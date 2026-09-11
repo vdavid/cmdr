@@ -1,7 +1,8 @@
 //! Direct file-action commands invoked from the command palette, context menus,
-//! and menu items: reveal in Finder, Get Info, open in the default editor, copy
-//! text to the clipboard, and the iCloud make-available-offline / remove-download
-//! pair. Thin pass-throughs that shell out or delegate to `file_system`.
+//! and menu items: reveal in Finder, Get Info, open in the text editor the user
+//! chose (plus the editor list its Settings row shows), copy text to the clipboard,
+//! and the iCloud make-available-offline / remove-download pair. Thin pass-throughs
+//! that shell out or delegate to `file_system`.
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 use std::process::Command;

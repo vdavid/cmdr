@@ -26,6 +26,12 @@ mock answers one number for every key still sees the system default. Linux runs 
 - **`OpenInEditorFailure`** (`launchRefused`, `timedOut`): a plain error toast, the choice left alone, and `false`,
   which the pane maps to `launchFailed`. `timedOut` stays honest that the editor may still appear. A throw with no typed
   reason gets the `launchRefused` wording, so nothing escapes as a rejection.
+- **`openedInName`** is filled in only when something will word it: the missing-app toast, or a press that may show the
+  hint (the caller asked about other editors). A plain open of a stored choice skips the name lookup, which shares the
+  launch's 5 s deadline and could otherwise turn an editor that did open into a `timedOut`.
+- **Off macOS**, the launch is the only part of this that runs: Linux keeps `xdg-open`, and when it can't be spawned F4
+  shows the `launchRefused` toast. Its wording ("Cmdr couldn't start your text editor. Try opening it yourself once,
+  then come back.") holds there too.
 
 ## The hint
 
@@ -68,8 +74,9 @@ settings" leads straight back to the row.
 ## The toasts
 
 Everything goes out under the one id `text-editor`, dismissed first and re-added. The dismiss makes the replacement
-total: `addToast`'s same-id path keeps the first toast's `dismissal` and width, which are wrong for a different message.
-A missing-app outcome only happens for a non-`system` choice, so it and the hint never come from the same press.
+total: `addToast`'s same-id path swaps the content, `dismissal`, and `props`, but keeps the first toast's width
+(`widthPx`), so a plain error toast raised over the 400 px hint would stay that wide. A missing-app outcome only happens
+for a non-`system` choice, so it and the hint never come from the same press.
 
 - **The hint**: persistent, 400 px wide, `TextEditorToastContent` with Dismiss. Its copy names no Settings path, because
   "Open settings" goes straight to the row.

@@ -204,6 +204,40 @@ describe('TextEditorSelect', () => {
     expect(settingsMap[SETTING_ID]).toBe('system')
   })
 
+  it('drops a pick whose canonical form arrives after the user already chose another row', async () => {
+    openAppPicker.mockResolvedValue(SUBLIME_PATH)
+    const slowPick: { answer?: () => void } = {}
+    listTextEditors.mockImplementation((appChoice: string) => {
+      const answer = {
+        data: editors({
+          apps: [XCODE, SUBLIME],
+          chosenId: appChoice === SUBLIME_PATH ? 'com.sublimetext.4' : 'system',
+        }),
+        timedOut: false,
+      }
+      if (appChoice !== SUBLIME_PATH) return Promise.resolve(answer)
+      // The canonical-form question can take up to the command's 2 s deadline.
+      return new Promise((resolve) => {
+        slowPick.answer = () => {
+          resolve(answer)
+        }
+      })
+    })
+    const target = await mountRow()
+    await pick(target, CHOOSE_APP_VALUE)
+    await vi.waitFor(() => {
+      expect(slowPick.answer).toBeDefined()
+    })
+
+    // The row stays usable meanwhile, and the user picks Xcode instead.
+    await pick(target, 'com.apple.dt.Xcode')
+    slowPick.answer?.()
+    for (let i = 0; i < 5; i++) await tick()
+
+    expect(setSetting).toHaveBeenLastCalledWith(SETTING_ID, 'com.apple.dt.Xcode')
+    expect(setSetting).not.toHaveBeenCalledWith(SETTING_ID, 'com.sublimetext.4')
+  })
+
   it('shows the system default when the chosen editor is gone, without writing', async () => {
     settingsMap[SETTING_ID] = 'com.barebones.bbedit'
     // BBEdit is gone, so the backend reports no choice.

@@ -6376,8 +6376,10 @@ export type EditorOpenOutcome =
 export type EditorOpenReport = {
   outcome: EditorOpenOutcome
   /**
-   *  The app that got the file, named the way Finder shows it. `None` when there's
-   *  nothing to read a name from (no system default resolves, or off macOS).
+   *  The app that got the file, named the way Finder shows it. Filled in only when
+   *  something words it: a fallback outcome (the missing-app toast), or a press whose
+   *  caller asked about other editors (the one-time hint). `None` otherwise, and when
+   *  there's nothing to read a name from (no system default resolves, or off macOS).
    */
   openedInName: string | null
   /**

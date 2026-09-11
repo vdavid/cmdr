@@ -31,8 +31,10 @@ pub enum EditorOpenOutcome {
 #[serde(rename_all = "camelCase")]
 pub struct EditorOpenReport {
     pub outcome: EditorOpenOutcome,
-    /// The app that got the file, named the way Finder shows it. `None` when there's
-    /// nothing to read a name from (no system default resolves, or off macOS).
+    /// The app that got the file, named the way Finder shows it. Filled in only when
+    /// something words it: a fallback outcome (the missing-app toast), or a press whose
+    /// caller asked about other editors (the one-time hint). `None` otherwise, and when
+    /// there's nothing to read a name from (no system default resolves, or off macOS).
     pub opened_in_name: Option<String>,
     /// `None` unless the caller asked. When asked: whether macOS lists any installed
     /// text editor besides the system default, which is what the one-time hint needs.
@@ -363,6 +365,14 @@ mod imp {
         !installed_editors(handler_ids, default_id, mac).is_empty()
     }
 
+    /// Whether the report has to name the app that got the file. Two things word that
+    /// name: the missing-app toast, and the one-time hint, which can only be due when the
+    /// caller asked about other editors. A plain open of a stored choice reads nothing,
+    /// so it skips the default-id lookup and the name read.
+    fn report_needs_app_name(outcome: &EditorOpenOutcome, ask_about_other_editors: bool) -> bool {
+        *outcome != EditorOpenOutcome::Opened || ask_about_other_editors
+    }
+
     /// Every app LaunchServices lists as a plain-text EDITOR, by bundle id, in its own
     /// order (which shifts between calls). The editor role keeps browsers and viewers
     /// out. Empty when nothing claims plain text.
@@ -439,7 +449,10 @@ mod imp {
     /// Reports what happened rather than whether it worked: a chosen app that's gone
     /// falls back to the system default and says so. Everything after the launch (the
     /// app's name, and the other-editors query when `ask_about_other_editors`) runs
-    /// once `open` has the request, so none of it delays the editor.
+    /// once `open` has the request, so none of it delays the editor, and only what a
+    /// reader will word runs at all (`report_needs_app_name`): it shares the launch's
+    /// deadline, and a lookup nobody reads could turn an editor that did open into a
+    /// `timedOut`.
     pub fn open_in_editor(
         file: &Path,
         setting: &str,
@@ -450,12 +463,19 @@ mod imp {
         launch(&launch_argv(&choice, file), file)?;
         log::info!(target: "text_editor", "opened {file:?} in {} ({outcome:?})", choice.id());
 
-        let default_id = plain_text_default_id();
-        let opened_in = match &choice {
-            TextEditorChoice::SystemDefault => default_id.as_deref().and_then(|id| mac.installed_bundle(id)),
-            TextEditorChoice::BundleId(id) => mac.installed_bundle(id),
-            TextEditorChoice::AppPath(path) => Some(path.clone()),
-        };
+        let needs_name = report_needs_app_name(&outcome, ask_about_other_editors);
+        // Both answers below can need the system default's id, so it's asked at most once,
+        // and only when one of them does.
+        let default_id = (ask_about_other_editors || (needs_name && choice == TextEditorChoice::SystemDefault))
+            .then(plain_text_default_id)
+            .flatten();
+        let opened_in = needs_name
+            .then(|| match &choice {
+                TextEditorChoice::SystemDefault => default_id.as_deref().and_then(|id| mac.installed_bundle(id)),
+                TextEditorChoice::BundleId(id) => mac.installed_bundle(id),
+                TextEditorChoice::AppPath(path) => Some(path.clone()),
+            })
+            .flatten();
         let other_editors_installed = ask_about_other_editors
             .then(|| other_editors_installed(&plain_text_editor_ids(), default_id.as_deref(), &mac));
         Ok(EditorOpenReport {
@@ -876,6 +896,30 @@ mod imp {
                 Some(XCODE),
                 &mac
             ));
+        }
+
+        // Which reports name the app.
+
+        #[test]
+        fn a_plain_open_nobody_asked_about_names_nothing() {
+            assert!(!report_needs_app_name(&EditorOpenOutcome::Opened, false));
+        }
+
+        #[test]
+        fn a_fallback_names_the_app_its_toast_words() {
+            assert!(report_needs_app_name(
+                &EditorOpenOutcome::ChosenAppMissingOpenedDefaultInstead,
+                false
+            ));
+            assert!(report_needs_app_name(
+                &EditorOpenOutcome::ChosenAppMissingOpenedDefaultInstead,
+                true
+            ));
+        }
+
+        #[test]
+        fn a_press_that_may_show_the_hint_names_the_app() {
+            assert!(report_needs_app_name(&EditorOpenOutcome::Opened, true));
         }
 
         // LaunchServices itself.

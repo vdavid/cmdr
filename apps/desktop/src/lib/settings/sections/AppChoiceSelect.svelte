@@ -57,6 +57,10 @@
     // Only the newest request may land: a pick fires one refresh itself and its
     // write fires another, and an older answer arriving last would show a stale list.
     let latestRequest = 0
+    // Every write the row starts: a picked row, or a "Choose an app…" pick. A pick
+    // waits on the picker and on `resolvePick` (up to its command's 2 s deadline)
+    // while the control stays usable, so a row picked meanwhile must win over it.
+    let latestChange = 0
 
     async function refresh(): Promise<void> {
         const request = ++latestRequest
@@ -86,6 +90,7 @@
     const value = $derived(pendingChoice ?? (answer === null ? '' : selectedIn(answer.data)))
 
     async function chooseApp(): Promise<void> {
+        const change = ++latestChange
         let picked: string | string[] | null
         try {
             picked = await openAppPicker({
@@ -110,6 +115,9 @@
                 log.warn('Resolving the picked app did not work, storing its path: {err}', { err: String(err) })
             }
         }
+        // A row picked while this pick waited is the newer choice; storing this one now
+        // would overwrite it.
+        if (change !== latestChange) return
         setSetting(settingId, choice)
         // The pick may not be in the list yet, and only the backend knows its name and icon.
         await refresh()
@@ -120,6 +128,7 @@
             void chooseApp()
             return
         }
+        latestChange++
         // Move the shown row now; the write's own change event re-asks right after.
         pendingChoice = next
         setSetting(settingId, next)

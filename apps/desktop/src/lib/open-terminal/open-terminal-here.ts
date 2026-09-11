@@ -49,8 +49,8 @@ const TOAST_WIDTH_PX = 400
  * Says one thing, retiring whatever this action said before.
  *
  * The dismiss is what makes the replacement total: `addToast`'s own same-id path
- * swaps the content but keeps the first toast's `props`, `dismissal`, and width,
- * which is the wrong body for a different message.
+ * swaps the content, dismissal, and props, but keeps the first toast's `widthPx`,
+ * so a plain one-line message raised over the 400 px hint would stay that wide.
  */
 function replaceToast(content: Parameters<typeof addToast>[0], options: Parameters<typeof addToast>[1]): void {
   dismissToast(TOAST_ID)

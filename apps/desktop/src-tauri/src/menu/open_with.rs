@@ -6,8 +6,8 @@
 //! cached in `MenuState.open_with_apps` keyed by bundle ID so we can resolve the
 //! click target without encoding paths into menu IDs.
 //!
-//! Each candidate uses `IconMenuItem` with the app's main icon (loaded by
-//! `file_system::open_with::load_app_icon` at candidate-list build time). App icons
+//! Each candidate uses `IconMenuItem` with the app's main icon (loaded inside
+//! `file_system::open_with::compute_open_with_choices` as it builds the candidate list). App icons
 //! are full-color non-template images, so they render correctly through `IconMenuItem`
 //! (the existing "no icons on context menus" decision in `menu/CLAUDE.md` was
 //! specific to SF Symbol *template* images, which need auto-tinting that rasterized

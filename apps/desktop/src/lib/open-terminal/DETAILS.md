@@ -73,8 +73,9 @@ first and re-added, so a second word retires the first rather than stacking. ❗
 `toastGroup`: a group already full of PERSISTENT toasts drops the INCOMING toast instead of evicting anything
 (`ui/toast/toast-store.svelte.ts` `makeRoomForNewToast`, and `status-corner/CLAUDE.md` carries the same warning), so the
 app-is-gone toast said nothing at all while the first-use hint was still up. The dismiss matters too: `addToast`'s own
-same-id path swaps the content but keeps the first toast's `props`, `dismissal`, and width. Both toasts deep-link to the
-terminal-app row through `openSettingsToTerminalApp()` under the `'open-terminal-toast'` settings surface.
+same-id path swaps the content, `dismissal`, and `props` but keeps the first toast's width (`widthPx`). Both toasts
+deep-link to the terminal-app row through `openSettingsToTerminalApp()` under the `'open-terminal-toast'` settings
+surface.
 
 `launchRefused` and `timedOut` become plain error toasts. `not_a_local_path` coming back from Rust reuses the same
 `noPath` wording as the frontend gate's refusal: from the user's side it's the same sentence, and the only difference is

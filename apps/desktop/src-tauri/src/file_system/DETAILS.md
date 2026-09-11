@@ -371,9 +371,10 @@ Which app F4 opens a file in: the regular pane, the search-results pane, and the
   launched Xcode, matching the resolved default. "Change All" writes an all-roles handler (`LSHandlerRoleAll`), so this
   can't tell `kLSRolesAll` from `kLSRolesEditor`: a role-specific override (from `duti`, say) could name one default
   while `open -t` launches another. Unverified.
-- **Everything in the report after the launch runs after it**: the app's name and, when asked, whether other editors
-  exist. That query uses ids and installed-ness only, ❌ no names or icons, because it shares the launch's 5 s deadline,
-  and a deadline expiring after `open` spawned would word an editor that did open as a timeout.
+- **Everything in the report after the launch runs after it, and only when something reads it**: the app's name when
+  the outcome is a fallback or the caller asked about other editors (`report_needs_app_name`), and whether other
+  editors exist only when asked. That query uses ids and installed-ness only, ❌ no names or icons: all of it shares the
+  launch's 5 s deadline, and a deadline expiring after `open` spawned would word an editor that did open as a timeout.
 - **Cost** (debug build, same machine and date): the editor query is 0.3 ms warm and 7–14 ms as a process's first
   LaunchServices call. `list_text_editors` with six apps, the default, names, and icons took 371 ms in a cold test
   process and 57 ms warm, nearly all of it icon decoding.
