@@ -51,6 +51,13 @@ struct BetaSignupRequest<'a> {
 #[tauri::command]
 #[specta::specta]
 pub async fn beta_signup(email: String) -> BetaSignupResult {
+    // E2E builds never reach the api-server, mirroring `feedback::send`: an E2E build is a release
+    // build, so a spec's signup would land on the real mailing list.
+    if cfg!(feature = "playwright-e2e") {
+        log::info!(target: "beta_signup", "Skipping beta signup (E2E build)");
+        return BetaSignupResult::Subscribed;
+    }
+
     let client = match reqwest::Client::builder().timeout(BETA_SIGNUP_TIMEOUT).build() {
         Ok(c) => c,
         Err(e) => {

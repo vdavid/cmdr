@@ -95,6 +95,14 @@ pub async fn activate_short_code(code: &str) -> Result<String, LicenseActivation
         });
     }
 
+    // E2E builds never reach the license server: an E2E build is a release build, so this would be
+    // production traffic. A run that needs a license state sets `CMDR_MOCK_LICENSE` instead.
+    if cfg!(feature = "playwright-e2e") {
+        return Err(LicenseActivationError::NetworkError {
+            detail: "E2E build: short code activation not available".to_string(),
+        });
+    }
+
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
         .build()
@@ -138,6 +146,12 @@ pub async fn validate_with_server(transaction_id: &str) -> ValidationOutcome {
     // In mock mode, skip server validation
     #[cfg(any(debug_assertions, feature = "playwright-e2e"))]
     if std::env::var("CMDR_MOCK_LICENSE").is_ok() {
+        return ValidationOutcome::NetworkError;
+    }
+
+    // E2E builds never reach the license server (production traffic from a release build). A
+    // `NetworkError` falls back to the cached status without overwriting it, like a real outage.
+    if cfg!(feature = "playwright-e2e") {
         return ValidationOutcome::NetworkError;
     }
 

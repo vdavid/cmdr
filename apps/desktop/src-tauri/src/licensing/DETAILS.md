@@ -136,7 +136,14 @@ license. Avoids storing the key just to read the transaction ID back.
 
 **Decision**: `CMDR_MOCK_LICENSE` env var bypasses all license logic including server calls.
 **Why**: License UX testing needs every state (personal, commercial, expired, with/without modals). Without mocking you'd
-need real keys per variant and a running API server. The mock skips network entirely.
+need real keys per variant and a running API server. The mock skips network entirely. It compiles into debug builds and
+`playwright-e2e` builds: the i18n screenshot run photographs the license surfaces on the release-profile E2E binary.
+Neither ships, so the variable can't unlock a user's install.
+
+**Decision**: an E2E build never reaches the license server, mock or not. `activate_short_code` answers a
+`NetworkError`, and `validate_with_server` answers `ValidationOutcome::NetworkError`, which keeps the cached status as a
+real outage would. **Why**: an E2E build is a release build, so its `LICENSE_SERVER_URL` is production, and a spec that
+typed a code or carried a stored key would send test traffic there.
 
 ## Gotchas
 

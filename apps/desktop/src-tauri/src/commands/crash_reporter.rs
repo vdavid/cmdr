@@ -32,11 +32,13 @@ pub fn dismiss_crash_report(app: tauri::AppHandle) {
 }
 
 /// Sends the crash report to the ingestion server, then deletes the local file.
-/// Skipped in dev mode and CI to avoid polluting production data.
+/// Skipped in debug builds, E2E builds (`playwright-e2e`), and CI to avoid polluting production
+/// data. The E2E skip mirrors `error_reporter::upload`: an E2E build is a release build, so without
+/// it a crash during a test run would reach the live channel looking like a real user's.
 #[tauri::command]
 #[specta::specta]
 pub async fn send_crash_report(app: tauri::AppHandle, report: CrashReport) -> Result<(), String> {
-    let should_skip = cfg!(debug_assertions) || std::env::var("CI").is_ok();
+    let should_skip = cfg!(debug_assertions) || cfg!(feature = "playwright-e2e") || std::env::var("CI").is_ok();
 
     if !should_skip {
         let client = reqwest::Client::builder()
@@ -55,7 +57,7 @@ pub async fn send_crash_report(app: tauri::AppHandle, report: CrashReport) -> Re
             return Err(format!("Crash report server returned {}", response.status()));
         }
     } else {
-        log::info!("Crash reporter: skipping send (dev mode or CI)");
+        log::info!("Crash reporter: skipping send (debug build, E2E build, or CI)");
     }
 
     // Delete the local crash file after successful send (or skip)
