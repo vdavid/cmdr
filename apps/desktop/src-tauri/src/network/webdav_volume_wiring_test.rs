@@ -9,13 +9,17 @@
 //! `apps/desktop/test/webdav-servers/start.sh`. Everything else runs without
 //! one.
 
+use std::path::Path;
 use std::time::Duration;
 
-use cmdr_webdav::WebdavConnectionParams;
+use cmdr_fs::volume::ConnectionState;
+use cmdr_webdav::{WebdavConnectionParams, WebdavVolume};
 
 use cmdr_webdav::volume::testing::{FIXTURE_USER, fixture_target};
 
 use crate::network::one_shot_credentials::SecretOffer;
+use crate::network::saved_server_fields::SavedServerOutcome;
+use crate::network::webdav_known_servers::KnownWebdavServer;
 use crate::network::webdav_volume_wiring::{self, WebdavConnection};
 use crate::network::{keychain, webdav_known_servers};
 
@@ -27,16 +31,6 @@ async fn disconnecting_a_volume_that_is_not_webdav_does_nothing() {
         !webdav_volume_wiring::disconnect("webdav-nothing-is-registered-here").await,
         "an unknown id is a no, not a panic"
     );
-}
-
-/// The reconnect switch on an unmounted volume is a plain no, so editing a
-/// saved server that isn't open stays an ordinary edit.
-#[test]
-fn applying_the_switch_to_an_unmounted_volume_is_a_plain_no() {
-    assert!(!webdav_volume_wiring::apply_auto_reconnect(
-        "webdav-nothing-is-registered-here",
-        false
-    ));
 }
 
 /// Asking about an unmounted volume answers `None`: there is no live session to
@@ -241,6 +235,91 @@ async fn webdav_integration_a_remembered_secret_is_in_the_store_after_the_dial()
     assert!(
         keychain::has_credentials(&params.credential_service(), Some(&params.username)),
         "the switch means exactly one thing: the secret is in the store"
+    );
+
+    webdav_volume_wiring::disconnect(&volume_id).await;
+}
+
+// ── Editing a connected place ────────────────────────────────────────
+
+/// ❗ **Saving an edit to a connected place applies it live, over the SAME
+/// client**: connected at `/photos`, then widened to the account's whole tree.
+/// Nothing re-probes, the shared retirement flag stays clear, and the reconnect
+/// loop still brings the client back after a loss, re-probing the NEW root.
+#[tokio::test]
+#[ignore = "needs the WebDAV fixture stack: apps/desktop/test/webdav-servers/start.sh (webdav-fixture)"]
+async fn webdav_integration_widening_a_connected_root_applies_live_over_the_same_client() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let target = fixture_target("APACHE", 13480, FIXTURE_USER);
+    let params = WebdavConnectionParams::new(target.base_url.clone(), &target.username, "/photos");
+    keychain::save_credentials(
+        &params.credential_service(),
+        Some(&params.username),
+        &params.username,
+        &target.password,
+    )
+    .expect("the test secret store always accepts");
+    let WebdavConnection::Connected { volume_id } =
+        webdav_volume_wiring::connect_and_register("", None, params.clone(), "webdav-edit-widen", None).await
+    else {
+        panic!("a fixture with its password stored must connect");
+    };
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    let narrow = manager.get(&volume_id).expect("just registered");
+    let client_before = narrow
+        .as_any()
+        .downcast_ref::<WebdavVolume>()
+        .expect("a WebDAV volume")
+        .client_witness()
+        .await
+        .expect("a live client");
+    let prefix = cmdr_fs::volume::webdav_app_root(params.host(), params.port(), &params.username);
+
+    let outcome = webdav_volume_wiring::save_without_connecting(KnownWebdavServer {
+        url: target.base_url.to_string(),
+        username: target.username.clone(),
+        display_name: String::new(),
+        remote_root: "/".to_string(),
+        start_folder: None,
+        auto_reconnect: true,
+        pinned: true,
+        last_connected_at: chrono::Utc::now().to_rfc3339(),
+    })
+    .await;
+
+    assert_eq!(outcome, SavedServerOutcome::Saved);
+    let wide = manager.get(&volume_id).expect("still registered");
+    let wide_root = format!("{prefix}/");
+    assert_eq!(wide.root(), Path::new(&wide_root), "the registry serves the wider root");
+    assert!(
+        wide.exists(Path::new(&format!("{prefix}/hello.txt"))).await,
+        "a file only the wider root covers lists through the live client"
+    );
+    let webdav = wide.as_any().downcast_ref::<WebdavVolume>().expect("a WebDAV volume");
+    let client_after = webdav.client_witness().await.expect("still a live client");
+    assert!(
+        std::sync::Weak::ptr_eq(&client_before, &client_after),
+        "❗ no re-probe: the client that served the old root serves the new one"
+    );
+    assert!(
+        !wide.retirement().expect("keeps a flag").is_retired(),
+        "❗ the swap retired nothing"
+    );
+
+    webdav.simulate_session_loss().await;
+    assert!(
+        wide.list_directory(Path::new(&wide_root), None).await.is_err(),
+        "an operation is what notices the loss and starts the loop"
+    );
+    cmdr_fs::testing::wait_until_async(
+        Duration::from_secs(30),
+        "the reconnect loop to bring the client back",
+        || wide.connection_state().is_some_and(ConnectionState::is_live),
+    )
+    .await;
+    assert!(
+        wide.list_directory(Path::new(&wide_root), None).await.is_ok(),
+        "the rebuilt client serves the wider root"
     );
 
     webdav_volume_wiring::disconnect(&volume_id).await;

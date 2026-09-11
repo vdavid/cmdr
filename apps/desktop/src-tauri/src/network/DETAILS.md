@@ -455,8 +455,8 @@ doesn't name it: SFTP has always come back on its own, and a missing field must 
 before the setting existed.
 
 `sftp_volume_wiring::save_without_connecting` (behind `update_known_sftp_server` and `update_saved_server`) moves both
-copies: the saved entry, and (through `apply_auto_reconnect`) a volume that happens to be mounted, so the switch takes
-effect now rather than on the next connect. What the two mean together, what the backend answers when one is on and
+copies: the saved entry, and on a connected place the live volume's switch, so it takes effect now rather than on the
+next connect (§ "Editing a connected place" has everything else an edit moves live). What the two mean together, what the backend answers when one is on and
 can't work, and what a UI shows: `crates/cmdr-sftp/DETAILS.md` § "The two switches".
 
 `sftp_volume_wiring.rs` is the only path a volume gets registered on, and it does three things in one order: dial
@@ -555,6 +555,52 @@ entry's OWN address, and writes the file back only when one changed. Conservativ
 
 `KnownWebdavServer::endpoint` is the one reader of a stored URL's `(host, port)`, shared by the label, the cleanup,
 `server_volumes`, and `webdav_volume_wiring::save_without_connecting`.
+
+### Editing a connected place
+
+Saving an edit to an SFTP or WebDAV place that is connected right now applies it to the live volume with no redial.
+Each `*_volume_wiring::save_without_connecting` finds the registered volume (typed, by downcast) and knows its own
+protocol's two moves; the protocol-free rest is `live_server_edit.rs`, so the order and the refusals are written once.
+
+What moves, and when:
+
+- **The label and the root**: a new instance over the SAME connection (`sharing_connection`), swapped in with
+  `VolumeManager::replace_root_in_place`, then `volumes-changed`.
+- **The start folder**: nothing in the registry; the panes learn the new landing from `volume-root-changed`.
+- **"Reconnect automatically"**: the live switch, at once.
+- **What the next redial dials with**: SFTP's root, key file, and agent switch (`set_redial_params`), and WebDAV's root
+  (`set_redial_root`), which its reconnect re-probes. No redial now.
+- **Not connected**: the store alone, with no existence check. A connect lands through `resolveValidPath`, which walks
+  up to the root.
+
+❗ **Check, then the live switches and redial params, then the store, then the install.** A refusal leaves all of them
+untouched, the store included. The install runs after the store holds the edit.
+
+**What the live session is asked** (`live_server_edit::check`). When the label or the root moved, the successor is
+built FIRST and statted through, because the live instance refuses any path above its own root:
+
+- **The root, only when it moved.** Missing, a file, or `PermissionDenied` → `SavedServerOutcome::RootNotFound`.
+- **The start folder, only when the root or the landing moved.** The same → `StartFolderNotFound`.
+- ❗ **Nothing, when neither moved**, even with a start folder set. The "reconnect automatically" switch is saved
+  through this same path, and it's most needed exactly when the session is down.
+- **Anything else a stat answers** (`DeviceDisconnected`, a timeout, a transport error) → `Unreachable`: nothing could
+  be confirmed, so nothing is saved.
+- ❗ **One budget for both stats** (`CHECK_BUDGET`, 5 s, the IPC writes tier). Each stat runs on its own task and the
+  JOIN HANDLE is what times out, so a slow server finishes in the background rather than being dropped mid-request
+  (`commands/CLAUDE.md` § timeouts).
+
+❗ **Never install through `connect_wiring::install_retiring_incumbent`.** Its `on_superseded` retires the `Retirement`
+the successor shares, standing the live place's reconnect loop and connection events down, and its identity guard
+refuses a changed root anyway (`file_system/volume/DETAILS.md` § "Replacing a root in place"). A place that
+disconnected between the check and the install (`RootReplacement::NotRegistered`) announces nothing: the store holds
+the edit, and the next connect dials it.
+
+**`volume-root-changed`** (`volume_broadcast::VolumeRootChanged`: `volumeId`, `oldRoot`, `newRoot`, `oldLanding`,
+`newLanding`) goes out after the install, only when the root or the landing moved. Every path is an APP path minted
+from the place's own prefix (`cmdr_fs::volume::ids::sftp_app_root` or `webdav_app_root`), and a landing is the start
+folder, else the root. The old landing is the saved start folder only while the LIVE root holds it, so a store that
+drifted from the session reports the old root. It isn't debounced, unlike `volumes-changed`, so it reaches the panes
+first.
 
 ### A secret used for one dial and never stored
 

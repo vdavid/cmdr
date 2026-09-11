@@ -445,7 +445,7 @@ pub fn get_known_sftp_servers() -> Vec<KnownSftpServer> {
     clippy::too_many_arguments,
     reason = "one argument per saved-server field, mirroring the connect command"
 )]
-pub fn update_known_sftp_server(
+pub async fn update_known_sftp_server(
     host: String,
     port: u16,
     username: String,
@@ -472,6 +472,7 @@ pub fn update_known_sftp_server(
         pinned: true,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
     })
+    .await
 }
 
 /// Whether an SFTP volume can actually come back on its own as it stands.

@@ -179,6 +179,29 @@ pub struct VolumeUnmounted {
     pub volume_id: Option<String>,
 }
 
+/// Typed `volume-root-changed` Tauri event: saving an edit to a CONNECTED place
+/// moved its root, its start folder, or both, and the registry already serves
+/// the new root.
+///
+/// Every path is an APP path (`sftp://ada@nas.local:22/srv/data`), and a landing
+/// is where opening the place lands: its start folder, else its root. Emitted
+/// only when the root or the landing actually moved. What a pane does with it:
+/// `network/DETAILS.md` § "Editing a connected place".
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type, Event)]
+#[serde(rename_all = "camelCase")]
+pub struct VolumeRootChanged {
+    /// The place's volume id, which an edit never changes.
+    pub volume_id: String,
+    /// The root the place had until this edit.
+    pub old_root: String,
+    /// The root it has now.
+    pub new_root: String,
+    /// Where opening the place landed until this edit.
+    pub old_landing: String,
+    /// Where it lands now.
+    pub new_landing: String,
+}
+
 /// What the user picked in a volume row's context menu.
 ///
 /// ❗ A typed enum, ❌ never a free string: the frontend branches on every one of
@@ -244,6 +267,37 @@ pub fn emit_volume_gone(volume_id: &str, volume_path: &str) {
     };
     if let Err(e) = payload.emit(app) {
         error!("Failed to emit volume-unmounted for {volume_id}: {e}");
+    }
+}
+
+/// The `VolumeRootChanged` events emitted so far. Test-only; a cell reads its
+/// own through [`volume_root_changes`], by a volume id no other cell uses.
+#[cfg(test)]
+static VOLUME_ROOTS_CHANGED: Mutex<Vec<VolumeRootChanged>> = Mutex::new(Vec::new());
+
+/// Every `VolumeRootChanged` this process emitted for `volume_id`, in order.
+#[cfg(test)]
+pub(crate) fn volume_root_changes(volume_id: &str) -> Vec<VolumeRootChanged> {
+    VOLUME_ROOTS_CHANGED
+        .lock_ignore_poison()
+        .iter()
+        .filter(|change| change.volume_id == volume_id)
+        .cloned()
+        .collect()
+}
+
+/// Tells the panes a connected place's root or landing moved, so a pane standing
+/// on the old one follows. Not debounced: the registry already serves the new
+/// root when this goes out.
+pub fn emit_volume_root_changed(change: VolumeRootChanged) {
+    #[cfg(test)]
+    VOLUME_ROOTS_CHANGED.lock_ignore_poison().push(change.clone());
+    let Some(app) = APP_HANDLE.get() else {
+        // No app in a unit test; the recording above is what a cell reads.
+        return;
+    };
+    if let Err(e) = change.emit(app) {
+        error!("Failed to emit volume-root-changed for {}: {e}", change.volume_id);
     }
 }
 

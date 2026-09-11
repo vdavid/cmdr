@@ -79,7 +79,7 @@ use crate::network::{
 use crate::reveal::RevealDelivered;
 use crate::search::live::events::{SearchCancelledEvent, SearchCompleteEvent, SearchErrorEvent, SearchProgressEvent};
 use crate::space_poller::{LowDiskSpacePayload, VolumeSpaceChanged};
-use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeUnmounted, VolumesChanged};
+use crate::volume_broadcast::{VolumeContextAction, VolumeMounted, VolumeRootChanged, VolumeUnmounted, VolumesChanged};
 // Window-management events: emit_to-targeted window lifecycle.
 use crate::window_events::{
     CloseAbout, CloseAllFileViewers, CloseConfirmation, CloseFileViewer, ExecuteCommand, FocusAbout, FocusConfirmation,
@@ -998,6 +998,9 @@ pub fn builder() -> Builder<tauri::Wry> {
             VolumesChanged,
             VolumeMounted,
             VolumeUnmounted,
+            // A connected SFTP or WebDAV place's root or landing moved on an edit
+            // (network/live_server_edit.rs).
+            VolumeRootChanged,
             VolumesBusyChanged,
             VolumeContextAction,
             LowDiskSpacePayload, // event_name = "low-disk-space"

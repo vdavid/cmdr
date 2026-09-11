@@ -458,12 +458,12 @@ fn webdav_target(url: &str, username: &str, start_folder: Option<&str>) -> Serve
 
 /// ❗ **A start folder outside the root is refused, and NOTHING is written**:
 /// the stored entry keeps every field it had, the name included.
-#[test]
-fn saving_a_start_folder_outside_the_root_is_refused_and_writes_nothing() {
+#[tokio::test]
+async fn saving_a_start_folder_outside_the_root_is_refused_and_writes_nothing() {
     let host = "192.0.2.61";
     sftp_known_servers::remember(sftp_entry(host, true));
 
-    let outcome = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1")));
+    let outcome = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1"))).await;
 
     assert_eq!(outcome, SavedServerOutcome::StartFolderOutsideRoot);
     let stored = sftp_known_servers::find(host, 2222, "ada").expect("the entry stays saved");
@@ -477,31 +477,31 @@ fn saving_a_start_folder_outside_the_root_is_refused_and_writes_nothing() {
 
 /// The start folder is stored normalized, and the root itself stores as none,
 /// so one landing has one spelling.
-#[test]
-fn saving_a_start_folder_under_the_root_stores_it_normalized() {
+#[tokio::test]
+async fn saving_a_start_folder_under_the_root_stores_it_normalized() {
     let host = "192.0.2.62";
     sftp_known_servers::remember(sftp_entry(host, true));
     let stored = || sftp_known_servers::find(host, 2222, "ada").expect("the entry stays saved");
 
-    let deeper = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos/")));
+    let deeper = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos/"))).await;
     assert_eq!(deeper, SavedServerOutcome::Saved);
     assert_eq!(stored().start_folder.as_deref(), Some("/srv/data/photos"));
     assert_eq!(stored().display_name, "Edited");
 
-    let at_root = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data")));
+    let at_root = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data"))).await;
     assert_eq!(at_root, SavedServerOutcome::Saved);
     assert_eq!(stored().start_folder, None);
 }
 
 /// WebDAV takes the same rule through the same family, so the frontend branches
 /// on protocol nowhere new.
-#[test]
-fn saving_a_webdav_start_folder_outside_the_root_is_refused_and_writes_nothing() {
+#[tokio::test]
+async fn saving_a_webdav_start_folder_outside_the_root_is_refused_and_writes_nothing() {
     let host = "192.0.2.63";
     webdav_known_servers::remember(webdav_entry(host, true));
     let url = format!("http://{host}:8080/dav/");
 
-    let outcome = update_saved_server(webdav_target(&url, "ada", Some("/Documents")));
+    let outcome = update_saved_server(webdav_target(&url, "ada", Some("/Documents"))).await;
 
     assert_eq!(outcome, SavedServerOutcome::StartFolderOutsideRoot);
     let stored = webdav_known_servers::find(&url, "ada").expect("the entry stays saved");

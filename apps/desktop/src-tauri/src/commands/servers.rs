@@ -699,11 +699,11 @@ pub async fn forget_server_secret(id: String) -> bool {
 /// server's PIN is not in it: `remember` preserves the stored pin on a replace,
 /// and [`set_place_pinned`] is the one writer that moves one.
 ///
-/// ❗ Answers a typed [`SavedServerOutcome`], and a refusal (a start folder
-/// outside the root) writes nothing at all.
+/// ❗ Answers a typed [`SavedServerOutcome`]; a refusal writes nothing at all. A
+/// connected place's edit applies live: `network/live_server_edit.rs`.
 #[tauri::command]
 #[specta::specta]
-pub fn update_saved_server(server: ServerTarget) -> SavedServerOutcome {
+pub async fn update_saved_server(server: ServerTarget) -> SavedServerOutcome {
     match server {
         ServerTarget::Sftp {
             display_name,
@@ -715,17 +715,20 @@ pub fn update_saved_server(server: ServerTarget) -> SavedServerOutcome {
             key_file,
             use_agent,
             auto_reconnect,
-        } => super::sftp::update_known_sftp_server(
-            host,
-            port,
-            username,
-            display_name,
-            remote_root,
-            start_folder,
-            key_file,
-            use_agent,
-            auto_reconnect,
-        ),
+        } => {
+            super::sftp::update_known_sftp_server(
+                host,
+                port,
+                username,
+                display_name,
+                remote_root,
+                start_folder,
+                key_file,
+                use_agent,
+                auto_reconnect,
+            )
+            .await
+        }
         ServerTarget::Webdav {
             display_name,
             url,
@@ -733,14 +736,17 @@ pub fn update_saved_server(server: ServerTarget) -> SavedServerOutcome {
             remote_root,
             start_folder,
             auto_reconnect,
-        } => super::webdav::update_known_webdav_server(
-            url,
-            username,
-            display_name,
-            remote_root,
-            start_folder,
-            auto_reconnect,
-        ),
+        } => {
+            super::webdav::update_known_webdav_server(
+                url,
+                username,
+                display_name,
+                remote_root,
+                start_folder,
+                auto_reconnect,
+            )
+            .await
+        }
     }
 }
 

@@ -116,7 +116,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     differ only in whether the fields arrived prefilled. It carries no PIN: `set_place_pinned` is the one writer that
     moves one, because the stores' `remember` deliberately preserves a stored pin on every replace. It answers a typed
     `SavedServerOutcome` (`network/saved_server_fields.rs`), the same one the per-protocol `update_known_*_server`
-    commands answer, and a refusal writes nothing.
+    commands answer, and a refusal writes nothing: `start_folder_outside_root` (connected or not), and for a connected
+    place, whose edit applies live, `root_not_found`, `start_folder_not_found`, and `unreachable` (`network/DETAILS.md`
+    § "Editing a connected place"). All three commands are `async`, because a live edit asks the server.
   - ❗ **A start folder outside the remote root is a typed refusal on both writers a person types into.**
     `update_saved_server` answers `start_folder_outside_root`, and `connect_server` answers
     `ServerConnectOutcome::StartFolderOutsideRoot` BEFORE dialing, so nothing is registered or saved. Landing the pane

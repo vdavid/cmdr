@@ -10,11 +10,14 @@
 //! lives here, because a connect is three things happening in one order: dial,
 //! register (retiring any predecessor), and remember the server for next time.
 
+use std::path::Path;
 use std::sync::Arc;
 
+use cmdr_fs::volume::Volume;
 use cmdr_webdav::{UnattendedReconnect, WebdavConnectError, WebdavConnectionParams, WebdavVolume};
 
 use super::connect_wiring::{self, AttemptTable};
+use super::live_server_edit::{self, ConnectedPlace, PlaceEdit};
 use super::one_shot_credentials::{self, SecretOffer};
 use super::saved_server_fields::{self, SavedServerOutcome};
 use super::webdav_known_servers::{self, KnownWebdavServer};
@@ -156,43 +159,72 @@ fn failed(error: WebdavConnectError) -> WebdavConnection {
     }
 }
 
-/// Moves the "reconnect automatically" switch on a volume that is already
-/// mounted, answering whether there was a WebDAV volume under that id.
-///
-/// ❗ The saved-server entry is the durable copy and the volume holds a live one,
-/// so editing a server that happens to be open has to move both. Without this, a
-/// switch the user flipped would take effect on the next connect and not before.
-pub fn apply_auto_reconnect(volume_id: &str, on: bool) -> bool {
-    let manager = crate::file_system::volume::manager::get_volume_manager();
-    let Some(volume) = manager.get(volume_id) else {
-        return false;
-    };
-    // Typed rather than a guess at the id's shape, the same way `disconnect` asks.
-    let Some(webdav) = volume.as_any().downcast_ref::<WebdavVolume>() else {
-        return false;
-    };
-    webdav.set_auto_reconnect(on);
-    true
-}
-
 /// Saves a server without dialing it: an edit, or an add that doesn't connect.
 ///
-/// ❗ The saved entry is the durable copy and a mounted volume holds a live
-/// "reconnect automatically" switch, so both move. A refusal moves neither.
-pub fn save_without_connecting(server: KnownWebdavServer) -> SavedServerOutcome {
+/// ❗ The saved entry is the durable copy and a CONNECTED place holds a live one,
+/// so an edit moves both, with no re-probe: the label and the root through an
+/// instance sharing the client, the "reconnect automatically" switch at once,
+/// and the root the next unattended re-probe asks for. The live client confirms
+/// a moved root or start folder first, and ❗ a refusal moves NOTHING, the store
+/// included. The order and the refusals: `live_server_edit.rs`.
+pub async fn save_without_connecting(server: KnownWebdavServer) -> SavedServerOutcome {
     let Ok(start_folder) =
         saved_server_fields::start_folder_under_root(&server.remote_root, server.start_folder.as_deref())
     else {
         return SavedServerOutcome::StartFolderOutsideRoot;
     };
     let server = KnownWebdavServer { start_folder, ..server };
-    if let Some((host, port)) = server.endpoint() {
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    // A URL no dial could open has no volume id, so nothing is connected under it.
+    // Typed rather than a guess at the id's shape, the same way `disconnect` asks.
+    let connected = server.endpoint().and_then(|(host, port)| {
         let volume_id = cmdr_fs::volume::webdav_volume_id(&host, port, &server.username);
-        // It answers whether that volume happened to be MOUNTED, and editing a saved server while it isn't is
-        // ordinary; the durable entry written below is what the caller asked for either way.
-        apply_auto_reconnect(&volume_id, server.auto_reconnect);
-    }
+        let live = manager
+            .get(&volume_id)
+            .filter(|volume| volume.as_any().is::<WebdavVolume>())?;
+        Some((
+            volume_id,
+            cmdr_fs::volume::webdav_app_root(&host, port, &server.username),
+            live,
+        ))
+    });
+    let Some((volume_id, app_prefix, live)) = connected else {
+        // Not connected: the store is the only copy, and the next connect dials it.
+        webdav_known_servers::remember(server);
+        return SavedServerOutcome::Saved;
+    };
+    let webdav = live
+        .as_any()
+        .downcast_ref::<WebdavVolume>()
+        .expect("filtered to a WebdavVolume above");
+    let place = ConnectedPlace {
+        volume_id,
+        live: Arc::clone(&live),
+        app_prefix,
+        saved_start_folder: webdav_known_servers::find(&server.url, &server.username)
+            .and_then(|saved| saved.start_folder),
+    };
+    let label = server.label();
+    let edit = PlaceEdit {
+        label: &label,
+        remote_root: &server.remote_root,
+        start_folder: server.start_folder.as_deref(),
+    };
+    let accepted = match live_server_edit::check(
+        &place,
+        &edit,
+        |name: &str, root: &Path| Arc::new(webdav.sharing_connection(name, root)) as Arc<dyn Volume>,
+        live_server_edit::CHECK_BUDGET,
+    )
+    .await
+    {
+        Ok(accepted) => accepted,
+        Err(refusal) => return refusal,
+    };
+    webdav.set_auto_reconnect(server.auto_reconnect);
+    webdav.set_redial_root(Path::new(&server.remote_root));
     webdav_known_servers::remember(server);
+    accepted.install(manager);
     SavedServerOutcome::Saved
 }
 

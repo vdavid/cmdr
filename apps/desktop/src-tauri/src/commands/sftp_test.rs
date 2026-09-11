@@ -115,7 +115,8 @@ async fn the_known_servers_trio_round_trips() {
         None,
         true,
         false,
-    );
+    )
+    .await;
     assert_eq!(saved, SavedServerOutcome::Saved);
 
     let mine: Vec<_> = get_known_sftp_servers()

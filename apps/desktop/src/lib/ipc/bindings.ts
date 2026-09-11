@@ -4253,8 +4253,8 @@ export const commands = {
    *  server's PIN is not in it: `remember` preserves the stored pin on a replace,
    *  and [`set_place_pinned`] is the one writer that moves one.
    *
-   *  ❗ Answers a typed [`SavedServerOutcome`], and a refusal (a start folder
-   *  outside the root) writes nothing at all.
+   *  ❗ Answers a typed [`SavedServerOutcome`]; a refusal writes nothing at all. A
+   *  connected place's edit applies live: `network/live_server_edit.rs`.
    */
   updateSavedServer: (server: ServerTarget) => __TAURI_INVOKE<SavedServerOutcome>('update_saved_server', { server }),
   /**
@@ -4637,6 +4637,7 @@ export const events = {
   volumeConnectionChanged: makeEvent<VolumeConnectionChanged>('volume-connection-changed'),
   volumeContextAction: makeEvent<VolumeContextAction>('volume-context-action'),
   volumeMounted: makeEvent<VolumeMounted>('volume-mounted'),
+  volumeRootChanged: makeEvent<VolumeRootChanged>('volume-root-changed'),
   volumeSpaceChanged: makeEvent<VolumeSpaceChanged>('volume-space-changed'),
   volumeUnmounted: makeEvent<VolumeUnmounted>('volume-unmounted'),
   volumesBusyChanged: makeEvent<VolumesBusyChanged>('volumes-busy-changed'),
@@ -11298,6 +11299,22 @@ export type SavedServerOutcome =
   | { outcome: 'saved' }
   // The start folder isn't the root or under it.
   | { outcome: 'start_folder_outside_root' }
+  /**
+   *  The place is connected and its new root isn't a folder this account can
+   *  open on the server: missing, a file, or refused.
+   */
+  | { outcome: 'root_not_found' }
+  /**
+   *  The place is connected and its start folder isn't a folder this account
+   *  can open on the server: missing, a file, or refused.
+   */
+  | { outcome: 'start_folder_not_found' }
+  /**
+   *  The place is connected, the edit needs the server to confirm a folder,
+   *  and the session didn't answer in time (it dropped, or the server is slow).
+   *  Nothing was checked, so nothing was saved.
+   */
+  | { outcome: 'unreachable' }
 
 /**
  *  A conflict detected during pre-copy scanning: a source item that already exists at the
@@ -14062,6 +14079,29 @@ export type VolumeIndexStatus = {
 export type VolumeMounted = {
   // The volume path (like "/Volumes/MyDrive").
   volumePath: string
+}
+
+/**
+ *  Typed `volume-root-changed` Tauri event: saving an edit to a CONNECTED place
+ *  moved its root, its start folder, or both, and the registry already serves
+ *  the new root.
+ *
+ *  Every path is an APP path (`sftp://ada@nas.local:22/srv/data`), and a landing
+ *  is where opening the place lands: its start folder, else its root. Emitted
+ *  only when the root or the landing actually moved. What a pane does with it:
+ *  `network/DETAILS.md` § "Editing a connected place".
+ */
+export type VolumeRootChanged = {
+  // The place's volume id, which an edit never changes.
+  volumeId: string
+  // The root the place had until this edit.
+  oldRoot: string
+  // The root it has now.
+  newRoot: string
+  // Where opening the place landed until this edit.
+  oldLanding: string
+  // Where it lands now.
+  newLanding: string
 }
 
 /**

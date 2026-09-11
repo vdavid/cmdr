@@ -31,7 +31,8 @@ WebDAV (host keys, a saved-server store each, a `*_volume_wiring.rs` that dials 
   dialog, blocks the mount, and returns -6600 on dismiss.
 - **Re-register via `register_replacing_predecessor` (SMB) or `install_retiring_incumbent` (SFTP, WebDAV), ❌ never a
   bare overwrite**: both retire the displaced volume via `on_superseded`, ❌ not `on_unmount`, which cuts the session
-  out from under in-flight transfers.
+  out from under in-flight transfers. An EDIT to a connected SFTP/WebDAV place is the exception: its successor shares
+  the session, so it goes through `live_server_edit.rs` (`DETAILS.md` § "Editing a connected place").
 - **Decide at ACT time, under the lock**: re-check `is_already_direct` right before connecting, holding
   `lock_volume_upgrade`. A stale decision once replaced a healthy volume three times in 15 s, one mid-copy.
 - **A mount's volume ID and its anchor inside the share come off ONE `statfs` row** (`identity_from_statfs`): the caller

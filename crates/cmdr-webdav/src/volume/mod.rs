@@ -221,6 +221,17 @@ impl WebdavVolume {
     pub async fn simulate_session_loss(&self) {
         self.inner.client.write().await.take();
     }
+
+    /// A handle on the live client, for a cell asserting that nothing re-probed.
+    ///
+    /// A `Weak` keeps the allocation (not the client) alive, so two witnesses are
+    /// `Weak::ptr_eq` exactly when they saw the same client: a reconnect installs
+    /// a new allocation. `None` while there is no client.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn client_witness(&self) -> Option<Weak<dyn std::any::Any + Send + Sync>> {
+        let client: Arc<dyn std::any::Any + Send + Sync> = self.inner.client.read().await.clone()?;
+        Some(Arc::downgrade(&client))
+    }
 }
 
 /// Opens a WebDAV volume: reads the account's secret from the store, builds a

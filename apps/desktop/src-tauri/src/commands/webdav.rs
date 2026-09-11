@@ -310,7 +310,7 @@ pub fn get_known_webdav_servers() -> Vec<KnownWebdavServer> {
 #[specta::specta]
 // Flat parameters rather than a struct, so the generated TS call site names each
 // one; the shape mirrors `connect_webdav_volume`.
-pub fn update_known_webdav_server(
+pub async fn update_known_webdav_server(
     url: String,
     username: String,
     display_name: String,
@@ -331,6 +331,7 @@ pub fn update_known_webdav_server(
         pinned: true,
         last_connected_at: chrono::Utc::now().to_rfc3339(),
     })
+    .await
 }
 
 /// Whether a WebDAV volume can actually come back on its own as it stands.

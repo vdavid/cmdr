@@ -22,6 +22,7 @@ mod roots;
 /// Swapping an id's volume across a root change a person asked for.
 mod root_replace;
 
+pub use root_replace::RootReplacement;
 use roots::Registration;
 pub use roots::{RootRemoval, StaleRootOutcome, is_stale_mount_errno};
 #[allow(

@@ -255,6 +255,18 @@ impl SftpVolume {
     pub async fn simulate_session_loss(&self) {
         self.inner.session.write().await.take();
     }
+
+    /// A handle on the live session, for a cell asserting that nothing redialed.
+    ///
+    /// A `Weak` keeps the allocation (not the connection) alive, so two witnesses
+    /// are `Weak::ptr_eq` exactly when they saw the same session: a redial
+    /// installs a new allocation, and the old address can't be reused while a
+    /// witness holds it. `None` while there is no session.
+    #[cfg(any(test, feature = "testing"))]
+    pub async fn session_witness(&self) -> Option<Weak<dyn std::any::Any + Send + Sync>> {
+        let session: Arc<dyn std::any::Any + Send + Sync> = self.inner.session.read().await.clone()?;
+        Some(Arc::downgrade(&session))
+    }
 }
 
 /// Opens an SFTP volume, or reports that its host key needs approving.

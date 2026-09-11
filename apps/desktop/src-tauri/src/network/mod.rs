@@ -13,6 +13,7 @@ pub mod keychain;
 
 pub mod connect_wiring;
 pub mod known_shares;
+pub mod live_server_edit;
 pub mod manual_servers;
 pub mod mdns_discovery;
 pub mod one_shot_credentials;

@@ -33,6 +33,16 @@ pub enum SavedServerOutcome {
     Saved,
     /// The start folder isn't the root or under it.
     StartFolderOutsideRoot,
+    /// The place is connected and its new root isn't a folder this account can
+    /// open on the server: missing, a file, or refused.
+    RootNotFound,
+    /// The place is connected and its start folder isn't a folder this account
+    /// can open on the server: missing, a file, or refused.
+    StartFolderNotFound,
+    /// The place is connected, the edit needs the server to confirm a folder,
+    /// and the session didn't answer in time (it dropped, or the server is slow).
+    /// Nothing was checked, so nothing was saved.
+    Unreachable,
 }
 
 /// The start folder as a store keeps it, or a refusal when it sits outside

@@ -10,13 +10,16 @@
 //! here, because a connect is three things happening in one order: dial, register
 //! (retiring any predecessor), and remember the server for next time.
 
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use cmdr_fs::volume::Volume;
 use cmdr_sftp::auth::UnattendedReconnect;
 use cmdr_sftp::volume::HostKeyApproval;
 use cmdr_sftp::{SftpConnectError, SftpConnectOutcome, SftpConnectionParams, SftpVolume};
 
 use super::connect_wiring::{self, AttemptTable};
+use super::live_server_edit::{self, ConnectedPlace, PlaceEdit};
 use super::one_shot_credentials::{self, SecretOffer};
 use super::saved_server_fields::{self, SavedServerOutcome};
 use super::sftp_known_servers::{self, KnownSftpServer};
@@ -168,30 +171,15 @@ fn failed(error: SftpConnectError) -> SftpConnection {
     }
 }
 
-/// Moves the "reconnect automatically" switch on a volume that is already
-/// mounted, answering whether there was an SFTP volume under that id.
-///
-/// ❗ The saved-server entry is the durable copy and the volume holds a live one,
-/// so editing a server that happens to be open has to move both. Without this, a
-/// switch the user flipped would take effect on the next connect and not before.
-pub fn apply_auto_reconnect(volume_id: &str, on: bool) -> bool {
-    let manager = crate::file_system::volume::manager::get_volume_manager();
-    let Some(volume) = manager.get(volume_id) else {
-        return false;
-    };
-    // Typed rather than a guess at the id's shape, the same way `disconnect` asks.
-    let Some(sftp) = volume.as_any().downcast_ref::<SftpVolume>() else {
-        return false;
-    };
-    sftp.set_auto_reconnect(on);
-    true
-}
-
 /// Saves a server without dialing it: an edit, or an add that doesn't connect.
 ///
-/// ❗ The saved entry is the durable copy and a mounted volume holds a live
-/// "reconnect automatically" switch, so both move. A refusal moves neither.
-pub fn save_without_connecting(server: KnownSftpServer) -> SavedServerOutcome {
+/// ❗ The saved entry is the durable copy and a CONNECTED place holds a live one,
+/// so an edit moves both, with no redial: the label and the root through an
+/// instance sharing the session, the "reconnect automatically" switch at once,
+/// and the key file and agent switch for the next unattended redial. The live
+/// session confirms a moved root or start folder first, and ❗ a refusal moves
+/// NOTHING, the store included. The order and the refusals: `live_server_edit.rs`.
+pub async fn save_without_connecting(server: KnownSftpServer) -> SavedServerOutcome {
     let Ok(start_folder) =
         saved_server_fields::start_folder_under_root(&server.remote_root, server.start_folder.as_deref())
     else {
@@ -199,10 +187,52 @@ pub fn save_without_connecting(server: KnownSftpServer) -> SavedServerOutcome {
     };
     let server = KnownSftpServer { start_folder, ..server };
     let volume_id = cmdr_fs::volume::sftp_volume_id(&server.host, server.port, &server.username);
-    // It answers whether that volume happened to be MOUNTED, and editing a saved server while it isn't is ordinary;
-    // the durable entry written below is what the caller asked for either way.
-    apply_auto_reconnect(&volume_id, server.auto_reconnect);
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    // Typed rather than a guess at the id's shape, the same way `disconnect` asks.
+    let Some(live) = manager
+        .get(&volume_id)
+        .filter(|volume| volume.as_any().is::<SftpVolume>())
+    else {
+        // Not connected: the store is the only copy, and the next connect dials it.
+        sftp_known_servers::remember(server);
+        return SavedServerOutcome::Saved;
+    };
+    let sftp = live
+        .as_any()
+        .downcast_ref::<SftpVolume>()
+        .expect("filtered to an SftpVolume above");
+    let place = ConnectedPlace {
+        volume_id,
+        live: Arc::clone(&live),
+        app_prefix: cmdr_fs::volume::sftp_app_root(&server.host, server.port, &server.username),
+        saved_start_folder: sftp_known_servers::find(&server.host, server.port, &server.username)
+            .and_then(|saved| saved.start_folder),
+    };
+    let label = server.label();
+    let edit = PlaceEdit {
+        label: &label,
+        remote_root: &server.remote_root,
+        start_folder: server.start_folder.as_deref(),
+    };
+    let accepted = match live_server_edit::check(
+        &place,
+        &edit,
+        |name: &str, root: &Path| Arc::new(sftp.sharing_connection(name, root)) as Arc<dyn Volume>,
+        live_server_edit::CHECK_BUDGET,
+    )
+    .await
+    {
+        Ok(accepted) => accepted,
+        Err(refusal) => return refusal,
+    };
+    sftp.set_auto_reconnect(server.auto_reconnect);
+    sftp.set_redial_params(
+        Path::new(&server.remote_root),
+        server.key_file.as_deref().map(PathBuf::from),
+        server.use_agent,
+    );
     sftp_known_servers::remember(server);
+    accepted.install(manager);
     SavedServerOutcome::Saved
 }
 

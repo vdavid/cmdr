@@ -121,7 +121,8 @@ async fn the_known_servers_trio_round_trips() {
         "/".to_string(),
         None,
         false,
-    );
+    )
+    .await;
     assert_eq!(saved, SavedServerOutcome::Saved);
 
     let mine: Vec<_> = get_known_webdav_servers()

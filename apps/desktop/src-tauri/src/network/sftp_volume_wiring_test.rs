@@ -9,15 +9,18 @@
 //! ❗ Every `sftp_integration_` cell here needs the Docker stack:
 //! `apps/desktop/test/sftp-servers/start.sh`.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use cmdr_fs::volume::ConnectionState;
 use cmdr_sftp::volume::testing::{FIXTURE_PASSWORD, FIXTURE_ROOT, FIXTURE_USER, fixture_port};
 
 use crate::network::one_shot_credentials::SecretOffer;
+use crate::network::saved_server_fields::SavedServerOutcome;
+use crate::network::sftp_known_servers::KnownSftpServer;
 use crate::network::sftp_volume_wiring::{self, SftpConnection};
 use crate::network::{keychain, sftp_host_keys, sftp_known_servers};
-use cmdr_sftp::SftpConnectionParams;
+use cmdr_sftp::{SftpConnectionParams, SftpVolume};
 
 const FIXTURE: &str = "sftp-servers/start.sh (sftp-fixture)";
 
@@ -413,4 +416,142 @@ async fn sftp_integration_forgetting_a_server_drops_its_session_and_unregisters_
             .any(|e| cmdr_fs::volume::sftp_volume_id(&e.host, e.port, &e.username) == volume_id),
         "and out of the saved list"
     );
+}
+
+// ── Editing a connected place ────────────────────────────────────────
+
+/// The saved entry an edit sheet sends for the fixture account, unnamed, at
+/// `remote_root`.
+fn edited(params: &SftpConnectionParams, remote_root: &str) -> KnownSftpServer {
+    KnownSftpServer {
+        host: params.host.clone(),
+        port: params.port,
+        username: params.username.clone(),
+        display_name: String::new(),
+        remote_root: remote_root.to_string(),
+        start_folder: None,
+        key_file: None,
+        use_agent: false,
+        auto_reconnect: true,
+        pinned: true,
+        last_connected_at: chrono::Utc::now().to_rfc3339(),
+    }
+}
+
+/// What the app addresses `remote` by on the fixture account.
+fn app_path(params: &SftpConnectionParams, remote: &str) -> String {
+    format!(
+        "{}{remote}",
+        cmdr_fs::volume::sftp_app_root(&params.host, params.port, &params.username)
+    )
+}
+
+/// ❗ **Saving an edit to a connected place applies it live, over the SAME
+/// session.** The reported bug's own shape: connected at a narrow root, then
+/// widened. The registry serves the wider root at once, nothing redials, the
+/// shared retirement flag stays clear, and the reconnect loop still brings the
+/// session back after a loss, because it belongs to the connection rather than
+/// to the instance the edit replaced.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_widening_a_connected_root_applies_live_over_the_same_session() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let params = SftpConnectionParams {
+        remote_root: PathBuf::from(format!("{FIXTURE_ROOT}/photos")),
+        ..stock_params()
+    };
+    signed_in_already(&params).await;
+    let SftpConnection::Connected { volume_id, .. } =
+        sftp_volume_wiring::connect_and_register("", None, params.clone(), "sftp-edit-widen", None).await
+    else {
+        panic!("a fixture with its key approved and its password stored must connect");
+    };
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    let narrow = manager.get(&volume_id).expect("just registered");
+    let session_before = narrow
+        .as_any()
+        .downcast_ref::<SftpVolume>()
+        .expect("an SFTP volume")
+        .session_witness()
+        .await
+        .expect("a live session");
+
+    let outcome = sftp_volume_wiring::save_without_connecting(edited(&params, FIXTURE_ROOT)).await;
+
+    assert_eq!(outcome, SavedServerOutcome::Saved);
+    let wide = manager.get(&volume_id).expect("still registered");
+    let wide_root = app_path(&params, FIXTURE_ROOT);
+    assert_eq!(wide.root(), Path::new(&wide_root), "the registry serves the wider root");
+    assert!(
+        wide.exists(Path::new(&app_path(&params, &format!("{FIXTURE_ROOT}/hello.txt"))))
+            .await,
+        "a file only the wider root covers lists through the live session"
+    );
+    let sftp = wide.as_any().downcast_ref::<SftpVolume>().expect("an SFTP volume");
+    let session_after = sftp.session_witness().await.expect("still a live session");
+    assert!(
+        std::sync::Weak::ptr_eq(&session_before, &session_after),
+        "❗ no redial: the session that served the old root serves the new one"
+    );
+    assert!(
+        !wide.retirement().expect("keeps a flag").is_retired(),
+        "❗ the swap retired nothing"
+    );
+    assert_eq!(
+        sftp_known_servers::find(&params.host, params.port, &params.username)
+            .expect("still saved")
+            .remote_root,
+        FIXTURE_ROOT
+    );
+
+    sftp.simulate_session_loss().await;
+    assert!(
+        wide.list_directory(Path::new(&wide_root), None).await.is_err(),
+        "an operation is what notices the loss and starts the loop"
+    );
+    cmdr_fs::testing::wait_until_async(
+        Duration::from_secs(30),
+        "the reconnect loop to bring the session back",
+        || wide.connection_state().is_some_and(ConnectionState::is_live),
+    )
+    .await;
+    assert!(
+        wide.list_directory(Path::new(&wide_root), None).await.is_ok(),
+        "the redialed session serves the wider root"
+    );
+
+    sftp_volume_wiring::disconnect(&volume_id).await;
+}
+
+/// ❗ **A root the server doesn't have is refused over the live session, and
+/// NOTHING moves**: not the store, not the registry.
+#[tokio::test]
+#[ignore = "needs the SFTP fixture stack: sftp-servers/start.sh (sftp-fixture)"]
+async fn sftp_integration_a_connected_root_the_server_lacks_is_refused_and_writes_nothing() {
+    let _secrets = crate::test_support::isolate_secrets();
+    let params = stock_params();
+    signed_in_already(&params).await;
+    let SftpConnection::Connected { volume_id, .. } =
+        sftp_volume_wiring::connect_and_register("", None, params.clone(), "sftp-edit-missing-root", None).await
+    else {
+        panic!("a fixture with its key approved and its password stored must connect");
+    };
+
+    let outcome = sftp_volume_wiring::save_without_connecting(edited(&params, "/srv/cmdr-no-such-root")).await;
+
+    assert_eq!(outcome, SavedServerOutcome::RootNotFound);
+    assert_eq!(
+        sftp_known_servers::find(&params.host, params.port, &params.username)
+            .expect("still saved")
+            .remote_root,
+        FIXTURE_ROOT,
+        "❗ a refusal writes nothing"
+    );
+    let manager = crate::file_system::volume::manager::get_volume_manager();
+    assert_eq!(
+        manager.get(&volume_id).expect("still registered").root(),
+        Path::new(&app_path(&params, FIXTURE_ROOT))
+    );
+
+    sftp_volume_wiring::disconnect(&volume_id).await;
 }
