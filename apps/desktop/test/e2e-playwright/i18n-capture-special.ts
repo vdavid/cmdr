@@ -242,6 +242,12 @@ export async function captureQueueWindow(
     // copies name a source that was never created, so each registers a real
     // operation and then fails validation inside it.
     await captureSurface('queue-failed', report, failed, async () => {
+      // A stage, not a cleanup, as in `operation-failure`: the throttled copies
+      // `queue` staged hold the local lane, so doomed copies started behind them
+      // would sit queued for ~12 s before failing. The picture is the same either
+      // way, two failed rows and nothing else, because the throttled copies are
+      // finished and gone by the time the doomed ones fail.
+      expect(await resetOperationState(main), 'the throttled copies did not drain before the failure shot').toBe(true)
       for (const name of QUEUE_DOOMED_SOURCES) await startQueueCopy(main, fixtureRoot, name)
       // Poll on BOTH failed rows: the "Dismiss all" button is conditional on
       // more than one, and it's half of what this surface adds.
