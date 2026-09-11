@@ -52,22 +52,21 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
     // Listed BEFORE the blanket `errors.` mapping for the same reason as
     // `errors.mutation.`.
     prefix: 'errors.mount.',
-    screenshot: 'connect-to-server.png',
+    screenshot: 'servers-hub.png',
     note:
       'This one is NOT the error panel. Your string is the one sentence under the "Couldn\'t mount share" title that replaces a ' +
-      'server\'s list of shares when a share doesn\'t open, in the same network flow as the "Connect to server" surface ' +
-      'pictured here.',
+      "server's list of shares when a share doesn't open. That list opens from the servers list pictured here.",
   },
   {
     // The share-listing family: one sentence under the network pane's "Couldn't
     // connect to …" title, and the tooltip on that server's row. Same reason to
     // precede `errors.`.
     prefix: 'errors.shareList.',
-    screenshot: 'connect-to-server.png',
+    screenshot: 'servers-hub.png',
     note:
       'This one is NOT the error panel. Your string is the one sentence under the "Couldn\'t connect to …" title that ' +
-      'replaces a server\'s list of shares when that list doesn\'t load, in the same network flow as the "Connect to server" ' +
-      "surface pictured here. The same sentence is the tooltip on that server's row in the servers list.",
+      "replaces a server's list of shares when that list doesn't load. That list opens from the servers list pictured " +
+      "here, and the same sentence is the tooltip on that server's row in it.",
   },
   {
     // The whole friendly-error family (listing / write / provider / git) shares
@@ -84,25 +83,25 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is.',
   },
   {
-    // SMB / network connect + reconnect + the MTP connection states all live on
-    // the network/device browsing surface reached via "Connect to server".
+    // SMB browsing, connect, and reconnect states all live in the network flow
+    // that starts at the servers hub.
     prefix: 'fileExplorer.network.',
-    screenshot: 'connect-to-server.png',
+    screenshot: 'servers-hub.png',
     note:
-      'Network (SMB) connection flow. This shows the "Connect to server" surface; your string appears here or on the ' +
-      'closely-related browsing/sign-in/reconnect states reached from it.',
+      'Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or ' +
+      'on the closely related browsing, sign-in, or reconnect states reached from it.',
   },
   {
     prefix: 'fileExplorer.smbReconnect.',
-    screenshot: 'connect-to-server.png',
+    screenshot: 'servers-hub.png',
     note:
       'The SMB reconnect banner shown when a mounted server drops: a "Reconnecting…" title, a countdown, and Retry/Cancel ' +
-      'controls. This shows the related "Connect to server" surface; your string appears in the same network-connection context.',
+      'controls. This shows the servers list the connection started from; your string appears in the same network context.',
   },
   {
     prefix: 'fileExplorer.networkMount.',
-    screenshot: 'connect-to-server.png',
-    note: 'Shown while mounting a network share, in the same network-connection flow as the "Connect to server" surface pictured here.',
+    screenshot: 'servers-hub.png',
+    note: 'Shown while mounting a network share, in the network flow that starts at the servers list pictured here.',
   },
   {
     // MTP device connection states + dialogs share the MTP browsing context.

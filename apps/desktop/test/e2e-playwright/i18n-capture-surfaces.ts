@@ -192,9 +192,9 @@ export async function captureSettingsWindow(
 
 /**
  * Captures every MAIN-WINDOW overlay surface: the file-op dialogs (new file,
- * delete, trash, rename, extension-change, conflict, transfer), the navigation
- * and networking dialogs (go-to-path, connect-to-server), the command palette,
- * and the shared-`QueryDialog` query UI (search, selection, filter popover).
+ * delete, trash, rename, extension-change, conflict, transfer), the go-to-path
+ * dialog, the command palette, the shared-`QueryDialog` query UI (search,
+ * selection, filter popover), and the servers hub.
  *
  * All render into the main window's own capture sink, so each follows the About
  * pattern: enable + setSurface the sink BEFORE opening (to record mount-time
@@ -384,18 +384,14 @@ export async function captureMainOverlays(
     return '.search-overlay .query-bar input.text-field-control'
   })
 
-  // Connect-to-server dialog: reachable from the Network volume's browser via the
-  // "+ Connect to server…" pseudo-row. Switch the left pane to Network (MCP),
-  // then double-click the connect row (a single click only moves the cursor onto
-  // it; `handleConnectRowDoubleClick` is what opens the dialog).
-  await mainOverlay('connect-to-server', async () => {
+  // Servers hub: the table the Network row opens (`servers.hub.*`), whose last row
+  // is always "Add server…", so it renders with no server saved or nearby. The
+  // sheet that row opens is the gallery's `server-sign-in-*` states, so this
+  // surface is the hub alone. Same 15 s budget `servers.spec.ts` gives the mount.
+  await mainOverlay('servers-hub', async () => {
     await mcpSelectVolume('left', 'Servers')
-    await main.waitForSelector('.network-browser .connect-row', 10000)
-    await main.evaluate(`(function(){
-      var el = document.querySelector('.network-browser .connect-row');
-      if (el) el.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-    })()`)
-    return '[data-dialog-id="connect-to-server"]'
+    await main.waitForSelector('.servers-hub .add-row', 15000)
+    return '.servers-hub .add-row'
   })
   // Leave the panes back on local so nothing downstream inherits Network.
   await mcpSelectVolume('left', LOCAL_VOLUME_NAME).catch(() => {})

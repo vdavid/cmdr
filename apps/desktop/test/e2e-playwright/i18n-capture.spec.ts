@@ -483,9 +483,8 @@ test.describe('i18n screenshot capture', () => {
     //    `.compose/` files, a running Docker daemon, and credentialed connect). That
     //    stack is far more invasive to bring up from this capture harness than the
     //    other passes (a different feature build + external Docker lifecycle), so
-    //    it's the documented lower-priority skip. The
-    //    connect-to-server DIALOG itself (`connect-to-server`) IS captured (reached
-    //    from the empty Network volume, no server needed).
+    //    it's the documented lower-priority skip. The servers hub the Network row
+    //    opens (`servers-hub`) IS captured: it needs no server.
     // (The download + MTP-connected toasts were here; they're now captured in the
     // main pass above via `captureDownloadToasts` / `captureMtpSurfaces`.)
     for (const deferred of [
