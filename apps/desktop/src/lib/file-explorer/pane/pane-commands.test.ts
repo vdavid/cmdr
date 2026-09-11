@@ -449,6 +449,49 @@ describe('moveCursorByNameInFileListing parent offset', () => {
     await cmds.moveCursorByNameInFileListing(refOf(ref), 'target')
     expect(findFileIndexSpy).toHaveBeenCalledWith('listing-1', 'target', false)
   })
+
+  /** A pane whose listing moves on the moment the lookup is sent, the way a fast `..` does. */
+  function paneThatMovesOnWhileAsked() {
+    let listingId = 'listing-1'
+    const ref = { ...buildPaneRef({ hasParent: false }), getListingId: () => listingId }
+    const moveOn = () => {
+      listingId = 'listing-2'
+    }
+    return { ref, moveOn }
+  }
+
+  it('answers not-found, quietly, when the listing it asked about was dropped meanwhile', async () => {
+    // The backend drops a listing the pane walks away from, so the lookup comes back
+    // refused. A caller that fires and forgets (the tab-switch cursor restore) once
+    // turned that refusal into an unhandled rejection.
+    const { ref, moveOn } = paneThatMovesOnWhileAsked()
+    findFileIndexSpy.mockImplementation(() => {
+      moveOn()
+      return Promise.reject(new Error('the listing is gone'))
+    })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await expect(cmds.moveCursorByNameInFileListing(refOf(ref), 'target')).resolves.toBe(false)
+    expect(ref.setCursorIndex).not.toHaveBeenCalled()
+  })
+
+  it('leaves the cursor alone when the pane moved to another listing while the lookup ran', async () => {
+    // The index belongs to the listing that was asked, not the one on screen now.
+    const { ref, moveOn } = paneThatMovesOnWhileAsked()
+    findFileIndexSpy.mockImplementation(() => {
+      moveOn()
+      return Promise.resolve(4)
+    })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await expect(cmds.moveCursorByNameInFileListing(refOf(ref), 'target')).resolves.toBe(false)
+    expect(ref.setCursorIndex).not.toHaveBeenCalled()
+  })
+
+  it('still reports a lookup that fails while its listing is the one on screen', async () => {
+    findFileIndexSpy.mockRejectedValue(new Error('no answer'))
+    const ref = buildPaneRef({ hasParent: false })
+    const cmds = create(buildAccess({ paneRefs: { left: ref } }))
+    await expect(cmds.moveCursorByNameInFileListing(refOf(ref), 'target')).rejects.toThrow('no answer')
+  })
 })
 
 describe('delegating commands', () => {

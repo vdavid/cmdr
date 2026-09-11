@@ -326,13 +326,28 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     return moveCursorByNameInFileListing(paneRef, name)
   }
 
-  /** Returns true when the cursor landed on the named item, false when it wasn't found. */
+  /**
+   * Returns true when the cursor landed on the named item, false when it wasn't found.
+   *
+   * The pane can leave the listing while the lookup is in flight (a quick `..`), and
+   * the backend drops a listing the pane abandons. An answer about a listing the pane
+   * no longer shows is "not found": its index can't place a cursor on the rows on
+   * screen, and its refusal isn't a failure. Told apart by listing identity, ❌ never
+   * by the refusal's message.
+   */
   async function moveCursorByNameInFileListing(paneRef: FilePaneAPI, name: string): Promise<boolean> {
     const listingId: string = paneRef.getListingId()
     if (!listingId) return false
+    const stillShown = () => paneRef.getListingId() === listingId
 
-    const backendIndex = await findFileIndex(listingId, name, access.getShowHiddenFiles())
-    if (backendIndex === null) return false
+    let backendIndex: number | null
+    try {
+      backendIndex = await findFileIndex(listingId, name, access.getShowHiddenFiles())
+    } catch (error) {
+      if (!stillShown()) return false
+      throw error
+    }
+    if (backendIndex === null || !stillShown()) return false
 
     // Backend index doesn't include ".." entry, but frontend does
     const hasParent: boolean = paneRef.hasParentEntry()
