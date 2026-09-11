@@ -9,42 +9,24 @@
  *
  * Run it like any single spec (the app must already be running; see the suite's
  * DETAILS.md § "Running a single spec"), or via `pnpm i18n:shots`, which gets the
- * E2E binary, launches, runs only this spec, and tears the app down. It's excluded from the
- * normal E2E lanes by filename (`grepInvert` in playwright.config.ts) so a full
- * suite run doesn't spend time taking screenshots.
+ * E2E binary, launches, runs only this spec, and tears the app down. It runs only
+ * under its own `i18n-capture` shard kind (`playwright.config.ts`), so a full suite
+ * run doesn't spend time taking screenshots. The lane still runs its STAGING, with
+ * no camera: `i18n-capture-staging.spec.ts`.
  *
- * Coupling policy: a key may render on several surfaces; the coupler assigns each
- * key the FIRST surface (in this file's call order) it appeared on, so the most
- * specific / smallest surface that a key belongs to wins when ordered narrow-to-
- * broad below. Keep the surface order intentional.
- *
- * This file is the thin ORCHESTRATOR: the surface-driving helpers and the
- * per-group capture functions live in `i18n-capture-surfaces.ts`. Keep them there
- * (file-length budget); this file only sequences the surfaces and writes the
- * report.
+ * This file is the thin ORCHESTRATOR: the ordered surface groups live in
+ * `i18n-capture-main-pass.ts` (shared with that staging spec, which is also where
+ * the coupling order is explained), and the per-group capture functions in the
+ * `i18n-capture-*.ts` modules beside it. This file only runs the passes and writes
+ * the report.
  */
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { test, expect } from './fixtures.js'
-import {
-  ensureAppReady,
-  dismissAllToasts,
-  dismissOverlay,
-  closeScopedWindow,
-  dispatchMenuCommand,
-  MKDIR_DIALOG,
-} from './helpers.js'
+import { dismissAllToasts } from './helpers.js'
 import type { TauriPage } from '@srsholmes/tauri-playwright'
-import {
-  type SurfaceEntry,
-  captureCall,
-  settlePaint,
-  focusWindow,
-  captureSurface,
-  captureErrorPaneExample,
-  fitFindings,
-} from './i18n-capture-helpers.js'
+import { type SurfaceEntry, fitFindings } from './i18n-capture-helpers.js'
 import {
   screenshotsDir,
   reportPath,
@@ -55,32 +37,8 @@ import {
   overflowLocale,
 } from './i18n-capture-config.js'
 import { clipFindings } from './i18n-capture-frame.js'
-import {
-  captureSettingsWindow,
-  captureMainOverlays,
-  captureFrontendToasts,
-  captureEmptyPane,
-  captureOnboardingWizard,
-  captureWhatsNew,
-  captureIndexingStatus,
-  captureIndexingGallery,
-} from './i18n-capture-surfaces.js'
-import {
-  captureMainDialogs,
-  captureViewerSubsurfaces,
-  captureQueueWindow,
-  captureOperationChipSurfaces,
-} from './i18n-capture-special.js'
-import { captureMainExplorerSurfaces } from './i18n-capture-surfaces-main.js'
-import { captureGalleryDialogs } from './i18n-capture-gallery.js'
-import { captureAskCmdrSurfaces } from './i18n-capture-ask-cmdr.js'
-import {
-  captureMtpSurfaces,
-  captureDownloadToasts,
-  captureQuickLookHint,
-  captureLicensePass,
-  captureFdaOnboardingPass,
-} from './i18n-capture-staged.js'
+import { MAIN_PASS_STEPS } from './i18n-capture-main-pass.js'
+import { captureLicensePass, captureFdaOnboardingPass } from './i18n-capture-staged.js'
 
 /**
  * Runs ONE mock-staged pass (a non-`main` launch carrying a `CMDR_MOCK_LICENSE` /
@@ -147,20 +105,6 @@ async function runMockPass(pass: string, main: TauriPage): Promise<void> {
   // failure fails every launch after it too.
   const failedHere = failed.slice(failedBefore)
   expect(failedHere, `surfaces failed to capture in pass ${pass}: ${failedHere.join(', ')}`).toEqual([])
-}
-
-/**
- * Switches `page`'s app to the pseudolocale for the overflow pass (no-op for the
- * normal English coupling pass). Every E2E build exposes `setLocale` on the
- * capture API; the catalog for `overflowLocale` was baked into the glob at build
- * time (the orchestrator generates `en-XA` before getting the binary). Doing it via this
- * frontend-only seam is identical to the live Language picker, so the captured UI
- * is what a user switching language would see.
- */
-async function switchToOverflowLocaleIfNeeded(page: TauriPage): Promise<void> {
-  if (!isOverflowPass) return
-  await captureCall(page, 'setLocale', overflowLocale)
-  await settlePaint(page)
 }
 
 /**
@@ -301,172 +245,11 @@ test.describe('i18n screenshot capture', () => {
     const failed: string[] = []
     const skipped: string[] = []
 
-    // Each surface goes through `captureSurface`, which isolates its failure so
-    // one broken surface can't abort the whole run (the report is always written
-    // below). The `stage` callback does the surface-specific setup and returns
-    // the page to capture against; the helper runs the shared
-    // setSurface → rerender → focus → settle → screenshot tail.
-
-    // ── Surface 1: main dual-pane window ─────────────────────────────────────
-    await captureSurface('main-window', report, failed, async () => {
-      await ensureAppReady(main)
-      await main.waitForSelector('.file-entry', 5000)
-      // Overflow pass: switch the whole app to the pseudolocale BEFORE any surface
-      // is captured, so every surface renders in the expanded, accented strings.
-      await switchToOverflowLocaleIfNeeded(main)
-      await captureCall(main, 'reset')
-      await captureCall<boolean>(main, 'enable')
-      return { page: main }
-    })
-
-    // ── Surface 2: new-folder dialog ─────────────────────────────────────────
-    // A modal overlay on the foreground main window, sharing the main sink. The
-    // shared `settlePaint` in `captureSurface` ensures the just-opened modal is
-    // in the composited frame the native capture reads.
-    //
-    // Open it via the registry command (the `file.newFolder` twin of
-    // `new-file-dialog`'s `file.newFile`), NOT a synthetic `F7` keypress. The
-    // Tauri `execute-command` event path is unaffected by DOM focus, whereas a
-    // synthesized keypress lands on `document.activeElement` — which is `<body>`
-    // whenever the E2E main window has lost OS focus (its `Prohibited` activation
-    // policy + ordered-to-back windows make that the norm), so the key never
-    // reaches the explorer's keydown handler. Making a folder doesn't depend on
-    // the cursor, so no `skipParentEntry` is needed either.
-    await captureSurface('new-folder-dialog', report, failed, async () => {
-      await dispatchMenuCommand(main, 'file.newFolder')
-      await main.waitForSelector(MKDIR_DIALOG, 5000)
-      await main.waitForSelector(`${MKDIR_DIALOG} input.text-field-control`, 3000)
-      return { page: main }
-    })
-    // `captureSurface` already isolated any staging failure (and recorded it in
-    // `failed`). The cleanup must not itself throw out of the test when the dialog
-    // never opened: without the `.catch`, `dismissOverlay`'s "no overlay is open"
-    // abort would skip every later surface and the report write. Swallow it; the
-    // recorded failure still fails the run at the end.
-    await dismissOverlay(main).catch(() => {})
-    await captureCall(main, 'disable').catch(() => {})
-
-    // ── Main-window file-explorer states (selection summary, Shift bar, hint) ──
-    // Data-driven sweep of the dual-pane explorer states the dialog/window
-    // tranches missed: a live multi-file selection (the selection-summary status
-    // bar + its size tooltip), the Shift fork of the function-key bar, and the
-    // Quick Look educational toast. All render into the main window's sink while
-    // it's foreground, so they go here before the separate-window captures pull
-    // focus away. Their keys are unique to these states, so coupling order is
-    // immaterial; staged early to keep the main window the active surface.
-    await captureMainExplorerSurfaces(main, report, failed)
-
-    // ── Ask Cmdr rail (consent → empty → one exchange → threads) ──────────────
-    // Also a main-window panel, and staged EARLY for one reason: the consent gate
-    // is a one-time screen recorded in `main.db`, so the only chance to photograph
-    // it is before anything in this run accepts it.
-    await captureAskCmdrSurfaces(main, report, failed, skipped)
-
-    // ── Surface 3 + 4..N: Settings window (every section) ─────────────────────
-    await captureSettingsWindow(main, report, failed)
-
-    // ── Viewer subsurfaces (search, context menu, pickers) ────────────────────
-    // Each opens its own viewer window (own webview context + sink) on a fixture
-    // file and captures a distinct viewer state.
-    //
-    // ❌ There's no plain `viewer` surface any more. It photographed the default
-    // text chrome, which is the same chrome every state below already shows, so it
-    // resolved not one key the others don't. `viewer-search` runs first and takes
-    // the shared viewer keys; it's also what the `viewer.` representative points
-    // at for the states nothing captures.
-    await captureViewerSubsurfaces(main, report, failed, skipped)
-
-    // ── Surface: About dialog (main window overlay) ──────────────────────────
-    // About is an in-app dialog rendered into the MAIN window (NOT a separate
-    // WebviewWindow), so it captures against the main page's sink. Opened via the
-    // `app.about` command. Re-enable + setSurface BEFORE opening so the dialog's
-    // mount-time `t()` calls record under `about` too. Foreground window, so the
-    // shared settlePaint is enough, no set_focus. Captured BEFORE the shortcuts
-    // window so the (separate-window) shortcuts open/close can't perturb the main
-    // window's sink between the dialog mount and its key dump.
-    await captureSurface('about', report, failed, async () => {
-      await captureCall(main, 'setSurface', 'about')
-      await captureCall<boolean>(main, 'enable')
-      await dispatchMenuCommand(main, 'app.about')
-      await main.waitForSelector('[data-dialog-id="about"]', 5000)
-      return { page: main }
-    })
-    await dismissOverlay(main).catch(() => {})
-    await captureCall(main, 'disable').catch(() => {})
-
-    // ── Main-window overlay surfaces (dialogs, palette, query UI) ─────────────
-    // Every dialog/palette/query surface rendered into the MAIN window, staged by
-    // a keypress or registry command. Extracted to `captureMainOverlays` to keep
-    // each surface isolated and the test body's complexity in check.
-    await captureMainOverlays(main, report, failed)
-
-    // ── Main-window report/feedback/license dialogs (default launch) ──────────
-    // The license-key ENTRY dialog (Personal state), error-report, and feedback
-    // dialogs, all main-window ModalDialogs opened by a registry command. The
-    // commercial/expired license surfaces need a separate `CMDR_MOCK_LICENSE`
-    // launch (the license pass below).
-    await captureMainDialogs(main, report, failed)
-
-    // ── Snapshot-resolved toast surfaces ──────────────────────────────────────
-    // Command-handler confirmations + the transfer-complete toast. These resolve
-    // their text ONCE at emit time, so the sink must be enabled BEFORE the action
-    // fires (see `captureToastSurface`). Run after the dialogs so dialog keys
-    // couple narrow-first.
-    await captureFrontendToasts(main, report, failed)
-
-    // ── Empty-directory pane messaging ────────────────────────────────────────
-    await captureEmptyPane(main, report, failed)
-
-    // ── Onboarding wizard (one surface per step) ──────────────────────────────
-    await captureOnboardingWizard(main, report, failed)
-
-    // ── What's-new post-update popup ──────────────────────────────────────────
-    await captureWhatsNew(main, report, failed)
-
-    // ── Drive-indexing status checklist (dev Graphics gallery) ─────────────────
-    // The shared per-volume checklist (`IndexingStatusBody`) in every state, from
-    // the dev gallery's fixtures (no live indexing needed). Runs BEFORE the live
-    // indicator below so the gallery — which actually SHOWS the checklist body —
-    // wins the shared `indexing.*` keys; the live indicator then owns only the
-    // hourglass's `indexing.status.ariaLabel`. Navigates the main window to
-    // `/dev/graphics` and back to `/`.
-    await captureIndexingGallery(main, report, failed)
-
-    // ── Drive-indexing status indicator (live hourglass) ───────────────────────
-    await captureIndexingStatus(main, report, failed)
-
-    // ── Mock-staged MAIN-pass surfaces ────────────────────────────────────────
-    // Reachable in the default launch: the E2E binary carries `virtual-mtp`, the
-    // store is hermetic and default, and the launch sets `CMDR_MOCK_FDA`:
-    //  - Quick Look hint: fires on Space now that the default store doesn't
-    //    suppress it (the data-dir fix).
-    //  - MTP browse + connected toast: the virtual device auto-registers under
-    //    E2E mode; the toast re-fires from the typed connect event.
-    //  - Download teaching toast: emitted via the `download-detected` event with
-    //    the FDA gate mocked open.
-    // The per-launch license + FDA-variant surfaces run in their own passes (see
-    // `runMockPass`), driven by the orchestrator's multi-launch loop.
-    await captureQuickLookHint(main, report, failed)
-    await captureMtpSurfaces(main, report, failed)
-    await captureDownloadToasts(main, report, failed)
-
-    // ── Representative friendly-error pane (the errors.* family) ───────────────
-    // One real error pane captured in situ via the `inject_listing_error` E2E
-    // hook. Every friendly error shares this title/explanation/suggestion layout,
-    // so the coupler maps the whole uncoupled `errors.*` family to this image with
-    // a `@key.screenshotNote` (see `REPRESENTATIVE_SCREENSHOTS` in
-    // `scripts/couple-screenshots.ts`). Run last among the main-pass surfaces so a
-    // transient error state can't perturb earlier captures.
-    await captureErrorPaneExample('error-message-example', report, failed, main)
-
-    // ── Registry-driven soft dialogs (every gallery state worth a shot) ────────
-    // Drives `DIALOG_GALLERY_ENTRIES` through the main window's own
-    // `debug-open-gallery-dialog` listener, so a dialog gets a screenshot the day
-    // it gets a gallery row. Runs LAST, after every hand-staged surface: a state
-    // is photographed only when it resolves a key nothing else recorded, so a
-    // faithful capture of the production path always beats a gallery preview of
-    // the same dialog. See `i18n-capture-gallery.ts` for the two limits it keeps.
-    await captureGalleryDialogs(main, report, failed, skipped)
+    // Every surface goes through an engine that isolates its failure, so one broken
+    // surface can't abort the whole run (the report is always written below). The
+    // groups and their coupling order live in `i18n-capture-main-pass.ts`, shared
+    // with the stage-only run the E2E lane drives.
+    for (const step of MAIN_PASS_STEPS) await step.run(main, { report, failed, skipped })
 
     // ── Documented skips deferred beyond the mock-staged surfaces ─────────────
     // These surfaces need backend state / events we can't fake from the frontend
@@ -491,7 +274,7 @@ test.describe('i18n screenshot capture', () => {
     //    it's the documented lower-priority skip. The servers hub the Network row
     //    opens (`servers-hub`) IS captured: it needs no server.
     // (The download + MTP-connected toasts were here; they're now captured in the
-    // main pass above via `captureDownloadToasts` / `captureMtpSurfaces`.)
+    // main pass above via `captureDownloadToasts` / `captureMtpConnectedToast`.)
     for (const deferred of [
       'toast-low-disk',
       'ai-suggestion',
@@ -537,46 +320,6 @@ test.describe('i18n screenshot capture', () => {
         `viewer large-copy confirm/refuse (need a >10 MB selection), viewer reload toast (needs a watcher ` +
         `event), and the license-details view (needs a real committed key, not just the AppStatus mock).`,
     )
-
-    // ── Surface: keyboard shortcuts window ────────────────────────────────────
-    // The standalone Keyboard shortcuts WebviewWindow (label `shortcuts`,
-    // `/shortcuts` route, opened by `help.openShortcuts`): its own webview context
-    // and capture sink, like the Settings and viewer windows.
-    //
-    // Every eval into a secondary window rides back on the plugin's own
-    // `plugin:playwright|pw_result` IPC, which Tauri gates per window through the
-    // capability ACL. A window missing from the E2E-only `playwright.json`
-    // capability (generated by `src-tauri/build.rs`) can never post its result, so
-    // even `1+1` burns the plugin's 30s ceiling and looks like a hang. Keep this
-    // window (and `queue`) in that list.
-    let shortcuts: TauriPage | undefined
-    await captureSurface('shortcuts', report, failed, async () => {
-      await dispatchMenuCommand(main, 'help.openShortcuts')
-      shortcuts = await main.waitForWindow((w) => w.label === 'shortcuts', { timeout: 10000 })
-      const s = shortcuts
-      // `waitForWindow` returns the moment the label exists, which is BEFORE the
-      // document loads; an eval landing in the outgoing document is torn down
-      // before it can post its result, so one retry rides that out.
-      await s.waitForSelector('.shortcuts-scroll .row', 15000).catch(async () => {
-        await s.waitForSelector('.shortcuts-scroll .row', 15000)
-      })
-      await focusWindow(s, 'shortcuts')
-      await captureCall(s, 'reset')
-      await captureCall<boolean>(s, 'enable')
-      return { page: s, focusLabel: 'shortcuts' }
-    })
-    if (shortcuts) await closeScopedWindow(main, shortcuts, 'shortcuts').catch(() => {})
-
-    // ── Surface: operation-queue window (empty + populated + failed) ──────────
-    // Its own window on `/queue`, and the only place a queue ROW renders.
-    await captureQueueWindow(main, report, failed)
-
-    // ── Surface: the main window's corner chip and failure notice ─────────────
-    // The other half of the `queue.*` namespace lives in the MAIN window, and
-    // only while work is in flight. Runs after the queue window closes, so the
-    // main window is what's on screen, and last overall because a retained
-    // failure is sticky until something explicitly dismisses it.
-    await captureOperationChipSurfaces(main, report, failed)
 
     // Always write the report with whatever succeeded. The shape stays a flat
     // `surface → { screenshot, keys }` map because `couple-screenshots.ts`

@@ -5,7 +5,8 @@
  * English COUPLING pass, a pseudolocale OVERFLOW pass, and a WORST-CASE overflow
  * pass that additionally maxes the zoom and shrinks every window. Which one is
  * live comes from the environment the orchestrator (`scripts/i18n-capture.ts`)
- * sets, and nearly every module needs the answer.
+ * sets, and nearly every module needs the answer. A fourth shape photographs
+ * nothing at all: the STAGE-ONLY run the regular E2E lane drives (`isStageOnly`).
  *
  * Its own module because it's pure configuration: no page, no filesystem work, no
  * imports from the rest of the harness. That's what lets the framing, shutter,
@@ -14,6 +15,29 @@
 
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+/**
+ * Whether this run only STAGES each surface: open it, prove it's ready, close it,
+ * and never enable the key sink, take the front position, or write a file.
+ *
+ * `i18n-capture-staging.spec.ts` turns it on so the routine E2E lane runs the
+ * capture's own staging code and fails at the commit that breaks it, rather than
+ * weeks later when someone next runs `pnpm i18n:shots`. It's a switch the spec
+ * flips rather than an env var because that spec shares a lane, and a worker
+ * process, with every other spec: nothing else there imports the capture modules,
+ * so the switch can't leak into them.
+ */
+let stageOnly = false
+
+/** Turns stage-only mode on or off for this worker. See `isStageOnly`. */
+export function setStageOnly(on: boolean): void {
+  stageOnly = on
+}
+
+/** True while a stage-only run is in flight: no sink recording, no focus grab, no image. */
+export function isStageOnly(): boolean {
+  return stageOnly
+}
 
 const here = dirname(fileURLToPath(import.meta.url))
 const baseScreenshotsDir = join(here, '..', '..', 'src', 'lib', 'intl', 'messages', 'screenshots')

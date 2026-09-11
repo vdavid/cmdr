@@ -8,8 +8,8 @@
  * stage from the capture sink.
  *
  * Split into two families by launch shape:
- *  - MAIN-pass surfaces (`captureMtpSurfaces`, `captureDownloadToasts`,
- *    `captureQuickLookHint`): reachable in the default capture launch (the
+ *  - MAIN-pass surfaces (`captureMtpBrowse`, `captureMtpConnectedToast`,
+ *    `captureDownloadToasts`, `captureQuickLookHint`): reachable in the default capture launch (the
  *    virtual MTP device auto-registers under E2E mode; the download + quick-look
  *    toasts fire from a frontend-emitted event / keypress). The spec calls these
  *    in the main pass.
@@ -39,23 +39,19 @@ import {
 const MTP_INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
 
 /**
- * Captures the MTP surfaces, reachable in the MAIN capture pass because the
- * `virtual-mtp` E2E binary auto-registers the fake device under E2E mode (see
- * `crates/cmdr-mtp/src/virtual_device.rs` `decide_startup_root`).
+ * Captures the MTP browse view (`mtp-browse`), reachable in the MAIN capture pass
+ * because the `virtual-mtp` E2E binary auto-registers the fake device under E2E
+ * mode (see `crates/cmdr-mtp/src/virtual_device.rs` `decide_startup_root`).
  *
- * - `mtp-browse`: select the virtual device's Internal Storage on the focused
- *   pane and capture the browse view (the volume breadcrumb + the device's file
- *   list), recording any `mtp.*` / file-list keys unique to an MTP volume. Plain
- *   mounted markup, so the normal `captureSurface` rerender path records its keys.
- * - `mtp-connected-toast`: the sticky connect toast (`mtp.connectedToast.*`). It
- *   fires from the `mtp-device-connected` Tauri event; the layout's listener adds
- *   the toast (gated by `fileOperations.mtpConnectionWarning`, default true). The
- *   real device already auto-connected at startup BEFORE the sink was enabled, so
- *   we RE-EMIT the typed event with the sink active (snapshot-before-trigger) to
- *   resolve + record the keys. The toast dedupes by id (`mtp-connected`), so any
- *   startup instance is dismissed first.
+ * Selects the virtual device's Internal Storage on the focused pane and captures
+ * the browse view (the volume breadcrumb + the device's file list), recording any
+ * `mtp.*` / file-list keys unique to an MTP volume. Plain mounted markup, so the
+ * normal `captureSurface` rerender path records its keys.
+ *
+ * Needs the DEVICE, so it only stages on an app that registered one: the capture
+ * launch does, and the E2E lane's non-MTP shards deliberately don't.
  */
-export async function captureMtpSurfaces(
+export async function captureMtpBrowse(
   main: TauriPage,
   report: Record<string, SurfaceEntry>,
   failed: string[],
@@ -63,7 +59,6 @@ export async function captureMtpSurfaces(
   await ensureAppReady(main)
   await initMcpClient(main)
 
-  // ── MTP browse view ──────────────────────────────────────────────────────
   await captureSurface('mtp-browse', report, failed, async () => {
     await captureCall(main, 'reset')
     await captureCall(main, 'setSurface', 'mtp-browse')
@@ -75,12 +70,27 @@ export async function captureMtpSurfaces(
     return { page: main }
   })
   await captureCall(main, 'disable').catch(() => {})
+}
 
-  // ── MTP connected toast (snapshot-before-trigger) ─────────────────────────
-  // Re-emit the typed `mtp-device-connected` event with the sink enabled so the
-  // toast's snapshot-resolved copy records. The toast body only reads the device
-  // NAME (title) + a static mac/other body, so a minimal payload suffices; the
-  // empty `storages` array is fine (the toast doesn't iterate it).
+/**
+ * Captures the sticky MTP connect toast (`mtp-connected-toast`,
+ * `mtp.connectedToast.*`). It fires from the `mtp-device-connected` Tauri event;
+ * the layout's listener adds the toast (gated by
+ * `fileOperations.mtpConnectionWarning`, default true). The real device already
+ * auto-connected at startup BEFORE the sink was enabled, so this RE-EMITS the
+ * typed event with the sink active (snapshot-before-trigger) to resolve and record
+ * the keys. The toast body only reads the device NAME (title) plus a static
+ * mac/other body, so a minimal payload suffices; the empty `storages` array is
+ * fine (the toast doesn't iterate it). The toast dedupes by id (`mtp-connected`),
+ * so any startup instance is dismissed first.
+ *
+ * Needs no device: the event alone raises the toast.
+ */
+export async function captureMtpConnectedToast(
+  main: TauriPage,
+  report: Record<string, SurfaceEntry>,
+  failed: string[],
+): Promise<void> {
   await captureToastSurface('mtp-connected-toast', report, failed, main, async () => {
     // Dismiss any startup connect toast first so the dedupe-by-id (`mtp-connected`)
     // doesn't no-op our re-emit, then fire the event the layout listener handles.

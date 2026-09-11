@@ -42,11 +42,12 @@ import {
   captureToastSurface,
   focusWindow,
   keysFor,
+  recordStagedSurface,
   settlePaint,
   shoot,
 } from './i18n-capture-helpers.js'
 import { resetOperationStateOrReport } from './i18n-capture-operations.js'
-import { isOverflowPass, overflowLocale } from './i18n-capture-config.js'
+import { isOverflowPass, isStageOnly, overflowLocale } from './i18n-capture-config.js'
 import { CROP_PADDING_TIGHT_CSS_PX, scanForClipping } from './i18n-capture-frame.js'
 
 /**
@@ -809,10 +810,17 @@ export async function captureIndexingGallery(
         label: 'main', value: { Logical: { width: ${String(Math.round(w))}, height: ${String(Math.round(h))} } }
       })`)
       .catch(() => {})
+  const startedAt = Date.now()
   try {
     await ensureAppReady(main)
     await navigateToRoute(main, '/dev/graphics')
     await main.waitForSelector('#graphics-drive-indexing-find-files-first', 15000)
+    // Staged: the gallery route rendered its first tile. Everything below sizes,
+    // scrolls, and shoots the window.
+    if (isStageOnly()) {
+      recordStagedSurface(label, report, startedAt)
+      return
+    }
     if (isOverflowPass) await captureCall(main, 'setLocale', overflowLocale)
     await captureCall(main, 'reset')
     await captureCall(main, 'setSurface', label)

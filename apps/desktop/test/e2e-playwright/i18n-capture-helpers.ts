@@ -20,12 +20,13 @@
 import { readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect } from './fixtures.js'
-import { dismissAllToasts, getFixtureRoot } from './helpers.js'
+import { dismissAllToasts } from './helpers.js'
 import { assessImageContent, cropPng, isCompletePng } from './i18n-capture-png.js'
 import {
   DEFAULT_UI_ZOOM,
   MAX_UI_ZOOM,
   isOverflowPass,
+  isStageOnly,
   isWorstCasePass,
   overflowLocale,
   screenshotsDir,
@@ -55,8 +56,15 @@ interface CaptureApi {
   setTextSize: (percent: number) => Promise<void>
 }
 
-/** Calls a method on the webview's `window.__cmdrI18nCapture`, returns its result. */
+/**
+ * Calls a method on the webview's `window.__cmdrI18nCapture`, returns its result.
+ *
+ * A stage-only run never sends `enable`, which is the one call that turns the
+ * inert sink into a recorder; every other call leaves an inert sink inert, so a
+ * staging closure's sink calls go through unchanged.
+ */
 export async function captureCall<T>(page: TauriPage, method: keyof CaptureApi, arg?: string): Promise<T> {
+  if (method === 'enable' && isStageOnly()) return false as T
   const argJson = arg === undefined ? '' : JSON.stringify(arg)
   return page.evaluate<T>(`(function() {
     var api = window.__cmdrI18nCapture;
@@ -97,8 +105,13 @@ export async function settlePaint(page: TauriPage): Promise<void> {
  * a window's occluded-throttled async `onMount` (settings/shortcuts gate content
  * on it) and so macOS composites the current frame for the native screenshot.
  * `core:window:allow-set-focus` is granted in each window's capability.
+ *
+ * A no-op in a stage-only run: that run rides the regular E2E lane, which never
+ * takes the front position from whoever is using the machine, so its staging has
+ * to reach every surface from the back.
  */
 export async function focusWindow(page: TauriPage, label: string): Promise<void> {
+  if (isStageOnly()) return
   const labelJson = JSON.stringify(label)
   await page.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:window|set_focus', { label: ${labelJson} })`)
 }
@@ -264,6 +277,12 @@ export async function shoot(
   screenshot: string,
   options: ShotOptions = {},
 ): Promise<void> {
+  // A tripwire, not a branch: every engine stops a stage-only run before it gets
+  // here, so reaching it means a caller photographs outside the engines and would
+  // write into the tracked screenshots dir from a routine E2E run.
+  if (isStageOnly()) {
+    throw new Error(`a stage-only run reached the shutter for \`${screenshot}\`; stop after staging instead`)
+  }
   const path = join(screenshotsDir, screenshot)
   const tries: string[] = []
   // Each attempt shoots to its OWN staging file and only the winner is renamed
@@ -533,6 +552,17 @@ export interface StagedSurface {
 }
 
 /**
+ * Records a surface a stage-only run staged: no image and no keys, because the run
+ * made neither. Recording it at all keeps every `label in report` check (the group
+ * catch blocks that mark unfinished surfaces failed) reading "done" exactly as it
+ * does after a photograph.
+ */
+export function recordStagedSurface(label: string, report: Record<string, SurfaceEntry>, startedAt: number): void {
+  report[label] = { screenshot: '', keys: [] }
+  console.log(`[i18n-capture] ${label}: staged in ${String(Date.now() - startedAt)} ms`)
+}
+
+/**
  * Stages, captures, and records ONE surface, isolating its failure: any throw is
  * caught, logged, and pushed to `failed`, and the run continues to the next
  * surface. Without this isolation a single broken surface (e.g. a window that
@@ -549,6 +579,10 @@ export interface StagedSurface {
  * → `settlePaint` → native screenshot → read the keys back. The capture sink's
  * enable/reset stays in `stage` because it's per-WINDOW, not per-surface (one
  * window hosts several surfaces sharing one sink).
+ *
+ * A stage-only run stops after `stage` and the `readySelector` wait: that pair is
+ * the whole claim "this surface is reachable and ready", and everything after it
+ * exists to photograph and key the result.
  */
 export async function captureSurface(
   label: string,
@@ -557,8 +591,14 @@ export async function captureSurface(
   stage: () => Promise<StagedSurface>,
 ): Promise<void> {
   const screenshot = `${label}.png`
+  const startedAt = Date.now()
   try {
     const { page, focusLabel, readySelector, fitSelector } = await stage()
+    if (isStageOnly()) {
+      if (readySelector !== undefined) await page.waitForSelector(readySelector, 5000)
+      recordStagedSurface(label, report, startedAt)
+      return
+    }
     // Overflow pass: each separate WebviewWindow (settings, viewer, shortcuts)
     // has its own locale source, so set the pseudolocale on whatever page this
     // surface captures against. Idempotent on `main` (already switched in the
@@ -652,6 +692,9 @@ async function waitForToastSettled(page: TauriPage): Promise<void> {
  * `trigger` returns nothing; the toast appearance is the readiness signal. After
  * the shot every toast is dismissed so the next surface (and the afterEach leak
  * guard) starts clean.
+ *
+ * A stage-only run stops once the toast is in the DOM; waiting out its enter
+ * animation is for the photograph.
  */
 export async function captureToastSurface(
   label: string,
@@ -661,6 +704,7 @@ export async function captureToastSurface(
   trigger: () => Promise<void>,
 ): Promise<void> {
   const screenshot = `${label}.png`
+  const startedAt = Date.now()
   try {
     await captureCall(main, 'reset')
     await captureCall(main, 'setSurface', label)
@@ -678,6 +722,10 @@ export async function captureToastSurface(
     // The toast appearing IS the readiness signal: the key was resolved (and so
     // recorded) at emit time, which is inside `trigger`.
     await main.waitForSelector('.toast', 5000)
+    if (isStageOnly()) {
+      recordStagedSurface(label, report, startedAt)
+      return
+    }
     // The toast slides in over a 0.2s animation (opacity 0->1, translateX 20->0).
     // `waitForSelector` returns the instant it's in the DOM (mid-animation), so
     // wait for the enter animation to FINISH (opacity 1, transform settled to
@@ -700,77 +748,5 @@ export async function captureToastSurface(
   } finally {
     await dismissAllToasts(main).catch(() => {})
     await captureCall(main, 'disable').catch(() => {})
-  }
-}
-
-/**
- * Captures ONE real friendly-error pane as the REPRESENTATIVE image for the whole
- * `errors.*` family (listing / write / provider / git). Every friendly error
- * shares this presentation (a bold title, an explanation paragraph, and a
- * suggestion), so a single honest capture, plus the coupler's representative
- * `@key.screenshotNote`, lets a translator load one image for the entire family.
- *
- * Like a toast, the error copy is SNAPSHOT-RESOLVED: `renderListingError` calls
- * `getMessage('errors.listing.<reason>.*')` once at navigation time and stores
- * plain strings on the FriendlyError props, so a later `rerender()` never
- * re-records them. The sink must be enabled BEFORE the error renders. Flow:
- * reset + setSurface + enable, THEN inject a real OS error (EACCES) and navigate
- * into a subdir so the backend listing fails and the pane renders, capturing the
- * `errors.listing.*` keys it resolves. We screenshot the real pane, then navigate
- * back so the next surface (and the afterEach leak guard) starts clean.
- *
- * Uses the `inject_listing_error` Tauri command (feature-gated behind
- * `playwright-e2e`, present in every E2E build): the same hook
- * `error-pane.spec.ts` uses. The injected error is single-shot, so the cleanup
- * navigation succeeds naturally.
- */
-export async function captureErrorPaneExample(
-  label: string,
-  report: Record<string, SurfaceEntry>,
-  failed: string[],
-  main: TauriPage,
-): Promise<void> {
-  const screenshot = `${label}.png`
-  const fixtureRoot = getFixtureRoot()
-  const subDirPath = `${fixtureRoot}/left/sub-dir`
-  const leftPath = `${fixtureRoot}/left`
-  try {
-    await captureCall(main, 'reset')
-    await captureCall(main, 'setSurface', label)
-    await captureCall<boolean>(main, 'enable')
-
-    // Inject EACCES (errno 13 → a friendly "No permission" error) and navigate
-    // into sub-dir in one atomic step (no wait between): a background listing
-    // could otherwise consume the single-shot injected error first.
-    await main.evaluate(
-      `window.__TAURI_INTERNALS__.invoke('inject_listing_error', { volumeId: 'root', errorCode: 13 })`,
-    )
-    await main.evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
-      event: 'mcp-nav-to-path',
-      payload: { pane: 'left', path: ${JSON.stringify(subDirPath)} }
-    })`)
-    // The error pane appearing IS the readiness signal: the keys were resolved
-    // (and recorded) during the listing the navigation kicked off.
-    await main.waitForSelector('.error-pane', 5000)
-    // Worst-case pass: max zoom + min window so the error title/explanation/
-    // suggestion fight the tightest pane. No-op outside the worst-case pass.
-    await stressLayoutIfWorstCase(main, 'main')
-    await shoot(main, 'main', screenshot)
-    report[label] = { screenshot, keys: await keysFor(main, label) }
-    await scanForClipping(main, label)
-    console.log(`[i18n-capture] ${label}: ${String(report[label].keys.length)} keys → ${screenshot}`)
-  } catch (err) {
-    failed.push(label)
-    console.warn(`[i18n-capture] surface ${label} FAILED: ${err instanceof Error ? err.message : String(err)}`)
-  } finally {
-    await captureCall(main, 'disable').catch(() => {})
-    // Navigate back to a real directory so the pane leaves the error state.
-    await main
-      .evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
-        event: 'mcp-nav-to-path',
-        payload: { pane: 'left', path: ${JSON.stringify(leftPath)} }
-      })`)
-      .catch(() => {})
-    await main.waitForSelector('.file-entry', 5000).catch(() => {})
   }
 }
