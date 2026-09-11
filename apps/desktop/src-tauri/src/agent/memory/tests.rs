@@ -431,12 +431,18 @@ fn the_first_decision_lands_before_the_folder_exists() {
 fn the_decision_ring_stays_inside_its_reserve() {
     let (_dir, store) = store();
 
-    for n in 0..300 {
-        store.record_outcome(&format!(
-            // allowed-pluralize-noun: synthetic fixture text, sized to fill the ring; nobody reads it.
-            "2026-08-23 approved: trash {n} files under /Users/x/Downloads"
-        ));
-    }
+    // A ring far past both caps, seeded in one plain write. Recording 300 decisions one by one
+    // made 300 durable writes, which is seconds of fsync on a container's overlay disk; the fold's
+    // own bound over 500 decisions is `outcomes::tests`' job, and this test is about the store.
+    let backlog: String = (0..299)
+        .map(|n| {
+            // allowed-pluralize-noun: synthetic fixture text, sized to overflow the ring; nobody reads it.
+            format!("- 2026-08-23 approved: trash {n} files under /Users/x/Downloads\n")
+        })
+        .collect();
+    std::fs::write(store.root().join(OUTCOMES_FILE), backlog).expect("seed the ring");
+
+    store.record_outcome("2026-08-23 approved: trash 299 files under /Users/x/Downloads");
 
     let log = std::fs::read_to_string(store.root().join(OUTCOMES_FILE)).expect("the ring");
     assert!(log.len() <= OUTCOMES_MAX_BYTES, "the ring reached {} bytes", log.len());

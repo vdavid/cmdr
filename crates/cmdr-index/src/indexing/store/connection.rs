@@ -153,6 +153,26 @@ impl IndexStore {
         Ok(conn)
     }
 
+    /// A write connection to a fresh in-memory index: the collation, pragmas, schema, and
+    /// version stamp a file-backed [`open`](Self::open) plus [`open_write_connection`]
+    /// would give, with no file behind it.
+    ///
+    /// For tests about what the rows mean, where a temp file only adds the filesystem's
+    /// cost: creating it, and syncing it on close. A proptest that opens one per case
+    /// pays that a hundred times over.
+    #[cfg(test)]
+    pub(crate) fn open_in_memory_write_connection() -> Result<Connection, IndexStoreError> {
+        let conn = cmdr_fs::sqlite_util::open_in_memory()?;
+        register_platform_case_collation(&conn)?;
+        apply_pragmas(&conn, false)?;
+        create_tables(&conn)?;
+        conn.execute(
+            "INSERT OR REPLACE INTO meta (key, value) VALUES (?1, ?2)",
+            params!["schema_version", SCHEMA_VERSION],
+        )?;
+        Ok(conn)
+    }
+
     /// Open a read-only connection with per-connection pragmas and `platform_case` collation.
     ///
     /// Never contends with the writer thread's write lock.

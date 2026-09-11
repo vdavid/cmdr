@@ -285,6 +285,10 @@ opened ANYWHERE in the process initializes it. So every connection opens through
 `desktop-rust-sqlite-open-direct` check forbids one outside `sqlite_util.rs`, and `ensure_shared_page_cache()` reports
 `TooLate` (with a `warn!`) if it ever happens anyway.
 
+A test about what the rows mean opens `IndexStore::open_in_memory_write_connection()` (test-only): the same collation,
+pragmas, schema, and version stamp as a file-backed open, with no file to create and sync. A temp-file index per
+proptest case cost seconds of fsync on the Linux lane's overlay disk (`read/coverage/tests.rs`).
+
 **Alternative weighed:** `sqlite3_soft_heap_limit64` also bounds the process dynamically and costs nothing at rest (the
 bundled `SQLITE_ENABLE_MEMORY_MANAGEMENT` build can reclaim page cache under it). We chose the slab because it's a hard
 bound with no reclaim heuristics, it degrades gracefully (SQLite falls back to `sqlite3Malloc` when the slab is

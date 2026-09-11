@@ -17,15 +17,15 @@ use crate::indexing::store::{EXCLUSION_POLICY_KEY, ROOT_ID};
 
 // ── Fixture plumbing ─────────────────────────────────────────────────
 
-/// A temp-file-backed index, already stamped with the current exclusion policy so
-/// the tests exercise the descent rather than the policy gate.
-fn open_temp_index() -> (Connection, tempfile::TempDir) {
-    let dir = tempfile::tempdir().expect("temp dir");
-    let db_path = dir.path().join("coverage-test-index.db");
-    let store = IndexStore::open(&db_path).expect("open store");
-    let conn = IndexStore::open_write_connection(store.db_path()).expect("write connection");
+/// An in-memory index, already stamped with the current exclusion policy so the
+/// tests exercise the descent rather than the policy gate.
+///
+/// In memory because nothing here is about the file: a temp file per proptest case
+/// cost seconds of fsync on the Linux lane's overlay disk, past the 8 s cap.
+fn open_test_index() -> Connection {
+    let conn = IndexStore::open_in_memory_write_connection().expect("in-memory index");
     stamp_current_policy(&conn);
-    (conn, dir)
+    conn
 }
 
 /// Stamp the DB as built against the exclusion policy this build applies, which is
@@ -83,7 +83,7 @@ fn coverage(conn: &Connection, scope: &str) -> CoverageMap {
 /// `listed_epoch`, which is what makes that unrepresentable; this holds them to it.
 #[test]
 fn min_subtree_epoch_implies_listed() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     // A mix: listed leaves, listed interiors, and unlisted holes at three depths.
     let a = insert_dir(&conn, ROOT_ID, "a");
     let a_b = insert_dir(&conn, a, "b");
@@ -237,10 +237,10 @@ fn descend(conn: &Connection, model: &Materialized) -> Vec<(Verdict, i64)> {
 }
 
 proptest! {
-    // Each case opens a temp-file SQLite index and runs the real aggregator over
+    // Each case builds a fresh in-memory index and runs the real aggregator over
     // it, so a case is milliseconds rather than microseconds. 96 over a space of
     // ≤24-node trees still explores it thoroughly; the default 256 made these two
-    // the slowest tests in the crate and starved them under the Linux lane's load.
+    // the slowest tests in the crate.
     #![proptest_config(ProptestConfig::with_cases(96))]
 
     /// The verdicts partition the scope: every directory in it is accounted for
@@ -253,7 +253,7 @@ proptest! {
     /// between the two halves.
     #[test]
     fn coverage_partitions_the_subtree(tree in tree_strategy()) {
-        let (conn, _dir) = open_temp_index();
+        let conn = open_test_index();
         let model = materialize(&conn, &tree);
 
         let mut produced: Vec<i64> = Vec::new();
@@ -288,7 +288,7 @@ proptest! {
     /// listed, and a covered cut has to have every directory under it listed.
     #[test]
     fn every_verdict_matches_its_directory(tree in tree_strategy()) {
-        let (conn, _dir) = open_temp_index();
+        let conn = open_test_index();
         let model = materialize(&conn, &tree);
 
         for (verdict, id) in descend(&conn, &model) {
@@ -332,7 +332,7 @@ proptest! {
 /// absorbs all the way to the scope root, so it would hand back `/`.
 #[test]
 fn a_single_uncovered_leaf_yields_the_leaf_not_the_root() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let projects = insert_dir(&conn, ROOT_ID, "projects");
     let cmdr = insert_dir(&conn, projects, "cmdr");
     let docs = insert_dir(&conn, cmdr, "docs");
@@ -353,7 +353,7 @@ fn a_single_uncovered_leaf_yields_the_leaf_not_the_root() {
 /// A volume the index has never seen hands back the scope root itself.
 #[test]
 fn a_cold_volume_yields_the_scope_root() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let map = coverage(&conn, "/Users/dave/projects");
     assert_eq!(map.frontier, vec!["/Users/dave/projects".to_string()]);
 }
@@ -362,7 +362,7 @@ fn a_cold_volume_yields_the_scope_root() {
 /// the covered siblings are never descended into.
 #[test]
 fn an_honest_stale_gap_yields_only_that_gap() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let users = insert_dir(&conn, ROOT_ID, "Users");
     let dave = insert_dir(&conn, users, "dave");
     let pictures = insert_dir(&conn, dave, "Pictures");
@@ -399,7 +399,7 @@ fn an_honest_stale_gap_yields_only_that_gap() {
 /// implementation that returned early and looked at nothing would look identical.
 #[test]
 fn a_fully_covered_scope_yields_an_empty_frontier() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let mut all = vec![ROOT_ID];
     // A 10-directory tree, three levels deep.
     for top in 0..3 {
@@ -441,7 +441,7 @@ fn a_fully_covered_scope_yields_an_empty_frontier() {
 /// slow path with nothing to show the user for it.
 #[test]
 fn a_known_unreadable_dir_is_reported_rather_than_walked_again() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let users = insert_dir(&conn, ROOT_ID, "Users");
     let dave = insert_dir(&conn, users, "dave");
     let documents = insert_dir(&conn, dave, "Documents");
@@ -481,7 +481,7 @@ fn a_known_unreadable_dir_is_reported_rather_than_walked_again() {
 /// cause is stored.
 #[test]
 fn a_declined_dir_is_reported_apart_from_a_refused_one() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let share = insert_dir(&conn, ROOT_ID, "share");
     let snapshots = insert_dir(&conn, share, "@eaDir");
     let locked = insert_dir(&conn, share, "private");
@@ -511,7 +511,7 @@ fn a_declined_dir_is_reported_apart_from_a_refused_one() {
 /// wedged mount or calls a temporary hole a permanent policy.
 #[test]
 fn abandoned_ground_is_reported_apart_from_refused_and_declined_ground() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let mnt = insert_dir(&conn, ROOT_ID, "mnt");
     let wedged = insert_dir(&conn, mnt, "phone");
     let snapshots = insert_dir(&conn, mnt, "@eaDir");
@@ -563,7 +563,7 @@ fn abandoned_ground_is_reported_apart_from_refused_and_declined_ground() {
 /// listed directory's files arrived with the listing.
 #[test]
 fn files_are_never_frontier() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let docs = insert_dir(&conn, ROOT_ID, "docs");
     insert_file(&conn, ROOT_ID, "top.txt", 1);
     insert_file(&conn, docs, "nested.txt", 2);
@@ -579,7 +579,7 @@ fn files_are_never_frontier() {
 /// otherwise leaves the subtrees it used to skip permanently invisible.
 #[test]
 fn a_policy_mismatch_hands_back_the_whole_scope() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let projects = insert_dir(&conn, ROOT_ID, "projects");
     list_and_aggregate(&conn, &[ROOT_ID, projects], 3);
     assert!(
@@ -598,7 +598,7 @@ fn a_policy_mismatch_hands_back_the_whole_scope() {
 /// A scope below the volume root answers for that subtree only.
 #[test]
 fn a_scoped_query_answers_for_its_subtree_only() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let users = insert_dir(&conn, ROOT_ID, "Users");
     let dave = insert_dir(&conn, users, "dave");
     let projects = insert_dir(&conn, dave, "projects");
@@ -623,7 +623,7 @@ fn a_scoped_query_answers_for_its_subtree_only() {
 /// reported as frontier: worst case somebody re-walks covered ground.
 #[test]
 fn a_pathologically_deep_chain_is_cut_at_the_depth_cap() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     // A chain deeper than the cap, listed the whole way, with one unlisted leaf at
     // the bottom so every level has a reason to descend.
     let depth = MAX_DESCENT_DEPTH + 8;
@@ -656,7 +656,7 @@ fn a_pathologically_deep_chain_is_cut_at_the_depth_cap() {
 /// be mistaken for one computed after.
 #[test]
 fn writing_rows_moves_the_token() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     let before = coverage(&conn, "/").token;
 
     let projects = insert_dir(&conn, ROOT_ID, "projects");
@@ -675,7 +675,7 @@ fn writing_rows_moves_the_token() {
 /// tell "unchanged" from "changed".
 #[test]
 fn an_unchanged_index_reports_an_unchanged_token() {
-    let (conn, _dir) = open_temp_index();
+    let conn = open_test_index();
     insert_dir(&conn, ROOT_ID, "projects");
     assert_eq!(coverage(&conn, "/").token, coverage(&conn, "/").token);
 }

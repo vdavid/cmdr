@@ -57,13 +57,17 @@ fn cached_pages_come_from_the_shared_slab() {
     let conn = open(&dir.path().join("slab.db")).expect("open db");
     conn.execute_batch("CREATE TABLE t (id INTEGER PRIMARY KEY, data BLOB);")
         .expect("create table");
+    // One transaction: as 200 autocommits, each insert was a fully synced commit, about 2 s of
+    // fsync on a container's overlay disk for a test about where cached pages come from.
+    let tx = conn.unchecked_transaction().expect("begin");
     {
-        let mut stmt = conn.prepare("INSERT INTO t (data) VALUES (?1)").expect("prepare");
+        let mut stmt = tx.prepare("INSERT INTO t (data) VALUES (?1)").expect("prepare");
         let blob = vec![0u8; 2_000];
         for _ in 0..200 {
             stmt.execute(rusqlite::params![blob]).expect("insert");
         }
     }
+    tx.commit().expect("commit");
     let count: i64 = conn
         .query_row("SELECT COUNT(*) FROM t", [], |row| row.get(0))
         .expect("count");
