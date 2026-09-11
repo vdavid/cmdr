@@ -261,6 +261,32 @@ Pinned by `mount_test.rs` (`a_netfs_success_with_no_mount_of_the_share_is_not_a_
 `statfs` rows, since NetFS can't be made to lie on demand), `mount_linux.rs::a_gio_success_counts_only_where_a_mount_is`,
 and `NetworkMountView.test.ts` for the pane.
 
+## A mount refusal is data, and the frontend words it
+
+`MountError` carries no sentence. Each variant holds what a message is built from: the `server` the mount addressed,
+the `share`, the `username` a share turned away, and for the catch-all `Unexpected` a `detail` for the log. The frontend
+words it from the `errors.mount.*` catalog (`apps/desktop/src/lib/file-explorer/network/mount-error-messages.ts`),
+naming the host the way the pane shows it rather than by its address. ERR-SHUSC is why: a Hungarian UI showed the
+backend's English `Share "data" not found on "observermch"`.
+
+- **Every producer answers with data**: `mount.rs::error_from_code` (NetFS codes), `settle_netfs_answer`
+  (`MountMissing`), `share_access::clarified`, `mount_linux.rs::classify_mount_error` (`gio` stderr), and
+  `network::mount_share`'s timeout and join-failure arms. Each keeps its diagnostic detail in the log.
+- **A variant exists where the fix differs.** `UnsupportedProtocol` (NetFS `-5996`) is fixed in the server's settings.
+  `MountRefused` (NetAuth `-6602`) signed in and was still turned down, so ❌ it's not an auth question: the sign-in
+  sheet would loop on a password that worked. `GvfsMissing` (Linux, no `gio`) is fixed by installing a package.
+  `Unexpected` takes an unknown code, a URL `CFURLCreateWithString` rejects, a panicked task, and `gio` stderr nothing
+  recognizes. NetFS's "no shares available" codes stay `ShareNotFound`: to someone who picked one share it's the same
+  answer, and `share_access` clarifies both the same way.
+- **A guest's "permission denied" from `gio` is `AuthRequired`**, the reading `share_access::clarified` gives any guest
+  turned away, so the sign-in sheet asks for a password instead of "a different account".
+- **The wire tags are snake_case** (`share_not_found`), and `smb-sign-in.ts` branches on them. Change a variant on both
+  sides in one commit; the frontend's variant record stops compiling until the new one has words.
+
+Pinned by `mount_test.rs::every_netfs_code_maps_to_typed_data`, `share_access_test.rs`, the Linux
+`classify_mount_error_snapshot_*` tests, and `mount-error-messages.test.ts` (every variant has catalog words that
+follow the error-copy rules).
+
 ## The mount URL is built, escaped, and NFC-normalized
 
 `mount.rs::build_smb_mount_url` assembles `smb://host[:port]/share` from percent-encoded halves.

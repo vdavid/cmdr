@@ -128,14 +128,14 @@ describe('commands.mountNetworkShare', () => {
   it('surfaces typed MountError variants (auth_failed) on the error branch', async () => {
     const ipc = installIpcMock()
     ipc.mock('mount_network_share', () => {
-      throw { type: 'auth_failed', message: 'bad credentials' }
+      throw { type: 'auth_failed', server: 's' }
     })
 
     const out = await commands.mountNetworkShare('s', 'sh', 'u', 'p', null, null)
 
     expect(out.status).toBe('error')
     if (out.status === 'error') {
-      expect(out.error).toEqual({ type: 'auth_failed', message: 'bad credentials' })
+      expect(out.error).toEqual({ type: 'auth_failed', server: 's' })
     }
   })
 })

@@ -815,13 +815,19 @@
   "errors.listing.notConnected.explanation": "Cmdr hasn't connected to the phone or server holding `{path}` yet, so there's nothing to show here. Nothing was disconnected, and nothing was deleted.",
   "errors.listing.notConnected.suggestion": "Here's what to try:\n- Open the phone or server from the volume switcher to connect to it\n- If it's a phone, unlock it and accept any prompt it shows\n- Navigate here again once it's connected",
   "@errors.listing.notConnected.title": {
-    "description": "Title of the listing error panel when a phone or server shows in Cmdr's volume list but Cmdr hasn't connected to it yet, so there's nothing to list. Deliberately distinct from \"Device disconnected\": nothing dropped. Plain text."
+    "description": "Title of the listing error panel when a phone or server shows in Cmdr's volume list but Cmdr hasn't connected to it yet, so there's nothing to list. Deliberately distinct from \"Device disconnected\": nothing dropped. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.notConnected.explanation": {
-    "description": "Body of the listing error panel for a phone or server Cmdr hasn't connected to yet. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder's path, which Cmdr doesn't control: any length, and it can start with a scheme such as adb:// or sftp://. The last sentence reassures that nothing broke."
+    "description": "Body of the listing error panel for a phone or server Cmdr hasn't connected to yet. Markdown. The literal `{path}` is a do-not-translate placeholder replaced at runtime with the folder's path, which Cmdr doesn't control: any length, and it can start with a scheme such as adb:// or sftp://. The last sentence reassures that nothing broke.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.notConnected.suggestion": {
-    "description": "Recovery suggestion for a phone or server Cmdr hasn't connected to yet. Markdown bullet list. \"Volume switcher\" is the dropdown at the top of each pane where a person picks a drive, phone, or server; use the same term as the commands.paneLeftVolumeChooser.label key. Choosing the phone or server there is what connects it."
+    "description": "Recovery suggestion for a phone or server Cmdr hasn't connected to yet. Markdown bullet list. \"Volume switcher\" is the dropdown at the top of each pane where a person picks a drive, phone, or server; use the same term as the commands.paneLeftVolumeChooser.label key. Choosing the phone or server there is what connects it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.listing.deviceReconnecting.title": "Reconnecting to the device",
   "errors.listing.deviceReconnecting.explanation": "The connection to the device holding `{path}` restarted, so this action didn't go through. The device is still plugged in, and Cmdr is reopening it right now. This usually follows a canceled or interrupted transfer.",
@@ -1602,16 +1608,24 @@
   "errors.write.notConnected.message.destination": "Cmdr hasn't connected to the destination phone or server yet, so nothing has changed. Your files are untouched.",
   "errors.write.notConnected.suggestion": "Open it from the volume switcher to connect to it, then try again. If it's a phone, unlock it and accept any prompt it shows.",
   "@errors.write.notConnected.title": {
-    "description": "Title of the copy, move, or delete error dialog when a phone or server shows in Cmdr's volume list but Cmdr hasn't connected to it yet, so the operation didn't start. Deliberately distinct from \"Device disconnected\": nothing dropped. Same meaning as errors.listing.notConnected.title, so keep the two consistent. Plain text."
+    "description": "Title of the copy, move, or delete error dialog when a phone or server shows in Cmdr's volume list but Cmdr hasn't connected to it yet, so the operation didn't start. Deliberately distinct from \"Device disconnected\": nothing dropped. Same meaning as errors.listing.notConnected.title, so keep the two consistent. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.notConnected.message.source": {
-    "description": "Body of the copy, move, or delete error dialog when the phone or server that holds the selected files isn't connected yet. Cmdr refused before reading or changing anything. Plain text, a raw errors.* string (no ICU). It has to read right for copy, move, and delete alike, so don't name one action."
+    "description": "Body of the copy, move, or delete error dialog when the phone or server that holds the selected files isn't connected yet. Cmdr refused before reading or changing anything. Plain text, a raw errors.* string (no ICU). It has to read right for copy, move, and delete alike, so don't name one action.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.notConnected.message.destination": {
-    "description": "Body of the copy or move error dialog when the phone or server the files would go to isn't connected yet. Cmdr refused before writing anything. Plain text, a raw errors.* string (no ICU). The last sentence is reassurance that the user's files weren't touched, so keep that promise explicit."
+    "description": "Body of the copy or move error dialog when the phone or server the files would go to isn't connected yet. Cmdr refused before writing anything. Plain text, a raw errors.* string (no ICU). The last sentence is reassurance that the user's files weren't touched, so keep that promise explicit.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.notConnected.suggestion": {
-    "description": "Recovery suggestion when a phone or server isn't connected yet, shown in the copy, move, or delete error dialog. Plain text. \"It\" is the phone or server the message above names. \"Volume switcher\" is the dropdown at the top of each pane where a person picks a drive, phone, or server; use the same term as the commands.paneLeftVolumeChooser.label key. Choosing the phone or server there is what connects it."
+    "description": "Recovery suggestion when a phone or server isn't connected yet, shown in the copy, move, or delete error dialog. Plain text. \"It\" is the phone or server the message above names. \"Volume switcher\" is the dropdown at the top of each pane where a person picks a drive, phone, or server; use the same term as the commands.paneLeftVolumeChooser.label key. Choosing the phone or server there is what connects it.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.destinationExists.title": "File already exists",
   "errors.write.destinationExists.message": "There's already a file with this name at the destination.",
@@ -2065,37 +2079,55 @@
   "errors.write.destinationNotWritable.readOnlyFilesystem.message": "This folder is read-only, so nothing can be copied or moved into it.",
   "errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": "Choose a different destination folder.",
   "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
-    "description": "Title of the copy/move error dialog when the destination FOLDER sits on storage mounted read-only (a disk image, a write-protected card, a phone's system area). Cmdr found this out before copying anything. Plain text."
+    "description": "Title of the copy/move error dialog when the destination FOLDER sits on storage mounted read-only (a disk image, a write-protected card, a phone's system area). Cmdr found this out before copying anything. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
-    "description": "Body of the copy/move error dialog when the destination folder is on read-only storage. About the folder, not the whole device. Plain text."
+    "description": "Body of the copy/move error dialog when the destination folder is on read-only storage. About the folder, not the whole device. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.destinationNotWritable.readOnlyFilesystem.suggestion": {
-    "description": "Recovery suggestion when the destination folder is on read-only storage. Plain text."
+    "description": "Recovery suggestion when the destination folder is on read-only storage. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.destinationNotWritable.noPermission.title": "No permission to add files here",
   "errors.write.destinationNotWritable.noPermission.message": "You don't have permission to add files to this folder.",
   "errors.write.destinationNotWritable.noPermission.suggestion": "Choose a different destination folder, or change this folder's permissions and try again.",
   "@errors.write.destinationNotWritable.noPermission.title": {
-    "description": "Title of the copy/move error dialog when the user's account isn't allowed to create files in the destination folder, found out before copying anything. Plain text."
+    "description": "Title of the copy/move error dialog when the user's account isn't allowed to create files in the destination folder, found out before copying anything. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.destinationNotWritable.noPermission.message": {
-    "description": "Body of the copy/move error dialog when the user's account may not create files in the destination folder. Plain text."
+    "description": "Body of the copy/move error dialog when the user's account may not create files in the destination folder. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.destinationNotWritable.noPermission.suggestion": {
-    "description": "Recovery suggestion when the user's account may not create files in the destination folder. Plain text."
+    "description": "Recovery suggestion when the user's account may not create files in the destination folder. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.destinationNotWritable.unexplained.title": "This folder doesn't accept files",
   "errors.write.destinationNotWritable.unexplained.message": "This folder doesn't accept new files, so nothing can be copied or moved into it.",
   "errors.write.destinationNotWritable.unexplained.suggestion": "Choose a different destination folder.",
   "@errors.write.destinationNotWritable.unexplained.title": {
-    "description": "Title of the copy/move error dialog when the destination folder refuses new files and Cmdr can't tell whether it's read-only or a permission problem (for example the top-level folder of a phone connected over ADB). Keep it neutral: don't claim read-only or a permission. Plain text."
+    "description": "Title of the copy/move error dialog when the destination folder refuses new files and Cmdr can't tell whether it's read-only or a permission problem (for example the top-level folder of a phone connected over ADB). Keep it neutral: don't claim read-only or a permission. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.destinationNotWritable.unexplained.message": {
-    "description": "Body of the copy/move error dialog when the destination folder refuses new files for a reason Cmdr can't tell. Keep it neutral. Plain text."
+    "description": "Body of the copy/move error dialog when the destination folder refuses new files for a reason Cmdr can't tell. Keep it neutral. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
-    "description": "Recovery suggestion when the destination folder refuses new files for a reason Cmdr can't tell. Plain text."
+    "description": "Recovery suggestion when the destination folder refuses new files for a reason Cmdr can't tell. Plain text.",
+    "screenshot": "error-message-example.png",
+    "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "errors.write.readOnlyDevice.destination.fallbackName": "The target device",
   "@errors.write.readOnlyDevice.destination.fallbackName": {
@@ -2394,7 +2426,9 @@
   },
   "errors.volume.notConnected": "Cmdr isn't connected to this phone or server yet, so open it first.",
   "@errors.volume.notConnected": {
-    "description": "Shown when a rename, new folder, or new file targets a phone or server that shows in Cmdr's volume list but isn't connected yet. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. \"Open it\" means opening the phone or server in a pane, which connects it. Cmdr never uses the words \"error\" or \"failed\" in messages people read."
+    "description": "Shown when a rename, new folder, or new file targets a phone or server that shows in Cmdr's volume list but isn't connected yet. Inline one-line message under the name field in Cmdr's Rename / New folder / New file flow, or in a brief toast. Plain text, one sentence, no markdown. \"Open it\" means opening the phone or server in a pane, which connects it. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "mkdir-confirmation-too-long.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the single red line under the name field in the Rename / New folder / New file box, exactly where the validation message sits in this screenshot (which shows a DIFFERENT message). One sentence, plain text, no markdown, and it has to fit a narrow dialog."
   },
   "errors.volume.deviceSessionReset": "The device restarted its connection. Give it a few seconds and try again.",
   "@errors.volume.deviceSessionReset": {
@@ -2530,6 +2564,118 @@
     "description": "The catch-all shown when nothing more specific applies. Keep it short and general rather than guessing at a reason; the technical reason is written to the log. Surface: a brief error toast in the top-right of Cmdr's main window, shown after someone asks to eject a drive or disconnect a network share. Your string is dropped into \"Couldn't eject {volumeName}: …\" or \"Couldn't disconnect: …\", so it reads as the sentence AFTER a colon. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
+  },
+  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "@errors.mount.hostUnreachable": {
+    "description": "Shown when nothing answered at the server's address: it's off, asleep, or on another network. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "@errors.mount.timeout": {
+    "description": "Shown when the server started answering and then went quiet for longer than Cmdr waits. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "@errors.mount.shareNotFound": {
+    "description": "Shown when the server says it has no shared folder by that name, for example because it was renamed or removed after the list loaded. \"Share\" means a folder a server makes available over the network. \"Go back\" points at the Back button, which returns to the server's list of shares. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "share": "the name of the shared folder, as the server spells it",
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "@errors.mount.authRequired": {
+    "description": "Shown when the server doesn't let guests (people who haven't signed in) open this shared folder. A sign-in sheet opens on top of it at the same time, so this is an instruction, not a dead end. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one short sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "share": "the name of the shared folder, as the server spells it",
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "@errors.mount.authFailed": {
+    "description": "Shown when the server turned down the username and password that were offered. A sign-in sheet opens on top of it at the same time, so the person can try again right away. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "@errors.mount.permissionDenied": {
+    "description": "Shown when the sign-in itself worked, but the server doesn't allow that account into this shared folder. The password is NOT the problem, so don't suggest checking it; another account is the fix. A sign-in sheet opens on top of it at the same time. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name",
+      "username": "the account name the person signed in with",
+      "share": "the name of the shared folder, as the server spells it"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "@errors.mount.cancelled": {
+    "description": "Shown when the connection was canceled partway through, usually by the system rather than by Cmdr. Nothing is broken. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "share": "the name of the shared folder, as the server spells it"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "@errors.mount.unsupportedProtocol": {
+    "description": "Shown when the server only offers an old version of the file-sharing protocol that this computer no longer uses (typically SMB 1). Keep \"SMB\" as-is: it's the protocol's name, and the server's settings use it too. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "@errors.mount.mountRefused": {
+    "description": "Shown when the server accepted the sign-in and then still turned down opening this shared folder, for a reason it didn't give. The password is NOT the problem. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name",
+      "share": "the name of the shared folder, as the server spells it"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "@errors.mount.mountMissing": {
+    "description": "Shown when the operating system reported the shared folder as connected, but the folder never actually appeared. It's a glitch on the computer's side, and trying again usually works. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "share": "the name of the shared folder, as the server spells it",
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "@errors.mount.gvfsMissing": {
+    "description": "Linux only. Shown when the system component Cmdr uses to connect network shares isn't installed. Keep \"GVFS\" and \"gvfs-smb\" exactly as written: they're the component's and the package's names, and the person types the package name into their package manager. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
+  },
+  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "@errors.mount.unexpected": {
+    "description": "The catch-all shown when nothing more specific applies. Keep it short and general rather than guessing at a reason; the technical reason is written to the log. Surface: the network pane, after someone opens a shared folder on a network server (SMB) and it doesn't open. The pane replaces the server's list of shares with a \"Couldn't mount share\" title, this sentence under it, and Try again and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "share": "the name of the shared folder, as the server spells it",
+      "server": "the server's name as the pane shows it (like Naspolya), or its network address (like 192.168.1.20) when it has no name"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
   },
   "errors.write.readOnlyDevice.source.title": "Read-only source",
   "@errors.write.readOnlyDevice.source.title": {

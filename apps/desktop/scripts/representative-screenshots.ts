@@ -47,6 +47,18 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'sentence, plain text, no markdown, and it has to fit a narrow dialog.',
   },
   {
+    // The share-mount refusal family doesn't use the error pane below either: it's
+    // one plain sentence under the network pane's "Couldn't mount share" title.
+    // Listed BEFORE the blanket `errors.` mapping for the same reason as
+    // `errors.mutation.`.
+    prefix: 'errors.mount.',
+    screenshot: 'connect-to-server.png',
+    note:
+      'This one is NOT the error panel. Your string is the one sentence under the "Couldn\'t mount share" title that replaces a ' +
+      'server\'s list of shares when a share doesn\'t open, in the same network flow as the "Connect to server" surface ' +
+      'pictured here.',
+  },
+  {
     // The whole friendly-error family (listing / write / provider / git) shares
     // one presentation: an error pane (or, for write ops, the same title +
     // explanation + suggestion layout in a dialog). The example shows a DIFFERENT

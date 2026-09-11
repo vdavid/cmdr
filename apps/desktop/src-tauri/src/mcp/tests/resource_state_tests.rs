@@ -584,7 +584,8 @@ fn on_disk_size_shows_only_when_it_diverges_enough_to_matter() {
 /// still describe that list, so without `mountError` a failed mount reads from
 /// this resource as a pane that simply didn't move — which is exactly how a
 /// mount that couldn't build its URL for a non-ASCII share got mistaken for
-/// silence. The message is the same sentence the pane shows.
+/// silence. The message is the same sentence the pane shows, in the UI's
+/// language, so the typed reason rides beside it for a reader to branch on.
 #[test]
 fn a_pane_showing_a_mount_failure_reports_it() {
     let state = PaneState {
@@ -594,7 +595,8 @@ fn a_pane_showing_a_mount_failure_reports_it() {
         view_mode: "full".to_string(),
         mount_error: Some(crate::mcp::pane_state::MountErrorInfo {
             share: "caf\u{e9}".to_string(),
-            message: "Connection to \"localhost\" timed out".to_string(),
+            reason: "timeout".to_string(),
+            message: "Cmdr waited, but \"localhost\" didn't answer in time.".to_string(),
         }),
         ..Default::default()
     };
@@ -606,8 +608,9 @@ fn a_pane_showing_a_mount_failure_reports_it() {
         yaml.contains("share: \"caf\u{e9}\""),
         "expected the share name:\n{yaml}"
     );
+    assert!(yaml.contains("reason: timeout"), "expected the typed reason:\n{yaml}");
     assert!(
-        yaml.contains("message: \"Connection to \\\"localhost\\\" timed out\""),
+        yaml.contains("message: \"Cmdr waited, but \\\"localhost\\\" didn't answer in time.\""),
         "expected the pane's own sentence:\n{yaml}"
     );
 

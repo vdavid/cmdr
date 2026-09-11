@@ -424,6 +424,7 @@ pub(crate) fn build_pane_yaml_with_options(state: &PaneState, indent: &str, comp
     if let Some(ref err) = state.mount_error {
         lines.push(format!("{}mountError:", indent));
         lines.push(format!("{}  share: {:?}", indent, err.share));
+        lines.push(format!("{}  reason: {}", indent, err.reason));
         lines.push(format!("{}  message: {:?}", indent, err.message));
     }
 

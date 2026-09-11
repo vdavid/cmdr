@@ -8,6 +8,7 @@ Signing in is `$lib/servers`' one sheet; this module only says what to ask and w
 - `network-store.svelte.ts`: the `$state` singleton behind all network data. `lazy-trigger.ts`: starting mDNS.
 - `ServersHub.svelte` (+ `servers-hub-{rows,actions,mcp}.ts`, `host-status.ts`): the hub table on the `network` volume.
   `PlacesBrowser.svelte`: one account's places, and the listing's sign-in. `smb-sign-in.ts`: SMB's side of the sheet.
+  `mount-error-messages.ts` (+ `mount-error.ts`): a refused mount's words.
 - `direct-connect.ts` (+ `upgrade-messages.ts`): the "Connect directly" upgrade. `os-mount-notice-bridge.ts` +
   `SmbOsMountFallbackToastContent.svelte`: the slow-connection notice. `smb-reconnect-manager.svelte.ts`: the per-volume
   backoff cycle on `volume-connection-changed` (backend-neutral; SMB is its first emitter).

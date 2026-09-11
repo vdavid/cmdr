@@ -138,11 +138,11 @@ pub(crate) const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
 /// `mount::mount_share_sync`, on the blocking pool under the mount timeout.
 ///
 /// A panicked task and an expired budget come back as the typed `MountError` the
-/// caller renders, and a mount that could only say "not found" spends what's left
+/// frontend words, and a mount that could only say "not found" spends what's left
 /// of the budget asking the server which it was
 /// (`share_access::clarify_share_not_found`). One function for both platforms, so
-/// the timeout, its wording, and the not-found clarification can't drift apart
-/// between macOS and Linux.
+/// the timeout and the not-found clarification can't drift apart between macOS
+/// and Linux.
 pub async fn mount_share(
     server: String,
     share: String,
@@ -160,16 +160,22 @@ pub async fn mount_share(
 
     let result = match tokio::time::timeout(timeout_duration, mount_future).await {
         Ok(Ok(result)) => result,
-        Ok(Err(join_error)) => Err(mount::MountError::ProtocolError {
-            message: format!("Mount task failed: {}", join_error),
+        Ok(Err(join_error)) => Err(mount::MountError::Unexpected {
+            server: attempt.server().to_string(),
+            share: attempt.share().to_string(),
+            detail: format!("the mount task didn't finish: {join_error}"),
         }),
-        Err(_timeout) => Err(mount::MountError::Timeout {
-            message: format!(
-                "Connection to \"{}\" timed out after {} seconds",
+        Err(_timeout) => {
+            log::warn!(
+                "Mounting \"{}\" on {} didn't finish within {} s",
+                attempt.share(),
                 attempt.server(),
                 timeout_duration.as_secs()
-            ),
-        }),
+            );
+            Err(mount::MountError::Timeout {
+                server: attempt.server().to_string(),
+            })
+        }
     };
 
     match result {

@@ -1737,6 +1737,54 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
+  "errors.mount.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "@errors.mount.hostUnreachable": {
+    "sourceHash": "a8a5d87"
+  },
+  "errors.mount.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Check that it's turned on and reachable, then try again.",
+  "@errors.mount.timeout": {
+    "sourceHash": "bfb786c"
+  },
+  "errors.mount.shareNotFound": "There's no share called \"{share}\" on \"{server}\". Go back and pick one from the list.",
+  "@errors.mount.shareNotFound": {
+    "sourceHash": "4f930a5"
+  },
+  "errors.mount.authRequired": "Sign in to open \"{share}\" on \"{server}\".",
+  "@errors.mount.authRequired": {
+    "sourceHash": "8466652"
+  },
+  "errors.mount.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "@errors.mount.authFailed": {
+    "sourceHash": "bb03537"
+  },
+  "errors.mount.permissionDenied": "You're signed in to \"{server}\" as \"{username}\", but that account can't open \"{share}\". Sign in with a different account.",
+  "@errors.mount.permissionDenied": {
+    "sourceHash": "12e20d9"
+  },
+  "errors.mount.cancelled": "Connecting to \"{share}\" stopped before it finished. Try again when you're ready.",
+  "@errors.mount.cancelled": {
+    "sourceHash": "0b0ec30"
+  },
+  "errors.mount.unsupportedProtocol": "This computer and \"{server}\" have no SMB version in common. Turn on SMB 2 or later in the server's settings, then try again.",
+  "@errors.mount.unsupportedProtocol": {
+    "sourceHash": "bf9c71e"
+  },
+  "errors.mount.mountRefused": "You're signed in to \"{server}\", but it wouldn't open \"{share}\". Check the share's settings on the server, then try again.",
+  "@errors.mount.mountRefused": {
+    "sourceHash": "c354782"
+  },
+  "errors.mount.mountMissing": "Your computer said \"{share}\" on \"{server}\" was connected, but it never showed up. Try again.",
+  "@errors.mount.mountMissing": {
+    "sourceHash": "a5f61b5"
+  },
+  "errors.mount.gvfsMissing": "Connecting to network shares on Linux needs GVFS. Install your distribution's gvfs-smb package, then try again.",
+  "@errors.mount.gvfsMissing": {
+    "sourceHash": "068da95"
+  },
+  "errors.mount.unexpected": "Something went wrong while connecting to \"{share}\" on \"{server}\". Try again in a moment.",
+  "@errors.mount.unexpected": {
+    "sourceHash": "8daf9ba"
+  },
   "errors.write.readOnlyDevice.source.title": "Csak olvasható forrás",
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"

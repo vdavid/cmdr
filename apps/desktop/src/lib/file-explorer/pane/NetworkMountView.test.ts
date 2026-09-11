@@ -15,7 +15,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import NetworkMountView from './NetworkMountView.svelte'
-import type { NetworkHost, ShareInfo } from '../types'
+import type { MountError, NetworkHost, ShareInfo } from '../types'
+import { MountFailure } from '../network/mount-error'
+import { renderMountError } from '../network/mount-error-messages'
 
 const h = vi.hoisted(() => ({
   fetchShares: vi.fn(),
@@ -82,16 +84,29 @@ vi.mock('$lib/utils/confirm-dialog', () => ({ confirmDialog: vi.fn(() => Promise
 vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn(() => 'id') }))
 vi.mock('../network/lazy-trigger', () => ({ triggerNetworkDiscovery: vi.fn() }))
 
+/** The address the view mounts by, which is NOT the name a person knows the host by. */
+const ADDRESS = '192.168.1.111'
+
 const host: NetworkHost = {
   id: 'naspolya-id',
   name: 'Naspolya',
   hostname: 'Naspolya.local',
-  ipAddress: '192.168.1.111',
+  ipAddress: ADDRESS,
   port: 445,
   source: 'discovered',
 }
 
 const naspi: ShareInfo = { name: 'naspi', isDisk: true, comment: null }
+
+/** What `mountNetworkShare` throws for a refusal: the typed value, carried across the throw. */
+function refused(error: MountError): MountFailure {
+  return new MountFailure(error)
+}
+
+const authFailed: MountError = { type: 'auth_failed', server: ADDRESS }
+const authRequired: MountError = { type: 'auth_required', server: ADDRESS, share: 'naspi' }
+const accountRefused: MountError = { type: 'permission_denied', server: ADDRESS, share: 'naspi', username: 'david' }
+const unreachable: MountError = { type: 'host_unreachable', server: ADDRESS }
 
 /** The sheet request under test, as much of it as these assert. */
 interface SheetRequest {
@@ -154,7 +169,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   })
 
   it('asks the sheet for this share (not the dead-end error pane) on an auth-class mount error', async () => {
-    h.mountNetworkShare.mockRejectedValue({ type: 'auth_failed', message: 'Invalid username or password' })
+    h.mountNetworkShare.mockRejectedValue(refused(authFailed))
     const { target, component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -178,7 +193,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
 
   it('retries the mount with entered credentials and saves them on success', async () => {
     h.mountNetworkShare
-      .mockRejectedValueOnce({ type: 'auth_failed', message: 'Invalid username or password' })
+      .mockRejectedValueOnce(refused(authFailed))
       .mockResolvedValueOnce({ mountPath: '/Volumes/naspi', alreadyMounted: false })
     const { component } = await mountViewAndActivateShare()
 
@@ -194,7 +209,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
 
     expect(outcome).toEqual({ kind: 'handed_off' })
     expect(h.mountNetworkShare).toHaveBeenCalledTimes(2)
-    expect(h.mountNetworkShare).toHaveBeenLastCalledWith('192.168.1.111', 'naspi', 'david', 'hunter2', 445, 15000)
+    expect(h.mountNetworkShare).toHaveBeenLastCalledWith(ADDRESS, 'naspi', 'david', 'hunter2', 445, 15000)
     // Remembered only once the mount actually went through.
     await vi.waitFor(() => {
       expect(h.saveSmbCredentials).toHaveBeenCalledWith('Naspolya', null, 'david', 'hunter2')
@@ -204,7 +219,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   })
 
   it('keeps the sheet open on a second refusal, and saves nothing', async () => {
-    h.mountNetworkShare.mockRejectedValue({ type: 'auth_failed', message: 'Invalid username or password' })
+    h.mountNetworkShare.mockRejectedValue(refused(authFailed))
     const { component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -227,7 +242,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // ERR-SHUSC: a share guests can SEE but can't OPEN. The backend clarifies the
     // mount's "not found" into `auth_required`, and that has to open the sheet
     // rather than the dead-end error pane.
-    h.mountNetworkShare.mockRejectedValue({ type: 'auth_required', message: 'Sign in to open "naspi"' })
+    h.mountNetworkShare.mockRejectedValue(refused(authRequired))
     const { component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -242,7 +257,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   it('asks for a different account when the share refuses the one that signed in', async () => {
     // The account got past sign-in; the SHARE doesn't let it in. The fix is another
     // account, which the sheet takes, so this is its question and not the pane's.
-    h.mountNetworkShare.mockRejectedValue({ type: 'permission_denied', message: '"david" can\'t open "naspi"' })
+    h.mountNetworkShare.mockRejectedValue(refused(accountRefused))
     const { target, component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -255,9 +270,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   })
 
   it('keeps the sheet open when the share refuses the account the user just signed in with', async () => {
-    h.mountNetworkShare
-      .mockRejectedValueOnce({ type: 'auth_required', message: 'Sign in to open "naspi"' })
-      .mockRejectedValueOnce({ type: 'permission_denied', message: '"david" can\'t open "naspi"' })
+    h.mountNetworkShare.mockRejectedValueOnce(refused(authRequired)).mockRejectedValueOnce(refused(accountRefused))
     const { component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -283,8 +296,8 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // between the listing and the mount is the pane's error state to render, with
     // its own Try again.
     h.mountNetworkShare
-      .mockRejectedValueOnce({ type: 'auth_failed', message: 'Invalid username or password' })
-      .mockRejectedValueOnce({ type: 'share_not_found', message: 'No such share' })
+      .mockRejectedValueOnce(refused(authFailed))
+      .mockRejectedValueOnce(refused({ type: 'share_not_found', server: ADDRESS, share: 'naspi' }))
     const { target, component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -305,12 +318,46 @@ describe('NetworkMountView mount-failure auth loop', () => {
     await unmount(component)
   })
 
+  it('words a refusal in the pane from the catalog, naming the host by its own name', async () => {
+    // ERR-SHUSC: the pane showed the backend's English `Share "data" not found on
+    // "observermch"` in an otherwise Hungarian UI. The words are the catalog's now,
+    // and the server is the host a person picked, not the address it was mounted by.
+    const notFound: MountError = { type: 'share_not_found', server: ADDRESS, share: 'naspi' }
+    h.mountNetworkShare.mockRejectedValue(refused(notFound))
+    const { target, component } = await mountViewAndActivateShare()
+
+    const errorPane = await vi.waitFor(() => must(target.querySelector('.mount-error-state'), 'the error pane'))
+    const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
+    expect(message).toBe(renderMountError(notFound, 'Naspolya'))
+    expect(message).toContain('"Naspolya"')
+    expect(message).not.toContain(ADDRESS)
+
+    await unmount(component)
+  })
+
+  it('words a mount call that broke down without a typed refusal as the catch-all', async () => {
+    // Not a refusal at all: the IPC call itself threw. Its text is a diagnostic for
+    // the log, so the pane says the honest general thing instead of showing it.
+    h.mountNetworkShare.mockRejectedValue(new Error('IPC transport closed'))
+    const { target, component } = await mountViewAndActivateShare()
+
+    const errorPane = await vi.waitFor(() => must(target.querySelector('.mount-error-state'), 'the error pane'))
+    const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
+    expect(message).toBe(
+      renderMountError({ type: 'unexpected', server: ADDRESS, share: 'naspi', detail: 'ignored' }, 'Naspolya'),
+    )
+    expect(message).not.toContain('IPC transport')
+    expect(h.openSignInSheet, 'no credential answers a broken call').not.toHaveBeenCalled()
+
+    await unmount(component)
+  })
+
   it('shows a mount the system reported but never made as the pane error, and Try again mounts again', async () => {
     // ERR-SHUSC: macOS said the share connected and nothing got mounted. No
     // credential answers that, so the sheet stays out of it, and the pane's
     // Try again is a real second attempt rather than a dead end.
     h.mountNetworkShare
-      .mockRejectedValueOnce({ type: 'mount_missing', message: 'macOS reported "naspi" as connected' })
+      .mockRejectedValueOnce(refused({ type: 'mount_missing', server: ADDRESS, share: 'naspi' }))
       .mockResolvedValueOnce({ mountPath: '/Volumes/naspi', alreadyMounted: false })
     const { target, component } = await mountViewAndActivateShare()
 
@@ -330,7 +377,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   })
 
   it('goes back to the share list when the sign-in is cancelled', async () => {
-    h.mountNetworkShare.mockRejectedValue({ type: 'auth_failed', message: 'Invalid username or password' })
+    h.mountNetworkShare.mockRejectedValue(refused(authFailed))
     const { target, component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -349,8 +396,9 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // The error pane replaces the share list, but the pane's own `path` and
     // `files` still describe that list. Without this mirror, a failed mount
     // reads from `cmdr://state` as a pane that simply didn't move, with the
-    // reason nowhere in the resource.
-    h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
+    // reason nowhere in the resource. The sentence is in the UI's language, so
+    // the typed reason rides beside it.
+    h.mountNetworkShare.mockRejectedValue(refused(unreachable))
     const { target, component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -360,7 +408,11 @@ describe('NetworkMountView mount-failure auth loop', () => {
     await vi.waitFor(() => {
       expect(h.updateLeftPaneState).toHaveBeenCalledWith(
         expect.objectContaining({
-          mountError: { share: 'naspi', message: 'Can\'t connect to "Naspolya"' },
+          mountError: {
+            share: 'naspi',
+            reason: 'host_unreachable',
+            message: renderMountError(unreachable, 'Naspolya'),
+          },
         }),
       )
     })
@@ -373,12 +425,18 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // silence it replaced, and the view that comes next can't be relied on to
     // clear it: `PlacesBrowser` only pushes once it has a share list, so a host
     // that has since gone quiet pushes nothing at all.
-    h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
+    h.mountNetworkShare.mockRejectedValue(refused(unreachable))
     const { target, component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
       expect(h.updateLeftPaneState).toHaveBeenCalledWith(
-        expect.objectContaining({ mountError: { share: 'naspi', message: 'Can\'t connect to "Naspolya"' } }),
+        expect.objectContaining({
+          mountError: {
+            share: 'naspi',
+            reason: 'host_unreachable',
+            message: renderMountError(unreachable, 'Naspolya'),
+          },
+        }),
       )
     })
 
@@ -400,7 +458,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     // nothing: every key went dead and the two buttons were the only way out. That
     // also left the MCP `nav_to_parent` tool (a synthetic Backspace) acking `OK`
     // while the pane sat still, with no way for an agent to leave a failed mount.
-    h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
+    h.mountNetworkShare.mockRejectedValue(refused(unreachable))
     const { target, component, api } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -422,7 +480,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   })
 
   it('counts no rows while the error pane is up, so a cursor move is refused instead of faked', async () => {
-    h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
+    h.mountNetworkShare.mockRejectedValue(refused(unreachable))
     const { target, component, api } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {
@@ -451,7 +509,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
   })
 
   it('keeps the error pane for non-auth mount errors', async () => {
-    h.mountNetworkShare.mockRejectedValue({ type: 'host_unreachable', message: 'Can\'t connect to "Naspolya"' })
+    h.mountNetworkShare.mockRejectedValue(refused(unreachable))
     const { target, component } = await mountViewAndActivateShare()
 
     await vi.waitFor(() => {

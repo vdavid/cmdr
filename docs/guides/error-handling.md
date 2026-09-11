@@ -24,7 +24,7 @@ The consequence that bites: **reason, provider, and git-kind names are an IPC co
 variant, a `Provider` variant, or a `FriendlyGitErrorKind` on one side only and the parity test fails (or, worse, it
 mis-renders at runtime). Change both sides in the same commit.
 
-## Four error paths
+## Five error paths
 
 - **Listing errors** (a pane can't show a folder): the pipeline above, ending in `ErrorPane`.
 - **Write errors** (a copy, move, delete, or compress didn't finish): the backend emits `write-error` carrying a typed
@@ -41,6 +41,10 @@ mis-renders at runtime). Change both sides in the same commit.
   `EjectError`, and the frontend words it through
   `apps/desktop/src/lib/file-explorer/navigation/eject-error-messages.ts` into the eject / disconnect toast.
   `diskutil`'s own stderr rides along in a `detail` field and goes to the LOG, never into the toast.
+- **Mount refusals** (a network share someone opened didn't mount): `mount_network_share` RETURNS a typed `MountError`
+  (the server, the share, and for a refused account the username), `mountNetworkShare` throws it as a `MountFailure`,
+  and the network pane words it through `apps/desktop/src/lib/file-explorer/network/mount-error-messages.ts` under its
+  "Couldn't mount share" title. The catch-all `Unexpected` keeps what NetFS or `gio` said in `detail`, for the log.
 
 ## Every command family owns its error type
 
@@ -93,6 +97,11 @@ The rule that replaced it:
   `apps/desktop/src/lib/file-explorer/navigation/eject-error-messages.ts`, and
   `apps/desktop/src/lib/file-explorer/navigation/eject-error.ts` carries the value across the throw. The three toasts
   that word an eject share `wordEjectRefusal`, which also routes the technical detail to the log.
+- **Mount refusals**: the enum is `apps/desktop/src-tauri/src/network/mount.rs` (the Linux twin is `mount_linux.rs`, and
+  why its variants are cut the way they are is `apps/desktop/src-tauri/src/network/DETAILS.md`); the words are
+  `apps/desktop/src/lib/file-explorer/network/mount-error-messages.ts`, and `mount-error.ts` beside it carries the value
+  across the throw. A new variant needs its `errors.mount.<variant>` key and its arm in `MOUNT_MESSAGE`, whose record
+  type demands every variant.
 - **The typed-error catalogue and the deadline helpers**:
   [the command layer](../../apps/desktop/src-tauri/src/commands/DETAILS.md#decisions) and
   `apps/desktop/src-tauri/src/commands/CLAUDE.md`.

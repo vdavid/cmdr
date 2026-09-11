@@ -45,9 +45,14 @@ impl ShareAttempt {
         }
     }
 
-    /// The server as the attempt names it, for a message about the whole mount.
+    /// The server as the attempt names it, for an answer about the whole mount.
     pub(crate) fn server(&self) -> &str {
         &self.params.server
+    }
+
+    /// The share as the attempt names it (NFC-folded), for an answer about the whole mount.
+    pub(crate) fn share(&self) -> &str {
+        &self.params.share_name
     }
 }
 
@@ -108,19 +113,16 @@ fn is_tree_connect(error: &smb2::Error) -> bool {
 ///   probe got in (so the "not found" is something this can't explain), or the
 ///   server didn't answer.
 pub(crate) fn clarified(original: MountError, attempt: &ShareAttempt, verdict: ShareVerdict) -> MountError {
-    let share = &attempt.params.share_name;
-    let server = &attempt.params.server;
+    let server = attempt.params.server.clone();
+    let share = attempt.params.share_name.clone();
     match (attempt.identity, verdict) {
         (SignInIdentity::Guest, ShareVerdict::RefusedAtShare | ShareVerdict::RefusedAtSignIn) => {
-            MountError::AuthRequired {
-                message: format!("\"{server}\" doesn't let guests open \"{share}\". Sign in to connect."),
-            }
+            MountError::AuthRequired { server, share }
         }
         (SignInIdentity::Account, ShareVerdict::RefusedAtShare) => MountError::PermissionDenied {
-            message: format!(
-                "\"{}\" signed in to \"{server}\" but isn't allowed to open \"{share}\"",
-                attempt.params.username
-            ),
+            server,
+            share,
+            username: attempt.params.username.clone(),
         },
         (SignInIdentity::Account, ShareVerdict::RefusedAtSignIn)
         | (_, ShareVerdict::Opens | ShareVerdict::NoSuchShare | ShareVerdict::Unknown) => original,

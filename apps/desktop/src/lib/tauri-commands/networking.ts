@@ -3,6 +3,7 @@
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { commands, events } from '$lib/ipc/bindings'
 import { throwEjectError } from '$lib/file-explorer/navigation/eject-error'
+import { throwMountError } from '$lib/file-explorer/network/mount-error'
 import { throwReconnectError } from '$lib/file-explorer/network/reconnect-error'
 import type {
   MountResult,
@@ -333,7 +334,8 @@ export async function listSharesWithCredentials(
  * @param password Optional password for authentication
  * @param timeoutMs Optional timeout in milliseconds (default: 20000)
  * @returns MountResult with mount path on success
- * @throws MountError on failure
+ * @throws MountFailure carrying the typed `MountError`; `asMountError` gets it back, and
+ *   `renderMountError` words it
  */
 export async function mountNetworkShare(
   server: string,
@@ -344,7 +346,7 @@ export async function mountNetworkShare(
   timeoutMs?: number,
 ): Promise<MountResult> {
   const res = await commands.mountNetworkShare(server, share, username, password, port ?? null, timeoutMs ?? null)
-  if (res.status === 'error') throwIpcError(res.error)
+  if (res.status === 'error') throwMountError(res.error)
   return res.data
 }
 

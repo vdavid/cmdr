@@ -18,6 +18,8 @@
     import type { HubRow } from '../network/servers-hub-rows'
     import PlacesBrowser from '../network/PlacesBrowser.svelte'
     import { isMountSignInQuestion, openSmbSignInSheet, refusalForMountError } from '../network/smb-sign-in'
+    import { asMountError } from '../network/mount-error'
+    import { renderMountError } from '../network/mount-error-messages'
     import type { SignInAttemptOutcome } from '$lib/servers/sign-in-contract'
     import Button from '$lib/ui/Button.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
@@ -139,7 +141,10 @@
             files: [],
             cursorIndex: 0,
             viewMode: 'full',
-            mountError: error && share !== undefined ? { share, message: error.message } : null,
+            mountError:
+                error && share !== undefined
+                    ? { share, reason: error.type, message: renderMountError(error, currentNetworkHost?.name) }
+                    : null,
         }).catch(() => {
             // MCP mirroring is optional; a failed push must not touch the UI.
         })
@@ -237,10 +242,9 @@
 
         isMounting = true
         mountError = null
+        const server = resolveServerAddress(currentNetworkHost)
 
         try {
-            const server = resolveServerAddress(currentNetworkHost)
-
             // Use provided credentials if available
             const result = await mountNetworkShare(
                 server,
@@ -278,7 +282,9 @@
             }
             return null
         } catch (e) {
-            mountError = e as MountError
+            // A value that isn't a typed refusal means the IPC call itself broke down,
+            // which the catch-all words honestly; its text goes to the log below.
+            mountError = asMountError(e) ?? { type: 'unexpected', server, share: share.name, detail: String(e) }
             // WARN, not ERROR: the pane below renders this failure with a retry, so
             // it's an outcome the person is looking at, not a defect to report. At
             // error level every unreachable NAS captured a backtrace and a state
@@ -474,7 +480,7 @@
     <div class="mount-error-state">
         <div class="error-icon">&#x274C;</div>
         <div class="error-title">{tString('fileExplorer.networkMount.mountFailedTitle')}</div>
-        <div class="error-message">{mountError.message}</div>
+        <div class="error-message">{renderMountError(mountError, currentNetworkHost?.name)}</div>
         <div class="error-actions">
             <Button variant="secondary" onclick={handleMountRetry}>{tString('fileExplorer.networkMount.tryAgain')}</Button>
             <Button variant="secondary" onclick={handleMountErrorBack}>{tString('fileExplorer.networkMount.back')}</Button>

@@ -15,7 +15,8 @@ fn protocol(status: NtStatus, command: Command) -> Result<(), smb2::Error> {
 
 fn not_found() -> MountError {
     MountError::ShareNotFound {
-        message: "Share \"data\" not found on \"observermch\"".to_string(),
+        server: "observermch".to_string(),
+        share: "data".to_string(),
     }
 }
 
@@ -116,20 +117,44 @@ fn clarified_answers_every_identity_and_verdict() {
     }
 }
 
-/// A kept answer is the mount's own, message and all, not a rebuilt one.
+/// A clarified answer carries what the pane words: the server and share the
+/// attempt named, and for a refused account, which account it was.
+#[test]
+fn clarified_answers_carry_the_names_the_pane_words() {
+    let guest = ShareAttempt::new("observermch", "data", 445, None, None);
+    assert_eq!(
+        clarified(not_found(), &guest, ShareVerdict::RefusedAtShare),
+        MountError::AuthRequired {
+            server: "observermch".to_string(),
+            share: "data".to_string(),
+        }
+    );
+
+    let account = ShareAttempt::new("observermch", "data", 445, Some("ada"), Some("hunter2"));
+    assert_eq!(
+        clarified(not_found(), &account, ShareVerdict::RefusedAtShare),
+        MountError::PermissionDenied {
+            server: "observermch".to_string(),
+            share: "data".to_string(),
+            username: "ada".to_string(),
+        }
+    );
+}
+
+/// A kept answer is the mount's own, not a rebuilt one.
 #[test]
 fn clarified_keeps_the_original_error_untouched() {
     let guest = ShareAttempt::new("observermch", "data", 445, None, None);
-    match clarified(not_found(), &guest, ShareVerdict::NoSuchShare) {
-        MountError::ShareNotFound { message } => assert_eq!(message, "Share \"data\" not found on \"observermch\""),
-        other => panic!("expected the original ShareNotFound, got {other:?}"),
-    }
+    let original = MountError::ShareNotFound {
+        server: "192.168.1.5".to_string(),
+        share: "Data".to_string(),
+    };
+    assert_eq!(clarified(original.clone(), &guest, ShareVerdict::NoSuchShare), original);
 }
 
-/// The messages are log diagnostics that reach error reports, so the password
-/// must never be in one.
+/// The answers reach logs and error reports, so the password must never be in one.
 #[test]
-fn clarified_messages_never_carry_the_password() {
+fn clarified_answers_never_carry_the_password() {
     let account = ShareAttempt::new("observermch", "data", 445, Some("ada"), Some("hunter2"));
     for verdict in [ShareVerdict::RefusedAtShare, ShareVerdict::RefusedAtSignIn] {
         let debug = format!("{:?}", clarified(not_found(), &account, verdict));

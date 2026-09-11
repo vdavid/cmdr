@@ -160,19 +160,53 @@ pub struct MountResult {
     pub already_mounted: bool,
 }
 
-/// Errors that can occur during mount operations.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "snake_case")]
+/// Why a mount didn't go through, as data the frontend words. Mirrors
+/// `network/mount.rs::MountError`, which documents each variant.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum MountError {
-    HostUnreachable { message: String },
-    ShareNotFound { message: String },
-    AuthRequired { message: String },
-    AuthFailed { message: String },
-    PermissionDenied { message: String },
-    Timeout { message: String },
-    Cancelled { message: String },
-    ProtocolError { message: String },
-    MountPathConflict { message: String },
+    HostUnreachable {
+        server: String,
+    },
+    Timeout {
+        server: String,
+    },
+    ShareNotFound {
+        server: String,
+        share: String,
+    },
+    AuthRequired {
+        server: String,
+        share: String,
+    },
+    AuthFailed {
+        server: String,
+    },
+    PermissionDenied {
+        server: String,
+        share: String,
+        username: String,
+    },
+    Cancelled {
+        share: String,
+    },
+    UnsupportedProtocol {
+        server: String,
+    },
+    MountRefused {
+        server: String,
+        share: String,
+    },
+    MountMissing {
+        server: String,
+        share: String,
+    },
+    GvfsMissing,
+    Unexpected {
+        server: String,
+        share: String,
+        detail: String,
+    },
 }
 
 /// Result of connecting to a manual server.
@@ -338,8 +372,10 @@ pub async fn mount_network_share(
     _username: Option<String>,
     _password: Option<String>,
 ) -> Result<MountResult, MountError> {
-    Err(MountError::ProtocolError {
-        message: format!("SMB mounting not supported on Linux ({}//{})", server, share),
+    Err(MountError::Unexpected {
+        server,
+        share,
+        detail: "SMB mounting isn't supported on this platform".to_string(),
     })
 }
 

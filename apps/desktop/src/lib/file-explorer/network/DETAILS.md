@@ -326,6 +326,14 @@ Two properties are load-bearing:
   sheet onto the pane's error state with its own "Try again" / "Back": the sheet has no words for a share that went
   missing. Non-auth failures never open it in the first place. Pinned by `../pane/NetworkMountView.test.ts`.
 
+**The pane's words are the frontend's.** `NetworkMountView` renders `renderMountError(error, host.name)`
+(`mount-error-messages.ts`): one `errors.mount.*` key per `MountError` variant, in a record typed over the variants so a
+new one can't ship without words. It names the host the way the pane shows it, since the backend only knows the address
+it mounted by. `mountNetworkShare` throws the typed value as a `MountFailure` (`mount-error.ts`), and a caught value
+that isn't one (the IPC call itself broke) reads as `unexpected`, its text going to the log. The MCP mirror carries the
+same sentence plus the typed `reason`. Why the variants are cut the way they are: `src-tauri/src/network/DETAILS.md` §
+"A mount refusal is data, and the frontend words it".
+
 ## SMB live-reconnect flow (cross-component)
 
 When a direct-SMB session drops mid-use, four pieces coordinate to recover:

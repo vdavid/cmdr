@@ -116,6 +116,18 @@
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "sourceHash": "0440df9"
   },
+  "fileExplorer.pane.directConnectionShareGoneToast": "{share} isn''t connected anymore, so there''s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionShareGoneToast": {
+    "sourceHash": "8a4b5ae"
+  },
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} isn''t responding right now, so Cmdr can''t connect to it directly. Try again in a moment.",
+  "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
+    "sourceHash": "6c29cca"
+  },
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} isn''t a network share, so there''s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
+    "sourceHash": "193a804"
+  },
   "fileExplorer.pane.trashUnconfirmedToast": "Không thể xác nhận tệp đã được chuyển vào Thùng rác. Ổ đĩa có thể đang chậm, nhưng tệp có lẽ vẫn đã được chuyển. Hãy kiểm tra Thùng rác để chắc chắn.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"

@@ -115,6 +115,18 @@
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "sourceHash": "0440df9"
   },
+  "fileExplorer.pane.directConnectionShareGoneToast": "{share} isn''t connected anymore, so there''s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionShareGoneToast": {
+    "sourceHash": "8a4b5ae"
+  },
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} isn''t responding right now, so Cmdr can''t connect to it directly. Try again in a moment.",
+  "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
+    "sourceHash": "6c29cca"
+  },
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} isn''t a network share, so there''s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
+    "sourceHash": "193a804"
+  },
   "fileExplorer.pane.trashUnconfirmedToast": "无法确认文件是否已移到废纸篓。该宗卷可能较慢，但文件也许已经移走。请查看废纸篓确认一下。",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"

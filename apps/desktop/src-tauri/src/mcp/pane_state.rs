@@ -127,6 +127,10 @@ pub struct PaneState {
 pub struct MountErrorInfo {
     /// The share the person tried to open.
     pub share: String,
+    /// The typed reason, `MountError`'s tag (`share_not_found`, `timeout`, …), so a
+    /// reader can branch on it without parsing the sentence, which is in the UI's
+    /// language.
+    pub reason: String,
     /// The sentence the pane shows under the title.
     pub message: String,
 }

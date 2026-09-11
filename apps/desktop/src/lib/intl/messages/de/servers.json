@@ -117,6 +117,10 @@
   "@servers.refusal.needsCredentials": {
     "sourceHash": "f5f689b"
   },
+  "servers.refusal.accountNotPermitted": "{username} doesn''t have access here. Try a different account.",
+  "@servers.refusal.accountNotPermitted": {
+    "sourceHash": "fbd3b7b"
+  },
   "servers.refusal.authMethodUnsupported": "Dieser Server nutzt eine Anmeldemethode, die Cmdr noch nicht unterstützt.",
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "62b963e"

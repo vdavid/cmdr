@@ -528,19 +528,12 @@ export interface KnownNetworkShare {
 // Mount types
 // ============================================================================
 
-/** Error types for mount operations. */
-export type MountError =
-  | { type: 'host_unreachable'; message: string }
-  | { type: 'share_not_found'; message: string }
-  | { type: 'auth_required'; message: string }
-  | { type: 'auth_failed'; message: string }
-  | { type: 'permission_denied'; message: string }
-  | { type: 'timeout'; message: string }
-  | { type: 'cancelled'; message: string }
-  | { type: 'protocol_error'; message: string }
-  | { type: 'mount_path_conflict'; message: string }
-  /** The system reported the share connected, and no mount of it is there. */
-  | { type: 'mount_missing'; message: string }
+/**
+ * Why a mount didn't go through, as typed data (`mount-error-messages.ts` words it).
+ * Re-exported from the generated bindings rather than restated, so it can't drift
+ * from the Rust enum.
+ */
+export type { MountError } from '$lib/ipc/bindings'
 
 // ============================================================================
 // Write operation types

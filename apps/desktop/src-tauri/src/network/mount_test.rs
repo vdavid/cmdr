@@ -95,74 +95,102 @@ fn mount_url_brackets_ipv6_literals() {
     );
 }
 
+/// Every NetFS code the mount knows, as the typed data the frontend words. ❌ No
+/// sentence in any of them: the words are `mount-error-messages.ts`'s, in the
+/// person's own language (ERR-SHUSC showed a Hungarian user the English
+/// `Share "data" not found on "observermch"`).
 #[test]
-fn test_error_from_code() {
-    let err = error_from_code(USER_CANCELLED_ERR, "test", "server");
-    match err {
-        MountError::Cancelled { .. } => (),
-        _ => panic!("Expected Cancelled error"),
-    }
-
-    let err = error_from_code(ENOENT, "Share1", "Server1");
-    match err {
-        MountError::ShareNotFound { message } => {
-            // allowed-error-string-match: testing Display content of MountError::ShareNotFound message field
-            assert!(message.contains("Share1"));
-            // allowed-error-string-match: testing Display content of MountError::ShareNotFound message field
-            assert!(message.contains("Server1"));
-        }
-        _ => panic!("Expected ShareNotFound error"),
-    }
-
-    let err = error_from_code(EAUTH, "test", "server");
-    match err {
-        MountError::AuthFailed { .. } => (),
-        _ => panic!("Expected AuthFailed error"),
-    }
-
-    let err = error_from_code(EHOSTUNREACH, "test", "server");
-    match err {
-        MountError::HostUnreachable { .. } => (),
-        _ => panic!("Expected HostUnreachable error"),
+fn every_netfs_code_maps_to_typed_data() {
+    let share = || "naspi".to_string();
+    let server = || "naspolya".to_string();
+    let cases = [
+        (USER_CANCELLED_ERR, MountError::Cancelled { share: share() }),
+        (
+            ENOENT,
+            MountError::ShareNotFound {
+                server: server(),
+                share: share(),
+            },
+        ),
+        (
+            ENETFSNOSHARESAVAIL,
+            MountError::ShareNotFound {
+                server: server(),
+                share: share(),
+            },
+        ),
+        (EACCES, MountError::AuthFailed { server: server() }),
+        (EAUTH, MountError::AuthFailed { server: server() }),
+        (
+            ENETFSNOAUTHMECHSUPP,
+            MountError::AuthRequired {
+                server: server(),
+                share: share(),
+            },
+        ),
+        (ETIMEDOUT, MountError::Timeout { server: server() }),
+        (ECONNREFUSED, MountError::HostUnreachable { server: server() }),
+        (EHOSTUNREACH, MountError::HostUnreachable { server: server() }),
+        (
+            ENETFSNOPROTOVERSSUPP,
+            MountError::UnsupportedProtocol { server: server() },
+        ),
+        (
+            -1234,
+            MountError::Unexpected {
+                server: server(),
+                share: share(),
+                detail: "NetFS answered -1234".to_string(),
+            },
+        ),
+    ];
+    for (code, expected) in cases {
+        assert_eq!(error_from_code(code, "naspi", "naspolya"), expected, "code {code}");
     }
 }
 
 /// NetAuth error codes (NetAuthAgent, documented in `<NetFS/NetFS.h>`) must map to
-/// typed errors, not the opaque `ProtocolError` catch-all. -6600 is what
+/// typed errors, not the opaque `Unexpected` catch-all. -6600 is what
 /// `NetFSMountURLSync` returns when authentication fails (observed in the wild with
 /// a guest mount against a creds-required NAS); routing it to `AuthFailed` is what
 /// lets the frontend offer the login form instead of a dead-end error pane.
 #[test]
 fn test_netauth_error_codes() {
-    let err = error_from_code(-6600, "naspi", "naspolya");
-    assert!(
-        matches!(err, MountError::AuthFailed { .. }),
-        "kNetAuthErrorInternal (-6600) should be AuthFailed, got {:?}",
-        err
+    assert_eq!(
+        error_from_code(-6600, "naspi", "naspolya"),
+        MountError::AuthFailed {
+            server: "naspolya".to_string()
+        },
+        "kNetAuthErrorInternal (-6600)"
     );
-
-    let err = error_from_code(-6004, "naspi", "naspolya");
-    assert!(
-        matches!(err, MountError::AuthRequired { .. }),
-        "kNetAuthErrorGuestNotSupported (-6004) should be AuthRequired, got {:?}",
-        err
+    assert_eq!(
+        error_from_code(-6004, "naspi", "naspolya"),
+        MountError::AuthRequired {
+            server: "naspolya".to_string(),
+            share: "naspi".to_string()
+        },
+        "kNetAuthErrorGuestNotSupported (-6004)"
     );
-
-    let err = error_from_code(-6003, "naspi", "naspolya");
-    assert!(
-        matches!(err, MountError::ShareNotFound { .. }),
-        "kNetAuthErrorNoSharesAvailable (-6003) should be ShareNotFound, got {:?}",
-        err
+    assert_eq!(
+        error_from_code(-6003, "naspi", "naspolya"),
+        MountError::ShareNotFound {
+            server: "naspolya".to_string(),
+            share: "naspi".to_string()
+        },
+        "kNetAuthErrorNoSharesAvailable (-6003)"
     );
 
     // kNetAuthErrorMountFailed means auth SUCCEEDED but the mount step failed, so it
     // must NOT map to an auth-class error (that would loop the user into a pointless
-    // login form). It stays a ProtocolError, just with a readable message.
-    let err = error_from_code(-6602, "naspi", "naspolya");
-    assert!(
-        matches!(err, MountError::ProtocolError { .. }),
-        "kNetAuthErrorMountFailed (-6602) should stay ProtocolError, got {:?}",
-        err
+    // login form). It's `MountRefused`, which the pane words as the server turning
+    // the share down.
+    assert_eq!(
+        error_from_code(-6602, "naspi", "naspolya"),
+        MountError::MountRefused {
+            server: "naspolya".to_string(),
+            share: "naspi".to_string()
+        },
+        "kNetAuthErrorMountFailed (-6602)"
     );
 }
 
@@ -457,9 +485,13 @@ const DATA: MountTarget<'static> = MountTarget {
 fn a_netfs_success_with_no_mount_of_the_share_is_not_a_mount() {
     for code in [0, EEXIST] {
         let result = settle_netfs_answer(code, DATA, [], &[]);
-        assert!(
-            matches!(result, Err(MountError::MountMissing { .. })),
-            "code {code} with nowhere to look must not invent a path, got {result:?}"
+        assert_eq!(
+            result.err(),
+            Some(MountError::MountMissing {
+                server: "observermch".to_string(),
+                share: "data".to_string(),
+            }),
+            "code {code} with nowhere to look must not invent a path"
         );
 
         let result = settle_netfs_answer(code, DATA, [sighting("/Volumes/data", None, true)], &[]);

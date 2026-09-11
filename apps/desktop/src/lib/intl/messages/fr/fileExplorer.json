@@ -116,6 +116,18 @@
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "sourceHash": "0440df9"
   },
+  "fileExplorer.pane.directConnectionShareGoneToast": "{share} isn''t connected anymore, so there''s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionShareGoneToast": {
+    "sourceHash": "8a4b5ae"
+  },
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} isn''t responding right now, so Cmdr can''t connect to it directly. Try again in a moment.",
+  "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
+    "sourceHash": "6c29cca"
+  },
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} isn''t a network share, so there''s no connection to speed up.",
+  "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
+    "sourceHash": "193a804"
+  },
   "fileExplorer.pane.trashUnconfirmedToast": "Impossible de confirmer le déplacement du fichier vers la corbeille. Le volume est peut-être lent, mais le fichier a peut-être bien été déplacé. Vérifiez votre corbeille pour en être sûr.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"

@@ -49,41 +49,48 @@ pub struct MountResult {
     pub already_mounted: bool,
 }
 
-/// Errors that can occur during mount operations.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "snake_case")]
+/// Why a mount didn't go through, as the data a person's message is built from.
+///
+/// ❌ No sentences: the frontend words every variant from the catalog
+/// (`file-explorer/network/mount-error-messages.ts`), so a translated UI never shows
+/// an English one (ERR-SHUSC). `server` is the address the mount used; the pane
+/// names the host by its own name where it has one. `mount_linux.rs` and
+/// `stubs/network.rs` carry the same JSON shape.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum MountError {
-    HostUnreachable {
-        message: String,
-    },
-    ShareNotFound {
-        message: String,
-    },
-    AuthRequired {
-        message: String,
-    },
-    AuthFailed {
-        message: String,
-    },
+    /// Nothing answered at the server's address: the connection was refused or had no route.
+    HostUnreachable { server: String },
+    /// The server didn't answer within the mount's budget.
+    Timeout { server: String },
+    /// The server has no share by that name, or offers none to this identity.
+    ShareNotFound { server: String, share: String },
+    /// The server wants a sign-in before it opens the share: a guest was turned away.
+    AuthRequired { server: String, share: String },
+    /// The server turned the offered username and password away.
+    AuthFailed { server: String },
+    /// The account signed in, and the share doesn't let it in.
     PermissionDenied {
-        message: String,
+        server: String,
+        share: String,
+        username: String,
     },
-    Timeout {
-        message: String,
-    },
-    Cancelled {
-        message: String,
-    },
-    ProtocolError {
-        message: String,
-    },
-    /// Path already exists but isn't a mountpoint.
-    MountPathConflict {
-        message: String,
-    },
+    /// The mount was canceled before it finished.
+    Cancelled { share: String },
+    /// The server offers no SMB version this computer's client speaks.
+    UnsupportedProtocol { server: String },
+    /// The server accepted the sign-in, then wouldn't mount the share.
+    MountRefused { server: String, share: String },
     /// The system reported the share connected, and no mount of it is there.
-    MountMissing {
-        message: String,
+    MountMissing { server: String, share: String },
+    /// Linux only: `gio` isn't installed, so there's nothing to mount with.
+    GvfsMissing,
+    /// Anything the variants above don't describe.
+    Unexpected {
+        server: String,
+        share: String,
+        /// What NetFS, `gio`, or the mount task said, for the log. ❌ Never shown to a person.
+        detail: String,
     },
 }
 
@@ -155,48 +162,31 @@ fn open_option_entries(want_guest: bool, want_force_new_session: bool) -> Vec<(&
     entries
 }
 
-/// Map NetFS/POSIX error codes to user-friendly MountError.
+/// Maps a NetFS / POSIX code to the typed `MountError` the frontend words.
 /// Note: EEXIST (17) is a success, so `settle_netfs_answer` handles it, not this.
 fn error_from_code(code: i32, share_name: &str, server_name: &str) -> MountError {
+    let server = server_name.to_string();
+    let share = share_name.to_string();
     match code {
-        USER_CANCELLED_ERR => MountError::Cancelled {
-            message: "Mount operation was cancelled".to_string(),
-        },
+        USER_CANCELLED_ERR => MountError::Cancelled { share },
         // ❗ Ambiguous: NetFS answers ENOENT for a share this identity may not open as
         // well as for one that doesn't exist. `network::mount_share` asks the server
         // which (`network/DETAILS.md` § "A share that says not found").
-        ENOENT => MountError::ShareNotFound {
-            message: format!("Share \"{}\" not found on \"{}\"", share_name, server_name),
-        },
-        ENETFSNOSHARESAVAIL => MountError::ShareNotFound {
-            message: format!("No shares available on \"{}\"", server_name),
-        },
-        EACCES | EAUTH | KNETAUTH_ERROR_INTERNAL => MountError::AuthFailed {
-            message: "Invalid username or password".to_string(),
-        },
-        ENETFSNOAUTHMECHSUPP => MountError::AuthRequired {
-            message: "Authentication required".to_string(),
-        },
-        KNETAUTH_ERROR_GUEST_NOT_SUPPORTED => MountError::AuthRequired {
-            message: format!("\"{}\" doesn't allow guest access. Sign in to connect.", server_name),
-        },
-        KNETAUTH_ERROR_NO_SHARES_AVAILABLE => MountError::ShareNotFound {
-            message: format!("No shares available on \"{}\"", server_name),
-        },
-        KNETAUTH_ERROR_MOUNT_FAILED => MountError::ProtocolError {
-            message: format!("\"{}\" refused to mount \"{}\"", server_name, share_name),
-        },
-        ETIMEDOUT => MountError::Timeout {
-            message: format!("Connection to \"{}\" timed out", server_name),
-        },
-        ECONNREFUSED | EHOSTUNREACH => MountError::HostUnreachable {
-            message: format!("Can't connect to \"{}\"", server_name),
-        },
-        ENETFSNOPROTOVERSSUPP => MountError::ProtocolError {
-            message: "Incompatible SMB protocol version".to_string(),
-        },
-        _ => MountError::ProtocolError {
-            message: format!("Mount failed with error code {}", code),
+        ENOENT | ENETFSNOSHARESAVAIL | KNETAUTH_ERROR_NO_SHARES_AVAILABLE => {
+            MountError::ShareNotFound { server, share }
+        }
+        EACCES | EAUTH | KNETAUTH_ERROR_INTERNAL => MountError::AuthFailed { server },
+        ENETFSNOAUTHMECHSUPP | KNETAUTH_ERROR_GUEST_NOT_SUPPORTED => MountError::AuthRequired { server, share },
+        // Signed in, then refused the mount itself. ❌ Not an auth question: the
+        // sign-in sheet would loop on a password that already worked.
+        KNETAUTH_ERROR_MOUNT_FAILED => MountError::MountRefused { server, share },
+        ETIMEDOUT => MountError::Timeout { server },
+        ECONNREFUSED | EHOSTUNREACH => MountError::HostUnreachable { server },
+        ENETFSNOPROTOVERSSUPP => MountError::UnsupportedProtocol { server },
+        _ => MountError::Unexpected {
+            server,
+            share,
+            detail: format!("NetFS answered {code}"),
         },
     }
 }
@@ -270,10 +260,8 @@ fn settle_netfs_answer(
             already_mounted: code == EEXIST,
         }),
         None => Err(MountError::MountMissing {
-            message: format!(
-                "macOS reported \"{}\" on \"{}\" as connected, but it never showed up. Try again.",
-                target.share, target.server
-            ),
+            server: target.server.to_string(),
+            share: target.share.to_string(),
         }),
     }
 }
@@ -416,8 +404,10 @@ pub fn mount_share_sync(
             core_foundation::url::CFURLCreateWithString(ptr::null(), cf_url_string.as_concrete_TypeRef(), ptr::null());
         if url_ref.is_null() {
             log::warn!("CFURLCreateWithString rejected the mount URL {url_string}");
-            return Err(MountError::ProtocolError {
-                message: format!("Can't build an address for \"{}\" on \"{}\"", share, server),
+            return Err(MountError::Unexpected {
+                server: server.to_string(),
+                share: share.to_string(),
+                detail: format!("CFURLCreateWithString rejected {url_string}"),
             });
         }
         CFURL::wrap_under_create_rule(url_ref)

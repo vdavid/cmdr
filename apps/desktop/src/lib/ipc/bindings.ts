@@ -9276,25 +9276,57 @@ export type ModelWindowView = {
   knownWindowTokens: number | null
 }
 
-// Errors that can occur during mount operations.
+/**
+ *  Why a mount didn't go through, as the data a person's message is built from.
+ *
+ *  ❌ No sentences: the frontend words every variant from the catalog
+ *  (`file-explorer/network/mount-error-messages.ts`), so a translated UI never shows
+ *  an English one (ERR-SHUSC). `server` is the address the mount used; the pane
+ *  names the host by its own name where it has one. `mount_linux.rs` and
+ *  `stubs/network.rs` carry the same JSON shape.
+ */
 export type MountError =
-  | { type: 'host_unreachable'; message: string }
-  | { type: 'share_not_found'; message: string }
-  | { type: 'auth_required'; message: string }
-  | { type: 'auth_failed'; message: string }
-  | { type: 'permission_denied'; message: string }
-  | { type: 'timeout'; message: string }
-  | { type: 'cancelled'; message: string }
-  | { type: 'protocol_error'; message: string }
-  // Path already exists but isn't a mountpoint.
-  | { type: 'mount_path_conflict'; message: string }
+  // Nothing answered at the server's address: the connection was refused or had no route.
+  | { type: 'host_unreachable'; server: string }
+  // The server didn't answer within the mount's budget.
+  | { type: 'timeout'; server: string }
+  // The server has no share by that name, or offers none to this identity.
+  | { type: 'share_not_found'; server: string; share: string }
+  // The server wants a sign-in before it opens the share: a guest was turned away.
+  | { type: 'auth_required'; server: string; share: string }
+  // The server turned the offered username and password away.
+  | { type: 'auth_failed'; server: string }
+  // The account signed in, and the share doesn't let it in.
+  | { type: 'permission_denied'; server: string; share: string; username: string }
+  // The mount was canceled before it finished.
+  | { type: 'cancelled'; share: string }
+  // The server offers no SMB version this computer's client speaks.
+  | { type: 'unsupported_protocol'; server: string }
+  // The server accepted the sign-in, then wouldn't mount the share.
+  | { type: 'mount_refused'; server: string; share: string }
   // The system reported the share connected, and no mount of it is there.
-  | { type: 'mount_missing'; message: string }
+  | { type: 'mount_missing'; server: string; share: string }
+  // Linux only: `gio` isn't installed, so there's nothing to mount with.
+  | { type: 'gvfs_missing' }
+  // Anything the variants above don't describe.
+  | {
+      type: 'unexpected'
+      server: string
+      share: string
+      // What NetFS, `gio`, or the mount task said, for the log. ❌ Never shown to a person.
+      detail: string
+    }
 
 // Why a pane is showing a mount failure rather than a directory.
 export type MountErrorInfo = {
   // The share the person tried to open.
   share: string
+  /**
+   *  The typed reason, `MountError`'s tag (`share_not_found`, `timeout`, …), so a
+   *  reader can branch on it without parsing the sentence, which is in the UI's
+   *  language.
+   */
+  reason: string
   // The sentence the pane shows under the title.
   message: string
 }

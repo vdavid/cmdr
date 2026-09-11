@@ -17,40 +17,57 @@ pub struct MountResult {
     pub already_mounted: bool,
 }
 
-/// Errors that can occur during mount operations.
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-#[serde(tag = "type", rename_all = "snake_case")]
+/// Why a mount didn't go through, as data the frontend words. The same JSON shape
+/// as `mount.rs::MountError`, which documents each variant.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(tag = "type", rename_all = "snake_case", rename_all_fields = "camelCase")]
 pub enum MountError {
     HostUnreachable {
-        message: String,
-    },
-    ShareNotFound {
-        message: String,
-    },
-    AuthRequired {
-        message: String,
-    },
-    AuthFailed {
-        message: String,
-    },
-    PermissionDenied {
-        message: String,
+        server: String,
     },
     Timeout {
-        message: String,
+        server: String,
+    },
+    ShareNotFound {
+        server: String,
+        share: String,
+    },
+    AuthRequired {
+        server: String,
+        share: String,
+    },
+    AuthFailed {
+        server: String,
+    },
+    PermissionDenied {
+        server: String,
+        share: String,
+        username: String,
     },
     Cancelled {
-        message: String,
+        share: String,
     },
-    ProtocolError {
-        message: String,
+    /// Never produced here: `gio` doesn't say which SMB versions it lacks.
+    UnsupportedProtocol {
+        server: String,
     },
-    MountPathConflict {
-        message: String,
+    /// Never produced here: `gio` has no separate "signed in, but no mount" answer.
+    MountRefused {
+        server: String,
+        share: String,
     },
     /// The system reported the share connected, and no mount of it is there.
     MountMissing {
-        message: String,
+        server: String,
+        share: String,
+    },
+    /// `gio` isn't installed, so there's nothing to mount with.
+    GvfsMissing,
+    Unexpected {
+        server: String,
+        share: String,
+        /// What `gio` or the spawn said, for the log. ❌ Never shown to a person.
+        detail: String,
     },
 }
 
@@ -140,11 +157,9 @@ pub(crate) fn mount_share_sync(
     password: Option<&str>,
     port: u16,
 ) -> Result<MountResult, MountError> {
-    // Check if gio is available
     if !is_gio_available() {
-        return Err(MountError::ProtocolError {
-            message: "SMB mounting requires GVFS. Install gvfs-smb on your system.".to_string(),
-        });
+        log::warn!("Can't mount \"{share}\" on {server}: `gio` isn't installed (the gvfs-smb package provides it)");
+        return Err(MountError::GvfsMissing);
     }
 
     // Check if already mounted
@@ -170,10 +185,15 @@ pub(crate) fn mount_share_sync(
 
     debug!("Mounting SMB share via gio: {}", smb_url);
 
-    let output = run_gio_mount(&smb_url, username, password)?;
+    let output = run_gio_mount(&smb_url, username, password).map_err(|e| MountError::Unexpected {
+        server: server.to_string(),
+        share: share.to_string(),
+        detail: format!("couldn't run gio mount: {e}"),
+    })?;
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(classify_mount_error(&stderr, server, share));
+        log::info!("gio mount of \"{share}\" on {server} answered: {}", stderr.trim());
+        return Err(classify_mount_error(&stderr, server, share, username));
     }
 
     // ❗ A zero exit is a claim, not a mount, same as NetFS's OK on macOS
@@ -185,9 +205,8 @@ pub(crate) fn mount_share_sync(
     ) else {
         log::warn!("gio mount answered success for {smb_url}, but no mount of \"{share}\" on {server} is there");
         return Err(MountError::MountMissing {
-            message: format!(
-                "GVFS reported \"{share}\" on \"{server}\" as connected, but it never showed up. Try again."
-            ),
+            server: server.to_string(),
+            share: share.to_string(),
         });
     };
 
@@ -219,13 +238,9 @@ fn run_gio_mount(
     smb_url: &str,
     username: Option<&str>,
     password: Option<&str>,
-) -> Result<std::process::Output, MountError> {
+) -> std::io::Result<std::process::Output> {
     use std::io::Write;
     use std::process::Stdio;
-
-    let fail = |e: std::io::Error| MountError::ProtocolError {
-        message: format!("Failed to run gio mount: {}", e),
-    };
 
     let mut cmd = Command::new("gio");
     // `LC_ALL=C` keeps stderr English so `classify_mount_error` matches.
@@ -244,7 +259,7 @@ fn run_gio_mount(
     });
     cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
-    let mut child = cmd.spawn().map_err(fail)?;
+    let mut child = cmd.spawn()?;
 
     if let Some(pass) = password {
         let mut stdin = child.stdin.take().expect("stdin is piped when a password is present");
@@ -253,7 +268,7 @@ fn run_gio_mount(
         let _ = stdin.write_all(format!("{}\n", pass).as_bytes());
     }
 
-    child.wait_with_output().map_err(fail)
+    child.wait_with_output()
 }
 
 /// Classifies `gio mount` stderr into a structured `MountError`.
@@ -266,7 +281,12 @@ fn run_gio_mount(
 /// table below would silently miss-classify on localized systems. See
 /// `classify_mount_error_snapshot_*` tests for the pinned wording per
 /// `gio` / `glib` version we currently support.
-fn classify_mount_error(stderr: &str, server: &str, share: &str) -> MountError {
+///
+/// A permission refusal reads like `share_access::clarified`'s table: a guest
+/// turned away is a credential question (`AuthRequired`), an account turned away
+/// is `PermissionDenied`. Stderr nothing here recognizes becomes the `Unexpected`
+/// detail, for the log.
+fn classify_mount_error(stderr: &str, server: &str, share: &str, username: Option<&str>) -> MountError {
     /// One phrase from `gio mount`'s English stderr.
     type Needle = &'static str;
     let needles_lower = stderr.to_lowercase();
@@ -290,45 +310,45 @@ fn classify_mount_error(stderr: &str, server: &str, share: &str) -> MountError {
     let unreachable: &[Needle] = &["host is down", "unreachable", "connection refused", "no route"];
     let cancelled: &[Needle] = &["cancelled", "canceled"];
 
+    let server = server.to_string();
+    let share = share.to_string();
+    let unexpected = |server: String, share: String| MountError::Unexpected {
+        server,
+        share,
+        detail: format!("gio mount: {}", stderr.trim()),
+    };
+
+    // Shouldn't normally get here, since `mount_share_sync` looks for an existing
+    // mount first. Checked ahead of the phrase table so it can't read as one of its
+    // answers.
     if has_any(already_mounted) {
-        // Shouldn't normally get here since we check first, but handle gracefully
-        MountError::ProtocolError {
-            message: format!("Share \"{}\" on \"{}\" is already mounted", share, server),
-        }
-    } else if has_any(not_found) {
-        MountError::ShareNotFound {
-            message: format!("Share \"{}\" not found on \"{}\"", share, server),
-        }
+        return unexpected(server, share);
+    }
+    if has_any(not_found) {
+        MountError::ShareNotFound { server, share }
     } else if has_any(auth_words) {
         if has_any(failed_words) {
-            MountError::AuthFailed {
-                message: "Invalid username or password".to_string(),
-            }
+            MountError::AuthFailed { server }
         } else {
-            MountError::AuthRequired {
-                message: "Authentication required".to_string(),
-            }
+            MountError::AuthRequired { server, share }
         }
     } else if has_any(permission) {
-        MountError::PermissionDenied {
-            message: format!("Permission denied for \"{}\" on \"{}\"", share, server),
+        match username {
+            Some(username) => MountError::PermissionDenied {
+                server,
+                share,
+                username: username.to_string(),
+            },
+            None => MountError::AuthRequired { server, share },
         }
     } else if has_any(timeout) {
-        MountError::Timeout {
-            message: format!("Connection to \"{}\" timed out", server),
-        }
+        MountError::Timeout { server }
     } else if has_any(unreachable) {
-        MountError::HostUnreachable {
-            message: format!("Can't connect to \"{}\"", server),
-        }
+        MountError::HostUnreachable { server }
     } else if has_any(cancelled) {
-        MountError::Cancelled {
-            message: "Mount operation was cancelled".to_string(),
-        }
+        MountError::Cancelled { share }
     } else {
-        MountError::ProtocolError {
-            message: format!("Mount failed: {}", stderr.trim()),
-        }
+        unexpected(server, share)
     }
 }
 
@@ -408,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_classify_mount_error_auth() {
-        let err = classify_mount_error("Authentication failed", "server", "share");
+        let err = classify_mount_error("Authentication failed", "server", "share", None);
         match err {
             MountError::AuthFailed { .. } => (),
             _ => panic!("Expected AuthFailed, got {:?}", err),
@@ -417,7 +437,7 @@ mod tests {
 
     #[test]
     fn test_classify_mount_error_unreachable() {
-        let err = classify_mount_error("Host is down", "server", "share");
+        let err = classify_mount_error("Host is down", "server", "share", None);
         match err {
             MountError::HostUnreachable { .. } => (),
             _ => panic!("Expected HostUnreachable, got {:?}", err),
@@ -426,7 +446,7 @@ mod tests {
 
     #[test]
     fn test_classify_mount_error_not_found() {
-        let err = classify_mount_error("Share doesn't exist on server", "server", "share");
+        let err = classify_mount_error("Share doesn't exist on server", "server", "share", None);
         match err {
             MountError::ShareNotFound { .. } => (),
             _ => panic!("Expected ShareNotFound, got {:?}", err),
@@ -435,7 +455,7 @@ mod tests {
 
     #[test]
     fn test_classify_mount_error_timeout() {
-        let err = classify_mount_error("Connection timed out", "server", "share");
+        let err = classify_mount_error("Connection timed out", "server", "share", None);
         match err {
             MountError::Timeout { .. } => (),
             _ => panic!("Expected Timeout, got {:?}", err),
@@ -444,7 +464,7 @@ mod tests {
 
     #[test]
     fn test_classify_mount_error_cancelled() {
-        let err = classify_mount_error("Operation was cancelled", "server", "share");
+        let err = classify_mount_error("Operation was cancelled", "server", "share", None);
         match err {
             MountError::Cancelled { .. } => (),
             _ => panic!("Expected Cancelled, got {:?}", err),
@@ -453,11 +473,15 @@ mod tests {
 
     #[test]
     fn test_classify_mount_error_generic() {
-        let err = classify_mount_error("Something unexpected happened", "server", "share");
-        match err {
-            MountError::ProtocolError { .. } => (),
-            _ => panic!("Expected ProtocolError, got {:?}", err),
-        }
+        // `gio`'s own words ride in `detail`, for the log, never in anything a person reads.
+        assert_eq!(
+            classify_mount_error("Something unexpected happened", "server", "share", None),
+            MountError::Unexpected {
+                server: "server".to_string(),
+                share: "share".to_string(),
+                detail: "gio mount: Something unexpected happened".to_string(),
+            }
+        );
     }
 
     // ── `gio mount` stderr snapshots ────────────────────────────────────────
@@ -473,7 +497,7 @@ mod tests {
         // glib emits this when the server requires auth and we sent anonymous.
         let stderr = "Error mounting location: Password required to access the share";
         assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
+            classify_mount_error(stderr, "server", "share", None),
             MountError::AuthRequired { .. }
         ));
     }
@@ -482,7 +506,7 @@ mod tests {
     fn classify_mount_error_snapshot_auth_failed_invalid_credentials() {
         let stderr = "Error mounting location: Authentication failed: invalid login or password";
         assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
+            classify_mount_error(stderr, "server", "share", None),
             MountError::AuthFailed { .. }
         ));
     }
@@ -491,7 +515,7 @@ mod tests {
     fn classify_mount_error_snapshot_share_not_found_no_such_file() {
         let stderr = "Error mounting location: No such file or directory";
         assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
+            classify_mount_error(stderr, "server", "share", None),
             MountError::ShareNotFound { .. }
         ));
     }
@@ -499,17 +523,30 @@ mod tests {
     #[test]
     fn classify_mount_error_snapshot_permission_denied_explicit() {
         let stderr = "Error mounting location: Permission denied";
-        assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
-            MountError::PermissionDenied { .. }
-        ));
+        assert_eq!(
+            classify_mount_error(stderr, "server", "share", Some("ada")),
+            MountError::PermissionDenied {
+                server: "server".to_string(),
+                share: "share".to_string(),
+                username: "ada".to_string(),
+            }
+        );
+        // A guest turned away is a credential question, the way `share_access::clarified`
+        // reads it, so the sign-in sheet asks for a password rather than another account.
+        assert_eq!(
+            classify_mount_error(stderr, "server", "share", None),
+            MountError::AuthRequired {
+                server: "server".to_string(),
+                share: "share".to_string(),
+            }
+        );
     }
 
     #[test]
     fn classify_mount_error_snapshot_host_unreachable_no_route() {
         let stderr = "Error mounting location: Failed to connect to server: No route to host";
         assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
+            classify_mount_error(stderr, "server", "share", None),
             MountError::HostUnreachable { .. }
         ));
     }
@@ -518,7 +555,7 @@ mod tests {
     fn classify_mount_error_snapshot_host_unreachable_connection_refused() {
         let stderr = "Error mounting location: Connection refused";
         assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
+            classify_mount_error(stderr, "server", "share", None),
             MountError::HostUnreachable { .. }
         ));
     }
@@ -527,7 +564,7 @@ mod tests {
     fn classify_mount_error_snapshot_timeout_explicit() {
         let stderr = "Error mounting location: Connection timed out";
         assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
+            classify_mount_error(stderr, "server", "share", None),
             MountError::Timeout { .. }
         ));
     }
@@ -536,7 +573,7 @@ mod tests {
     fn classify_mount_error_snapshot_cancelled_by_user() {
         let stderr = "Error mounting location: Operation was cancelled";
         assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
+            classify_mount_error(stderr, "server", "share", None),
             MountError::Cancelled { .. }
         ));
     }
@@ -545,8 +582,8 @@ mod tests {
     fn classify_mount_error_snapshot_already_mounted_fallback() {
         let stderr = "Error mounting location: Location is already mounted";
         assert!(matches!(
-            classify_mount_error(stderr, "server", "share"),
-            MountError::ProtocolError { .. }
+            classify_mount_error(stderr, "server", "share", None),
+            MountError::Unexpected { .. }
         ));
     }
 }
