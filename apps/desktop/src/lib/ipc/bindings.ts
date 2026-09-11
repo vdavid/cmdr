@@ -2576,8 +2576,8 @@ export const commands = {
    *  frontend hasn't seen yet, exactly as `listing_id` does for a streaming
    *  listing.
    */
-  searchFilesStreaming: (query: SearchQuery, runId: string) =>
-    typedError<LiveSearchStart, string>(__TAURI_INVOKE('search_files_streaming', { query, runId })),
+  searchFilesStreaming: (query: SearchQuery, runId: string, order: number) =>
+    typedError<LiveSearchStart, string>(__TAURI_INVOKE('search_files_streaming', { query, runId, order })),
   // Stop a live search and the walk behind it. Returns whether there was one.
   cancelSearch: (runId: string) => typedError<boolean, string>(__TAURI_INVOKE('cancel_search', { runId })),
   /**

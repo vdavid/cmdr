@@ -81,7 +81,12 @@ pub(crate) enum RunOrigin {
     /// The search dialog. One dialog asks one question at a time, so a new run
     /// supersedes its previous one, and closing the dialog stops what it left
     /// behind.
-    Dialog,
+    Dialog {
+        /// Where this run stands among the dialog's runs: a larger `order` is a
+        /// question asked later. The frontend mints it when the run starts, so it
+        /// holds the order the user asked in, whatever order the starts reach here.
+        order: u64,
+    },
     /// An MCP tool call. Its own asker with its own caller waiting, so it
     /// neither supersedes nor is superseded, and a dialog closing is none of its
     /// business. Only the app quitting stops it.
@@ -133,10 +138,15 @@ static RUNS: LazyLock<Mutex<HashMap<String, Arc<LiveRun>>>> = LazyLock::new(|| M
 
 /// Register a run, superseding the ones it speaks over.
 ///
-/// The dialog asks one question at a time, so an earlier DIALOG run's results
+/// The dialog asks one question at a time, so an EARLIER dialog run's results
 /// are by definition for a query the user has moved on from. ❌ Superseding does
 /// not cancel: their walks keep filling the index, which is what makes the
 /// refined query cheaper than the first one.
+///
+/// ❗ Earlier means a smaller [`RunOrigin::Dialog`] `order`, ❌ never "registered
+/// first". Starts reach this in whatever order the IPC runtime runs them, so a run
+/// that arrives after a later question has registered starts out superseded,
+/// rather than silencing the run the dialog is watching.
 ///
 /// ❌ It reaches no [`RunOrigin::Agent`] run, in either direction: an MCP call
 /// has its own caller waiting on its own answer, and a person typing has no
@@ -150,9 +160,16 @@ pub(crate) fn register(run_id: &str, volume_id: &str, origin: RunOrigin) -> Arc<
         superseded: AtomicBool::new(false),
     });
     let mut runs = RUNS.lock_ignore_poison();
-    if origin == RunOrigin::Dialog {
-        for other in runs.values().filter(|other| other.origin == RunOrigin::Dialog) {
-            other.superseded.store(true, Ordering::Relaxed);
+    if let RunOrigin::Dialog { order } = origin {
+        for other in runs.values() {
+            let RunOrigin::Dialog { order: other_order } = other.origin else {
+                continue;
+            };
+            if other_order <= order {
+                other.superseded.store(true, Ordering::Relaxed);
+            } else {
+                run.superseded.store(true, Ordering::Relaxed);
+            }
         }
     }
     runs.insert(run_id.to_string(), Arc::clone(&run));
@@ -208,7 +225,7 @@ pub(crate) fn cancel_all_live_runs() {
 /// call still waiting for its answer.
 pub(crate) fn cancel_dialog_runs_except(keep_run_id: Option<&str>) {
     for run in RUNS.lock_ignore_poison().values() {
-        if run.origin != RunOrigin::Dialog || keep_run_id.is_some_and(|keep| keep == run.run_id) {
+        if !matches!(run.origin, RunOrigin::Dialog { .. }) || keep_run_id.is_some_and(|keep| keep == run.run_id) {
             continue;
         }
         run.cancel.cancel();

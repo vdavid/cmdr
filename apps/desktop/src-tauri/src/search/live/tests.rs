@@ -21,7 +21,7 @@ fn run_for_test(volume_id: &str) -> Arc<LiveRun> {
     Arc::new(LiveRun {
         run_id: format!("run-{volume_id}"),
         volume_id: volume_id.to_string(),
-        origin: RunOrigin::Dialog,
+        origin: RunOrigin::Dialog { order: 0 },
         cancel: CancellationToken::new(),
         superseded: AtomicBool::new(false),
     })
@@ -250,7 +250,7 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
     // Draining after the supersede is not politeness: the channel is bounded, so a
     // run that stopped reading would park the walk it isn't allowed to stop.
     let _serialized = test_registry_lock();
-    let first = register("run-1", "supersede-volume", RunOrigin::Dialog);
+    let first = register("run-1", "supersede-volume", RunOrigin::Dialog { order: 1 });
     let q = SearchQuery {
         limit: 1000,
         ..query("report")
@@ -274,7 +274,7 @@ fn a_query_refined_mid_walk_drops_the_batches_and_keeps_the_walk() {
         });
 
         // The user types. A new run registers, superseding this one.
-        let _second = register("run-2", "supersede-volume", RunOrigin::Dialog);
+        let _second = register("run-2", "supersede-volume", RunOrigin::Dialog { order: 2 });
         assert!(!refined.wants_events(), "the newer run supersedes the older one");
         assert!(!refined.is_cancelled(), "❌ and does NOT stop its walk");
 
@@ -331,8 +331,8 @@ fn a_walk_that_wrote_rows_marks_its_volume_for_the_next_query() {
     // query rebuilds its arena first. The mark is what tells it to, and a
     // superseded run has to keep marking — its walk is still writing.
     let _serialized = test_registry_lock();
-    let run = register("run-marks", "marked-volume", RunOrigin::Dialog);
-    let second = register("run-marks-2", "marked-volume", RunOrigin::Dialog);
+    let run = register("run-marks", "marked-volume", RunOrigin::Dialog { order: 3 });
+    let second = register("run-marks-2", "marked-volume", RunOrigin::Dialog { order: 4 });
     let q = query("report");
     volumes::take_walked_behind("marked-volume");
 
@@ -793,7 +793,7 @@ fn cancelling_everything_stops_every_run_in_flight() {
     // What a quitting app calls. It reaches an agent's run too: nobody's search
     // outlives the process.
     let _serialized = test_registry_lock();
-    let one = register("run-all-1", "volume-a", RunOrigin::Dialog);
+    let one = register("run-all-1", "volume-a", RunOrigin::Dialog { order: 5 });
     let two = register("run-all-2", "volume-b", RunOrigin::Agent);
     cancel_all_live_runs();
     assert!(one.is_cancelled() && two.is_cancelled());
@@ -805,7 +805,7 @@ fn cancelling_everything_stops_every_run_in_flight() {
 fn cancelling_a_run_nobody_registered_says_so_rather_than_pretending() {
     let _serialized = test_registry_lock();
     assert!(!cancel_live_run("a-run-that-never-was"));
-    let run = register("run-cancel-one", "volume-c", RunOrigin::Dialog);
+    let run = register("run-cancel-one", "volume-c", RunOrigin::Dialog { order: 6 });
     assert!(cancel_live_run("run-cancel-one"));
     assert!(run.is_cancelled());
     deregister("run-cancel-one");
@@ -819,13 +819,13 @@ fn an_agent_run_and_the_dialog_stay_out_of_each_others_way() {
     // their results stop arriving, and an agent's answer would come back empty
     // because somebody touched the keyboard.
     let _serialized = test_registry_lock();
-    let dialog = register("run-dialog", "volume-d", RunOrigin::Dialog);
+    let dialog = register("run-dialog", "volume-d", RunOrigin::Dialog { order: 7 });
     let agent = register("run-agent", "volume-d", RunOrigin::Agent);
     assert!(dialog.wants_events(), "an agent's search doesn't supersede the dialog");
     assert!(agent.wants_events());
 
     // And the dialog asking its next question supersedes only its own.
-    let refined = register("run-dialog-2", "volume-d", RunOrigin::Dialog);
+    let refined = register("run-dialog-2", "volume-d", RunOrigin::Dialog { order: 8 });
     assert!(!dialog.wants_events(), "the dialog's own previous run is superseded");
     assert!(agent.wants_events(), "the agent's is not");
     assert!(refined.wants_events());
@@ -836,11 +836,30 @@ fn an_agent_run_and_the_dialog_stay_out_of_each_others_way() {
 }
 
 #[test]
+fn a_dialog_run_that_registers_after_a_newer_one_is_the_one_silenced() {
+    // Two starts race from the frontend to here, and nothing orders their arrival:
+    // each builds its query and installs its listeners first, and commands run
+    // concurrently. If arrival decided, an earlier question reaching the registry
+    // last would silence the later one the dialog is watching, and the dialog would
+    // wait on a run that never reports.
+    let _serialized = test_registry_lock();
+    let later = register("run-order-later", "volume-f", RunOrigin::Dialog { order: 20 });
+    let earlier = register("run-order-earlier", "volume-f", RunOrigin::Dialog { order: 10 });
+    assert!(later.wants_events(), "the question asked later keeps reporting");
+    assert!(
+        !earlier.wants_events(),
+        "the earlier question, arriving late, starts out superseded"
+    );
+    deregister("run-order-later");
+    deregister("run-order-earlier");
+}
+
+#[test]
 fn closing_the_dialog_leaves_an_agents_search_running() {
     // `release_search_index` means "nobody is watching the dialog any more",
     // which says nothing about an MCP call still waiting on its answer.
     let _serialized = test_registry_lock();
-    let dialog = register("run-close-dialog", "volume-e", RunOrigin::Dialog);
+    let dialog = register("run-close-dialog", "volume-e", RunOrigin::Dialog { order: 9 });
     let agent = register("run-close-agent", "volume-e", RunOrigin::Agent);
     cancel_dialog_runs_except(None);
     assert!(dialog.is_cancelled());

@@ -50,16 +50,17 @@ const started: LiveSearchStart = {
 }
 
 describe('commands.searchFilesStreaming', () => {
-  it('sends the query and the CALLER-supplied run id, and names the volume it routed to', async () => {
+  it('sends the query, the CALLER-supplied run id and order, and names the volume it routed to', async () => {
     // The caller supplies the run id (as it does a listing id) so no event can
-    // arrive against an id the frontend hasn't seen yet.
+    // arrive against an id the frontend hasn't seen yet, and the order so a start
+    // that reaches the backend late can't silence a later one.
     const ipc = installIpcMock()
     ipc.mock('search_files_streaming', () => started)
 
-    const result = await commands.searchFilesStreaming(query, 'run-1')
+    const result = await commands.searchFilesStreaming(query, 'run-1', 7)
 
     expect(result).toEqual({ status: 'ok', data: started })
-    expect(ipc.lastCall('search_files_streaming')?.payload).toEqual({ query, runId: 'run-1' })
+    expect(ipc.lastCall('search_files_streaming')?.payload).toEqual({ query, runId: 'run-1', order: 7 })
   })
 
   it('surfaces a refused scope as an error rather than an empty answer', async () => {
@@ -71,7 +72,7 @@ describe('commands.searchFilesStreaming', () => {
       throw 'A search covers one volume at a time.'
     })
 
-    const result = await commands.searchFilesStreaming(query, 'run-2')
+    const result = await commands.searchFilesStreaming(query, 'run-2', 8)
 
     expect(result.status).toBe('error')
   })

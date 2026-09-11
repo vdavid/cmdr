@@ -51,7 +51,12 @@ pub struct LiveSearchStart {
 ///
 /// Starting a run SUPERSEDES every other one: the dialog asks one question at a
 /// time. ❌ That is not a cancel — their walks keep going (Decision 11).
-pub(crate) fn start_live(app: tauri::AppHandle, query: SearchQuery, run_id: String) -> Result<LiveSearchStart, String> {
+pub(crate) fn start_live(
+    app: tauri::AppHandle,
+    query: SearchQuery,
+    run_id: String,
+    order: u64,
+) -> Result<LiveSearchStart, String> {
     volumes::touch_activity();
     volumes::cancel_idle_timer();
 
@@ -60,7 +65,7 @@ pub(crate) fn start_live(app: tauri::AppHandle, query: SearchQuery, run_id: Stri
         run_id: run_id.clone(),
         target_volume_id: target.volume_id.clone(),
     };
-    let run = live::register(&run_id, &target.volume_id, RunOrigin::Dialog);
+    let run = live::register(&run_id, &target.volume_id, RunOrigin::Dialog { order });
 
     let spawned = std::thread::Builder::new().name("search-live".into()).spawn(move || {
         let sink = live::TauriSearchEventSink::new(app);

@@ -61,11 +61,13 @@ export async function sortSearchResults(
  * Resolves as soon as routing has picked its one volume; everything else arrives as
  * `search-progress` / `search-complete` / `search-cancelled` / `search-error`, each
  * stamped with `runId`. The CALLER mints the id (as it does a listing id), so no event
- * can arrive against one the frontend hasn't seen. Starting a run supersedes the
- * previous one: its events stop, its walk carries on.
+ * can arrive against one the frontend hasn't seen. Starting a run supersedes every
+ * dialog run with a smaller `order` (its events stop, its walk carries on), and a run
+ * that arrives after a larger one starts out superseded, so the question asked last wins
+ * whatever order the starts reach the backend in.
  */
-export async function searchFilesStreaming(query: SearchQuery, runId: string): Promise<LiveSearchStart> {
-  const res = await commands.searchFilesStreaming(query, runId)
+export async function searchFilesStreaming(query: SearchQuery, runId: string, order: number): Promise<LiveSearchStart> {
+  const res = await commands.searchFilesStreaming(query, runId, order)
   if (res.status === 'error') throwIpcError(res.error)
   return res.data
 }

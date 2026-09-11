@@ -141,8 +141,9 @@ pub async fn search_files_streaming(
     app: tauri::AppHandle,
     query: SearchQuery,
     run_id: String,
+    order: u64,
 ) -> Result<search::LiveSearchStart, String> {
-    search::start_live(app, query, run_id)
+    search::start_live(app, query, run_id, order)
 }
 
 /// Stop a live search and the walk behind it. Returns whether there was one.

@@ -77,6 +77,22 @@ function isIncomplete(coverage: SearchRunCoverage): boolean {
   return coverage.walk === 'interrupted' || coverage.walk === 'cancelled' || coverage.abandonedGround
 }
 
+/** The order the last run got, so two starts in the same clock tick still differ. */
+let lastRunOrder = 0
+
+/**
+ * The next run's place in line: a larger number is a question asked later.
+ *
+ * The backend silences every dialog run older than the one registering, and two starts
+ * can reach it in either order, so `start` mints this first thing, in the order the user
+ * asked. It's the wall clock in microseconds, kept strictly increasing: a plain counter
+ * would restart from zero on a reload while an older run is still registered.
+ */
+export function nextRunOrder(nowMs: number = performance.timeOrigin + performance.now()): number {
+  lastRunOrder = Math.max(lastRunOrder + 1, Math.floor(nowMs * 1000))
+  return lastRunOrder
+}
+
 export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamSource {
   /** The shared "the run ended" shape, from Search's own terminal answer. */
   const settle = (callbacks: QueryStreamCallbacks) => (matchCount: number, coverage: SearchRunCoverage) => {
@@ -93,6 +109,8 @@ export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamS
 
   return {
     start: async (runId: string, callbacks: QueryStreamCallbacks): Promise<() => void> => {
+      // Before any await: this is the one moment the starts still run in the order asked.
+      const order = nextRunOrder()
       deps.onCoverage(null)
       // Starting a run supersedes every other one backend side, so a walk handed off
       // to a pane goes silent from here on. Telling it now is what stops its toast
@@ -129,7 +147,7 @@ export function createLiveSearchSource(deps: LiveSearchSourceDeps): QueryStreamS
 
       try {
         const query = await deps.buildQuery()
-        await searchFilesStreaming(query, runId)
+        await searchFilesStreaming(query, runId, order)
       } catch (err) {
         stop()
         deps.onRunState?.(null)

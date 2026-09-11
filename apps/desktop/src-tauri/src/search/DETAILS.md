@@ -438,8 +438,13 @@ by this call", which is a bigger change than it's worth so far.
 
 ### Decision 11: superseding is not cancelling
 
-Refining a query registers a new run and marks the old one superseded. The old run stops emitting; its walk keeps
-running, and its driver keeps DRAINING — the walk's channel is bounded, so a run that stopped reading would park the
+Refining a query registers a new run and marks the old one superseded. "Old" is the frontend's say, not the
+registry's: every dialog start carries an `order` (`RunOrigin::Dialog { order }`, minted by `nextRunOrder` in
+`src/lib/search/live-search-source.ts` before the start's first await), and `register` supersedes only dialog runs with a
+smaller or equal one. Two starts can reach the registry in either order (each builds its query and installs listeners
+first, and commands run concurrently), so a run arriving after a later question starts out superseded. Deciding by
+arrival once silenced the run the dialog was watching, which then sat in `resolvingCoverage` for good. The old run stops
+emitting; its walk keeps running, and its driver keeps DRAINING — the walk's channel is bounded, so a run that stopped reading would park the
 walk it isn't allowed to stop, and the arena mark has to keep pace with rows it's still writing. The ground it already
 covered comes back to the next query from the index, not from a replay buffer.
 

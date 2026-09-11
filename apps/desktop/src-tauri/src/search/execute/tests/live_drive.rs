@@ -205,7 +205,7 @@ pub(super) fn search_watched(run_id: &str, scope: &str, pattern: &str, sink: &Co
         from_scope: true,
         can_be_indexed: true,
     };
-    let run = live::register(run_id, VOLUME_ID, RunOrigin::Dialog);
+    let run = live::register(run_id, VOLUME_ID, RunOrigin::Dialog { order: 1 });
     run_live_blocking(query, target, &run, sink);
     live::deregister(run_id);
 
