@@ -17,7 +17,8 @@ badges). The leaves beside them:
 - `cloud_actions.rs`: iCloud download and eviction. `cloud_provider.rs`: who owns a path, and what they can do.
 - `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback.
 - `open_with.rs`: the "Open with" candidate apps. `share.rs`: the `Share` submenu's services.
-- `tags.rs`: Finder tags. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in.
+- `tags.rs`: Finder tags. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
+  types; the macOS half in `text_editor_macos.rs`, its tests in `text_editor_test.rs`).
 
 ## What `mod.rs` is for
 
@@ -379,7 +380,7 @@ Which app F4 opens a file in: the regular pane, the search-results pane, and the
   LaunchServices call. `list_text_editors` with six apps, the default, names, and icons took 371 ms in a cold test
   process and 57 ms warm, nearly all of it icon decoding.
 - The `playwright-e2e` build records the FILE into `crate::open_mock` instead of launching, whatever the choice, so
-  every `e2e_opened_paths` consumer is untouched. On macOS that's `text_editor.rs`'s own `launch`; off macOS it's the
+  every `e2e_opened_paths` consumer is untouched. On macOS that's `text_editor_macos.rs`'s own `launch`; off macOS it's the
   command's E2E arm.
 
 ## Finder tags MCP consumer (`tags.rs`)
