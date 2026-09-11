@@ -16,8 +16,7 @@
 
   "indexing.scan.label": "Indexing your drive...",
   "@indexing.scan.label": {
-    "description": "Generic fallback shown on the drive''s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says ''indexing'' rather than ''scanning'' because a first index no longer makes one pass over the drive. The trailing '...' signals ongoing work; keep it.",
-    "screenshot": "indexing-status.png"
+    "description": "Generic fallback shown on the drive''s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says ''indexing'' rather than ''scanning'' because a first index no longer makes one pass over the drive. The trailing '...' signals ongoing work; keep it."
   },
 
   "indexing.scan.counters": "{entriesText} entries, {dirsText} dirs",
@@ -50,20 +49,17 @@
 
   "indexing.phase.priorityFolders": "Indexing the folders you use most",
   "@indexing.phase.priorityFolders": {
-    "description": "Header at the top of the drive-indexing checklist during the FIRST phase of a drive''s first index, while Cmdr covers the folders this person is most likely to want first (their downloads, documents, desktop, and anything they just opened). The three phase headers are read in sequence, so each one says what is still to come rather than what is included: ''your folders'' followed by ''your home folder'' would read as the scope widening and then narrowing. Short phrase, sentence case, no trailing period.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Header at the top of the drive-indexing checklist during the FIRST phase of a drive''s first index, while Cmdr covers the folders this person is most likely to want first (their downloads, documents, desktop, and anything they just opened). The three phase headers are read in sequence, so each one says what is still to come rather than what is included: ''your folders'' followed by ''your home folder'' would read as the scope widening and then narrowing. Short phrase, sentence case, no trailing period."
   },
 
   "indexing.phase.home": "Indexing the rest of your home folder",
   "@indexing.phase.home": {
-    "description": "Header at the top of the drive-indexing checklist during the SECOND phase of a drive''s first index, once the folders from the first phase are done and Cmdr moves on to everything else in the user''s home folder. ''The rest of'' is load-bearing: it tells the reader the earlier folders are already finished. Short phrase, sentence case, no trailing period.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Header at the top of the drive-indexing checklist during the SECOND phase of a drive''s first index, once the folders from the first phase are done and Cmdr moves on to everything else in the user''s home folder. ''The rest of'' is load-bearing: it tells the reader the earlier folders are already finished. Short phrase, sentence case, no trailing period."
   },
 
   "indexing.phase.wholeDrive": "Indexing the rest of the drive",
   "@indexing.phase.wholeDrive": {
-    "description": "Header at the top of the drive-indexing checklist during the LAST phase of a drive''s first index, once home is done and Cmdr covers everything else on the drive (applications, system folders, anything outside the home folder). ''The rest of'' again says the earlier phases are finished. Short phrase, sentence case, no trailing period.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Header at the top of the drive-indexing checklist during the LAST phase of a drive''s first index, once home is done and Cmdr covers everything else on the drive (applications, system folders, anything outside the home folder). ''The rest of'' again says the earlier phases are finished. Short phrase, sentence case, no trailing period."
   },
 
   "indexing.run.firstIndex": "First index",
@@ -74,13 +70,11 @@
 
   "indexing.run.firstScan": "First full scan",
   "@indexing.run.firstScan": {
-    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr scans this drive for the very first time (no earlier index exists). Tells the user this is the big one-time pass, not a routine update. Short noun phrase, sentence case, no trailing period.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr scans this drive for the very first time (no earlier index exists). Tells the user this is the big one-time pass, not a routine update. Short noun phrase, sentence case, no trailing period."
   },
   "indexing.run.rescan": "Full rescan",
   "@indexing.run.rescan": {
-    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr clears this drive''s existing index and rebuilds it from scratch (for example after a scan that never finished). Folder sizes stay blank until it''s done, which is what sets it apart from ''Checking for changes''. Short noun phrase, sentence case, no trailing period.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr clears this drive''s existing index and rebuilds it from scratch (for example after a scan that never finished). Folder sizes stay blank until it''s done, which is what sets it apart from ''Checking for changes''. Short noun phrase, sentence case, no trailing period."
   },
   "indexing.run.changeCheck": "Checking for changes",
   "@indexing.run.changeCheck": {
@@ -242,8 +236,7 @@
       "hoursText": "whole hours remaining, already formatted (e.g. 1)",
       "minutes": "raw whole minutes past the hour, drives the minute plural",
       "minutesText": "whole minutes past the hour, already formatted (e.g. 24)"
-    },
-    "screenshot": "indexing-checklist.png"
+    }
   },
 
   "indexing.eta.hoursLeft": "{hours, plural, one {{hoursText} hour} other {{hoursText} hours}} left",
@@ -252,8 +245,7 @@
     "placeholders": {
       "hours": "raw whole hours remaining, drives the plural",
       "hoursText": "whole hours remaining, already formatted (e.g. 20)"
-    },
-    "screenshot": "indexing-checklist.png"
+    }
   },
 
   "indexing.rescan.staleIndex": "Your drive index is outdated. It looks like the app hasn''t run for a while. Running a fresh scan to catch up.",
@@ -357,8 +349,7 @@
 
   "indexing.enrich.label": "Image indexing",
   "@indexing.enrich.label": {
-    "description": "Row title in the top-right indexing tooltip for image content-indexing (Cmdr reading images so they can be searched by what's in them), shown above the progress bar. Sits alongside the drive-indexing rows. Sentence case, terse.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Row title in the top-right indexing tooltip for image content-indexing (Cmdr reading images so they can be searched by what's in them), shown above the progress bar. Sits alongside the drive-indexing rows. Sentence case, terse."
   },
   "indexing.enrich.progress": "{done, plural, one {{doneText} of {totalText} image} other {{doneText} of {totalText} images}}",
   "@indexing.enrich.progress": {
@@ -368,16 +359,14 @@
       "doneText": "images processed so far, formatted (e.g. 1,200)",
       "total": "raw total",
       "totalText": "total images to index, formatted (e.g. 5,000)"
-    },
-    "screenshot": "indexing-checklist.png"
+    }
   },
   "indexing.enrich.rate": "{rateText}/min",
   "@indexing.enrich.rate": {
     "description": "Processing speed shown beside the Image-indexing progress, e.g. '320/min' meaning 320 images per minute. Keep it compact; '/min' is per minute.",
     "placeholders": {
       "rateText": "images processed per minute, formatted (e.g. 320)"
-    },
-    "screenshot": "indexing-checklist.png"
+    }
   },
   "indexing.enrich.rateEta": "{rate} · {eta}",
   "@indexing.enrich.rateEta": {
@@ -385,33 +374,27 @@
     "placeholders": {
       "rate": "the already-built rate text (e.g. 320/min)",
       "eta": "the already-built time-left text (e.g. 2m left)"
-    },
-    "screenshot": "indexing-checklist.png"
+    }
   },
   "indexing.enrich.pausedIdle": "Waiting until you''re idle",
   "@indexing.enrich.pausedIdle": {
-    "description": "Status shown for a network (NAS) drive whose image indexing paused because you're actively using the app; it resumes when you stop. Reassuring, not an error.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Status shown for a network (NAS) drive whose image indexing paused because you're actively using the app; it resumes when you stop. Reassuring, not an error."
   },
   "indexing.enrich.pausedDisconnected": "Paused, resumes on reconnect",
   "@indexing.enrich.pausedDisconnected": {
-    "description": "Status shown for a network drive whose image indexing paused because the drive disconnected; it resumes automatically when the drive reconnects. Reassuring, not an error. No em-dash.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Status shown for a network drive whose image indexing paused because the drive disconnected; it resumes automatically when the drive reconnects. Reassuring, not an error. No em-dash."
   },
   "indexing.enrich.queued": "Image indexing starts after the drive scan",
   "@indexing.enrich.queued": {
-    "description": "Quiet one-liner at the bottom of the drive-indexing tooltip when image indexing is turned on but its pass is waiting for the drive scan above it to finish (it starts automatically right after). Gives the ''Index image contents'' toggle immediate visible feedback. Calm, sentence case, no trailing period.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Quiet one-liner at the bottom of the drive-indexing tooltip when image indexing is turned on but its pass is waiting for the drive scan above it to finish (it starts automatically right after). Gives the ''Index image contents'' toggle immediate visible feedback. Calm, sentence case, no trailing period."
   },
 
   "indexing.enrich.imagesBarLabel": "Images indexed",
   "@indexing.enrich.imagesBarLabel": {
-    "description": "Accessible label (screen-reader only) for the images progress bar in the Image-indexing row. Not shown visually.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Accessible label (screen-reader only) for the images progress bar in the Image-indexing row. Not shown visually."
   },
   "indexing.enrich.bytesBarLabel": "Image data processed",
   "@indexing.enrich.bytesBarLabel": {
-    "description": "Accessible label (screen-reader only) for the second progress bar, which tracks how much image DATA (bytes) has been processed. Not shown visually.",
-    "screenshot": "indexing-checklist.png"
+    "description": "Accessible label (screen-reader only) for the second progress bar, which tracks how much image DATA (bytes) has been processed. Not shown visually."
   }
 }

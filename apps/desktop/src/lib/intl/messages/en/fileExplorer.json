@@ -94,8 +94,7 @@
     "description": "How much the pane's storage holds, shown INSTEAD of the free-space line when the storage has no size limit and so no free figure and no percentage: a cloud account with no quota, for example. Appears in the status bar under a pane, in the drive picker, and as the first line of the hover tooltip. Reads as a statement of fact: of what is stored there, 64 MB. The size arrives already formatted with the user's unit choice (MB/MiB), so don't add units.",
     "placeholders": {
       "usedText": "how much is stored, already formatted, like \"64.21 MB\""
-    },
-    "screenshot": "main-window.png"
+    }
   },
   "fileExplorer.diskSpace.noLimitNote": "This storage has no size limit, so there's no bar to fill.",
   "@fileExplorer.diskSpace.noLimitNote": {
@@ -1129,8 +1128,7 @@
   },
   "fileExplorer.columns.created": "Created",
   "@fileExplorer.columns.created": {
-    "description": "File-list column header for the creation date (Brief view). Keep it short.",
-    "screenshot": "main-window.png"
+    "description": "File-list column header for the creation date (Brief view). Keep it short."
   },
   "fileExplorer.columns.sortByRelevance": "Sort by relevance",
   "@fileExplorer.columns.sortByRelevance": {
@@ -1156,13 +1154,11 @@
   },
   "fileExplorer.list.sortColumnsAriaLabel": "Sort columns",
   "@fileExplorer.list.sortColumnsAriaLabel": {
-    "description": "Accessibility label for the row of sortable column headers in the Brief list view.",
-    "screenshot": "main-window.png"
+    "description": "Accessibility label for the row of sortable column headers in the Brief list view."
   },
   "fileExplorer.dirSize.updatingIndexTooltip": "Updating index: size may change.",
   "@fileExplorer.dirSize.updatingIndexTooltip": {
-    "description": "Hover tooltip on a folder''s size while indexing is in progress, warning that the figure may still change. Note the colon.",
-    "screenshot": "about-commercial.png"
+    "description": "Hover tooltip on a folder''s size while indexing is in progress, warning that the figure may still change. Note the colon."
   },
   "fileExplorer.dirSize.scanProgressTooltip": "Sizes appear as the scan progresses",
   "@fileExplorer.dirSize.scanProgressTooltip": {
@@ -1216,8 +1212,7 @@
   },
   "fileExplorer.dirSize.updatingIndexLine": "Updating index, so size may change.",
   "@fileExplorer.dirSize.updatingIndexLine": {
-    "description": "Last line of a folder''s size tooltip while indexing, warning the figure may change.",
-    "screenshot": "about-commercial.png"
+    "description": "Last line of a folder''s size tooltip while indexing, warning the figure may change."
   },
   "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
   "@fileExplorer.dirSize.dirPlaceholder": {
@@ -1235,8 +1230,7 @@
   },
   "fileExplorer.dirSize.unknownTooltip": "Size unknown: this folder hasn''t been scanned yet.",
   "@fileExplorer.dirSize.unknownTooltip": {
-    "description": "Hover tooltip on a folder whose recursive size is unknown (shown as an em dash —) because nothing in its subtree has been scanned. Distinct from a genuinely-empty folder, which shows 0 bytes.",
-    "screenshot": "operation-chip.png"
+    "description": "Hover tooltip on a folder whose recursive size is unknown (shown as an em dash —) because nothing in its subtree has been scanned. Distinct from a genuinely-empty folder, which shows 0 bytes."
   },
   "fileExplorer.dirSize.staleLine": "These sizes are from an earlier scan and may be out of date.",
   "@fileExplorer.dirSize.staleLine": {
@@ -1501,8 +1495,7 @@
   },
   "fileExplorer.selectionInfo.dir": "DIR",
   "@fileExplorer.selectionInfo.dir": {
-    "description": "Status-bar marker shown in place of a size for a folder whose recursive size is not computed. Short for \"directory\"; rendered in capitals.",
-    "screenshot": "conflict-dialog.png"
+    "description": "Status-bar marker shown in place of a size for a folder whose recursive size is not computed. Short for \"directory\"; rendered in capitals."
   },
   "fileExplorer.selectionInfo.sizeNotReadyAriaLabel": "Size not ready yet",
   "@fileExplorer.selectionInfo.sizeNotReadyAriaLabel": {
@@ -1561,13 +1554,11 @@
   },
   "fileExplorer.tabBar.pinnedAriaLabel": "Pinned",
   "@fileExplorer.tabBar.pinnedAriaLabel": {
-    "description": "Accessibility label and tooltip for a pinned tab (one kept open deliberately).",
-    "screenshot": "main-window.png"
+    "description": "Accessibility label and tooltip for a pinned tab (one kept open deliberately)."
   },
   "fileExplorer.tabBar.closeTabTooltip": "Close tab",
   "@fileExplorer.tabBar.closeTabTooltip": {
-    "description": "Hover tooltip for the small close button on a tab.",
-    "screenshot": "main-window.png"
+    "description": "Hover tooltip for the small close button on a tab."
   },
   "fileExplorer.tabBar.newTabAriaLabel": "New tab",
   "@fileExplorer.tabBar.newTabAriaLabel": {
@@ -2087,8 +2078,7 @@
       "hoursText": "the same hour count, already formatted for the reader (e.g. 18)",
       "remaining": "whole hours until the next scheduled full check, as a raw number, used only to pick the plural branch (never below 1)",
       "remainingText": "the same remaining-hour count, already formatted for the reader (e.g. 6)"
-    },
-    "screenshot": "onboarding-fda-denied.png"
+    }
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, and the check running right now will put them right.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
@@ -2226,8 +2216,7 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Drive indexing is off in Settings, so no drive is indexed right now.",
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
-    "description": "Hover tooltip on the gray drive-index dot when the master drive-indexing switch is off. Explains that the gray dot is about the global switch, not this one drive.",
-    "screenshot": "mtp-browse.png"
+    "description": "Hover tooltip on the gray drive-index dot when the master drive-indexing switch is off. Explains that the gray dot is about the global switch, not this one drive."
   },
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Drive indexing is off in Settings. Turn it on under Indexing > Drive indexing, and this drive picks up where it left off.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {

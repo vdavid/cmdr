@@ -29,8 +29,7 @@
     "placeholders": {
       "currentText": "number of characters typed so far, already formatted for display (e.g. 52,000)",
       "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
-    },
-    "screenshot": "feedback-dialog.png"
+    }
   },
 
   "feedback.dialog.tooLong": "Sorry, that''s too long. Maximum is {maxText} characters.",

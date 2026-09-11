@@ -19,8 +19,7 @@
     "description": "The same language-picker option as settings.appearance.language.opt.system, naming the language that following the Mac currently lands on: \"System default (Svenska)\". Shown in the Settings picker and in the compact language control in the onboarding wizard's header. Word order is yours: put the language name wherever it reads best, and use your language's own bracketing convention. Keep the opening words identical to settings.appearance.language.opt.system, since the two labels swap places in the same row.",
     "placeholders": {
       "language": "the resolved language's name in that language's own words, never translated (for example \"Svenska\", \"Magyar\", \"Deutsch\"). Capitalized already."
-    },
-    "screenshot": "settings-appearance.png"
+    }
   },
   "settings.theme.mode.label": "Theme mode",
   "@settings.theme.mode.label": {
@@ -128,33 +127,27 @@
   },
   "settings.appearance.dateTimeFormat.opt.system": "System default",
   "@settings.appearance.dateTimeFormat.opt.system": {
-    "description": "Date/time format option: use the macOS system date and time format. Radio-button label.",
-    "screenshot": "settings-appearance.png"
+    "description": "Date/time format option: use the macOS system date and time format. Radio-button label."
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "description": "Date/time format option: the ISO 8601 standard format (year-month-day). \"ISO 8601\" is a standard name; keep it as-is. Radio-button label.",
-    "screenshot": "settings-appearance.png"
+    "description": "Date/time format option: the ISO 8601 standard format (year-month-day). \"ISO 8601\" is a standard name; keep it as-is. Radio-button label."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "e.g., 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
-    "description": "Example shown under the ISO 8601 option. The date string \"2025-01-25 14:30\" is a literal ISO example and must stay exactly in that digit layout (year-month-day 24-hour time); only translate the \"e.g.,\" lead-in.",
-    "screenshot": "settings-appearance.png"
+    "description": "Example shown under the ISO 8601 option. The date string \"2025-01-25 14:30\" is a literal ISO example and must stay exactly in that digit layout (year-month-day 24-hour time); only translate the \"e.g.,\" lead-in."
   },
   "settings.appearance.dateTimeFormat.opt.short": "Short",
   "@settings.appearance.dateTimeFormat.opt.short": {
-    "description": "Date/time format option: a compact month/day plus time format. Radio-button label.",
-    "screenshot": "settings-appearance.png"
+    "description": "Date/time format option: a compact month/day plus time format. Radio-button label."
   },
   "settings.appearance.dateTimeFormat.optDesc.short": "e.g., 01/25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.short": {
-    "description": "Example shown under the Short option. \"01/25 14:30\" is a literal example (month/day 24-hour time) and must stay in that digit layout; only translate the \"e.g.,\" lead-in.",
-    "screenshot": "settings-appearance.png"
+    "description": "Example shown under the Short option. \"01/25 14:30\" is a literal example (month/day 24-hour time) and must stay in that digit layout; only translate the \"e.g.,\" lead-in."
   },
   "settings.appearance.dateTimeFormat.opt.custom": "Custom...",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "description": "Date/time format option: define your own format string (reveals the custom-format text field). The trailing ellipsis signals it opens further input; keep an ellipsis. Radio-button label.",
-    "screenshot": "settings-appearance.png"
+    "description": "Date/time format option: define your own format string (reveals the custom-format text field). The trailing ellipsis signals it opens further input; keep an ellipsis. Radio-button label."
   },
   "settings.appearance.customDateTimeFormat.label": "Custom date/time format",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -410,13 +403,11 @@
   },
   "settings.listing.briefColumnWidthMode.opt.paneWidth": "Pane width (no limit)",
   "@settings.listing.briefColumnWidthMode.opt.paneWidth": {
-    "description": "Brief-column-width option: no extra limit, columns may grow up to the full pane width. Radio-button label.",
-    "screenshot": "settings-appearance-listing.png"
+    "description": "Brief-column-width option: no extra limit, columns may grow up to the full pane width. Radio-button label."
   },
   "settings.listing.briefColumnWidthMode.opt.limited": "Limit to",
   "@settings.listing.briefColumnWidthMode.opt.limited": {
-    "description": "Brief-column-width option: cap columns at a chosen pixel width. This label reads as a sentence lead-in immediately followed by a numeric width control, so phrase it to flow into \"Limit to [N px]\". Radio-button label.",
-    "screenshot": "settings-appearance-listing.png"
+    "description": "Brief-column-width option: cap columns at a chosen pixel width. This label reads as a sentence lead-in immediately followed by a numeric width control, so phrase it to flow into \"Limit to [N px]\". Radio-button label."
   },
   "settings.listing.briefColumnWidthMaxPx.label": "Brief column width limit",
   "@settings.listing.briefColumnWidthMaxPx.label": {
@@ -970,13 +961,11 @@
   },
   "settings.indexing.masterOffNote": "Drive indexing is off, so no drive is indexed and folder sizes stay hidden. Each drive keeps its own on or off choice, ready for when you turn this back on.",
   "@settings.indexing.masterOffNote": {
-    "description": "Note under the master drive-indexing toggle, shown only while it''s off. States what stops happening and reassures that the per-drive choices survive the master switch. Sentence case.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "description": "Note under the master drive-indexing toggle, shown only while it''s off. States what stops happening and reassures that the per-drive choices survive the master switch. Sentence case."
   },
   "settings.indexing.overriddenBadge": "Off with drive indexing",
   "@settings.indexing.overriddenBadge": {
-    "description": "Small badge next to a settings row that the master drive-indexing switch has overridden, shown while that switch is off. Very short; sentence case.",
-    "screenshot": "settings-behavior-file-system-watching.png"
+    "description": "Small badge next to a settings row that the master drive-indexing switch has overridden, shown while that switch is off. Very short; sentence case."
   },
   "settings.indexing.reEnableNotifications.label": "Re-enable notifications for all drives",
   "@settings.indexing.reEnableNotifications.label": {
@@ -1246,28 +1235,23 @@
   },
   "settings.network.timeoutMode.opt.normal": "Normal",
   "@settings.network.timeoutMode.opt.normal": {
-    "description": "Network-timeout option: standard timeout for typical local networks. Radio-button label.",
-    "screenshot": "settings-file-systems-smb.png"
+    "description": "Network-timeout option: standard timeout for typical local networks. Radio-button label."
   },
   "settings.network.timeoutMode.optDesc.normal": "For typical local networks (15s timeout)",
   "@settings.network.timeoutMode.optDesc.normal": {
-    "description": "Sub-text under the Normal timeout option. \"15s\" is a literal value (15 seconds); keep the number and the \"s\" unit.",
-    "screenshot": "settings-file-systems-smb.png"
+    "description": "Sub-text under the Normal timeout option. \"15s\" is a literal value (15 seconds); keep the number and the \"s\" unit."
   },
   "settings.network.timeoutMode.opt.slow": "Slow network",
   "@settings.network.timeoutMode.opt.slow": {
-    "description": "Network-timeout option: longer timeout for slow or high-latency networks. Radio-button label.",
-    "screenshot": "settings-file-systems-smb.png"
+    "description": "Network-timeout option: longer timeout for slow or high-latency networks. Radio-button label."
   },
   "settings.network.timeoutMode.optDesc.slow": "For VPNs or high-latency connections (45s timeout)",
   "@settings.network.timeoutMode.optDesc.slow": {
-    "description": "Sub-text under the Slow network timeout option. \"VPN\" = virtual private network (keep the abbreviation or use the locale's standard form). \"45s\" is a literal value (45 seconds); keep the number and the \"s\" unit.",
-    "screenshot": "settings-file-systems-smb.png"
+    "description": "Sub-text under the Slow network timeout option. \"VPN\" = virtual private network (keep the abbreviation or use the locale's standard form). \"45s\" is a literal value (45 seconds); keep the number and the \"s\" unit."
   },
   "settings.network.timeoutMode.opt.custom": "Custom",
   "@settings.network.timeoutMode.opt.custom": {
-    "description": "Network-timeout option: user-defined timeout (reveals the custom-timeout field). Radio-button label.",
-    "screenshot": "settings-file-systems-smb.png"
+    "description": "Network-timeout option: user-defined timeout (reveals the custom-timeout field). Radio-button label."
   },
   "settings.network.customTimeout.label": "Custom timeout",
   "@settings.network.customTimeout.label": {
@@ -1738,8 +1722,7 @@
   },
   "settings.tint.amber": "Amber",
   "@settings.tint.amber": {
-    "description": "Volume-tint color name: amber (a warm yellow-orange). Shown as a swatch label / aria-label in the tint color picker.",
-    "screenshot": "settings-appearance.png"
+    "description": "Volume-tint color name: amber (a warm yellow-orange). Shown as a swatch label / aria-label in the tint color picker."
   },
   "settings.tint.lime": "Lime",
   "@settings.tint.lime": {
@@ -1767,8 +1750,7 @@
   },
   "settings.tint.purple": "Purple",
   "@settings.tint.purple": {
-    "description": "Volume-tint color name: purple. Shown as a swatch label / aria-label in the tint color picker.",
-    "screenshot": "settings-appearance.png"
+    "description": "Volume-tint color name: purple. Shown as a swatch label / aria-label in the tint color picker."
   },
   "settings.tint.pink": "Pink",
   "@settings.tint.pink": {
@@ -2056,18 +2038,15 @@
   },
   "settings.askCmdr.status.off": "Ask Cmdr is off",
   "@settings.askCmdr.status.off": {
-    "description": "Status line in Ask Cmdr settings when the feature is turned off. Sentence case, no period.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "description": "Status line in Ask Cmdr settings when the feature is turned off. Sentence case, no period."
   },
   "settings.askCmdr.status.needsReview": "Ask Cmdr is paused",
   "@settings.askCmdr.status.needsReview": {
-    "description": "Status line in Ask Cmdr settings, in place of \"Ask Cmdr is on\" / \"Ask Cmdr is off\", for someone who had it on but whose opt-in no longer covers what it does. Sentence case, no period. \"Ask Cmdr\" is a product name and stays as it is.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "description": "Status line in Ask Cmdr settings, in place of \"Ask Cmdr is on\" / \"Ask Cmdr is off\", for someone who had it on but whose opt-in no longer covers what it does. Sentence case, no period. \"Ask Cmdr\" is a product name and stays as it is."
   },
   "settings.askCmdr.status.changed": "It changed since you turned it on, so it’s waiting for your OK. Read what’s new below, then switch it back on.",
   "@settings.askCmdr.status.changed": {
-    "description": "Explanation under the paused status line in Ask Cmdr settings: why the feature paused itself and what to do about it. \"below\" is the disclosure text further down the same screen. The apostrophes are U+2019.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "description": "Explanation under the paused status line in Ask Cmdr settings: why the feature paused itself and what to do about it. \"below\" is the disclosure text further down the same screen. The apostrophes are U+2019."
   },
   "settings.askCmdr.status.onSince": "On since {date}",
   "@settings.askCmdr.status.onSince": {
@@ -2081,13 +2060,11 @@
   },
   "settings.askCmdr.turnOn": "Turn on Ask Cmdr",
   "@settings.askCmdr.turnOn": {
-    "description": "Button that opts into and turns on Ask Cmdr from settings. Starts with a verb. Sentence case.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "description": "Button that opts into and turns on Ask Cmdr from settings. Starts with a verb. Sentence case."
   },
   "settings.askCmdr.turnBackOn": "Turn back on",
   "@settings.askCmdr.turnBackOn": {
-    "description": "Button in Ask Cmdr settings that accepts the updated wording and switches the feature back on. Shown instead of \"Turn on Ask Cmdr\" for someone who had it on before. Starts with a verb. Sentence case.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "description": "Button in Ask Cmdr settings that accepts the updated wording and switches the feature back on. Shown instead of \"Turn on Ask Cmdr\" for someone who had it on before. Starts with a verb. Sentence case."
   },
   "settings.askCmdr.turnOff": "Turn off Ask Cmdr",
   "@settings.askCmdr.turnOff": {
@@ -2174,8 +2151,7 @@
   },
   "settings.askCmdr.wakeDelay.description": "How soon Cmdr looks at a folder that just changed. Longer means a calmer assistant.",
   "@settings.askCmdr.wakeDelay.description": {
-    "description": "Help text for the cadence slider, used by settings search and wherever the live readout is unavailable. The rendered row shows settings.askCmdr.wakeDelay.summary instead, which names the two actual waits.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "description": "Help text for the cadence slider, used by settings search and wherever the live readout is unavailable. The rendered row shows settings.askCmdr.wakeDelay.summary instead, which names the two actual waits."
   },
   "settings.askCmdr.wakeDelay.summary": "Busy folders get a look within {hot}, quieter ones within {warm}.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -2217,8 +2193,7 @@
   },
   "settings.askCmdr.memory.forgotten": "Cmdr’s notes are gone. It starts over from here.",
   "@settings.askCmdr.memory.forgotten": {
-    "description": "Confirmation line shown in Ask Cmdr settings right after the user confirms \"Forget everything\". The apostrophe is U+2019.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "description": "Confirmation line shown in Ask Cmdr settings right after the user confirms \"Forget everything\". The apostrophe is U+2019."
   },
   "settings.askCmdr.spend.title": "Spending",
   "@settings.askCmdr.spend.title": {
@@ -2227,8 +2202,7 @@
   },
   "settings.askCmdr.spend.empty": "No usage yet. Your token use and estimated cost will show up here.",
   "@settings.askCmdr.spend.empty": {
-    "description": "Empty state under the Ask Cmdr spending heading before any chat has run.",
-    "screenshot": "settings-ai-ask-cmdr.png"
+    "description": "Empty state under the Ask Cmdr spending heading before any chat has run."
   },
   "settings.askCmdr.spend.disclaimer": "These are estimates. Your provider bills you directly, so check your provider’s dashboard for the exact amount.",
   "@settings.askCmdr.spend.disclaimer": {

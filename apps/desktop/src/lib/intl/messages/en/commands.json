@@ -560,8 +560,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Open your terminal app in the folder you''re looking at",
   "@commands.fileOpenTerminalHere.description": {
-    "description": "Help text under the \"Open terminal here\" row in the command palette. Says what the user gets: a terminal window whose working directory is already the folder in front of them, so there's nothing to type. \"your terminal app\" is whichever app they picked in Settings.",
-    "screenshot": "settings-keyboard-shortcuts.png"
+    "description": "Help text under the \"Open terminal here\" row in the command palette. Says what the user gets: a terminal window whose working directory is already the folder in front of them, so there's nothing to type. \"your terminal app\" is whichever app they picked in Settings."
   },
   "commands.fileCopyPath.label": "Copy path to clipboard",
   "@commands.fileCopyPath.label": {

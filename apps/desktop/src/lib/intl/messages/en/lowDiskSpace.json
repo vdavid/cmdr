@@ -5,14 +5,12 @@
     "placeholders": {
       "freeText": "amount of free space, already formatted with its unit (e.g. 4.2 GB)",
       "percentText": "free space as a percentage, already formatted to one decimal (e.g. 3.1)"
-    },
-    "screenshot": "low-disk-space-toast.png"
+    }
   },
 
   "lowDiskSpace.toast.disable": "Disable these notifications",
   "@lowDiskSpace.toast.disable": {
-    "description": "Button on the low-disk-space warning toast that turns the warning off and opens its settings. A short button label.",
-    "screenshot": "low-disk-space-toast.png"
+    "description": "Button on the low-disk-space warning toast that turns the warning off and opens its settings. A short button label."
   },
 
   "lowDiskSpace.toast.closeTooltip": "Dismiss",

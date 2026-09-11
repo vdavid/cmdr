@@ -125,8 +125,7 @@
   },
   "onboarding.stepFda.why": "Why?",
   "@onboarding.stepFda.why": {
-    "description": "A link after the opening apology on the Full Disk Access step. Clicking it reveals the explanation and the pros and cons below. One word, curious rather than demanding.",
-    "screenshot": "onboarding-fda-notgranted.png"
+    "description": "A link after the opening apology on the Full Disk Access step. Clicking it reveals the explanation and the pros and cons below. One word, curious rather than demanding."
   },
   "onboarding.stepFda.pro.label": "Pro:",
   "@onboarding.stepFda.pro.label": {

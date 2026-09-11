@@ -456,13 +456,11 @@
   },
   "askCmdr.consent.whatsNew.title": "What’s changed since you turned this on",
   "@askCmdr.consent.whatsNew.title": {
-    "description": "Heading above the Ask Cmdr consent screen, shown ONLY to someone who already accepted an older version of this copy, so they can see why they are being asked again. Sentence case. The apostrophe is U+2019.",
-    "screenshot": "ask-cmdr-consent.png"
+    "description": "Heading above the Ask Cmdr consent screen, shown ONLY to someone who already accepted an older version of this copy, so they can see why they are being asked again. Sentence case. The apostrophe is U+2019."
   },
   "askCmdr.consent.whatsNew.body": "Cmdr can now look inside a file you ask about: some of its text, a few pages of a PDF, the list of files inside an archive, or a photo’s camera details and location. That’s a bigger promise than the one you agreed to, so here it all is again.",
   "@askCmdr.consent.whatsNew.body": {
-    "description": "Paragraph under askCmdr.consent.whatsNew.title, shown only to someone being asked again after the consent copy changed. Names the new thing (on request, the assistant reads parts of a file: some text, a few PDF pages, the names of the files inside an archive, or a photo's camera details and location) and says why the whole screen is being shown again. The apostrophes are U+2019.",
-    "screenshot": "ask-cmdr-consent.png"
+    "description": "Paragraph under askCmdr.consent.whatsNew.title, shown only to someone being asked again after the consent copy changed. Names the new thing (on request, the assistant reads parts of a file: some text, a few PDF pages, the names of the files inside an archive, or a photo's camera details and location) and says why the whole screen is being shown again. The apostrophes are U+2019."
   },
   "askCmdr.forget.title": "Forget everything Cmdr remembers about you?",
   "@askCmdr.forget.title": {
@@ -982,8 +980,7 @@
   },
   "askCmdr.wake.needsApiKey": "AI features are on, but they need a provider to work. Click to set one up in settings.",
   "@askCmdr.wake.needsApiKey": {
-    "description": "Tooltip and spoken label on the status-corner indicator shown when the user turned AI features on but no AI provider is configured, so nothing can be sent anywhere. Pressing it opens Cmdr's AI settings, where the provider is picked, which is what the second sentence promises. \"provider\" means the LLM service the user brings their own key for. Sentence case.",
-    "screenshot": "about-commercial.png"
+    "description": "Tooltip and spoken label on the status-corner indicator shown when the user turned AI features on but no AI provider is configured, so nothing can be sent anywhere. Pressing it opens Cmdr's AI settings, where the provider is picked, which is what the second sentence promises. \"provider\" means the LLM service the user brings their own key for. Sentence case."
   },
   "askCmdr.wakeDigest.summary": "What changed in {foldersText} {folders, plural, one {folder} other {folders}}",
   "@askCmdr.wakeDigest.summary": {

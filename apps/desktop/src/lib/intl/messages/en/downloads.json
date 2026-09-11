@@ -13,8 +13,7 @@
     "description": "Small line under the download toast title naming the subfolder a file landed in, e.g. 'in Downloads/Chrome/'. Only shown when the file is in a subfolder of Downloads.",
     "placeholders": {
       "subdir": "the folder path relative to Downloads, with a trailing slash (e.g. Downloads/Chrome/)"
-    },
-    "screenshot": "download-toast.png"
+    }
   },
 
   "downloads.toast.learnIntro": "Something cool to learn about jumping to downloads",
@@ -47,8 +46,7 @@
     "placeholders": {
       "inAppKey": "the in-app shortcut keys (e.g. ⌘J)",
       "globalKey": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
-    },
-    "screenshot": "download-toast.png"
+    }
   },
 
   "downloads.toast.summaryInApp": "Jump with <inApp>{inAppKey}</inApp> in-app.",
@@ -56,8 +54,7 @@
     "description": "One-line summary in the collapsed download toast when only the in-app shortcut is set. <inApp> wraps the shortcut key cap (don't translate the key glyphs). 'in-app' means while Cmdr is the active app.",
     "placeholders": {
       "inAppKey": "the in-app shortcut keys (e.g. ⌘J)"
-    },
-    "screenshot": "download-toast.png"
+    }
   },
 
   "downloads.toast.summaryGlobal": "Jump with <global>{globalKey}</global> globally.",
@@ -65,8 +62,7 @@
     "description": "One-line summary in the collapsed download toast when only the system-wide shortcut is set. <global> wraps the shortcut key cap (don't translate the key glyphs). 'globally' means from any app.",
     "placeholders": {
       "globalKey": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
-    },
-    "screenshot": "download-toast.png"
+    }
   },
 
   "downloads.toast.expandTip": "Show the shortcut tip",
@@ -134,8 +130,7 @@
 
   "downloads.fda.message": "Cmdr needs Full Disk Access to watch your Downloads folder.",
   "@downloads.fda.message": {
-    "description": "Info toast shown when jumping to the latest download fails because Cmdr lacks Full Disk Access. 'Full Disk Access' is the exact macOS permission name; keep it as-is.",
-    "screenshot": "latest-download-fda-toast.png"
+    "description": "Info toast shown when jumping to the latest download fails because Cmdr lacks Full Disk Access. 'Full Disk Access' is the exact macOS permission name; keep it as-is."
   },
 
   "downloads.fda.dismiss": "Dismiss",

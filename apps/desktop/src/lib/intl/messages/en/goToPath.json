@@ -16,13 +16,11 @@
   },
   "goToPath.dialog.recentsAriaLabel": "Recent paths",
   "@goToPath.dialog.recentsAriaLabel": {
-    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to path\" dialog.",
-    "screenshot": "go-to-path.png"
+    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to path\" dialog."
   },
   "goToPath.dialog.removeFromList": "Remove from list",
   "@goToPath.dialog.removeFromList": {
-    "description": "Tooltip and accessibility label for the button that removes one entry from the recent-paths list. A short label.",
-    "screenshot": "go-to-path.png"
+    "description": "Tooltip and accessibility label for the button that removes one entry from the recent-paths list. A short label."
   },
   "goToPath.dialog.cancel": "Cancel",
   "@goToPath.dialog.cancel": {
