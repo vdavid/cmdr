@@ -43,7 +43,7 @@ use std::path::{Path, PathBuf};
 
 use crate::file_system::VolumeManager;
 use crate::file_system::listing::FileEntry;
-use crate::file_system::volume::VolumeError;
+use crate::file_system::volume::{Volume, VolumeError};
 
 use super::store::{
     OperationRow, RollbackUnit, fold_name, open_read_connection, ops_in_rolling_back, read_inverse_op, read_operation,
@@ -562,6 +562,24 @@ fn removal_target(unit: &RollbackUnit) -> (String, PathBuf) {
     }
 }
 
+/// The verdict for an item a volume answered "not there" about, given every
+/// `(volume, path)` side the reversal touches.
+///
+/// A volume refuses a path above its own root as `NotFound`, and a remote place's
+/// root can be narrowed after the operation ran (`network/DETAILS.md` § "Editing a
+/// connected place"). An item there is NOT gone: it sits where the operation left
+/// it, out of the volume's reach, and counting it as reversed reports an undo that
+/// removed nothing. So it fails safe; only a path every side still serves can be
+/// already gone. Containment is by whole path components (`Path::starts_with`), so
+/// `/share/tmp2` isn't under `/share/tmp`.
+fn missing_item(sides: &[(&dyn Volume, &Path)]) -> ItemResult {
+    if sides.iter().all(|(volume, path)| path.starts_with(volume.root())) {
+        ItemResult::Skipped(SkipReason::AlreadyGone)
+    } else {
+        ItemResult::Skipped(SkipReason::Failed)
+    }
+}
+
 async fn remove_file_if_unchanged(vm: &VolumeManager, runner: &dyn RollbackRunner, unit: &RollbackUnit) -> ItemResult {
     let (vol_id, path) = removal_target(unit);
     let Some(volume) = vm.get(&vol_id) else {
@@ -569,8 +587,9 @@ async fn remove_file_if_unchanged(vm: &VolumeManager, runner: &dyn RollbackRunne
     };
     let live = match volume.get_metadata(&path).await {
         Ok(entry) => entry,
-        // Already gone ⇒ the desired end state already holds (idempotent).
-        Err(VolumeError::NotFound(_)) => return ItemResult::Skipped(SkipReason::AlreadyGone),
+        // Already gone ⇒ the desired end state already holds (idempotent), as long
+        // as the volume still reaches the path.
+        Err(VolumeError::NotFound(_)) => return missing_item(&[(&*volume, path.as_path())]),
         Err(_) => return ItemResult::Skipped(SkipReason::Failed),
     };
     match verify_snapshot(unit.size, unit.mtime, live.size, live.modified_at) {
@@ -582,7 +601,7 @@ async fn remove_file_if_unchanged(vm: &VolumeManager, runner: &dyn RollbackRunne
             .await
         {
             Ok(()) => ItemResult::Reversed,
-            Err(VolumeError::NotFound(_)) => ItemResult::Skipped(SkipReason::AlreadyGone),
+            Err(VolumeError::NotFound(_)) => missing_item(&[(&*volume, path.as_path())]),
             Err(_) => ItemResult::Skipped(SkipReason::Failed),
         },
         SnapshotVerdict::Drift => ItemResult::Skipped(SkipReason::Drift),
@@ -596,8 +615,9 @@ async fn remove_dir_if_empty(vm: &VolumeManager, runner: &dyn RollbackRunner, un
         return ItemResult::Skipped(SkipReason::Failed);
     };
     if !volume.exists(&path).await {
-        // Already removed ⇒ idempotent no-op.
-        return ItemResult::Skipped(SkipReason::AlreadyGone);
+        // Already removed ⇒ idempotent no-op, as long as the volume still reaches
+        // the path.
+        return missing_item(&[(&*volume, path.as_path())]);
     }
     // Only remove a directory the undo created if it's still empty — a file added
     // since must not be swept away. A `seq DESC` stream removes the dir's own
@@ -611,7 +631,7 @@ async fn remove_dir_if_empty(vm: &VolumeManager, runner: &dyn RollbackRunner, un
             .await
         {
             Ok(()) => ItemResult::Reversed,
-            Err(VolumeError::NotFound(_)) => ItemResult::Skipped(SkipReason::AlreadyGone),
+            Err(VolumeError::NotFound(_)) => missing_item(&[(&*volume, path.as_path())]),
             Err(_) => ItemResult::Skipped(SkipReason::Failed),
         },
         Ok(_) => ItemResult::Skipped(SkipReason::DirNotEmpty),
@@ -638,12 +658,15 @@ async fn restore_move(vm: &VolumeManager, runner: &dyn RollbackRunner, unit: &Ro
     let Some(to_volume) = vm.get(to_vol_id) else {
         return ItemResult::Skipped(SkipReason::Failed);
     };
+    // Either side refusing a path means the same thing `missing_item` guards: a
+    // root that no longer reaches it.
+    let sides = [(&*from_volume, from_path.as_path()), (&*to_volume, to_path.as_path())];
 
     // The thing to move back must still be where the op left it.
     let from_entry = match from_volume.get_metadata(from_path).await {
         Ok(e) => e,
         // Gone (trash emptied, item moved within trash, already restored) ⇒ skip.
-        Err(VolumeError::NotFound(_)) => return ItemResult::Skipped(SkipReason::AlreadyGone),
+        Err(VolumeError::NotFound(_)) => return missing_item(&sides),
         Err(_) => return ItemResult::Skipped(SkipReason::Failed),
     };
     // For a file, verify it hasn't changed since the op (dirs: existence only —
@@ -692,7 +715,7 @@ async fn restore_move(vm: &VolumeManager, runner: &dyn RollbackRunner, unit: &Ro
     {
         Ok(()) => ItemResult::Reversed,
         Err(VolumeError::AlreadyExists(_)) => ItemResult::Skipped(SkipReason::RestoreTargetOccupied),
-        Err(VolumeError::NotFound(_)) => ItemResult::Skipped(SkipReason::AlreadyGone),
+        Err(VolumeError::NotFound(_)) => missing_item(&sides),
         Err(_) => ItemResult::Skipped(SkipReason::Failed),
     }
 }

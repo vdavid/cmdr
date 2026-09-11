@@ -266,3 +266,104 @@ pub(super) fn entry(name: &str, inode: Option<u64>, size: Option<u64>, mtime: Op
         ..FileEntry::new(name.to_string(), format!("/{name}"), false, false)
     }
 }
+
+// ── A remote place whose root was narrowed ───────────────────────────────────
+
+use std::future::Future;
+use std::path::PathBuf;
+use std::pin::Pin;
+
+use crate::file_system::volume::ListingProgress;
+
+/// A remote place's volume after an edit narrowed its root: every file stays on
+/// the server (`inner`), but a path above the new root is refused as `NotFound`,
+/// the way `SftpVolume` and `WebdavVolume` refuse one
+/// (`crates/cmdr-sftp/src/volume/paths.rs`). `InMemoryVolume` serves any path it
+/// holds, so on its own it can't stand in for that.
+pub(super) struct RootFenced {
+    inner: Arc<InMemoryVolume>,
+    root: PathBuf,
+}
+
+impl RootFenced {
+    /// `inner`'s files, served through a volume rooted at `root`.
+    pub(super) fn over(inner: &Arc<InMemoryVolume>, root: &str) -> Arc<dyn Volume> {
+        Arc::new(Self {
+            inner: Arc::clone(inner),
+            root: PathBuf::from(root),
+        })
+    }
+
+    fn fence(&self, path: &Path) -> Result<(), VolumeError> {
+        if path.starts_with(&self.root) {
+            Ok(())
+        } else {
+            Err(VolumeError::NotFound(path.to_string_lossy().into_owned()))
+        }
+    }
+}
+
+impl Volume for RootFenced {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn root(&self) -> &Path {
+        &self.root
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.fence(path)?;
+            self.inner.list_directory(path, on_progress).await
+        })
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.fence(path)?;
+            self.inner.get_metadata(path).await
+        })
+    }
+
+    fn create_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.fence(path)?;
+            self.inner.create_directory(path).await
+        })
+    }
+
+    fn delete<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.fence(path)?;
+            self.inner.delete(path).await
+        })
+    }
+
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            self.fence(from)?;
+            self.fence(to)?;
+            self.inner.rename(from, to, force).await
+        })
+    }
+}

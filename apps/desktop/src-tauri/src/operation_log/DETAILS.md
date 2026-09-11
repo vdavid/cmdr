@@ -445,6 +445,22 @@ backend offers one). ❌ Don't fork any of them.
    case-folded path **within one volume** (the `same_volume` gate is load-bearing — a cross-volume restore to the same
    relative path is a genuinely different file and must never be treated as self).
 
+### What counts as already gone
+
+An item a volume answers `NotFound` about (or `exists` false) is `SkipReason::AlreadyGone`, which counts as reversed: the
+end state the undo wanted already holds. That's only true for a path the volume still serves. `SftpVolume` and
+`WebdavVolume` refuse a path above their root as `NotFound` too, and a remote place's root can be narrowed after the
+operation ran (`network/DETAILS.md` § "Editing a connected place"). Reading that refusal as "gone" reported a clean undo
+that left every copied file on the server (seen on a real NAS, 2026-09-11).
+
+So `missing_item` checks every side an item touches (both ends of a restore) against `volume.root()`, by whole path
+components, and a path outside one is `SkipReason::Failed`: the op lands `partially_rolled_back`. A path inside the root
+keeps the idempotent no-op. It fails safe in the one other shape that reaches it, a local share whose active mount root
+moved to a second mount: a path under the old mount reads as outside, and the item is reported unreversed rather than
+counted. Pinned by `rollback/tests.rs::an_item_a_narrowed_root_no_longer_reaches_fails_instead_of_counting_as_gone` and
+its two siblings; `RootFenced` (`rollback/test_support.rs`) stands in for the refusing volume, since `InMemoryVolume`
+serves any path it holds.
+
 ### Per-kind inverse table
 
 The op kind + item entry-type map to one of three inverse actions (`inverse_action`):
