@@ -25,13 +25,13 @@ it.
 another instance over the same `inner`, which is how saving an edit to a connected place renames or re-roots it with no
 redial (`apps/desktop/src-tauri/src/network/DETAILS.md` § "Editing a connected place").
 
-- ❗ **Pure, and installed through a replace that retires nobody.** Building one commits nothing, so the wiring builds it
-  first to stat the new root over the live session and drops it on a refusal. `on_superseded` retires the SHARED flag,
-  so installing it the way a fresh connect does would stand the live place's reconnect loop down.
+- ❗ **Pure, and installed through a replace that retires nobody.** Building one commits nothing, so the wiring builds
+  it first to stat the new root over the live session and drops it on a refusal. `on_superseded` retires the SHARED
+  flag, so installing it the way a fresh connect does would stand the live place's reconnect loop down.
 - ❗ **Not `Volume::rerooted`.** That is the registry's mount-promotion hook, called on evidence with an app-side mount
   root. Implemented here, it would let the registry move a live place onto a fallback root that `register`'s conflict
-  guard recorded (a second connect of the same account at another root records exactly that), which nobody saved. And
-  an edit moves the label, which a promotion never does.
+  guard recorded (a second connect of the same account at another root records exactly that), which nobody saved. And an
+  edit moves the label, which a promotion never does.
 - **What the NEXT redial dials with moves separately**, through `set_redial_params(remote_root, key_file, use_agent)`,
   and only once the edit is accepted. `inner.params` sits behind a `std::sync::RwLock` for it, and every reader takes
   the `params()` snapshot, so no guard crosses an await. The identity (`host`, `port`, `username`) never moves.
@@ -1168,11 +1168,11 @@ For scale, the same three buckets: `cmdr-smb` is 15 / 4 / 18, `cmdr-archive` 35 
 
 Three public modules, and each is named by path from outside the crate: `auth` (for `AuthRungUsed` and
 `UnattendedReconnect`), `transport` (for `HostKeyPrompt` and its kind), and `volume` (for `approve_host_key`,
-`HostKeyApproval`, `SftpVolume`'s two switch methods and its two edit methods, and the `testing` fixtures). `errors`, `extensions`,
-`known_hosts`, `params`, and `trust` are `pub(crate)`; the three types the app does need from them (`SftpConnectError`,
-`ServerExtensions`, `SftpConnectionParams`) arrive as root re-exports. ❗ Keep it that way: a `pub mod` promises
-everything `pub` inside it, and `trust` and `known_hosts` in particular hold the man-in-the-middle decision, which
-nothing outside this crate has any business reaching into.
+`HostKeyApproval`, `SftpVolume`'s two switch methods and its two edit methods, and the `testing` fixtures). `errors`,
+`extensions`, `known_hosts`, `params`, and `trust` are `pub(crate)`; the three types the app does need from them
+(`SftpConnectError`, `ServerExtensions`, `SftpConnectionParams`) arrive as root re-exports. ❗ Keep it that way: a
+`pub mod` promises everything `pub` inside it, and `trust` and `known_hosts` in particular hold the man-in-the-middle
+decision, which nothing outside this crate has any business reaching into.
 
 What the 27 items pay for beyond the crate's first shape:
 
@@ -1182,6 +1182,6 @@ What the 27 items pay for beyond the crate's first shape:
   and its only caller is `volume::approve_host_key`.
 - **Editing a connected place** (§ "The connection model"): `SftpVolume::sharing_connection` and
   `SftpVolume::set_redial_params` cost two. Neither fits one of the four dispositions. The app wiring calls both, so
-  there's no gate and no delete. Only this crate can build an instance over its private connection state, so there's
-  no facade. And they can't fold into one: the instance is built BEFORE the edit is checked, and the redial params may
-  only move once it is accepted.
+  there's no gate and no delete. Only this crate can build an instance over its private connection state, so there's no
+  facade. And they can't fold into one: the instance is built BEFORE the edit is checked, and the redial params may only
+  move once it is accepted.

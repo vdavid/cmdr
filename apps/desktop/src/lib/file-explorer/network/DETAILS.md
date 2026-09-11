@@ -88,8 +88,8 @@ unit-tested:
 
   ❗ **The Name column ranks three names**, in `servers-hub-rows.ts::displayName`: a name a PERSON chose (an SFTP or
   WebDAV account someone named), then the DISCOVERED Bonjour name, and last a stand-in nobody chose (an unnamed
-  account's derived `username@host`, which keeps its place because only SMB rows match a discovered host). The rank comes off
-  `SavedServer.nameSource` (`commands/servers.rs`'s `ServerNameSource`), a fact the store that wrote the label
+  account's derived `username@host`, which keeps its place because only SMB rows match a discovered host). The rank
+  comes off `SavedServer.nameSource` (`commands/servers.rs`'s `ServerNameSource`), a fact the store that wrote the label
   publishes, ❌ never a guess at the string's shape. Without it a person's NAS renames itself the moment they use it:
   every SMB label is a stand-in, either the way `statfs` spells the server (written to `known_shares` on the first share
   listing, `smb-consumer-guest`) or the address typed into "Add server" (`manual_servers` derives `host` or `host:port`;

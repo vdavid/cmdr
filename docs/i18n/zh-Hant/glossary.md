@@ -1187,8 +1187,8 @@ label"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lproj`
 - **Root folder（這部伺服器被限制在裡面的那個資料夾，Cmdr 絕不往它的上層走）** · `根資料夾` · Double Commander
   zh-TW（`Go to root directory` → `移到根資料夾`）、Thunar zh-TW 和 zh-HK（`file system root folder` →
   `檔案系統根資料夾`）、MS（`root directory` 的三個譯法之一，另兩個是 `根目錄`、`最上層資料夾`）· `high`。TC 和 MS 的
-  `root folder` 條目寫 `根目錄`，但目錄在使用者看得到的地方一律取 `資料夾`，英文也特意說 folder。❗ 標籤和每一句提到它的
-  說明或拒絕訊息必須一字不差用同一個詞（`servers.sheet.rootFolder`、`.startFolderHelp`、
+  `root folder` 條目寫 `根目錄`，但目錄在使用者看得到的地方一律取
+  `資料夾`，英文也特意說 folder。❗ 標籤和每一句提到它的說明或拒絕訊息必須一字不差用同一個詞（`servers.sheet.rootFolder`、`.startFolderHelp`、
   `servers.refusal.startFolderOutsideRoot`），`起始資料夾` 同理（`servers.sheet.startFolder`、
   `servers.refusal.startFolderOutsideRoot`、`.startFolderNotFound`）。「比…更上層」的句型取自 Thunar 的
   `沒有比根目錄更上層的目錄`。
@@ -1196,8 +1196,8 @@ label"，直接從這部 Mac 上的 macOS 套件（`zh_TW.lproj` / `zh_HK.lproj`
   **自行組出來的**：`起始` 是 Apple zh-TW 表示「從哪裡開始」的字（Finder `BulkRenameWindow` 的 `編號起始於：`、AppKit
   `在工具列起始處插入`），加上既定的 `資料夾` · `high`。❌ 不寫 `開始位置`：TC 和 DC 用它指搜尋或指令的 "Start in"，而且
   `位置` 在伺服器中心已經是 Places。❌ 不寫 `啟動資料夾`：那是 Windows 開機自動執行程式的 Startup 資料夾。
-- **"Leave it empty"（欄位底下的說明）** · `留空的話，就…` · 目錄既有的 `settings.fileOperations.adbBinaryPath.description`
-  （`留空的話，Cmdr 會…`）· `high`
+- **"Leave it empty"（欄位底下的說明）** · `留空的話，就…` · 目錄既有的
+  `settings.fileOperations.adbBinaryPath.description` （`留空的話，Cmdr 會…`）· `high`
 - **"your account can read it"** · `你的帳號有權限讀取` · `帳號` 見下面 § 被鎖住的伺服器身分，`讀取` 和「權限」沿用
   `fileExplorer.dirSize.noPermsTooltip`（`Cmdr 沒有讀取這個資料夾的權限`）· `high`
 - **"didn't answer in time, so nothing was saved"** · `沒有及時回應，所以什麼都沒儲存` · 前半句一字不差沿用

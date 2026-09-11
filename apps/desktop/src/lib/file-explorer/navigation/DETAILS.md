@@ -87,9 +87,9 @@ switching volumes. Runs checks **in parallel** with 500ms frontend timeouts per 
 `firstLandingOn` is the volume's landing. For a server place that's its start folder (`VolumeInfo.landingPath`, minted
 in Rust by `server_volumes.rs`; `../pane/navigate.ts` hands it over through `getVolumeLandingById`). Everything else
 lands at its root, except a phone: an `adb://<serial>` root becomes `adb://<serial>/sdcard`, where the user's own files
-are. ❗ It is a LANDING rule reached only by arm 4, ❌ never a different volume root: the root is unchanged, one Backspace
-away, and shown in the breadcrumb, and a remembered path (arm 3) still wins. Why a phone lands there, and why `/data` is
-never hidden: `$lib/adb/DETAILS.md` § "Where a phone's first navigation lands".
+are. ❗ It is a LANDING rule reached only by arm 4, ❌ never a different volume root: the root is unchanged, one
+Backspace away, and shown in the breadcrumb, and a remembered path (arm 3) still wins. Why a phone lands there, and why
+`/data` is never hidden: `$lib/adb/DETAILS.md` § "Where a phone's first navigation lands".
 
 ### Picking a volume itself (`picked-volume-path.ts`)
 

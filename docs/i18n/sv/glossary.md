@@ -2880,30 +2880,30 @@ aldrig aktuell.
 
 ## Rotmapp och startmapp för en sparad server (`servers.sheet.rootFolder*`/`.startFolder*`/`.nameHelp`, `servers.refusal.startFolderOutsideRoot`/`.rootNotFound`/`.startFolderNotFound`/`.saveUnconfirmed`, 2026-09-11)
 
-ICU-värden. Arket för att lägga till eller redigera en SFTP- eller WebDAV-server. Rotmappen är taket på servern (Cmdr går
-aldrig ovanför den), startmappen är där panelen öppnas och måste ligga i rotmappen. Båda termerna står likadant i
+ICU-värden. Arket för att lägga till eller redigera en SFTP- eller WebDAV-server. Rotmappen är taket på servern (Cmdr
+går aldrig ovanför den), startmappen är där panelen öppnas och måste ligga i rotmappen. Båda termerna står likadant i
 etiketter, hjälprader och vägranden. Ersätter den borttagna etiketten "Remote folder" (`Mapp på servern`).
 
-- **root folder (en sparad servers tak): `rotmapp`** · samma ord som glossarets `rotmapp`-post (§ Namnbyten och volymsvar):
-  Microsoft-terminologin har `root folder`/`root directory` → `rotmapp` (term 313442, läst 2026-09-11), Thunar
-  `Rotmappen har ingen förälder`, Total Commander `Gå till rotmappen`. Här är det inte filsystemets rot utan en mapp
-  användaren väljer, precis som i engelskan; hjälpraden säger vad den gör. `high`.
+- **root folder (en sparad servers tak): `rotmapp`** · samma ord som glossarets `rotmapp`-post (§ Namnbyten och
+  volymsvar): Microsoft-terminologin har `root folder`/`root directory` → `rotmapp` (term 313442, läst 2026-09-11),
+  Thunar `Rotmappen har ingen förälder`, Total Commander `Gå till rotmappen`. Här är det inte filsystemets rot utan en
+  mapp användaren väljer, precis som i engelskan; hjälpraden säger vad den gör. `high`.
 - **start folder: `startmapp`** · ingen källa har begreppet som substantiv. Total Commander (`&Starta i:`) och Dolphin
   (utgången post `Start in:` → `Starta i:`) har bara verbetiketten, och nyckeln kräver en substantivfras. Sammansatt
   parallellt med `rotmapp` och Apples `start`-sammansättningar (`Startskiva`, `Startobjekt och tillägg`). Microsofts
   Windows-mapp `Startup` krockar inte (ingen `startup folder`-post i terminologin). `tentative`.
 - **account: `konto`** · Microsoft-terminologin (`account` → `konto`, flera poster, läst 2026-09-11) och katalogens
   `servers.sheet.identityLocked` (`Adressen och kontot`). `high`.
-- **Leave it empty (under ett fält): `Lämna fältet tomt`, inte `Lämna den tom`** · efter `Mappen …` skulle `den` syfta på
-  mappen, och `en tom mapp` betyder en mapp utan filer. `fältet` är entydigt; namnfältets hjälprad säger likadant så
-  att arkets hjälprader delar ram. Katalogens `Lämna det tomt, så …` (`settings.fileOperations.adbBinaryPath.description`)
-  gäller där inget substantiv står före. `high`.
+- **Leave it empty (under ett fält): `Lämna fältet tomt`, inte `Lämna den tom`** · efter `Mappen …` skulle `den` syfta
+  på mappen, och `en tom mapp` betyder en mapp utan filer. `fältet` är entydigt; namnfältets hjälprad säger likadant så
+  att arkets hjälprader delar ram. Katalogens `Lämna det tomt, så …`
+  (`settings.fileOperations.adbBinaryPath.description`) gäller där inget substantiv står före. `high`.
 - **your account can read it: `ditt konto får läsa den`** · `får` för behörighet, inte `kan` (förmåga); katalogens
   `errors.listing.remotePermissionDenied.explanation` (`kontot du anslöt med har inte behörighet att öppna den`) bär
   samma betydelse i längre form. De två `*NotFound`-syskonen delar ram tecken för tecken (`style.md` § Syskonvarianter).
   `high`.
-- **nothing was saved: `så Cmdr sparade ingenting`** · aktiv form i stället för `ingenting sparades` (`style.md`),
-  komma före konsekutivt `så`. Första satsen är ordagrant `servers.refusal.timedOut` (`{host} svarade inte i tid`),
-  sista är katalogens `Försök igen om en stund.` `high`.
+- **nothing was saved: `så Cmdr sparade ingenting`** · aktiv form i stället för `ingenting sparades` (`style.md`), komma
+  före konsekutivt `så`. Första satsen är ordagrant `servers.refusal.timedOut` (`{host} svarade inte i tid`), sista är
+  katalogens `Försök igen om en stund.` `high`.
 
 Inga `sameAsSourceJustification`; `{host}` står oförändrad, och ingen apostrof i värdena.

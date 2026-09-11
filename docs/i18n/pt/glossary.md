@@ -2831,15 +2831,15 @@ se repetem nas nove chaves (rótulos, legendas e recusas), então cada um é uma
   o ponto de abertura de um servidor.
 - **never goes above this folder → `nunca sobe além desta pasta`** · `subir` é o movimento de navegação para cima (a
   linha `parent folder` → `Ir para a pasta superior`); `sobe acima` seria pleonasmo, e `além` diz o teto sem ele · high
-- **Where the server opens → `A pasta em que o servidor abre`** · o fragmento inglês sem núcleo soa solto em pt-BR, então
-  a legenda nomeia a pasta; o `Deixe em branco para abrir na pasta raiz` repete o `abrir` e o termo do rótulo irmão ·
-  high
+- **Where the server opens → `A pasta em que o servidor abre`** · o fragmento inglês sem núcleo soa solto em pt-BR,
+  então a legenda nomeia a pasta; o `Deixe em branco para abrir na pasta raiz` repete o `abrir` e o termo do rótulo
+  irmão · high
 - **Leave it empty → `Deixe em branco`** · molde já publicado em `settings.fileOperations.adbBinaryPath.description`
   (linha `Leave this empty` acima) · confirmed
-- **call this server by its account and host → `usar a conta e o host como nome deste servidor`** · o `chamar este
-  servidor` literal deixa em aberto quem chama; o nome montado é `ada@nas.local`, então a legenda diz o que vira nome.
-  `conta` é o termo da irmã `servers.sheet.identityLocked` (`O endereço e a conta identificam este servidor`) e da MS
-  terminology pt-BR (`account` → `conta`); `host` fica verbatim (linha `host (network)`) · high
+- **call this server by its account and host → `usar a conta e o host como nome deste servidor`** · o
+  `chamar este servidor` literal deixa em aberto quem chama; o nome montado é `ada@nas.local`, então a legenda diz o que
+  vira nome. `conta` é o termo da irmã `servers.sheet.identityLocked` (`O endereço e a conta identificam este servidor`)
+  e da MS terminology pt-BR (`account` → `conta`); `host` fica verbatim (linha `host (network)`) · high
 - **Cmdr can''t open → `O Cmdr não consegue abrir`**, no presente porque o inglês é `can''t`, não `couldn''t`; `O Cmdr`
   por extenso, como manda o `style.md` · high. **Check that it exists → `Confira se ela existe`**: `conferir` é o verbo
   de uma verificação feita pela pessoa (`style.md` § Notes, a mesma folha já diz `Confira a impressão digital`), mesmo

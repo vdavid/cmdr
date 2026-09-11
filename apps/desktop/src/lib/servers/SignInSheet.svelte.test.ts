@@ -269,7 +269,10 @@ describe('SignInSheet: add mode', () => {
     }
     await renderSheet({ mode: 'add', attempt })
 
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'ada@nas.local/srv/data')
+    typeInto(
+      document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement,
+      'ada@nas.local/srv/data',
+    )
     await tick()
     const startFolder = document.body.querySelector<HTMLInputElement>('#server-start-folder') as HTMLInputElement
     typeInto(startFolder, '/srv/data-1')
@@ -291,7 +294,10 @@ describe('SignInSheet: add mode', () => {
       Promise.resolve({ kind: 'refused', refusal: 'start_folder_outside_root' })
     await renderSheet({ mode: 'add', attempt })
 
-    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'ada@nas.local/srv/data')
+    typeInto(
+      document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement,
+      'ada@nas.local/srv/data',
+    )
     await tick()
     buttonSaying('Connect').click()
     await flush()

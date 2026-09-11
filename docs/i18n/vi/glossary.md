@@ -2963,10 +2963,10 @@ nó. Thư mục bắt đầu là nơi khung mở ra, và phải là thư mục g
 - **start folder → `thư mục bắt đầu`** · kho tham chiếu không có "start folder" hay "initial folder" nào (Nautilus,
   Thunar, Dolphin, Total Commander, MS terminology đều trống). macOS vi dịch bổ ngữ "start" đúng khuôn này:
   `WorkflowKit.framework` (`Start Location` → `Vị trí bắt đầu`) và `ActionKit.framework` (`Start Location Not Found` →
-  `Không tìm thấy vị trí bắt đầu`), macOS 26.6.2 build 25G83, quét `.loctable` trực tiếp 2026-09-11 · `tentative` (gốc từ
-  chắc chắn, nhưng nguồn là nghĩa lộ trình của Shortcuts, không phải thư mục). ❌ Không dùng `thư mục khởi động`: macOS
-  dành `khởi động` cho startup (`Startup Disk` → `Ổ đĩa khởi động`). ❌ Không dùng `thư mục mặc định` (MS `default
-  folder`), nghĩa khác.
+  `Không tìm thấy vị trí bắt đầu`), macOS 26.6.2 build 25G83, quét `.loctable` trực tiếp 2026-09-11 · `tentative` (gốc
+  từ chắc chắn, nhưng nguồn là nghĩa lộ trình của Shortcuts, không phải thư mục). ❌ Không dùng `thư mục khởi động`:
+  macOS dành `khởi động` cho startup (`Startup Disk` → `Ổ đĩa khởi động`). ❌ Không dùng `thư mục mặc định` (MS
+  `default folder`), nghĩa khác.
 - **host trong `nameHelp` → `địa chỉ`** · `host` và `server` đều là `máy chủ` (đầu bảng này), nên dịch sát "by its
   account and host" thành `máy chủ này theo tài khoản và máy chủ` đọc lẫn lộn. `địa chỉ` là nhãn của chính ô đó
   (`servers.sheet.address`) và là chữ `servers.sheet.identityLocked` đã dùng cho cặp `Địa chỉ và tài khoản` · `high`.
@@ -2975,9 +2975,10 @@ nó. Thư mục bắt đầu là nơi khung mở ra, và phải là thư mục g
 - **"Where the server opens." → `Thư mục hiện ra đầu tiên khi bạn mở máy chủ.`** · dịch sát `Nơi máy chủ mở ra` đọc như
   máy chủ đang khởi động; câu mô tả thẳng thứ người dùng thấy. `mở` là động từ đã chốt cho một hàng máy chủ
   (`menu.network.open`) · `tentative` (không nguồn nào có câu này).
-- **Hai câu `…NotFound` dùng chung đuôi từng chữ**: `Hãy kiểm tra xem thư mục có tồn tại không và tài khoản của bạn có
-  đọc được không.` Chỉ vế đầu khác (`thư mục này` / `thư mục bắt đầu này`), theo luật chuỗi chị em trong `style.md`.
-  `không mở được` theo khuôn `không kết nối được tới` của `servers.refusal.unreachable`.
+- **Hai câu `…NotFound` dùng chung đuôi từng chữ**:
+  `Hãy kiểm tra xem thư mục có tồn tại không và tài khoản của bạn có đọc được không.` Chỉ vế đầu khác (`thư mục này` /
+  `thư mục bắt đầu này`), theo luật chuỗi chị em trong `style.md`. `không mở được` theo khuôn `không kết nối được tới`
+  của `servers.refusal.unreachable`.
 - **`saveUnconfirmed` → `{host} đã không phản hồi kịp thời, nên Cmdr chưa lưu gì. Hãy thử lại sau giây lát.`** · vế đầu
   chép nguyên `servers.refusal.timedOut`; `Hãy thử lại sau giây lát.` là câu catalog đã ship nhiều lần. `chưa` thay vì
   `không`, vì thử lại là an toàn và sẽ lưu (cùng luật `chưa` / `không` của § Lời mời ghim Cmdr vào Dock). Câu chủ động

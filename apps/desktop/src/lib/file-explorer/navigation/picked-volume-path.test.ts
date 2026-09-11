@@ -43,7 +43,13 @@ describe('pathForPickedVolume', () => {
 
   it('opens a local disk at its root', () => {
     expect(
-      pathForPickedVolume({ id: 'usb', name: 'USB', path: '/Volumes/USB', category: 'attached_volume', isEjectable: true }),
+      pathForPickedVolume({
+        id: 'usb',
+        name: 'USB',
+        path: '/Volumes/USB',
+        category: 'attached_volume',
+        isEjectable: true,
+      }),
     ).toBe('/Volumes/USB')
   })
 })

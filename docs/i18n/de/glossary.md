@@ -2806,20 +2806,20 @@ hinausgeht, und der Ordner, in dem sich ein Bereich beim Öffnen des Servers zei
   keinen Begriff dafür. ❌ Nicht `Stammverzeichnis` (Verzeichnis ist nur der technische Sinn, `style.md`), nicht Thunars
   `Basisverzeichnis` oder Nautilus' `Basisordner` (Tier 3). Abgrenzung zur Zeile `der oberste Ordner eines Volumes`: die
   gilt für das englische „top folder“, das kein vom Nutzer gesetzter Begriff ist; hier benennt das Englische ein Feld,
-  und MS führt genau dieses Wort. Das alte, entfernte Label „Entfernter Ordner“ meinte dasselbe Feld,
-  sagt aber nichts über die Obergrenze, also kein Weiterführen.
+  und MS führt genau dieses Wort. Das alte, entfernte Label „Entfernter Ordner“ meinte dasselbe Feld, sagt aber nichts
+  über die Obergrenze, also kein Weiterführen.
 - **start folder (wo sich der Server öffnet) → `Startordner`** (maskulin) · KDE Dolphin („Home URL“ → „Startordner“,
-  „Select Home Location“ → „Startordner auswählen“), Double Commander („in all start path…“ → „in allen Startpfaden …“) ·
-  `high` (nur Tier 3, aber ohne Widerspruch; macOS und MS haben keinen Eintrag).
+  „Select Home Location“ → „Startordner auswählen“), Double Commander („in all start path…“ → „in allen Startpfaden …“)
+  · `high` (nur Tier 3, aber ohne Widerspruch; macOS und MS haben keinen Eintrag).
 - **„a folder inside it“ → `ein Ordner darin`** · kürzer als `ein Ordner in ihm`, und das Pronominaladverb vermeidet den
   Rückbezug auf zwei maskuline Nomen · `high`.
-- **„Check that it exists and that your account can read it.“ → `Prüfe, ob es ihn gibt und ob dein Konto ihn lesen
-  darf.`** · `gibt es` ist das gesetzte Existenz-Idiom („Diesen Ordner gibt es noch nicht.“), `Konto` aus § Die gesperrte
-  Server-Identität, `Prüfe, ob …` aus `errors.listing.couldntReadUnknown.suggestion`. `darf`, weil der häufigste Grund
-  fehlende Rechte sind · `high`.
+- **„Check that it exists and that your account can read it.“ →
+  `Prüfe, ob es ihn gibt und ob dein Konto ihn lesen darf.`** · `gibt es` ist das gesetzte Existenz-Idiom („Diesen
+  Ordner gibt es noch nicht.“), `Konto` aus § Die gesperrte Server-Identität, `Prüfe, ob …` aus
+  `errors.listing.couldntReadUnknown.suggestion`. `darf`, weil der häufigste Grund fehlende Rechte sind · `high`.
 - **„so nothing was saved“ → `deshalb hat Cmdr nichts gesichert`** · das Partizip folgt der Taste `Sichern`
-  (`servers.sheet.save`, § Die Einführungs-Checkliste), aktiv mit `Cmdr` als Subjekt; der erste Halbsatz ist zeichengleich
-  zu `servers.refusal.timedOut` · `high`.
+  (`servers.sheet.save`, § Die Einführungs-Checkliste), aktiv mit `Cmdr` als Subjekt; der erste Halbsatz ist
+  zeichengleich zu `servers.refusal.timedOut` · `high`.
 - **„Leave it empty to …“ → `Leer lassen, um … zu …`** · der Katalog (`settings.askCmdr.interactiveModel.description`
   „Leer lassen, um dasselbe Modell … zu verwenden.“) · `high`. `benennen` passt hier, anders als in `identityLocked`,
   weil der Hinweis wirklich über die Beschriftung im Feld `Name` spricht.

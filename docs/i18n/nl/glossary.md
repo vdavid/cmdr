@@ -3314,17 +3314,17 @@ paneel opent. Beide termen staan byte-gelijk in de labels, de hulpregels en de w
 - **root folder (het plafond op de server) → `hoofdmap`** · Microsoft terminology (`DUTCH.tbx`, `root folder` /
   `root directory` → `hoofdmap`, NLD/BEL, "The uppermost directory on a computer, partition or volume"), KDE Dolphin
   (`Search all directories from the root up` → `vanaf de hoofdmap (root)`) · `high`. macOS kent het begrip niet (geen
-  `root folder` in Finder, AppKit of Systeeminstellingen). Afgewezen: Double Commanders `rootmap` (half Engels),
-  Total Commanders `hoofddirectory` (verouderd, de catalogus zegt overal `map`), en het oude label `Externe map`, dat
-  de plafondbetekenis niet draagt.
+  `root folder` in Finder, AppKit of Systeeminstellingen). Afgewezen: Double Commanders `rootmap` (half Engels), Total
+  Commanders `hoofddirectory` (verouderd, de catalogus zegt overal `map`), en het oude label `Externe map`, dat de
+  plafondbetekenis niet draagt.
 - **start folder (waar een paneel opent) → `beginmap`** · Double Commander (`Start path:` → `Beginpad:`,
   `Starting paths` → `Beginpaden`), met de gevestigde folder → `map` · `tentative`: geen bron heeft de samenstelling
   zelf. Gekozen boven `startmap`, dat aan Windows' `Opstartmap` en het Startmenu doet denken.
-- **never goes above (this folder) → `gaat nooit hoger dan`** · geen bron; `bovenliggende map` staat al voor de map
-  één niveau hoger, dus `hoger` sluit daar in beeld op aan · `tentative`
+- **never goes above (this folder) → `gaat nooit hoger dan`** · geen bron; `bovenliggende map` staat al voor de map één
+  niveau hoger, dus `hoger` sluit daar in beeld op aan · `tentative`
 - **call (a server) by its account and host → `noemt … naar het account en de host`** · `het account` volgt
-  `servers.sheet.identityLocked`; de zinsbouw `Laat dit leeg, dan … Cmdr` volgt `settings.fileOperations.adbBinaryPath.description`
-  · `high` op de termen
+  `servers.sheet.identityLocked`; de zinsbouw `Laat dit leeg, dan … Cmdr` volgt
+  `settings.fileOperations.adbBinaryPath.description` · `high` op de termen
 - **can read it (je account) → `hem mag lezen`** · `mag` omdat de server toegang weigert (rechten), niet omdat het
   technisch niet kan; `hem` voor `de map`, zoals `Cmdr maakt hem aan` · `tentative`
 - **nothing was saved → `er is niets bewaard`** · glossary save → `bewaren` (macOS), `{host} reageerde niet op tijd`

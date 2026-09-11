@@ -13,12 +13,12 @@ proves it with one `PROPFIND Depth: 0` on the root. The probe rides `tokio::sele
 leaves nothing behind. On success the backend records the PII-free analytics event `webdav_connected`.
 
 **An instance is a name and a root over a shared client.** `WebdavVolume` is `{ name, root, inner }`, the same split
-`crates/cmdr-sftp/DETAILS.md` § "The connection model" describes, and `WebdavVolume::sharing_connection(name,
-remote_root)` builds another instance over the same client with no re-probe. It is pure, it goes in through the
-registry's non-retiring replace, and it is deliberately not `Volume::rerooted`; that section has why.
-`set_redial_root` moves the root the next re-probe asks for, once an edit is accepted: ❗ a reconnect PROPFINDs the
-root, so a place whose old root was since deleted would otherwise never come back. `inner.params` sits behind a
-`std::sync::RwLock` for it, read through the `params()` snapshot.
+`crates/cmdr-sftp/DETAILS.md` § "The connection model" describes, and
+`WebdavVolume::sharing_connection(name, remote_root)` builds another instance over the same client with no re-probe. It
+is pure, it goes in through the registry's non-retiring replace, and it is deliberately not `Volume::rerooted`; that
+section has why. `set_redial_root` moves the root the next re-probe asks for, once an edit is accepted: ❗ a reconnect
+PROPFINDs the root, so a place whose old root was since deleted would otherwise never come back. `inner.params` sits
+behind a `std::sync::RwLock` for it, read through the `params()` snapshot.
 
 The probe's answers, in connect terms:
 

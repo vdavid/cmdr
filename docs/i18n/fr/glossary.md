@@ -3303,20 +3303,21 @@ Termes :
   Finder français nomme ainsi le dossier personnel (Finder `LocalizableMerged` `TL_HELP_HOME` « Go to your Home folder »
   → « Aller à votre dossier Départ », `FF21` / `TL2` « Home » → « Départ »), alors même qu'Apple rend `Start Location`
   par `Point de départ` (WorkflowKit) et que Double Commander écrit « Chemin de départ ». ❌ Pas `dossier de démarrage`
-  non plus : Dolphin (« Afficher au démarrage ») et macOS (« Disque de démarrage ») réservent `démarrage` au lancement de
-  l'app ou du Mac. Aucune source n'atteste `dossier initial` mot pour mot ; le catalogue emploie déjà `initial` au sens «
-  du début » (`analyse initiale`, `configuration initiale`).
+  non plus : Dolphin (« Afficher au démarrage ») et macOS (« Disque de démarrage ») réservent `démarrage` au lancement
+  de l'app ou du Mac. Aucune source n'atteste `dossier initial` mot pour mot ; le catalogue emploie déjà `initial` au
+  sens « du début » (`analyse initiale`, `configuration initiale`).
 - your account (celui avec lequel on se connecte) → **votre compte** · reprend `le compte` de
   `servers.sheet.identityLocked` et d'`errors.listing.remotePermissionDenied.*` · high.
 
 Décisions de formulation :
 
-- **`Leave it empty to …` → `Laissez ce champ vide pour …`**, sur le moule de `settings.fileOperations.adbBinaryPath.description`
-  (« Laissez ce champ vide et Cmdr cherche… »). `Laissez-le vide` ferait porter `le` sur un nom que la ligne ne répète pas.
+- **`Leave it empty to …` → `Laissez ce champ vide pour …`**, sur le moule de
+  `settings.fileOperations.adbBinaryPath.description` (« Laissez ce champ vide et Cmdr cherche… »). `Laissez-le vide`
+  ferait porter `le` sur un nom que la ligne ne répète pas.
 - **`call this server by its account and host` → `désigner ce serveur par son compte et son hôte`** : `nommer` se
   confondrait avec la valeur du champ `Nom` lui-même.
-- **`Where the server opens.` devient une phrase complète** : `Le serveur s''ouvre dans ce dossier.` Le fragment `Là où
-  le serveur s''ouvre.` sonne bancal en français.
+- **`Where the server opens.` devient une phrase complète** : `Le serveur s''ouvre dans ce dossier.` Le fragment
+  `Là où le serveur s''ouvre.` sonne bancal en français.
 - **`a folder inside it` → `un dossier à l''intérieur de celui-ci`** · `à l''intérieur de` est la forme du Finder (« Nom
   du nouveau dossier à l'intérieur de « ^0 » ») ; `celui-ci` renvoie sans ambiguïté au dernier nommé, le dossier racine,
   là où `qu''il contient` pourrait se rattacher au sujet.
@@ -3324,7 +3325,8 @@ Décisions de formulation :
   `Cmdr ne peut pas ouvrir … Vérifiez qu''il existe et que votre compte peut le lire.`** · Cmdr reste sujet, comme les
   sœurs `servers.refusal.*` ; `Vérifiez que …` est le moule d'`errors.listing.*.suggestion`. `{host}` suit `sur`, sans
   accord.
-- **`{host} didn''t answer in time, so nothing was saved.` → `{host} n''a pas répondu à temps, Cmdr n''a donc rien
-  enregistré.`** · la première proposition recopie `servers.refusal.timedOut` ; la voix active remplace le passif
-  anglais (style guide § Voice). `Réessayez dans un instant.` recopie cinq clés livrées (`ai.translateError.timeout.body`,
+- **`{host} didn''t answer in time, so nothing was saved.` →
+  `{host} n''a pas répondu à temps, Cmdr n''a donc rien enregistré.`** · la première proposition recopie
+  `servers.refusal.timedOut` ; la voix active remplace le passif anglais (style guide § Voice).
+  `Réessayez dans un instant.` recopie cinq clés livrées (`ai.translateError.timeout.body`,
   `operationLog.rollback.refusalUnexpected`, …).

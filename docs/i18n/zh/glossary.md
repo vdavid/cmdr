@@ -2082,7 +2082,8 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   的对照项，Apple对应的单选是 `注册用户`，但我们的英文是动词短语，所以照动词写。
 - **How to connect（无障碍名）→ `连接方式`** · NetAuthAgent 的同位控件叫
   `连接身份：`（`CONNECT_AS`），我们这组选项问的是用不用账户，`连接方式` 更贴 · `high`。
-- **远程文件夹那个字段现在叫「根文件夹」** · 见本文件末尾 § 服务器表单的根文件夹与起始文件夹。`Remote` → `远程`（FinderKit `LocalizableMerged.loctable`）这条词根仍然成立。
+- **远程文件夹那个字段现在叫「根文件夹」** · 见本文件末尾 § 服务器表单的根文件夹与起始文件夹。`Remote` →
+  `远程`（FinderKit `LocalizableMerged.loctable`）这条词根仍然成立。
 - **Reconnect automatically → `自动重新连接`** · AppSSOKerberos `MainMenu.loctable`（`Reconnect` →
   `重新连接`）、ClassroomKit（`Automatically` → `自动`），目录里 `fileExplorer.smbReconnect.*` 一直写 `重新连接` ·
   `confirmed`。
@@ -2550,12 +2551,30 @@ zh-CN 为 Tier 1，GitHub 自家中文文档用于 GitHub 专有动词，Microso
 
 ## 服务器表单的根文件夹与起始文件夹（`servers.sheet.rootFolder*`、`.startFolder*`、`.nameHelp`、`servers.refusal.startFolderOutsideRoot`/`.rootNotFound`/`.startFolderNotFound`/`.saveUnconfirmed`）
 
-编辑 SFTP / WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「天花板」，Cmdr 不会往它上面走；起始文件夹是打开服务器时窗格进入的位置，必须是根文件夹本身或它里面的文件夹。九个键里两个词必须一字不差。参考堆（`_ignored/i18n/zh/`）和实时 macOS 包都查过，验证于 macOS 26.6.2 / 25G83，2026-09-11。
+编辑 SFTP /
+WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「天花板」，Cmdr 不会往它上面走；起始文件夹是打开服务器时窗格进入的位置，必须是根文件夹本身或它里面的文件夹。九个键里两个词必须一字不差。参考堆（`_ignored/i18n/zh/`）和实时 macOS 包都查过，验证于 macOS
+26.6.2 / 25G83，2026-09-11。
 
-- **root folder → `根文件夹`** · Microsoft TBX `zh-Hans`（`root folder` / `root directory` 给 `根文件夹`、`根目录`、`顶层文件夹` 三个）、Total Commander zh-CN（`根文件夹` 4 处，如 `切换驱动器时总是跳转到根文件夹`）、Double Commander zh-CN（`Go to root directory` → `转到根文件夹`）；Thunar 用 `根目录` · `high`。取 `根文件夹` 是因为 `文件夹` 是已定的 folder。⚠️ 不用 `顶层文件夹`：那是 `errors.mutation.*` 给宗卷自己最上面那层留的词，而这里是用户自选的上限，英文也是另一个词。这个字段的旧标签 `远程文件夹`（英文 "Remote folder"）已随键删除。
-- **start folder → `起始文件夹`** · macOS Safari `MainMenu.strings`（`ZCQ-eG-J6s.title`：`Show Start Page` → `显示起始页`）、Microsoft TBX（`start page` → `起始页`）· `high`。⚠️ 不用 Double Commander 的 `启动文件夹`（`Start in directory`）：在 Windows 中文里它是开机自动运行程序的「启动」文件夹，读者会想歪；DC 自己另一处又写 `开始文件夹`，并不统一。
-- **"Leave it empty to…" → `留空则…`** · style.md 已定的留空句式；`nameHelp` 写 `留空则用账户和主机作为这台服务器的名称。`，用 `名称` 扣住上面的字段标签 `servers.sheet.name`，`账户`、`主机` 都是已定词 · `high`。
-- **"never goes above this folder" → `不会越过这个文件夹往上走`** · 大白话，说的就是「天花板」；刻意没写 `上层文件夹`（那是 Finder 的 Enclosing Folder 命令名，会读成一个菜单项）· `tentative`。
-- **"Cmdr can''t open … Check that it exists and that your account can read it." → `Cmdr 无法打开 {host} 上的这个文件夹。请确认它存在，并且你的账户能读取它。`** · `Cmdr 无法打开…` 与 `errors.git.gitDirPermissionDenied.title` 同型，`请确认…` 与 `fileExplorer.navigation.driveIndex.refusedUpgradeFailed` 同型 · `high`。起始文件夹那条只多 `起始` 两个字。
-- **"didn''t answer in time, so nothing was saved. Try again in a moment." → `{host} 没能及时响应，所以什么都没保存。过一会儿再试一次。`** · `没能及时响应` 逐字沿用 `servers.refusal.timedOut`；`过一会儿再试一次` 与 `ai.translateError.timeout.body` 同型 · `high`。
+- **root folder → `根文件夹`** · Microsoft TBX `zh-Hans`（`root folder` / `root directory` 给
+  `根文件夹`、`根目录`、`顶层文件夹` 三个）、Total Commander zh-CN（`根文件夹` 4 处，如
+  `切换驱动器时总是跳转到根文件夹`）、Double Commander zh-CN（`Go to root directory` → `转到根文件夹`）；Thunar 用
+  `根目录` · `high`。取 `根文件夹` 是因为 `文件夹` 是已定的 folder。⚠️ 不用 `顶层文件夹`：那是 `errors.mutation.*`
+  给宗卷自己最上面那层留的词，而这里是用户自选的上限，英文也是另一个词。这个字段的旧标签 `远程文件夹`（英文 "Remote
+  folder"）已随键删除。
+- **start folder → `起始文件夹`** · macOS Safari `MainMenu.strings`（`ZCQ-eG-J6s.title`：`Show Start Page` →
+  `显示起始页`）、Microsoft TBX（`start page` → `起始页`）· `high`。⚠️ 不用 Double Commander 的
+  `启动文件夹`（`Start in directory`）：在 Windows 中文里它是开机自动运行程序的「启动」文件夹，读者会想歪；DC 自己另一处又写
+  `开始文件夹`，并不统一。
+- **"Leave it empty to…" → `留空则…`** · style.md 已定的留空句式；`nameHelp` 写
+  `留空则用账户和主机作为这台服务器的名称。`，用 `名称` 扣住上面的字段标签 `servers.sheet.name`，`账户`、`主机`
+  都是已定词 · `high`。
+- **"never goes above this folder" → `不会越过这个文件夹往上走`** · 大白话，说的就是「天花板」；刻意没写
+  `上层文件夹`（那是 Finder 的 Enclosing Folder 命令名，会读成一个菜单项）· `tentative`。
+- **"Cmdr can''t open … Check that it exists and that your account can read it." →
+  `Cmdr 无法打开 {host} 上的这个文件夹。请确认它存在，并且你的账户能读取它。`** · `Cmdr 无法打开…` 与
+  `errors.git.gitDirPermissionDenied.title` 同型，`请确认…` 与 `fileExplorer.navigation.driveIndex.refusedUpgradeFailed`
+  同型 · `high`。起始文件夹那条只多 `起始` 两个字。
+- **"didn''t answer in time, so nothing was saved. Try again in a moment." →
+  `{host} 没能及时响应，所以什么都没保存。过一会儿再试一次。`** · `没能及时响应` 逐字沿用
+  `servers.refusal.timedOut`；`过一会儿再试一次` 与 `ai.translateError.timeout.body` 同型 · `high`。
 - **ICU** · 九个值都不含撇号；`{host}` 原样保留，两侧留半角空格。没有值与英文相同，不需要 `sameAsSourceJustification`。

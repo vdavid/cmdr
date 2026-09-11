@@ -124,9 +124,10 @@ describe('serverTargetFrom', () => {
   })
 
   it('carries a typed start folder trimmed, and none when the field is empty', () => {
-    expect(serverTargetFrom({ ...typed('ada@nas.local/srv/data'), startFolder: ' /srv/data/photos ' })).toMatchObject(
-      { remoteRoot: '/srv/data', startFolder: '/srv/data/photos' },
-    )
+    expect(serverTargetFrom({ ...typed('ada@nas.local/srv/data'), startFolder: ' /srv/data/photos ' })).toMatchObject({
+      remoteRoot: '/srv/data',
+      startFolder: '/srv/data/photos',
+    })
     expect(serverTargetFrom({ ...typed('ada@nas.local/srv/data'), startFolder: '  ' })).toMatchObject({
       startFolder: null,
     })

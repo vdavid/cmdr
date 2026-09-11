@@ -269,9 +269,9 @@ writing rules the friendly-error copy obeys: they are error copy however they ar
 
 **A second `Record` says WHICH FIELD each sentence goes under** (`refusalField`): the secret for the two that are about
 a credential, the address for the four that are about the endpoint, the root folder or the start folder for the three
-that are about a folder, and the form for the five no field can fix. ❗ A
-refusal floating above a form reads as being about the whole form: "That password didn't work" under the password field
-is an instruction, and the same words above the address are a puzzle.
+that are about a folder, and the form for the five no field can fix. ❗ A refusal floating above a form reads as being
+about the whole form: "That password didn't work" under the password field is an instruction, and the same words above
+the address are a puzzle.
 
 ## Add mode, address first
 
