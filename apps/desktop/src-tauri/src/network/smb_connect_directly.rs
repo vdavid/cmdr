@@ -20,9 +20,10 @@ use crate::commands::util::blocking_with_timeout;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::network::keychain;
 use crate::network::smb_connect_failure::{Refusal, RefusedAt, SignInIdentity, UpgradeError, UpgradeFailure};
-use crate::network::smb_upgrade::{
-    MOUNT_READ_LIMIT, friendly_server_name, get_keychain_password, resolve_ip_to_hostname_with_wait, try_smb_upgrade,
+use crate::network::smb_server_address::{
+    friendly_server_name, get_keychain_password, resolve_ip_to_hostname_with_wait,
 };
+use crate::network::smb_upgrade::{MOUNT_READ_LIMIT, try_smb_upgrade};
 #[cfg(target_os = "macos")]
 use crate::volumes::{SmbMountInfo, get_smb_mount_info};
 #[cfg(target_os = "linux")]
@@ -278,7 +279,7 @@ pub(crate) async fn connect_directly_with_credentials(
 /// `CredentialsNeeded`, which falls back to the sign-in sheet.
 #[cfg(target_os = "macos")]
 pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str) -> UpgradeResult {
-    use crate::network::smb_upgrade::system_keychain_aliases;
+    use crate::network::smb_server_address::system_keychain_aliases;
     use crate::secrets::system_keychain_smb;
 
     let MountedShare { mount_path, info } = match find_mounted_share(volume_id).await {
@@ -338,7 +339,7 @@ pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str)
 /// responding included: the offer just doesn't appear.
 #[cfg(target_os = "macos")]
 pub(crate) async fn system_has_saved_password(volume_id: &str) -> bool {
-    use crate::network::smb_upgrade::system_keychain_aliases;
+    use crate::network::smb_server_address::system_keychain_aliases;
     use crate::secrets::system_keychain_smb;
 
     let Ok(MountedShare { info, .. }) = find_mounted_share(volume_id).await else {

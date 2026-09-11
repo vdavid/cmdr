@@ -128,7 +128,7 @@ fn smb_info(mount: &MountEntry) -> Option<SmbMountInfo> {
 fn network_name(mount: &MountEntry) -> String {
     match smb_info(mount) {
         Some(info) => {
-            let display = crate::network::smb_upgrade::friendly_server_name(&info.server);
+            let display = crate::network::smb_server_address::friendly_server_name(&info.server);
             format!("{} on {}", info.share, display)
         }
         None => volume_name_from_path(&mount.mount_point),

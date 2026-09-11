@@ -72,6 +72,9 @@ mod smb_cache;
 #[cfg(target_os = "linux")]
 mod smb_smbclient;
 mod smb_smbutil;
+// Who a `statfs` server string is: what to dial, what to call it, and which saved
+// credentials go with it. Shared by `smb_upgrade` and `smb_connect_directly`.
+pub(crate) mod smb_server_address;
 pub(crate) mod smb_upgrade;
 // "Connect directly": the upgrade someone asked for, answered with where it left
 // the volume. The auto-upgrade paths stay in `smb_upgrade`.
