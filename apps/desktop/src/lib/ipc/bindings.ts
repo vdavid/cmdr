@@ -13606,8 +13606,9 @@ export type VolumeConnection =
    *  backend stopped rather than reconnecting. ❗ Never collapsed into
    *  [`NeedsCredentials`](Self::NeedsCredentials): a changed key is the shape a
    *  man-in-the-middle takes, and a sign-in prompt in front of one is how a password
-   *  gets typed into it. Recovery is the user opening the server again, where
-   *  `connect_sftp_volume`'s typed outcome carries the fingerprint to look at.
+   *  gets typed into it. Recovery is the user opening the server again, where the
+   *  connect command's (`connectServer` / `connectSavedPlace`) typed outcome
+   *  carries the fingerprint to look at.
    *
    *  ❗ Payload-free, and it stays that way: this enum is `Copy` on both sides of
    *  `events::volume_mapping::wire_state`.
