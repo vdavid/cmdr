@@ -541,6 +541,14 @@ dialog.
 removes a `/Volumes` mount point along with its mount. A mount point left behind as a plain directory reads as
 `NotSmbMount`, which the frontend answers the same way.
 
+**The mount read is bounded, and only the mount read.** `find_mounted_share` reads the root (`statfs`, then
+`Path::exists`) through `commands::util::blocking_with_timeout` under `MOUNT_READ_LIMIT` (5 s). A mount whose server went
+quiet blocks that read for 30–120 s, which kept "Connecting directly…" spinning for all of it; now it answers
+`MountNotResponding` without dialing. ❌ Never bound the whole flow: the saved-password door goes on to wait for the
+person's answer to the Keychain consent dialog. `try_smb_upgrade` takes the caller's `SmbMountInfo`, anchor included, so
+an attempt never reads the mount a second time, and `system_has_saved_password` (the `system_has_saved_smb_password`
+probe) goes through the same bounded read.
+
 **`CredentialsNeeded` carries a typed `CredentialsNeededReason`, ❌ never a sentence.** `From<Refusal>` decides it: a
 guest refused at either step offered nothing (`NoCredential`, as when nothing is saved), an account refused at sign-in
 is `CredentialRejected`, and an account the share refused is `AccountNotPermitted`. The frontend maps each to its

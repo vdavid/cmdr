@@ -173,6 +173,13 @@
       "share": "the name of the network share, for example archive or Photos"
     }
   },
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} isn''t responding right now, so Cmdr can''t connect to it directly. Try again in a moment.",
+  "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
+    "description": "Toast shown when someone asks for a faster direct connection to a network share, but the share's current connection stopped answering, so the app couldn't even look it up and didn't try. {share} is the share's name. Nothing is lost, and trying again later may work.",
+    "placeholders": {
+      "share": "the name of the network share, for example archive or Photos"
+    }
+  },
   "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} isn''t a network share, so there''s no connection to speed up.",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "description": "Toast shown when someone asks for a faster direct connection on a drive that isn't a network share at all, so there's nothing to connect. {volume} is the drive's name. Explains why nothing happened; nothing broke.",

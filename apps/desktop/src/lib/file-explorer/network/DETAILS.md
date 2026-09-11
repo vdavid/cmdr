@@ -234,8 +234,10 @@ The sequence, and who speaks at each step:
 2. A persistent "Connecting directly…" toast goes up and comes down on every exit path.
 3. `upgradeToSmbVolume(volumeId)` answers a typed `UpgradeResult` and never throws for an outcome. `success` → success
    toast + `requestVolumeRefresh()`. `networkError` → the `upgrade-messages.ts` sentence for that `UpgradeFailure`, at
-   `error`. `volumeGone` / `notSmbMount` → `nothingToUpgradeMessage`, at `warn`: nothing broke, there was just no
-   OS-mounted share left to connect (an unmount, an eject, or a network drop between the offer and the press).
+   `error`. `mountNotResponding` → `mountNotRespondingMessage` naming the share, also at `error` and `stillOnOsMount`:
+   nothing was dialed and nothing is gone, so a later press is worth making. `volumeGone` / `notSmbMount` →
+   `nothingToUpgradeMessage`, at `warn`: nothing broke, there was just no OS-mounted share left to connect (an unmount,
+   an eject, or a network drop between the offer and the press).
 4. `credentialsNeeded` → `systemHasSavedSmbPassword` (a prompt-free probe). If macOS/Finder saved one, a native primer
    dialog ("Use the saved password?") cushions the system Keychain consent dialog, whose own text we can't customize. On
    "Use saved password", `upgradeToSmbVolumeUsingSavedPassword` reads consent → direct smb2 → copies the password into

@@ -149,10 +149,13 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   absent/denied). User-initiated only. Lazy-startup hooks: `ensure_network_discovery_started` (idempotent: kicks off
   mDNS + manual-server load + smb-mount upgrade on first user network action) and `set_network_enabled` (live-applies
   the `network.enabled` toggle). The "Connect directly" upgrade lives in `network::smb_connect_directly` and the
-  auto-upgrade in `network::smb_upgrade`; the three `upgrade_to_smb_volume*` commands only kick mDNS and delegate. They
-  answer a bare `UpgradeResult`, with no `Err` channel: a volume that's gone or isn't an SMB mount is a variant
-  (`VolumeGone` / `NotSmbMount`) the frontend words, and elsewhere than macOS the saved-password one answers
-  `CredentialsNeeded`.
+  auto-upgrade in `network::smb_upgrade`; the three `upgrade_to_smb_volume*` commands only kick mDNS and delegate, and
+  `system_has_saved_smb_password` delegates to `smb_connect_directly::system_has_saved_password`. They answer a bare
+  `UpgradeResult`, with no `Err` channel: a volume that's gone, isn't an SMB mount, or whose mount didn't answer in time
+  is a variant (`VolumeGone` / `NotSmbMount` / `MountNotResponding`) the frontend words, and elsewhere than macOS the
+  saved-password one answers `CredentialsNeeded`. Their filesystem timeout lives in `network`, around the mount read
+  alone (`network/DETAILS.md` § "Connect directly answers a gone volume"), because the saved-password door goes on to
+  wait for the Keychain consent dialog, which no deadline may cut off.
   `list_shares_with_credentials` carries `#[allow(clippy::too_many_arguments)]`: Tauri params must be top-level args.
 - **`smb_diagnostics.rs`** (debug window only): `list_smb_volumes` (the dashboard's volume picker) and
   `get_smb_diagnostics(volume_id)` (a snapshot of one volume's `smb2::SmbClient`). The snapshot DTOs mirror

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { UpgradeFailure } from '$lib/ipc/bindings'
-import { directConnectionUnavailableMessage } from './upgrade-messages'
+import { directConnectionUnavailableMessage, mountNotRespondingMessage } from './upgrade-messages'
 
 const ALL_REASONS: UpgradeFailure[] = ['unreachable', 'tooSlow', 'unexpected']
 
@@ -24,6 +24,14 @@ describe('directConnectionUnavailableMessage', () => {
       const message = directConnectionUnavailableMessage(reason, 'Naspolya').toLowerCase()
       expect(message).not.toMatch(/\berrors?\b|\bfail(ed|ure)?\b/)
     }
+  })
+
+  it('names a share whose mount stopped answering, without saying anything failed', () => {
+    // The backend can't name the server of a mount that won't answer, so the
+    // sentence names the share the pressed control showed.
+    const message = mountNotRespondingMessage('archive')
+    expect(message).toContain('archive')
+    expect(message.toLowerCase()).not.toMatch(/\berrors?\b|\bfail(ed|ure)?\b/)
   })
 
   it('says the share still works, because nothing actually broke', () => {

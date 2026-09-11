@@ -108,6 +108,9 @@ impl VolumeProvider for AppVolumeProvider {
                 UpgradeResult::NotSmbMount => Err(SmbUpgradeRefusal::Failed(
                     "the volume isn't an SMB mount".to_string().into(),
                 )),
+                UpgradeResult::MountNotResponding => Err(SmbUpgradeRefusal::Failed(
+                    "the volume's mount isn't responding".to_string().into(),
+                )),
             }
         })
     }

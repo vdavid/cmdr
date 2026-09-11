@@ -34,7 +34,11 @@ import { openSmbSignInSheet, type SmbCredentialAnswer } from './smb-sign-in'
 import type { SignInAttemptOutcome } from '$lib/servers/sign-in-contract'
 import type { ConnectRefusalKind } from '$lib/servers/connect-refusals'
 import type { CredentialsNeededReason } from '$lib/ipc/bindings'
-import { directConnectionUnavailableMessage, nothingToUpgradeMessage } from './upgrade-messages'
+import {
+  directConnectionUnavailableMessage,
+  mountNotRespondingMessage,
+  nothingToUpgradeMessage,
+} from './upgrade-messages'
 
 const log = getAppLogger('fileExplorer')
 
@@ -232,14 +236,19 @@ async function upgradeWithCredentials(
 /**
  * Says why no direct session came of it, and where that leaves the volume.
  *
- * A server that didn't cooperate is worth another press once it wakes, so that's
- * an `error` and the volume is `stillOnOsMount`. A share that's gone, or a volume
- * that was never one, isn't worth any press: nothing broke, there was just nothing
- * left to connect, so that's a `warn` and the volume is `gone`.
+ * A server that didn't cooperate, or a mount that stopped answering, is worth
+ * another press once it wakes, so that's an `error` and the volume is
+ * `stillOnOsMount`. A share that's gone, or a volume that was never one, isn't
+ * worth any press: nothing broke, there was just nothing left to connect, so
+ * that's a `warn` and the volume is `gone`.
  */
 function announceNoUpgrade(result: NoUpgrade, shareName: string): DirectConnectOutcome {
   if (result.status === 'networkError') {
     addToast(directConnectionUnavailableMessage(result.reason, result.displayName), { level: 'error' })
+    return 'stillOnOsMount'
+  }
+  if (result.status === 'mountNotResponding') {
+    addToast(mountNotRespondingMessage(shareName), { level: 'error' })
     return 'stillOnOsMount'
   }
   addToast(nothingToUpgradeMessage(result.status, shareName), { level: 'warn' })

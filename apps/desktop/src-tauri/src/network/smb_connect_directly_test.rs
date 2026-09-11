@@ -58,6 +58,34 @@ async fn a_volume_on_another_filesystem_answers_not_smb_mount() {
     assert!(matches!(answer, UpgradeResult::NotSmbMount), "got {answer:?}");
 }
 
+/// A mount whose server went quiet blocks `statfs` for as long as it stays quiet,
+/// and "Connecting directly…" spun for all of it. The read is bounded, and the
+/// answer says the mount isn't responding rather than dialing anything.
+#[tokio::test]
+async fn a_mount_that_doesnt_answer_in_time_answers_mount_not_responding() {
+    let dir = TestDir::new("connect_directly_hung");
+    let volume = Registered::at("hung", &dir);
+    // Stands in for a `statfs` on a hung mount: it returns only once the test lets it.
+    let (release, hung) = std::sync::mpsc::channel::<()>();
+
+    let answer = tokio::time::timeout(
+        Duration::from_secs(3),
+        find_mounted_share_within(&volume.0, Duration::from_millis(200), move |_| {
+            let _ = hung.recv();
+            MountRead::Gone
+        }),
+    )
+    .await;
+    // Frees the blocking thread whichever way it went.
+    let _ = release.send(());
+
+    match answer {
+        Ok(Err(UpgradeResult::MountNotResponding)) => {}
+        Ok(other) => panic!("a mount that doesn't answer must be MountNotResponding, got {other:?}"),
+        Err(_) => panic!("the mount read isn't bounded: still waiting after 3 s"),
+    }
+}
+
 /// The sign-in sheet's door looks first too, so a share that went away while the
 /// user typed comes back as gone rather than as a breakdown.
 #[tokio::test]

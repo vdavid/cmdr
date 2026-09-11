@@ -13538,6 +13538,12 @@ export type UpgradeResult =
    *  nothing to upgrade.
    */
   | { status: 'notSmbMount' }
+  /**
+   *  The OS mount behind the volume didn't answer a status read in time: its
+   *  server went quiet, or the network dropped without the mount noticing yet.
+   *  Nothing was dialed, and a later press may work.
+   */
+  | { status: 'mountNotResponding' }
 
 // Per-turn token usage, camelCase for the wire.
 export type UsageView = {

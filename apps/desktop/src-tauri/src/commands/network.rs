@@ -9,10 +9,6 @@ use crate::network::{
 
 use crate::network::smb_connect_directly::{self, UpgradeResult};
 use crate::network::smb_upgrade::register_smb_volume;
-// Only the macOS-gated commands below read the system keychain aliases; an unconditional
-// import fails the Linux build via `#![deny(unused)]`.
-#[cfg(target_os = "macos")]
-use crate::network::smb_upgrade::system_keychain_aliases;
 
 /// Gets all currently discovered network hosts.
 #[tauri::command]
@@ -400,29 +396,7 @@ pub async fn upgrade_to_smb_volume_with_credentials(
 #[tauri::command]
 #[specta::specta]
 pub async fn system_has_saved_smb_password(volume_id: String) -> Result<bool, String> {
-    use crate::file_system::volume::manager::get_volume_manager;
-    use crate::secrets::system_keychain_smb;
-    use crate::volumes::get_smb_mount_info;
-
-    let manager = get_volume_manager();
-    let Some(volume) = manager.get(&volume_id) else {
-        return Ok(false);
-    };
-    let mount_path = volume.root().to_string_lossy().to_string();
-    let Some(info) = get_smb_mount_info(&mount_path) else {
-        return Ok(false);
-    };
-
-    // Use whatever the discovery state already knows (don't warm mDNS just to probe).
-    let aliases = system_keychain_aliases(&info.server);
-    let candidates = system_keychain_smb::server_query_candidates(&info.server, None, &aliases);
-
-    // Attribute read is fast and prompt-free, but still FFI — keep it off the async worker.
-    Ok(
-        tokio::task::spawn_blocking(move || system_keychain_smb::account_for_any(&candidates).is_some())
-            .await
-            .unwrap_or(false),
-    )
+    Ok(smb_connect_directly::system_has_saved_password(&volume_id).await)
 }
 
 #[cfg(not(target_os = "macos"))]

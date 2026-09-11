@@ -16,6 +16,7 @@
 //! they go through `smb_upgrade::register_smb_volume` instead, and it's their
 //! failure the OS-mount notice announces.
 
+use crate::commands::util::blocking_with_timeout;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::network::keychain;
 use crate::network::smb_connect_failure::{Refusal, RefusedAt, SignInIdentity, UpgradeError, UpgradeFailure};
@@ -71,6 +72,10 @@ pub enum UpgradeResult {
     /// Something is mounted at the volume's root, but not an SMB share, so there's
     /// nothing to upgrade.
     NotSmbMount,
+    /// The OS mount behind the volume didn't answer a status read in time: its
+    /// server went quiet, or the network dropped without the mount noticing yet.
+    /// Nothing was dialed, and a later press may work.
+    MountNotResponding,
 }
 
 /// Why "Connect directly" needs a credential.
@@ -104,15 +109,65 @@ impl From<Refusal> for CredentialsNeededReason {
 }
 
 /// The OS mount a direct session would take over from.
+#[derive(Debug)]
 struct MountedShare {
     mount_path: String,
     info: SmbMountInfo,
 }
 
+/// How long reading the mount behind a volume may take before "Connect directly"
+/// answers `MountNotResponding`.
+///
+/// Above the 2 s read tier (`commands/CLAUDE.md`), because a 2 s bound on a
+/// sub-millisecond mount-table read has tripped on a CPU-saturated machine before
+/// the blocking task was even scheduled (`commands/volumes.rs::resolve_location_inner`).
+/// Still short enough that a hung mount answers while someone watches the toast.
+const MOUNT_READ_LIMIT: Duration = Duration::from_secs(5);
+
+/// What the OS says is at a volume's root.
+#[derive(Debug)]
+enum MountRead {
+    /// An SMB mount, and what the OS records about it.
+    Smb(SmbMountInfo),
+    /// Something else is mounted there, or a plain directory was left behind.
+    NotSmb,
+    /// Nothing is there: macOS removes a `/Volumes` mount point along with its
+    /// mount.
+    Gone,
+}
+
+/// Reads what's mounted at `mount_path`.
+///
+/// Blocking, and for as long as a network mount's server stays quiet: `statfs` and
+/// `stat` on a hung mount wait 30-120 s.
+fn read_mount(mount_path: &str) -> MountRead {
+    if let Some(info) = get_smb_mount_info(mount_path) {
+        return MountRead::Smb(info);
+    }
+    // No SMB mount there. Whether the root exists at all is what separates a share
+    // that just went away from a volume that never was one.
+    if std::path::Path::new(mount_path).exists() {
+        MountRead::NotSmb
+    } else {
+        MountRead::Gone
+    }
+}
+
 /// Finds the OS-mounted SMB share behind `volume_id`, or the answer to give
 /// without dialing anything: `Success` for a volume that's already direct,
-/// `VolumeGone` or `NotSmbMount` for one there's nothing to upgrade on.
-fn find_mounted_share(volume_id: &str) -> Result<MountedShare, UpgradeResult> {
+/// `VolumeGone` or `NotSmbMount` for one there's nothing to upgrade on, and
+/// `MountNotResponding` for a mount that didn't answer in time.
+async fn find_mounted_share(volume_id: &str) -> Result<MountedShare, UpgradeResult> {
+    find_mounted_share_within(volume_id, MOUNT_READ_LIMIT, read_mount).await
+}
+
+/// [`find_mounted_share`], with the mount read and its limit passed in so a test
+/// can stand in a mount that never answers.
+async fn find_mounted_share_within(
+    volume_id: &str,
+    limit: Duration,
+    read: impl FnOnce(&str) -> MountRead + Send + 'static,
+) -> Result<MountedShare, UpgradeResult> {
     let Some(volume) = get_volume_manager().get(volume_id) else {
         return Err(UpgradeResult::VolumeGone);
     };
@@ -120,16 +175,17 @@ fn find_mounted_share(volume_id: &str) -> Result<MountedShare, UpgradeResult> {
         return Err(UpgradeResult::Success);
     }
     let mount_path = volume.root().to_string_lossy().to_string();
-    if let Some(info) = get_smb_mount_info(&mount_path) {
-        return Ok(MountedShare { mount_path, info });
-    }
-    // No SMB mount there. Whether the root exists at all is what separates a share
-    // that just went away (macOS removes a `/Volumes` mount point along with its
-    // mount) from a volume that never was one.
-    if std::path::Path::new(&mount_path).exists() {
-        Err(UpgradeResult::NotSmbMount)
-    } else {
-        Err(UpgradeResult::VolumeGone)
+    let path = mount_path.clone();
+    // ❗ Only this read is bounded, ❌ never the whole flow: the saved-password door
+    // goes on to wait for the person's answer to the Keychain consent dialog.
+    let Some(mount) = blocking_with_timeout(limit, None, move || Some(read(&path))).await else {
+        log::warn!("The mount at {mount_path} didn't answer a status read within {limit:?}; not dialing");
+        return Err(UpgradeResult::MountNotResponding);
+    };
+    match mount {
+        MountRead::Smb(info) => Ok(MountedShare { mount_path, info }),
+        MountRead::NotSmb => Err(UpgradeResult::NotSmbMount),
+        MountRead::Gone => Err(UpgradeResult::VolumeGone),
     }
 }
 
@@ -153,7 +209,7 @@ fn credentials_needed(
 /// Upgrades `volume_id` with the credentials Cmdr stored for its share, or answers
 /// `CredentialsNeeded` when there are none or the server turns them down.
 pub(crate) async fn connect_directly(volume_id: &str) -> UpgradeResult {
-    let MountedShare { mount_path, info } = match find_mounted_share(volume_id) {
+    let MountedShare { mount_path, info } = match find_mounted_share(volume_id).await {
         Ok(share) => share,
         Err(answer) => return answer,
     };
@@ -177,16 +233,7 @@ pub(crate) async fn connect_directly(volume_id: &str) -> UpgradeResult {
     };
     log::info!("Found Keychain credentials for user={}", username);
 
-    let upgraded = try_smb_upgrade(
-        &info.server,
-        &info.share,
-        &mount_path,
-        Some(&username),
-        Some(&password),
-        info.port,
-        volume_id,
-    )
-    .await;
+    let upgraded = try_smb_upgrade(&info, &mount_path, Some(&username), Some(&password), volume_id).await;
     match upgraded {
         Ok(()) => UpgradeResult::Success,
         Err(UpgradeError::Refused(refusal)) => {
@@ -205,7 +252,7 @@ pub(crate) async fn connect_directly_with_credentials(
     password: Option<String>,
     remember_in_keychain: bool,
 ) -> UpgradeResult {
-    let MountedShare { mount_path, info } = match find_mounted_share(volume_id) {
+    let MountedShare { mount_path, info } = match find_mounted_share(volume_id).await {
         Ok(share) => share,
         Err(answer) => return answer,
     };
@@ -214,16 +261,7 @@ pub(crate) async fn connect_directly_with_credentials(
     let hostname = resolve_ip_to_hostname_with_wait(&info.server, HOSTNAME_WAIT).await;
     let display_name = friendly_server_name(&info.server);
 
-    let upgraded = try_smb_upgrade(
-        &info.server,
-        &info.share,
-        &mount_path,
-        username.as_deref(),
-        password.as_deref(),
-        info.port,
-        volume_id,
-    )
-    .await;
+    let upgraded = try_smb_upgrade(&info, &mount_path, username.as_deref(), password.as_deref(), volume_id).await;
     match upgraded {
         Ok(()) => {
             if remember_in_keychain && let (Some(u), Some(p)) = (&username, &password) {
@@ -252,7 +290,7 @@ pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str)
     use crate::network::smb_upgrade::system_keychain_aliases;
     use crate::secrets::system_keychain_smb;
 
-    let MountedShare { mount_path, info } = match find_mounted_share(volume_id) {
+    let MountedShare { mount_path, info } = match find_mounted_share(volume_id).await {
         Ok(share) => share,
         Err(answer) => return answer,
     };
@@ -277,12 +315,10 @@ pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str)
     };
 
     let upgraded = try_smb_upgrade(
-        &info.server,
-        &info.share,
+        &info,
         &mount_path,
         Some(&creds.username),
         Some(&creds.password),
-        info.port,
         volume_id,
     )
     .await;
@@ -303,11 +339,34 @@ pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str)
     }
 }
 
+/// Whether the login keychain holds an SMB password another app (Finder) saved for
+/// `volume_id`'s server, so the frontend can decide whether to offer it.
+///
+/// An attributes-only read that ❌ never raises the consent dialog. `false` for
+/// anything short of an OS-mounted share that answered, a mount that isn't
+/// responding included: the offer just doesn't appear.
+#[cfg(target_os = "macos")]
+pub(crate) async fn system_has_saved_password(volume_id: &str) -> bool {
+    use crate::network::smb_upgrade::system_keychain_aliases;
+    use crate::secrets::system_keychain_smb;
+
+    let Ok(MountedShare { info, .. }) = find_mounted_share(volume_id).await else {
+        return false;
+    };
+    // Whatever the discovery state already knows: this doesn't warm mDNS just to probe.
+    let aliases = system_keychain_aliases(&info.server);
+    let candidates = system_keychain_smb::server_query_candidates(&info.server, None, &aliases);
+    // Prompt-free and fast, but still FFI, so it stays off the async worker.
+    tokio::task::spawn_blocking(move || system_keychain_smb::account_for_any(&candidates).is_some())
+        .await
+        .unwrap_or(false)
+}
+
 /// No system keychain to borrow from here, which is the macOS answer for "nothing
 /// saved": ask for the password on the sign-in sheet.
 #[cfg(not(target_os = "macos"))]
 pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str) -> UpgradeResult {
-    match find_mounted_share(volume_id) {
+    match find_mounted_share(volume_id).await {
         Ok(MountedShare { info, .. }) => {
             let display_name = friendly_server_name(&info.server);
             let hint = info.username.clone();

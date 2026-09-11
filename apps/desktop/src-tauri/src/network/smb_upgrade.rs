@@ -10,6 +10,10 @@ use crate::network::get_discovered_hosts;
 use crate::network::smb_connect_failure::{
     DirectConnectOutcome, UpgradeError, UpgradeFailure, log_direct_connect_failure,
 };
+#[cfg(target_os = "macos")]
+use crate::volumes::SmbMountInfo;
+#[cfg(target_os = "linux")]
+use crate::volumes_linux::SmbMountInfo;
 
 /// What a mount is, as the OS records it: which volume it belongs to, and where
 /// it sits inside that volume's share.
@@ -51,18 +55,6 @@ fn identity_from_statfs(mount_path: &str) -> Option<MountIdentity> {
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn identity_from_statfs(_mount_path: &str) -> Option<MountIdentity> {
     None
-}
-
-/// Where `mount_path` sits inside its share, empty when it's the share root or
-/// when the mount can't be read (gone, or not SMB).
-///
-/// Empty is the right fallback rather than a failure: it's what every ordinary
-/// mount has, and it's exactly what this code assumed before anchored mounts were
-/// understood at all.
-fn share_root_from_statfs(mount_path: &str) -> String {
-    identity_from_statfs(mount_path)
-        .map(|identity| identity.share_root)
-        .unwrap_or_default()
 }
 
 /// Delays between direct-connect attempts.
@@ -392,18 +384,23 @@ pub(crate) async fn resolve_and_register_smb_volume(server: &str, share: &str, m
     register_smb_volume(server, share, mount_path, username, password, port).await;
 }
 
-/// Attempts the smb2 connection and registers the volume. Returns `Ok(())` on success.
+/// Attempts the smb2 connection for the mount `info` describes, and registers the
+/// volume. Returns `Ok(())` on success.
+///
+/// `info` is the caller's read of the mount, anchor included, so this never reads
+/// it again: a second `statfs` would be one more unbounded wait on a mount that may
+/// have just stopped answering.
 pub(crate) async fn try_smb_upgrade(
-    server: &str,
-    share: &str,
+    info: &SmbMountInfo,
     mount_path: &str,
     username: Option<&str>,
     password: Option<&str>,
-    port: u16,
     volume_id: &str,
 ) -> Result<(), UpgradeError> {
     use cmdr_smb::volume::connect_smb_volume;
     use std::sync::Arc;
+
+    let (server, share, port) = (info.server.as_str(), info.share.as_str(), info.port);
 
     // Resolve mDNS service names to connectable addresses
     let display = friendly_server_name(server);
@@ -432,7 +429,7 @@ pub(crate) async fn try_smb_upgrade(
     }
 
     let params = cmdr_smb::volume::SmbConnectionParams::new(&resolved_server, share, port, username, password);
-    let share_root = share_root_from_statfs(mount_path);
+    let share_root = info.subpath.clone().unwrap_or_default();
     match connect_with_retry(|| {
         connect_smb_volume(
             share,

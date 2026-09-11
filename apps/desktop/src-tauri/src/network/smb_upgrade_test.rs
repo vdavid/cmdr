@@ -9,6 +9,17 @@ use super::*;
 use std::path::Path;
 use std::time::Duration;
 
+/// What the OS records about an ordinary mount of `share`, at the share root.
+fn mount_of(server: &str, share: &str, port: u16) -> SmbMountInfo {
+    SmbMountInfo {
+        server: server.to_string(),
+        share: share.to_string(),
+        subpath: None,
+        username: None,
+        port,
+    }
+}
+
 #[test]
 fn system_keychain_aliases_include_the_mdns_service_form_for_an_ip() {
     use crate::network::{HostSource, NetworkHost};
@@ -518,7 +529,14 @@ async fn upgrading_an_already_direct_volume_costs_nothing() {
     let (direct, _) = tracking::TrackingVolume::create_with_smb_state("already-direct", Some(ConnectionState::Direct));
     manager.register(&volume_id, std::sync::Arc::clone(&direct));
 
-    let result = try_smb_upgrade(server, share, "/Volumes/unreachable", None, None, 445, &volume_id).await;
+    let result = try_smb_upgrade(
+        &mount_of(server, share, 445),
+        "/Volumes/unreachable",
+        None,
+        None,
+        &volume_id,
+    )
+    .await;
 
     assert!(
         result.is_ok(),
@@ -736,12 +754,10 @@ async fn smb_integration_upgrade_reads_a_guest_refused_at_the_share() {
     let port = both_fixture_port();
     let volume_id = crate::file_system::volume::smb_volume_id("127.0.0.1", port, "private");
     let result = try_smb_upgrade(
-        "127.0.0.1",
-        "private",
+        &mount_of("127.0.0.1", "private", port),
         "/Volumes/never-mounted",
         None,
         None,
-        port,
         &volume_id,
     )
     .await;
@@ -769,12 +785,10 @@ async fn smb_integration_upgrade_reads_a_wrong_password_as_refused_at_sign_in() 
     let port = both_fixture_port();
     let volume_id = crate::file_system::volume::smb_volume_id("127.0.0.1", port, "private");
     let result = try_smb_upgrade(
-        "127.0.0.1",
-        "private",
+        &mount_of("127.0.0.1", "private", port),
         "/Volumes/never-mounted",
         Some("testuser"),
         Some("not-the-password"),
-        port,
         &volume_id,
     )
     .await;

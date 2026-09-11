@@ -473,6 +473,10 @@ pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, para
                 "Volume {volume_id} isn't mounted anymore (unmounted or ejected), so there's nothing to upgrade. \
                  See cmdr://state volumes for the current ids."
             ))),
+            UpgradeResult::MountNotResponding => Err(ToolError::internal(format!(
+                "Volume {volume_id}'s mount didn't answer a status read in time, so nothing was dialed. The server \
+                 behind it may be asleep or unreachable; try again later."
+            ))),
             UpgradeResult::NotSmbMount => Err(ToolError::invalid_params(format!(
                 "Volume {volume_id} isn't an SMB mount, so there's nothing to upgrade. Pick a volume whose kind is \
                  smb and connectionState is os_mount in cmdr://state volumes."

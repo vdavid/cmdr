@@ -33,6 +33,18 @@ export function directConnectionUnavailableMessage(reason: UpgradeFailure, serve
 }
 
 /**
+ * The toast text for a share whose OS mount didn't answer the status read the
+ * upgrade starts with. Nothing was dialed, and nothing is gone, so a later try may
+ * work.
+ *
+ * `share` is what the pressed control showed, like `nothingToUpgradeMessage`'s
+ * `name`: a mount that isn't answering can't tell the backend its server's name.
+ */
+export function mountNotRespondingMessage(share: string): string {
+  return tString('fileExplorer.pane.directConnectionMountNotRespondingToast', { share })
+}
+
+/**
  * The toast text for a volume with no OS-mounted share left to upgrade: the
  * share went away before the press (`volumeGone`), or the volume was never a
  * network share (`notSmbMount`).

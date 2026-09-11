@@ -1369,6 +1369,7 @@ export type MessageKey =
   | 'fileExplorer.networkMount.tryAgain'
   | 'fileExplorer.pane.connectedDirectlyToast'
   | 'fileExplorer.pane.dialogRenderFailedToast'
+  | 'fileExplorer.pane.directConnectionMountNotRespondingToast'
   | 'fileExplorer.pane.directConnectionNotNetworkShareToast'
   | 'fileExplorer.pane.directConnectionShareGoneToast'
   | 'fileExplorer.pane.directConnectionTooSlowToast'

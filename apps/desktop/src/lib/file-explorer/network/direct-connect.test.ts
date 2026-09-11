@@ -144,6 +144,16 @@ describe('connectDirectly', () => {
     expect(toastsAt('warn')[0]).toContain('Backup')
   })
 
+  it("says the share isn't responding, and leaves the retry up, when its mount stopped answering", async () => {
+    // A hung mount blocks the status read the upgrade starts with. Nothing was
+    // dialed and nothing is gone, so a later press is worth making.
+    upgradeToSmbVolume.mockResolvedValue({ status: 'mountNotResponding' })
+
+    await expect(connectDirectly(archive)).resolves.toBe('stillOnOsMount')
+    expect(toastsAt('error')).toHaveLength(1)
+    expect(toastsAt('error')[0]).toContain('archive')
+  })
+
   it('still asks when the remembered-username lookup breaks down', async () => {
     // ❗ This runs BEFORE the sheet opens and nothing here can await it, so a
     // rejection would be an unhandled one AND a prompt that never appeared, over
