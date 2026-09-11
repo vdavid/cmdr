@@ -181,7 +181,7 @@ twin too (it strips the leading `@` and checks the underlying key), so a metadat
 
 `@key.screenshot` values are populated by a re-runnable harness, never hand-authored. **`pnpm i18n:shots`** is the one
 command: it captures fresh screenshots, then rewrites every `@key.screenshot`. (Under the hood it's
-`i18n:capture --build` then `i18n:couple`; the orchestrator is `apps/desktop/scripts/i18n-capture.ts`, the coupler is
+`i18n:shots:no-couple` then `i18n:couple`; the orchestrator is `apps/desktop/scripts/i18n-capture.ts`, the coupler is
 `couple-screenshots.ts`, each carrying a full header comment. Conceptual overview + the prod-no-op define:
 `docs/guides/i18n.md` § Screenshots.)
 
@@ -231,16 +231,13 @@ only explanation.
 the spec's 300 s Playwright timeout, so the run dies part-way and `pnpm i18n:shots` never reaches `i18n:couple` (`&&`).
 Both runs above ended in a bare timeout with zero couplings written.
 
-### Three costs of a capture run, none of them obvious
+### Two things about a capture run that aren't obvious
 
-- **The first capture build compiles the whole graph from `libc` up (~15 min).** `i18n-capture.ts` passes
-  `--config profile.release.debug-assertions=true`, which changes the fingerprint of every dependency, so Cargo can
-  reuse nothing from a normal release build. Cargo then KEEPS that fingerprint set, so later capture builds recompile
-  only what changed. Budget the wait once per machine, not once per run.
-- **`pnpm check svelte` (or any lane that rebuilds the app binary) clobbers the capture binary.** Naming a group runs
-  its slow lanes too, and the E2E lane rebuilds `target/<triple>/release/Cmdr` WITHOUT `CMDR_I18N_CAPTURE_BUILD`. The
-  next `pnpm i18n:capture` then dies on every surface with `__cmdrI18nCapture not installed`, which reads like a harness
-  bug and isn't. Run the checks first, or pass `--build` again afterwards.
+- **It runs on the Playwright lane's binary, so a changed tree costs one build, paid by whichever runs first.**
+  `i18n-capture.ts` asks the check runner for the E2E binary (`--ensure-e2e-binary`), which compiles only when the stamp
+  beside the binary doesn't match the tree. Neither run rebuilds over the other, and neither can launch a binary older
+  than the tree. Generating `en-XA` counts as a change: `scripts/check/checks/DETAILS.md` § "The Playwright lane's
+  binary is fingerprinted".
 - **Piping `pnpm i18n:shots` hides how it ended.** It's `capture && couple`, so a failed capture skips the coupler, and
   a pipe reports the exit status of whatever you piped INTO. `capture-failed.json` (and `capture-report.json`, rolled
   back by the guard) is what says how the run really went.

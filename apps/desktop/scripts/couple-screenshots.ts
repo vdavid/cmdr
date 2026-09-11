@@ -17,7 +17,7 @@
  * doesn't couple (its surface is gone, or no representative rule reaches it
  * anymore) loses both.
  *
- * Run via `pnpm i18n:couple` (after `pnpm i18n:capture`), or directly with
+ * Run via `pnpm i18n:couple` (after `pnpm i18n:shots:no-couple`), or directly with
  * `node scripts/couple-screenshots.ts`. Pass `--check` to write nothing and
  * report instead, exiting by the worst finding: 0 when clean,
  * `CHECK_EXIT_WARN` for stale couplings or a representative rule every key of
@@ -631,7 +631,7 @@ function main() {
   const checkOnly = process.argv.includes('--check')
 
   if (!existsSync(reportPath)) {
-    console.error(`No capture report at ${reportPath}.\nRun \`pnpm i18n:capture\` first to produce it.`)
+    console.error(`No capture report at ${reportPath}.\nRun \`pnpm i18n:shots\` to capture and couple in one go.`)
     process.exit(1)
   }
 

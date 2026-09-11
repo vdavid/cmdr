@@ -105,7 +105,7 @@ automate it, and survives `oxfmt` (which collapses whitespace in regular markdow
   quarter shrinks the technical-debt surface without forcing a single huge cleanup.
 - **Quarterly: i18n translation completeness**. After any batch of new strings lands, verify the 9 non-English locales
   have translations for new keys (the automated stale-check catches outdated translations; the gap is new strings that
-  need fresh commissioning). Run `pnpm i18n:overflow` to catch UI clipping at 150% zoom + min window. Review the
+  need fresh commissioning). Run `pnpm i18n:shots:overflow` to catch UI clipping at 150% zoom + min window. Review the
   translator-process guide if a new feature adds non-trivial message patterns. Frequency: quarterly, or immediately
   after a feature that adds more than five new message keys.
 

@@ -60,7 +60,7 @@ export async function captureCall<T>(page: TauriPage, method: keyof CaptureApi, 
   const argJson = arg === undefined ? '' : JSON.stringify(arg)
   return page.evaluate<T>(`(function() {
     var api = window.__cmdrI18nCapture;
-    if (!api) throw new Error('__cmdrI18nCapture not installed; build with playwright-e2e and ensure non-prod mode');
+    if (!api) throw new Error('no __cmdrI18nCapture in this webview: the binary is not an E2E build (CMDR_E2E_BUILD=1). Run the capture through pnpm i18n:shots, which builds one');
     return api.${method}(${argJson});
   })()`)
 }
@@ -720,7 +720,7 @@ export async function captureToastSurface(
  * back so the next surface (and the afterEach leak guard) starts clean.
  *
  * Uses the `inject_listing_error` Tauri command (feature-gated behind
- * `playwright-e2e`, present in the capture build): the same hook
+ * `playwright-e2e`, present in every E2E build): the same hook
  * `error-pane.spec.ts` uses. The injected error is single-shot, so the cleanup
  * navigation succeeds naturally.
  */

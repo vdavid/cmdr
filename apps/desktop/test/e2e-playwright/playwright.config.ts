@@ -15,7 +15,7 @@ const shardKind = process.env.CMDR_E2E_SHARD_KIND ?? 'all'
 const mtpSpecMatch = /mtp(-[a-z-]+)?\.spec\.ts$/
 // The i18n screenshot-capture driver is not a pass/fail test; it's excluded from
 // every normal lane and only runs under its own `i18n-capture` shard kind (used
-// by `pnpm i18n:capture`). Keeping it out of `all`/`mtp`/`non-mtp` means a full
+// by `pnpm i18n:shots`). Keeping it out of `all`/`mtp`/`non-mtp` means a full
 // suite run never spends time taking screenshots.
 const i18nCaptureSpecMatch = /i18n-capture\.spec\.ts$/
 // The marketing capture (`pnpm marketing:shots`) is the same shape: a screenshot

@@ -42,9 +42,8 @@ import { resetOperationState, resetOperationStateOrReport } from './i18n-capture
  *
  * The COMMERCIAL / perpetual / expired / reminder license surfaces live in their
  * own `CMDR_MOCK_LICENSE` launches (`captureLicensePass` in
- * `i18n-capture-staged.ts`): `app_status.rs` reads that env only under
- * `#[cfg(debug_assertions)]`, which the capture build turns on for the release
- * profile. The license DETAILS view stays document-skipped in the spec: it needs
+ * `i18n-capture-staged.ts`): `app_status.rs` reads that env only in debug and
+ * `playwright-e2e` builds, and this capture runs on an E2E binary. The license DETAILS view stays document-skipped in the spec: it needs
  * a real committed key, which the `AppStatus` mock doesn't populate.
  */
 export async function captureMainDialogs(

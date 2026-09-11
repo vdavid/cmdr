@@ -51,6 +51,19 @@ an APFS clonefile (`cp -c`), falling back to a plain copy, and downloading only 
   keychain in the search list: the runner's launchd session can't reach the login keychain's key, and `--keychain` on
   its own doesn't work for a keychain outside the search list.
 
+## The capture binary
+
+`i18n-capture.ts` never builds or picks a binary itself. `capture-runtime.ts`'s `ensureE2eBinary` asks the check runner
+(`scripts/check.sh --ensure-e2e-binary`), which reuses the Playwright lane's stamped binary when it matches the tree,
+builds it otherwise, and prints its path. The build command and the fingerprint inputs stay in Go
+(`scripts/check/checks/e2e-build.go`), so the capture and the lane can't disagree about staleness, and no entry point
+(`i18n:shots`, `i18n:shots:no-couple`, `i18n:shots:overflow`) can launch an old binary.
+
+One binary serves both runs. Every E2E build carries the capture instrumentation inert, and the launch turns it into a
+capture with `CMDR_I18N_CAPTURE=1` beside `CMDR_E2E_MODE=1` (`src/lib/app-mode.ts`). The license passes need no build of
+their own either: `CMDR_MOCK_LICENSE` compiles into `playwright-e2e` builds, and an E2E build never reaches a production
+server (`src-tauri/src/licensing/DETAILS.md`).
+
 ## The capture guard
 
 `capture-runtime.ts`'s `createTrackedArtifactGuard` is why a half-finished i18n capture can't leave the repo claiming a

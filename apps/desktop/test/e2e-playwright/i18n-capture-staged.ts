@@ -3,9 +3,8 @@
  * (`i18n-capture.spec.ts`).
  *
  * These are the mock-staged surfaces: the ones that
- * need a feature-compiled binary (`virtual-mtp`), a `#[cfg(debug_assertions)]`
- * mock the release-with-debug-assertions capture build now honors
- * (`CMDR_MOCK_LICENSE`, `CMDR_MOCK_FDA`), or a backend event the frontend can
+ * need a feature-compiled binary (`virtual-mtp`), a launch-time mock the E2E
+ * binary honors (`CMDR_MOCK_LICENSE`, `CMDR_MOCK_FDA`), or a backend event the frontend can
  * stage from the capture sink.
  *
  * Split into two families by launch shape:
@@ -41,7 +40,7 @@ const MTP_INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
 
 /**
  * Captures the MTP surfaces, reachable in the MAIN capture pass because the
- * `virtual-mtp` capture build auto-registers the fake device under E2E mode (see
+ * `virtual-mtp` E2E binary auto-registers the fake device under E2E mode (see
  * `crates/cmdr-mtp/src/virtual_device.rs` `decide_startup_root`).
  *
  * - `mtp-browse`: select the virtual device's Internal Storage on the focused
@@ -109,8 +108,8 @@ export async function captureMtpSurfaces(
  *    teachable hint exists and the bridge doesn't skip the toast.
  *
  * The bridge also re-checks `downloads_watcher_status().fdaPending` and bails if
- * the FDA gate is pending. The capture launch sets `CMDR_MOCK_FDA=granted`
- * (debug-assertions build), so the gate reads open and the toast surfaces.
+ * the FDA gate is pending. The capture launch sets `CMDR_MOCK_FDA=granted`,
+ * so the gate reads open and the toast surfaces.
  */
 export async function captureDownloadToasts(
   main: TauriPage,
@@ -176,8 +175,8 @@ export async function captureQuickLookHint(
 
 /**
  * License-pass surfaces, captured in a SEPARATE launch per `CMDR_MOCK_LICENSE`
- * value (the mock is read once at startup under `#[cfg(debug_assertions)]`, which
- * the capture build turns on for the release profile). Each launch's `pass`
+ * value (the mock is read once at startup, in debug and `playwright-e2e` builds
+ * alike). Each launch's `pass`
  * names which mock is active so this captures only that state's surface and
  * MERGES into the existing report.
  *

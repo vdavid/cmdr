@@ -13,7 +13,25 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createTrackedArtifactGuard } from './capture-runtime.ts'
+import { binaryPathFromRunnerOutput, createTrackedArtifactGuard } from './capture-runtime.ts'
+
+describe('binaryPathFromRunnerOutput', () => {
+  // `scripts/check.sh --ensure-e2e-binary` prints the path as its LAST stdout line. Anything
+  // before it (a worktree-warming note) must not be mistaken for the binary.
+  it('takes the last non-empty line as the binary path', () => {
+    const stdout = 'Waiting for the worktree to finish warming…\n/repo/target/aarch64-apple-darwin/release/Cmdr\n\n'
+    expect(binaryPathFromRunnerOutput(stdout)).toBe('/repo/target/aarch64-apple-darwin/release/Cmdr')
+  })
+
+  it('trims the whitespace around the path', () => {
+    expect(binaryPathFromRunnerOutput('  /repo/target/x/release/Cmdr  \r\n')).toBe('/repo/target/x/release/Cmdr')
+  })
+
+  it('answers null when the runner printed nothing', () => {
+    expect(binaryPathFromRunnerOutput('')).toBeNull()
+    expect(binaryPathFromRunnerOutput('\n  \n')).toBeNull()
+  })
+})
 
 let dir: string
 

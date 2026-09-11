@@ -3,7 +3,7 @@
 How to reshoot Cmdr's marketing screenshots and refresh every place they appear. One command does the capture; the rest
 of this page is what to do with the results, and what to look at when a run refuses.
 
-Not to be confused with the translator screenshots (`pnpm i18n:capture`), which photograph ~150 UI surfaces for
+Not to be confused with the translator screenshots (`pnpm i18n:shots`), which photograph ~150 UI surfaces for
 `docs/guides/i18n-translation.md`. Different audience, different pipeline, one shared launch layer
 (`apps/desktop/scripts/capture-runtime.ts`).
 
@@ -16,9 +16,8 @@ pnpm marketing:shots --out ~/Desktop/qa  # somewhere else, leaving brand/ untouc
 ```
 
 ❗ **Leave the machine alone while it runs.** macOS draws the wide window shadow only for the KEY window, so every shot
-takes the front position first; clicking into another app mid-run costs retries. Unlike `pnpm i18n:capture`, this does
-not refuse to start behind another app, because it claims the front through System Events and then proves it in the
-pixels.
+takes the front position first; clicking into another app mid-run costs retries. Unlike `pnpm i18n:shots`, this does not
+refuse to start behind another app, because it claims the front through System Events and then proves it in the pixels.
 
 A quiet run takes about 25 seconds and writes nine files. The one exception is the drive index: see § "When it waits".
 

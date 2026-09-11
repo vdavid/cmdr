@@ -4,25 +4,27 @@
  *
  * Mirrors the manual single-spec recipe (see `test/e2e-playwright/DETAILS.md`)
  * but wraps the whole lifecycle so capture is a single command:
- *   1. refuse to run if any Cmdr is already up (we never kill a foreign instance).
- *   2. (optional `--build`) compile the capture binary: the `playwright-e2e`
- *      feature PLUS `CMDR_I18N_CAPTURE_BUILD=1`, which bakes the capture
- *      instrumentation into the frontend (see `messages.svelte.ts`).
+ *   1. warn if another Cmdr is up (we never kill a foreign instance), and wait
+ *      for the front position to clear.
+ *   2. get the E2E binary for the current tree from the check runner
+ *      (`ensureE2eBinary`), which builds it only when the one on disk is stale.
+ *      It's the Playwright lane's own binary: every E2E build carries the capture
+ *      instrumentation, inert until the spec enables it (see
+ *      `messages.svelte.ts`), so there is no capture build of its own.
  *   3. create a fresh fixture tree.
- *   4. launch the binary (E2E mode, unique socket) and wait for its socket.
+ *   4. launch the binary (E2E mode plus `CMDR_I18N_CAPTURE=1`, which marks the
+ *      run with the yellow `SCREENSHOT` title bar; unique socket) and wait for
+ *      its socket.
  *   5. run ONLY `i18n-capture.spec.ts` (via the `i18n-capture` shard kind),
  *      which drives the surfaces, records keys, and writes the screenshots +
  *      `screenshots/capture-report.json`.
  *   6. stop ONLY the app WE launched (its pid), always, even on failure.
  *
- * Then run `pnpm i18n:couple` to write the `@key.screenshot` couplings.
- *
  * Usage:
- *   pnpm i18n:shots              # the full re-run: this with --build, then couple
- *   pnpm i18n:capture --build    # build the capture binary, then capture
- *   pnpm i18n:capture            # reuse a binary from a PRIOR --build run
- *   pnpm i18n:overflow           # pseudolocale OVERFLOW pass (= --build --locale en-XA)
- *   pnpm i18n:overflow --worst-case  # WORST CASE: pseudolocale + 150% zoom + min window size
+ *   pnpm i18n:shots                        # capture, then write the `@key.screenshot` couplings
+ *   pnpm i18n:shots:no-couple              # capture only; `pnpm i18n:couple` writes the couplings later
+ *   pnpm i18n:shots:overflow               # pseudolocale OVERFLOW pass (= --locale en-XA)
+ *   pnpm i18n:shots:overflow --worst-case  # WORST CASE: pseudolocale + 150% zoom + min window size
  *
  * The `--locale <tag>` axis (default `en`) switches the capture to an OVERFLOW
  * pass: it generates the locale (en-XA), the driver switches the app to it, the
@@ -31,12 +33,11 @@
  * coupling artifacts (`capture-report.json` / `@key.screenshot`) and runs only
  * the main capture pass. See `docs/guides/i18n.md` § Pseudolocale.
  *
- * `pnpm i18n:shots` is the single entry point for a fresh end-to-end refresh
- * (capture with `--build`, then `i18n:couple`); reach for it after a UI change.
- *
- * ALWAYS use `--build` unless a previous `--build` already produced a capture
- * binary: the capture API is absent from a binary built by the normal E2E lane
- * (that lane doesn't set `CMDR_I18N_CAPTURE_BUILD`).
+ * `pnpm i18n:shots` is the single entry point for a fresh end-to-end refresh;
+ * reach for it after a UI change. Every entry point goes through step 2, so none
+ * can run a stale binary: the runner owns the build command and the stamp that
+ * decides whether a rebuild is due, and the Playwright lane asks it the same
+ * question.
  *
  * Extending to more surfaces: add a staging block to `i18n-capture.spec.ts`
  * (stage → setSurface → rerender → screenshot → dump) and re-run this. No change
@@ -45,12 +46,12 @@
 
 import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess, SpawnSyncOptions } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  hostTriple,
+  ensureE2eBinary,
   reserveFreePort,
   waitForFrontPositionToClear,
   waitForSocket,
@@ -61,17 +62,12 @@ import { EN_US_LOCALE_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.
 
 const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
-// The Cargo workspace root is the REPO root, so the built binary lands in
-// `<repo-root>/target/<triple>/release/Cmdr`, NOT under `apps/desktop/src-tauri`.
-// This matches `desktop-svelte-e2e-playwright.go`'s binary resolution.
-const repoRoot = join(desktopDir, '..', '..')
 /**
  * Where this run's artifacts land, mirroring `i18n-capture-config.ts`'s split so
  * an overflow pass is judged against its own directory rather than the coupling
  * one. Used by the completeness check at the end of the run.
  */
 const screenshotsBaseDir = join(desktopDir, 'src', 'lib', 'intl', 'messages', 'screenshots')
-const wantBuild = process.argv.includes('--build')
 
 /**
  * `--locale <tag>` axis. Default `en` is the normal coupling capture (writes
@@ -80,8 +76,7 @@ const wantBuild = process.argv.includes('--build')
  * screenshots land in a SEPARATE `screenshots/overflow/` dir, and a DOM clip scan
  * writes `overflow/overflow-report.md`. An overflow pass never touches coupling
  * artifacts and runs only the `main` capture pass (the mock-license/FDA passes
- * are coupling-only). `pnpm i18n:overflow` is just this with `--locale en-XA
- * --build`.
+ * are coupling-only). `pnpm i18n:shots:overflow` is this with `--locale en-XA`.
  */
 const localeIdx = process.argv.indexOf('--locale')
 // `argv.at(localeIdx + 1)` is `string | undefined`: undefined when `--locale` is
@@ -97,7 +92,7 @@ const isOverflow = captureLocale !== 'en'
 // (150%) AND resizes each captured window to its minimum allowed size before the
 // shot + clip scan. Output lands in a SEPARATE `overflow/worst-case/` dir so it
 // never overwrites the default-size overflow shots. This is the maximal-overflow
-// scenario a translator must fit. `pnpm i18n:overflow --worst-case`.
+// scenario a translator must fit. `pnpm i18n:shots:overflow --worst-case`.
 const wantWorstCase = process.argv.includes('--worst-case')
 
 /** This run's screenshot dir and report path, matching the spec's own three-way split. */
@@ -109,7 +104,7 @@ const screenshotsDir = wantWorstCase
 const reportPath = join(screenshotsDir, 'capture-report.json')
 if (wantWorstCase && !isOverflow) {
   throw new Error(
-    '`--worst-case` only applies to an overflow pass; use it with `--locale en-XA` (or `pnpm i18n:overflow --worst-case`)',
+    '`--worst-case` only applies to an overflow pass; use it with `--locale en-XA` (or `pnpm i18n:shots:overflow --worst-case`)',
   )
 }
 // An explicit socket override (rare); otherwise each pass derives its own unique
@@ -251,64 +246,29 @@ async function main() {
   await waitForFrontPositionToClear('[i18n-capture]')
 
   if (isOverflow) {
-    // Generate the target locale BEFORE the build: the frontend's catalog glob
-    // (`messages/*/*.json`) is eager and resolved at BUILD time, so the locale dir
-    // must exist on disk before the capture binary is compiled or the runtime
-    // can't switch to it. Only `en-XA` (the pseudolocale) is generable today.
+    // Generate the target locale BEFORE getting the binary: the frontend's catalog
+    // glob (`messages/*/*.json`) is eager and resolved at BUILD time, so the locale
+    // dir must exist on disk when the binary is compiled or the runtime can't
+    // switch to it. Only `en-XA` (the pseudolocale) is generable today, and the E2E
+    // build fingerprint covers its gitignored dir, so a binary that predates it
+    // reads as stale below.
     if (captureLocale === 'en-XA') {
       console.log(`[i18n-capture] overflow pass: generating ${captureLocale} catalog…`)
       run('node', ['scripts/gen-pseudolocale.ts'])
     } else {
       console.log(
         `[i18n-capture] overflow pass in ${captureLocale}: assuming its catalog is already on disk ` +
-          `(only en-XA is auto-generated). Build with --build so the glob includes it.`,
+          `(only en-XA is auto-generated). A tracked locale dir is a build input, so the binary carries it.`,
       )
     }
   }
 
-  if (wantBuild) {
-    console.log('[i18n-capture] building capture binary…')
-    // `CMDR_I18N_CAPTURE_BUILD=1` flips the `__CMDR_I18N_CAPTURE__` Vite define so
-    // the frontend bundle BAKES IN the capture instrumentation. Only THIS build
-    // sets it, so a binary built by the normal E2E lane has no capture API:
-    // `pnpm i18n:capture` must always go through `--build`. The env propagates
-    // through tauri-wrapper → Tauri → the vite build.
-    //
-    // The capture build carries EVERY mock/feature at once (the visual UI is
-    // identical between them, only the cfg gates flip), so one build reaches all
-    // the special surfaces:
-    //  - `playwright-e2e`: the capture sink + E2E IPC (always needed).
-    //  - `virtual-mtp`: the fake MTP device, so the MTP browse surface + connected
-    //    toast are reachable without real hardware.
-    //  - `--config profile.release.debug-assertions=true`: turns ON
-    //    `#[cfg(debug_assertions)]` for the RELEASE profile, so the
-    //    `CMDR_MOCK_LICENSE` / `CMDR_MOCK_FDA` mocks (debug-only) take effect.
-    //    A clean, scoped Cargo override that touches only this one build, with no
-    //    committed `Cargo.toml` change. Everything after the tauri `--` separator
-    //    is forwarded to `cargo`.
-    run(
-      'node',
-      [
-        'scripts/tauri-wrapper.ts',
-        'build',
-        '--no-bundle',
-        '--target',
-        hostTriple(),
-        '--',
-        '--features',
-        'playwright-e2e,virtual-mtp',
-        '--config',
-        'profile.release.debug-assertions=true',
-      ],
-      { env: { ...process.env, CMDR_I18N_CAPTURE_BUILD: '1' } },
-    )
-  }
-
-  const triple = hostTriple()
-  const binary = join(repoRoot, 'target', triple, 'release', 'Cmdr')
-  if (!existsSync(binary)) {
-    throw new Error(`E2E binary not found at ${binary}.\nRun with --build first (\`pnpm i18n:capture --build\`).`)
-  }
+  // The E2E binary for this tree, the one the Playwright lane runs: the check
+  // runner reuses the stamped binary when it matches and builds it otherwise, so
+  // this can't launch a stale one. It carries everything the special surfaces
+  // need: `playwright-e2e` (the capture sink, E2E IPC, the `CMDR_MOCK_LICENSE`
+  // mock) and `virtual-mtp` (the fake device behind the MTP surfaces).
+  const binary = ensureE2eBinary('[i18n-capture]')
 
   // Fresh fixtures so the panes have predictable content for the screenshot.
   // This dynamically imports a sibling `.ts` module; Node 25 strips its types
@@ -319,8 +279,8 @@ async function main() {
 
   // The MAIN launch captures every default-launch surface and writes the report
   // fresh. `CMDR_MOCK_FDA=granted` opens the FDA gate so the download teaching
-  // toast surfaces (its event bridge bails when the gate is pending); the
-  // debug-assertions capture build honors the mock. `CMDR_E2E_ASK_CMDR_FAKE=1`
+  // toast surfaces (its event bridge bails when the gate is pending); every build
+  // honors that mock. `CMDR_E2E_ASK_CMDR_FAKE=1`
   // routes Ask Cmdr's send through the scripted fake LLM, which is what both
   // answers the message and opens the composer's provider gate, so the rail's
   // chat surfaces render without a configured provider. The virtual MTP device
@@ -360,10 +320,10 @@ async function main() {
 
   // PER-LAUNCH mock passes. Each carries an env the app reads once at startup,
   // and the spec (keyed by `CMDR_I18N_CAPTURE_PASS`) captures only that pass's
-  // surface and MERGES into the report the main pass wrote. The
-  // debug-assertions capture build is what makes `CMDR_MOCK_LICENSE` /
-  // `CMDR_MOCK_FDA` (both `#[cfg(debug_assertions)]`) take effect in a release
-  // binary. `CMDR_MOCK_LICENSE` values per `app_status.rs::get_mock_status`.
+  // surface and MERGES into the report the main pass wrote. The E2E binary
+  // honors both mocks: `CMDR_MOCK_LICENSE` compiles into `playwright-e2e` builds,
+  // and `CMDR_MOCK_FDA` into every build. `CMDR_MOCK_LICENSE` values per
+  // `app_status.rs::get_mock_status`.
   //
   // `surfaces` is what each pass MUST end up contributing to the report. It's the
   // completeness contract: these launches are the only way their surfaces can be
@@ -465,7 +425,7 @@ function assertRunIsComplete(
 }
 
 /**
- * Launches the capture binary (with `extraEnv` merged in), waits for its unique
+ * Launches the E2E binary as a capture (with `extraEnv` merged in), waits for its unique
  * socket, runs ONLY the capture spec against it, then stops that app. One launch
  * per pass so a `CMDR_MOCK_LICENSE` state takes effect (it's read once at launch).
  */
@@ -482,9 +442,9 @@ async function launchAndCapture(
     `/tmp/tauri-playwright-i18n-${String(process.pid)}-${passLabel.replace(/[^a-z0-9]+/gi, '-')}.sock`
 
   // Pin a per-launch MCP port so the app and the spec's MCP-client helpers agree
-  // on where `/mcp` lives (mirrors what the standard E2E launcher passes). The
-  // capture build enables MCP by default (debug-assertions on), but discovery
-  // needs a known port. `CMDR_MCP_ENABLED=1` is belt-and-braces.
+  // on where `/mcp` lives (mirrors what the standard E2E launcher passes). An E2E
+  // binary is a release build, so MCP is off by default: `CMDR_MCP_ENABLED=1`
+  // turns it on, and discovery needs the known port.
   const mcpPort = await reserveFreePort()
   const mcpEnv = { CMDR_MCP_PORT: String(mcpPort), CMDR_MCP_ENABLED: '1' }
 
@@ -498,6 +458,9 @@ async function launchAndCapture(
     env: {
       ...process.env,
       CMDR_E2E_MODE: '1',
+      // Marks this E2E run as a capture: the yellow `SCREENSHOT` title bar, baked into
+      // every translator image and telling whoever is at the machine to leave it alone.
+      CMDR_I18N_CAPTURE: '1',
       CMDR_E2E_START_PATH: startPath,
       CMDR_PLAYWRIGHT_SOCKET: socket,
       ...mcpEnv,

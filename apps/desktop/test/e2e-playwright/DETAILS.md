@@ -196,7 +196,7 @@ Only the layout facts that none of those carry live here:
   matching runs on the dedicated sequential MTP lane, everything else on the parallel `--shard X/2` non-MTP lanes. So
   naming a new MTP-touching spec `mtp-<something>.spec.ts` is what keeps it off a parallel lane (and mis-naming a
   non-MTP spec that way needlessly serializes it). `i18n-capture.spec.ts` is excluded from every normal lane (`all` /
-  `mtp` / `non-mtp`) and runs only under its own `i18n-capture` shard kind via `pnpm i18n:capture`: it's a screenshot
+  `mtp` / `non-mtp`) and runs only under its own `i18n-capture` shard kind via `pnpm i18n:shots`: it's a screenshot
   driver, not a pass/fail suite. `marketing-shots.spec.ts` is the same shape (`marketing-shots` kind,
   `pnpm marketing:shots`) with two extra reasons for its own lane: it is macOS-only, so it must stay out of `all` (what
   the Linux Docker lane runs), and it is the only spec that runs with NO fixture tree, photographing the developer's
@@ -220,7 +220,7 @@ Only the layout facts that none of those carry live here:
   assertion instead reads the container header (`webp-size.ts`), so it runs on a CI runner with no ImageMagick and still
   catches the likeliest drift: a reshoot at a different size while `FOCUSED_*` stays put. ❌ Don't collapse them back
   into one magick-gated test; that leaves CI asserting nothing about the masters.
-- **❗ Before `pnpm i18n:capture`: quit or hide whatever app is frontmost, then leave the computer alone, and tell David
+- **❗ Before `pnpm i18n:shots`: quit or hide whatever app is frontmost, then leave the computer alone, and tell David
   both halves.** The native screenshot returns the window's last COMPOSITED frame, and macOS stops compositing a window
   that isn't frontmost, so the capture reads a stale, pre-paint frame: a dark rectangle with three traffic lights, while
   every other signal stays healthy (DOM correct, selectors matched, keys recorded). One run shipped 31 blank images this
@@ -419,8 +419,8 @@ Callers: `apps/desktop/scripts/e2e-linux.sh` (settings half only), `apps/desktop
 
 Both failure modes read as product regressions, which is what makes them worth pinning rather than documenting.
 
-The pseudolocale pass is a separate path: `pnpm i18n:overflow` drives `setLocale('en-XA')` against the RUNNING app and
-touches neither pin, so they don't meet.
+The pseudolocale pass is a separate path: `pnpm i18n:shots:overflow` drives `setLocale('en-XA')` against the RUNNING app
+and touches neither pin, so they don't meet.
 
 ## The Full Disk Access pin
 
@@ -453,17 +453,22 @@ The four per-FDA-state banner branches stay covered where they can be driven pro
 
 `app-mode.ts` resolves one of `prod` / `dev` / `e2e` / `capture`, which the main window turns into a tinted title bar
 (plain / pink `DEV MODE` / blue `E2E MODE` / **yellow `SCREENSHOT`**) plus a decorated child-window title. Signals: dev
-from `import.meta.env.DEV`, e2e from `CMDR_E2E_MODE` via the backend's `isE2eMode()`, capture from the
-`__CMDR_I18N_CAPTURE__` build define (`CMDR_I18N_CAPTURE_BUILD=1`). Precedence is capture > e2e > dev.
+from `import.meta.env.DEV`; e2e and capture from the launch environment, which the backend reports through
+`getAutomatedRun()` (`CMDR_E2E_MODE=1` is an E2E run, `CMDR_I18N_CAPTURE=1` on top of it a capture). Precedence is
+capture > e2e > dev.
 
-- **Capture mode exists to be SEEN.** A capture build's only job is taking the translator screenshots, and using the
+- **The mode belongs to the launch, never the build.** The capture runs on the Playwright lane's own E2E binary, which
+  carries the capture instrumentation inert (`__CMDR_E2E_BUILD__`), so no build define can say which run is in flight.
+  Every window resolves the mode once, from the root `+layout.svelte`. Until that answer lands a window reads as
+  dev/prod, and the main window awaits it before rendering the explorer or opening a child window.
+- **Capture mode exists to be SEEN.** A capture run's only job is taking the translator screenshots, and using the
   computer mid-run turns those screenshots blank (macOS stops compositing a backgrounded window). The yellow
   `SCREENSHOT` bar is the glanceable "leave this alone", clearly distinct from an ordinary E2E run, which is harmless to
-  interrupt. It's a signal, not a grab: a capture build keeps `Prohibited` and still orders child windows to the back.
+  interrupt. It's a signal, not a grab: a capture run keeps `Prohibited` and still orders child windows to the back.
 - **❗ For anything that changes BEHAVIOR, call `isE2eRun()`, never `getAppMode() === 'e2e'`.** `capture` is a
   refinement of `e2e`, not an alternative: a capture run drives the app through the same harness events. Comparing to
   `'e2e'` alone silently disables the E2E-only listeners (the dialog gallery, the whats-new rerun) and the onboarding
-  suppression in a capture build, which breaks the capture run itself. `getAppMode()` is for the visual marker only.
+  suppression in a capture run, which breaks the capture run itself. `getAppMode()` is for the visual marker only.
 - The `SCREENSHOT` title text is INSIDE all ~133 translator screenshots, so changing that marker re-renders every image.
 
 The activation policy is set through Tauri's own API, not a hand-rolled `objc2` call: `App::set_activation_policy` (and

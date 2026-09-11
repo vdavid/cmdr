@@ -28,7 +28,7 @@ in `DETAILS.md`. Feature must-knows in the colocated `CLAUDE.md`s.
   There are four app modes (`prod` / `dev` / `e2e` / `capture`, driving the plain / pink `DEV MODE` / blue `E2E MODE` /
   yellow `SCREENSHOT` title bars), and `capture` is a REFINEMENT of `e2e`, not an alternative: the i18n screenshot run
   is an E2E run that also photographs each surface, driven by the same harness events. Comparing to `'e2e'` alone
-  silently switches your gate off in a capture build, which is how you'd break the screenshot run without touching it.
+  silently switches your gate off in a capture run, which is how you'd break the screenshot run without touching it.
   `getAppMode()` is for the VISUAL marker only. Modes and the capture run's rules: `test/e2e-playwright/DETAILS.md` §
   App modes.
 - **Investigating high memory? `vmmap`'s `IOAccelerator` rows are the RUST HEAP, not GPU memory.** mimalloc tags its

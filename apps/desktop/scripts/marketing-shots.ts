@@ -10,7 +10,7 @@
  *
  * ❗ Leave the machine alone while it runs. macOS draws the wide window shadow only for
  * the KEY window, so every shot takes the front position first, and clicking into
- * another app mid-run costs retries. Unlike `pnpm i18n:capture`, this does NOT refuse to
+ * another app mid-run costs retries. Unlike `pnpm i18n:shots`, this does NOT refuse to
  * start behind another app: it claims the front through System Events, which works
  * across apps, and then proves it in the pixels.
  *
@@ -118,9 +118,8 @@ function warnIfBinaryIsStale(binary: string): void {
 function build(): void {
   console.log(`${LOG} building the Playwright binary…`)
   // Deliberately the SAME command (and therefore the same cargo config) as
-  // `pnpm test:e2e:playwright:build`, so the two share a cache. ❌ Don't add
-  // `--config profile.release.debug-assertions=true` the way `i18n-capture.ts` does:
-  // that flips `CMDR_MOCK_LICENSE` on, which changes visible About/licensing copy.
+  // `pnpm test:e2e:playwright:build`, so the two share a cache. ❌ Don't add a cargo
+  // `--config` override here: any profile flip recompiles the whole dependency graph.
   run('pnpm', ['test:e2e:playwright:build'])
 }
 

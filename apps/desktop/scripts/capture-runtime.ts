@@ -12,14 +12,18 @@
  * at the bottom lives here too: same shape of mistake, same one place.
  *
  * Stdlib only, like `instance-id.ts`, so either orchestrator can import it with no
- * build step. Everything here except the launch primitives is pure filesystem work
- * and is covered by `capture-runtime.test.ts`.
+ * build step. Everything here except the launch primitives is pure (the runner-output
+ * parser, the filesystem guard) and is covered by `capture-runtime.test.ts`.
  */
 
 import { execSync, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import net from 'node:net'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+/** The repo root, where the check runner lives: this file sits at `apps/desktop/scripts/`. */
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 
 /** Resolves the host target triple, which is where the built binary lands. */
 export function hostTriple(): string {
@@ -28,6 +32,46 @@ export function hostTriple(): string {
     .find((l) => l.startsWith('host:'))
   if (line === undefined) throw new Error('could not parse host triple from `rustc -vV`')
   return line.replace('host:', '').trim()
+}
+
+/**
+ * The binary path out of `scripts/check.sh --ensure-e2e-binary`'s stdout: its last
+ * non-empty line, since anything the runner says before it (a worktree-warming note)
+ * isn't the answer. `null` when it printed nothing.
+ */
+export function binaryPathFromRunnerOutput(stdout: string): string | null {
+  const lines = stdout
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line !== '')
+  return lines.at(-1) ?? null
+}
+
+/**
+ * The E2E binary for the current tree, built first when the one on disk is stale.
+ *
+ * Asks the check runner rather than building or finding a binary here: the runner
+ * owns the build command, the stamp beside the binary, and the fingerprint inputs
+ * behind it (`scripts/check/checks/e2e-build.go`). So a capture can never launch a
+ * binary older than the tree, and it never disagrees with the Playwright lane about
+ * whether a rebuild is due. The runner's progress and any build failure reach the
+ * terminal through stderr; only the path comes back on stdout.
+ */
+export function ensureE2eBinary(logPrefix: string): string {
+  console.log(`${logPrefix} getting the E2E binary for this tree (builds it only when stale)…`)
+  const res = spawnSync(join(repoRoot, 'scripts', 'check.sh'), ['--ensure-e2e-binary'], {
+    cwd: repoRoot,
+    stdio: ['ignore', 'pipe', 'inherit'],
+    encoding: 'utf8',
+  })
+  if (res.status !== 0) {
+    throw new Error(`\`scripts/check.sh --ensure-e2e-binary\` exited ${String(res.status)}; its output is above`)
+  }
+  const binary = binaryPathFromRunnerOutput(res.stdout)
+  if (binary === null || !existsSync(binary)) {
+    throw new Error(`the check runner named no E2E binary on disk (stdout: ${JSON.stringify(res.stdout)})`)
+  }
+  return binary
 }
 
 /** Polls a Unix socket until connectable or the deadline passes. */

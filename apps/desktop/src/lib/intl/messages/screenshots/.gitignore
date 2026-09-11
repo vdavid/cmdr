@@ -11,7 +11,7 @@
 # `capture-skipped.json` (tracked) + the coverage report.
 capture-failed.json
 
-# The whole pseudolocale OVERFLOW pass output (`pnpm i18n:overflow`): expanded-locale
+# The whole pseudolocale OVERFLOW pass output (`pnpm i18n:shots:overflow`): expanded-locale
 # screenshots + the clip report + its own report/skip JSONs. Entirely regenerable
 # and for visual overflow review only (separate from `@key.screenshot` coupling),
 # so none of it is tracked. See docs/guides/i18n.md § Pseudolocale.

@@ -14,11 +14,11 @@
     "deploy:api-server": "pnpm --filter @cmdr/api-server deploy",
     "i18n:pseudo": "pnpm --filter @cmdr/desktop i18n:pseudo",
     "i18n:check-stale": "pnpm --filter @cmdr/desktop i18n:check-stale",
-    "i18n:capture": "pnpm --filter @cmdr/desktop i18n:capture",
     "marketing:shots": "pnpm --filter @cmdr/desktop marketing:shots",
     "i18n:couple": "pnpm --filter @cmdr/desktop i18n:couple",
     "i18n:shots": "pnpm --filter @cmdr/desktop i18n:shots",
-    "i18n:overflow": "pnpm --filter @cmdr/desktop i18n:overflow",
+    "i18n:shots:no-couple": "pnpm --filter @cmdr/desktop i18n:shots:no-couple",
+    "i18n:shots:overflow": "pnpm --filter @cmdr/desktop i18n:shots:overflow",
     "icons": "./scripts/regenerate-icons.sh",
     "check": "./scripts/check.sh"
   },
