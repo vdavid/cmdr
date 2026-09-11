@@ -18,9 +18,13 @@
  * anymore) loses both.
  *
  * Run via `pnpm i18n:couple` (after `pnpm i18n:capture`), or directly with
- * `node scripts/couple-screenshots.ts`. Pass `--check` to fail (exit 1) if any
- * coupling is missing/stale instead of writing (useful in CI once a full
- * capture exists).
+ * `node scripts/couple-screenshots.ts`. Pass `--check` to write nothing and
+ * report instead, exiting by the worst finding: 0 when clean,
+ * `CHECK_EXIT_WARN` for stale couplings or a representative rule every key of
+ * which has its own capture, `CHECK_EXIT_ERROR` for a structural break (a rule
+ * that reaches no catalog key, or a rule or catalog screenshot naming an image
+ * the report doesn't have). `desktop-message-screenshots-fresh` maps those
+ * codes; any other non-zero code means the script itself failed.
  *
  * The `@key` metadata (including `screenshot` and `screenshotNote`) is stripped
  * by the runtime and by `gen-message-keys.ts`, so this never changes rendered
@@ -409,6 +413,77 @@ export function renderSurfaceReview(review: SurfaceReview): string {
   return lines.join('\n')
 }
 
+/**
+ * Something wrong with the coupling inputs themselves, found without a capture
+ * run: every input is tracked (the report, the catalogs, the rules), so a key or
+ * surface rename breaks one in the same commit that caused it.
+ */
+export type StructuralFinding =
+  /** A representative rule that is the first match for no catalog key (renamed away, or shadowed by earlier rules). */
+  | { kind: 'deadRule'; prefix: string }
+  /** A representative rule whose stand-in image the report doesn't have, so it silently couples nothing. */
+  | { kind: 'missingRuleTarget'; prefix: string; screenshot: string }
+  /** A catalog `@key.screenshot` naming an image the report doesn't have. */
+  | { kind: 'unknownScreenshot'; key: string; screenshot: string }
+  /** A representative rule every key of which has its own capture, so it stands in for nothing. */
+  | { kind: 'redundantRule'; prefix: string; keys: number }
+
+/** `--check` exit code when the worst finding only warns (stale couplings, a redundant rule). */
+export const CHECK_EXIT_WARN = 20
+/** `--check` exit code for a structural break. Both codes sit clear of Node's own, so a crash can't pass for a finding. */
+export const CHECK_EXIT_ERROR = 21
+
+/**
+ * Pure: the structural findings for one set of inputs.
+ * @param allKeys every catalog key.
+ * @param screenshotByKey each key's current `@key.screenshot`, as written in the catalogs.
+ */
+export function findStructuralProblems(
+  report: CaptureReport,
+  allKeys: Iterable<string>,
+  screenshotByKey: Map<string, string>,
+  mappings: RepresentativeMapping[] = REPRESENTATIVE_SCREENSHOTS,
+): StructuralFinding[] {
+  const captured = new Set(Object.values(report).map((surface) => surface.screenshot))
+  const direct = couplingsFromReport(report)
+  // A rule "reaches" the keys it's the FIRST match for, the same way
+  // `representativeFor` picks, so a broad rule whose keys all sit under earlier
+  // specific ones counts as dead.
+  const reached = new Map<RepresentativeMapping, string[]>(mappings.map((rule) => [rule, []]))
+  for (const key of allKeys) {
+    const rule = representativeFor(key, mappings)
+    if (rule) reached.get(rule)?.push(key)
+  }
+
+  const findings: StructuralFinding[] = []
+  for (const rule of mappings) {
+    const keys = reached.get(rule) ?? []
+    if (keys.length === 0) findings.push({ kind: 'deadRule', prefix: rule.prefix })
+    if (!captured.has(rule.screenshot)) {
+      findings.push({ kind: 'missingRuleTarget', prefix: rule.prefix, screenshot: rule.screenshot })
+    }
+    if (keys.length > 0 && keys.every((key) => direct.has(key))) {
+      findings.push({ kind: 'redundantRule', prefix: rule.prefix, keys: keys.length })
+    }
+  }
+  for (const [key, screenshot] of screenshotByKey) {
+    if (!captured.has(screenshot)) findings.push({ kind: 'unknownScreenshot', key, screenshot })
+  }
+  return findings
+}
+
+/** Whether a finding fails the check. A redundant rule only costs a translator nothing, so it warns. */
+export function isBreakingFinding(finding: StructuralFinding): boolean {
+  return finding.kind !== 'redundantRule'
+}
+
+/** The `--check` exit code: the worst of the structural findings and the stale couplings. */
+export function checkExitCode(findings: StructuralFinding[], staleCount: number): number {
+  if (findings.some((finding) => isBreakingFinding(finding))) return CHECK_EXIT_ERROR
+  if (findings.length > 0 || staleCount > 0) return CHECK_EXIT_WARN
+  return 0
+}
+
 export interface Coupling {
   /** The screenshot filename to write to `@key.screenshot`. */
   screenshot: string
@@ -444,6 +519,8 @@ export interface CoupleResult {
   missingTwins: string[]
   /** For `--check`: keys whose coupling is missing/stale (the writes that WOULD happen). */
   stale: StaleCoupling[]
+  /** How many twins lost a coupling this run no longer produces. */
+  clearedCount: number
 }
 
 /**
@@ -522,7 +599,8 @@ export function coupleCatalog(rawText: string, keyToCoupling: Map<string, Coupli
   // Every edit above is skipped when a field already holds its target, so any
   // byte of difference is a real change.
   const changed = text !== rawText
-  return { text, changed, couplingCount, coupledWithoutDescription, missingKeys, missingTwins, stale }
+  const clearedCount = cleared.stale.length
+  return { text, changed, couplingCount, coupledWithoutDescription, missingKeys, missingTwins, stale, clearedCount }
 }
 
 /**
@@ -648,21 +726,32 @@ function setTwinField(text: string, metaKey: string, field: string, value: strin
 // ── CLI shell (file I/O only; skipped when imported as a module) ──────────────
 
 /**
- * Reads every `en/*.json` catalog and returns area → its renderable keys (the
- * `@key` metadata twins dropped), matching the runtime + codegen's key set. Used
- * to compute coverage over the WHOLE catalog, not just the captured subset.
+ * Reads every `en/*.json` catalog. Returns area → its renderable keys (the `@key`
+ * metadata twins dropped, matching the runtime + codegen's key set), used to
+ * compute coverage over the WHOLE catalog rather than the captured subset; and
+ * key → the `@key.screenshot` its twin carries now, for the structural findings.
  * @param messagesDir absolute path to `messages/en`
  */
-function keysByAreaFromCatalogs(messagesDir: string): Map<string, string[]> {
-  const byArea = new Map<string, string[]>()
+function readCatalogs(messagesDir: string): {
+  keysByArea: Map<string, string[]>
+  screenshotByKey: Map<string, string>
+} {
+  const keysByArea = new Map<string, string[]>()
+  const screenshotByKey = new Map<string, string>()
   for (const name of readdirSync(messagesDir)) {
     if (!name.endsWith('.json')) continue
-    const area = name.slice(0, -'.json'.length)
     const json = JSON.parse(readFileSync(join(messagesDir, name), 'utf8')) as Record<string, unknown>
-    const keys = Object.keys(json).filter((k) => !k.startsWith('@'))
-    byArea.set(area, keys)
+    keysByArea.set(
+      name.slice(0, -'.json'.length),
+      Object.keys(json).filter((k) => !k.startsWith('@')),
+    )
+    for (const [metaKey, meta] of Object.entries(json)) {
+      if (!metaKey.startsWith('@') || typeof meta !== 'object' || meta === null) continue
+      const { screenshot } = meta as { screenshot?: unknown }
+      if (typeof screenshot === 'string') screenshotByKey.set(metaKey.slice(1), screenshot)
+    }
   }
-  return byArea
+  return { keysByArea, screenshotByKey }
 }
 
 /** Groups key→coupling pairs by their catalog file, so each file is read/written once. */
@@ -683,6 +772,7 @@ function groupByFile(byKey: Map<string, Coupling>): Map<string, Map<string, Coup
 interface CoupleAllResult {
   changedFiles: string[]
   couplingCount: number
+  clearedCount: number
   staleForCheck: string[]
   coupledWithoutDescription: string[]
   missingTwins: string[]
@@ -701,6 +791,7 @@ function coupleAllFiles(
 ): CoupleAllResult {
   const changedFiles: string[] = []
   let couplingCount = 0
+  let clearedCount = 0
   const staleForCheck: string[] = []
   const coupledWithoutDescription: string[] = []
   const missingTwins: string[] = []
@@ -723,6 +814,7 @@ function coupleAllFiles(
       missingTwins.push(`${key} (in ${file})`)
     }
     couplingCount += result.couplingCount
+    clearedCount += result.clearedCount
     coupledWithoutDescription.push(...result.coupledWithoutDescription)
     if (checkOnly) {
       for (const { key, screenshot, current } of result.stale) {
@@ -737,7 +829,39 @@ function coupleAllFiles(
     }
   }
 
-  return { changedFiles, couplingCount, staleForCheck, coupledWithoutDescription, missingTwins }
+  return { changedFiles, couplingCount, clearedCount, staleForCheck, coupledWithoutDescription, missingTwins }
+}
+
+/** One finding as a line a person can act on. */
+function describeFinding(finding: StructuralFinding): string {
+  switch (finding.kind) {
+    case 'deadRule':
+      return `representative rule \`${finding.prefix}\` is the first match for no catalog key (renamed away, or every key it matches sits under an earlier rule); fix or delete it in \`representative-screenshots.ts\``
+    case 'missingRuleTarget':
+      return `representative rule \`${finding.prefix}\` points at ${finding.screenshot}, which \`capture-report.json\` doesn't have, so it couples nothing; aim it at a captured surface`
+    case 'unknownScreenshot':
+      return `${finding.key} names ${finding.screenshot}, which \`capture-report.json\` doesn't have; run \`pnpm i18n:couple\``
+    case 'redundantRule':
+      return `representative rule \`${finding.prefix}\` stands in for nothing: all ${String(finding.keys)} key(s) it reaches have their own capture; consider deleting it`
+  }
+}
+
+/** Prints one headed, bulleted section to stderr, or nothing when it's empty. */
+function printSection(header: string, lines: string[]): void {
+  if (lines.length === 0) return
+  console.error(`${header} (${String(lines.length)}):`)
+  for (const line of lines) console.error(`  - ${line}`)
+}
+
+/** Prints the structural findings (breaking first) and the stale couplings. */
+function printFindings(findings: StructuralFinding[], stale: string[]): void {
+  const describe = (list: StructuralFinding[]): string[] => list.map((finding) => describeFinding(finding))
+  printSection(
+    'Broken screenshot rules and couplings',
+    describe(findings.filter((finding) => isBreakingFinding(finding))),
+  )
+  printSection('Redundant representative rules', describe(findings.filter((finding) => !isBreakingFinding(finding))))
+  printSection('Stale screenshot couplings, which `pnpm i18n:couple` rewrites', stale)
 }
 
 function main() {
@@ -760,7 +884,7 @@ function main() {
   const directKeyToScreenshot = couplingsFromReport(report)
 
   // Every renderable catalog key (for the representative pass + coverage).
-  const keysByArea = keysByAreaFromCatalogs(messagesDir)
+  const { keysByArea, screenshotByKey } = readCatalogs(messagesDir)
   const allKeys = [...keysByArea.values()].flat()
   // Screenshots the capture run actually produced (a representative may only
   // point at one of these, never at a missing image).
@@ -772,24 +896,28 @@ function main() {
 
   // Group target keys by their catalog file so each file is read/written once.
   const byFile = groupByFile(byKey)
-  const { changedFiles, couplingCount, staleForCheck, coupledWithoutDescription, missingTwins } = coupleAllFiles(
-    byFile,
-    messagesDir,
-    checkOnly,
-  )
+  const { changedFiles, couplingCount, clearedCount, staleForCheck, coupledWithoutDescription, missingTwins } =
+    coupleAllFiles(byFile, messagesDir, checkOnly)
 
   if (checkOnly) {
-    if (staleForCheck.length > 0) {
-      console.error(`Missing/stale screenshot couplings (${String(staleForCheck.length)}):`)
-      for (const line of staleForCheck) console.error(`  - ${line}`)
-      process.exit(1)
+    // Read against the catalogs as committed: a screenshot the report lacks is a
+    // break for as long as a twin still names it.
+    const findings = findStructuralProblems(report, allKeys, screenshotByKey)
+    printFindings(findings, staleForCheck)
+    const exitCode = checkExitCode(findings, staleForCheck.length)
+    if (exitCode === 0) {
+      console.log('Every screenshot coupling matches the capture report, and every representative rule is live.')
     }
-    console.log('All captured keys are already coupled to their screenshots.')
-    process.exit(0)
+    process.exit(exitCode)
   }
 
+  // This run just rewrote every twin from the report, so only the rules can still
+  // be broken; a finding here doesn't stop the write, it tells the person running it.
+  printFindings(findStructuralProblems(report, allKeys, new Map()), [])
+
   console.log(
-    `Coupled ${String(couplingCount)} key(s) to screenshots across ${String(changedFiles.length)} catalog file(s) ` +
+    `Coupled ${String(couplingCount)} key(s) to screenshots and cleared ${String(clearedCount)} stale coupling(s) ` +
+      `across ${String(changedFiles.length)} catalog file(s) ` +
       `(${String(directKeys.size)} direct, ${String(representativeKeys.size)} representative).`,
   )
 

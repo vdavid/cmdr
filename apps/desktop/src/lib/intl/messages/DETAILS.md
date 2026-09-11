@@ -309,22 +309,34 @@ The coupler writes screenshots in two passes:
   genuinely matches; otherwise leave the cluster uncoupled (it shows in the coverage report).
 
 **Gotcha: one string needing its own note still goes in the table, never in the catalog.** `screenshotNote` is a
-GENERATED field, so a note typed straight into `en/*.json` is unregenerable and the next `pnpm i18n:shots` silently
-replaces it with the family's note (or deletes it). `prefix` is matched with `startsWith`, so a whole KEY works as an
-entry; list it BEFORE the family entry it lives under, because `representativeFor` takes the first match, and among
-full-key entries put the longest first, since a shorter key is a prefix of a longer sibling.
+GENERATED field, so a note typed straight into `en/*.json` is unregenerable: the next coupler run replaces it with the
+family's note, or deletes it, since the coupler owns `screenshot` and `screenshotNote` outright and strips both from any
+twin whose key it doesn't couple. `prefix` is matched with `startsWith`, so a whole KEY works as an entry; list it
+BEFORE the family entry it lives under, because `representativeFor` takes the first match, and among full-key entries
+put the longest first, since a shorter key is a prefix of a longer sibling.
 
-❗ **Renaming or splitting a surface silently empties every representative mapping aimed at its old PNG.** "Only points
-at an image the run produced" is the honesty guarantee AND the failure mode: the coupler drops the mapping rather than
-complaining, so the loss shows up only as a coverage number that went down. When Settings > AI split into
-`settings-ai-provider` / `settings-ai-ask-cmdr` / `settings-ai-mcp-server`, `settings-ai.png` stopped existing and all
-101 `ai.*` couplings went with it while the mapping table kept naming the dead file. So after any surface rename or
-split, re-check every `REPRESENTATIVE_SCREENSHOTS` target against the FRESH `capture-report.json`, and read the per-area
-diff in `coverage-report.md` before committing the run.
+**A key or surface rename breaks the coupling inputs in the commit that made it, so `message-screenshots-fresh` fails
+there.** "Only points at an image the run produced" is the honesty guarantee AND a silent failure mode: the coupler
+drops such a mapping rather than complaining. It has bitten twice. When Settings > AI split into three surfaces,
+`settings-ai.png` stopped existing and all 101 `ai.*` couplings went with it while the table kept naming the dead file.
+And a rule's prefix renamed away matched nothing, so eight `servers.paneState.*` keys kept pointing at a dialog that no
+longer existed. The report, the catalogs, and the rules are all tracked, so the check (in CI) runs the coupler's
+`--check` on them and fails on:
 
-The coupler is idempotent (a re-run with the same report is a byte-for-byte no-op). The warn-only
-`message-screenshots-fresh` check runs the coupler's `--check` to flag report↔catalog drift without needing the PNGs; it
-never fails the build (screenshots are optional). Re-run `pnpm i18n:shots` to clear a drift warning.
+- a representative rule that is the first match for no catalog key (its family was renamed away, or earlier rules claim
+  every key it matches),
+- a rule whose stand-in image the report doesn't have (it would couple nothing), and
+- an `@key.screenshot` naming an image the report doesn't have.
+
+It warns on a rule every key of which has its own capture (it stands in for nothing), and on stale couplings. Findings
+are pure (`findStructuralProblems`); the exit codes are `CHECK_EXIT_WARN` / `CHECK_EXIT_ERROR`, both clear of Node's
+own, so the Go check can never read a crashed coupler as a finding.
+
+The coupler is idempotent (a re-run with the same report is a byte-for-byte no-op) and owns `screenshot` /
+`screenshotNote` outright: a coupling no surface or rule produces anymore is removed. Stale couplings stay a warn
+because screenshots are optional, and because a key rename would otherwise force dropping a still-truthful screenshot in
+the same commit (the report learns the new name only at the next capture). `pnpm i18n:couple` rewrites them from the
+tracked report; `pnpm i18n:shots` when the report itself is out of date.
 
 ## Parity contract
 

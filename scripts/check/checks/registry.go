@@ -443,11 +443,10 @@ var AllChecks = []CheckDefinition{
 		DisplayName: "message-screenshots-fresh",
 		App:         AppDesktop,
 		Tech:        "🎨 Svelte",
-		// Warn-only metric (drift between the capture report and the catalogs'
-		// @key.screenshot couplings): screenshots are an optional translator aid, so
-		// stale couplings never fail the build. Like other warn-only metrics, a CI
-		// step would be noise since it can't fail.
-		NotInCI:   "warn-only metric; it can never fail, so a CI step would be noise",
+		// Errors on a structural break a rename leaves behind (a representative
+		// rule reaching no catalog key, or a rule or @key.screenshot naming an image
+		// the capture report lacks) and warns on drift. Every input is tracked, so
+		// it runs in CI like the other freshness checks.
 		DependsOn: nil,
 		IsFast:    true,
 		Inputs:    svelteInputs,

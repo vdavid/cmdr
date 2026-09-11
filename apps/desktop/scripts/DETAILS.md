@@ -72,11 +72,10 @@ the old bytes and never reformats anything.
 **A DELETED surface leaves the report by hand.** The main pass builds its map from `{}`, but the license and FDA passes
 load the committed report and merge into it, so a surface that no longer exists anywhere (a dialog case that was
 removed) survives until the next full main capture — and until then the report describes a screen the app can't show.
-`couple-screenshots.ts --check` stays green over it ("Skipping … not present", exit 0), so nothing surfaces it. Deleting
-the surface's object out of `capture-report.json` is safe and is what the next full run would do; check first whether
-any catalog key's `@key.screenshot` names that PNG (`grep` the `en/` catalogs), and re-run `pnpm i18n:couple` if one
-does, so the key falls back to the next surface it appeared on rather than pointing at an image nobody will capture
-again.
+`message-screenshots-fresh` can't tell a surface the app no longer shows from one it does, so nothing surfaces it.
+Deleting the surface's object out of `capture-report.json` is safe and is what the next full run would do. Follow it
+with `pnpm i18n:couple`, which moves each of its keys to the next surface it appeared on, or clears the coupling;
+without that, the check fails on every `@key.screenshot` still naming the deleted PNG.
 
 ## The defaults manifest
 

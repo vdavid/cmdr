@@ -9,6 +9,11 @@ import {
   buildCouplings,
   buildSurfaceReview,
   renderSurfaceReview,
+  findStructuralProblems,
+  isBreakingFinding,
+  checkExitCode,
+  CHECK_EXIT_WARN,
+  CHECK_EXIT_ERROR,
   REPRESENTATIVE_SCREENSHOTS,
 } from './couple-screenshots.ts'
 
@@ -357,6 +362,88 @@ describe('REPRESENTATIVE_SCREENSHOTS config', () => {
       expect(m.note.trim().length).toBeGreaterThan(0)
       expect(m.screenshot.endsWith('.png')).toBe(true)
     }
+  })
+})
+
+describe('findStructuralProblems', () => {
+  const report = {
+    dialog: { screenshot: 'dialog.png', keys: ['common.ok', 'errors.mount.direct'] },
+    pane: { screenshot: 'pane.png', keys: [] },
+  }
+  const keys = ['common.ok', 'common.cancel', 'errors.mount.direct', 'errors.mount.other', 'errors.write.x']
+  const live = [
+    { prefix: 'errors.mount.', screenshot: 'pane.png', note: 'mount note' },
+    { prefix: 'errors.', screenshot: 'dialog.png', note: 'errors note' },
+  ]
+  const noTwins = new Map<string, string>()
+
+  it('finds nothing when every rule reaches a key and every image is in the report', () => {
+    expect(findStructuralProblems(report, keys, new Map([['common.ok', 'dialog.png']]), live)).toEqual([])
+  })
+
+  it('flags a rule whose prefix no catalog key starts with', () => {
+    // The shape that shipped a dead dialog to translators: a family renamed away
+    // from its rule, so the rule matched nothing and said nothing.
+    const mappings = [...live, { prefix: 'fileExplorer.smbReconnect.', screenshot: 'pane.png', note: 'n' }]
+    expect(findStructuralProblems(report, keys, noTwins, mappings)).toEqual([
+      { kind: 'deadRule', prefix: 'fileExplorer.smbReconnect.' },
+    ])
+  })
+
+  it('flags a rule whose every matching key an earlier rule already claims', () => {
+    expect(findStructuralProblems(report, ['errors.mount.other'], noTwins, live)).toEqual([
+      { kind: 'deadRule', prefix: 'errors.' },
+    ])
+  })
+
+  it('flags a rule whose stand-in image the report does not have', () => {
+    const mappings = [{ prefix: 'errors.', screenshot: 'renamed-away.png', note: 'n' }]
+    expect(findStructuralProblems(report, keys, noTwins, mappings)).toEqual([
+      { kind: 'missingRuleTarget', prefix: 'errors.', screenshot: 'renamed-away.png' },
+    ])
+  })
+
+  it('flags a catalog screenshot the report does not have', () => {
+    const twins = new Map([
+      ['common.ok', 'dialog.png'],
+      ['common.cancel', 'gone.png'],
+    ])
+    expect(findStructuralProblems(report, keys, twins, live)).toEqual([
+      { kind: 'unknownScreenshot', key: 'common.cancel', screenshot: 'gone.png' },
+    ])
+  })
+
+  it('warns about a rule every key of which already has a direct capture', () => {
+    const mappings = [{ prefix: 'errors.mount.', screenshot: 'pane.png', note: 'n' }]
+    expect(findStructuralProblems(report, ['common.ok', 'errors.mount.direct'], noTwins, mappings)).toEqual([
+      { kind: 'redundantRule', prefix: 'errors.mount.', keys: 1 },
+    ])
+  })
+})
+
+describe('checkExitCode', () => {
+  const dead = { kind: 'deadRule', prefix: 'x.' } as const
+  const redundant = { kind: 'redundantRule', prefix: 'y.', keys: 2 } as const
+
+  it('treats only a redundant rule as non-breaking', () => {
+    expect(isBreakingFinding(redundant)).toBe(false)
+    expect(isBreakingFinding(dead)).toBe(true)
+    expect(isBreakingFinding({ kind: 'missingRuleTarget', prefix: 'x.', screenshot: 'a.png' })).toBe(true)
+    expect(isBreakingFinding({ kind: 'unknownScreenshot', key: 'x.y', screenshot: 'a.png' })).toBe(true)
+  })
+
+  it('exits clean, warn, or error by the worst finding', () => {
+    expect(checkExitCode([], 0)).toBe(0)
+    expect(checkExitCode([], 3)).toBe(CHECK_EXIT_WARN)
+    expect(checkExitCode([redundant], 0)).toBe(CHECK_EXIT_WARN)
+    expect(checkExitCode([redundant, dead], 5)).toBe(CHECK_EXIT_ERROR)
+  })
+
+  it('keeps clear of the code Node exits with on an uncaught exception', () => {
+    // The Go check reads any other non-zero code as "the coupler crashed", so a
+    // finding must never share Node's exit 1.
+    expect([CHECK_EXIT_WARN, CHECK_EXIT_ERROR]).not.toContain(1)
+    expect(CHECK_EXIT_WARN).not.toBe(CHECK_EXIT_ERROR)
   })
 })
 

@@ -19,11 +19,10 @@ Two things to know before reading a count from anywhere:
 - **The percentage falls as the catalog grows, and that is fine.** Absolute coverage keeps climbing; the denominator
   climbs faster whenever a feature lands with a lot of copy (the translated menu bar arrived as a large block of
   permanently-native `menu.*` keys). Judge progress on the uncoupled COUNT per area, never on the headline percentage.
-- **The report and the catalogs can disagree in both directions.** A key the catalogs carry an `@key.screenshot` for
-  that a fresh coupling would not produce stays invisible: the warn-only `message-screenshots-fresh` check reads
-  missing-or-stale couplings and stays green over a coupling the report no longer justifies
-  (`apps/desktop/scripts/DETAILS.md` § "The capture guard" covers the deleted-surface half). A full `pnpm i18n:shots`
-  clears both directions.
+- **A deleted surface can outlive itself in the report.** The coupler clears any `@key.screenshot` the report and the
+  representative rules no longer produce, and `message-screenshots-fresh` flags one until it does, but a surface removed
+  from the app stays in the report until the next full main capture, still counted as coverage
+  (`apps/desktop/scripts/DETAILS.md` § "The capture guard"). A full `pnpm i18n:shots` clears it.
 
 ## 1. `settings.mediaIndex`: the panel body behind the master toggle
 
