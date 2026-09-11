@@ -30,7 +30,8 @@ import {
   initMcpClient,
   mcpCall,
   mcpReadResource,
-  mcpSelectVolume,
+  getMtpVolumePath,
+  mcpOpenMtpStorageRoot,
   mcpNavToPath,
   mcpAwaitItem,
 } from '../e2e-shared/mcp-client.js'
@@ -67,20 +68,6 @@ async function bothPanesOnLocalVolume(): Promise<boolean> {
   const state = await mcpReadResource('cmdr://state')
   const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) => line.replace(/^\n {2}volume: /, ''))
   return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
-}
-
-/** Discovers the mtp:// path prefix for a named MTP storage from cmdr://state. */
-async function getMtpVolumePath(storageName: string): Promise<string> {
-  const state = await mcpReadResource('cmdr://state')
-  const lines = state.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(`name: ${storageName}`) && lines[i + 1]?.includes('id:')) {
-      const id = lines[i + 1].trim().replace('id: ', '')
-      const [deviceId, storageId] = id.split(':')
-      return `mtp://${deviceId}/${storageId}`
-    }
-  }
-  throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
 }
 
 /**
@@ -141,7 +128,7 @@ test.describe('MTP copy pre-flight reuses watcher-backed listing', () => {
     // `LISTING_CACHE` for the parent and marks the MTP volume as watched
     // (the virtual device is connected). The oracle's
     // `try_get_watched_listing(volume_id, path)` should hit on every entry.
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'DCIM')
     await mcpNavToPath('left', `${mtpPath}/DCIM`)
     await mcpAwaitItem('left', 'cache-a.jpg', 30)

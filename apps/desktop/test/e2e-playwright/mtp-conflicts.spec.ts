@@ -19,7 +19,8 @@ import {
   initMcpClient,
   mcpCall,
   mcpReadResource,
-  mcpSelectVolume,
+  getMtpVolumePath,
+  mcpOpenMtpStorageRoot,
   mcpNavToPath,
   mcpAwaitItem,
 } from '../e2e-shared/mcp-client.js'
@@ -49,20 +50,6 @@ async function bothPanesOnLocalVolume(): Promise<boolean> {
   const state = await mcpReadResource('cmdr://state')
   const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) => line.replace(/^\n {2}volume: /, ''))
   return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
-}
-
-/** Discovers the mtp:// path prefix for a named MTP storage from cmdr://state. */
-async function getMtpVolumePath(storageName: string): Promise<string> {
-  const state = await mcpReadResource('cmdr://state')
-  const lines = state.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(`name: ${storageName}`) && lines[i + 1]?.includes('id:')) {
-      const id = lines[i + 1].trim().replace('id: ', '')
-      const [deviceId, storageId] = id.split(':')
-      return `mtp://${deviceId}/${storageId}`
-    }
-  }
-  throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
 }
 
 // MTP protocol overhead requires longer timeouts
@@ -112,7 +99,7 @@ test.describe('MTP cross-volume move conflicts', () => {
 
     // Left pane: MTP Documents (has report.txt from fixtures)
     await ensureAppReady(tauriPage)
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
@@ -164,7 +151,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     fs.writeFileSync(path.join(fixtureRoot, 'right', 'report.txt'), 'local-version')
 
     await ensureAppReady(tauriPage)
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
@@ -200,7 +187,7 @@ test.describe('MTP cross-volume move conflicts', () => {
     // Left pane: local left/ (has file-a.txt from local fixtures)
     // Right pane: MTP Internal Storage root
     await ensureAppReady(tauriPage)
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'file-a.txt', 15)
 
     await mcpCall('move_cursor', { pane: 'left', filename: 'file-a.txt' })
@@ -256,13 +243,13 @@ test.describe('MTP same-volume move conflicts', () => {
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
     // Left pane: MTP Documents (has report.txt)
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
 
     // Right pane: MTP root (also has report.txt)
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'report.txt')
 
     await focusPane(tauriPage, 0)
@@ -315,12 +302,12 @@ test.describe('MTP same-volume move conflicts', () => {
     await ensureAppReady(tauriPage)
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
 
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'report.txt')
 
     await focusPane(tauriPage, 0)
@@ -370,7 +357,7 @@ test.describe('MTP cross-volume copy conflicts', () => {
     fs.writeFileSync(path.join(fixtureRoot, 'right', 'notes.txt'), 'local-notes')
 
     await ensureAppReady(tauriPage)
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')

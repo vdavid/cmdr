@@ -20,7 +20,8 @@ import { recreateMtpFixtures, MTP_FIXTURE_ROOT } from '../e2e-shared/mtp-fixture
 import {
   initMcpClient,
   mcpCall,
-  mcpReadResource,
+  getMtpVolumePath,
+  mcpOpenMtpStorageRoot,
   mcpSelectVolume,
   mcpNavToPath,
   mcpAwaitItem,
@@ -82,23 +83,6 @@ async function bothPanesOnLocalVolume(tauriPage: PageLike): Promise<boolean> {
       return true;
     })()`,
   )
-}
-
-/**
- * Discovers the mtp:// path prefix for a named MTP storage from cmdr://state.
- * The device ID is assigned at runtime, so tests must discover it dynamically.
- */
-async function getMtpVolumePath(storageName: string): Promise<string> {
-  const state = await mcpReadResource('cmdr://state')
-  const lines = state.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(`name: ${storageName}`) && lines[i + 1]?.includes('id:')) {
-      const id = lines[i + 1].trim().replace('id: ', '')
-      const [deviceId, storageId] = id.split(':')
-      return `mtp://${deviceId}/${storageId}`
-    }
-  }
-  throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
 }
 
 /**
@@ -244,7 +228,7 @@ test.describe('MTP navigation', () => {
     await ensureAppReady(tauriPage)
 
     // Select Internal Storage on left pane
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
 
     // Verify root listing: Documents, DCIM, Music
@@ -275,11 +259,27 @@ test.describe('MTP navigation', () => {
     expect(backAtRoot).toBe(true)
   })
 
+  test('switching back to a storage reopens the folder last used there', async ({ tauriPage }) => {
+    await ensureAppReady(tauriPage)
+
+    const mtpPath = await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
+    await mcpNavToPath('left', `${mtpPath}/Documents`)
+    await mcpAwaitItem('left', 'report.txt')
+
+    // Leave the phone, then pick the storage again with no path of our own: the pane
+    // asks the phone whether `Documents` still exists and goes back there.
+    await mcpSelectVolume('left', LOCAL_VOLUME_NAME)
+    await expect.poll(async () => isStateClean(tauriPage, LOCAL_VOLUME_NAME), { timeout: 5000 }).toBeTruthy()
+    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpAwaitItem('left', 'report.txt')
+    expect(await fileExistsInPane(tauriPage, 'notes.txt', 0)).toBe(true)
+  })
+
   test('free space is displayed for MTP volume', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
 
     // Select Internal Storage on left pane
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
 
     // Open the volume picker to check space info
@@ -323,7 +323,7 @@ test.describe('MTP file operations', () => {
     const fixtureRoot = getFixtureRoot()
 
     // Navigate left pane to MTP Documents
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
     await mcpNavToPath('left', `${mtpPath}/Documents`)
@@ -364,7 +364,7 @@ test.describe('MTP file operations', () => {
 
     // Left pane is on local left/ (has file-a.txt from fixtures)
     // Navigate right pane to MTP Internal Storage root
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'Documents')
 
     // Cursor file-a.txt in left pane and copy
@@ -394,13 +394,13 @@ test.describe('MTP file operations', () => {
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
     // Navigate left pane to MTP Documents
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'notes.txt')
 
     // Navigate right pane to MTP Music
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'Documents')
     await mcpNavToPath('right', `${mtpPath}/Music`)
 
@@ -445,7 +445,7 @@ test.describe('MTP file operations', () => {
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
     // Navigate left pane to MTP Documents
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
@@ -514,7 +514,7 @@ test.describe('MTP file operations', () => {
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
     // Navigate left pane to MTP Documents (has report.txt and notes.txt)
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
@@ -584,7 +584,7 @@ test.describe('MTP file operations', () => {
     await ensureAppReady(tauriPage)
 
     // Navigate left pane to MTP Internal Storage root (has DCIM folder with nested files)
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'DCIM')
 
     // Verify DCIM has nested content before delete
@@ -616,7 +616,7 @@ test.describe('MTP file operations', () => {
     await ensureAppReady(tauriPage)
 
     // Navigate left pane to MTP Internal Storage root
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
 
     // Create folder via MCP: mkdir opens the dialog, then we type the name and confirm
@@ -653,7 +653,7 @@ test.describe('MTP rename', () => {
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
     // Navigate left pane to MTP Documents
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
@@ -688,7 +688,7 @@ test.describe('MTP rename', () => {
     await ensureAppReady(tauriPage)
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
@@ -739,7 +739,7 @@ test.describe('MTP cross-storage move', () => {
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
     // Navigate left pane to MTP Documents
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
@@ -779,7 +779,7 @@ test.describe('MTP cross-storage move', () => {
 
     // Left pane is on local left/ (has file-a.txt from fixtures)
     // Navigate right pane to MTP Internal Storage root
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'Documents')
 
     // Move cursor to file-a.txt in left pane and move
@@ -815,7 +815,7 @@ test.describe('MTP clipboard rejection', () => {
     await ensureAppReady(tauriPage)
 
     // Navigate left pane to MTP Internal Storage
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
 
     // Focus the left pane and move cursor to Documents
@@ -840,7 +840,7 @@ test.describe('MTP clipboard rejection', () => {
     await ensureAppReady(tauriPage)
 
     // Navigate left pane to MTP Internal Storage
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
 
     // Focus and move cursor
@@ -865,7 +865,7 @@ test.describe('MTP clipboard rejection', () => {
     await ensureAppReady(tauriPage)
 
     // Switch right pane to MTP
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'Documents')
 
     // Switch focus to right pane (paste targets the focused pane).
@@ -904,7 +904,7 @@ test.describe('MTP read-only enforcement', () => {
     const mtpPath = await getMtpVolumePath(SD_CARD)
 
     // Navigate left pane to SD Card → photos
-    await mcpSelectVolume('left', SD_CARD)
+    await mcpOpenMtpStorageRoot('left', SD_CARD)
     await mcpAwaitItem('left', 'photos')
     await mcpNavToPath('left', `${mtpPath}/photos`)
     await mcpAwaitItem('left', 'sunset.jpg')
@@ -1005,7 +1005,7 @@ test.describe('MTP file watching', () => {
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
     // Navigate left pane to MTP Documents
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'report.txt')
@@ -1052,7 +1052,7 @@ test.describe('MTP large file transfer', () => {
     fs.closeSync(fd)
 
     // Right pane: MTP Internal Storage root
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'Documents')
 
     // Re-navigate left pane so it picks up the new file (file watcher may be slow)
@@ -1093,7 +1093,7 @@ test.describe('MTP large file transfer', () => {
     await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('rescan_virtual_mtp')`)
 
     // Left pane: MTP Documents
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     await mcpNavToPath('left', `${mtpPath}/Documents`)
     await mcpAwaitItem('left', 'large-mtp.dat', 30)

@@ -22,7 +22,8 @@ import {
   initMcpClient,
   mcpCall,
   mcpReadResource,
-  mcpSelectVolume,
+  getMtpVolumePath,
+  mcpOpenMtpStorageRoot,
   mcpNavToPath,
   mcpAwaitItem,
 } from '../e2e-shared/mcp-client.js'
@@ -49,20 +50,6 @@ const INTERNAL_STORAGE = 'Virtual Pixel 9 - Internal Storage'
 const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
 
 const INTERNAL = path.join(MTP_FIXTURE_ROOT, 'internal')
-
-/** Discovers the mtp:// path prefix for a named MTP storage from cmdr://state. */
-async function getMtpVolumePath(storageName: string): Promise<string> {
-  const state = await mcpReadResource('cmdr://state')
-  const lines = state.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(`name: ${storageName}`) && lines[i + 1]?.includes('id:')) {
-      const id = lines[i + 1].trim().replace('id: ', '')
-      const [deviceId, storageId] = id.split(':')
-      return `mtp://${deviceId}/${storageId}`
-    }
-  }
-  throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
-}
 
 async function bothPanesOnLocalVolume(): Promise<boolean> {
   const state = await mcpReadResource('cmdr://state')
@@ -115,13 +102,13 @@ test('same-volume MTP folder move auto-merges; file clash inside prompts; dest-o
   const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
   // Left pane: MTP Documents (holds the source `album`).
-  await mcpSelectVolume('left', INTERNAL_STORAGE)
+  await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
   await mcpAwaitItem('left', 'Documents')
   await mcpNavToPath('left', `${mtpPath}/Documents`)
   await mcpAwaitItem('left', 'album')
 
   // Right pane: MTP root (holds the dest `album` to merge into).
-  await mcpSelectVolume('right', INTERNAL_STORAGE)
+  await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
   await mcpAwaitItem('right', 'album')
 
   await focusPane(tauriPage, 0)

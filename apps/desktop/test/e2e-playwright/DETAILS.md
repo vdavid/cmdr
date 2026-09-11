@@ -940,6 +940,14 @@ Toasts auto-dismiss after 4 seconds if `dismissal: 'transient'` (the default), o
 
 ## Gotchas
 
+**Gotcha**: selecting a volume reopens the folder last used on it, so a bare `mcpSelectVolume` lands wherever an EARLIER
+test left that volume. **Why**: `determineNavigationPath` restores the remembered path when the volume says it still
+exists, asking the volume itself, and one app instance serves every test on the shard. Phones and servers answer that
+question truthfully, so an MTP spec that selected Internal Storage and waited for a root row sat in `Documents` instead
+(all 28 MTP tests timed out that way). A spec that needs a storage's root opens it with `mcpOpenMtpStorageRoot`
+(`e2e-shared/mcp-client.ts`), which selects and then navigates to the root; `mtp.spec.ts`'s "switching back to a storage
+reopens the folder last used there" pins the remembering itself.
+
 **Gotcha**: the proactive agent's inbox is SHARED with the running indexer, so "the wake reports what I staged" is not
 free. **Why**: the indexer's tap rolls up every folder the rest of the suite churns, and a wake covers everything
 waiting, tallying it in the digest and naming its thread after the top-ranked folder. `forceAgentWake` narrows the wake

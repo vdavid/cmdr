@@ -24,7 +24,13 @@ import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { recreateMtpFixtures } from '../e2e-shared/mtp-fixtures.js'
-import { initMcpClient, mcpReadResource, mcpSelectVolume, mcpAwaitItem } from '../e2e-shared/mcp-client.js'
+import {
+  getMtpVolumePath,
+  initMcpClient,
+  mcpAwaitItem,
+  mcpOpenMtpStorageRoot,
+  mcpReadResource,
+} from '../e2e-shared/mcp-client.js'
 import {
   ensureAppReady,
   expectDialogCounters,
@@ -44,23 +50,6 @@ const SD_CARD = 'Virtual Pixel 9 - SD Card'
 const LOCAL_VOLUME_NAME = os.platform() === 'linux' ? 'Root' : 'Macintosh HD'
 
 const ALERT_DIALOG = '[data-dialog-id="alert"]'
-
-/** Discovers the mtp:// path prefix for a named MTP storage from cmdr://state.
- *  The device id is assigned at runtime, so the prefix is derived from the
- *  `id: deviceId:storageId` line (matching the canonical helper in the other
- *  MTP specs), not hardcoded. */
-async function getMtpVolumePath(storageName: string): Promise<string> {
-  const state = await mcpReadResource('cmdr://state')
-  const lines = state.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(`name: ${storageName}`) && lines[i + 1]?.includes('id:')) {
-      const id = lines[i + 1].trim().replace('id: ', '')
-      const [deviceId, storageId] = id.split(':')
-      return `mtp://${deviceId}/${storageId}`
-    }
-  }
-  throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
-}
 
 /** Reads the registered volume id for a named MTP storage from cmdr://state.
  *  This is what a self-drag records as its source volume id (the dispatchable
@@ -134,7 +123,7 @@ test.describe('Programmatic drop entry (MTP)', () => {
     const fixtureRoot = getFixtureRoot()
 
     // Right pane → the read-only SD Card storage.
-    await mcpSelectVolume('right', SD_CARD)
+    await mcpOpenMtpStorageRoot('right', SD_CARD)
     await mcpAwaitItem('right', 'photos')
 
     // Drop a local file onto the read-only destination.
@@ -161,7 +150,7 @@ test.describe('Programmatic drop entry (MTP)', () => {
     // the dialog showed 0 bytes / 0 files. Entering through the self-drag flow
     // (recorded identity = MTP volume id + relative path) is what reality does;
     // the transfer must carry the MTP source so the 50-byte report.txt counts.
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     const mtpVolumeId = await getMtpVolumeId(INTERNAL_STORAGE)
 
@@ -191,7 +180,7 @@ test.describe('Programmatic drop entry (MTP)', () => {
     // mtp:// path (no recorded identity). The resolver matches the MTP root via
     // longest-prefix and the counters fill. Kept alongside the self-drag spec so
     // both entry shapes stay covered.
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'Documents')
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
@@ -214,7 +203,7 @@ test.describe('Programmatic drop entry (MTP)', () => {
     const fixtureRoot = getFixtureRoot()
 
     // Right pane → MTP Internal Storage root (the drop destination).
-    await mcpSelectVolume('right', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('right', INTERNAL_STORAGE)
     await mcpAwaitItem('right', 'Documents')
 
     // Drop the local 1 KB file-a.txt onto the MTP pane. The handler resolves the

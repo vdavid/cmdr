@@ -31,7 +31,8 @@ import {
   initMcpClient,
   mcpCall,
   mcpReadResource,
-  mcpSelectVolume,
+  getMtpVolumePath,
+  mcpOpenMtpStorageRoot,
   mcpNavToPath,
   mcpAwaitItem,
 } from '../e2e-shared/mcp-client.js'
@@ -60,19 +61,6 @@ async function bothPanesOnLocalVolume(): Promise<boolean> {
   const state = await mcpReadResource('cmdr://state')
   const volumeLines = (state.match(/\n {2}volume: ([^\n]+)/g) ?? []).map((line) => line.replace(/^\n {2}volume: /, ''))
   return volumeLines.length >= 2 && volumeLines[0] === LOCAL_VOLUME_NAME && volumeLines[1] === LOCAL_VOLUME_NAME
-}
-
-async function getMtpVolumePath(storageName: string): Promise<string> {
-  const state = await mcpReadResource('cmdr://state')
-  const lines = state.split('\n')
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(`name: ${storageName}`) && lines[i + 1]?.includes('id:')) {
-      const id = lines[i + 1].trim().replace('id: ', '')
-      const [deviceId, storageId] = id.split(':')
-      return `mtp://${deviceId}/${storageId}`
-    }
-  }
-  throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
 }
 
 /** Seeds extra files in /DCIM so the delete has multiple top-level entries to track. */
@@ -122,7 +110,7 @@ test.describe('MTP delete reuses scan preview (no double scan)', () => {
     const mtpPath = await getMtpVolumePath(INTERNAL_STORAGE)
 
     // Land in MTP /DCIM so the parent listing is in the watcher-backed cache.
-    await mcpSelectVolume('left', INTERNAL_STORAGE)
+    await mcpOpenMtpStorageRoot('left', INTERNAL_STORAGE)
     await mcpAwaitItem('left', 'DCIM')
     await mcpNavToPath('left', `${mtpPath}/DCIM`)
     await mcpAwaitItem('left', 'delete-a.jpg', 30)

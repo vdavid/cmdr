@@ -134,6 +134,38 @@ export async function mcpNavToPath(pane: 'left' | 'right', path: string): Promis
   return mcpCall('nav_to_path', { pane, path })
 }
 
+/**
+ * The `mtp://<device>/<storage>` root of a named MTP storage, read off `cmdr://state`.
+ * The device id is assigned at runtime, so a spec discovers it rather than hardcoding it.
+ */
+export async function getMtpVolumePath(storageName: string): Promise<string> {
+  const state = await mcpReadResource('cmdr://state')
+  const lines = state.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].includes(`name: ${storageName}`) && lines[i + 1]?.includes('id:')) {
+      const id = lines[i + 1].trim().replace('id: ', '')
+      const [deviceId, storageId] = id.split(':')
+      return `mtp://${deviceId}/${storageId}`
+    }
+  }
+  throw new Error(`MTP volume "${storageName}" not found in cmdr://state`)
+}
+
+/**
+ * Opens a named MTP storage in `pane` at its ROOT, and returns the root's path.
+ *
+ * ❗ Selecting a volume reopens the folder last used on it (`determineNavigationPath`),
+ * and one app instance serves every test on the shard, so a bare `mcpSelectVolume`
+ * lands wherever an earlier test left that storage (its `Documents`, say). A spec
+ * that starts from the root says so through this helper.
+ */
+export async function mcpOpenMtpStorageRoot(pane: 'left' | 'right', storageName: string): Promise<string> {
+  await mcpSelectVolume(pane, storageName)
+  const root = await getMtpVolumePath(storageName)
+  await mcpNavToPath(pane, root)
+  return root
+}
+
 /** Waits for an item to appear in a pane. */
 export async function mcpAwaitItem(pane: 'left' | 'right', itemName: string, timeoutS = 15): Promise<string> {
   return mcpCall('await', { pane, condition: 'has_item', value: itemName, timeoutSeconds: timeoutS })
