@@ -269,7 +269,11 @@ fn a_saved_servers_row_carries_its_start_folder_as_the_landing() {
         row_for(host).landing_path.as_deref(),
         Some(format!("sftp://ada@{host}:2222/srv/data/photos").as_str())
     );
-    assert_eq!(row_for(plain_host).landing_path, None, "no start folder lands at the root");
+    assert_eq!(
+        row_for(plain_host).landing_path,
+        None,
+        "no start folder lands at the root"
+    );
     assert_eq!(
         row_for(drifted_host).landing_path,
         None,
