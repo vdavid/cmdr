@@ -16,7 +16,7 @@
  * parser, the filesystem guard) and is covered by `capture-runtime.test.ts`.
  */
 
-import { execSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import net from 'node:net'
 import { dirname, join } from 'node:path'
@@ -24,15 +24,6 @@ import { fileURLToPath } from 'node:url'
 
 /** The repo root, where the check runner lives: this file sits at `apps/desktop/scripts/`. */
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
-
-/** Resolves the host target triple, which is where the built binary lands. */
-export function hostTriple(): string {
-  const line = execSync('rustc -vV', { encoding: 'utf8' })
-    .split('\n')
-    .find((l) => l.startsWith('host:'))
-  if (line === undefined) throw new Error('could not parse host triple from `rustc -vV`')
-  return line.replace('host:', '').trim()
-}
 
 /**
  * The binary path out of `scripts/check.sh --ensure-e2e-binary`'s stdout: its last

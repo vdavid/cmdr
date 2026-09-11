@@ -11,9 +11,11 @@ Not to be confused with the translator screenshots (`pnpm i18n:shots`), which ph
 
 ```bash
 pnpm marketing:shots                     # into brand/screenshots/
-pnpm marketing:shots --build             # rebuild the Playwright binary first
 pnpm marketing:shots --out ~/Desktop/qa  # somewhere else, leaving brand/ untouched
 ```
+
+It runs on the Playwright lane's E2E binary, rebuilt first only when the tree changed, so a master can never come from a
+stale build.
 
 ❗ **Leave the machine alone while it runs.** macOS draws the wide window shadow only for the KEY window, so every shot
 takes the front position first; clicking into another app mid-run costs retries. Unlike `pnpm i18n:shots`, this does not

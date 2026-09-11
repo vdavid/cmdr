@@ -4,9 +4,11 @@
  *
  * ```bash
  * pnpm marketing:shots            # reshoot, using the warm shots data dir
- * pnpm marketing:shots --build    # rebuild the Playwright binary first
  * pnpm marketing:shots --out /tmp/shots   # write somewhere else, leave brand/ alone
  * ```
+ *
+ * The binary comes from `ensureE2eBinary`: the Playwright lane's E2E binary, rebuilt
+ * first only when the tree changed, so a master can never be shot from a stale build.
  *
  * ❗ Leave the machine alone while it runs. macOS draws the wide window shadow only for
  * the KEY window, so every shot takes the front position first, and clicking into
@@ -33,11 +35,11 @@
 
 import { spawn, spawnSync } from 'node:child_process'
 import type { ChildProcess, SpawnSyncOptions } from 'node:child_process'
-import { existsSync, mkdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { frontmostApp, hostTriple, reserveFreePort, waitForSocket, warnIfForeignCmdr } from './capture-runtime.ts'
+import { ensureE2eBinary, frontmostApp, reserveFreePort, waitForSocket, warnIfForeignCmdr } from './capture-runtime.ts'
 import { buildThreadSql } from './marketing-shots-thread.ts'
 import { EN_US_LOCALE_ARGS, pinUiLanguage } from '../test/e2e-shared/pin-locale.ts'
 
@@ -45,11 +47,8 @@ const LOG = '[marketing-shots]'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const desktopDir = join(here, '..')
-// The Cargo workspace root is the REPO root, so the binary lands in
-// `<repo-root>/target/<triple>/release/Cmdr`, not under `apps/desktop/src-tauri`.
 const repoRoot = join(desktopDir, '..', '..')
 
-const wantBuild = process.argv.includes('--build')
 const outIdx = process.argv.indexOf('--out')
 const outDir = outIdx >= 0 ? (process.argv.at(outIdx + 1) ?? '') : join(repoRoot, 'brand', 'screenshots')
 
@@ -88,39 +87,6 @@ function killApp() {
     // Already gone; ESRCH is the normal way this ends.
   }
   appProc = null
-}
-
-function binaryPath(): string {
-  const triple = hostTriple()
-  const binary = join(repoRoot, 'target', triple, 'release', 'Cmdr')
-  if (!existsSync(binary)) {
-    throw new Error(`No Playwright binary at ${binary}. Run with --build, or \`pnpm test:e2e:playwright:build\`.`)
-  }
-  return binary
-}
-
-/**
- * Warns when the binary predates the source it's supposed to photograph.
- *
- * A warning rather than a rebuild: rebuilding takes minutes and the caller may know the
- * change was frontend-only. Silence would be worse than either, because a master shot
- * from a stale binary looks completely fine.
- */
-function warnIfBinaryIsStale(binary: string): void {
-  const builtAt = statSync(binary).mtimeMs
-  const sources = [join(desktopDir, 'src'), join(desktopDir, 'src-tauri', 'src')]
-  const newest = Math.max(...sources.filter(existsSync).map((dir) => statSync(dir).mtimeMs))
-  if (newest > builtAt) {
-    console.warn(`${LOG} WARNING: ${binary} is older than the sources. Re-run with --build to photograph the change.`)
-  }
-}
-
-function build(): void {
-  console.log(`${LOG} building the Playwright binary…`)
-  // Deliberately the SAME command (and therefore the same cargo config) as
-  // `pnpm test:e2e:playwright:build`, so the two share a cache. ❌ Don't add a cargo
-  // `--config` override here: any profile flip recompiles the whole dependency graph.
-  run('pnpm', ['test:e2e:playwright:build'])
 }
 
 /**
@@ -331,9 +297,7 @@ async function main(): Promise<void> {
 
   requireImageMagick()
 
-  if (wantBuild) build()
-  const binary = binaryPath()
-  warnIfBinaryIsStale(binary)
+  const binary = ensureE2eBinary(LOG)
 
   mkdirSync(dataDir, { recursive: true })
   mkdirSync(outDir, { recursive: true })

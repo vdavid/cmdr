@@ -53,11 +53,12 @@ an APFS clonefile (`cp -c`), falling back to a plain copy, and downloading only 
 
 ## The capture binary
 
-`i18n-capture.ts` never builds or picks a binary itself. `capture-runtime.ts`'s `ensureE2eBinary` asks the check runner
-(`scripts/check.sh --ensure-e2e-binary`), which reuses the Playwright lane's stamped binary when it matches the tree,
-builds it otherwise, and prints its path. The build command and the fingerprint inputs stay in Go
-(`scripts/check/checks/e2e-build.go`), so the capture and the lane can't disagree about staleness, and no entry point
-(`i18n:shots`, `i18n:shots:no-couple`, `i18n:shots:overflow`) can launch an old binary.
+Neither capture orchestrator (`i18n-capture.ts`, `marketing-shots.ts`) builds or picks a binary itself.
+`capture-runtime.ts`'s `ensureE2eBinary` asks the check runner (`scripts/check.sh --ensure-e2e-binary`), which reuses
+the Playwright lane's stamped binary when it matches the tree, builds it otherwise, and prints its path. The build
+command and the fingerprint inputs stay in Go (`scripts/check/checks/e2e-build.go`), so the capture and the lane can't
+disagree about staleness, and no entry point (`i18n:shots`, `i18n:shots:no-couple`, `i18n:shots:overflow`,
+`marketing:shots`) can launch an old binary.
 
 One binary serves both runs. Every E2E build carries the capture instrumentation inert, and the launch turns it into a
 capture with `CMDR_I18N_CAPTURE=1` beside `CMDR_E2E_MODE=1` (`src/lib/app-mode.ts`). The license passes need no build of
