@@ -55,6 +55,7 @@ describe('serverTargetFrom', () => {
       port: 2222,
       username: 'ada',
       remoteRoot: '/srv/data',
+      startFolder: null,
       keyFile: '~/.ssh/id_ed25519',
       useAgent: false,
       autoReconnect: true,

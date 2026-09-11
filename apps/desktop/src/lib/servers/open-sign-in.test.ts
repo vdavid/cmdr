@@ -258,6 +258,7 @@ describe('add mode', () => {
       port: 22,
       username: 'ada',
       remoteRoot: '/',
+      startFolder: null,
       keyFile: null,
       useAgent: true,
       autoReconnect: true,
