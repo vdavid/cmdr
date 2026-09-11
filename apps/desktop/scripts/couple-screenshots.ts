@@ -12,9 +12,10 @@
  * several surfaces; it's assigned the FIRST surface it appeared on, in the
  * report's insertion order (the spec orders surfaces narrow-to-broad, so the
  * most specific surface a key belongs to wins). Re-runnable and idempotent: a
- * second run with the same report produces no diff. It only ADDS or UPDATES the
- * `screenshot` field; it never removes a key's existing manual coupling for a
- * surface that wasn't in this run.
+ * second run with the same report produces no diff. It owns `screenshot` and
+ * `screenshotNote` outright: a twin carrying either one for a key this run
+ * doesn't couple (its surface is gone, or no representative rule reaches it
+ * anymore) loses both.
  *
  * Run via `pnpm i18n:couple` (after `pnpm i18n:capture`), or directly with
  * `node scripts/couple-screenshots.ts`. Pass `--check` to fail (exit 1) if any
@@ -423,7 +424,8 @@ export interface Coupling {
 /** One missing/stale coupling for `--check`: the write that WOULD happen. */
 export interface StaleCoupling {
   key: string
-  screenshot: string
+  /** The screenshot the run would write, or undefined when it clears the key's coupling. */
+  screenshot: string | undefined
   current: string | undefined
 }
 
@@ -464,7 +466,6 @@ export interface CoupleResult {
 export function coupleCatalog(rawText: string, keyToCoupling: Map<string, Coupling>): CoupleResult {
   const json = JSON.parse(rawText) as Record<string, unknown>
   let text = rawText
-  let changed = false
   let couplingCount = 0
   const coupledWithoutDescription: string[] = []
   const missingKeys: string[] = []
@@ -511,10 +512,51 @@ export function coupleCatalog(rawText: string, keyToCoupling: Map<string, Coupli
     if (!hasDescription) coupledWithoutDescription.push(`${key} → ${screenshot}`)
     couplingCount++
     stale.push({ key, screenshot, current: typeof meta.screenshot === 'string' ? meta.screenshot : undefined })
-    changed = true
   }
 
+  const cleared = clearUncoupledTwins(text, json, keyToCoupling)
+  text = cleared.text
+  stale.push(...cleared.stale)
+  missingTwins.push(...cleared.unlocatable)
+
+  // Every edit above is skipped when a field already holds its target, so any
+  // byte of difference is a real change.
+  const changed = text !== rawText
   return { text, changed, couplingCount, coupledWithoutDescription, missingKeys, missingTwins, stale }
+}
+
+/**
+ * Removes `screenshot` and `screenshotNote` from every twin whose key isn't in
+ * `keyToCoupling`. The map is the whole truth for its catalog, so a coupling it
+ * doesn't name is one no surface or rule produces anymore, and keeping it would
+ * point a translator at the wrong image.
+ * @param json The catalog as parsed BEFORE this run's edits (the twins' current fields).
+ */
+function clearUncoupledTwins(
+  rawText: string,
+  json: Record<string, unknown>,
+  keyToCoupling: Map<string, Coupling>,
+): { text: string; stale: StaleCoupling[]; unlocatable: string[] } {
+  let text = rawText
+  const stale: StaleCoupling[] = []
+  const unlocatable: string[] = []
+  for (const [metaKey, existing] of Object.entries(json)) {
+    const key = metaKey.slice(1)
+    if (!metaKey.startsWith('@') || keyToCoupling.has(key)) continue
+    const meta = typeof existing === 'object' && existing !== null ? (existing as Record<string, unknown>) : {}
+    const current = typeof meta.screenshot === 'string' ? meta.screenshot : undefined
+    if (current === undefined && typeof meta.screenshotNote !== 'string') continue
+    const withoutScreenshot = setTwinField(text, metaKey, 'screenshot', null)
+    const withoutBoth =
+      withoutScreenshot === null ? null : setTwinField(withoutScreenshot, metaKey, 'screenshotNote', null)
+    if (withoutBoth === null) {
+      unlocatable.push(key)
+      continue
+    }
+    text = withoutBoth
+    stale.push({ key, screenshot: undefined, current })
+  }
+  return { text, stale, unlocatable }
 }
 
 /**
@@ -647,9 +689,10 @@ interface CoupleAllResult {
 }
 
 /**
- * Couples every catalog file in `byFile`. With `checkOnly`, collects stale
- * couplings instead of writing; otherwise writes the changed files. Skips files
- * with no catalog on disk, and surfaces drift (missing keys) as warnings.
+ * Couples every catalog file on disk, including one this run couples nothing in
+ * (its stale couplings still need clearing). With `checkOnly`, collects stale
+ * couplings instead of writing; otherwise writes the changed files. Surfaces
+ * drift (a coupled area with no catalog, missing keys) as warnings.
  */
 function coupleAllFiles(
   byFile: Map<string, Map<string, Coupling>>,
@@ -662,13 +705,16 @@ function coupleAllFiles(
   const coupledWithoutDescription: string[] = []
   const missingTwins: string[] = []
 
-  for (const [file, keyMap] of byFile) {
-    const filePath = join(messagesDir, file)
-    if (!existsSync(filePath)) {
+  const catalogFiles = readdirSync(messagesDir).filter((name) => name.endsWith('.json'))
+  for (const file of byFile.keys()) {
+    if (!catalogFiles.includes(file)) {
       console.warn(`Skipping ${file}: no such catalog (key area without a catalog file?)`)
-      continue
     }
-    const result = coupleCatalog(readFileSync(filePath, 'utf8'), keyMap)
+  }
+
+  for (const file of catalogFiles) {
+    const filePath = join(messagesDir, file)
+    const result = coupleCatalog(readFileSync(filePath, 'utf8'), byFile.get(file) ?? new Map<string, Coupling>())
 
     for (const key of result.missingKeys) {
       console.warn(`Skipping ${key}: not present in ${file} (catalog may have drifted from the report)`)
@@ -680,7 +726,8 @@ function coupleAllFiles(
     coupledWithoutDescription.push(...result.coupledWithoutDescription)
     if (checkOnly) {
       for (const { key, screenshot, current } of result.stale) {
-        staleForCheck.push(`${key} → ${screenshot} (currently ${JSON.stringify(current)})`)
+        const target = screenshot === undefined ? 'no screenshot (stale coupling to clear)' : screenshot
+        staleForCheck.push(`${key} → ${target} (currently ${JSON.stringify(current)})`)
       }
       continue
     }

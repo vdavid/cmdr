@@ -210,6 +210,75 @@ describe('coupleCatalog (N1 value-safety, line-surgical)', () => {
   })
 })
 
+describe('coupleCatalog (owns screenshot and screenshotNote outright)', () => {
+  // A twin carrying a coupling this run doesn't produce: `common.cancel` lost its
+  // surface (and its representative rule), `common.greeting` kept only a note.
+  const STALE = `{
+  "common.ok": "OK",
+  "@common.ok": {
+    "description": "Confirm button in dialogs.",
+    "screenshot": "dialog.png"
+  },
+
+  "common.cancel": "Cancel",
+  "@common.cancel": {
+    "description": "Dismiss button in dialogs.",
+    "screenshot": "gone.png",
+    "screenshotNote": "A stand-in nobody maps anymore."
+  },
+
+  "common.greeting": "Hello",
+  "@common.greeting": {
+    "description": "Status text.",
+    "screenshotNote": "An orphaned note."
+  }
+}
+`
+
+  it('removes both fields from a twin whose key this run does not couple', () => {
+    const result = coupleCatalog(STALE, new Map([['common.ok', { screenshot: 'dialog.png' }]]))
+    expect(result.changed).toBe(true)
+    const after = parse(result.text)
+    expect(after['@common.cancel']).toEqual({ description: 'Dismiss button in dialogs.' })
+    expect(after['@common.greeting']).toEqual({ description: 'Status text.' })
+    // The coupled twin stays exactly as it was.
+    expect(after['@common.ok']).toEqual({ description: 'Confirm button in dialogs.', screenshot: 'dialog.png' })
+    // Line-surgical: removing the fields' lines is the whole diff.
+    const expected = STALE.replace(
+      ',\n    "screenshot": "gone.png",\n    "screenshotNote": "A stand-in nobody maps anymore."',
+      '',
+    ).replace(',\n    "screenshotNote": "An orphaned note."', '')
+    expect(result.text).toBe(expected)
+  })
+
+  it('reports each clearing as stale, with no screenshot to write', () => {
+    const { stale } = coupleCatalog(STALE, new Map([['common.ok', { screenshot: 'dialog.png' }]]))
+    expect(stale).toEqual([
+      { key: 'common.cancel', screenshot: undefined, current: 'gone.png' },
+      { key: 'common.greeting', screenshot: undefined, current: undefined },
+    ])
+  })
+
+  it('clears a catalog this run couples nothing in', () => {
+    const { text, changed } = coupleCatalog(STALE, new Map())
+    expect(changed).toBe(true)
+    const after = parse(text)
+    for (const twin of ['@common.ok', '@common.cancel', '@common.greeting']) {
+      const meta = after[twin] as Record<string, unknown>
+      expect('screenshot' in meta || 'screenshotNote' in meta).toBe(false)
+    }
+  })
+
+  it('is idempotent: a cleared catalog is a no-op on the next run', () => {
+    const keyToCoupling = new Map([['common.ok', { screenshot: 'dialog.png' }]])
+    const first = coupleCatalog(STALE, keyToCoupling)
+    const second = coupleCatalog(first.text, keyToCoupling)
+    expect(second.changed).toBe(false)
+    expect(second.stale).toEqual([])
+    expect(second.text).toBe(first.text)
+  })
+})
+
 describe('couplingsFromReport', () => {
   it('flattens surface→keys with first-surface-wins ordering', () => {
     const report = {
