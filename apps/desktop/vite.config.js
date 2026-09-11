@@ -15,21 +15,13 @@ const host = process.env.TAURI_DEV_HOST
 const envPort = process.env.CMDR_VITE_PORT
 const port = envPort ? Number(envPort) : 1420
 
-// Build-time flag baking the i18n screenshot-capture instrumentation into the
-// frontend bundle. TRUE only for the dedicated capture build (the i18n-capture
-// orchestrator sets `CMDR_I18N_CAPTURE_BUILD=1` for its `tauri build`); FALSE for
-// prod AND ordinary dev/E2E builds. Because it's a compile-time constant, esbuild
-// dead-code-eliminates the whole capture path (the `window.__cmdrI18nCapture`
-// install, the recording hooks, the sink) when it's false: true zero overhead,
-// and verifiably absent from prod (grep the bundle for `__cmdrI18nCapture`). See
-// `src/lib/intl/messages.svelte.ts` and `docs/specs/i18n-screenshots-plan.md`.
-const i18nCaptureBuild = process.env.CMDR_I18N_CAPTURE_BUILD === '1'
-
-// Every build that carries the dialog gallery: the capture build (which photographs
-// gallery states for translators) and the E2E build (whose `dialog-inset.spec.ts`
-// measures every dialog through it). Set by `test:e2e:playwright:build` and by the
-// Linux Docker build; a production build sets neither, so the harness and every
-// dialog it imports still drop out of the shipped bundle.
+// Every E2E build: `test:e2e:playwright:build` (the Playwright lane's binary, which the i18n
+// screenshot run reuses) and the Linux Docker build set `CMDR_E2E_BUILD=1`. It bakes in the
+// harness-only instruments: the i18n capture sink (`window.__cmdrI18nCapture`, inert until the
+// harness calls `enable()`; see `src/lib/intl/messages.svelte.ts`) and the dialog gallery the
+// capture photographs and `dialog-inset.spec.ts` measures. A production build and `pnpm dev` set
+// neither, so esbuild dead-code-eliminates the lot: verifiably absent from prod (grep the bundle
+// for `__cmdrI18nCapture`). Sites dev also wants gate on `import.meta.env.DEV || __CMDR_E2E_BUILD__`.
 const e2eBuild = process.env.CMDR_E2E_BUILD === '1'
 
 // Dev-only label of which working tree this session runs against (worktree slug, "main", or
@@ -48,8 +40,7 @@ export default defineConfig(async () => ({
   plugins: [stripCatalogMetadata(), Icons({ compiler: 'svelte' }), sveltekit()],
 
   define: {
-    __CMDR_I18N_CAPTURE__: JSON.stringify(i18nCaptureBuild),
-    __CMDR_DIALOG_GALLERY__: JSON.stringify(i18nCaptureBuild || e2eBuild),
+    __CMDR_E2E_BUILD__: JSON.stringify(e2eBuild),
     __CMDR_WORKTREE_LABEL__: JSON.stringify(worktreeLabel),
   },
 

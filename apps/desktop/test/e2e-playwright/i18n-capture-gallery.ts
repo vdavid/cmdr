@@ -14,8 +14,8 @@
  * gets a gallery row, with no change here.
  *
  * `+layout.svelte` and `listener-setup.ts` gate the gallery on
- * `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__`. The capture build sets that
- * define, so does every E2E build; a production build sets neither. See
+ * `import.meta.env.DEV || __CMDR_E2E_BUILD__`. Every E2E build sets that define,
+ * the binary this capture runs on included; a production build sets neither. See
  * `src/lib/dialog-gallery/DETAILS.md`.
  *
  * Two deliberate limits, both about not lying to translators:
@@ -88,9 +88,8 @@ interface FixtureDirPayload {
  * `transfer-confirmation`, the two name dialogs, `go-to-path`) scan it for real,
  * so the numbers they display are the ones on disk.
  *
- * The command is `#[cfg(debug_assertions)]`, which the capture build turns on for
- * the release profile, so it's present in this binary and absent from a shipped
- * one.
+ * The command compiles under `feature = "playwright-e2e"` (and in debug builds),
+ * so it's present in this binary and absent from a shipped one.
  */
 async function createFixtureDir(main: TauriPage): Promise<FixtureDirPayload> {
   return main.evaluate<FixtureDirPayload>(`window.__TAURI_INTERNALS__.invoke('create_dialog_gallery_fixtures', {})`)

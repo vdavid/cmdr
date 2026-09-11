@@ -42,7 +42,8 @@ only checks subscription expiry. Frontend counterpart: `src/lib/licensing/CLAUDE
   waiting). The network-error log lives only in `validation_client.rs`; don't log it a second time here.
 - **Two-layer cache**: in-memory `LICENSE_CACHE: Mutex<Option<LicenseInfo>>` (avoids re-verifying per call) + on-disk
   `license.json` via `tauri-plugin-store` (persists server result across sessions).
-- **`CMDR_MOCK_LICENSE` bypasses ALL license logic including server calls** (debug only). Values: `personal`,
+- **`CMDR_MOCK_LICENSE` bypasses ALL license logic including server calls** (debug and `playwright-e2e` builds only,
+  neither of which ships). Values: `personal`,
   `personal_reminder`, `commercial`, `perpetual`, `expired`, `expired_no_modal`.
 - **`should_show_commercial_reminder` starts the 30-day timer on first call, it doesn't show immediately.** Showing it on
   first launch would be a hostile first impression.

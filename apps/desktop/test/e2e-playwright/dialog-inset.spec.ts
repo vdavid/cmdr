@@ -29,7 +29,7 @@
  *
  * ❗ **It needs a gallery-carrying binary.** Every E2E build makes one:
  * `CMDR_E2E_BUILD=1` (set by `test:e2e:playwright:build` and the Linux Docker
- * build) turns on the `__CMDR_DIALOG_GALLERY__` define, and the disk-backed rows'
+ * build) turns on the `__CMDR_E2E_BUILD__` define, and the disk-backed rows'
  * fixture command compiles under `feature = "playwright-e2e"` as well as
  * `debug_assertions`. A hand-rolled build that sets neither leaves this test
  * nothing to measure: locally it SKIPS with the recipe, but under CI it FAILS,
@@ -262,7 +262,7 @@ test.describe('Dialog body inset', () => {
     const galleryLive = await probeGallery(page)
     const noGallery =
       'This binary carries no dialog gallery (`CMDR_E2E_BUILD=1` sets the ' +
-      '`__CMDR_DIALOG_GALLERY__` define). Rebuild with `pnpm test:e2e:playwright:build`.'
+      '`__CMDR_E2E_BUILD__` define). Rebuild with `pnpm test:e2e:playwright:build`.'
     if (!galleryLive && process.env.CI) throw new Error(noGallery)
     test.skip(!galleryLive, noGallery)
 

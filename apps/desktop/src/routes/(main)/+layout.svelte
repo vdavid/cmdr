@@ -55,10 +55,10 @@
     import { initAutoSendToastListener, cleanupAutoSendToastListener } from '$lib/error-reporter/auto-send-toast.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     // Dialog gallery harness (Debug > Soft dialogs). Gated below on
-    // `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__`, both of which Vite inlines to
+    // `import.meta.env.DEV || __CMDR_E2E_BUILD__`, both of which Vite inlines to
     // build-time booleans, so the harness and every dialog it imports drop out of
-    // production builds. The gallery flag is what lets the i18n screenshot driver and
-    // the E2E lane open gallery states in their builds; see `dialog-gallery/DETAILS.md`.
+    // production builds. The E2E flag is what lets the i18n screenshot driver and
+    // the E2E lane open gallery states on their shared binary; see `dialog-gallery/DETAILS.md`.
     import DialogGallery from '$lib/dialog-gallery/DialogGallery.svelte'
     import QuitConfirmationDialog from '$lib/quit/QuitConfirmationDialog.svelte'
     import { quitPrompt, initQuitPrompt, cleanupQuitPrompt } from '$lib/quit/quit-prompt.svelte'
@@ -360,7 +360,7 @@
 {#if updateBlockerNotice.blocker}
     <MoveToApplicationsDialog blocker={updateBlockerNotice.blocker} onClose={dismissMoveToApplicationsNudge} />
 {/if}
-{#if import.meta.env.DEV || __CMDR_DIALOG_GALLERY__}
+{#if import.meta.env.DEV || __CMDR_E2E_BUILD__}
     <DialogGallery />
 {/if}
 <div class="page-wrapper">

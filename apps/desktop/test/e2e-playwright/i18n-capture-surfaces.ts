@@ -735,8 +735,8 @@ export async function captureIndexingStatus(
  * Captures the drive-indexing status CHECKLIST from the dev Graphics gallery
  * (`routes/dev/graphics/sections/IndexingStatusSection.svelte`): the shared
  * `IndexingStatusBody` in every state as fixed fixtures (no live indexing) plus the
- * collapsed `IndexingDriveSummary` row. The capture build compiles the gallery in
- * via the `__CMDR_I18N_CAPTURE__` gate, so we client-nav the main window to
+ * collapsed `IndexingDriveSummary` row. The E2E build compiles the gallery in
+ * via the `__CMDR_E2E_BUILD__` gate, so we client-nav the main window to
  * `/dev/graphics` (same JS context, the sink stays installed).
  *
  * ONE coupling surface (`indexing-checklist`): every tile mounts at once, so a

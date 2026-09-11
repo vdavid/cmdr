@@ -2,7 +2,7 @@
  * Which gallery dialog the main window is currently previewing.
  *
  * Read only by `DialogGallery.svelte`, which the app mounts behind the
- * `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__` gate, so the whole module tree
+ * `import.meta.env.DEV || __CMDR_E2E_BUILD__` gate, so the whole module tree
  * tree-shakes out of a plain production build. Nothing in the main window's own
  * graph reads it: a previewed dialog suppresses shortcuts by registering in
  * `$lib/ui/open-dialogs.svelte` like any other soft dialog, since the gallery

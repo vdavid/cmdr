@@ -85,13 +85,13 @@ pub struct CachedLicenseStatus {
 /// Get the current application status.
 ///
 /// Priority:
-/// 1. Check for mock mode (debug builds only)
+/// 1. Check for mock mode (debug and E2E builds only)
 /// 2. Check for stored license key
 /// 3. Validate with server if needed (every 7 days)
 /// 4. Fall back to cached status or personal use
 pub fn get_app_status(app: &tauri::AppHandle) -> AppStatus {
-    // In debug builds, check for mock mode first
-    #[cfg(debug_assertions)]
+    // In debug and E2E builds, check for mock mode first
+    #[cfg(any(debug_assertions, feature = "playwright-e2e"))]
     if let Some(status) = get_mock_status(app) {
         return status;
     }
@@ -113,7 +113,7 @@ pub fn get_app_status(app: &tauri::AppHandle) -> AppStatus {
 /// Check if license needs re-validation (called by frontend to trigger async validation).
 pub fn needs_validation(app: &tauri::AppHandle) -> bool {
     // In mock mode, skip server validation entirely
-    #[cfg(debug_assertions)]
+    #[cfg(any(debug_assertions, feature = "playwright-e2e"))]
     if std::env::var("CMDR_MOCK_LICENSE").is_ok() {
         return false;
     }
@@ -150,8 +150,8 @@ pub fn has_been_validated(app: &tauri::AppHandle) -> bool {
 pub async fn validate_license_async(app: &tauri::AppHandle, transaction_id: Option<&str>) -> Result<AppStatus, String> {
     use crate::licensing::validation_client::ValidationOutcome;
 
-    // In debug builds, check for mock mode first
-    #[cfg(debug_assertions)]
+    // In debug and E2E builds, check for mock mode first
+    #[cfg(any(debug_assertions, feature = "playwright-e2e"))]
     if let Some(status) = get_mock_status(app) {
         return Ok(status);
     }
@@ -483,10 +483,14 @@ fn current_timestamp() -> u64 {
 }
 
 // ============================================================================
-// Mock mode for local testing (debug builds only)
+// Mock mode for local testing (debug and E2E builds only)
 // ============================================================================
 
 /// Get mock status from environment variable.
+///
+/// Compiled into debug builds and `playwright-e2e` builds: the i18n screenshot run drives its
+/// license surfaces through this on the release-profile E2E binary. Neither ships, so a stray
+/// `CMDR_MOCK_LICENSE` can never unlock a user's install.
 ///
 /// Set CMDR_MOCK_LICENSE to one of:
 /// - "personal" - No license (no reminder)
@@ -495,7 +499,7 @@ fn current_timestamp() -> u64 {
 /// - "perpetual" - Active perpetual license
 /// - "expired" - Expired subscription (shows modal)
 /// - "expired_no_modal" - Expired subscription (modal already shown)
-#[cfg(debug_assertions)]
+#[cfg(any(debug_assertions, feature = "playwright-e2e"))]
 fn get_mock_status(_app: &tauri::AppHandle) -> Option<AppStatus> {
     let mock_value = std::env::var("CMDR_MOCK_LICENSE").ok()?;
 

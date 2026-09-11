@@ -5,13 +5,12 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [Icons({ compiler: 'svelte' }), svelte()],
-  // Bake the capture instrumentation in (TRUE) so the capture-mode unit tests in
+  // Bake the E2E build's instruments in (TRUE) so the capture-mode unit tests in
   // `messages.svelte.test.ts` can exercise `window.__cmdrI18nCapture`. In a real
-  // build this constant comes from `vite.config.js`'s `define` (TRUE only in the
-  // dedicated capture build); here it's always on so the tests run.
+  // build this constant comes from `vite.config.js`'s `define` (TRUE only in E2E
+  // builds); here it's always on so the tests run.
   define: {
-    __CMDR_I18N_CAPTURE__: 'true',
-    __CMDR_DIALOG_GALLERY__: 'true',
+    __CMDR_E2E_BUILD__: 'true',
     // Empty in unit tests; the worktree-label decoration is exercised in `app-mode.test.ts`
     // by passing the label explicitly rather than relying on this baked-in constant.
     __CMDR_WORKTREE_LABEL__: '""',

@@ -105,7 +105,7 @@ The two locale generators emit `#[rustfmt::skip]`, so they own their layout and 
 - **The dev-title worktree label rides a Vite `define`, not IPC.** For dev launches the wrapper exports
   `CMDR_WORKTREE_LABEL` (the `--worktree` slug, `"main"` for a `-m` main-clone run, or the worktree directory name for a
   plain dev launch from a worktree); `resolveWorktreeLabel` in `instance-id.js` is the pure resolver. `vite.config.js`
-  bakes it into the `__CMDR_WORKTREE_LABEL__` compile-time constant (mirroring `__CMDR_I18N_CAPTURE__`), and
+  bakes it into the `__CMDR_WORKTREE_LABEL__` compile-time constant (mirroring `__CMDR_E2E_BUILD__`), and
   `src/lib/app-mode.ts`'s `decorateMainWindowTitle` wraps it around the dev title bar, e.g.
   `(colorful-tags) DEV MODE - … - DEV MODE (colorful-tags)`. Skipped under E2E (so E2E titles stay unmarked by a label)
   and never set for prod. A dev-only cosmetic, so no Rust/IPC surface.

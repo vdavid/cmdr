@@ -48,7 +48,7 @@ real props, seeds the real state store, or emits the real backend event.
 `DebugDialogsPanel.svelte` emits `emitTo('main', 'debug-open-gallery-dialog', { dialogId, stateId, fixtures })`
 (`fixtures` is `null` unless the row's `usesFixtureDir` is set; the panel resolves it through the debug-only
 `createDialogGalleryFixtures` IPC, which only an eslint-exempt path may call); `routes/(main)/listener-setup.ts`
-consumes it inside the existing `if (import.meta.env.DEV || __CMDR_DIALOG_GALLERY__)` block (the same seam
+consumes it inside the existing `if (import.meta.env.DEV || __CMDR_E2E_BUILD__)` block (the same seam
 `debug-inject-error` uses, recorded at `routes/(main)/DETAILS.md`). The listener calls `openGalleryDialog(...)` and then
 focuses the main window **from the main window's own side**: the Debug window's capability set is minimal and permission
 failures are silent, so it must not try to push focus itself.
@@ -63,10 +63,9 @@ which reads as a dialog bug rather than a permissions one (Tauri permission fail
 swallowed the rejection). It now logs the failure. Same call serves the confirmation-dialog focus request, so that path
 was broken too.
 
-`routes/(main)/+layout.svelte` mounts `DialogGallery.svelte` inside
-`{#if import.meta.env.DEV || __CMDR_DIALOG_GALLERY__}`, alongside the other always-mounted dialogs (`crash-report`,
-`error-report`, `feedback`, `mtp-permission`, `ptpcamerad`). Not `+page.svelte`: it's already over its `file-length`
-allowlist entry.
+`routes/(main)/+layout.svelte` mounts `DialogGallery.svelte` inside `{#if import.meta.env.DEV || __CMDR_E2E_BUILD__}`,
+alongside the other always-mounted dialogs (`crash-report`, `error-report`, `feedback`, `mtp-permission`, `ptpcamerad`).
+Not `+page.svelte`: it's already over its `file-length` allowlist entry.
 
 The main-window graph imports nothing from this directory. A previewed dialog suppresses global shortcuts the same way a
 real one does: `+page.svelte`'s `isModalDialogOpen()` asks `$lib/ui/open-dialogs.svelte`, and the gallery renders the
@@ -83,13 +82,12 @@ gets a gallery row. It calls `create_dialog_gallery_fixtures` itself rather than
 `test/e2e-playwright/dialog-inset.spec.ts` is the second, and it walks the same registry to measure each dialog's body
 inset against its title. It runs in every E2E lane, macOS and Linux.
 
-This is why the gate is `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__` rather than `DEV` alone: BOTH of those drivers
-run against a production Vite build (capture and E2E binaries are release builds), so `DEV` alone would leave the
-gallery out of exactly the builds that need it. The define is true when `CMDR_I18N_CAPTURE_BUILD=1` (the capture build)
-or `CMDR_E2E_BUILD=1` (`test:e2e:playwright:build` and the Linux Docker build) is set, and a production build sets
-neither. The fixture command follows the same logic in Rust:
-`#[cfg(any(debug_assertions, feature = "playwright-e2e"))]`, collected by its own `collect_dialog_gallery_types` so the
-other two debug commands stay out of an E2E binary. ❌ Don't narrow any of those back: the dialog screenshots go
+This is why the gate is `import.meta.env.DEV || __CMDR_E2E_BUILD__` rather than `DEV` alone: BOTH of those drivers run
+against a production Vite build (the capture reuses the E2E binary, a release build), so `DEV` alone would leave the
+gallery out of exactly the builds that need it. The define is true when `CMDR_E2E_BUILD=1` (`test:e2e:playwright:build`
+and the Linux Docker build) is set, and a production build sets neither. The fixture command follows the same logic in
+Rust: `#[cfg(any(debug_assertions, feature = "playwright-e2e"))]`, collected by its own `collect_dialog_gallery_types`
+so the other two debug commands stay out of an E2E binary. ❌ Don't narrow any of those back: the dialog screenshots go
 silently to zero and the inset check skips, the same way the `ai.*` couplings once did.
 
 Two limits the driver keeps, both about not lying to translators: it captures only `hostWindow: 'main'` rows (the
@@ -111,8 +109,8 @@ literals in `apps/desktop/build/`):
 
 - **Absent**: `DialogGallery.svelte`, every `fixtures/` module, `disk-fixture.ts`, `store-seeding.ts`, and the two
   preview modules — so are the dialog imports the harness would otherwise have added to the main-window graph. The
-  `{#if import.meta.env.DEV || __CMDR_DIALOG_GALLERY__}` in `+layout.svelte` is what does it (Vite inlines both flags,
-  and a production build has neither). Markers checked: `Cmdr paused indexing because the drive is running on battery.`
+  `{#if import.meta.env.DEV || __CMDR_E2E_BUILD__}` in `+layout.svelte` is what does it (Vite inlines both flags, and a
+  production build has neither). Markers checked: `Cmdr paused indexing because the drive is running on battery.`
   (`fixtures/alert.ts`) and `Dialog gallery has no fixture for` (the harness's own warning). Neither appears anywhere
   under `build/`.
 - **Present**: `gallery-registry.ts`'s row copy and `DebugDialogsPanel.svelte`, inside the Debug route's own lazily

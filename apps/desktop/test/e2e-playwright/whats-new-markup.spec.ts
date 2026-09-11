@@ -20,7 +20,7 @@
  *
  * ❗ Needs a gallery-carrying binary, same as `dialog-inset.spec.ts`:
  * `CMDR_E2E_BUILD=1` (set by `test:e2e:playwright:build`) turns on the
- * `__CMDR_DIALOG_GALLERY__` define. Locally it SKIPS with the recipe; under CI it
+ * `__CMDR_E2E_BUILD__` define. Locally it SKIPS with the recipe; under CI it
  * FAILS, because a silent skip there reads as coverage that isn't happening.
  */
 
@@ -105,7 +105,7 @@ test.describe("What's new inline markup", () => {
       .catch(() => false)
     const noGallery =
       'This binary carries no dialog gallery (`CMDR_E2E_BUILD=1` sets the ' +
-      '`__CMDR_DIALOG_GALLERY__` define). Rebuild with `pnpm test:e2e:playwright:build`.'
+      '`__CMDR_E2E_BUILD__` define). Rebuild with `pnpm test:e2e:playwright:build`.'
     if (!galleryLive && process.env.CI) throw new Error(noGallery)
     test.skip(!galleryLive, noGallery)
 

@@ -183,7 +183,7 @@ function resolveRaw(locale: string, key: string): string {
   return key
 }
 
-// ── Capture mode (capture build only; absent everywhere else) ─────────────────
+// ── Capture mode (E2E builds only; absent from production) ────────────────────
 //
 // A screenshot-coupling harness drives the app surface-by-surface, records which
 // catalog keys render on each surface, and writes `@key.screenshot` couplings
@@ -192,18 +192,19 @@ function resolveRaw(locale: string, key: string): string {
 // RESOLVED key behind every `t()`/`getMessage()`/`<Trans>` call, so the
 // instrumentation lives here.
 //
-// Gated on `__CMDR_I18N_CAPTURE__`, a Vite `define` compile-time constant that is
-// TRUE only in the dedicated capture build (the i18n-capture orchestrator sets
-// `CMDR_I18N_CAPTURE_BUILD=1`) and FALSE in prod and ordinary dev/E2E builds.
-// Because it's a constant, esbuild dead-code-eliminates the entire block below
-// (the sink, `recordCapturedKey`, the API, and `if (false && captureActive) …`
-// in the hot path) when it's false: true zero overhead and verifiably ABSENT
-// from prod. Why a build constant, not the runtime `getAppMode()`: the install
+// Gated on `__CMDR_E2E_BUILD__`, a Vite `define` compile-time constant that is
+// TRUE in every E2E build (`CMDR_E2E_BUILD=1`; the i18n screenshot run shares the
+// Playwright lane's binary) and FALSE in prod and dev. Because it's a constant,
+// esbuild dead-code-eliminates the entire block below (the sink,
+// `recordCapturedKey`, the API, and `if (false && captureActive) …` in the hot
+// path) when it's false: true zero overhead and verifiably ABSENT from prod. In an
+// E2E build the API installs inert: nothing records until the harness calls
+// `enable()`. Why a build constant, not the runtime `getAppMode()`: the install
 // runs at module load, before `initAppMode()` resolves over IPC, and the E2E
-// binary is a production Vite build (`import.meta.env.DEV` false), so the runtime
-// gate read `'prod'` at load and never installed the API.
+// binary is a production Vite build (`import.meta.env.DEV` false), so a runtime
+// gate would read `'prod'` at load and never install the API.
 
-/** True only while a capture run is active. Exists only in the capture build. */
+/** True only while a capture run is active. Exists only in E2E builds. */
 let captureActive = false
 /** The surface label every recorded key is tagged with until it changes. */
 let captureSurface = ''
@@ -225,7 +226,7 @@ function recordCapturedKey(key: string): void {
 /**
  * The window-exposed capture control surface. Typed loosely on `window` so the
  * Playwright driver (which talks to the webview by name) can call it without a
- * shared type. Installed once, only in the capture build.
+ * shared type. Installed once, only in E2E builds.
  */
 interface I18nCaptureApi {
   /** Turns recording on. Returns whether it's now active. */
@@ -252,7 +253,7 @@ interface I18nCaptureApi {
    * accented strings. `null` reverts to the OS default. The driver calls this
    * once after the app is ready, before capturing surfaces. Relies on the
    * `tag`'s catalog being loaded (the glob includes it only if the dir existed
-   * at build time, so generate `en-XA` BEFORE the capture build).
+   * at build time, so `en-XA` has to be on disk when the E2E binary is built).
    */
   setLocale: (tag: string | null) => void
   /**
@@ -263,13 +264,13 @@ interface I18nCaptureApi {
    * store, which cross-window-syncs and re-runs `text-size.svelte`'s
    * `computeAndApply` (the `--font-scale` root var + the reactive scale). Lazily
    * imports `$lib/settings` so the intl runtime stays decoupled from settings
-   * outside the capture build. Returns a promise the driver awaits before the
+   * outside an E2E build. Returns a promise the driver awaits before the
    * shot so the new scale has applied.
    */
   setTextSize: (percent: number | string) => Promise<void>
 }
 
-if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
+if (__CMDR_E2E_BUILD__ && typeof window !== 'undefined') {
   const api: I18nCaptureApi = {
     enable() {
       captureActive = true
@@ -297,7 +298,7 @@ if (__CMDR_I18N_CAPTURE__ && typeof window !== 'undefined') {
     },
     async setTextSize(percent: number | string) {
       // Lazy import: keeps the always-loaded intl runtime free of a settings
-      // dependency; this method only ever runs in the capture build.
+      // dependency; this method only ever runs in a capture run.
       const { setSetting } = await import('$lib/settings')
       // Coerce: the E2E driver reaches this through `captureCall`, which
       // JSON-stringifies every arg, so `percent` arrives as a string ("100").
@@ -327,7 +328,7 @@ export function getMessage(key: MessageKey): string {
   // Read the rune UNCONDITIONALLY and FIRST. See the reactivity note above.
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- load-bearing rune read: tracks the reactive dependency before any cache lookup; see header.
   localeVersion
-  if (__CMDR_I18N_CAPTURE__ && captureActive) recordCapturedKey(key)
+  if (__CMDR_E2E_BUILD__ && captureActive) recordCapturedKey(key)
   const locale = getUiLocale()
   return resolveRaw(locale, key)
 }
@@ -365,7 +366,7 @@ export function t(key: MessageKey, params?: TranslationParams): TranslationResul
   // reactive dependency isn't tracked. See the reactivity note above.
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- load-bearing rune read: tracks the reactive dependency before any cache lookup; see header.
   localeVersion
-  if (__CMDR_I18N_CAPTURE__ && captureActive) recordCapturedKey(key)
+  if (__CMDR_E2E_BUILD__ && captureActive) recordCapturedKey(key)
   const locale = getUiLocale()
   return getCompiled(locale, key).format(params)
 }

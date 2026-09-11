@@ -88,7 +88,7 @@ pub fn is_short_code(input: &str) -> bool {
 /// Returns the full key or a typed activation error.
 pub async fn activate_short_code(code: &str) -> Result<String, LicenseActivationError> {
     // In mock mode, return a mock key
-    #[cfg(debug_assertions)]
+    #[cfg(any(debug_assertions, feature = "playwright-e2e"))]
     if std::env::var("CMDR_MOCK_LICENSE").is_ok() {
         return Err(LicenseActivationError::NetworkError {
             detail: "Mock mode: short code activation not available".to_string(),
@@ -136,7 +136,7 @@ pub async fn activate_short_code(code: &str) -> Result<String, LicenseActivation
 /// - `NetworkError`: client couldn't reach the license server at all
 pub async fn validate_with_server(transaction_id: &str) -> ValidationOutcome {
     // In mock mode, skip server validation
-    #[cfg(debug_assertions)]
+    #[cfg(any(debug_assertions, feature = "playwright-e2e"))]
     if std::env::var("CMDR_MOCK_LICENSE").is_ok() {
         return ValidationOutcome::NetworkError;
     }

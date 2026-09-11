@@ -66,7 +66,7 @@ RUST_LOG=cmdr_lib::file_system::volume::mtp=trace pnpm check desktop-e2e-playwri
 cd apps/desktop
 
 # Build the Tauri binary with the playwright plugin. The script sets CMDR_E2E_BUILD=1,
-# which bakes in the dialog gallery (`__CMDR_DIALOG_GALLERY__`) that dialog-inset.spec.ts
+# which bakes in the dialog gallery (`__CMDR_E2E_BUILD__`) that dialog-inset.spec.ts
 # drives; a hand-rolled build without it leaves that spec nothing to measure.
 pnpm test:e2e:playwright:build
 

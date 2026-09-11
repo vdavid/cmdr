@@ -24,10 +24,10 @@
     const SUB_IDS = ['icons', 'spinners', 'status-badges', 'illustrations', 'animations', 'drive-indexing'] as const
 </script>
 
-<!-- Renders in dev, and ALSO in the i18n screenshot-capture build (`__CMDR_I18N_CAPTURE__`,
-     a Vite define true only there, dead-code-eliminated in prod) so the capture driver can
-     screenshot the drive-indexing checklist tiles by their anchors. Zero shipping impact. -->
-{#if import.meta.env.DEV || __CMDR_I18N_CAPTURE__}
+<!-- Renders in dev, and ALSO in E2E builds (`__CMDR_E2E_BUILD__`, a Vite define true only
+     there, dead-code-eliminated in prod) so the i18n capture driver can screenshot the
+     drive-indexing checklist tiles by their anchors. Zero shipping impact. -->
+{#if import.meta.env.DEV || __CMDR_E2E_BUILD__}
     <CatalogPage
         prefix="graphics"
         subIds={SUB_IDS}

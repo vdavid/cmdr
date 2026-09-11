@@ -1,4 +1,4 @@
-# Dialog gallery (dev + capture builds)
+# Dialog gallery (dev + E2E builds)
 
 Opens every registered soft dialog on demand with fixture data, for design review without staging the real conditions.
 Two drivers: Debug > Soft dialogs (`routes/debug/DebugDialogsPanel.svelte`), and the i18n screenshot capture
@@ -29,9 +29,9 @@ translators.
 - **The harness, its fixtures, and the dialogs they pull in tree-shake out of prod**; `gallery-registry.ts` doesn't (it
   rides the Debug route's chunk). The main window's own graph imports nothing from here: a preview suppresses global
   shortcuts by registering in `$lib/ui/open-dialogs.svelte`, like the shipping dialog it is.
-- **The gate is `import.meta.env.DEV || __CMDR_DIALOG_GALLERY__`** (`+layout.svelte`, `listener-setup.ts`), the define
-  every capture AND E2E build sets. ❌ Never narrow a site to `DEV` or to `__CMDR_I18N_CAPTURE__`: both of those builds
-  are prod Vite builds, so the dialog screenshots go silently to zero and `dialog-inset.spec.ts` stops measuring.
+- **The gate is `import.meta.env.DEV || __CMDR_E2E_BUILD__`** (`+layout.svelte`, `listener-setup.ts`), the define every
+  E2E build sets, and the i18n capture runs on that same binary. ❌ Never narrow a site to `DEV`: E2E binaries are prod
+  Vite builds, so the dialog screenshots go silently to zero and `dialog-inset.spec.ts` stops measuring.
 - **Adding a soft dialog means adding a gallery row**, enforced by `dialog-gallery-coverage` (id presence only), and
   **its fixture record belongs in `fixtures/index.ts`**: harness and `fixtures.test.ts` both read `fixtureRecords`, so
   "state id ↔ fixture key" drift is a test failure, not a dead button.

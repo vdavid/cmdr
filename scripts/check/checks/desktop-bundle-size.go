@@ -40,7 +40,7 @@ func desktopBundleOutDir(rootDir string) string {
 }
 
 // buildDesktopFrontend produces a PRODUCTION-shaped bundle: neither
-// `CMDR_E2E_BUILD` nor `CMDR_I18N_CAPTURE_BUILD` is set, so the dialog gallery
+// `CMDR_E2E_BUILD` nor anything else that flips a harness define is set, so the dialog gallery
 // and the capture instrumentation drop out exactly as they do in a release.
 // Roughly six seconds; the lane's `Inputs` keep it off the hot path.
 func buildDesktopFrontend(ctx *CheckContext) error {
