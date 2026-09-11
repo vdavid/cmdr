@@ -28,7 +28,9 @@ recipe for adding one is § "Adding a new check". Only the layout rules live her
   (compile, find, sign, freshness stamp), `e2e-playwright-app.go` owns one shard's lifecycle (fixtures, MCP ports, the
   Tauri process, socket wait, teardown), and `e2e-output.go` turns a raw transcript into a printable summary. That last
   one is shared with the Linux Docker lane and the build, which is why it lives under the neutral `e2e-` prefix rather
-  than the check's own name. None appears in `AllChecks`.
+  than the check's own name. `e2e-stale-selector-parse.go` is the TypeScript lexer and CSS selector parser behind
+  `desktop-svelte-e2e-stale-selector`, kept apart so the check file holds only its wiring, vocabulary, and scan. None
+  appears in `AllChecks`.
 - **`changelog-commit-links.go` resolves every commit hash in `CHANGELOG.md` through ONE `git cat-file --batch-check`
   process**, not a process per reference. The recognition rule is § "CHANGELOG commit refs" below.
 
