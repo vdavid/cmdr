@@ -39,7 +39,18 @@ function container(): HTMLDivElement {
   return target
 }
 
-/** Mounts the bare shell over one answer, and waits for it to land. */
+/** What the shell renders for any answer here; the row modules own the real mapping. */
+const ROWS = [
+  { value: 'system', label: 'System default (TextEdit)' },
+  { value: 'com.sublimetext.4', label: 'Sublime Text' },
+  { value: CHOOSE_APP_VALUE, label: 'Choose an app…' },
+]
+
+/**
+ * Mounts the bare shell over one answer, and waits for it to land. The option
+ * callbacks ignore their argument: `mount` can't infer the shell's generic, so it
+ * types the list as `unknown`.
+ */
 async function mountShell(timedOut: boolean): Promise<HTMLDivElement> {
   const target = container()
   mount(AppChoiceSelect, {
@@ -50,12 +61,8 @@ async function mountShell(timedOut: boolean): Promise<HTMLDivElement> {
       checkingLabel: 'Checking your apps…',
       pickerTitle: 'Choose a text editor',
       listApps: () => Promise.resolve({ data: EDITORS, timedOut }),
-      itemsFor: (list: TextEditorList) => [
-        { value: 'system', label: `System default (${list.defaultAppName ?? ''})` },
-        ...list.apps.map((app) => ({ value: app.id, label: app.displayName })),
-        { value: CHOOSE_APP_VALUE, label: 'Choose an app…' },
-      ],
-      selectedIn: (list: TextEditorList) => list.chosenId ?? 'system',
+      itemsFor: () => ROWS,
+      selectedIn: () => 'system',
     },
   })
   await tick()
