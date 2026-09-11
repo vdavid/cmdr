@@ -14,6 +14,9 @@ use super::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_ti
 use crate::file_system::google_drive::DriveItemLinks;
 #[cfg(target_os = "macos")]
 use crate::file_system::terminal::{OpenTerminalError, OpenTerminalOutcome, TerminalAppList};
+#[cfg(target_os = "macos")]
+use crate::file_system::text_editor::TextEditorList;
+use crate::file_system::text_editor::{EditorOpenReport, OpenInEditorError};
 
 /// Listing terminals is a handful of LaunchServices lookups and bundle-icon
 /// reads. Generous enough for a custom pick sitting on a slow mount, short enough
@@ -25,6 +28,16 @@ const TERMINAL_APPS_TIMEOUT: Duration = Duration::from_secs(2);
 /// in front of it.
 #[cfg(target_os = "macos")]
 const OPEN_TERMINAL_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Listing text editors is one LaunchServices query plus a name and an icon read
+/// per app. Same bound as the terminal list, for a picked app on a slow mount.
+#[cfg(target_os = "macos")]
+const TEXT_EDITORS_TIMEOUT: Duration = Duration::from_secs(2);
+
+/// Opening a file is one `spawn` of `open`; the wait is for the installed-app
+/// lookup in front of it and the name read behind it.
+#[cfg(target_os = "macos")]
+const OPEN_IN_EDITOR_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Show a file in Finder (reveal in parent folder)
 #[tauri::command]
@@ -90,49 +103,113 @@ pub fn get_info(_path: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Open file in the system's default text editor (macOS only).
+/// Opens a file in the text editor `app_choice` names.
 ///
-/// Backs the `file.edit` command and the "open the freshly created file" step of the
-/// new-file flow. Like `open_path`, the `playwright-e2e` build swaps in a launch-free
-/// variant: `open -t` spawns a TextEdit window per call, and the E2E suite (which
-/// creates files and opens them in the editor) has no way to close them, so they pile
-/// up across runs. The E2E variant records into the same `crate::open_mock` store as
-/// `open_path`, so specs assert intent via `e2e_opened_paths`.
+/// Backs the `file.edit` command (F4, in both the regular and the search-results pane)
+/// and the "open the freshly created file" step of the new-file flow. `app_choice` is
+/// the stored `behavior.textEditorApp` value (`system`, a bundle id, or an `.app`
+/// path), passed in because the frontend owns the settings store.
+///
+/// Answers with a report rather than a bare success: a chosen app that's gone falls
+/// back to the system default and says so, and `ask_about_other_editors` adds whether
+/// macOS lists any other editor, which the one-time hint needs. The `playwright-e2e`
+/// build records the file into `crate::open_mock` instead of launching (inside
+/// `file_system::text_editor`), so a suite run piles up no editor windows.
 #[tauri::command]
 #[specta::specta]
-#[cfg(all(target_os = "macos", not(feature = "playwright-e2e")))]
-pub fn open_in_editor(path: String) -> Result<(), String> {
-    Command::new("open")
-        .arg("-t")
-        .arg(&path)
-        .spawn()
-        .map_err(|e| e.to_string())?;
-    Ok(())
+#[cfg(target_os = "macos")]
+pub async fn open_in_editor(
+    path: String,
+    app_choice: String,
+    ask_about_other_editors: bool,
+) -> Result<EditorOpenReport, OpenInEditorError> {
+    blocking_typed_result_with_timeout(
+        OPEN_IN_EDITOR_TIMEOUT,
+        || OpenInEditorError::TimedOut,
+        |detail| {
+            crate::log_error!(target: "file_actions", "open_in_editor panicked: {detail}");
+            OpenInEditorError::TimedOut
+        },
+        move || {
+            crate::file_system::text_editor::open_in_editor(
+                std::path::Path::new(&path),
+                &app_choice,
+                ask_about_other_editors,
+            )
+        },
+    )
+    .await
 }
 
+/// Linux: `xdg-open` decides, as it always did. Both choice arguments are ignored
+/// (there's no Settings row off macOS), and there's nothing to report beyond the
+/// launch.
 #[tauri::command]
 #[specta::specta]
 #[cfg(all(target_os = "linux", not(feature = "playwright-e2e")))]
-pub fn open_in_editor(path: String) -> Result<(), String> {
-    Command::new("xdg-open").arg(&path).spawn().map_err(|e| e.to_string())?;
-    Ok(())
+pub fn open_in_editor(
+    path: String,
+    _app_choice: String,
+    _ask_about_other_editors: bool,
+) -> Result<EditorOpenReport, OpenInEditorError> {
+    Command::new("xdg-open")
+        .arg(&path)
+        .spawn()
+        .map_err(|e| OpenInEditorError::LaunchRefused {
+            errno: e.raw_os_error(),
+        })?;
+    Ok(EditorOpenReport {
+        outcome: crate::file_system::text_editor::EditorOpenOutcome::Opened,
+        opened_in_name: None,
+        other_editors_installed: None,
+    })
 }
 
 #[tauri::command]
 #[specta::specta]
 #[cfg(all(not(any(target_os = "macos", target_os = "linux")), not(feature = "playwright-e2e")))]
-pub fn open_in_editor(_path: String) -> Result<(), String> {
-    Err("Open in editor is not available on this platform".to_string())
+pub fn open_in_editor(
+    _path: String,
+    _app_choice: String,
+    _ask_about_other_editors: bool,
+) -> Result<EditorOpenReport, OpenInEditorError> {
+    Err(OpenInEditorError::LaunchRefused { errno: None })
 }
 
-/// E2E variant: record the editor-open request instead of launching TextEdit,
-/// funneling into the same `crate::open_mock` store as `open_path` so no orphan windows leak.
+/// E2E variant off macOS (the Linux Docker lane): record the file instead of
+/// launching, into the same `crate::open_mock` store as `open_path`, so no orphan
+/// windows leak. The macOS E2E build records inside `file_system::text_editor`.
 #[tauri::command]
 #[specta::specta]
-#[cfg(feature = "playwright-e2e")]
-pub fn open_in_editor(path: String) -> Result<(), String> {
+#[cfg(all(not(target_os = "macos"), feature = "playwright-e2e"))]
+pub fn open_in_editor(
+    path: String,
+    _app_choice: String,
+    _ask_about_other_editors: bool,
+) -> Result<EditorOpenReport, OpenInEditorError> {
     crate::open_mock::record(path);
-    Ok(())
+    Ok(EditorOpenReport {
+        outcome: crate::file_system::text_editor::EditorOpenOutcome::Opened,
+        opened_in_name: None,
+        other_editors_installed: None,
+    })
+}
+
+/// The text editors on this Mac, the system default, and which one `app_choice`
+/// names.
+///
+/// The settings row calls this on mount and after every write of its setting, and a
+/// "Choose an app…" pick calls it with the picked path to learn what to store
+/// (`chosenId`). One LaunchServices query plus a name and an icon read per app, so
+/// nothing caches it; the timeout only bounds a read on a stalled mount.
+#[tauri::command]
+#[specta::specta]
+#[cfg(target_os = "macos")]
+pub async fn list_text_editors(app_choice: String) -> TimedOut<TextEditorList> {
+    blocking_with_timeout_flag(TEXT_EDITORS_TIMEOUT, TextEditorList::default(), move || {
+        crate::file_system::text_editor::list_text_editors(&app_choice)
+    })
+    .await
 }
 
 /// Open a file (or folder) with the system's default application.

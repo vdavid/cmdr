@@ -106,6 +106,9 @@ export {
   quickLookClose,
   getInfo,
   openInEditor,
+  OpenInEditorFailure,
+  asOpenInEditorError,
+  listTextEditors,
   listTerminalApps,
   openTerminalHere,
   terminalAppDisplayName,
@@ -117,10 +120,14 @@ export {
 } from './file-actions'
 export type {
   DriveItemLinks,
+  EditorOpenReport,
+  OpenInEditorError,
   OpenTerminalError,
   OpenTerminalOutcome,
   TerminalApp,
   TerminalAppList,
+  TextEditorApp,
+  TextEditorList,
 } from './file-actions'
 
 // Favorites (user-editable switcher favorites)

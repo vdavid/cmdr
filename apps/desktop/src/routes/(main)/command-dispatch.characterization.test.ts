@@ -297,11 +297,11 @@ describe('characterization — module-delegate arms', () => {
 describe('characterization — entry-under-cursor arms', () => {
   const ENTRY = { path: '/Users/test/file.txt', filename: 'file.txt' }
 
-  it('file.edit → openInEditor(path) when an entry is under the cursor', async () => {
+  it('file.edit → openInEditor(path, system default, no hint query) when an entry is under the cursor', async () => {
     const explorer = makeExplorerSpy()
     explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
     await handleCommandExecute('file.edit', makeCtx(explorer))
-    expect(openInEditor).toHaveBeenCalledExactlyOnceWith(ENTRY.path)
+    expect(openInEditor).toHaveBeenCalledExactlyOnceWith(ENTRY.path, 'system', false)
   })
 
   it('file.edit → refuses a file that isn’t on the Mac with a toast, and never opens an editor', async () => {

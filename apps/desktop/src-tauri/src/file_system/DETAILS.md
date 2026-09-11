@@ -17,7 +17,7 @@ badges). The leaves beside them:
 - `cloud_actions.rs`: iCloud download and eviction. `cloud_provider.rs`: who owns a path, and what they can do.
 - `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback.
 - `open_with.rs`: the "Open with" candidate apps. `share.rs`: the `Share` submenu's services.
-- `tags.rs`: Finder tags. `terminal.rs`: "open terminal here".
+- `tags.rs`: Finder tags. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in.
 
 ## What `mod.rs` is for
 
@@ -304,7 +304,7 @@ the per-app window-vs-tab survey) is `docs/notes/terminal-launch-sources-2026-09
 - **Installed-ness is one `URLForApplicationWithBundleIdentifier:` call per app**, asked whenever the settings row
   renders and again at launch time. ❌ Never a `/Applications` scan, and no "Refresh" button, because there's nothing
   to refresh.
-- **Icons come from the bundle's own `.icns`** (`open_with::load_app_icon` plus `icons::rgba_to_data_url`), not from
+- **Icons come from the bundle's own `.icns`** (`open_with::app_icon_data_url`, shared with the text editor row), not from
   the OS icon provider: a plain file read needs no TCC permission and can't descend into a FileProvider XPC chain deep
   enough to overflow a blocking-pool thread's stack.
 - **The path-less refusal keys on the volume**, not the path string: `paths_are_os_visible()` is the same reading Quick
@@ -319,6 +319,67 @@ the per-app window-vs-tab survey) is `docs/notes/terminal-launch-sources-2026-09
   `open_in_editor`, so a suite run doesn't pile up terminal windows nothing can close. It records the FOLDER, never the
   argv: Warp's recipe ends in a URI rather than a path, so a spec reading the argv would assert something different for
   one app in the table than for the other seven.
+
+## Text editor (`text_editor.rs`)
+
+Which app F4 opens a file in: the regular pane, the search-results pane, and the ⇧F4 new-file auto-open all reach
+`open_in_editor`. The stored choice (`behavior.textEditorApp`) arrives as an argument, like the terminal's.
+
+- **Three shapes, told apart structurally.** `system` (or empty) runs `open -t <file>`, byte-identical to F4 before the
+  setting existed. An absolute path runs `open -a <app> <file>`. Anything else is a bundle id and runs
+  `open -b <id> <file>`, which lets LaunchServices pick the copy. `launch_argv` is pure.
+- **The list is `LSCopyAllRoleHandlersForContentType("public.plain-text", kLSRolesEditor)`** through `core-services`.
+  Why, from a compiled Swift probe (verified on macOS 26.6.2 with Sublime Text 4200 and VS Code 1.137.0, 2026-09-11):
+  - The editor role lists seven for plain text: Xcode, TextEdit, Warp, Path Finder, LibreOffice, Sublime Text, and VS
+    Code. The viewer role adds browsers, Notes, and Script Editor, which is what the role filter keeps out.
+  - VS Code declares text by extension (`txt`) and OSType (`TEXT`, `utxt`) only, and LaunchServices files it under
+    `public.plain-text` and none of `public.text`, `public.utf8-plain-text`, or `public.source-code`. Plain text is
+    the one query that lists it, and a union with those types adds nothing.
+  - ❌ Not `NSWorkspace` `URLsForApplicationsToOpenContentType:`: no role filter (a second copy of Warp listed twice),
+    and it needs `UniformTypeIdentifiers.framework`, which dyld refuses on the 10.15 floor. ❌ Not
+    `URLsForApplicationsToOpenURL:` on a made-up path: a path with nothing at it answers zero apps.
+  - Both C functions are deprecated since macOS 12 and still in the macOS 26 SDK. `core-services` 1.0.0 marks neither
+    `#[deprecated]`, and `desktop-rust-macos-availability` checks Objective-C selectors only. If a bump adds the
+    attribute, allow it per call with a reason naming the 10.15 floor.
+- **Both return +1 objects (the Create rule), or NULL when nothing claims plain text** (an empty list, not an error).
+  Each wrapper null-checks and wraps with `wrap_under_create_rule` exactly once: a get-rule wrap leaks, and a second
+  wrap over-releases and crashes somewhere unrelated later.
+- **LaunchServices' order isn't stable** (Xcode moved to the front once it became the default), so `apps` comes in no
+  particular order and the frontend sorts by name.
+- **Bundle ids compare case-insensitively.** Finder's "Change All" stored the default as `com.apple.dt.xcode`, while
+  the APIs answer `com.apple.dt.Xcode`.
+- **The system default** is `LSCopyDefaultRoleHandlerForContentType("public.plain-text", kLSRolesAll)`. Its id is left
+  out of `apps` (it's the "System default (…)" row), and a choice that pins it by id gets a row of its own. A listed id
+  counts only while its bundle is on disk: LaunchServices keeps answering for a deleted bundle until it notices.
+- **The pick rule: store the bundle id unless the user deliberately picked a different copy than the one
+  LaunchServices would launch.** The frontend passes the picked path to `list_text_editors` and stores `chosen_id`. A
+  pick becomes its bundle id when that id resolves to the very bundle picked, compared after `std::fs::canonicalize`
+  (the dialog's spelling and LaunchServices' can differ by a symlink or a trailing slash), and stays a path otherwise.
+  When either side runs through `AppTranslocation/` (a quarantined download macOS runs from a randomized read-only
+  mirror), its path says nothing about where the original sits, so the `.app` folder name decides instead: the id
+  already matched, and only a copy renamed on purpose is a different one. That's `is_same_bundle`. Translocation is
+  real here: Sublime Text and VS Code, both downloaded through a browser, ran from `AppTranslocation/` while
+  `URLForApplicationWithBundleIdentifier:` and `NSRunningApplication` reported `/Applications` (same machine and date).
+- **A chosen app that's gone** (a bundle id that no longer resolves to a bundle on disk, or a path that isn't a
+  directory) gets the file opened with `open -t` and the outcome `chosen_app_missing_opened_default_instead`. An app on
+  a volume that's unmounted right now reads as gone too.
+- **`opened` means `open` took the request, never that a window appeared.** The first launch of a freshly downloaded VS
+  Code exited with no window while `open -b` still exited 0; on a retry, `open -b com.microsoft.VSCode <file>` and
+  `open -a "/Applications/Visual Studio Code.app" <file>` both opened the file (same machine and date). Both forms
+  work, so bundle ids keep `open -b`.
+- **What's verified about `open -t`**: with Xcode set as the plain-text default through Finder's "Change All", `open -t`
+  launched Xcode, matching the resolved default. "Change All" writes an all-roles handler (`LSHandlerRoleAll`), so this
+  can't tell `kLSRolesAll` from `kLSRolesEditor`: a role-specific override (from `duti`, say) could name one default
+  while `open -t` launches another. Unverified.
+- **Everything in the report after the launch runs after it**: the app's name and, when asked, whether other editors
+  exist. That query uses ids and installed-ness only, ❌ no names or icons, because it shares the launch's 5 s deadline,
+  and a deadline expiring after `open` spawned would word an editor that did open as a timeout.
+- **Cost** (debug build, same machine and date): the editor query is 0.3 ms warm and 7–14 ms as a process's first
+  LaunchServices call. `list_text_editors` with six apps, the default, names, and icons took 371 ms in a cold test
+  process and 57 ms warm, nearly all of it icon decoding.
+- The `playwright-e2e` build records the FILE into `crate::open_mock` instead of launching, whatever the choice, so
+  every `e2e_opened_paths` consumer is untouched. On macOS that's `text_editor.rs`'s own `launch`; off macOS it's the
+  command's E2E arm.
 
 ## Finder tags MCP consumer (`tags.rs`)
 

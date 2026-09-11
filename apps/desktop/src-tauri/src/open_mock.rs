@@ -1,7 +1,8 @@
 //! In-process record of external-open requests for the `playwright-e2e` build.
 //!
 //! Every action that hands a path to another app records here instead of
-//! launching it: `open_path`, `open_in_editor` (`commands/file_actions.rs`), and
+//! launching it: `open_path` (`commands/file_actions.rs`), `open_in_editor`
+//! (`file_system/text_editor.rs` on macOS, the command's own arm elsewhere), and
 //! "open terminal here" (`file_system/terminal.rs`). The suite creates files and
 //! opens them, and it has no way to close a TextEdit or terminal window, so real
 //! launches would pile up unbounded across runs.

@@ -1055,14 +1055,14 @@ fns under the E2E feature, NOT as Tauri commands; if a future spec needs to read
 
 **Gotcha**: External opens are recorded, not launched. **Why**: same `playwright-e2e` feature swap. The two commands
 that hand a path to an external launcher, `open_path` (default-app open: Enter / double-click / `open_under_cursor`) and
-`open_in_editor` (`open -t`, used by the `file.edit` command and the new-file flow's "open the freshly created file"
-step), compile to variants that push the path into an in-process store instead of shelling out to `open` / `xdg-open`.
-Real launches would leak TextEdit/Preview windows the suite can't close, unbounded across runs (this is why the new-file
-round-trip test once left a TextEdit window per run). A spec asserts open intent via the `getOpenedPaths` /
-`clearOpenedPaths` helpers (backed by the `e2e_opened_paths` / `e2e_clear_opened_paths` commands, both feature-gated).
-Both commands funnel into one `open_mock` store, so `getOpenedPaths` sees every external open regardless of which
-command made it. A new user-visible "open externally" flow MUST route through a backend command gated the same way,
-never the frontend opener plugin (which really launches), or it re-introduces the leak. See
+`open_in_editor` (F4's launch into whichever editor is chosen, used by the `file.edit` command and the new-file flow's
+"open the freshly created file" step), compile to variants that push the path into an in-process store instead of
+shelling out to `open` / `xdg-open`. Real launches would leak TextEdit/Preview windows the suite can't close, unbounded
+across runs (this is why the new-file round-trip test once left a TextEdit window per run). A spec asserts open intent
+via the `getOpenedPaths` / `clearOpenedPaths` helpers (backed by the `e2e_opened_paths` / `e2e_clear_opened_paths`
+commands, both feature-gated). Both commands funnel into one `open_mock` store, so `getOpenedPaths` sees every external
+open regardless of which command made it. A new user-visible "open externally" flow MUST route through a backend command
+gated the same way, never the frontend opener plugin (which really launches), or it re-introduces the leak. See
 `apps/desktop/src-tauri/src/commands/file_actions.rs`.
 
 ## `ensureAppReady` focus contract

@@ -28,11 +28,13 @@
 use std::path::{Path, PathBuf};
 
 use objc2::rc::autoreleasepool;
-use objc2_app_kit::{NSRunningApplication, NSWorkspace};
+use objc2_app_kit::NSRunningApplication;
 use objc2_foundation::NSString;
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, utf8_percent_encode};
 
-use crate::file_system::open_with::{load_app_icon, read_app_display_name, read_bundle_identifier};
+use crate::file_system::open_with::{
+    app_icon_data_url, installed_app_path, read_app_display_name, read_bundle_identifier,
+};
 
 /// Terminal.app: always present on macOS, so it's both the default choice and the
 /// fallback when the chosen app has been uninstalled.
@@ -332,18 +334,6 @@ fn resolve_choice(
     }
 }
 
-/// Where the app with this bundle id lives, or `None` if it isn't installed.
-/// One LaunchServices lookup, which is why the settings row can ask on every
-/// render and the action can ask again at launch time. ❌ Never a
-/// `/Applications` scan.
-fn installed_app_path(bundle_id: &str) -> Option<PathBuf> {
-    autoreleasepool(|_| {
-        let workspace = NSWorkspace::sharedWorkspace();
-        let url = workspace.URLForApplicationWithBundleIdentifier(&NSString::from_str(bundle_id))?;
-        url.path().map(|p| PathBuf::from(p.to_string()))
-    })
-}
-
 /// Whether an app with this bundle id has a running instance right now.
 fn is_running(bundle_id: &str) -> bool {
     autoreleasepool(|_| {
@@ -361,18 +351,13 @@ fn choice_app_path(choice: &TerminalChoice) -> Option<PathBuf> {
     }
 }
 
-/// The dropdown entry for an app known to be installed at `app_path`.
-///
-/// The icon comes from the bundle's own `.icns` rather than `NSWorkspace`:
-/// it's a plain file read, so it needs no TCC permission and can't descend
-/// into a FileProvider XPC chain deep enough to blow a pool thread's stack.
+/// The dropdown entry for an app known to be installed at `app_path`. The icon
+/// comes from the bundle's own `.icns` (`open_with::app_icon_data_url` says why).
 fn app_entry(id: String, display_name: String, app_path: &Path, bundle_id: &str) -> TerminalApp {
-    let icon =
-        load_app_icon(app_path).and_then(|icon| crate::icons::rgba_to_data_url(&icon.rgba, icon.width, icon.height));
     TerminalApp {
         id,
         display_name,
-        icon,
+        icon: app_icon_data_url(app_path),
         is_running: is_running(bundle_id),
     }
 }

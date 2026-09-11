@@ -11,15 +11,15 @@ and a chosen app that's been removed still opens the file, in the system default
 
 ## Loud rules
 
-- ❗ This plan feeds the loop in `docs/guides/multi-agent-refactors.md`: one agent per milestone, sequential, a report of
-  ≤350 words, one commit (or a few) per milestone, messages leading with impact and carrying no AI attribution.
+- ❗ This plan feeds the loop in `docs/guides/multi-agent-refactors.md`: one agent per milestone, sequential, a report
+  of ≤350 words, one commit (or a few) per milestone, messages leading with impact and carrying no AI attribution.
 - ❌ No `run_in_background`; foreground checks only. ❌ Never tail or head `pnpm check`.
 - ❌ Never add `objc2-uniform-type-identifiers` (directly or through a crate feature), and never call
   `URLsForApplicationsToOpenContentType:` / `URLForApplicationToOpenContentType:`. That crate's `#[link]` loads
   `UniformTypeIdentifiers.framework` (macOS 11), dyld then refuses to start Cmdr on the 10.15 floor, and
   `desktop-macos-framework-floor` fails the build. The LaunchServices C API below answers the same question on 10.15+.
-- ❌ Never ask about a made-up `.txt` URL: `URLsForApplicationsToOpenURL:` on a path that doesn't exist returns zero apps
-  (measured, see Evidence).
+- ❌ Never ask about a made-up `.txt` URL: `URLsForApplicationsToOpenURL:` on a path that doesn't exist returns zero
+  apps (measured, see Evidence).
 - ❌ No hand-maintained editor table, no `/Applications` scan, no Refresh button. What macOS reports IS the list, its
   oddities included.
 - ❌ Don't change what F4 does off macOS: Linux keeps `xdg-open` and shows no Settings row.
@@ -38,12 +38,12 @@ A compiled Swift probe on David's Mac (verified on macOS 26.6 / Darwin 25.6.0, 2
   Finder, LibreOffice, Xcode.
 - **The same call with `kLSRolesViewer`**: seven, all viewers: Instruments, Script Editor, Firefox, Safari, Claude,
   Chrome, Notes.
-- **`NSWorkspace` `URLsForApplicationsToOpenContentType:` for plain text**: 13 paths, viewers and editors mixed, and Warp
-  twice (two copies on disk). That API has no role filter.
+- **`NSWorkspace` `URLsForApplicationsToOpenContentType:` for plain text**: 13 paths, viewers and editors mixed, and
+  Warp twice (two copies on disk). That API has no role filter.
 - **`URLsForApplicationsToOpenURL:` on a nonexistent `/tmp/….txt`**: zero apps.
 - **`LSCopyDefaultRoleHandlerForContentType("public.plain-text", …)`**: `com.apple.TextEdit` for both `kLSRolesEditor`
-  and `kLSRolesAll`, matching `URLForApplicationToOpenContentType:`. David's LaunchServices prefs carry no plain-text
-  override, so how `open -t` behaves with a NON-TextEdit default is unverified here (M1 spike).
+  and `kLSRolesAll`, matching `URLForApplicationToOpenContentType:`, while David's prefs still carried no plain-text
+  override. With a non-TextEdit default, see the verified findings below.
 - **Editor-role handlers for `public.source-code` and `public.json`**: the plain-text set minus Path Finder (and minus
   LibreOffice for JSON); Markdown adds OpenKnowledge.
 - **`man open`**: `-t` "Causes the file to be opened with the default text editor, as determined via LaunchServices".
@@ -57,18 +57,33 @@ declares both as `(CFStringRef, LSRolesMask)`, returning `CFStringRef` and `CFAr
 deprecated both in macOS 12 yet keeps them in the macOS 26 SDK, and they're C symbols, so
 `desktop-rust-macos-availability` (Objective-C selectors only) has nothing to flag.
 
-⚠️ **Unverified: whether the requester's editors show up.** Neither Sublime Text nor VS Code is installed on David's
-Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / `utxt` with role `Editor`, not by UTI
-(`build/lib/electron.ts` in `microsoft/vscode`, `main`, fetched 2026-09-11), so whether LaunchServices files it under
-`public.plain-text` is exactly the open question. M1 starts with a spike for it.
+**Verified: the requester's editors show up** (macOS 26.6.2, compiled Swift probe, 2026-09-11, with Sublime Text 4200
+and VS Code 1.137.0 installed and the plain-text default set to Xcode through Finder's "Change All"):
+
+- **The editor-role plain-text query lists seven**: Xcode, TextEdit, Warp, Path Finder, LibreOffice,
+  `com.sublimetext.4`, and `com.microsoft.VSCode`. VS Code declares text by EXTENSION (`txt`) plus the OSTypes `TEXT` /
+  `utxt`, never by UTI, and LaunchServices files it under `public.plain-text` only: it's absent from `public.text`,
+  `public.utf8-plain-text`, and `public.source-code`, so a union with those types would add nothing.
+- **The default** answers `com.apple.dt.Xcode` for the all, editor, and viewer roles, while Finder stored it lowercased
+  (`com.apple.dt.xcode`, `LSHandlerRoleAll` only). `open -t` launched Xcode, matching the resolved default.
+- **LaunchServices' order isn't stable**: Xcode moved to the front after becoming the default.
+- **`open -b com.sublimetext.4`** opened a file named with a space, `&`, and `árvíztűrő` correctly, from an
+  `AppTranslocation` copy (quarantine still set) while `URLForApplicationWithBundleIdentifier:` reported
+  `/Applications`. VS Code ran translocated too.
+- **`open -b com.microsoft.VSCode`** exited 0 with no window on the first launch of a freshly downloaded copy, then
+  opened the file on a retry, as did `open -a "/Applications/Visual Studio Code.app"`. So exit 0 means "request
+  accepted", never "a window appeared".
+- **Names**: VS Code's plist says `Code` (`CFBundleDisplayName`), while Finder, Spotlight, and `displayNameAtPath:` say
+  "Visual Studio Code".
+- **Timings**: the list call 0.26 ms warm and 7–14 ms as a process's first LaunchServices call; resolving an id plus
+  reading a name 0.1–0.6 ms each.
 
 ## Map of the current code
 
-- **The launch**: `open_in_editor(path)` in `apps/desktop/src-tauri/src/commands/file_actions.rs`, four sync
-  `#[cfg]` arms: `open -t` on macOS and `xdg-open` on Linux (both `not(feature = "playwright-e2e")`), an error string
-  elsewhere, and ONE `playwright-e2e` arm, ungated by OS, that records into `crate::open_mock`. Once it asks
-  LaunchServices anything it has to become `async` with a timeout: a sync command runs on the main thread
-  (`commands/CLAUDE.md`).
+- **The launch**: `open_in_editor(path)` in `apps/desktop/src-tauri/src/commands/file_actions.rs`, four sync `#[cfg]`
+  arms: `open -t` on macOS and `xdg-open` on Linux (both `not(feature = "playwright-e2e")`), an error string elsewhere,
+  and ONE `playwright-e2e` arm, ungated by OS, that records into `crate::open_mock`. Once it asks LaunchServices
+  anything it has to become `async` with a timeout: a sync command runs on the main thread (`commands/CLAUDE.md`).
 - **The frontend wrapper**: `openInEditor(path)` in `apps/desktop/src/lib/tauri-commands/file-actions.ts`,
   `throwIpcError` on failure.
 - **The guard**: `apps/desktop/src/lib/file-explorer/pane/editor-open.ts` (`canOpenInEditor`, `openInEditorOrExplain`,
@@ -85,9 +100,9 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
   files mock `openInEditor` without dispatching `file.edit`.
 - **The template, "Open terminal here"**:
   - Rust `apps/desktop/src-tauri/src/file_system/terminal.rs`: `parse_choice`, pure `launch_argv`, pure
-    `resolve_choice(setting, is_installed)`, `installed_app_path` (`URLForApplicationWithBundleIdentifier:`), `app_entry`
-    (icon via `open_with::load_app_icon` plus `icons::rgba_to_data_url`), and a `launch` split by cfg that records the
-    folder under `playwright-e2e`.
+    `resolve_choice(setting, is_installed)`, `installed_app_path` (`URLForApplicationWithBundleIdentifier:`),
+    `app_entry` (icon via `open_with::load_app_icon` plus `icons::rgba_to_data_url`), and a `launch` split by cfg that
+    records the folder under `playwright-e2e`.
   - Commands `list_terminal_apps` (`blocking_with_timeout_flag`, 2 s, `TimedOut<…>`) and `open_terminal_here`
     (`blocking_typed_result_with_timeout`, 5 s, typed error), both `#[cfg(target_os = "macos")]`.
   - Frontend `apps/desktop/src/lib/open-terminal/`: `terminal-app-setting.ts`, `first-use-pick.ts`,
@@ -95,16 +110,17 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
     The toasts carries the lesson this feature must keep: one toast id, `dismissToast` then `addToast`, ❌ never a
     one-slot `toastGroup`.
   - Settings `apps/desktop/src/lib/settings/sections/TerminalAppSelect.svelte` plus `terminal-app-options.ts`, rendered
-    in the Terminal card of `NavigationAndFileOpsSection.svelte`; the registry entries `behavior.openTerminalHereApp` and
-    `behavior.openTerminalHereToastSeen` in `settings/definitions/behavior.ts`; the deep link
+    in the Terminal card of `NavigationAndFileOpsSection.svelte`; the registry entries `behavior.openTerminalHereApp`
+    and `behavior.openTerminalHereToastSeen` in `settings/definitions/behavior.ts`; the deep link
     `openSettingsToTerminalApp()` under surface `'open-terminal-toast'` in the `SettingsSurface` union of
     `settings/settings-window.ts`.
 - **App helpers**: `apps/desktop/src-tauri/src/file_system/open_with.rs` (`read_app_display_name`,
-  `read_bundle_identifier`, `load_app_icon`, `open_paths_with`, `pick_app_via_open_panel`). `file_system/mod.rs` declares
-  the module `#[cfg(target_os = "macos")]`; its AppKit code sits in a private `mod imp` exported through one
+  `read_bundle_identifier`, `load_app_icon`, `open_paths_with`, `pick_app_via_open_panel`). `file_system/mod.rs`
+  declares the module `#[cfg(target_os = "macos")]`; its AppKit code sits in a private `mod imp` exported through one
   `pub use imp::{…}` list, so a moved helper goes inside `imp` and onto that list.
-- **LaunchServices C precedent**: `macos_icons.rs` imports `core_services::{LSCopyDefaultRoleHandlerForContentType,
-  kLSRolesAll}`, wraps the +1 result with `wrap_under_create_rule`, and gives every `unsafe` block its own `// SAFETY:`.
+- **LaunchServices C precedent**: `macos_icons.rs` imports
+  `core_services::{LSCopyDefaultRoleHandlerForContentType, kLSRolesAll}`, wraps the +1 result with
+  `wrap_under_create_rule`, and gives every `unsafe` block its own `// SAFETY:`.
 - **Platform gating in Settings**: a registry setting has NO platform flag. Only `SearchableRow.macOSOnly` exists
   (`settings/types.ts`), dropped at index build by `settings/sections/searchable-rows.ts::searchableRowEntries`. The
   terminal row renders on Linux and sits at "Checking…" forever (second paragraph of `open-terminal/DETAILS.md`).
@@ -135,9 +151,8 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
    `EditorOpenReport` / `OpenInEditorError`, so those wire types compile everywhere, and everything else in the file is
    `#[cfg(target_os = "macos")]` (a `mod imp`, the `open_with.rs` shape), which keeps Linux free of dead-code warnings.
    `installed_app_path` and the icon-to-data-URL step move from `terminal.rs` into `open_with.rs` as shared helpers, so
-   the two modules don't copy them. Why not grow `open_with.rs`: that file is the context menu's "Open with"
-   candidates with their own cache, while this feature has its own vocabulary (choice, fallback, report) that reads
-   better alone.
+   the two modules don't copy them. Why not grow `open_with.rs`: that file is the context menu's "Open with" candidates
+   with their own cache, while this feature has its own vocabulary (choice, fallback, report) that reads better alone.
 
 3. **The stored value is one string, `behavior.textEditorApp`, default `system`.** Rust's `parse_choice` tells three
    shapes apart structurally:
@@ -146,29 +161,37 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
    - Anything else: a bundle id, launched with `open -b <id> <file>`.
 
    A listed app stores its bundle id, so it survives an update that moves or renames the bundle, and LaunchServices
-   picks which copy to launch (the probe found Warp twice on disk). A pick stores its bundle id ONLY when
-   `URLForApplicationWithBundleIdentifier:` resolves that id to the very bundle picked, compared after
-   `std::fs::canonicalize` on both sides (the dialog's spelling and LaunchServices' can differ by a symlink or a trailing
-   slash), and the path otherwise (no bundle id, or a second copy chosen on purpose). That canonicalization happens once, at pick time, by asking
-   `list_text_editors(<picked path>)` for its `chosenId`. ❌ Browsing Settings never rewrites a stored value. Why a
-   sentinel rather than an empty default: `system` reads plainly in `settings.json`, and no bundle id is a bare word.
+   picks which copy to launch (the probe found Warp twice on disk). Both `open -b` and `open -a <resolved path>` opened
+   the file in VS Code on the retry (Evidence), so a bundle id launches with `open -b`. Bundle ids compare
+   case-insensitively everywhere (Finder stores the default lowercased).
+
+   **The pick rule: store the bundle id unless the user deliberately picked a different copy than the one LaunchServices
+   would launch.** A pick stores its bundle id when `URLForApplicationWithBundleIdentifier:` resolves that id to the
+   very bundle picked, compared after `std::fs::canonicalize` on both sides (the dialog's spelling and LaunchServices'
+   can differ by a symlink or a trailing slash), and the path otherwise (no bundle id, or a second copy chosen on
+   purpose). When either side is an App Translocation mirror (a path through `AppTranslocation/`, which a quarantined
+   download runs from), its path says nothing about where the original sits, so the bundle folder name decides: same id
+   and same `.app` name is the same app; a copy renamed on purpose keeps its path. The pure `is_same_bundle` carries the
+   rule. That canonicalization happens once, at pick time, by asking `list_text_editors(<picked path>)` for its
+   `chosenId`. ❌ Browsing Settings never rewrites a stored value. Why a sentinel rather than an empty default: `system`
+   reads plainly in `settings.json`, and no bundle id is a bare word.
 
 4. **The list is `LSCopyAllRoleHandlersForContentType("public.plain-text", kLSRolesEditor)`** through `core-services`.
    Each id resolves with `URLForApplicationWithBundleIdentifier:` (an id that doesn't resolve, or resolves to a bundle
    no longer on disk, is dropped), the system default's own id is removed (it's already the first row), and the chosen
    app is appended when it isn't listed (a pick of an app that doesn't claim plain text, or the default pinned
    explicitly). `chosenId` is the stored choice in canonical form (`system`, a bundle id, or a path, per Decision 3),
-   and `null` once the chosen app is gone. Names via `read_app_display_name`, icons
-   via `load_app_icon`; the frontend sorts rows by name in the app's locale, since that's presentation. The system
-   default's name comes from `LSCopyDefaultRoleHandlerForContentType("public.plain-text", kLSRolesAll)`, the call
-   `macos_icons.rs` already makes per extension. Why: the Evidence section. **Fallback rule**: if the M1 spike shows
-   Sublime Text or VS Code missing under plain text, take the union of editor-role handlers for `public.plain-text`,
-   `public.text`, and `public.source-code`, deduplicated by bundle id, and record the evidence in
-   `file_system/DETAILS.md`. "Choose an app…" covers anything still missing.
+   and `null` once the chosen app is gone. Names via `read_app_display_name`, icons via `load_app_icon`; the frontend
+   sorts rows by name in the app's locale, since that's presentation. The system default's name comes from
+   `LSCopyDefaultRoleHandlerForContentType("public.plain-text", kLSRolesAll)`, the call `macos_icons.rs` already makes
+   per extension. Why: the Evidence section, which also shows that a union with `public.text` and `public.source-code`
+   would add nothing. "Choose an app…" covers anything macOS doesn't list. The order of `apps` is unspecified:
+   LaunchServices' own order shifts between calls.
 
 5. **`open_in_editor` answers with a report, not a bare success.** New shape:
    `open_in_editor(path, app_choice, ask_about_other_editors) -> Result<EditorOpenReport, OpenInEditorError>`.
-   - **`outcome`**: `opened` or `chosen_app_missing_opened_default_instead`.
+   - **`outcome`**: `opened` or `chosen_app_missing_opened_default_instead`. `opened` means `open` accepted the request,
+     never that a window appeared (Evidence: VS Code's first launch).
    - **`openedInName: string | null`**: the display name of the app that got the file (the chosen app, or the system
      default's resolved name).
    - **`otherEditorsInstalled: boolean | null`**: `null` unless asked. When asked, whether the list from Decision 4
@@ -183,13 +206,12 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
 
 6. **A removed app: the press still opens the file, in the system default.** Rust checks installed-ness before launching
    (a bundle id through `URLForApplicationWithBundleIdentifier:` AND `is_dir()` on the path it answers, a path through
-   `is_dir()`), falls back to `open -t`,
-   and reports `chosen_app_missing_opened_default_instead`. The frontend resets the setting to `system` and raises a
-   persistent toast naming the app the file DID open in, with "Open settings". Why: the user asked to edit this file and
-   the default editor does that; the toast explains the surprise; the reset keeps the next press quiet. The toast names
-   the fallback rather than the missing app because, once a bundle is gone, nothing is left to read its name from, and
-   there's no table to ask (unlike the terminal). Accepted edge: an app picked from a volume that's unmounted right now
-   gets reset too; the toast links straight to the row.
+   `is_dir()`), falls back to `open -t`, and reports `chosen_app_missing_opened_default_instead`. The frontend resets
+   the setting to `system` and raises a persistent toast naming the app the file DID open in, with "Open settings". Why:
+   the user asked to edit this file and the default editor does that; the toast explains the surprise; the reset keeps
+   the next press quiet. The toast names the fallback rather than the missing app because, once a bundle is gone,
+   nothing is left to read its name from, and there's no table to ask (unlike the terminal). Accepted edge: an app
+   picked from a volume that's unmounted right now gets reset too; the toast links straight to the row.
 
 7. **The frontend feature is a new `text-editor/` module under `apps/desktop/src/lib/`, with its own `CLAUDE.md` +
    `DETAILS.md`.** `pane/editor-open.ts` keeps the guard and hands the launch to that module's `openFileInEditor(path)`,
@@ -203,16 +225,16 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
    is the same question after ⇧F4 as after F4. The pane guard's `fileExplorer.edit.notOnThisMac` refusal isn't part of
    that id: it stays its own transient toast, so an F4 on a guarded row stacks beside a hint that's still up, while a
    plain second F4 says nothing and leaves the hint alone. The ⇧F4 path closes the dialog and refocuses the pane before
-   `onOpenInEditor` runs (`handleNewFileCreated`), so no toast from here can land while a dialog owns the keys. The frontend passes `ask_about_other_editors = true` only while
-   `behavior.textEditorHintSeen` is false AND the stored choice is `system`. The pure `decideEditorHint({ hintSeen,
-   storedChoice, report })`:
+   `onOpenInEditor` runs (`handleNewFileCreated`), so no toast from here can land while a dialog owns the keys. The
+   frontend passes `ask_about_other_editors = true` only while `behavior.textEditorHintSeen` is false AND the stored
+   choice is `system`. The pure `decideEditorHint({ hintSeen, storedChoice, report })`:
    - **Hint already spent**: no hint, no write.
    - **The launch threw** (`launchRefused`, `timedOut`): no hint, the flag stays unspent.
    - **The stored choice isn't `system`**: no hint, and spend the flag silently. They already found the setting, and
      Rust wasn't asked.
    - **`otherEditorsInstalled` is `null`** (Linux, or not asked): no hint, no write.
-   - **`otherEditorsInstalled` is `false`**: no hint, and ❗ the flag stays UNSPENT, so someone who installs Sublime Text
-     next month is still told.
+   - **`otherEditorsInstalled` is `false`**: no hint, and ❗ the flag stays UNSPENT, so someone who installs Sublime
+     Text next month is still told.
    - **`otherEditorsInstalled` is `true`**: show the hint (named when `openedInName` is present, the unnamed wording
      otherwise) and spend the flag.
 
@@ -225,9 +247,9 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
    the row stays disabled at "Checking…", which claims nothing). ❗ The row is ready once an answer lands with
    `timedOut: false`, never when `apps` is non-empty (the terminal's rule): `apps` leaves out the system default, so a
    Mac whose only editor is TextEdit answers a complete, empty `apps`, and that row must still offer "System default
-   (TextEdit)" and "Choose an app…". F4 is one IPC, and the editor query rides on it only while the
-   hint is due. `open_in_editor` gets a 5 s deadline, like the terminal launch. M1 reports the list's duration on
-   David's Mac; if icon decoding pushes it past roughly 300 ms, say so rather than raising the deadline.
+   (TextEdit)" and "Choose an app…". F4 is one IPC, and the editor query rides on it only while the hint is due.
+   `open_in_editor` gets a 5 s deadline, like the terminal launch. M1 reports the list's duration on David's Mac; if
+   icon decoding pushes it past roughly 300 ms, say so rather than raising the deadline.
 
 10. **Settings placement: a new "Text editor" card directly above the Terminal card**, holding one row with a bespoke
     `TextEditorSelect.svelte` (the options are live, so it can't be `SettingSelect`). Why its own card: the neighbor is
@@ -236,9 +258,9 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
     dropped at index build in `buildSearchIndex`. The terminal row takes the same flag and the same `isMacOS()` gate in
     that milestone, which retires its "Checking… forever on Linux" wart for a line or two.
 
-11. **E2E: no new Playwright spec.** The `playwright-e2e` build keeps recording the FILE path into `open_mock` (never the
-    argv, never the app), so every `e2e_opened_paths` consumer is untouched. Choice parsing, argv, the fallback, and the
-    list assembly are pure Rust tests; the hint table and the side effects are Vitest. What an E2E spec would add is
+11. **E2E: no new Playwright spec.** The `playwright-e2e` build keeps recording the FILE path into `open_mock` (never
+    the argv, never the app), so every `e2e_opened_paths` consumer is untouched. Choice parsing, argv, the fallback, and
+    the list assembly are pure Rust tests; the hint table and the side effects are Vitest. What an E2E spec would add is
     "Sublime Text was asked", which `open_mock` can't say without reshaping a store other specs read, for an assertion a
     unit test already makes. ❗ The ⇧F4 round-trip test must spend `behavior.textEditorHintSeen` in its setup
     (`mcpCall('set_setting', …)`, as `open-terminal-here.spec.ts` does for its own flag): on any Mac with Xcode or
@@ -249,8 +271,8 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
 
 ## Draft copy (for David's review)
 
-Each key is tagged with the milestone whose code first names it, which is where it lands and gets translated (§ The
-copy procedure).
+Each key is tagged with the milestone whose code first names it, which is where it lands and gets translated (§ The copy
+procedure).
 
 Settings, in `messages/en/settings.json`:
 
@@ -276,11 +298,11 @@ Toasts, in `messages/en/fileExplorer.json` beside `fileExplorer.edit.notOnThisMa
   Settings, under Navigation & file ops."
 - (M2) `fileExplorer.edit.dismiss`: "Dismiss"
 - (M2) `fileExplorer.edit.openSettings`: "Open settings"
-- (M2) `fileExplorer.edit.appMissing`: "The editor you picked isn't installed anymore, so this file opened in {app}."
-- (M2) `fileExplorer.edit.appMissingUnnamed`: "The editor you picked isn't installed anymore, so this file opened in
-  your default text editor."
-- (M2) `fileExplorer.edit.launchRefused`: "Cmdr couldn't start your text editor. Try opening it yourself once, then
-  come back."
+- (M2) `fileExplorer.edit.appMissing`: "Cmdr can't find the editor you picked, so this file opened in {app}."
+- (M2) `fileExplorer.edit.appMissingUnnamed`: "Cmdr can't find the editor you picked, so this file opened in your
+  default text editor."
+- (M2) `fileExplorer.edit.launchRefused`: "Cmdr couldn't start your text editor. Try opening it yourself once, then come
+  back."
 - (M2) `fileExplorer.edit.timedOut`: "Your text editor is taking a while to start. It may still open."
 
 ICU values double every apostrophe (`isn''t`, `couldn''t`). `{app}` is an uncontrolled insert (any app's own name): say
@@ -290,9 +312,8 @@ so in its `@key` description, and keep it in a slot a translator can restructure
 (`commands.handler.openTerminalHere.*` and `settings.behavior.openTerminalHereApp.*`), so
 `desktop-i18n-term-consistency` warns if a locale translates them differently.
 
-For David: `appMissing` says "isn't installed anymore", which reads wrong in Decision 6's accepted edge (an app on a
-volume that's unmounted right now). Something like "isn't on this Mac right now" would cover both. `launchRefused`
-copies the terminal's advice word for word.
+`appMissing` says "can't find" rather than "isn't installed anymore", so it stays true in Decision 6's accepted edge (an
+app on a volume that's unmounted right now). `launchRefused` copies the terminal's advice word for word.
 
 ## Milestones
 
@@ -300,30 +321,26 @@ copies the terminal's advice word for word.
 
 **Scope**
 
-- **Spike first** (timebox about 45 minutes; report the result before building the list). Download the current Sublime
-  Text and VS Code macOS archives into the scratchpad and read each `Contents/Info.plist` `CFBundleDocumentTypes`
-  (`LSItemContentTypes`, `CFBundleTypeExtensions`, `CFBundleTypeOSTypes`, `CFBundleTypeRole`). ❗ Registering either app
-  with `lsregister` writes David's LaunchServices database, so do it ONLY with David's OK relayed through the lead;
-  without it, pick between the `public.plain-text` query and Decision 4's union on what the plists declare, and say
-  which evidence decided. Also ask, through the lead, whether David will spend a minute confirming that `open -t` and
-  the resolved default name agree after changing a `.txt` file's default in Finder; if not, record it as an open item in
-  `file_system/DETAILS.md`. Finder's "Change All" writes an all-roles handler, so that check can't tell `kLSRolesAll`
-  from `kLSRolesEditor`: note there too that a role-specific override (from `duti`, say) could name one default while
-  `open -t` launches another. ❌ Never change David's default handler yourself.
+- **Spike (done, 2026-09-11)**: Sublime Text and VS Code installed, `open -t` checked against a Finder "Change All"
+  default, and both launch forms tried; results in Evidence. The `public.plain-text` query stands.
+  `file_system/DETAILS.md` § "Text editor" records what "Change All" can't test: a role-specific override (from `duti`,
+  say) could name one default while `open -t` launches another. ❌ Never change David's default handler.
 - **Shared helpers**: move `installed_app_path` out of `terminal.rs` into `open_with.rs`'s `mod imp`, exported on its
-  `pub use imp::{…}` list, plus an `app_icon_data_url(app_path)` wrapping `load_app_icon` and
-  `icons::rgba_to_data_url`. `terminal.rs` calls both. Behavior-identical.
+  `pub use imp::{…}` list, plus an `app_icon_data_url(app_path)` wrapping `load_app_icon` and `icons::rgba_to_data_url`.
+  `terminal.rs` calls both. Behavior-identical.
+- **App names**: `read_app_display_name` answers what Finder shows (`NSFileManager` `displayNameAtPath:`, a trailing
+  `.app` trimmed), falling back to the plist names only when there's no bundle at the path to ask. The "Open with" menu,
+  the terminal row, and the file-viewer row get the same fix, in a commit of its own.
 - **The module**, `text_editor.rs` under `file_system/`, declared UNGATED in `file_system/mod.rs` (Decision 2): the wire
   types `EditorOpenReport`, `EditorOpenOutcome`, and `OpenInEditorError` compile everywhere, and the rest sits behind
   `#[cfg(target_os = "macos")]`:
   - `SYSTEM_DEFAULT_CHOICE = "system"` and `TextEditorChoice { SystemDefault, BundleId(String), AppPath(PathBuf) }`.
-  - Pure: `parse_choice`, `launch_argv(&TextEditorChoice, file) -> Vec<String>`, `resolve_choice(choice,
-    is_installed)`, the list assembly (handler ids + default id + chosen + a resolver → rows), the pick
-    canonicalization, and `other_editors_installed`.
+  - Pure: `parse_choice`, `launch_argv(&TextEditorChoice, file) -> Vec<String>`, `resolve_choice(choice, is_installed)`,
+    the list assembly (handler ids + default id + chosen + a resolver → rows), the pick canonicalization, and
+    `other_editors_installed`.
   - The two LaunchServices calls behind small `unsafe` wrappers: each with its own `// SAFETY:`, null-checked, wrapped
     with `CFArray::wrap_under_create_rule` / `CFString::wrap_under_create_rule` exactly once.
-  - `list_text_editors(setting) -> TextEditorList { defaultAppName, defaultAppIcon, apps: Vec<TextEditorApp { id,
-    displayName, icon }>, chosenId }`.
+  - `list_text_editors(setting) -> TextEditorList { defaultAppName, defaultAppIcon, apps: Vec<TextEditorApp { id, displayName, icon }>, chosenId }`.
   - `open_in_editor(path, setting, ask) -> Result<EditorOpenReport, OpenInEditorError>`, with `launch` split by cfg:
     spawn `open`, or `crate::open_mock::record(<file>)` under `playwright-e2e`.
 - **Commands** in `commands/file_actions.rs`, registered in `ipc.rs` beside the terminal's:
@@ -335,10 +352,10 @@ copies the terminal's advice word for word.
     answers `launchRefused { errno: null }`. ❗ Today's `playwright-e2e` arm has no OS condition: add
     `not(target_os = "macos")` to it, or the macOS E2E build defines `open_in_editor` twice.
   - New macOS-only `list_text_editors(app_choice) -> TimedOut<TextEditorList>` (2 s, `blocking_with_timeout_flag`).
-- **Frontend plumbing only**: `pnpm bindings:regen`; `openInEditor(path, appChoice, askAboutOtherEditors):
-  Promise<EditorOpenReport>` throwing an `OpenInEditorFailure` (`TypedFailure`) plus `asOpenInEditorError`, and
-  `listTextEditors(appChoice)`. `editor-open.ts` calls `openInEditor(rowPath, 'system', false)` with a comment that M2
-  replaces the literal.
+- **Frontend plumbing only**: `pnpm bindings:regen`;
+  `openInEditor(path, appChoice, askAboutOtherEditors): Promise<EditorOpenReport>` throwing an `OpenInEditorFailure`
+  (`TypedFailure`) plus `asOpenInEditorError`, and `listTextEditors(appChoice)`. `editor-open.ts` calls
+  `openInEditor(rowPath, 'system', false)` with a comment that M2 replaces the literal.
 - **Docs**: `file_system/DETAILS.md` gets a § "Text editor (`text_editor.rs`)" (the Evidence section trimmed, with its
   anchor; why the role query; the Create rule; the pick canonicalization; the `open -t` verification status) and a
   module-map line. `file_system/CLAUDE.md` gets one guardrail: text editors come from the LaunchServices editor-ROLE C
@@ -377,24 +394,29 @@ complete, so M2 and M3 are frontend-only.
 3. `resolve_choice`: an installed choice is used as is with `Opened`; a missing bundle id and a missing path both fall
    back to `SystemDefault` with `ChosenAppMissingOpenedDefaultInstead`; `SystemDefault` is never "missing", even when
    the installed check says no (it's never asked).
-4. List assembly: drops ids that don't resolve or resolve to a missing bundle, removes the default's id, appends a
-   chosen bundle id or path that isn't listed, never duplicates a chosen id that is (a stored path whose canonical form
-   is a listed bundle id included), keeps LaunchServices' order; `chosenId` is `system` for the default and `None` for
-   a missing app.
-5. Pick canonicalization: bundle id when it resolves to the same bundle, a symlinked spelling of that path included;
-   the path when it resolves elsewhere or there's no bundle id.
+4. List assembly: drops ids that don't resolve or resolve to a missing bundle, removes the default's id whatever its
+   case, appends a chosen bundle id or path that isn't listed, never duplicates a chosen id that is (matched
+   case-insensitively and answered in the listed spelling; a stored path whose canonical form is a listed bundle id
+   included); `chosenId` is `system` for the default and `None` for a missing app. Row order is unspecified, so the
+   tests compare ids sorted.
+5. Pick canonicalization: bundle id when it resolves to the same bundle (a symlinked or trailing-slash spelling
+   included, and a translocated copy on either side with the same `.app` name); the path when it resolves elsewhere,
+   when a translocated copy carries another name, or when there's no bundle id.
 6. `other_editors_installed`: empty and default-only answer false; one more app answers true.
-7. macOS-only smoke test: the plain-text default's bundle id is `Some` (TextEdit ships with macOS). Break the CF
-   wrapper to return `None`, see it fail, restore.
-8. `open_with.rs`: `installed_app_path("com.apple.TextEdit")` is `Some` on macOS (moves with the helper, or is added).
+7. macOS-only smoke test: the plain-text default's bundle id is `Some` (TextEdit ships with macOS). Break the CF wrapper
+   to return `None`, see it fail, restore.
+8. `open_with.rs`: `installed_app_path("com.apple.TextEdit")` is `Some` on macOS (moves with the helper, or is added),
+   and a bundle folder named "Visual Studio Code.app" whose plist says `Code` reads as "Visual Studio Code" (red on the
+   plist-first name), with a trailing `.app` trimmed case-insensitively.
 9. Frontend: tests for the `openInEditor` and `listTextEditors` wrappers (typed failure round trip), because
    `svelte-tests` holds every file to a 70% coverage floor. Update the exact-argument expectations in
    `command-dispatch.characterization.test.ts` and `pane/search-pane-keys.test.ts` to `(path, 'system', false)`
    deliberately: the call changed on purpose.
 
-**DONE**: `pnpm check clippy rust-tests desktop-bindings-fresh desktop-rust-macos-availability
-desktop-macos-framework-floor` green (the floor check needs a built binary; if it skips, say so) plus `pnpm check
-svelte` for the wrapper and call site. The spike's result and the list timing are in the report. Commit, for example
+**DONE**:
+`pnpm check clippy rust-tests desktop-bindings-fresh desktop-rust-macos-availability desktop-macos-framework-floor`
+green (the floor check needs a built binary; if it skips, say so) plus `pnpm check svelte` for the wrapper and call
+site. The spike's result and the list timing are in the report. Commit, for example
 `feat(editor): Cmdr can list the text editors macOS knows and launch a file in a chosen one, groundwork for picking what F4 opens`.
 
 ### The copy procedure (M2 and M3 each run it)
@@ -431,31 +453,31 @@ Draft copy keys tagged with its number, writes the code that names them, and tra
 **Red step**: run `pnpm check desktop-i18n-coverage` right after `sync-locale-keys` and see it fail on the English
 skeletons; translate; see it pass.
 
-**Checks**, inside the milestone's DONE: `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural
-desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate desktop-i18n-term-consistency
-desktop-i18n-aria-label desktop-i18n-doc-citations desktop-message-keys-unused`, warns reported.
+**Checks**, inside the milestone's DONE:
+`pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate desktop-i18n-term-consistency desktop-i18n-aria-label desktop-i18n-doc-citations desktop-message-keys-unused`,
+warns reported.
 
 ### M2. F4 honors the choice
 
 **Scope**
 
-- **Registry**: `behavior.textEditorApp` in `settings/definitions/behavior.ts` beside the terminal entries (`type:
-  'string'`, `default: 'system'`, `component: 'select'`, `cardKey: 'settings.navigationAndFileOps.card.textEditor'`,
-  keywords such as `editor`, `text editor`, `F4`, `Sublime Text`, `VS Code`, `BBEdit`, `TextEdit`), with a comment in
-  the terminal's style, and its `SettingsValues` key in `settings/types.ts`. No row until M3; until then the entry is
-  searchable with nothing rendered, which is fine inside the branch. ❌ Never add it to `CATEGORICAL_STRING_KEYS`: the
-  value can be a path inside someone's home folder. Commit the `settings-defaults.gen.json` rewrite that
-  `analytics-settings-defaults` makes.
+- **Registry**: `behavior.textEditorApp` in `settings/definitions/behavior.ts` beside the terminal entries
+  (`type: 'string'`, `default: 'system'`, `component: 'select'`,
+  `cardKey: 'settings.navigationAndFileOps.card.textEditor'`, keywords such as `editor`, `text editor`, `F4`,
+  `Sublime Text`, `VS Code`, `BBEdit`, `TextEdit`), with a comment in the terminal's style, and its `SettingsValues` key
+  in `settings/types.ts`. No row until M3; until then the entry is searchable with nothing rendered, which is fine
+  inside the branch. ❌ Never add it to `CATEGORICAL_STRING_KEYS`: the value can be a path inside someone's home folder.
+  Commit the `settings-defaults.gen.json` rewrite that `analytics-settings-defaults` makes.
 - **Copy**: § The copy procedure, for the keys tagged (M2).
 - **The module**, `text-editor/` under `apps/desktop/src/lib/`:
   - `text-editor-choice.ts`: a leaf with zero imports, `SYSTEM_DEFAULT_EDITOR_CHOICE = 'system'` (mirrors Rust's
     `SYSTEM_DEFAULT_CHOICE`).
   - `text-editor-setting.ts`: `getTextEditorChoice()` (a missing or non-string value reads as `system`),
-    `setTextEditorChoice`, and `openSettingsToTextEditor()` (surface `'text-editor-toast'`, section `['Behavior',
-    'Navigation & file ops']`, anchor `settingAnchorId('behavior.textEditorApp')`, which starts resolving in M3; until
-    then the section opens at its top).
-  - `open-file-in-editor.ts`: `openFileInEditor(path): Promise<boolean>`. Reads the choice, calls `openInEditor(path,
-    choice, false)` (the hint arrives in M3), resets to `system` and raises the missing-app toast on
+    `setTextEditorChoice`, and `openSettingsToTextEditor()` (surface `'text-editor-toast'`, section
+    `['Behavior', 'Navigation & file ops']`, anchor `settingAnchorId('behavior.textEditorApp')`, which starts resolving
+    in M3; until then the section opens at its top).
+  - `open-file-in-editor.ts`: `openFileInEditor(path): Promise<boolean>`. Reads the choice, calls
+    `openInEditor(path, choice, false)` (the hint arrives in M3), resets to `system` and raises the missing-app toast on
     `chosen_app_missing_opened_default_instead`, words `launchRefused` and `timedOut`, never throws, and says everything
     under the one id with dismiss-then-add.
   - `TextEditorToastContent.svelte`: one presentational body (a resolved `message`, an optional Dismiss, and "Open
@@ -482,9 +504,9 @@ nothing in the UI advertises it yet.
 - The three callers stay untouched. `command-dispatch.characterization.test.ts` pins `openInEditor`'s arguments; its
   settings mock answers `100` for every key, which `getTextEditorChoice` reads as `system`, so it keeps expecting
   `(path, 'system', false)`. ❗ That mock and `pane/search-pane-keys.test.ts`'s spy both resolve `undefined`, and
-  `openFileInEditor` now reads the report: have them resolve `{ outcome: 'opened', openedInName: null,
-  otherEditorsInstalled: null }`. `search-pane-keys.test.ts` also reaches `$lib/settings` unmocked from here on; mock it
-  there if the real store doesn't load.
+  `openFileInEditor` now reads the report: have them resolve
+  `{ outcome: 'opened', openedInName: null, otherEditorsInstalled: null }`. `search-pane-keys.test.ts` also reaches
+  `$lib/settings` unmocked from here on; mock it there if the real store doesn't load.
 - `svelte-tests` holds each new `.ts` file to 70% coverage.
 - Every string goes through `tString` (`cmdr/no-raw-user-facing-string`).
 - ❌ Don't touch `DualPaneExplorer.svelte` or `FilePane.svelte`.
@@ -504,8 +526,9 @@ nothing in the UI advertises it yet.
 5. `text-editor-toasts.a11y.test.ts`, mirroring `open-terminal-toasts.a11y.test.ts`.
 6. The copy: the procedure's red step on `desktop-i18n-coverage`.
 
-**DONE**: the copy procedure's checks, `pnpm check svelte`, then `pnpm check docs-reachable docs-dead-links
-docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
+**DONE**: the copy procedure's checks, `pnpm check svelte`, then
+`pnpm check docs-reachable docs-dead-links docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for
+example
 `feat(editor): F4 opens files in the editor you chose, and falls back to the system default with a word when that app is gone`.
 
 ### M3. The Settings row and the one-time hint
@@ -561,8 +584,8 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
 - The choose-app sentinel must be neither `system`, nor a path, nor bundle-id-shaped (the terminal's `__choose_app__`
   qualifies; share it through the extracted component).
 - ❗ `isMacOS()` is FALSE under Vitest on every host: jsdom's user agent reads `(darwin)` or `(linux)`, never "mac".
-  Once both cards sit behind `isMacOS()`, `NavigationAndFileOpsSection.svelte.test.ts` (four cards, Terminal among
-  them) and the section's case in `sections.a11y.test.ts` lose the Terminal card unless they mock
+  Once both cards sit behind `isMacOS()`, `NavigationAndFileOpsSection.svelte.test.ts` (four cards, Terminal among them)
+  and the section's case in `sections.a11y.test.ts` lose the Terminal card unless they mock
   `$lib/shortcuts/key-capture`'s `isMacOS` to true, the way `RevealHandlerCard.svelte.test.ts` does. Both files also
   mock `listTerminalApps`, so mock `listTextEditors` beside it.
 - "Open settings" scrolls to the row through `settingAnchorId`, and focus stays in the Settings search field. An
@@ -572,8 +595,8 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
 
 **Test plan** (red, then green)
 
-1. `editor-hint.test.ts`: one test per Decision 8 bullet. Red on a stub answering "no hint, no write": the `true` row and
-   the non-`system` row fail.
+1. `editor-hint.test.ts`: one test per Decision 8 bullet. Red on a stub answering "no hint, no write": the `true` row
+   and the non-`system` row fail.
 2. `open-file-in-editor.test.ts`: `askAboutOtherEditors` is true only while unspent AND `system`; the hint is raised
    with `{ app }` and the flag written; `false` leaves the flag alone; a non-`system` choice spends it without asking
    Rust.
@@ -584,17 +607,18 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
    Mock it on `$lib/shortcuts/key-capture`, the module `searchable-rows.ts` already reads, so the registry filter and
    the row filter answer to one mock. Call `clearSearchIndex()` between the two: `buildSearchIndex` memoizes, so without
    it the second answer is the first one's.
-5. `NavigationAndFileOpsSection.svelte.test.ts`: off macOS neither card renders; on macOS the Text editor card sits above
-   Terminal.
+5. `NavigationAndFileOpsSection.svelte.test.ts`: off macOS neither card renders; on macOS the Text editor card sits
+   above Terminal.
 6. `TextEditorSelect.svelte.test.ts`: a TextEdit-only answer (`apps: []`, `timedOut: false`) renders enabled with the
    system row and "Choose an app…"; a timed-out answer stays disabled at "Checking your apps…"; a pick stores the
    canonical `chosenId`, and a cancelled one stores nothing. Red on the terminal's `apps.length > 0` rule. Add a
    `TextEditorSelect a11y` case beside `TerminalAppSelect a11y` in `sections.a11y.test.ts`.
 7. The terminal row's existing tests stay green through the extraction.
-7. The copy: the procedure's red step on `desktop-i18n-coverage`.
+8. The copy: the procedure's red step on `desktop-i18n-coverage`.
 
-**DONE**: the copy procedure's checks, then plain `pnpm check` green; the "New file round-trip" test run alone per the single-spec recipe in
-`apps/desktop/test/e2e-playwright/CLAUDE.md`, green; then `pnpm check --include-slow` once. Commit, for example
+**DONE**: the copy procedure's checks, then plain `pnpm check` green; the "New file round-trip" test run alone per the
+single-spec recipe in `apps/desktop/test/e2e-playwright/CLAUDE.md`, green; then `pnpm check --include-slow` once.
+Commit, for example
 `feat(settings): pick the app F4 opens files in from the editors macOS lists, and hear once where that setting lives`.
 
 ## Out of scope
@@ -611,21 +635,22 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
 
 ## Edges this plan leaves as they are
 
-Read from the code on 2026-09-11. None change here; the ones marked are product calls for David.
+Read from the code on 2026-09-11. None change here. The two marked "decided" were product calls; the decision is to
+leave both as described, and the lead reports them to David.
 
 - **Several selected files**: F4 opens the cursor row only and ignores the selection (`withEntryUnderCursor` in
   `file-handlers.ts`).
 - **The `..` row**: F4 does nothing (`getFileAndPathUnderCursor` answers `null` for it).
-- **A folder (David's call)**: in a regular pane F4 hands the folder over (`open -t <folder>` today, which TextEdit can't
-  open), while the search-results F4 skips folders. With Sublime Text or VS Code chosen, a folder opens as a project,
-  which may be welcome. Aligning the two panes is a separate change.
+- **A folder (decided: leave as is)**: in a regular pane F4 hands the folder over (`open -t <folder>` today, which
+  TextEdit can't open), while the search-results F4 skips folders. With Sublime Text or VS Code chosen, a folder opens
+  as a project, which may be welcome. Aligning the two panes is a separate change.
 - **A binary file**: the editor decides, as today.
 - **An app that can't open text, picked through "Choose an app…"**: `open -a` launches it, the file may not open, and
   Rust reports `opened`. The user picked it; the row shows it.
-- **TextEdit picked through "Choose an app…" (David's call)**: it canonicalizes to `com.apple.TextEdit`, which isn't
-  `system`, so the row shows "System default (TextEdit)" AND a second "TextEdit" row (Decision 4's pinned default).
-  Pinning survives a later change of the system default; folding a pick that equals the default back into `system`
-  would avoid the lookalike row.
+- **TextEdit picked through "Choose an app…" (decided: leave as is)**: it canonicalizes to `com.apple.TextEdit`, which
+  isn't `system`, so the row shows "System default (TextEdit)" AND a second "TextEdit" row (Decision 4's pinned
+  default). Pinning survives a later change of the system default; folding a pick that equals the default back into
+  `system` would avoid the lookalike row.
 - **An app on an external volume**: Decision 6's accepted edge.
 
 ## Invariants

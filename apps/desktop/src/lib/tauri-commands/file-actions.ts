@@ -5,9 +5,12 @@ import { openUrl } from '@tauri-apps/plugin-opener'
 import {
   commands,
   type DriveItemLinks,
+  type EditorOpenReport,
+  type OpenInEditorError,
   type OpenTerminalError,
   type OpenTerminalOutcome,
   type TerminalAppList,
+  type TextEditorList,
   type TimedOut,
 } from '$lib/ipc/bindings'
 import { TypedFailure } from '$lib/ipc/typed-failure'
@@ -15,10 +18,14 @@ import { throwIpcError } from './ipc-types'
 
 export type {
   DriveItemLinks,
+  EditorOpenReport,
+  OpenInEditorError,
   OpenTerminalError,
   OpenTerminalOutcome,
   TerminalApp,
   TerminalAppList,
+  TextEditorApp,
+  TextEditorList,
 } from '$lib/ipc/bindings'
 
 /**
@@ -321,14 +328,52 @@ export async function getInfo(path: string): Promise<void> {
   if (res.status === 'error') throwIpcError(res.error)
 }
 
+/** An editor launch that never started, still carrying the backend's typed reason. */
+export class OpenInEditorFailure extends TypedFailure<OpenInEditorError> {
+  constructor(failure: OpenInEditorError) {
+    super(failure, `open in editor refused: ${failure.type}`)
+    this.name = 'OpenInEditorFailure'
+  }
+}
+
+/** The typed refusal behind a caught value, or `null` when it isn't one. */
+export function asOpenInEditorError(error: unknown): OpenInEditorError | null {
+  return error instanceof OpenInEditorFailure ? error.failure : null
+}
+
 /**
- * Open file in the system's default text editor.
- * On macOS, uses `open -t`. On Linux, uses `xdg-open`.
+ * Opens a file in the text editor `appChoice` names.
+ *
+ * Resolves to a REPORT, not a bare success: the chosen app may be gone (the system
+ * default opened the file instead), and `openedInName` names the app that got it.
+ * Throws {@link OpenInEditorFailure} only when the launch couldn't be attempted.
+ * Linux runs `xdg-open` and ignores the last two arguments.
+ *
  * @param path - Absolute path to the file.
+ * @param appChoice - The stored `behavior.textEditorApp`: `system`, a bundle id, or an `.app` path.
+ * @param askAboutOtherEditors - Whether to also answer `otherEditorsInstalled`, for the one-time hint.
  */
-export async function openInEditor(path: string): Promise<void> {
-  const res = await commands.openInEditor(path)
-  if (res.status === 'error') throwIpcError(res.error)
+export async function openInEditor(
+  path: string,
+  appChoice: string,
+  askAboutOtherEditors: boolean,
+): Promise<EditorOpenReport> {
+  const res = await commands.openInEditor(path, appChoice, askAboutOtherEditors)
+  if (res.status === 'error') throw new OpenInEditorFailure(res.error)
+  return res.data
+}
+
+/**
+ * The text editors macOS lists on this Mac, the system default, and which one
+ * `appChoice` names (macOS only).
+ *
+ * `chosenId` is the choice in the form to store: pass a "Choose an app…" pick's path
+ * and store what comes back. It's `null` when that app is gone. Asked fresh on every
+ * render; nothing caches it.
+ * @param appChoice - The stored choice, or a freshly picked `.app` path.
+ */
+export async function listTextEditors(appChoice: string): Promise<TimedOut<TextEditorList>> {
+  return await commands.listTextEditors(appChoice)
 }
 
 /**

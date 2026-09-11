@@ -41,6 +41,8 @@ export async function openInEditorOrExplain(volumeId: string, rowPath: string): 
     addToast(tString('fileExplorer.edit.notOnThisMac'), { level: 'info' })
     return 'refusedNotOnThisMac'
   }
-  await openInEditor(rowPath)
+  // The system default, and no question about other editors: nothing reads
+  // `behavior.textEditorApp` or the hint's flag here yet.
+  await openInEditor(rowPath, 'system', false)
   return 'opened'
 }

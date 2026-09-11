@@ -261,6 +261,28 @@ mod imp {
         }
     }
 
+    /// Where the app with this bundle id lives, or `None` if LaunchServices knows no
+    /// such app. One LaunchServices lookup, which is why a settings row can ask on
+    /// every render and an action can ask again at launch time. ❌ Never a
+    /// `/Applications` scan.
+    pub fn installed_app_path(bundle_id: &str) -> Option<PathBuf> {
+        autoreleasepool(|_| {
+            let workspace = NSWorkspace::sharedWorkspace();
+            let url = workspace.URLForApplicationWithBundleIdentifier(&NSString::from_str(bundle_id))?;
+            url.path().map(|p| PathBuf::from(p.to_string()))
+        })
+    }
+
+    /// The app's icon as a base64 WebP data URL, for a settings row. `None` when the
+    /// bundle carries no readable icon.
+    ///
+    /// Read from the bundle's own `.icns` rather than `NSWorkspace`: a plain file read
+    /// needs no TCC permission and can't descend into a FileProvider XPC chain deep
+    /// enough to blow a pool thread's stack.
+    pub fn app_icon_data_url(app_path: &Path) -> Option<String> {
+        load_app_icon(app_path).and_then(|icon| crate::icons::rgba_to_data_url(&icon.rgba, icon.width, icon.height))
+    }
+
     /// Reads `CFBundleIdentifier` from Info.plist. Used as a stable menu-item ID.
     pub fn read_bundle_identifier(app_path: &Path) -> Option<String> {
         let p = app_path.to_str()?;
@@ -442,8 +464,8 @@ mod imp {
 
 #[cfg(target_os = "macos")]
 pub use imp::{
-    compute_open_with_choices, load_app_icon, open_paths_with, pick_app_via_open_panel, read_app_display_name,
-    read_bundle_identifier, start_invalidation_observer,
+    app_icon_data_url, compute_open_with_choices, installed_app_path, open_paths_with, pick_app_via_open_panel,
+    read_app_display_name, read_bundle_identifier, start_invalidation_observer,
 };
 
 #[cfg(not(target_os = "macos"))]
@@ -558,9 +580,18 @@ mod tests {
             assert_eq!(read_app_display_name(&app), "Visual Studio Code");
         }
 
+        /// TextEdit ships with macOS, so LaunchServices always knows where it is.
+        #[test]
+        fn launchservices_finds_textedit_by_bundle_id() {
+            assert!(installed_app_path("com.apple.TextEdit").is_some_and(|path| path.is_dir()));
+        }
+
         #[test]
         fn a_bundle_that_is_gone_is_named_by_its_folder() {
-            assert_eq!(read_app_display_name(Path::new("/nonexistent/Gone Editor.app")), "Gone Editor");
+            assert_eq!(
+                read_app_display_name(Path::new("/nonexistent/Gone Editor.app")),
+                "Gone Editor"
+            );
         }
 
         /// Finder's "Show all filename extensions" makes the display name keep `.app`.

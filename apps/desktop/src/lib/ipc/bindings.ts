@@ -1421,16 +1421,23 @@ export const commands = {
   // Open the Get Info window for a file (macOS only, no-op on other platforms)
   getInfo: (path: string) => typedError<null, string>(__TAURI_INVOKE('get_info', { path })),
   /**
-   *  Open file in the system's default text editor (macOS only).
+   *  Opens a file in the text editor `app_choice` names.
    *
-   *  Backs the `file.edit` command and the "open the freshly created file" step of the
-   *  new-file flow. Like `open_path`, the `playwright-e2e` build swaps in a launch-free
-   *  variant: `open -t` spawns a TextEdit window per call, and the E2E suite (which
-   *  creates files and opens them in the editor) has no way to close them, so they pile
-   *  up across runs. The E2E variant records into the same `crate::open_mock` store as
-   *  `open_path`, so specs assert intent via `e2e_opened_paths`.
+   *  Backs the `file.edit` command (F4, in both the regular and the search-results pane)
+   *  and the "open the freshly created file" step of the new-file flow. `app_choice` is
+   *  the stored `behavior.textEditorApp` value (`system`, a bundle id, or an `.app`
+   *  path), passed in because the frontend owns the settings store.
+   *
+   *  Answers with a report rather than a bare success: a chosen app that's gone falls
+   *  back to the system default and says so, and `ask_about_other_editors` adds whether
+   *  macOS lists any other editor, which the one-time hint needs. The `playwright-e2e`
+   *  build records the file into `crate::open_mock` instead of launching (inside
+   *  `file_system::text_editor`), so a suite run piles up no editor windows.
    */
-  openInEditor: (path: string) => typedError<null, string>(__TAURI_INVOKE('open_in_editor', { path })),
+  openInEditor: (path: string, appChoice: string, askAboutOtherEditors: boolean) =>
+    typedError<EditorOpenReport, OpenInEditorError>(
+      __TAURI_INVOKE('open_in_editor', { path, appChoice, askAboutOtherEditors }),
+    ),
   /**
    *  Open a file (or folder) with the system's default application.
    *
@@ -4184,6 +4191,16 @@ export const commands = {
   terminalAppDisplayName: (appChoice: string) =>
     __TAURI_INVOKE<string | null>('terminal_app_display_name', { appChoice }),
   /**
+   *  The text editors on this Mac, the system default, and which one `app_choice`
+   *  names.
+   *
+   *  The settings row calls this on mount and after every write of its setting, and a
+   *  "Choose an app…" pick calls it with the picked path to learn what to store
+   *  (`chosenId`). One LaunchServices query plus a name and an icon read per app, so
+   *  nothing caches it; the timeout only bounds a read on a stalled mount.
+   */
+  listTextEditors: (appChoice: string) => __TAURI_INVOKE<TimedOut<TextEditorList>>('list_text_editors', { appChoice }),
+  /**
    *  Pushes what `Cmdr > Services` should act on: the focused pane's selection, or
    *  its cursor row when nothing is selected.
    *
@@ -6337,6 +6354,37 @@ export type DryRunResult = {
   conflicts: ConflictInfo[]
   // True if `conflicts` is a sample (`conflicts_total > conflicts.len()`).
   conflictsSampled: boolean
+}
+
+/**
+ *  What `open_in_editor` did with the file, so the frontend acts on a variant rather
+ *  than reading a sentence.
+ */
+export type EditorOpenOutcome =
+  /**
+   *  The chosen app got the file (the system default, when that's the choice).
+   *  ❗ It means `open` took the request, not that a window appeared.
+   */
+  | 'opened'
+  /**
+   *  The chosen app isn't on this Mac right now, so the system default got the file.
+   *  The frontend resets the setting and says so.
+   */
+  | 'chosen_app_missing_opened_default_instead'
+
+// The answer to one F4.
+export type EditorOpenReport = {
+  outcome: EditorOpenOutcome
+  /**
+   *  The app that got the file, named the way Finder shows it. `None` when there's
+   *  nothing to read a name from (no system default resolves, or off macOS).
+   */
+  openedInName: string | null
+  /**
+   *  `None` unless the caller asked. When asked: whether macOS lists any installed
+   *  text editor besides the system default, which is what the one-time hint needs.
+   */
+  otherEditorsInstalled: boolean | null
 }
 
 /**
@@ -9819,6 +9867,19 @@ export type OpenFileViewer = {
 }
 
 /**
+ *  Why `open_in_editor` couldn't answer at all. Distinct from [`EditorOpenOutcome`],
+ *  which reports things that DID happen.
+ */
+export type OpenInEditorError =
+  /**
+   *  The launcher couldn't be spawned. Carries the OS errno where there is one, so
+   *  nothing has to read a message.
+   */
+  | { type: 'launchRefused'; errno: number | null }
+  // The launch didn't finish inside the command's deadline.
+  | { type: 'timedOut' }
+
+/**
  *  `open-settings`: open the settings window deep-linked to `section` (MCP
  *  `dialog open settings --section …`). Emitted to the main window.
  */
@@ -13054,6 +13115,41 @@ export type TerminalAppList = {
   /**
    *  The id of the currently chosen app, present in `apps`. Absent when the
    *  chosen app has been uninstalled, which is the frontend's cue to reset.
+   */
+  chosenId: string | null
+}
+
+// One text editor, as the settings row needs it.
+export type TextEditorApp = {
+  // Exactly what goes into the setting: a bundle id, or an absolute `.app` path.
+  id: string
+  // The app's name the way Finder shows it.
+  displayName: string
+  /**
+   *  The app's icon as a base64 WebP data URL, read from its bundle. Absent when
+   *  the bundle carries no readable icon.
+   */
+  icon: string | null
+}
+
+// The text editors on this Mac, plus the system default and which one is chosen.
+export type TextEditorList = {
+  /**
+   *  What the system default is called, for the "System default (…)" row. `None`
+   *  when nothing on this Mac claims plain text.
+   */
+  defaultAppName: string | null
+  defaultAppIcon: string | null
+  /**
+   *  Every other listed editor, plus the chosen app when macOS doesn't list it.
+   *  ❗ In no particular order: LaunchServices' own order shifts between calls,
+   *  so the frontend sorts by name.
+   */
+  apps: TextEditorApp[]
+  /**
+   *  The stored choice in canonical form: `system`, or the `id` of one of `apps`.
+   *  `None` once the chosen app is gone, which the row displays as the default
+   *  without writing anything.
    */
   chosenId: string | null
 }

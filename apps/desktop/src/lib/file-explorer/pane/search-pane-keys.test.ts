@@ -103,7 +103,7 @@ describe('createSearchPaneKeys', () => {
     computeSpy.mockReturnValue({ kind: 'edit-file' })
     const { keys } = setup({ getSnapshotVolumeId: () => 'root' })
     keys.handleSearchResultsKeyDown(fakeEvent().e)
-    expect(openInEditorSpy).toHaveBeenCalledWith('/f.txt')
+    expect(openInEditorSpy).toHaveBeenCalledWith('/f.txt', 'system', false)
   })
 
   it('edit-file refuses a phone’s file with a toast instead of handing the editor a path it can’t open', () => {

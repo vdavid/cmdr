@@ -174,6 +174,9 @@ All under `apps/desktop/src-tauri/src/`.
 - `file_system/terminal.rs`: "Open terminal here": which terminal apps Cmdr knows, how each one takes a folder, and
   whether a pane's folder has a path a shell can reach. Rationale: the module's own docs; the sources behind the table:
   `docs/notes/terminal-launch-sources-2026-09-04.md`
+- `file_system/text_editor.rs`: which app F4 opens a file in: the text editors LaunchServices lists, the stored choice
+  (the system default, a bundle id, or a picked `.app`), and the fallback when that app is gone. Rationale: the module's
+  own docs
 - `file_viewer/`: Three-backend file viewer (FullLoad, ByteSeek, LineIndex)
 - `network/`: SMB's app-side half: mDNS discovery, share listing (smb2 + smbutil/smbclient fallback), mounting,
   Keychain, the auto-upgrade passes, and the frontend's connection events. The backend under it is `crates/cmdr-smb/`

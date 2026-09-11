@@ -733,6 +733,15 @@ macro_rules! ipc_command_manifest {
                 ]
                 dispatch_only: []
             }
+            // The text editors F4 can open a file in. macOS only: the list is
+            // LaunchServices' answer (`file_system/text_editor.rs`), while
+            // `open_in_editor` itself answers on every platform.
+            cfg(target_os = "macos") {
+                typed: [
+                    crate::commands::file_actions::list_text_editors,
+                ]
+                dispatch_only: []
+            }
             // `Cmdr > Services`: the live selection the system Services menu acts on.
             // macOS only, mechanism and all (`services_menu/`); no other platform has
             // a services menu to feed.

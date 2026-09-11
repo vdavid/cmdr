@@ -16,19 +16,23 @@ commands, and notable non-obvious placements.
   wrap menu, encoding pickers (`viewerSetEncoding` / `viewerGetEncodingOptions`), tail mode (`viewerSetTailMode`),
   `viewerReload`.
 - **`file-actions.ts`**: open file/URL, Finder reveal, Quick Look, Get Info, context menu (file / breadcrumb /
-  volume-selector-row / parent-row), clipboard, open in editor, cloud actions (`cloudMakeAvailableOffline` /
+  volume-selector-row / parent-row), clipboard, the text editor pair, cloud actions (`cloudMakeAvailableOffline` /
   `cloudRemoveDownload`, iCloud Drive only), `googleDriveLinks` (a Drive item's `viewUrl` plus its `geminiUrl`, or
   `null` when the path isn't one we can identify, backing the three Drive context-menu actions from one resolution), and
   the "Open terminal here" trio. That trio: `listTerminalApps` (which terminal apps are installed, for the settings row
   and the first-use picker), `openTerminalHere` (answers with an OUTCOME, and throws `OpenTerminalFailure` only when the
   launch couldn't be attempted), and `terminalAppDisplayName` (a table lookup, for naming an app that has just been
-  uninstalled). All three take the stored choice as an argument, since the frontend owns the settings store.
-  `showFileContextMenu` closes with two fact objects: `PaneContextMenuFacts` (what the SURFACE contributes) then
-  `ContextMenuTarget`, the TEXT the menu's header line shows about the right-clicked rows (`countText`, `sizeText`).
-  Both are rendered on this side because both need locale-aware number formatting, which Rust's `menu_t` deliberately
-  lacks; build them with `$lib/file-explorer/selection/context-menu-target`, ❌ never by hand. Rust still derives the
-  target COUNT from `paths` and uses it to pick the header's shape. Omit `sizeText` for "no honest size"; ❌ never a
-  zero. Full rationale: `$lib/file-explorer/selection/DETAILS.md` § Context-menu header.
+  uninstalled). All three take the stored choice as an argument, since the frontend owns the settings store. The text
+  editor pair takes it too: `openInEditor(path, appChoice, askAboutOtherEditors)` answers an `EditorOpenReport` (the
+  outcome, the app that got the file, and whether other editors exist when asked) and throws `OpenInEditorFailure` only
+  when the launch couldn't be attempted; `listTextEditors(appChoice)` (macOS) lists what LaunchServices calls a text
+  editor, with `chosenId` as the form to store for a stored or freshly picked choice. `showFileContextMenu` closes with
+  two fact objects: `PaneContextMenuFacts` (what the SURFACE contributes) then `ContextMenuTarget`, the TEXT the menu's
+  header line shows about the right-clicked rows (`countText`, `sizeText`). Both are rendered on this side because both
+  need locale-aware number formatting, which Rust's `menu_t` deliberately lacks; build them with
+  `$lib/file-explorer/selection/context-menu-target`, ❌ never by hand. Rust still derives the target COUNT from `paths`
+  and uses it to pick the header's shape. Omit `sizeText` for "no honest size"; ❌ never a zero. Full rationale:
+  `$lib/file-explorer/selection/DETAILS.md` § Context-menu header.
 - **`favorites.ts`**: user-editable switcher favorites: `addFavorite`, `removeFavorite`, `renameFavorite`,
   `reorderFavorites`, plus `stripFavoritePrefix` (recover the bare id from a `fav-…` switcher id). Listing rides
   `listVolumes` / `volumes-changed`; there's no `listFavorites`.

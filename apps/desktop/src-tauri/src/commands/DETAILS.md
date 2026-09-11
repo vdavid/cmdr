@@ -255,9 +255,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `terminal_app_display_name(app_choice)`, all pass-throughs to `../file_system/terminal.rs`, which owns the table, the
   recipes, and the volume gate. The chosen app arrives as an argument because the frontend owns the settings store.
   The display-name lookup is I/O-free on purpose: the toast that needs it fires exactly when the app it names has been
-  uninstalled, so the table is all that's left to read a name from. `open_path`, `open_in_editor`, and `open_terminal_here` all
-  swap to a recording variant under `playwright-e2e`, funneling into `crate::open_mock` so a suite run leaves no orphan
-  windows.
+  uninstalled, so the table is all that's left to read a name from. `open_in_editor(path, app_choice,
+  ask_about_other_editors)` is F4's launch, passing through to `../file_system/text_editor.rs`: async on macOS (5 s),
+  answering an `EditorOpenReport` or a typed `OpenInEditorError`, and a sync `xdg-open` with a plain report on Linux.
+  Beside it sits the macOS-only `list_text_editors(app_choice)` (2 s, `TimedOut`). `open_path`, `open_in_editor`, and
+  `open_terminal_here` all record into `crate::open_mock` instead of launching under `playwright-e2e`, so a suite run
+  leaves no orphan windows.
 - **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` cache per-label
   child-window geometry via `State<ChildWindowRectStore>`. In-memory and session-only, never on disk; used by Settings
   and Debug. Viewers don't use it (they cascade, see `lib/window-positioning.ts`). Only the main window persists across

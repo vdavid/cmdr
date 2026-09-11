@@ -17,12 +17,11 @@ Directory listing, file writing, sync status, volume management, and file watchi
   an entry in the pane forever. Cmdr's own (`.cmdr-tmp-*`) hides by OWNERSHIP, other apps' (`.sb-`) by NAME, and
   `is_hidden_from_listings` is GATED on the pure `could_be_hidden_from_listings`, which is what keeps cached row numbers
   valid. § "Hiding transient scratch".
-- **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`** (that blob carries
-  `kHasCustomIcon`, so zeroing it destroys custom folder icons), and encode a **binary** plist (`plist` defaults to
-  XML).
-- **Never call macOS frameworks from rayon or any constrained-stack pool**: NSURL/FileProvider XPC round-trips blow the
-  2 MB worker stack and can block forever. Use pooled, hard-capped 8 MB OS threads (`sync_status/pool.rs`); a per-call
-  `std::thread::scope` is NOT enough. § "Threading".
+- **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`** (zeroing it destroys custom
+  folder icons), and encode a **binary** plist.
+- **Never call macOS frameworks from rayon or any constrained-stack pool**: FileProvider XPC blows the 2 MB stack and
+  can block forever. Use pooled, hard-capped 8 MB OS threads (`sync_status/pool.rs`), not a per-call
+  `std::thread::scope`. § "Threading".
 - **Watcher rules.** Each has its own section in `DETAILS.md`; read them before touching `watcher.rs`:
   - ❌ Never `tokio::spawn` from a watcher OS thread (no reactor: it panics). Use `tauri::async_runtime::spawn`, and
     `caching::spawn_full_refresh` for FullRefresh dispatch.
@@ -37,9 +36,10 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - **A watch on an OS-mounted network share is `WatchCoverage::ThisMachineOnly`, never `EveryWriter`** (FSEvents on
   `smbfs` sees this machine's writes only). ❌ Don't refuse to arm it over that; what it must not do is let a delete
   walker or copy scan skip a read. `volume/DETAILS.md` § "Trait capability model".
-- **"Open terminal here" asks `NSWorkspace` whether each known app is installed; ❌ never scans `/Applications`**, and
-  its recipes are a pure `launch_argv`, so argv is unit-tested without launching anything. A new terminal is one
-  `KNOWN_TERMINALS` entry, owing its bundle id's source and date. § "Open terminal here".
+- **"Open terminal here" asks `NSWorkspace` per known app, ❌ never scans `/Applications`**; recipes are a pure
+  `launch_argv`. New terminals need a sourced, dated `KNOWN_TERMINALS` entry. § "Open terminal here".
+- **F4's editors come from LaunchServices' editor-ROLE plain-text query** (`text_editor.rs`): ❌ never the UTI crate
+  (10.15 floor) or a made-up `.txt` URL (no apps). § "Text editor".
 - **`cloud_actions.rs` is iCloud Drive only**, gated by `CloudProvider::supports_eviction`; the cross-provider-looking
   `NSFileProviderManager` methods need the bundled extension. Don't widen it. Provider identity lives once, in
   `cloud_provider.rs`, which the volume switcher reads too.

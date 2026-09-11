@@ -30,6 +30,8 @@ pub mod sync_status;
 pub mod tags;
 #[cfg(target_os = "macos")]
 pub mod terminal;
+/// Ungated: `open_in_editor` answers with its wire types on every platform.
+pub mod text_editor;
 pub mod validation;
 pub mod volume;
 pub(crate) mod watcher;
