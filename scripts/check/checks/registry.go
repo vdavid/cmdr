@@ -913,6 +913,23 @@ var AllChecks = []CheckDefinition{
 		Run:         RunBarePoll,
 	},
 	{
+		ID:          "desktop-svelte-e2e-stale-selector",
+		Nickname:    "e2e-stale-selector",
+		DisplayName: "e2e-stale-selector",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		IsFast:      true,
+		// Reads the E2E test trees and the frontend source their selectors name, and
+		// nothing else in `svelteInputs`, so a script or config edit stays a cache hit.
+		// Both halves are here on purpose: a UI change alone is what strands a selector.
+		Inputs: inputs([]string{
+			"apps/desktop/src/**",
+			"apps/desktop/test/e2e-playwright/**",
+			"apps/desktop/test/e2e-shared/**",
+		}, agentDocExclusions),
+		Run: RunE2EStaleSelector,
+	},
+	{
 		ID:          "desktop-vite-build-target",
 		Nickname:    "vite-build-target",
 		DisplayName: "vite-build-target",

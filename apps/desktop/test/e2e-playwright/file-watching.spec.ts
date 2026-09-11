@@ -329,7 +329,7 @@ test.describe('File watching', () => {
     }
 
     // Create a new hidden file externally
-    const hiddenName = '.hidden-watch-test'
+    const hiddenName = '.hidden-watch-test' // allowed-stale-selector: a dotfile this test creates, not a selector
     fs.writeFileSync(path.join(fixtureRoot, 'left', hiddenName), 'hidden content')
     await flushFileWatcher(tauriPage)
 

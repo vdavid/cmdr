@@ -948,6 +948,13 @@ question truthfully, so an MTP spec that selected Internal Storage and waited fo
 (`e2e-shared/mcp-client.ts`), which selects and then navigates to the root; `mtp.spec.ts`'s "switching back to a storage
 reopens the folder last used there" pins the remembering itself.
 
+**Gotcha**: a selector naming a class or `data-*` attribute that nothing in `apps/desktop/src` renders fails
+`pnpm check e2e-stale-selector`, in the fast lane and CI. **Why**: code nothing runs routinely (the i18n and marketing
+captures) goes stale silently when the UI changes, and a stale NEGATIVE assertion (`isVisible(…)).toBe(false)`) passes
+forever. Point the selector at what the app renders now; a token the source can't spell opts out with
+`// allowed-stale-selector: <reason>`. What counts as a selector, and why component tests count toward the vocabulary:
+`scripts/check/checks/DETAILS.md` § "E2E stale selectors".
+
 **Gotcha**: the proactive agent's inbox is SHARED with the running indexer, so "the wake reports what I staged" is not
 free. **Why**: the indexer's tap rolls up every folder the rest of the suite churns, and a wake covers everything
 waiting, tallying it in the digest and naming its thread after the top-ranked folder. `forceAgentWake` narrows the wake

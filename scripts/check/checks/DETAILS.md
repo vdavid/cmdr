@@ -768,6 +768,41 @@ means zero new CI-contract surface (both E2E checks already carry `NotInCI` reas
   below the threshold minus a 25% margin (1.5 s). Wider than file-length's 10% because wall-clock durations oscillate
   run to run; a test hovering at 1.9 s must not cause remove/re-add churn.
 
+## E2E stale selectors
+
+`desktop-svelte-e2e-stale-selector` (fast lane, ERROR, in CI) fails when a selector in the Playwright test code names a
+class or `data-*` attribute that appears nowhere in `apps/desktop/src`. A UI change strands a selector silently in code
+nothing runs routinely: the i18n capture waited on `.network-browser .connect-row` for five days after the servers hub
+replaced that row (fixed in `43a711b1d`), and a static check flags it the day the UI changes.
+
+- **Scope**: every `.ts` under `apps/desktop/test/e2e-playwright/` and `apps/desktop/test/e2e-shared/`, minus Vitest
+  `*.test.ts` files, which build their own happy-dom tree. The Linux E2E lane has no specs of its own.
+- **Extraction**: a one-pass lexer reads every string literal, including those inside template interpolations and inside
+  a template's own text. So the `document.querySelector('…')` calls in `evaluate` bodies count, as do selector
+  constants, helper arguments, and the `return '.x'` staging closures. A literal counts when it parses whole as a CSS
+  selector list (known tag names and pseudo-classes only), and its tokens are its static class names and `data-*`
+  attribute names. An interpolated name (`.entry-${kind}`) is skipped.
+- **Not a selector, by shape**: an uppercase letter in a class or attribute name (`nav.goToPath`,
+  `[Content_Types].xml`), a class ending in `-` (`.cmdr-temp-`, a prefix match), and a lone `tag.word` or `${base}.word`
+  (`nav.back`, `a.txt`, `${name}.png`). A lone `.word` stays a selector, so a dotfile name that isn't also a word in the
+  source needs the opt-out.
+- **Attribute values aren't checked**: most are runtime data (file names, operation ids), and the one kind worth
+  checking, a dialog id, can outlive its dialog in a comment (`connect-to-server` did).
+- **Vocabulary**: every whole word (letters, digits, `-`, `_`) in the `.svelte`, `.ts`, `.js`, `.css`, and `.html` files
+  under `apps/desktop/src`, plus `data-foo-bar` for each `dataset.fooBar`. Presence is the bar because a class arrives
+  through `class="…"`, `class:foo`, `classList`, template strings, and CSS alike. ❌ Don't exclude the component tests:
+  they mount real components, so they're where library-rendered markup like Ark's `data-value` gets spelled (and they
+  fail in `svelte-tests` if it goes away). Excluding them flagged four Ark item selectors on the real tree.
+- **Opt-out**: `// allowed-stale-selector: <reason>` at the end of the line or on a comment-only line directly above. A
+  reasonless one excuses nothing, and an unused one fails (`directiveTracker`).
+- **Inputs**: `apps/desktop/src/**` plus both test trees. A UI-only edit is exactly what strands a selector, so it has
+  to re-run the check.
+
+Measured on the real tree (2026-09-11, `pnpm check e2e-stale-selector --fresh`): 1,051 selectors in 118 test files. The
+first runs raised 15 hits, which is where each shape rule above comes from: 6 real drift (fixed in `919ab117e`, one of
+them a negative assertion that could never fail), and 9 false positives (three `[Content_Types].xml` zip entries,
+`.cmdr-temp-`, the `.hidden-watch-test` dotfile that carries the one opt-out, and four Ark `data-value` selectors).
+
 ## Website bundle-size baseline
 
 `website-bundle-size` (warn-only, `IsFast`, self-skips without `dist/` like `html-validate`) compares the built
@@ -1511,14 +1546,15 @@ doubles as production code.
   stylelint, css-unused, a11y-contrast, a11y-coverage (every component has a tier-3 a11y test, colocated or in a
   directory-level `*.a11y.test.ts` that imports it), ui-primitive-coverage (every top-level `lib/ui/*.svelte` primitive
   has a Debug > Components catalog section), dialog-gallery-coverage (every `SOFT_DIALOG_REGISTRY` id has a row in the
-  Debug > Soft dialogs gallery, and every row names a registered id), btn-restyle, bare-poll, svelte-check,
-  import-cycles, jscpd (warn-only; the frontend clone list, TypeScript and Svelte), message-keys-fresh
-  (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the `area.feature.leaf` shape +
-  known-area first segment), message-keys-unused (catalog keys never referenced in `src/`; error-level, with a closed
-  dynamic-prefix allowlist for runtime-built keys), message-screenshots-fresh (ERROR on a structural break: a
-  representative rule reaching no catalog key, or a rule or `@key.screenshot` naming an image the committed capture
-  report lacks; warns on stale couplings and on a rule every key of which has its own capture; runs the coupler's
-  `--check` and maps its exit code, reads no PNGs), i18n-stale (warn-only; a non-`en` translation whose
+  Debug > Soft dialogs gallery, and every row names a registered id), btn-restyle, bare-poll, e2e-stale-selector (ERROR;
+  a Playwright selector naming a class or `data-*` attribute that appears nowhere in `apps/desktop/src`, see § "E2E
+  stale selectors"), svelte-check, import-cycles, jscpd (warn-only; the frontend clone list, TypeScript and Svelte),
+  message-keys-fresh (regenerate-and-diff `keys.gen.ts` from the message catalogs), message-key-naming (the
+  `area.feature.leaf` shape + known-area first segment), message-keys-unused (catalog keys never referenced in `src/`;
+  error-level, with a closed dynamic-prefix allowlist for runtime-built keys), message-screenshots-fresh (ERROR on a
+  structural break: a representative rule reaching no catalog key, or a rule or `@key.screenshot` naming an image the
+  committed capture report lacks; warns on stale couplings and on a rule every key of which has its own capture; runs
+  the coupler's `--check` and maps its exit code, reads no PNGs), i18n-stale (warn-only; a non-`en` translation whose
   `@key.sourceHash` no longer matches the value it was translated from), i18n-parity (ERROR; each locale key's
   `{placeholder}`+`<tag>` set, or raw `{token}` set for `errors.*`, must equal that of the value it renders instead of,
   since a mismatch crashes at runtime), i18n-icu (ERROR; every message is written in its own family's grammar: an ICU
