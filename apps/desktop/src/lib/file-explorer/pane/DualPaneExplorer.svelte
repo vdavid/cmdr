@@ -14,7 +14,6 @@
     import LoadingIcon from '$lib/ui/LoadingIcon.svelte'
     import DialogManager from './DialogManager.svelte'
     import { openInEditorOrExplain } from './editor-open'
-    import { pluralize } from '$lib/utils/pluralize'
     import { type ViewMode } from '$lib/app-status-store'
     import type { CommandId, McpSelectMode, McpTabAction, ConfirmDialogType } from '$lib/commands'
     import type { SelectionActionArgs } from '../../../routes/(main)/explorer-api'
@@ -23,29 +22,17 @@
         type Location,
         type UnlistenFn,
         updateFocusedPane,
-        updateViewModeMenu,
-        ejectVolume,
         onVolumeContextAction,
         onVolumeUnmounted,
     } from '$lib/tauri-commands'
-    import type { SortColumn, SortOrder, NetworkHost, WriteOperationError, FriendlyError, FileEntry } from '../types'
+    import type { SortColumn, NetworkHost, WriteOperationError, FriendlyError, FileEntry } from '../types'
     import { ensureFontMetricsLoaded } from '$lib/font-metrics'
     import { determineNavigationPath } from '../navigation/path-navigation'
-    import { pathForPickedVolume } from '../navigation/picked-volume-path'
     import { createVolumeRootFollow } from './volume-root-follow'
-    import { runServerRowAction } from '../navigation/server-row-actions'
 
-    import { canGoBack, type NavigationHistory } from '../navigation/navigation-history'
+    import { canGoBack } from '../navigation/navigation-history'
     import TabBar from '../tabs/TabBar.svelte'
-    import {
-        getActiveTab,
-        getAllTabs,
-        pushHistoryEntry,
-        trimClosedStack,
-        getClosedStackSize,
-        MAX_TABS_PER_PANE,
-        type TabManager,
-    } from '../tabs/tab-state-manager.svelte'
+    import { getActiveTab, getAllTabs, pushHistoryEntry, trimClosedStack, MAX_TABS_PER_PANE } from '../tabs/tab-state-manager.svelte'
     import type { TabId } from '../tabs/tab-types'
     import {
         saveTabsForPane,
@@ -99,6 +86,9 @@
         type NavigateResult,
     } from './navigate'
     import { createDragDropController } from './drag-drop-controller.svelte'
+    import { createPaneAccessors } from './pane-accessors.svelte'
+    import { moveCursorToTarget } from './move-cursor'
+    import { handleVolumeContextAction } from './volume-context-action'
     import { initPersistenceSubscriber } from './persistence-subscriber.svelte'
     import { initDebugEmitters } from './debug-emitters.svelte'
     import { initTabMcpSync } from './tab-mcp-sync.svelte'
@@ -108,50 +98,16 @@
     import { createIndexEventHandler } from './index-events'
     import { loadPersistedState } from './initialization'
     import { getDirectorySortMode, getShowHiddenFiles } from '$lib/settings/reactive-settings.svelte'
-    import { getSetting, onSettingChange } from '$lib/settings'
-    import { setReopenClosedTabEnabled, onMenuBarRebuilt, activateWindowMenu } from '$lib/tauri-commands'
+    import { onSettingChange } from '$lib/settings'
+    import { onMenuBarRebuilt, activateWindowMenu } from '$lib/tauri-commands'
     import { resyncMenuAccelerators } from '$lib/shortcuts'
     import DragOverlay from '../drag/DragOverlay.svelte'
-    import { addToast, addToastForPane } from '$lib/ui/toast'
-    import { wordEjectRefusal } from '../navigation/eject-error-messages'
+    import { addToastForPane } from '$lib/ui/toast'
     import { tString } from '$lib/intl/messages.svelte'
 
     function saveTabsForPaneSide(pane: 'left' | 'right') {
         saveTabsForPane(pane, getTabMgr)
     }
-
-    /** Per-pane closed-tab history cap, lives in `fileExplorer.tabs.closedTabHistorySize` setting. */
-    function getClosedTabsCap(): number {
-        return getSetting('fileExplorer.tabs.closedTabHistorySize')
-    }
-
-    /** Pushes the focused pane's closed-stack-empty state to the backend so the
-     *  File menu's "Reopen closed tab" item enables/disables in sync. */
-    function syncReopenMenuState() {
-        const enabled = getClosedStackSize(getTabMgr(focusedPane)) > 0
-        void setReopenClosedTabEnabled(enabled)
-    }
-
-    // Live tab-manager holders live in the explorer store now. These `$derived`
-    // aliases read the live `$state<TabManager>` reference through the store getter,
-    // so every reader below keeps tracking both holder swaps (`setTabMgr`) and
-    // in-place manager mutations.
-    const leftTabMgr = $derived(explorerState.getTabMgr('left'))
-    const rightTabMgr = $derived(explorerState.getTabMgr('right'))
-
-    // Derived active tab state: these replace the old scalar variables
-    const leftPath = $derived(getActiveTab(leftTabMgr).path)
-    const rightPath = $derived(getActiveTab(rightTabMgr).path)
-    const leftVolumeId = $derived(getActiveTab(leftTabMgr).volumeId)
-    const rightVolumeId = $derived(getActiveTab(rightTabMgr).volumeId)
-    const leftViewMode = $derived(getActiveTab(leftTabMgr).viewMode)
-    const rightViewMode = $derived(getActiveTab(rightTabMgr).viewMode)
-    const leftSortBy = $derived(getActiveTab(leftTabMgr).sortBy)
-    const rightSortBy = $derived(getActiveTab(rightTabMgr).sortBy)
-    const leftSortOrder = $derived(getActiveTab(leftTabMgr).sortOrder)
-    const rightSortOrder = $derived(getActiveTab(rightTabMgr).sortOrder)
-    const leftHistory = $derived(getActiveTab(leftTabMgr).history)
-    const rightHistory = $derived(getActiveTab(rightTabMgr).history)
 
     interface Props {
         /**
@@ -214,82 +170,41 @@
         onOpenInEditor: (path: string) => void openInEditorOrExplain(getPaneVolumeId(focusedPane), path),
     })
 
-    // --- Pane accessor helpers ---
-
-    function getPaneRef(pane: 'left' | 'right'): FilePaneAPI | undefined {
-        return paneRefs[pane]
-    }
-
-    function getPanePath(pane: 'left' | 'right'): string {
-        return pane === 'left' ? leftPath : rightPath
-    }
-
-    function getPaneVolumeId(pane: 'left' | 'right'): string {
-        return pane === 'left' ? leftVolumeId : rightVolumeId
-    }
-
-    function getPaneHistory(pane: 'left' | 'right'): NavigationHistory {
-        return pane === 'left' ? leftHistory : rightHistory
-    }
-
-    function getPaneSort(pane: 'left' | 'right'): { sortBy: SortColumn; sortOrder: SortOrder } {
-        return pane === 'left'
-            ? { sortBy: leftSortBy, sortOrder: leftSortOrder }
-            : { sortBy: rightSortBy, sortOrder: rightSortOrder }
-    }
-
-    function getTabMgr(pane: 'left' | 'right'): TabManager {
-        return explorerState.getTabMgr(pane)
-    }
-
-    function setPanePath(pane: 'left' | 'right', path: string) {
-        getActiveTab(getTabMgr(pane)).path = path
-    }
-
-    function setPaneVolumeId(pane: 'left' | 'right', volumeId: string) {
-        getActiveTab(getTabMgr(pane)).volumeId = volumeId
-    }
-
-    function setPaneHistory(pane: 'left' | 'right', history: NavigationHistory) {
-        getActiveTab(getTabMgr(pane)).history = history
-    }
-
-    function setPaneSort(pane: 'left' | 'right', sortBy: SortColumn, sortOrder: SortOrder) {
-        const tab = getActiveTab(getTabMgr(pane))
-        tab.sortBy = sortBy
-        tab.sortOrder = sortOrder
-    }
-
-    function setPaneViewMode(pane: 'left' | 'right', viewMode: ViewMode) {
-        getActiveTab(getTabMgr(pane)).viewMode = viewMode
-    }
-
-    function getPaneViewMode(pane: 'left' | 'right'): ViewMode {
-        return pane === 'left' ? leftViewMode : rightViewMode
-    }
-
-    /** Pushes the full View menu state (active pane + per-pane modes) to the backend so
-     * the per-pane menu items show correct check marks and the keyboard accelerator
-     * (⌘1/⌘2 by default) attaches to the active pane's pair. */
-    function pushViewMenuState() {
-        void updateViewModeMenu(focusedPane, getPaneViewMode('left'), getPaneViewMode('right'))
-    }
-
-    function getPaneVolumePath(pane: 'left' | 'right'): string {
-        return pane === 'left' ? leftVolumePath : rightVolumePath
-    }
-
-    function getPaneVolumeName(pane: 'left' | 'right'): string | undefined {
-        return pane === 'left' ? leftVolumeName : rightVolumeName
-    }
-
-    function getPaneWidth(pane: 'left' | 'right'): number {
-        return pane === 'left' ? leftPaneWidthPercent : 100 - leftPaneWidthPercent
-    }
-
-    function otherPane(pane: 'left' | 'right'): 'left' | 'right' {
-        return pane === 'left' ? 'right' : 'left'
-    }
+    // Per-pane derived state + the read/write accessor functions, split into
+    // pane-accessors.svelte.ts to keep this component under its length cap.
+    // `paneRefs` is the one thing it can't self-contain (bound via `bind:this`
+    // in the template below), so it's handed in by reference.
+    const paneAccessors = createPaneAccessors(paneRefs)
+    const {
+        getPaneRef,
+        getPanePath,
+        getPaneVolumeId,
+        getPaneHistory,
+        getPaneSort,
+        getTabMgr,
+        setPanePath,
+        setPaneVolumeId,
+        setPaneHistory,
+        setPaneSort,
+        setPaneViewMode,
+        getPaneViewMode,
+        pushViewMenuState,
+        getPaneVolumePath,
+        getPaneVolumeName,
+        getPaneWidth,
+        otherPane,
+        getClosedTabsCap,
+        syncReopenMenuState,
+    } = paneAccessors
+    // These six stay LIVE `$derived` aliases (not destructured) because they're
+    // read directly below, outside the accessor functions above: a destructure
+    // would snapshot the getter's value once instead of tracking it.
+    const leftTabMgr = $derived(paneAccessors.leftTabMgr)
+    const rightTabMgr = $derived(paneAccessors.rightTabMgr)
+    const leftPath = $derived(paneAccessors.leftPath)
+    const rightPath = $derived(paneAccessors.rightPath)
+    const leftHistory = $derived(paneAccessors.leftHistory)
+    const rightHistory = $derived(paneAccessors.rightHistory)
 
     // Read API over this explorer's navigation + UI-chrome state, handed to command
     // factories so they don't reach into component closures. Getters return live
@@ -478,25 +393,6 @@
         getFocusedPane: () => focusedPane,
     })
 
-    // Derived volume paths - handle 'network' virtual volume specially
-    const leftVolumePath = $derived(
-        leftVolumeId === 'network' ? 'smb://' : (volumes.find((v) => v.id === leftVolumeId)?.path ?? '/'),
-    )
-    const rightVolumePath = $derived(
-        rightVolumeId === 'network' ? 'smb://' : (volumes.find((v) => v.id === rightVolumeId)?.path ?? '/'),
-    )
-    // Derived volume names for MCP state sync. ❗ The hub row's name comes from the
-    // catalog, the one place the switcher label, this push, and Rust's
-    // `volume_listing::SERVERS_VOLUME_NAME` agree: `mcp/executor/nav.rs` waits for
-    // this pushed name to equal that const before it calls a volume switch done.
-    const serversVolumeName = $derived(tString('fileExplorer.navigation.networkVolume'))
-    const leftVolumeName = $derived(
-        leftVolumeId === 'network' ? serversVolumeName : volumes.find((v) => v.id === leftVolumeId)?.name,
-    )
-    const rightVolumeName = $derived(
-        rightVolumeId === 'network' ? serversVolumeName : volumes.find((v) => v.id === rightVolumeId)?.name,
-    )
-
     // --- Unified handler functions ---
 
     /**
@@ -672,45 +568,15 @@
         await volumeRootFollow.init()
 
         // Native breadcrumb context menu's "Eject (name)" item routes back via this
-        // event (see `on_menu_event` in `lib.rs`). The Svelte popup paths in
+        // event; body in `volume-context-action.ts`. The Svelte popup paths in
         // VolumeBreadcrumb call `ejectVolume` directly; this listener only handles
         // the native-menu case.
         unlistenVolumeContextAction = await onVolumeContextAction((payload) => {
-            if (payload.action !== 'eject') {
-                // Everything a SERVER row's menu offers (Open, Edit…, Disconnect,
-                // the pin pair, the two Forgets) is dispatched from one module,
-                // shared with the hub and the palette.
-                void runServerRowAction({
-                    ...payload,
-                    // ❗ Open needs a pane to move, and the `navigate()`
-                    // transaction lives here. Through the same `selectVolume`
-                    // intent a switcher click raises, so the pinned-tab fork,
-                    // focus, and history push all apply.
-                    onOpen: (volumeId: string) => {
-                        const volume = volumes.find((v) => v.id === volumeId)
-                        if (!volume) return
-                        navigateIntent({
-                            pane: explorerState.getFocusedPane(),
-                            to: { selectVolume: { volumeId, path: pathForPickedVolume(volume) } },
-                            source: 'user',
-                        })
-                    },
-                })
-                return
-            }
-            void (async () => {
-                try {
-                    await ejectVolume(payload.volumeId)
-                } catch (e) {
-                    addToast(
-                        tString('fileExplorer.pane.ejectFailedToast', {
-                            volumeName: payload.volumeName,
-                            message: wordEjectRefusal(e),
-                        }),
-                        { level: 'error' },
-                    )
-                }
-            })()
+            handleVolumeContextAction(payload, {
+                getVolumes: () => volumes,
+                getFocusedPane: () => explorerState.getFocusedPane(),
+                navigate: navigateIntent,
+            })
         })
 
         // Listen for index directory updates to refresh panes when sizes change
@@ -1091,63 +957,21 @@
         return paneCommands.getFocusedPaneEntries()
     }
 
-    /**
-     * Move cursor to a specific index or filename.
-     * Used by MCP move_cursor tool.
-     *
-     * Throws when the target doesn't exist (filename not in the listing, index out
-     * of range, pane unavailable). The `cursor.moveTo` dispatch awaits this, so the
-     * exception reaches the MCP adapter's try/catch and the tool reports the real
-     * failure instead of a false-positive "OK: Moved cursor".
-     */
+    /** Move cursor to a specific index or filename. Used by MCP move_cursor tool.
+     *  Body in `move-cursor.ts`: throws when the target doesn't exist (filename
+     *  not in the listing, index out of range, pane unavailable). The
+     *  `cursor.moveTo` dispatch awaits this, so the exception reaches the MCP
+     *  adapter's try/catch and the tool reports the real failure instead of a
+     *  false-positive "OK: Moved cursor". */
     export async function moveCursor(pane: 'left' | 'right', to: number | string) {
-        explorerState.setFocusedPane(pane)
-        const paneRef = getPaneRef(pane)
-        if (!paneRef) throw new Error(`The ${pane} pane is unavailable`)
-
-        // Wait for the pane's current load (if any) to settle before touching
-        // the listing. Without this, an MCP-driven `move_cursor` that lands
-        // mid-navigation reads the FE's freshly-assigned `listingId` while the
-        // backend's `LISTING_CACHE` insert is still in flight, surfacing as
-        // "Listing not found" from `find_file_index`.
-        await paneRef.whenLoadSettles()
-
-        if (typeof to === 'number') {
-            // `setCursorIndex` stores the value unclamped, so range-check first. A
-            // network view counts its own rows (hosts or shares, `0` while a mount runs
-            // or its failure is on screen) rather than the file listing; without that
-            // count the check was skipped there and the host browser silently CLAMPED
-            // an out-of-range index, so the tool reported a move it hadn't made.
-            const total = paneRef.isInNetworkView() ? paneRef.getNetworkItemCount() : paneRef.getEffectiveTotalCount()
-            if (to < 0 || to >= total) {
-                throw new Error(
-                    `Index ${String(to)} is out of range in the ${pane} pane (${String(total)} ${pluralize(total, 'item')})`,
-                )
-            }
-            await paneRef.setCursorIndex(to)
-        } else {
-            const found = await paneCommands.moveCursorByName(paneRef, to)
-            if (!found) {
-                throw new Error(`"${to}" not found in the ${pane} pane listing`)
-            }
-        }
-        // MCP-driven cursor placement: re-anchor DOM focus on the explorer container
-        // so the next keystroke (the agent often follows move_cursor with a shortcut)
-        // lands in the right dispatcher chain. Also makes the awaited completion
-        // genuine; `void` swallowed the cursor-set promise and let MCP report `OK`
-        // before the cursor was observably positioned.
-        containerElement?.focus()
-
-        // Flush the new cursor position to the backend's PaneStateStore BEFORE the
-        // round-trip replies ok, so a follow-up tool call (move_cursor → copy/move/
-        // delete) reads fresh state. Without this, the cursor lives only in FE state
-        // until the debounced pane→MCP sync fires; the immediately-following file-op
-        // runs `check_operation_has_target` against a stale store (cursor still on
-        // `..`) and rejects with "Nothing to copy". This mirrors `select`, which
-        // flushes for the same reason (see pane-commands.ts handleMcpSelect*). Not a
-        // per-keystroke path — keyboard cursor moves use `setCursorIndex` directly via
-        // handleKeyDown, never this exported MCP/search entry.
-        await paneRef.syncStateToMcpNow()
+        await moveCursorToTarget(pane, to, {
+            getPaneRef,
+            setFocusedPane: (p) => {
+                explorerState.setFocusedPane(p)
+            },
+            moveCursorByName: (paneRef, name) => paneCommands.moveCursorByName(paneRef, name),
+            focusContainer: () => containerElement?.focus(),
+        })
     }
 
     export function scrollTo(pane: 'left' | 'right', index: number) {

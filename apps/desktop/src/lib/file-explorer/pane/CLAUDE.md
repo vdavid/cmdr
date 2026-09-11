@@ -6,6 +6,9 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
 ## Module map
 
 - `DualPaneExplorer.svelte`: the root, owning both panes, key/command dispatch, the dialog manager, the MCP surface.
+  Split out for length: `pane-accessors.svelte.ts` (per-pane `$derived` state + the get/set accessor functions every
+  other factory here is built on), `move-cursor.ts` and `volume-context-action.ts` (pure orchestration logic, each with
+  its own test file).
 - `FilePane.svelte`: one pane (lifecycle `$state`, the `FilePaneAPI` exports, the alt-view `{#if}` chain); its
   controllers and helpers are siblings (`DETAILS.md` § File map).
 

@@ -22,7 +22,7 @@ import {
 import { throwIpcError } from './ipc-types'
 import { withTimeout } from '$lib/utils/timing'
 
-export type { Location, ResolveLocationResult }
+export type { Location, ResolveLocationResult, VolumeContextAction }
 
 const log = getAppLogger('storage')
 

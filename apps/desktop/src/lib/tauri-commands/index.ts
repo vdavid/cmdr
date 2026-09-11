@@ -198,7 +198,7 @@ export {
   openSystemSettingsUrl,
   openAppearanceSettings,
 } from './storage'
-export type { Location, PathVolumeResolution, ResolveLocationResult, SpaceInfo } from './storage'
+export type { Location, PathVolumeResolution, ResolveLocationResult, SpaceInfo, VolumeContextAction } from './storage'
 
 // Networking (SMB, keychain, mounting)
 export {
