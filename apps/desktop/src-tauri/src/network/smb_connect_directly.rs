@@ -21,7 +21,7 @@ use crate::file_system::volume::manager::get_volume_manager;
 use crate::network::keychain;
 use crate::network::smb_connect_failure::{Refusal, RefusedAt, SignInIdentity, UpgradeError, UpgradeFailure};
 use crate::network::smb_upgrade::{
-    friendly_server_name, get_keychain_password, resolve_ip_to_hostname_with_wait, try_smb_upgrade,
+    MOUNT_READ_LIMIT, friendly_server_name, get_keychain_password, resolve_ip_to_hostname_with_wait, try_smb_upgrade,
 };
 #[cfg(target_os = "macos")]
 use crate::volumes::{SmbMountInfo, get_smb_mount_info};
@@ -114,15 +114,6 @@ struct MountedShare {
     mount_path: String,
     info: SmbMountInfo,
 }
-
-/// How long reading the mount behind a volume may take before "Connect directly"
-/// answers `MountNotResponding`.
-///
-/// Above the 2 s read tier (`commands/CLAUDE.md`), because a 2 s bound on a
-/// sub-millisecond mount-table read has tripped on a CPU-saturated machine before
-/// the blocking task was even scheduled (`commands/volumes.rs::resolve_location_inner`).
-/// Still short enough that a hung mount answers while someone watches the toast.
-const MOUNT_READ_LIMIT: Duration = Duration::from_secs(5);
 
 /// What the OS says is at a volume's root.
 #[derive(Debug)]

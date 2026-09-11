@@ -21,6 +21,7 @@ use crate::volumes_linux::SmbMountInfo;
 /// The two travel together because they come from the same `statfs` row and are
 /// answers to the same question. Deriving them apart is how a mount ends up
 /// keyed as one share and addressed as another.
+#[derive(Debug)]
 struct MountIdentity {
     /// From `smb_volume_id(server, port, share)`: the SHARE's identity, so a mount
     /// anchored inside a share is the same volume as the share itself.
@@ -55,6 +56,42 @@ fn identity_from_statfs(mount_path: &str) -> Option<MountIdentity> {
 #[cfg(not(any(target_os = "macos", target_os = "linux")))]
 fn identity_from_statfs(_mount_path: &str) -> Option<MountIdentity> {
     None
+}
+
+/// How long reading the mount behind a volume may take before an upgrade stops
+/// waiting on it: "Connect directly" answers `MountNotResponding`, and the auto
+/// paths leave the share on the kernel mount.
+///
+/// Above the 2 s read tier (`commands/CLAUDE.md`), because a 2 s bound on a
+/// sub-millisecond mount-table read has tripped on a CPU-saturated machine before
+/// the blocking task was even scheduled (`commands/volumes.rs::resolve_location_inner`).
+/// Still short enough that a hung mount answers while someone watches the toast.
+pub(crate) const MOUNT_READ_LIMIT: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// What reading a mount's identity came back with.
+#[derive(Debug)]
+enum IdentityRead {
+    /// The mount answered, with its identity or with `None` (see [`identity_from_statfs`]).
+    Answered(Option<MountIdentity>),
+    /// The mount didn't answer within the limit.
+    NotResponding,
+}
+
+/// Reads a mount's identity with `read`, giving up after `limit`.
+///
+/// `read` is [`identity_from_statfs`] outside tests: a `statfs` that waits 30-120 s on
+/// a mount whose server went quiet, on an async path that would otherwise hold a
+/// tokio worker for all of it.
+async fn read_identity_within(
+    mount_path: &str,
+    limit: std::time::Duration,
+    read: impl FnOnce(&str) -> Option<MountIdentity> + Send + 'static,
+) -> IdentityRead {
+    let path = mount_path.to_string();
+    crate::commands::util::blocking_with_timeout(limit, IdentityRead::NotResponding, move || {
+        IdentityRead::Answered(read(&path))
+    })
+    .await
 }
 
 /// Delays between direct-connect attempts.
@@ -292,7 +329,20 @@ pub(crate) async fn register_smb_volume(
     // computes via `volume_id_for_mount` all agree. Statfs is the canonical
     // source — `server` as passed in may be an mDNS service name or display
     // string that wouldn't match what the watcher later sees.
-    let identity = identity_from_statfs(mount_path);
+    //
+    // A mount that doesn't answer stays on the kernel mount, and nothing is
+    // announced: its identity is what keys the volume, so a guess could file it
+    // under another share's id, and the notice's retry would meet the same silent
+    // mount. The next mount event or upgrade pass asks again.
+    let identity = match read_identity_within(mount_path, MOUNT_READ_LIMIT, identity_from_statfs).await {
+        IdentityRead::Answered(identity) => identity,
+        IdentityRead::NotResponding => {
+            log::warn!(
+                "Leaving {mount_path} on the kernel mount: it didn't answer a status read within {MOUNT_READ_LIMIT:?}, so there's no telling which volume it is"
+            );
+            return;
+        }
+    };
     let share_root = identity.as_ref().map(|i| i.share_root.clone()).unwrap_or_default();
     let volume_id = identity
         .map(|i| i.volume_id)

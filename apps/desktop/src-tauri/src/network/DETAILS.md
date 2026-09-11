@@ -359,6 +359,14 @@ a mount path. Both connect sites then build a `cmdr_smb::volume::MountAnchor` fr
 **An unreadable mount answers "share root", not "failure"** (`share_root_from_statfs`). That's what every ordinary
 mount has, and a mount that's gone or isn't SMB has no anchor to honor anyway.
 
+**A mount that doesn't answer is left alone.** `register_smb_volume` reads the identity through `read_identity_within`
+under `MOUNT_READ_LIMIT` (5 s), since a `statfs` on a mount whose server went quiet waits 30–120 s, and the auto paths
+would hold a tokio worker for all of it. A timeout returns before the upgrade lock or any dial, at WARN, and announces
+nothing: without the identity there's no telling which volume the mount is, so a guessed id could file it under another
+share, and the notice's retry would meet the same silent mount ("Connect directly" answers `MountNotResponding`). The
+next mount event or upgrade pass asks again. Pinned by
+`smb_upgrade_test.rs::a_mount_that_doesnt_answer_its_identity_read_is_not_waited_on`.
+
 **`carry_mount_roots` hands anchors across a volume swap, in both directions.** `register_replacing_predecessor` runs it
 before anyone is retired, over `SmbVolume::exchange_mount_roots_with`: the newcomer adopts every root its predecessor
 knew, and the incumbent is told where the newcomer's own root sits. Which direction matters depends on whether the
@@ -572,7 +580,8 @@ removes a `/Volumes` mount point along with its mount. A mount point left behind
 `NotSmbMount`, which the frontend answers the same way.
 
 **The mount read is bounded, and only the mount read.** `find_mounted_share` reads the root (`statfs`, then
-`Path::exists`) through `commands::util::blocking_with_timeout` under `MOUNT_READ_LIMIT` (5 s). A mount whose server went
+`Path::exists`) through `commands::util::blocking_with_timeout` under `smb_upgrade::MOUNT_READ_LIMIT` (5 s), the bound the
+auto paths' identity read shares (§ "A mount's identity comes off the mount, not the request"). A mount whose server went
 quiet blocks that read for 30–120 s, which kept "Connecting directly…" spinning for all of it; now it answers
 `MountNotResponding` without dialing. ❌ Never bound the whole flow: the saved-password door goes on to wait for the
 person's answer to the Keychain consent dialog. `try_smb_upgrade` takes the caller's `SmbMountInfo`, anchor included, so

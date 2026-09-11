@@ -20,6 +20,53 @@ fn mount_of(server: &str, share: &str, port: u16) -> SmbMountInfo {
     }
 }
 
+/// The auto-upgrade paths read a mount's identity off `statfs`, which on a mount
+/// whose server went quiet waits 30-120 s and parks a tokio worker for all of it.
+/// The read is bounded, and a mount that doesn't answer is reported as such.
+#[tokio::test]
+async fn a_mount_that_doesnt_answer_its_identity_read_is_not_waited_on() {
+    // Stands in for a `statfs` on a hung mount: it returns only once the test lets it.
+    let (release, hung) = std::sync::mpsc::channel::<()>();
+
+    let read = tokio::time::timeout(
+        Duration::from_secs(3),
+        read_identity_within("/Volumes/hung", Duration::from_millis(200), move |_| {
+            let _ = hung.recv();
+            None
+        }),
+    )
+    .await;
+    // Frees the blocking thread whichever way it went.
+    let _ = release.send(());
+
+    match read {
+        Ok(IdentityRead::NotResponding) => {}
+        Ok(other) => panic!("a mount that doesn't answer must read as NotResponding, got {other:?}"),
+        Err(_) => panic!("the identity read isn't bounded: still waiting after 3 s"),
+    }
+}
+
+/// A mount that answers keeps its answer, `None` included: that's every GVFS mount
+/// on Linux, and the caller falls back to the requested share's id for it.
+#[tokio::test]
+async fn a_mount_that_answers_its_identity_read_keeps_the_answer() {
+    let read = read_identity_within("/Volumes/data", Duration::from_secs(2), |_| {
+        Some(MountIdentity {
+            volume_id: "smb-nas-445-data".to_string(),
+            share_root: "sub".to_string(),
+        })
+    })
+    .await;
+    let IdentityRead::Answered(Some(identity)) = read else {
+        panic!("a mount that answered must keep its identity, got {read:?}");
+    };
+    assert_eq!(identity.volume_id, "smb-nas-445-data");
+    assert_eq!(identity.share_root, "sub");
+
+    let read = read_identity_within("/run/user/1000/gvfs/x", Duration::from_secs(2), |_| None).await;
+    assert!(matches!(read, IdentityRead::Answered(None)), "got {read:?}");
+}
+
 #[test]
 fn system_keychain_aliases_include_the_mdns_service_form_for_an_ip() {
     use crate::network::{HostSource, NetworkHost};
