@@ -163,6 +163,63 @@ fn clarified_answers_never_carry_the_password() {
     }
 }
 
+/// A guest has no password to be wrong. NetFS answers a guest mount on a server
+/// that wants credentials with `kNetAuthErrorInternal` (-6600), which reads as
+/// `AuthFailed`, and the pane told someone who never typed a password that theirs
+/// didn't work. For a guest it's the server wanting a sign-in.
+#[test]
+fn a_guest_turned_away_at_sign_in_is_asked_to_sign_in() {
+    let guest = ShareAttempt::new("observermch", "data", 445, None, None);
+    let auth_failed = MountError::AuthFailed {
+        server: "192.168.1.5".to_string(),
+    };
+
+    assert_eq!(
+        refusal_for_identity(auth_failed, &guest),
+        MountError::AuthRequired {
+            server: "192.168.1.5".to_string(),
+            share: "data".to_string(),
+        }
+    );
+}
+
+/// An account that offered a password and was turned away keeps `AuthFailed`, and
+/// every other answer stays the mount's own, for either identity.
+#[test]
+fn refusal_for_identity_keeps_every_other_answer() {
+    let guest = ShareAttempt::new("observermch", "data", 445, None, None);
+    let account = ShareAttempt::new("observermch", "data", 445, Some("ada"), Some("hunter2"));
+    let auth_failed = MountError::AuthFailed {
+        server: "observermch".to_string(),
+    };
+    assert_eq!(refusal_for_identity(auth_failed.clone(), &account), auth_failed);
+
+    let others = [
+        not_found(),
+        MountError::Timeout {
+            server: "observermch".to_string(),
+        },
+        MountError::MountRefused {
+            server: "observermch".to_string(),
+            share: "data".to_string(),
+        },
+        MountError::AuthRequired {
+            server: "observermch".to_string(),
+            share: "data".to_string(),
+        },
+    ];
+    for original in others {
+        for attempt in [&guest, &account] {
+            assert_eq!(
+                refusal_for_identity(original.clone(), attempt),
+                original,
+                "{:?} rewrote {original:?}",
+                attempt.identity
+            );
+        }
+    }
+}
+
 #[test]
 fn an_attempt_is_a_guest_one_only_without_a_username() {
     assert_eq!(

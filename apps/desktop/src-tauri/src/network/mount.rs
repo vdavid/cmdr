@@ -175,6 +175,8 @@ fn error_from_code(code: i32, share_name: &str, server_name: &str) -> MountError
         ENOENT | ENETFSNOSHARESAVAIL | KNETAUTH_ERROR_NO_SHARES_AVAILABLE => {
             MountError::ShareNotFound { server, share }
         }
+        // A guest's is a sign-in question, which `network::mount_share` knows and this
+        // doesn't (`share_access::refusal_for_identity`).
         EACCES | EAUTH | KNETAUTH_ERROR_INTERNAL => MountError::AuthFailed { server },
         ENETFSNOAUTHMECHSUPP | KNETAUTH_ERROR_GUEST_NOT_SUPPORTED => MountError::AuthRequired { server, share },
         // Signed in, then refused the mount itself. ❌ Not an auth question: the

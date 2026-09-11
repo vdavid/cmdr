@@ -153,7 +153,8 @@ fn every_netfs_code_maps_to_typed_data() {
 /// typed errors, not the opaque `Unexpected` catch-all. -6600 is what
 /// `NetFSMountURLSync` returns when authentication fails (observed in the wild with
 /// a guest mount against a creds-required NAS); routing it to `AuthFailed` is what
-/// lets the frontend offer the login form instead of a dead-end error pane.
+/// lets the frontend offer the login form instead of a dead-end error pane. For a
+/// guest, `mount_share` then reads it as `AuthRequired` (`share_access_test.rs`).
 #[test]
 fn test_netauth_error_codes() {
     assert_eq!(
@@ -408,6 +409,39 @@ async fn smb_integration_mount_guest_refused_share_asks_for_credentials() {
     assert!(
         matches!(result, Err(MountError::AuthRequired { .. })),
         "a guest mount of a share that refuses guests must ask for credentials, got {result:?}"
+    );
+}
+
+/// A guest mount on a server that only lets accounts in must ask for a sign-in, not
+/// say the password didn't work: a guest never offered one.
+///
+/// NetFS answers this with an auth code, which alone reads as `AuthFailed`
+/// (`kNetAuthErrorInternal`, -6600, in the field), so the sheet opened blaming a
+/// password nobody typed. `network::mount_share` reads a guest's `AuthFailed` as
+/// `AuthRequired` (`share_access::refusal_for_identity`). The `auth` fixture host lets
+/// no guest in.
+#[cfg(target_os = "macos")]
+#[tokio::test]
+#[ignore = "Requires Docker SMB containers (./apps/desktop/test/smb-servers/start.sh)"]
+async fn smb_integration_mount_guest_on_an_accounts_only_server_asks_for_credentials() {
+    let port: u16 = std::env::var("SMB_CONSUMER_AUTH_PORT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10481);
+    let host = "localhost".to_string();
+
+    let result = mount_share(host.clone(), "private".to_string(), None, None, port, Some(8_000)).await;
+
+    // A mount riding a session NetFS cached from an earlier sign-in would go through;
+    // it's not this test's to keep.
+    if let Ok(ref mounted) = result {
+        let _ = std::process::Command::new("diskutil")
+            .args(["unmount", "force", &mounted.mount_path])
+            .output();
+    }
+    assert!(
+        matches!(result, Err(MountError::AuthRequired { .. })),
+        "a guest mount on a server that lets no guest in must ask for credentials, got {result:?}"
     );
 }
 

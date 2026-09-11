@@ -96,8 +96,8 @@ To make this hold, every NetFS mount sets `UIOption = NoUI` (`open_option_entrie
 hands auth *failures* to NetAuthAgent even when we pass explicit credentials: the agent pops a system dialog ("You
 entered an invalid username or password...") on top of Cmdr, blocks the mount call while open, and returns
 `kNetAuthErrorInternal` (-6600) when dismissed. With `NoUI`, the same failure returns immediately as a typed code
-(`error_from_code` maps -6600 → `AuthFailed`, -6004 `kNetAuthErrorGuestNotSupported` → `AuthRequired`) and the frontend
-renders its own login form.
+(`error_from_code` maps -6600 → `AuthFailed`, which a guest's attempt reads as `AuthRequired`, and -6004
+`kNetAuthErrorGuestNotSupported` → `AuthRequired`) and the frontend renders its own login form.
 
 ### `smb2` for SMB share enumeration (not `pavao`/libsmbclient, `smb-rs`, or `smbutil`)
 
@@ -278,8 +278,12 @@ backend's English `Share "data" not found on "observermch"`.
   `Unexpected` takes an unknown code, a URL `CFURLCreateWithString` rejects, a panicked task, and `gio` stderr nothing
   recognizes. NetFS's "no shares available" codes stay `ShareNotFound`: to someone who picked one share it's the same
   answer, and `share_access` clarifies both the same way.
-- **A guest's "permission denied" from `gio` is `AuthRequired`**, the reading `share_access::clarified` gives any guest
-  turned away, so the sign-in sheet asks for a password instead of "a different account".
+- **A guest turned away is `AuthRequired`, ❌ never `AuthFailed`**: a guest typed no password to be wrong. NetFS answers a
+  guest on a server that lets only accounts in with an auth code that maps to `AuthFailed` (-6600 in the field;
+  verified on macOS 26.6.2 / 25G83 against the `auth` fixture, `smb_integration_mount_guest_on_an_accounts_only_server_asks_for_credentials`,
+  2026-09-11), so `network::mount_share` reads a guest's `AuthFailed` as `AuthRequired` on both platforms
+  (`share_access::refusal_for_identity`). `gio`'s "permission denied" for a guest reads the same inside
+  `classify_mount_error`, which is also the reading `share_access::clarified` gives any guest turned away.
 - **The wire tags are snake_case** (`share_not_found`), and `smb-sign-in.ts` branches on them. Change a variant on both
   sides in one commit; the frontend's variant record stops compiling until the new one has words.
 

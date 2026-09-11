@@ -140,8 +140,9 @@ pub(crate) const DEFAULT_MOUNT_TIMEOUT_MS: u64 = 20_000;
 /// A panicked task and an expired budget come back as the typed `MountError` the
 /// frontend words, and a mount that could only say "not found" spends what's left
 /// of the budget asking the server which it was
-/// (`share_access::clarify_share_not_found`). One function for both platforms, so
-/// the timeout and the not-found clarification can't drift apart between macOS
+/// (`share_access::clarify_share_not_found`). A guest's `AuthFailed` reads as the
+/// sign-in it is (`share_access::refusal_for_identity`). One function for both
+/// platforms, so the timeout and these readings can't drift apart between macOS
 /// and Linux.
 pub async fn mount_share(
     server: String,
@@ -183,7 +184,8 @@ pub async fn mount_share(
             let budget_left = timeout_duration.saturating_sub(started.elapsed());
             Err(share_access::clarify_share_not_found(not_found, &attempt, budget_left).await)
         }
-        other => other,
+        Err(refusal) => Err(share_access::refusal_for_identity(refusal, &attempt)),
+        Ok(mounted) => Ok(mounted),
     }
 }
 

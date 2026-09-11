@@ -129,6 +129,24 @@ pub(crate) fn clarified(original: MountError, attempt: &ShareAttempt, verdict: S
     }
 }
 
+/// What a mount's own refusal means for the identity it went out as.
+///
+/// A guest has no password to be wrong, so an `AuthFailed` for one is the server
+/// wanting a sign-in: `AuthRequired`, which opens the sign-in sheet asking for a
+/// password. NetFS answers a guest mount on a server that lets only accounts in with
+/// an auth code (`kNetAuthErrorInternal`, -6600, in the field), and `gio` with
+/// "Authentication failed"; worded as they come, both told someone who never typed a
+/// password that theirs didn't work. Every other answer is the mount's own.
+pub(crate) fn refusal_for_identity(original: MountError, attempt: &ShareAttempt) -> MountError {
+    match (attempt.identity, original) {
+        (SignInIdentity::Guest, MountError::AuthFailed { server }) => MountError::AuthRequired {
+            server,
+            share: attempt.params.share_name.clone(),
+        },
+        (_, original) => original,
+    }
+}
+
 /// Asks the server why a mount found no share, within `budget`, and answers with
 /// the error the mount should report.
 ///
