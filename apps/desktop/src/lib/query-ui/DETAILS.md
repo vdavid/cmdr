@@ -345,8 +345,13 @@ shared `hasRunnableQuery()` predicate (non-empty query OR size/date/type filter 
 explicit-trigger contract because the prefill caller's `autoRun: true` IS the explicit trigger.
 
 ⚠️ The flag has THREE producers and is consumed once per arming, so a producer that arms it after another one's run has
-already fired runs the same query twice. Search's prefill closes that by clearing `lastRunQuery` (a prefill replaces the
-session), which is what the reopen producer below reads; see `lib/search/DETAILS.md` § MCP `open_search_dialog`.
+already fired runs the same query twice. Search's prefill clears `lastRunQuery` (a prefill replaces the session), which
+is what the reopen producer below reads; see `lib/search/DETAILS.md` § MCP `open_search_dialog`. That leaves the
+cold-open case: the effect runs BEFORE `onMount`, and a streaming run writes `lastRunQuery` the moment it starts, so
+`onMount` would read that fresh run as a prior session and start it again. The effect sets `runRequestHandled` when it
+consumes the flag, and the reopen producer skips while it's set. A second start is not just waste: the backend silences
+every dialog run but the last to register, so the dialog can end up tracking a run that never reports, stuck on
+`resolvingCoverage` (`QueryDialog.run-on-mount.svelte.test.ts`).
 
 A third producer of `runOnMount` is the reopen path. `onMount` sets the flag when the surviving state holds a restorable
 NON-AI session (`getLastRunQuery() !== null` AND `hasRunnableQuery()` AND `mode !== 'ai'`), so the dialog re-derives
@@ -360,11 +365,13 @@ index loads, so the re-run still lands.
 ### Test coverage
 
 `QueryDialog.svelte.test.ts` (orchestrator) pins the title rendering, primary + secondary action callbacks, ⌘N / ⌘H, the
-IME guard, and the `lastDialogEvent` ownership. The `QueryDialog` block of `dialog.a11y.test.ts` runs axe-core across
-loading / index-ready / AI-on against a minimal Search-shaped config. Search's full integration tests live in the
-`lib/search/SearchDialog.<concern>.svelte.test.ts` family (session, shortcuts, ai, auto-apply, open-in-pane, scope,
-images, coverage, handoff) plus the `SearchDialog` block of `lib/search/search.a11y.test.ts`, and they mount QueryDialog
-through the Search wrapper.
+IME guard, and the `lastDialogEvent` ownership. Two siblings mount the dialog over a streaming source:
+`QueryDialog.escape.svelte.test.ts` (Escape stops a live run before it closes) and
+`QueryDialog.run-on-mount.svelte.test.ts` (a run asked for at mount starts once). The `QueryDialog` block of
+`dialog.a11y.test.ts` runs axe-core across loading / index-ready / AI-on against a minimal Search-shaped config.
+Search's full integration tests live in the `lib/search/SearchDialog.<concern>.svelte.test.ts` family (session,
+shortcuts, ai, auto-apply, open-in-pane, scope, images, coverage, handoff) plus the `SearchDialog` block of
+`lib/search/search.a11y.test.ts`, and they mount QueryDialog through the Search wrapper.
 
 The four controller modules carry their own suites (`query-runner.test.ts`, `recent-popover.test.ts`,
 `query-shortcuts.test.ts`, `result-actions.test.ts`), which is where a rule is cheapest to pin: the nothing-to-run
