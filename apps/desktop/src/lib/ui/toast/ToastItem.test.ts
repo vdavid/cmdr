@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mount, tick } from 'svelte'
+import { mount, tick, unmount } from 'svelte'
 import ToastItem from './ToastItem.svelte'
 import ToastContainer from './ToastContainer.svelte'
 import ToastIdFixture from './toast-id-fixture.svelte'
@@ -32,6 +32,25 @@ function mountItem(props: Record<string, unknown>): HTMLElement {
   })
   return target
 }
+
+/**
+ * Containers a test mounted over the real toast store. Clearing `document.body` doesn't
+ * unmount them, and a leftover one keeps rendering the next test's toasts with its own
+ * timers, so each is unmounted after its test.
+ */
+const mountedContainers: ReturnType<typeof mount>[] = []
+
+async function mountContainer(): Promise<HTMLElement> {
+  const target = document.createElement('div')
+  document.body.appendChild(target)
+  mountedContainers.push(mount(ToastContainer, { target }))
+  await tick()
+  return target
+}
+
+afterEach(() => {
+  for (const container of mountedContainers.splice(0)) void unmount(container)
+})
 
 describe('ToastItem close button', () => {
   beforeEach(() => {
@@ -225,10 +244,7 @@ describe('ToastItem component content', () => {
     // Pre-fix this stayed up: the body called `dismissToast(undefined)`, so an offer's
     // "Yes" ran again on every click while the toast never went away.
     addToast(ToastIdFixture, { id: 'self-closing', dismissal: 'persistent' })
-    const target = document.createElement('div')
-    document.body.appendChild(target)
-    mount(ToastContainer, { target })
-    await tick()
+    const target = await mountContainer()
 
     const close = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Close')
     if (!close) throw new Error('Close button missing')
@@ -236,6 +252,74 @@ describe('ToastItem component content', () => {
     await tick()
 
     expect(getToasts()).toHaveLength(0)
+  })
+})
+
+describe('ToastItem re-raised under the same id', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    clearAllToasts()
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('auto-dismisses a persistent toast once it is re-raised as transient', async () => {
+    // Pre-fix the timer was only armed on mount, so the drag-out completion toast
+    // that replaces its persistent in-progress toast stayed up for good.
+    addToast('Downloading 3 files…', { id: 'drag', dismissal: 'persistent' })
+    await mountContainer()
+
+    addToast('Downloaded 3 files', { id: 'drag', dismissal: 'transient', timeoutMs: 4000 })
+    await tick()
+
+    vi.advanceTimersByTime(3999)
+    expect(getToasts()).toHaveLength(1)
+    vi.advanceTimersByTime(2)
+    expect(getToasts()).toHaveLength(0)
+  })
+
+  it('gives a re-raised transient toast its full timeout from the new post', async () => {
+    addToast('Indexing…', { id: 'index', timeoutMs: 4000 })
+    await mountContainer()
+
+    vi.advanceTimersByTime(3000)
+    addToast('Indexing completed', { id: 'index', timeoutMs: 4000 })
+    await tick()
+
+    vi.advanceTimersByTime(3999)
+    expect(getToasts()).toHaveLength(1)
+    vi.advanceTimersByTime(2)
+    expect(getToasts()).toHaveLength(0)
+  })
+
+  it('keeps a toast re-raised as transient under the pointer until the pointer leaves', async () => {
+    addToast('Downloading 3 files…', { id: 'drag', dismissal: 'persistent' })
+    const target = await mountContainer()
+    const toast = target.querySelector('.toast') as HTMLElement
+    toast.dispatchEvent(new PointerEvent('pointerenter'))
+
+    addToast('Downloaded 3 files', { id: 'drag', dismissal: 'transient', timeoutMs: 4000 })
+    await tick()
+    vi.advanceTimersByTime(20000)
+    expect(getToasts()).toHaveLength(1)
+
+    toast.dispatchEvent(new PointerEvent('pointerleave'))
+    vi.advanceTimersByTime(HOVER_LEAVE_GRACE_MS + 1)
+    expect(getToasts()).toHaveLength(0)
+  })
+
+  it('stops the clock when a transient toast is re-raised as persistent', async () => {
+    addToast('Copied 3 files', { id: 'op', timeoutMs: 4000 })
+    await mountContainer()
+
+    addToast('Copy needs your attention', { id: 'op', dismissal: 'persistent' })
+    await tick()
+    vi.advanceTimersByTime(60000)
+
+    expect(getToasts()).toHaveLength(1)
   })
 })
 

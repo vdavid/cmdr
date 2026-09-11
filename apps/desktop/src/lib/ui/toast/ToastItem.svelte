@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { onMount, onDestroy } from 'svelte'
     import type { ToastContent, ToastLevel, ToastDismissal } from './toast-store.svelte'
     import { HOVER_LEAVE_GRACE_MS } from './toast-store.svelte'
     import { formatToastAge, msUntilToastAgeChanges } from './toast-age'
@@ -67,9 +66,13 @@
     // minute is meant to go one second after the pointer leaves, not to get
     // its leftover seconds back.
     //
-    // Persistent toasts never get a timer; the hover handlers no-op for them.
+    // The clock starts on mount and restarts on every same-id re-raise (a new
+    // `postedAt`), which can also change `dismissal` and `timeoutMs`. Persistent
+    // toasts never get a timer, and a toast re-raised under the pointer waits for
+    // the pointer to leave, same as one hovered the whole time.
     let timer: ReturnType<typeof setTimeout> | undefined
     let naturalDeadline = 0
+    let hovered = false
 
     // Age label ("2m ago"). `now` moves only when the label would change: one timer, armed for
     // the next whole minute (or hour) and re-armed each time it fires, so an idle toast costs one
@@ -123,24 +126,25 @@
     }
 
     function handlePointerEnter() {
+        hovered = true
         if (dismissal !== 'transient') return
         clearTimer()
     }
 
     function handlePointerLeave() {
+        hovered = false
         if (dismissal !== 'transient') return
         armTimer(Math.max(naturalDeadline - Date.now(), HOVER_LEAVE_GRACE_MS))
     }
 
-    onMount(() => {
-        if (dismissal === 'transient') {
-            naturalDeadline = Date.now() + timeoutMs
-            armTimer(timeoutMs)
-        }
-    })
-
-    onDestroy(() => {
-        clearTimer()
+    $effect(() => {
+        // Tracked so a same-id re-raise restarts the clock even when dismissal and
+        // timeout come back unchanged.
+        void postedAt
+        if (dismissal !== 'transient') return
+        naturalDeadline = Date.now() + timeoutMs
+        if (!hovered) armTimer(timeoutMs)
+        return clearTimer
     })
 </script>
 

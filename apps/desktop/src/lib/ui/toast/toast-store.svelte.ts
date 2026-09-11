@@ -139,9 +139,18 @@ function countInGroup(group: string): number {
   return toasts.reduce((n, t) => (t.toastGroup === group ? n + 1 : n), 0)
 }
 
-function replaceExisting(index: number, content: ToastContent, level: ToastLevel, options?: ToastOptions): void {
+function replaceExisting(
+  index: number,
+  content: ToastContent,
+  resolved: ResolvedToastOptions,
+  options?: ToastOptions,
+): void {
   toasts[index].content = content
-  toasts[index].level = level
+  toasts[index].level = resolved.level
+  // A re-raise can change how the toast leaves: a drag-out's persistent
+  // in-progress toast finishes as a transient completion toast.
+  toasts[index].dismissal = resolved.dismissal
+  toasts[index].timeoutMs = resolved.timeoutMs
   toasts[index].closeTooltip = options?.closeTooltip
   toasts[index].onDismiss = options?.onDismiss
   toasts[index].props = options?.props
@@ -211,10 +220,10 @@ export function addToast(content: ToastContent, options?: ToastOptions): string 
   const resolved = resolveOptions(options)
   const { id, level, dismissal, timeoutMs, toastGroup, maxInGroup } = resolved
 
-  // Dedup: replace content and level in place if ID already exists.
+  // Dedup: replace the toast in place if ID already exists.
   const existingIndex = findIndexById(id)
   if (existingIndex !== -1) {
-    replaceExisting(existingIndex, content, level, options)
+    replaceExisting(existingIndex, content, resolved, options)
     return id
   }
 

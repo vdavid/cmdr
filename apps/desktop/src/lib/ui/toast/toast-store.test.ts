@@ -56,6 +56,17 @@ describe('addToast', () => {
     expect(getToasts()[0].props).toEqual({ availableBytes: 5 })
   })
 
+  it('replaces dismissal and timeout on a same-id add, so an in-progress toast can finish as a transient one', () => {
+    // Pre-fix the first raise's `persistent` stuck: a drag-out's completion toast,
+    // raised transient over its in-progress one, never went away.
+    addToast('Downloading 3 files…', { id: 'dup', dismissal: 'persistent' })
+    addToast('Downloaded 3 files', { id: 'dup', dismissal: 'transient', timeoutMs: 6000 })
+
+    const toast = getToasts()[0]
+    expect(toast.dismissal).toBe('transient')
+    expect(toast.timeoutMs).toBe(6000)
+  })
+
   it('clears props on a same-id add that passes none', () => {
     addToast(dummyContent, { id: 'dup', props: { availableBytes: 10 } })
     addToast(dummyContent, { id: 'dup' })
