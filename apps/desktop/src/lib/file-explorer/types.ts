@@ -485,16 +485,12 @@ export interface ShareListResult {
   fromCache: boolean
 }
 
-/** Error types for share listing operations. */
-export type ShareListError =
-  | { type: 'host_unreachable'; message: string }
-  | { type: 'timeout'; message: string }
-  | { type: 'auth_required'; message: string }
-  | { type: 'signing_required'; message: string }
-  | { type: 'auth_failed'; message: string }
-  | { type: 'protocol_error'; message: string }
-  | { type: 'resolution_failed'; message: string }
-  | { type: 'missing_dependency'; message: string; installCommand: string | null }
+/**
+ * Why a server's share list didn't load. `message` is diagnostic detail for the
+ * log; `share-list-error-messages.ts` words the type. Re-exported from the
+ * generated bindings rather than restated, so it can't drift from the Rust enum.
+ */
+export type { ShareListError } from '$lib/ipc/bindings'
 
 // ============================================================================
 // Known shares store types

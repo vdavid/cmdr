@@ -592,15 +592,6 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
   },
-  "fileExplorer.network.browser.tooltip.errorWithType": "Error: {reason}",
-  "@fileExplorer.network.browser.tooltip.errorWithType": {
-    "description": "Fallback hover tooltip on a host row for an unclassified problem, showing the raw technical error type. {reason} is a short error code. Used only when no friendlier message is available.",
-    "placeholders": {
-      "reason": "a short technical error type/code"
-    },
-    "screenshot": "connect-to-server.png",
-    "screenshotNote": "Network (SMB) connection flow. This shows the \"Connect to server\" surface; your string appears here or on the closely-related browsing/sign-in/reconnect states reached from it."
-  },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Can''t remove discovered hosts",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "description": "Warning toast when the user tries to remove a host that was auto-discovered (only manually-added hosts can be removed).",

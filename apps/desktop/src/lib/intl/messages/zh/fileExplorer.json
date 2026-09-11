@@ -415,10 +415,6 @@
   "@fileExplorer.network.browser.tooltip.authFailed": {
     "sourceHash": "b8620ab"
   },
-  "fileExplorer.network.browser.tooltip.errorWithType": "问题：{reason}",
-  "@fileExplorer.network.browser.tooltip.errorWithType": {
-    "sourceHash": "ee0fd6d"
-  },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "无法移除自动发现的主机",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "03fabd6"

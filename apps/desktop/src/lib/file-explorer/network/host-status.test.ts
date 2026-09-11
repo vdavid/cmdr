@@ -32,9 +32,10 @@ vi.mock('./network-store.svelte', () => ({
   isShareDataStale: h.isShareDataStale,
 }))
 
-// Identity tString so tooltip assertions read the resolved message KEY (locale-independent).
+// Identity lookups so tooltip assertions read the resolved message KEY (locale-independent).
 vi.mock('$lib/intl/messages.svelte', () => ({
   tString: (key: string) => key,
+  getMessage: (key: string) => key,
 }))
 
 const host = (over: Partial<NetworkHost> = {}): NetworkHost => ({
@@ -131,8 +132,12 @@ describe('getHostStatus', () => {
     expect(getHostStatus(host()).kind).toBe('timeout')
     h.getShareState.mockReturnValue(error('host_unreachable'))
     expect(getHostStatus(host()).kind).toBe('unreachable')
-    h.getShareState.mockReturnValue(error('something_else'))
-    expect(getHostStatus(host()).kind).toBe('error')
+    // Every other variant is the generic `error` kind. Real ones only: the tooltip
+    // words each variant through a record over the closed union.
+    for (const type of ['protocol_error', 'resolution_failed', 'missing_dependency']) {
+      h.getShareState.mockReturnValue(error(type))
+      expect(getHostStatus(host()).kind, type).toBe('error')
+    }
   })
 
   it('sets hasInfo on an error state (a tooltip explains it)', () => {
@@ -203,13 +208,15 @@ describe('getStatusTooltip', () => {
     expect(getStatusTooltip(host())).toBe('fileExplorer.network.browser.tooltip.requiresLogin')
   })
 
-  it('prefers a concrete error message, falling back to the typed key', () => {
+  it('words every other failure from the catalog, never with the backend diagnostic', () => {
     h.getShareState.mockReturnValue(error('auth_failed'))
     expect(getStatusTooltip(host())).toBe('fileExplorer.network.browser.tooltip.authFailed')
+    // The backend's `message` is an English diagnostic for the log (here, what a
+    // fallback tool printed), so the tooltip reads the typed reason instead.
     h.getShareState.mockReturnValue(error('host_unreachable', 'Host is down'))
-    expect(getStatusTooltip(host())).toBe('Host is down')
-    h.getShareState.mockReturnValue(error('host_unreachable'))
-    expect(getStatusTooltip(host())).toBe('fileExplorer.network.browser.tooltip.errorWithType')
+    expect(getStatusTooltip(host())).toBe('errors.shareList.hostUnreachable')
+    h.getShareState.mockReturnValue(error('resolution_failed'))
+    expect(getStatusTooltip(host())).toBe('errors.shareList.resolutionFailed')
   })
 
   it('has no tooltip for a healthy loaded state', () => {

@@ -59,6 +59,17 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'pictured here.',
   },
   {
+    // The share-listing family: one sentence under the network pane's "Couldn't
+    // connect to …" title, and the tooltip on that server's row. Same reason to
+    // precede `errors.`.
+    prefix: 'errors.shareList.',
+    screenshot: 'connect-to-server.png',
+    note:
+      'This one is NOT the error panel. Your string is the one sentence under the "Couldn\'t connect to …" title that ' +
+      'replaces a server\'s list of shares when that list doesn\'t load, in the same network flow as the "Connect to server" ' +
+      "surface pictured here. The same sentence is the tooltip on that server's row in the servers list.",
+  },
+  {
     // The whole friendly-error family (listing / write / provider / git) shares
     // one presentation: an error pane (or, for write ops, the same title +
     // explanation + suggestion layout in a dialog). The example shows a DIFFERENT

@@ -2677,6 +2677,75 @@
     "screenshot": "connect-to-server.png",
     "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't mount share\" title that replaces a server's list of shares when a share doesn't open, in the same network flow as the \"Connect to server\" surface pictured here."
   },
+  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "@errors.shareList.hostUnreachable": {
+    "description": "Shown when nothing answered at the server's address: it's off, asleep, or on another network. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load, in the same network flow as the \"Connect to server\" surface pictured here. The same sentence is the tooltip on that server's row in the servers list."
+  },
+  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "@errors.shareList.timeout": {
+    "description": "Shown when the server accepted the connection and then went quiet for longer than Cmdr waits. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load, in the same network flow as the \"Connect to server\" surface pictured here. The same sentence is the tooltip on that server's row in the servers list."
+  },
+  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "@errors.shareList.authRequired": {
+    "description": "Shown when the server won't show its shared folders to someone who hasn't signed in. \"Shares\" means the folders a server makes available over the network. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one short sentence, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load, in the same network flow as the \"Connect to server\" surface pictured here. The same sentence is the tooltip on that server's row in the servers list."
+  },
+  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "@errors.shareList.signingRequired": {
+    "description": "Shown when the server only answers over a secured connection that it gives to signed-in accounts, so guests (people who haven't signed in) can't see its shared folders. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load, in the same network flow as the \"Connect to server\" surface pictured here. The same sentence is the tooltip on that server's row in the servers list."
+  },
+  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "@errors.shareList.authFailed": {
+    "description": "Shown when the server turned down the username and password that were offered. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load, in the same network flow as the \"Connect to server\" surface pictured here. The same sentence is the tooltip on that server's row in the servers list."
+  },
+  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "@errors.shareList.protocolError": {
+    "description": "The catch-all shown when nothing more specific applies. Keep it short and general rather than guessing at a reason; the technical reason is written to the log. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load, in the same network flow as the \"Connect to server\" surface pictured here. The same sentence is the tooltip on that server's row in the servers list."
+  },
+  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "@errors.shareList.resolutionFailed": {
+    "description": "Shown when the server's name never turned into a network address, usually because it's off or the name is misspelled. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry, Sign in, and Back buttons. The same sentence is the tooltip on that server's row in the servers list. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "placeholders": {
+      "server": "the server's name as the servers list shows it (like Naspolya)"
+    },
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load, in the same network flow as the \"Connect to server\" surface pictured here. The same sentence is the tooltip on that server's row in the servers list."
+  },
+  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "@errors.shareList.missingDependency": {
+    "description": "Linux only. Shown when the program Cmdr uses to list a server's shared folders isn't installed. Keep \"smbclient\" exactly as written: it's the program's name, and the person types it into their package manager. When Cmdr knows the install command, the pane shows it in a copy box right below this sentence. Surface: the network pane, after someone opens a server (SMB) to see its shared folders and the list doesn't load. The pane shows a \"Couldn't connect to …\" title naming the server, this sentence under it, and Retry and Back buttons. Plain text, one or two short sentences, no markdown. Cmdr never uses the words \"error\" or \"failed\" in messages people read.",
+    "screenshot": "connect-to-server.png",
+    "screenshotNote": "This one is NOT the error panel. Your string is the one sentence under the \"Couldn't connect to …\" title that replaces a server's list of shares when that list doesn't load, in the same network flow as the \"Connect to server\" surface pictured here. The same sentence is the tooltip on that server's row in the servers list."
+  },
   "errors.write.readOnlyDevice.source.title": "Read-only source",
   "@errors.write.readOnlyDevice.source.title": {
     "description": "Title of the copy/move error dialog when the SOURCE is read-only, so a move out of it can't happen (a file inside a repo's virtual `.git` history, or inside a tar/7z archive). Plain text.",

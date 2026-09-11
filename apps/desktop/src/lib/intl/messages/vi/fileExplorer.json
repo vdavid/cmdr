@@ -417,10 +417,6 @@
   "@fileExplorer.network.browser.tooltip.authFailed": {
     "sourceHash": "b8620ab"
   },
-  "fileExplorer.network.browser.tooltip.errorWithType": "Sự cố: {reason}",
-  "@fileExplorer.network.browser.tooltip.errorWithType": {
-    "sourceHash": "ee0fd6d"
-  },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Không thể gỡ bỏ máy chủ được phát hiện tự động",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "03fabd6"

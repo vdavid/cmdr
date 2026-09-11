@@ -417,10 +417,6 @@
   "@fileExplorer.network.browser.tooltip.authFailed": {
     "sourceHash": "b8620ab"
   },
-  "fileExplorer.network.browser.tooltip.errorWithType": "Probléma: {reason}",
-  "@fileExplorer.network.browser.tooltip.errorWithType": {
-    "sourceHash": "ee0fd6d"
-  },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "A felfedezett gépek nem távolíthatók el",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "03fabd6"

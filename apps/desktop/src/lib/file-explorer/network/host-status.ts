@@ -11,6 +11,7 @@ import type { MessageKey } from '$lib/intl/keys.gen'
 import { tString } from '$lib/intl/messages.svelte'
 import type { NetworkHost } from '../types'
 import { getShareState, getCredentialStatus, isHostResolving, isShareDataStale } from './network-store.svelte'
+import { renderShareListError } from './share-list-error-messages'
 
 /**
  * One host's status as a TYPED descriptor, not a pre-rendered string. The visible cell
@@ -180,9 +181,8 @@ export function getStatusTooltip(host: NetworkHost): string | undefined {
     if (state.error.type === 'auth_failed') {
       return tString('fileExplorer.network.browser.tooltip.authFailed')
     }
-    return (
-      state.error.message || tString('fileExplorer.network.browser.tooltip.errorWithType', { reason: state.error.type })
-    )
+    // ❌ Never `state.error.message`: it's the backend's English diagnostic, for the log.
+    return renderShareListError(state.error, host.name)
   }
   return undefined
 }

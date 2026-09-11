@@ -417,10 +417,6 @@
   "@fileExplorer.network.browser.tooltip.authFailed": {
     "sourceHash": "b8620ab"
   },
-  "fileExplorer.network.browser.tooltip.errorWithType": "Problème : {reason}",
-  "@fileExplorer.network.browser.tooltip.errorWithType": {
-    "sourceHash": "ee0fd6d"
-  },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Impossible de retirer les hôtes détectés",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "03fabd6"

@@ -44,7 +44,9 @@ mis-renders at runtime). Change both sides in the same commit.
 - **Mount refusals** (a network share someone opened didn't mount): `mount_network_share` RETURNS a typed `MountError`
   (the server, the share, and for a refused account the username), `mountNetworkShare` throws it as a `MountFailure`,
   and the network pane words it through `apps/desktop/src/lib/file-explorer/network/mount-error-messages.ts` under its
-  "Couldn't mount share" title. The catch-all `Unexpected` keeps what NetFS or `gio` said in `detail`, for the log.
+  "Couldn't mount share" title. The catch-all `Unexpected` keeps what NetFS or `gio` said in `detail`, for the log. A
+  server's share LISTING that didn't load is worded the same way: `ShareListError`'s `message` is a diagnostic, and
+  `share-list-error-messages.ts` beside it words the type for the pane and the servers list's tooltip.
 
 ## Every command family owns its error type
 

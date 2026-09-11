@@ -165,6 +165,11 @@ on success (nothing here connects a VOLUME, and the loaded list IS the result), 
 `authentication_rejected` / `needs_credentials`, and closes it onto the pane's own error state for anything else,
 because that is where the retry and a missing dependency's install command live.
 
+The error state's sentence, and the servers list's tooltip for the same failure (`host-status.ts`), come from
+`share-list-error-messages.ts`: one `errors.shareList.*` key per `ShareListError` type, naming the host. ❌ Never
+`error.message`: the backend documents it as diagnostic detail for the log, and it's English, often a fallback tool's
+own stderr.
+
 When `authenticatedCredentials` is set, a "Forget saved password" button appears in the header; clicking it calls
 `forgetCredentials` and clears `authenticatedCredentials`. Shares sort case-insensitively. Escape/Backspace go back.
 

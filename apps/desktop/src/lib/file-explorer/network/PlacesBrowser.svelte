@@ -10,6 +10,7 @@
     import CopyBox from '$lib/ui/CopyBox.svelte'
     import Spinner from '$lib/ui/Spinner.svelte'
     import type { AuthMode, PlacesAccount, ShareInfo, ShareListError } from '../types'
+    import { renderShareListError } from './share-list-error-messages'
     import {
         getShareState,
         fetchShares,
@@ -560,7 +561,7 @@
             <div class="error-title">
                 {tString('fileExplorer.network.share.connectFailedTitle', { hostName: host.name })}
             </div>
-            <div class="error-message">{error.message || error.type}</div>
+            <div class="error-message">{renderShareListError(error, host.name)}</div>
             {#if error.type === 'missing_dependency' && error.installCommand}
                 <CopyBox text={error.installCommand} />
                 <div class="error-actions">

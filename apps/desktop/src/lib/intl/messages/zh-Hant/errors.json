@@ -1785,6 +1785,38 @@
   "@errors.mount.unexpected": {
     "sourceHash": "8daf9ba"
   },
+  "errors.shareList.hostUnreachable": "Cmdr couldn't reach \"{server}\". Check that it's turned on and on the same network as this computer.",
+  "@errors.shareList.hostUnreachable": {
+    "sourceHash": "a8a5d87"
+  },
+  "errors.shareList.timeout": "Cmdr waited, but \"{server}\" didn't answer in time. Try again in a moment.",
+  "@errors.shareList.timeout": {
+    "sourceHash": "ae84e14"
+  },
+  "errors.shareList.authRequired": "Sign in to see the shares on \"{server}\".",
+  "@errors.shareList.authRequired": {
+    "sourceHash": "4268ae9"
+  },
+  "errors.shareList.signingRequired": "\"{server}\" doesn't show its shares to guests. Sign in to see them.",
+  "@errors.shareList.signingRequired": {
+    "sourceHash": "8ae651a"
+  },
+  "errors.shareList.authFailed": "That username and password didn't work on \"{server}\". Check them and sign in again.",
+  "@errors.shareList.authFailed": {
+    "sourceHash": "bb03537"
+  },
+  "errors.shareList.protocolError": "Something went wrong while asking \"{server}\" for its shares. Try again in a moment.",
+  "@errors.shareList.protocolError": {
+    "sourceHash": "064a773"
+  },
+  "errors.shareList.resolutionFailed": "Cmdr couldn't find \"{server}\" on the network. Check its name, or try again once it's back online.",
+  "@errors.shareList.resolutionFailed": {
+    "sourceHash": "d2e5b54"
+  },
+  "errors.shareList.missingDependency": "Listing shares on this computer needs smbclient, which isn't installed. Install it, then try again.",
+  "@errors.shareList.missingDependency": {
+    "sourceHash": "810b06a"
+  },
   "errors.write.readOnlyDevice.source.title": "來源為唯讀",
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"

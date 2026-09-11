@@ -17,7 +17,8 @@
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
 import { mount, unmount, tick } from 'svelte'
 import PlacesBrowser from './PlacesBrowser.svelte'
-import type { NetworkHost, ShareInfo } from '../types'
+import type { NetworkHost, ShareInfo, ShareListError } from '../types'
+import { renderShareListError } from './share-list-error-messages'
 
 const h = vi.hoisted(() => ({
   fetchShares: vi.fn(),
@@ -129,6 +130,24 @@ describe('PlacesBrowser credential gate', () => {
     // No stored credentials anywhere (the incident state).
     h.getSmbCredentials.mockRejectedValue(new Error('not found'))
     h.openSignInSheet.mockResolvedValue({ kind: 'cancelled' })
+  })
+
+  it('words a share list that did not load from the catalog, never with the backend diagnostic', async () => {
+    // The backend's `message` is an English diagnostic for the log, often a
+    // fallback tool's own stderr, so the pane reads the typed reason instead.
+    const failure: ShareListError = {
+      type: 'host_unreachable',
+      message: 'smbutil failed: Connection refused (os error 61)',
+    }
+    h.fetchShares.mockRejectedValue(failure)
+    const { target, component } = mountBrowser(vi.fn())
+
+    const errorPane = await vi.waitFor(() => must(target.querySelector('.error-state'), 'the error pane'))
+    const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
+    expect(message).toBe(renderShareListError(failure, 'Naspolya'))
+    expect(message).not.toContain('smbutil')
+
+    await unmount(component)
   })
 
   it('attempts the mount (no in-pane prompt) when creds are required and none are stored', async () => {
