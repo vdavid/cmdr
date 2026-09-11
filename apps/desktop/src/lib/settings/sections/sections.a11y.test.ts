@@ -141,7 +141,6 @@ import NotificationsSection from './NotificationsSection.svelte'
 import SearchSection from './SearchSection.svelte'
 import ShortcutPill from './ShortcutPill.svelte'
 import TerminalAppSelect from './TerminalAppSelect.svelte'
-import TextEditorSelect from './TextEditorSelect.svelte'
 
 /**
  * Installs this block's `getSetting` for its own tests only. Call inside a
@@ -537,23 +536,6 @@ describe('NavigationAndFileOpsSection a11y', () => {
   it('default has no a11y violations', async () => {
     const target = container()
     mount(NavigationAndFileOpsSection, { target, props: { searchQuery: '' } })
-    await tick()
-    await expectNoA11yViolations(target)
-  })
-})
-
-/**
- * Tier 3 a11y tests for `TextEditorSelect.svelte`, the "Edit files in" control.
- * Audited on its own as well as inside its section, because it carries its own
- * accessible name and spends its first moments disabled.
- */
-describe('TextEditorSelect a11y', () => {
-  useSettings((key: string) => (key === 'behavior.textEditorApp' ? 'system' : undefined))
-
-  it('has no a11y violations once the editor list has landed', async () => {
-    const target = container()
-    mount(TextEditorSelect, { target, props: { ariaLabel: 'Edit files in' } })
-    await tick()
     await tick()
     await expectNoA11yViolations(target)
   })

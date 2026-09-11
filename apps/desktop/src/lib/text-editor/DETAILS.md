@@ -30,8 +30,8 @@ mock answers one number for every key still sees the system default. Linux runs 
 ## The hint
 
 The one-time hint is the only place this setting is advertised. `openFileInEditor` reads the choice and
-`behavior.textEditorHintSeen` before its first `await`, asks Rust about other editors (`askAboutOtherEditors`) only while
-the flag is unspent AND the choice is `system`, and hands the report to the pure `decideEditorHint`:
+`behavior.textEditorHintSeen` before its first `await`, asks Rust about other editors (`askAboutOtherEditors`) only
+while the flag is unspent AND the choice is `system`, and hands the report to the pure `decideEditorHint`:
 
 - **Hint already spent**: nothing said, nothing written.
 - **The launch threw** (`launchRefused`, `timedOut`): no hint, and the flag stays unspent.

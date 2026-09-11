@@ -161,7 +161,10 @@ describe('TextEditorSelect', () => {
     openAppPicker.mockResolvedValue(SUBLIME_PATH)
     listTextEditors.mockImplementation((appChoice: string) =>
       Promise.resolve({
-        data: editors({ apps: [XCODE, SUBLIME], chosenId: appChoice === SUBLIME_PATH ? 'com.sublimetext.4' : 'system' }),
+        data: editors({
+          apps: [XCODE, SUBLIME],
+          chosenId: appChoice === SUBLIME_PATH ? 'com.sublimetext.4' : 'system',
+        }),
         timedOut: false,
       }),
     )

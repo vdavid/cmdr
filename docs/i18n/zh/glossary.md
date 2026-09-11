@@ -2614,8 +2614,8 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
 - `{app}` 前后留空格。Dismiss、Open settings 与 `commands.handler.openTerminalHere.dismiss` /
   `commands.handler.openTerminalHere.openSettings` 一致。
 - **system default → `跟随系统`** · 目录（`settings.appearance.language.opt.system`、
-  `settings.appearance.dateTimeFormat.opt.system`）· `high`。`settings.behavior.textEditorApp.systemDefault` 在后面用全角括号带上
-  App 名，同 `settings.appearance.language.opt.systemWithLanguage`。
+  `settings.appearance.dateTimeFormat.opt.system`）· `high`。`settings.behavior.textEditorApp.systemDefault`
+  在后面用全角括号带上 App 名，同 `settings.appearance.language.opt.systemWithLanguage`。
 - "Choose an app…"、"Checking your apps…" 与 `settings.behavior.openTerminalHereApp.chooseApp` /
   `settings.behavior.openTerminalHereApp.checking` 一致。提示（`fileExplorer.edit.hint`）沿用
   `commands.handler.openTerminalHere.hint` 的句式，但不写设置的位置，因为它的按钮直接跳过去。

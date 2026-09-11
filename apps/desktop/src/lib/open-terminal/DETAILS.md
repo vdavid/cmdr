@@ -4,10 +4,10 @@ Depth behind `CLAUDE.md`. The spec that decided all of this is `docs/specs/open-
 per-app recipes, and why there's no window-vs-tab control are `src-tauri/src/file_system/DETAILS.md`.
 
 The whole feature is macOS-only, and the gating is per surface rather than one flag: the palette entry and the shortcut
-come from `isMacOS()` in `commands/sources/file-list.ts`, the menu item from the Rust side, and the Settings Terminal card
-from `isMacOS()` in `settings/sections/NavigationAndFileOpsSection.svelte`, with `macOSOnly` on the setting so search
-agrees. Bundle ids and launch recipes are a macOS vocabulary, and Linux has no default terminal either, so a Linux build
-would bring its own table rather than reuse this one.
+come from `isMacOS()` in `commands/sources/file-list.ts`, the menu item from the Rust side, and the Settings Terminal
+card from `isMacOS()` in `settings/sections/NavigationAndFileOpsSection.svelte`, with `macOSOnly` on the setting so
+search agrees. Bundle ids and launch recipes are a macOS vocabulary, and Linux has no default terminal either, so a
+Linux build would bring its own table rather than reuse this one.
 
 ## What "here" means
 

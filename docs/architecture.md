@@ -91,8 +91,8 @@ All under `apps/desktop/src/lib/`.
 - `open-terminal/`: "Open terminal here" frontend: which folder "here" means, where the command is offered, the
   first-use app picker and its two toasts. See `apps/desktop/src/lib/open-terminal/CLAUDE.md`
 - `text-editor/`: which app F4 opens files in: reads the stored choice, launches through `openInEditor`, falls back to
-  the system default with a toast when that app is gone, and points at the setting once with a hint. The Settings row
-  is `apps/desktop/src/lib/settings/sections/TextEditorSelect.svelte`. See `apps/desktop/src/lib/text-editor/CLAUDE.md`
+  the system default with a toast when that app is gone, and points at the setting once with a hint. The Settings row is
+  `apps/desktop/src/lib/settings/sections/TextEditorSelect.svelte`. See `apps/desktop/src/lib/text-editor/CLAUDE.md`
 - `go-to-path/`: "Go to path" (⌘G) dialog + handler: thin presenter over backend `resolve_go_to_path`, recents mirror
 - `query-ui/`: Shared filter-and-act-on primitives for Search and Selection: `QueryBar`, `ModeChips`, `QueryResults`,
   recent-items, `createQueryFilterState()`

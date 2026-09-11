@@ -30,8 +30,8 @@ sections compose).
   `settings.operationLog.intro` blurb). The conflict/progress settings live ONLY in Advanced (`maxConflictsToShow`,
   `progressUpdateInterval` → `section: ['Advanced']`), never mirrored here. The hidden
   `behavior.doubleClickOnPaneNotificationSeen`, `behavior.textEditorHintSeen`, and `behavior.openTerminalHereToastSeen`
-  flags (one-time-hint trackers) are registered but render no row. Each card frame gated via `anyVisible(shouldShow,
-  ...)` (the card-group pattern).
+  flags (one-time-hint trackers) are registered but render no row. Each card frame gated via
+  `anyVisible(shouldShow, ...)` (the card-group pattern).
 - **`AppChoiceSelect.svelte`** + **`app-choice-options.ts`**: the shell behind both rows that pick an app off this Mac.
   **`TextEditorSelect.svelte`** + **`text-editor-options.ts`**: the "Edit files in" control.
   **`TerminalAppSelect.svelte`** + **`terminal-app-options.ts`**: the "Open terminal here uses" control. See § "Rows
@@ -544,10 +544,10 @@ Two rows choose an app off this Mac: "Edit files in" (`TextEditorSelect.svelte`)
 `*-options.ts` builders (the rows and the selected value), its strings, and optionally a `resolvePick` step.
 `app-choice-options.ts` holds the row shape and the `CHOOSE_APP_VALUE` sentinel both rows share.
 
-**Why it isn't `SettingSelect`.** Those options are registry constants. These are whatever is on this Mac at this moment,
-so the shell asks the backend on mount and again after every write of its setting. Each query is a few LaunchServices
-lookups plus bundle-icon reads, cheap enough that caching would only buy a stale list the day someone installs a new
-app. Hence ❌ no `/Applications` scan and ❌ no refresh button, both settled in the Rust modules.
+**Why it isn't `SettingSelect`.** Those options are registry constants. These are whatever is on this Mac at this
+moment, so the shell asks the backend on mount and again after every write of its setting. Each query is a few
+LaunchServices lookups plus bundle-icon reads, cheap enough that caching would only buy a stale list the day someone
+installs a new app. Hence ❌ no `/Applications` scan and ❌ no refresh button, both settled in the Rust modules.
 
 **Ready means an answer landed that didn't time out, ❌ never "the app list is non-empty".** The text editor list leaves
 out the system default, so a Mac whose only editor is TextEdit answers a complete, empty `apps`, and that row must still
@@ -596,8 +596,8 @@ Text editor); `text-editor-options.ts` only presents that answer.
   one-time hint, whose rules live in `apps/desktop/src/lib/text-editor/DETAILS.md` § The hint. This row only reads and
   writes the choice.
 - **Decided edge**: TextEdit picked through "Choose an app…" canonicalizes to `com.apple.TextEdit`, which isn't
-  `system`, so the row shows "System default (TextEdit)" AND a second "TextEdit" row. The pin survives a later change
-  of the system default.
+  `system`, so the row shows "System default (TextEdit)" AND a second "TextEdit" row. The pin survives a later change of
+  the system default.
 
 ### "Open terminal here uses": a row whose options are read off the machine
 

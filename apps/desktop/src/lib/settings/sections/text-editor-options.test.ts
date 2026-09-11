@@ -56,12 +56,7 @@ describe('textEditorItems', () => {
       ...LABELS,
       locale: 'de',
     })
-    expect(items.map((item) => item.label)).toEqual([
-      'System default (TextEdit)',
-      'Ölmaker',
-      'Zed',
-      'Choose an app…',
-    ])
+    expect(items.map((item) => item.label)).toEqual(['System default (TextEdit)', 'Ölmaker', 'Zed', 'Choose an app…'])
   })
 
   it('offers each editor under the id the backend will be handed back, with its icon', () => {

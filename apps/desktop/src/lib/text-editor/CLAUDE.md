@@ -23,8 +23,8 @@ Which app F4 opens a file in, and everything said around that launch. Backend co
   loader reads once, at startup), and Rust answers with a typed report. ❌ No sentence crosses IPC.
 - **The hint flag is spent only when the hint shows**, or when a non-`system` choice proves the setting was found. ❗
   With no other editor installed, say nothing and leave it UNSPENT. `editor-hint.ts` owns the table.
-- **Ask about other editors only while the hint is due** (flag unspent AND choice `system`); every other press is a plain
-  launch.
+- **Ask about other editors only while the hint is due** (flag unspent AND choice `system`); every other press is a
+  plain launch.
 - **A removed app still opens the file**, in the system default: `chosen_app_missing_opened_default_instead` resets the
   setting to `system` and raises a persistent toast. ❗ Word it from the report's `openedInName`, the app that DID get
   the file: once a bundle is gone, nothing is left to read its name from.
