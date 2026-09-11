@@ -315,7 +315,7 @@ const SMB_PATH_REFUSAL: NavigateRefusal = {
 
 /**
  * MTP capability check. Returns a refusal or `null`. Note the em dash in the
- * first string — it's contract (L12), byte-pinned by `navigate.test.ts`.
+ * first string — it's contract (L12), byte-pinned by `navigate.refusals.test.ts`.
  */
 function validateMtpNavigation(path: string, volumeId: string, volumeName: string | undefined): NavigateRefusal | null {
   if (path.startsWith('mtp://')) {

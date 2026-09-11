@@ -170,19 +170,25 @@ simultaneous error panes don't both toggle. Its `Main window/Error screen` scope
 ### Tests
 
 Colocated with the code they pin (`codegraph_files` lists them; every alt-view component carries an `*.a11y.test.ts` axe
-sweep). Three splits the layout doesn't explain for itself:
+sweep). Four splits the layout doesn't explain for itself:
 
 - **The drag-drop controller suite is split in two on purpose**: `drag-drop-controller.svelte.test.ts` (handler
   contracts, including the self-drag-identity scenarios) and `drag-drop-controller.listeners.svelte.test.ts` (Tauri
   listener registration + the enter→over→drop cycle), sharing volume constants and builders from
   `drag-drop-controller.test-fixtures.ts`. The `vi.mock` blocks stay DUPLICATED per file: vitest hoists them per module,
   so they can't move into the shared fixtures.
+- **The `navigate()` headless seam suite is split by WHAT it's pinning**, sharing the fake per-pane harness from
+  `navigate.test-fixtures.ts`: `navigate.commit.test.ts` (WHEN a commit lands — the P4 optimistic-vs-not ordering,
+  the background-correction token/generation bookkeeping, `commitPathFromListing`'s stale-listing drop policy, and
+  the same-token self-re-entry rule), `navigate.arms.test.ts` (WHICH arm handles an intent — the pinned-tab fork,
+  `{ snapshot }`, the `'fallback'` edge-flow source, `{ history }`, `{ location }`, and `{ volumeId, path }`
+  volume-(re)select), and `navigate.refusals.test.ts` (every refusal kind's `message`, byte-for-byte, L12).
 - **`volume-tint.svelte.fallback.test.ts` sits beside `volume-tint.svelte.test.ts`** because the two force opposite
   `hasColorMix` branches: the main file pins it `true` to assert the `color-mix(...)` string, the fallback file forces
   the JS sRGB-mix branch and asserts hex (stubbing `getComputedStyle`, since jsdom doesn't resolve CSS custom
   properties).
-- **`integration-test-utils.ts` and `drag-drop-controller.test-fixtures.ts` are scaffolding, not suites** — they carry
-  no tests of their own.
+- **`integration-test-utils.ts`, `drag-drop-controller.test-fixtures.ts`, and `navigate.test-fixtures.ts` are
+  scaffolding, not suites** — they carry no tests of their own.
 
 The drag-drop controller owns native drag auto-scroll lifecycle because it sees every terminal drag path (`drop`,
 `leave`, `cleanup`). `FilePane.autoScrollDuringDrag` forwards one animation-frame scroll request to the active list; the
@@ -499,7 +505,8 @@ capability record is the "differently complicated" failure mode to avoid:
 - **Kind-scoped toast wording (reads the record, then picks words).** `command-dispatch.ts` +
   `file-operation-commands.ts` (`caps.kind === 'search-results'` decides the WORDING after the capability decides the
   block).
-- **Tests + debug.** `navigate.test.ts` and the other `*.test.*` fixtures, `routes/debug/DebugHistoryPanel.svelte`.
+- **Tests + debug.** `navigate.commit.test.ts` / `navigate.arms.test.ts` / `navigate.refusals.test.ts` and the other
+  `*.test.*` fixtures, `routes/debug/DebugHistoryPanel.svelte`.
 
 **Command-body factories read through `PaneAccess`.** The MCP/palette command bodies live in factories
 (`clipboard-operations`, `file-operation-commands`, `pane-commands`) that take a `PaneAccess` (live-reference read API)
@@ -509,7 +516,7 @@ unchanged. Read-only / delegating bodies move; functions that WRITE component na
 `mirror*`/`restoreFocus` helpers) stay in the component — un-trapping that state is the explorer-store phase, not this
 factoring. The `navigate(intent)` transaction itself lives in `navigate.ts` (the component builds its `NavigateDeps` and
 wraps it as the `navigate` export). The MTP capability check lives in `navigate.ts` (`validateMtpNavigation`, the
-synchronous refusal gate for the in-place path arm); its refusal strings are byte-pinned by `navigate.test.ts`.
+synchronous refusal gate for the in-place path arm); its refusal strings are byte-pinned by `navigate.refusals.test.ts`.
 `moveCursorByName*` moved into `pane-commands` even though it's called from component-resident writers (`moveCursor`,
 `restoreCursorByFilename`); those callers reach back via `paneCommands.*`.
 
@@ -921,7 +928,7 @@ entry — they're not pane-destination changes).
   `whenLoadSettles`. History / edge flows: match the primitive they drive.
 - **`NavigateResult` (L12).** `{ status: 'started', settled }` or `{ status: 'refused', reason }`. The refusal `message`
   strings (on-network, smb-path-unsupported, MTP-mismatch, on-MTP-volume, pane-unavailable) are EXACT contract — the MCP
-  adapter forwards them verbatim as the `mcp-response` error; `navigate.test.ts` + the handler suite pin them
+  adapter forwards them verbatim as the `mcp-response` error; `navigate.refusals.test.ts` + the handler suite pin them
   byte-for-byte.
 - **An `smb://` path below the host-list sentinel is refused (`smb-path-unsupported`).** `resolve_location` maps EVERY
   `smb://` path onto the virtual `network` volume, whose state is a host plus a share list rather than a path, so
