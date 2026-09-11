@@ -20,7 +20,15 @@ function makePaneRefStub(overrides: Partial<Record<string, ReturnType<typeof vi.
     setCursorIndex,
     syncStateToMcpNow,
   } as unknown as FilePaneAPI
-  return { ref, whenLoadSettles, isInNetworkView, getNetworkItemCount, getEffectiveTotalCount, setCursorIndex, syncStateToMcpNow }
+  return {
+    ref,
+    whenLoadSettles,
+    isInNetworkView,
+    getNetworkItemCount,
+    getEffectiveTotalCount,
+    setCursorIndex,
+    syncStateToMcpNow,
+  }
 }
 
 function makeDeps(paneRef: FilePaneAPI | undefined) {

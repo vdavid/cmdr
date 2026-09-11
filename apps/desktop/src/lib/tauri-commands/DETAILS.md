@@ -72,8 +72,8 @@ commands, and notable non-obvious placements.
   `reconnectVolume` / `reconnectVolumeWithCredentials` / `getVolumeSignInState`, all three backend-neutral (two despite
   the name).
 - **`webdav.ts`**: WebDAV servers minus connecting: cancel, disconnect, the saved-server list, the password store, and
-  the unattended-reconnect query. No host-key step. The contract: `crates/cmdr-webdav/DETAILS.md` § "Connecting from
-  the frontend". Reconnect and sign-in use the same three backend-neutral `networking.ts` commands SFTP does.
+  the unattended-reconnect query. No host-key step. The contract: `crates/cmdr-webdav/DETAILS.md` § "Connecting from the
+  frontend". Reconnect and sign-in use the same three backend-neutral `networking.ts` commands SFTP does.
 - **`licensing.ts`**: license status, activation, expiry, server validation.
 - **`settings.ts`**: port checking, file watcher debounce, indexing toggle, MCP server control, AI subsystem commands.
 - **`tab.ts`**: tab context menu: `showTabContextMenu`, `onTabContextAction`.

@@ -201,10 +201,10 @@ the typed password. `UnattendedReconnect` is `SwitchOff`, `NoStoredSecret`, or `
 
 ## Connecting from the frontend
 
-The sign-in UI's command surface is protocol-agnostic: `connectServer` (a brand-new target) and `connectSavedPlace`
-(one already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented end to end in
-`apps/desktop/src/lib/servers/DETAILS.md`. Both funnel into `network::webdav_volume_wiring::connect_and_register`,
-which answers with outcomes (`ServerConnectOutcome`, widened across protocols)
+The sign-in UI's command surface is protocol-agnostic: `connectServer` (a brand-new target) and `connectSavedPlace` (one
+already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented end to end in
+`apps/desktop/src/lib/servers/DETAILS.md`. Both funnel into `network::webdav_volume_wiring::connect_and_register`, which
+answers with outcomes (`ServerConnectOutcome`, widened across protocols)
 `connected | authentication_rejected | needs_credentials | auth_method_unsupported | certificate_untrusted | not_a_webdav_server | timed_out | unreachable | cancelled`
 (`AuthMethodUnsupported` is its own variant, ❌ never folded into `AuthenticationRejected`: a Digest-only server never
 saw the password). The rest of the app's commands: `cancelServerConnect`, `disconnectWebdavVolume`,

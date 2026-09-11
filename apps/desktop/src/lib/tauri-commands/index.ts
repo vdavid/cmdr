@@ -921,9 +921,4 @@ export {
   forgetKnownWebdavServer,
   getWebdavUnattendedReconnect,
 } from './webdav'
-export type {
-  KnownWebdavServer,
-  SavedWebdavServer,
-  WebdavTarget,
-  WebdavUnattendedReconnect,
-} from './webdav'
+export type { KnownWebdavServer, SavedWebdavServer, WebdavTarget, WebdavUnattendedReconnect } from './webdav'

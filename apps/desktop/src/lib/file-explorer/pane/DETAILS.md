@@ -178,9 +178,9 @@ sweep). Four splits the layout doesn't explain for itself:
   `drag-drop-controller.test-fixtures.ts`. The `vi.mock` blocks stay DUPLICATED per file: vitest hoists them per module,
   so they can't move into the shared fixtures.
 - **The `navigate()` headless seam suite is split by WHAT it's pinning**, sharing the fake per-pane harness from
-  `navigate.test-fixtures.ts`: `navigate.commit.test.ts` (WHEN a commit lands — the P4 optimistic-vs-not ordering,
-  the background-correction token/generation bookkeeping, `commitPathFromListing`'s stale-listing drop policy, and
-  the same-token self-re-entry rule), `navigate.arms.test.ts` (WHICH arm handles an intent — the pinned-tab fork,
+  `navigate.test-fixtures.ts`: `navigate.commit.test.ts` (WHEN a commit lands — the P4 optimistic-vs-not ordering, the
+  background-correction token/generation bookkeeping, `commitPathFromListing`'s stale-listing drop policy, and the
+  same-token self-re-entry rule), `navigate.arms.test.ts` (WHICH arm handles an intent — the pinned-tab fork,
   `{ snapshot }`, the `'fallback'` edge-flow source, `{ history }`, `{ location }`, and `{ volumeId, path }`
   volume-(re)select), and `navigate.refusals.test.ts` (every refusal kind's `message`, byte-for-byte, L12).
 - **`volume-tint.svelte.fallback.test.ts` sits beside `volume-tint.svelte.test.ts`** because the two force opposite

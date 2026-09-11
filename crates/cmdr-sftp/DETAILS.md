@@ -868,8 +868,8 @@ Beyond the four required methods, `volume_impl.rs` states these deliberately:
 
 ## Connecting from the frontend
 
-The sign-in UI's command surface is protocol-agnostic: `connectServer` (a brand-new target) and `connectSavedPlace`
-(one already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented end to end in
+The sign-in UI's command surface is protocol-agnostic: `connectServer` (a brand-new target) and `connectSavedPlace` (one
+already saved) in `apps/desktop/src-tauri/src/commands/servers.rs`, documented end to end in
 `apps/desktop/src/lib/servers/DETAILS.md`. Both funnel into `network::sftp_volume_wiring::connect_and_register`, which
 is what the rest of this section describes: the round-trip shape, the host-key two-phase approval, and the one secret
 entry are facts about THIS crate's dial, true regardless of which command surface calls it.
@@ -944,8 +944,8 @@ sign-in dialog owes the user a way out. Four lines:
 3. The cancel button calls `cancelServerConnect(attemptId)`.
 4. The connect promise settles with `{ outcome: 'cancelled' }`. Close the dialog; there is nothing to say.
 
-❗ **The id is the CALLER's, and it has to exist before the call.** The connect command doesn't answer until the
-connect is over, so an id the backend handed back would arrive at exactly the moment a cancel stopped being useful.
+❗ **The id is the CALLER's, and it has to exist before the call.** The connect command doesn't answer until the connect
+is over, so an id the backend handed back would arrive at exactly the moment a cancel stopped being useful.
 
 `cancelServerConnect` answering `false` means nobody was connecting under that id — a click landing just after the
 connect finished. That is not an error and there is nothing to show for it: whatever the connect call settled with is
@@ -992,8 +992,8 @@ switch, and the two are read together by `getSftpUnattendedReconnect` (§ "The t
 
 ### The two-phase approval, in order
 
-1. The connect command answers `needs_host_key_approval` and **the dial is already gone**. ❗ No session is held
-   across the prompt, so a user who walks away costs nothing and there is no handle to expire.
+1. The connect command answers `needs_host_key_approval` and **the dial is already gone**. ❗ No session is held across
+   the prompt, so a user who walks away costs nothing and there is no handle to expire.
 2. Show the fingerprint. ❗ `kind: 'unknown'` is first contact and may be one click; `kind: 'changed'` is the shape a
    man-in-the-middle takes and ❌ must never share that path — different copy, different weight, and the honest way out
    is checking the key against the server by another route.
@@ -1015,12 +1015,12 @@ an authentication attempt against a server that locks accounts.
 ❗ **`getVolumeSignInState(volumeId)` is the answer, asked when the banner renders**, and there is deliberately no
 second source: the connect outcome (`ServerConnectOutcome`) doesn't carry a rung at all — `connect_and_register`'s own
 rung is dropped once it's widened into the outcome, because it's a fact about THIS dial, not something worth deriving a
-later sign-in from. The rung is decided per DIAL, so a mid-life reconnect can land somewhere else than the connect did
-— adding an ssh-agent identity lifts a `password` volume to `agent`, removing one drops it back — while
+later sign-in from. The rung is decided per DIAL, so a mid-life reconnect can land somewhere else than the connect did —
+adding an ssh-agent identity lifts a `password` volume to `agent`, removing one drops it back — while
 `volume-connection-changed` is payload-free by design (§ "Mid-life") and carries no rung either. An answer captured at
-connect would therefore go wrong in both directions: a stale `nothing` leaves a volume that now wants a password with
-no way in at all, and a stale `key_passphrase` asks for a secret the session no longer uses. Reading it live is what
-closes both.
+connect would therefore go wrong in both directions: a stale `nothing` leaves a volume that now wants a password with no
+way in at all, and a stale `key_passphrase` asks for a secret the session no longer uses. Reading it live is what closes
+both.
 
 The backend owns the mapping rather than the frontend deriving it from `rung`: getting it wrong ships a button that
 answers `NotSupported` every time it's pressed, or no button where one was the only way back in.

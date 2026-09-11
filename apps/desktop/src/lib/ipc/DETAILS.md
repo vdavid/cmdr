@@ -103,11 +103,10 @@ and the diff proves it.
   rather than a state a backend rests in, and `needs_host_key_approval` is SFTP's alone. ❗ That fourth value is
   payload-free on purpose — the enum is `Copy` on both sides of `wire_state` — so the host key it is ABOUT reaches the
   frontend through the connect command's (`connectServer` / `connectSavedPlace`) typed outcome instead
-(`crates/cmdr-sftp/DETAILS.md` § "Connecting from the
-  frontend"). `volume-store.svelte.ts`'s `toConnectionState` widens all four into the standing `ConnectionState` the
-  picker renders (`needs_credentials` → `needs_sign_in`), so a server whose backend stopped retrying reaches the dot and
-  the pane between `volumes-changed` broadcasts. `os_mount` and `saved` run the other way: only the backend's volume
-  listing decides those, so neither ever arrives on this event.
+  (`crates/cmdr-sftp/DETAILS.md` § "Connecting from the frontend"). `volume-store.svelte.ts`'s `toConnectionState`
+  widens all four into the standing `ConnectionState` the picker renders (`needs_credentials` → `needs_sign_in`), so a
+  server whose backend stopped retrying reaches the dot and the pane between `volumes-changed` broadcasts. `os_mount`
+  and `saved` run the other way: only the backend's volume listing decides those, so neither ever arrives on this event.
 - **A struct event that's ALSO emitted bare delivers `null` at runtime, which the generated `{ field }` type doesn't
   model.** `open-settings` carries `{ section }` from the MCP path, but the E2E `openSettingsWindowViaProd` helper emits
   it with no payload to open the default section. The generated `OpenSettings = { section: string }` says the payload is
