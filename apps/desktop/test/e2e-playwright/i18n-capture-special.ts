@@ -16,6 +16,7 @@ import { join } from 'node:path'
 import { expect } from './fixtures.js'
 import {
   ensureAppReady,
+  dismissAllToasts,
   dismissOverlay,
   openViewerWindow,
   closeScopedWindow,
@@ -254,6 +255,10 @@ export async function captureQueueWindow(
     console.warn(`[i18n-capture] queue window setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
     await resetOperationStateOrReport(main, failed, 'queue-window')
+    // Each doomed copy also raised a persistent failure toast in the MAIN window.
+    // Dismissing the retained failures above doesn't close those toasts, and on a
+    // shared E2E shard one left up fails whichever test runs next.
+    await dismissAllToasts(main).catch(() => {})
     if (queue) await closeScopedWindow(main, queue, 'queue').catch(() => {})
     removeQueueSources(fixtureRoot)
   }
@@ -334,6 +339,9 @@ export async function captureOperationChipSurfaces(
     console.warn(`[i18n-capture] operation chip setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
     await resetOperationStateOrReport(main, failed, 'operation-chip')
+    // The failure surface's toast is persistent, and dismissing the retained
+    // failure above doesn't close it (see `captureQueueWindow`).
+    await dismissAllToasts(main).catch(() => {})
     await captureCall(main, 'disable').catch(() => {})
     removeQueueSources(fixtureRoot)
   }

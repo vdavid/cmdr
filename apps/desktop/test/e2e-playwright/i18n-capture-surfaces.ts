@@ -20,6 +20,7 @@ import {
   ensureAppReady,
   dismissOverlay,
   acceptOnboardingTermsIfPresent,
+  closeOnboardingWizardIfOpen,
   skipParentEntry,
   moveCursorToFile,
   openSettingsWindowViaProd,
@@ -397,6 +398,37 @@ export async function captureMainOverlays(
   await mcpSelectVolume('left', LOCAL_VOLUME_NAME).catch(() => {})
 }
 
+/** The bare ids of every saved favorite, off `list_volumes` (favorites ride it as `fav-<id>` locations). */
+async function favoriteIds(main: TauriPage): Promise<string[]> {
+  return main.evaluate<string[]>(`(async function(){
+    var res = await window.__TAURI_INTERNALS__.invoke('list_volumes');
+    return res.data
+      .filter(function(v){ return v.category === 'favorite'; })
+      .map(function(v){ return v.id.replace(/^fav-/, ''); });
+  })()`)
+}
+
+/**
+ * Removes every favorite that isn't in `before`, so the favorite surface leaves
+ * the list as it found it. The capture's own data dir is thrown away after the
+ * run, but a stage-only run shares its app with every other spec on the shard,
+ * where a leftover favorite changes every later volume chooser and turns this
+ * surface's next attempt into an "already a favorite" no-op. Says so when it
+ * can't, rather than leaving that silently.
+ */
+async function removeFavoritesAddedSince(main: TauriPage, before: string[]): Promise<void> {
+  try {
+    const added = (await favoriteIds(main)).filter((id) => !before.includes(id))
+    for (const id of added) {
+      await main.evaluate(`window.__TAURI_INTERNALS__.invoke('remove_favorite', { id: ${JSON.stringify(id)} })`)
+    }
+  } catch (err) {
+    console.warn(
+      `[i18n-capture] toast-favorite left its favorite behind: ${err instanceof Error ? err.message : String(err)}`,
+    )
+  }
+}
+
 /**
  * Captures the SNAPSHOT-RESOLVED toast surfaces (command-handler confirmations
  * and the transfer-completion toast). Each follows the `captureToastSurface`
@@ -418,9 +450,11 @@ export async function captureFrontendToasts(
 
   // Favorite the focused pane's folder (`favorites.add` → success toast). The
   // fixture root isn't favorited yet, so this hits the success path.
+  const favoritesBefore = await favoriteIds(main)
   await captureToastSurface('toast-favorite', report, failed, main, async () => {
     await dispatchMenuCommand(main, 'favorites.add')
   })
+  await removeFavoritesAddedSince(main, favoritesBefore)
 
   // Reopen-closed-tab with empty history (`tab.reopen` → "no recently closed
   // tabs" warning). At app start nothing has been closed, so the empty branch
@@ -618,25 +652,11 @@ export async function captureOnboardingWizard(
     }
     console.warn(`[i18n-capture] onboarding setup FAILED: ${err instanceof Error ? err.message : String(err)}`)
   } finally {
-    // If the walk didn't finish (a capture threw mid-flow), make sure the wizard
-    // is closed so it doesn't leak into later surfaces. Best-effort: advance to
-    // the end. `opened` guards the no-op case.
-    if (opened) {
-      for (let i = 0; i < ONBOARDING_STEP_BOUND; i++) {
-        if (!(await main.isVisible(WIZARD).catch(() => false))) break
-        await clickForward().catch(() => {})
-        await expect
-          .poll(
-            async () =>
-              (await main.count(WIZARD).catch(() => 1)) === 0 || !(await main.isVisible(WIZARD).catch(() => false)),
-            {
-              timeout: 1500,
-            },
-          )
-          .toBeTruthy()
-          .catch(() => {})
-      }
-    }
+    // If the walk didn't finish (a capture threw mid-flow), close the wizard so it
+    // doesn't leak into later surfaces. The shared closer ticks the Beta step's
+    // terms gate on the way; a bare forward-click loop stalls there and leaves the
+    // wizard up, which on a shared E2E shard refuses every later test's operations.
+    if (opened) await closeOnboardingWizardIfOpen(main).catch(() => {})
   }
 }
 
@@ -722,11 +742,20 @@ export async function captureIndexingStatus(
   })
   await captureCall(main, 'disable').catch(() => {})
   // Clear the faked scan state so the indicator unmounts and nothing downstream
-  // inherits a stuck hourglass.
+  // inherits a stuck hourglass. The `live` phase is the terminal event that expires
+  // every live fact about the volume (`indexing-status-corner.spec.ts` ends its
+  // synthetic runs the same way); without it the fake drive can outlive this
+  // surface and sit in a later spec's corner tooltip on a shared E2E shard.
   await main
     .evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
       event: 'index-scan-complete',
       payload: { volumeId: 'i18n-capture', totalEntries: 100000, totalDirs: 3500, durationMs: 30000 }
+    })`)
+    .catch(() => {})
+  await main
+    .evaluate(`window.__TAURI_INTERNALS__.invoke('plugin:event|emit', {
+      event: 'index-phase-changed',
+      payload: { volumeId: 'i18n-capture', phase: 'live' }
     })`)
     .catch(() => {})
 }
