@@ -89,7 +89,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   sign-in sheet, and the pane banner speak about servers rather than about SFTP, WebDAV, and SMB, so this is the
   surface they call: `list_saved_servers` (the union of the two saved-server stores plus SMB hosts from
   `known_shares.rs` and `manual_servers.rs`), `connect_saved_place`, `connect_server`, `cancel_server_connect`,
-  `disconnect_place`, `set_place_pinned`, `forget_server`, `forget_server_secret`, `update_saved_server`.
+  `disconnect_place`, `set_place_pinned`, `forget_server`, `forget_server_secret`, `update_saved_server`. The wire
+  vocabulary (`ServerTarget`, `ServerConnectOutcome`, `SavedPlaceRefusal`, `SavedServer`, `SavedPlace`,
+  `ServerProtocol`, `ServerNameSource`) lives in the sibling `servers/wire.rs`, re-exported at the same path so nothing
+  outside this file has to know it moved.
   - `list_saved_servers` names an SFTP or WebDAV account by its label and publishes `name_source: fallback` when
     nobody named it, so the edit sheet can open an empty name field with the label as its placeholder, and nothing on
     the frontend derives one (`network/DETAILS.md` § "An unnamed server's label, and names that only repeat the

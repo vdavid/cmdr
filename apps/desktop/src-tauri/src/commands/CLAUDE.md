@@ -6,9 +6,9 @@ Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` function
 ## Module map
 
 One file per domain plus `mod.rs` (re-exports + platform gates), `util.rs` (timeouts and budgets), and the directories
-`agent/`, `file_system/`, and `media_index/`. `servers.rs` is the protocol-agnostic facade over `sftp.rs`, `webdav.rs`,
-and `network.rs`. AI and space-poller commands register themselves; the index subsystems are the reverse, since they
-can't carry `tauri::`.
+`agent/`, `file_system/`, `media_index/`, and `servers/` (`servers.rs`'s own wire-vocabulary sibling, `wire.rs`).
+`servers.rs` is the protocol-agnostic facade over `sftp.rs`, `webdav.rs`, and `network.rs`. AI and space-poller
+commands register themselves; the index subsystems are the reverse, since they can't carry `tauri::`.
 
 ## Must-knows
 

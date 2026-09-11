@@ -12168,7 +12168,11 @@ export type ServerProtocol =
  *  share mount rather than a session.
  */
 export type ServerTarget =
-  // An SFTP account, the same fields `connect_sftp_volume` takes.
+  /**
+   *  An SFTP account: display name, host, port, account, remote root, an
+   *  optional start folder, an optional key file, and the agent/auto-reconnect
+   *  switches.
+   */
   | {
       protocol: 'sftp'
       // What to call it in the UI.
@@ -12193,7 +12197,10 @@ export type ServerTarget =
       // Whether Cmdr may redial unattended when the session drops.
       autoReconnect: boolean
     }
-  // A WebDAV account, the same fields `connect_webdav_volume` takes.
+  /**
+   *  A WebDAV account: display name, base URL, account, remote root, an
+   *  optional start folder, and the auto-reconnect switch.
+   */
   | {
       protocol: 'webdav'
       // What to call it in the UI.
