@@ -30,7 +30,7 @@ pub(super) fn make_test_volume_with(root: &str, host: VolumeHost) -> WebdavVolum
         ),
         inner: Arc::new_cyclic(|me| WebdavVolumeInner {
             volume_id: "webdav-test".to_string(),
-            params,
+            params: std::sync::RwLock::new(params),
             client: tokio::sync::RwLock::new(None),
             state: AtomicU8::new(ConnectionState::Connected as u8),
             retirement: Retirement::new(),

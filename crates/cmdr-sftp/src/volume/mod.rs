@@ -10,9 +10,11 @@
 //! through the [`VolumeHost`] seams handed to [`connect_sftp_volume`].
 //! `CLAUDE.md` has the must-knows, `DETAILS.md` the decisions.
 
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Weak};
 
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
 use cmdr_fs::volume::remote_paths::RemoteRoot;
@@ -78,8 +80,11 @@ struct SftpVolumeInner {
     /// From `sftp_volume_id(host, port, username)`, the key every piece of
     /// durable per-volume state is filed under.
     volume_id: String,
-    /// How to reach the server, and how to reach it again.
-    params: SftpConnectionParams,
+    /// How to reach the server, and how to reach it again. Behind a lock
+    /// because an edit to a connected place moves the root, key file, and agent
+    /// switch the next redial uses (`SftpVolume::set_redial_params`); the
+    /// identity never moves. Read it through `params()`, a snapshot.
+    params: std::sync::RwLock<SftpConnectionParams>,
     /// Which rung built the LIVE session, which is what decides whether a
     /// dropped one may rebuild itself (`crate::auth::reconnect_policy`).
     ///
@@ -122,10 +127,56 @@ struct SftpVolumeInner {
     host: VolumeHost,
 }
 
+impl SftpVolumeInner {
+    /// How to reach the server again, as it stands now. A snapshot, so ❌ no
+    /// guard is ever held across a dial.
+    pub(super) fn params(&self) -> SftpConnectionParams {
+        self.params.read_ignore_poison().clone()
+    }
+}
+
 impl SftpVolume {
     /// The volume id every listing-cache lookup and connection event uses.
     pub fn volume_id(&self) -> &str {
         &self.inner.volume_id
+    }
+
+    /// Another instance of this volume, named `name` and rooted at the
+    /// server-side `remote_root`, riding THIS instance's connection: what saving
+    /// an edit to a connected place installs, with no redial.
+    ///
+    /// ❗ Shares everything connection-scoped (the session, the reconnect loop,
+    /// the switch, and the `Retirement`), so it goes into the registry through a
+    /// replace that retires nobody, ❌ never one that calls `on_superseded` on
+    /// this instance. Pure: nothing is committed until the caller installs it,
+    /// so it can be built to CHECK a root before anything is saved.
+    ///
+    /// ❗ Not `Volume::rerooted`. That is the registry's mount-promotion hook,
+    /// called on evidence with an app-side mount root, and implementing it would
+    /// let the registry move a live place onto a fallback root nobody saved. The
+    /// label moves here too, which a promotion never does.
+    pub fn sharing_connection(&self, name: &str, remote_root: &Path) -> SftpVolume {
+        let prefix = {
+            let params = self.inner.params.read_ignore_poison();
+            cmdr_fs::volume::sftp_app_root(&params.host, params.port, &params.username)
+        };
+        SftpVolume {
+            name: name.to_string(),
+            root: RemoteRoot::new(prefix, remote_root),
+            inner: Arc::clone(&self.inner),
+        }
+    }
+
+    /// Moves what the NEXT dial on this connection uses, with no redial now: an
+    /// edited root, key file, or agent switch reaches the unattended reconnect.
+    ///
+    /// The identity (`host`, `port`, `username`) never moves; another account is
+    /// another volume.
+    pub fn set_redial_params(&self, remote_root: &Path, key_file: Option<PathBuf>, use_agent: bool) {
+        let mut params = self.inner.params.write_ignore_poison();
+        params.remote_root = remote_root.to_path_buf();
+        params.key_file = key_file;
+        params.use_agent = use_agent;
     }
 
     /// Which credential built the live session.
@@ -253,7 +304,7 @@ pub async fn connect_sftp_volume(
                 root,
                 inner: Arc::new_cyclic(|me| SftpVolumeInner {
                     volume_id: volume_id.to_string(),
-                    params,
+                    params: std::sync::RwLock::new(params),
                     rung: std::sync::Mutex::new(rung),
                     session: tokio::sync::RwLock::new(Some(Arc::new(connection))),
                     state: AtomicU8::new(ConnectionState::Connected as u8),
@@ -336,6 +387,8 @@ mod host_seam_test;
 mod integration_test;
 #[cfg(test)]
 mod scan_test;
+#[cfg(test)]
+mod sharing_test;
 #[cfg(test)]
 mod test_support;
 #[cfg(test)]

@@ -189,11 +189,17 @@ var surfaceGuardedCrates = []struct {
 		// hold the man-in-the-middle decision, which nothing outside this crate has
 		// any business reaching into.
 		//
-		// 25 items, up from 23 at the extraction: the two per-server switches added
-		// `auth::UnattendedReconnect`, `SftpVolume::set_auto_reconnect`, and
-		// `SftpVolume::unattended_reconnect`, and narrowing `transport`'s
+		// 27 items. The two per-server switches cost three
+		// (`auth::UnattendedReconnect`, `SftpVolume::set_auto_reconnect`,
+		// `SftpVolume::unattended_reconnect`), and narrowing `transport`'s
 		// `presented_host_key` to `pub(crate)` (it returned a `pub(crate)` type, so
-		// nothing outside could call it) gave one back.
+		// nothing outside could call it) gave one back. Saving an edit to a connected
+		// place costs two, `SftpVolume::sharing_connection` and
+		// `SftpVolume::set_redial_params`, and neither fits a disposition: the app
+		// wiring calls both (no gate, no delete), only this crate can build an
+		// instance over its private connection state (no facade), and they can't fold
+		// into one, because the instance is built BEFORE the edit is checked while the
+		// redial params may only move once it is accepted.
 		//
 		// Item-by-item, and what each module is for: `crates/cmdr-sftp/DETAILS.md`
 		// § "The public surface is capped".
@@ -201,7 +207,7 @@ var surfaceGuardedCrates = []struct {
 		Ceilings: surfaceCeilings{
 			RootPromises:   10,
 			PublicModules:  3,
-			SubsystemItems: 25,
+			SubsystemItems: 27,
 		},
 	},
 	{
@@ -210,13 +216,16 @@ var surfaceGuardedCrates = []struct {
 		// vocabulary, so the whole promise is the params, the typed connect
 		// error, the volume, its one unattended-reconnect answer, and the
 		// constructor; `volume` is the only public module, and `volume::testing`
-		// exists only behind the `testing` feature. Item-by-item:
+		// exists only behind the `testing` feature. Saving an edit to a connected
+		// place adds two, `WebdavVolume::sharing_connection` and
+		// `WebdavVolume::set_redial_root`, for the reasons `cmdr-sftp`'s entry gives
+		// for its twins. Item-by-item:
 		// `crates/cmdr-webdav/DETAILS.md` § "The public surface is capped".
 		Name: "cmdr-webdav",
 		Ceilings: surfaceCeilings{
 			RootPromises:   6,
 			PublicModules:  1,
-			SubsystemItems: 8,
+			SubsystemItems: 10,
 		},
 	},
 	{

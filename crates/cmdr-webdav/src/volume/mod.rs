@@ -11,9 +11,11 @@
 //! through the [`VolumeHost`] seams handed to [`connect_webdav_volume`].
 //! `CLAUDE.md` has the must-knows, `DETAILS.md` the decisions.
 
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Weak};
 
+use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::settings::BackendName;
 use cmdr_fs::volume::remote_paths::RemoteRoot;
@@ -81,8 +83,11 @@ pub struct WebdavVolume {
 struct WebdavVolumeInner {
     /// The key every piece of durable per-volume state is filed under.
     volume_id: String,
-    /// How to reach the server, and how to reach it again.
-    params: WebdavConnectionParams,
+    /// How to reach the server, and how to reach it again. Behind a lock
+    /// because an edit to a connected place moves the root the next re-probe
+    /// asks for (`WebdavVolume::set_redial_root`); the identity never moves.
+    /// Read it through `params()`, a snapshot.
+    params: std::sync::RwLock<WebdavConnectionParams>,
     /// The live client. `None` once a request found the server gone, at which
     /// point every operation fails fast rather than each one timing out.
     client: tokio::sync::RwLock<Option<Arc<WebdavClient>>>,
@@ -108,10 +113,47 @@ struct WebdavVolumeInner {
     host: VolumeHost,
 }
 
+impl WebdavVolumeInner {
+    /// How to reach the server again, as it stands now. A snapshot, so ❌ no
+    /// guard is ever held across a probe.
+    pub(super) fn params(&self) -> WebdavConnectionParams {
+        self.params.read_ignore_poison().clone()
+    }
+}
+
 impl WebdavVolume {
     /// The volume id every listing-cache lookup and connection event uses.
     pub fn volume_id(&self) -> &str {
         &self.inner.volume_id
+    }
+
+    /// Another instance of this volume, named `name` and rooted at the
+    /// collection `remote_root` under the base URL, riding THIS instance's
+    /// client: what saving an edit to a connected place installs, with no
+    /// re-probe.
+    ///
+    /// ❗ Shares everything connection-scoped (the client, the reconnect loop,
+    /// the switch, and the `Retirement`), so it goes into the registry through a
+    /// replace that retires nobody. Pure: nothing is committed until the caller
+    /// installs it. ❗ Not `Volume::rerooted`, for the reasons
+    /// `crates/cmdr-sftp`'s twin gives: `DETAILS.md` § "The connection model".
+    pub fn sharing_connection(&self, name: &str, remote_root: &Path) -> WebdavVolume {
+        let prefix = {
+            let params = self.inner.params.read_ignore_poison();
+            cmdr_fs::volume::webdav_app_root(params.host(), params.port(), &params.username)
+        };
+        WebdavVolume {
+            name: name.to_string(),
+            root: RemoteRoot::new(prefix, remote_root),
+            inner: Arc::clone(&self.inner),
+        }
+    }
+
+    /// Moves the root the NEXT re-probe asks for, with no re-probe now. ❗ A
+    /// reconnect probes the root, so a place whose old root was since deleted
+    /// would otherwise never come back.
+    pub fn set_redial_root(&self, remote_root: &Path) {
+        self.inner.params.write_ignore_poison().remote_root = remote_root.to_path_buf();
     }
 
     /// Moves the user's "reconnect automatically" switch on a mounted volume.
@@ -251,7 +293,7 @@ impl WebdavVolume {
             root,
             inner: Arc::new_cyclic(|me| WebdavVolumeInner {
                 volume_id: volume_id.to_string(),
-                params,
+                params: std::sync::RwLock::new(params),
                 client: tokio::sync::RwLock::new(Some(Arc::new(client))),
                 state: AtomicU8::new(ConnectionState::Connected as u8),
                 retirement: Retirement::new(),
@@ -279,5 +321,7 @@ mod integration_test;
 // `WebdavNextcloudTestAtom` with it (`scripts/check/checks/desktop-rust-webdav-nextcloud.go`).
 #[cfg(test)]
 mod nextcloud_test;
+#[cfg(test)]
+mod sharing_test;
 #[cfg(test)]
 mod test_support;

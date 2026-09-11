@@ -12,6 +12,14 @@ failed with a transport error (`reqwest::Error::is_connect` / `is_request`, mapp
 proves it with one `PROPFIND Depth: 0` on the root. The probe rides `tokio::select!` against the cancel token; a cancel
 leaves nothing behind. On success the backend records the PII-free analytics event `webdav_connected`.
 
+**An instance is a name and a root over a shared client.** `WebdavVolume` is `{ name, root, inner }`, the same split
+`crates/cmdr-sftp/DETAILS.md` § "The connection model" describes, and `WebdavVolume::sharing_connection(name,
+remote_root)` builds another instance over the same client with no re-probe. It is pure, it goes in through the
+registry's non-retiring replace, and it is deliberately not `Volume::rerooted`; that section has why.
+`set_redial_root` moves the root the next re-probe asks for, once an edit is accepted: ❗ a reconnect PROPFINDs the
+root, so a place whose old root was since deleted would otherwise never come back. `inner.params` sits behind a
+`std::sync::RwLock` for it, read through the `params()` snapshot.
+
 The probe's answers, in connect terms:
 
 - **A transport failure, `is_timeout`**: `TimedOut`.
@@ -245,6 +253,9 @@ and what the write cells do to a real account, is in `apps/desktop/test/webdav-s
 Root re-exports: 5 items (`WebdavConnectionParams`, `WebdavConnectError`, `WebdavVolume`, `UnattendedReconnect`,
 `connect_webdav_volume`) plus `pub mod volume`, which the check counts as a sixth root promise. Public modules: 1
 (`volume`), plus `volume::testing` under the `testing` feature. Pub items in `volume`: 4 (`WebdavVolume`,
-`UnattendedReconnect`, `ConnectionState`, `connect_webdav_volume`); the check's own `countSurface` measures 8, since it
-counts the methods on `WebdavVolume` too. `index-crate-isolation` is pinned at exactly 6 / 1 / 8 (measured 2026-09-01):
-no slack, so the first widening is a conversation rather than a drift.
+`UnattendedReconnect`, `ConnectionState`, `connect_webdav_volume`); the check's own `countSurface` measures 10, since it
+counts the methods on `WebdavVolume` too. Two of those are editing a connected place (§ "The connection model"):
+`sharing_connection` and `set_redial_root`, which fit none of the four dispositions for the reasons
+`crates/cmdr-sftp/DETAILS.md` § "The public surface is capped" gives for their twins. `index-crate-isolation` is pinned
+at exactly 6 / 1 / 10 (measured 2026-09-11, `pnpm check index-crate-isolation`): no slack, so the next widening is a
+conversation rather than a drift.

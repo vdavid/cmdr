@@ -53,7 +53,9 @@ pub fn make_test_volume_with(root: &str, rung: AuthRungUsed, host: VolumeHost) -
         ),
         inner: Arc::new_cyclic(|me| SftpVolumeInner {
             volume_id: cmdr_fs::volume::sftp_volume_id("127.0.0.1", CLOSED_PORT, "ada"),
-            params: SftpConnectionParams::new("127.0.0.1", CLOSED_PORT, "ada", root).without_agent(),
+            params: std::sync::RwLock::new(
+                SftpConnectionParams::new("127.0.0.1", CLOSED_PORT, "ada", root).without_agent(),
+            ),
             rung: std::sync::Mutex::new(rung),
             session: tokio::sync::RwLock::new(None),
             // A volume with no session behind it is one whose session went away,

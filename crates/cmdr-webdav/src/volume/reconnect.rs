@@ -98,7 +98,7 @@ impl WebdavVolumeInner {
         username: String,
         password: String,
     ) -> Result<(), VolumeError> {
-        if username != self.params.username {
+        if username != self.params().username {
             return Err(VolumeError::NotSupported);
         }
         self.refresh_remembered_secret(&username, &password).await;
@@ -140,7 +140,7 @@ impl WebdavVolumeInner {
                 None => return Err(Stalled::NeedsUser),
             },
         };
-        match build_and_probe(&self.params, &secret, &CancellationToken::new()).await {
+        match build_and_probe(&self.params(), &secret, &CancellationToken::new()).await {
             Ok(client) => {
                 if self.unmounted.load(Ordering::Relaxed) {
                     return Err(gone());
@@ -196,7 +196,8 @@ impl WebdavVolumeInner {
     /// The store's entry for this account. ❗ On a blocking task: the store may
     /// put a Keychain prompt in front of this.
     async fn stored_secret(&self) -> Option<StoredCredentials> {
-        secret_store::stored_secret(&self.host, &self.params.credential_service(), &self.params.username).await
+        let params = self.params();
+        secret_store::stored_secret(&self.host, &params.credential_service(), &params.username).await
     }
 
     /// Reports the stall and turns it into the trait's vocabulary.
@@ -222,7 +223,7 @@ impl WebdavVolumeInner {
     /// having said no.
     async fn refresh_remembered_secret(&self, username: &str, secret: &str) {
         let took =
-            secret_store::refresh_remembered_secret(&self.host, &self.params.credential_service(), username, secret)
+            secret_store::refresh_remembered_secret(&self.host, &self.params().credential_service(), username, secret)
                 .await;
         if !took {
             warn!(

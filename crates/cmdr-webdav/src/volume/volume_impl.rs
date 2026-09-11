@@ -50,11 +50,12 @@ impl Volume for WebdavVolume {
     /// The SERVER and account, not the directory: two volumes opened at
     /// different collections on one server share its concurrency budget.
     fn lane_key(&self) -> LaneKey {
+        let params = self.inner.params();
         LaneKey::new(format!(
             "webdav:{}:{}:{}",
-            self.inner.params.host(),
-            self.inner.params.port(),
-            self.inner.params.username
+            params.host(),
+            params.port(),
+            params.username
         ))
     }
 

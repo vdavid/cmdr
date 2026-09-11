@@ -147,7 +147,7 @@ impl SftpVolumeInner {
         username: String,
         password: String,
     ) -> Result<(), VolumeError> {
-        if username != self.params.username {
+        if username != self.params().username {
             return Err(VolumeError::NotSupported);
         }
         match self.auth_rung() {
@@ -207,14 +207,7 @@ impl SftpVolumeInner {
         // ❗ A token nobody else holds, so nothing can call this off: a reconnect
         // has no user watching it, and the backoff loop's own gates
         // (`check_unattended_policy`, `unmounted`) are what stop it.
-        match transport::dial(
-            self.params.clone(),
-            self.host.clone(),
-            offered,
-            CancellationToken::new(),
-        )
-        .await
-        {
+        match transport::dial(self.params(), self.host.clone(), offered, CancellationToken::new()).await {
             Ok(DialOutcome::Connected { connection, rung }) => {
                 // Between the dial starting and the session landing, the user may
                 // have ejected the volume. Installing here would leave a live SSH
@@ -317,7 +310,8 @@ impl SftpVolumeInner {
     /// modal dialog on the async runtime stalls every other volume. ❌ The secret
     /// itself is dropped on the spot; only its existence comes back.
     async fn stored_secret_exists(&self) -> bool {
-        secret_store::has_stored_secret(&self.host, &self.params.credential_service(), &self.params.username).await
+        let params = self.params();
+        secret_store::has_stored_secret(&self.host, &params.credential_service(), &params.username).await
     }
 
     /// Reports the stall and turns it into the trait's vocabulary.
@@ -375,7 +369,7 @@ impl SftpVolumeInner {
     /// lost.
     async fn refresh_remembered_secret(&self, username: &str, secret: &str) {
         let took =
-            secret_store::refresh_remembered_secret(&self.host, &self.params.credential_service(), username, secret)
+            secret_store::refresh_remembered_secret(&self.host, &self.params().credential_service(), username, secret)
                 .await;
         if !took {
             warn!(

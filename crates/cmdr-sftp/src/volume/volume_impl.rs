@@ -83,10 +83,8 @@ impl Volume for SftpVolume {
     /// different directories on one server would each run full concurrency
     /// against the same host and the same single SSH connection.
     fn lane_key(&self) -> LaneKey {
-        LaneKey::new(format!(
-            "sftp:{}:{}:{}",
-            self.inner.params.host, self.inner.params.port, self.inner.params.username
-        ))
+        let params = self.inner.params();
+        LaneKey::new(format!("sftp:{}:{}:{}", params.host, params.port, params.username))
     }
 
     /// Read per batch dispatch, ❗ never captured at construction: the trait

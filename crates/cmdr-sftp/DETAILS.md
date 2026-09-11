@@ -19,6 +19,23 @@ it.
 - `Sftp`'s methods take `&self` and `Sftp::fs()` hands back a fresh `Fs`, so N operations genuinely overlap on one
   channel.
 
+**An instance is a name and a root over a shared connection.** `SftpVolume` is `{ name, root, inner }`, where
+`SftpVolumeInner` holds everything connection-scoped: the session, the rung, the reconnect loop's lock and latch, the
+"reconnect automatically" switch, and the `Retirement`. `SftpVolume::sharing_connection(name, remote_root)` builds
+another instance over the same `inner`, which is how saving an edit to a connected place renames or re-roots it with no
+redial (`apps/desktop/src-tauri/src/network/DETAILS.md` § "Editing a connected place").
+
+- ❗ **Pure, and installed through a replace that retires nobody.** Building one commits nothing, so the wiring builds it
+  first to stat the new root over the live session and drops it on a refusal. `on_superseded` retires the SHARED flag,
+  so installing it the way a fresh connect does would stand the live place's reconnect loop down.
+- ❗ **Not `Volume::rerooted`.** That is the registry's mount-promotion hook, called on evidence with an app-side mount
+  root. Implemented here, it would let the registry move a live place onto a fallback root that `register`'s conflict
+  guard recorded (a second connect of the same account at another root records exactly that), which nobody saved. And
+  an edit moves the label, which a promotion never does.
+- **What the NEXT redial dials with moves separately**, through `set_redial_params(remote_root, key_file, use_agent)`,
+  and only once the edit is accepted. `inner.params` sits behind a `std::sync::RwLock` for it, and every reader takes
+  the `params()` snapshot, so no guard crosses an await. The identity (`host`, `port`, `username`) never moves.
+
 `transport.rs` raises `russh`'s channel window from its 2 MiB default to 16 MiB. That number is load-bearing rather than
 cosmetic: at 2 MiB, eight 255 KiB reads already fill the channel, so a request window of depth 8 and one of depth 32
 measure the same 14–18 MB/s at 50 ms RTT. Raising it is what lets depth pay at all (§ "The read window"). It does
@@ -1141,7 +1158,7 @@ The servers themselves: `apps/desktop/test/sftp-servers/README.md`.
 ## The public surface is capped
 
 `cmdr-sftp` is in `guardedIndexCrates`, so nothing here may name `cmdr`, `tauri`, or `tauri-specta`. It is also in
-`surfaceGuardedCrates`, capped at **10 root promises / 3 public modules / 25 items in them** (measured with the check's
+`surfaceGuardedCrates`, capped at **10 root promises / 3 public modules / 27 items in them** (measured with the check's
 own `countSurface`). That's the shape `cmdr-smb` and `cmdr-archive` carry: no slack, so the first widening is a decision
 rather than a silent drift. Raising it is allowed when the wider surface is genuinely the better design, said here and
 in the commit message; ❌ never to get the check green. Same contract as the index crates
@@ -1151,13 +1168,20 @@ For scale, the same three buckets: `cmdr-smb` is 15 / 4 / 18, `cmdr-archive` 35 
 
 Three public modules, and each is named by path from outside the crate: `auth` (for `AuthRungUsed` and
 `UnattendedReconnect`), `transport` (for `HostKeyPrompt` and its kind), and `volume` (for `approve_host_key`,
-`HostKeyApproval`, `SftpVolume`'s two switch methods, and the `testing` fixtures). `errors`, `extensions`,
+`HostKeyApproval`, `SftpVolume`'s two switch methods and its two edit methods, and the `testing` fixtures). `errors`, `extensions`,
 `known_hosts`, `params`, and `trust` are `pub(crate)`; the three types the app does need from them (`SftpConnectError`,
 `ServerExtensions`, `SftpConnectionParams`) arrive as root re-exports. ❗ Keep it that way: a `pub mod` promises
 everything `pub` inside it, and `trust` and `known_hosts` in particular hold the man-in-the-middle decision, which
 nothing outside this crate has any business reaching into.
 
-The item budget moved from 23 to 25 for the two per-server switches: `auth::UnattendedReconnect`,
-`SftpVolume::set_auto_reconnect`, and `SftpVolume::unattended_reconnect` cost three, and narrowing
-`transport::presented_host_key` to `pub(crate)` gave one back. That one was `pub` and unreachable anyway: it returns
-`trust::PresentedHostKey`, whose module is `pub(crate)`, and its only caller is `volume::approve_host_key`.
+What the 27 items pay for beyond the crate's first shape:
+
+- **The two per-server switches**: `auth::UnattendedReconnect`, `SftpVolume::set_auto_reconnect`, and
+  `SftpVolume::unattended_reconnect` cost three, and narrowing `transport::presented_host_key` to `pub(crate)` gave one
+  back. That one was `pub` and unreachable anyway: it returns `trust::PresentedHostKey`, whose module is `pub(crate)`,
+  and its only caller is `volume::approve_host_key`.
+- **Editing a connected place** (§ "The connection model"): `SftpVolume::sharing_connection` and
+  `SftpVolume::set_redial_params` cost two. Neither fits one of the four dispositions. The app wiring calls both, so
+  there's no gate and no delete. Only this crate can build an instance over its private connection state, so there's
+  no facade. And they can't fold into one: the instance is built BEFORE the edit is checked, and the redial params may
+  only move once it is accepted.
