@@ -457,9 +457,8 @@ So `missing_item` checks every side an item touches (both ends of a restore) aga
 components, and a path outside one is `SkipReason::Failed`: the op lands `partially_rolled_back`. A path inside the root
 keeps the idempotent no-op. It fails safe in the one other shape that reaches it, a local share whose active mount root
 moved to a second mount: a path under the old mount reads as outside, and the item is reported unreversed rather than
-counted. Pinned by `rollback/tests.rs::an_item_a_narrowed_root_no_longer_reaches_fails_instead_of_counting_as_gone` and
-its two siblings; `RootFenced` (`rollback/test_support.rs`) stands in for the refusing volume, since `InMemoryVolume`
-serves any path it holds.
+counted. Pinned by `rollback/root_reach_tests.rs`, where `RootFenced` (`rollback/test_support.rs`) stands in for the
+refusing volume, since `InMemoryVolume` serves any path it holds.
 
 ### Per-kind inverse table
 
