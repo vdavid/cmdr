@@ -73,6 +73,65 @@ async fn the_sign_in_door_answers_volume_gone_too() {
     assert!(matches!(answer, UpgradeResult::VolumeGone), "got {answer:?}");
 }
 
+/// What the sign-in sheet opens saying, for each refusal.
+///
+/// A guest turned away anywhere offered nothing, so it's asked for a sign-in. An
+/// account the SHARE turned away signed in fine: answering "wrong password" kept the
+/// sheet asking for a password that worked, round after round (ERR-SHUSC).
+#[test]
+fn each_refusal_tells_the_sheet_what_to_ask_for() {
+    use crate::network::smb_connect_failure::{RefusedAt, SignInIdentity};
+
+    let table = [
+        (
+            SignInIdentity::Guest,
+            RefusedAt::SignIn,
+            CredentialsNeededReason::NoCredential,
+        ),
+        (
+            SignInIdentity::Guest,
+            RefusedAt::Share,
+            CredentialsNeededReason::NoCredential,
+        ),
+        (
+            SignInIdentity::Account,
+            RefusedAt::SignIn,
+            CredentialsNeededReason::CredentialRejected,
+        ),
+        (
+            SignInIdentity::Account,
+            RefusedAt::Share,
+            CredentialsNeededReason::AccountNotPermitted,
+        ),
+    ];
+    for (identity, at, expected) in table {
+        assert_eq!(
+            CredentialsNeededReason::from(Refusal { identity, at }),
+            expected,
+            "{identity:?} refused at {at:?}"
+        );
+    }
+}
+
+/// The wire shape the frontend switches on: a camelCase tag, and no English
+/// sentence beside it.
+#[test]
+fn the_reason_crosses_ipc_as_a_tag() {
+    let answer = UpgradeResult::CredentialsNeeded {
+        server: "observermch".to_string(),
+        share: "data".to_string(),
+        port: 445,
+        display_name: "observermch".to_string(),
+        username_hint: Some("ada".to_string()),
+        reason: CredentialsNeededReason::AccountNotPermitted,
+    };
+    let json = serde_json::to_value(&answer).expect("an UpgradeResult serializes");
+
+    assert_eq!(json["status"], "credentialsNeeded");
+    assert_eq!(json["reason"], "accountNotPermitted");
+    assert_eq!(json.get("message"), None);
+}
+
 /// The saved-password door looks before it could raise the Keychain consent
 /// dialog, so a gone share never costs the user a system prompt.
 #[tokio::test]

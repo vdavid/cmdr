@@ -18,7 +18,7 @@
 
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::network::keychain;
-use crate::network::smb_connect_failure::{UpgradeError, UpgradeFailure};
+use crate::network::smb_connect_failure::{Refusal, RefusedAt, SignInIdentity, UpgradeError, UpgradeFailure};
 use crate::network::smb_upgrade::{
     friendly_server_name, get_keychain_password, resolve_ip_to_hostname_with_wait, try_smb_upgrade,
 };
@@ -51,10 +51,12 @@ pub enum UpgradeResult {
         port: u16,
         /// Friendly display name for the server (mDNS hostname or IP).
         display_name: String,
-        /// Username hint from stored credentials or the OS mount.
+        /// Username hint: the account a refused attempt went out as, else the OS
+        /// mount's.
         username_hint: Option<String>,
-        /// Optional message explaining why credentials are needed.
-        message: Option<String>,
+        /// Why a credential is needed, which decides what the sign-in sheet says
+        /// first.
+        reason: CredentialsNeededReason,
     },
     /// Couldn't reach the server (DNS, network, unreachable, too slow).
     NetworkError {
@@ -69,6 +71,36 @@ pub enum UpgradeResult {
     /// Something is mounted at the volume's root, but not an SMB share, so there's
     /// nothing to upgrade.
     NotSmbMount,
+}
+
+/// Why "Connect directly" needs a credential.
+///
+/// Word-free, like `UpgradeFailure`: the frontend maps it to a `ConnectRefusalKind`
+/// and the catalog words it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum CredentialsNeededReason {
+    /// Nothing was offered: no credential is saved for the share, or the attempt
+    /// went out as a guest and was turned away.
+    NoCredential,
+    /// The server didn't accept the account's password at sign-in.
+    CredentialRejected,
+    /// The account signed in, and the share doesn't let it open. The password is
+    /// the one thing known to be right, so the fix is a different account.
+    AccountNotPermitted,
+}
+
+impl From<Refusal> for CredentialsNeededReason {
+    /// A guest turned away at either step offered nothing, and an account is the
+    /// next step either way, so both ask for a sign-in. Only an account's refusal
+    /// says something about the credential it offered.
+    fn from(refusal: Refusal) -> Self {
+        match (refusal.identity, refusal.at) {
+            (SignInIdentity::Guest, _) => Self::NoCredential,
+            (SignInIdentity::Account, RefusedAt::SignIn) => Self::CredentialRejected,
+            (SignInIdentity::Account, RefusedAt::Share) => Self::AccountNotPermitted,
+        }
+    }
 }
 
 /// The OS mount a direct session would take over from.
@@ -106,7 +138,7 @@ fn credentials_needed(
     info: SmbMountInfo,
     display_name: String,
     username_hint: Option<String>,
-    message: Option<&str>,
+    reason: CredentialsNeededReason,
 ) -> UpgradeResult {
     UpgradeResult::CredentialsNeeded {
         server: info.server,
@@ -114,7 +146,7 @@ fn credentials_needed(
         port: info.port,
         display_name,
         username_hint,
-        message: message.map(str::to_string),
+        reason,
     }
 }
 
@@ -141,7 +173,7 @@ pub(crate) async fn connect_directly(volume_id: &str) -> UpgradeResult {
     let Some((username, password)) = get_keychain_password(&info.server, hostname.as_deref(), &info.share).await else {
         log::info!("No stored credentials found, requesting credentials from user");
         let hint = info.username.clone();
-        return credentials_needed(info, display_name, hint, None);
+        return credentials_needed(info, display_name, hint, CredentialsNeededReason::NoCredential);
     };
     log::info!("Found Keychain credentials for user={}", username);
 
@@ -159,12 +191,7 @@ pub(crate) async fn connect_directly(volume_id: &str) -> UpgradeResult {
         Ok(()) => UpgradeResult::Success,
         Err(UpgradeError::Refused(refusal)) => {
             log::info!("Stored credentials didn't work ({refusal:?}), requesting new credentials");
-            credentials_needed(
-                info,
-                display_name,
-                Some(username),
-                Some("Stored credentials didn't work"),
-            )
+            credentials_needed(info, display_name, Some(username), refusal.into())
         }
         Err(UpgradeError::Network { reason, display_name }) => UpgradeResult::NetworkError { reason, display_name },
     }
@@ -207,9 +234,7 @@ pub(crate) async fn connect_directly_with_credentials(
             }
             UpgradeResult::Success
         }
-        Err(UpgradeError::Refused(_)) => {
-            credentials_needed(info, display_name, username, Some("Invalid username or password"))
-        }
+        Err(UpgradeError::Refused(refusal)) => credentials_needed(info, display_name, username, refusal.into()),
         Err(UpgradeError::Network { reason, display_name }) => UpgradeResult::NetworkError { reason, display_name },
     }
 }
@@ -248,7 +273,7 @@ pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str)
         .flatten();
     let Some(creds) = creds else {
         let hint = info.username.clone();
-        return credentials_needed(info, display_name, hint, None);
+        return credentials_needed(info, display_name, hint, CredentialsNeededReason::NoCredential);
     };
 
     let upgraded = try_smb_upgrade(
@@ -271,12 +296,9 @@ pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str)
             }
             UpgradeResult::Success
         }
-        Err(UpgradeError::Refused(_)) => credentials_needed(
-            info,
-            display_name,
-            Some(creds.username),
-            Some("The saved password didn't work"),
-        ),
+        Err(UpgradeError::Refused(refusal)) => {
+            credentials_needed(info, display_name, Some(creds.username), refusal.into())
+        }
         Err(UpgradeError::Network { reason, display_name }) => UpgradeResult::NetworkError { reason, display_name },
     }
 }
@@ -289,7 +311,7 @@ pub(crate) async fn connect_directly_with_system_saved_password(volume_id: &str)
         Ok(MountedShare { info, .. }) => {
             let display_name = friendly_server_name(&info.server);
             let hint = info.username.clone();
-            credentials_needed(info, display_name, hint, None)
+            credentials_needed(info, display_name, hint, CredentialsNeededReason::NoCredential)
         }
         Err(answer) => answer,
     }

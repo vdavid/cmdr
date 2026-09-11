@@ -54,14 +54,22 @@ import { connectDirectly } from './direct-connect'
 /** The share every test presses the button on. */
 const archive = { volumeId: 'smb-archive', shareName: 'archive' }
 
-const credentialsNeeded: UpgradeResult = {
+const credentialsNeeded: UpgradeResult & { status: 'credentialsNeeded' } = {
   status: 'credentialsNeeded',
   server: 'naspolya',
   share: 'archive',
   port: 445,
   displayName: 'Naspolya',
   usernameHint: null,
-  message: null,
+  reason: 'noCredential',
+}
+
+/** A `credentialsNeeded` answer for an account the attempt tried. */
+function refusedAs(
+  reason: 'credentialRejected' | 'accountNotPermitted',
+  usernameHint: string,
+): UpgradeResult & { status: 'credentialsNeeded' } {
+  return { ...credentialsNeeded, reason, usernameHint }
 }
 
 /** Toasts the user would actually read as bad news. */
@@ -184,7 +192,7 @@ describe('connectDirectly', () => {
 
   it('keeps the sheet open on a password the server refused', async () => {
     upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
-    upgradeToSmbVolumeWithCredentials.mockResolvedValue(credentialsNeeded)
+    upgradeToSmbVolumeWithCredentials.mockResolvedValue(refusedAs('credentialRejected', 'david'))
 
     await connectDirectly(archive)
     const request = await sheetRequest()
@@ -192,6 +200,42 @@ describe('connectDirectly', () => {
     await expect(
       request.attempt({ mode: 'sign-in', secret: { secret: 'wrong', remember: true }, username: 'david' }),
     ).resolves.toEqual({ kind: 'refused', refusal: 'authentication_rejected' })
+  })
+
+  it('keeps the sheet open asking for a different account when the share turns the typed one away', async () => {
+    // ERR-SHUSC: the account signed in and the SHARE refused it. Calling that a
+    // wrong password kept the sheet asking for a password that worked.
+    upgradeToSmbVolume.mockResolvedValue(credentialsNeeded)
+    upgradeToSmbVolumeWithCredentials.mockResolvedValue(refusedAs('accountNotPermitted', 'david'))
+
+    await connectDirectly(archive)
+    const request = await sheetRequest()
+
+    await expect(
+      request.attempt({ mode: 'sign-in', secret: { secret: 'hunter2', remember: true }, username: 'david' }),
+    ).resolves.toEqual({ kind: 'refused', refusal: 'account_not_permitted' })
+  })
+
+  it('opens the sheet saying the share turned the saved account away, and names that account', async () => {
+    upgradeToSmbVolume.mockResolvedValue(refusedAs('accountNotPermitted', 'ada'))
+
+    await expect(connectDirectly(archive)).resolves.toBe('askingForCredentials')
+
+    const request = await sheetRequest()
+    expect(request.refusal).toBe('account_not_permitted')
+    // The sentence says "{username} doesn't have access here", so it has to be the
+    // account that was actually turned away.
+    expect(request.endpoint.username).toBe('ada')
+  })
+
+  it('opens the sheet saying the saved password was refused, and names its account', async () => {
+    upgradeToSmbVolume.mockResolvedValue(refusedAs('credentialRejected', 'ada'))
+
+    await connectDirectly(archive)
+
+    const request = await sheetRequest()
+    expect(request.refusal).toBe('authentication_rejected')
+    expect(request.endpoint.username).toBe('ada')
   })
 
   it('closes the sheet and names the reason when the server itself is the problem', async () => {

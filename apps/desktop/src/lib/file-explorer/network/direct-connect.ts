@@ -32,12 +32,28 @@ import { tString } from '$lib/intl/messages.svelte'
 import { triggerNetworkDiscovery } from './lazy-trigger'
 import { openSmbSignInSheet, type SmbCredentialAnswer } from './smb-sign-in'
 import type { SignInAttemptOutcome } from '$lib/servers/sign-in-contract'
+import type { ConnectRefusalKind } from '$lib/servers/connect-refusals'
+import type { CredentialsNeededReason } from '$lib/ipc/bindings'
 import { directConnectionUnavailableMessage, nothingToUpgradeMessage } from './upgrade-messages'
 
 const log = getAppLogger('fileExplorer')
 
 /** The `credentialsNeeded` arm of an upgrade result, which is all the form needs. */
 export type CredentialsNeeded = UpgradeResult & { status: 'credentialsNeeded' }
+
+/**
+ * What the sheet says, for each reason the backend needed a credential.
+ *
+ * ❗ A `Record`, so a new reason can't reach the sheet without a refusal to say.
+ * ❌ `accountNotPermitted` is not `authentication_rejected`: that account SIGNED
+ * IN, and calling it a wrong password kept the sheet asking for a password that
+ * worked (ERR-SHUSC).
+ */
+const REFUSAL_FOR_REASON: Record<CredentialsNeededReason, ConnectRefusalKind> = {
+  noCredential: 'needs_credentials',
+  credentialRejected: 'authentication_rejected',
+  accountNotPermitted: 'account_not_permitted',
+}
 
 /** The answers that leave no direct session and no credential worth asking for. */
 type NoUpgrade = Exclude<UpgradeResult, { status: 'success' | 'credentialsNeeded' }>
@@ -171,7 +187,10 @@ function askForCredentials(info: CredentialsNeeded, target: DirectConnectTarget)
     // ❗ No guest option: connecting with no credential at all is exactly what
     // `upgradeToSmbVolume` just tried, so offering it again would be inert.
     guestAllowed: false,
-    refusal: 'needs_credentials',
+    refusal: REFUSAL_FOR_REASON[info.reason],
+    // A refusal names the account it turned away, so that account opens the sheet.
+    // With nothing offered, the store's remembered username is the better guess.
+    initialUsername: info.reason === 'noCredential' ? undefined : (info.usernameHint ?? undefined),
     attempt: (answer) => upgradeWithCredentials(target, answer),
   })
   return 'askingForCredentials'
@@ -180,10 +199,11 @@ function askForCredentials(info: CredentialsNeeded, target: DirectConnectTarget)
 /**
  * One upgrade round-trip with what the user offered.
  *
- * ❗ Only a refused CREDENTIAL keeps the sheet open. A server that stopped
- * answering, or a share that went away while the user typed, has nothing a
- * password can fix, so the sheet closes and the typed sentence goes to a toast:
- * the same words the flow's own paths use.
+ * ❗ Only an answer another credential can fix keeps the sheet open, saying
+ * which: a password the server refused, or an account the share doesn't let in.
+ * A server that stopped answering, or a share that went away while the user
+ * typed, has nothing a credential can fix, so the sheet closes and the typed
+ * sentence goes to a toast: the same words the flow's own paths use.
  */
 async function upgradeWithCredentials(
   target: DirectConnectTarget,
@@ -200,7 +220,7 @@ async function upgradeWithCredentials(
       announceSuccess()
       return { kind: 'handed_off' }
     }
-    if (result.status === 'credentialsNeeded') return { kind: 'refused', refusal: 'authentication_rejected' }
+    if (result.status === 'credentialsNeeded') return { kind: 'refused', refusal: REFUSAL_FOR_REASON[result.reason] }
     announceNoUpgrade(result, target.shareName)
     return { kind: 'handed_off' }
   } catch (e) {

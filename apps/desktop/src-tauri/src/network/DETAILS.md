@@ -541,6 +541,13 @@ dialog.
 removes a `/Volumes` mount point along with its mount. A mount point left behind as a plain directory reads as
 `NotSmbMount`, which the frontend answers the same way.
 
+**`CredentialsNeeded` carries a typed `CredentialsNeededReason`, ❌ never a sentence.** `From<Refusal>` decides it: a
+guest refused at either step offered nothing (`NoCredential`, as when nothing is saved), an account refused at sign-in
+is `CredentialRejected`, and an account the share refused is `AccountNotPermitted`. The frontend maps each to its
+refusal kind (`src/lib/file-explorer/network/DETAILS.md` § "Connect directly"). `username_hint` is the account the
+refused attempt went out as, so the sheet's sentence can name it. The MCP `upgrade_smb_to_direct` tool words the same
+reason for agents.
+
 ## The two SFTP stores, and why neither is a widened SMB one
 
 `sftp_host_keys.rs` holds what this machine TRUSTS (`known-sftp-hosts.json`), `sftp_known_servers.rs` holds what the

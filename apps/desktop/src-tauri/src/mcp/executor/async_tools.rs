@@ -434,7 +434,7 @@ pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, para
 
     #[cfg(any(target_os = "macos", target_os = "linux"))]
     {
-        use crate::network::smb_connect_directly::{UpgradeResult, connect_directly};
+        use crate::network::smb_connect_directly::{CredentialsNeededReason, UpgradeResult, connect_directly};
         // The upgrade takes no `AppHandle`, which is what lets this generic executor
         // call it. What it can't do is kick mDNS (that needs a concrete handle), so
         // hostname-keyed Keychain creds need mDNS already running; the
@@ -445,14 +445,24 @@ pub async fn execute_upgrade_smb_to_direct<R: Runtime>(_app: &AppHandle<R>, para
                 server,
                 share,
                 display_name,
+                reason,
                 ..
             } => {
                 let server_label = if display_name.is_empty() { server } else { display_name };
+                let why = match reason {
+                    CredentialsNeededReason::NoCredential => {
+                        "Cmdr's Keychain has no password for this share. (If mDNS isn't running, hostname-keyed creds \
+                         also won't be found; trigger any network UI action first.)"
+                    }
+                    CredentialsNeededReason::CredentialRejected => "The server didn't accept the saved password.",
+                    CredentialsNeededReason::AccountNotPermitted => {
+                        "The saved account signed in, but this share doesn't let it open; a different account is needed."
+                    }
+                };
                 Ok(json!(format!(
-                    "Needs credentials: share={} on {}. Cmdr's Keychain didn't have a working password for this share. \
-                     Agents can't prompt; the user has to enter credentials via the UI's 'Connect directly' button. \
-                     (If mDNS isn't running, hostname-keyed creds also won't be found; trigger any network UI action first.)",
-                    share, server_label
+                    "Needs credentials: share={} on {}. {} Agents can't prompt; the user has to enter credentials via \
+                     the UI's 'Connect directly' button.",
+                    share, server_label, why
                 )))
             }
             UpgradeResult::NetworkError { reason, display_name } => Err(ToolError::internal(format!(

@@ -116,6 +116,8 @@
      * `/srv/da`.
      */
     let startFolderTouched = $state(false)
+    /** The account the last round sent, which is who that round's refusal is about. */
+    let roundUsername = $state<string | null>(null)
 
     let addressInput = $state<HTMLInputElement | undefined>()
     let secretInput = $state<HTMLInputElement | undefined>()
@@ -158,7 +160,11 @@
     /** The subject a refusal's sentence names: the server, and the account on it. */
     const refusalSubject = $derived.by(() => {
         if (request.mode === 'sign-in') {
-            return { host: request.endpoint.host, username: request.endpoint.username ?? request.endpoint.displayName }
+            // ❗ A round's refusal names the account that round SENT. Where the
+            // username is editable, the account the sheet opened with may not be
+            // the one that was turned away.
+            const username = roundUsername || (request.endpoint.username ?? request.endpoint.displayName)
+            return { host: request.endpoint.host, username }
         }
         const parsed = parseServerAddress(form.address)
         const host = parsed.kind === 'parsed' ? parsed.host : form.address
@@ -331,6 +337,7 @@
     async function run(submission: SignInSubmission) {
         if (!attempt) return
         pendingSubmission = submission
+        roundUsername = submission.mode === 'sign-in' ? submission.username : null
         busy = true
         refusal = null
         const outcome = await attempt(submission)

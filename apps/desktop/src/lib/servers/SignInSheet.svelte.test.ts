@@ -488,6 +488,40 @@ describe('SignInSheet: edit mode', () => {
   })
 })
 
+describe('SignInSheet: a refusal and the account that earned it', () => {
+  it('names the account the refused round tried, not the one the sheet opened with', async () => {
+    const attempt = (submission: SignInSubmission): Promise<SignInAttemptOutcome> => {
+      submissions.push(submission)
+      return Promise.resolve({ kind: 'refused', refusal: 'account_not_permitted' })
+    }
+    await renderSheet({
+      mode: 'sign-in',
+      remembered: false,
+      endpoint: {
+        protocol: 'smb',
+        displayName: 'observermch/data',
+        address: 'smb://observermch/data',
+        host: 'observermch',
+        username: 'ada',
+      },
+      shape: { kind: 'username_password', guestAllowed: false },
+      attempt,
+    })
+
+    typeInto(document.body.querySelector<HTMLInputElement>('#sign-in-username') as HTMLInputElement, 'bob')
+    typeInto(document.body.querySelector<HTMLInputElement>('#sign-in-secret') as HTMLInputElement, 'hunter2')
+    await tick()
+    buttonSaying('Sign in').click()
+    await flush()
+
+    // The share turned away `bob`, the account that was sent. Naming `ada`, who
+    // the sheet happened to open with, blames an account nobody tried.
+    expect(submissions[0]?.mode === 'sign-in' && submissions[0].username).toBe('bob')
+    expect(document.body.textContent).toContain("bob doesn't have access here")
+    expect(document.body.textContent).not.toContain("ada doesn't have access here")
+  })
+})
+
 describe('SignInSheet: a refusal and the address that earned it', () => {
   it('stops accusing the old host once the address is corrected', async () => {
     const attempt = (submission: SignInSubmission): Promise<SignInAttemptOutcome> => {

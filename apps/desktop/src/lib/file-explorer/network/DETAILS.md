@@ -255,8 +255,17 @@ Three properties callers rely on:
 The credential ask is the one app-global sign-in sheet, so the flow raises it itself. ❗ It returns
 `askingForCredentials` as soon as the sheet is UP, ❌ not when the user is done with it: the OS-mount notice retires on
 that outcome, and awaiting the sheet would leave the notice stacked under it. The sheet's `attempt` is
-`upgradeToSmbVolumeWithCredentials`; a refused credential keeps it open, and a server that stopped answering or a share
-that went away closes it with the same typed sentence the flow's own paths toast, because no password can fix either.
+`upgradeToSmbVolumeWithCredentials`; a server that stopped answering or a share that went away closes it with the same
+typed sentence the flow's own paths toast, because no credential can fix either.
+
+**What the sheet says comes from the answer's typed `reason`**, through `REFUSAL_FOR_REASON`, on the opening round and
+on every retry: `noCredential` → `needs_credentials`, `credentialRejected` → `authentication_rejected`, and
+`accountNotPermitted` → `account_not_permitted`. The backend reads which one from who the attempt went out as and which
+step refused it (`src-tauri/src/network/DETAILS.md` § "An auth rejection says what was actually rejected"). ❌ Never
+collapse the last two: an account the share turns away SIGNED IN, and answering "wrong password" kept the sheet asking
+for a password that worked (ERR-SHUSC). A refusal opens the sheet on the account it turned away (`usernameHint` as
+`initialUsername`), because the sentence names that account; with nothing offered, the remembered username pre-fills
+instead.
 
 ## The OS-mount fallback notice
 

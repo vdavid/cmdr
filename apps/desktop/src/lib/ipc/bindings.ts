@@ -6100,6 +6100,26 @@ export type CrashReport = {
   imageBase?: string | null
 }
 
+/**
+ *  Why "Connect directly" needs a credential.
+ *
+ *  Word-free, like `UpgradeFailure`: the frontend maps it to a `ConnectRefusalKind`
+ *  and the catalog words it.
+ */
+export type CredentialsNeededReason =
+  /**
+   *  Nothing was offered: no credential is saved for the share, or the attempt
+   *  went out as a guest and was turned away.
+   */
+  | 'noCredential'
+  // The server didn't accept the account's password at sign-in.
+  | 'credentialRejected'
+  /**
+   *  The account signed in, and the share doesn't let it open. The password is
+   *  the one thing known to be right, so the fix is a different account.
+   */
+  | 'accountNotPermitted'
+
 export type CreditInfoDto = {
   available: number
   in_flight: number
@@ -13489,10 +13509,16 @@ export type UpgradeResult =
       port: number
       // Friendly display name for the server (mDNS hostname or IP).
       displayName: string
-      // Username hint from stored credentials or the OS mount.
+      /**
+       *  Username hint: the account a refused attempt went out as, else the OS
+       *  mount's.
+       */
       usernameHint: string | null
-      // Optional message explaining why credentials are needed.
-      message: string | null
+      /**
+       *  Why a credential is needed, which decides what the sign-in sheet says
+       *  first.
+       */
+      reason: CredentialsNeededReason
     }
   // Couldn't reach the server (DNS, network, unreachable, too slow).
   | {

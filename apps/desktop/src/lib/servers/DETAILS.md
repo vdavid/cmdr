@@ -247,8 +247,8 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
 - `needs_credentials`: nothing was ever offered. ❌ Not a rejection.
 - `account_not_permitted`: the account signed in, and the PLACE turned it away (an SMB share whose TreeConnect answers
   access denied). Names the account and asks for a different one. ❗ Goes under `form`, ❌ never `secret`: the password
-  worked, and the `secret` slot marks its field invalid. SMB's mount is the producer today, and the direct-connect path
-  is meant to reuse it.
+  worked, and the `secret` slot marks its field invalid. Produced by SMB's mount (`permission_denied`) and by "Connect
+  directly" (`accountNotPermitted`).
 - `auth_method_unsupported`: the server challenged with a scheme Cmdr doesn't speak, so the secret never left. ❌ Never
   name the scheme; "Digest" means nothing to the reader.
 - `certificate_untrusted`: macOS doesn't trust the certificate, and the fix is Keychain Access. Trust-on-first-use is
@@ -265,6 +265,12 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
   this account (missing, a file, or refused). They name the host.
 - `save_unconfirmed`: a save to a connected place that the server didn't confirm in time. Names the host and says
   nothing was saved.
+
+**Whose name a refusal says.** In sign-in mode the sentence names the account the refused ROUND sent
+(`SignInSheet.svelte`'s `roundUsername`), and only the refusal the sheet opened with names `endpoint.username`. Where
+the shape lets the username be edited, the account the sheet opened with may not be the one that was turned away, and
+"ada doesn't have access here" after `bob` was refused blames an account nobody tried. Add mode has the same rule for
+the host: an edit retires the refusal, since its sentence reads the live form.
 
 Keys live in `$lib/intl/messages/en/servers.json` under `servers.refusal.*`, reached through a `Record` in
 `connect-refusals.ts` rather than a built string, which is what keeps `desktop-message-keys-unused` honest without a
