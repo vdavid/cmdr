@@ -1773,7 +1773,7 @@
   "@errors.mount.mountRefused": {
     "sourceHash": "c354782"
   },
-  "errors.mount.mountMissing": "A számítógéped azt jelezte, hogy a(z) „{server}” szerveren lévő „{share}” megosztás csatlakoztatva van, de sosem jelent meg. Próbáld újra.",
+  "errors.mount.mountMissing": "A számítógéped azt jelezte, hogy a(z) „{server}” szerveren lévő „{share}” megosztás csatlakoztatva van, de mégsem jelent meg. Próbáld újra.",
   "@errors.mount.mountMissing": {
     "sourceHash": "a5f61b5"
   },
