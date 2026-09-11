@@ -182,8 +182,8 @@ sweep). Four splits the layout doesn't explain for itself:
   background-correction token/generation bookkeeping, `commitPathFromListing`'s stale-listing drop policy, and the
   same-token self-re-entry rule), `navigate.arms.test.ts` (WHICH arm handles an intent — the pinned-tab fork,
   `{ snapshot }`, the `'fallback'` edge-flow source, `{ history }`, `{ location }`, and `{ volumeId, path }`
-  volume-(re)select), `navigate.return.test.ts` (the return point and the `{ returnTo }` arm, § "Escape during a
-  load"), and `navigate.refusals.test.ts` (every refusal kind's `message`, byte-for-byte, L12).
+  volume-(re)select), `navigate.return.test.ts` (the return point and the `{ returnTo }` arm, § "Escape during a load"),
+  and `navigate.refusals.test.ts` (every refusal kind's `message`, byte-for-byte, L12).
 - **`volume-tint.svelte.fallback.test.ts` sits beside `volume-tint.svelte.test.ts`** because the two force opposite
   `hasColorMix` branches: the main file pins it `true` to assert the `color-mix(...)` string, the fallback file forces
   the JS sRGB-mix branch and asserts hex (stubbing `getComputedStyle`, since jsdom doesn't resolve CSS custom
@@ -920,12 +920,12 @@ entry — they're not pane-destination changes).
   unresolvable path is a friendly toast (shared `resolveLocationOrToast`) or a typed MCP `ok: false`, never a
   wrong-volume listing. The canonical description of the shapes + edges lives in `navigate.ts`'s module doc.
 - **Intent arms.** `{ goTo }` self-routes: same volume as the pane → the in-place arm, a different volume → the switch
-  arm. `{ selectVolume }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its callers —
-  the cancel walk-up, retry, `selectVolumeByIndex` — pass the CURRENT volume id on purpose).
+  arm. `{ selectVolume }` is the deliberate volume-(re)select intent and ALWAYS takes the switch arm (its callers — the
+  cancel walk-up, retry, `selectVolumeByIndex` — pass the CURRENT volume id on purpose).
   `{ history: 'back' | 'forward' | 'parent' }` walks the stack (`parent` delegates to `FilePane.navigateToParent`);
   `{ snapshot: id }` opens `search-results://<id>` through the volume-switch machinery; `{ returnTo }` hands the pane
-  back after a cancelled load (§ "Escape during a load"). The pinned-tab fork (L7) lives
-  in ONE place per arm: `commitPathFromListing` for the in-place landing, `commitVolumeSwitch` for the switch.
+  back after a cancelled load (§ "Escape during a load"). The pinned-tab fork (L7) lives in ONE place per arm:
+  `commitPathFromListing` for the in-place landing, `commitVolumeSwitch` for the switch.
 - **Per-arm optimism (P4).** The switch arm commits volumeId + path + history SYNCHRONOUSLY (truly optimistic). The
   in-place arm does NOT commit on call — it drives the FilePane primitive, and the commit lands when the listing
   completes and `onPathChange` re-enters `commitPathFromListing`. Don't "upgrade" the in-place arm to an immediate

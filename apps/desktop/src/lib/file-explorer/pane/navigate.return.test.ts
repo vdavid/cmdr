@@ -87,7 +87,12 @@ describe('the return point', () => {
   it("isn't remembered by a cancel's own commits", () => {
     const h = makeHarness({ left: { volumeId: 'root', path: '/Users/me/gone' } })
     navigate(
-      { pane: 'left', to: { selectVolume: { volumeId: 'root', path: '/Users/me' } }, source: 'cancel', pushHistory: false },
+      {
+        pane: 'left',
+        to: { selectVolume: { volumeId: 'root', path: '/Users/me' } },
+        source: 'cancel',
+        pushHistory: false,
+      },
       h.deps,
     )
     expect(returnPointFor(h.deps, 'left')).toBeNull()

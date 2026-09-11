@@ -531,7 +531,11 @@ describe('scenario 9: Escape during a load returns the pane to what it last show
   /** Lands the pane's listing of `path` once it has started, as the backend's `listing-complete` would. */
   async function land(path: string): Promise<void> {
     await listed(path)
-    events.recorder?.fireListingEvent('listing-complete', { listingId: latestListingId(), totalCount: 0, volumeRoot: '/' })
+    events.recorder?.fireListingEvent('listing-complete', {
+      listingId: latestListingId(),
+      totalCount: 0,
+      volumeRoot: '/',
+    })
     await settleUi()
   }
 

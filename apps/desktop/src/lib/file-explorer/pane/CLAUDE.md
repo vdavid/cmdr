@@ -34,8 +34,8 @@ Per-pane orchestrator: cursor, focus, tabs, selection, type-to-jump, dialogs, dr
   layout).
 - **`navigate(intent, deps)` is the single pane-nav entry**: `{ goTo }` self-routes by volume, `{ selectVolume }` always
   switches.
-- **Escape during a load returns the pane to what it last SHOWED** (its return point, else the loader's `lastShown`),
-  ❌ never a guess from history, which walked Back one step too far (`DETAILS.md` § Escape during a load).
+- **Escape during a load returns the pane to what it last SHOWED** (its return point, else the loader's `lastShown`), ❌
+  never a guess from history, which walked Back one step too far (`DETAILS.md` § Escape during a load).
 - **The `network` pane is the SERVERS HUB** (`NetworkMountView`): it owns its MCP push, so `pane-mcp-sync` skips it, and
   ❗ its NAME is spelled in four places (`../network/DETAILS.md` § Gotchas).
 - **ONE typed state renders every remote wait** (`remote-connect-state.ts` + `RemoteConnectView`): `place-connect` gates

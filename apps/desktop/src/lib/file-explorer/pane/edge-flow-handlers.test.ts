@@ -77,7 +77,12 @@ describe('createEdgeFlowHandlers', () => {
         lastShown: { volumeId: 'root', path: '/elsewhere' },
       })
 
-      expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { returnTo: point }, source: 'cancel', selectName: 'b' })
+      expect(navigate).toHaveBeenCalledWith({
+        pane: 'left',
+        to: { returnTo: point },
+        source: 'cancel',
+        selectName: 'b',
+      })
       expect(focusContainer).toHaveBeenCalled()
     })
 
@@ -105,7 +110,12 @@ describe('createEdgeFlowHandlers', () => {
         lastShown: shownA,
       })
 
-      expect(navigate).toHaveBeenCalledWith({ pane: 'left', to: { goTo: shownA }, source: 'cancel', selectName: 'child' })
+      expect(navigate).toHaveBeenCalledWith({
+        pane: 'left',
+        to: { goTo: shownA },
+        source: 'cancel',
+        selectName: 'child',
+      })
     })
 
     it('stops a load the pane already switched away from, and does nothing more', () => {
