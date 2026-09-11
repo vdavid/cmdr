@@ -280,8 +280,8 @@ faster access" menu item. Clicking it hands off to `connectDirectly` in `../netw
 whole flow (stored credentials → saved-password probe → login form) and every toast along it; the OS-mount fallback
 notice presses the same function. This component hands it the volume id and the share's name, read while the row is
 still listed: the name is what words the answer if the share goes away before the backend gets there. A credential
-question opens the one sign-in sheet, which the flow raises itself. The flow itself: `../network/DETAILS.md` § "Connect directly". Submenu supports
-full keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
+question opens the one sign-in sheet, which the flow raises itself. The flow itself: `../network/DETAILS.md` § "Connect
+directly". Submenu supports full keyboard navigation (ArrowRight to open, ArrowLeft/Escape to close, Enter to activate).
 
 ### Eject button + row context menu
 
