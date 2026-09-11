@@ -93,7 +93,10 @@ fn clearing_one_server_leaves_the_others_told() {
         notices.claim("alpha.local", "smb-alpha", &[]),
         "alpha was forgotten, so it speaks again"
     );
-    assert!(!notices.claim("beta.local", "smb-beta", &[]), "beta was never forgotten");
+    assert!(
+        !notices.claim("beta.local", "smb-beta", &[]),
+        "beta was never forgotten"
+    );
 }
 
 /// A direct connect can land on a server nobody was ever warned about (the

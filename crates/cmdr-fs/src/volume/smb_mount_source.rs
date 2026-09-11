@@ -30,7 +30,10 @@ pub struct SmbAuthority<'a> {
 /// its colons all stay in the host.
 pub fn split_authority(authority: &str) -> SmbAuthority<'_> {
     let (username, host_port) = match authority.rsplit_once('@') {
-        Some((user_info, host_port)) => (Some(user_info.split_once(':').map_or(user_info, |(user, _)| user)), host_port),
+        Some((user_info, host_port)) => (
+            Some(user_info.split_once(':').map_or(user_info, |(user, _)| user)),
+            host_port,
+        ),
         None => (None, authority),
     };
 
@@ -59,23 +62,35 @@ mod tests {
 
     #[test]
     fn a_named_user_and_an_ipv4_host() {
-        assert_eq!(split_authority("david@192.168.1.111"), authority(Some("david"), "192.168.1.111", None));
+        assert_eq!(
+            split_authority("david@192.168.1.111"),
+            authority(Some("david"), "192.168.1.111", None)
+        );
     }
 
     #[test]
     fn a_host_with_a_port_and_no_user() {
-        assert_eq!(split_authority("localhost:11480"), authority(None, "localhost", Some(11480)));
+        assert_eq!(
+            split_authority("localhost:11480"),
+            authority(None, "localhost", Some(11480))
+        );
     }
 
     /// The guest form macOS records: the empty password is not part of the name.
     #[test]
     fn the_empty_guest_password_is_not_part_of_the_username() {
-        assert_eq!(split_authority("guest:@localhost:11484"), authority(Some("guest"), "localhost", Some(11484)));
+        assert_eq!(
+            split_authority("guest:@localhost:11484"),
+            authority(Some("guest"), "localhost", Some(11484))
+        );
     }
 
     #[test]
     fn a_bracketed_ipv6_host_with_a_port_comes_back_unbracketed() {
-        assert_eq!(split_authority("guest:@[::1]:18445"), authority(Some("guest"), "::1", Some(18445)));
+        assert_eq!(
+            split_authority("guest:@[::1]:18445"),
+            authority(Some("guest"), "::1", Some(18445))
+        );
     }
 
     #[test]
