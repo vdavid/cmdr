@@ -36,8 +36,6 @@
      
     import ErrorReportToastContent from './ErrorReportToastContent.svelte'
     import BundleSavedToastContent from './BundleSavedToastContent.svelte'
-    import { setLastSentReport } from './error-report-toast-state.svelte'
-    import { setLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
     import { closeErrorReportDialog, errorReportFlow } from './error-report-flow.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { t, tString } from '$lib/intl/messages.svelte'
@@ -160,12 +158,13 @@
             // Sticky choice and a newly typed address are remembered only now: a
             // half-typed one shouldn't become the reply channel for every report.
             attachEmail.persist()
-            setLastSentReport({ id: result.id, kind: isAmend ? 'amended' : 'sent' })
             addToast(ErrorReportToastContent, {
                 id: 'error-report-sent',
                 level: 'success',
                 dismissal: 'transient',
                 timeoutMs: POST_SEND_TOAST_MS,
+                // One object from one call, so the id and its sentence can't drift apart.
+                props: { reportId: result.id, kind: isAmend ? 'amended' : 'sent' },
             })
             closeErrorReportDialog()
         } catch (e) {
@@ -187,11 +186,11 @@
     async function handleSaveToDisk() {
         try {
             const path = await saveErrorReportToDisk(userNote || undefined, attachEmail.emailToAttach, preview?.id)
-            setLastSavedBundlePath(path)
             addToast(BundleSavedToastContent, {
                 id: 'error-report-bundle-saved',
                 level: 'success',
                 dismissal: 'persistent',
+                props: { path },
             })
         } catch (e) {
             addToast(tString('errorReporter.dialog.saveFailedToast', { error: String(e) }), { level: 'error' })

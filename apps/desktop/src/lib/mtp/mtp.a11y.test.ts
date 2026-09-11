@@ -18,7 +18,6 @@ import { mount, tick } from 'svelte'
 import MtpConnectedToastContent from './MtpConnectedToastContent.svelte'
 import MtpPermissionDialog from './MtpPermissionDialog.svelte'
 import PtpcameradDialog from './PtpcameradDialog.svelte'
-import { setLastConnectedDeviceName } from './mtp-connected-toast-state.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
 
 // `vi.hoisted`, not a plain `let`: spreading the real `$lib/settings` pulls in the
@@ -76,20 +75,18 @@ describe('MtpConnectedToastContent a11y', () => {
 
   it('macOS variant has no a11y violations', async () => {
     macState.value = true
-    setLastConnectedDeviceName('Pixel 8')
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(MtpConnectedToastContent, { target, props: {} })
+    mount(MtpConnectedToastContent, { target, props: { toastId: 'mtp-connected', deviceName: 'Pixel 8' } })
     await tick()
     await expectNoA11yViolations(target)
   })
 
   it('non-macOS variant has no a11y violations', async () => {
     macState.value = false
-    setLastConnectedDeviceName('Pixel 8')
     const target = document.createElement('div')
     document.body.appendChild(target)
-    mount(MtpConnectedToastContent, { target, props: {} })
+    mount(MtpConnectedToastContent, { target, props: { toastId: 'mtp-connected', deviceName: 'Pixel 8' } })
     await tick()
     await expectNoA11yViolations(target)
   })

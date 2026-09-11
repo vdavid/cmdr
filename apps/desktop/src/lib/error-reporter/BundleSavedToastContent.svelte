@@ -4,12 +4,16 @@
     import { showInFinder } from '$lib/tauri-commands'
     import { tooltip } from '$lib/tooltip/tooltip'
     import { tString } from '$lib/intl/messages.svelte'
-    import { getLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
 
-    const toastId = 'error-report-bundle-saved'
+    interface Props {
+        toastId: string
+        /** Where the debug bundle landed. */
+        path: string
+    }
+
+    const { toastId, path }: Props = $props()
 
     function handleReveal() {
-        const path = getLastSavedBundlePath()
         if (path) {
             void showInFinder(path)
         }
@@ -22,9 +26,7 @@
 
 <div class="content">
     <span class="message">{tString('errorReporter.bundleSavedToast.message')}</span>
-    <span class="path" use:tooltip={{ text: getLastSavedBundlePath(), overflowOnly: true }}
-        >{getLastSavedBundlePath()}</span
-    >
+    <span class="path" use:tooltip={{ text: path, overflowOnly: true }}>{path}</span>
     <div class="actions">
         <Button size="mini" variant="secondary" onclick={handleDismiss}
             >{tString('errorReporter.bundleSavedToast.dismiss')}</Button

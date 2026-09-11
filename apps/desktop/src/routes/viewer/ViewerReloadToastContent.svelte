@@ -1,45 +1,28 @@
-<script lang="ts" module>
-    /**
-     * Module-state bridge for the persistent reload toast. The toast system
-     * mounts components without props, so the viewer page calls
-     * `setReloadToastContext({ sessionId, kind, toastId })` immediately
-     * before `addToast(ViewerReloadToastContent, ...)` and the toast renders
-     * against this state. There's at most one reload toast per session per
-     * kind active at a time; rapid changes coalesce by toast id, so the
-     * "last write wins" semantic is fine.
-     */
-    interface ReloadToastContext {
-        sessionId: string
-        toastId: string
-        kind: 'grew' | 'rotated'
-    }
-
-    let ctx = $state<ReloadToastContext>({ sessionId: '', toastId: '', kind: 'grew' })
-
-    export function setReloadToastContext(next: ReloadToastContext): void {
-        ctx = next
-    }
-</script>
-
 <script lang="ts">
     import { viewerReload } from '$lib/tauri-commands'
     import { dismissToast } from '$lib/ui/toast/toast-store.svelte'
     import { getAppLogger } from '$lib/logging/logger'
     import { tString } from '$lib/intl/messages.svelte'
 
+    interface Props {
+        toastId: string
+        /** The viewer session whose file changed on disk. */
+        sessionId: string
+        /** `grew`: bytes were appended. `rotated`: the file was replaced. */
+        kind: 'grew' | 'rotated'
+    }
+
+    const { toastId, sessionId, kind }: Props = $props()
+
     const log = getAppLogger('viewer-tail')
 
     const message = $derived(
-        ctx.kind === 'rotated'
-            ? tString('viewer.reloadToast.rotated')
-            : tString('viewer.reloadToast.grew'),
+        kind === 'rotated' ? tString('viewer.reloadToast.rotated') : tString('viewer.reloadToast.grew'),
     )
 
     async function reload(): Promise<void> {
-        const session = ctx.sessionId
-        const toastId = ctx.toastId
         try {
-            const res = await viewerReload(session)
+            const res = await viewerReload(sessionId)
             if (res.status === 'error') {
                 log.warn('viewer_reload failed: {error}', { error: res.error })
             }

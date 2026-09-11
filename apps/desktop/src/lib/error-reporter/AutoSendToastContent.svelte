@@ -4,21 +4,26 @@
     import { openSettingsWindow } from '$lib/settings/settings-window'
     import { tString } from '$lib/intl/messages.svelte'
     import { openErrorReportDialogForAutoSentReport } from './error-report-flow.svelte'
-    import { getLastAutoSentReportId } from './auto-send-toast-state.svelte'
     import SentReportToastBody from './SentReportToastBody.svelte'
 
-    const TOAST_ID = 'error-report-auto-sent'
+    interface Props {
+        toastId: string
+        /** The report Flow B sent. */
+        reportId: string
+    }
+
+    const { toastId, reportId }: Props = $props()
 
     function handleViewOrAddNotes() {
         // Amend mode, ❌ never the compose entry point: this dialog shows the bundle that
         // actually shipped and adds the note to THAT report, so one incident stays one
         // report with one id.
-        dismissToast(TOAST_ID)
+        dismissToast(toastId)
         openErrorReportDialogForAutoSentReport()
     }
 
     function handleChangeSettings() {
-        dismissToast(TOAST_ID)
+        dismissToast(toastId)
         void openSettingsWindow('error-toast')
     }
 </script>
@@ -35,6 +40,6 @@
 <SentReportToastBody
     title={tString('errorReporter.autoSentToast.title')}
     message={tString('errorReporter.autoSentToast.referenceIdLabel')}
-    reportId={getLastAutoSentReportId()}
+    {reportId}
     {actions}
 />

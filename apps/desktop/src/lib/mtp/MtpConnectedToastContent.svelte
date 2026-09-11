@@ -4,11 +4,19 @@
     import Checkbox from '$lib/ui/Checkbox.svelte'
     import { setSetting } from '$lib/settings'
     import { isMacOS } from '$lib/shortcuts/key-capture'
-    import { getLastConnectedDeviceName } from './mtp-connected-toast-state.svelte'
     import { tString } from '$lib/intl/messages.svelte'
 
-    const toastId = 'mtp-connected'
+    interface Props {
+        toastId: string
+        /** The device's name as the backend reported it; empty when it had none. */
+        deviceName: string
+    }
+
+    const { toastId, deviceName }: Props = $props()
     let dontShowAgain = $state(false)
+
+    // Resolved here so the fallback follows a live language switch.
+    const shownName = $derived(deviceName || tString('mtp.deviceFallbackName'))
 
     function handleOk() {
         if (dontShowAgain) {
@@ -27,7 +35,7 @@
 </script>
 
 <div>
-    <p class="title">{tString('mtp.connectedToast.title', { deviceName: getLastConnectedDeviceName() })}</p>
+    <p class="title">{tString('mtp.connectedToast.title', { deviceName: shownName })}</p>
     <p class="body">
         {#if isMacOS()}
             {tString('mtp.connectedToast.bodyMac')}

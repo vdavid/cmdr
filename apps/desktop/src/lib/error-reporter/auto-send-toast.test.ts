@@ -1,17 +1,15 @@
 /**
  * Unit tests for the Flow B auto-send toast listener.
  *
- * The listener subscribes to the Tauri `error-report-auto-sent` event, stashes the
- * report ID into the toast component's module-level `$state`, and pushes a toast via
- * `addToast`. We test the bridge: that the listener registers, dispatches on event,
- * and tears down cleanly.
+ * The listener subscribes to the Tauri `error-report-auto-sent` event and pushes a
+ * toast via `addToast`, handing it the report ID as a prop. We test the bridge: that
+ * the listener registers, dispatches on event, and tears down cleanly.
  */
 
 import { describe, it, vi, expect, beforeEach } from 'vitest'
 import { listen } from '@tauri-apps/api/event'
 import { addToast } from '$lib/ui/toast'
 
-import { getLastAutoSentReportId } from './auto-send-toast-state.svelte'
 import { initAutoSendToastListener, cleanupAutoSendToastListener } from './auto-send-toast.svelte'
 
 vi.mock('@tauri-apps/api/event', () => ({
@@ -52,7 +50,7 @@ describe('auto-send toast listener', () => {
     expect(listen).toHaveBeenCalledTimes(1)
   })
 
-  it('shows a toast and stashes the ID when the event fires', async () => {
+  it('shows a toast carrying the report ID when the event fires', async () => {
     await initAutoSendToastListener()
     expect(registeredHandler).toBeDefined()
     registeredHandler?.({ payload: { id: 'ERR-LSTN1' } })
@@ -63,8 +61,8 @@ describe('auto-send toast listener', () => {
       level: 'info',
       dismissal: 'transient',
       timeoutMs: 10_000,
+      props: { reportId: 'ERR-LSTN1' },
     })
-    expect(getLastAutoSentReportId()).toBe('ERR-LSTN1')
   })
 
   it('cleanup unregisters the listener', async () => {

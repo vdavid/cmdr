@@ -2,22 +2,29 @@
     import { dismissToast } from '$lib/ui/toast'
     import Button from '$lib/ui/Button.svelte'
     import { tString } from '$lib/intl/messages.svelte'
-    import { getLastSentReportId, getLastSentReportKind } from './error-report-toast-state.svelte'
     import SentReportToastBody from './SentReportToastBody.svelte'
 
-    const toastId = 'error-report-sent'
+    interface Props {
+        toastId: string
+        /** The report this toast talks about. */
+        reportId: string
+        /** `sent`: a new report shipped. `amended`: a note joined the report Flow B had already sent. */
+        kind: 'sent' | 'amended'
+    }
+
+    const { toastId, reportId, kind }: Props = $props()
     let copied = $state(false)
 
     // One toast, two outcomes: a report that shipped, and a note that joined the report
     // Flow B had already sent. Only the lead sentence differs.
     const messageKey = $derived(
-        getLastSentReportKind() === 'amended'
+        kind === 'amended'
             ? ('errorReporter.amendedToast.message' as const)
             : ('errorReporter.sentToast.message' as const),
     )
 
     async function handleCopy() {
-        await navigator.clipboard.writeText(getLastSentReportId())
+        await navigator.clipboard.writeText(reportId)
         copied = true
         setTimeout(() => (copied = false), 2000)
     }
@@ -34,4 +41,4 @@
     </Button>
 {/snippet}
 
-<SentReportToastBody message={tString(messageKey)} reportId={getLastSentReportId()} {actions} />
+<SentReportToastBody message={tString(messageKey)} {reportId} {actions} />

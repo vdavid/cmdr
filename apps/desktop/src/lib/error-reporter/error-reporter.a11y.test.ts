@@ -26,12 +26,9 @@ import BundleSavedToastContent from './BundleSavedToastContent.svelte'
 import ErrorReportDialog from './ErrorReportDialog.svelte'
 import ErrorReportToastContent from './ErrorReportToastContent.svelte'
 import SentReportToastBody from './SentReportToastBody.svelte'
-import { setLastAutoSentReportId, getLastAutoSentReportId } from './auto-send-toast-state.svelte'
-import { setLastSavedBundlePath } from './bundle-saved-toast-state.svelte'
-import { setLastSentReport, getLastSentReportId } from './error-report-toast-state.svelte'
 import { closeErrorReportDialog, errorReportFlow, openErrorReportDialog } from './error-report-flow.svelte'
 import { expectNoA11yViolations } from '$lib/test-a11y'
-import { dismissToast } from '$lib/ui/toast'
+import { addToast, dismissToast } from '$lib/ui/toast'
 import { showInFinder } from '$lib/tauri-commands'
 import { amendErrorReport, prepareErrorReportPreview, sendErrorReport } from '$lib/tauri-commands/error-reporter'
 import { openSettingsWindow } from '$lib/settings/settings-window'
@@ -150,11 +147,12 @@ Object.defineProperty(navigator, 'clipboard', {
   writable: true,
 })
 
-/** Mounts a props-less component into a fresh container attached to the document. */
-function mountInto(component: Component<Record<string, never>>): HTMLElement {
+/** Mounts a component into a fresh container attached to the document. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the same constraint Svelte's own `mount` puts on props
+function mountInto<Props extends Record<string, any>>(component: Component<Props>, props = {} as Props): HTMLElement {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  mount(component, { target, props: {} })
+  mount(component, { target, props })
   return target
 }
 
@@ -168,21 +166,20 @@ afterEach(() => {
 /**
  * Tier 3 a11y tests for `AutoSendToastContent.svelte`.
  *
- * Toast body shown after the Flow B auto-dispatcher uploads a report. Reads the last
- * auto-sent ID from a module-level `$state` set via `setLastAutoSentReportId(id)`.
+ * Toast body shown after the Flow B auto-dispatcher uploads a report. Takes the
+ * report's id as a prop.
  */
 describe('AutoSendToastContent', () => {
+  const autoSent = (reportId: string) => ({ toastId: 'error-report-auto-sent', reportId })
+
   it('default render has no a11y violations', async () => {
-    setLastAutoSentReportId('ERR-AUTO1')
-    const target = mountInto(AutoSendToastContent)
+    const target = mountInto(AutoSendToastContent, autoSent('ERR-AUTO1'))
     await tick()
     await expectNoA11yViolations(target)
   })
 
-  it('renders the most recently set auto-sent ID', () => {
-    setLastAutoSentReportId('ERR-AUTO2')
-    expect(getLastAutoSentReportId()).toBe('ERR-AUTO2')
-    const target = mountInto(AutoSendToastContent)
+  it('renders the report id it was given', () => {
+    const target = mountInto(AutoSendToastContent, autoSent('ERR-AUTO2'))
     expect(target.textContent).toContain('ERR-AUTO2')
     expect(target.textContent).toContain('Error report sent')
     expect(target.textContent).toContain('Reference ID')
@@ -191,9 +188,8 @@ describe('AutoSendToastContent', () => {
   // The incident this guards: the button used to call the compose entry point, so a
   // note typed after an auto-send uploaded a SECOND report under a third id.
   it('the view/add-notes button opens the dialog in amend mode, never the compose one', async () => {
-    setLastAutoSentReportId('ERR-VIEW1')
     closeErrorReportDialog()
-    const target = mountInto(AutoSendToastContent)
+    const target = mountInto(AutoSendToastContent, autoSent('ERR-VIEW1'))
     await tick()
     const viewButton = Array.from(target.querySelectorAll('button')).find(
       (b) => b.textContent.trim() === 'View or add notes to the report',
@@ -207,8 +203,7 @@ describe('AutoSendToastContent', () => {
   })
 
   it('Change settings button dismisses the toast and opens the settings window', async () => {
-    setLastAutoSentReportId('ERR-SET01')
-    const target = mountInto(AutoSendToastContent)
+    const target = mountInto(AutoSendToastContent, autoSent('ERR-SET01'))
     await tick()
     const settingsButton = Array.from(target.querySelectorAll('button')).find(
       (b) => b.textContent.trim() === 'Change settings',
@@ -224,26 +219,27 @@ describe('AutoSendToastContent', () => {
  * Tier 3 a11y tests for `BundleSavedToastContent.svelte`.
  *
  * Toast body shown after a successful "Save bundle to disk (debug)" action.
- * Reads the saved-bundle path from a module-level `$state` set via
- * `setLastSavedBundlePath(path)`.
+ * Takes the saved bundle's path as a prop.
  */
 describe('BundleSavedToastContent', () => {
+  const saved = (path: string) => ({ toastId: 'error-report-bundle-saved', path })
+
   it('default render has no a11y violations', async () => {
-    setLastSavedBundlePath('/Users/test/Application Support/com.veszelovszki.cmdr-dev/error-report-debug.zip')
-    const target = mountInto(BundleSavedToastContent)
+    const target = mountInto(
+      BundleSavedToastContent,
+      saved('/Users/test/Application Support/com.veszelovszki.cmdr-dev/error-report-debug.zip'),
+    )
     await tick()
     await expectNoA11yViolations(target)
   })
 
-  it('renders the most recently saved path', () => {
-    setLastSavedBundlePath('/tmp/bundle-XYZ.zip')
-    const target = mountInto(BundleSavedToastContent)
+  it('renders the path it was given', () => {
+    const target = mountInto(BundleSavedToastContent, saved('/tmp/bundle-XYZ.zip'))
     expect(target.textContent).toContain('/tmp/bundle-XYZ.zip')
   })
 
   it('Reveal in Finder button calls showInFinder with the saved path', async () => {
-    setLastSavedBundlePath('/tmp/bundle-REV.zip')
-    const target = mountInto(BundleSavedToastContent)
+    const target = mountInto(BundleSavedToastContent, saved('/tmp/bundle-REV.zip'))
     await tick()
     const revealButton = Array.from(target.querySelectorAll('button')).find(
       (b) => b.textContent.trim() === 'Reveal in Finder',
@@ -254,8 +250,7 @@ describe('BundleSavedToastContent', () => {
   })
 
   it('Dismiss button calls dismissToast with the toast ID', async () => {
-    setLastSavedBundlePath('/tmp/bundle-DIS.zip')
-    const target = mountInto(BundleSavedToastContent)
+    const target = mountInto(BundleSavedToastContent, saved('/tmp/bundle-DIS.zip'))
     await tick()
     const dismissButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Dismiss')
     if (!dismissButton) throw new Error('Dismiss button missing')
@@ -267,27 +262,25 @@ describe('BundleSavedToastContent', () => {
 /**
  * Tier 3 a11y tests for `ErrorReportToastContent.svelte`.
  *
- * Toast body shown after a successful error-report send. Reads the last sent ID
- * from a module-level `$state` set via `setLastSentReport({ id, kind })`.
+ * Toast body shown after a successful error-report send. Takes the report's id, and
+ * whether it was sent or amended, as props.
  */
 describe('ErrorReportToastContent', () => {
+  const sent = (reportId: string) => ({ toastId: 'error-report-sent', reportId, kind: 'sent' as const })
+
   it('default render has no a11y violations', async () => {
-    setLastSentReport({ id: 'ERR-AB23X', kind: 'sent' })
-    const target = mountInto(ErrorReportToastContent)
+    const target = mountInto(ErrorReportToastContent, sent('ERR-AB23X'))
     await tick()
     await expectNoA11yViolations(target)
   })
 
-  it('renders the most recently set sent ID', () => {
-    setLastSentReport({ id: 'ERR-99XYZ', kind: 'sent' })
-    expect(getLastSentReportId()).toBe('ERR-99XYZ')
-    const target = mountInto(ErrorReportToastContent)
+  it('renders the report id it was given', () => {
+    const target = mountInto(ErrorReportToastContent, sent('ERR-99XYZ'))
     expect(target.textContent).toContain('ERR-99XYZ')
   })
 
   it('Copy ID button copies to the clipboard', async () => {
-    setLastSentReport({ id: 'ERR-COPY1', kind: 'sent' })
-    const target = mountInto(ErrorReportToastContent)
+    const target = mountInto(ErrorReportToastContent, sent('ERR-COPY1'))
     await tick()
     const copyButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Copy ID')
     if (!copyButton) throw new Error('Copy ID button missing')
@@ -298,8 +291,7 @@ describe('ErrorReportToastContent', () => {
   })
 
   it('Dismiss button calls dismissToast with the toast ID', async () => {
-    setLastSentReport({ id: 'ERR-DISMS', kind: 'sent' })
-    const target = mountInto(ErrorReportToastContent)
+    const target = mountInto(ErrorReportToastContent, sent('ERR-DISMS'))
     await tick()
     const dismissButton = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Dismiss')
     if (!dismissButton) throw new Error('Dismiss button missing')
@@ -648,6 +640,7 @@ describe('ErrorReportDialog in amend mode', () => {
     setSettingMock.mockClear()
     vi.mocked(sendErrorReport).mockClear()
     vi.mocked(amendErrorReport).mockClear()
+    vi.mocked(addToast).mockClear()
   })
 
   afterEach(() => {
@@ -703,7 +696,11 @@ describe('ErrorReportDialog in amend mode', () => {
 
     expect(vi.mocked(amendErrorReport)).toHaveBeenCalledWith('it happened while copying', undefined)
     expect(vi.mocked(sendErrorReport)).not.toHaveBeenCalled()
-    expect(getLastSentReportId()).toBe('ERR-AUTO9')
+    // The toast names the report the note joined, and says it was amended.
+    expect(vi.mocked(addToast)).toHaveBeenCalledWith(
+      ErrorReportToastContent,
+      expect.objectContaining({ props: { reportId: 'ERR-AUTO9', kind: 'amended' } }),
+    )
     expect(errorReportFlow.open).toBe(false)
   })
 

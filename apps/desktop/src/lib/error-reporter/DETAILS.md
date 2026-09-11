@@ -58,15 +58,12 @@ listens and shows `addToast(AutoSendToastContent, ...)`:
 The listener is initialized in `(main)/+layout.svelte` next to the dialog mount and torn down in the matching
 `onDestroy`. Idempotent: repeated `init` calls are no-ops.
 
-## ID-bridging pattern
+## Toast data
 
-`error-report-toast-state.svelte.ts` holds `{ id, kind }` in a module-level `$state` with `setLastSentReport(...)` /
-`getLastSentReportId()` / `getLastSentReportKind()`. The dialog sets it right before `addToast(component, ...)` so the
-toast renders both without the toast system forwarding props. One setter taking an object keeps the pair from drifting:
-an amended report showing the "Error report sent" sentence would be the same class of lie the amend mode fixes. The
-state lives in a `.svelte.ts` module rather than the toast's `<script module>` so its exports are typed across imports
-(a `.svelte` module export is seen as `any`). Same pattern in `bundle-saved-toast-state`, `auto-send-toast-state`, and
-mtp's `mtp-connected-toast-state`.
+Each toast gets what it shows as `props` from its one raise: the post-send toast `{ reportId, kind }`, the bundle-saved
+toast `{ path }`, and the auto-sent toast `{ reportId }`. Each closes itself through the `toastId` the toast frame hands
+it. The post-send toast's id and `kind` travel in one object from one call, so they can't drift apart: an amended report
+showing the "Error report sent" sentence would be the same class of lie amend mode exists to fix.
 
 ## Note-capture timing and gotchas
 

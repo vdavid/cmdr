@@ -44,7 +44,6 @@
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { MtpPermissionDialog, PtpcameradDialog } from '$lib/mtp'
     import MtpConnectedToastContent from '$lib/mtp/MtpConnectedToastContent.svelte'
-    import { setLastConnectedDeviceName } from '$lib/mtp/mtp-connected-toast-state.svelte'
     import CrashReportDialog from '$lib/crash-reporter/CrashReportDialog.svelte'
     import CrashReportToastContent from '$lib/crash-reporter/CrashReportToastContent.svelte'
     import ErrorReportDialog from '$lib/error-reporter/ErrorReportDialog.svelte'
@@ -276,11 +275,11 @@
             // Listen for MTP device connections and show info toast
             mtpConnectedUnlistenPromise = onMtpDeviceConnected((event) => {
                 if (!getSetting('fileOperations.mtpConnectionWarning')) return
-                setLastConnectedDeviceName(event.deviceName || 'MTP device')
                 addToast(MtpConnectedToastContent, {
                     id: 'mtp-connected',
                     dismissal: 'persistent',
                     level: 'info',
+                    props: { deviceName: event.deviceName },
                 })
             })
 

@@ -12,7 +12,6 @@ import { addToast } from '$lib/ui/toast'
 import { onErrorReportAutoSent } from '$lib/tauri-commands'
 
 import AutoSendToastContent from './AutoSendToastContent.svelte'
-import { setLastAutoSentReportId } from './auto-send-toast-state.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 
 const log = getAppLogger('errorReporter')
@@ -35,12 +34,12 @@ export async function initAutoSendToastListener(): Promise<void> {
   unlisten = await onErrorReportAutoSent((payload) => {
     const reportId = payload.id
     log.info('Error report auto-sent: {id}', { id: reportId })
-    setLastAutoSentReportId(reportId)
     addToast(AutoSendToastContent, {
       id: TOAST_ID,
       level: 'info',
       dismissal: 'transient',
       timeoutMs: TOAST_TIMEOUT_MS,
+      props: { reportId },
     })
   })
 }
