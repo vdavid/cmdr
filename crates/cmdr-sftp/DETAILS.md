@@ -897,8 +897,8 @@ a sign-in UI genuinely branches on all of it.
   server without connecting (renaming it, changing its root or key file, or moving the `autoReconnect` switch) goes
   through the protocol-agnostic `updateSavedServer` (`commands/servers.rs`), which calls
   `sftp_volume_wiring::save_without_connecting` directly rather than through a per-protocol command; a successful
-  connect calls the same wiring function. ❗ It also pushes `autoReconnect` into a volume that happens to be mounted,
-  so the switch takes effect now rather than on the next connect. ❗ **Neither the edit nor a connect can change
+  connect calls the same wiring function. ❗ It also pushes `autoReconnect` into a volume that happens to be mounted, so
+  the switch takes effect now rather than on the next connect. ❗ **Neither the edit nor a connect can change
   `pinned`.** `sftp_known_servers::remember` honors the caller's value only when the entry is NEW (which is what pins a
   place on its first successful connect) and carries the stored value across on a replace. It runs on EVERY successful
   connect, so a caller-supplied pin would put an unpinned row back in the switcher the next time the session came back.
