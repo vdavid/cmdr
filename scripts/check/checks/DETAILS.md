@@ -1714,7 +1714,9 @@ Linux build compiles fine on macOS and fails on Linux if the `use` isn't wrapped
 catches this after push, but the check catches it locally and instantly. It detects module-level gating (for example,
 `#[cfg(target_os = "macos")] mod foo;` in `lib.rs` makes everything inside `foo` inherently safe, and so does a file
 `foo.rs` pulls in through `#[path = "foo_tests.rs"] mod foo_tests;`) and scans the remaining files for ungated
-references.
+references. Gated declarations count from ANY file, resolved the way rustc resolves them, because a leaf file can keep
+its macOS half in a sibling: `text_editor.rs` declares
+`#[cfg(target_os = "macos")] #[path = "text_editor_macos.rs"] mod imp;`.
 
 Two name sets, with different reach because the two are named differently in code:
 

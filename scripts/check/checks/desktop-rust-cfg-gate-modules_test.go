@@ -123,6 +123,37 @@ mod native_drag_tests;
 	}
 }
 
+// A leaf file can keep its macOS half in a sibling: `text_editor.rs` declaring
+// `#[cfg(target_os = "macos")] #[path = "text_editor_macos.rs"] mod imp;`. That sibling is
+// as absent from the Linux build as a gated module declared from a `mod.rs`, so its imports
+// need no gate of their own, and neither do the files it pulls in.
+func TestRunCfgGate_SkipsAMacOSHalfALeafFileGatesByPath(t *testing.T) {
+	root := writeCfgGateModuleWorkspace(t, "fn main() {}\n")
+	appSrc := filepath.Join(root, "apps", "desktop", "src-tauri", "src")
+	mustWrite(t, filepath.Join(appSrc, "lib.rs"), `mod commands;
+mod text_editor;
+#[cfg(target_os = "macos")]
+mod native_drag;
+`)
+	mustWrite(t, filepath.Join(appSrc, "text_editor.rs"), `pub struct EditorOpenReport;
+
+#[cfg(target_os = "macos")]
+#[path = "text_editor_macos.rs"]
+mod imp;
+`)
+	mustWrite(t, filepath.Join(appSrc, "text_editor_macos.rs"), `use crate::native_drag::DragSessionLocality;
+
+#[cfg(test)]
+#[path = "text_editor_test.rs"]
+mod tests;
+`)
+	mustWrite(t, filepath.Join(appSrc, "text_editor_test.rs"), "use crate::native_drag::DragSessionLocality;\n")
+
+	if _, err := RunCfgGate(&CheckContext{RootDir: root}); err != nil {
+		t.Fatalf("a leaf file's `#[path]`-gated macOS half and its children need no gate, got: %v", err)
+	}
+}
+
 func TestMacOSOnlyModulePaths_NestedModule(t *testing.T) {
 	srcDir := t.TempDir()
 	mustWrite(t, filepath.Join(srcDir, "lib.rs"), "#[cfg(any(target_os = \"macos\", target_os = \"linux\"))]\nmod mtp;\n")

@@ -231,7 +231,7 @@ func TestFindCfgGatedModules_BasicMod(t *testing.T) {
 mod foo;`, "\n")
 
 	result := findCfgGatedModules(lines)
-	if len(result) != 1 || result[0] != "foo" {
+	if len(result) != 1 || result[0].name != "foo" {
 		t.Errorf("expected [foo], got %v", result)
 	}
 }
@@ -241,7 +241,7 @@ func TestFindCfgGatedModules_PubMod(t *testing.T) {
 pub mod bar;`, "\n")
 
 	result := findCfgGatedModules(lines)
-	if len(result) != 1 || result[0] != "bar" {
+	if len(result) != 1 || result[0].name != "bar" {
 		t.Errorf("expected [bar], got %v", result)
 	}
 }
@@ -251,7 +251,7 @@ func TestFindCfgGatedModules_PubCrateMod(t *testing.T) {
 pub(crate) mod baz;`, "\n")
 
 	result := findCfgGatedModules(lines)
-	if len(result) != 1 || result[0] != "baz" {
+	if len(result) != 1 || result[0].name != "baz" {
 		t.Errorf("expected [baz], got %v", result)
 	}
 }
@@ -272,7 +272,7 @@ func TestFindCfgGatedModules_BlankLineBetweenCfgAndMod(t *testing.T) {
 mod spaced;`, "\n")
 
 	result := findCfgGatedModules(lines)
-	if len(result) != 1 || result[0] != "spaced" {
+	if len(result) != 1 || result[0].name != "spaced" {
 		t.Errorf("expected [spaced], got %v", result)
 	}
 }
@@ -283,7 +283,7 @@ func TestFindCfgGatedModules_MultipleStackedAttributes(t *testing.T) {
 mod stacked;`, "\n")
 
 	result := findCfgGatedModules(lines)
-	if len(result) != 1 || result[0] != "stacked" {
+	if len(result) != 1 || result[0].name != "stacked" {
 		t.Errorf("expected [stacked], got %v", result)
 	}
 }
@@ -300,7 +300,7 @@ pub mod gated_two;`, "\n")
 	if len(result) != 2 {
 		t.Fatalf("expected 2 gated modules, got %d: %v", len(result), result)
 	}
-	if result[0] != "gated_one" || result[1] != "gated_two" {
+	if result[0].name != "gated_one" || result[1].name != "gated_two" {
 		t.Errorf("expected [gated_one, gated_two], got %v", result)
 	}
 }
@@ -1081,7 +1081,7 @@ func TestFindCfgGatedModules_PubSuperMod(t *testing.T) {
 pub(super) mod internal;`, "\n")
 
 	result := findCfgGatedModules(lines)
-	if len(result) != 1 || result[0] != "internal" {
+	if len(result) != 1 || result[0].name != "internal" {
 		t.Errorf("expected [internal], got %v", result)
 	}
 }

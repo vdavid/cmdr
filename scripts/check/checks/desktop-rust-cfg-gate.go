@@ -223,8 +223,10 @@ func allTargetDepNames(cargo map[string]any) map[string]bool {
 // modDeclPattern matches cfg-gated module declarations: optional visibility, then mod <name>;
 var modDeclPattern = regexp.MustCompile(`^(?:pub(?:\s*\((?:crate|super)\))?\s+)?mod\s+(\w+)\s*;`)
 
-// buildModuleGatedFileSet scans lib.rs and mod.rs files to find modules gated behind
-// #[cfg(target_os = "macos")], then resolves them to actual file paths.
+// buildModuleGatedFileSet scans every Rust file for modules gated behind
+// #[cfg(target_os = "macos")], then resolves them to actual file paths. Every file, not only
+// lib.rs and mod.rs: a leaf `text_editor.rs` keeps its macOS half in a sibling through
+// `#[cfg(target_os = "macos")] #[path = "text_editor_macos.rs"] mod imp;`.
 // Returns a set of absolute file paths that are inherently gated.
 func buildModuleGatedFileSet(srcDir string) (map[string]bool, error) {
 	gatedFiles := make(map[string]bool)
@@ -233,18 +235,15 @@ func buildModuleGatedFileSet(srcDir string) (map[string]bool, error) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || !isModuleRootFile(d.Name()) {
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".rs") {
 			return nil
 		}
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		dir := filepath.Dir(path)
-		for _, modName := range findCfgGatedModules(strings.Split(string(data), "\n")) {
-			for _, f := range moduleFiles(dir, modName) {
-				gatedFiles[f] = true
-			}
+		for _, f := range declaredModuleFiles(path, strings.Split(string(data), "\n"), findCfgGatedModules) {
+			gatedFiles[f] = true
 		}
 		return nil
 	})
@@ -315,35 +314,36 @@ func rustFilesUnder(dir string) []string {
 // pathAttrPattern captures the file named by a `#[path = "..."]` attribute.
 var pathAttrPattern = regexp.MustCompile(`#\[path\s*=\s*"([^"]+)"\]`)
 
-// childModuleFiles returns the files of the child modules a Rust source file declares. A
-// `#[path = "..."]` attribute resolves against the directory holding the declaring file;
-// a plain `mod x;` resolves against that file's own module directory, which for `lib.rs`,
-// `main.rs`, and `mod.rs` is the same directory and for `foo.rs` is `foo/`.
+// childModuleFiles returns the files of every child module a Rust source file declares.
 func childModuleFiles(path string) []string {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil
 	}
+	return declaredModuleFiles(path, strings.Split(string(data), "\n"), findModuleDecls)
+}
+
+// declaredModuleFiles resolves the module declarations `find` picks out of a source file's
+// lines to the files they bring in. A `#[path = "..."]` attribute resolves against the
+// directory holding the declaring file; a plain `mod x;` resolves against that file's own
+// module directory, which for `lib.rs`, `main.rs`, and `mod.rs` is the same directory and for
+// `foo.rs` is `foo/`.
+func declaredModuleFiles(path string, lines []string, find func([]string) []moduleDecl) []string {
 	dir := filepath.Dir(path)
 	modDir := dir
 	if !isModuleRootFile(filepath.Base(path)) {
 		modDir = filepath.Join(dir, strings.TrimSuffix(filepath.Base(path), ".rs"))
 	}
 
-	var children []string
-	lines := strings.Split(string(data), "\n")
-	for i, line := range lines {
-		matches := modDeclPattern.FindStringSubmatch(strings.TrimSpace(line))
-		if matches == nil {
+	var files []string
+	for _, decl := range find(lines) {
+		if explicit := explicitModulePath(lines, decl.line); explicit != "" {
+			files = append(files, filepath.Join(dir, explicit))
 			continue
 		}
-		if explicit := explicitModulePath(lines, i); explicit != "" {
-			children = append(children, filepath.Join(dir, explicit))
-			continue
-		}
-		children = append(children, moduleFiles(modDir, matches[1])...)
+		files = append(files, moduleFiles(modDir, decl.name)...)
 	}
-	return children
+	return files
 }
 
 // explicitModulePath returns the file named by a `#[path = "..."]` attribute directly above
@@ -357,27 +357,33 @@ func explicitModulePath(lines []string, modLineIdx int) string {
 	return ""
 }
 
-// findCfgGatedModules finds module names that are preceded by #[cfg(target_os = "macos")]
-// in the given lines. Handles blank lines and other attributes between the cfg and the mod.
-func findCfgGatedModules(lines []string) []string {
-	var result []string
+// moduleDecl is one `mod <name>;` declaration: the module's name, and the line it sits on,
+// which is where its attributes (a `#[cfg]`, a `#[path]`) are read from.
+type moduleDecl struct {
+	name string
+	line int
+}
 
+// findModuleDecls finds every `mod <name>;` declaration in the given lines.
+func findModuleDecls(lines []string) []moduleDecl {
+	var result []moduleDecl
 	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		// Check if this line is a mod declaration
-		matches := modDeclPattern.FindStringSubmatch(trimmed)
-		if matches == nil {
-			continue
-		}
-		modName := matches[1]
-
-		// Walk backwards to see if there's a #[cfg(target_os = "macos")] attribute
-		if hasMacOSCfgAttribute(lines, i) {
-			result = append(result, modName)
+		if matches := modDeclPattern.FindStringSubmatch(strings.TrimSpace(line)); matches != nil {
+			result = append(result, moduleDecl{name: matches[1], line: i})
 		}
 	}
+	return result
+}
 
+// findCfgGatedModules finds the module declarations preceded by #[cfg(target_os = "macos")]
+// in the given lines. Handles blank lines and other attributes between the cfg and the mod.
+func findCfgGatedModules(lines []string) []moduleDecl {
+	var result []moduleDecl
+	for _, decl := range findModuleDecls(lines) {
+		if hasMacOSCfgAttribute(lines, decl.line) {
+			result = append(result, decl)
+		}
+	}
 	return result
 }
 
