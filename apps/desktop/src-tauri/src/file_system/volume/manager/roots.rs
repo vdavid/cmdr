@@ -103,6 +103,20 @@ impl Registration {
         self.record_root(&root);
     }
 
+    /// Swap the volume for one that may sit at a DIFFERENT root, handing back
+    /// the one it replaced. The old active root leaves the set and the new one
+    /// enters it fresh (never inheriting a stale mark), so nothing finds this
+    /// entry by a root it no longer serves. Other fallback roots stay.
+    pub(super) fn replace_root(&mut self, volume: Arc<dyn Volume>) -> Arc<dyn Volume> {
+        let old_root = self.volume.root().to_path_buf();
+        let new_root = volume.root().to_path_buf();
+        if old_root != new_root {
+            self.roots.retain(|r| r.path != old_root && r.path != new_root);
+            self.roots.push(MountRoot::new(new_root));
+        }
+        std::mem::replace(&mut self.volume, volume)
+    }
+
     /// The root that SHOULD be active: the best-ranked one, or `None` when the
     /// entry has no roots left at all.
     fn best_root(&self) -> Option<&MountRoot> {

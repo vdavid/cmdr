@@ -554,6 +554,28 @@ their own path) and would need re-pointing if a `LocalExternal` disk ever showed
 **Decision**: `register` replaces only at the SAME root; an identity conflict keeps the incumbent
 **Why**: replacing the volume at one root is routine (that's the SMB upgrade: an OS-mounted `LocalPosixVolume` becomes a direct `SmbVolume` at `/Volumes/naspi`, and a live transfer holding an `Arc` keeps working through it). Two DIFFERENT roots claiming one ID is not routine, and letting the last writer win made registration ORDER decide where the volume was rooted. A share mounted at both `/Volumes/naspi` and `/Volumes/naspi-1` derives one ID from both mounts, so the registry ended up rooted at `/Volumes/naspi-1` and a pane restoring a saved `/Volumes/naspi/…` path failed its listing. Keeping the incumbent makes the outcome deterministic without pretending the ambiguity is resolved: `report_identity_conflict` still logs it, because the honest answers (a cloned volume, a double mount) both deserve a human's attention. Discovery collapses double mounts before they reach here (`volumes/DETAILS.md` § "One volume ID publishes one mount root"); this is defense in depth, not the only guard. `is_identity_conflict` (root inequality) is what tells the two cases apart. Restoring a remembered registration in a test goes through `force_register`, which skips the guard, since putting back the previous value has to be unconditional.
 
+### Replacing a root in place
+
+**Decision**: `VolumeManager::replace_root_in_place(id, volume)` (`manager/root_replace.rs`) swaps the volume serving a
+REGISTERED id for one at a possibly different root, and answers `RootReplacement::Replaced { previous }` or
+`NotRegistered`. It retires nobody, drops the old active root from the entry's root set (the new root enters fresh,
+other fallbacks stay), and announces the id to the arrival listeners after the guard drops, as `register` does.
+
+**Why its own door**: the one caller is a saved SFTP or WebDAV place edited while connected (`network/DETAILS.md` §
+"Editing a connected place"), whose successor is a new instance SHARING the live connection. Every existing path gets
+that case wrong, silently:
+
+- `register` reads a different root under a taken id as an identity conflict: the incumbent stays active and the new
+  root is only recorded as a fallback, so the edit changes nothing but a warn line.
+- `connect_wiring::install_retiring_incumbent` asks `would_keep_incumbent` and hits the same refusal, and on a same-root
+  swap it calls `on_superseded`, which retires the `Retirement` the successor shares: the live place loses its
+  reconnect loop and its connection events.
+- `force_register` is test-only, and it would keep the old root findable.
+
+**Why the old root leaves the set**: a fallback root is a claim that another mount reaches the same filesystem. After a
+root edit it would make `find_by_root` keep answering for a path the place no longer covers.
+Pinned by `manager/root_replace_tests.rs`.
+
 **Decision**: a caller that retires the incumbent asks `would_keep_incumbent` first
 **Why**: `register_replacing_predecessor` (the SMB upgrade's entry point) calls `on_superseded` on the volume it is displacing, which stops that volume's watcher. On a refused registration the registry keeps that same volume active, so retiring first left the ID pointing at a live share with no watcher: it stayed listed, and silently stopped seeing its own changes. `would_keep_incumbent(id, root)` answers the guard's question under the read lock so the caller can skip the retirement, and the ordering (retire, then register) is unchanged for the routine same-root swap, where two live watchers on one ID would double-feed the index. Covered by `a_registration_the_registry_refuses_leaves_the_incumbent_untouched`.
 

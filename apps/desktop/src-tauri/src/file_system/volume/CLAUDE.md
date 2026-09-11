@@ -15,8 +15,8 @@ through a `Volume`, **relative to the volume root**.
   a `.zip`-crossing path to an `ArchiveVolume` and a `.git/<category>/` path to a `GitPortalVolume`, path UNCHANGED,
   and answers `is_routed()`; match a `RoutedKind` only where the answer is about that one backend.
   `resolve_local_only` is for the ONE caller that can't `.await`. `DETAILS.md` § "Resolving a path: the two routes".
-- **Watcher-pre-registered volumes go in via `register_if_absent`**, else the FSEvents watcher overwrites an
-  `SmbVolume` with a `LocalPosixVolume`; plain `register` replaces at the SAME root. `DETAILS.md` § "Key decisions".
+- **Watcher-pre-registered volumes use `register_if_absent`** (else FSEvents overwrites an `SmbVolume`). `register`
+  replaces only at the SAME root; an edited root uses `replace_root_in_place`. `DETAILS.md` § "Key decisions".
 - **A volume the registry REMOVES is retired** (`Volume::retirement`), so a backend's watcher and reconnect loop stand
   down; a replace doesn't. `DETAILS.md` § "Leaving the registry".
 - **Work that must WAIT for a volume subscribes with `on_volume_arrival`, ❌ never polls the registry.** A listener gets
