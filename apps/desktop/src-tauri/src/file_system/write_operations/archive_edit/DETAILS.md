@@ -105,6 +105,12 @@ fresh spared, other-archive ignored, delete-failure doesn't fail the edit).
   `write-error`; other mutator faults map to typed `WriteOperationError`. **The terminal `files_processed` is
   `MutationProgress::entries_changed`** (entries the edit adds / deletes / renames), NOT `entries_total` (the
   retained-rewrite count) — deleting one file from a 3-entry zip reports 1, not 2.
+- **E2E pacing.** Under `set_test_throttle` / `CMDR_E2E_COPY_THROTTLE_MS`, `MutatorHooks::on_progress` sleeps once per
+  finished entry for the copy throttle's value, in 10 ms slices that return the moment the op is cancelled. It sleeps
+  only while an entry remains: the mutator checks cancel before every entry, so a click inside the sleep always stops
+  the rewrite, while a sleep after the LAST entry would be dead time, since the commit follows with no check left.
+  `archive-editing.spec.ts`'s cancel-paste test depends on it: unpaced, a local paste into a small zip lands before the
+  progress dialog can offer an enabled Cancel. Production reads one atomic and never sleeps.
 - **Routing seams.** The former archive rejections become routing: `create_directory_managed` / `create_file_managed`
   (a `.zip`-crossing parent), `rename_managed` (an in-archive path), `delete_files_start` (in-archive sources), and the
   `copy`/`move_between_volumes` COMMANDS (an archive-resolved destination). The instant-op forks reach a `TauriEventSink`

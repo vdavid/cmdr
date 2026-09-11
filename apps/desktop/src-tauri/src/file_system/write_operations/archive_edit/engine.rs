@@ -1,10 +1,11 @@
 //! The shared apply engine: the single chokepoint that runs a plan+apply closure
 //! against an archive (LOCAL in place, or REMOTE pull-apply-upload-swap), the
 //! [`PlanError`] cancel-vs-fault split, the mutator control-seam [`MutatorHooks`]
-//! (cancel/pause/progress/downloads-ignore), the mutator-error mapping, and the
-//! post-commit source deletion for an into-archive move.
+//! (cancel/pause/progress/downloads-ignore, plus E2E pacing), the mutator-error
+//! mapping, and the post-commit source deletion for an into-archive move.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -188,9 +189,27 @@ pub(super) fn emit_archive_terminal(
     }
 }
 
+/// How often a paced sleep re-checks cancel, so E2E pacing never holds a click
+/// back longer than this.
+const PACE_CANCEL_SLICE: Duration = Duration::from_millis(10);
+
+/// Sleeps for `total`, re-checking `cancelled` every [`PACE_CANCEL_SLICE`] and
+/// returning as soon as it answers `true`.
+fn sleep_unless_cancelled(total: Duration, cancelled: impl Fn() -> bool) {
+    let deadline = Instant::now() + total;
+    while !cancelled() {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return;
+        }
+        std::thread::sleep(remaining.min(PACE_CANCEL_SLICE));
+    }
+}
+
 /// Bridges the mutator's control seam to the operation's live state: cancel from
-/// `OperationIntent`, pause from the `PauseGate`, throttled progress events, and
-/// the downloads-watcher ignore registration for the temp + final paths.
+/// `OperationIntent`, pause from the `PauseGate`, throttled progress events, the
+/// downloads-watcher ignore registration for the temp + final paths, and the E2E
+/// per-entry pacing.
 pub(super) struct MutatorHooks {
     state: Arc<WriteOperationState>,
     events: Arc<dyn OperationEventSink>,
@@ -204,6 +223,9 @@ pub(super) struct MutatorHooks {
     last_emit: Mutex<Option<Instant>>,
     /// Latest progress snapshot, read by the driver for the terminal event's totals.
     latest: Mutex<MutationProgress>,
+    /// The last `entries_done` the E2E pacing slept for, so it sleeps once per entry
+    /// rather than once per chunk. `usize::MAX` until the first tick.
+    paced_entries: AtomicUsize,
 }
 
 impl MutatorHooks {
@@ -224,6 +246,7 @@ impl MutatorHooks {
             progress_interval,
             last_emit: Mutex::new(None),
             latest: Mutex::new(MutationProgress::default()),
+            paced_entries: AtomicUsize::new(usize::MAX),
         }
     }
 
@@ -231,25 +254,10 @@ impl MutatorHooks {
     pub(super) fn latest_progress(&self) -> MutationProgress {
         *self.latest.lock_ignore_poison()
     }
-}
 
-impl MutationHooks for MutatorHooks {
-    fn is_cancelled(&self) -> bool {
-        is_cancelled(&self.state.intent)
-    }
-
-    fn wait_if_paused(&self) {
-        // Sync park — the mutator runs on the blocking pool, so parking its
-        // thread is the correct shape (matches the local-FS drivers). Cancel
-        // wins: the gate returns the instant the op leaves `Running`.
-        self.state.pause_gate.wait_while_paused_sync(&self.state.intent);
-    }
-
-    fn on_progress(&self, progress: MutationProgress) {
-        *self.latest.lock_ignore_poison() = progress;
-
-        // Throttle to the op's progress interval, but always let the final tick
-        // (all bytes processed) through so the bar reaches 100%.
+    /// Emits `write-progress`, throttled to the op's progress interval, but always
+    /// lets the final tick (all entries done) through so the bar reaches 100%.
+    fn emit_progress_if_due(&self, progress: MutationProgress) {
         let is_final = progress.entries_done == progress.entries_total;
         {
             let mut last = self.last_emit.lock_ignore_poison();
@@ -274,7 +282,69 @@ impl MutationHooks for MutatorHooks {
         self.state.emit_progress_via_sink(&*self.events, event);
     }
 
+    /// E2E-only per-entry pacing, the archive twin of the copy loop's per-file
+    /// throttle (`transfer/copy/mod.rs`), so a spec can press Cancel mid-rewrite.
+    /// `effective_copy_throttle_ms()` is `None` in production, so this is one atomic
+    /// load. It sleeps only while an entry remains: the mutator checks cancel before
+    /// every entry, so a click during the sleep always stops the rewrite, whereas
+    /// after the last entry the commit follows with no check left to honor it.
+    fn pace_entry_for_e2e(&self, progress: MutationProgress) {
+        let Some(ms) = crate::test_mode::effective_copy_throttle_ms().filter(|ms| *ms > 0) else {
+            return;
+        };
+        if progress.entries_done >= progress.entries_total
+            || self.paced_entries.swap(progress.entries_done, Ordering::Relaxed) == progress.entries_done
+        {
+            return;
+        }
+        sleep_unless_cancelled(Duration::from_millis(ms), || is_cancelled(&self.state.intent));
+    }
+}
+
+impl MutationHooks for MutatorHooks {
+    fn is_cancelled(&self) -> bool {
+        is_cancelled(&self.state.intent)
+    }
+
+    fn wait_if_paused(&self) {
+        // Sync park — the mutator runs on the blocking pool, so parking its
+        // thread is the correct shape (matches the local-FS drivers). Cancel
+        // wins: the gate returns the instant the op leaves `Running`.
+        self.state.pause_gate.wait_while_paused_sync(&self.state.intent);
+    }
+
+    fn on_progress(&self, progress: MutationProgress) {
+        *self.latest.lock_ignore_poison() = progress;
+        self.emit_progress_if_due(progress);
+        self.pace_entry_for_e2e(progress);
+    }
+
     fn note_pending(&self, path: &Path) {
         crate::downloads::note_pending_write_for_cmdr(path);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn paced_sleep_gives_way_to_a_cancel_within_a_slice() {
+        // The cancel lands after the first check, so a 10 s pace must return at once.
+        let checks = AtomicUsize::new(0);
+        let started = Instant::now();
+        sleep_unless_cancelled(Duration::from_secs(10), || checks.fetch_add(1, Ordering::Relaxed) >= 1);
+        assert!(
+            started.elapsed() < Duration::from_secs(1),
+            "slept {:?} past a cancel",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn paced_sleep_runs_its_full_length_without_a_cancel() {
+        let started = Instant::now();
+        sleep_unless_cancelled(Duration::from_millis(30), || false);
+        assert!(started.elapsed() >= Duration::from_millis(30));
     }
 }

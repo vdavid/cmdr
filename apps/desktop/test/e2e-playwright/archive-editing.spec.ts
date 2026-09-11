@@ -26,6 +26,7 @@ import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureMcpClient, mcpReadResource } from '../e2e-shared/mcp-client.js'
 import {
+  clickButtonByText,
   ensureAppReady,
   flushFileWatcher,
   getFixtureRoot,
@@ -257,21 +258,20 @@ test.describe('Archive editing', () => {
     await ensureMcpClient(tauriPage)
     const fixtureRoot = getFixtureRoot()
 
-    // A large source file gives a window to cancel mid-write. Create it directly
-    // (the shared bulk cache isn't populated for a single manual instance).
-    // This spec runs ~4 s, well over the sub-second suite norm, and that's
-    // inherent, not a stray sleep: pinning a MID-TRANSFER cancel needs a transfer
-    // long enough to catch mid-write, so the 24 MB write + zip-compress window is
-    // load-bearing. Don't shrink it to "speed it up" — a file small enough to
-    // finish before the cancel lands turns this into a completed-copy test and
-    // stops exercising the cancel path.
-    const bigName = 'big-to-cancel.dat'
-    fs.writeFileSync(path.join(fixtureRoot, 'left', bigName), Buffer.alloc(24 * 1024 * 1024, 7))
+    const leftDir = path.join(fixtureRoot, 'left')
+    const zipPath = path.join(leftDir, 'sample.zip')
+
+    // `set_test_throttle` paces the archive rewrite between entries
+    // (`archive_edit/engine.rs`), and that pause is the window Cancel lands in.
+    // Unpaced, a local paste into this small zip lands before the progress dialog
+    // can offer an enabled Cancel, which quietly turns this into a completed-copy
+    // test. The window comes from the pacing, not the source's size, so it stays small.
+    const pasteName = 'paste-to-cancel.txt'
+    fs.writeFileSync(path.join(leftDir, pasteName), 'a paste that never lands\n')
     // The pane has to SEE this write before the F5 below can cursor it, and an
-    // external 24 MB create reaches it only via FSEvents, which can lag or drop it
-    // under load. `flushFileWatcher` re-reads the listing through the Volume trait
-    // instead of waiting on delivery, so the wait can't be lost. Same missing step
-    // that made `compress-basic:151` flake on its own 24 MB write.
+    // external create reaches it only via FSEvents, which can lag or drop it under
+    // load. `flushFileWatcher` re-reads the listing through the Volume trait instead
+    // of waiting on delivery, so the wait can't be lost.
     await flushFileWatcher(tauriPage)
 
     await navigatePaneTo(tauriPage, 'right', `${fixtureRoot}/left/sample.zip`)
@@ -281,29 +281,35 @@ test.describe('Archive editing', () => {
 
     // Navigating the right pane focuses it (focus follows the navigated pane), so
     // re-focus the left source pane (still at `left/` from the beforeEach) before
-    // cursoring the big file for the F5 copy.
+    // cursoring the file for the F5 copy.
     await navigatePaneTo(tauriPage, 'left', `${fixtureRoot}/left`)
     await settleFocusedPaneOnLeft(tauriPage, `${fixtureRoot}/left`)
-    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, bigName), { timeout: 5000 }).toBeTruthy()
-    const found = await moveCursorToFile(tauriPage, bigName)
+    await expect.poll(async () => fileExistsInFocusedPane(tauriPage, pasteName), { timeout: 5000 }).toBeTruthy()
+    const found = await moveCursorToFile(tauriPage, pasteName)
     expect(found).toBe(true)
 
-    await tauriPage.keyboard.press('F5')
-    await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
-    await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
-    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
-    // Cancel as soon as the progress dialog appears (temp+rename means the original
-    // is untouched until the final atomic rename, so cancel can't corrupt it).
-    await tauriPage.waitForSelector(TRANSFER_PROGRESS, 5000)
-    await tauriPage.waitForSelector(`${TRANSFER_PROGRESS} .button-row button`, 3000).catch(() => {})
-    await tauriPage.evaluate(`(function(){
-        var dlg = document.querySelector('${TRANSFER_PROGRESS}');
-        var btns = dlg ? Array.prototype.slice.call(dlg.querySelectorAll('button')) : [];
-        var cancel = btns.find(function(b){ return /cancel/i.test((b.textContent||'')); });
-        if (cancel) cancel.click();
-    })()`)
-    await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 20000 }).toBeTruthy()
-    await clearAllToasts(tauriPage)
+    // "Intact" below means the same bytes, and no temp left beside the zip.
+    const zipBytesBefore = fs.readFileSync(zipPath)
+    const leftNamesBefore = fs.readdirSync(leftDir).sort()
+
+    await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: 500 })`)
+    try {
+      await tauriPage.keyboard.press('F5')
+      await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
+      await tauriPage.waitForSelector(`${TRANSFER_DIALOG} .btn-primary`, 3000)
+      await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
+      await tauriPage.waitForSelector(TRANSFER_PROGRESS, 5000)
+      await clickButtonByText(tauriPage, `${TRANSFER_PROGRESS} button`, 'Cancel')
+      await expect.poll(async () => !(await tauriPage.isVisible('.modal-overlay')), { timeout: 20000 }).toBeTruthy()
+      await clearAllToasts(tauriPage)
+    } finally {
+      await tauriPage.evaluate(`window.__TAURI_INTERNALS__.invoke('set_test_throttle', { ms: null })`)
+    }
+
+    // Temp+rename leaves the original alone until the final rename, and a cancel
+    // before it removes the temp: the zip is byte-identical, with nothing beside it.
+    expect(fs.readFileSync(zipPath).equals(zipBytesBefore)).toBe(true)
+    expect(fs.readdirSync(leftDir).sort()).toEqual(leftNamesBefore)
 
     // The zip's prior contents are fully intact regardless of when the cancel
     // caught the edit (temp+rename never mutates the original until the final

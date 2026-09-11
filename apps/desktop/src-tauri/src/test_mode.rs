@@ -44,7 +44,8 @@ static SCAN_PREVIEW_DELAY_OVERRIDE: AtomicI64 = AtomicI64::new(-1);
 /// Sets the IPC-driven copy throttle override.
 ///
 /// `None` clears the override and falls back to `CMDR_E2E_COPY_THROTTLE_MS`.
-/// `Some(ms)` pins the copy loop to that per-file delay. Used by E2E specs
+/// `Some(ms)` pins the copy loop to that per-file delay, and an archive edit's
+/// rewrite to that per-entry delay (`archive_edit/engine.rs`). Used by E2E specs
 /// that need a known window in which to click Cancel/Rollback.
 pub fn set_copy_throttle_override(ms: Option<u64>) {
     let v = match ms {

@@ -779,7 +779,8 @@ E2E test hooks split along two axes:
 - **`CMDR_VIRTUAL_MTP=1` (or `=<dir>`)**: Dev opt-in: `pnpm dev` registers the virtual MTP device. See
   `tooling/virtual-mtp.md`.
 - **`CMDR_E2E_COPY_THROTTLE_MS`** (no E2E-mode gate; the variable alone is enough, and it's re-read every file):
-  Per-file sleep inside the copy loop. Lets tests stage Cancel/Rollback.
+  Per-file sleep inside the copy loop, and a per-entry sleep inside an archive edit's rewrite (`archive_edit/engine.rs`,
+  in 10 ms slices that give way to a cancel). Lets tests stage Cancel/Rollback.
 - **`CMDR_E2E_ROLLBACK_THROTTLE_MS`** (**needs `CMDR_E2E_MODE=1` too**, else it does nothing at all): Per-item sleep
   inside the operation-log ROLLBACK engine's file loop (`operation_log/rollback.rs`), so a spec can watch a reversal run
   and press Cancel inside it. Its own knob rather than a reuse of the copy throttle: pacing the reversal must not also
@@ -809,7 +810,8 @@ E2E test hooks split along two axes:
 
 **Existing soft hooks** (IPC-driven, feature-gated to `playwright-e2e`):
 
-- **`set_test_throttle(ms)`**: Mid-run override of `CMDR_E2E_COPY_THROTTLE_MS`; clears with `null`.
+- **`set_test_throttle(ms)`**: Mid-run override of `CMDR_E2E_COPY_THROTTLE_MS`, so it paces copies and archive edits
+  alike; clears with `null`.
 - **`set_test_rollback_throttle(ms)`**: Mid-run override of `CMDR_E2E_ROLLBACK_THROTTLE_MS`; clears with `null`.
 - **`flush_file_watcher()`**: Synchronously re-reads every active watch, bypassing debouncer + FSEvents latency.
 - **`inject_listing_error()`**: Inject an IoError into a volume's next list_directory for retry coverage.
