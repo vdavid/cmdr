@@ -212,6 +212,11 @@ export interface FilePaneAPI {
   refreshIndexSizes(): void
 
   navigateToParent(): Promise<boolean>
+  /**
+   * Resolves when the listing lands. Rejects on a listing error, a cancel, or
+   * `NavigationSuperseded` when a newer navigation takes over; only that last one
+   * is safe to drop unawaited.
+   */
   navigateToPath(path: string, selectName?: string): Promise<void>
   handleCancelLoading(): void
 

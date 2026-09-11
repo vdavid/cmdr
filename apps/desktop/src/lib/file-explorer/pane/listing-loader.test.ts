@@ -87,7 +87,7 @@ vi.mock('$lib/logging/logger', () => ({
   getAppLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }),
 }))
 
-import { createListingLoader, type ListingLoaderDeps } from './listing-loader'
+import { createListingLoader, NavigationSuperseded, type ListingLoaderDeps } from './listing-loader'
 
 interface PaneState {
   volumeId: string
@@ -570,8 +570,7 @@ describe('createListingLoader — pendingLoad / navigateToPath / whenLoadSettles
     await vi.waitFor(() => {
       expect(firstRejected).toHaveBeenCalled()
     })
-    expect(firstRejected.mock.calls[0][0]).toBeInstanceOf(Error)
-    expect((firstRejected.mock.calls[0][0] as Error).message).toBe('Superseded by new navigation')
+    expect(firstRejected.mock.calls[0][0]).toBeInstanceOf(NavigationSuperseded)
 
     // Wait for the second load to finish registering, then complete it.
     await vi.waitFor(() => {
@@ -579,6 +578,22 @@ describe('createListingLoader — pendingLoad / navigateToPath / whenLoadSettles
     })
     completeCb(h.listeners.complete.length - 1)({ listingId: state.listingId, totalCount: 3, volumeRoot: '/' })
     await expect(second).resolves.toBeUndefined()
+  })
+
+  it('a superseded navigateToPath that nobody awaits raises no unhandled rejection', async () => {
+    // The cancel-loading flow and every `navigate()` caller that drops `settled`
+    // fire and forget. A newer navigation taking over is expected, not a failure.
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    try {
+      const { loader } = makeHarness()
+      void loader.navigateToPath({ path: '/a' })
+      await loader.loadDirectory({ path: '/b' })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(unhandled).not.toHaveBeenCalled()
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
   })
 
   it('resetLoadingState rejects the pending load with its message', async () => {

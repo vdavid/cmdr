@@ -63,6 +63,18 @@ import { isEventForCurrentLoad } from './listing-token'
 
 const log = getAppLogger('fileExplorer')
 
+/**
+ * What a pending `navigateToPath` rejects with when a newer navigation takes
+ * over before its listing lands. Expected control flow, not a failure: check it
+ * with `instanceof`, ❌ never by its message.
+ */
+export class NavigationSuperseded extends Error {
+  constructor() {
+    super('Superseded by new navigation')
+    this.name = 'NavigationSuperseded'
+  }
+}
+
 export interface ListingLoaderDeps {
   paneId: 'left' | 'right'
 
@@ -181,7 +193,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
   // listing is done. Set at the start of loadDirectory, resolved by
   // handleListingComplete / error / cancel handlers.
   let pendingLoadResolve: (() => void) | null = null
-  let pendingLoadReject: ((reason: string) => void) | null = null
+  let pendingLoadReject: ((reason: Error) => void) | null = null
 
   function resolvePendingLoad() {
     pendingLoadResolve?.()
@@ -189,7 +201,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     pendingLoadReject = null
   }
 
-  function rejectPendingLoad(reason: string) {
+  function rejectPendingLoad(reason: Error) {
     pendingLoadReject?.(reason)
     pendingLoadResolve = null
     pendingLoadReject = null
@@ -229,9 +241,9 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     deps.setFinalizingCount(undefined)
     // Reject pending load promise on error/cancel
     if (errorMessage) {
-      rejectPendingLoad(errorMessage)
+      rejectPendingLoad(new Error(errorMessage))
     } else {
-      rejectPendingLoad('Loading cancelled')
+      rejectPendingLoad(new Error('Loading cancelled'))
     }
   }
 
@@ -311,7 +323,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     )
 
     // Reject any pending load from a previous navigation
-    rejectPendingLoad('Superseded by new navigation')
+    rejectPendingLoad(new NavigationSuperseded())
 
     // Increment generation to cancel any in-flight requests
     const thisGeneration = ++loadGeneration
@@ -620,12 +632,18 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
     // Start loadDirectory first: it rejects any previous pending load
     void loadDirectory({ path, selectName })
     // Then set up our promise (after the previous one was rejected)
-    return new Promise<void>((resolve, reject) => {
+    const landed = new Promise<void>((resolve, reject) => {
       pendingLoadResolve = resolve
-      pendingLoadReject = (reason: string) => {
-        reject(new Error(reason))
+      pendingLoadReject = (reason: Error) => {
+        // A newer navigation taking over is expected, so it's marked handled: a
+        // caller that fires and forgets (the cancel flow, a `navigate()` whose
+        // `settled` nobody reads) raises no unhandled rejection. One that awaits
+        // still gets `NavigationSuperseded`.
+        if (reason instanceof NavigationSuperseded) void landed.catch(() => {})
+        reject(reason)
       }
     })
+    return landed
   }
 
   async function navigateToParent(): Promise<boolean> {
@@ -664,7 +682,7 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
         prevResolve?.()
         resolve()
       }
-      pendingLoadReject = (reason: string) => {
+      pendingLoadReject = (reason: Error) => {
         prevReject?.(reason)
         resolve() // We treat reject as "load is no longer in flight"; caller checks isLoading.
       }
