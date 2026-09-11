@@ -270,17 +270,23 @@ fn walk_plan(plan: BatchPlan, cfg: WalkConfig) -> (WalkStats, bool) {
 
 #[test]
 fn a_read_that_keeps_delivering_is_never_abandoned() {
-    // A big HEALTHY directory: 20 batches, 30 ms apart, so the read runs ~600 ms —
-    // 12x the stall timeout. Elapsed time can't tell this from a hung mount, which
+    // A big HEALTHY directory: 75 batches, 10 ms apart, so the read runs ~750 ms —
+    // 3x the stall timeout. Elapsed time can't tell this from a hung mount, which
     // is how a real 200,000-entry directory got dropped from a whole fresh scan.
     // Progress can: this read never stops delivering, so it must be read in full.
+    // ❗ The widened stall timeout keeps the gap far under it: a busy Linux VM wakes a
+    // worker tens of ms late, which read as a stall against 50 ms.
     let plan = BatchPlan {
-        batches: 20,
+        batches: 75,
         per_batch: 100,
-        gap: Duration::from_millis(30),
+        gap: Duration::from_millis(10),
         publish: true,
     };
-    let (stats, big_read) = walk_plan(plan, fast_cfg(2));
+    let cfg = WalkConfig {
+        stall_timeout: Duration::from_millis(250),
+        ..fast_cfg(2)
+    };
+    let (stats, big_read) = walk_plan(plan, cfg);
 
     assert_eq!(
         stats.timed_out, 0,
