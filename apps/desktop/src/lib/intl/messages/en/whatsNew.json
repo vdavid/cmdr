@@ -16,7 +16,9 @@
   },
   "whatsNew.dialog.showLess": "Show less",
   "@whatsNew.dialog.showLess": {
-    "description": "Button in the What's new dialog that collapses one release's detailed change lists again. The expanded counterpart of whatsNew.dialog.showMore."
+    "description": "Button in the What's new dialog that collapses one release's detailed change lists again. The expanded counterpart of whatsNew.dialog.showMore.",
+    "screenshot": "whats-new.png",
+    "screenshotNote": "The What’s new dialog, pictured here. Your string is the link that folds a release’s detailed changes away again once someone has expanded them."
   },
   "whatsNew.dialog.seeFullChangelog": "See full changelog",
   "@whatsNew.dialog.seeFullChangelog": {

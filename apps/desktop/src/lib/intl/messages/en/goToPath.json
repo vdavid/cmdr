@@ -16,11 +16,15 @@
   },
   "goToPath.dialog.recentsAriaLabel": "Recent paths",
   "@goToPath.dialog.recentsAriaLabel": {
-    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to path\" dialog."
+    "description": "Accessibility label (read by screen readers) for the list of recently visited paths in the \"Go to path\" dialog.",
+    "screenshot": "go-to-path.png",
+    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.dialog.removeFromList": "Remove from list",
   "@goToPath.dialog.removeFromList": {
-    "description": "Tooltip and accessibility label for the button that removes one entry from the recent-paths list. A short label."
+    "description": "Tooltip and accessibility label for the button that removes one entry from the recent-paths list. A short label.",
+    "screenshot": "go-to-path.png",
+    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.dialog.cancel": "Cancel",
   "@goToPath.dialog.cancel": {
@@ -37,7 +41,9 @@
     "description": "Inline warning under the input when the typed path doesn't exist; tells the user the nearest existing folder it would go to instead.",
     "placeholders": {
       "dir": "the nearest existing parent folder's path (e.g. /Users/me)"
-    }
+    },
+    "screenshot": "go-to-path.png",
+    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.toast.landedOnAncestor": "<req>{requested}</req> doesn''t exist, so we took you to <land>{landed}</land>.",
   "@goToPath.toast.landedOnAncestor": {
@@ -57,10 +63,14 @@
     "description": "Preview line under the Go to path box when what the user typed is an address Cmdr can open right now: a saved server, or a phone. Present tense, third person.",
     "placeholders": {
       "name": "the server''s or device''s name, like “Naspolya”"
-    }
+    },
+    "screenshot": "go-to-path.png",
+    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
   "goToPath.dialog.addsServer": "Adds a server",
   "@goToPath.dialog.addsServer": {
-    "description": "Preview line under the Go to path box when what the user typed is a server address nothing has saved yet, so going there opens the form that adds it. Present tense, third person."
+    "description": "Preview line under the Go to path box when what the user typed is a server address nothing has saved yet, so going there opens the form that adds it. Present tense, third person.",
+    "screenshot": "go-to-path.png",
+    "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   }
 }

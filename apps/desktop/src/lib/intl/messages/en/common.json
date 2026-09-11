@@ -1,12 +1,10 @@
 {
   "common.attachEmail": "Attach my email address ({emailAddress} – <change>change</change>) so you can follow up",
   "@common.attachEmail": {
-    "description": "Label for an opt-in checkbox to include the user's email address so the team can follow up on their report. Shared verbatim by the crash-report, error-report, and feedback dialogs. \"You\" is the Cmdr team; the user is the one speaking. This variant appears when the app already has an address on file, shown in the parentheses; when it doesn't, common.attachEmailPrompt takes its place, so keep the two wordings parallel. <change> wraps the inline link that opens Settings on the field holding that address; keep its text short and lowercase, a verb the user acts on.",
+    "description": "Label for an opt-in checkbox to include the user's email address so the team can follow up on their report. Shared verbatim by the crash-report, error-report, and feedback dialogs. \"You\" is the Cmdr team; the user is the one speaking. This variant appears when the app already has an address on file, shown in the parentheses; when it doesn't, common.attachEmailPrompt takes its place, so keep the two wordings parallel. <change> wraps the inline link that opens Settings on the field holding that address; keep its text short and lowercase, a verb the user acts on. The crash-report and feedback dialogs place the same checkbox above their Send button.",
     "placeholders": {
       "emailAddress": "the user's email address on file (e.g. alex@example.com)"
-    },
-    "screenshot": "error-report.png",
-    "screenshotNote": "Pictured in the error-report dialog; the crash-report and feedback dialogs place the same checkbox above their Send button."
+    }
   },
 
   "common.attachEmailInputLabel": "Your email address",
@@ -32,6 +30,8 @@
 
   "common.downloadsFdaHint": "Cmdr needs Full Disk Access to watch your Downloads folder. <settingsLink>Open System Settings</settingsLink>",
   "@common.downloadsFdaHint": {
-    "description": "Hint shown when the downloads watcher lacks Full Disk Access. <settingsLink> wraps the inline action that opens System Settings."
+    "description": "Hint shown when the downloads watcher lacks Full Disk Access. <settingsLink> wraps the inline action that opens System Settings.",
+    "screenshot": "settings-behavior-notifications.png",
+    "screenshotNote": "Settings > Behavior > Notifications, pictured here. Your string is the hint at the top of this section that appears only while Cmdr can’t watch the Downloads folder for lack of Full Disk Access, with a link that opens System Settings."
   }
 }

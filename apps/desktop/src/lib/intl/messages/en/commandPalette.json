@@ -24,11 +24,15 @@
 
   "commandPalette.groupRecent": "Recent",
   "@commandPalette.groupRecent": {
-    "description": "Heading above the recently-used commands at the top of the command palette (shown when the search box is empty). A short section label."
+    "description": "Heading above the recently-used commands at the top of the command palette (shown when the search box is empty). A short section label.",
+    "screenshot": "command-palette.png",
+    "screenshotNote": "The command palette, pictured here. Your string is one of the two section headings it shows above its list while the search box is empty."
   },
 
   "commandPalette.groupAll": "All commands",
   "@commandPalette.groupAll": {
-    "description": "Heading above the full command list in the command palette, shown below the \"Recent\" group. A short section label."
+    "description": "Heading above the full command list in the command palette, shown below the \"Recent\" group. A short section label.",
+    "screenshot": "command-palette.png",
+    "screenshotNote": "The command palette, pictured here. Your string is one of the two section headings it shows above its list while the search box is empty."
   }
 }

@@ -19,7 +19,9 @@
     "description": "The same language-picker option as settings.appearance.language.opt.system, naming the language that following the Mac currently lands on: \"System default (Svenska)\". Shown in the Settings picker and in the compact language control in the onboarding wizard's header. Word order is yours: put the language name wherever it reads best, and use your language's own bracketing convention. Keep the opening words identical to settings.appearance.language.opt.system, since the two labels swap places in the same row.",
     "placeholders": {
       "language": "the resolved language's name in that language's own words, never translated (for example \"Svenska\", \"Magyar\", \"Deutsch\"). Capitalized already."
-    }
+    },
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is a choice in its language picker."
   },
   "settings.theme.mode.label": "Theme mode",
   "@settings.theme.mode.label": {
@@ -127,27 +129,39 @@
   },
   "settings.appearance.dateTimeFormat.opt.system": "System default",
   "@settings.appearance.dateTimeFormat.opt.system": {
-    "description": "Date/time format option: use the macOS system date and time format. Radio-button label."
+    "description": "Date/time format option: use the macOS system date and time format. Radio-button label.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
   "settings.appearance.dateTimeFormat.opt.iso": "ISO 8601",
   "@settings.appearance.dateTimeFormat.opt.iso": {
-    "description": "Date/time format option: the ISO 8601 standard format (year-month-day). \"ISO 8601\" is a standard name; keep it as-is. Radio-button label."
+    "description": "Date/time format option: the ISO 8601 standard format (year-month-day). \"ISO 8601\" is a standard name; keep it as-is. Radio-button label.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
   "settings.appearance.dateTimeFormat.optDesc.iso": "e.g., 2025-01-25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.iso": {
-    "description": "Example shown under the ISO 8601 option. The date string \"2025-01-25 14:30\" is a literal ISO example and must stay exactly in that digit layout (year-month-day 24-hour time); only translate the \"e.g.,\" lead-in."
+    "description": "Example shown under the ISO 8601 option. The date string \"2025-01-25 14:30\" is a literal ISO example and must stay exactly in that digit layout (year-month-day 24-hour time); only translate the \"e.g.,\" lead-in.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
   "settings.appearance.dateTimeFormat.opt.short": "Short",
   "@settings.appearance.dateTimeFormat.opt.short": {
-    "description": "Date/time format option: a compact month/day plus time format. Radio-button label."
+    "description": "Date/time format option: a compact month/day plus time format. Radio-button label.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
   "settings.appearance.dateTimeFormat.optDesc.short": "e.g., 01/25 14:30",
   "@settings.appearance.dateTimeFormat.optDesc.short": {
-    "description": "Example shown under the Short option. \"01/25 14:30\" is a literal example (month/day 24-hour time) and must stay in that digit layout; only translate the \"e.g.,\" lead-in."
+    "description": "Example shown under the Short option. \"01/25 14:30\" is a literal example (month/day 24-hour time) and must stay in that digit layout; only translate the \"e.g.,\" lead-in.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
   "settings.appearance.dateTimeFormat.opt.custom": "Custom...",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "description": "Date/time format option: define your own format string (reveals the custom-format text field). The trailing ellipsis signals it opens further input; keep an ellipsis. Radio-button label."
+    "description": "Date/time format option: define your own format string (reveals the custom-format text field). The trailing ellipsis signals it opens further input; keep an ellipsis. Radio-button label.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
   "settings.appearance.customDateTimeFormat.label": "Custom date/time format",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -403,11 +417,15 @@
   },
   "settings.listing.briefColumnWidthMode.opt.paneWidth": "Pane width (no limit)",
   "@settings.listing.briefColumnWidthMode.opt.paneWidth": {
-    "description": "Brief-column-width option: no extra limit, columns may grow up to the full pane width. Radio-button label."
+    "description": "Brief-column-width option: no extra limit, columns may grow up to the full pane width. Radio-button label.",
+    "screenshot": "settings-appearance-listing.png",
+    "screenshotNote": "Settings > Appearance > Listing, pictured here. Your string is one of the choices for how wide columns in the Brief view may grow."
   },
   "settings.listing.briefColumnWidthMode.opt.limited": "Limit to",
   "@settings.listing.briefColumnWidthMode.opt.limited": {
-    "description": "Brief-column-width option: cap columns at a chosen pixel width. This label reads as a sentence lead-in immediately followed by a numeric width control, so phrase it to flow into \"Limit to [N px]\". Radio-button label."
+    "description": "Brief-column-width option: cap columns at a chosen pixel width. This label reads as a sentence lead-in immediately followed by a numeric width control, so phrase it to flow into \"Limit to [N px]\". Radio-button label.",
+    "screenshot": "settings-appearance-listing.png",
+    "screenshotNote": "Settings > Appearance > Listing, pictured here. Your string is one of the choices for how wide columns in the Brief view may grow."
   },
   "settings.listing.briefColumnWidthMaxPx.label": "Brief column width limit",
   "@settings.listing.briefColumnWidthMaxPx.label": {
@@ -961,11 +979,15 @@
   },
   "settings.indexing.masterOffNote": "Drive indexing is off, so no drive is indexed and folder sizes stay hidden. Each drive keeps its own on or off choice, ready for when you turn this back on.",
   "@settings.indexing.masterOffNote": {
-    "description": "Note under the master drive-indexing toggle, shown only while it''s off. States what stops happening and reassures that the per-drive choices survive the master switch. Sentence case."
+    "description": "Note under the master drive-indexing toggle, shown only while it''s off. States what stops happening and reassures that the per-drive choices survive the master switch. Sentence case.",
+    "screenshot": "settings-indexing-drive-indexing.png",
+    "screenshotNote": "Settings > Indexing > Drive indexing, pictured here. Your string is the note under the main switch that appears only while that switch is off."
   },
   "settings.indexing.overriddenBadge": "Off with drive indexing",
   "@settings.indexing.overriddenBadge": {
-    "description": "Small badge next to a settings row that the master drive-indexing switch has overridden, shown while that switch is off. Very short; sentence case."
+    "description": "Small badge next to a settings row that the master drive-indexing switch has overridden, shown while that switch is off. Very short; sentence case.",
+    "screenshot": "settings-indexing-drive-indexing.png",
+    "screenshotNote": "Settings > Indexing > Drive indexing, pictured here. Your string is the small badge on a row the main switch overrides, shown only while that switch is off."
   },
   "settings.indexing.reEnableNotifications.label": "Re-enable notifications for all drives",
   "@settings.indexing.reEnableNotifications.label": {
@@ -1235,23 +1257,33 @@
   },
   "settings.network.timeoutMode.opt.normal": "Normal",
   "@settings.network.timeoutMode.opt.normal": {
-    "description": "Network-timeout option: standard timeout for typical local networks. Radio-button label."
+    "description": "Network-timeout option: standard timeout for typical local networks. Radio-button label.",
+    "screenshot": "settings-file-systems-smb.png",
+    "screenshotNote": "Settings > File systems > SMB, pictured here. Your string is one of the network timeout choices, or the line under one of them."
   },
   "settings.network.timeoutMode.optDesc.normal": "For typical local networks (15s timeout)",
   "@settings.network.timeoutMode.optDesc.normal": {
-    "description": "Sub-text under the Normal timeout option. \"15s\" is a literal value (15 seconds); keep the number and the \"s\" unit."
+    "description": "Sub-text under the Normal timeout option. \"15s\" is a literal value (15 seconds); keep the number and the \"s\" unit.",
+    "screenshot": "settings-file-systems-smb.png",
+    "screenshotNote": "Settings > File systems > SMB, pictured here. Your string is one of the network timeout choices, or the line under one of them."
   },
   "settings.network.timeoutMode.opt.slow": "Slow network",
   "@settings.network.timeoutMode.opt.slow": {
-    "description": "Network-timeout option: longer timeout for slow or high-latency networks. Radio-button label."
+    "description": "Network-timeout option: longer timeout for slow or high-latency networks. Radio-button label.",
+    "screenshot": "settings-file-systems-smb.png",
+    "screenshotNote": "Settings > File systems > SMB, pictured here. Your string is one of the network timeout choices, or the line under one of them."
   },
   "settings.network.timeoutMode.optDesc.slow": "For VPNs or high-latency connections (45s timeout)",
   "@settings.network.timeoutMode.optDesc.slow": {
-    "description": "Sub-text under the Slow network timeout option. \"VPN\" = virtual private network (keep the abbreviation or use the locale's standard form). \"45s\" is a literal value (45 seconds); keep the number and the \"s\" unit."
+    "description": "Sub-text under the Slow network timeout option. \"VPN\" = virtual private network (keep the abbreviation or use the locale's standard form). \"45s\" is a literal value (45 seconds); keep the number and the \"s\" unit.",
+    "screenshot": "settings-file-systems-smb.png",
+    "screenshotNote": "Settings > File systems > SMB, pictured here. Your string is one of the network timeout choices, or the line under one of them."
   },
   "settings.network.timeoutMode.opt.custom": "Custom",
   "@settings.network.timeoutMode.opt.custom": {
-    "description": "Network-timeout option: user-defined timeout (reveals the custom-timeout field). Radio-button label."
+    "description": "Network-timeout option: user-defined timeout (reveals the custom-timeout field). Radio-button label.",
+    "screenshot": "settings-file-systems-smb.png",
+    "screenshotNote": "Settings > File systems > SMB, pictured here. Your string is one of the network timeout choices, or the line under one of them."
   },
   "settings.network.customTimeout.label": "Custom timeout",
   "@settings.network.customTimeout.label": {
@@ -1714,51 +1746,75 @@
   },
   "settings.tint.red": "Red",
   "@settings.tint.red": {
-    "description": "Volume-tint color name: red. Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: red. Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.orange": "Orange",
   "@settings.tint.orange": {
-    "description": "Volume-tint color name: orange. Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: orange. Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.amber": "Amber",
   "@settings.tint.amber": {
-    "description": "Volume-tint color name: amber (a warm yellow-orange). Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: amber (a warm yellow-orange). Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.lime": "Lime",
   "@settings.tint.lime": {
-    "description": "Volume-tint color name: lime (a yellow-green). Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: lime (a yellow-green). Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.green": "Green",
   "@settings.tint.green": {
-    "description": "Volume-tint color name: green. Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: green. Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.teal": "Teal",
   "@settings.tint.teal": {
-    "description": "Volume-tint color name: teal (a blue-green). Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: teal (a blue-green). Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.cyan": "Cyan",
   "@settings.tint.cyan": {
-    "description": "Volume-tint color name: cyan (a bright light blue). Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: cyan (a bright light blue). Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.blue": "Blue",
   "@settings.tint.blue": {
-    "description": "Volume-tint color name: blue. Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: blue. Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.indigo": "Indigo",
   "@settings.tint.indigo": {
-    "description": "Volume-tint color name: indigo (a deep blue-violet). Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: indigo (a deep blue-violet). Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.purple": "Purple",
   "@settings.tint.purple": {
-    "description": "Volume-tint color name: purple. Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: purple. Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.pink": "Pink",
   "@settings.tint.pink": {
-    "description": "Volume-tint color name: pink. Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: pink. Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.tint.brown": "Brown",
   "@settings.tint.brown": {
-    "description": "Volume-tint color name: brown. Shown as a swatch label / aria-label in the tint color picker."
+    "description": "Volume-tint color name: brown. Shown as a swatch label / aria-label in the tint color picker.",
+    "screenshot": "settings-appearance.png",
+    "screenshotNote": "Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks."
   },
   "settings.section.appearance": "Appearance",
   "@settings.section.appearance": {
@@ -2038,15 +2094,21 @@
   },
   "settings.askCmdr.status.off": "Ask Cmdr is off",
   "@settings.askCmdr.status.off": {
-    "description": "Status line in Ask Cmdr settings when the feature is turned off. Sentence case, no period."
+    "description": "Status line in Ask Cmdr settings when the feature is turned off. Sentence case, no period.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.status.needsReview": "Ask Cmdr is paused",
   "@settings.askCmdr.status.needsReview": {
-    "description": "Status line in Ask Cmdr settings, in place of \"Ask Cmdr is on\" / \"Ask Cmdr is off\", for someone who had it on but whose opt-in no longer covers what it does. Sentence case, no period. \"Ask Cmdr\" is a product name and stays as it is."
+    "description": "Status line in Ask Cmdr settings, in place of \"Ask Cmdr is on\" / \"Ask Cmdr is off\", for someone who had it on but whose opt-in no longer covers what it does. Sentence case, no period. \"Ask Cmdr\" is a product name and stays as it is.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.status.changed": "It changed since you turned it on, so it’s waiting for your OK. Read what’s new below, then switch it back on.",
   "@settings.askCmdr.status.changed": {
-    "description": "Explanation under the paused status line in Ask Cmdr settings: why the feature paused itself and what to do about it. \"below\" is the disclosure text further down the same screen. The apostrophes are U+2019."
+    "description": "Explanation under the paused status line in Ask Cmdr settings: why the feature paused itself and what to do about it. \"below\" is the disclosure text further down the same screen. The apostrophes are U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.status.onSince": "On since {date}",
   "@settings.askCmdr.status.onSince": {
@@ -2060,11 +2122,15 @@
   },
   "settings.askCmdr.turnOn": "Turn on Ask Cmdr",
   "@settings.askCmdr.turnOn": {
-    "description": "Button that opts into and turns on Ask Cmdr from settings. Starts with a verb. Sentence case."
+    "description": "Button that opts into and turns on Ask Cmdr from settings. Starts with a verb. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.turnBackOn": "Turn back on",
   "@settings.askCmdr.turnBackOn": {
-    "description": "Button in Ask Cmdr settings that accepts the updated wording and switches the feature back on. Shown instead of \"Turn on Ask Cmdr\" for someone who had it on before. Starts with a verb. Sentence case."
+    "description": "Button in Ask Cmdr settings that accepts the updated wording and switches the feature back on. Shown instead of \"Turn on Ask Cmdr\" for someone who had it on before. Starts with a verb. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.turnOff": "Turn off Ask Cmdr",
   "@settings.askCmdr.turnOff": {
@@ -2088,7 +2154,9 @@
       "provider": {
         "content": "The current AI provider label: Off, Cloud AI, or Local LLM."
       }
-    }
+    },
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.provider.off": "Turn on an AI provider in Settings › AI to start chatting.",
   "@settings.askCmdr.provider.off": {
@@ -2127,7 +2195,9 @@
   },
   "settings.askCmdr.chatMemorySize.overWindow": "Your model may refuse a message this long. Cmdr keeps the value you set.",
   "@settings.askCmdr.chatMemorySize.overWindow": {
-    "description": "Warning under the chat memory size picker, shown when the chosen size is larger than the context window Cmdr believes the model has. Cmdr does not overrule the choice: what Cmdr knows about a model can be out of date, and the user may be right. So name the consequence and confirm the value stands. Never says error or failed. Sentence case."
+    "description": "Warning under the chat memory size picker, shown when the chosen size is larger than the context window Cmdr believes the model has. Cmdr does not overrule the choice: what Cmdr knows about a model can be out of date, and the user may be right. So name the consequence and confirm the value stands. Never says error or failed. Sentence case.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.proactive.title": "On its own",
   "@settings.askCmdr.proactive.title": {
@@ -2151,7 +2221,9 @@
   },
   "settings.askCmdr.wakeDelay.description": "How soon Cmdr looks at a folder that just changed. Longer means a calmer assistant.",
   "@settings.askCmdr.wakeDelay.description": {
-    "description": "Help text for the cadence slider, used by settings search and wherever the live readout is unavailable. The rendered row shows settings.askCmdr.wakeDelay.summary instead, which names the two actual waits."
+    "description": "Help text for the cadence slider, used by settings search and wherever the live readout is unavailable. The rendered row shows settings.askCmdr.wakeDelay.summary instead, which names the two actual waits.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.wakeDelay.summary": "Busy folders get a look within {hot}, quieter ones within {warm}.",
   "@settings.askCmdr.wakeDelay.summary": {
@@ -2193,7 +2265,9 @@
   },
   "settings.askCmdr.memory.forgotten": "Cmdr’s notes are gone. It starts over from here.",
   "@settings.askCmdr.memory.forgotten": {
-    "description": "Confirmation line shown in Ask Cmdr settings right after the user confirms \"Forget everything\". The apostrophe is U+2019."
+    "description": "Confirmation line shown in Ask Cmdr settings right after the user confirms \"Forget everything\". The apostrophe is U+2019.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.spend.title": "Spending",
   "@settings.askCmdr.spend.title": {
@@ -2202,7 +2276,9 @@
   },
   "settings.askCmdr.spend.empty": "No usage yet. Your token use and estimated cost will show up here.",
   "@settings.askCmdr.spend.empty": {
-    "description": "Empty state under the Ask Cmdr spending heading before any chat has run."
+    "description": "Empty state under the Ask Cmdr spending heading before any chat has run.",
+    "screenshot": "settings-ai-ask-cmdr.png",
+    "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
   },
   "settings.askCmdr.spend.disclaimer": "These are estimates. Your provider bills you directly, so check your provider’s dashboard for the exact amount.",
   "@settings.askCmdr.spend.disclaimer": {

@@ -456,11 +456,15 @@
   },
   "askCmdr.consent.whatsNew.title": "What’s changed since you turned this on",
   "@askCmdr.consent.whatsNew.title": {
-    "description": "Heading above the Ask Cmdr consent screen, shown ONLY to someone who already accepted an older version of this copy, so they can see why they are being asked again. Sentence case. The apostrophe is U+2019."
+    "description": "Heading above the Ask Cmdr consent screen, shown ONLY to someone who already accepted an older version of this copy, so they can see why they are being asked again. Sentence case. The apostrophe is U+2019.",
+    "screenshot": "ask-cmdr-consent.png",
+    "screenshotNote": "The Ask Cmdr consent screen, pictured here. Your string is the heading or paragraph above it that appears only for someone who accepted an earlier version of this screen and is being asked again."
   },
   "askCmdr.consent.whatsNew.body": "Cmdr can now look inside a file you ask about: some of its text, a few pages of a PDF, the list of files inside an archive, or a photo’s camera details and location. That’s a bigger promise than the one you agreed to, so here it all is again.",
   "@askCmdr.consent.whatsNew.body": {
-    "description": "Paragraph under askCmdr.consent.whatsNew.title, shown only to someone being asked again after the consent copy changed. Names the new thing (on request, the assistant reads parts of a file: some text, a few PDF pages, the names of the files inside an archive, or a photo's camera details and location) and says why the whole screen is being shown again. The apostrophes are U+2019."
+    "description": "Paragraph under askCmdr.consent.whatsNew.title, shown only to someone being asked again after the consent copy changed. Names the new thing (on request, the assistant reads parts of a file: some text, a few PDF pages, the names of the files inside an archive, or a photo's camera details and location) and says why the whole screen is being shown again. The apostrophes are U+2019.",
+    "screenshot": "ask-cmdr-consent.png",
+    "screenshotNote": "The Ask Cmdr consent screen, pictured here. Your string is the heading or paragraph above it that appears only for someone who accepted an earlier version of this screen and is being asked again."
   },
   "askCmdr.forget.title": "Forget everything Cmdr remembers about you?",
   "@askCmdr.forget.title": {

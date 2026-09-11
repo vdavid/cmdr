@@ -293,4 +293,184 @@ export const REPRESENTATIVE_SCREENSHOTS: RepresentativeMapping[] = [
       'Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout ' +
       'as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated.',
   },
+  {
+    // Shown only to someone re-accepting changed consent copy; the capture stages a first-time consent.
+    prefix: 'askCmdr.consent.whatsNew.',
+    screenshot: 'ask-cmdr-consent.png',
+    note:
+      'The Ask Cmdr consent screen, pictured here. Your string is the heading or paragraph above it that appears only for ' +
+      'someone who accepted an earlier version of this screen and is being asked again.',
+  },
+  {
+    // The two headings render only while the search box is empty.
+    prefix: 'commandPalette.group',
+    screenshot: 'command-palette.png',
+    note: 'The command palette, pictured here. Your string is one of the two section headings it shows above its list while the search box is empty.',
+  },
+  {
+    // Every other command description is captured on this list; this one's row doesn't render in the shot.
+    prefix: 'commands.fileOpenTerminalHere.description',
+    screenshot: 'settings-keyboard-shortcuts.png',
+    note:
+      'The Settings > Keyboard shortcuts list, pictured here. Your string is the one-line description of the "Open terminal ' +
+      'here" command, which appears with the other command descriptions in this list and in the command palette.',
+  },
+  {
+    // Tab states (pinned, unreachable) the main-window shot doesn't stage.
+    prefix: 'fileExplorer.tabBar.',
+    screenshot: 'main-window.png',
+    note:
+      'The main window, pictured here. Your string belongs to the tab bar above a file pane: the tooltip or spoken name of a ' +
+      'tab in a state this screenshot doesn’t show, such as a pinned tab or one pointing at a place that can’t be reached.',
+  },
+  {
+    prefix: 'fileExplorer.columns.created',
+    screenshot: 'main-window.png',
+    note: 'The main window, pictured here. Your string is the header of the creation date column in the file list, which this screenshot doesn’t show.',
+  },
+  {
+    prefix: 'fileExplorer.list.sortColumnsAriaLabel',
+    screenshot: 'main-window.png',
+    note: 'The main window, pictured here. Your string is never shown: a screen reader speaks it for the row of sortable column headers in the file list.',
+  },
+  {
+    prefix: 'fileExplorer.diskSpace.used',
+    screenshot: 'main-window.png',
+    note: 'The main window, pictured here. Your string is one of the disk space figures Cmdr shows for the drive a file pane is on.',
+  },
+  {
+    // The unbounded variant of the free-space line captured on this surface.
+    prefix: 'fileOperations.transferDialog.spaceInfoUnbounded',
+    screenshot: 'conflict-dialog.png',
+    note:
+      'The copy/move dialog, pictured here. Your string replaces the free-space line next to the destination picker when the ' +
+      'destination has no size limit, such as a cloud account with no quota.',
+  },
+  {
+    // The recent-paths list and the typed-path hints; the capture stages an empty dialog.
+    prefix: 'goToPath.dialog.',
+    screenshot: 'go-to-path.png',
+    note:
+      'The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent ' +
+      'paths, or a hint under the field about the path you typed.',
+  },
+  {
+    // The checklist's phase headers, run-kind headers, long ETAs, and image-indexing row are
+    // all states of the same tiles this surface photographs.
+    prefix: 'indexing.phase.',
+    screenshot: 'indexing-checklist.png',
+    note: 'The drive-indexing checklist, pictured here. Your string is the header it shows during one phase of a drive’s first index.',
+  },
+  {
+    prefix: 'indexing.run.',
+    screenshot: 'indexing-checklist.png',
+    note: 'The drive-indexing checklist, pictured here. Your string is the header naming the kind of run in progress, for a run this screenshot doesn’t show.',
+  },
+  {
+    prefix: 'indexing.eta.',
+    screenshot: 'indexing-checklist.png',
+    note: 'The drive-indexing checklist, pictured here. Your string is how much time it says is left, in the form it uses for longer waits.',
+  },
+  {
+    prefix: 'indexing.enrich.',
+    screenshot: 'indexing-checklist.png',
+    note:
+      'The drive-indexing checklist, pictured here. Your string belongs to the image-indexing row that appears beside these ' +
+      'drive rows while Cmdr reads image contents: its title, progress, speed, or a paused or waiting state.',
+  },
+  {
+    prefix: 'queue.chip.',
+    screenshot: 'operation-chip.png',
+    note: 'The operation chip in the corner of the main window, pictured here. Your string is never shown: a screen reader speaks it for the chip while an operation is still scanning.',
+  },
+  {
+    // Row states the queue shot doesn't stage: a reversal, a clash waiting for an answer, a paused operation.
+    prefix: 'queue.row.',
+    screenshot: 'queue.png',
+    note:
+      'The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo ' +
+      'in progress, an operation waiting for your answer, or a paused one with its Resume button.',
+  },
+  {
+    // Dropdown and swatch options of controls this section shows closed.
+    prefix: 'settings.appearance.dateTimeFormat.',
+    screenshot: 'settings-appearance.png',
+    note: 'Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them.',
+  },
+  {
+    prefix: 'settings.appearance.language.opt.',
+    screenshot: 'settings-appearance.png',
+    note: 'Settings > Appearance, pictured here. Your string is a choice in its language picker.',
+  },
+  {
+    prefix: 'settings.tint.',
+    screenshot: 'settings-appearance.png',
+    note: 'Settings > Appearance, pictured here. Your string is the name of one color in its tint picker, used as the swatch’s label and the name a screen reader speaks.',
+  },
+  {
+    prefix: 'settings.listing.briefColumnWidthMode.',
+    screenshot: 'settings-appearance-listing.png',
+    note: 'Settings > Appearance > Listing, pictured here. Your string is one of the choices for how wide columns in the Brief view may grow.',
+  },
+  {
+    prefix: 'settings.network.timeoutMode.',
+    screenshot: 'settings-file-systems-smb.png',
+    note: 'Settings > File systems > SMB, pictured here. Your string is one of the network timeout choices, or the line under one of them.',
+  },
+  {
+    prefix: 'settings.askCmdr.',
+    screenshot: 'settings-ai-ask-cmdr.png',
+    note:
+      'Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking ' +
+      'you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls.',
+  },
+  {
+    prefix: 'whatsNew.dialog.showLess',
+    screenshot: 'whats-new.png',
+    note: 'The What’s new dialog, pictured here. Your string is the link that folds a release’s detailed changes away again once someone has expanded them.',
+  },
+  {
+    // `download-toast.png` renamed to `toast-download.png`; these are the toast's other forms.
+    prefix: 'downloads.toast.',
+    screenshot: 'toast-download.png',
+    note:
+      'The toast Cmdr shows when a download lands, pictured here. Your string is another form of it: the summary when several ' +
+      'downloads land at once, the note that one landed in a subfolder, or the tooltip on its expand button.',
+  },
+  {
+    // `feedback-dialog.png` renamed to `feedback.png`; these are the dialog's other states.
+    prefix: 'feedback.dialog.',
+    screenshot: 'feedback.png',
+    note:
+      'The feedback dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its character ' +
+      'counter, the note that a message is too long, the Send button while sending, or the line shown when a message ' +
+      'couldn’t be sent.',
+  },
+  {
+    // `transfer-complete-toast.png` renamed to `toast-transfer-complete.png`; every `transfer.*` key is an outcome of that toast.
+    prefix: 'transfer.',
+    screenshot: 'toast-transfer-complete.png',
+    note:
+      'The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a ' +
+      'move to trash or a delete, a compress, some files skipped, or files that appeared during a move.',
+  },
+  {
+    // `settings-behavior-file-system-watching.png` went away when drive indexing got its own section.
+    prefix: 'settings.indexing.masterOffNote',
+    screenshot: 'settings-indexing-drive-indexing.png',
+    note: 'Settings > Indexing > Drive indexing, pictured here. Your string is the note under the main switch that appears only while that switch is off.',
+  },
+  {
+    prefix: 'settings.indexing.overriddenBadge',
+    screenshot: 'settings-indexing-drive-indexing.png',
+    note: 'Settings > Indexing > Drive indexing, pictured here. Your string is the small badge on a row the main switch overrides, shown only while that switch is off.',
+  },
+  {
+    // Only rendered while the downloads watcher lacks Full Disk Access, which the capture machine has.
+    prefix: 'common.downloadsFdaHint',
+    screenshot: 'settings-behavior-notifications.png',
+    note:
+      'Settings > Behavior > Notifications, pictured here. Your string is the hint at the top of this section that appears ' +
+      'only while Cmdr can’t watch the Downloads folder for lack of Full Disk Access, with a link that opens System Settings.',
+  },
 ]

@@ -94,7 +94,9 @@
     "description": "How much the pane's storage holds, shown INSTEAD of the free-space line when the storage has no size limit and so no free figure and no percentage: a cloud account with no quota, for example. Appears in the status bar under a pane, in the drive picker, and as the first line of the hover tooltip. Reads as a statement of fact: of what is stored there, 64 MB. The size arrives already formatted with the user's unit choice (MB/MiB), so don't add units.",
     "placeholders": {
       "usedText": "how much is stored, already formatted, like \"64.21 MB\""
-    }
+    },
+    "screenshot": "main-window.png",
+    "screenshotNote": "The main window, pictured here. Your string is one of the disk space figures Cmdr shows for the drive a file pane is on."
   },
   "fileExplorer.diskSpace.noLimitNote": "This storage has no size limit, so there's no bar to fill.",
   "@fileExplorer.diskSpace.noLimitNote": {
@@ -1128,7 +1130,9 @@
   },
   "fileExplorer.columns.created": "Created",
   "@fileExplorer.columns.created": {
-    "description": "File-list column header for the creation date (Brief view). Keep it short."
+    "description": "File-list column header for the creation date (Brief view). Keep it short.",
+    "screenshot": "main-window.png",
+    "screenshotNote": "The main window, pictured here. Your string is the header of the creation date column in the file list, which this screenshot doesn’t show."
   },
   "fileExplorer.columns.sortByRelevance": "Sort by relevance",
   "@fileExplorer.columns.sortByRelevance": {
@@ -1154,7 +1158,9 @@
   },
   "fileExplorer.list.sortColumnsAriaLabel": "Sort columns",
   "@fileExplorer.list.sortColumnsAriaLabel": {
-    "description": "Accessibility label for the row of sortable column headers in the Brief list view."
+    "description": "Accessibility label for the row of sortable column headers in the Brief list view.",
+    "screenshot": "main-window.png",
+    "screenshotNote": "The main window, pictured here. Your string is never shown: a screen reader speaks it for the row of sortable column headers in the file list."
   },
   "fileExplorer.dirSize.updatingIndexTooltip": "Updating index: size may change.",
   "@fileExplorer.dirSize.updatingIndexTooltip": {
@@ -1550,15 +1556,21 @@
   },
   "fileExplorer.tabBar.unreachableAriaLabel": "Unreachable",
   "@fileExplorer.tabBar.unreachableAriaLabel": {
-    "description": "Accessibility label and tooltip for a tab whose folder/volume can''t currently be reached."
+    "description": "Accessibility label and tooltip for a tab whose folder/volume can''t currently be reached.",
+    "screenshot": "main-window.png",
+    "screenshotNote": "The main window, pictured here. Your string belongs to the tab bar above a file pane: the tooltip or spoken name of a tab in a state this screenshot doesn’t show, such as a pinned tab or one pointing at a place that can’t be reached."
   },
   "fileExplorer.tabBar.pinnedAriaLabel": "Pinned",
   "@fileExplorer.tabBar.pinnedAriaLabel": {
-    "description": "Accessibility label and tooltip for a pinned tab (one kept open deliberately)."
+    "description": "Accessibility label and tooltip for a pinned tab (one kept open deliberately).",
+    "screenshot": "main-window.png",
+    "screenshotNote": "The main window, pictured here. Your string belongs to the tab bar above a file pane: the tooltip or spoken name of a tab in a state this screenshot doesn’t show, such as a pinned tab or one pointing at a place that can’t be reached."
   },
   "fileExplorer.tabBar.closeTabTooltip": "Close tab",
   "@fileExplorer.tabBar.closeTabTooltip": {
-    "description": "Hover tooltip for the small close button on a tab."
+    "description": "Hover tooltip for the small close button on a tab.",
+    "screenshot": "main-window.png",
+    "screenshotNote": "The main window, pictured here. Your string belongs to the tab bar above a file pane: the tooltip or spoken name of a tab in a state this screenshot doesn’t show, such as a pinned tab or one pointing at a place that can’t be reached."
   },
   "fileExplorer.tabBar.newTabAriaLabel": "New tab",
   "@fileExplorer.tabBar.newTabAriaLabel": {

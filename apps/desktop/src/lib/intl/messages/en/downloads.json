@@ -13,7 +13,9 @@
     "description": "Small line under the download toast title naming the subfolder a file landed in, e.g. 'in Downloads/Chrome/'. Only shown when the file is in a subfolder of Downloads.",
     "placeholders": {
       "subdir": "the folder path relative to Downloads, with a trailing slash (e.g. Downloads/Chrome/)"
-    }
+    },
+    "screenshot": "toast-download.png",
+    "screenshotNote": "The toast Cmdr shows when a download lands, pictured here. Your string is another form of it: the summary when several downloads land at once, the note that one landed in a subfolder, or the tooltip on its expand button."
   },
 
   "downloads.toast.learnIntro": "Something cool to learn about jumping to downloads",
@@ -46,7 +48,9 @@
     "placeholders": {
       "inAppKey": "the in-app shortcut keys (e.g. ⌘J)",
       "globalKey": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
-    }
+    },
+    "screenshot": "toast-download.png",
+    "screenshotNote": "The toast Cmdr shows when a download lands, pictured here. Your string is another form of it: the summary when several downloads land at once, the note that one landed in a subfolder, or the tooltip on its expand button."
   },
 
   "downloads.toast.summaryInApp": "Jump with <inApp>{inAppKey}</inApp> in-app.",
@@ -54,7 +58,9 @@
     "description": "One-line summary in the collapsed download toast when only the in-app shortcut is set. <inApp> wraps the shortcut key cap (don't translate the key glyphs). 'in-app' means while Cmdr is the active app.",
     "placeholders": {
       "inAppKey": "the in-app shortcut keys (e.g. ⌘J)"
-    }
+    },
+    "screenshot": "toast-download.png",
+    "screenshotNote": "The toast Cmdr shows when a download lands, pictured here. Your string is another form of it: the summary when several downloads land at once, the note that one landed in a subfolder, or the tooltip on its expand button."
   },
 
   "downloads.toast.summaryGlobal": "Jump with <global>{globalKey}</global> globally.",
@@ -62,12 +68,16 @@
     "description": "One-line summary in the collapsed download toast when only the system-wide shortcut is set. <global> wraps the shortcut key cap (don't translate the key glyphs). 'globally' means from any app.",
     "placeholders": {
       "globalKey": "the system-wide shortcut keys (e.g. ⌃⌥⌘J)"
-    }
+    },
+    "screenshot": "toast-download.png",
+    "screenshotNote": "The toast Cmdr shows when a download lands, pictured here. Your string is another form of it: the summary when several downloads land at once, the note that one landed in a subfolder, or the tooltip on its expand button."
   },
 
   "downloads.toast.expandTip": "Show the shortcut tip",
   "@downloads.toast.expandTip": {
-    "description": "Accessibility label and tooltip for the chevron button that expands the collapsed download toast back to its full shortcut tip. A short action phrase."
+    "description": "Accessibility label and tooltip for the chevron button that expands the collapsed download toast back to its full shortcut tip. A short action phrase.",
+    "screenshot": "toast-download.png",
+    "screenshotNote": "The toast Cmdr shows when a download lands, pictured here. Your string is another form of it: the summary when several downloads land at once, the note that one landed in a subfolder, or the tooltip on its expand button."
   },
 
   "downloads.toast.collapseTip": "Make this notification more compact",

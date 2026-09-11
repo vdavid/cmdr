@@ -29,7 +29,9 @@
     "placeholders": {
       "currentText": "number of characters typed so far, already formatted for display (e.g. 52,000)",
       "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
-    }
+    },
+    "screenshot": "feedback.png",
+    "screenshotNote": "The feedback dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its character counter, the note that a message is too long, the Send button while sending, or the line shown when a message couldn’t be sent."
   },
 
   "feedback.dialog.tooLong": "Sorry, that''s too long. Maximum is {maxText} characters.",
@@ -37,7 +39,9 @@
     "description": "Warning shown below the feedback box when the typed text exceeds the maximum length. Apologetic and brief.",
     "placeholders": {
       "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
-    }
+    },
+    "screenshot": "feedback.png",
+    "screenshotNote": "The feedback dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its character counter, the note that a message is too long, the Send button while sending, or the line shown when a message couldn’t be sent."
   },
 
   "feedback.dialog.moreWays": "You can also <github>browse and vote on GitHub</github> or <call>book a call</call> with David.",
@@ -48,12 +52,16 @@
 
   "feedback.dialog.invalid": "That note didn''t go through. Shorten it and try again?",
   "@feedback.dialog.invalid": {
-    "description": "Shown when the server rejects the feedback as invalid (usually too long). Encourages the user to shorten and retry. Avoid the words \"error\" and \"failed\"."
+    "description": "Shown when the server rejects the feedback as invalid (usually too long). Encourages the user to shorten and retry. Avoid the words \"error\" and \"failed\".",
+    "screenshot": "feedback.png",
+    "screenshotNote": "The feedback dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its character counter, the note that a message is too long, the Send button while sending, or the line shown when a message couldn’t be sent."
   },
 
   "feedback.dialog.softFailure": "Sorry, we couldn''t send your feedback right now. Try again?",
   "@feedback.dialog.softFailure": {
-    "description": "Shown when sending the feedback didn't go through for a transient reason (e.g. network). Apologetic, suggests retrying. Avoid the words \"error\" and \"failed\"."
+    "description": "Shown when sending the feedback didn't go through for a transient reason (e.g. network). Apologetic, suggests retrying. Avoid the words \"error\" and \"failed\".",
+    "screenshot": "feedback.png",
+    "screenshotNote": "The feedback dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its character counter, the note that a message is too long, the Send button while sending, or the line shown when a message couldn’t be sent."
   },
 
   "feedback.dialog.cancel": "Cancel",
@@ -70,7 +78,9 @@
 
   "feedback.dialog.sending": "Sending…",
   "@feedback.dialog.sending": {
-    "description": "Label on the submit button while the feedback is being sent (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short."
+    "description": "Label on the submit button while the feedback is being sent (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short.",
+    "screenshot": "feedback.png",
+    "screenshotNote": "The feedback dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its character counter, the note that a message is too long, the Send button while sending, or the line shown when a message couldn’t be sent."
   },
 
   "feedback.sentToast": "Thanks for the feedback! We read every note.",

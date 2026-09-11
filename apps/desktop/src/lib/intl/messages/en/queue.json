@@ -34,17 +34,23 @@
 
   "queue.row.reversalMovingBack": "Putting files back",
   "@queue.row.reversalMovingBack": {
-    "description": "Names an operation row that is UNDOING a finished move or a finished move-to-trash: the files are traveling back to where they came from, and nothing is being deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack), so use the same verb family: nothing here may sound like a deletion."
+    "description": "Names an operation row that is UNDOING a finished move or a finished move-to-trash: the files are traveling back to where they came from, and nothing is being deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack), so use the same verb family: nothing here may sound like a deletion.",
+    "screenshot": "queue.png",
+    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
 
   "queue.row.reversalDeleting": "Deleting what it created",
   "@queue.row.reversalDeleting": {
-    "description": "Names an operation row that is UNDOING a finished copy, a new file or folder, or a compress: the reversal deletes what that operation created. \"it\" is the operation being undone. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByDeleting), so keep the deleting verb: this one really does take files away."
+    "description": "Names an operation row that is UNDOING a finished copy, a new file or folder, or a compress: the reversal deletes what that operation created. \"it\" is the operation being undone. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByDeleting), so keep the deleting verb: this one really does take files away.",
+    "screenshot": "queue.png",
+    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
 
   "queue.row.reversalRenamingBack": "Putting the old names back",
   "@queue.row.reversalRenamingBack": {
-    "description": "Names an operation row that is UNDOING a finished rename: the files get their old names back, and nothing moves or is deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRenamingBack)."
+    "description": "Names an operation row that is UNDOING a finished rename: the files get their old names back, and nothing moves or is deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRenamingBack).",
+    "screenshot": "queue.png",
+    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
   "queue.row.reversalInFolder": "in {folder}",
   "@queue.row.reversalInFolder": {
@@ -54,7 +60,9 @@
         "type": "String",
         "example": "Backup"
       }
-    }
+    },
+    "screenshot": "queue.png",
+    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
 
   "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Canceled} failed {Couldn''t finish} other {Running}}",
@@ -68,12 +76,16 @@
 
   "queue.row.statusAwaitingAnswer": "Needs your answer",
   "@queue.row.statusAwaitingAnswer": {
-    "description": "Replaces the status word on an operation row that has stopped and is waiting for the user to answer a question about a file (a name clash: the file already exists at the destination). The question is on screen in the main window, not in the queue window this row is in. Keep it to two or three words: it sits in the same narrow column as \"Running\" and \"Waiting\", and it must not be confusable with \"Waiting\", which means queued behind another operation."
+    "description": "Replaces the status word on an operation row that has stopped and is waiting for the user to answer a question about a file (a name clash: the file already exists at the destination). The question is on screen in the main window, not in the queue window this row is in. Keep it to two or three words: it sits in the same narrow column as \"Running\" and \"Waiting\", and it must not be confusable with \"Waiting\", which means queued behind another operation.",
+    "screenshot": "queue.png",
+    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
 
   "queue.row.awaitingAnswerTooltip": "Answer the prompt in the main window and this operation carries on.",
   "@queue.row.awaitingAnswerTooltip": {
-    "description": "Tooltip on the \"Needs your answer\" status of an operation row, saying where the question is. The main window is the two-pane file manager window; the operation queue is a separate window, so the prompt can be hidden behind it."
+    "description": "Tooltip on the \"Needs your answer\" status of an operation row, saying where the question is. The main window is the two-pane file manager window; the operation queue is a separate window, so the prompt can be hidden behind it.",
+    "screenshot": "queue.png",
+    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
 
   "queue.row.pause": "Pause",
@@ -84,7 +96,9 @@
 
   "queue.row.resume": "Resume",
   "@queue.row.resume": {
-    "description": "Button on a paused operation row that resumes the operation. Toggles back from \"Pause\"."
+    "description": "Button on a paused operation row that resumes the operation. Toggles back from \"Pause\".",
+    "screenshot": "queue.png",
+    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
 
   "queue.row.foreground": "Show",
@@ -113,7 +127,9 @@
 
   "queue.row.resumeAria": "Resume this operation",
   "@queue.row.resumeAria": {
-    "description": "Screen-reader label for the per-row Resume button (the visible button shows only \"Resume\")."
+    "description": "Screen-reader label for the per-row Resume button (the visible button shows only \"Resume\").",
+    "screenshot": "queue.png",
+    "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
 
   "queue.row.cancelAria": "Cancel this operation",
@@ -229,7 +245,9 @@
     "description": "Screen-reader label for the same corner chip as queue.chip.ariaLabel, while the operation is still counting up what it has to do. It is the same sentence with the progress figure replaced by the state word, because a percentage can only read 0 for the whole count and saying so would be dishonest. Keep both other parts: the label, because voice-control users press the chip by saying the word they can see on it, and the closing promise that pressing it opens the operation queue window. Use the same scanning wording as fileOperations.shared.scanningTooltip, in whatever ongoing form reads naturally after the label in your language, and drop that string''s trailing ellipsis: this one is spoken, not seen.",
     "placeholders": {
       "label": "what the chip shows: the action word from queue.row.label (\"Copying\"), or the status word \"Paused\" when the operation is paused"
-    }
+    },
+    "screenshot": "operation-chip.png",
+    "screenshotNote": "The operation chip in the corner of the main window, pictured here. Your string is never shown: a screen reader speaks it for the chip while an operation is still scanning."
   },
 
   "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} item} other { · {countText} items}}{hasDestination, select, yes { · to {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
