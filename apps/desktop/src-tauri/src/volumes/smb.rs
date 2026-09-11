@@ -297,6 +297,7 @@ mod enrichment_tests {
             is_disk_image: false,
             connection_state: None,
             pinned: None,
+            landing_path: None,
             device_readiness: None,
             usb_speed: None,
             capabilities: None,

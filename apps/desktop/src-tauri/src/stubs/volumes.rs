@@ -51,6 +51,9 @@ pub struct VolumeInfo {
     /// both land on an id). Hiding is `navigation/volume-grouping.ts`'s job, and
     /// this field is what it reads.
     pub pinned: Option<bool>,
+    /// Twin of the macOS field: where opening a server place lands. Always `None`
+    /// on stub platforms, which list no server places.
+    pub landing_path: Option<String>,
     pub device_readiness: Option<cmdr_fs::volume::DeviceReadiness>,
     /// Negotiated USB link speed. Always `None` on stub platforms (no MTP).
     pub usb_speed: Option<crate::usb_speed::UsbSpeed>,
@@ -96,6 +99,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
                 is_disk_image: false,
                 connection_state: None,
                 pinned: None,
+                landing_path: None,
                 device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
@@ -117,6 +121,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         is_disk_image: false,
         connection_state: None,
         pinned: None,
+        landing_path: None,
         device_readiness: None,
         usb_speed: None,
         capabilities: None,
@@ -136,6 +141,7 @@ pub fn list_volumes() -> Vec<VolumeInfo> {
         is_disk_image: false,
         connection_state: None,
         pinned: None,
+        landing_path: None,
         device_readiness: None,
         usb_speed: None,
         capabilities: None,

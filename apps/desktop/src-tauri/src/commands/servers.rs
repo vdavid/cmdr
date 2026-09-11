@@ -701,9 +701,24 @@ pub async fn forget_server_secret(id: String) -> bool {
 ///
 /// ❗ Answers a typed [`SavedServerOutcome`]; a refusal writes nothing at all. A
 /// connected place's edit applies live: `network/live_server_edit.rs`.
+///
+/// ❗ A saved edit republishes the volume list, whatever it changed. The rows
+/// carry the label and the landing, and neither an unconnected place's edit nor
+/// a start-folder-only one moves anything in the registry that would announce
+/// it. The servers hub re-reads the saved list on the same broadcast. A second
+/// request beside the live install's own coalesces in the debounce.
 #[tauri::command]
 #[specta::specta]
 pub async fn update_saved_server(server: ServerTarget) -> SavedServerOutcome {
+    let outcome = save_target(server).await;
+    if outcome == SavedServerOutcome::Saved {
+        crate::volume_broadcast::emit_volumes_changed();
+    }
+    outcome
+}
+
+/// The per-protocol save behind [`update_saved_server`].
+async fn save_target(server: ServerTarget) -> SavedServerOutcome {
     match server {
         ServerTarget::Sftp {
             display_name,

@@ -189,6 +189,7 @@ fn build_attached_location(
         is_disk_image,
         connection_state: None,
         pinned: None,
+        landing_path: None,
         device_readiness: None,
         usb_speed: None,
         capabilities: None,

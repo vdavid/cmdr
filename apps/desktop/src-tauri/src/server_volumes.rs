@@ -24,7 +24,7 @@
 use cmdr_fs::volume::remote_paths::RemoteRoot;
 use cmdr_fs::volume::{BackendKind, ConnectionState};
 
-use crate::network::{sftp_known_servers, webdav_known_servers};
+use crate::network::{saved_server_fields, sftp_known_servers, webdav_known_servers};
 use crate::volume_listing::{LocationCategory, LocationInfo};
 
 /// One SFTP or WebDAV place, from the stores and the registry.
@@ -38,6 +38,10 @@ pub(crate) struct ServerPlace {
     /// The app-facing root: `<prefix><remote root>`
     /// (`cmdr_fs::volume::remote_paths`).
     pub app_root: String,
+    /// Where opening the place lands when that isn't `app_root`: the saved start
+    /// folder as an app path. `None` when there is none, when the root no longer
+    /// holds it, and for a live volume nothing saved.
+    pub landing_path: Option<String>,
     /// `"sftp"` or `"webdav"`. ❗ Load-bearing beyond display: the MCP volumes
     /// resource keys `kind` on it, and the frontend's `volumeKindFor` reads it
     /// AHEAD of the `category === 'network'` arm, so a row without it is an SMB
@@ -88,6 +92,7 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
             id,
             name: server.label(),
             app_root: root.app_root().to_string_lossy().into_owned(),
+            landing_path: landing_under(&root, &server.remote_root, server.start_folder.as_deref()),
             fs_type: "sftp",
             pinned: server.pinned,
         });
@@ -109,6 +114,7 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
             id,
             name: server.label(),
             app_root: root.app_root().to_string_lossy().into_owned(),
+            landing_path: landing_under(&root, &server.remote_root, server.start_folder.as_deref()),
             fs_type: "webdav",
             pinned: server.pinned,
         });
@@ -131,6 +137,8 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
             id,
             name: volume.name().to_string(),
             app_root: volume.root().to_string_lossy().into_owned(),
+            // No saved entry, so no start folder: it lands at its root.
+            landing_path: None,
             fs_type,
             // Nothing saved says otherwise, and a live session earns its
             // switcher row through the session rather than through a pin.
@@ -139,6 +147,18 @@ pub(crate) fn server_places() -> Vec<ServerPlace> {
         });
     }
     places
+}
+
+/// A saved start folder as the app path a pane lands on, or `None` for the root.
+///
+/// ❗ Silent where `saved_server_fields::start_folder_for_root` logs: the list is
+/// rebuilt on every `volumes-changed`, so a start folder the root no longer holds
+/// would log once per refresh. It lands at the root either way.
+fn landing_under(root: &RemoteRoot, remote_root: &str, start_folder: Option<&str>) -> Option<String> {
+    saved_server_fields::start_folder_under_root(remote_root, start_folder)
+        .ok()
+        .flatten()
+        .map(|folder| root.to_app_path(&folder).to_string_lossy().into_owned())
 }
 
 /// The row a place becomes.
@@ -163,6 +183,7 @@ pub(crate) fn location_from_place(place: ServerPlace) -> LocationInfo {
         supports_trash: false,
         connection_state: Some(place.state),
         pinned: Some(place.pinned),
+        landing_path: place.landing_path,
         device_readiness: None,
         usb_speed: None,
         capabilities: None,

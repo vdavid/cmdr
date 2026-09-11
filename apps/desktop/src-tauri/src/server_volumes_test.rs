@@ -240,6 +240,43 @@ fn an_unnamed_saved_server_gets_a_row_named_username_at_host() {
     assert_eq!(row.name, format!("ada@{host}"));
 }
 
+/// ❗ **A row carries where opening the place lands**, as an app path, so a pane
+/// picking a saved place goes straight there without asking the store. A place
+/// with no start folder lands at its root, which the row says with `None`, and so
+/// does a stored start folder its root no longer holds.
+#[test]
+fn a_saved_servers_row_carries_its_start_folder_as_the_landing() {
+    let host = "198.51.100.16";
+    let mut with_start = saved_sftp(host, true);
+    with_start.start_folder = Some("/srv/data/photos".to_string());
+    sftp_known_servers::remember(with_start);
+    let plain_host = "198.51.100.17";
+    sftp_known_servers::remember(saved_sftp(plain_host, true));
+    let drifted_host = "198.51.100.18";
+    let mut drifted = saved_sftp(drifted_host, true);
+    drifted.start_folder = Some("/srv/data-1".to_string());
+    sftp_known_servers::remember(drifted);
+
+    let mut rows = Vec::new();
+    append_server_volumes(&mut rows);
+    let row_for = |row_host: &str| {
+        rows.iter()
+            .find(|row| row.id == cmdr_fs::volume::sftp_volume_id(row_host, 2222, "ada"))
+            .expect("a saved server has a row")
+    };
+
+    assert_eq!(
+        row_for(host).landing_path.as_deref(),
+        Some(format!("sftp://ada@{host}:2222/srv/data/photos").as_str())
+    );
+    assert_eq!(row_for(plain_host).landing_path, None, "no start folder lands at the root");
+    assert_eq!(
+        row_for(drifted_host).landing_path,
+        None,
+        "❗ `/srv/data-1` isn't under `/srv/data`, so the place lands at its root"
+    );
+}
+
 /// ❗ **Every saved server gets a row, and the row carries its own pin.** The
 /// list is the app's registry of what a volume id MEANS: a hub Enter and a
 /// restored tab both land on an id, and an id with no row is a volume the app

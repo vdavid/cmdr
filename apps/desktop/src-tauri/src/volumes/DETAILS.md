@@ -43,7 +43,10 @@ Inside this listing, `LocationCategory::Network` comes only from the servers arm
 `server_volumes::append_server_volumes` folds into `volume_listing::complete` between the device providers and
 enrichment: one row per SFTP or WebDAV place the app knows, registered or merely saved (state `Saved`, the greyed row
 with the hollow dot). `category: Network`, `fs_type: "sftp"` / `"webdav"`, `is_ejectable: false` (a server has nothing
-to unplug; its control says Disconnect), `supports_trash: false`, `pinned: Some(_)`.
+to unplug; its control says Disconnect), `supports_trash: false`, `pinned: Some(_)`, and `landing_path`: the saved start
+folder as an app path, or `None` when the place lands at its root (no start folder, or one the root no longer holds). A
+pane picking a `saved` place goes straight to that landing: `apps/desktop/src/lib/file-explorer/navigation/DETAILS.md` §
+`path-navigation.ts`.
 
 ❗ **A `saved` row and the volume it becomes share ONE id**, minted by `cmdr_fs::volume::sftp_volume_id` /
 `webdav_volume_id`, the same ids the registry keys on. That identity is what makes a tab restorable: a tab stores

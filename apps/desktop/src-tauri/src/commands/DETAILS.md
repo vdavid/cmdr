@@ -119,6 +119,10 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     commands answer, and a refusal writes nothing: `start_folder_outside_root` (connected or not), and for a connected
     place, whose edit applies live, `root_not_found`, `start_folder_not_found`, and `unreachable` (`network/DETAILS.md`
     § "Editing a connected place"). All three commands are `async`, because a live edit asks the server.
+  - ❗ **A saved edit republishes the volume list, whatever it changed** (`update_saved_server` requests
+    `volumes-changed` on `Saved`). The rows carry each place's label and landing, and neither an unconnected place's
+    edit nor a start-folder-only one moves anything in the registry that would announce it. The servers hub re-reads
+    `list_saved_servers` on the same broadcast, which is how it learns an edit landed.
   - ❗ **A start folder outside the remote root is a typed refusal on both writers a person types into.**
     `update_saved_server` answers `start_folder_outside_root`, and `connect_server` answers
     `ServerConnectOutcome::StartFolderOutsideRoot` BEFORE dialing, so nothing is registered or saved. Landing the pane

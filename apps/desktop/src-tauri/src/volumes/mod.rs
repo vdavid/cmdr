@@ -109,6 +109,14 @@ pub struct LocationInfo {
     /// both land on an id). Hiding is `navigation/volume-grouping.ts`'s job, and
     /// this field is what it reads.
     pub pinned: Option<bool>,
+    /// Where opening this place lands, as an app path, when that isn't `path`: a
+    /// server place's saved start folder (`server_volumes.rs`). `None` lands at
+    /// `path`, and every row that isn't a server place carries `None`.
+    ///
+    /// ❗ Rides on the row so a pane picking a saved place goes straight to its
+    /// landing without asking the store, and so the switcher and the pane read
+    /// one spelling of it.
+    pub landing_path: Option<String>,
     pub device_readiness: Option<cmdr_fs::volume::DeviceReadiness>,
     /// Negotiated USB link speed. Set only for MTP/mobile volumes; everything
     /// else carries `None`. Frontend maps to a label like "USB 3.2 Gen 1" and a
@@ -202,6 +210,7 @@ pub fn resolve_path_volume_fast(path: &str) -> Option<VolumeInfo> {
             is_disk_image,
             connection_state: None,
             pinned: None,
+            landing_path: None,
             device_readiness: None,
             usb_speed: None,
             capabilities: None,
@@ -291,6 +300,7 @@ fn get_favorites() -> Vec<LocationInfo> {
                 is_disk_image: false,
                 connection_state: None,
                 pinned: None,
+                landing_path: None,
                 device_readiness: None,
                 usb_speed: None,
                 capabilities: None,
@@ -329,6 +339,7 @@ fn get_main_volume() -> Option<LocationInfo> {
             is_disk_image: false,
             connection_state: None,
             pinned: None,
+            landing_path: None,
             device_readiness: None,
             usb_speed: None,
             capabilities: None,

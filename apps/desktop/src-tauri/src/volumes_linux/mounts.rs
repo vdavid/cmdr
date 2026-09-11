@@ -75,6 +75,7 @@ fn get_mounted_volumes_with(mounts: &[MountEntry], volume_id: impl Fn(&str) -> S
             is_disk_image: false,
             connection_state: None,
             pinned: None,
+            landing_path: None,
             device_readiness: None,
             usb_speed: None,
             capabilities: None,

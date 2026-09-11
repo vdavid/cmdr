@@ -493,6 +493,38 @@ async fn saving_a_start_folder_under_the_root_stores_it_normalized() {
     assert_eq!(stored().start_folder, None);
 }
 
+/// ❗ **A saved edit republishes the volume list, whatever it changed.** The
+/// switcher's name and landing come from that list, and neither an unconnected
+/// place's edit nor a start-folder-only one moves anything in the registry that
+/// would announce it. The hub re-reads the saved list on the same broadcast. A
+/// refusal wrote nothing, so it asks for nothing.
+#[tokio::test]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "the lock serializes the process-global broadcast recorders for the whole cell; holding it across the await IS the point"
+)]
+async fn saving_an_edit_republishes_the_volume_list_and_a_refusal_does_not() {
+    let _recorder = crate::volume_broadcast::recorder_test_lock();
+    let host = "192.0.2.66";
+    sftp_known_servers::remember(sftp_entry(host, true));
+
+    let before = crate::volume_broadcast::volumes_changed_requests();
+    let refused = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data-1"))).await;
+    assert_eq!(refused, SavedServerOutcome::StartFolderOutsideRoot);
+    assert_eq!(
+        crate::volume_broadcast::volumes_changed_requests(),
+        before,
+        "a refusal changed nothing, so nothing is republished"
+    );
+
+    let saved = update_saved_server(sftp_target(host, 2222, "ada", Some("/srv/data/photos"))).await;
+    assert_eq!(saved, SavedServerOutcome::Saved);
+    assert!(
+        crate::volume_broadcast::volumes_changed_requests() > before,
+        "❗ without it the switcher keeps the old name and landing until something else republishes"
+    );
+}
+
 /// WebDAV takes the same rule through the same family, so the frontend branches
 /// on protocol nowhere new.
 #[tokio::test]

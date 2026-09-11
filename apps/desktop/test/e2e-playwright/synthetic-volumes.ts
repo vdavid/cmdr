@@ -39,6 +39,7 @@ export const SYNTHETIC_VOLUME_DEFAULTS: SyntheticVolume = {
   isDiskImage: false,
   connectionState: null,
   pinned: null,
+  landingPath: null,
   deviceReadiness: null,
   usbSpeed: null,
   capabilities: null,

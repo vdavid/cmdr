@@ -4255,6 +4255,12 @@ export const commands = {
    *
    *  ❗ Answers a typed [`SavedServerOutcome`]; a refusal writes nothing at all. A
    *  connected place's edit applies live: `network/live_server_edit.rs`.
+   *
+   *  ❗ A saved edit republishes the volume list, whatever it changed. The rows
+   *  carry the label and the landing, and neither an unconnected place's edit nor
+   *  a start-folder-only one moves anything in the registry that would announce
+   *  it. The servers hub re-reads the saved list on the same broadcast. A second
+   *  request beside the live install's own coalesces in the debounce.
    */
   updateSavedServer: (server: ServerTarget) => __TAURI_INVOKE<SavedServerOutcome>('update_saved_server', { server }),
   /**
@@ -8708,6 +8714,16 @@ export type LocationInfo = {
    *  this field is what it reads.
    */
   pinned: boolean | null
+  /**
+   *  Where opening this place lands, as an app path, when that isn't `path`: a
+   *  server place's saved start folder (`server_volumes.rs`). `None` lands at
+   *  `path`, and every row that isn't a server place carries `None`.
+   *
+   *  ❗ Rides on the row so a pane picking a saved place goes straight to its
+   *  landing without asking the store, and so the switcher and the pane read
+   *  one spelling of it.
+   */
+  landingPath: string | null
   deviceReadiness: DeviceReadiness | null
   /**
    *  Negotiated USB link speed. Set only for MTP/mobile volumes; everything
