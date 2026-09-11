@@ -108,6 +108,7 @@ async function runMockPass(pass: string, main: TauriPage): Promise<void> {
   const skipped = loadJson<string[]>(skippedPath, [])
 
   const before = new Set(Object.keys(report))
+  const failedBefore = failed.length
 
   if (pass.startsWith('license:')) {
     await captureLicensePass(pass, main, report, failed)
@@ -141,7 +142,11 @@ async function runMockPass(pass: string, main: TauriPage): Promise<void> {
   // capture failure and isn't one.
   await dismissAllToasts(main).catch(() => {})
 
-  expect(failed, `surfaces failed to capture in pass ${pass}: ${failed.join(', ')}`).toEqual([])
+  // The loaded list still carries every earlier pass's failures, and those passes
+  // already failed on them. Judge this pass only by what it added, or one main-pass
+  // failure fails every launch after it too.
+  const failedHere = failed.slice(failedBefore)
+  expect(failedHere, `surfaces failed to capture in pass ${pass}: ${failedHere.join(', ')}`).toEqual([])
 }
 
 /**

@@ -523,8 +523,13 @@ async function launchAndCapture(
   // `CMDR_PLAYWRIGHT_SOCKET` to know which socket to connect to. Without this,
   // Playwright connects to the default `/tmp/tauri-playwright.sock` while the app
   // listens on our unique one, and the first `evaluate` hangs to timeout.
+  //
+  // `--retries=0` overrides the suite's shared `retries: 1`. A retry reruns the pass against the SAME app and data dir,
+  // where one-shot states are already used up (the Ask Cmdr empty thread now has a thread in it, a boot-time license
+  // modal was already dismissed), so it can only add failures of its own, and it doubles the run. A surface that
+  // flakes shows up as failed, and the rerun is a fresh `pnpm i18n:shots`.
   try {
-    run('npx', ['playwright', 'test', '--config', 'test/e2e-playwright/playwright.config.ts'], {
+    run('npx', ['playwright', 'test', '--config', 'test/e2e-playwright/playwright.config.ts', '--retries=0'], {
       env: {
         ...process.env,
         CMDR_E2E_START_PATH: startPath,
