@@ -4,12 +4,11 @@
  * screenshot capture, plain in prod).
  *
  * Where each signal comes from: dev is read synchronously from Vite
- * (`import.meta.env.DEV`); E2E mode comes from the `CMDR_E2E_MODE` env var the
- * backend exposes via `isE2eMode()`; capture comes from the `__CMDR_I18N_CAPTURE__`
- * build define (set by `CMDR_I18N_CAPTURE_BUILD=1`), which is synchronous and
- * frontend-wide, so it needs no backend round trip and is right even on the first
- * frame. A binary built with that define exists only to take the i18n
- * translator screenshots, so the define IS the mode.
+ * (`import.meta.env.DEV`); E2E and capture both come from the launch environment,
+ * which the backend reports through `getAutomatedRun()`: `CMDR_E2E_MODE=1` is an
+ * E2E run, and `CMDR_I18N_CAPTURE=1` on top of it is a capture. The binary is the
+ * same either way (the Playwright lane's E2E build), so the mode is a property of
+ * the launch, never of the build.
  *
  * Precedence: capture > e2e > dev. A capture run is also an E2E run (it drives the
  * app through the Playwright plugin), and E2E typically runs against a dev build,
@@ -20,57 +19,44 @@
  * anyone clicking into another app mid-run silently turns the remaining
  * screenshots blank. The yellow `SCREENSHOT` title bar is the at-a-glance signal
  * that this run must be left alone — distinct from an ordinary E2E run, which is
- * harmless to interrupt. ❗ It is a SIGNAL, not a grab: a capture build keeps the
+ * harmless to interrupt. ❗ It is a SIGNAL, not a grab: a capture run keeps the
  * E2E `Prohibited` activation policy and never steals focus on its own.
  */
 import type { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 
 import { getAppLogger } from '$lib/logging/logger'
-import { isE2eMode, orderWindowToBack } from '$lib/tauri-commands'
+import { getAutomatedRun, orderWindowToBack } from '$lib/tauri-commands'
 
 export type AppMode = 'prod' | 'dev' | 'e2e' | 'capture'
 
 const log = getAppLogger('app-mode')
 
 let cachedMode: AppMode | null = null
+/** The in-flight resolution, so concurrent callers share one backend round trip. */
+let pendingMode: Promise<AppMode> | null = null
 
 /**
- * Whether this binary was built to take the i18n capture screenshots, read once
- * from the build define so it's available synchronously everywhere.
- *
- * Held in a variable rather than read inline because the UNIT-TEST config defines
- * `__CMDR_I18N_CAPTURE__` as true for every test (`vitest.config.ts` bakes the
- * capture instrumentation in so `messages.svelte.test.ts` can exercise the capture
- * sink). Reading the define directly would therefore make every test think it's a
- * capture build. `_resetForTests()` clears it; `_setCaptureBuildForTests()` opts a
- * test back in.
+ * Resolves the app mode once per window and caches it. The root layout calls it for
+ * every window; a page that needs the answer before acting awaits the same promise.
  */
-let captureBuild: boolean = __CMDR_I18N_CAPTURE__
-
-function isCaptureBuild(): boolean {
-  return captureBuild
-}
-
-/** Resolves the app mode once and caches it. Subsequent calls are no-ops. */
-export async function initAppMode(): Promise<AppMode> {
-  if (cachedMode != null) return cachedMode
-  if (isCaptureBuild()) {
-    cachedMode = 'capture'
-    return cachedMode
-  }
-  const e2e = await isE2eMode()
-  cachedMode = e2e ? 'e2e' : import.meta.env.DEV ? 'dev' : 'prod'
-  return cachedMode
+export function initAppMode(): Promise<AppMode> {
+  if (cachedMode != null) return Promise.resolve(cachedMode)
+  pendingMode ??= getAutomatedRun().then((run) => {
+    const mode: AppMode = run === 'capture' ? 'capture' : run === 'e2e' ? 'e2e' : import.meta.env.DEV ? 'dev' : 'prod'
+    cachedMode = mode
+    return mode
+  })
+  return pendingMode
 }
 
 /**
- * Returns the cached app mode. Before `initAppMode()` resolves, falls back to
- * capture/dev/prod from the synchronous signals so call sites that can't wait
- * (window creation, title bar render on first frame) still get a sensible answer.
+ * Returns the cached app mode. Before `initAppMode()` resolves, falls back to dev/prod
+ * from the synchronous signal, so a window reads as unmarked until the backend says
+ * otherwise. Nothing a run depends on happens that early: the main window renders its
+ * explorer and opens child windows only after awaiting the resolution.
  */
 export function getAppMode(): AppMode {
   if (cachedMode != null) return cachedMode
-  if (isCaptureBuild()) return 'capture'
   return import.meta.env.DEV ? 'dev' : 'prod'
 }
 
@@ -83,7 +69,7 @@ export function getAppMode(): AppMode {
  * window out of the way). `capture` is a REFINEMENT of `e2e`, not an alternative
  * to it: a capture run is an E2E run that also takes screenshots, and it drives
  * the app through the same harness events. Comparing to `'e2e'` alone silently
- * turns those behaviors off in a capture build, which breaks the capture run
+ * turns those behaviors off in a capture run, which breaks the capture run
  * itself (the gallery and whats-new surfaces need the E2E-only listeners, and the
  * onboarding suppression keeps a popup out of every screenshot).
  *
@@ -172,19 +158,8 @@ export async function orderChildWindowToBackInE2e(win: WebviewWindow): Promise<v
   }
 }
 
-/**
- * Test-only: clears the cached mode so each test sees a fresh resolution, and
- * turns the capture-build flag OFF. The unit-test config defines
- * `__CMDR_I18N_CAPTURE__` as true for unrelated reasons, so `false` is the sane
- * default for a test that isn't about capture mode; `_setCaptureBuildForTests`
- * opts in.
- */
+/** Test-only: clears the cached and in-flight mode so each test sees a fresh resolution. */
 export function _resetForTests(): void {
   cachedMode = null
-  captureBuild = false
-}
-
-/** Test-only: simulates a binary built with `CMDR_I18N_CAPTURE_BUILD=1`. */
-export function _setCaptureBuildForTests(value: boolean): void {
-  captureBuild = value
+  pendingMode = null
 }

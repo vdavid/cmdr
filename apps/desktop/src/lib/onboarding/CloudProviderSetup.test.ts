@@ -31,10 +31,9 @@ const getAiApiKeyStatus = vi.fn<(id: string) => Promise<{ isSet: boolean; finger
 )
 const openExternalUrl = vi.fn<(url: string) => Promise<void>>(() => Promise.resolve())
 
-// Unit tests run with `__CMDR_I18N_CAPTURE__` baked in, so the real `isE2eRun()` answers
-// true and the shared controller suppresses its auto-check on open. These tests are about
-// the everyday path, so they answer false; the suppression itself is covered in
-// `$lib/ai-provider-setup/provider-setup.svelte.test.ts`.
+// The shared controller suppresses its auto-check on open under `isE2eRun()`. These tests are
+// about the everyday path, so they pin it false rather than lean on an unresolved mode; the
+// suppression itself is covered in `$lib/ai-provider-setup/provider-setup.svelte.test.ts`.
 vi.mock('$lib/app-mode', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   isE2eRun: () => false,

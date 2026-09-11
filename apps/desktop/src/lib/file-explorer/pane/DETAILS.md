@@ -1098,9 +1098,8 @@ Two guardrails that are easy to undo by accident:
   no context for. The pure decision function has no `~/Downloads` input at all, which makes the ordering structural
   rather than a comment. If the folder is missing, the right pane falls back to `~` and the marker is still recorded.
 - **`isE2eRun()`, never `getAppMode() === 'e2e'`**, and it is only trustworthy because `DualPaneExplorer` renders behind
-  `showApp`, which `routes/(main)/+page.svelte` sets after `await initAppMode()`. A capture build answers synchronously
-  from its build define, a plain E2E run needs that resolved cache. Mount the explorer any earlier and the gate silently
-  reads `dev`. See `$lib/app-mode.ts`.
+  `showApp`, which `routes/(main)/+page.svelte` sets after `await initAppMode()`. Both E2E and capture runs need that
+  resolved cache. Mount the explorer any earlier and the gate silently reads `dev`. See `$lib/app-mode.ts`.
 
 **What gets written, and in what order.** `loadPersistedState` does it all in one block, after volume resolution (so the
 stored `volumeId`s are the resolved ones) and before the `CMDR_E2E_START_PATH` override (so fixture paths can never

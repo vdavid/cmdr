@@ -3043,6 +3043,12 @@ export const commands = {
    */
   isE2eMode: () => __TAURI_INVOKE<boolean>('is_e2e_mode'),
   /**
+   *  Returns which automated run launched the app: none, a plain E2E run, or the i18n screenshot
+   *  capture. `$lib/app-mode` resolves the window's mode from it once per window. Always compiled
+   *  in; with the env vars unset it answers `None`.
+   */
+  getAutomatedRun: () => __TAURI_INVOKE<AutomatedRun>('get_automated_run'),
+  /**
    *  Returns `true` when the Ask Cmdr send path is served by the deterministic
    *  scripted fake LLM (`CMDR_E2E_ASK_CMDR_FAKE`). The composer reads this to treat
    *  the fake as an active provider, so send isn't gated off during E2E even though
@@ -5189,6 +5195,21 @@ export type AuthMode =
 
 // Authentication options available for a share.
 export type AuthOptions = 'guest_only' | 'credentials_only' | 'guest_or_credentials'
+
+/**
+ *  Which automated run launched this process, if any. The frontend turns it into the run's
+ *  title-bar marker (blue `E2E MODE`, yellow `SCREENSHOT`) and its harness-only behavior.
+ *
+ *  A capture is a REFINEMENT of an E2E run, never an alternative: the i18n screenshot run is an
+ *  E2E run that also photographs each surface, on the same binary the Playwright lane drives.
+ */
+export type AutomatedRun =
+  // No harness: a user's launch or a dev session.
+  | 'none'
+  // A Playwright E2E run (`CMDR_E2E_MODE=1`).
+  | 'e2e'
+  // The i18n screenshot capture (`CMDR_I18N_CAPTURE=1` on top of `CMDR_E2E_MODE=1`).
+  | 'capture'
 
 // What a backend can do.
 export type BackendCapabilities = {

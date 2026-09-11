@@ -19,6 +19,15 @@ pub fn is_e2e_mode() -> bool {
     crate::test_mode::is_e2e_mode()
 }
 
+/// Returns which automated run launched the app: none, a plain E2E run, or the i18n screenshot
+/// capture. `$lib/app-mode` resolves the window's mode from it once per window. Always compiled
+/// in; with the env vars unset it answers `None`.
+#[tauri::command]
+#[specta::specta]
+pub fn get_automated_run() -> crate::test_mode::AutomatedRun {
+    crate::test_mode::automated_run()
+}
+
 /// Returns `true` when the Ask Cmdr send path is served by the deterministic
 /// scripted fake LLM (`CMDR_E2E_ASK_CMDR_FAKE`). The composer reads this to treat
 /// the fake as an active provider, so send isn't gated off during E2E even though

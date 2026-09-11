@@ -57,9 +57,8 @@ The merge had to preserve behaviour that existed in only one of the two. Where e
 - **Secret errors as a persistent toast**: an `onSecretErrorChange` option. Settings passes it; the wizard doesn't, so
   it stays at the inline message. Both render `controller.secretError` inline.
 - **`isE2eRun()` suppression of the auto-check on open**: in the controller, so it now covers the wizard as well. An
-  automated run has no real provider to answer, and a cache hit still serves everywhere. This is why unit tests that
-  want the everyday path have to mock `$lib/app-mode`: `vitest.config.ts` bakes `__CMDR_I18N_CAPTURE__` in, so the real
-  `isE2eRun()` answers true in every unit test.
+  automated run has no real provider to answer, and a cache hit still serves everywhere. Unit tests mock `$lib/app-mode`
+  to pin the answer either way, since the real `isE2eRun()` reads a mode resolved over IPC.
 - **`pushConfigToBackend()` after a key persist**: an `onKeyPersisted` option. Settings passes it; the wizard pushes
   once from `StepAi.persist()` instead, so it doesn't push a provider the user hasn't confirmed yet.
 - **The `ai.cloud.askCmdrOverrideHint` note** and the settings-search `shouldShow` gating: stayed in

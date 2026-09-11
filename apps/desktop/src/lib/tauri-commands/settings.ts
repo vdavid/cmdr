@@ -6,6 +6,7 @@ import type { AiApiKeyError } from '$lib/ipc/bindings'
 import {
   commands,
   events,
+  type AutomatedRun,
   type RestrictedWindowPersistableSetting,
   type RestrictedWindowSettings,
   type SettingsChanged,
@@ -523,6 +524,19 @@ export async function isE2eMode(): Promise<boolean> {
     return await commands.isE2eMode()
   } catch {
     return false
+  }
+}
+
+/**
+ * Returns which automated run launched the binary: `'e2e'` (`CMDR_E2E_MODE=1`), `'capture'`
+ * (`CMDR_I18N_CAPTURE=1` on top of it), or `'none'`. Answers `'none'` when the backend isn't
+ * reachable (non-Tauri context, like a Vitest run).
+ */
+export async function getAutomatedRun(): Promise<AutomatedRun> {
+  try {
+    return await commands.getAutomatedRun()
+  } catch {
+    return 'none'
   }
 }
 

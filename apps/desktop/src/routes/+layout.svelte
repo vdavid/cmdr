@@ -17,9 +17,15 @@
     import { initLogger } from '$lib/logging/logger'
     import { installClipboardShimIfE2e } from '$lib/clipboard-shim'
     import { initWindowSettings } from '$lib/settings/window-settings'
+    import { initAppMode } from '$lib/app-mode'
 
     onMount(() => {
         void initLogger()
+        // The run mode (E2E, screenshot capture) for EVERY window, not only the ones that
+        // await it themselves: each window is its own JS context, so a Settings or queue
+        // window that skipped this would answer `isE2eRun()` false for the whole run.
+        // Promise-memoized, so a page awaiting it in its own `onMount` shares this call.
+        void initAppMode()
         // E2E-only: keep webview clipboard writes off the real OS clipboard.
         // No-op in dev/prod. Runs for every window (main, viewer, debug).
         void installClipboardShimIfE2e()

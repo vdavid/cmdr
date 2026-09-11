@@ -171,6 +171,43 @@ pub fn is_e2e_mode() -> bool {
     std::env::var("CMDR_E2E_MODE").as_deref() == Ok("1")
 }
 
+/// Which automated run launched this process, if any. The frontend turns it into the run's
+/// title-bar marker (blue `E2E MODE`, yellow `SCREENSHOT`) and its harness-only behavior.
+///
+/// A capture is a REFINEMENT of an E2E run, never an alternative: the i18n screenshot run is an
+/// E2E run that also photographs each surface, on the same binary the Playwright lane drives.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum AutomatedRun {
+    /// No harness: a user's launch or a dev session.
+    None,
+    /// A Playwright E2E run (`CMDR_E2E_MODE=1`).
+    E2e,
+    /// The i18n screenshot capture (`CMDR_I18N_CAPTURE=1` on top of `CMDR_E2E_MODE=1`).
+    Capture,
+}
+
+/// The automated run this process is part of, read from the launch environment.
+///
+/// **Strictly additive**: code must keep working with both vars unset.
+pub fn automated_run() -> AutomatedRun {
+    automated_run_from(
+        std::env::var("CMDR_E2E_MODE").ok().as_deref(),
+        std::env::var("CMDR_I18N_CAPTURE").ok().as_deref(),
+    )
+}
+
+/// Pure core of [`automated_run`]. Both vars read exactly `"1"`, like [`is_e2e_mode`], and the
+/// capture flag counts only inside an E2E run: on its own it would mark a launch that has none of
+/// E2E mode's protections (the data-dir guard, `Prohibited` activation) as a screenshot run.
+fn automated_run_from(e2e_mode: Option<&str>, i18n_capture: Option<&str>) -> AutomatedRun {
+    match (e2e_mode == Some("1"), i18n_capture == Some("1")) {
+        (false, _) => AutomatedRun::None,
+        (true, false) => AutomatedRun::E2e,
+        (true, true) => AutomatedRun::Capture,
+    }
+}
+
 /// `CMDR_E2E_ASK_CMDR_FAKE` routes the Ask Cmdr send path through the deterministic
 /// scripted fake LLM (`agent::resolve_agent_llm`), so the rail's send-and-render can
 /// be tested with no real provider. This is the single source of truth for "the fake
@@ -394,6 +431,29 @@ mod tests {
         // Reference call to keep the helper from being dead-coded out of
         // test builds; the result is environment-dependent so we don't assert.
         let _ = is_e2e_mode();
+    }
+
+    /// The capture flag refines an E2E run and means nothing without one; both vars read exactly
+    /// `"1"`, so a `CMDR_E2E_MODE=0` left in an environment can't turn a launch into a run.
+    #[test]
+    fn automated_run_needs_e2e_mode_and_reads_exactly_one() {
+        assert_eq!(automated_run_from(None, None), AutomatedRun::None);
+        assert_eq!(automated_run_from(None, Some("1")), AutomatedRun::None);
+        assert_eq!(automated_run_from(Some("0"), Some("1")), AutomatedRun::None);
+        assert_eq!(automated_run_from(Some("true"), None), AutomatedRun::None);
+        assert_eq!(automated_run_from(Some("1"), None), AutomatedRun::E2e);
+        assert_eq!(automated_run_from(Some("1"), Some("0")), AutomatedRun::E2e);
+        assert_eq!(automated_run_from(Some("1"), Some("")), AutomatedRun::E2e);
+        assert_eq!(automated_run_from(Some("1"), Some("1")), AutomatedRun::Capture);
+    }
+
+    /// The wire shape the frontend's `AutomatedRun` union compares against.
+    #[test]
+    fn automated_run_serializes_camel_case() {
+        let json = |run| serde_json::to_string(&run).expect("a unit enum always serializes");
+        assert_eq!(json(AutomatedRun::None), "\"none\"");
+        assert_eq!(json(AutomatedRun::E2e), "\"e2e\"");
+        assert_eq!(json(AutomatedRun::Capture), "\"capture\"");
     }
 
     /// Adopting the machine's pre-existing network mounts is exactly "not under E2E".

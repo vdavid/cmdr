@@ -41,8 +41,8 @@ vi.mock('$lib/settings', async (importOriginal) => {
   }
 })
 
-// The unit-test build bakes in the capture constant, so the real `isE2eRun()` answers true
-// for every test. This mock puts it under the test's control instead.
+// The real `isE2eRun()` reads a mode resolved over IPC, which a unit test never has. This mock
+// puts it under the test's control instead.
 const e2e = { on: false }
 vi.mock('$lib/app-mode', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),

@@ -661,6 +661,7 @@ export {
   getDirStatsBatch,
   getE2eStartPath,
   isE2eMode,
+  getAutomatedRun,
   isForceOnboarding,
   getAiStatus,
   getAiModelInfo,

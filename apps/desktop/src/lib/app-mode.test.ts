@@ -1,21 +1,21 @@
 /**
  * Tests for the app-mode helper. `_resetForTests` clears the module's cached
  * mode between cases so each test sees a fresh resolution. The backend
- * `isE2eMode` call is mocked at the `tauri-commands` barrel; `import.meta.env.DEV`
- * is whatever vitest reports (DEV=true in the dev test runner), which the
- * assertions account for.
+ * `getAutomatedRun` call is mocked at the `tauri-commands` barrel;
+ * `import.meta.env.DEV` is whatever vitest reports (DEV=true in the dev test
+ * runner), which the assertions account for.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { isE2eModeSpy, orderWindowToBackSpy, warnSpy } = vi.hoisted(() => ({
-  isE2eModeSpy: vi.fn<() => Promise<boolean>>(),
+const { getAutomatedRunSpy, orderWindowToBackSpy, warnSpy } = vi.hoisted(() => ({
+  getAutomatedRunSpy: vi.fn<() => Promise<'none' | 'e2e' | 'capture'>>(),
   orderWindowToBackSpy: vi.fn<(label: string) => Promise<void>>(),
   warnSpy: vi.fn(),
 }))
 
 vi.mock('$lib/tauri-commands', () => ({
-  isE2eMode: isE2eModeSpy,
+  getAutomatedRun: getAutomatedRunSpy,
   orderWindowToBack: orderWindowToBackSpy,
 }))
 
@@ -31,7 +31,6 @@ import {
   decorateMainWindowTitle,
   orderChildWindowToBackInE2e,
   _resetForTests,
-  _setCaptureBuildForTests,
 } from './app-mode'
 
 /** Minimal `WebviewWindow` stand-in: `once` fires the callback so the helper's
@@ -49,21 +48,21 @@ function fakeWindow(label: string) {
 describe('app-mode', () => {
   beforeEach(() => {
     _resetForTests()
-    isE2eModeSpy.mockReset()
+    getAutomatedRunSpy.mockReset()
     orderWindowToBackSpy.mockReset()
     orderWindowToBackSpy.mockResolvedValue(undefined)
     warnSpy.mockReset()
   })
 
-  it('resolves to e2e when backend reports E2E', async () => {
-    isE2eModeSpy.mockResolvedValue(true)
+  it('resolves to e2e when backend reports an E2E run', async () => {
+    getAutomatedRunSpy.mockResolvedValue('e2e')
     expect(await initAppMode()).toBe('e2e')
     expect(getAppMode()).toBe('e2e')
     expect(decorateChildWindowTitle('Settings')).toBe('E2E - Settings - E2E')
   })
 
-  it('falls back to dev (vitest DEV=true) when backend says no', async () => {
-    isE2eModeSpy.mockResolvedValue(false)
+  it('falls back to dev (vitest DEV=true) when backend reports no automated run', async () => {
+    getAutomatedRunSpy.mockResolvedValue('none')
     expect(await initAppMode()).toBe('dev')
     expect(getAppMode()).toBe('dev')
     // Dev mode leaves child titles untouched — only E2E decorates.
@@ -71,64 +70,53 @@ describe('app-mode', () => {
   })
 
   it('initAppMode is idempotent', async () => {
-    isE2eModeSpy.mockResolvedValue(true)
+    getAutomatedRunSpy.mockResolvedValue('e2e')
     await initAppMode()
     await initAppMode()
-    expect(isE2eModeSpy).toHaveBeenCalledTimes(1)
+    expect(getAutomatedRunSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('getAppMode pre-init falls back to dev/prod from import.meta.env.DEV', () => {
-    // Before initAppMode runs, vitest's DEV=true → dev. Either way, never e2e.
-    expect(getAppMode()).not.toBe('e2e')
+  it('shares one backend round trip between callers that start before it resolves', async () => {
+    // The root layout and a page's own `onMount` both call it while the first answer is in flight.
+    getAutomatedRunSpy.mockResolvedValue('capture')
+    const [first, second] = await Promise.all([initAppMode(), initAppMode()])
+    expect(first).toBe('capture')
+    expect(second).toBe('capture')
+    expect(getAutomatedRunSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('getAppMode pre-init falls back to dev/prod, never a run marker', () => {
+    // Before initAppMode runs, vitest's DEV=true → dev. The unit-test build bakes the E2E
+    // build define in, and that must not make a window look like a run before the backend says so.
+    expect(getAppMode()).toBe('dev')
+    expect(isE2eRun()).toBe(false)
   })
 
   describe('capture mode', () => {
-    it('resolves to capture from the build define, without asking the backend', async () => {
-      _setCaptureBuildForTests(true)
+    it('resolves to capture when the backend reports a capture run', async () => {
+      getAutomatedRunSpy.mockResolvedValue('capture')
       expect(await initAppMode()).toBe('capture')
-      expect(getAppMode()).toBe('capture')
-      // The define is synchronous and decisive, so there's no `isE2eMode()` round trip.
-      expect(isE2eModeSpy).not.toHaveBeenCalled()
-    })
-
-    it('wins over e2e, which in turn wins over dev', async () => {
-      // A capture run IS an E2E run (backend reports E2E too); the most specific marker wins.
-      _setCaptureBuildForTests(true)
-      isE2eModeSpy.mockResolvedValue(true)
-      expect(await initAppMode()).toBe('capture')
-
-      _resetForTests()
-      isE2eModeSpy.mockResolvedValue(true)
-      expect(await initAppMode()).toBe('e2e')
-
-      _resetForTests()
-      isE2eModeSpy.mockResolvedValue(false)
-      expect(await initAppMode()).toBe('dev')
-    })
-
-    it('reports capture pre-init too, so the first frame is already yellow', () => {
-      _setCaptureBuildForTests(true)
       expect(getAppMode()).toBe('capture')
     })
 
     it('counts as an E2E run, so harness-only behavior stays on', async () => {
-      _setCaptureBuildForTests(true)
+      getAutomatedRunSpy.mockResolvedValue('capture')
       await initAppMode()
       expect(isE2eRun()).toBe(true)
 
       _resetForTests()
-      isE2eModeSpy.mockResolvedValue(true)
+      getAutomatedRunSpy.mockResolvedValue('e2e')
       await initAppMode()
       expect(isE2eRun()).toBe(true)
 
       _resetForTests()
-      isE2eModeSpy.mockResolvedValue(false)
+      getAutomatedRunSpy.mockResolvedValue('none')
       await initAppMode()
       expect(isE2eRun()).toBe(false)
     })
 
     it('still keeps child windows out of the way, like any run', async () => {
-      _setCaptureBuildForTests(true)
+      getAutomatedRunSpy.mockResolvedValue('capture')
       await initAppMode()
       const win = fakeWindow('settings')
       await orderChildWindowToBackInE2e(win)
@@ -136,7 +124,7 @@ describe('app-mode', () => {
     })
 
     it('marks child window titles with SCREENSHOT', async () => {
-      _setCaptureBuildForTests(true)
+      getAutomatedRunSpy.mockResolvedValue('capture')
       await initAppMode()
       expect(decorateChildWindowTitle('Settings')).toBe('SCREENSHOT - Settings - SCREENSHOT')
     })
@@ -144,7 +132,7 @@ describe('app-mode', () => {
 
   describe('orderChildWindowToBackInE2e', () => {
     it('orders the window back once created when in E2E', async () => {
-      isE2eModeSpy.mockResolvedValue(true)
+      getAutomatedRunSpy.mockResolvedValue('e2e')
       await initAppMode()
       const win = fakeWindow('viewer-123')
       await orderChildWindowToBackInE2e(win)
@@ -154,7 +142,7 @@ describe('app-mode', () => {
     })
 
     it('is a no-op outside E2E', async () => {
-      isE2eModeSpy.mockResolvedValue(false)
+      getAutomatedRunSpy.mockResolvedValue('none')
       await initAppMode()
       const win = fakeWindow('settings')
       await orderChildWindowToBackInE2e(win)
@@ -164,7 +152,7 @@ describe('app-mode', () => {
     })
 
     it('swallows and logs errors so callers can fire-and-forget', async () => {
-      isE2eModeSpy.mockResolvedValue(true)
+      getAutomatedRunSpy.mockResolvedValue('e2e')
       await initAppMode()
       orderWindowToBackSpy.mockRejectedValue(new Error('no window'))
       const win = fakeWindow('shortcuts')
