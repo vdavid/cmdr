@@ -1685,7 +1685,9 @@ export const commands = {
   dismissCrashReport: () => __TAURI_INVOKE<void>('dismiss_crash_report'),
   /**
    *  Sends the crash report to the ingestion server, then deletes the local file.
-   *  Skipped in dev mode and CI to avoid polluting production data.
+   *  Skipped in debug builds, E2E builds (`playwright-e2e`), and CI to avoid polluting production
+   *  data. The E2E skip mirrors `error_reporter::upload`: an E2E build is a release build, so without
+   *  it a crash during a test run would reach the live channel looking like a real user's.
    */
   sendCrashReport: (report: CrashReport) => typedError<null, string>(__TAURI_INVOKE('send_crash_report', { report })),
   /**
