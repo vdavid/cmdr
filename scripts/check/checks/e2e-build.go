@@ -1,8 +1,12 @@
 package checks
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -72,15 +76,61 @@ func e2eBinaryInputs() []string {
 	}, agentDocExclusions)
 }
 
-// e2eBuildFingerprint hashes the tree the binary would be built from, using the
-// same git-aware pass every check's fingerprint uses.
+// e2eBuildGeneratedInputs are build inputs the git-aware pass can't see: gitignored
+// dirs something generates before a build, which the build then bakes in. Vite's
+// catalog glob takes every `messages/*/` dir ON DISK, so the pseudolocale
+// (`pnpm i18n:pseudo`, the overflow capture's first step) lands in whichever binary
+// is built after it. The dirs come from `GENERATED_LOCALES` in
+// `apps/desktop/scripts/i18n-catalog-lib.ts`.
+var e2eBuildGeneratedInputs = []string{"apps/desktop/src/lib/intl/messages/en-XA"}
+
+// e2eBuildFingerprint hashes the tree the binary would be built from: the same
+// git-aware pass every check's fingerprint uses, plus the generated inputs it can't
+// see.
 func e2eBuildFingerprint(rootDir string) (string, error) {
 	data, err := CollectRepoFingerprintData(rootDir)
 	if err != nil {
 		return "", err
 	}
+	generated, err := generatedInputsDigest(rootDir)
+	if err != nil {
+		return "", err
+	}
 	def := CheckDefinition{Inputs: e2eBinaryInputs()}
-	return data.FingerprintFor(&def), nil
+	combined := sha256.Sum256([]byte(data.FingerprintFor(&def) + "\x00" + generated))
+	return hex.EncodeToString(combined[:]), nil
+}
+
+// generatedInputsDigest hashes every file under `e2eBuildGeneratedInputs` by path and
+// content. A dir that doesn't exist contributes nothing, so "never generated" and
+// "deleted since" read the same, which is what the binary would carry either way.
+func generatedInputsDigest(rootDir string) (string, error) {
+	hasher := sha256.New()
+	for _, rel := range e2eBuildGeneratedInputs {
+		// WalkDir visits in lexical order, so the digest is stable across runs.
+		err := filepath.WalkDir(filepath.Join(rootDir, rel), func(path string, entry fs.DirEntry, err error) error {
+			if errors.Is(err, fs.ErrNotExist) {
+				return fs.SkipAll
+			}
+			if err != nil || entry.IsDir() {
+				return err
+			}
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			relPath, err := filepath.Rel(rootDir, path)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(hasher, "%s\x00%x\x00", filepath.ToSlash(relPath), sha256.Sum256(content))
+			return nil
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 // e2eBinaryIsCurrent reports whether the binary on disk is the one this exact
@@ -135,21 +185,27 @@ func e2eBuildStampFor(binaryPath, fingerprint string) (string, error) {
 	return fmt.Sprintf("%s %d %d", fingerprint, info.Size(), info.ModTime().UnixNano()), nil
 }
 
-// buildTauriBinary compiles the Tauri binary with the playwright-e2e feature
-// flag, returns the path to the built binary, and code-signs it for Keychain
-// access on macOS. Errors include the build log path for post-mortem.
+// EnsureE2EBinary returns the path to an E2E binary built from the current tree (the
+// `playwright-e2e` feature plus the E2E Vite define), compiling one only when the
+// binary on disk isn't already it, and code-signs it for Keychain access on macOS.
+// Errors include the build log path for post-mortem.
 //
-// The compile is skipped when the binary on disk was already built from this exact
-// tree (`e2e-build-cache.go`). Code-signing still runs either way: it's fast, it's
-// idempotent, and re-asserting the signature costs less than reasoning about
-// whether a previous run got that far.
-func buildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64) (string, error) {
+// Two callers share it, so neither can launch a binary older than the tree: the
+// Playwright lane, and `pnpm check --ensure-e2e-binary`, which the i18n screenshot run
+// starts with. `progress` hears about a compile before it starts, because otherwise a
+// caller outside the check run sits through minutes of silence.
+//
+// Code-signing runs whether or not it compiled: it's fast, it's idempotent, and
+// re-asserting the signature costs less than reasoning about whether a previous run
+// got that far.
+func EnsureE2EBinary(ctx *CheckContext, timestamp int64, progress io.Writer) (string, error) {
 	// Captured BEFORE the build, since the build writes into the tree (Vite's
 	// `apps/desktop/build/`), and stamped only once it succeeds. A fingerprint pass
 	// that fails leaves this empty, which forces the rebuild and skips the stamp.
 	fingerprint, _ := e2eBuildFingerprint(ctx.RootDir)
 
-	binaryPath, buildErr := reuseOrBuildTauriBinary(ctx, desktopDir, timestamp, fingerprint)
+	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
+	binaryPath, buildErr := reuseOrBuildTauriBinary(ctx, desktopDir, timestamp, fingerprint, progress)
 	if buildErr != nil {
 		return "", buildErr
 	}
@@ -161,13 +217,14 @@ func buildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64) (st
 
 // reuseOrBuildTauriBinary returns the path to a binary built from the current tree,
 // compiling one only when the binary on disk isn't already it.
-func reuseOrBuildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64, fingerprint string) (string, error) {
+func reuseOrBuildTauriBinary(ctx *CheckContext, desktopDir string, timestamp int64, fingerprint string, progress io.Writer) (string, error) {
 	if ctx.ReuseArtifacts {
 		if existing, err := findTauriBinary(ctx.RootDir); err == nil && e2eBinaryIsCurrent(existing, fingerprint) {
 			return existing, nil
 		}
 	}
 
+	fmt.Fprintln(progress, "Building the E2E binary: none on disk was built from this tree. This takes a few minutes…")
 	buildCmd := exec.Command("pnpm", "test:e2e:playwright:build")
 	buildCmd.Dir = desktopDir
 	buildOutput, err := RunCommand(buildCmd, true)

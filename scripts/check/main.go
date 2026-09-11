@@ -54,6 +54,8 @@ type cliFlags struct {
 	graphFormat  string // tree (default) | mermaid | dot
 	docsGraph    bool   // render the doc-discoverability tree (rooted at AGENTS.md) and exit
 	printNightly bool   // print the pinned nightly toolchain (used by CI) and exit
+	// ensure the E2E binary is built from the current tree, print its path, and exit
+	ensureE2EBinary bool
 }
 
 func main() {
@@ -124,6 +126,10 @@ func main() {
 			printError("Error: %v", err)
 			os.Exit(1)
 		}
+		return
+	}
+
+	if handleEnsureE2EBinaryFlag(flags, rootDir) {
 		return
 	}
 
@@ -286,6 +292,7 @@ func parseFlags(args []string) (*cliFlags, error) {
 		graphFormat  = fs.String("graph-format", "tree", "Graph output format: tree | mermaid | dot")
 		docsGraph    = fs.Bool("docs-graph", false, "Render the doc-discoverability tree (CLAUDE.md / DETAILS.md / docs, rooted at AGENTS.md) and exit")
 		printNightly = fs.Bool("print-nightly", false, "Print the pinned nightly toolchain cargo-udeps runs on, and exit")
+		ensureE2E    = fs.Bool("ensure-e2e-binary", false, "Build the E2E binary unless the one on disk matches this tree, print its path, and exit")
 		help         = fs.Bool("help", false, "Show help message")
 		h            = fs.Bool("h", false, "Show help message")
 	)
@@ -334,6 +341,8 @@ func parseFlags(args []string) (*cliFlags, error) {
 		graphFormat:  *graphFormat,
 		docsGraph:    *docsGraph,
 		printNightly: *printNightly,
+
+		ensureE2EBinary: *ensureE2E,
 	}
 
 	if err := applyPositionalSelectors(flags, positionals, args); err != nil {
@@ -696,6 +705,7 @@ func showUsage() {
 	fmt.Println("    --graph-format FORMAT    Graph output format: tree (default) | mermaid | dot")
 	fmt.Println("    --docs-graph             Render the doc-discoverability tree (rooted at AGENTS.md) and exit")
 	fmt.Println("    --print-nightly          Print the pinned nightly toolchain cargo-udeps runs on, and exit")
+	fmt.Println("    --ensure-e2e-binary      Build the E2E binary unless the one on disk matches this tree, print its path, and exit")
 	fmt.Println("    -h, --help               Show this help message")
 	fmt.Println()
 	fmt.Println("If nothing is named, runs all non-slow checks for all apps.")

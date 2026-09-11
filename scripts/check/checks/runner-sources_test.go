@@ -165,6 +165,7 @@ func TestRunnerCoreCoversWhatTheExecutorReaches(t *testing.T) {
 		"NightlyToolchain": "printed by `--print-nightly` for CI's toolchain install; no check run touches it",
 		"BuildDocGraph":    "the `--docs-graph` renderer, which draws a diagram instead of running checks",
 		"DocGraph":         "the type that renderer hands around; same path, same reasoning",
+		"EnsureE2EBinary":  "`--ensure-e2e-binary` builds the E2E binary and exits; the Playwright lane reaches the same code through its own `Run`, so that lane fingerprints `e2e-build.go`",
 	}
 
 	declaringFile := map[string]string{}

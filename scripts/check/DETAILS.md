@@ -59,6 +59,11 @@ naming review (§ "The unrecognized-name log").
 - **`--graph-format`**: Graph output: `tree` (default, colored terminal), `mermaid`, `dot`
 - **`--docs-graph`**: Render the doc-discoverability tree (rooted at the repo-root `CLAUDE.md`) with per-doc usage, and
   exit
+- **`--ensure-e2e-binary`**: Build the E2E binary unless the one on disk was built from this tree, print its path as the
+  only stdout line (progress on stderr), and exit. The i18n screenshot run starts with it, so it can never launch a
+  stale binary. Waits out a warming worktree, skips the main-clone guard (a build writes nothing tracked), and `--fresh`
+  forces the compile. It shares `EnsureE2EBinary` with the Playwright lane: `checks/DETAILS.md` § "The Playwright lane's
+  binary is fingerprinted"
 - **`-h`, `--help`**: Show help message
 
 `--graph` honors the same selectors (positional or flag form), so `pnpm check rust --graph` graphs only the Rust checks.

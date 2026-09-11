@@ -23,6 +23,26 @@ func TestParseFlags_PositionalCheckNames(t *testing.T) {
 	}
 }
 
+// `pnpm i18n:shots` gets its binary through this flag, so the capture can never launch
+// a binary older than the tree.
+func TestParseFlags_EnsureE2EBinary(t *testing.T) {
+	flags, err := parseFlags([]string{"--ensure-e2e-binary"})
+	if err != nil {
+		t.Fatalf("parseFlags() returned error: %v", err)
+	}
+	if !flags.ensureE2EBinary {
+		t.Error("--ensure-e2e-binary didn't set ensureE2EBinary")
+	}
+
+	flags, err = parseFlags(nil)
+	if err != nil {
+		t.Fatalf("parseFlags() returned error: %v", err)
+	}
+	if flags.ensureE2EBinary {
+		t.Error("ensureE2EBinary is on without the flag; every plain `pnpm check` would build the E2E binary and exit")
+	}
+}
+
 func TestParseFlags_PositionalCommaSeparated(t *testing.T) {
 	flags, err := parseFlags([]string{"oxfmt,clippy", "rustfmt"})
 	if err != nil {

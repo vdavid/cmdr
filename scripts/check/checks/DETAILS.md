@@ -906,8 +906,11 @@ a timestamp.
 
 ## The Playwright lane's binary is fingerprinted, because its build isn't incremental
 
-**Decision**: `buildTauriBinary` stamps the release binary with a fingerprint of everything it was compiled from
-(`e2eBinaryInputs`, in `e2e-build.go`) and skips the compile when the binary on disk already carries that stamp.
+**Decision**: `EnsureE2EBinary` stamps the release binary with a fingerprint of everything it was compiled from
+(`e2eBinaryInputs`, in `e2e-build.go`) and skips the compile when the binary on disk already carries that stamp. It has
+two callers: this lane, and `pnpm check --ensure-e2e-binary`, which the i18n screenshot run (`pnpm i18n:shots`) starts
+with. Sharing one decision is what keeps either from running a binary older than the tree, and it's why the two never
+rebuild over each other: the capture instrumentation rides every E2E build, so there is only one binary to want.
 
 **Why**: `pnpm test:e2e:playwright:build` does not get cheaper when nothing changed. Measured back-to-back on a warm
 `target/` with an untouched tree (macOS, rustc 1.97.1, 2026-08-12): the second build took **172 s**, of which cargo
@@ -920,6 +923,12 @@ The stamped set is narrower than the lane's `Inputs` on purpose: it drops `apps/
 specs, its config, and the shared fixture helpers from disk when the suite runs, so editing one changes what the suite
 asserts, never what it asserts against — and an E2E debugging loop edits exactly those files.
 `TestE2EBinaryInputsCoverTheBuildAndNothingElse` pins both directions of that boundary.
+
+One input sits outside git's view, so the fingerprint folds it in by hand: `e2eBuildGeneratedInputs`, today only the
+gitignored pseudolocale `messages/en-XA/`. Vite's catalog glob bakes every locale dir ON DISK, so generating `en-XA`
+(the overflow capture's first step) changes what the next build contains while leaving the git-aware pass identical.
+Without the fold, the overflow run would reuse a binary built before the pseudolocale existed and switch to a locale it
+doesn't carry. `TestE2EBuildFingerprintSeesTheGitignoredPseudolocale` pins it.
 
 Every uncertainty rebuilds: a missing binary, a missing or unreadable stamp, or a fingerprint pass that failed (which
 hands over an empty string, and `recordE2EBuild` refuses to write one). That bias matters more here than elsewhere,

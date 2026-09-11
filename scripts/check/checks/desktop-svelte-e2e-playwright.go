@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -77,7 +78,7 @@ func RunDesktopE2EPlaywright(ctx *CheckContext) (CheckResult, error) {
 	timestamp := time.Now().Unix()
 	pid := os.Getpid()
 
-	binaryPath, err := buildTauriBinary(ctx, desktopDir, timestamp)
+	binaryPath, err := EnsureE2EBinary(ctx, timestamp, io.Discard)
 	if err != nil {
 		return CheckResult{}, err
 	}

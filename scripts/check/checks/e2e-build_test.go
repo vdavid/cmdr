@@ -82,6 +82,38 @@ func TestE2EBinaryIsCurrent(t *testing.T) {
 	})
 }
 
+// TestE2EBuildFingerprintSeesTheGitignoredPseudolocale pins the one build input git
+// can't see. Vite bakes every `messages/*/` dir on disk into the binary, and `en-XA/`
+// is generated and gitignored, so the git-aware pass alone would vouch for a binary
+// built before the pseudolocale existed, and the overflow capture would switch to a
+// locale the binary doesn't carry.
+func TestE2EBuildFingerprintSeesTheGitignoredPseudolocale(t *testing.T) {
+	dir := initFpGitRepo(t, map[string]string{
+		"apps/desktop/src/lib/intl/messages/.gitignore":  "en-XA/\n",
+		"apps/desktop/src/lib/intl/messages/en/app.json": `{"app.title": "Cmdr"}`,
+	})
+	fingerprintNow := func() string {
+		t.Helper()
+		fp, err := e2eBuildFingerprint(dir)
+		if err != nil {
+			t.Fatalf("e2eBuildFingerprint: %v", err)
+		}
+		return fp
+	}
+
+	without := fingerprintNow()
+	writeFiles(t, dir, map[string]string{"apps/desktop/src/lib/intl/messages/en-XA/app.json": `{"app.title": "[Çɱðŕ]"}`})
+	with := fingerprintNow()
+	if with == without {
+		t.Error("generating `en-XA/` left the fingerprint unchanged; a binary built without the pseudolocale would be reused for the overflow capture")
+	}
+
+	writeFiles(t, dir, map[string]string{"apps/desktop/src/lib/intl/messages/en-XA/app.json": `{"app.title": "[Çɱðŕ ŵîðéŕ]"}`})
+	if fingerprintNow() == with {
+		t.Error("regenerating `en-XA/` with different strings left the fingerprint unchanged; the binary would carry the old pseudolocale")
+	}
+}
+
 // TestE2EBinaryInputsCoverTheBuildAndNothingElse pins the boundary the whole skip
 // rests on: everything the binary is compiled from is in, and the Playwright suite's
 // own specs and fixtures are out. Get the first half wrong and the suite asserts
