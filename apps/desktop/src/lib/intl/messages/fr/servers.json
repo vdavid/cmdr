@@ -148,6 +148,22 @@
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
   },
+  "servers.refusal.startFolderOutsideRoot": "Le dossier initial doit être le dossier racine ou un dossier à l''intérieur de celui-ci.",
+  "@servers.refusal.startFolderOutsideRoot": {
+    "sourceHash": "a1d1efb"
+  },
+  "servers.refusal.rootNotFound": "Cmdr ne peut pas ouvrir ce dossier sur {host}. Vérifiez qu''il existe et que votre compte peut le lire.",
+  "@servers.refusal.rootNotFound": {
+    "sourceHash": "883a0bc"
+  },
+  "servers.refusal.startFolderNotFound": "Cmdr ne peut pas ouvrir ce dossier initial sur {host}. Vérifiez qu''il existe et que votre compte peut le lire.",
+  "@servers.refusal.startFolderNotFound": {
+    "sourceHash": "f1df16e"
+  },
+  "servers.refusal.saveUnconfirmed": "{host} n''a pas répondu à temps, Cmdr n''a donc rien enregistré. Réessayez dans un instant.",
+  "@servers.refusal.saveUnconfirmed": {
+    "sourceHash": "f7bb3a6"
+  },
   "servers.sheet.addTitle": "Ajouter un serveur",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -252,9 +268,25 @@
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
   },
-  "servers.sheet.remoteFolder": "Dossier distant",
-  "@servers.sheet.remoteFolder": {
-    "sourceHash": "71525cd"
+  "servers.sheet.nameHelp": "Laissez ce champ vide pour désigner ce serveur par son compte et son hôte.",
+  "@servers.sheet.nameHelp": {
+    "sourceHash": "7b0a53f"
+  },
+  "servers.sheet.rootFolder": "Dossier racine",
+  "@servers.sheet.rootFolder": {
+    "sourceHash": "6d92528"
+  },
+  "servers.sheet.rootFolderHelp": "Cmdr ne remonte jamais au-dessus de ce dossier sur le serveur.",
+  "@servers.sheet.rootFolderHelp": {
+    "sourceHash": "688d735"
+  },
+  "servers.sheet.startFolder": "Dossier initial",
+  "@servers.sheet.startFolder": {
+    "sourceHash": "ef05c31"
+  },
+  "servers.sheet.startFolderHelp": "Le serveur s''ouvre dans ce dossier. Laissez ce champ vide pour ouvrir le dossier racine.",
+  "@servers.sheet.startFolderHelp": {
+    "sourceHash": "514018e"
   },
   "servers.sheet.keyFile": "Fichier de clé",
   "@servers.sheet.keyFile": {

@@ -204,6 +204,10 @@ const REFUSAL_KINDS: ConnectRefusalKind[] = [
   'unreachable',
   'host_key_untrusted',
   'host_key_revoked',
+  'start_folder_outside_root',
+  'root_not_found',
+  'start_folder_not_found',
+  'save_unconfirmed',
 ]
 
 /**

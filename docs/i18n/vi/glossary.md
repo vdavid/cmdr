@@ -2950,3 +2950,38 @@ tới `ngắt kết nối`.
   theo chị em).
 - Tên điện thoại `{name}` đứng đầu câu (`{name} không báo cho Cmdr biết…`): tiếng Việt không biến hình nên tên nào cũng
   vừa, kể cả `Pixel 9 Pro XL`. Không giá trị nào chứa dấu nháy đơn.
+
+## Thư mục gốc và thư mục bắt đầu của máy chủ đã lưu (`servers.sheet.rootFolder*` / `.startFolder*` / `.nameHelp`, `servers.refusal.startFolderOutsideRoot` / `.rootNotFound` / `.startFolderNotFound` / `.saveUnconfirmed`, 2026-09-11)
+
+Bề mặt: biểu mẫu thêm hoặc sửa một máy chủ SFTP / WebDAV đã lưu. Thư mục gốc là TRẦN: Cmdr không bao giờ đi lên cao hơn
+nó. Thư mục bắt đầu là nơi khung mở ra, và phải là thư mục gốc hoặc nằm bên trong nó; để trống nghĩa là thư mục gốc.
+
+- **root folder (trần của một máy chủ đã lưu) → `thư mục gốc`** · MS terminology `VIETNAMESE.tbx` (`root folder` /
+  `root directory` → `thư mục gốc`), Xfce Thunar (`The root folder has no parent` → `Thư mục gốc không có thư mục cha`),
+  và catalog đã ship ở `errors.mutation.cantRenameVolumeRoot` · `high`. Cùng một chữ ở nhãn, dòng gợi ý và các câu từ
+  chối (`en` `@key.description` yêu cầu vậy).
+- **start folder → `thư mục bắt đầu`** · kho tham chiếu không có "start folder" hay "initial folder" nào (Nautilus,
+  Thunar, Dolphin, Total Commander, MS terminology đều trống). macOS vi dịch bổ ngữ "start" đúng khuôn này:
+  `WorkflowKit.framework` (`Start Location` → `Vị trí bắt đầu`) và `ActionKit.framework` (`Start Location Not Found` →
+  `Không tìm thấy vị trí bắt đầu`), macOS 26.6.2 build 25G83, quét `.loctable` trực tiếp 2026-09-11 · `tentative` (gốc từ
+  chắc chắn, nhưng nguồn là nghĩa lộ trình của Shortcuts, không phải thư mục). ❌ Không dùng `thư mục khởi động`: macOS
+  dành `khởi động` cho startup (`Startup Disk` → `Ổ đĩa khởi động`). ❌ Không dùng `thư mục mặc định` (MS `default
+  folder`), nghĩa khác.
+- **host trong `nameHelp` → `địa chỉ`** · `host` và `server` đều là `máy chủ` (đầu bảng này), nên dịch sát "by its
+  account and host" thành `máy chủ này theo tài khoản và máy chủ` đọc lẫn lộn. `địa chỉ` là nhãn của chính ô đó
+  (`servers.sheet.address`) và là chữ `servers.sheet.identityLocked` đã dùng cho cặp `Địa chỉ và tài khoản` · `high`.
+- **"goes above this folder" → `đi lên cao hơn thư mục này`** · cùng gốc `lên` với `lên thư mục cha` đã ship
+  (`Bấm đúp vào nền khung để lên thư mục cha`). Đặt `Trên máy chủ,` lên đầu câu để không lặp `trên` hai lần.
+- **"Where the server opens." → `Thư mục hiện ra đầu tiên khi bạn mở máy chủ.`** · dịch sát `Nơi máy chủ mở ra` đọc như
+  máy chủ đang khởi động; câu mô tả thẳng thứ người dùng thấy. `mở` là động từ đã chốt cho một hàng máy chủ
+  (`menu.network.open`) · `tentative` (không nguồn nào có câu này).
+- **Hai câu `…NotFound` dùng chung đuôi từng chữ**: `Hãy kiểm tra xem thư mục có tồn tại không và tài khoản của bạn có
+  đọc được không.` Chỉ vế đầu khác (`thư mục này` / `thư mục bắt đầu này`), theo luật chuỗi chị em trong `style.md`.
+  `không mở được` theo khuôn `không kết nối được tới` của `servers.refusal.unreachable`.
+- **`saveUnconfirmed` → `{host} đã không phản hồi kịp thời, nên Cmdr chưa lưu gì. Hãy thử lại sau giây lát.`** · vế đầu
+  chép nguyên `servers.refusal.timedOut`; `Hãy thử lại sau giây lát.` là câu catalog đã ship nhiều lần. `chưa` thay vì
+  `không`, vì thử lại là an toàn và sẽ lưu (cùng luật `chưa` / `không` của § Lời mời ghim Cmdr vào Dock). Câu chủ động
+  với `Cmdr` làm chủ ngữ thay cho bị động của tiếng Anh.
+- **"Leave it empty" → `Để trống để …`** · `để trống` đã chốt trong `style.md`; khuôn câu y như
+  `settings.askCmdr.interactiveModel.description` (`Để trống để dùng chung mô hình…`).
+- Không giá trị tiếng Việt nào có dấu nháy đơn, nên không có `''` nào phải nhân đôi; `{host}` giữ nguyên.

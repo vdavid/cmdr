@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
-import { wordConnectRefusal } from './connect-refusals'
+import { refusalField, wordConnectRefusal } from './connect-refusals'
 import type { ConnectRefusalKind } from './connect-refusals'
 
 /** One value per `ConnectRefusalKind`. Adding a kind makes this fail to typecheck. */
@@ -24,6 +24,10 @@ const KINDS: ConnectRefusalKind[] = [
   'unreachable',
   'host_key_untrusted',
   'host_key_revoked',
+  'start_folder_outside_root',
+  'root_not_found',
+  'start_folder_not_found',
+  'save_unconfirmed',
 ]
 
 const subject = { host: 'nas.local', username: 'ada' }
@@ -73,5 +77,25 @@ describe('wordConnectRefusal', () => {
       wordConnectRefusal('authentication_rejected', subject),
     )
     expect(wordConnectRefusal('auth_method_unsupported', subject)).not.toContain('password')
+  })
+
+  it('names the server a folder refusal or an unconfirmed save is about', () => {
+    expect(wordConnectRefusal('root_not_found', subject)).toContain('nas.local')
+    expect(wordConnectRefusal('start_folder_not_found', subject)).toContain('nas.local')
+    expect(wordConnectRefusal('save_unconfirmed', subject)).toContain('nas.local')
+  })
+})
+
+describe('refusalField', () => {
+  it('puts each folder refusal under the folder it is about', () => {
+    // ❗ "Cmdr can't open this folder" under the start folder sends someone to
+    // retype the wrong path, so the root and the start folder keep their own.
+    expect(refusalField('root_not_found')).toBe('root')
+    expect(refusalField('start_folder_not_found')).toBe('start_folder')
+    expect(refusalField('start_folder_outside_root')).toBe('start_folder')
+  })
+
+  it('puts an unconfirmed save above the buttons, since no field can fix a server that did not answer', () => {
+    expect(refusalField('save_unconfirmed')).toBe('form')
   })
 })

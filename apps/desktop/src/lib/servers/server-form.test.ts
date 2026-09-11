@@ -7,7 +7,14 @@
 
 import { describe, expect, it } from 'vitest'
 import { parseServerAddress } from './address-parser'
-import { applyParsedAddress, emptyServerForm, nextcloudAddress, serverTargetFrom } from './server-form'
+import {
+  applyParsedAddress,
+  emptyServerForm,
+  formFromSftpServer,
+  isStartFolderUnderRoot,
+  nextcloudAddress,
+  serverTargetFrom,
+} from './server-form'
 
 /** A form as the sheet would hold it after someone typed `address`. */
 function typed(address: string) {
@@ -50,7 +57,7 @@ describe('serverTargetFrom', () => {
     const form = { ...typed('ada@nas.local:2222/srv/data'), keyFile: ' ~/.ssh/id_ed25519 ', useAgent: false }
     expect(serverTargetFrom(form)).toEqual({
       protocol: 'sftp',
-      displayName: 'ada@nas.local:2222/srv/data',
+      displayName: '',
       host: 'nas.local',
       port: 2222,
       username: 'ada',
@@ -97,6 +104,97 @@ describe('serverTargetFrom', () => {
   it('reads all three root spellings as the volume root', () => {
     for (const remoteRoot of ['', ' ', '.']) {
       expect(serverTargetFrom({ ...typed('ada@nas.local'), remoteRoot })).toMatchObject({ remoteRoot: '/' })
+    }
+  })
+
+  it('keeps an empty name empty, so the server is called by its account and host', () => {
+    // ❗ Pre-fix an empty name fell back to the whole typed address, path and
+    // all, which left the edit sheet with a name that looked exactly like the
+    // address and sent a person to widen the root through the wrong field.
+    expect(serverTargetFrom(typed('sftp://david@192.168.1.111:22/share/naspi/tmp'))).toMatchObject({ displayName: '' })
+    expect(serverTargetFrom({ ...typed('https://cloud.example.com/dav'), username: 'ada' })).toMatchObject({
+      displayName: '',
+    })
+  })
+
+  it('trims a typed name', () => {
+    expect(serverTargetFrom({ ...typed('ada@nas.local'), displayName: '  Naspolya ' })).toMatchObject({
+      displayName: 'Naspolya',
+    })
+  })
+
+  it('carries a typed start folder trimmed, and none when the field is empty', () => {
+    expect(serverTargetFrom({ ...typed('ada@nas.local/srv/data'), startFolder: ' /srv/data/photos ' })).toMatchObject(
+      { remoteRoot: '/srv/data', startFolder: '/srv/data/photos' },
+    )
+    expect(serverTargetFrom({ ...typed('ada@nas.local/srv/data'), startFolder: '  ' })).toMatchObject({
+      startFolder: null,
+    })
+  })
+})
+
+describe('formFromSftpServer', () => {
+  it('opens an unnamed server with an empty name field, never its label or address', () => {
+    const form = formFromSftpServer({
+      host: 'nas.local',
+      port: 22,
+      username: 'ada',
+      displayName: '',
+      remoteRoot: '/srv/data',
+      startFolder: '/srv/data/photos',
+      keyFile: null,
+      useAgent: true,
+      autoReconnect: true,
+      pinned: true,
+      lastConnectedAt: '2026-09-06T00:00:00Z',
+    })
+    expect(form.displayName).toBe('')
+    expect(form.remoteRoot).toBe('/srv/data')
+    expect(form.startFolder).toBe('/srv/data/photos')
+  })
+})
+
+/**
+ * The sheet's inline mirror of the backend's "at or under the root" rule
+ * (`saved_server_fields::start_folder_under_root`). The backend stays
+ * authoritative; this only answers before a round-trip.
+ */
+describe('isStartFolderUnderRoot', () => {
+  it('accepts an empty start folder, which means the root', () => {
+    expect(isStartFolderUnderRoot('/srv/data', '')).toBe(true)
+    expect(isStartFolderUnderRoot('/srv/data', '   ')).toBe(true)
+  })
+
+  it('accepts the root itself and anything below it', () => {
+    expect(isStartFolderUnderRoot('/srv/data', '/srv/data')).toBe(true)
+    expect(isStartFolderUnderRoot('/srv/data', '/srv/data/photos/2024')).toBe(true)
+    expect(isStartFolderUnderRoot('/srv/data/', '/srv/data/photos/')).toBe(true)
+  })
+
+  it('refuses a sibling that shares the root as a string prefix', () => {
+    expect(isStartFolderUnderRoot('/srv/data', '/srv/data-1')).toBe(false)
+    expect(isStartFolderUnderRoot('/srv/data', '/srv/database/x')).toBe(false)
+  })
+
+  it('refuses a folder above or beside the root', () => {
+    expect(isStartFolderUnderRoot('/srv/data', '/srv')).toBe(false)
+    expect(isStartFolderUnderRoot('/srv/data', '/home/ada')).toBe(false)
+  })
+
+  it('resolves `.` and `..` the way the backend does before comparing', () => {
+    expect(isStartFolderUnderRoot('/srv/data', '/srv/data/../etc')).toBe(false)
+    expect(isStartFolderUnderRoot('/srv/data', '/srv/./data/photos')).toBe(true)
+    expect(isStartFolderUnderRoot('/srv/data/tmp/..', '/srv/data/photos')).toBe(true)
+  })
+
+  it('reads a relative path from `/`, the way the backend reads a relative root', () => {
+    expect(isStartFolderUnderRoot('/srv/data', 'photos')).toBe(false)
+    expect(isStartFolderUnderRoot('/srv/data', 'srv/data/photos')).toBe(true)
+  })
+
+  it('treats every root spelling of the server root as holding everything', () => {
+    for (const root of ['', '.', '/']) {
+      expect(isStartFolderUnderRoot(root, '/home/ada')).toBe(true)
     }
   })
 })

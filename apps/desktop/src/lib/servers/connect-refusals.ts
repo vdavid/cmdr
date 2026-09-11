@@ -1,5 +1,5 @@
 /**
- * The words for every reason a connect can stop.
+ * The words for every reason a connect or a saved edit can stop.
  *
  * ❗ A `Record` over `ConnectRefusalKind`, so a new reason can't reach a person
  * without someone writing its sentence, and every key appears here as a literal
@@ -37,6 +37,17 @@ export type ConnectRefusalKind =
   | 'unreachable'
   | 'host_key_untrusted'
   | 'host_key_revoked'
+  /** The start folder is neither the root folder nor inside it. A connect and a save both refuse it. */
+  | 'start_folder_outside_root'
+  /** A save to a connected place: the new root isn't a folder this account can open on the server. */
+  | 'root_not_found'
+  /** A save to a connected place: the start folder isn't a folder this account can open on the server. */
+  | 'start_folder_not_found'
+  /**
+   * A save to a connected place needed the server to confirm a folder and it didn't answer in time.
+   * ❗ Not `unreachable`: nothing was saved, and in edit mode the address that sentence points at is locked.
+   */
+  | 'save_unconfirmed'
 
 const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   authentication_rejected: 'servers.refusal.authenticationRejected',
@@ -49,6 +60,10 @@ const REFUSAL_KEYS: Record<ConnectRefusalKind, MessageKey> = {
   unreachable: 'servers.refusal.unreachable',
   host_key_untrusted: 'servers.refusal.hostKeyUntrusted',
   host_key_revoked: 'servers.refusal.hostKeyRevoked',
+  start_folder_outside_root: 'servers.refusal.startFolderOutsideRoot',
+  root_not_found: 'servers.refusal.rootNotFound',
+  start_folder_not_found: 'servers.refusal.startFolderNotFound',
+  save_unconfirmed: 'servers.refusal.saveUnconfirmed',
 }
 
 /** What the place is called in a refusal: its host where there is one, else its name. */
@@ -77,6 +92,10 @@ export type RefusalField =
   | 'secret'
   /** The address, which in add mode is where a wrong endpoint is fixed. */
   | 'address'
+  /** The root folder, the ceiling nothing navigates above. */
+  | 'root'
+  /** The start folder, where opening the place lands. */
+  | 'start_folder'
   /** Nothing the user can retype. It reads above the buttons. */
   | 'form'
 
@@ -92,6 +111,13 @@ const REFUSAL_FIELDS: Record<ConnectRefusalKind, RefusalField> = {
   unreachable: 'address',
   host_key_untrusted: 'form',
   host_key_revoked: 'form',
+  // ❗ Each folder refusal under its OWN folder: "Cmdr can't open this folder"
+  // under the start folder sends someone to retype the wrong path.
+  start_folder_outside_root: 'start_folder',
+  root_not_found: 'root',
+  start_folder_not_found: 'start_folder',
+  // No field fixes a server that didn't answer.
+  save_unconfirmed: 'form',
 }
 
 /** Where `kind`'s sentence goes. */

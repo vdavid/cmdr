@@ -150,6 +150,22 @@
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
   },
+  "servers.refusal.startFolderOutsideRoot": "De beginmap moet de hoofdmap zijn of een map daarbinnen.",
+  "@servers.refusal.startFolderOutsideRoot": {
+    "sourceHash": "a1d1efb"
+  },
+  "servers.refusal.rootNotFound": "Cmdr kan deze map op {host} niet openen. Controleer of hij bestaat en of je account hem mag lezen.",
+  "@servers.refusal.rootNotFound": {
+    "sourceHash": "883a0bc"
+  },
+  "servers.refusal.startFolderNotFound": "Cmdr kan deze beginmap op {host} niet openen. Controleer of hij bestaat en of je account hem mag lezen.",
+  "@servers.refusal.startFolderNotFound": {
+    "sourceHash": "f1df16e"
+  },
+  "servers.refusal.saveUnconfirmed": "{host} reageerde niet op tijd, dus er is niets bewaard. Probeer het zo opnieuw.",
+  "@servers.refusal.saveUnconfirmed": {
+    "sourceHash": "f7bb3a6"
+  },
   "servers.sheet.addTitle": "Voeg server toe",
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
@@ -255,9 +271,25 @@
   "@servers.sheet.name": {
     "sourceHash": "dcd1d52"
   },
-  "servers.sheet.remoteFolder": "Externe map",
-  "@servers.sheet.remoteFolder": {
-    "sourceHash": "71525cd"
+  "servers.sheet.nameHelp": "Laat dit leeg, dan noemt Cmdr deze server naar het account en de host.",
+  "@servers.sheet.nameHelp": {
+    "sourceHash": "7b0a53f"
+  },
+  "servers.sheet.rootFolder": "Hoofdmap",
+  "@servers.sheet.rootFolder": {
+    "sourceHash": "6d92528"
+  },
+  "servers.sheet.rootFolderHelp": "Cmdr gaat op de server nooit hoger dan deze map.",
+  "@servers.sheet.rootFolderHelp": {
+    "sourceHash": "688d735"
+  },
+  "servers.sheet.startFolder": "Beginmap",
+  "@servers.sheet.startFolder": {
+    "sourceHash": "ef05c31"
+  },
+  "servers.sheet.startFolderHelp": "De map waarin de server opent. Laat dit leeg om de hoofdmap te openen.",
+  "@servers.sheet.startFolderHelp": {
+    "sourceHash": "514018e"
   },
   "servers.sheet.keyFile": "Sleutelbestand",
   "@servers.sheet.keyFile": {

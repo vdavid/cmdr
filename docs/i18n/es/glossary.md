@@ -3019,3 +3019,37 @@ enchufado, así que ninguna menciona la desconexión.
 - **stays as a reminder → `sigue ahí para recordártelo`** · `tú`, y el `lo` neutro recoge la situación entera sin
   concordar con nada. `se queda como recordatorio` también vale, pero suena más rígido · `tentative` (elección de
   registro, sin fuente).
+
+## La carpeta raíz y la carpeta inicial de un servidor guardado (`servers.sheet.{rootFolder,rootFolderHelp,startFolder,startFolderHelp,nameHelp}`, `servers.refusal.{startFolderOutsideRoot,rootNotFound,startFolderNotFound,saveUnconfirmed}`, 2026-09-11)
+
+La hoja de añadir o editar un servidor SFTP / WebDAV gana dos campos: el techo del que Cmdr nunca sube y la carpeta donde
+se abre el panel. Montón de referencia minado en `_ignored/i18n/es/` (2026-09-11).
+
+- **root folder (el techo de un servidor guardado) → `Carpeta raíz`** · Double Commander («Go to root directory» → «Ir a
+  la carpeta raíz», «Change directory to root» → «Cambiar a la carpeta raíz»), terminología de Microsoft (`root` →
+  `raíz`, id 1605375, panregional) y el propio catálogo (`errors.mutation.cantRenameVolumeRoot`, § root folder más
+  arriba) · `high`. Sustituye al rótulo `Carpeta remota`: el campo ya no dice solo dónde está algo, dice de dónde no se
+  sale, y `raíz` es lo que lo cuenta.
+- **start folder (donde se abre el servidor) → `Carpeta inicial`** · Double Commander «Start pat&h:» → «&Ruta inicial:»
+  (dos entradas); Nautilus confirma el adjetivo para el estado de partida («Initial size of the window» → «Tamaño
+  inicial de la ventana») · `high`. ❌ NO `carpeta de inicio`, aunque Total Commander y Double Commander digan
+  `directorio de inicio` / `rutas de inicio`: en este catálogo es la carpeta personal (`commands.navGoHome.label`,
+  `fileExplorer.errorPane.goHome`, `fileExplorer.unreachable.openHome`), así que se leería como la carpeta de inicio del
+  usuario en el servidor. macOS `es` no publica ninguno de los dos términos.
+- **«Where the server opens.» → `Dónde se abre el servidor.`** · pie de campo en forma de interrogativa indirecta, con
+  tilde, como `servers.sheet.connectionModeLegend` («Cómo conectarse»). ❌ No nombrar `la carpeta` en esa frase: el
+  `Déjalo vacío` de después pasaría a leerse como «vacía la carpeta» (sin archivos) · `tentative` (registro, sin fuente
+  directa).
+- **«Leave it empty to X» → `Déjalo vacío y` + futuro** · la regla del `style.md` (`Déjalo vacío y Cmdr buscará …`). El
+  `lo` es el campo, no quien lee · `high`.
+- **«call this server by its account and host» → `usará la cuenta y el host como nombre del servidor`** · ❌ NO
+  `por su cuenta`: el catálogo ya gasta esa locución en «solo, sin ayuda» (`servers.sheet.needsStoredSecret`, «volver a
+  conectar por su cuenta»), y aquí se leería igual. `nombre` repite el rótulo del campo encima (`servers.sheet.name`);
+  `la cuenta` y `host` son los ya asentados · `high`.
+- **«Check that it exists and that your account can read it» → `Comprueba que exista y que tu cuenta pueda leerla`** ·
+  subjuntivo tras `Comprueba que`, como `errors.listing.hostDown.suggestion` («Comprueba que el host esté encendido»).
+  `leerla` concuerda con `carpeta`, que es fijo · `high`.
+- **«didn't answer in time, so nothing was saved. Try again in a moment.» → `no respondió a tiempo, así que no se guardó
+  nada. Inténtalo de nuevo en un momento.`** · la primera mitad copia `servers.refusal.timedOut`; la última frase es la
+  forma más repetida del catálogo (`settings.mediaIndex.clip.deleteFailed`, `operationLog.dialog.loadError`,
+  `ai.translateError.serverError.body`) · `high`.

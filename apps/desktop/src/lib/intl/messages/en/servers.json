@@ -169,6 +169,31 @@
       "host": "the server''s hostname or address, like \"nas.local\""
     }
   },
+  "servers.refusal.startFolderOutsideRoot": "The start folder has to be the root folder or a folder inside it.",
+  "@servers.refusal.startFolderOutsideRoot": {
+    "description": "Shown under the Start folder field of the add or edit server sheet when the typed start folder is neither the root folder nor a folder inside it. Nothing was saved or dialed. Calm and instructive. \"Start folder\" and \"root folder\" must use the same words as the field labels (servers.sheet.startFolder and servers.sheet.rootFolder)."
+  },
+  "servers.refusal.rootNotFound": "Cmdr can''t open this folder on {host}. Check that it exists and that your account can read it.",
+  "@servers.refusal.rootNotFound": {
+    "description": "Shown under the Root folder field when the user saves an edit to a server that is connected right now, and the server has no folder at that path this account can open: it is missing, it is a file, or access is refused. Nothing was saved. \"Cmdr\" is the product name.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like \"nas.local\""
+    }
+  },
+  "servers.refusal.startFolderNotFound": "Cmdr can''t open this start folder on {host}. Check that it exists and that your account can read it.",
+  "@servers.refusal.startFolderNotFound": {
+    "description": "Shown under the Start folder field when the user saves an edit to a server that is connected right now, and the server has no folder at the start folder path this account can open: it is missing, it is a file, or access is refused. Nothing was saved. \"start folder\" must match the servers.sheet.startFolder label. \"Cmdr\" is the product name.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like \"nas.local\""
+    }
+  },
+  "servers.refusal.saveUnconfirmed": "{host} didn''t answer in time, so nothing was saved. Try again in a moment.",
+  "@servers.refusal.saveUnconfirmed": {
+    "description": "Shown above the buttons of the edit server sheet when saving needed the connected server to confirm a folder and it did not answer within a few seconds. Nothing was saved, and trying again is safe.",
+    "placeholders": {
+      "host": "the server''s hostname or address, like \"nas.local\""
+    }
+  },
   "servers.sheet.addTitle": "Add server",
   "@servers.sheet.addTitle": {
     "description": "Title of the sheet where the user types a new server. VERB phrase, imperative."
@@ -275,9 +300,25 @@
   "@servers.sheet.name": {
     "description": "Label of the field for what to call this server in the app. One word, NOUN."
   },
-  "servers.sheet.remoteFolder": "Remote folder",
-  "@servers.sheet.remoteFolder": {
-    "description": "Label of the field for which folder ON THE SERVER to open at. Two words."
+  "servers.sheet.nameHelp": "Leave it empty to call this server by its account and host.",
+  "@servers.sheet.nameHelp": {
+    "description": "One line under the Name field in the add and edit server sheets. An empty name makes Cmdr call the server by its account name and host, like ada@nas.local."
+  },
+  "servers.sheet.rootFolder": "Root folder",
+  "@servers.sheet.rootFolder": {
+    "description": "Label of the field for the folder ON THE SERVER this saved server is limited to: Cmdr never shows anything above it. Two words, NOUN phrase. The refusal messages and the start folder help reuse this term, so keep it consistent."
+  },
+  "servers.sheet.rootFolderHelp": "Cmdr never goes above this folder on the server.",
+  "@servers.sheet.rootFolderHelp": {
+    "description": "One line under the Root folder field, explaining that the folder is a ceiling: Cmdr never navigates above it on the server. \"Cmdr\" is the product name."
+  },
+  "servers.sheet.startFolder": "Start folder",
+  "@servers.sheet.startFolder": {
+    "description": "Label of the field for the folder a pane opens at when the user opens this server. It must be the root folder or a folder inside it. Two words, NOUN phrase."
+  },
+  "servers.sheet.startFolderHelp": "Where the server opens. Leave it empty to open the root folder.",
+  "@servers.sheet.startFolderHelp": {
+    "description": "One line under the Start folder field: it is where the server opens, and leaving it empty opens the root folder. \"root folder\" must use the same words as the servers.sheet.rootFolder label."
   },
   "servers.sheet.keyFile": "Key file",
   "@servers.sheet.keyFile": {

@@ -2810,3 +2810,45 @@ então o índice fica amarelo mesmo conectado; nenhuma das três pode falar em d
   `settings.indexing.staleNotify.description`) reutilizados sem mudança.
 
 Nenhum valor leva apóstrofo. Varredura pt-PT: zero `ficheiro`, `telemóvel`, `estar a` + infinitivo, próclise.
+
+## Pasta raiz e pasta inicial de um servidor salvo (`servers.sheet.rootFolder*` / `startFolder*` / `nameHelp`, `servers.refusal.startFolderOutsideRoot` / `rootNotFound` / `startFolderNotFound` / `saveUnconfirmed`, 2026-09-11)
+
+A folha de adicionar ou editar um servidor SFTP ou WebDAV ganhou dois campos: o TETO no servidor (o Cmdr nunca navega
+acima dele) e a pasta onde o painel abre (a própria raiz ou uma pasta dentro dela; em branco = a raiz). Os dois termos
+se repetem nas nove chaves (rótulos, legendas e recusas), então cada um é uma palavra fixa só.
+
+- **root folder → `pasta raiz`** · MS terminology pt-BR (`root folder` → `pasta raiz`, BRA, id 233534; a mesma entrada
+  oferece `diretório raiz` e `pasta de nível superior`, e `pasta` é o termo do catálogo) e macOS Finder pt-BR (`SC11`
+  `Nenhuma pasta raiz encontrada…`, a linha `volume root` acima); o catálogo já publica `A pasta raiz de um volume` em
+  `errors.json` · high. Sem acento: `raíz`, como no Double Commander pt-BR (`Go to root directory` →
+  `Ir para a pasta raíz.`), é grafia errada. Substitui o rótulo antigo `Pasta remota` (a chave "Remote folder", que
+  saiu), porque o campo agora é o teto e não só "a pasta do outro lado".
+- **start folder → `pasta inicial`** · Total Commander pt-BR (`5071` e `5785` `Pasta &inicial:`, o campo de pasta de
+  partida de um botão ou comando de menu) e Double Commander pt-BR (`in all start path...` →
+  `em todos caminhos iniciais...`) · high. O macOS pt-BR não tem o conceito (nenhum `Pasta inicial` em
+  `/System/Applications` nem `/System/Library/CoreServices`, macOS 26.6.2 build 25G83, 2026-09-11). ❌ Não
+  `pasta pessoal` (o `Home` do Finder) nem `pasta base` (o `home folder` da MS): as duas nomeiam a pasta do usuário, não
+  o ponto de abertura de um servidor.
+- **never goes above this folder → `nunca sobe além desta pasta`** · `subir` é o movimento de navegação para cima (a
+  linha `parent folder` → `Ir para a pasta superior`); `sobe acima` seria pleonasmo, e `além` diz o teto sem ele · high
+- **Where the server opens → `A pasta em que o servidor abre`** · o fragmento inglês sem núcleo soa solto em pt-BR, então
+  a legenda nomeia a pasta; o `Deixe em branco para abrir na pasta raiz` repete o `abrir` e o termo do rótulo irmão ·
+  high
+- **Leave it empty → `Deixe em branco`** · molde já publicado em `settings.fileOperations.adbBinaryPath.description`
+  (linha `Leave this empty` acima) · confirmed
+- **call this server by its account and host → `usar a conta e o host como nome deste servidor`** · o `chamar este
+  servidor` literal deixa em aberto quem chama; o nome montado é `ada@nas.local`, então a legenda diz o que vira nome.
+  `conta` é o termo da irmã `servers.sheet.identityLocked` (`O endereço e a conta identificam este servidor`) e da MS
+  terminology pt-BR (`account` → `conta`); `host` fica verbatim (linha `host (network)`) · high
+- **Cmdr can''t open → `O Cmdr não consegue abrir`**, no presente porque o inglês é `can''t`, não `couldn''t`; `O Cmdr`
+  por extenso, como manda o `style.md` · high. **Check that it exists → `Confira se ela existe`**: `conferir` é o verbo
+  de uma verificação feita pela pessoa (`style.md` § Notes, a mesma folha já diz `Confira a impressão digital`), mesmo
+  que as sugestões de `errors.listing.*` usem `Verifique se`. `lê-la` é seguro porque `pasta` é o único antecedente
+  feminino antes do pronome (`conta` é o sujeito da oração) · high
+- **Try again in a moment → `Tente novamente em instantes`** · a forma fixa da linha `"Try again in a moment."` acima
+  (`operationLog.dialog.loadError`, `settings.mediaIndex.clip.deleteFailed`) · confirmed. `não respondeu a tempo` copia
+  `servers.refusal.timedOut`, a irmã que abre com o mesmo `{host}` · confirmed. `nada foi salvo` fica passivo porque o
+  inglês é passivo e `nada` é o sujeito, então a frase não fica sem sujeito.
+
+Nenhum valor leva apóstrofo, então não há `''` a dobrar, e nenhum precisa de `sameAsSourceJustification`. Varredura
+pt-PT: zero `ficheiro`, `estar a` + infinitivo, `guardar`, próclise antes de infinitivo, `tu`.

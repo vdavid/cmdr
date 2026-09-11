@@ -179,6 +179,26 @@ every time, since a stored secret is never read back out of the Keychain to pref
 LAST, after the Remember flip, so it wins over a box the same visit turned off: a password field with text in it and
 Save pressed stores that password.
 
+**Edit mode's name field holds what the user TYPED.** The store row's raw name opens it, empty for a server nobody
+named, with the listing's label (`username@host`, published as `nameSource: 'fallback'`) as its placeholder; the sheet's
+title uses the label. `serverTargetFrom` sends an empty name as empty and ❌ never falls back to the address. ❗ A name
+that repeated the typed address left it as the sheet's only URL-shaped field, and a root got "widened" through the name
+(`apps/desktop/src-tauri/src/network/DETAILS.md` § "An unnamed server's label, and names that only repeat the address").
+
+**The root folder is a ceiling, the start folder is a landing.** Both sit in Advanced, which edit mode opens because the
+settings someone came to change live there. The start folder must be the root or under it, by whole components:
+`server-form.ts::isStartFolderUnderRoot` mirrors the backend's `start_folder_under_root` (`.` and `..` resolved, a
+relative path read from `/`), so the sentence arrives before a round-trip, once the field has lost focus and again on
+Save or Connect. The backend stays authoritative. A pasted address's path fills the root folder.
+
+**Saving answers a typed outcome** (`server-outcomes.ts::readSavedServerOutcome`). `saved` writes the Remember flip and
+the typed password, then closes. ❗ Every refusal writes NOTHING, the password included, keeps the sheet open, and puts
+its sentence under its own field with the caret there, opening Advanced first. The backend's `unreachable` (a connected
+server that didn't confirm a folder within 5 s) reads as `save_unconfirmed`, ❌ never the dial's `unreachable`: nothing
+was saved, and the address that sentence points at is locked. A saved edit republishes the volume list, which is how the
+hub and the switcher learn it (`apps/desktop/src-tauri/src/commands/DETAILS.md` § `servers.rs`). Where panes go when a
+connected place's root moved: `../file-explorer/pane/DETAILS.md` § "A place whose root moved under the pane".
+
 **Edit mode's "this can't reconnect on its own" warning is the BACKEND's answer, ❌ never a derivation.**
 `getSftpUnattendedReconnect` / `getWebdavUnattendedReconnect` say whether an unattended reconnect can work as things
 stand, and the sheet asks when it RENDERS. ❌ Don't rebuild it from "auto-reconnect is on AND no secret is stored": the
@@ -235,6 +255,12 @@ token is the only sane state, and a revoked token surfaces as `needs_sign_in` be
 - `host_key_untrusted` (from `needs_host_key_approval`): the sheet's key step is where the fingerprint is shown and
   approved.
 - `host_key_revoked`: deliberately final. No button can safely undo a revocation the user's own `known_hosts` records.
+- `start_folder_outside_root`: the start folder is neither the root folder nor inside it. A connect and a save both
+  refuse it, and the sheet says it before either.
+- `root_not_found` and `start_folder_not_found`: a save to a connected place whose server can't open that folder for
+  this account (missing, a file, or refused). They name the host.
+- `save_unconfirmed`: a save to a connected place that the server didn't confirm in time. Names the host and says
+  nothing was saved.
 
 Keys live in `$lib/intl/messages/en/servers.json` under `servers.refusal.*`, reached through a `Record` in
 `connect-refusals.ts` rather than a built string, which is what keeps `desktop-message-keys-unused` honest without a
@@ -242,7 +268,8 @@ dynamic-prefix entry. `$lib/error-messages/friendly-error-style.test.ts` renders
 writing rules the friendly-error copy obeys: they are error copy however they are filed.
 
 **A second `Record` says WHICH FIELD each sentence goes under** (`refusalField`): the secret for the two that are about
-a credential, the address for the four that are about the endpoint, and the form for the three no field can fix. ❗ A
+a credential, the address for the four that are about the endpoint, the root folder or the start folder for the three
+that are about a folder, and the form for the five no field can fix. ❗ A
 refusal floating above a form reads as being about the whole form: "That password didn't work" under the password field
 is an instruction, and the same words above the address are a puzzle.
 

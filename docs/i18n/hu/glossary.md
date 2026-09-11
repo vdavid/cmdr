@@ -3221,3 +3221,41 @@ fájlváltozásait, ezért az indexe csatlakoztatva is sárga. A szöveg nem eml
 - **„stays as a reminder” → `emlékeztetőül ott marad`** · leíró, a katalógus `emlékeztető` szava (`settings.json`, a
   Space-emlékeztető leírása) · tentative. A pile-ban nincs `emlékeztetőül` / `emlékeztetőként` találat.
 - Aposztróf egyik magyar értékben sincs; a `{name}` halmaza egyezik az angoléval.
+
+## A szerver gyökérmappája és kezdőmappája (`servers.sheet.rootFolder`/`.rootFolderHelp`/`.startFolder`/`.startFolderHelp`/`.nameHelp`, `servers.refusal.startFolderOutsideRoot`/`.rootNotFound`/`.startFolderNotFound`/`.saveUnconfirmed`, 2026-09-11)
+
+A szerverlap két mappamezője: a gyökérmappa a plafon (a Cmdr sosem lép fölé), a kezdőmappa az, ahol a szerver megnyílik
+(a gyökérmappa vagy egy benne lévő mappa; üresen a gyökérmappa).
+
+- **root folder → `gyökérmappa`** · ms (`HUNGARIAN.tbx` `root folder` → `gyökérmappa`, mellette `gyökérkönyvtár` és
+  `legfelső szintű mappa`), xf (Thunar „The root folder has no parent” = „A gyökérmappának nincs szülője”), Double
+  Commander („Change directory to root” = „Váltás gyökérmappára”), Total Commander („a gyökér mappában”) · `high`. A
+  pile macOS-ágában nincs találat. ❌ NEM `gyökérkönyvtár`: a `könyvtár` a technikai szó, a felület `mappa`-t mond
+  (style.md). A törölt „Remote folder” címke (`Távoli mappa`) utódja, de az angol jelentése is megváltozott
+  („Remote folder” → „Root folder”: a mező plafon lett), ezért a régi alak nem folytatható.
+- **start folder → `kezdőmappa`** · Total Commander („&Induló mappa:”, egy parancsikon indítási mappája; „Az induló
+  mappa nem létezik.”), Double Commander („in all start path” = „az összes kezdő útvonalban”), ms (`kezdőmappa` létezik,
+  de a `home folder` jelentésben) · `tentative`. Tier-1 forrás nincs. A `kezdőmappa` azért nyer az `induló mappa` ellen,
+  mert egyszavas összetétel, ami párban áll a `gyökérmappa`-val és a lap többi címkéjével (`Kulcsfájl`,
+  `Kulcsjelmondat`), és a DC `kezdő-` előtagját viszi. A Microsoft-jelentés ütközése (home folder) macOS-en nem jön
+  elő: a Finder a saját mappát `Saját mappa`-nak hívja (`TL_HELP_HOME` = „Ugrás a Saját mappájába”), és a katalógus is
+  (`fileExplorer.unreachable.openHome` = „Saját mappa megnyitása”, `commands.navGoHome.label` = „Ugrás a saját
+  mappára”). ❌ Soha ne `saját mappa` a kezdőmappára.
+- **A `{host}` ragozatlan helyen áll**: `A Cmdr nem tudja megnyitni ezt a mappát itt: {host}.` a szállított
+  `fileExplorer.network.share.notFound` (`… nem található itt: {hostName}`) idiómája, a `{host} nem válaszolt időben,
+  …` pedig a `servers.refusal.timedOut` mondatkezdő alanya · `high`.
+- **Leave it empty to … → `Hagyd üresen, hogy …`** · `settings.askCmdr.interactiveModel.description` („Hagyd üresen,
+  hogy ugyanazt a modellt használja…”) · `high`.
+- **account and host (a névtelen szerver megjelenített neve, `ada@nas.local`) → `a fiók és a cím`** ·
+  `servers.sheet.identityLocked` („A cím és a fiók azonosítja ezt a szervert.”) és a lap `Cím` mezőcímkéje · `high`. ❌
+  NEM `gép` / `gazdagép`: a lapon a mező neve `Cím`, és a súgósor arra mutat. Itt az `elnevez` ige a helyes, mert a sor
+  épp a `Név` mező alatt áll (a `identityLocked` sor ezt szándékosan kerülte, lásd fent).
+- **never goes above this folder → `soha nem lép ennél a mappánál feljebb`** · a `lép` a katalógus navigációs igéje
+  (`errors.listing.*.suggestion`: „Lépj a szülőmappába”) · `high`.
+- **Check that it exists and that your account can read it → `Ellenőrizd, hogy létezik-e, és hogy a fiókod
+  olvashatja-e.`** · `fileExplorer.navigation.driveIndex.refusedUpgradeFailed` („Ellenőrizd, hogy a megosztás elérhető-e”)
+  · `high`.
+- **nothing was saved → `a Cmdr nem mentett semmit`; Try again in a moment → `Próbáld újra egy pillanat múlva.`** ·
+  cselekvő alak a style guide szerint; a második mondat szó szerint a `errors.volume.deletePending` és a
+  `settings.mediaIndex.clip.deleteFailed` alakja · `high`.
+- Aposztróf egyik magyar értékben sincs, a `{host}` halmaza egyezik az angoléval, `sameAsSourceJustification` nem kellett.

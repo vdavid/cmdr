@@ -27,16 +27,23 @@
     import ServerFormFields from './ServerFormFields.svelte'
     import SignInCredentialFields from './SignInCredentialFields.svelte'
     import { parseServerAddress } from './address-parser'
-    import { refusalField, wordConnectRefusal, type ConnectRefusalKind } from './connect-refusals'
+    import {
+        refusalField,
+        wordConnectRefusal,
+        type ConnectRefusalKind,
+        type RefusalField,
+    } from './connect-refusals'
     import {
         applyParsedAddress,
         emptyServerForm,
         formFromSftpServer,
         formFromWebdavServer,
+        isStartFolderUnderRoot,
         nextcloudAddress,
         serverTargetFrom,
         type ServerForm,
     } from './server-form'
+    import { readSavedServerOutcome, type SaveOutcome } from './server-outcomes'
     import type {
         SignInAttemptOutcome,
         SignInSheetRequest,
@@ -98,9 +105,22 @@
     let rememberWhenOpened = false
     /** The submission to repeat once a host key is trusted. */
     let pendingSubmission: SignInSubmission | null = null
+    /**
+     * Edit mode opens Advanced: the name, the root folder, and the start folder,
+     * the settings someone came to change, all live there.
+     */
+    let advancedOpen = $state(request.mode === 'edit')
+    /**
+     * Whether the start folder has lost focus once. The inline "under the root"
+     * sentence waits for it, so it doesn't flash while someone is still typing
+     * `/srv/da`.
+     */
+    let startFolderTouched = $state(false)
 
     let addressInput = $state<HTMLInputElement | undefined>()
     let secretInput = $state<HTMLInputElement | undefined>()
+    let rootInput = $state<HTMLInputElement | undefined>()
+    let startFolderInput = $state<HTMLInputElement | undefined>()
 
     const isEdit = $derived(request.mode === 'edit')
     /** `nothing` never opens the sheet, so a shape that reaches here always asks something. */
@@ -109,11 +129,25 @@
     const attempt = $derived(request.mode === 'edit' ? null : request.attempt)
     const editedServer = $derived(request.mode === 'edit' ? request.server : null)
 
+    /**
+     * ❗ The listing's `displayName` IS the label already: a name a person typed,
+     * or `username@host` for a server nobody named (`nameSource: 'fallback'`).
+     * The frontend never derives one.
+     */
     const sheetTitle = $derived.by(() => {
         if (request.mode === 'add') return tString('servers.sheet.addTitle')
         if (request.mode === 'edit') return tString('servers.sheet.editTitle', { name: request.server.displayName })
         return tString('servers.sheet.signInTitle', { name: request.endpoint.displayName })
     })
+
+    /**
+     * What an empty name field turns into: the derived label, shown only for a
+     * server nobody named. A named server's label is its name, so clearing the
+     * field has no stand-in to preview.
+     */
+    const namePlaceholder = $derived(
+        request.mode === 'edit' && request.server.nameSource === 'fallback' ? request.server.displayName : undefined,
+    )
 
     const submitLabel = $derived.by(() => {
         if (request.mode === 'edit') return tString('servers.sheet.save')
@@ -133,6 +167,25 @@
 
     const refusalText = $derived(refusal ? wordConnectRefusal(refusal, refusalSubject) : undefined)
     const refusalWhere = $derived(refusal ? refusalField(refusal) : null)
+
+    /**
+     * Whether the form's start folder sits outside its root: the backend's rule
+     * (`start_folder_outside_root`), mirrored so the answer comes before a
+     * round-trip. The backend stays authoritative.
+     */
+    const startFolderOutsideRoot = $derived(
+        request.mode !== 'sign-in' && form.protocol !== 'smb' && !isStartFolderUnderRoot(form.remoteRoot, form.startFolder),
+    )
+
+    /** The sentence under the start folder: the last refusal about it, else the inline check once it has spoken. */
+    const startFolderRefusalText = $derived.by(() => {
+        if (refusalWhere === 'start_folder') return refusalText
+        if (startFolderTouched && startFolderOutsideRoot) {
+            return wordConnectRefusal('start_folder_outside_root', refusalSubject)
+        }
+        return undefined
+    })
+
     /**
      * The one remedy worth a button: a bare Nextcloud origin answers "nothing
      * here speaks WebDAV", and the fix is a collection path nobody knows.
@@ -177,7 +230,10 @@
 
     /**
      * Edit mode reads the per-protocol store row, because `SavedServer` carries
-     * no key file, remote folder, or ssh-agent switch.
+     * no key file, remote folder, start folder, or ssh-agent switch.
+     *
+     * ❗ The store row's name is the RAW one, empty for a server nobody named, so
+     * the name field opens holding exactly what the user typed.
      *
      * ❗ Matched on the ADDRESS the listing published rather than on an id: the
      * volume id is minted in Rust from `(host, port, username)` and there is no
@@ -228,6 +284,13 @@
 
     async function submit() {
         if (!canSubmit) return
+        if (startFolderOutsideRoot) {
+            // The backend would refuse the same thing, and says nothing a person
+            // can't be told right now.
+            startFolderTouched = true
+            await refuse('start_folder_outside_root')
+            return
+        }
         if (request.mode === 'edit') {
             await save()
             return
@@ -297,15 +360,32 @@
                 step = 'revoked'
                 return
             case 'refused':
-                refusal = outcome.refusal
-                step = 'form'
-                await tick()
-                // Focus goes back to the field the sentence is about, so a retry
-                // is one keystroke rather than a hunt.
-                if (refusalField(outcome.refusal) === 'secret') secretInput?.focus()
-                else if (refusalField(outcome.refusal) === 'address') addressInput?.focus()
+                await refuse(outcome.refusal)
                 return
         }
+    }
+
+    /**
+     * Puts a refusal on screen and the caret in the field it is about, so a retry
+     * is one keystroke rather than a hunt.
+     *
+     * ❗ The root and start folder live inside Advanced, so a refusal about either
+     * opens it first: a sentence under a collapsed field is one nobody reads.
+     */
+    async function refuse(kind: ConnectRefusalKind) {
+        refusal = kind
+        step = 'form'
+        const where = refusalField(kind)
+        if (where === 'root' || where === 'start_folder') advancedOpen = true
+        await tick()
+        focusField(where)
+    }
+
+    function focusField(where: RefusalField) {
+        if (where === 'secret') secretInput?.focus()
+        else if (where === 'address') addressInput?.focus()
+        else if (where === 'root') rootInput?.focus()
+        else if (where === 'start_folder') startFolderInput?.focus()
     }
 
     /**
@@ -350,6 +430,10 @@
      * Edit mode: write the target, then the Remember flip, then whatever was
      * typed into the password field. Each deliberately, and each once.
      *
+     * ❗ A refusal writes NOTHING, the password included: the backend saved none
+     * of the edit, and a secret filed beside an edit that didn't land is half a
+     * change. The sheet stays open with the sentence under the field it is about.
+     *
      * ❗ The typed password lands LAST, so it wins over a box the same visit
      * turned off. A password field with text in it and Save pressed stores that
      * password; anything else is a field that doesn't do what it shows.
@@ -362,14 +446,28 @@
             return
         }
         busy = true
+        refusal = null
+        let answer: SaveOutcome
         try {
-            await updateSavedServer(target)
+            answer = readSavedServerOutcome(await updateSavedServer(target))
+        } catch (e) {
+            // Nothing confirmed the edit, which is exactly what this refusal says.
+            log.warn('Saving the edited server broke down: {error}', { error: String(e) })
+            answer = { kind: 'refused', refusal: 'save_unconfirmed' }
+        }
+        if (answer.kind === 'refused') {
+            busy = false
+            await refuse(answer.refusal)
+            return
+        }
+        try {
             await writeRememberFlip(editedServer.id)
             await writeTypedSecret(target)
             close({ kind: 'saved' })
         } catch (e) {
             log.warn('Saving the edited server broke down: {error}', { error: String(e) })
-            refusal = 'unreachable'
+            busy = false
+            await refuse('unreachable')
         } finally {
             busy = false
         }
@@ -471,8 +569,17 @@
                       }
                     : undefined}
                 secretRefusal={refusalWhere === 'secret' ? refusalText : undefined}
+                rootRefusal={refusalWhere === 'root' ? refusalText : undefined}
+                startFolderRefusal={startFolderRefusalText}
                 storedSecretWarning={storedSecretWarning ?? undefined}
+                {namePlaceholder}
+                bind:advancedOpen
+                onStartFolderBlur={() => {
+                    startFolderTouched = true
+                }}
                 bind:addressInput
+                bind:rootInput
+                bind:startFolderInput
                 onChange={(patch: Partial<ServerForm>) => {
                     form = { ...form, ...patch }
                     // A refusal describes the attempt that earned it, and its

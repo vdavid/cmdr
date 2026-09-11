@@ -1,7 +1,8 @@
 /**
- * The ONE place a backend `ServerConnectOutcome` becomes the app's own words.
+ * The ONE place a backend `ServerConnectOutcome` or `SavedServerOutcome` becomes
+ * the app's own words.
  *
- * ❗ Exhaustive over the wire enum, so a new outcome fails to COMPILE here rather
+ * ❗ Exhaustive over the wire enums, so a new outcome fails to COMPILE here rather
  * than falling into a default arm that words it as something else. Two readers of
  * this switch would be two chances to word one outcome differently, which is why
  * `connect-flow.ts` folds this result rather than re-reading the wire.
@@ -10,7 +11,9 @@
  * fingerprint to show, and a refusal sentence has nowhere to put one.
  */
 
+import type { SavedServerOutcome } from '$lib/ipc/bindings'
 import type { ServerConnectOutcome } from '$lib/tauri-commands'
+import type { ConnectRefusalKind } from './connect-refusals'
 import type { SignInAttemptOutcome } from './sign-in-contract'
 
 /** How one dial ended. Everything a dial can answer, minus the caller-only hand-off. */
@@ -40,13 +43,36 @@ export function readConnectOutcome(outcome: ServerConnectOutcome): ServerDialOut
     case 'invalid_url':
       return { kind: 'refused', refusal: 'invalid_url' }
     case 'start_folder_outside_root':
-      // ❗ A stand-in: the add form has no start-folder field yet, so a dial never carries one the backend could
-      // refuse. It borrows the address refusal until the field lands with a sentence of its own.
-      return { kind: 'refused', refusal: 'invalid_url' }
+      return { kind: 'refused', refusal: 'start_folder_outside_root' }
     case 'timed_out':
       return { kind: 'refused', refusal: 'timed_out' }
     case 'unreachable':
       return { kind: 'refused', refusal: 'unreachable' }
+  }
+}
+
+/** How saving an edit ended: written, or refused with nothing written. */
+export type SaveOutcome = { kind: 'saved' } | { kind: 'refused'; refusal: ConnectRefusalKind }
+
+/**
+ * One save's answer, in the app's own vocabulary.
+ *
+ * ❗ The backend's `unreachable` reads as `save_unconfirmed`, ❌ not the dial's
+ * `unreachable`: nothing was saved, and the address that sentence points at is
+ * locked in edit mode.
+ */
+export function readSavedServerOutcome(outcome: SavedServerOutcome): SaveOutcome {
+  switch (outcome.outcome) {
+    case 'saved':
+      return { kind: 'saved' }
+    case 'start_folder_outside_root':
+      return { kind: 'refused', refusal: 'start_folder_outside_root' }
+    case 'root_not_found':
+      return { kind: 'refused', refusal: 'root_not_found' }
+    case 'start_folder_not_found':
+      return { kind: 'refused', refusal: 'start_folder_not_found' }
+    case 'unreachable':
+      return { kind: 'refused', refusal: 'save_unconfirmed' }
   }
 }
 

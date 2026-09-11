@@ -3286,3 +3286,45 @@ Décisions de formulation :
   téléphone vient de l'appareil (« Pixel 9 Pro XL ») ; aucun participe ni adjectif ne s'accorde avec lui.
 - **`on the phone itself` → `directement sur le téléphone`** dans l'info-bulle, plus naturel que `lui-même` ; le corps
   garde `sur le téléphone`, comme l'anglais.
+
+## La feuille du serveur : dossier racine et dossier initial (`servers.sheet.rootFolder*`, `.startFolder*`, `.nameHelp`, `servers.refusal.startFolderOutsideRoot`, `.rootNotFound`, `.startFolderNotFound`, `.saveUnconfirmed`)
+
+Deux champs de la feuille d'ajout ou de modification d'un serveur SFTP ou WebDAV : le plafond sur le serveur (Cmdr ne
+remonte jamais au-dessus) et le dossier où le panneau s'ouvre. Famille ICU : apostrophes ASCII doublées. Tas de
+références miné (`_ignored/i18n/fr/`, 2026-09-11) et paquets macOS installés (macOS 26.6.2 build 25G83).
+
+Termes :
+
+- root folder (le plafond d'un serveur enregistré) → **dossier racine** · MS terminology FRA, id 2130701 (« dossier
+  racine » pour `root folder` ET `root directory`) ; Double Commander (« Go to root directory » → « Aller au dossier
+  racine ») ; Xfce Thunar (« The root folder has no parent » → « Le dossier racine n'a pas de parent ») ; déjà livré
+  dans `errors.mutation.cantRenameVolumeRoot` · high. Remplace l'ancien libellé `Dossier distant` du même champ.
+- start folder (le dossier où s'ouvre le serveur) → **dossier initial** · tentative. ❌ Pas `dossier de départ` : le
+  Finder français nomme ainsi le dossier personnel (Finder `LocalizableMerged` `TL_HELP_HOME` « Go to your Home folder »
+  → « Aller à votre dossier Départ », `FF21` / `TL2` « Home » → « Départ »), alors même qu'Apple rend `Start Location`
+  par `Point de départ` (WorkflowKit) et que Double Commander écrit « Chemin de départ ». ❌ Pas `dossier de démarrage`
+  non plus : Dolphin (« Afficher au démarrage ») et macOS (« Disque de démarrage ») réservent `démarrage` au lancement de
+  l'app ou du Mac. Aucune source n'atteste `dossier initial` mot pour mot ; le catalogue emploie déjà `initial` au sens «
+  du début » (`analyse initiale`, `configuration initiale`).
+- your account (celui avec lequel on se connecte) → **votre compte** · reprend `le compte` de
+  `servers.sheet.identityLocked` et d'`errors.listing.remotePermissionDenied.*` · high.
+
+Décisions de formulation :
+
+- **`Leave it empty to …` → `Laissez ce champ vide pour …`**, sur le moule de `settings.fileOperations.adbBinaryPath.description`
+  (« Laissez ce champ vide et Cmdr cherche… »). `Laissez-le vide` ferait porter `le` sur un nom que la ligne ne répète pas.
+- **`call this server by its account and host` → `désigner ce serveur par son compte et son hôte`** : `nommer` se
+  confondrait avec la valeur du champ `Nom` lui-même.
+- **`Where the server opens.` devient une phrase complète** : `Le serveur s''ouvre dans ce dossier.` Le fragment `Là où
+  le serveur s''ouvre.` sonne bancal en français.
+- **`a folder inside it` → `un dossier à l''intérieur de celui-ci`** · `à l''intérieur de` est la forme du Finder (« Nom
+  du nouveau dossier à l'intérieur de « ^0 » ») ; `celui-ci` renvoie sans ambiguïté au dernier nommé, le dossier racine,
+  là où `qu''il contient` pourrait se rattacher au sujet.
+- **`Cmdr can''t open … Check that it exists and that your account can read it.` →
+  `Cmdr ne peut pas ouvrir … Vérifiez qu''il existe et que votre compte peut le lire.`** · Cmdr reste sujet, comme les
+  sœurs `servers.refusal.*` ; `Vérifiez que …` est le moule d'`errors.listing.*.suggestion`. `{host}` suit `sur`, sans
+  accord.
+- **`{host} didn''t answer in time, so nothing was saved.` → `{host} n''a pas répondu à temps, Cmdr n''a donc rien
+  enregistré.`** · la première proposition recopie `servers.refusal.timedOut` ; la voix active remplace le passif
+  anglais (style guide § Voice). `Réessayez dans un instant.` recopie cinq clés livrées (`ai.translateError.timeout.body`,
+  `operationLog.rollback.refusalUnexpected`, …).

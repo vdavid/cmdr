@@ -32,7 +32,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   getSftpUnattendedReconnect: vi.fn(() => Promise.resolve('ready')),
   getWebdavUnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
-  updateSavedServer: vi.fn(() => Promise.resolve()),
+  updateSavedServer: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
   approveSftpHostKey: vi.fn(() => Promise.resolve({ outcome: 'recorded' })),
 }))
 
@@ -161,6 +161,35 @@ describe('the three renderers on their own', () => {
         onTryNextcloudAddress: () => {},
         secretRefusal: "That password didn't work for ada.",
         storedSecretWarning: 'Reconnecting on its own needs a remembered password.',
+        onChange: () => {},
+      },
+    })
+    await tick()
+    await expectNoA11yViolations(target)
+  })
+
+  it('the Advanced fields with refusals under the root and start folders have no violations', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(ServerFormFields, {
+      target,
+      props: {
+        form: {
+          ...emptyServerForm(),
+          protocol: 'sftp',
+          address: 'ada@nas.local',
+          displayName: '',
+          remoteRoot: '/srv/data',
+          startFolder: '/srv/data-1',
+        },
+        disabled: false,
+        protocolEditable: false,
+        identityEditable: false,
+        identityHint: 'The address and the account are what name this server.',
+        advancedOpen: true,
+        namePlaceholder: 'ada@nas.local',
+        rootRefusal: "Cmdr can't open this folder on nas.local.",
+        startFolderRefusal: 'The start folder has to be the root folder or a folder inside it.',
         onChange: () => {},
       },
     })

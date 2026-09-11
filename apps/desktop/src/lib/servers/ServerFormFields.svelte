@@ -13,6 +13,10 @@
      * credential question comes from the listing or the mount when one refuses.
      * Putting a password field in front of a NAS that lets guests in would ask
      * for something nobody needs.
+     *
+     * ❗ **The root folder is a CEILING, the start folder is a LANDING.** Nothing
+     * navigates above the root; opening the place lands on the start folder, which
+     * has to be the root or under it. Empty means the root.
      */
     import { open as openFilePicker } from '@tauri-apps/plugin-dialog'
     import Button from '$lib/ui/Button.svelte'
@@ -47,10 +51,26 @@
         onTryNextcloudAddress?: () => void
         /** The sentence under the secret field. */
         secretRefusal?: string
+        /** The sentence under the root folder. */
+        rootRefusal?: string
+        /** The sentence under the start folder. */
+        startFolderRefusal?: string
         /** Shown in edit mode when the backend says unattended reconnect can't work as things stand. */
         storedSecretWarning?: string
+        /**
+         * What an empty name turns into, as the name field's placeholder: the
+         * backend's derived label, in edit mode. ❌ Never an address, which is what
+         * sent a person to edit the wrong field.
+         */
+        namePlaceholder?: string
+        /** Whether the Advanced disclosure is open. The sheet opens it to show a refusal under a field inside. */
+        advancedOpen?: boolean
+        /** The start folder lost focus, which is when the sheet's inline "under the root" check starts speaking. */
+        onStartFolderBlur?: () => void
         onChange: (patch: Partial<ServerForm>) => void
         addressInput?: HTMLInputElement
+        rootInput?: HTMLInputElement
+        startFolderInput?: HTMLInputElement
     }
 
     /* eslint-disable prefer-const -- $bindable() requires `let` destructuring */
@@ -63,14 +83,19 @@
         addressRefusal,
         onTryNextcloudAddress,
         secretRefusal,
+        rootRefusal,
+        startFolderRefusal,
         storedSecretWarning,
+        namePlaceholder,
+        advancedOpen = $bindable(false),
+        onStartFolderBlur,
         onChange,
         addressInput = $bindable(),
+        rootInput = $bindable(),
+        startFolderInput = $bindable(),
     }: Props = $props()
 
     const log = getAppLogger('servers')
-
-    let advancedOpen = $state(false)
 
     const protocolOptions: ToggleGroupOption[] = $derived([
         { value: 'smb', label: tString('servers.sheet.protocolSmb') },
@@ -81,6 +106,8 @@
     /** SMB signs in from the mount, not from here. */
     const asksForCredentials = $derived(form.protocol !== 'smb')
     const isSftp = $derived(form.protocol === 'sftp')
+    /** An empty start folder opens the root, so the root is what the empty field shows. */
+    const startFolderPlaceholder = $derived(form.remoteRoot.trim() === '' ? '/' : form.remoteRoot.trim())
 
     async function browseForKeyFile() {
         try {
@@ -210,24 +237,58 @@
                     onChange({ displayName: (e.currentTarget as HTMLInputElement).value })
                 }}
                 {disabled}
-                placeholder={form.address}
+                placeholder={namePlaceholder}
+                aria-describedby="server-name-help"
             />
+            <p id="server-name-help" class="field-help">{tString('servers.sheet.nameHelp')}</p>
         </div>
 
         {#if asksForCredentials}
             <div class="field">
-                <label for="server-remote-root" class="field-label">{tString('servers.sheet.remoteFolder')}</label>
+                <label for="server-remote-root" class="field-label">{tString('servers.sheet.rootFolder')}</label>
                 <TextInput
                     id="server-remote-root"
+                    bind:inputElement={rootInput}
                     value={form.remoteRoot}
                     oninput={(e: Event) => {
                         onChange({ remoteRoot: (e.currentTarget as HTMLInputElement).value })
                     }}
                     {disabled}
+                    invalid={rootRefusal !== undefined}
+                    aria-describedby={rootRefusal ? 'server-remote-root-refusal' : 'server-remote-root-help'}
                     placeholder="/"
                     autocapitalize="off"
                     spellcheck={false}
                 />
+                {#if rootRefusal}
+                    <p id="server-remote-root-refusal" class="field-refusal" role="alert">{rootRefusal}</p>
+                {:else}
+                    <p id="server-remote-root-help" class="field-help">{tString('servers.sheet.rootFolderHelp')}</p>
+                {/if}
+            </div>
+
+            <div class="field">
+                <label for="server-start-folder" class="field-label">{tString('servers.sheet.startFolder')}</label>
+                <TextInput
+                    id="server-start-folder"
+                    bind:inputElement={startFolderInput}
+                    value={form.startFolder}
+                    oninput={(e: Event) => {
+                        onChange({ startFolder: (e.currentTarget as HTMLInputElement).value })
+                    }}
+                    onblur={() => onStartFolderBlur?.()}
+                    {disabled}
+                    invalid={startFolderRefusal !== undefined}
+                    aria-describedby={startFolderRefusal ? 'server-start-folder-refusal' : 'server-start-folder-help'}
+                    placeholder={startFolderPlaceholder}
+                    autocapitalize="off"
+                    spellcheck={false}
+                />
+                {#if startFolderRefusal}
+                    <p id="server-start-folder-refusal" class="field-refusal" role="alert">{startFolderRefusal}</p>
+                {:else}
+                    <p id="server-start-folder-help" class="field-help">{tString('servers.sheet.startFolderHelp')}</p>
+                {/if}
             </div>
         {/if}
 

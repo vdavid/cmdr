@@ -23,7 +23,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => ({
   getSftpUnattendedReconnect: vi.fn(() => Promise.resolve('ready')),
   getWebdavUnattendedReconnect: vi.fn(() => Promise.resolve('possible')),
   forgetServerSecret: vi.fn(() => Promise.resolve(true)),
-  updateSavedServer: vi.fn(() => Promise.resolve()),
+  updateSavedServer: vi.fn(() => Promise.resolve({ outcome: 'saved' })),
   saveSftpCredentials: vi.fn(() => Promise.resolve()),
   saveWebdavCredentials: vi.fn(() => Promise.resolve()),
   approveSftpHostKey: vi.fn(() => Promise.resolve({ outcome: 'recorded' })),
@@ -261,6 +261,45 @@ describe('SignInSheet: add mode', () => {
     expect(submissions).toEqual([{ mode: 'add_smb', address: 'naspolya' }])
     expect(done).toEqual([{ kind: 'handed_off' }])
   })
+
+  it('refuses a start folder outside the root under the start folder, before dialing', async () => {
+    const attempt = (submission: SignInSubmission): Promise<SignInAttemptOutcome> => {
+      submissions.push(submission)
+      return Promise.resolve({ kind: 'connected', volumeId: 'v' })
+    }
+    await renderSheet({ mode: 'add', attempt })
+
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'ada@nas.local/srv/data')
+    await tick()
+    const startFolder = document.body.querySelector<HTMLInputElement>('#server-start-folder') as HTMLInputElement
+    typeInto(startFolder, '/srv/data-1')
+    await tick()
+
+    buttonSaying('Connect').click()
+    await flush()
+
+    // ❗ By whole components: `/srv/data-1` is a sibling of `/srv/data`, and the
+    // sheet says so without a round-trip.
+    expect(submissions).toEqual([])
+    expect(document.body.querySelector('#server-start-folder-refusal')).not.toBeNull()
+    expect(startFolder.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(startFolder)
+  })
+
+  it('puts a connect that refuses the start folder under the start folder', async () => {
+    const attempt = (): Promise<SignInAttemptOutcome> =>
+      Promise.resolve({ kind: 'refused', refusal: 'start_folder_outside_root' })
+    await renderSheet({ mode: 'add', attempt })
+
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-address') as HTMLInputElement, 'ada@nas.local/srv/data')
+    await tick()
+    buttonSaying('Connect').click()
+    await flush()
+
+    expect(document.body.querySelector('#server-start-folder-refusal')).not.toBeNull()
+    expect(document.body.querySelector('#server-address-refusal')).toBeNull()
+    expect(document.activeElement).toBe(document.body.querySelector('#server-start-folder'))
+  })
 })
 
 /**
@@ -301,6 +340,104 @@ describe('SignInSheet: edit mode', () => {
     vi.mocked(commands.getKnownSftpServers).mockResolvedValue([KNOWN_SFTP])
     vi.mocked(commands.saveSftpCredentials).mockClear()
     vi.mocked(commands.forgetServerSecret).mockClear()
+    vi.mocked(commands.updateSavedServer).mockClear()
+  })
+
+  it('opens an unnamed server with an empty name, its label as the placeholder, and the label in the title', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.getKnownSftpServers).mockResolvedValue([{ ...KNOWN_SFTP, displayName: '' }])
+    await renderSheet({ mode: 'edit', server: { ...SAVED, displayName: 'ada@nas.local', nameSource: 'fallback' } })
+
+    // ❗ The field holds what the user TYPED, which for an unnamed server is
+    // nothing. A name that looked like the address is what sent a person to
+    // widen the root through the wrong field.
+    const name = document.body.querySelector<HTMLInputElement>('#server-name')
+    expect(name?.value).toBe('')
+    expect(name?.placeholder).toBe('ada@nas.local')
+    expect(document.body.textContent).toContain('Edit ada@nas.local')
+  })
+
+  it('shows the saved root folder and start folder', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.getKnownSftpServers).mockResolvedValue([{ ...KNOWN_SFTP, startFolder: '/srv/data/photos' }])
+    await renderSheet({ mode: 'edit', server: SAVED })
+
+    expect(document.body.querySelector<HTMLInputElement>('#server-remote-root')?.value).toBe('/srv/data')
+    expect(document.body.querySelector<HTMLInputElement>('#server-start-folder')?.value).toBe('/srv/data/photos')
+  })
+
+  it('closes as saved when the save lands', async () => {
+    const { done } = await renderSheet({ mode: 'edit', server: SAVED })
+
+    buttonSaying('Save').click()
+    await flush()
+
+    expect(done).toEqual([{ kind: 'saved' }])
+  })
+
+  it('keeps the sheet open on a root the server lacks, under the root folder, and writes no password', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.updateSavedServer).mockResolvedValueOnce({ outcome: 'root_not_found' })
+    const { done } = await renderSheet({ mode: 'edit', server: SAVED })
+
+    typeInto(document.body.querySelector<HTMLInputElement>('#server-secret') as HTMLInputElement, 'hunter2')
+    await tick()
+    buttonSaying('Save').click()
+    await flush()
+
+    const root = document.body.querySelector<HTMLInputElement>('#server-remote-root') as HTMLInputElement
+    expect(done).toEqual([])
+    expect(document.body.querySelector('#server-remote-root-refusal')?.textContent).toContain('nas.local')
+    expect(root.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(root)
+    // ❗ A refusal saved nothing, so the password typed beside it isn't filed
+    // either: half an edit is a server that dials one way and lists another.
+    expect(vi.mocked(commands.saveSftpCredentials)).not.toHaveBeenCalled()
+  })
+
+  it('puts a start folder the server lacks under the start folder', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.updateSavedServer).mockResolvedValueOnce({ outcome: 'start_folder_not_found' })
+    const { done } = await renderSheet({ mode: 'edit', server: SAVED })
+
+    buttonSaying('Save').click()
+    await flush()
+
+    const startFolder = document.body.querySelector<HTMLInputElement>('#server-start-folder')
+    expect(done).toEqual([])
+    expect(document.body.querySelector('#server-start-folder-refusal')).not.toBeNull()
+    expect(document.body.querySelector('#server-remote-root-refusal')).toBeNull()
+    expect(document.activeElement).toBe(startFolder)
+  })
+
+  it('refuses a start folder outside the root before asking the backend', async () => {
+    const commands = await import('$lib/tauri-commands')
+    const { done } = await renderSheet({ mode: 'edit', server: SAVED })
+
+    const startFolder = document.body.querySelector<HTMLInputElement>('#server-start-folder') as HTMLInputElement
+    typeInto(startFolder, '/srv/database')
+    await tick()
+    buttonSaying('Save').click()
+    await flush()
+
+    expect(vi.mocked(commands.updateSavedServer)).not.toHaveBeenCalled()
+    expect(done).toEqual([])
+    expect(document.body.querySelector('#server-start-folder-refusal')).not.toBeNull()
+    expect(document.activeElement).toBe(startFolder)
+  })
+
+  it('stays open and says so when the connected server did not answer in time', async () => {
+    const commands = await import('$lib/tauri-commands')
+    vi.mocked(commands.updateSavedServer).mockResolvedValueOnce({ outcome: 'unreachable' })
+    const { done } = await renderSheet({ mode: 'edit', server: SAVED })
+
+    buttonSaying('Save').click()
+    await flush()
+
+    expect(done).toEqual([])
+    const formRefusal = document.body.querySelector('.form-refusal')
+    expect(formRefusal?.getAttribute('role')).toBe('alert')
+    expect(formRefusal?.textContent).toContain('nas.local')
   })
 
   it('locks the identity and points at the honest way to change it', async () => {

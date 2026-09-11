@@ -81,7 +81,10 @@ export function serverTargetFrom(form: ServerForm): ServerTarget | null {
   if (parsed.kind === 'unparsed') return null
 
   const username = form.username.trim()
-  const displayName = form.displayName.trim() || form.address.trim()
+  // ❗ Empty stays empty. The backend calls an unnamed server by its account and
+  // host, and a name that repeated the typed address left the edit sheet with a
+  // name that looked like the address, which sent a person to edit the wrong field.
+  const displayName = form.displayName.trim()
 
   // ❗ The TOGGLE decides which target this is, not the address: it stays
   // editable exactly so someone can type a bare host and say "that one is SFTP".
@@ -189,6 +192,35 @@ function webdavBaseUrl(parsed: Extract<ParsedAddress, { kind: 'parsed' }>): stri
 function startFolderOf(form: ServerForm): string | null {
   const trimmed = form.startFolder.trim()
   return trimmed === '' ? null : trimmed
+}
+
+/**
+ * Whether `startFolder` is the root or sits under it, compared by whole path
+ * components. An empty start folder means the root, so it always is.
+ *
+ * ❗ The sheet's inline MIRROR of `saved_server_fields::start_folder_under_root`,
+ * for feedback before a round-trip. The backend stays authoritative and answers
+ * `start_folder_outside_root` on its own. Both sides normalize first, the way
+ * `cmdr_fs::volume::remote_paths::normalize_remote_path` does: `.` and `..`
+ * resolved, and a relative path read from `/`. That's why `/srv/data-1` and
+ * `/srv/data/../etc` are both outside `/srv/data`.
+ */
+export function isStartFolderUnderRoot(remoteRoot: string, startFolder: string): boolean {
+  if (startFolder.trim() === '') return true
+  const root = normalizeServerPath(remoteRoot)
+  const folder = normalizeServerPath(startFolder)
+  return root === '/' || folder === root || folder.startsWith(`${root}/`)
+}
+
+/** A server-side path made absolute, with `.` and `..` resolved lexically. */
+function normalizeServerPath(path: string): string {
+  const parts: string[] = []
+  for (const part of path.trim().split('/')) {
+    if (part === '' || part === '.') continue
+    if (part === '..') parts.pop()
+    else parts.push(part)
+  }
+  return `/${parts.join('/')}`
 }
 
 /** The three root spellings (`''`, `'.'`, `'/'`) all mean the volume root. */
