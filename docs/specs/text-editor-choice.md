@@ -200,7 +200,10 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
 
 8. **The hint.** A persistent toast; everything this feature says goes out under ONE toast id, `text-editor`, dismissed
    first and re-added. It can come from any of the three callers: they share one entry, and "which app opens my files"
-   is the same question after ⇧F4 as after F4. The frontend passes `ask_about_other_editors = true` only while
+   is the same question after ⇧F4 as after F4. The pane guard's `fileExplorer.edit.notOnThisMac` refusal isn't part of
+   that id: it stays its own transient toast, so an F4 on a guarded row stacks beside a hint that's still up, while a
+   plain second F4 says nothing and leaves the hint alone. The ⇧F4 path closes the dialog and refocuses the pane before
+   `onOpenInEditor` runs (`handleNewFileCreated`), so no toast from here can land while a dialog owns the keys. The frontend passes `ask_about_other_editors = true` only while
    `behavior.textEditorHintSeen` is false AND the stored choice is `system`. The pure `decideEditorHint({ hintSeen,
    storedChoice, report })`:
    - **Hint already spent**: no hint, no write.
@@ -218,8 +221,11 @@ Mac. VS Code declares plain text by EXTENSION (`txt`) plus the OSTypes `TEXT` / 
    editor someone wants for their files.
 
 9. **Cost.** Nothing is cached. The Settings row lists on mount and after every write of its setting
-   (`list_text_editors`, 2 s deadline, `TimedOut<TextEditorList>`; a deadline that expires answers empty and the row
-   stays disabled at "Checking…", which claims nothing). F4 is one IPC, and the editor query rides on it only while the
+   (`list_text_editors`, 2 s deadline, `TimedOut<TextEditorList>`; a deadline that expires answers `timedOut: true` and
+   the row stays disabled at "Checking…", which claims nothing). ❗ The row is ready once an answer lands with
+   `timedOut: false`, never when `apps` is non-empty (the terminal's rule): `apps` leaves out the system default, so a
+   Mac whose only editor is TextEdit answers a complete, empty `apps`, and that row must still offer "System default
+   (TextEdit)" and "Choose an app…". F4 is one IPC, and the editor query rides on it only while the
    hint is due. `open_in_editor` gets a 5 s deadline, like the terminal launch. M1 reports the list's duration on
    David's Mac; if icon decoding pushes it past roughly 300 ms, say so rather than raising the deadline.
 
@@ -283,6 +289,10 @@ so in its `@key` description, and keep it in a slot a translator can restructure
 "Choose an app…", and "Checking your apps…" repeat the terminal keys' English on purpose
 (`commands.handler.openTerminalHere.*` and `settings.behavior.openTerminalHereApp.*`), so
 `desktop-i18n-term-consistency` warns if a locale translates them differently.
+
+For David: `appMissing` says "isn't installed anymore", which reads wrong in Decision 6's accepted edge (an app on a
+volume that's unmounted right now). Something like "isn't on this Mac right now" would cover both. `launchRefused`
+copies the terminal's advice word for word.
 
 ## Milestones
 
@@ -400,9 +410,10 @@ Draft copy keys tagged with its number, writes the code that names them, and tra
   `settings.behavior.openTerminalHereApp.chooseApp`). Run `pnpm intl:keys`, then
   `node apps/desktop/scripts/sync-locale-keys.ts`.
 - Translate into the ten full locales per `docs/guides/i18n-translation.md` § "New feature → add strings and translate
-  to ALL languages": each locale's style guide and glossary, the reference pile at the MAIN clone's absolute path, the
-  reusable translator block, at most three translator subagents at a time (spawned without `name` when you're a subagent
-  yourself). Record glossary entries per locale: "text editor" in M2, "system default" in M3.
+  to ALL languages": each locale's style guide and glossary, the reference pile at the MAIN clone's absolute path, and
+  the reusable translator block as your own brief. Do it yourself, one locale at a time: it's under ten short strings
+  per milestone, and the milestone agent is itself a subagent, which can't name the agents it spawns and doesn't
+  reliably wake when they finish. Record glossary entries per locale: "text editor" in M2, "system default" in M3.
 - Overlays (`en-GB`, `en-AU`): nothing to fork unless evidence says otherwise; "editor", "installed", and "default" are
   spelled the same.
 
@@ -511,18 +522,27 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
   the default's icon), the apps sorted with an `Intl.Collator` in the app's locale, then the choose-app sentinel; and
   `selectedTextEditorId(list)`, where a `null` `chosenId` DISPLAYS `system` and never writes.
 - **The row**, `settings/sections/TextEditorSelect.svelte`: lists on mount and on `onSpecificSettingChange`, stays
-  disabled at "Checking…" while empty, and "Choose an app…" opens `@tauri-apps/plugin-dialog`'s `open()` (filter `app`,
-  default `/Applications`), then stores `(await listTextEditors(picked)).data.chosenId ?? picked`. ❗
-  `TerminalAppSelect.svelte` is the same shell: extract the shared part (the `Select`, the checking state, the picker,
-  the refresh on change) into one component both rows use, rather than copying it (`jscpd-frontend`). Each row keeps its
-  own `*-options.ts`.
+  disabled at "Checking…" until an answer lands with `timedOut: false` (Decision 9), and "Choose an app…" opens
+  `@tauri-apps/plugin-dialog`'s `open()` (filter `app`, default `/Applications`), then stores
+  `(await listTextEditors(picked)).data.chosenId ?? picked`. ❗ `TerminalAppSelect.svelte` is the same shell: extract
+  the shared part (the `Select`, the checking state, the picker, the refresh on change) into one component both rows
+  use, rather than copying it (`jscpd-frontend`). Each row keeps its own `*-options.ts`. The seams the shell takes per
+  row: the list call, the items and selected-value functions, the strings, and a `resolvePick(picked)` step, identity
+  for the terminal (its test pins exactly two `listTerminalApps` calls after a pick, and the stored raw path) and the
+  `chosenId` canonicalization for the editor. `TerminalAppSelect.svelte` stays as a thin wrapper with its file name and
+  `ariaLabel` prop, so `TerminalAppSelect.svelte.test.ts` and its case in `sections.a11y.test.ts` pass unchanged. Moving
+  the terminal row to the ready rule above keeps those tests green too: they cover the loaded list and the timed-out,
+  empty answer.
 - **The page**: in `NavigationAndFileOpsSection.svelte`, the "Text editor" card sits above Terminal, both cards behind
   `isMacOS()` plus `anyVisible`; update the header comment's card list.
 - **The hint**: `text-editor/editor-hint.ts` (pure `decideEditorHint`, Decision 8), wired into `openFileInEditor`, which
   now asks Rust only while the hint is due; the hint toast uses `TextEditorToastContent` with Dismiss.
 - **E2E**: the "New file round-trip" test in `file-operations.spec.ts` spends `behavior.textEditorHintSeen` before its
-  dispatch, with a comment saying why. Grep the suite for any other path that reaches `file.edit` or confirms a new
-  file, and do the same there.
+  dispatch, with a comment saying why. That test doesn't call `ensureMcpClient` today, so add it before the `mcpCall`
+  (the file already imports both). It's the only spec that reaches the editor launch (checked 2026-09-11: nothing
+  dispatches `file.edit`, `archive-browsing.spec.ts` clears `open_mock` for the Enter menu's default-app open, and the
+  capture run's `new-file-dialog` surface only opens the dialog). Settings persist across tests in one app instance, so
+  the spent flag carries forward, which no later spec minds.
 - **Docs**: a § for the row in `settings/sections/DETAILS.md` (mirroring the terminal's, pointing at
   `text-editor/DETAILS.md` for the hint); the `macOSOnly` flag on settings in `settings/DETAILS.md`, next to the
   searchable-row one; a step-1 bullet in `docs/guides/adding-a-new-setting.md`; delete the "One surface is NOT gated"
@@ -540,7 +560,14 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
 - ❌ Never write the setting while browsing: the missing-app display is display only.
 - The choose-app sentinel must be neither `system`, nor a path, nor bundle-id-shaped (the terminal's `__choose_app__`
   qualifies; share it through the extracted component).
-- `NavigationAndFileOpsSection.svelte.test.ts`: if it mocks `listTerminalApps`, mock `listTextEditors` the same way.
+- ❗ `isMacOS()` is FALSE under Vitest on every host: jsdom's user agent reads `(darwin)` or `(linux)`, never "mac".
+  Once both cards sit behind `isMacOS()`, `NavigationAndFileOpsSection.svelte.test.ts` (four cards, Terminal among
+  them) and the section's case in `sections.a11y.test.ts` lose the Terminal card unless they mock
+  `$lib/shortcuts/key-capture`'s `isMacOS` to true, the way `RevealHandlerCard.svelte.test.ts` does. Both files also
+  mock `listTerminalApps`, so mock `listTextEditors` beside it.
+- "Open settings" scrolls to the row through `settingAnchorId`, and focus stays in the Settings search field. An
+  already-open Settings window keeps its search query across `navigate-to-section`, so a leftover query can filter the
+  card away and the scroll silently no-ops. Every deep link has this today; don't fix it inside this plan.
 - `hidden` settings still enter search by design, which is why the hint flag takes `macOSOnly` too.
 
 **Test plan** (red, then green)
@@ -554,11 +581,16 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
    pair where byte order and collation disagree, like "Ölmaker" and "Zed" under `de`), choose-app last; a `null`
    `chosenId` selects `system`.
 4. Settings search: with `isMacOS` false the three `macOSOnly` settings are gone from results; true brings them back.
-   Call `clearSearchIndex()` between the two: `buildSearchIndex` memoizes, so without it the second answer is the
-   first one's.
+   Mock it on `$lib/shortcuts/key-capture`, the module `searchable-rows.ts` already reads, so the registry filter and
+   the row filter answer to one mock. Call `clearSearchIndex()` between the two: `buildSearchIndex` memoizes, so without
+   it the second answer is the first one's.
 5. `NavigationAndFileOpsSection.svelte.test.ts`: off macOS neither card renders; on macOS the Text editor card sits above
    Terminal.
-6. The terminal row's existing tests stay green through the extraction.
+6. `TextEditorSelect.svelte.test.ts`: a TextEdit-only answer (`apps: []`, `timedOut: false`) renders enabled with the
+   system row and "Choose an app…"; a timed-out answer stays disabled at "Checking your apps…"; a pick stores the
+   canonical `chosenId`, and a cancelled one stores nothing. Red on the terminal's `apps.length > 0` rule. Add a
+   `TextEditorSelect a11y` case beside `TerminalAppSelect a11y` in `sections.a11y.test.ts`.
+7. The terminal row's existing tests stay green through the extraction.
 7. The copy: the procedure's red step on `desktop-i18n-coverage`.
 
 **DONE**: the copy procedure's checks, then plain `pnpm check` green; the "New file round-trip" test run alone per the single-spec recipe in
@@ -577,6 +609,25 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
 - Analytics properties on `editor_opened`.
 - Adopting a running editor on first use.
 
+## Edges this plan leaves as they are
+
+Read from the code on 2026-09-11. None change here; the ones marked are product calls for David.
+
+- **Several selected files**: F4 opens the cursor row only and ignores the selection (`withEntryUnderCursor` in
+  `file-handlers.ts`).
+- **The `..` row**: F4 does nothing (`getFileAndPathUnderCursor` answers `null` for it).
+- **A folder (David's call)**: in a regular pane F4 hands the folder over (`open -t <folder>` today, which TextEdit can't
+  open), while the search-results F4 skips folders. With Sublime Text or VS Code chosen, a folder opens as a project,
+  which may be welcome. Aligning the two panes is a separate change.
+- **A binary file**: the editor decides, as today.
+- **An app that can't open text, picked through "Choose an app…"**: `open -a` launches it, the file may not open, and
+  Rust reports `opened`. The user picked it; the row shows it.
+- **TextEdit picked through "Choose an app…" (David's call)**: it canonicalizes to `com.apple.TextEdit`, which isn't
+  `system`, so the row shows "System default (TextEdit)" AND a second "TextEdit" row (Decision 4's pinned default).
+  Pinning survives a later change of the system default; folding a pick that equals the default back into `system`
+  would avoid the lookalike row.
+- **An app on an external volume**: Decision 6's accepted edge.
+
 ## Invariants
 
 - F4 with the setting at `system` runs `open -t <file>`, exactly as before this plan.
@@ -589,6 +640,7 @@ docs-link-text claude-md-length`, then plain `pnpm check`. Commit, for example
 - The editor query runs only when the Settings row renders or when an F4 lands while the hint is due.
 - No framework newer than macOS 10.15 enters the binary, and no selector newer than 10.15 is called ungated.
 - The `playwright-e2e` build launches nothing and records the file path only.
-- Everything the feature says goes out under one toast id, dismissed before it's re-added.
+- Everything the feature says goes out under one toast id, dismissed before it's re-added (the pane guard's existing
+  transient refusal keeps its own).
 - Nothing from this feature renders or matches search off macOS.
 - Every key lands in the same commit as the code naming it, translated into all ten full locales.
