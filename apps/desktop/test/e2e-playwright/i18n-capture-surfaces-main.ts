@@ -59,11 +59,7 @@ async function clearSelection(main: TauriPage): Promise<void> {
  *   deletePermanently*,noShift*}` the default fork never shows.
  *
  * The Quick Look educational toast (`fileExplorer.quickLookHint.*`) is NOT here:
- * it's a documented skip in the spec. Its trigger (Space in the file list) gates
- * on the `fileExplorer.suppressQuickLookHint` setting, and the capture binary
- * reads the REAL prod tauri-store (the orchestrator launches it without a
- * `CMDR_DATA_DIR` override), where the setting is `true`, so the toast never
- * shows. See the spec's skip block for the full reason.
+ * `captureQuickLookHint` in `i18n-capture-staged.ts` owns it.
  *
  * Order is narrow-to-broad within the explorer: selection-summary first (its keys
  * are the most specific), then the Shift bar.
@@ -101,20 +97,10 @@ export async function captureMainExplorerSurfaces(
     // with `key:'Shift'` flips its `shiftHeld` rune and re-renders the Shift fork.
     // No keyup is dispatched, so it stays in the Shift state through the shot.
     await main.evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift', bubbles: true }))`)
-    // Wait for the Shift fork to render. Detect it by a LOCALE-INDEPENDENT marker,
-    // NOT by the English "permanently" label: the overflow pass pseudolocalizes
-    // every label. The Shift fork is the only fork that renders the disabled F2/F3
-    // empty slots, whose `<kbd>` carries the literal, never-translated "F2".
-    await main.waitForSelector('.function-key-bar', 5000)
-    await expect
-      .poll(
-        async () =>
-          main.evaluate<boolean>(
-            `Array.from(document.querySelectorAll('.function-key-bar button kbd')).some(function(k){ return k.textContent === 'F2'; })`,
-          ),
-        { timeout: 3000 },
-      )
-      .toBeTruthy()
+    // Wait on the bar's own `data-row` marker, ❌ never on what a chip says: the
+    // overflow pass pseudolocalizes every label, and the key text follows the
+    // user's bindings and the platform's Shift glyph.
+    await main.waitForSelector('.function-key-bar[data-row="shift"]', 5000)
     return { page: main }
   })
   // Release Shift so nothing downstream inherits the Shift fork.

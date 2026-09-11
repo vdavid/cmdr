@@ -230,6 +230,7 @@
 {#if visible}
     <div
         class="function-key-bar"
+        data-row={shiftHeld ? 'shift' : 'plain'}
         role="toolbar"
         aria-label={tString('fileExplorer.functionKeyBar.toolbarAriaLabel')}
         onmousedown={(e) => {

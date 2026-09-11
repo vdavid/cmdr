@@ -150,6 +150,21 @@ describe('FunctionKeyBar', () => {
     document.body.removeChild(target)
   })
 
+  it('names the row it shows on the bar, so a caller can wait on the Shift row whatever its labels say', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    mount(FunctionKeyBar, { target, props: { visible: true } })
+    const row = () => target.querySelector('.function-key-bar')?.getAttribute('data-row')
+
+    expect(row()).toBe('plain')
+    await pressShift()
+    expect(row()).toBe('shift')
+    await releaseShift()
+    expect(row()).toBe('plain')
+
+    document.body.removeChild(target)
+  })
+
   it('follows a rebind of the SHIFTED binding in the Shift row, leaving the plain row alone', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
