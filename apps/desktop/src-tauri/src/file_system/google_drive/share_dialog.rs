@@ -25,6 +25,13 @@
 //! selector are looked up at runtime, every call runs inside `objc2::exception::catch`,
 //! and every wait is bounded. A macOS or Drive update that moves any of it takes the
 //! menu item away; it never crashes.
+//!
+//! **Every block handed to File Provider carries its type signature**
+//! (`RcBlock::with_encoding`, ❌ never `RcBlock::new`). File Provider wraps a completion
+//! handler with `__FPMakeAsyncCompletionBlock`, which forwards through
+//! `_Block_signature`; a signature-less block becomes a nil handler inside File
+//! Provider, and the reply then crashes the app with `EXC_BAD_ACCESS` at `0x10`.
+//! Verified with lldb on Darwin 25.6.0, 2026-09-11.
 
 use std::ffi::CStr;
 use std::panic::AssertUnwindSafe;
@@ -33,7 +40,7 @@ use std::sync::OnceLock;
 use std::sync::mpsc;
 use std::time::Duration;
 
-use block2::RcBlock;
+use block2::{ManualBlockEncoding, RcBlock};
 use objc2::rc::{Allocated, Retained};
 use objc2::runtime::{AnyClass, AnyObject};
 use objc2::{msg_send, sel};
@@ -167,13 +174,22 @@ fn item_manager() -> Option<Retained<AnyObject>> {
     unsafe { msg_send![class, defaultManager] }
 }
 
+/// The type signature of `fetchItemForURL:`'s completion handler, `(FPItem *, NSError *) -> void`.
+struct FetchCompletionEncoding;
+
+// SAFETY: `v24@?0@8@16` is a void block taking two object pointers, which is exactly the
+// `(*mut AnyObject, *mut NSError) -> ()` this encoding is declared for.
+unsafe impl ManualBlockEncoding for FetchCompletionEncoding {
+    type Arguments = (*mut AnyObject, *mut NSError);
+    type Return = ();
+    const ENCODING_CSTR: &'static CStr = c"v24@?0@8@16";
+}
+
 /// Resolves `path` to a File Provider item, waiting at most `timeout`.
 fn fetch_item(path: &Path, timeout: Duration) -> Option<FetchedItem> {
     let (tx, rx) = mpsc::channel::<Option<FetchedItem>>();
-    let started = objc2::exception::catch(AssertUnwindSafe(|| {
-        let manager = item_manager()?;
-        let url = NSURL::fileURLWithPath(&NSString::from_str(path.to_str()?));
-        let completion = RcBlock::new(move |item: *mut AnyObject, _error: *mut NSError| {
+    let completion = RcBlock::with_encoding::<_, _, _, FetchCompletionEncoding>(
+        move |item: *mut AnyObject, _error: *mut NSError| {
             // SAFETY: File Provider passes nil or an `FPItem` it keeps alive for the block's call.
             let fetched = unsafe { item.as_ref() }.and_then(|item| {
                 objc2::exception::catch(AssertUnwindSafe(|| read_item(item)))
@@ -182,7 +198,11 @@ fn fetch_item(path: &Path, timeout: Duration) -> Option<FetchedItem> {
             });
             // A failed send means the caller stopped waiting (its timeout), which it already handles.
             let _ = tx.send(fetched);
-        });
+        },
+    );
+    let started = objc2::exception::catch(AssertUnwindSafe(|| {
+        let manager = item_manager()?;
+        let url = NSURL::fileURLWithPath(&NSString::from_str(path.to_str()?));
         // SAFETY: `fetchItemForURL:completionHandler:` exists on the manager's class (checked in
         // `item_manager`). `url` is a live `NSURL`, and the block matches the handler's
         // `(FPItem *, NSError *)` shape. File Provider copies the block, so ours can drop after.
@@ -335,5 +355,33 @@ mod tests {
         };
         assert!(!offers_share(&no_action));
         assert!(!offers_share(&no_root_flag));
+    }
+
+    /// Manual regression test against a REAL streamed Google Drive item Drive lets you
+    /// share, so it's ignored by default. Run it with:
+    ///
+    /// `CMDR_DRIVE_STREAM_ITEM=<path> cargo nextest run --workspace --features cmdr/virtual-mtp --run-ignored only -E 'test(file_provider_answers_a_real_stream_item_without_crashing)'`
+    ///
+    /// File Provider wraps a completion handler through the block's type signature. A
+    /// handler without one became nil inside File Provider, which crashed the process
+    /// when the reply arrived (`EXC_BAD_ACCESS` at `0x10`); pre-fix, this test died with
+    /// SIGSEGV on its first fetch. The 1 ms waits let replies land after the caller gave
+    /// up, the way the context menu's bounded wait does.
+    #[test]
+    #[ignore = "needs a streamed Google Drive item in CMDR_DRIVE_STREAM_ITEM"]
+    fn file_provider_answers_a_real_stream_item_without_crashing() {
+        let item = PathBuf::from(
+            std::env::var("CMDR_DRIVE_STREAM_ITEM")
+                .expect("set CMDR_DRIVE_STREAM_ITEM to a streamed Google Drive item"),
+        );
+        for _ in 0..20 {
+            let _ = can_share(&item, Duration::from_millis(1));
+        }
+        // allowed-test-sleep: the replies landing after their callers stopped waiting are the subject
+        std::thread::sleep(Duration::from_secs(5));
+        assert!(
+            can_share(&item, Duration::from_secs(5)),
+            "a streamed Drive item Drive lets you share offers Share once File Provider answers"
+        );
     }
 }

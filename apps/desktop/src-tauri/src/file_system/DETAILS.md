@@ -123,6 +123,10 @@ needs before touching it:
   and a 250 ms wait at menu build (`commands/menu.rs`). Anything off means no menu item, never a crash.
 - **No completion block on the operation.** Its signature is private, and a guessed argument we'd dereference could
   crash the app, so a click reports only whether it scheduled.
+- **Every block handed to File Provider needs a type signature** (`RcBlock::with_encoding`, never `RcBlock::new`).
+  File Provider wraps completion handlers through `_Block_signature`, and a block without one becomes a nil handler
+  inside File Provider that crashes the app when the reply arrives. The ignored
+  `file_provider_answers_a_real_stream_item_without_crashing` test reproduces it against a real streamed item.
 
 **One resolution, every URL.** `item_links()` resolves the item ONCE into a private `ResolvedItem` (id + kind +
 resource key) and formats each URL from it, so a context menu never pays two xattr reads or two SQLite round-trips for
