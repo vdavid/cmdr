@@ -166,7 +166,7 @@ test.describe('Archive editing', () => {
     await tauriPage.waitForSelector(DELETE_DIALOG, 5000)
     const bannerText = await tauriPage.textContent(`${DELETE_DIALOG} .warning-banner`)
     expect(bannerText).toContain('no trash inside an archive')
-    expect(await tauriPage.isVisible(`${DELETE_DIALOG} .trash-choice`)).toBe(false)
+    expect(await tauriPage.isVisible(`${DELETE_DIALOG} .switch-root`)).toBe(false)
 
     // Confirm the permanent delete (danger button) and wait for the rewrite.
     await expect.poll(async () => tauriPage.isEnabled(`${DELETE_DIALOG} .btn-danger`), { timeout: 5000 }).toBeTruthy()
@@ -295,9 +295,7 @@ test.describe('Archive editing', () => {
     // Cancel as soon as the progress dialog appears (temp+rename means the original
     // is untouched until the final atomic rename, so cancel can't corrupt it).
     await tauriPage.waitForSelector(TRANSFER_PROGRESS, 5000)
-    await tauriPage
-      .waitForSelector(`${TRANSFER_PROGRESS} .btn-cancel, ${TRANSFER_PROGRESS} button.cancel`, 3000)
-      .catch(() => {})
+    await tauriPage.waitForSelector(`${TRANSFER_PROGRESS} .button-row button`, 3000).catch(() => {})
     await tauriPage.evaluate(`(function(){
         var dlg = document.querySelector('${TRANSFER_PROGRESS}');
         var btns = dlg ? Array.prototype.slice.call(dlg.querySelectorAll('button')) : [];

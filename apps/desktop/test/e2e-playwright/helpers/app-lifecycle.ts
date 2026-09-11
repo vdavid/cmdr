@@ -81,14 +81,6 @@ export async function ensureAppReady(
   // allowed-bare-poll: modal may or may not be present from a prior test; precautionary dismiss, not a required assertion
   await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.modal-overlay')), 3000)
 
-  // Dismiss any overlays (AI notification, etc.)
-  await tauriPage.evaluate(`(function() {
-        var btn = document.querySelector('.ai-notification .ai-button.secondary');
-        if (btn) btn.click();
-    })()`)
-  // allowed-bare-poll: AI notification may or may not be present; precautionary dismiss, not a required assertion
-  await pollUntil(tauriPage, async () => !(await tauriPage.isVisible('.ai-notification')), 3000)
-
   // Reset both panes back to the local volume if a previous test (smb,
   // mtp, mtp-conflicts, network-toggle) left one on Network/MTP/etc.
   // `mcp-nav-to-path` below is rejected by `DualPaneExplorer.navigateToPath`

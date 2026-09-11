@@ -174,7 +174,7 @@ test.describe('MTP device discovery', () => {
     // Open the volume picker by clicking the breadcrumb in the left pane
     await tauriPage.evaluate(`(function() {
             var pane = document.querySelectorAll('.file-pane')[0];
-            var breadcrumb = pane ? pane.closest('.file-pane-wrapper')?.querySelector('.volume-breadcrumb .volume-name') : null;
+            var breadcrumb = pane ? pane.querySelector('.volume-breadcrumb .volume-name') : null;
             if (!breadcrumb) breadcrumb = document.querySelector('.volume-breadcrumb .volume-name');
             if (breadcrumb) breadcrumb.click();
         })()`)
