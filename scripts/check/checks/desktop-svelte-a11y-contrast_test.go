@@ -72,7 +72,8 @@ func TestExtractOpacitySection(t *testing.T) {
 		t.Errorf("lastNonEmptyLine() = %q, want the final stats line", got)
 	}
 
-	if got := extractOpacitySection("no marker here"); got != "" {
-		t.Errorf("extractOpacitySection with no marker = %q, want empty", got)
+	// A changed tool output shape must not silently drop the findings from the warn.
+	if got := extractOpacitySection("no marker here"); got != "no marker here" {
+		t.Errorf("extractOpacitySection with no marker = %q, want the full output back", got)
 	}
 }

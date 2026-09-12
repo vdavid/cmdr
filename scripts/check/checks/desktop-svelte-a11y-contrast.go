@@ -70,9 +70,10 @@ func RunA11yContrast(ctx *CheckContext) (CheckResult, error) {
 // the opacity findings themselves). Runs from the `=== Unmodeled opacity`
 // header through the next blank line (the tool always follows the block,
 // findings plus its one "fix:" footer, with a blank `fmt.Println()`).
-// Returns "" if the marker isn't found (the caller only calls this when
-// `readOpacityFindingCount` already confirmed findings exist, so that would
-// mean the tool's output shape changed).
+// Returns the full output if the marker isn't found: the caller only calls
+// this when `readOpacityFindingCount` already confirmed findings exist, so a
+// missing marker means the tool's output shape changed, and a warn that
+// silently drops its findings would be worse than a noisy one.
 func extractOpacitySection(output string) string {
 	lines := strings.Split(output, "\n")
 	start := -1
@@ -83,7 +84,7 @@ func extractOpacitySection(output string) string {
 		}
 	}
 	if start == -1 {
-		return ""
+		return output
 	}
 	end := len(lines)
 	for i := start + 1; i < len(lines); i++ {
