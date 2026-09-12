@@ -48,6 +48,7 @@ fn manager_for(
         IndexVolumeKind::LocalExternal,
         true,
         VolumeSignals::new(Arc::new(std::sync::Mutex::new(None)), events),
+        crate::indexing::lifecycle::state::VolumeHold::for_test(volume_id),
     )
     .expect("build the index manager")
 }

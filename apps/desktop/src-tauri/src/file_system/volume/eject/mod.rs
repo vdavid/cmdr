@@ -322,9 +322,11 @@ async fn eject_now(volume_id: String) -> Result<(), EjectError> {
                 verb: UnmountVerb::Unmount,
                 mount_path: &mount_path,
             };
-            stop_index_then_unmount(volume_id, stop_index_blocking(volume_id.to_string()), || {
-                run_teardown(volume_id, teardown)
-            })
+            stop_index_then_unmount(
+                volume_id,
+                stop_index_blocking(volume_id.to_string(), stop_removable_index),
+                || run_teardown(volume_id, teardown),
+            )
             .await
         }
         EjectAction::DiskutilEject => {
@@ -332,9 +334,11 @@ async fn eject_now(volume_id: String) -> Result<(), EjectError> {
                 verb: UnmountVerb::Eject,
                 mount_path: &mount_path,
             };
-            stop_index_then_unmount(volume_id, stop_index_blocking(volume_id.to_string()), || {
-                run_teardown(volume_id, teardown)
-            })
+            stop_index_then_unmount(
+                volume_id,
+                stop_index_blocking(volume_id.to_string(), stop_removable_index),
+                || run_teardown(volume_id, teardown),
+            )
             .await
         }
     }
@@ -420,16 +424,18 @@ fn is_already_unmounted(volume_id: &str, still_mounted: impl FnOnce() -> bool) -
 /// This is the ONE reliable wedge-safe point: releasing the FSEvents watcher +
 /// open SQLite handles while the filesystem is still healthy is the only thing that
 /// keeps an open stream/handle from wedging a FSKit (`msdos`) unmount (see
-/// `indexing/DETAILS.md` § the unmount/eject lifecycle and the 2026-07-15 kernel
-/// panic). The ordering is unconditional: the index stop is awaited to completion,
+/// `crates/cmdr-index/src/indexing/transports/DETAILS.md` § "Unmount/eject lifecycle"
+/// and the 2026-07-15 kernel panic). The ordering is unconditional: the index stop is awaited to completion,
 /// then the unmount runs. ❗ The stop runs under [`deadlines::INDEX_STOP_DEADLINE`],
-/// and a stop that doesn't finish answers `NotResponding` WITHOUT running the
-/// unmount: an index that may still hold the volume must never meet one. `stop_index`
-/// and `unmount` are parameters so the ordering and the stall can be asserted in a
-/// test without a real volume or `diskutil`. No-op stop for an unindexed volume.
+/// and any stop that can't say the index let go of the volume (it didn't finish,
+/// the index was still releasing, or the stop panicked) answers WITHOUT running the
+/// unmount: an index that may still hold the volume must never meet one.
+/// `stop_index` and `unmount` are parameters so the ordering and the stall can be
+/// asserted in a test without a real volume or `diskutil`. No-op stop for an
+/// unindexed volume.
 async fn stop_index_then_unmount<S, F, Fut>(volume_id: &str, stop_index: S, unmount: F) -> Result<(), EjectError>
 where
-    S: Future<Output = ()> + Send + 'static,
+    S: Future<Output = Result<(), EjectError>> + Send + 'static,
     F: FnOnce() -> Fut,
     Fut: Future<Output = Result<(), EjectError>>,
 {
@@ -439,8 +445,14 @@ where
         deadlines::INDEX_STOP_DEADLINE,
         stop_index,
     )
-    .await?;
+    .await??;
     unmount().await
+}
+
+/// The index stop an eject runs: the drive's own index, waiting for it to let go
+/// of the drive for as long as the eject waits for the stop.
+fn stop_removable_index(volume_id: &str) -> cmdr_index::RemovableStop {
+    crate::index_host::index().stop_removable_volume(volume_id, deadlines::INDEX_STOP_DEADLINE)
 }
 
 /// Stop `volume_id`'s index on the blocking pool, awaited so the stop COMPLETES
@@ -453,13 +465,32 @@ where
 /// the kind whose DB stays usable via a later reconcile. SMB/MTP indexes tear down
 /// through their own disconnect paths and stay registered (Stale, offline-browsable)
 /// across an eject, so this must not remove them. No-op for a non-`LocalExternal` or
-/// unindexed volume.
-async fn stop_index_blocking(volume_id: String) {
+/// unindexed volume. `stop` is a parameter so a test can hand in an answer.
+async fn stop_index_blocking(volume_id: String, stop: fn(&str) -> cmdr_index::RemovableStop) -> Result<(), EjectError> {
+    use cmdr_index::RemovableStop;
+
     let vid = volume_id.clone();
-    if let Err(join_err) =
-        tokio::task::spawn_blocking(move || crate::index_host::index().stop_removable_volume(&vid)).await
-    {
-        log::warn!(target: "eject", "index-stop task for '{volume_id}' failed to join: {join_err}");
+    match tokio::task::spawn_blocking(move || stop(&vid)).await {
+        Ok(RemovableStop::Released | RemovableStop::NothingToStop) => Ok(()),
+        // Its own wait ran out before the index let go, which is the same thing the
+        // eject's deadline catching the stop means: nothing unmounted, still connected.
+        Ok(RemovableStop::StillReleasing) => {
+            log::warn!(
+                target: "eject",
+                "the index for {volume_id} was still letting go of the drive when its stop ran out of time; leaving it mounted"
+            );
+            Err(EjectError::NotResponding {
+                step: EjectStep::IndexStop,
+            })
+        }
+        // A stop that panicked says nothing about whether the index let go. ❌ Never
+        // read it as done.
+        Err(join_err) => {
+            log::warn!(target: "eject", "index-stop task for {volume_id} failed to join: {join_err}; leaving it mounted");
+            Err(EjectError::Unexpected {
+                detail: format!("{}: {join_err}", EjectStep::IndexStop),
+            })
+        }
     }
 }
 
@@ -653,11 +684,15 @@ mod tests {
         let observed = Arc::clone(&active_when_unmount_ran);
         let vid_for_unmount = vid.to_string();
 
-        let result = stop_index_then_unmount(vid, stop_index_blocking(vid.to_string()), || async move {
-            // Record the index state at the exact moment the unmount would run.
-            observed.store(is_index_active(&vid_for_unmount), Ordering::SeqCst);
-            Ok(())
-        })
+        let result = stop_index_then_unmount(
+            vid,
+            stop_index_blocking(vid.to_string(), stop_removable_index),
+            || async move {
+                // Record the index state at the exact moment the unmount would run.
+                observed.store(is_index_active(&vid_for_unmount), Ordering::SeqCst);
+                Ok(())
+            },
+        )
         .await;
 
         assert!(result.is_ok(), "the ordering seam must propagate the unmount result");
@@ -666,6 +701,72 @@ mod tests {
             "the index must be stopped BEFORE the unmount runs"
         );
         assert!(!is_index_active(vid), "the index instance is gone after eject");
+    }
+
+    /// An index still letting go of the drive when its stop's wait ran out must
+    /// never meet the unmount: a watcher alive at unmount is what wedges FSKit.
+    #[tokio::test]
+    async fn an_index_still_letting_go_of_the_drive_never_meets_the_unmount() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let vid = "volumes-cmdr-test-eject-still-releasing";
+        let unmount_ran = Arc::new(AtomicBool::new(false));
+        let observed = Arc::clone(&unmount_ran);
+
+        let result = stop_index_then_unmount(
+            vid,
+            stop_index_blocking(vid.to_string(), |_: &str| cmdr_index::RemovableStop::StillReleasing),
+            move || async move {
+                observed.store(true, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+
+        assert!(
+            matches!(
+                result,
+                Err(EjectError::NotResponding {
+                    step: EjectStep::IndexStop
+                })
+            ),
+            "got {result:?}"
+        );
+        assert!(
+            !unmount_ran.load(Ordering::SeqCst),
+            "a drive its index hasn't let go of must stay mounted"
+        );
+    }
+
+    /// A stop that panicked says nothing about whether the index let go, so it
+    /// must not be read as "done".
+    #[tokio::test]
+    async fn an_index_stop_that_panicked_never_meets_the_unmount() {
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let vid = "volumes-cmdr-test-eject-stop-panicked";
+        let unmount_ran = Arc::new(AtomicBool::new(false));
+        let observed = Arc::clone(&unmount_ran);
+
+        let result = stop_index_then_unmount(
+            vid,
+            stop_index_blocking(vid.to_string(), |_: &str| -> cmdr_index::RemovableStop {
+                panic!("simulated panic inside the index stop")
+            }),
+            move || async move {
+                observed.store(true, Ordering::SeqCst);
+                Ok(())
+            },
+        )
+        .await;
+
+        assert!(matches!(result, Err(EjectError::Unexpected { .. })), "got {result:?}");
+        assert!(
+            !unmount_ran.load(Ordering::SeqCst),
+            "an index stop nobody knows the end of must not reach the unmount"
+        );
     }
 
     #[test]

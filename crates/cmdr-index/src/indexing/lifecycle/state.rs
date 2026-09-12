@@ -49,6 +49,7 @@ use crate::indexing::watch::branches::{self, AfterWalk};
 mod auto_start;
 mod freshness_bridge;
 mod queries;
+mod release;
 mod reservation;
 mod scan_control;
 mod startup;
@@ -69,6 +70,7 @@ pub(crate) use queries::{
     ready_volumes_with_kind, volume_kind,
 };
 pub use queries::{is_active, is_failed};
+pub(crate) use release::VolumeHold;
 #[cfg(any(test, feature = "testing"))]
 pub use reservation::reserve_initializing_index_for_test;
 pub(crate) use reservation::{is_initializing_phase, try_reserve_initializing_phase};
@@ -89,10 +91,10 @@ pub(crate) use startup::{
 pub(crate) use supervisor::fail_index_for_test;
 pub(crate) use supervisor::spawn_failure_supervisor;
 pub(crate) use teardown::reset_to_not_indexed;
-pub(crate) use teardown::stop_all_indexing;
+pub use teardown::{RemovableStop, clear_every_index, clear_index, disable_drive_index_persist_intent};
+pub(crate) use teardown::{stop_all_indexing, stop_removable_volume};
 #[cfg(test)]
-pub(crate) use teardown::while_stopping_for_test;
-pub use teardown::{clear_every_index, clear_index, disable_drive_index_persist_intent, stop_indexing};
+pub(crate) use teardown::{stop_indexing, while_stopping_for_test};
 
 // ── Indexing state machine ────────────────────────────────────────────
 

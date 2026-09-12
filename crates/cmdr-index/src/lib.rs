@@ -98,6 +98,7 @@ pub use indexing::events::{
 pub use indexing::aggregator::AggregationPhase;
 pub use indexing::lifecycle::cover::{CoverOutcome, CoverWalk};
 pub use indexing::lifecycle::freshness::Freshness;
+pub use indexing::lifecycle::state::RemovableStop;
 pub use indexing::read::coverage::{CoverageDimension, CoverageMap, CoverageToken};
 pub use indexing::read::enrichment::ReadPool;
 pub use indexing::read::expected_totals::ExpectedTotals;

@@ -9,7 +9,7 @@
 use cmdr_fs::ignore_poison::IgnorePoison;
 use std::sync::Arc;
 
-use super::{INDEX_REGISTRY, IndexInstance, IndexPhase, Registry, StartRequest, VolumeSignals};
+use super::{INDEX_REGISTRY, IndexInstance, IndexPhase, Registry, StartRequest, VolumeHold, VolumeSignals};
 #[cfg(any(test, feature = "testing"))]
 use crate::indexing::lifecycle::freshness::Freshness;
 use crate::indexing::read::enrichment::{ReadPool, install_read_pool};
@@ -37,10 +37,15 @@ pub(crate) fn is_initializing_phase(phase: &IndexPhase) -> bool {
     matches!(phase, IndexPhase::Initializing { .. })
 }
 
-/// Atomically reserve the `Initializing(store)` phase for `volume_id`. Returns
-/// `Ok(())` when the volume had no registered instance (the only legitimate
-/// start); returns `Err(store)` otherwise so the caller can drop the unused
-/// store without constructing the heavy `IndexManager`.
+/// Atomically reserve the `Initializing(store)` phase for `volume_id`. Returns the
+/// start's [`VolumeHold`] when the volume had no registered instance (the only
+/// legitimate start); returns `Err(store)` otherwise so the caller can drop the
+/// unused store without constructing the heavy `IndexManager`.
+///
+/// ⚠️ **The hold is taken in the same critical section as the insert**, and the
+/// start hands it to the manager it builds. A teardown that meets `Initializing`
+/// frees the key long before that manager is gone, so the hold is the only thing
+/// still saying a start is working on the volume (`release.rs`).
 ///
 /// ⚠️ **A refusal is not always a no-op.** A volume that is on its way OUT of the
 /// registry still holds its key, and `request` is RECORDED on the transient phase
@@ -76,7 +81,7 @@ pub(crate) fn try_reserve_initializing_phase(
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
     signals: VolumeSignals,
-) -> Result<(), Box<IndexStore>> {
+) -> Result<VolumeHold, Box<IndexStore>> {
     try_reserve_initializing_phase_on(
         &INDEX_REGISTRY,
         volume_id,
@@ -99,7 +104,7 @@ pub(super) fn try_reserve_initializing_phase_on(
     read_pool: Arc<ReadPool>,
     pending_sizes: Arc<PendingSizes>,
     signals: VolumeSignals,
-) -> Result<(), Box<IndexStore>> {
+) -> Result<VolumeHold, Box<IndexStore>> {
     let kind = request.kind();
     let mut reg = registry.lock_ignore_poison();
     if let Some(instance) = reg.get_mut(volume_id) {
@@ -120,7 +125,7 @@ pub(super) fn try_reserve_initializing_phase_on(
             signals,
         },
     );
-    Ok(())
+    Ok(VolumeHold::take(volume_id))
 }
 
 /// Test-only: reserve a lightweight `Initializing` index instance for `volume_id`
@@ -136,7 +141,7 @@ pub fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVolumeKin
     let store = IndexStore::open(&db_path).expect("open test store");
     let pool = Arc::new(ReadPool::new(db_path.clone()).expect("test read pool"));
     let pending = Arc::new(PendingSizes::new());
-    try_reserve_initializing_phase(
+    let hold = try_reserve_initializing_phase(
         volume_id,
         StartRequest::for_test(kind),
         store,
@@ -148,5 +153,8 @@ pub fn reserve_initializing_index_for_test(volume_id: &str, kind: IndexVolumeKin
         ),
     )
     .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
+    // No start stands behind this slot, so nothing is working on the volume: a
+    // stop that frees it finds the volume already let go.
+    drop(hold);
     dir
 }

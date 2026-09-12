@@ -172,6 +172,15 @@ are flat `u32` fields rather than a second public counters type, and the flags-t
 (`../watch/activity_monitor.rs`) is crate-private, because what an event COUNTS AS is a decision the rollup already
 answers. A public change-kind enum would spend a second promise and needs its own argument.
 
+A seventeenth (52 → 53), raised by an agent under § "The ceiling that keeps this honest": **`RemovableStop`**, what
+`stop_removable_volume` answers. The method returned a `bool` once the stop was REQUESTED, and three lifecycle windows
+return before the manager holding the drive's watcher is gone (`../lifecycle/DETAILS.md` § "When a volume has been let
+go"), so an eject unmounted under a live watcher: the FSKit wedge. A host deciding whether to unmount has to tell
+`Released` from `StillReleasing`, and no disposition says it. A `bool` can't carry three answers. An `IndexError`
+variant would be a case every other method's callers must match and none can meet, and still releasing isn't the index
+failing. Waiting without an answer leaves the host nothing to refuse on. The method count doesn't move: an existing
+method's contract changed.
+
 ⚠️ **Which of the check's counters a new item spends is not a choice, so read the right one before assuming headroom.**
 `index-crate-isolation` counts `SubsystemItems` in the modules it can REACH by walking `pub mod` declarations from
 `lib.rs`, which for this crate is `importance` and `media_index` and nothing else. `indexing` is private, so everything
@@ -206,7 +215,9 @@ parent). A grant of "one item" for such a type is `RootPromises` moving by one a
   two scopes (a volume, a whole device).
 - **`volume_kind` + `stop_indexing` ⇒ `Index::stop_removable_volume`.** Two call sites (`volume/eject/`,
   `volumes/watcher.rs`) each open with the identical `!= LocalExternal` guard, because only that kind holds a watcher
-  and open database handles that can wedge an unmount. That's the index's knowledge, not the app's.
+  and open database handles that can wedge an unmount. That's the index's knowledge, not the app's. So is WHEN the drive
+  has been let go: the call waits for it, bounded by the host's `wait_at_most`, and answers a `RemovableStop` (§ "The 14
+  the glob was hiding").
 - **`is_active` + `get_freshness` ⇒ `Index::is_fresh`.** The operation log's coverage gate wants one predicate: can
   these rows be trusted as a complete answer?
 - **`should_auto_start` + `set_master_enabled` ⇒ `IndexBuilder::indexing_enabled`.** The stored setting is
@@ -247,8 +258,9 @@ parent). A grant of "one item" for such a type is `RootPromises` moving by one a
 `cmdr-archive` the same way, from its own entry in the check. Four buckets here, measured 2026-07-31 and raised once on
 2026-08-05 for the coverage concept above:
 
-- **50 root promises** — the names `lib.rs` exports, `pub mod` included. 44 at the audit, plus coverage's six types (the
-  read half's three on 2026-08-05, the walk half's three the same day).
+- **53 root promises** — the names `lib.rs` exports, `pub mod` included. 44 at the audit, plus coverage's six types (the
+  read half's three on 2026-08-05, the walk half's three the same day), then `CoveragePhase`, `FolderChangeRollup`, and
+  `RemovableStop`, one at a time (§ "The 14 the glob was hiding").
 - **40 methods on `Index`** — the 36 above plus `Index::builder`, which the headline number treats as the constructor
   rather than a call, plus `cover`, which took the slot reserved for it by name, plus the disk-footprint pair below. The
   cold-volume bootstrap took none of it: it went behind `cover` rather than becoming a method (above, "Why standing a

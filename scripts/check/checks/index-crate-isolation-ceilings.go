@@ -103,13 +103,22 @@ var surfaceGuardedCrates = []struct {
 		// argument, and why the change-kind enum behind it stays crate-private, is in
 		// the audit doc below under "A sixteenth followed".
 		//
+		// Raised on 2026-09-12, `RootPromises` 52 -> 53, for ONE item on an existing
+		// method: `RemovableStop`, what `Index::stop_removable_volume` answers. The
+		// method used to return once the stop was REQUESTED, which let an eject
+		// unmount a drive while a drain, a scan start's handback, or a half-built
+		// start still watched it (the FSKit wedge). A host has to be able to tell
+		// "released" from "still releasing" to refuse the unmount, and neither
+		// `bool` nor a new `IndexError` variant every other method would then have
+		// to match says it. Why, in the audit doc below under "A seventeenth".
+		//
 		// ⚠️ WHICH BUCKET a grant lands in is not a choice, so read the right counter
 		// before assuming you have headroom. A value an event carries always spends a
 		// ROOT PROMISE, never `SubsystemItems`. Why, in the audit doc below, under
 		// "Which of the check's counters a new item spends is not a choice".
 		HandleType: "Index",
 		Ceilings: surfaceCeilings{
-			RootPromises:   52,
+			RootPromises:   53,
 			HandleMethods:  40,
 			PublicModules:  17,
 			SubsystemItems: 156,

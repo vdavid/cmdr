@@ -105,6 +105,11 @@ pub(crate) struct IndexManager {
     /// `start_scan` is `&mut self` and `get_status` is `&self`. `None` until the
     /// first scan starts; refreshed at the start of every scan.
     pub(super) scan_calibration: Option<ScanCalibration>,
+    /// This manager's stake in its volume, taken by the reservation that started
+    /// it. Nothing reads it: it drops with the manager, after `shutdown` on every
+    /// teardown path, and that drop is what tells a removable-volume stop the
+    /// volume has been let go (`state/release.rs`).
+    _hold: state::VolumeHold,
 }
 
 /// The static, per-scan inputs the frontend needs to pick and drive a scan
@@ -302,6 +307,7 @@ impl IndexManager {
         kind: IndexVolumeKind,
         inodes_trustworthy: bool,
         signals: state::VolumeSignals,
+        hold: state::VolumeHold,
     ) -> Result<Self, String> {
         let store = IndexStore::open(&db_path).map_err(|e| format!("Failed to open index store: {e}"))?;
 
@@ -344,6 +350,7 @@ impl IndexManager {
             phases: None,
             pending_phases: PendingPhases::No,
             scan_calibration: None,
+            _hold: hold,
         })
     }
 

@@ -6,18 +6,21 @@
 //! DROP the lock, run the blocking drain, then remove the instance.
 
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 use cmdr_fs::ignore_poison::IgnorePoison;
 
+use super::release;
 use super::{
     INDEX_REGISTRY, IndexPhase, PersistDisable, Registry, StartRequest, TeardownClaim, all_registered_volume_ids,
-    resolved_index_db_path,
+    resolved_index_db_path, volume_kind,
 };
 use crate::indexing::lifecycle::manager::IndexManager;
 use crate::indexing::read::enrichment::uninstall_read_pool;
 use crate::indexing::read::pending_sizes::uninstall_pending_sizes;
 use crate::indexing::reconcile::verifier;
 use crate::indexing::store::IndexStore;
+use crate::indexing::volume::IndexVolumeKind;
 
 /// Take a volume off the read path and drop what a stopped index is no longer
 /// owed. **The first thing every teardown does**, whatever ends it.
@@ -80,6 +83,62 @@ pub(super) fn finish_the_claimed_teardown(
 /// but no scanning or watching runs. Directory sizes revert to `<dir>`.
 pub fn stop_indexing(volume_id: &str) -> Result<(), String> {
     stop_the_volume(volume_id, PersistDisable::No)
+}
+
+/// What stopping a removable volume's index came to, for a host deciding whether
+/// the volume is safe to unmount.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RemovableStop {
+    /// Nothing this stop is for: the volume isn't a local external drive, or no
+    /// index is working on it. A share or a phone keeps its index across an
+    /// unmount and tears it down through its own disconnect path.
+    NothingToStop,
+    /// Its index stopped, and every manager that was working on the volume has
+    /// shut down and gone.
+    Released,
+    /// Its index was still letting go of the volume when the wait ran out: a
+    /// drain, a scan start handing its manager back, or a start still standing
+    /// its manager up. ❗ Don't unmount it: something may still be watching it.
+    StillReleasing,
+}
+
+/// Stop a removable volume's index, and answer only once every manager working on
+/// the volume has let it go, or once `wait_at_most` has run out.
+///
+/// ⚠️ **[`stop_the_volume`] returning is NOT the volume being let go**, which is
+/// the whole reason this waits. It returns early in three windows, each for a good
+/// reason: a stop CLAIMED on a `Detached` volume drains at the handback, a start
+/// caught `Initializing` shuts its half-built manager down on its own thread, and a
+/// drain somebody else started is still running. All three end with a
+/// [`VolumeHold`](super::VolumeHold) dropping, which is what this subscribes to.
+///
+/// `wait_at_most` counts from the call, the drain included, so a host's deadline
+/// on the call and this wait end together. ❌ Don't move the wait into
+/// [`stop_indexing`] or the user's disable: those record their request on a
+/// transient phase and return, and nothing that calls them may start blocking.
+pub(crate) fn stop_removable_volume(volume_id: &str, wait_at_most: Duration) -> RemovableStop {
+    let started = Instant::now();
+    match volume_kind(volume_id) {
+        Some(IndexVolumeKind::LocalExternal) => {
+            if let Err(e) = stop_indexing(volume_id) {
+                log::warn!("stopping the removable volume index '{volume_id}' failed: {e}");
+            }
+        }
+        // A share or a phone keeps its index across an unmount.
+        Some(_) => return RemovableStop::NothingToStop,
+        // No instance, but a start that some other stop cancelled can still be
+        // shutting its half-built manager down, and that start holds the volume.
+        None if !release::is_held(volume_id) => return RemovableStop::NothingToStop,
+        None => {}
+    }
+    if release::wait_until_released(volume_id, wait_at_most.saturating_sub(started.elapsed())) {
+        RemovableStop::Released
+    } else {
+        log::warn!(
+            "'{volume_id}' was still being let go of when its removable stop ran out of time ({wait_at_most:?})"
+        );
+        RemovableStop::StillReleasing
+    }
 }
 
 /// What a stop still has to do once it knows what it found.
@@ -156,8 +215,12 @@ fn stop_the_volume(volume_id: &str, persist: PersistDisable) -> Result<(), Strin
                     log::info!("Indexing disabled for a failed volume '{volume_id}'");
                     StopTarget::NothingToDrain
                 }
-                other => {
-                    instance.phase = other; // put it back, wasn't running
+                IndexPhase::ShuttingDown { .. } | IndexPhase::Detached { .. } => {
+                    // Another teardown is draining this volume and frees the slot
+                    // when it's done. ❌ Don't put its phase back: the fresh marker
+                    // is what drops the start it was carrying, and restoring the old
+                    // one brought the drive back up over this stop. (`Detached` is
+                    // unreachable: `claim_the_teardown` above took it.)
                     StopTarget::NothingToDrain
                 }
             }

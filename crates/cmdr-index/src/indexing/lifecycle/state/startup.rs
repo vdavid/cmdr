@@ -297,18 +297,19 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
     // FRESH start's instance and leave two writer threads on one database.
     let reservation = signals.cancel.clone();
 
-    if try_reserve_initializing_phase(
+    // THIS start's stake in the volume. It rides into the manager below and drops
+    // with it, after `shutdown`, whichever way this start ends — which is what a
+    // removable-volume stop waits for (`release.rs`).
+    let Ok(hold) = try_reserve_initializing_phase(
         volume_id,
         request,
         init_store,
         Arc::clone(&pool),
         Arc::clone(&pending),
         signals.clone(),
-    )
-    .is_err()
-    {
+    ) else {
         return Ok(());
-    }
+    };
 
     // Announce the registration on the lifecycle bus so a backend subsystem (the
     // importance scheduler) can wire up per-volume subscriptions for a volume that
@@ -326,6 +327,7 @@ pub(in crate::indexing::lifecycle) fn start_indexing_for(
         kind,
         inodes_trustworthy,
         signals,
+        hold,
     ) {
         Ok(m) => m,
         Err(e) => {

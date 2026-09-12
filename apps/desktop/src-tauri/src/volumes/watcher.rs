@@ -269,31 +269,50 @@ pub(crate) fn handle_volume_will_unmount(volume_path: &str) {
     }
 }
 
+/// How long an unmount hook's stop waits for a drive's index to let go of it.
+///
+/// Nobody waits on the answer: the OS unmounts on its own schedule, so this only
+/// decides when the stopping thread gives up and says so in the log. The same tier
+/// as the eject's own index-stop deadline, so both paths call a stop "still
+/// releasing" by one clock.
+const INDEX_RELEASE_WAIT: std::time::Duration = std::time::Duration::from_secs(15);
+
 /// Stop a registered `LocalExternal` index for `volume_id`, releasing its FSEvents
-/// watcher and SQLite handles. Returns whether one was stopped. No-op (false) for a
-/// non-`LocalExternal` or unindexed volume: SMB and MTP indexes tear down through
-/// their own disconnect paths, and stopping them here would fight those.
+/// watcher and SQLite handles, and wait up to [`INDEX_RELEASE_WAIT`] for it to let
+/// go of the drive. `NothingToStop` for a non-`LocalExternal` or unindexed volume:
+/// SMB and MTP indexes tear down through their own disconnect paths, and stopping
+/// them here would fight those.
 ///
 /// Synchronous. The `NSWorkspace` observer blocks run on the MAIN THREAD and
 /// `stop_indexing`'s drain can take a few seconds, so the observer callers wrap this
 /// via [`stop_local_external_index_off_main`]; tests call it directly for a
 /// deterministic result.
-fn stop_local_external_index(volume_id: &str) -> bool {
-    crate::index_host::index().stop_removable_volume(volume_id)
+fn stop_local_external_index(volume_id: &str) -> cmdr_index::RemovableStop {
+    crate::index_host::index().stop_removable_volume(volume_id, INDEX_RELEASE_WAIT)
 }
 
 /// Run [`stop_local_external_index`] off the main thread. The `NSWorkspace` observer
 /// blocks fire on the main thread and `stop_indexing` blocks for the drain (up to a
 /// few seconds), so it must never run inline or the UI would hang mid-unmount.
+///
+/// Neither hook can refuse anything, so the answer goes to the log. A drive that
+/// unmounts while its index is still letting go of it is the shape the FSKit wedge
+/// needs, so that one is a `warn`: it's the line to find after a hung unmount.
 fn stop_local_external_index_off_main(volume_id: String) {
     // Skip the thread spawn entirely for the common non-LocalExternal case (root,
     // SMB, MTP): the kind check is a cheap registry lock.
     if crate::index_host::index().volume_kind(&volume_id) != Some(cmdr_index::IndexVolumeKind::LocalExternal) {
         return;
     }
-    std::thread::spawn(move || {
-        // allowed-discarded-outcome: the `bool` exists so tests get a deterministic result; this thread is fire-and-forget off an `NSWorkspace` observer with no caller left to tell.
-        stop_local_external_index(&volume_id);
+    std::thread::spawn(move || match stop_local_external_index(&volume_id) {
+        cmdr_index::RemovableStop::StillReleasing => log::warn!(
+            target: "cmdr_lib::volumes",
+            "{volume_id} unmounted while its index was still letting go of it ({} s wait ran out)",
+            INDEX_RELEASE_WAIT.as_secs()
+        ),
+        outcome @ (cmdr_index::RemovableStop::Released | cmdr_index::RemovableStop::NothingToStop) => {
+            debug!("Index stop for unmounting volume {volume_id}: {outcome:?}");
+        }
     });
 }
 
@@ -622,8 +641,9 @@ mod tests {
         let _tmp = reserve_initializing_index_for_test(vid, IndexVolumeKind::LocalExternal);
         assert!(is_index_active(vid), "precondition: the index is active");
 
-        assert!(
+        assert_eq!(
             stop_local_external_index(vid),
+            cmdr_index::RemovableStop::Released,
             "a registered LocalExternal index must be stopped on unmount"
         );
         assert!(!is_index_active(vid), "the instance must be removed after the stop");
@@ -640,8 +660,9 @@ mod tests {
         let _tmp = reserve_initializing_index_for_test(vid, IndexVolumeKind::Smb);
         assert!(is_index_active(vid), "precondition: the SMB index is active");
 
-        assert!(
-            !stop_local_external_index(vid),
+        assert_eq!(
+            stop_local_external_index(vid),
+            cmdr_index::RemovableStop::NothingToStop,
             "the local-external unmount cleanup must not stop an SMB index"
         );
         assert!(is_index_active(vid), "the SMB instance must be left intact");

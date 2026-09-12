@@ -221,3 +221,6 @@ mod rescans;
 
 /// Turning a drive's indexing off and back on faster than a teardown finishes.
 mod toggles;
+
+/// Stopping a removable drive's index for an eject, whatever window it lands in.
+mod removals;

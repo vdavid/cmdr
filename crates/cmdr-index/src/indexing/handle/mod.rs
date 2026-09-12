@@ -338,24 +338,23 @@ impl Index {
         state::clear_every_index().map_err(Into::into)
     }
 
-    /// A removable drive is going away; stop indexing it if it's the kind that
-    /// has to stop. Reports whether it did.
+    /// A removable drive is going away: stop indexing it if it's the kind that
+    /// has to stop, and answer only once the index has let go of the drive, or
+    /// once `wait_at_most` has run out.
     ///
     /// Only a locally-attached external drive is stopped here: it's the one
-    /// holding a filesystem watcher and open database handles that can wedge an
-    /// unmount. Shares and phones tear down through their own disconnect paths
-    /// and stay browsable offline, so stopping them here would fight those.
+    /// holding a filesystem watcher that can wedge an unmount. Shares and phones
+    /// tear down through their own disconnect paths and stay browsable offline,
+    /// so stopping them here would fight those.
+    ///
+    /// ❗ [`RemovableStop::StillReleasing`](crate::RemovableStop::StillReleasing) means the drive is NOT safe to
+    /// unmount. `wait_at_most` counts from the call, the drain included, so a
+    /// host can hand it the same deadline it puts on the call.
     ///
     /// **Blocking**: draining the writer can take seconds. Never call it on a
     /// thread the interface is waiting on.
-    pub fn stop_removable_volume(&self, volume_id: &str) -> bool {
-        if state::volume_kind(volume_id) != Some(IndexVolumeKind::LocalExternal) {
-            return false;
-        }
-        if let Err(e) = state::stop_indexing(volume_id) {
-            log::warn!(target: "indexing", "stopping the removable volume index '{volume_id}' failed: {e}");
-        }
-        true
+    pub fn stop_removable_volume(&self, volume_id: &str, wait_at_most: std::time::Duration) -> crate::RemovableStop {
+        state::stop_removable_volume(volume_id, wait_at_most)
     }
 
     /// Apply the master drive-indexing switch. Off stops every volume that's

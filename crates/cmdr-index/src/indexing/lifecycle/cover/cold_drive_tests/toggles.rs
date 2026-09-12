@@ -25,7 +25,7 @@ const PROOF: &str = "scope/found.txt";
 /// ⚠️ The settle is load-bearing, not tidiness: the first index announces itself
 /// asynchronously, so a `scans_started()` baseline read before it lands counts
 /// that walk against whatever the test does next.
-fn an_indexed_drive(volume_id: &'static str) -> ColdDrive {
+pub(super) fn an_indexed_drive(volume_id: &'static str) -> ColdDrive {
     let drive = ColdDrive::new(volume_id);
     std::fs::create_dir_all(drive.tree.path().join("scope")).expect("dirs");
     std::fs::write(drive.tree.path().join(PROOF), "x").expect("file");
@@ -79,6 +79,31 @@ fn turning_indexing_off_then_on_inside_the_drain_window_leaves_the_drive_indexin
         !IndexStore::user_disabled(&drive.db_path()),
         "and the disable's veto must not outlive the start that superseded it, or the drive \
          comes back off at the next launch"
+    );
+}
+
+/// On and then OFF inside one drain window leaves the drive OFF: a stop drops the
+/// start recorded before it, because the user's last word is off.
+///
+/// The stop that met the drain used to put the old `ShuttingDown` back whole,
+/// recorded start included, so the far side of the drain started the drive again
+/// over the veto the stop had just written.
+#[test]
+fn turning_indexing_on_then_off_inside_the_drain_window_leaves_the_drive_off() {
+    let drive = an_indexed_drive("cover-toggle-on-off-inside-the-drain-test");
+
+    state::while_stopping_for_test(drive.volume_id, || {
+        turn_on(&drive);
+        turn_off(&drive);
+    });
+
+    assert!(
+        !state::is_active(drive.volume_id),
+        "the last thing the user asked for was OFF, so nothing may start the drive again"
+    );
+    assert!(
+        IndexStore::user_disabled(&drive.db_path()),
+        "and the veto stays on disk, so the next launch agrees"
     );
 }
 

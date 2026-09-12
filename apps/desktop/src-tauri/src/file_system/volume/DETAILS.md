@@ -481,6 +481,15 @@ reaches the unmount, since an index that may still hold the volume can wedge FSK
 never block, and the unmount tool has `TOOL_TIMEOUT`. The tests hand `within_deadline` a future that never resolves and
 let a paused clock run out the deadline.
 
+**The index stop waits for the index to let go of the drive, not for the stop to be asked.** `stop_index_blocking` calls
+`Index::stop_removable_volume` with `INDEX_STOP_DEADLINE`, which answers `Released` only once every index manager on the
+drive has shut down (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § "When a volume has been let go"). A stop
+that lands while the drive's index is still starting, or while a scan start or another teardown holds its manager,
+returns before that manager is gone, and treating that return as done let the unmount run under a live watcher. So
+`StillReleasing` answers the same `NotResponding { step: IndexStop }` as the deadline, and a stop that panicked answers
+`Unexpected`: ❌ neither reaches the unmount. `stop_index_blocking` takes the stop as a parameter, so
+`eject::tests` pins both without an index.
+
 **One eject at a time per volume.** `eject` hands the pipeline to `in_flight::join_or_start`: a request for a volume
 whose eject is still running JOINS that flight and gets its answer, with no second teardown. A slow `diskutil` (10.5 s
 in one user's log) invites repeat clicks, and every caller lands here: both switcher buttons, the native menu, and MCP.
@@ -511,7 +520,7 @@ answering `Ok` would hand automation a false success. The UI's own controls reac
 The MCP `eject` tool wraps `eject::eject` directly (not the command), surfacing `Busy` / non-ejectable as honest tool errors; see `mcp/DETAILS.md`.
 
 Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `NotEjectable`,
-`NotAnSmbVolume`, `DeviceDisconnectRefused`, `UnmountRefused`, `TimedOut`, `Unexpected`), and it IS the wire type:
+`NotAnSmbVolume`, `DeviceDisconnectRefused`, `UnmountRefused`, `TimedOut`, `NotResponding`, `Unexpected`), and it IS the wire type:
 `commands::eject` passes it straight through, so nothing is flattened on the way out and the frontend words each
 variant from `errors.eject.*` (`src/lib/file-explorer/navigation/DETAILS.md` § "Eject button + row context menu").
 `diskutil`'s own stderr rides in the `detail` field of `UnmountRefused` / `DeviceDisconnectRefused` and goes to the LOG,
@@ -525,8 +534,8 @@ macOS's FSKit `msdos` service — while a process still holds it open (an FSEven
 the FSKit service mid-unmount, which on macOS 26 escalated to a WindowServer watchdog kernel panic (observed
 2026-07-15). So `stop_index_then_unmount` above stops a `LocalExternal` volume's index — dropping its FSEvents watcher
 and closing its SQLite handles — BEFORE the `diskutil` subprocess runs. The post-unmount `NSWorkspaceDidUnmountNotification`
-hook is only cleanup (the volume's already gone), not wedge-prevention. See `indexing/DETAILS.md` § "Unmount/eject
-lifecycle for a LocalExternal index (the wedge-safe ordering)" for the full incident writeup and the ordering guarantee.
+hook is only cleanup (the volume's already gone), not wedge-prevention. See `crates/cmdr-index/src/indexing/transports/DETAILS.md`
+§ "Unmount/eject lifecycle (the wedge-safe ordering)" for the full incident writeup and the ordering guarantee.
 
 ## Key decisions
 

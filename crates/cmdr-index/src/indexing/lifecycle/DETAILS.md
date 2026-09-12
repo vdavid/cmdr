@@ -22,7 +22,10 @@ concurrently without corrupting each other. Every invariant below holds independ
     replaces it.
   - `teardown.rs` — `stop_indexing`, `clear_index`, `clear_every_index`, `reset_to_not_indexed`,
     `disable_drive_index_persist_intent`, `remove_instance_and_handles`, and `stop_all_indexing`, all sharing the
-    withdraw-then-publish-`ShuttingDown`-then-drop-the-guard-then-drain ordering.
+    withdraw-then-publish-`ShuttingDown`-then-drop-the-guard-then-drain ordering. Plus `stop_removable_volume`, the one
+    stop that waits for the volume to be let go.
+  - `release.rs` — `VolumeHold`, one start's stake in its volume from its reservation to its manager's drop, and the
+    condvar `stop_removable_volume` waits on (§ "When a volume has been let go").
   - `scan_control.rs` — `force_scan`, `stop_scan`, `trigger_verification`, plus `off_the_registry` and the
     `DetachedManager` guard behind it: the ONE place a live volume's manager comes out for blocking work.
   - `queries.rs` — the read-only surface: `is_active`, `is_failed`, `index_failure`, `awaits_its_first_scan`,
@@ -418,7 +421,9 @@ moment it stops, so the four "already indexing, no-op" gates (`Index::start_volu
 persisted intent it reads is stale for exactly that long — a reconnect acting on it would turn a NAS back on seconds
 after somebody turned it off. A reconnect recurs on its own; a user's click does not.
 
-Anchors: `cover::cold_drive_tests::toggles` (all five phases end to end) and
+Anchors: `cover::cold_drive_tests::toggles` (all five phases end to end, and
+`turning_indexing_on_then_off_inside_the_drain_window_leaves_the_drive_off` for the stop's half: a stop that met a drain
+used to put the old phase back whole, recorded start included) and
 `state::tests::a_start_answers_every_phase_it_can_meet` (the three that need no manager, placed rather than raced).
 
 - `stop_scan` and `trigger_verification` still refuse / no-op, which stays correct for a volume whose scan is starting.
@@ -428,6 +433,47 @@ Anchors: `cover::cold_drive_tests::toggles` (all five phases end to end) and
 `BumpCurrentEpoch` / `TruncateData` / stamp / flush sequence needs a `writer` clone and a read connection, both cheap to
 hold outside the manager. A prelude that blocks on neither needs no window at all. Larger than this design; see the
 spike note's § 6.
+
+## When a volume has been let go (`state/release.rs`)
+
+An eject must not unmount a drive while any index manager still watches it: an FSEvents stream open at unmount can wedge
+macOS FSKit (`msdos`), which is the 2026-07-15 kernel panic (`../transports/DETAILS.md` § "Unmount/eject lifecycle"). So
+`state::stop_removable_volume`, behind `Index::stop_removable_volume`, answers `RemovableStop::Released` only once every
+manager that was working on the volume has shut down and gone, and `StillReleasing` when its wait runs out first.
+
+**Why the registry can't answer it.** `stop_the_volume` returns early in three windows, each for a reason the sections
+above defend, and in each a manager is still alive when it does:
+
+- **A claimed `Detached`**: the scan start holds the manager, and the drain runs at `hand_the_manager_back`.
+- **`Initializing`**: the teardown cancels the start and removes the key at once, and the start shuts its half-built
+  manager down later, on its own thread, at its re-lock. With the key gone, the registry has nothing left to ask.
+- **A drain in flight**: another teardown published `ShuttingDown` and is still inside `mgr.shutdown()`.
+
+**The hold.** `try_reserve_initializing_phase` takes a `VolumeHold` in the critical section that inserts the key and
+returns it; the start hands it to `IndexManager::new_for_kind`, and it drops with the manager. Every path ends a manager
+after `shutdown` (`finish_stopping`, `finish_clearing`, `finish_failing`, `hand_the_manager_back`'s orphan arm, the
+start's `(false, _)` arms) or never built one (a failed constructor drops the hold with it), so the drop IS the release,
+and a new teardown path can't forget to report one. ⚠️ Taken after the lock is released, a stop could free the slot in
+the gap, find nothing held, and answer `Released` while the start goes on to stand a manager up.
+
+**The wake.** A per-volume count behind one mutex and one condvar. The drop of a volume's LAST hold notifies, and
+`wait_until_released` waits with `wait_timeout_while`, ❌ never a poll. The table is a leaf lock: the reservation takes
+it under `INDEX_REGISTRY`, and nothing takes the registry while holding it.
+
+**The bound** counts from the call, the synchronous drain included, so a host hands in the deadline it already puts on
+the call (eject passes `INDEX_STOP_DEADLINE`, 15 s) and the blocking thread ends when the eject stops waiting. A start
+that lands after the stop freed the slot takes a hold of its own, so a volume something is indexing again answers
+`StillReleasing` too: it isn't let go.
+
+❌ **Only the removable stop waits.** The user's disable and every other teardown record their request on a transient
+phase and return (§ "The shutting-down window"), and nothing that calls them may start blocking.
+
+What "let go" covers is the MANAGER: its watcher, live-event loop, and writer thread, all stopped by `shutdown`. A
+cancelled scan thread isn't joined (`../transports/DETAILS.md` § "The drain is cooperative"), and a search's cover walk
+stops on its caller's token rather than the volume's (`cover/CLAUDE.md`), so neither is part of the answer.
+
+Anchors: `cover::cold_drive_tests::removals` (a drain in flight and a claimed `Detached`, both over real managers),
+`state::tests::a_removable_stop_waits_for_the_start_it_cancelled`, and `state::release::tests` (the wake itself).
 
 ## Capability axes (`IndexVolumeKind`)
 

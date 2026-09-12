@@ -634,6 +634,7 @@ fn clear_registry_and_pools() {
         "sweep-stale",
         "sweep-scanning",
         "awaits-first-scan",
+        "removable-initializing",
     ];
     let mut reg = INDEX_REGISTRY.lock().unwrap();
     for vid in STATE_TEST_VIDS {
@@ -672,6 +673,50 @@ fn awaiting_a_first_scan_is_not_the_same_as_being_active() {
     );
 
     clear_registry_and_pools();
+}
+
+/// A removable stop that meets a start still standing its manager up frees the
+/// slot at once, but the drive isn't let go until that start has shut its
+/// half-built manager down. Once the key is gone the registry has nothing left to
+/// ask, so the start's hold is the only thing that can say so.
+#[test]
+fn a_removable_stop_waits_for_the_start_it_cancelled() {
+    let _guard = INDEX_REGISTRY_TEST_GUARD.lock().unwrap_or_else(|e| e.into_inner());
+    clear_registry_and_pools();
+
+    let volume_id = "removable-initializing";
+    let dir = tempfile::tempdir().expect("temp dir");
+    let db_path = dir.path().join("removable-initializing.db");
+    // The start in flight: its reservation won, and it's somewhere inside
+    // `resume_or_scan` with the hold it will hand its manager.
+    let start = try_reserve_initializing_phase(
+        volume_id,
+        StartRequest::for_test(IndexVolumeKind::LocalExternal),
+        IndexStore::open(&db_path).expect("store"),
+        Arc::new(ReadPool::new(db_path.clone()).expect("pool")),
+        Arc::new(PendingSizes::new()),
+        VolumeSignals::new(fresh(None), NoopEventSink::shared()),
+    )
+    .unwrap_or_else(|_| panic!("reserve {volume_id} must succeed from absent"));
+
+    assert_eq!(
+        stop_removable_volume(volume_id, Duration::ZERO),
+        RemovableStop::StillReleasing,
+        "the start is still standing its manager up, so the drive isn't let go"
+    );
+    assert!(
+        !is_active(volume_id),
+        "the slot is freed all the same, so nothing new starts over the cancelled start"
+    );
+
+    // The start sees its token cancelled at its re-lock and shuts its half-built
+    // manager down, which is where the hold drops.
+    drop(start);
+    assert_eq!(
+        stop_removable_volume(volume_id, Duration::ZERO),
+        RemovableStop::NothingToStop,
+        "once the start is gone, nothing is left working on the drive"
+    );
 }
 
 /// Tests that mutate `INDEX_REGISTRY` serialize on this guard (mirrors

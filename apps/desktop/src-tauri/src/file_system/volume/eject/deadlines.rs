@@ -109,10 +109,14 @@ mod tests {
         let observed = Arc::clone(&unmount_ran);
 
         let result = in_flight::join_or_start(vid, move || async move {
-            stop_index_then_unmount(vid, std::future::pending::<()>(), move || async move {
-                observed.store(true, Ordering::SeqCst);
-                Ok(())
-            })
+            stop_index_then_unmount(
+                vid,
+                std::future::pending::<Result<(), EjectError>>(),
+                move || async move {
+                    observed.store(true, Ordering::SeqCst);
+                    Ok(())
+                },
+            )
             .await
         })
         .await;
