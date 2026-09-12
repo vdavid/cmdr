@@ -449,6 +449,21 @@ only, so an eject that unmounted it while a sibling partition on the same disk r
 disk powered on, with the refusal kept only in the `info` line; a whole-disk status from DiskArbitration is what closes
 it.
 
+**A refusal is retried before anyone hears about it.** When `settle` answers `UnmountRefused`,
+`unmount_tool::settle_with_retries` runs the tool again after each pause in `REFUSAL_RETRY_BACKOFF` (0.5 s, 1 s, 1.5 s:
+at most four runs), re-settling every time, so a volume that left the mount table in between counts as done. Why: the
+usual dissenter isn't Cmdr. The first time a pane shows an unseen `.app`, the icon fetch makes `/usr/libexec/lsd`
+(LaunchServices) register the bundle, and `lsd` holds the volume for about 0.3–0.9 s; a user saw 1–3 s in ERR-TT2FH, and
+a plain retry 2 s later worked (verified on macOS 26.6.2, reproduced with a dev build, 2026-09-12: the `warn` line named
+`dissented by PID 983 (/usr/libexec/lsd)`). `TimedOut` and `Unexpected` aren't retried (a timeout already waited 15 s,
+and a tool that couldn't start won't start next time), and neither is a device teardown. Each intermediate refusal logs
+at `info` with its attempt number and the tool's outcome, so the logs show how often transient holds happen; a final
+refusal logs the one `warn`, naming how many attempts were made, and a success after retries logs `info` with the
+count. Both verbs retry, so `disconnect_smb` does too; for an eject the loop runs inside its flight, so the spinner
+covers it and a joined caller gets the final answer. The cost: a real hold (an app with a file open on the drive)
+reports about 3 s later than it would without the retries. The loop takes the tool and the mount-table read as
+closures, so its tests run a scripted fake tool on a paused clock.
+
 **One eject at a time per volume.** `eject` hands the pipeline to `in_flight::join_or_start`: a request for a volume
 whose eject is still running JOINS that flight and gets its answer, with no second teardown. A slow `diskutil` (10.5 s
 in one user's log) invites repeat clicks, and every caller lands here: both switcher buttons, the native menu, and MCP.

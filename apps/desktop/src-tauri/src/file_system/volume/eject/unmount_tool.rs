@@ -2,8 +2,10 @@
 //! disconnect runs, and what its run means.
 //!
 //! [`run`] reports HOW the tool ended as a [`ToolOutcome`], keeping the exit
-//! status the wire type has no room for, so `run_teardown` (the one place a
-//! refusal is logged) can name it. [`settle`] turns that into the caller's answer.
+//! status the wire type has no room for, so the log lines can name it. [`settle`]
+//! turns that into the caller's answer, and [`settle_with_retries`] (what
+//! `run_teardown` calls) runs the tool again after a transient refusal and writes
+//! the tool's log lines.
 
 use std::time::Duration;
 
@@ -181,9 +183,103 @@ pub(super) fn is_still_mounted(mount_path: &str) -> bool {
     listed.unwrap_or(true)
 }
 
+/// The pause before each retry of a refused unmount: at most three more runs,
+/// about 3 s in all. A refusal is often a TRANSIENT hold: LaunchServices (`lsd`)
+/// registering an `.app` a pane just showed holds the volume for under a second
+/// (`volume/DETAILS.md` § "Eject").
+pub(super) const REFUSAL_RETRY_BACKOFF: [Duration; 3] = [
+    Duration::from_millis(500),
+    Duration::from_millis(1000),
+    Duration::from_millis(1500),
+];
+
+/// What a run of the tool is aimed at, for its log lines.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Target<'a> {
+    /// The volume being torn down.
+    pub volume_id: &'a str,
+    /// Eject or unmount.
+    pub verb: UnmountVerb,
+    /// The mount root the tool runs against.
+    pub mount_path: &'a str,
+}
+
+/// Runs the tool until it settles, retrying a refused unmount after each pause in
+/// [`REFUSAL_RETRY_BACKOFF`].
+///
+/// Every run re-settles, so a volume that left the mount table between runs
+/// counts as done. Only [`EjectError::UnmountRefused`] is retried: a timeout
+/// already waited [`TOOL_TIMEOUT`] and its unmount may still land, and a tool that
+/// couldn't start won't start next time. `run_tool` and `still_mounted` are
+/// closures, so tests drive a scripted tool on a paused clock.
+///
+/// Logs on target `eject`: each intermediate refusal at `info` with its attempt
+/// number and outcome (so the logs show how often holds are transient), the final
+/// refusal once at `warn` with the attempt count, and a success at `info`, with the
+/// count when it took retries.
+pub(super) async fn settle_with_retries<T, Fut, M>(
+    target: Target<'_>,
+    mut run_tool: T,
+    mut still_mounted: M,
+) -> Result<(), EjectError>
+where
+    T: FnMut() -> Fut,
+    Fut: Future<Output = ToolOutcome>,
+    M: FnMut() -> bool,
+{
+    let Target {
+        volume_id,
+        verb,
+        mount_path,
+    } = target;
+    let mut attempts: usize = 1;
+    loop {
+        let outcome = run_tool().await;
+        let pause = REFUSAL_RETRY_BACKOFF.get(attempts - 1).copied();
+        match (settle(&outcome, verb, &mut still_mounted), pause) {
+            (Settled::Done, _) => {
+                if attempts == 1 {
+                    log::info!(target: "eject", "`{verb}` succeeded for {volume_id} at {mount_path}");
+                } else {
+                    log::info!(
+                        target: "eject",
+                        "`{verb}` succeeded for {volume_id} at {mount_path} on attempt {attempts}"
+                    );
+                }
+                return Ok(());
+            }
+            (Settled::AlreadyGone, _) => {
+                log::info!(
+                    target: "eject",
+                    "`{verb}` for {volume_id} at {mount_path} didn't go through on attempt {attempts} ({outcome}), but it's no longer mounted, so it counts as done"
+                );
+                return Ok(());
+            }
+            (Settled::Refused(EjectError::UnmountRefused { .. }), Some(pause)) => {
+                log::info!(
+                    target: "eject",
+                    "`{verb}` for {volume_id} at {mount_path} was refused on attempt {attempts} ({outcome}); retrying in {} ms",
+                    pause.as_millis()
+                );
+                tokio::time::sleep(pause).await;
+                attempts += 1;
+            }
+            (Settled::Refused(error), _) => {
+                log::warn!(
+                    target: "eject",
+                    "`{verb}` for {volume_id} at {mount_path} didn't go through (attempts: {attempts}): {outcome}"
+                );
+                return Err(error);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
+    use std::collections::VecDeque;
 
     fn still_mounted() -> bool {
         true
@@ -275,5 +371,120 @@ mod tests {
             outcome.to_string(),
             "exit status 1, stderr: Failed to find disk /Volumes/X"
         );
+    }
+
+    // ── Retrying a refused unmount ────────────────────────────────────
+
+    fn target() -> Target<'static> {
+        Target {
+            volume_id: "vol-backup-00c0ffee00c0ffee",
+            verb: UnmountVerb::Eject,
+            mount_path: "/Volumes/Backup",
+        }
+    }
+
+    /// A fake tool that answers `script` in order and counts its runs.
+    fn scripted(script: Vec<ToolOutcome>, runs: &Cell<usize>) -> impl FnMut() -> std::future::Ready<ToolOutcome> + '_ {
+        let mut script = VecDeque::from(script);
+        move || {
+            runs.set(runs.get() + 1);
+            std::future::ready(
+                script
+                    .pop_front()
+                    .expect("the tool must not run more often than the test scripted"),
+            )
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_transient_hold_is_retried_until_the_eject_goes_through() {
+        // `lsd` registering a freshly seen `.app` holds the volume for under a
+        // second; the retry after the first pause finds it free.
+        let runs = Cell::new(0);
+        let started = tokio::time::Instant::now();
+        let result = settle_with_retries(
+            target(),
+            scripted(vec![dissented(), ToolOutcome::Succeeded], &runs),
+            still_mounted,
+        )
+        .await;
+
+        assert!(result.is_ok(), "got {result:?}");
+        assert_eq!(runs.get(), 2);
+        assert_eq!(started.elapsed(), Duration::from_millis(500));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_hold_that_outlasts_every_retry_answers_the_last_refusal() {
+        let runs = Cell::new(0);
+        let started = tokio::time::Instant::now();
+        let result = settle_with_retries(
+            target(),
+            scripted(vec![dissented(), dissented(), dissented(), dissented()], &runs),
+            still_mounted,
+        )
+        .await;
+
+        let expected_detail = format!(
+            "{}: Unmount was dissented by PID 51419 (/bin/sleep)",
+            UnmountVerb::Eject
+        );
+        assert!(
+            matches!(result, Err(EjectError::UnmountRefused { ref detail }) if *detail == expected_detail),
+            "got {result:?}"
+        );
+        assert_eq!(runs.get(), 4, "one run plus three retries");
+        assert_eq!(
+            started.elapsed(),
+            Duration::from_secs(3),
+            "a real hold reports about 3 s later"
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_retry_that_finds_the_volume_gone_counts_as_done() {
+        let runs = Cell::new(0);
+        let mut mount_table = VecDeque::from([true, false]);
+        let result = settle_with_retries(target(), scripted(vec![dissented(), dissented()], &runs), move || {
+            mount_table
+                .pop_front()
+                .expect("the mount table must be read once per refused run")
+        })
+        .await;
+
+        assert!(result.is_ok(), "got {result:?}");
+        assert_eq!(runs.get(), 2);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_timeout_is_not_retried() {
+        // It already waited 15 s, and the unmount it didn't cancel may still land.
+        let runs = Cell::new(0);
+        let result = settle_with_retries(
+            target(),
+            scripted(vec![ToolOutcome::TimedOut, ToolOutcome::Succeeded], &runs),
+            still_mounted,
+        )
+        .await;
+
+        assert!(matches!(result, Err(EjectError::TimedOut)), "got {result:?}");
+        assert_eq!(runs.get(), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_tool_that_couldnt_start_is_not_retried() {
+        let runs = Cell::new(0);
+        let outcome = ToolOutcome::CouldNotStart {
+            detail: "No such file or directory".to_string(),
+        };
+        let result = settle_with_retries(
+            target(),
+            scripted(vec![outcome, ToolOutcome::Succeeded], &runs),
+            still_mounted,
+        )
+        .await;
+
+        assert!(matches!(result, Err(EjectError::Unexpected { .. })), "got {result:?}");
+        assert_eq!(runs.get(), 1);
     }
 }

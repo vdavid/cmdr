@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::device_volumes::DeviceVolumeProvider;
-use unmount_tool::{Settled, UnmountVerb};
+use unmount_tool::UnmountVerb;
 
 pub use in_flight::{VolumesEjectingChanged, ejecting_volume_ids, init_ejecting_volume_emitter};
 
@@ -303,7 +303,8 @@ enum Teardown<'a> {
     Tool { verb: UnmountVerb, mount_path: &'a str },
 }
 
-/// Runs one teardown and reports how it went.
+/// Runs one teardown and reports how it went. A refused unmount is retried first,
+/// in `unmount_tool::settle_with_retries`, which also writes the tool's log lines.
 ///
 /// ❗ The ONE place a teardown refusal is logged: every eject and SMB disconnect
 /// that reaches a device provider or the unmount tool passes through here, so a
@@ -326,27 +327,17 @@ async fn run_teardown(volume_id: &str, teardown: Teardown<'_>) -> Result<(), Eje
             }
         },
         Teardown::Tool { verb, mount_path } => {
-            let outcome = unmount_tool::run(verb, mount_path).await;
-            match unmount_tool::settle(&outcome, verb, || unmount_tool::is_still_mounted(mount_path)) {
-                Settled::Done => {
-                    log::info!(target: "eject", "`{verb}` succeeded for {volume_id} at {mount_path}");
-                    Ok(())
-                }
-                Settled::AlreadyGone => {
-                    log::info!(
-                        target: "eject",
-                        "`{verb}` for {volume_id} at {mount_path} didn't go through ({outcome}), but it's no longer mounted, so it counts as done"
-                    );
-                    Ok(())
-                }
-                Settled::Refused(error) => {
-                    log::warn!(
-                        target: "eject",
-                        "`{verb}` for {volume_id} at {mount_path} didn't go through: {outcome}"
-                    );
-                    Err(error)
-                }
-            }
+            let target = unmount_tool::Target {
+                volume_id,
+                verb,
+                mount_path,
+            };
+            unmount_tool::settle_with_retries(
+                target,
+                || unmount_tool::run(verb, mount_path),
+                || unmount_tool::is_still_mounted(mount_path),
+            )
+            .await
         }
     }
 }
