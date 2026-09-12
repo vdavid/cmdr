@@ -15,7 +15,8 @@ window focus context.
   stay reachable at `crate::menu::…`.
 - `command_map.rs`: the menu item ID constants (all `*_ID`) and the ID mapping functions
   (`menu_id_to_command`, `command_id_to_menu_id`).
-- `menu_items.rs`: small-piece builders and platform-aware helpers: `build_sort_submenu`,
+- `menu_items.rs`: small-piece builders and platform-aware helpers: `MenuSlot` / `build_registered_submenu` (every
+  top-level submenu in `macos.rs` / `linux.rs` goes through this pair; see "Accelerator sync"), `build_sort_submenu`,
   `build_zoom_submenu`, `register_item`, `register_sort_items`, `truncate_for_menu_label`, the `copy_path_accelerator` /
   `show_in_file_manager_*` / `full_view_label` / `brief_view_label` platform helpers, and the
   `SortSubmenuItems` struct, plus `DetachWord` / `detach_label`, which decide whether a row's leave-this-volume item
@@ -240,19 +241,15 @@ The frontend triggers regular-item updates via `invoke('update_menu_accelerator'
 `shortcuts-store.ts`, and triggers view-mode rebuilds via `invoke('update_view_mode_menu')` from
 `DualPaneExplorer.svelte` on focus change, swap, and any view-mode toggle.
 
-Because the position is a bare magic number, inserting or removing one item silently shifts every
-`register_item` index after it, and the damage only shows up the first time a user rebinds that
-shortcut: a DIFFERENT item gets removed and reinserted. `register_item_positions_match_submenu_order`
-in `menu_items.rs` guards it by reading `macos.rs` / `linux.rs` with `include_str!` and checking each
-registered index against the item's real slot in that submenu's `Submenu::with_items` /
-`Submenu::with_id_and_items` array. Source
-parsing is the only option available: building a real menu needs AppKit on the main thread. It reads
-both array shapes rustfmt produces (one entry per line, and a short array collapsed onto one line), and
-it FAILS when a registration's submenu has no array it can read, so a new menu can't slip past
-unchecked. Submenus assembled by a helper (`build_zoom_submenu`, `build_sort_submenu`) have no literal
-array in those files, which is why the Sort by registrations live in
-`menu_items::register_sort_items`, beside the builder that fixes their order: nothing over in the
-platform files could have checked them anyway.
+Every top-level submenu in `macos.rs` / `linux.rs` is built with `menu_items::build_registered_submenu`,
+which takes the submenu's items as a `&[MenuSlot]` array in display order (`MenuSlot::Reg(id, item)` for
+an item tracked in `MenuState.items`, `MenuSlot::Plain(item)` for a separator, a nested submenu, a
+`PredefinedMenuItem`, or a `CheckMenuItem` synced some other way) and registers every `Reg` entry at its
+own index in that array. There's no hand-typed position anywhere: the index `register_item` stores IS
+the item's index in the array the submenu is built from, so a reorder can't desync one from the other by
+construction. Submenus assembled by a helper (`build_zoom_submenu`, `build_view_mode_items`) take plain
+items in their own submenu and register nothing themselves, same as before; Sort by is the one exception,
+registered by `menu_items::register_sort_items` beside `build_sort_submenu`, which fixes its order.
 
 ### Per-pane view modes
 
@@ -689,11 +686,11 @@ focus-gain (see "Per-window menu activation" above).
 **Decision**: Accelerator updates via remove/recreate/reinsert instead of in-place mutation.
 **Why**: Tauri's menu API has no `set_accelerator()` method. The only way to change a displayed accelerator is to destroy the old `MenuItem`, create a new one with the new accelerator string, and reinsert it at the same position in the parent submenu. This is why `MenuState` tracks both the `Submenu` reference and the positional index for every updatable item.
 
-**Decision**: `macos.rs` and `linux.rs` each keep their own `register_item` block, even though roughly 70 lines of it are identical.
+**Decision**: `macos.rs` and `linux.rs` each keep their own imperative item construction (still duplicated: every `MenuItem::with_id(…)` call, its label, and its accelerator), but the ~70-line `register_item` block each used to keep separately is gone. Both files build every top-level submenu through `menu_items::build_registered_submenu`, passing the submenu's items as a `&[MenuSlot]` array; the function registers each `MenuSlot::Reg` entry at its own index in that array.
 
-**Why**: `register_item_positions_match_submenu_order` is a source-parsing test. It reads `macos.rs` and `linux.rs` with `include_str!`, pairs every `register_item(…, &submenu, N)` call against the literal `Submenu::with_items(…, &[…])` array in the SAME file, and fails when `N` doesn't point at that item. It's the only guard there is: building a real menu needs AppKit on the main thread, so a wrong index is otherwise invisible until a user edits a shortcut and a different item moves. The test explicitly skips any submenu assembled by a helper, because a helper's array isn't in the file being parsed — so lifting the shared registrations into one would hand back the duplication and take the guard with it. A submenu built by a helper is the one exception, and `register_sort_items` takes it: the guard already skips those submenus, so keeping their indices in the platform files bought no coverage while letting a reorder inside `build_sort_submenu` desync two hardcoded copies. Positions belong next to the array that sets them.
+**Why**: `register_item_positions_match_submenu_order` used to be a source-parsing test reading `macos.rs` / `linux.rs` back with `include_str!`, because building a real menu needs AppKit on the main thread and that made source text the only place left to check a hand-typed position against. `build_registered_submenu` retired that test by making the bug it guarded against unrepresentable: there's no hand-typed index anywhere left to drift from the array beside it, so the position IS the item's index in the very array the submenu is built from. `register_sort_items` still registers Sort by's items itself, beside `build_sort_submenu`, which fixes their order — that one submenu is assembled by a shared helper rather than a `MenuSlot` array in the platform files, so folding it into the generic mechanism would buy nothing.
 
-The wider version of this question (five of the seven menus have identical structure and differ only in labels and accelerators, so a per-platform data table could build them all) is a real option and would collapse both files, but it replaces this test rather than keeping it, and it reshapes a menu bar David reviews by eye. Not something to do as a side effect of a duplication pass.
+The wider version of this question (five of the seven menus have identical STRUCTURE and differ only in labels and accelerators, so a per-platform data table could build them all, collapsing the item construction too) is still a real option, still undone, and still not something to do as a side effect of a duplication pass: it reshapes a menu bar David reviews by eye, and needs its own conscious decision rather than riding in on a mechanical refactor.
 
 **Decision**: Omit F-key and Tab/Space accelerators on Linux.
 **Why**: GTK intercepts F2-F8, Tab, and Space at the toolkit level before events reach the webview. Registering them as menu accelerators causes double-handling or silent swallowing. On Linux these keys are dispatched purely through JS keydown handlers, bypassing the native menu system entirely.

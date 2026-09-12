@@ -23,9 +23,10 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
   picks the shape from `context_paths.len()` and formats NOTHING: ❌ every number arrives pre-rendered from the
   frontend; ❌ no file KIND. `context_menu_header.rs`.
 - **Accelerator changes go remove/recreate/reinsert** (Tauri has no `set_accelerator()`), and `MenuState` tracks each
-  item's submenu and index — so **adding or moving one item shifts every later `register_item` index**, mangling a
-  different item on the first rebind. `register_item_positions_match_submenu_order` catches it, which is why both
-  platform files keep near-identical blocks; keep those position comments truthful.
+  item's submenu and index. Every top-level submenu in `macos.rs` / `linux.rs` is built through
+  `menu_items::build_registered_submenu`, from a `&[MenuSlot]` array in display order: the position `register_item`
+  stores is that item's own index in the array, never a hand-typed number, so adding or moving an item can't desync it
+  from submenu order. Add a new item as a new `MenuSlot` entry; there's no second place to update.
 - **CheckMenuItems (view modes, show hidden) must NOT use `"execute-command"`**: they auto-toggle, so emitting it
   double-toggles. They emit `"settings-changed"` / `"view-mode-changed"`; sort emits `"menu-sort"`; close-tab and
   "Open with" have own paths.

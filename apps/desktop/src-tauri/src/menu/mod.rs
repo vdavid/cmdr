@@ -7,7 +7,9 @@
 //! - `command_map.rs`: all menu item ID constants plus the ID ↔ command-registry mapping
 //!   (`menu_id_to_command` and `command_id_to_menu_id`), glob-re-exported from `mod.rs`.
 //! - `menu_items.rs`: menu item builder helpers and submenu factories (sort, zoom),
-//!   accelerator/label platform-aware helpers, `register_item`, and `truncate_for_menu_label`.
+//!   accelerator/label platform-aware helpers, `register_item`, `truncate_for_menu_label`, and
+//!   `build_registered_submenu` (every top-level submenu in `macos.rs` / `linux.rs` is built
+//!   through it, from a `&[MenuSlot]` array in display order).
 //! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher, context menus (file,
 //!   breadcrumb, tab, network host), viewer menu, plus `FileContextInfo` / `ContextMenuPaneFacts` /
 //!   `ContextMenuResult`.
