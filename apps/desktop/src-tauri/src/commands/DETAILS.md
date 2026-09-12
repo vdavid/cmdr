@@ -24,22 +24,13 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   is a claim about the volume's own writes, so on SMB a cached answer to "re-read this" would be a lie. Logs at debug
   `target: "refresh_listing"` on short-circuit.
   `write_ops.rs`: create, copy, move, delete, trash, scan preview, conflict resolution, synthetic diff helpers.
-  `volume_copy.rs`: cross-volume copy/move/compress/scan, `SourceItemInput`. The three transfer commands are
-  pass-throughs that build the `TauriEventSink` and hand everything to `write_operations::start_volume_{copy, move,
-  compress}`, which own the volume + destination-path resolution and the archive forks so a backend caller reaches the
-  same routing (`../file_system/write_operations/DETAILS.md` § "Routing a transfer"). `scan_volume_for_conflicts` optionally takes a
-  source volume id + source paths and resolves each item's real `is_directory` + size from the source volume via
-  `stat_source_paths`: one `Volume::get_metadata` per top-level path, `SOURCE_STAT_CONCURRENCY` (16) in flight, strictly
-  O(top-level items) and never a subtree walk. `merge_source_types_from_stats` folds the results over the FE's
-  name-only placeholders so dir-vs-dir collisions classify as silent merges; back-compatible when omitted. ❌ Don't
-  swap this back to `scan_for_copy_batch`: a batch of exactly one path takes a fast path straight into
-  `scan_recursive` on SMB and SFTP, so a single directory source walks its whole subtree (a 119k-file folder ate the
-  entire 30 s check budget, `ERR-AYVM4`). The batch scan stays right for the transfer's own scan phase, which wants
-  the tree. The source paths also drive
-  `drop_self_collisions`, which removes the collisions naming a source itself so a same-folder paste doesn't announce
-  every item as its own conflict. It answers with the engines' own predicates, which is what keeps the dialog and the
-  write agreeing about which clashes are real (canonical:
-  `../file_system/write_operations/transfer/DETAILS.md` § "Self-collision (duplicating in place)"). `stat.rs`:
+  `volume_copy.rs`: cross-volume copy/move/compress/scan. The three transfer commands are pass-throughs that build the
+  `TauriEventSink` and hand everything to `write_operations::start_volume_{copy, move, compress}`, which own the volume
+  + destination-path resolution and the archive forks so a backend caller reaches the same routing
+  (`../file_system/write_operations/DETAILS.md` § "Routing a transfer"). `scan_volume_for_conflicts` is itself a thin
+  wrapper around `write_operations::conflict_preflight::scan_volume_for_conflicts_within`, which owns the whole
+  budgeted pre-flight check (`VolumeScanError`, `SourceItemInput`, the source-stat/self-collision machinery):
+  `../file_system/write_operations/DETAILS.md` § "The pre-flight conflict check". `stat.rs`:
   `stat_paths_kinds(paths) -> TimedOut<Vec<Option<bool>>>`, a batched top-level "is this a directory?" probe for the
   drag-and-drop transfer path (`Some(true)` = dir, `Some(false)` = file, `None` = unknown / non-local / vanished). One
   `spawn_blocking` under the read timeout, never a subtree walk; per-item failures map to `None` so a virtual MTP/SMB

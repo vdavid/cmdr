@@ -21,6 +21,7 @@ mod archive_remote_edit;
 mod cancellable;
 mod compress_estimate;
 mod conflict;
+mod conflict_preflight;
 mod conflict_slot;
 mod create;
 mod delete;
@@ -140,7 +141,6 @@ pub(crate) use rename::{
 // reachable by a backend caller and not only the IPC edge. `routing.rs`.
 pub(crate) use routing::{
     resolve_dest_path, resolve_source_volume, start_volume_compress, start_volume_copy, start_volume_move,
-    transfer_would_land_on_its_source,
 };
 #[cfg(not(test))]
 use source_binding::retain_bound_sources;
@@ -225,6 +225,12 @@ pub(crate) fn test_retain_failure(operation_id: &str, operation_type: WriteOpera
 pub use mutation_error::MutationError;
 pub use transfer::volume::scan_for_volume_copy;
 pub use types::{VolumeCopyConfig, VolumeCopyScanResult};
+// The transfer dialog's pre-flight conflict check: `commands/file_system/
+// volume_copy.rs`'s `scan_volume_for_conflicts` is a thin wrapper around
+// `scan_volume_for_conflicts_within`, budgeted the same way as every other
+// IPC-facing scan. `conflict_preflight.rs`.
+pub(crate) use conflict_preflight::{CONFLICT_CHECK_BUDGET, scan_volume_for_conflicts_within};
+pub use conflict_preflight::{SourceItemInput, VolumeScanError};
 // Test-only: the archive-edit and remote-transfer suites drive these drivers
 // directly, under a `CollectorEventSink` and without a routing decision to make.
 #[cfg(test)]

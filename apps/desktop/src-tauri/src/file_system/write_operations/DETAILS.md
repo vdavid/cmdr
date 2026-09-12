@@ -62,7 +62,8 @@ The full top-level inventory is here:
 - Scan and preview: `scan.rs`, `scan_preview.rs`, `scan_cache.rs`, `scan_bridge.rs` (the scan-progress seam the drivers
   feed, and `ScanPause`, the park that lets a walk honor its owner's Pause), `scan_watchdog.rs` (the inactivity bound on
   a preview), `compress_estimate.rs`. Conflicts and overwrite:
-  `conflict.rs` (policy), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
+  `conflict.rs` (policy), `conflict_preflight.rs` (the transfer dialog's BEFORE-the-write check, § "The pre-flight
+  conflict check"), `unique_name.rs` (the ` (N)` namer), `conflict_slot.rs` (the one-answer-wins slot behind
   `resolve_write_conflict`), `overwrite.rs` (tests in `overwrite_tests.rs`). Cancellation and durability:
   `cancellable.rs`, `rollback.rs`, `durability.rs`.
   `rollback.rs` wears two hats: the history dialog's reversal, and the executor the operation-log engine injects.
@@ -784,6 +785,40 @@ from a `CachedScanResult` is real work with its own correctness questions.
 the opposite of what a scanning-phase test needs to hold, so `set_test_scan_preview_delay` (an IPC override behind the
 `playwright-e2e` feature, falling back to `CMDR_E2E_SCAN_PREVIEW_DELAY_MS`) holds every worker at its starting line for
 a set number of milliseconds. Per-test rather than per-process, so one spec's window doesn't slow the whole run.
+
+## The pre-flight conflict check
+
+`conflict_preflight.rs` is the transfer dialog's "which of these would already collide at the destination?" check:
+`VolumeScanError` (the refusal vocabulary, shared with `scan_for_volume_copy`), `SourceItemInput` (the FE's per-item
+input), and `scan_volume_for_conflicts_within`, the whole budgeted check. `commands/file_system/volume_copy.rs`'s
+`scan_volume_for_conflicts` is a thin `#[tauri::command]` wrapper that calls it with the production
+`CONFLICT_CHECK_BUDGET` (30 s); the split exists so a test can hand the inner function a budget it can wait out
+(`conflict_preflight_tests.rs`, `#[path]`-attached the way `conflict.rs`'s test suites are).
+
+Distinct from `conflict.rs` (which resolves a clash a write has already hit) and from `scan.rs` / `scan_preview.rs`
+(which size a transfer rather than check for collisions).
+
+**One budget for every leg, not one per leg.** Two volume resolves (a `.zip`-crossing path probes the network), the
+source batch stat, and the destination scan can each reach a device that has stopped answering, and each takes what's
+LEFT of `deadline` rather than a fresh timeout, because four legs with their own timeouts add up to a promise nobody
+wrote down.
+
+**The optional source-stat leg gets a sub-budget, never the whole deadline.** When `source_volume_id` +
+`source_paths` are supplied, `stat_source_paths` resolves each item's real `is_directory` + size on the source volume:
+one `Volume::get_metadata` per top-level path, `SOURCE_STAT_CONCURRENCY` (16) in flight, strictly O(top-level items)
+and never a subtree walk. ❌ Don't swap this back to `scan_for_copy_batch`: a batch of exactly one path takes a fast
+path straight into `scan_recursive` on SMB and SFTP, so a single directory source would walk its whole subtree (a
+119k-file folder ate the entire 30 s check budget, `ERR-AYVM4`). This leg runs on `deadline.fraction(SOURCE_STAT_BUDGET_DIVISOR)`
+(3, so it gets 10 s of a 30 s budget) because its failure is non-fatal — a fallback to the FE's name-only items — while
+the destination scan after it is not: sharing one deadline would let a wedged source spend everything, so the
+destination scan then fails instantly and the user reads a timeout blamed on a device the check never asked.
+`merge_source_types_from_stats` folds the stats over the name-only placeholders so dir-vs-dir collisions classify as
+silent merges; back-compatible when the caller omits the source volume.
+
+**`drop_self_collisions` removes the collisions naming a source itself**, so a same-folder paste (a duplicate, which
+both engines auto-rename silently instead of asking about) doesn't announce every item as its own conflict. It answers
+with `transfer_would_land_on_its_source`, the engines' own predicate, which is what keeps the dialog and the write
+agreeing about which clashes are real (canonical: `transfer/DETAILS.md` § "Self-collision (duplicating in place)").
 
 ## Routing a transfer
 

@@ -143,7 +143,7 @@ async fn a_panicking_task_frees_its_permit() {
 #[cfg(test)]
 mod wire_shape_tests {
     use super::DeadlineError;
-    use crate::commands::file_system::VolumeScanError;
+    use crate::file_system::VolumeScanError;
     use crate::file_system::listing::fuzzy_jump::FuzzyJumpError;
     use crate::file_system::volume::reconnect_error::ReconnectError;
     use serde_json::json;

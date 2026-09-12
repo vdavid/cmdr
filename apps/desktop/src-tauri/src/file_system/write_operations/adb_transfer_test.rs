@@ -22,6 +22,7 @@ use cmdr_fs::volume::host::listings::RecordingListings;
 use cmdr_fs::volume::{DirectoryChange, UnwritableReason, Volume, VolumeError};
 
 use super::MutationError;
+use super::VolumeScanError;
 use super::event_sinks::{CollectorEventSink, OperationEventSink};
 use super::network_transfer_test_support::{
     a_cancelled_upload_leaves_nothing_behind, a_directory_tree_lands_intact_off_the_server,
@@ -33,7 +34,7 @@ use super::state::WriteOperationState;
 use super::types::{VolumeCopyConfig, WriteOperationConfig, WriteOperationError};
 use crate::adb::device_provider::apply_device_list;
 use crate::adb::test_support::{a_listed_phone, dial, dials_seen, phone, retire_phone};
-use crate::commands::file_system::{VolumeScanError, scan_volume_for_copy};
+use crate::commands::file_system::scan_volume_for_copy;
 use crate::file_system::volume::LocalPosixVolume;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::ignore_poison::IgnorePoison;
