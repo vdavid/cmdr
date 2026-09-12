@@ -78,6 +78,5 @@ Date modified moved up by one. The shortcut order (`⌘3..6`) matches the menu o
 - `apps/desktop/src-tauri/src/menu/mod.rs`: `build_sort_submenu` now takes accelerator params and reorders Date modified
   above Size; sort items added to the items HashMap and to `command_id_to_menu_id` so user-customized shortcuts re-flow
   into the menu
-- `apps/desktop/src-tauri/src/menu/macos.rs` and `linux.rs`: pass `Cmd+3..6` accelerators; register sort items in items
-  HashMap
+- `apps/desktop/src-tauri/src/menu/menu_bar.rs`: the Sort by rows carry `Cmd+3..6` and register in the items HashMap
 - `apps/desktop/src/lib/shortcuts/shortcuts-store.ts`: added the four sort command IDs to `menuCommands`

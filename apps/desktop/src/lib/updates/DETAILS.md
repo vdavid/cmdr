@@ -175,8 +175,9 @@ and only then trash the original, so a helper dying at any point leaves two copi
   flips to `ready` the helper dismisses `'update-check'` so it doesn't overlap the persistent restart toast.
 
 The native menu item sits in the Cmdr submenu (macOS) right after "Enter license key…", wired through
-`menu_id_to_command` / `command_id_to_menu_id` in `src-tauri/src/menu/mod.rs`, SF Symbol `arrow.down.circle` mapped in
-`macos.rs`. On Linux the same command appears at the bottom of the Edit submenu after the license item.
+`menu_id_to_command` / `command_id_to_menu_id` in `src-tauri/src/menu/command_map.rs`, SF Symbol `arrow.down.circle`
+mapped in `menu/macos_appkit.rs`. On Linux the same command appears at the bottom of the Edit submenu after the license
+item. Both placements are rows in `menu/menu_bar.rs`.
 
 ## Onboarding gating
 

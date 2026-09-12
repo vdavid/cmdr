@@ -676,8 +676,8 @@ repo-root `feature-status.json`.
 The wiring with a foot on this side:
 
 - **The native menu item.** Command `log.operationLog` (App scope) needs the `OPERATION_LOG_ID` mappings in
-  `menu/command_map.rs` (`menu_id_to_command` + `command_id_to_menu_id`) plus the `MenuItem::with_id` in BOTH `macos.rs`
-  and `linux.rs` (**View menu**, after the command palette). The other places one command touches, and how a miss fails
+  `menu/command_map.rs` (`menu_id_to_command` + `command_id_to_menu_id`) plus its row in `menu/menu_bar.rs`
+  (**View menu**, after the command palette). The other places one command touches, and how a miss fails
   silently: `apps/desktop/src/lib/commands/CLAUDE.md` § Gotchas.
 - **Default shortcut ⌘⌥L**, Command-then-Option in the canonical combo vocabulary rather than Apple's display order ⌥⌘
   (`apps/desktop/src/lib/shortcuts/CLAUDE.md`), so it fires through the in-app dispatch and not only via the native

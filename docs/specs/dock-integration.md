@@ -73,7 +73,7 @@ Everything lives in `apps/desktop/src-tauri/src/menu/` (20 files, `CLAUDE.md` + 
   and the two id↔command maps, `menu_id_to_command(id) -> Option<(&str, CommandScope)>` and its inverse.
 - `menu/menu_items.rs` / `menu/menu_structure.rs`: build the pieces and assemble them. `build_context_menu` is at
   `menu/menu_structure.rs:150`.
-- `menu/macos.rs` / `menu/linux.rs`: per-platform menu-bar layout.
+- `menu/menu_bar.rs`: the menu-bar layout for both platforms.
 - `menu/menu_handlers.rs`: `handle_menu_event(app, event)`, wired in `lib.rs` as
   `.on_menu_event(menu::handle_menu_event)` (`apps/desktop/src-tauri/src/lib.rs:753`).
 - `menu/macos_appkit.rs`: the objc2 boundary. `cleanup_macos_menus`, `set_macos_menu_icons`, and the reusable helpers

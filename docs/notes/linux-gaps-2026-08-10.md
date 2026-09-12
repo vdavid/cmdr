@@ -27,10 +27,10 @@ Fix shape: add watches per directory and skip `EACCES` instead of aborting the w
 
 ## `Cmd+` menu accelerators bind to Super, not Ctrl
 
-`menu/linux.rs` declares its accelerators as `Cmd+…` (`Cmd+F`, `Cmd+A`, `Cmd+I`, `Cmd+,`, `Cmd+1`, and the sort and zoom
-chords). muda maps `"COMMAND" | "CMD" | "SUPER"` to `Modifiers::META` unconditionally, and META is the Super key on GTK;
-`CmdOrCtrl` is the string that resolves to `CONTROL` off macOS (verified in muda 0.19.3, `src/accelerator.rs` lines 536
-and 541, 2026-08-10). So the menu advertises Super chords to Linux users.
+`menu/menu_bar.rs` gives Linux its accelerators as `Cmd+…` (`Cmd+F`, `Cmd+A`, `Cmd+I`, `Cmd+,`, `Cmd+1`, and the sort
+and zoom chords). muda maps `"COMMAND" | "CMD" | "SUPER"` to `Modifiers::META` unconditionally, and META is the Super
+key on GTK; `CmdOrCtrl` is the string that resolves to `CONTROL` off macOS (verified in muda 0.19.3,
+`src/accelerator.rs` lines 536 and 541, 2026-08-10). So the menu advertises Super chords to Linux users.
 
 It isn't broken in practice: the frontend keydown layer accepts `metaKey || ctrlKey`, so Ctrl+A and Ctrl+T work as users
 expect. Only the printed accelerator label is wrong. Switching those strings to `CmdOrCtrl` would fix the label, but it

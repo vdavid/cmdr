@@ -5,9 +5,10 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
 ## Module map
 
 - `mod.rs` (shared types and menu state), `command_map.rs` (item IDs + the two id↔command maps).
-- `menu_items.rs` / `menu_structure.rs` build and assemble the pieces; `macos.rs` / `linux.rs` lay out each platform's
-  bar; `macos_appkit.rs` is the objc2 boundary the right-click extras cross (`services_context.rs`, `share_submenu.rs`,
-  `context_menu_icons.rs`, `context_menu_header.rs`). One line per file: DETAILS § File layout.
+- `menu_bar.rs`: both platforms' menu bar, one row per item (words: `menu_spec.rs`; built by `menu_bar_builder.rs`).
+  `menu_structure.rs`: context and viewer menus. `macos_appkit.rs`: the objc2 boundary the right-click extras cross
+  (`services_context.rs`, `share_submenu.rs`, `context_menu_icons.rs`, `context_menu_header.rs`). One line per file:
+  DETAILS § File layout.
 
 ## Must-knows
 
@@ -22,11 +23,9 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
 - **The context menu's first line is a disabled HEADER naming what it acts on** (the selection vs the clicked row). Rust
   picks the shape from `context_paths.len()` and formats NOTHING: ❌ every number arrives pre-rendered from the
   frontend; ❌ no file KIND. `context_menu_header.rs`.
-- **Accelerator changes go remove/recreate/reinsert** (Tauri has no `set_accelerator()`), and `MenuState` tracks each
-  item's submenu and index. Every top-level submenu in `macos.rs` / `linux.rs` is built through
-  `menu_items::build_registered_submenu`, from a `&[MenuSlot]` array in display order: the position `register_item`
-  stores is that item's own index in the array, never a hand-typed number, so adding or moving an item can't desync it
-  from submenu order. Add a new item as a new `MenuSlot` entry; there's no second place to update.
+- **Accelerator changes go remove/recreate/reinsert** (Tauri has no `set_accelerator()`), so `MenuState` tracks each
+  item's submenu and index: the builder registers a tracked row at its own index. A new item is one row in
+  `menu_bar.rs`, plus its line in the `menu_bar_test.rs` snapshot.
 - **CheckMenuItems (view modes, show hidden) must NOT use `"execute-command"`**: they auto-toggle, so emitting it
   double-toggles. They emit `"settings-changed"` / `"view-mode-changed"`; sort emits `"menu-sort"`; close-tab and
   "Open with" have own paths.
@@ -42,8 +41,8 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
 - **Custom (not Predefined) MenuItems for Cut/Copy/Paste/Move here/Select all**: in non-main windows they forward the
   native selector via `send_native_edit_action()`, or ⌘A and the clipboard die in settings/viewer text fields. ❌ Not
   `PredefinedMenuItem::select_all`: it conflicts. Predefined items need explicit text (muda's is English).
-- **Linux omits F-key, Tab, Space, and `Cmd+Plus`/`Cmd+Minus` accelerators** (GTK intercepts them); JS keydown
-  dispatches them there.
+- **Linux omits F-key, Tab, Space, and `Cmd+Plus`/`Cmd+Minus` accelerators** (GTK intercepts them; `macos(…)` rows);
+  JS keydown dispatches them there.
 - **Every label comes from `menu_t("menu.…")`, ❌ never a literal.** `rebuild.rs` rebuilds the bar on a language change
   and emits `menu-bar-rebuilt` so the frontend re-pushes what only it knows. Linux mnemonics are ALLOCATED per submenu
   from the translated labels.

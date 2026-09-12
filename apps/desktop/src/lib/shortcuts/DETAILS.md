@@ -412,7 +412,7 @@ channels share a payload, revisit — but today it's not a trivial merge, so lea
 
 ### Modifier-key accelerators may fire twice (menu + JS)
 
-For commands that have BOTH a native-menu accelerator (`menu/macos.rs` `Some("Shift+Space")` etc.) AND a registry
+For commands that have BOTH a native-menu accelerator (`menu/menu_bar.rs` `macos("Shift+Space")` etc.) AND a registry
 shortcut (`shortcuts: ['⇧Space']`), AppKit can leak the modifier keydown to the webview even after the menu accelerator
 has fired. So `on_menu_event` emits `execute-command file.quickLook` AND `handleGlobalKeyDown` in `+page.svelte` also
 sees the keydown and calls `handleCommandExecute('file.quickLook')`. **Both paths run, both reach the dispatcher.**

@@ -134,12 +134,11 @@ Two special cases:
    otherwise).
 6. Pin its English in `command-registry.parity.test.ts` (`EXPECTED_NAMES`, plus `EXPECTED_DESCRIPTIONS` when it has a
    description). The test asserts every registry command appears there, so a new command fails it until pinned.
-7. For a native menu item: add the id const and both map directions in `src-tauri/src/menu/command_map.rs`, build the
-   item in the platform menu builders (`menu/macos.rs` + `menu/linux.rs` for the menu bar, `menu/menu_structure.rs` for
-   the right-click menu), `register_item` it in `MenuState.items` so accelerator rebinding can reach it, and add the id
-   to `menuCommands` in `shortcuts-store.ts`. Menu-bar items are positional: inserting one shifts every `register_item`
-   index after it. `rust-command-id-drift.test.ts` fails if `menu_id_to_command` emits an unknown id, or if
-   `menuCommands` and the reverse map disagree.
+7. For a native menu item: add the id const and both map directions in `src-tauri/src/menu/command_map.rs`, add its row
+   to `menu/menu_bar.rs` for the menu bar (rows are tracked by default, which is what lets accelerator rebinding reach
+   them; update the pinned bar in `menu/menu_bar_test.rs` alongside) or build it in `menu/menu_structure.rs` for the
+   right-click menu, and add the id to `menuCommands` in `shortcuts-store.ts`. `rust-command-id-drift.test.ts` fails if
+   `menu_id_to_command` emits an unknown id, or if `menuCommands` and the reverse map disagree.
 
 ## Fuzzy search
 

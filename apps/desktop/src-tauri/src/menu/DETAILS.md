@@ -15,14 +15,19 @@ window focus context.
   stay reachable at `crate::menu::…`.
 - `command_map.rs`: the menu item ID constants (all `*_ID`) and the ID mapping functions
   (`menu_id_to_command`, `command_id_to_menu_id`).
-- `menu_items.rs`: small-piece builders and platform-aware helpers: `MenuSlot` / `build_registered_submenu` (every
-  top-level submenu in `macos.rs` / `linux.rs` goes through this pair; see "Accelerator sync"), `build_sort_submenu`,
-  `build_zoom_submenu`, `register_item`, `register_sort_items`, `truncate_for_menu_label`, the `copy_path_accelerator` /
-  `show_in_file_manager_*` / `full_view_label` / `brief_view_label` platform helpers, and the
-  `SortSubmenuItems` struct, plus `DetachWord` / `detach_label`, which decide whether a row's leave-this-volume item
-  reads `Eject ({name})` or `Disconnect` (a phone gets the second: `adb` has no per-client detach, so nothing is made
-  safe to unplug).
-- `menu_structure.rs`: hierarchical assembly: the `build_menu` dispatcher, file context menu
+- `menu_bar.rs`: `MENU_BAR`, the menu bar for both platforms as data, one row per item with every platform difference
+  marked on its row, plus the per-platform constants the file context menu shares (`COPY_PATH_ACCELERATOR`,
+  `SHOW_IN_FILE_MANAGER_KEY`, `SHOW_IN_FILE_MANAGER_ACCELERATOR`). `menu_bar_test.rs` pins both bars as text. Why it's
+  data: the menu-bar Decision under "Key decisions".
+- `menu_spec.rs`: the words `MENU_BAR` is written in (`item`, `check`, `submenu`, `macos_only`, `both`, `macos`,
+  `split`, …) and `Platform` / `PerPlatform`, where a platform difference resolves. No `cfg`, so both bars exist on
+  every host.
+- `menu_bar_builder.rs`: `build_menu`, which builds `MENU_BAR` for `Platform::current()`, allocates the mnemonics,
+  registers the tracked items, and hands back `MenuItems`.
+- `menu_items.rs`: small shared pieces: `APP_MENU_TITLE`, `pin_tab_label`, `truncate_for_menu_label`, plus
+  `DetachWord` / `detach_label`, which decide whether a row's leave-this-volume item reads `Eject ({name})` or
+  `Disconnect` (a phone gets the second: `adb` has no per-client detach, so nothing is made safe to unplug).
+- `menu_structure.rs`: the file context menu
   (`build_context_menu`), breadcrumb / tab / network-host / function-key-bar / volume-selector-row context menus
   (`build_volume_row_context_menu`: favorite Rename/Remove, a server's Disconnect/Pin/Forget items, or the
   `detach_label` item), the viewer-window menu
@@ -40,7 +45,6 @@ window focus context.
   strings) and `update_menu_item_accelerator` (swapping one on a live item).
 - `view_mode_items.rs`: `rebuild_view_mode_items` (full remove/recreate/reinsert when the active pane
   or a shortcut moved) and `sync_view_mode_check_states` (the cheap check-state-only path).
-- `macos.rs`: `build_menu_macos`, the full macOS menu bar. Building only.
 - `macos_appkit.rs`: the two passes that reach past Tauri into AppKit once the bar is built:
   `cleanup_macos_menus` (removes system-injected Edit items, registers the Help menu) and
   `set_macos_menu_icons` (SF Symbol icons via objc2 FFI) with its `MENU_BAR_ICONS` table.
@@ -66,7 +70,6 @@ window focus context.
   line".
 - `media_index_items.rs`: `image_index_menu_items`, which decides the image-search group's labels and which of them are
   clickable.
-- `linux.rs`: `build_menu_linux` (full Linux/GTK menu bar with mnemonics, no F-key accelerators).
 - `rebuild.rs`: `rebuild_menu_bar`, which throws the bar away and builds a new one in the current UI language.
 - `mnemonics.rs`: `Mnemonics`, the per-submenu allocator for the Linux underline letter.
 
@@ -124,8 +127,8 @@ depends on the LANGUAGE. A hand-picked English set couldn't survive nine transla
 a per-submenu uniqueness puzzle on top of translating. So `mnemonics::Mnemonics` allocates them at build time from the
 translated labels, in menu order: word-initial letters first (what people scan for), then any other letter or digit,
 then no marker at all if everything is taken (which costs one keystroke and nothing else). The menu bar's own titles get
-one allocator; each submenu gets its own. It's a no-op on macOS, but the call sites are identical on both platforms so a
-new item can't be given a mnemonic on one and not the other.
+one allocator; each submenu gets its own. The builder runs every label through it on both platforms (a no-op on macOS),
+so no row in `menu_bar.rs` names a mnemonic, and a new item can't get one on one platform and not the other.
 
 ## Key concepts
 
@@ -222,8 +225,8 @@ Shared state managed via `tauri::State<MenuState<Wry>>`. Holds:
 - Cached view-mode state (`view_mode_active_pane`, `view_mode_left`, `view_mode_right`,
   `view_mode_full_accel`, `view_mode_brief_accel`) used by `rebuild_view_mode_items` to
   attach the keyboard accelerator only to the currently-active pane's pair
-- `items: HashMap<String, MenuItemEntry>` for the ~20 regular MenuItems that need accelerator
-  updates and enable/disable
+- `items: HashMap<String, MenuItemEntry>` for every `Tracking::Tracked` row in `menu_bar.rs`, the items
+  that need accelerator updates and enable/disable
 - `context: MenuContext` for right-click context menu: `path` (primary right-clicked file),
   `filename`, `paths` (full selection if the right-clicked file is part of it, else `[path]`),
   and (macOS) `open_with_apps` (`bundle_id → app_path` map populated when "Open with" submenu
@@ -241,15 +244,10 @@ The frontend triggers regular-item updates via `invoke('update_menu_accelerator'
 `shortcuts-store.ts`, and triggers view-mode rebuilds via `invoke('update_view_mode_menu')` from
 `DualPaneExplorer.svelte` on focus change, swap, and any view-mode toggle.
 
-Every top-level submenu in `macos.rs` / `linux.rs` is built with `menu_items::build_registered_submenu`,
-which takes the submenu's items as a `&[MenuSlot]` array in display order (`MenuSlot::Reg(id, item)` for
-an item tracked in `MenuState.items`, `MenuSlot::Plain(item)` for a separator, a nested submenu, a
-`PredefinedMenuItem`, or a `CheckMenuItem` synced some other way) and registers every `Reg` entry at its
-own index in that array. There's no hand-typed position anywhere: the index `register_item` stores IS
-the item's index in the array the submenu is built from, so a reorder can't desync one from the other by
-construction. Submenus assembled by a helper (`build_zoom_submenu`, `build_view_mode_items`) take plain
-items in their own submenu and register nothing themselves, same as before; Sort by is the one exception,
-registered by `menu_items::register_sort_items` beside `build_sort_submenu`, which fixes its order.
+`menu_bar_builder.rs` registers every `Tracking::Tracked` row in `MenuState.items` at its own index among
+the rows its submenu shows on this platform, nested submenus (Sort by) included. There's no hand-typed
+position anywhere: the index stored IS the item's index in the rows the submenu is built from, so adding,
+moving, or platform-tagging a row can't desync one from the other.
 
 ### Per-pane view modes
 
@@ -351,11 +349,11 @@ AppKit drew, so a translated label matches itself.
 breaks the moment a title is translated, silently in both cases: icons vanish, and AppKit's injected
 Edit items come back.
 
-This is why every menu-bar submenu is built with `Submenu::with_id_and_items` and an ID from
-`command_map.rs`. Two IDs are shared with the viewer menu bar (`menu_structure.rs`): `EDIT_MENU_ID`
-and `HELP_MENU_ID`, because `cleanup_macos_menus` runs against whichever bar is installed. Only one
-bar is ever installed at a time, so the shared IDs never collide. `menu_items.rs` owns
-`SORT_BY_MENU_ID` (its `build_sort_submenu` serves both platforms).
+This is why every top-level menu in `menu_bar.rs` carries an ID from `command_map.rs`, which the macOS
+bar builds it with (Linux looks nothing up, so it builds its menus without one). Two IDs are shared
+with the viewer menu bar (`menu_structure.rs`): `EDIT_MENU_ID` and `HELP_MENU_ID`, because
+`cleanup_macos_menus` runs against whichever bar is installed. Only one bar is ever installed at a time,
+so the shared IDs never collide. Sort by carries `SORT_BY_MENU_ID` on both platforms.
 
 ### macOS cleanup (objc2)
 
@@ -435,15 +433,15 @@ same fact `Share` rides on: both hand file URLs to something outside Cmdr).
 ### SF Symbol icons (macOS only)
 
 `set_macos_menu_icons(app)` runs post-construction via objc2 FFI, walking the `MENU_BAR_ICONS` table
-in `macos.rs` and calling `NSImage(systemSymbolName:)` + `setImage:` on each `NSMenuItem`. This
+in `macos_appkit.rs` and calling `NSImage(systemSymbolName:)` + `setImage:` on each `NSMenuItem`. This
 produces true template images that auto-tint on selection highlighting.
 
 The table is `(menu ID, [(menu item ID, SF Symbol name)], nested)`, resolved to titles as described
 above. `nested` recurses one level for View > Sort by; the recursion is uniform, so a second nesting
 level would need no new code. Anything that fails to resolve logs a warning naming the ID and the
 symbol, because the failure is otherwise invisible: the menu builds fine, just without an icon.
-`menu_icon_ids_are_built_by_the_menu_bar` (in `macos.rs`) is the compile-time-ish guard, parsing
-`macos.rs` and `menu_items.rs` for the IDs the menu bar actually constructs.
+`menu_icon_ids_are_built_by_the_menu_bar` (in `macos_appkit.rs`) is the guard: each icon's item has to
+sit directly inside the menu its group names in `MENU_BAR` on macOS, which is where the pass looks.
 
 **Gotcha**: an accelerator update replaces the menu item (see "Accelerator sync"), and the fresh
 `NSMenuItem` carries no image, so `update_menu_accelerator` re-applies the icons afterwards.
@@ -550,6 +548,8 @@ what keeps the native catalog free of the count-plus-noun shape `menu_t` can't r
 
 ## Platform differences
 
+Every difference is marked on its row in `menu_bar.rs`, and `menu_bar_test.rs` spells out each bar in full.
+
 | Aspect | macOS | Linux |
 |--------|-------|-------|
 | App menu | Dedicated "cmdr" menu with About, License, Settings | No app menu; About under Help, Settings/License under Edit |
@@ -646,7 +646,8 @@ the second takes the focused pane to the servers hub. macOS SF Symbols are `netw
 commands do: `apps/desktop/src/routes/(main)/command-handlers/servers-handlers.ts`.
 
 The **Help** submenu holds, in order: `Keyboard shortcuts`, separator, `What's new`, `Send feedback…`,
-`Send error report…` (Linux prepends `About cmdr` + a separator, since it has no app menu). `What's new`
+`Send error report…` (Linux, which has no app menu, starts with `About`, `Acknowledgements`, and a separator, and has
+no separator after `Keyboard shortcuts`). `What's new`
 (`HELP_WHATS_NEW_ID` (`"help_whats_new"`) → `help.whatsNew`, `App`-scoped) opens the post-update changelog popup (see
 `apps/desktop/src/lib/whats-new/CLAUDE.md`); it has no default shortcut but is registered in `MenuState.items` so a
 future custom binding still flows into the menu. Its macOS SF Symbol is `sparkles` (the symbol map matches by exact
@@ -659,11 +660,11 @@ both menu items open the identical latest-five slice. Its macOS SF Symbol is `li
 IDs share one command, `command_id_to_menu_id("help.whatsNew")` resolves only to `HELP_WHATS_NEW_ID`; that's fine since
 neither carries a default shortcut (a future binding would just track the Help item).
 
-The **Zoom** submenu (`build_zoom_submenu`) holds the text-size presets (75/100/125/150 %) plus Zoom in (`Cmd+Plus`) /
+The **Zoom** submenu holds the text-size presets (75/100/125/150 %) plus Zoom in (`Cmd+Plus`) /
 Zoom out (`Cmd+Minus`) / 100 % (`Cmd+0`). Items are `App`-scoped so the keyboard accelerators fire in any focused window.
 Linux skips the in/out accelerators because GTK intercepts `Cmd+Plus` / `Cmd+Minus` at the toolkit level; the JS
 shortcut dispatch path covers Linux.
-macOS adds: cmdr (app menu), Window. See the menu item ID constants in `mod.rs` for the full item list.
+macOS adds: cmdr (app menu), Window. `menu_bar.rs` has the full item list.
 
 Viewer windows get a minimal menu: File (Close), Edit (clipboard), View (Word wrap), and on macOS
 also Window and Help. On Linux it's a per-window menu; on macOS it's installed app-level on viewer
@@ -686,11 +687,10 @@ focus-gain (see "Per-window menu activation" above).
 **Decision**: Accelerator updates via remove/recreate/reinsert instead of in-place mutation.
 **Why**: Tauri's menu API has no `set_accelerator()` method. The only way to change a displayed accelerator is to destroy the old `MenuItem`, create a new one with the new accelerator string, and reinsert it at the same position in the parent submenu. This is why `MenuState` tracks both the `Submenu` reference and the positional index for every updatable item.
 
-**Decision**: `macos.rs` and `linux.rs` each keep their own imperative item construction (still duplicated: every `MenuItem::with_id(…)` call, its label, and its accelerator), but the ~70-line `register_item` block each used to keep separately is gone. Both files build every top-level submenu through `menu_items::build_registered_submenu`, passing the submenu's items as a `&[MenuSlot]` array; the function registers each `MenuSlot::Reg` entry at its own index in that array.
+**Decision**: one menu bar for both platforms, written as data (`menu_bar.rs`) and built by one generic builder (`menu_bar_builder.rs`), with every platform difference marked on the row it changes: `macos_only` / `linux_only` rows and menus, `macos(…)` / `split(…)` accelerators, per-platform label keys, and top-level IDs that reach macOS alone.
+**Why**: per-platform builders write each item's ID, label, and accelerator twice, so a new item is two edits in lockstep and a drift between them goes unnoticed. As data, a new item is one row, its registration position is its index among the rows its submenu shows, and the table carries no `cfg`, so `menu_bar_test.rs` pins BOTH bars as text on any host. That's the only way to check the Linux bar on a Mac (a real `muda::Menu` panics off the main thread), and the snapshot doubles as the review surface: a menu change reads as a diff of the bar. Sort by, Zoom, and the pane view-mode submenus are rows too, so nothing about the bar lives in a helper.
 
-**Why**: `register_item_positions_match_submenu_order` used to be a source-parsing test reading `macos.rs` / `linux.rs` back with `include_str!`, because building a real menu needs AppKit on the main thread and that made source text the only place left to check a hand-typed position against. `build_registered_submenu` retired that test by making the bug it guarded against unrepresentable: there's no hand-typed index anywhere left to drift from the array beside it, so the position IS the item's index in the very array the submenu is built from. `register_sort_items` still registers Sort by's items itself, beside `build_sort_submenu`, which fixes their order — that one submenu is assembled by a shared helper rather than a `MenuSlot` array in the platform files, so folding it into the generic mechanism would buy nothing.
-
-The wider version of this question (five of the seven menus have identical STRUCTURE and differ only in labels and accelerators, so a per-platform data table could build them all, collapsing the item construction too) is still a real option, still undone, and still not something to do as a side effect of a duplication pass: it reshapes a menu bar David reviews by eye, and needs its own conscious decision rather than riding in on a mechanical refactor.
+A few asymmetries look accidental, and each is one row edit away: macOS keeps About and Settings out of `MenuState.items` while Linux tracks them, the Help menu's separator sits after `Keyboard shortcuts` on macOS but after the About group on Linux, and Duplicate's `Cmd+D` is macOS-only.
 
 **Decision**: Omit F-key and Tab/Space accelerators on Linux.
 **Why**: GTK intercepts F2-F8, Tab, and Space at the toolkit level before events reach the webview. Registering them as menu accelerators causes double-handling or silent swallowing. On Linux these keys are dispatched purely through JS keydown handlers, bypassing the native menu system entirely.
