@@ -653,6 +653,26 @@ mod tests {
                 names.push(name);
             }
         }
+        // `build_registered_submenu(app, Some(ID), …)` is the macOS-only shape a top-level submenu
+        // uses when the AppKit passes below need to find it by ID; Linux passes `None` there and
+        // contributes nothing here. `::with_id` above can't see this one: there's no `::` before it.
+        for (index, _) in source.match_indices("build_registered_submenu(") {
+            let after = &source[index + "build_registered_submenu(".len()..];
+            let Some(after_app) = after.trim_start().strip_prefix("app,") else {
+                continue;
+            };
+            let Some(after_some) = after_app.trim_start().strip_prefix("Some(") else {
+                continue;
+            };
+            let name: String = after_some
+                .trim_start()
+                .chars()
+                .take_while(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || *c == '_')
+                .collect();
+            if !name.is_empty() {
+                names.push(name);
+            }
+        }
         names
     }
 }

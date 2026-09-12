@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 use tauri::{
     AppHandle, Runtime,
-    menu::{CheckMenuItem, MenuItem, PredefinedMenuItem, Submenu},
+    menu::{CheckMenuItem, IsMenuItem, MenuItem, PredefinedMenuItem, Submenu},
 };
 
 use crate::intl::{menu_t, menu_t_with};
@@ -364,6 +364,56 @@ pub(crate) fn build_zoom_submenu<R: Runtime>(
             &zoom_out,
         ],
     )
+}
+
+/// One entry in a top-level submenu's build order, in display order.
+///
+/// A submenu built from a `&[MenuSlot]` and registered with [`build_registered_submenu`] can't
+/// suffer the bug `register_item_positions_match_submenu_order` used to guard against: there's no
+/// hand-typed index anywhere to drift from the array beside it, because the position IS that
+/// item's index in the very array the submenu is built from.
+pub(crate) enum MenuSlot<'a, R: Runtime> {
+    /// An item tracked for accelerator updates (`MenuState.items`), keyed by its menu ID.
+    Reg(&'static str, &'a MenuItem<R>),
+    /// Anything else: a separator, a submenu, a `PredefinedMenuItem`, a `CheckMenuItem` not synced
+    /// through the generic accelerator-update path, or a `MenuItem` with nothing to register (a
+    /// dialog opener with no accelerator, kept in the menu but never rebound).
+    Plain(&'a dyn IsMenuItem<R>),
+}
+
+impl<'a, R: Runtime> MenuSlot<'a, R> {
+    fn as_dyn(&self) -> &'a dyn IsMenuItem<R> {
+        match self {
+            MenuSlot::Reg(_, item) => *item,
+            MenuSlot::Plain(item) => *item,
+        }
+    }
+}
+
+/// Builds a top-level submenu from `slots` and registers every [`MenuSlot::Reg`] entry in `items`
+/// at its real index in `slots`, so a position can never go stale: see [`MenuSlot`].
+///
+/// `id` is `Some` on macOS, where the post-construction AppKit passes resolve a submenu by ID
+/// (`menu/DETAILS.md` § "Finding a menu from AppKit"); `None` on Linux, which does none of that and
+/// builds every top-level submenu with a plain `Submenu::with_items`.
+pub(crate) fn build_registered_submenu<R: Runtime>(
+    app: &AppHandle<R>,
+    id: Option<&str>,
+    label: &str,
+    slots: &[MenuSlot<R>],
+    items: &mut HashMap<String, MenuItemEntry<R>>,
+) -> tauri::Result<Submenu<R>> {
+    let refs: Vec<&dyn IsMenuItem<R>> = slots.iter().map(MenuSlot::as_dyn).collect();
+    let submenu = match id {
+        Some(id) => Submenu::with_id_and_items(app, id, label, true, &refs)?,
+        None => Submenu::with_items(app, label, true, &refs)?,
+    };
+    for (position, slot) in slots.iter().enumerate() {
+        if let MenuSlot::Reg(item_id, item) = slot {
+            register_item(items, item_id, item, &submenu, position);
+        }
+    }
+    Ok(submenu)
 }
 
 /// Registers a regular MenuItem in the items HashMap for accelerator updates.

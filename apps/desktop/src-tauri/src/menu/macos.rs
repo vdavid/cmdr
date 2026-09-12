@@ -6,14 +6,14 @@ use std::collections::HashMap;
 
 use tauri::{
     AppHandle, Runtime,
-    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
+    menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem},
 };
 
 use crate::intl::menu_t;
 
 use super::menu_items::{
-    APP_MENU_TITLE, ViewModeItems, build_sort_submenu, build_view_mode_items, build_zoom_submenu,
-    copy_path_accelerator, register_item, register_sort_items, show_in_file_manager_accelerator,
+    APP_MENU_TITLE, MenuSlot, ViewModeItems, build_registered_submenu, build_sort_submenu, build_view_mode_items,
+    build_zoom_submenu, copy_path_accelerator, register_sort_items, show_in_file_manager_accelerator,
     show_in_file_manager_label,
 };
 use super::{
@@ -38,6 +38,9 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     has_existing_license: bool,
 ) -> tauri::Result<MenuItems<R>> {
     let menu = Menu::new(app)?;
+    // Registrations land here as each submenu below is built, at whatever index the item actually
+    // holds in that submenu's `MenuSlot` array: see `menu_items::build_registered_submenu`.
+    let mut items = HashMap::new();
 
     // --- cmdr app menu ---
     let about_item = MenuItem::with_id(app, ABOUT_ID, menu_t("menu.app.about"), true, None::<&str>)?;
@@ -80,32 +83,35 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     )?;
     let settings_item = MenuItem::with_id(app, SETTINGS_ID, menu_t("menu.app.settings"), true, Some("Cmd+,"))?;
 
-    let app_menu = Submenu::with_id_and_items(
+    let app_menu = build_registered_submenu(
         app,
-        APP_MENU_ID,
+        Some(APP_MENU_ID),
         APP_MENU_TITLE,
-        true,
         &[
-            &about_item,
-            &acknowledgements_item,
-            &license_item,
-            &check_for_updates_item,
-            &changelog_item,
-            &open_onboarding_item,
-            &PredefinedMenuItem::separator(app)?,
-            &settings_item,
-            &PredefinedMenuItem::separator(app)?,
+            MenuSlot::Plain(&about_item),
+            MenuSlot::Plain(&acknowledgements_item),
+            MenuSlot::Plain(&license_item),
+            MenuSlot::Reg(CHECK_FOR_UPDATES_ID, &check_for_updates_item),
+            MenuSlot::Reg(CHANGELOG_ID, &changelog_item),
+            MenuSlot::Reg(OPEN_ONBOARDING_ID, &open_onboarding_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Plain(&settings_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
             // System Services menu, populated by AppKit with Action extensions and other apps'
             // services (Ghostty's "New tab here", Nimble Commander's "Reveal", Quick Actions, etc.).
             // muda's PredefinedMenuItem::services wires `NSApplication.servicesMenu` for us.
-            &PredefinedMenuItem::services(app, Some(&menu_t("menu.app.services")))?,
-            &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::hide(app, Some(&menu_t("menu.app.hide")))?,
-            &PredefinedMenuItem::hide_others(app, Some(&menu_t("menu.app.hideOthers")))?,
-            &PredefinedMenuItem::show_all(app, Some(&menu_t("menu.app.showAll")))?,
-            &PredefinedMenuItem::separator(app)?,
-            &PredefinedMenuItem::quit(app, Some(&menu_t("menu.app.quit")))?,
+            MenuSlot::Plain(&PredefinedMenuItem::services(app, Some(&menu_t("menu.app.services")))?),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Plain(&PredefinedMenuItem::hide(app, Some(&menu_t("menu.app.hide")))?),
+            MenuSlot::Plain(&PredefinedMenuItem::hide_others(
+                app,
+                Some(&menu_t("menu.app.hideOthers")),
+            )?),
+            MenuSlot::Plain(&PredefinedMenuItem::show_all(app, Some(&menu_t("menu.app.showAll")))?),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Plain(&PredefinedMenuItem::quit(app, Some(&menu_t("menu.app.quit")))?),
         ],
+        &mut items,
     )?;
     menu.append(&app_menu)?;
 
@@ -178,32 +184,32 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         Some("Shift+Space"),
     )?;
 
-    let file_menu = Submenu::with_id_and_items(
+    let file_menu = build_registered_submenu(
         app,
-        FILE_MENU_ID,
-        menu_t("menu.bar.file"),
-        true,
+        Some(FILE_MENU_ID),
+        &menu_t("menu.bar.file"),
         &[
-            &open_item,
-            &file_view_item,
-            &edit_item,
-            &PredefinedMenuItem::separator(app)?,
-            &file_copy_item,
-            &file_move_item,
-            &file_duplicate_item,
-            &file_compress_item,
-            &file_new_folder_item,
-            &file_new_file_item,
-            &file_delete_item,
-            &file_delete_permanently_item,
-            &PredefinedMenuItem::separator(app)?,
-            &rename_item,
-            &PredefinedMenuItem::separator(app)?,
-            &show_in_finder_item,
-            &open_terminal_here_item,
-            &get_info_item,
-            &quick_look_item,
+            MenuSlot::Reg(OPEN_ID, &open_item),
+            MenuSlot::Reg(FILE_VIEW_ID, &file_view_item),
+            MenuSlot::Reg(EDIT_ID, &edit_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(FILE_COPY_ID, &file_copy_item),
+            MenuSlot::Reg(FILE_MOVE_ID, &file_move_item),
+            MenuSlot::Reg(FILE_DUPLICATE_ID, &file_duplicate_item),
+            MenuSlot::Reg(FILE_COMPRESS_ID, &file_compress_item),
+            MenuSlot::Reg(FILE_NEW_FOLDER_ID, &file_new_folder_item),
+            MenuSlot::Reg(FILE_NEW_FILE_ID, &file_new_file_item),
+            MenuSlot::Reg(FILE_DELETE_ID, &file_delete_item),
+            MenuSlot::Reg(FILE_DELETE_PERMANENTLY_ID, &file_delete_permanently_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(RENAME_ID, &rename_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(SHOW_IN_FINDER_ID, &show_in_finder_item),
+            MenuSlot::Reg(OPEN_TERMINAL_HERE_ID, &open_terminal_here_item),
+            MenuSlot::Reg(GET_INFO_ID, &get_info_item),
+            MenuSlot::Reg(QUICK_LOOK_ID, &quick_look_item),
         ],
+        &mut items,
     )?;
     menu.append(&file_menu)?;
 
@@ -244,25 +250,25 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         Some("Cmd+F"),
     )?;
 
-    let edit_menu = Submenu::with_id_and_items(
+    let edit_menu = build_registered_submenu(
         app,
-        EDIT_MENU_ID,
-        menu_t("menu.bar.edit"),
-        true,
+        Some(EDIT_MENU_ID),
+        &menu_t("menu.bar.edit"),
         &[
-            &PredefinedMenuItem::undo(app, Some(&menu_t("menu.edit.undo")))?,
-            &PredefinedMenuItem::redo(app, Some(&menu_t("menu.edit.redo")))?,
-            &PredefinedMenuItem::separator(app)?,
-            &edit_cut_item,
-            &edit_copy_item,
-            &edit_paste_item,
-            &edit_paste_move_item,
-            &PredefinedMenuItem::separator(app)?,
-            &copy_path_item,
-            &copy_filename_item,
-            &PredefinedMenuItem::separator(app)?,
-            &search_files_item,
+            MenuSlot::Plain(&PredefinedMenuItem::undo(app, Some(&menu_t("menu.edit.undo")))?),
+            MenuSlot::Plain(&PredefinedMenuItem::redo(app, Some(&menu_t("menu.edit.redo")))?),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(EDIT_CUT_ID, &edit_cut_item),
+            MenuSlot::Reg(EDIT_COPY_ID, &edit_copy_item),
+            MenuSlot::Reg(EDIT_PASTE_ID, &edit_paste_item),
+            MenuSlot::Reg(EDIT_PASTE_MOVE_ID, &edit_paste_move_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(COPY_PATH_ID, &copy_path_item),
+            MenuSlot::Reg(COPY_FILENAME_ID, &copy_filename_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(SEARCH_FILES_ID, &search_files_item),
         ],
+        &mut items,
     )?;
     menu.append(&edit_menu)?;
 
@@ -298,19 +304,19 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         None::<&str>,
     )?;
 
-    let select_menu = Submenu::with_id_and_items(
+    let select_menu = build_registered_submenu(
         app,
-        SELECT_MENU_ID,
-        menu_t("menu.bar.select"),
-        true,
+        Some(SELECT_MENU_ID),
+        &menu_t("menu.bar.select"),
         &[
-            &select_all_item,
-            &deselect_all_item,
-            &invert_selection_item,
-            &PredefinedMenuItem::separator(app)?,
-            &select_files_item,
-            &deselect_files_item,
+            MenuSlot::Reg(SELECT_ALL_ID, &select_all_item),
+            MenuSlot::Reg(DESELECT_ALL_ID, &deselect_all_item),
+            MenuSlot::Reg(INVERT_SELECTION_ID, &invert_selection_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(SELECT_FILES_ID, &select_files_item),
+            MenuSlot::Reg(DESELECT_FILES_ID, &deselect_files_item),
         ],
+        &mut items,
     )?;
     menu.append(&select_menu)?;
 
@@ -402,28 +408,28 @@ pub(crate) fn build_menu_macos<R: Runtime>(
     // registry shortcut; this is the initial label.
     let ask_cmdr_item = MenuItem::with_id(app, ASK_CMDR_ID, menu_t("menu.view.askCmdr"), true, Some("Cmd+Alt+A"))?;
 
-    let view_submenu = Submenu::with_id_and_items(
+    let view_submenu = build_registered_submenu(
         app,
-        VIEW_MENU_ID,
-        menu_t("menu.bar.view"),
-        true,
+        Some(VIEW_MENU_ID),
+        &menu_t("menu.bar.view"),
         &[
-            &view_left_pane_submenu,
-            &view_right_pane_submenu,
-            &PredefinedMenuItem::separator(app)?,
-            &show_hidden_item,
-            &sort_submenu,
-            &zoom_submenu,
-            &PredefinedMenuItem::separator(app)?,
-            &switch_pane_item,
-            &swap_panes_item,
-            &PredefinedMenuItem::separator(app)?,
-            &command_palette_item,
-            &queue_show_item,
-            &operation_log_item,
-            &suggested_ops_item,
-            &ask_cmdr_item,
+            MenuSlot::Plain(&view_left_pane_submenu),
+            MenuSlot::Plain(&view_right_pane_submenu),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Plain(&show_hidden_item),
+            MenuSlot::Plain(&sort_submenu),
+            MenuSlot::Plain(&zoom_submenu),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(SWITCH_PANE_ID, &switch_pane_item),
+            MenuSlot::Reg(SWAP_PANES_ID, &swap_panes_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(COMMAND_PALETTE_ID, &command_palette_item),
+            MenuSlot::Reg(QUEUE_SHOW_ID, &queue_show_item),
+            MenuSlot::Reg(OPERATION_LOG_ID, &operation_log_item),
+            MenuSlot::Reg(SUGGESTED_OPS_ID, &suggested_ops_item),
+            MenuSlot::Reg(ASK_CMDR_ID, &ask_cmdr_item),
         ],
+        &mut items,
     )?;
     menu.append(&view_submenu)?;
 
@@ -453,23 +459,23 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         None::<&str>,
     )?;
 
-    let go_menu = Submenu::with_id_and_items(
+    let go_menu = build_registered_submenu(
         app,
-        GO_MENU_ID,
-        menu_t("menu.bar.go"),
-        true,
+        Some(GO_MENU_ID),
+        &menu_t("menu.bar.go"),
         &[
-            &go_back_item,
-            &go_forward_item,
-            &PredefinedMenuItem::separator(app)?,
-            &go_parent_item,
-            &go_home_item,
-            &PredefinedMenuItem::separator(app)?,
-            &go_to_path_item,
-            &go_latest_download_item,
-            &PredefinedMenuItem::separator(app)?,
-            &favorites_add_item,
+            MenuSlot::Reg(GO_BACK_ID, &go_back_item),
+            MenuSlot::Reg(GO_FORWARD_ID, &go_forward_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(GO_PARENT_ID, &go_parent_item),
+            MenuSlot::Reg(GO_HOME_ID, &go_home_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(GO_TO_PATH_ID, &go_to_path_item),
+            MenuSlot::Reg(GO_LATEST_DOWNLOAD_ID, &go_latest_download_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(FAVORITES_ADD_ID, &favorites_add_item),
         ],
+        &mut items,
     )?;
     menu.append(&go_menu)?;
 
@@ -491,12 +497,15 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         None::<&str>,
     )?;
 
-    let servers_menu = Submenu::with_id_and_items(
+    let servers_menu = build_registered_submenu(
         app,
-        SERVERS_MENU_ID,
-        menu_t("menu.bar.servers"),
-        true,
-        &[&servers_connect_item, &servers_show_item],
+        Some(SERVERS_MENU_ID),
+        &menu_t("menu.bar.servers"),
+        &[
+            MenuSlot::Reg(SERVERS_CONNECT_ID, &servers_connect_item),
+            MenuSlot::Reg(SERVERS_SHOW_ID, &servers_show_item),
+        ],
+        &mut items,
     )?;
     menu.append(&servers_menu)?;
 
@@ -529,35 +538,38 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         None::<&str>,
     )?;
 
-    let tab_menu = Submenu::with_id_and_items(
+    let tab_menu = build_registered_submenu(
         app,
-        TAB_MENU_ID,
-        menu_t("menu.bar.tab"),
-        true,
+        Some(TAB_MENU_ID),
+        &menu_t("menu.bar.tab"),
         &[
-            &new_tab_item,
-            &close_tab_item,
-            &reopen_closed_tab_item,
-            &PredefinedMenuItem::separator(app)?,
-            &next_tab_item,
-            &prev_tab_item,
-            &PredefinedMenuItem::separator(app)?,
-            &pin_tab_item,
-            &close_other_tabs_item,
+            MenuSlot::Reg(NEW_TAB_ID, &new_tab_item),
+            MenuSlot::Reg(CLOSE_TAB_ID, &close_tab_item),
+            MenuSlot::Reg(REOPEN_CLOSED_TAB_ID, &reopen_closed_tab_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(NEXT_TAB_ID, &next_tab_item),
+            MenuSlot::Reg(PREV_TAB_ID, &prev_tab_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Plain(&pin_tab_item),
+            MenuSlot::Reg(CLOSE_OTHER_TABS_ID, &close_other_tabs_item),
         ],
+        &mut items,
     )?;
     menu.append(&tab_menu)?;
 
     // --- Window menu ---
-    let window_menu = Submenu::with_id_and_items(
+    let window_menu = build_registered_submenu(
         app,
-        WINDOW_MENU_ID,
-        menu_t("menu.bar.window"),
-        true,
+        Some(WINDOW_MENU_ID),
+        &menu_t("menu.bar.window"),
         &[
-            &PredefinedMenuItem::minimize(app, Some(&menu_t("menu.window.minimize")))?,
-            &PredefinedMenuItem::maximize(app, Some(&menu_t("menu.window.zoom")))?,
+            MenuSlot::Plain(&PredefinedMenuItem::minimize(
+                app,
+                Some(&menu_t("menu.window.minimize")),
+            )?),
+            MenuSlot::Plain(&PredefinedMenuItem::maximize(app, Some(&menu_t("menu.window.zoom")))?),
         ],
+        &mut items,
     )?;
     menu.append(&window_menu)?;
 
@@ -585,134 +597,23 @@ pub(crate) fn build_menu_macos<R: Runtime>(
         true,
         None::<&str>,
     )?;
-    let help_menu = Submenu::with_id_and_items(
+    let help_menu = build_registered_submenu(
         app,
-        HELP_MENU_ID,
-        menu_t("menu.bar.help"),
-        true,
+        Some(HELP_MENU_ID),
+        &menu_t("menu.bar.help"),
         &[
-            &shortcuts_item,
-            &PredefinedMenuItem::separator(app)?,
-            &whats_new_item,
-            &send_feedback_item,
-            &send_error_report_item,
+            MenuSlot::Reg(HELP_SHORTCUTS_ID, &shortcuts_item),
+            MenuSlot::Plain(&PredefinedMenuItem::separator(app)?),
+            MenuSlot::Reg(HELP_WHATS_NEW_ID, &whats_new_item),
+            MenuSlot::Reg(HELP_SEND_FEEDBACK_ID, &send_feedback_item),
+            MenuSlot::Reg(HELP_SEND_ERROR_REPORT_ID, &send_error_report_item),
         ],
+        &mut items,
     )?;
     menu.append(&help_menu)?;
 
-    // --- Populate items HashMap for accelerator updates ---
-    let mut items = HashMap::new();
-
-    // File menu positions: open(0), view(1), edit(2), sep(3), copy(4), move(5),
-    // duplicate(6), compress(7), new_folder(8), new_file(9), delete(10),
-    // delete_perm(11), sep(12), rename(13), sep(14), show_in_finder(15),
-    // open_terminal_here(16), get_info(17), quick_look(18)
-    register_item(&mut items, OPEN_ID, &open_item, &file_menu, 0);
-    register_item(&mut items, FILE_VIEW_ID, &file_view_item, &file_menu, 1);
-    register_item(&mut items, EDIT_ID, &edit_item, &file_menu, 2);
-    register_item(&mut items, FILE_COPY_ID, &file_copy_item, &file_menu, 4);
-    register_item(&mut items, FILE_MOVE_ID, &file_move_item, &file_menu, 5);
-    register_item(&mut items, FILE_DUPLICATE_ID, &file_duplicate_item, &file_menu, 6);
-    register_item(&mut items, FILE_COMPRESS_ID, &file_compress_item, &file_menu, 7);
-    register_item(&mut items, FILE_NEW_FOLDER_ID, &file_new_folder_item, &file_menu, 8);
-    register_item(&mut items, FILE_NEW_FILE_ID, &file_new_file_item, &file_menu, 9);
-    register_item(&mut items, FILE_DELETE_ID, &file_delete_item, &file_menu, 10);
-    register_item(
-        &mut items,
-        FILE_DELETE_PERMANENTLY_ID,
-        &file_delete_permanently_item,
-        &file_menu,
-        11,
-    );
-    register_item(&mut items, RENAME_ID, &rename_item, &file_menu, 13);
-    register_item(&mut items, SHOW_IN_FINDER_ID, &show_in_finder_item, &file_menu, 15);
-    register_item(
-        &mut items,
-        OPEN_TERMINAL_HERE_ID,
-        &open_terminal_here_item,
-        &file_menu,
-        16,
-    );
-    register_item(&mut items, GET_INFO_ID, &get_info_item, &file_menu, 17);
-    register_item(&mut items, QUICK_LOOK_ID, &quick_look_item, &file_menu, 18);
-
-    // Edit menu positions: undo(0), redo(1), sep(2), cut(3), copy(4), paste(5), move_here(6),
-    // sep(7), copy_path(8), copy_filename(9), sep(10), search_files(11)
-    register_item(&mut items, EDIT_CUT_ID, &edit_cut_item, &edit_menu, 3);
-    register_item(&mut items, EDIT_COPY_ID, &edit_copy_item, &edit_menu, 4);
-    register_item(&mut items, EDIT_PASTE_ID, &edit_paste_item, &edit_menu, 5);
-    register_item(&mut items, EDIT_PASTE_MOVE_ID, &edit_paste_move_item, &edit_menu, 6);
-    register_item(&mut items, COPY_PATH_ID, &copy_path_item, &edit_menu, 8);
-    register_item(&mut items, COPY_FILENAME_ID, &copy_filename_item, &edit_menu, 9);
-    register_item(&mut items, SEARCH_FILES_ID, &search_files_item, &edit_menu, 11);
-
-    // Select menu positions: select_all(0), deselect_all(1), invert_selection(2), sep(3),
-    // select_files(4), deselect_files(5). The two `…` items carry no accelerator: bare `+`/`-` aren't valid
-    // macOS menu accelerators (those always carry Cmd), so the keystroke binding lives in
-    // FilePane's keydown handler. The items are still registered so a future user-customized
-    // shortcut could flow into the menu via the generic update path.
-    register_item(&mut items, SELECT_ALL_ID, &select_all_item, &select_menu, 0);
-    register_item(&mut items, DESELECT_ALL_ID, &deselect_all_item, &select_menu, 1);
-    register_item(&mut items, INVERT_SELECTION_ID, &invert_selection_item, &select_menu, 2);
-    register_item(&mut items, SELECT_FILES_ID, &select_files_item, &select_menu, 4);
-    register_item(&mut items, DESELECT_FILES_ID, &deselect_files_item, &select_menu, 5);
-
-    // View menu positions: full(0), brief(1), sep(2), hidden(3), sort(4), zoom(5), sep(6),
-    // switch(7), swap(8), sep(9), command(10), queue(11), operation_log(12),
-    // suggested_ops(13), ask_cmdr(14)
-    register_item(&mut items, SWITCH_PANE_ID, &switch_pane_item, &view_submenu, 7);
-    register_item(&mut items, SWAP_PANES_ID, &swap_panes_item, &view_submenu, 8);
-    register_item(&mut items, COMMAND_PALETTE_ID, &command_palette_item, &view_submenu, 10);
-    register_item(&mut items, QUEUE_SHOW_ID, &queue_show_item, &view_submenu, 11);
-    register_item(&mut items, OPERATION_LOG_ID, &operation_log_item, &view_submenu, 12);
-    register_item(&mut items, SUGGESTED_OPS_ID, &suggested_ops_item, &view_submenu, 13);
-    register_item(&mut items, ASK_CMDR_ID, &ask_cmdr_item, &view_submenu, 14);
-
     // Sort by: the positions live with the layout in `menu_items::register_sort_items`.
     register_sort_items(&mut items, &sort_items);
-
-    // Go menu positions: back(0), forward(1), sep(2), parent(3), home(4), sep(5), go_to_path(6),
-    // go_latest_download(7), sep(8), favorites_add(9)
-    register_item(&mut items, GO_BACK_ID, &go_back_item, &go_menu, 0);
-    register_item(&mut items, GO_FORWARD_ID, &go_forward_item, &go_menu, 1);
-    register_item(&mut items, GO_PARENT_ID, &go_parent_item, &go_menu, 3);
-    register_item(&mut items, GO_HOME_ID, &go_home_item, &go_menu, 4);
-    register_item(&mut items, GO_TO_PATH_ID, &go_to_path_item, &go_menu, 6);
-    register_item(&mut items, GO_LATEST_DOWNLOAD_ID, &go_latest_download_item, &go_menu, 7);
-    register_item(&mut items, FAVORITES_ADD_ID, &favorites_add_item, &go_menu, 9);
-
-    // Servers menu positions: connect(0), show(1)
-    register_item(&mut items, SERVERS_CONNECT_ID, &servers_connect_item, &servers_menu, 0);
-    register_item(&mut items, SERVERS_SHOW_ID, &servers_show_item, &servers_menu, 1);
-
-    // Tab menu positions: new(0), close(1), reopen(2), sep(3), next(4), prev(5), sep(6), pin(7),
-    // close_others(8)
-    register_item(&mut items, NEW_TAB_ID, &new_tab_item, &tab_menu, 0);
-    register_item(&mut items, CLOSE_TAB_ID, &close_tab_item, &tab_menu, 1);
-    register_item(&mut items, REOPEN_CLOSED_TAB_ID, &reopen_closed_tab_item, &tab_menu, 2);
-    register_item(&mut items, NEXT_TAB_ID, &next_tab_item, &tab_menu, 4);
-    register_item(&mut items, PREV_TAB_ID, &prev_tab_item, &tab_menu, 5);
-    register_item(&mut items, CLOSE_OTHER_TABS_ID, &close_other_tabs_item, &tab_menu, 8);
-
-    // Help menu positions: shortcuts(0), sep(1), whats_new(2), send_feedback(3), send_error_report(4)
-    register_item(&mut items, HELP_SHORTCUTS_ID, &shortcuts_item, &help_menu, 0);
-    register_item(&mut items, HELP_WHATS_NEW_ID, &whats_new_item, &help_menu, 2);
-    register_item(&mut items, HELP_SEND_FEEDBACK_ID, &send_feedback_item, &help_menu, 3);
-    register_item(
-        &mut items,
-        HELP_SEND_ERROR_REPORT_ID,
-        &send_error_report_item,
-        &help_menu,
-        4,
-    );
-
-    // cmdr menu positions: about(0), acknowledgements(1), license(2),
-    // check_for_updates(3), changelog(4), open_onboarding(5), sep(6), settings(7),
-    // sep(8), services(9), sep(10), hide(11), hide_others(12), show_all(13),
-    // sep(14), quit(15)
-    register_item(&mut items, CHECK_FOR_UPDATES_ID, &check_for_updates_item, &app_menu, 3);
-    register_item(&mut items, CHANGELOG_ID, &changelog_item, &app_menu, 4);
-    register_item(&mut items, OPEN_ONBOARDING_ID, &open_onboarding_item, &app_menu, 5);
 
     Ok(MenuItems {
         menu,

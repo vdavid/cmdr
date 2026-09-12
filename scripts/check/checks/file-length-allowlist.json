@@ -23,7 +23,6 @@
     "apps/desktop/src-tauri/src/file_viewer/session.rs": 1459,
     "apps/desktop/src-tauri/src/file_viewer/session_test.rs": 1777,
     "apps/desktop/src-tauri/src/mcp/server.rs": 1008,
-    "apps/desktop/src-tauri/src/menu/linux.rs": 823,
     "apps/desktop/src-tauri/src/menu/menu_structure.rs": 826,
     "apps/desktop/src-tauri/src/network/manual_servers.rs": 1056,
     "apps/desktop/src-tauri/src/operation_log/rollback.rs": 860,
