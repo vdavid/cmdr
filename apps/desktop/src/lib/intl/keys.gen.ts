@@ -636,6 +636,7 @@ export type MessageKey =
   | 'errors.eject.deviceDisconnectRefused'
   | 'errors.eject.notAnSmbVolume'
   | 'errors.eject.notEjectable'
+  | 'errors.eject.notResponding'
   | 'errors.eject.timedOut'
   | 'errors.eject.unexpected'
   | 'errors.eject.unmountRefused'

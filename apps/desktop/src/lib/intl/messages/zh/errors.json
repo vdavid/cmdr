@@ -1733,6 +1733,10 @@
   "@errors.eject.timedOut": {
     "sourceHash": "c592421"
   },
+  "errors.eject.notResponding": "这个驱动器没有响应，所以仍处于连接状态。请稍后再试。",
+  "@errors.eject.notResponding": {
+    "sourceHash": "742a732"
+  },
   "errors.eject.unexpected": "出了点问题，Cmdr 也说不清是什么。",
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"

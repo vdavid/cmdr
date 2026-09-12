@@ -44,6 +44,8 @@ const EJECT_MESSAGE: { [K in EjectError['type']]: () => string } = {
   deviceDisconnectRefused: () => raw('errors.eject.deviceDisconnectRefused'),
   unmountRefused: () => raw('errors.eject.unmountRefused'),
   timedOut: () => raw('errors.eject.timedOut'),
+  // Nothing was unmounted, so it must NOT share `timedOut`'s "may still eject".
+  notResponding: () => raw('errors.eject.notResponding'),
   // The single honest fallback. ❌ `detail` is never the message; it goes to
   // `ejectTechnicalDetail()`.
   unexpected: () => raw('errors.eject.unexpected'),

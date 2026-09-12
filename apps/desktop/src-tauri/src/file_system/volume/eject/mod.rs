@@ -23,6 +23,7 @@
 //! The `commands::eject` IPC layer is a thin delegate over [`eject`]: [`EjectError`]
 //! IS the wire type, so nothing is flattened on the way out.
 
+mod deadlines;
 mod in_flight;
 mod unmount_tool;
 
@@ -153,15 +154,44 @@ pub enum EjectError {
         /// The tool's own stderr, for the log and the details line.
         detail: String,
     },
-    /// The `diskutil` / `umount` subprocess didn't finish within the timeout.
-    /// ❗ The unmount was NOT cancelled; it may still land.
+    /// The `diskutil` / `umount` subprocess (or a device provider's eject) didn't
+    /// finish within the timeout. ❗ The unmount was NOT cancelled; it may still land.
     TimedOut,
+    /// A step that runs BEFORE any unmount didn't finish within its deadline, so
+    /// nothing was unmounted and nothing may still land. A disk image whose backing
+    /// file sits on a hung share can block these for good. ❌ Never word it as
+    /// [`Self::TimedOut`], whose copy promises the eject may still happen.
+    NotResponding {
+        /// The step that stalled.
+        step: EjectStep,
+    },
     /// The one honest fallback, for a failure nothing above classifies (a
     /// panicked task). ❌ `detail` is never the message.
     Unexpected {
         /// What the layer below reported, for the log and the details line.
         detail: String,
     },
+}
+
+/// Which pre-unmount step stalled, for [`EjectError::NotResponding`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum EjectStep {
+    /// Asking the OS whether the volume is ejectable (`statfs` + NSURL, or the
+    /// Linux mount list).
+    EjectabilityCheck,
+    /// Stopping the drive's index, which must finish before any unmount runs.
+    IndexStop,
+}
+
+impl std::fmt::Display for EjectStep {
+    /// For logs and MCP replies only.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::EjectabilityCheck => "the ejectability check",
+            Self::IndexStop => "the index stop",
+        })
+    }
 }
 
 impl std::fmt::Display for EjectError {
@@ -178,6 +208,7 @@ impl std::fmt::Display for EjectError {
             }
             Self::UnmountRefused { detail } => write!(f, "unmount refused: {detail}"),
             Self::TimedOut => f.write_str("timed out"),
+            Self::NotResponding { step } => write!(f, "{step} didn't finish in time, so nothing was unmounted"),
             Self::Unexpected { detail } => write!(f, "unexpected: {detail}"),
         }
     }
@@ -253,11 +284,19 @@ async fn eject_now(volume_id: String) -> Result<(), EjectError> {
 
     // For physical volumes, ejectability comes from NSURL (macOS) /
     // `/sys/block/*/removable` (Linux). Look it up via the fast statfs-based
-    // resolver instead of enumerating all volumes.
+    // resolver instead of enumerating all volumes. Under a deadline: a disk image
+    // backed by a file on a hung share can block this for good, and a stalled
+    // check answers `NotResponding`, ❌ never a guessed "not ejectable".
     let is_ejectable = if provider.is_some() || is_smb {
         false
     } else {
-        resolve_is_ejectable(&mount_path).await
+        deadlines::within_deadline(
+            EjectStep::EjectabilityCheck,
+            volume_id,
+            deadlines::EJECTABILITY_CHECK_DEADLINE,
+            resolve_is_ejectable(mount_path.clone()),
+        )
+        .await?
     };
 
     let action = decide_eject_action(&EjectContext {
@@ -283,14 +322,20 @@ async fn eject_now(volume_id: String) -> Result<(), EjectError> {
                 verb: UnmountVerb::Unmount,
                 mount_path: &mount_path,
             };
-            stop_index_then_unmount(volume_id, || run_teardown(volume_id, teardown)).await
+            stop_index_then_unmount(volume_id, stop_index_blocking(volume_id.to_string()), || {
+                run_teardown(volume_id, teardown)
+            })
+            .await
         }
         EjectAction::DiskutilEject => {
             let teardown = Teardown::Tool {
                 verb: UnmountVerb::Eject,
                 mount_path: &mount_path,
             };
-            stop_index_then_unmount(volume_id, || run_teardown(volume_id, teardown)).await
+            stop_index_then_unmount(volume_id, stop_index_blocking(volume_id.to_string()), || {
+                run_teardown(volume_id, teardown)
+            })
+            .await
         }
     }
 }
@@ -312,20 +357,36 @@ enum Teardown<'a> {
 /// the frontend's line (`wordEjectRefusal`) is a warn, which a production build drops.
 async fn run_teardown(volume_id: &str, teardown: Teardown<'_>) -> Result<(), EjectError> {
     match teardown {
-        Teardown::Device(provider) => match provider.eject(volume_id).await {
-            Ok(()) => Ok(()),
-            Err(detail) => {
+        Teardown::Device(provider) => {
+            // Under a detached deadline: MTP closes its session when the last handle
+            // drops, which a wedged phone can stall. Expiry answers `TimedOut`, which
+            // is TRUE here: the disconnect already started and runs on to its end.
+            let task_provider = Arc::clone(&provider);
+            let task_volume_id = volume_id.to_string();
+            let result = crate::deadline::timeout_detached_typed(
+                deadlines::DEVICE_EJECT_DEADLINE,
+                || EjectError::TimedOut,
+                |detail| EjectError::Unexpected { detail },
+                async move {
+                    task_provider
+                        .eject(&task_volume_id)
+                        .await
+                        .map_err(|detail| EjectError::DeviceDisconnectRefused {
+                            provider: task_provider.id().to_string(),
+                            detail,
+                        })
+                },
+            )
+            .await;
+            if let Err(error) = &result {
                 log::warn!(
                     target: "eject",
-                    "{} disconnect of {volume_id} didn't go through: {detail}",
+                    "{} disconnect of {volume_id} didn't go through: {error}",
                     provider.id()
                 );
-                Err(EjectError::DeviceDisconnectRefused {
-                    provider: provider.id().to_string(),
-                    detail,
-                })
             }
-        },
+            result
+        }
         Teardown::Tool { verb, mount_path } => {
             let target = unmount_tool::Target {
                 volume_id,
@@ -361,14 +422,24 @@ fn is_already_unmounted(volume_id: &str, still_mounted: impl FnOnce() -> bool) -
 /// keeps an open stream/handle from wedging a FSKit (`msdos`) unmount (see
 /// `indexing/DETAILS.md` § the unmount/eject lifecycle and the 2026-07-15 kernel
 /// panic). The ordering is unconditional: the index stop is awaited to completion,
-/// then the unmount runs. `unmount` is a parameter so the ordering can be asserted
-/// in a test without a real volume or `diskutil`. No-op stop for an unindexed volume.
-async fn stop_index_then_unmount<F, Fut>(volume_id: &str, unmount: F) -> Result<(), EjectError>
+/// then the unmount runs. ❗ The stop runs under [`deadlines::INDEX_STOP_DEADLINE`],
+/// and a stop that doesn't finish answers `NotResponding` WITHOUT running the
+/// unmount: an index that may still hold the volume must never meet one. `stop_index`
+/// and `unmount` are parameters so the ordering and the stall can be asserted in a
+/// test without a real volume or `diskutil`. No-op stop for an unindexed volume.
+async fn stop_index_then_unmount<S, F, Fut>(volume_id: &str, stop_index: S, unmount: F) -> Result<(), EjectError>
 where
+    S: Future<Output = ()> + Send + 'static,
     F: FnOnce() -> Fut,
     Fut: Future<Output = Result<(), EjectError>>,
 {
-    stop_index_blocking(volume_id).await;
+    deadlines::within_deadline(
+        EjectStep::IndexStop,
+        volume_id,
+        deadlines::INDEX_STOP_DEADLINE,
+        stop_index,
+    )
+    .await?;
     unmount().await
 }
 
@@ -383,8 +454,8 @@ where
 /// through their own disconnect paths and stay registered (Stale, offline-browsable)
 /// across an eject, so this must not remove them. No-op for a non-`LocalExternal` or
 /// unindexed volume.
-async fn stop_index_blocking(volume_id: &str) {
-    let vid = volume_id.to_string();
+async fn stop_index_blocking(volume_id: String) {
+    let vid = volume_id.clone();
     if let Err(join_err) =
         tokio::task::spawn_blocking(move || crate::index_host::index().stop_removable_volume(&vid)).await
     {
@@ -454,11 +525,13 @@ pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
 }
 
 /// Looks up `is_ejectable` for the volume at `mount_path` via the per-path
-/// statfs/NSURL fast resolver. Avoids the full volume enumeration.
-async fn resolve_is_ejectable(mount_path: &str) -> bool {
+/// statfs/NSURL fast resolver. Avoids the full volume enumeration. Blocks without
+/// limit on a hung backing store, so its caller puts it under
+/// [`deadlines::EJECTABILITY_CHECK_DEADLINE`].
+async fn resolve_is_ejectable(mount_path: String) -> bool {
     #[cfg(target_os = "macos")]
     {
-        let path = mount_path.to_string();
+        let path = mount_path;
         tokio::task::spawn_blocking(move || {
             crate::volumes::resolve_path_volume_fast(&path)
                 .map(|v| v.is_ejectable)
@@ -469,7 +542,7 @@ async fn resolve_is_ejectable(mount_path: &str) -> bool {
     }
     #[cfg(target_os = "linux")]
     {
-        let path = mount_path.to_string();
+        let path = mount_path;
         tokio::task::spawn_blocking(move || {
             crate::volumes_linux::list_locations()
                 .into_iter()
@@ -580,7 +653,7 @@ mod tests {
         let observed = Arc::clone(&active_when_unmount_ran);
         let vid_for_unmount = vid.to_string();
 
-        let result = stop_index_then_unmount(vid, || async move {
+        let result = stop_index_then_unmount(vid, stop_index_blocking(vid.to_string()), || async move {
             // Record the index state at the exact moment the unmount would run.
             observed.store(is_index_active(&vid_for_unmount), Ordering::SeqCst);
             Ok(())
@@ -667,6 +740,14 @@ mod wire_tests {
         assert_eq!(
             serde_json::to_value(EjectError::TimedOut).unwrap(),
             serde_json::json!({ "type": "timedOut" })
+        );
+
+        assert_eq!(
+            serde_json::to_value(EjectError::NotResponding {
+                step: EjectStep::IndexStop
+            })
+            .unwrap(),
+            serde_json::json!({ "type": "notResponding", "step": "indexStop" })
         );
     }
 

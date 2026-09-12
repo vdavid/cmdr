@@ -6490,10 +6490,21 @@ export type EjectError =
       detail: string
     }
   /**
-   *  The `diskutil` / `umount` subprocess didn't finish within the timeout.
-   *  ❗ The unmount was NOT cancelled; it may still land.
+   *  The `diskutil` / `umount` subprocess (or a device provider's eject) didn't
+   *  finish within the timeout. ❗ The unmount was NOT cancelled; it may still land.
    */
   | { type: 'timedOut' }
+  /**
+   *  A step that runs BEFORE any unmount didn't finish within its deadline, so
+   *  nothing was unmounted and nothing may still land. A disk image whose backing
+   *  file sits on a hung share can block these for good. ❌ Never word it as
+   *  [`Self::TimedOut`], whose copy promises the eject may still happen.
+   */
+  | {
+      type: 'notResponding'
+      // The step that stalled.
+      step: EjectStep
+    }
   /**
    *  The one honest fallback, for a failure nothing above classifies (a
    *  panicked task). ❌ `detail` is never the message.
@@ -6503,6 +6514,16 @@ export type EjectError =
       // What the layer below reported, for the log and the details line.
       detail: string
     }
+
+// Which pre-unmount step stalled, for [`EjectError::NotResponding`].
+export type EjectStep =
+  /**
+   *  Asking the OS whether the volume is ejectable (`statfs` + NSURL, or the
+   *  Linux mount list).
+   */
+  | 'ejectabilityCheck'
+  // Stopping the drive's index, which must finish before any unmount runs.
+  | 'indexStop'
 
 /**
  *  The outcome of a per-drive "Turn on indexing" request.

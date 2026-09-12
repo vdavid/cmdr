@@ -464,6 +464,23 @@ covers it and a joined caller gets the final answer. The cost: a real hold (an a
 reports about 3 s later than it would without the retries. The loop takes the tool and the mount-table read as
 closures, so its tests run a scripted fake tool on a paused clock.
 
+**No step can hang an eject forever.** Every blocking step in the pipeline runs under a deadline. A disk image whose
+backing FILE lives on a hung SMB share looks like a local ejectable volume, yet its `statfs`/NSURL lookup and its index
+stop can block for 30–120 s or for good; with the in-flight join below, one wedged flight would strand every later
+click on a spinner and keep the volume in the ejecting set. `eject/deadlines.rs` holds the tiers: the ejectability
+check gets 5 s (a read, but one that may wake a sleeping disk), the index stop 15 s (it drains the index writer, which
+takes seconds; the unmount tool's own tier), and a device provider's eject 15 s (MTP closes its session when the last
+handle drops, which a wedged phone can stall). Each races a join handle through `deadline::timeout_detached_typed`, so
+a stuck blocking thread is detached (it can't be cancelled), logged at `warn`, and the flight lands. Each expiry keeps
+its copy true: a stalled ejectability check or index stop answers `NotResponding { step }` ("isn't responding, so it's
+still connected"), because nothing was unmounted and `TimedOut`'s copy promises the eject may still land. ❌ A stalled
+check is never guessed `NotEjectable` (the false-alarm family ERR-TT2FH belongs to), and ❌ a stalled index stop never
+reaches the unmount, since an index that may still hold the volume can wedge FSKit. A stalled device eject answers
+`TimedOut`, which IS true there: its disconnect already started and runs on. `provider_for_volume_id` needs no deadline
+(both providers answer from memory, and MTP's device-map mutex is held only for bookkeeping), the mount-table reads
+never block, and the unmount tool has `TOOL_TIMEOUT`. The tests hand `within_deadline` a future that never resolves and
+let a paused clock run out the deadline.
+
 **One eject at a time per volume.** `eject` hands the pipeline to `in_flight::join_or_start`: a request for a volume
 whose eject is still running JOINS that flight and gets its answer, with no second teardown. A slow `diskutil` (10.5 s
 in one user's log) invites repeat clicks, and every caller lands here: both switcher buttons, the native menu, and MCP.

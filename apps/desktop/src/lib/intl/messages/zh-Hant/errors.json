@@ -1733,6 +1733,10 @@
   "@errors.eject.timedOut": {
     "sourceHash": "c592421"
   },
+  "errors.eject.notResponding": "這個磁碟機沒有回應，所以仍保持連線。請稍後再試。",
+  "@errors.eject.notResponding": {
+    "sourceHash": "742a732"
+  },
   "errors.eject.unexpected": "出了點狀況，Cmdr 也說不上來是什麼。",
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"

@@ -34,6 +34,7 @@ const EJECT_CASES: EjectError[] = [
   { type: 'deviceDisconnectRefused', provider: 'mtp', detail: 'PTP CloseSession timed out' },
   { type: 'unmountRefused', detail: 'Unmount failed for /Volumes/Trip: in use by process 1234 (mds)' },
   { type: 'timedOut' },
+  { type: 'notResponding', step: 'indexStop' },
   { type: 'unexpected', detail: 'the eject task panicked' },
 ]
 
@@ -60,6 +61,14 @@ describe('renderEjectError', () => {
 
   it("says a timeout may still land, because the backend's deadline detaches rather than cancels", () => {
     expect(renderEjectError({ type: 'timedOut' }).toLowerCase()).toContain('may still')
+  })
+
+  it("doesn't promise a stalled eject may still land, because nothing was unmounted", () => {
+    // The deadline passed before the unmount ran (an index stop or an ejectability
+    // check that hung), so `timedOut`'s "may still eject on its own" would be false.
+    const rendered = renderEjectError({ type: 'notResponding', step: 'ejectabilityCheck' })
+    expect(rendered).not.toBe(renderEjectError({ type: 'timedOut' }))
+    expect(rendered.toLowerCase()).not.toContain('may still')
   })
 
   it('never renders the untranslated OS text as the message', () => {
