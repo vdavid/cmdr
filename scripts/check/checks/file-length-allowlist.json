@@ -8,7 +8,6 @@
     "scripts/check/checks/registry.go": "append-only check registry (one CheckDefinition entry per check); line count tracks the number of checks, not splittable logic"
   },
   "files": {
-    "apps/desktop/src-tauri/src/commands/file_system/volume_copy.rs": 819,
     "apps/desktop/src-tauri/src/file_system/listing/caching.rs": 903,
     "apps/desktop/src-tauri/src/file_system/write_operations/delete/walker.rs": 942,
     "apps/desktop/src-tauri/src/file_system/write_operations/manager.rs": 1152,
