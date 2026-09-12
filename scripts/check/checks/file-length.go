@@ -17,10 +17,14 @@ const (
 	// fileLengthTestWarnLines is the threshold for test files (see isTestFile):
 	// splitting a test file scatters shared mocks and fixtures across siblings
 	// rather than improving architecture, so tests get more room before warning.
-	// It happens to equal fileLengthCriticalLines, so a test file that trips it is
-	// red from the start; that's fine, there's no yellow phase for tests.
 	fileLengthTestWarnLines = 1200
 	fileLengthCriticalLines = 1200
+	// fileLengthTestCriticalLines is a test file's red threshold, the same 1.5x
+	// ratio above its warn line as fileLengthCriticalLines is above
+	// fileLengthWarnLines — so a test file gets a yellow phase too, rather than
+	// going straight to red the moment it crosses its (already generous) warn
+	// line.
+	fileLengthTestCriticalLines = 1800
 
 	// Tolerate this much growth above each allowlisted file's recorded line count before warning,
 	// so small incremental edits don't trigger a warning until growth becomes meaningful.
@@ -103,6 +107,15 @@ func fileLengthThreshold(relPath string) int {
 		return fileLengthTestWarnLines
 	}
 	return fileLengthWarnLines
+}
+
+// fileLengthCriticalThreshold returns the red threshold that applies to
+// relPath, picked the same way fileLengthThreshold picks the warn one.
+func fileLengthCriticalThreshold(relPath string) int {
+	if isTestFile(relPath) {
+		return fileLengthTestCriticalLines
+	}
+	return fileLengthCriticalLines
 }
 
 // fileLengthAllowlist is the on-disk shape of file-length-allowlist.json.
@@ -284,7 +297,7 @@ func formatLongFiles(files []longFile, allowlist fileLengthAllowlist, allowliste
 			detail = fmt.Sprintf("(%d lines, allowlist: %d, %d kB, ~%s tokens, +%d%% growth)", f.lines, allowedLines, sizeKB, tokenStr, growthPct)
 		}
 		color := ansiYellow
-		if f.lines >= fileLengthCriticalLines {
+		if f.lines >= fileLengthCriticalThreshold(f.relPath) {
 			color = ansiRed
 		}
 		sb.WriteString(fmt.Sprintf("  - %s %s%s%s\n", f.relPath, color, detail, ansiReset))

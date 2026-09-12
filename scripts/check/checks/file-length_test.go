@@ -331,6 +331,42 @@ func TestFileLengthThreshold(t *testing.T) {
 	}
 }
 
+func TestFileLengthCriticalThreshold(t *testing.T) {
+	if got := fileLengthCriticalThreshold("scripts/check/checks/file-length.go"); got != fileLengthCriticalLines {
+		t.Errorf("expected source file critical threshold %d, got %d", fileLengthCriticalLines, got)
+	}
+	if got := fileLengthCriticalThreshold("scripts/check/checks/file-length_test.go"); got != fileLengthTestCriticalLines {
+		t.Errorf("expected test file critical threshold %d, got %d", fileLengthTestCriticalLines, got)
+	}
+}
+
+// TestRunFileLength_TestFileHasAYellowPhase: a test file past its 1,200-line
+// warn threshold but under its 1,800-line critical one warns yellow, not red
+// — the same two-phase shape ordinary source gets at 800/1,200.
+func TestRunFileLength_TestFileHasAYellowPhase(t *testing.T) {
+	tmp := t.TempDir()
+
+	yellowPath := filepath.Join(tmp, "big_test.go")
+	if err := os.WriteFile(yellowPath, []byte(strings.Repeat("line\n", 1300)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	redPath := filepath.Join(tmp, "huge_test.go")
+	if err := os.WriteFile(redPath, []byte(strings.Repeat("line\n", 1900)), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(result.Message, ansiYellow+"(1300 lines") {
+		t.Errorf("expected yellow for a 1,300-line test file (over warn, under critical), got: %s", result.Message)
+	}
+	if !strings.Contains(result.Message, ansiRed+"(1900 lines") {
+		t.Errorf("expected red for a 1,900-line test file (over its critical threshold), got: %s", result.Message)
+	}
+}
+
 // TestRunFileLength_TestFileGetsHigherThreshold is the core contract: a _test.go
 // file past the ordinary 800-line threshold but under the 1,200-line test
 // threshold doesn't warn, while an ordinary .go file at the same length does.

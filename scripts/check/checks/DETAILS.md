@@ -231,11 +231,13 @@ below for the section-aware patterns to follow.
 - New files not in either section are reported normally.
 - If the allowlist file is missing, all long files are reported (backwards-compatible).
 
-**Two thresholds**: 800 lines for ordinary source, 1,200 for test files (`fileLengthWarnLines` /
-`fileLengthTestWarnLines`). Splitting a test file usually scatters shared mocks and fixtures across siblings rather than
-improving architecture, so tests get more room before warning. `isTestFile` classifies a path by its own naming
-convention, never by content, so an inline `#[cfg(test)] mod tests` block inside an ordinary `.rs` file does NOT count
-as a test file:
+**Two thresholds, each with its own yellow-then-red phase**: 800/1,200 lines (warn/critical) for ordinary source,
+1,200/1,800 for test files (`fileLengthWarnLines`/`fileLengthCriticalLines`, `fileLengthTestWarnLines`/
+`fileLengthTestCriticalLines` — the same 1.5x ratio both ways). Splitting a test file usually scatters shared mocks and
+fixtures across siblings rather than improving architecture, so tests get more room before warning, and still get a
+yellow phase before red rather than going straight to red at their (already generous) warn line. `isTestFile`
+classifies a path by its own naming convention, never by content, so an inline `#[cfg(test)] mod tests` block inside an
+ordinary `.rs` file does NOT count as a test file:
 
 - Rust: `*_test.rs`, `*_tests.rs`, a bare `tests.rs`, or any file under a `tests/` directory segment.
 - Go: `*_test.go`.
