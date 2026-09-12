@@ -49,23 +49,32 @@
         font-family: var(--font-system);
         white-space: nowrap;
         transition:
-            opacity var(--transition-base),
+            color var(--transition-base),
             font-style var(--transition-base);
-        opacity: 1;
     }
 
+    /* Stale: the buffer reset fired but the indicator hasn't hidden yet. Quiet
+       text (the shared `--color-text-quiet` token) + italic on the whole
+       overlay; the `.buffer` span's own accent color is overridden the same
+       way, since it doesn't inherit through its explicit `color:` below. */
     .type-to-jump-indicator.is-stale {
         font-style: italic;
-        opacity: 0.5;
+        color: var(--color-text-quiet);
     }
 
     .buffer {
         font-family: var(--font-mono);
         color: var(--color-accent-text);
+        transition: color var(--transition-base);
+    }
+
+    .type-to-jump-indicator.is-stale .buffer {
+        color: var(--color-text-quiet);
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .type-to-jump-indicator {
+        .type-to-jump-indicator,
+        .buffer {
             transition: none;
         }
     }

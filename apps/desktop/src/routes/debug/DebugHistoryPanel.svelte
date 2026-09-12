@@ -148,7 +148,7 @@
     }
 
     .history-list li.future {
-        opacity: 0.5;
+        color: var(--color-text-quiet);
     }
 
     .history-index {

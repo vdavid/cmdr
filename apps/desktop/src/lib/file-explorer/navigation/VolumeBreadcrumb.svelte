@@ -1365,11 +1365,13 @@
         outline: none;
     }
 
-    /* TCC-restricted entries: faded text + (i) icon. The tooltip explains the
-       restriction and points to System Settings. See `restricted-paths-store`. */
+    /* TCC-restricted entries: quiet text (the same shared token the file-list's
+       hidden-entry dim uses, see `--color-text-quiet` in `app.css`) + italic +
+       (i) icon. The tooltip explains the restriction and points to System
+       Settings. See `restricted-paths-store`. */
     .volume-item.is-restricted .volume-label {
         font-style: italic;
-        opacity: 0.6;
+        color: var(--color-text-quiet);
     }
 
     .checkmark {
@@ -1602,12 +1604,14 @@
         opacity: 0.7;
     }
 
-    /* A pinned place nobody has dialed. Dimmed, so the connected rows above
-       it read as the live ones; it is still fully clickable, and opening it
-       is what dials. ❌ Not `aria-disabled`: it is the opposite of disabled. */
+    /* A pinned place nobody has dialed. Dimmed (the shared `--color-text-quiet`
+       token, see the file-list's hidden-entry dim), so the connected rows
+       above it read as the live ones; it is still fully clickable, and
+       opening it is what dials. ❌ Not `aria-disabled`: it is the opposite of
+       disabled. */
     .volume-item.is-saved-place .volume-label,
     .volume-item.is-saved-place .volume-fs {
-        opacity: 0.6;
+        color: var(--color-text-quiet);
     }
 
     /* In the dropdown, push the indicator to the far right */
