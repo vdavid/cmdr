@@ -1,59 +1,40 @@
 # Playwright E2E tests (tauri-playwright)
 
-Playwright E2E in Tauri mode: commands inject into the real webview over a Unix socket. The same specs run on macOS and
+Playwright in Tauri mode: commands inject into the real webview over a Unix socket. The same specs run on macOS and
 Linux (Docker), so a modifier key comes from `CTRL_OR_META`, ❌ never a hardcoded ⌘.
 
 ## Must-knows
 
-- **The suite connects to a running app, it never launches one.** `pnpm check desktop-e2e-playwright` runs the whole
-  lifecycle; a hand launch ALWAYS records its pid and chains `; kill "$(cat /tmp/cmdr-e2e-app.pid)"`. ❌ Never
-  `pkill -f 'target.*Cmdr'`: every Cmdr shares that argv, so it SIGTERMs a concurrent suite. Recipes: DETAILS § "Running
-  on macOS".
-- **Run only the spec you're iterating on** (~10 min, and one broken test cascades). ❌ Keep `--project=tauri` in the
-  `=` form; a space swallows the path.
-- **Scattered failures across unrelated specs, different every run, mean saturation, not a regression.**
-- **❌ Never `keyboard.press('Escape')`** to close an overlay: under Linux Xvfb it can vanish as an opaque timeout. Use
-  `dismissOverlay` / `expectAndDismissToast` / `dismissAllToasts`, or `escapeOverlayUntilGone` when press one isn't a
-  close; no double-Escape in `beforeEach`.
-- **Five ways a helper claims success it never got.** Bare `await pollUntil(...)` returns `false` on timeout, so the
-  test goes green: use `expect.poll(...).toBeTruthy()` (`bare-poll` flags it). `.click()` on a `disabled` button
-  dispatches NOTHING yet returns normally: press via `clickButtonByText` / `resolveConflict`. `.click()` drives no Ark
-  `Select` (`pointerdown`): use `pointerClick`, and assert its `'clicked'`. One lost answer wedged 196 tests.
-  `dismissAllToasts` clears nothing before the toast lands, so END an op with `expectAndDismissToast`. And the file and
-  the row land BEFORE the op does, so `waitForOperationsToSettle` first, or its toast and the next op both go missing.
-  DETAILS § "Waiting for a write to settle".
-- **Open the onboarding wizard? Close it from a `finally`**, with `closeOnboardingWizardIfOpen`. It refuses every MCP
-  operation ("the onboarding dialog is open") and swallows every keystroke, so on a shared shard one left up doesn't
-  fail its own test, it fails all 82 after it. ❌ Never match its rows by label: `data-checklist-item` and
-  `#onboarding-terms-block` are the handles, and a stale selector here is what left it open.
-- **Exercise viewer + settings through the production multi-window flow** (`openViewerWindow` /
-  `openSettingsWindowViaProd` / `closeScopedWindow`), ❌ never by routing the main window there: that hides a scoped
-  page that can't call a Tauri command.
-- **`ensureAppReady()` resets route, volume, AND directories, in that order** (without it, navigation silently no-ops);
-  file-op specs also need `recreateFixtures()`. Its `leftPane` list is an `every()`, so one NARROWER than the fixture
-  passes on a partial listing: pass `expectedLeftPaneEntries(fixtureRoot)`. DETAILS § "Fixture-churn readiness".
-- **Need the other pane focused? Click its `.file-pane` and read `.is-focused` back.** ❌ Never the `pane.switch`
-  TOGGLE, nor `cmdr://state`'s `focused:`: a toggle on that stale mirror lands in the wrong pane. DETAILS § "Claiming a
-  pane's focus".
-- **One global `afterEach` guards TWO leaks: UI artifacts, and a dirty `left/` + `right/`.** A mutating spec restores
-  the tree (`restoreFixtureTree(getFixtureRoot())`) or the guard names it. ❌ Don't relax it. **Holding an op?
-  `drainOperations()` BEFORE the restore, in ONE hook** (`afterEach`s run in DECLARATION order): a restore under a live
-  op deletes its source, and the retained `SourceNotFound` poisons the next.
-- **"Rows appeared" doesn't prove a WALK**: the instance indexes its tree at launch, so a spec needing one takes the
-  index away first (`search-walk-ground.ts`).
-- **"STOPPED ANSWERING" means read UP, not down**: a silent app fails every later test instantly, on purpose. DETAILS §
-  "The dead-app circuit breaker".
-- **Downloads is redirected** to `$CMDR_DATA_DIR/downloads`, ❌ never real `~/Downloads`: a download mid-run toasts into
-  whatever spec is in flight. DETAILS § Decision.
-- **Two fakes**: the clipboard is a Rust `Mutex`, not `NSPasteboard`, and `tauri-plugin-store` reads your REAL store
-  files unless redirected, so a locally flipped setting becomes a CI-only failure.
-- **Every harness pins BOTH locale halves before launch**: `appearance.language`, plus `-AppleLocale` for the formatting
-  no setting reaches. DETAILS § "The locale pin".
-- **`emitBackendEvent` drives UI off a synthetic backend event.** The app is SHARED: emit the terminal event that clears
-  it (test AND `afterEach`), under an id nothing real claims. DETAILS § "Synthetic backend events".
-- **The marketing capture (`marketing-shots.spec.ts`) photographs real folders, with NO fixture tree.** ❌ Never point
-  it at a fixture root or set `CMDR_E2E_START_PATH`: the guard deletes anything outside the manifest. It shoots via
-  `screencapture -l` and ❗ needs the machine left alone; say both first. Contract: DETAILS.
+- **The suite connects to a running app; it never launches one.** `pnpm check desktop-e2e-playwright` runs the whole
+  lifecycle. A hand launch records its pid and chains `; kill "$(cat /tmp/cmdr-e2e-app.pid)"`. ❌ Never
+  `pkill -f 'target.*Cmdr'`: every Cmdr shares that argv, so it SIGTERMs a concurrent suite. DETAILS § "Running on
+  macOS".
+- **Iterate on one spec**, keeping `--project=tauri` in the `=` form (a space swallows the path). Scattered failures
+  that differ every run mean saturation, not a regression.
+- **❌ Never `keyboard.press('Escape')` to close an overlay**: under Xvfb it can vanish as an opaque timeout. Use
+  `dismissOverlay`, `expectAndDismissToast`, or `escapeOverlayUntilGone`.
+- **A helper can return normally having done nothing.** Assert a poll with `expect.poll(...).toBeTruthy()`, never a bare
+  `pollUntil`. Press buttons with `clickButtonByText` (a disabled `.click()` dispatches nothing) and Ark widgets with
+  `pointerClick`. After a write, `waitForOperationsToSettle`, then end with `expectAndDismissToast`. DETAILS § "Waiting
+  for a write to settle".
+- **Close the onboarding wizard from a `finally`** (`closeOnboardingWizardIfOpen`): left open, it refuses every MCP call
+  and fails every later test on the shard. Match its rows by `data-checklist-item`, ❌ never by label.
+- **Drive viewer and settings through the real multi-window flow** (`openViewerWindow`, `openSettingsWindowViaProd`,
+  `closeScopedWindow`), ❌ never by routing the main window there.
+- **`ensureAppReady()` resets route, volume, and directories.** File-op specs add `recreateFixtures()` and pass
+  `expectedLeftPaneEntries(fixtureRoot)`. DETAILS § "Fixture-churn readiness".
+- **To focus a pane, click its `.file-pane` and read `.is-focused` back**, ❌ never the `pane.switch` toggle or
+  `cmdr://state`'s stale `focused:`. DETAILS § "Claiming a pane's focus".
+- **The global `afterEach` fails a spec that leaks UI or leaves `left/` or `right/` dirty**; ❌ don't relax it. Restore
+  with `restoreFixtureTree`, and when holding an op, `drainOperations()` first in the SAME hook.
+- **"STOPPED ANSWERING" means read up**: an earlier test killed the app. DETAILS § "The dead-app circuit breaker".
+- **The harness walls the app off from your machine**: Downloads and `tauri-plugin-store` are redirected (a new store
+  needs the redirect too, or your local settings leak into runs), the clipboard is a Rust fake, and both locale halves
+  are pinned. DETAILS § "The locale pin".
+- **`emitBackendEvent` state is shared**: emit the clearing event in the test AND `afterEach`. Rows appearing doesn't
+  prove a walk (`search-walk-ground.ts`). DETAILS § "Synthetic backend events".
+- **`marketing-shots.spec.ts` shoots real folders with NO fixture tree**: ❌ never set `CMDR_E2E_START_PATH` for it (the
+  guard deletes anything outside the manifest), and it needs the machine left alone; say both first.
 
-Everything else (run recipes, architecture, sharding, app modes, contracts, decisions): `DETAILS.md`. Read it before
-non-trivial work here.
+Run recipes, architecture, sharding, app modes, contracts, and decisions: `DETAILS.md`. Read it before any non-trivial
+work here: editing, planning, reorganizing, or advising.
