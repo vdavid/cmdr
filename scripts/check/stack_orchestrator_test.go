@@ -1,11 +1,37 @@
 package main
 
 import (
+	"io"
+	"os"
+	"strings"
 	"testing"
 
 	"cmdr/scripts/check/checks"
 	"cmdr/scripts/check/stacklease"
 )
+
+// captureStdout redirects os.Stdout to a pipe for the duration of fn and
+// returns everything written to it.
+func captureStdout(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	orig := os.Stdout
+	os.Stdout = w
+	done := make(chan string, 1)
+	go func() {
+		buf, _ := io.ReadAll(r)
+		done <- string(buf)
+	}()
+	fn()
+	os.Stdout = orig
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return <-done
+}
 
 // A check declares its fixture needs as two strings, so nothing but this test
 // stands between a typo and a run that dies at bring-up time — after planning,
@@ -54,12 +80,11 @@ func TestPortEnvAppliersNameRegisteredStacks(t *testing.T) {
 	}
 }
 
-// The orchestrator's Stop() summary line names exactly the stacks that really
-// went down, which it learns from stacklease.OnTeardown rather than assuming
-// every held stack did. Verified without a real Docker stack: the hook
-// NewStackOrchestrator installs must append to the orchestrator's own
-// bookkeeping.
-func TestOrchestratorWiresOnTeardownIntoItsOwnBookkeeping(t *testing.T) {
+// NewStackOrchestrator wires stacklease's two hooks to print a friendly line
+// per stack, at the moment each fires (before the slow compose command it
+// announces runs) — verified without a real Docker stack by calling the
+// installed hooks directly.
+func TestOrchestratorWiresReconcileAndTeardownHooksToFriendlyLines(t *testing.T) {
 	prevTeardown := stacklease.OnTeardown
 	prevReconcile := stacklease.OnReconcileStart
 	t.Cleanup(func() {
@@ -67,11 +92,16 @@ func TestOrchestratorWiresOnTeardownIntoItsOwnBookkeeping(t *testing.T) {
 		stacklease.OnReconcileStart = prevReconcile
 	})
 
-	o := NewStackOrchestrator(t.TempDir())
-	stacklease.OnTeardown("smb")
-	stacklease.OnTeardown("sftp")
-	if got := o.tornDown; len(got) != 2 || got[0] != "smb" || got[1] != "sftp" {
-		t.Fatalf("expected tornDown = [smb sftp], got %v", got)
+	NewStackOrchestrator(t.TempDir())
+
+	out := captureStdout(t, func() { stacklease.OnReconcileStart("smb") })
+	if !strings.Contains(out, "Starting smb fixtures") {
+		t.Errorf("expected a starting line for smb, got: %q", out)
+	}
+
+	out = captureStdout(t, func() { stacklease.OnTeardown("sftp") })
+	if !strings.Contains(out, "Stopping sftp fixtures") {
+		t.Errorf("expected a stopping line for sftp, got: %q", out)
 	}
 }
 

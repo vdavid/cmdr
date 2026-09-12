@@ -41,11 +41,6 @@ type StackOrchestrator struct {
 	mu       sync.Mutex
 	started  map[checks.StackMode]bool
 	held     map[string]*stacklease.Stack
-	// tornDown collects the stacks stacklease.OnTeardown fired for during the
-	// current Stop() call, so Stop can print one summary line naming exactly
-	// the stacks that actually went down (as opposed to those left up for
-	// another holder). Reset at the start of each Stop().
-	tornDown []string
 }
 
 // portEnvAppliers pins a stack's host-port range in this process before bring-up,
@@ -80,7 +75,7 @@ func NewStackOrchestrator(rootDir string) *StackOrchestrator {
 		fmt.Printf("📦 Starting %s fixtures…\n", stackName)
 	}
 	stacklease.OnTeardown = func(stackName string) {
-		o.tornDown = append(o.tornDown, stackName)
+		fmt.Printf("🧹 Stopping %s fixtures…\n", stackName)
 	}
 	return o
 }
@@ -145,9 +140,10 @@ func (o *StackOrchestrator) EnsureStarted(wanted []checks.StackMode) error {
 // (no-op).
 //
 // Prints nothing when every held stack stays up for another holder (the
-// common case); prints one summary line naming exactly the stacks that
-// actually went down (via stacklease's OnTeardown hook), since that's the one
-// outcome worth a human noticing. A release error always prints, regardless.
+// common case); stacklease's OnTeardown hook (wired in NewStackOrchestrator)
+// prints one line per stack that actually goes down, before its `compose
+// down` runs, mirroring OnReconcileStart's before-the-slow-command timing. A
+// release error always prints, regardless.
 func (o *StackOrchestrator) Stop() {
 	o.mu.Lock()
 	defer o.mu.Unlock()
@@ -160,7 +156,6 @@ func (o *StackOrchestrator) Stop() {
 	}
 	sort.Strings(names)
 
-	o.tornDown = nil
 	for _, name := range names {
 		stack := o.held[name]
 		if stack == nil {
@@ -171,10 +166,6 @@ func (o *StackOrchestrator) Stop() {
 		if err := stack.Release(o.holderID); err != nil {
 			fmt.Printf("   %s lease release reported: %v\n", name, err)
 		}
-	}
-	if len(o.tornDown) > 0 {
-		sort.Strings(o.tornDown)
-		fmt.Printf("🧹 Stopping fixtures: %s\n", strings.Join(o.tornDown, ", "))
 	}
 	o.held = map[string]*stacklease.Stack{}
 	o.started = map[checks.StackMode]bool{}

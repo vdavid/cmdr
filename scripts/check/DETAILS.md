@@ -781,9 +781,9 @@ same containers), so a fixed-cost banner on every run drowned the one thing wort
   has.
 - `stacklease.OnReconcileStart` and `OnTeardown` are hooks `Acquire`/`Release` call exactly when they decide `up -d` or
   `compose down` is actually happening (under the stack's lock, before the slow command runs). `NewStackOrchestrator`
-  wires both to print one line per stack (`📦 Starting <stack> fixtures…`, and a single `🧹 Stopping fixtures: <names>`
-  in `Stop` naming only the stacks whose hook actually fired) — the one thing worth telling a human about regardless of
-  verbosity. A release error still always prints, independent of both mechanisms.
+  wires both to print one line per stack, at that same moment (`📦 Starting <stack> fixtures…` / `🧹 Stopping <stack>
+  fixtures…`) — the one thing worth telling a human about regardless of verbosity. A release error still always
+  prints, independent of both mechanisms.
 
 **Decision**: cmdr's SMB stack binds a dedicated host-port range (11480+), not smb2's default (10480+). **Why**: cmdr
 runs a _vendored copy_ of smb2's `consumer` compose under its own project name (`smb-consumer`), while smb2's own test
