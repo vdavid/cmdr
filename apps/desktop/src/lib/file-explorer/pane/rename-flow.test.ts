@@ -54,7 +54,7 @@ vi.mock('../rename/rename-operations', () => ({
 vi.mock('$lib/settings', () => ({ getSetting: getSettingSpy }))
 vi.mock('$lib/ui/toast', () => ({ addToastForPane: addToastSpy, dismissTransientToastsForPane: vi.fn() }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (k: string) => k }))
-vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
+vi.mock('./archive-paths', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
 import { refreshListing } from '$lib/tauri-commands'
 import { buildFlow, deferred, PASTED, type Entry } from './test-rename-flow'

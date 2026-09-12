@@ -31,7 +31,7 @@ import { getTechnicalDetails } from '$lib/file-operations/transfer/transfer-erro
 import TrashCompleteToastContent from '$lib/file-operations/delete/TrashCompleteToastContent.svelte'
 import { getAppLogger } from '$lib/logging/logger'
 import { moveCursorToNewFolder } from '$lib/file-operations/mkdir/new-folder-operations'
-import { pathCrossesArchiveBoundary } from './volume-capabilities'
+import { pathCrossesArchiveBoundary } from './archive-paths'
 import { transferOpLabel } from './transfer-op-label'
 import { createTransferPaneEffects } from './transfer-pane-effects'
 import { createAdoptedOperation } from './adopted-operation.svelte'

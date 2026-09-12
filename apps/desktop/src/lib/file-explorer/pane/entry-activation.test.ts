@@ -50,7 +50,7 @@ vi.mock('./archive-enter-policy', () => ({
   resolveEnterPolicy: policy.resolveEnterPolicy,
   enterBehaviorFromSettings: policy.enterBehaviorFromSettings,
 }))
-vi.mock('./volume-capabilities', () => ({
+vi.mock('./archive-paths', () => ({
   pathInsideArchive: policy.pathInsideArchive,
   pathCrossesArchiveBoundary: policy.pathCrossesArchiveBoundary,
 }))

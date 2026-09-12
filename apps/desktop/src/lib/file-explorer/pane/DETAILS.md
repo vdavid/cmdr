@@ -1325,8 +1325,8 @@ move out). The design keeps the frontend simple: the tab keeps ONE `volumeId` â€
 volume ids never enter FE state, history, persistence, or MCP sync. Archive-ness is derived from the PATH; all I/O
 routing happens backend-side in `VolumeManager::resolve(volume_id, path)`.
 
-- **TWO path predicates, and picking the wrong one is a real bug** (`volume-capabilities.ts`), mirroring the backend's
-  own pair in `crates/cmdr-archive/src/boundary.rs`:
+- **TWO path predicates, and picking the wrong one is a real bug** (`archive-paths.ts`), mirroring the backend's own
+  pair in `crates/cmdr-archive/src/boundary.rs`:
   - `pathCrossesArchiveBoundary(path)` â€” AT or inside an archive (any component carries a supported suffix). The
     ENTER-IT question, for sites reading a PANE path: capability rows, the git-repo lookup, disk space, the terminal
     target, the Enter policy's already-inside check.

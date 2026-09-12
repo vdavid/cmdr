@@ -18,7 +18,8 @@ import {
   getCommonParentPath,
   getDestinationVolumeInfo,
 } from './transfer-operations'
-import { capabilitiesFor, capabilitiesForPane, pathCrossesArchiveBoundary } from './volume-capabilities'
+import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
+import { pathCrossesArchiveBoundary } from './archive-paths'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { duplicateInPlace } from './duplicate-command'

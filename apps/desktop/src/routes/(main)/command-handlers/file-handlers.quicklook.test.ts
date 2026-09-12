@@ -32,9 +32,10 @@ vi.mock('$lib/file-explorer/quick-look/quick-look-state.svelte', () => ({
   quickLookDispatchGuardJustFired: vi.fn(() => false),
   armQuickLookDispatchGuard: vi.fn(),
 }))
-// `pathInsideArchive` (the gate) stays REAL — that's what we're exercising. Its
-// module pulls in the volume store, which needs no data here (pathInsideArchive is
-// a pure string check), so a stubbed store keeps the import light.
+// `pathInsideArchive` (the gate) stays REAL — that's what we're exercising, and
+// it's a pure string check with no store dependency. `file-handlers.ts` also
+// imports `capabilitiesFor`, which DOES pull in the volume store, so it's stubbed
+// here to keep that import light; it needs no data for this test.
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
 
 import { quickLookOpen, trackEvent } from '$lib/tauri-commands'

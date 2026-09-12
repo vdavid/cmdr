@@ -61,7 +61,7 @@ vi.mock('../rename/rename-operations', () => ({
 vi.mock('$lib/settings', () => ({ getSetting: getSettingSpy }))
 vi.mock('$lib/ui/toast', () => ({ addToastForPane: vi.fn(), dismissTransientToastsForPane: vi.fn() }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: tStringSpy }))
-vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
+vi.mock('./archive-paths', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
 import { getFileBeside, getFileRange } from '$lib/tauri-commands'
 import { addToastForPane } from '$lib/ui/toast'

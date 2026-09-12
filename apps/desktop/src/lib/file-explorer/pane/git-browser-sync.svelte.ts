@@ -18,7 +18,7 @@ import { getSetting, onSpecificSettingChange } from '$lib/settings'
 import { dependOn } from '$lib/utils/reactivity'
 import { isMtpVolumeId } from '$lib/mtp'
 import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
-import { pathCrossesArchiveBoundary } from './volume-capabilities'
+import { pathCrossesArchiveBoundary } from './archive-paths'
 
 export interface GitBrowserSyncDeps {
   /** The pane's current directory path (reactive read). */

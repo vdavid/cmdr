@@ -24,7 +24,7 @@ import {
 } from '$lib/tauri-commands'
 import type { ConflictResolution, SortColumn, SortOrder, TransferOperationType } from '$lib/file-explorer/types'
 import { getSetting } from '$lib/settings'
-import { pathCrossesArchiveBoundary, pathInsideArchive } from '$lib/file-explorer/pane/volume-capabilities'
+import { pathCrossesArchiveBoundary, pathInsideArchive } from '$lib/file-explorer/pane/archive-paths'
 
 /** Everything the backend needs to start this operation. Captured at the moment
  *  the user confirmed, and never re-read afterwards. */

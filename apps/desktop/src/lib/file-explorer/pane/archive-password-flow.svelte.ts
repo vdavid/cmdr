@@ -28,7 +28,7 @@ import {
   notifyArchivePasswordDismissed,
 } from '$lib/tauri-commands'
 import { getAppLogger } from '$lib/logging/logger'
-import { archiveNameFromPath } from './volume-capabilities'
+import { archiveNameFromPath } from './archive-paths'
 import { transferOpLabel } from './transfer-op-label'
 import type { TransferOperationType } from '../types'
 import type { ArchivePasswordPropsData } from './dialog-props'

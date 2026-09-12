@@ -45,7 +45,7 @@ vi.mock('../rename/rename-operations', () => ({
 }))
 vi.mock('$lib/settings', () => ({ getSetting: getSettingSpy }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: tStringSpy }))
-vi.mock('./volume-capabilities', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
+vi.mock('./archive-paths', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
 
 import { refreshListing } from '$lib/tauri-commands'
 import { clearAllToasts, dismissToast, getToasts } from '$lib/ui/toast'

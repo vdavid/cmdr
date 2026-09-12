@@ -19,7 +19,7 @@ import {
   type SpaceInfo,
   type UnlistenFn,
 } from '$lib/tauri-commands'
-import { pathCrossesArchiveBoundary } from './volume-capabilities'
+import { pathCrossesArchiveBoundary } from './archive-paths'
 import type { VolumeSpaceWatchArgs } from './types'
 
 export interface VolumeSpaceDeps {
