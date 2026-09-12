@@ -532,6 +532,7 @@ mod tests {
                 .pop_front()
                 .expect("the tool must not run more often than the test scripted");
             Box::pin(within_tool_timeout(async move {
+                // allowed-test-sleep: the delay IS the subject (a slow answer from the daemon's dissenter scan), on a paused clock
                 tokio::time::sleep(delay).await;
                 outcome
             }))
