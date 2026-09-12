@@ -243,7 +243,10 @@ case "${1:-}" in
         ;;
     *)
         tool_name="$1"
-        args="${2:-\{\}}"
+        # A tool called with no arguments sends an empty object. `${2:-\{\}}` kept the
+        # backslash inside double quotes and sent `\{}`, which the server rejects.
+        args="${2:-}"
+        [ -n "$args" ] || args='{}'
         init
         # Build JSON-RPC request
         body="{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"${tool_name}\",\"arguments\":${args}}}"
