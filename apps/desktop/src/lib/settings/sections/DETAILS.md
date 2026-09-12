@@ -66,7 +66,7 @@ sections compose).
   switch, a hard gate in the backend (`crates/cmdr-index/src/indexing/lifecycle/DETAILS.md` § The two indexing
   switches), so while it's off this section renders the rows it overrides as overridden: both sub-toggles get
   `disabled` + the "Off with drive indexing" badge, the hand-rendered re-enable row dims with them
-  (`.reenable-row.overridden`, matching `SettingRow`'s own disabled opacity), and one `.master-off-note` line says what
+  (`.reenable-row.disabled`, the same class `SettingRow` uses for its own disabled opacity), and one `.master-off-note` line says what
   stopped and that each drive keeps its own choice. Clear index stays live on purpose: reclaiming the disk is exactly
   what someone who turned indexing off may want next, and there IS something to reclaim there: a search walks whatever
   folder it's pointed at whichever way the switch is set, and leaves an index behind. So the size and the button read

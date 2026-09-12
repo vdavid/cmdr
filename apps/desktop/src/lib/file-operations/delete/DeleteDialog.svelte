@@ -421,7 +421,7 @@
                     })}</span
                 >
                 {#if bytesPerSec !== null && bytesPerSec > 0}
-                    <span class="scan-throughput-sep">·</span>
+                    <span class="scan-throughput-sep" aria-hidden="true">·</span>
                     <span class="scan-throughput-value"
                         ><Trans key="fileOperations.shared.byteRate" snippets={{ size }} /></span
                     >

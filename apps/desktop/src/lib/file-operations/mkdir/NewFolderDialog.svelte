@@ -198,8 +198,12 @@
                             </li>
                         {/each}
                         {#if aiStreaming}
+                            <!-- The `<li>` is already `aria-hidden`, so a screen reader skips this
+                                 whole placeholder rather than announcing a nameless empty item; the
+                                 span repeats the marker so its own `.suggestion-pending` rule stays
+                                 exempt from the opacity check without leaning on the ancestor. -->
                             <li role="listitem" aria-hidden="true">
-                                <span class="suggestion-item suggestion-pending">…</span>
+                                <span class="suggestion-item suggestion-pending" aria-hidden="true">…</span>
                             </li>
                         {/if}
                     </ul>

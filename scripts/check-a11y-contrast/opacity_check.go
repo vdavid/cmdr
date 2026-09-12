@@ -33,10 +33,17 @@ var opacityInactiveMarkers = []string{
 	"data-gated",
 }
 
-// opacityInactiveClassPatterns are class-name shapes that mark the same
-// inactive-component state as `opacityInactiveMarkers`, but via a plain
-// class rather than an attribute/pseudo-class (`.disabled`, `.is-disabled`,
-// `.is-disabled-look`, `.text-field-disabled`).
+// opacityInactiveClassWords are class-name STATE WORDS that mark the same
+// disabled/inactive semantics as `opacityInactiveMarkers`, but via a plain
+// class rather than an attribute/pseudo-class: bare `.<word>`, `.is-<word>`
+// (also matches `.is-<word>-look`), or `.*-<word>`. `disabled` covers
+// `.disabled`, `.is-disabled`, `.is-disabled-look`, `.text-field-disabled`.
+// `unavailable` covers `.volume-item.is-unavailable` (a device the daemon
+// lists but can't use — present, explained by its tooltip, `aria-disabled`
+// on the row, and not openable: the same WCAG 1.4.3 inactive-component case
+// as `disabled`, just a different word for it).
+var opacityInactiveClassWords = []string{"disabled", "unavailable"}
+
 func opacityInactiveSelector(rule Rule) bool {
 	sel := strings.ToLower(rule.Selector)
 	for _, marker := range opacityInactiveMarkers {
@@ -46,7 +53,34 @@ func opacityInactiveSelector(rule Rule) bool {
 	}
 	for _, c := range rule.Classes {
 		cl := strings.ToLower(c)
-		if cl == "disabled" || strings.HasPrefix(cl, "is-disabled") || strings.HasSuffix(cl, "-disabled") {
+		for _, word := range opacityInactiveClassWords {
+			if cl == word || strings.HasPrefix(cl, "is-"+word) || strings.HasSuffix(cl, "-"+word) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// opacityDraggingMarkers are selector substrings marking transient
+// drag-in-progress visual feedback: `.foo.is-dragging` (the ghosted row at
+// the drag source) or `.foo.cannot-drop` (a drop target/cursor showing it
+// can't accept the drop). Both dim ONLY while a pointer drag is in flight —
+// WCAG 1.4.3's "incidental text" carve-out covers momentary UI feedback like
+// this the same way it covers a hover tooltip or an animating toast, so it's
+// exempt on the same footing as the disabled/inactive case, not because it's
+// decorative. Checked the same way as `opacityInactiveMarkers` (a substring
+// match against the lowercased selector), so any component's `.is-dragging`
+// or `.cannot-drop` state matches without a per-component entry.
+var opacityDraggingMarkers = []string{
+	"is-dragging",
+	"cannot-drop",
+}
+
+func opacityIsDraggingFeedback(rule Rule) bool {
+	sel := strings.ToLower(rule.Selector)
+	for _, marker := range opacityDraggingMarkers {
+		if strings.Contains(sel, marker) {
 			return true
 		}
 	}
@@ -86,6 +120,9 @@ var opacityDecorativeAllowlist = []opacityDecorativeEntry{
 	{"RepoChip.svelte", ".sep", `aria-hidden "·" divider, no informational content`},
 	{"IndexingStatusBody.svelte", ".step-pending .step-marker", "wraps a <Spinner>/<Icon>, aria-hidden"},
 	{"FileIcon.svelte", ".icon-wrapper.is-dimmed", `holds an alt="" <img> plus badge glyphs, no text; the row's name carries the meaning`},
+	{"ScanPhaseBody.svelte", ".scan-throughput-sep", `aria-hidden "·" divider, no informational content`},
+	{"DeleteDialog.svelte", ".scan-throughput-sep", `aria-hidden "·" divider, no informational content`},
+	{"NewFolderDialog.svelte", ".suggestion-pending", `aria-hidden pulsing "…" placeholder, no informational content`},
 }
 
 func opacityDecorativeReason(rule Rule) (string, bool) {
@@ -144,6 +181,9 @@ func (a *Analyzer) AnalyzeOpacity(pf *ParsedFile) []OpacityFinding {
 			continue
 		}
 		if opacityInactiveSelector(rule) {
+			continue
+		}
+		if opacityIsDraggingFeedback(rule) {
 			continue
 		}
 		if _, ok := opacityDecorativeReason(rule); ok {

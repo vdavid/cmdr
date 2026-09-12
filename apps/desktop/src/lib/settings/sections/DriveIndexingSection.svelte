@@ -196,7 +196,7 @@
             <!-- The re-enable button belongs to the prompt toggle above it, so it shows
                  for a hit on either: its own row id, or that setting's. -->
             {#if anyVisible(shouldShow, 'indexing.askForEachDrive', 'row:indexing.reEnableNotifications')}
-                <div class="reenable-row" class:overridden={!masterEnabled}>
+                <div class="reenable-row" class:disabled={!masterEnabled}>
                     <div class="reenable-header">
                         <span class="info-label">{tString('settings.indexing.reEnableNotifications.label')}</span>
                         <span
@@ -279,9 +279,11 @@
         border-bottom: 1px solid var(--color-border-subtle);
     }
 
-    /* Matches `SettingRow`'s overridden look, so the hand-rendered row dims in step
-       with the registry rows above it when the master switch is off. */
-    .reenable-row.overridden {
+    /* Same `.disabled` shape `SettingRow` uses for its own overridden look (and
+       the a11y-contrast checker's inactive-component exemption already
+       recognizes), so the hand-rendered row dims in step with the registry
+       rows above it when the master switch is off. */
+    .reenable-row.disabled {
         opacity: 0.6;
     }
 

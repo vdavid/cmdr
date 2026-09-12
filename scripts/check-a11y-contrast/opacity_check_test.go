@@ -27,6 +27,45 @@ func TestAnalyzeOpacity_DisabledStateExempt(t *testing.T) {
 	}
 }
 
+// TestAnalyzeOpacity_UnavailableExempt covers the `unavailable` inactive-class
+// word alongside `disabled`: a device row the daemon lists but can't use is
+// the same WCAG 1.4.3 inactive-component case, just a different word for it.
+func TestAnalyzeOpacity_UnavailableExempt(t *testing.T) {
+	rule := Rule{
+		File:       "VolumeBreadcrumb.svelte",
+		Line:       1774,
+		Selector:   ".volume-item.is-unavailable",
+		Classes:    []string{"volume-item", "is-unavailable"},
+		Opacity:    0.5,
+		HasOpacity: true,
+	}
+	a := NewAnalyzer(NewVarTable())
+	pf := &ParsedFile{Path: rule.File, Rules: []Rule{rule}}
+	findings := a.AnalyzeOpacity(pf)
+	if len(findings) != 0 {
+		t.Errorf("selector %q: expected unavailable-component exemption, got finding(s) %+v", rule.Selector, findings)
+	}
+}
+
+// TestAnalyzeOpacity_DraggingFeedbackExempt covers the transient
+// drag-in-progress category: `is-dragging` at the drag source and
+// `cannot-drop` at a refusing drop target both dim ONLY while a pointer drag
+// is in flight, which WCAG 1.4.3 treats as incidental text.
+func TestAnalyzeOpacity_DraggingFeedbackExempt(t *testing.T) {
+	cases := []Rule{
+		{File: "VolumeBreadcrumb.svelte", Line: 1336, Selector: ".favorite-item.is-dragging", Classes: []string{"favorite-item", "is-dragging"}, Opacity: 0.5, HasOpacity: true},
+		{File: "DragOverlay.svelte", Line: 79, Selector: ".drag-overlay.cannot-drop", Classes: []string{"drag-overlay", "cannot-drop"}, Opacity: 0.5, HasOpacity: true},
+	}
+	a := NewAnalyzer(NewVarTable())
+	for _, rule := range cases {
+		pf := &ParsedFile{Path: rule.File, Rules: []Rule{rule}}
+		findings := a.AnalyzeOpacity(pf)
+		if len(findings) != 0 {
+			t.Errorf("selector %q: expected dragging-feedback exemption, got finding(s) %+v", rule.Selector, findings)
+		}
+	}
+}
+
 // TestAnalyzeOpacity_PlainTextReported is the core regression case: an
 // opacity-dimmed rule with no disabled/inactive marker and no decorative
 // exemption must be reported, since the rule walker can't fold `opacity`
@@ -66,6 +105,9 @@ func TestAnalyzeOpacity_DecorativeExempt(t *testing.T) {
 		// row's own name carrying the meaning. It is the one allowlisted entry
 		// that exists to make something LESS visible on purpose, so pin it.
 		{File: "apps/desktop/src/lib/file-explorer/selection/FileIcon.svelte", Line: 142, Selector: ".icon-wrapper.is-dimmed", Classes: []string{"icon-wrapper", "is-dimmed"}, Opacity: 0.5, HasOpacity: true},
+		{File: "apps/desktop/src/lib/file-operations/transfer/ScanPhaseBody.svelte", Line: 172, Selector: ".scan-throughput-sep", Classes: []string{"scan-throughput-sep"}, Opacity: 0.6, HasOpacity: true},
+		{File: "apps/desktop/src/lib/file-operations/delete/DeleteDialog.svelte", Line: 612, Selector: ".scan-throughput-sep", Classes: []string{"scan-throughput-sep"}, Opacity: 0.6, HasOpacity: true},
+		{File: "apps/desktop/src/lib/file-operations/mkdir/NewFolderDialog.svelte", Line: 295, Selector: ".suggestion-pending", Classes: []string{"suggestion-item", "suggestion-pending"}, Opacity: 0.5, HasOpacity: true},
 	}
 	a := NewAnalyzer(NewVarTable())
 	for _, rule := range cases {
@@ -120,11 +162,11 @@ func TestAnalyzeOpacity_ZeroOpacityIgnored(t *testing.T) {
 // the same class): one physical component state, one finding.
 func TestAnalyzeOpacity_DedupesRepeatedSelector(t *testing.T) {
 	rules := []Rule{
-		{File: "NewFolderDialog.svelte", Line: 295, Selector: ".suggestion-pending", Classes: []string{"suggestion-item", "suggestion-pending"}, Opacity: 0.5, HasOpacity: true},
-		{File: "NewFolderDialog.svelte", Line: 309, Selector: ".suggestion-pending", Classes: []string{"suggestion-pending"}, Opacity: 0.4, HasOpacity: true, ModeOnly: ""},
+		{File: "SomeWidget.svelte", Line: 20, Selector: ".hint-text", Classes: []string{"hint-text"}, Opacity: 0.5, HasOpacity: true},
+		{File: "SomeWidget.svelte", Line: 34, Selector: ".hint-text", Classes: []string{"hint-text"}, Opacity: 0.4, HasOpacity: true, ModeOnly: ""},
 	}
 	a := NewAnalyzer(NewVarTable())
-	pf := &ParsedFile{Path: "NewFolderDialog.svelte", Rules: rules}
+	pf := &ParsedFile{Path: "SomeWidget.svelte", Rules: rules}
 	findings := a.AnalyzeOpacity(pf)
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 deduped finding, got %d: %+v", len(findings), findings)

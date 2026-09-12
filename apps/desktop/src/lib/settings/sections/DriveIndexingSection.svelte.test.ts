@@ -143,7 +143,7 @@ describe('DriveIndexingSection', () => {
     const target = await mountSection()
     expect(target.querySelector('.master-off-note')).toBeNull()
     expect(target.querySelectorAll('.setting-row.disabled')).toHaveLength(0)
-    expect(target.querySelector('.reenable-row.overridden')).toBeNull()
+    expect(target.querySelector('.reenable-row.disabled')).toBeNull()
     target.remove()
   })
 
@@ -174,7 +174,7 @@ describe('DriveIndexingSection', () => {
     // dims with them rather than staying bright beside them.
     expect(target.querySelectorAll('.setting-row.disabled')).toHaveLength(2)
     expect(target.querySelectorAll('.disabled-badge')).toHaveLength(2)
-    expect(target.querySelector('.reenable-row.overridden')).not.toBeNull()
+    expect(target.querySelector('.reenable-row.disabled')).not.toBeNull()
 
     // Every switch below the master one is inert.
     const switches = Array.from(target.querySelectorAll<HTMLInputElement>('.setting-row.disabled input'))
