@@ -91,14 +91,14 @@ browser, the thing tier 1 exists to avoid), `opacity_check.go` detects the gap i
 rule with a static `opacity: N < 1` UNLESS it's one of:
 
 - **A disabled or inactive UI component** (`opacityInactiveSelector` in `opacity_check.go`): `:disabled`, `[disabled]`,
-  `aria-disabled`, `data-disabled`, `data-gated`, or a `.disabled` / `.is-disabled*` / `*-disabled` class — plus the same
-  three shapes for `unavailable` (`.volume-item.is-unavailable`, a device the daemon lists but can't use). WCAG 1.4.3
-  explicitly exempts inactive components, and this is where most of the codebase's `opacity` dimming lives.
+  `aria-disabled`, `data-disabled`, `data-gated`, or a `.disabled` / `.is-disabled*` / `*-disabled` class — plus the
+  same three shapes for `unavailable` (`.volume-item.is-unavailable`, a device the daemon lists but can't use). WCAG
+  1.4.3 explicitly exempts inactive components, and this is where most of the codebase's `opacity` dimming lives.
 - **Transient drag-in-progress feedback** (`opacityIsDraggingFeedback` in `opacity_check.go`): a selector containing
   `is-dragging` (the ghosted row at the drag source, for example `.favorite-item.is-dragging`) or `cannot-drop` (a drop
-  target signaling a refusal, for example `.drag-overlay.cannot-drop`). Both dim ONLY while a pointer drag is in
-  flight; WCAG 1.4.3's "incidental text" carve-out covers momentary UI feedback like this the same way it covers a
-  hover tooltip or an animating toast.
+  target signaling a refusal, for example `.drag-overlay.cannot-drop`). Both dim ONLY while a pointer drag is in flight;
+  WCAG 1.4.3's "incidental text" carve-out covers momentary UI feedback like this the same way it covers a hover tooltip
+  or an animating toast.
 - **A hand-verified non-text element** (`opacityDecorativeAllowlist`): an `<Icon>` wrapper, an empty CSS-shape status
   indicator (a colored dot/bar/swatch with no child content), or an aria-hidden punctuation divider with no
   informational content. None of these render a text glyph, so this checker's text-contrast scope doesn't apply. Each
