@@ -768,8 +768,8 @@ the shared `smb-consumer` Docker Compose project. Two layers of contention had t
 The standalone scripts (`start.sh`, `e2e-linux.sh::start_smb_containers`) take their **own** leases (`manual` for
 `start.sh`, `$$` for `e2e-linux.sh`), so a manual run alongside a `check.sh` run just registers as a second holder and
 neither tears the other's stack down. The SIGINT handler in `main.go` captures the orchestrator via shared variable so a
-Ctrl+C also releases every held lease (with a banner) before exiting 130. See the `stacklease/` module map above for
-the lock/lease/policy model, and § "Two fixture stacks, two lease namespaces" for how a second protocol plugs in.
+Ctrl+C also releases every held lease (with a banner) before exiting 130. See the `stacklease/` module map above for the
+lock/lease/policy model, and § "Two fixture stacks, two lease namespaces" for how a second protocol plugs in.
 
 **Decision**: bring-up and teardown are silent on the common path; only the decisions that cost real wall-clock time
 print. **Why**: adopting an already-serving stack is the overwhelmingly common case (every worktree racing to reuse the
@@ -780,13 +780,13 @@ same containers), so a fixed-cost banner on every run drowned the one thing wort
   a foreign lease); `stacklease.InfoLogf` carries the routine decision log (adopt confirmations, swept dead leases,
   reconcile/release rationale) and is silenced by `SetVerbose(false)`, which `main.go` calls whenever `flags.quiet` is
   set (i.e. no `-v`/`--verbose`, and not CI). Every OTHER caller of the package (the `stack-lease` CLI that
-  `start.sh`/`stop.sh`/`e2e-linux.sh` shell out to, `go run`) never calls `SetVerbose`, so it keeps seeing what it always
-  has.
+  `start.sh`/`stop.sh`/`e2e-linux.sh` shell out to, `go run`) never calls `SetVerbose`, so it keeps seeing what it
+  always has.
 - `stacklease.OnReconcileStart` and `OnTeardown` are hooks `Acquire`/`Release` call exactly when they decide `up -d` or
   `compose down` is actually happening (under the stack's lock, before the slow command runs). `NewStackOrchestrator`
-  wires both to print one line per stack, at that same moment (`📦 Starting <stack> fixtures…` / `🧹 Stopping <stack>
-  fixtures…`) — the one thing worth telling a human about regardless of verbosity. A release error still always
-  prints, independent of both mechanisms.
+  wires both to print one line per stack, at that same moment (`📦 Starting <stack> fixtures…` /
+  `🧹 Stopping <stack> fixtures…`) — the one thing worth telling a human about regardless of verbosity. A release error
+  still always prints, independent of both mechanisms.
 
 **Decision**: cmdr's SMB stack binds a dedicated host-port range (11480+), not smb2's default (10480+). **Why**: cmdr
 runs a _vendored copy_ of smb2's `consumer` compose under its own project name (`smb-consumer`), while smb2's own test

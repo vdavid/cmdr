@@ -1014,6 +1014,10 @@ export const commands = {
    *  passed in `source_items`. This lets the dialog classify dir-vs-dir collisions
    *  as silent merges without the FE having to plumb per-item types. Callers that
    *  don't pass the source volume keep the legacy name-only behavior.
+   *
+   *  A thin wrapper: the budgeted scan itself is
+   *  `write_operations::conflict_preflight::scan_volume_for_conflicts_within`,
+   *  which is what a test hands a budget it can wait out.
    */
   scanVolumeForConflicts: (
     volumeId: string,
@@ -12701,7 +12705,7 @@ export type SortColumn = 'name' | 'extension' | 'size' | 'modified' | 'created'
 // Sort order (ascending or descending).
 export type SortOrder = 'ascending' | 'descending'
 
-// Input type for source item information (used by scan_volume_for_conflicts).
+// Input type for source item information (used by `scan_volume_for_conflicts`).
 export type SourceItemInput = {
   // File/directory name.
   name: string
