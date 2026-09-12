@@ -16,7 +16,7 @@ Per catalog area, each renderable key is one of three:
 
 Coverage is PARTIAL by design. Uncoupled keys are expected, not bugs.
 
-**Total: 2458 / 3563 keys have a screenshot (69%):** 1369 direct (38%) and 1089 representative (31%). 950 remain
+**Total: 2464 / 3563 keys have a screenshot (69%):** 1375 direct (39%) and 1089 representative (31%). 944 remain
 uncoupled, and 155 are native surfaces a webview capture cannot reach.
 
 | Area           | Direct | Representative | Uncoupled | Native | Total | Any % |
@@ -49,7 +49,7 @@ uncoupled, and 155 are native surfaces a webview capture cannot reach.
 | search         |      9 |             48 |         0 |      0 |    57 |  100% |
 | selection      |     14 |              0 |         1 |      0 |    15 |   93% |
 | servers        |     48 |             19 |        33 |      0 |   100 |   67% |
-| settings       |    337 |             38 |       250 |      0 |   625 |   60% |
+| settings       |    343 |             38 |       244 |      0 |   625 |   61% |
 | shortcuts      |     31 |             28 |         0 |      0 |    59 |  100% |
 | suggestedOps   |      0 |              0 |        29 |      0 |    29 |    0% |
 | transfer       |      2 |             11 |         0 |      0 |    13 |  100% |
@@ -70,7 +70,7 @@ picture of a key several surfaces share, and being the clearest is reason enough
 staging (or add it to `DROPPED_GALLERY_STATES` for a gallery state) in `test/e2e-playwright/`.
 
 - `search-dialog` (97 keys, none unique)
-- `select-dialog` (90 keys, none unique)
+- `select-dialog` (89 keys, none unique)
 - `transfer-confirmation-copy` (84 keys, none unique)
 - `onboarding-optional` (83 keys, none unique)
 - `transfer-dialog` (77 keys, none unique)

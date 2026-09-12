@@ -1863,7 +1863,8 @@
   },
   "settings.navigationAndFileOps.card.textEditor": "Text editor",
   "@settings.navigationAndFileOps.card.textEditor": {
-    "description": "Heading of the Text editor card in Settings > Behavior > Navigation & file ops, directly above the Terminal card. It holds the setting for which app F4 (edit) opens files in. Generic here: a text editor app in general, NOT Apple's app called TextEdit. macOS only."
+    "description": "Heading of the Text editor card in Settings > Behavior > Navigation & file ops, directly above the Terminal card. It holds the setting for which app F4 (edit) opens files in. Generic here: a text editor app in general, NOT Apple's app called TextEdit. macOS only.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.navigationAndFileOps.card.terminal": "Terminal",
   "@settings.navigationAndFileOps.card.terminal": {
@@ -1910,18 +1911,21 @@
   },
   "settings.behavior.textEditorApp.label": "Edit files in",
   "@settings.behavior.textEditorApp.label": {
-    "description": "Label of the dropdown that picks which app F4 (edit) opens files in, in the Text editor card of Settings > Behavior > Navigation & file ops. The sentence continues in the dropdown beside it, which names an app: \"Edit files in [Sublime Text]\" or \"Edit files in [System default (TextEdit)]\". If your language can't continue a label into an app name, a noun label like \"Editor app\" is fine."
+    "description": "Label of the dropdown that picks which app F4 (edit) opens files in, in the Text editor card of Settings > Behavior > Navigation & file ops. The sentence continues in the dropdown beside it, which names an app: \"Edit files in [Sublime Text]\" or \"Edit files in [System default (TextEdit)]\". If your language can't continue a label into an app name, a noun label like \"Editor app\" is fine.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.textEditorApp.description": "Cmdr lists the text editors macOS knows about on this Mac. To use a different app, pick \"Choose an app…\".",
   "@settings.behavior.textEditorApp.description": {
-    "description": "Helper text under the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is what macOS itself reports as text editors on this Mac, and there's a way to pick any other app. \"Choose an app…\" is the last row of that same dropdown and matches the terminal row below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key. \"Cmdr\" is the product name and \"macOS\" the system name; keep both."
+    "description": "Helper text under the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is what macOS itself reports as text editors on this Mac, and there's a way to pick any other app. \"Choose an app…\" is the last row of that same dropdown and matches the terminal row below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key. \"Cmdr\" is the product name and \"macOS\" the system name; keep both.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.textEditorApp.systemDefault": "System default ({app})",
   "@settings.behavior.textEditorApp.systemDefault": {
     "description": "First row of the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Picking it makes F4 (edit) open files in whatever app macOS uses for plain text, which is TextEdit unless the user changed it in Finder. \"System default\" = the Mac's own default app; use the wording your locale's macOS uses for a system-wide default where it has one.",
     "placeholders": {
       "app": "the name of that default app as Finder shows it, like \"TextEdit\" or \"Xcode\". Any installed app's own name, never translated; the parentheses keep it out of the phrase's grammar"
-    }
+    },
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.textEditorApp.systemDefaultUnnamed": "System default",
   "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
@@ -1929,7 +1933,8 @@
   },
   "settings.behavior.textEditorApp.chooseApp": "Choose an app…",
   "@settings.behavior.textEditorApp.chooseApp": {
-    "description": "Last row of the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Picking it opens the macOS file picker so the user can point at any app on their Mac. The trailing … (U+2026) means \"this opens a dialog\"; keep it. Same row as on the terminal dropdown below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key."
+    "description": "Last row of the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Picking it opens the macOS file picker so the user can point at any app on their Mac. The trailing … (U+2026) means \"this opens a dialog\"; keep it. Same row as on the terminal dropdown below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.textEditorApp.chooseAppTitle": "Choose a text editor",
   "@settings.behavior.textEditorApp.chooseAppTitle": {
@@ -1937,7 +1942,8 @@
   },
   "settings.behavior.textEditorApp.checking": "Checking your apps…",
   "@settings.behavior.textEditorApp.checking": {
-    "description": "Placeholder shown in the \"Edit files in\" dropdown for the moment before Cmdr has finished asking macOS which text editors are on this Mac. The dropdown is disabled while it reads this. \"your apps\" = the apps on this Mac. Usually gone within a few milliseconds. Same wording as the terminal dropdown's settings.behavior.openTerminalHereApp.checking key; translate it identically."
+    "description": "Placeholder shown in the \"Edit files in\" dropdown for the moment before Cmdr has finished asking macOS which text editors are on this Mac. The dropdown is disabled while it reads this. \"your apps\" = the apps on this Mac. Usually gone within a few milliseconds. Same wording as the terminal dropdown's settings.behavior.openTerminalHereApp.checking key; translate it identically.",
+    "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.textEditorHintSeen.label": "Text editor hint shown",
   "@settings.behavior.textEditorHintSeen.label": {

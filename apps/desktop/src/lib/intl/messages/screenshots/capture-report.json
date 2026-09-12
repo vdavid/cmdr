@@ -855,6 +855,11 @@
       "settings.behavior.openTerminalHereApp.chooseApp",
       "settings.behavior.openTerminalHereApp.description",
       "settings.behavior.openTerminalHereApp.label",
+      "settings.behavior.textEditorApp.checking",
+      "settings.behavior.textEditorApp.chooseApp",
+      "settings.behavior.textEditorApp.description",
+      "settings.behavior.textEditorApp.label",
+      "settings.behavior.textEditorApp.systemDefault",
       "settings.control.customOption",
       "settings.fileOperations.allowFileExtensionChanges.description",
       "settings.fileOperations.allowFileExtensionChanges.label",
@@ -871,6 +876,7 @@
       "settings.navigationAndFileOps.card.operationLog",
       "settings.navigationAndFileOps.card.showInFinder",
       "settings.navigationAndFileOps.card.terminal",
+      "settings.navigationAndFileOps.card.textEditor",
       "settings.operationLog.intro",
       "settings.operationLog.maxAge.description",
       "settings.operationLog.maxAge.label",
@@ -2405,7 +2411,6 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -2933,7 +2938,6 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
-      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -3026,7 +3030,7 @@
       "fileExplorer.columns.name",
       "fileExplorer.columns.size",
       "fileExplorer.dirSize.contentLabel",
-      "fileExplorer.dirSize.noFiles",
+      "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.diskSpace.barTooltip",
@@ -3370,6 +3374,7 @@
       "fileExplorer.dirSize.contentLabel",
       "fileExplorer.dirSize.fileCount",
       "fileExplorer.dirSize.folderCount",
+      "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
       "fileExplorer.navigation.driveIndex.ariaLabel",
@@ -3383,7 +3388,13 @@
   },
   "toast-tab": {
     "screenshot": "toast-tab.png",
-    "keys": ["commands.handler.noRecentlyClosedTabs", "ui.toast.dismissAria"]
+    "keys": [
+      "commands.handler.noRecentlyClosedTabs",
+      "fileExplorer.navigation.driveIndex.ariaLabel",
+      "fileExplorer.navigation.driveIndex.durationSec",
+      "fileExplorer.navigation.driveIndex.tooltipFresh",
+      "ui.toast.dismissAria"
+    ]
   },
   "toast-zoom-in": {
     "screenshot": "toast-zoom-in.png",
@@ -3399,9 +3410,6 @@
       "fileExplorer.dirSize.noFiles",
       "fileExplorer.dirSize.noFolders",
       "fileExplorer.dirSize.onDiskLabel",
-      "fileExplorer.diskSpace.barTooltip",
-      "fileExplorer.diskSpace.free",
-      "fileExplorer.diskSpace.somewhatLowNote",
       "ui.toast.dismissAria"
     ]
   },
@@ -9863,9 +9871,6 @@
       "commands.sortByModified.label",
       "commands.sortByName.label",
       "commands.sortBySize.label",
-      "errors.write.sourceNotFound.message.copy",
-      "errors.write.sourceNotFound.suggestion",
-      "errors.write.sourceNotFound.title",
       "fileExplorer.breadcrumb.navigateTooltip",
       "fileExplorer.columns.ext",
       "fileExplorer.columns.modified",
@@ -9916,10 +9921,7 @@
       "licensing.windowTitle.personalUse",
       "queue.chip.ariaLabel",
       "queue.chip.tooltip",
-      "queue.failureToast.action",
-      "queue.failureToast.title",
-      "queue.row.label",
-      "ui.toast.dismissAria"
+      "queue.row.label"
     ]
   },
   "operation-failure": {

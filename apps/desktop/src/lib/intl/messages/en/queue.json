@@ -200,13 +200,13 @@
     "placeholders": {
       "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, create_file, or archive_edit"
     },
-    "screenshot": "operation-chip.png"
+    "screenshot": "operation-failure.png"
   },
 
   "queue.failureToast.action": "Show in operation queue",
   "@queue.failureToast.action": {
     "description": "Button on the failure notice that opens the operation queue window, where the operation''s row carries the full reason and what to do about it. \"Operation queue\" is the window''s name; keep it identical to the window title.",
-    "screenshot": "operation-chip.png"
+    "screenshot": "operation-failure.png"
   },
 
   "queue.failureToast.summary": "{count, plural, one {{countText} operation couldn''t finish} other {{countText} operations couldn''t finish}}",
