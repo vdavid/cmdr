@@ -59,6 +59,24 @@ pub fn parse_proc_mounts_from_content(contents: &str) -> Vec<MountEntry> {
         .collect()
 }
 
+/// Whether `path` is a mount point in `/proc/mounts`. Reading the table never
+/// touches the mount itself, so a hung network mount can't stall it. `None` when
+/// the table couldn't be read. Eject asks this to tell a refusal from a volume
+/// that's already gone.
+pub fn is_mount_point(path: &str) -> Option<bool> {
+    mount_table_lists(&parse_proc_mounts(), path)
+}
+
+/// [`is_mount_point`] over a pre-parsed table. An empty table is unknown, never
+/// "not mounted": a readable one always holds `/`.
+fn mount_table_lists(mounts: &[MountEntry], path: &str) -> Option<bool> {
+    if mounts.is_empty() {
+        return None;
+    }
+    let path = Path::new(path);
+    Some(mounts.iter().any(|entry| Path::new(&entry.mountpoint) == path))
+}
+
 /// Looks up the filesystem type for the given path by finding the mount
 /// with the longest matching mountpoint prefix.
 pub fn fs_type_for_path(path: &Path) -> Option<String> {
@@ -236,6 +254,30 @@ user@host:/path /mnt/sshfs fuse.sshfs rw,relatime 0 0
         let content = "\n# comment\n\n";
         let entries = parse_proc_mounts_from_content(content);
         assert!(entries.is_empty());
+    }
+
+    #[test]
+    fn mount_table_lists_only_whole_mountpoints() {
+        let entries = parse_proc_mounts_from_content(SAMPLE_MOUNTS);
+        assert_eq!(mount_table_lists(&entries, "/mnt/data"), Some(true));
+        assert_eq!(mount_table_lists(&entries, "/mnt/data/"), Some(true));
+        assert_eq!(
+            mount_table_lists(&entries, "/mnt"),
+            Some(false),
+            "a parent of a mount isn't one"
+        );
+        assert_eq!(mount_table_lists(&entries, "/mnt/data/sub"), Some(false));
+
+        let escaped = parse_proc_mounts_from_content("/dev/sdc1 /media/me/USB\\040Stick vfat rw 0 0\n");
+        assert_eq!(mount_table_lists(&escaped, "/media/me/USB Stick"), Some(true));
+    }
+
+    #[test]
+    fn an_unreadable_mount_table_is_unknown_never_unmounted() {
+        // `parse_proc_mounts` answers an empty list when `/proc/mounts` can't be
+        // read, and a real table always holds `/`. Reading that as "gone" would
+        // turn a real eject refusal into a silent success.
+        assert_eq!(mount_table_lists(&[], "/mnt/data"), None);
     }
 
     #[test]

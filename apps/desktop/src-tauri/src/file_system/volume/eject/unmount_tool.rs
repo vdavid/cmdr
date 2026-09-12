@@ -124,37 +124,92 @@ fn run_blocking(verb: UnmountVerb, mount_path: &str) -> ToolOutcome {
     }
 }
 
-/// What a finished run means for the caller. Pure.
+/// What a finished run means for the caller.
+#[derive(Debug)]
+pub(super) enum Settled {
+    /// The tool did it.
+    Done,
+    /// The tool didn't say yes, but the volume is no longer in the mount table, so
+    /// the goal is met: something else unmounted it first, or the unmount a
+    /// timeout didn't cancel landed.
+    AlreadyGone,
+    /// It didn't happen, and the volume is still mounted.
+    Refused(EjectError),
+}
+
+/// What a finished run means for the caller. Pure: `still_mounted` is the
+/// mount-table read, asked only when the tool didn't succeed.
 ///
-/// Only a tool that EXITED with a code turned the unmount down, so only that is
-/// an [`EjectError::UnmountRefused`]: a tool that never started or died to a
-/// signal would make "something is still using this drive" a lie.
-pub(super) fn settle(outcome: &ToolOutcome, verb: UnmountVerb) -> Result<(), EjectError> {
-    match outcome {
-        ToolOutcome::Succeeded => Ok(()),
-        ToolOutcome::Exited { code: Some(_), stderr } => Err(EjectError::UnmountRefused {
+/// ❗ "No longer mounted" is the one evidence that overrides a failure, and it
+/// comes from the OS mount table: ❌ never a probe of the mount root (a `statfs`
+/// on a hung network mount blocks 30–120 s), ❌ never the tool's stderr
+/// (`error-string-match`). The registry would be too late: the unmount
+/// notification can land milliseconds after the tool exits.
+///
+/// Of the failures that stay failures, only a tool that EXITED with a code turned
+/// the unmount down, so only that is an [`EjectError::UnmountRefused`]: a tool
+/// that never started or died to a signal would make "something is still using
+/// this drive" a lie.
+pub(super) fn settle(outcome: &ToolOutcome, verb: UnmountVerb, still_mounted: impl FnOnce() -> bool) -> Settled {
+    let error = match outcome {
+        ToolOutcome::Succeeded => return Settled::Done,
+        ToolOutcome::Exited { code: Some(_), stderr } => EjectError::UnmountRefused {
             detail: format!("{verb}: {stderr}"),
-        }),
-        ToolOutcome::TimedOut => Err(EjectError::TimedOut),
+        },
+        ToolOutcome::TimedOut => EjectError::TimedOut,
         ToolOutcome::Exited { code: None, .. } | ToolOutcome::CouldNotStart { .. } | ToolOutcome::TaskFailed { .. } => {
-            Err(EjectError::Unexpected {
+            EjectError::Unexpected {
                 detail: format!("{verb}: {outcome}"),
-            })
+            }
         }
+    };
+    if still_mounted() {
+        Settled::Refused(error)
+    } else {
+        Settled::AlreadyGone
     }
+}
+
+/// Whether `mount_path` is still in the OS mount table, read without touching the
+/// mount itself. A table that can't be read answers "still mounted": reading it
+/// as gone would turn a real refusal into a silent success.
+pub(super) fn is_still_mounted(mount_path: &str) -> bool {
+    #[cfg(target_os = "macos")]
+    let listed = crate::volumes::is_mount_point(mount_path);
+    #[cfg(target_os = "linux")]
+    let listed = crate::file_system::linux_mounts::is_mount_point(mount_path);
+    listed.unwrap_or(true)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn a_tool_that_says_no_is_an_unmount_refusal_carrying_its_stderr() {
-        let outcome = ToolOutcome::Exited {
+    fn still_mounted() -> bool {
+        true
+    }
+
+    fn gone() -> bool {
+        false
+    }
+
+    fn refusal(settled: Settled) -> EjectError {
+        match settled {
+            Settled::Refused(error) => error,
+            other => panic!("expected a refusal, got {other:?}"),
+        }
+    }
+
+    fn dissented() -> ToolOutcome {
+        ToolOutcome::Exited {
             code: Some(1),
             stderr: "Unmount was dissented by PID 51419 (/bin/sleep)".to_string(),
-        };
-        let error = settle(&outcome, UnmountVerb::Eject).unwrap_err();
+        }
+    }
+
+    #[test]
+    fn a_tool_that_says_no_is_an_unmount_refusal_carrying_its_stderr() {
+        let error = refusal(settle(&dissented(), UnmountVerb::Eject, still_mounted));
         assert!(
             matches!(error, EjectError::UnmountRefused { ref detail } if detail.contains("dissented by PID 51419")),
             "got {error:?}"
@@ -168,21 +223,42 @@ mod tests {
         let outcome = ToolOutcome::CouldNotStart {
             detail: "No such file or directory".to_string(),
         };
-        let error = settle(&outcome, UnmountVerb::Unmount).unwrap_err();
+        let error = refusal(settle(&outcome, UnmountVerb::Unmount, still_mounted));
         assert!(matches!(error, EjectError::Unexpected { .. }), "got {error:?}");
     }
 
     #[test]
-    fn a_timeout_stays_a_timeout() {
-        assert!(matches!(
-            settle(&ToolOutcome::TimedOut, UnmountVerb::Eject),
-            Err(EjectError::TimedOut)
-        ));
+    fn a_timeout_stays_a_timeout_while_the_volume_is_still_mounted() {
+        let error = refusal(settle(&ToolOutcome::TimedOut, UnmountVerb::Eject, still_mounted));
+        assert!(matches!(error, EjectError::TimedOut), "got {error:?}");
     }
 
     #[test]
-    fn a_clean_exit_is_done() {
-        assert!(settle(&ToolOutcome::Succeeded, UnmountVerb::Eject).is_ok());
+    fn a_clean_exit_is_done_without_reading_the_mount_table() {
+        let settled = settle(&ToolOutcome::Succeeded, UnmountVerb::Eject, || {
+            panic!("a clean exit must not read the mount table")
+        });
+        assert!(matches!(settled, Settled::Done), "got {settled:?}");
+    }
+
+    #[test]
+    fn a_refusal_for_a_volume_no_longer_mounted_counts_as_already_gone() {
+        // `diskutil eject` of a path that's already unmounted exits 1 with
+        // "Failed to find disk", and so does one that lost a race with the
+        // unmount it asked for. The person's goal is met either way.
+        let outcome = ToolOutcome::Exited {
+            code: Some(1),
+            stderr: "Failed to find disk /Volumes/X".to_string(),
+        };
+        let settled = settle(&outcome, UnmountVerb::Eject, gone);
+        assert!(matches!(settled, Settled::AlreadyGone), "got {settled:?}");
+    }
+
+    #[test]
+    fn a_timeout_after_which_the_volume_is_gone_counts_as_already_gone() {
+        // The unmount the timeout didn't cancel landed.
+        let settled = settle(&ToolOutcome::TimedOut, UnmountVerb::Unmount, gone);
+        assert!(matches!(settled, Settled::AlreadyGone), "got {settled:?}");
     }
 
     #[test]

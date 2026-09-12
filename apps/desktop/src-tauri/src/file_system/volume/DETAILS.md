@@ -435,6 +435,22 @@ holding the drive ("Unmount was dissented by PID 51419"). It has to be Rust's lo
 onto the wire type: only a tool that EXITED with a code is `UnmountRefused`. One that couldn't start or died to a
 signal is `Unexpected`, since "something is still using this drive" would be a lie there.
 
+**A failure for a volume that's no longer mounted counts as done.** When the tool doesn't succeed, `settle` asks
+whether the mount root is still in the OS mount table (`volumes::is_mount_point`, the non-blocking
+`getfsstat(MNT_NOWAIT)` snapshot discovery reads; `file_system::linux_mounts::is_mount_point` on Linux), and if it
+isn't, the eject answers `Ok`: the person's goal is met. That covers an eject of a path something already unmounted
+(`diskutil` exits 1, "Failed to find disk"), and a timed-out unmount that landed anyway. The `info` line still records
+what the tool said. The evidence is typed and can't block: ❌ not the tool's stderr (`error-string-match`), ❌ not a
+probe of the mount root (a `statfs` on a hung network mount blocks 30–120 s), and not the registry either, because the
+unmount notification can land milliseconds after `diskutil` exits. A mount table that can't be read counts as "still
+mounted", so a real refusal never turns into a silent success. The decision is the pure `unmount_tool::settle`, with
+the table read passed in as a closure it calls only on failure.
+
+**An ID the registry no longer knows stays `VolumeNotFound`.** It could be a volume that finished unmounting a moment
+ago, or an ID that never existed (an MCP caller's typo), and with no mount root left there's nothing typed to ask, so
+answering `Ok` would hand automation a false success. The UI's own controls reach it only in a narrow race, and its copy
+("That drive isn't connected any more, so there's nothing to eject") already reads right there.
+
 The MCP `eject` tool wraps `eject::eject` directly (not the command), surfacing `Busy` / non-ejectable as honest tool errors; see `mcp/DETAILS.md`.
 
 Errors are the typed `EjectError` (`Busy`, `VolumeNotFound`, `NotEjectable`,

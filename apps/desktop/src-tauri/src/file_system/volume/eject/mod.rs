@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::device_volumes::DeviceVolumeProvider;
-use unmount_tool::UnmountVerb;
+use unmount_tool::{Settled, UnmountVerb};
 
 /// Action the eject pipeline takes for a given volume.
 #[derive(Debug, PartialEq, Eq)]
@@ -302,15 +302,26 @@ async fn run_teardown(volume_id: &str, teardown: Teardown<'_>) -> Result<(), Eje
         },
         Teardown::Tool { verb, mount_path } => {
             let outcome = unmount_tool::run(verb, mount_path).await;
-            let result = unmount_tool::settle(&outcome, verb);
-            match &result {
-                Ok(()) => log::info!(target: "eject", "`{verb}` succeeded for {volume_id} at {mount_path}"),
-                Err(_) => log::warn!(
-                    target: "eject",
-                    "`{verb}` for {volume_id} at {mount_path} didn't go through: {outcome}"
-                ),
+            match unmount_tool::settle(&outcome, verb, || unmount_tool::is_still_mounted(mount_path)) {
+                Settled::Done => {
+                    log::info!(target: "eject", "`{verb}` succeeded for {volume_id} at {mount_path}");
+                    Ok(())
+                }
+                Settled::AlreadyGone => {
+                    log::info!(
+                        target: "eject",
+                        "`{verb}` for {volume_id} at {mount_path} didn't go through ({outcome}), but it's no longer mounted, so it counts as done"
+                    );
+                    Ok(())
+                }
+                Settled::Refused(error) => {
+                    log::warn!(
+                        target: "eject",
+                        "`{verb}` for {volume_id} at {mount_path} didn't go through: {outcome}"
+                    );
+                    Err(error)
+                }
             }
-            result
         }
     }
 }

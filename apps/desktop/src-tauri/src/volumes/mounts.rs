@@ -75,6 +75,18 @@ fn cstr_field_to_string(field: &[libc::c_char]) -> String {
     String::from_utf8_lossy(&bytes).into_owned()
 }
 
+/// Whether `path` is a mount point in the kernel mount table. Reads the same
+/// non-blocking `getfsstat` snapshot discovery does, so a hung mount can't stall
+/// it. `None` when the table couldn't be read (a live system always lists `/`).
+pub(crate) fn is_mount_point(path: &str) -> Option<bool> {
+    let mounts = enumerate_mounts();
+    if mounts.is_empty() {
+        return None;
+    }
+    let path = Path::new(path);
+    Some(mounts.iter().any(|m| Path::new(&m.mount_point) == path))
+}
+
 /// Whether a mount point should surface as an attached volume in the switcher.
 ///
 /// Mirrors the old NSFileManager filter: only `/Volumes/*`, never the boot
@@ -385,5 +397,12 @@ mod tests {
         let mounts = enumerate_mounts();
         assert!(!mounts.is_empty(), "getfsstat returned no mounts");
         assert!(mounts.iter().any(|m| m.mount_point == "/"), "root mount missing");
+    }
+
+    #[test]
+    fn is_mount_point_answers_from_the_mount_table() {
+        assert_eq!(is_mount_point("/"), Some(true), "the boot volume is a mount point");
+        // A folder ON a mount is not one: an eject can't mistake it for a live mount.
+        assert_eq!(is_mount_point("/usr/bin"), Some(false));
     }
 }
