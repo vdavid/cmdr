@@ -11,6 +11,8 @@
 //! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher, context menus (file,
 //!   breadcrumb, tab, network host), viewer menu, plus `FileContextInfo` / `ContextMenuPaneFacts` /
 //!   `ContextMenuResult`.
+//! - `item_states.rs`: `apply_menu_item_states` (the single writer of every main-menu item's
+//!   enabled state), `set_menu_context`, and the macOS app-menu-bar swap between main and viewer.
 //! - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher wired into the Tauri
 //!   builder, plus the macOS post-construction helpers it shares a platform with
 //!   (`cleanup_macos_menus`, `set_macos_menu_icons`, and the responder-chain edit actions).
@@ -33,6 +35,7 @@ mod context_menu_header;
 #[cfg(target_os = "macos")]
 mod context_menu_icons;
 pub mod install;
+mod item_states;
 #[cfg(not(target_os = "macos"))]
 mod linux;
 #[cfg(target_os = "macos")]
@@ -80,6 +83,9 @@ pub use context_menu_header::lend_context_menu_header;
 pub use context_menu_header::{ContextMenuTarget, ContextMenuTargetFacts};
 #[cfg(target_os = "macos")]
 pub use context_menu_icons::lend_context_menu_icons;
+pub(crate) use item_states::{apply_menu_item_states, set_menu_context};
+#[cfg(target_os = "macos")]
+pub(crate) use item_states::{swap_to_main_menu, swap_to_viewer_menu};
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
 pub use menu_handlers::handle_menu_event;
 #[cfg(target_os = "macos")]

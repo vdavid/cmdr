@@ -28,6 +28,10 @@ window focus context.
   (`build_viewer_menu`), plus the `FileContextInfo` and `ContextMenuResult` types.
 - `install.rs`: `at_startup`, the single call `lib.rs` makes in `setup`: pin the UI language, build the bar,
   run the macOS AppKit passes, and place the `MenuState` everything else mutates. Order inside is load-bearing.
+- `item_states.rs`: `apply_menu_item_states` (the one writer of every main-menu item's enabled state, derived from
+  stored inputs through the pure `menu_item_enabled`), `set_menu_context` (records which window's menu the explorer
+  items answer to), and the macOS-only `swap_to_main_menu` / `swap_to_viewer_menu` (the app-level menu-bar swap).
+  All three are called from `commands::menu::activate_window_menu` and the other menu-state IPC commands.
 - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher, plus the macOS
   post-construction wrappers `cleanup_macos_menus` / `set_macos_menu_icons` and
   `send_native_edit_action` (the actual objc2 FFI lives in `macos_appkit.rs`).
@@ -301,7 +305,7 @@ hint reinforcing the focus guard in `on_menu_event`.
 
 ## Dialog refusals, and the one writer of an item's enabled state
 
-Every main-menu item's enabled state comes from `apply_menu_item_states` in `commands/menu.rs`, which derives it from
+Every main-menu item's enabled state comes from `apply_menu_item_states` in `item_states.rs`, which derives it from
 stored inputs through the pure `menu_item_enabled`: whether the explorer owns the menu, `file_operations_blocked`, the
 "Open terminal here" and "Reopen closed tab" verdicts, and `commands_refused_over_dialog`. Each input's writer stores it
 and calls the recompute. **Decision/Why:** when each input wrote its items directly, the last writer won, so a focus
