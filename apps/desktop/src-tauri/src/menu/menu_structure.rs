@@ -1,9 +1,5 @@
-//! Hierarchical menu structure assembly.
-//!
-//! Builds the top-level application menu, context menus (file, breadcrumb,
-//! tab, network host, function key bar), and the viewer-window menu. Delegates the
-//! per-platform menu bar shape to `menu::macos::build_menu_macos` and
-//! `menu::linux::build_menu_linux`.
+//! Context menus (file, breadcrumb, tab, network host, function key bar) and the
+//! viewer-window menu. The main menu bar is `menu_bar.rs`.
 
 #[cfg(target_os = "macos")]
 use std::collections::HashMap;
@@ -30,12 +26,10 @@ use super::context_menu_header::{ContextMenuTargetFacts, append_context_menu_hea
 
 #[cfg(target_os = "macos")]
 use super::OPEN_TERMINAL_HERE_ID;
+use super::menu_bar::{COPY_PATH_ACCELERATOR, SHOW_IN_FILE_MANAGER_ACCELERATOR, SHOW_IN_FILE_MANAGER_KEY};
 #[cfg(target_os = "macos")]
 use super::menu_items::APP_MENU_TITLE;
-use super::menu_items::{
-    COPY_FILENAME_MAX_CHARS, DetachWord, copy_path_accelerator, detach_label, pin_tab_label,
-    show_in_file_manager_accelerator, show_in_file_manager_label, truncate_for_menu_label,
-};
+use super::menu_items::{COPY_FILENAME_MAX_CHARS, DetachWord, detach_label, pin_tab_label, truncate_for_menu_label};
 #[cfg(target_os = "macos")]
 use super::{
     CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, DRIVE_ASK_GEMINI_ID, DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID,
@@ -45,10 +39,10 @@ use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
     FAVORITE_REMOVE_ID, FAVORITE_RENAME_ID, FAVORITES_ADD_CONTEXT_ID, FILE_COPY_ID, FILE_DELETE_ID, FILE_DUPLICATE_ID,
     FILE_MOVE_ID, FILE_NEW_FILE_ID, FILE_NEW_FOLDER_ID, FILE_VIEW_ID, FUNCTION_KEY_BAR_HIDE_ID, ImageIndexMenuState,
-    MenuItems, NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID,
-    RENAME_ID, SERVER_DISCONNECT_ID, SERVER_EDIT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_OPEN_ID,
-    SERVER_PIN_ID, SERVER_UNPIN_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID,
-    TOGGLE_SELECTION_ID, VIEWER_WORD_WRAP_ID, ViewMode, ViewerMenuItems, image_index_menu_items,
+    NETWORK_HOST_DISCONNECT_ID, NETWORK_HOST_FORGET_SECRET_ID, NETWORK_HOST_FORGET_SERVER_ID, OPEN_ID, RENAME_ID,
+    SERVER_DISCONNECT_ID, SERVER_EDIT_ID, SERVER_FORGET_ID, SERVER_FORGET_SECRET_ID, SERVER_OPEN_ID, SERVER_PIN_ID,
+    SERVER_UNPIN_ID, SHOW_IN_FINDER_ID, TAB_CLOSE_ID, TAB_CLOSE_OTHERS_ID, TAB_PIN_ID, TOGGLE_SELECTION_ID,
+    VIEWER_WORD_WRAP_ID, ViewerMenuItems, image_index_menu_items,
 };
 
 /// Per-file information needed to build a fully-populated context menu.
@@ -95,24 +89,6 @@ pub struct ContextMenuResult<R: Runtime> {
     pub menu: Menu<R>,
     #[cfg(target_os = "macos")]
     pub open_with_apps: HashMap<String, PathBuf>,
-}
-
-/// Builds the application menu for the current platform.
-pub fn build_menu<R: Runtime>(
-    app: &AppHandle<R>,
-    show_hidden_files: bool,
-    view_mode: ViewMode,
-    has_existing_license: bool,
-) -> tauri::Result<MenuItems<R>> {
-    #[cfg(target_os = "macos")]
-    {
-        super::macos::build_menu_macos(app, show_hidden_files, view_mode, has_existing_license)
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    {
-        super::linux::build_menu_linux(app, show_hidden_files, view_mode, has_existing_license)
-    }
 }
 
 /// What the PANE the right-click landed in contributes, as opposed to the file
@@ -270,9 +246,9 @@ pub fn build_context_menu<R: Runtime>(
     let show_in_finder_item = MenuItem::with_id(
         app,
         SHOW_IN_FINDER_ID,
-        show_in_file_manager_label(),
+        menu_t(SHOW_IN_FILE_MANAGER_KEY.current()),
         true,
-        Some(show_in_file_manager_accelerator()),
+        SHOW_IN_FILE_MANAGER_ACCELERATOR.current(),
     )?;
     let copy_filename_item = MenuItem::with_id(
         app,
@@ -289,7 +265,7 @@ pub fn build_context_menu<R: Runtime>(
         COPY_PATH_ID,
         menu_t("menu.edit.copyPath"),
         true,
-        Some(copy_path_accelerator()),
+        COPY_PATH_ACCELERATOR.current(),
     )?;
     menu.append(&show_in_finder_item)?;
     // "Open terminal here" rides beside Show in Finder, same gesture aimed at a

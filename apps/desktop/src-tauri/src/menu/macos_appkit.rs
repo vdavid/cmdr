@@ -536,70 +536,102 @@ mod tests {
     use super::*;
     use std::collections::{HashMap, HashSet};
 
-    /// The main menu bar, plus the shared builders it pulls items from.
-    const MAIN_MENU_SOURCES: [(&str, &str); 2] = [
-        ("macos.rs", include_str!("macos.rs")),
-        ("menu_items.rs", include_str!("menu_items.rs")),
-    ];
+    use crate::menu::menu_bar::MENU_BAR;
+    use crate::menu::menu_spec::{EntryKind, Platform, SubmenuSpec};
+
     /// The viewer's menu bar. It matters too: `cleanup_macos_menus` runs against whichever bar is
     /// currently installed, and macOS swaps this one in whenever a viewer window has focus.
     const VIEWER_MENU_SOURCES: [(&str, &str); 1] = [("menu_structure.rs", include_str!("menu_structure.rs"))];
 
-    /// Every SF Symbol lands on a menu or item the menu bar actually builds.
+    /// The top-level menus the macOS bar builds.
+    fn macos_menu_bar() -> Vec<&'static SubmenuSpec> {
+        MENU_BAR
+            .iter()
+            .filter(|bar_menu| bar_menu.is_on(Platform::MacOs))
+            .map(|bar_menu| &bar_menu.submenu)
+            .collect()
+    }
+
+    /// Every SF Symbol lands on an item the macOS bar builds directly inside the menu its group
+    /// names, which is the only place `apply_icon_group` looks (`Submenu::get` searches direct
+    /// children alone).
     ///
     /// The icons are applied through AppKit, which has never heard of a Tauri menu ID: we resolve
     /// each ID to the title it currently carries and match on that. So an ID that names nothing
     /// costs an icon and nothing else, with no crash and no log line anyone reads. Building a real
-    /// menu needs AppKit on the main thread, so the source is what we can check here.
+    /// menu needs AppKit on the main thread, so the spec the bar is built from is what we check.
     #[test]
     fn menu_icon_ids_are_built_by_the_menu_bar() {
-        let built = menu_ids_built_by(&MAIN_MENU_SOURCES);
-
-        fn check(built: &HashSet<String>, group: &MenuIcons) {
-            assert!(
-                built.contains(group.menu_id),
-                "the macOS menu bar builds no menu with id `{}`, so its {} icons never land",
-                group.menu_id,
-                group.items.len()
-            );
+        fn check(menus: &[&'static SubmenuSpec], group: &MenuIcons) {
+            let Some(menu) = menus
+                .iter()
+                .copied()
+                .find(|menu| menu.id.on(Platform::MacOs) == Some(group.menu_id))
+            else {
+                panic!(
+                    "the macOS menu bar builds no menu with id `{}` where its {} icons look, so they never land",
+                    group.menu_id,
+                    group.items.len()
+                );
+            };
+            let children: Vec<&'static EntryKind> = menu.entries_on(Platform::MacOs).collect();
             for (item_id, symbol) in group.items {
                 assert!(
-                    built.contains(*item_id),
-                    "the macOS menu bar builds no item with id `{item_id}`, so the `{symbol}` icon never lands"
+                    children.iter().copied().any(|entry| match entry {
+                        EntryKind::Item(item) => item.id == *item_id,
+                        EntryKind::Check(check) => check.id == *item_id,
+                        _ => false,
+                    }),
+                    "the macOS `{}` menu builds no item with id `{item_id}`, so the `{symbol}` icon never lands",
+                    group.menu_id
                 );
             }
-            for nested in group.nested {
-                check(built, nested);
+            let nested: Vec<&'static SubmenuSpec> = children
+                .iter()
+                .copied()
+                .filter_map(|entry| match entry {
+                    EntryKind::Submenu(nested) => Some(nested),
+                    _ => None,
+                })
+                .collect();
+            for group in group.nested {
+                check(&nested, group);
             }
         }
 
+        let bar = macos_menu_bar();
         for group in MENU_BAR_ICONS {
-            check(&built, group);
+            check(&bar, group);
         }
     }
 
-    /// `cleanup_macos_menus` finds the Edit and Help menus by ID, and it runs against both menu
-    /// bars. A bar missing either ID silently keeps AppKit's injected Writing Tools / AutoFill /
-    /// Dictation items, or loses the Help menu's search field.
+    /// `cleanup_macos_menus` finds the Edit and Help menus by ID among the installed bar's top-level
+    /// menus, and it runs against both menu bars. A bar missing either ID silently keeps AppKit's
+    /// injected Writing Tools / AutoFill / Dictation items, or loses the Help menu's search field.
     #[test]
     fn both_menu_bars_carry_the_ids_cleanup_needs() {
-        for sources in [&MAIN_MENU_SOURCES[..], &VIEWER_MENU_SOURCES[..]] {
-            let built = menu_ids_built_by(sources);
-            for id in [EDIT_MENU_ID, HELP_MENU_ID] {
-                assert!(
-                    built.contains(id),
-                    "{} builds no menu with id `{id}`, so `cleanup_macos_menus` can't find it",
-                    sources[0].0
-                );
-            }
+        let main_bar: HashSet<&str> = macos_menu_bar()
+            .into_iter()
+            .filter_map(|menu| menu.id.on(Platform::MacOs))
+            .collect();
+        let viewer_bar = menu_ids_built_by(&VIEWER_MENU_SOURCES);
+        for id in [EDIT_MENU_ID, HELP_MENU_ID] {
+            assert!(
+                main_bar.contains(id),
+                "the macOS menu bar has no top-level menu with id `{id}`, so `cleanup_macos_menus` can't find it"
+            );
+            assert!(
+                viewer_bar.contains(id),
+                "{} builds no menu with id `{id}`, so `cleanup_macos_menus` can't find it",
+                VIEWER_MENU_SOURCES[0].0
+            );
         }
     }
 
     /// Menu IDs the given sources construct, as the runtime strings they resolve to.
     ///
     /// Reads the ID constant out of every `with_id` / `with_id_and_items` call and looks it up in
-    /// `command_map.rs`, which is where all of them live. One of the sources is this very file, so
-    /// spelling a call out in a comment here would have the parser read the comment as code.
+    /// `command_map.rs`, which is where all of them live.
     fn menu_ids_built_by(sources: &[(&str, &str)]) -> HashSet<String> {
         let values = menu_id_constants();
         let mut built = HashSet::new();
@@ -645,26 +677,6 @@ mod tests {
                 continue;
             };
             let name: String = after_app
-                .trim_start()
-                .chars()
-                .take_while(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || *c == '_')
-                .collect();
-            if !name.is_empty() {
-                names.push(name);
-            }
-        }
-        // `build_registered_submenu(app, Some(ID), …)` is the macOS-only shape a top-level submenu
-        // uses when the AppKit passes below need to find it by ID; Linux passes `None` there and
-        // contributes nothing here. `::with_id` above can't see this one: there's no `::` before it.
-        for (index, _) in source.match_indices("build_registered_submenu(") {
-            let after = &source[index + "build_registered_submenu(".len()..];
-            let Some(after_app) = after.trim_start().strip_prefix("app,") else {
-                continue;
-            };
-            let Some(after_some) = after_app.trim_start().strip_prefix("Some(") else {
-                continue;
-            };
-            let name: String = after_some
                 .trim_start()
                 .chars()
                 .take_while(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || *c == '_')

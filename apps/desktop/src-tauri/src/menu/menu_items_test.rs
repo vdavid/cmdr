@@ -120,9 +120,8 @@ fn test_truncate_for_menu_label_max_smaller_than_extension() {
 /// new one can't slip in with `...`.
 #[test]
 fn menu_labels_use_the_ellipsis_character() {
-    const SOURCES: [(&str, &str); 4] = [
-        ("macos.rs", include_str!("macos.rs")),
-        ("linux.rs", include_str!("linux.rs")),
+    const SOURCES: [(&str, &str); 3] = [
+        ("menu_bar.rs", include_str!("menu_bar.rs")),
         ("menu_structure.rs", include_str!("menu_structure.rs")),
         ("open_with.rs", include_str!("open_with.rs")),
     ];

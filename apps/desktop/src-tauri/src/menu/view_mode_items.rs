@@ -14,7 +14,7 @@ use tauri::{
 use crate::ignore_poison::IgnorePoison;
 use crate::intl::menu_t;
 
-use super::menu_items::Mnemonics;
+use super::mnemonics::Mnemonics;
 use super::{
     MenuState, VIEW_MODE_BRIEF_LEFT_ID, VIEW_MODE_BRIEF_RIGHT_ID, VIEW_MODE_FULL_LEFT_ID, VIEW_MODE_FULL_RIGHT_ID,
     ViewMode,
@@ -49,7 +49,7 @@ pub fn rebuild_view_mode_items<R: Runtime>(app: &AppHandle<R>, menu_state: &Menu
 
     let left_active = active_pane == "left";
     // Each pane submenu holds only these two items, so one allocation serves
-    // both panes and reproduces exactly what `build_view_mode_items` assigned.
+    // both panes and reproduces exactly what the menu-bar build assigned.
     let mut mnemonics = Mnemonics::new();
     let full_label = mnemonics.assign(&menu_t("menu.view.fullView"));
     let brief_label = mnemonics.assign(&menu_t("menu.view.briefView"));

@@ -6,13 +6,13 @@
 //!   `NetworkHostMenuContext`, `CommandScope`, `ViewMode`).
 //! - `command_map.rs`: all menu item ID constants plus the ID ↔ command-registry mapping
 //!   (`menu_id_to_command` and `command_id_to_menu_id`), glob-re-exported from `mod.rs`.
-//! - `menu_items.rs`: menu item builder helpers and submenu factories (sort, zoom),
-//!   accelerator/label platform-aware helpers, `register_item`, `truncate_for_menu_label`, and
-//!   `build_registered_submenu` (every top-level submenu in `macos.rs` / `linux.rs` is built
-//!   through it, from a `&[MenuSlot]` array in display order).
-//! - `menu_structure.rs`: hierarchical assembly: `build_menu` dispatcher, context menus (file,
-//!   breadcrumb, tab, network host), viewer menu, plus `FileContextInfo` / `ContextMenuPaneFacts` /
-//!   `ContextMenuResult`.
+//! - `menu_bar.rs`: the menu bar for both platforms, one row per item (`MENU_BAR`), written in the
+//!   words `menu_spec.rs` defines. `menu_bar_builder.rs` builds it for the running platform
+//!   (`build_menu`), and `mnemonics.rs` allocates the Linux underline letters.
+//! - `menu_items.rs`: small shared pieces: `APP_MENU_TITLE`, `pin_tab_label`, `detach_label`, and
+//!   `truncate_for_menu_label`.
+//! - `menu_structure.rs`: context menus (file, breadcrumb, tab, network host), the viewer menu, plus
+//!   `FileContextInfo` / `ContextMenuPaneFacts` / `ContextMenuResult`.
 //! - `item_states.rs`: `apply_menu_item_states` (the single writer of every main-menu item's
 //!   enabled state), `set_menu_context`, and the macOS app-menu-bar swap between main and viewer.
 //! - `menu_handlers.rs`: `handle_menu_event`, the `.on_menu_event` dispatcher wired into the Tauri
@@ -22,7 +22,6 @@
 //!   strings) and `update_menu_item_accelerator` (swapping one on a live item).
 //! - `view_mode_items.rs`: keeping the per-pane view-mode items in step, via a full
 //!   `rebuild_view_mode_items` or a cheap `sync_view_mode_check_states`.
-//! - `macos.rs` / `linux.rs`: platform-specific menu bar shape.
 //! - `macos_appkit.rs`: the objc2 passes that fix the built menu bar up (`cleanup_macos_menus`,
 //!   `set_macos_menu_icons`), plus the `MENU_BAR_ICONS` table.
 //! - `open_with.rs` (macOS): "Open with" submenu builder.
@@ -38,18 +37,17 @@ mod context_menu_header;
 mod context_menu_icons;
 pub mod install;
 mod item_states;
-#[cfg(not(target_os = "macos"))]
-mod linux;
-#[cfg(target_os = "macos")]
-mod macos;
 // `pub(crate)` for one helper: `dock::menu` builds its own `NSMenu` by hand (Tauri
 // exposes none) and puts SF Symbols on it with `set_sf_symbol`, so the same glyph
 // rules cover the menu bar and the Dock tile menu. Everything else here stays internal.
 #[cfg(target_os = "macos")]
 pub(crate) mod macos_appkit;
 mod media_index_items;
+mod menu_bar;
+mod menu_bar_builder;
 mod menu_handlers;
 mod menu_items;
+mod menu_spec;
 mod menu_structure;
 mod mnemonics;
 #[cfg(target_os = "macos")]
@@ -89,6 +87,7 @@ pub(crate) use item_states::{apply_menu_item_states, set_menu_context};
 #[cfg(target_os = "macos")]
 pub(crate) use item_states::{swap_to_main_menu, swap_to_viewer_menu};
 pub use media_index_items::{ImageIndexMenuState, image_index_menu_items};
+pub use menu_bar_builder::build_menu;
 pub use menu_handlers::handle_menu_event;
 #[cfg(target_os = "macos")]
 pub use menu_handlers::{
@@ -98,7 +97,7 @@ pub(crate) use menu_items::DetachWord;
 pub use menu_items::pin_tab_label;
 pub use menu_structure::{
     ContextMenuPaneFacts, FileContextInfo, ServerRowMenu, build_breadcrumb_context_menu, build_context_menu,
-    build_function_key_bar_context_menu, build_menu, build_network_host_context_menu, build_parent_row_context_menu,
+    build_function_key_bar_context_menu, build_network_host_context_menu, build_parent_row_context_menu,
     build_tab_context_menu, build_viewer_menu, build_volume_row_context_menu,
 };
 pub use rebuild::rebuild_menu_bar;
@@ -311,7 +310,7 @@ pub struct MenuState<R: Runtime> {
     pub view_mode_left: Mutex<ViewMode>,
     pub view_mode_right: Mutex<ViewMode>,
     /// Cached view-mode shortcuts. Frontend pushes updates via `update_menu_accelerator`.
-    /// Defaults match the labels created in `build_menu_*` (Cmd+1 / Cmd+2).
+    /// Defaults match the left pane's accelerators in `menu_bar.rs` (Cmd+1 / Cmd+2).
     pub view_mode_full_accel: Mutex<Option<String>>,
     pub view_mode_brief_accel: Mutex<Option<String>>,
     /// Pin/unpin tab menu item (label toggles based on active tab state)
