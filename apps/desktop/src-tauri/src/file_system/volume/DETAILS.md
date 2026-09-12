@@ -424,7 +424,8 @@ subprocess. `commands::eject::eject_volume` is a thin delegate; the pipeline is:
    teardown via `on_unmount`); otherwise NSURL/`/sys/block` ejectability → `diskutil eject` (powers down USB, detaches
    DMGs). The pure `decide_eject_action` makes this choice and is unit-tested without touching the FS.
 3. **Execute**, always through `run_teardown`: the provider's eject (MTP closes the session; ADB only retires the
-   volume, since `adb` has no per-client detach), or a `diskutil`/`umount` subprocess under a 15 s timeout.
+   volume, since `adb` has no per-client detach), or a `diskutil`/`umount` subprocess under a 30 s timeout (why:
+   "A slow refusal is still a refusal" below).
 
 **Every refusal is logged once, in Rust.** `run_teardown` is the choke point every eject and SMB disconnect passes
 through, and it writes one `warn` on target `eject` naming the volume ID, the command (`diskutil eject`, `umount`) or
@@ -455,7 +456,7 @@ at most four runs), re-settling every time, so a volume that left the mount tabl
 usual dissenter isn't Cmdr. The first time a pane shows an unseen `.app`, the icon fetch makes `/usr/libexec/lsd`
 (LaunchServices) register the bundle, and `lsd` holds the volume for about 0.3–0.9 s; a user saw 1–3 s in ERR-TT2FH, and
 a plain retry 2 s later worked (verified on macOS 26.6.2, reproduced with a dev build, 2026-09-12: the `warn` line named
-`dissented by PID 983 (/usr/libexec/lsd)`). `TimedOut` and `Unexpected` aren't retried (a timeout already waited 15 s,
+`dissented by PID 983 (/usr/libexec/lsd)`). `TimedOut` and `Unexpected` aren't retried (a timeout already waited 30 s,
 and a tool that couldn't start won't start next time), and neither is a device teardown. Each intermediate refusal logs
 at `info` with its attempt number and the tool's outcome, so the logs show how often transient holds happen; a final
 refusal logs the one `warn`, naming how many attempts were made, and a success after retries logs `info` with the
@@ -464,12 +465,27 @@ covers it and a joined caller gets the final answer. The cost: a real hold (an a
 reports about 3 s later than it would without the retries. The loop takes the tool and the mount-table read as
 closures, so its tests run a scripted fake tool on a paused clock.
 
+**A slow refusal is still a refusal, and retries stop at a budget.** A refusal can take a long time to ARRIVE: after
+`unmount(2)` answers EBUSY, `diskarbitrationd` scans every process with `proc_listpidspath(PROC_ALL_PIDS,
+PATH_IS_VOLUME)` to name the dissenter before it answers (`DARequest.c`), and the scan's time follows system load.
+`diskutil eject` refusals of a held APFS disk image at load 2.2–2.5 took 20.4, 1.8, 0.5, 27.8, and 0.6 s (verified on
+macOS 26.6.2, `diskutil eject` against a DMG held open, 2026-09-12). At a 15 s tool timeout two of those five read as a
+false `TimedOut` ("may still eject"), skipped the retry, and lost the stderr naming the holder, so `TOOL_TIMEOUT` is 30
+s. With four runs that long an eject could spin for about 2 minutes, so `RETRY_BUDGET` (30 s) stops a NEW attempt from
+starting once the time since the first attempt plus the next pause would pass it; the final refusal still logs the one
+`warn`, with the attempt count and the elapsed time. The budget is 30 s because a slow answer comes from the scan, not
+from a long hold, so a retry after one can still succeed: even the worst measured refusal (27.8 s) gets one. Worst case
+on the spinner: the tool phase is at most 60 s (the budget, plus one last run that starts just inside it and hits the
+timeout), so an eject is at most 80 s (the 5 s ejectability check, the 15 s index stop, then that 60 s), and an SMB
+disconnect, which runs only the tool phase, at most 60 s. The tests script a tool that answers after a set delay
+through the real `within_tool_timeout`, on a paused clock.
+
 **No step can hang an eject forever.** Every blocking step in the pipeline runs under a deadline. A disk image whose
 backing FILE lives on a hung SMB share looks like a local ejectable volume, yet its `statfs`/NSURL lookup and its index
 stop can block for 30–120 s or for good; with the in-flight join below, one wedged flight would strand every later
 click on a spinner and keep the volume in the ejecting set. `eject/deadlines.rs` holds the tiers: the ejectability
 check gets 5 s (a read, but one that may wake a sleeping disk), the index stop 15 s (it drains the index writer, which
-takes seconds; the unmount tool's own tier), and a device provider's eject 15 s (MTP closes its session when the last
+takes seconds), and a device provider's eject 15 s (MTP closes its session when the last
 handle drops, which a wedged phone can stall). Each races a join handle through `deadline::timeout_detached_typed`, so
 a stuck blocking thread is detached (it can't be cancelled), logged at `warn`, and the flight lands. Each expiry keeps
 its copy true: a stalled ejectability check or index stop answers `NotResponding { step }` ("isn't responding, so it's

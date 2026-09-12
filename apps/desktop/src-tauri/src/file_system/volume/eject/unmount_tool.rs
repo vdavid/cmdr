@@ -11,9 +11,18 @@ use std::time::Duration;
 
 use super::EjectError;
 
-/// How long the tool gets. ❗ Hitting it doesn't cancel the unmount, which may
-/// still land afterwards.
-const TOOL_TIMEOUT: Duration = Duration::from_secs(15);
+/// How long one run of the tool gets. ❗ Hitting it doesn't cancel the unmount,
+/// which may still land afterwards.
+///
+/// 30 s because a REFUSAL can be slow to arrive: after `unmount(2)` answers EBUSY,
+/// `diskarbitrationd` scans every process with `proc_listpidspath(PROC_ALL_PIDS,
+/// PATH_IS_VOLUME)` to name the dissenter before it answers (`DARequest.c`), and
+/// that scan's time follows system load. `diskutil eject` refusals of a held APFS
+/// disk image at load 2.2–2.5 took 20.4, 1.8, 0.5, 27.8, and 0.6 s (verified on
+/// macOS 26.6.2, `diskutil eject` against a DMG held open, 2026-09-12). At 15 s two
+/// of those five read as a false `TimedOut`, skipped the retry, and lost the stderr
+/// naming the holder.
+const TOOL_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Which teardown the tool performs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -84,18 +93,23 @@ impl std::fmt::Display for ToolOutcome {
 /// Runs the tool against `mount_path` on the blocking pool, under [`TOOL_TIMEOUT`].
 pub(super) async fn run(verb: UnmountVerb, mount_path: &str) -> ToolOutcome {
     let path = mount_path.to_string();
-    match tokio::time::timeout(
-        TOOL_TIMEOUT,
-        tokio::task::spawn_blocking(move || run_blocking(verb, &path)),
-    )
+    within_tool_timeout(async move {
+        tokio::task::spawn_blocking(move || run_blocking(verb, &path))
+            .await
+            .unwrap_or_else(|join_err| ToolOutcome::TaskFailed {
+                detail: join_err.to_string(),
+            })
+    })
     .await
-    {
-        Ok(Ok(outcome)) => outcome,
-        Ok(Err(join_err)) => ToolOutcome::TaskFailed {
-            detail: join_err.to_string(),
-        },
-        Err(_elapsed) => ToolOutcome::TimedOut,
-    }
+}
+
+/// Bounds one run of the tool by [`TOOL_TIMEOUT`]. On expiry the run's future is
+/// dropped, which only drops the JOIN HANDLE: the blocking thread and the unmount
+/// it asked for run on. A seam, so tests hand in a run that answers late or never.
+async fn within_tool_timeout(run: impl Future<Output = ToolOutcome>) -> ToolOutcome {
+    tokio::time::timeout(TOOL_TIMEOUT, run)
+        .await
+        .unwrap_or(ToolOutcome::TimedOut)
 }
 
 fn run_blocking(verb: UnmountVerb, mount_path: &str) -> ToolOutcome {
@@ -193,6 +207,16 @@ pub(super) const REFUSAL_RETRY_BACKOFF: [Duration; 3] = [
     Duration::from_millis(1500),
 ];
 
+/// How long after the first attempt a retry may still START.
+///
+/// Retries exist for sub-second holds (`lsd`), and a slow ANSWER comes from the
+/// daemon's dissenter scan ([`TOOL_TIMEOUT`]), not from a long hold, so a retry
+/// after a slow refusal can still succeed: at 30 s even the worst measured refusal
+/// (27.8 s) gets one. It caps the tool phase at `RETRY_BUDGET` + [`TOOL_TIMEOUT`]
+/// (60 s: one last run may start just inside the budget and hit the timeout), where
+/// four runs with no budget could reach about 2 minutes.
+pub(super) const RETRY_BUDGET: Duration = Duration::from_secs(30);
+
 /// What a run of the tool is aimed at, for its log lines.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Target<'a> {
@@ -205,7 +229,8 @@ pub(super) struct Target<'a> {
 }
 
 /// Runs the tool until it settles, retrying a refused unmount after each pause in
-/// [`REFUSAL_RETRY_BACKOFF`].
+/// [`REFUSAL_RETRY_BACKOFF`], as long as the retry would start inside
+/// [`RETRY_BUDGET`] of the first attempt.
 ///
 /// Every run re-settles, so a volume that left the mount table between runs
 /// counts as done. Only [`EjectError::UnmountRefused`] is retried: a timeout
@@ -215,8 +240,8 @@ pub(super) struct Target<'a> {
 ///
 /// Logs on target `eject`: each intermediate refusal at `info` with its attempt
 /// number and outcome (so the logs show how often holds are transient), the final
-/// refusal once at `warn` with the attempt count, and a success at `info`, with the
-/// count when it took retries.
+/// refusal once at `warn` with the attempt count and the time since the first
+/// attempt, and a success at `info`, with the count when it took retries.
 pub(super) async fn settle_with_retries<T, Fut, M>(
     target: Target<'_>,
     mut run_tool: T,
@@ -233,6 +258,7 @@ where
         mount_path,
     } = target;
     let mut attempts: usize = 1;
+    let first_attempt = tokio::time::Instant::now();
     loop {
         let outcome = run_tool().await;
         let pause = REFUSAL_RETRY_BACKOFF.get(attempts - 1).copied();
@@ -255,7 +281,9 @@ where
                 );
                 return Ok(());
             }
-            (Settled::Refused(EjectError::UnmountRefused { .. }), Some(pause)) => {
+            (Settled::Refused(EjectError::UnmountRefused { .. }), Some(pause))
+                if first_attempt.elapsed() + pause < RETRY_BUDGET =>
+            {
                 log::info!(
                     target: "eject",
                     "`{verb}` for {volume_id} at {mount_path} was refused on attempt {attempts} ({outcome}); retrying in {} ms",
@@ -267,7 +295,8 @@ where
             (Settled::Refused(error), _) => {
                 log::warn!(
                     target: "eject",
-                    "`{verb}` for {volume_id} at {mount_path} didn't go through (attempts: {attempts}): {outcome}"
+                    "`{verb}` for {volume_id} at {mount_path} didn't go through (attempts: {attempts}, {:.1} s since the first): {outcome}",
+                    first_attempt.elapsed().as_secs_f64()
                 );
                 return Err(error);
             }
@@ -458,7 +487,7 @@ mod tests {
 
     #[tokio::test(start_paused = true)]
     async fn a_timeout_is_not_retried() {
-        // It already waited 15 s, and the unmount it didn't cancel may still land.
+        // It already waited 30 s, and the unmount it didn't cancel may still land.
         let runs = Cell::new(0);
         let result = settle_with_retries(
             target(),
@@ -486,5 +515,87 @@ mod tests {
 
         assert!(matches!(result, Err(EjectError::Unexpected { .. })), "got {result:?}");
         assert_eq!(runs.get(), 1);
+    }
+
+    // ── Slow answers: the daemon's dissenter scan, the timeout, the budget ──
+
+    /// A fake tool whose every run answers after its own delay, through the real
+    /// [`within_tool_timeout`], and counts its runs.
+    fn answering_after(
+        script: Vec<(Duration, ToolOutcome)>,
+        runs: &Cell<usize>,
+    ) -> impl FnMut() -> std::pin::Pin<Box<dyn Future<Output = ToolOutcome>>> + '_ {
+        let mut script = VecDeque::from(script);
+        move || {
+            runs.set(runs.get() + 1);
+            let (delay, outcome) = script
+                .pop_front()
+                .expect("the tool must not run more often than the test scripted");
+            Box::pin(within_tool_timeout(async move {
+                tokio::time::sleep(delay).await;
+                outcome
+            }))
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_refusal_that_answers_after_20_s_is_a_refusal_and_is_retried() {
+        // `diskarbitrationd` scans every process for the dissenter before it
+        // answers, and under load that took 20.4 and 27.8 s in a measured run. The
+        // answer is still a refusal naming the holder, not a timeout.
+        let runs = Cell::new(0);
+        let started = tokio::time::Instant::now();
+        let result = settle_with_retries(
+            target(),
+            answering_after(
+                vec![
+                    (Duration::from_secs(20), dissented()),
+                    (Duration::ZERO, ToolOutcome::Succeeded),
+                ],
+                &runs,
+            ),
+            still_mounted,
+        )
+        .await;
+
+        assert!(result.is_ok(), "the retry after a slow refusal can still succeed, got {result:?}");
+        assert_eq!(runs.get(), 2);
+        assert_eq!(started.elapsed(), Duration::from_millis(20_500));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn the_retry_budget_stops_a_new_attempt_from_starting_past_its_limit() {
+        // Refusals at 20 s and at 29.5 s: the next retry would START at 30.5 s,
+        // past the 30 s budget, so the second refusal is the answer.
+        let runs = Cell::new(0);
+        let started = tokio::time::Instant::now();
+        let result = settle_with_retries(
+            target(),
+            answering_after(
+                vec![
+                    (Duration::from_secs(20), dissented()),
+                    (Duration::from_secs(9), dissented()),
+                    (Duration::ZERO, ToolOutcome::Succeeded),
+                ],
+                &runs,
+            ),
+            still_mounted,
+        )
+        .await;
+
+        assert!(
+            matches!(result, Err(EjectError::UnmountRefused { .. })),
+            "got {result:?}"
+        );
+        assert_eq!(runs.get(), 2, "no attempt may start once the budget is spent");
+        assert_eq!(started.elapsed(), Duration::from_millis(29_500));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_truly_stuck_tool_still_answers_timed_out_at_30_s() {
+        let started = tokio::time::Instant::now();
+        let outcome = within_tool_timeout(std::future::pending::<ToolOutcome>()).await;
+        assert_eq!(outcome, ToolOutcome::TimedOut);
+        assert_eq!(started.elapsed(), Duration::from_secs(30));
     }
 }

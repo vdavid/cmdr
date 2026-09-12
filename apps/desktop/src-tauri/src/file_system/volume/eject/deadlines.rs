@@ -17,8 +17,7 @@ use super::{EjectError, EjectStep};
 pub(super) const EJECTABILITY_CHECK_DEADLINE: Duration = Duration::from_secs(5);
 
 /// How long stopping the drive's index gets. It drains the index writer, which
-/// the index documents as taking seconds; the same tier as the unmount tool's own
-/// timeout.
+/// the index documents as taking seconds.
 pub(super) const INDEX_STOP_DEADLINE: Duration = Duration::from_secs(15);
 
 /// How long a device provider's eject gets. MTP closes its session when the last
