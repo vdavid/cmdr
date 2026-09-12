@@ -210,8 +210,12 @@ mod tests {
     #[test]
     fn a_tool_that_says_no_is_an_unmount_refusal_carrying_its_stderr() {
         let error = refusal(settle(&dissented(), UnmountVerb::Eject, still_mounted));
+        let expected_detail = format!(
+            "{}: Unmount was dissented by PID 51419 (/bin/sleep)",
+            UnmountVerb::Eject
+        );
         assert!(
-            matches!(error, EjectError::UnmountRefused { ref detail } if detail.contains("dissented by PID 51419")),
+            matches!(error, EjectError::UnmountRefused { ref detail } if *detail == expected_detail),
             "got {error:?}"
         );
     }
@@ -267,8 +271,9 @@ mod tests {
             code: Some(1),
             stderr: "Failed to find disk /Volumes/X".to_string(),
         };
-        let line = outcome.to_string();
-        assert!(line.contains("exit status 1"), "{line}");
-        assert!(line.contains("Failed to find disk /Volumes/X"), "{line}");
+        assert_eq!(
+            outcome.to_string(),
+            "exit status 1, stderr: Failed to find disk /Volumes/X"
+        );
     }
 }
