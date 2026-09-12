@@ -41,6 +41,11 @@ type StackOrchestrator struct {
 	mu       sync.Mutex
 	started  map[checks.StackMode]bool
 	held     map[string]*stacklease.Stack
+	// tornDown collects the stacks stacklease.OnTeardown fired for during the
+	// current Stop() call, so Stop can print one summary line naming exactly
+	// the stacks that actually went down (as opposed to those left up for
+	// another holder). Reset at the start of each Stop().
+	tornDown []string
 }
 
 // portEnvAppliers pins a stack's host-port range in this process before bring-up,
@@ -55,15 +60,29 @@ var portEnvAppliers = map[string]func(){
 // NewStackOrchestrator returns an orchestrator scoped to the given repo root. Its
 // lease holder-id is this check.sh process's PID — long-lived for the whole run,
 // so the dead-PID sweep keeps the lease only while the run is alive.
+//
+// It also wires stacklease's two default-visible hooks: the common case (every
+// requested stack already adopted) prints nothing, so the only output on the
+// happy path is a friendly line for the DECISION that actually costs wall-clock
+// time (a reconcile's `up -d`, or a release's `compose down`). Verbose detail
+// (adopt confirmations, swept leases, reconcile rationale) is stacklease's own
+// InfoLogf, gated by SetVerbose instead.
 func NewStackOrchestrator(rootDir string) *StackOrchestrator {
 	// Point stacklease's config-hash + compose-file resolution at this repo,
 	// independent of the orchestrator's cwd.
 	stacklease.SetRepoRoot(rootDir)
-	return &StackOrchestrator{
+	o := &StackOrchestrator{
 		holderID: strconv.Itoa(os.Getpid()),
 		started:  map[checks.StackMode]bool{},
 		held:     map[string]*stacklease.Stack{},
 	}
+	stacklease.OnReconcileStart = func(stackName string) {
+		fmt.Printf("📦 Starting %s fixtures…\n", stackName)
+	}
+	stacklease.OnTeardown = func(stackName string) {
+		o.tornDown = append(o.tornDown, stackName)
+	}
+	return o
 }
 
 // collectStackModes returns the deduplicated, deterministically-ordered set of
@@ -89,6 +108,11 @@ func collectStackModes(defs []checks.CheckDefinition) []checks.StackMode {
 // acquiring this run's machine-wide lease on each stack (which adopts an
 // already-serving stack or reconciles it via `up -d` under the lock). Idempotent
 // per pair. Returns nil if no pair was passed.
+//
+// Prints nothing itself: an already-serving stack (the common case) is fully
+// silent, and stacklease's OnReconcileStart hook (wired in NewStackOrchestrator)
+// prints the one line that matters when Acquire decides `up -d` is actually
+// needed.
 func (o *StackOrchestrator) EnsureStarted(wanted []checks.StackMode) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
@@ -106,13 +130,10 @@ func (o *StackOrchestrator) EnsureStarted(wanted []checks.StackMode) error {
 		if apply, ok := portEnvAppliers[stack.Name]; ok {
 			apply()
 		}
-		fmt.Printf("📦 Ensuring %s Docker containers (%s) via lease %s...\n", stack.Name, want.Mode, o.holderID)
-		res, err := stack.Acquire(o.holderID, want.Mode)
-		if err != nil {
+		if _, err := stack.Acquire(o.holderID, want.Mode); err != nil {
 			return fmt.Errorf("fixture orchestrator: %s lease acquire (%s) failed: %w", stack.Name, want.Mode, err)
 		}
 		o.held[stack.Name] = stack
-		fmt.Printf("   → %s (%d service(s))\n", res.Action, len(res.Services))
 		o.started[want] = true
 	}
 	return nil
@@ -121,8 +142,12 @@ func (o *StackOrchestrator) EnsureStarted(wanted []checks.StackMode) error {
 // Stop releases this run's lease on every stack it acquired. A shared stack is
 // torn down only if no other session still holds a lease on it (down-at-zero,
 // under the lock — see stacklease). Safe to call when nothing was started
-// (no-op). Prints a friendly banner so the user knows cleanup is happening —
-// relevant when Stop runs from a Ctrl+C handler.
+// (no-op).
+//
+// Prints nothing when every held stack stays up for another holder (the
+// common case); prints one summary line naming exactly the stacks that
+// actually went down (via stacklease's OnTeardown hook), since that's the one
+// outcome worth a human noticing. A release error always prints, regardless.
 func (o *StackOrchestrator) Stop() {
 	o.mu.Lock()
 	defer o.mu.Unlock()
@@ -134,7 +159,8 @@ func (o *StackOrchestrator) Stop() {
 		names = append(names, name)
 	}
 	sort.Strings(names)
-	fmt.Printf("\nReleasing fixture leases (%s); a stack downs only if no other session needs it...\n", strings.Join(names, ", "))
+
+	o.tornDown = nil
 	for _, name := range names {
 		stack := o.held[name]
 		if stack == nil {
@@ -145,6 +171,10 @@ func (o *StackOrchestrator) Stop() {
 		if err := stack.Release(o.holderID); err != nil {
 			fmt.Printf("   %s lease release reported: %v\n", name, err)
 		}
+	}
+	if len(o.tornDown) > 0 {
+		sort.Strings(o.tornDown)
+		fmt.Printf("🧹 Stopping fixtures: %s\n", strings.Join(o.tornDown, ", "))
 	}
 	o.held = map[string]*stacklease.Stack{}
 	o.started = map[checks.StackMode]bool{}

@@ -768,6 +768,23 @@ Ctrl+C also releases every held lease (with a banner) before exiting 130. See
 [`stacklease/stacklease.go`](stacklease/stacklease.go) for the lock/lease/policy model, and § "Two fixture stacks, two
 lease namespaces" for how a second protocol plugs in.
 
+**Decision**: bring-up and teardown are silent on the common path; only the decisions that cost real wall-clock time
+print. **Why**: adopting an already-serving stack is the overwhelmingly common case (every worktree racing to reuse the
+same containers), so a fixed-cost banner on every run drowned the one thing worth noticing: a stack that actually had to
+`up -d` or `compose down`. Two mechanisms split this:
+
+- `stacklease.Logf` carries every `WARN:`-prefixed line and always prints (a leaked stack, a config-hash mismatch under
+  a foreign lease); `stacklease.InfoLogf` carries the routine decision log (adopt confirmations, swept dead leases,
+  reconcile/release rationale) and is silenced by `SetVerbose(false)`, which `main.go` calls whenever `flags.quiet` is
+  set (i.e. no `-v`/`--verbose`, and not CI). Every OTHER caller of the package (the `stack-lease` CLI that
+  `start.sh`/`stop.sh`/`e2e-linux.sh` shell out to, `go run`) never calls `SetVerbose`, so it keeps seeing what it always
+  has.
+- `stacklease.OnReconcileStart` and `OnTeardown` are hooks `Acquire`/`Release` call exactly when they decide `up -d` or
+  `compose down` is actually happening (under the stack's lock, before the slow command runs). `NewStackOrchestrator`
+  wires both to print one line per stack (`📦 Starting <stack> fixtures…`, and a single `🧹 Stopping fixtures: <names>`
+  in `Stop` naming only the stacks whose hook actually fired) — the one thing worth telling a human about regardless of
+  verbosity. A release error still always prints, independent of both mechanisms.
+
 **Decision**: cmdr's SMB stack binds a dedicated host-port range (11480+), not smb2's default (10480+). **Why**: cmdr
 runs a _vendored copy_ of smb2's `consumer` compose under its own project name (`smb-consumer`), while smb2's own test
 harness runs the same compose under project `consumer` on 10480+. Same ports + different project = mutually exclusive: a

@@ -232,8 +232,8 @@ below for the section-aware patterns to follow.
 - If the allowlist file is missing, all long files are reported (backwards-compatible).
 
 **Two thresholds**: 800 lines for ordinary source, 1,200 for test files (`fileLengthWarnLines` /
-`fileLengthTestWarnLines`). Splitting a test file usually scatters shared mocks and fixtures across siblings rather
-than improving architecture, so tests get more room before warning. `isTestFile` classifies a path by its own naming
+`fileLengthTestWarnLines`). Splitting a test file usually scatters shared mocks and fixtures across siblings rather than
+improving architecture, so tests get more room before warning. `isTestFile` classifies a path by its own naming
 convention, never by content, so an inline `#[cfg(test)] mod tests` block inside an ordinary `.rs` file does NOT count
 as a test file:
 

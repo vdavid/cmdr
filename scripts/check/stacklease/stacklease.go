@@ -131,12 +131,51 @@ type Composer interface {
 	RunningServices() ([]string, error)
 }
 
-// Logf is the package's diagnostic sink. Defaults to stderr; the CLI main and
-// tests can redirect it. We log loudly on every non-trivial decision so a human
-// reading a leaked-stack situation can reconstruct what happened.
+// Logf is the package's WARNING sink: every `WARN:`-prefixed line, printed
+// unconditionally. Defaults to stderr; the CLI main and tests can redirect it.
+// Anything logged here is a human reading a leaked-stack situation needs to
+// reconstruct what happened, so it is never silenced.
 var Logf = func(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "[stacklease] "+format+"\n", args...)
 }
+
+// InfoLogf is the package's routine-decision sink: adopt/reconcile rationale,
+// swept-dead-lease notices, release/teardown notes, and republished-key
+// confirmations. Defaults to the same real printer as Logf, so every direct
+// caller (start.sh/stop.sh/e2e-linux.sh via the `stack-lease` CLI, `go run`,
+// the test binary before a test silences it) keeps seeing what it always has.
+// The check runner is the one caller that dials this down: SetVerbose(false)
+// swaps it to a no-op so a `pnpm check` run that just adopts an already-serving
+// stack (the common case) prints nothing here; -v or CI restore it.
+var InfoLogf = func(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "[stacklease] "+format+"\n", args...)
+}
+
+// SetVerbose turns InfoLogf on (the default) or off. The check runner calls
+// this once at startup from its -v/--verbose flag (CI passes true too).
+func SetVerbose(v bool) {
+	if v {
+		InfoLogf = func(format string, args ...any) {
+			fmt.Fprintf(os.Stderr, "[stacklease] "+format+"\n", args...)
+		}
+		return
+	}
+	InfoLogf = func(format string, args ...any) {}
+}
+
+// OnReconcileStart is called synchronously, under the stack's lock, the
+// moment Acquire decides the stack needs `up -d` — before that (possibly
+// slow) command runs. The check runner's orchestrator uses this to print one
+// friendly line while Docker does the work it's waiting on; every other
+// caller defaults to a no-op.
+var OnReconcileStart = func(stackName string) {}
+
+// OnTeardown is called synchronously, under the stack's lock, the moment
+// Release decides this was the stack's last holder and is about to run
+// `compose down`. The check runner's orchestrator uses this to print one
+// friendly line when a stack it held actually goes down; every other caller
+// defaults to a no-op.
+var OnTeardown = func(stackName string) {}
 
 // newComposer is overridable in tests to inject a fake Composer.
 var newComposer = func(s *Stack) Composer { return &dockerComposer{stack: s} }
@@ -198,6 +237,7 @@ func (s *Stack) Acquire(holderID, mode string) (AcquireResult, error) {
 	action := s.decideAction(composer, services, mode, otherLeases)
 
 	if action == ActionReconcile {
+		OnReconcileStart(s.Name)
 		if err := composer.Up(s.modeServicesFor(mode)); err != nil {
 			// Reconcile failed: we still hold a lease and the stack is in
 			// whatever state it was. Surface the error; the caller decides
@@ -261,7 +301,7 @@ func (s *Stack) healKeyMaterial(c Composer, requested []string, broughtUp bool) 
 	if err := s.waitForKeyMaterial(requested); err != nil {
 		return err
 	}
-	Logf("%s republished key material for %s", s.Name, strings.Join(gaps, ", "))
+	InfoLogf("%s republished key material for %s", s.Name, strings.Join(gaps, ", "))
 	return nil
 }
 
@@ -305,7 +345,7 @@ func (s *Stack) decideAction(c Composer, services []string, mode string, otherLe
 	switch {
 	case allServing && hashMatches:
 		// All requested services healthy + config matches → adopt, no compose call.
-		Logf("adopt %s: all %d requested service(s) serving, config hash matches", s.Name, len(services))
+		InfoLogf("adopt %s: all %d requested service(s) serving, config hash matches", s.Name, len(services))
 		return ActionAdopt
 	case allServing && !hashMatches && otherLeases > 0:
 		// Hash mismatch under a foreign live lease → adopt ANYWAY + WARN. The
@@ -314,14 +354,14 @@ func (s *Stack) decideAction(c Composer, services []string, mode string, otherLe
 		return ActionAdopt
 	case allServing && !hashMatches && otherLeases == 0:
 		// Hash mismatch, only self → reconcile is safe.
-		Logf("%s config hash differs and no other leases; reconciling via up -d to apply this session's config", s.Name)
+		InfoLogf("%s config hash differs and no other leases; reconciling via up -d to apply this session's config", s.Name)
 		return ActionReconcile
 	default:
 		// Partially up / unhealthy → reconcile (brings missing/sick up without
 		// disturbing healthy ones). Safe regardless of other leases: `up -d` is
 		// additive, never a recreate.
 		missing := s.missingServices(services, running, healthy)
-		Logf("reconcile %s: stack partially up/unhealthy (missing-or-sick: %s); up -d", s.Name, strings.Join(missing, ", "))
+		InfoLogf("reconcile %s: stack partially up/unhealthy (missing-or-sick: %s); up -d", s.Name, strings.Join(missing, ", "))
 		return ActionReconcile
 	}
 }
@@ -355,7 +395,7 @@ func (s *Stack) Reconcile(mode string) error {
 	if err := s.healKeyMaterial(composer, s.resolveServices(composer, mode), true); err != nil {
 		return err
 	}
-	Logf("reconcile %s (mode %s): up -d issued (additive; no down, no force-recreate)", s.Name, mode)
+	InfoLogf("reconcile %s (mode %s): up -d issued (additive; no down, no force-recreate)", s.Name, mode)
 	return nil
 }
 
@@ -387,13 +427,14 @@ func (s *Stack) Release(holderID string) error {
 		return nil
 	}
 	if remaining > 0 {
-		Logf("release %s/%q: %d lease(s) still held; leaving the stack UP", s.Name, holderID, remaining)
+		InfoLogf("release %s/%q: %d lease(s) still held; leaving the stack UP", s.Name, holderID, remaining)
 		return nil
 	}
 
 	// 3. Zero leases → down, with the lock STILL HELD (an arriving acquirer
 	//    blocks on the lock until the down finishes, then starts fresh).
-	Logf("release %s/%q: last lease gone; tearing the stack down (compose down)", s.Name, holderID)
+	OnTeardown(s.Name)
+	InfoLogf("release %s/%q: last lease gone; tearing the stack down (compose down)", s.Name, holderID)
 	composer := newComposer(s)
 	if err := composer.Down(); err != nil {
 		// Down errored → inconsistency → leave UP, don't pretend it's gone.
@@ -502,7 +543,7 @@ func (s *Stack) sweepDeadLeases() {
 		}
 		if !processAlive(pid) {
 			if rmErr := os.Remove(filepath.Join(s.LeaseDir(), h)); rmErr == nil {
-				Logf("swept dead %s lease %d (process gone)", s.Name, pid)
+				InfoLogf("swept dead %s lease %d (process gone)", s.Name, pid)
 			}
 		}
 	}

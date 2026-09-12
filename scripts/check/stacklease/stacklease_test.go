@@ -1,6 +1,7 @@
 package stacklease
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -149,10 +150,13 @@ func withFakes(t *testing.T) *composerFakes {
 	prev := newComposer
 	newComposer = func(s *Stack) Composer { return fakes.forStack(s) }
 	prevLog := Logf
-	Logf = func(string, ...any) {} // silence
+	prevInfoLog := InfoLogf
+	Logf = func(string, ...any) {}     // silence
+	InfoLogf = func(string, ...any) {} // silence
 	t.Cleanup(func() {
 		newComposer = prev
 		Logf = prevLog
+		InfoLogf = prevInfoLog
 	})
 	return fakes
 }
@@ -227,6 +231,125 @@ func TestAcquireAdoptsServingStackNoComposeCall(t *testing.T) {
 	}
 	if len(fake.upCalls) != upBefore {
 		t.Fatalf("adopt must issue NO compose up; up calls went %d -> %d", upBefore, len(fake.upCalls))
+	}
+}
+
+// captureStderr redirects os.Stderr to a pipe for the duration of fn and
+// returns everything written to it, so a test can assert on the real
+// Logf/InfoLogf printer's output rather than a substitute closure.
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	orig := os.Stderr
+	os.Stderr = w
+	done := make(chan string, 1)
+	go func() {
+		buf, _ := io.ReadAll(r)
+		done <- string(buf)
+	}()
+	fn()
+	os.Stderr = orig
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return <-done
+}
+
+// TestSetVerboseTogglesInfoLogf is the visibility-split contract: with verbose
+// off (the check runner's default), a routine decision like "adopt" prints
+// nothing; SetVerbose(true) (an explicit -v, or CI) restores it. Logf's
+// WARN-prefixed lines are untouched by SetVerbose (covered by every other test
+// in this file, which silences Logf and would fail if a WARN leaked through
+// unexpectedly).
+func TestSetVerboseTogglesInfoLogf(t *testing.T) {
+	fake := withFake(t)
+	serveE2E(fake)
+	if _, err := SMB.Acquire("manual", "e2e"); err != nil {
+		t.Fatalf("seed Acquire: %v", err)
+	}
+
+	SetVerbose(false)
+	out := captureStderr(t, func() {
+		if _, err := SMB.Acquire("12345", "e2e"); err != nil {
+			t.Fatalf("Acquire: %v", err)
+		}
+	})
+	if strings.Contains(out, "adopt") {
+		t.Errorf("expected the adopt info line silenced with verbose off, got: %q", out)
+	}
+
+	SetVerbose(true)
+	out = captureStderr(t, func() {
+		if _, err := SMB.Acquire("67890", "e2e"); err != nil {
+			t.Fatalf("Acquire: %v", err)
+		}
+	})
+	if !strings.Contains(out, "adopt") {
+		t.Errorf("expected the adopt info line back once verbose is on, got: %q", out)
+	}
+}
+
+// TestOnReconcileStartFiresOnlyWhenReconciling: the orchestrator's hook into
+// "Docker is about to do slow work" must fire exactly on the reconcile path,
+// not on adopt.
+func TestOnReconcileStartFiresOnlyWhenReconciling(t *testing.T) {
+	withFake(t)
+	prev := OnReconcileStart
+	t.Cleanup(func() { OnReconcileStart = prev })
+
+	var fired []string
+	OnReconcileStart = func(stackName string) { fired = append(fired, stackName) }
+
+	// Empty stack → reconcile.
+	if _, err := SMB.Acquire("manual", "e2e"); err != nil {
+		t.Fatalf("Acquire: %v", err)
+	}
+	if len(fired) != 1 || fired[0] != SMB.Name {
+		t.Fatalf("expected OnReconcileStart(%q) exactly once, got: %v", SMB.Name, fired)
+	}
+
+	// Second holder, already serving + hash matches → adopt, no new firing.
+	if _, err := SMB.Acquire("12345", "e2e"); err != nil {
+		t.Fatalf("Acquire: %v", err)
+	}
+	if len(fired) != 1 {
+		t.Fatalf("expected no additional OnReconcileStart on adopt, got: %v", fired)
+	}
+}
+
+// TestOnTeardownFiresOnlyAtLastRelease: the orchestrator's "stack is really
+// going down" hook must fire only when the last holder releases, not when
+// other holders remain.
+func TestOnTeardownFiresOnlyAtLastRelease(t *testing.T) {
+	withFake(t)
+	prev := OnTeardown
+	t.Cleanup(func() { OnTeardown = prev })
+
+	var fired []string
+	OnTeardown = func(stackName string) { fired = append(fired, stackName) }
+
+	if _, err := SMB.Acquire("11111", "e2e"); err != nil {
+		t.Fatalf("Acquire: %v", err)
+	}
+	if _, err := SMB.Acquire("22222", "e2e"); err != nil {
+		t.Fatalf("Acquire: %v", err)
+	}
+
+	if err := SMB.Release("11111"); err != nil {
+		t.Fatalf("Release: %v", err)
+	}
+	if len(fired) != 0 {
+		t.Fatalf("expected no OnTeardown while a holder remains, got: %v", fired)
+	}
+
+	if err := SMB.Release("22222"); err != nil {
+		t.Fatalf("Release: %v", err)
+	}
+	if len(fired) != 1 || fired[0] != SMB.Name {
+		t.Fatalf("expected OnTeardown(%q) exactly once at the last release, got: %v", SMB.Name, fired)
 	}
 }
 

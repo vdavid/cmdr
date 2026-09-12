@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"cmdr/scripts/check/checks"
+	"cmdr/scripts/check/stacklease"
 
 	"golang.org/x/term"
 )
@@ -163,6 +164,11 @@ func main() {
 	checksToRun = plan.toRun
 
 	ensurePnpmIfNeeded(ctx, checksToRun, flags.quiet)
+
+	// Quiet mode is the default: stacklease's routine decision log (adopt,
+	// swept leases, reconcile rationale) only prints with -v/--verbose (CI
+	// always gets it, since flags.quiet is false there too).
+	stacklease.SetVerbose(!flags.quiet)
 
 	fixtures = setupStackOrchestratorIfNeeded(rootDir, checksToRun)
 	if fixtures != nil {

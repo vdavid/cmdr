@@ -54,6 +54,27 @@ func TestPortEnvAppliersNameRegisteredStacks(t *testing.T) {
 	}
 }
 
+// The orchestrator's Stop() summary line names exactly the stacks that really
+// went down, which it learns from stacklease.OnTeardown rather than assuming
+// every held stack did. Verified without a real Docker stack: the hook
+// NewStackOrchestrator installs must append to the orchestrator's own
+// bookkeeping.
+func TestOrchestratorWiresOnTeardownIntoItsOwnBookkeeping(t *testing.T) {
+	prevTeardown := stacklease.OnTeardown
+	prevReconcile := stacklease.OnReconcileStart
+	t.Cleanup(func() {
+		stacklease.OnTeardown = prevTeardown
+		stacklease.OnReconcileStart = prevReconcile
+	})
+
+	o := NewStackOrchestrator(t.TempDir())
+	stacklease.OnTeardown("smb")
+	stacklease.OnTeardown("sftp")
+	if got := o.tornDown; len(got) != 2 || got[0] != "smb" || got[1] != "sftp" {
+		t.Fatalf("expected tornDown = [smb sftp], got %v", got)
+	}
+}
+
 func contains(haystack []string, needle string) bool {
 	for _, s := range haystack {
 		if s == needle {
