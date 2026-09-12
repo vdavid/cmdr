@@ -204,7 +204,7 @@ parent). A grant of "one item" for such a type is `RootPromises` moving by one a
 - **`on_smb_watcher_died` + `on_smb_overflow` + `on_mtp_watch_continuity_lost` ⇒ `Index::on_watch_gap(scope, reason)`.**
   One question — "live watching lost continuity, so the index can no longer claim it has seen every change" — asked in
   two scopes (a volume, a whole device).
-- **`volume_kind` + `stop_indexing` ⇒ `Index::stop_removable_volume`.** Two call sites (`eject.rs`,
+- **`volume_kind` + `stop_indexing` ⇒ `Index::stop_removable_volume`.** Two call sites (`volume/eject/`,
   `volumes/watcher.rs`) each open with the identical `!= LocalExternal` guard, because only that kind holds a watcher
   and open database handles that can wedge an unmount. That's the index's knowledge, not the app's.
 - **`is_active` + `get_freshness` ⇒ `Index::is_fresh`.** The operation log's coverage gate wants one predicate: can

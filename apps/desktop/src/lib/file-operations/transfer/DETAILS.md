@@ -292,7 +292,7 @@ Three entry paths start a transfer, and they all prepare it through `pane/transf
   engine picks same-fs vs cross-fs from runtime device ids. Everything keyed on the volume ITSELF does depend on it, and
   a flat `root` broke all of it: the source volume has to enter the busy set so Eject stays DISABLED while a paste reads
   off a USB stick, a DMG, or a mounted share (`status_cache.rs::compute_busy_volume_ids` filters root out, and
-  `volume/eject.rs::eject_volume` refuses only what's in that set); the operation has to take the source mount's lane so
+  `volume/eject/mod.rs::eject` refuses only what's in that set); the operation has to take the source mount's lane so
   two pastes off one device serialize; the operation log records the source; and `TransferProgressDialog`'s direction
   header resolves the source label off that id.
 

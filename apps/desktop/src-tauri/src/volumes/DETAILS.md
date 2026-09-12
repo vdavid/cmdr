@@ -129,7 +129,7 @@ flat ~30s (one smbfs kernel timeout). (Incident: live NAS QA, 2026-07-13.)
 2. **Skip blocking enrichment for network mounts.** `build_attached_location` runs the blocking NSURL / NSWorkspace /
    DiskArbitration enrichment (`resolve_local`) ONLY for local mounts. Network mounts (`is_network_fs_type`) derive
    everything from the getfsstat snapshot: id/name from `f_mntfromname` (SMB → "share on server"), `is_ejectable = false`
-   (cosmetically moot: the eject affordance keys on `connectionState` and `eject.rs` forces it true for SMB), no icon,
+   (cosmetically moot: the eject affordance keys on `connectionState` and `volume/eject/` forces it true for SMB), no icon,
    never a disk image. So a dead network mount contributes its entry and never blocks discovery of the healthy volumes
    beside it.
 3. **Off-main + timeout-guarded callers.** `init_volume_manager` registers root synchronously (cheap, `/` never hangs)

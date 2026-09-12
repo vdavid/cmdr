@@ -1,4 +1,4 @@
-//! Ejecting a phone, end to end: `eject.rs` routes the id to this provider, the
+//! Ejecting a phone, end to end: `volume/eject/` routes the id to this provider, the
 //! provider retires the volume, the row stays listed with nothing registered
 //! behind it, and the next dial opens the phone as a NEW volume.
 

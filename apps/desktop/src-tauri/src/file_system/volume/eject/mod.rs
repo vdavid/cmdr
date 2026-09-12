@@ -17,11 +17,19 @@
 //!
 //! Non-ejectable volumes return an error.
 //!
+//! Every teardown that reaches a device provider or the unmount tool (`unmount_tool`)
+//! runs through [`run_teardown`], the one place a refusal is logged.
+//!
 //! The `commands::eject` IPC layer is a thin delegate over [`eject`]: [`EjectError`]
 //! IS the wire type, so nothing is flattened on the way out.
 
+mod unmount_tool;
+
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::sync::Arc;
+
+use crate::device_volumes::DeviceVolumeProvider;
+use unmount_tool::UnmountVerb;
 
 /// Action the eject pipeline takes for a given volume.
 #[derive(Debug, PartialEq, Eq)]
@@ -236,28 +244,74 @@ pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
     .map_err(EjectError::from)?;
 
     match action {
-        EjectAction::DeviceDisconnect {
-            provider: id,
-            volume_id,
-        } => {
+        EjectAction::DeviceDisconnect { volume_id, .. } => {
             let provider = provider.ok_or_else(|| EjectError::VolumeNotFound {
                 volume_id: volume_id.clone(),
             })?;
-            provider
-                .eject(&volume_id)
-                .await
-                .map_err(|detail| EjectError::DeviceDisconnectRefused {
-                    provider: id.to_string(),
-                    detail,
-                })
+            run_teardown(&volume_id, Teardown::Device(provider)).await
         }
         // For disk volumes, stop the index BEFORE the unmount (the wedge-safe point).
         // A device provider tears its index down through its own disconnect hook,
         // so it isn't stopped here.
         EjectAction::DiskutilUnmount => {
-            stop_index_then_unmount(volume_id, || diskutil_run("unmount", &mount_path)).await
+            let teardown = Teardown::Tool {
+                verb: UnmountVerb::Unmount,
+                mount_path: &mount_path,
+            };
+            stop_index_then_unmount(volume_id, || run_teardown(volume_id, teardown)).await
         }
-        EjectAction::DiskutilEject => stop_index_then_unmount(volume_id, || diskutil_run("eject", &mount_path)).await,
+        EjectAction::DiskutilEject => {
+            let teardown = Teardown::Tool {
+                verb: UnmountVerb::Eject,
+                mount_path: &mount_path,
+            };
+            stop_index_then_unmount(volume_id, || run_teardown(volume_id, teardown)).await
+        }
+    }
+}
+
+/// One teardown [`run_teardown`] performs.
+enum Teardown<'a> {
+    /// Hand it to the device provider that owns the volume (MTP, ADB).
+    Device(Arc<dyn DeviceVolumeProvider>),
+    /// Run `diskutil` / `umount` against the volume's mount root.
+    Tool { verb: UnmountVerb, mount_path: &'a str },
+}
+
+/// Runs one teardown and reports how it went.
+///
+/// ❗ The ONE place a teardown refusal is logged: every eject and SMB disconnect
+/// that reaches a device provider or the unmount tool passes through here, so a
+/// refusal can't go unlogged or be logged twice. It has to be Rust's log, because
+/// the frontend's line (`wordEjectRefusal`) is a warn, which a production build drops.
+async fn run_teardown(volume_id: &str, teardown: Teardown<'_>) -> Result<(), EjectError> {
+    match teardown {
+        Teardown::Device(provider) => match provider.eject(volume_id).await {
+            Ok(()) => Ok(()),
+            Err(detail) => {
+                log::warn!(
+                    target: "eject",
+                    "{} disconnect of {volume_id} didn't go through: {detail}",
+                    provider.id()
+                );
+                Err(EjectError::DeviceDisconnectRefused {
+                    provider: provider.id().to_string(),
+                    detail,
+                })
+            }
+        },
+        Teardown::Tool { verb, mount_path } => {
+            let outcome = unmount_tool::run(verb, mount_path).await;
+            let result = unmount_tool::settle(&outcome, verb);
+            match &result {
+                Ok(()) => log::info!(target: "eject", "`{verb}` succeeded for {volume_id} at {mount_path}"),
+                Err(_) => log::warn!(
+                    target: "eject",
+                    "`{verb}` for {volume_id} at {mount_path} didn't go through: {outcome}"
+                ),
+            }
+            result
+        }
     }
 }
 
@@ -339,8 +393,11 @@ pub async fn disconnect_smb(volume_id: &str) -> Result<(), EjectError> {
     #[cfg(target_os = "macos")]
     {
         let mount_path = volume.root().to_string_lossy().to_string();
-        diskutil_run("unmount", &mount_path).await?;
-        log::info!(target: "eject", "Disconnected SMB volume {} (unmounted {})", volume_id, mount_path);
+        let teardown = Teardown::Tool {
+            verb: UnmountVerb::Unmount,
+            mount_path: &mount_path,
+        };
+        run_teardown(volume_id, teardown).await?;
         // FSEvents will fire shortly and trigger on_unmount + volume-manager removal.
     }
 
@@ -384,63 +441,6 @@ async fn resolve_is_ejectable(mount_path: &str) -> bool {
         .await
         .unwrap_or(false)
     }
-}
-
-/// Runs a blocking eject subprocess with a 15 s timeout, mapping the outcome to
-/// [`EjectError`]. A real deadline becomes [`EjectError::TimedOut`], which the
-/// frontend words differently from a refusal because the unmount may still land.
-async fn run_eject_subprocess(
-    timeout: Duration,
-    f: impl FnOnce() -> Result<(), String> + Send + 'static,
-) -> Result<(), EjectError> {
-    match tokio::time::timeout(timeout, tokio::task::spawn_blocking(f)).await {
-        Ok(Ok(Ok(()))) => Ok(()),
-        Ok(Ok(Err(detail))) => Err(EjectError::UnmountRefused { detail }),
-        Ok(Err(join_err)) => Err(EjectError::Unexpected {
-            detail: join_err.to_string(),
-        }),
-        Err(_elapsed) => Err(EjectError::TimedOut),
-    }
-}
-
-#[cfg(target_os = "macos")]
-async fn diskutil_run(verb: &'static str, mount_path: &str) -> Result<(), EjectError> {
-    let path_for_cmd = mount_path.to_string();
-    run_eject_subprocess(Duration::from_secs(15), move || {
-        let output = std::process::Command::new("diskutil")
-            .args([verb, &path_for_cmd])
-            .output()
-            .map_err(|e| format!("couldn't run diskutil: {e}"))?;
-        if output.status.success() {
-            log::info!(target: "eject", "diskutil {} succeeded for {}", verb, path_for_cmd);
-            Ok(())
-        } else {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            Err(format!("diskutil {}: {}", verb, stderr.trim()))
-        }
-    })
-    .await
-}
-
-#[cfg(target_os = "linux")]
-async fn diskutil_run(verb: &'static str, mount_path: &str) -> Result<(), EjectError> {
-    // Linux: shell out to `umount`. The physical-drive eject UX is rare on
-    // Linux dev machines; `umount` covers the SMB and removable cases.
-    let path_for_cmd = mount_path.to_string();
-    let _ = verb;
-    run_eject_subprocess(Duration::from_secs(15), move || {
-        let output = std::process::Command::new("umount")
-            .arg(&path_for_cmd)
-            .output()
-            .map_err(|e| format!("couldn't run umount: {e}"))?;
-        if output.status.success() {
-            Ok(())
-        } else {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            Err(format!("umount: {}", stderr.trim()))
-        }
-    })
-    .await
 }
 
 #[cfg(test)]

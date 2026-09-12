@@ -13,7 +13,7 @@ whose module doc is canonical for the trait.
 - **This module** owns the cached device state, the provider, the connect wiring, eject, and the commands. It is the
   only place that knows both the crate and the app.
 - **`device_volumes.rs`** owns the provider registry, `append_device_volumes` (what `volume_listing::complete` folds
-  over), `provider_for_volume_id` (what `eject.rs` asks before answering `EjectAction::DeviceDisconnect`),
+  over), `provider_for_volume_id` (what `volume/eject/` asks before answering `EjectAction::DeviceDisconnect`),
   `device_volume_for_path` (what path resolution asks), and `notify_devices_changed`, the one push channel (it emits
   `volumes-changed`).
 - **`commands/volumes.rs::resolve_path_to_volume`** answers an `adb://` path with the cached row
@@ -106,7 +106,7 @@ which answers the same way for a saved server nobody connected; an id nobody lis
 unmount race is. The frontend shows the `notConnected` reason without probing whether the path exists
 (`listing-loader.ts`).
 
-**Eject**: `eject.rs` asks `provider_for_volume_id`, gets this provider, and answers
+**Eject**: `volume/eject/` asks `provider_for_volume_id`, gets this provider, and answers
 `EjectAction::DeviceDisconnect { provider: "adb", volume_id }`. `AdbDeviceProvider::eject` forgets the volume and
 unregisters whatever the registry holds under the id, remembered or not; nothing is sent to the phone (`adb` has no
 per-client detach). The device stays in the cached list, so
@@ -172,7 +172,7 @@ that the registry and the provider hold the same volume. A cell asserting on the
   the binary-path fallback; a pane listing a dialed phone through `read_directory_with_progress` on an
   `adb://<serial>/sdcard` path (the cell that holds the prefixed spelling end to end); the viewer opening a text file
   under `adb://<serial>/sdcard`; and a listing and a `path_exists` on a listed, undialed phone (never `NotFound`).
-- `eject_test.rs`: `eject.rs` routes a phone's id to this provider (`DeviceDisconnect { provider: "adb" }`), the volume
+- `eject_test.rs`: `volume/eject/` routes a phone's id to this provider (`DeviceDisconnect { provider: "adb" }`), the volume
   is unregistered and forgotten, the row stays listed without `capabilities`, and the next dial goes over the wire and
   registers a new volume.
 - `device_provider.rs`: the provider's row answers, `serial_of_path`, and an eject of a volume the registry holds but

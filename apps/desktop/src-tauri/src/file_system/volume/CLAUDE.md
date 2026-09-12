@@ -8,7 +8,7 @@ through a `Volume`, **relative to the volume root**.
 - `mod.rs` re-exports all of `cmdr_fs::volume`; the trait itself is `crates/cmdr-fs/src/volume/mod.rs`.
 - `manager.rs` (+ `manager/`: `routing.rs` and its two routes, the mount-root set): the registry behind
   `get_volume_manager()`.
-- `backends/` (its own `CLAUDE.md`), `eject.rs` (macOS+Linux teardown by kind), `friendly_error/` (in `cmdr-fs`).
+- `backends/` (its own `CLAUDE.md`), `eject/` (macOS+Linux teardown by kind), `friendly_error/` (in `cmdr-fs`).
 
 ## Must-knows
 - **A site passing a path calls `VolumeManager::resolve(volume_id, path).await`, ❌ never `get(volume_id)`.** It routes
@@ -42,8 +42,8 @@ through a `Volume`, **relative to the volume root**.
 - **A path from the UI is anchored by its CALLER (`cmdr_fs::volume::root_anchored`), ❌ never guessed at by the
   backend.** Panes send absolute paths, the transfer dialog's dest box volume-relative ones, and a leading `/` doesn't
   tell them apart. Idempotent, so anchor without checking. `DETAILS.md` § "Path handling gotchas".
-- **`eject.rs` stops a `LocalExternal` index BEFORE `diskutil` runs**: an open watcher or handle at unmount can wedge
-  macOS FSKit (kernel-panic risk). `DETAILS.md` § "Eject"; a new backend, § "Building a new volume".
+- **`eject/` stops a `LocalExternal` index BEFORE `diskutil` runs** (an open watcher can wedge macOS FSKit: kernel-panic
+  risk), and **every teardown goes through `run_teardown`**, the ONE place a refusal is logged. `DETAILS.md` § "Eject".
 
 Architecture, flows, and decision detail: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

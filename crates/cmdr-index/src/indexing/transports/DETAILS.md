@@ -294,10 +294,10 @@ post-unmount hook can undo it.
 **Three hooks, only one reliable.** Each releases the watcher + handles and preserves the DB on disk (a later remount +
 re-enable reconciles in place). Idempotent, so overlapping hooks are safe. All three act ONLY for a `LocalExternal`
 index (`indexing::volume_kind(id) == Some(LocalExternal)`); SMB and MTP tear their indexes down through their own
-disconnect paths, and stopping them here would fight that. (The hooks themselves live in `file_system/volume/eject.rs`
+disconnect paths, and stopping them here would fight that. (The hooks themselves live in `file_system/volume/eject/mod.rs`
 and `volumes/watcher.rs`; the `LocalExternal` gate — `stop_index_blocking` — lives here.)
 
-- **Cmdr's own eject (`file_system/volume/eject.rs`) — the reliable wedge-safe point.** For a
+- **Cmdr's own eject (`file_system/volume/eject/mod.rs`) — the reliable wedge-safe point.** For a
   `DiskutilUnmount`/`DiskutilEject`, `stop_index_then_unmount` awaits `stop_index_blocking(volume_id)` and ONLY THEN
   runs `diskutil`. The ordering is unconditional and runs on the blocking pool. This is the one path where Cmdr controls
   the timing, so it's the guaranteed protection. SMB/MTP keep their own teardown and their offline-browsable Stale index

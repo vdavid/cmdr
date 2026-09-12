@@ -2,7 +2,7 @@
  * The words for a typed `EjectError`: what an eject or a network-share
  * disconnect says to the person who asked for it.
  *
- * Classification is the backend's (`file_system/volume/eject.rs`); the words are
+ * Classification is the backend's (`file_system/volume/eject/mod.rs`); the words are
  * all here, pulled from the `errors.eject.*` catalog so every locale gets its
  * own. Same split as the mutation path
  * (`$lib/file-operations/mutation-error-messages.ts`);

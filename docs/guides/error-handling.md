@@ -96,7 +96,7 @@ The rule that replaced it:
 - **Mutation refusals**: the enum is `apps/desktop/src-tauri/src/file_system/write_operations/mutation_error.rs`; the
   words are `apps/desktop/src/lib/file-operations/mutation-error-messages.ts`, and
   `apps/desktop/src/lib/file-operations/mutation-error.ts` is what keeps the typed value alive across the throw.
-- **Eject and disconnect refusals**: the enum is `apps/desktop/src-tauri/src/file_system/volume/eject.rs`; the words are
+- **Eject and disconnect refusals**: the enum is `apps/desktop/src-tauri/src/file_system/volume/eject/mod.rs`; the words are
   `apps/desktop/src/lib/file-explorer/navigation/eject-error-messages.ts`, and
   `apps/desktop/src/lib/file-explorer/navigation/eject-error.ts` carries the value across the throw. The three toasts
   that word an eject share `wordEjectRefusal`, which also routes the technical detail to the log.
@@ -180,7 +180,7 @@ Both sides change together, in one commit. The per-side recipes are canonical in
 A new provider additionally needs its detection arm in `detect_provider`, its suggestions in
 `provider-error-messages.ts`, and a row in the `volumes/CLAUDE.md` provider table.
 
-A new **eject refusal** is the same two-sided move again: add the `EjectError` variant, return it from `eject.rs`, add
+A new **eject refusal** is the same two-sided move again: add the `EjectError` variant, return it from `eject/mod.rs`, add
 the `errors.eject.<variant>` key with its `@key` description, run `pnpm intl:keys` +
 `node apps/desktop/scripts/sync-locale-keys.ts`, translate into every locale, and add the arm to `EJECT_MESSAGE` in
 `eject-error-messages.ts` (a record type that demands every variant, so the frontend can't compile with one missing).

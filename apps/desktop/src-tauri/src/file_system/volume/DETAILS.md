@@ -412,8 +412,9 @@ destination goes through, plus `path_exists`.
 
 ## Eject
 
-`eject.rs` (macOS+Linux) owns volume teardown across every kind, so it lives next to the `VolumeManager` and `Volume`
-trait it dispatches over. `commands::eject::eject_volume` is a thin delegate; the pipeline is:
+`eject/` (macOS+Linux) owns volume teardown across every kind, so it lives next to the `VolumeManager` and `Volume`
+trait it dispatches over: `mod.rs` holds the pipeline and `EjectError`, `unmount_tool.rs` the `diskutil` / `umount`
+subprocess. `commands::eject::eject_volume` is a thin delegate; the pipeline is:
 
 1. **Busy gate**: refuse (`EjectError::Busy`) if a write op is touching the volume (`file_system::busy_volume_ids`), so
    a transfer can't be truncated. The picker already disables Eject for busy volumes; this defends against a race or an
@@ -422,8 +423,17 @@ trait it dispatches over. `commands::eject::eject_volume` is a thin delegate; th
    MTP, ADB) → that provider's `eject`; a registered `SmbVolume` (`backend_kind() == Smb`) → `diskutil unmount` (FSEvents drives smb2
    teardown via `on_unmount`); otherwise NSURL/`/sys/block` ejectability → `diskutil eject` (powers down USB, detaches
    DMGs). The pure `decide_eject_action` makes this choice and is unit-tested without touching the FS.
-3. **Execute**: the provider's eject (MTP closes the session; ADB only retires the volume, since `adb` has no
-   per-client detach), or a `diskutil`/`umount` subprocess under a 15 s timeout.
+3. **Execute**, always through `run_teardown`: the provider's eject (MTP closes the session; ADB only retires the
+   volume, since `adb` has no per-client detach), or a `diskutil`/`umount` subprocess under a 15 s timeout.
+
+**Every refusal is logged once, in Rust.** `run_teardown` is the choke point every eject and SMB disconnect passes
+through, and it writes one `warn` on target `eject` naming the volume ID, the command (`diskutil eject`, `umount`) or
+the provider, the mount path, and how the tool ended: its exit status and stderr, which usually names the process
+holding the drive ("Unmount was dissented by PID 51419"). It has to be Rust's log, because the frontend's line in
+`wordEjectRefusal` is a warn, and production frontend logging keeps errors only. `unmount_tool::run` answers a
+`ToolOutcome` rather than an `EjectError` so the exit status survives to that line, and `unmount_tool::settle` maps it
+onto the wire type: only a tool that EXITED with a code is `UnmountRefused`. One that couldn't start or died to a
+signal is `Unexpected`, since "something is still using this drive" would be a lie there.
 
 The MCP `eject` tool wraps `eject::eject` directly (not the command), surfacing `Busy` / non-ejectable as honest tool errors; see `mcp/DETAILS.md`.
 
