@@ -3,6 +3,6 @@
   "files": {
     "apps/desktop/src-tauri/src/analytics/CLAUDE.md": 606,
     "apps/desktop/src/lib/file-explorer/drag/CLAUDE.md": 608,
-    "apps/desktop/test/e2e-playwright/CLAUDE.md": 623
+    "apps/desktop/test/e2e-playwright/CLAUDE.md": 746
   }
 }
