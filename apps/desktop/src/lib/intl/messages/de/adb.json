@@ -71,6 +71,10 @@
   "@adb.disconnectBusyTooltip": {
     "sourceHash": "b42bed4"
   },
+  "adb.disconnectingDeviceAriaLabel": "Verbindung zu {name} wird getrennt …",
+  "@adb.disconnectingDeviceAriaLabel": {
+    "sourceHash": "50be3d4"
+  },
   "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
   "@adb.volumeLabelWithSuffix": {
     "sourceHash": "98d6c20",

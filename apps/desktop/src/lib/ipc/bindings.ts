@@ -3736,6 +3736,13 @@ export const commands = {
    *  after and panes rooted at the volume redirect to root.
    */
   ejectVolume: (volumeId: string) => typedError<null, EjectError>(__TAURI_INVOKE('eject_volume', { volumeId })),
+  /**
+   *  Returns the IDs of volumes whose eject is still running. The volume picker
+   *  bootstraps its ejecting set from this once on startup, then keeps it live via
+   *  the `volumes-ejecting-changed` event, to show those Eject controls as in
+   *  progress.
+   */
+  getEjectingVolumeIds: () => __TAURI_INVOKE<string[]>('get_ejecting_volume_ids'),
   // Removes a manually-added server by ID.
   removeManualServer: (serverId: string) =>
     typedError<null, string>(__TAURI_INVOKE('remove_manual_server', { serverId })),
@@ -4553,6 +4560,7 @@ export const events = {
   volumeUnmounted: makeEvent<VolumeUnmounted>('volume-unmounted'),
   volumesBusyChanged: makeEvent<VolumesBusyChanged>('volumes-busy-changed'),
   volumesChanged: makeEvent<VolumesChanged>('volumes-changed'),
+  volumesEjectingChanged: makeEvent<VolumesEjectingChanged>('volumes-ejecting-changed'),
   writeCancelled: makeEvent<WriteCancelledEvent>('write-cancelled'),
   writeComplete: makeEvent<WriteCompleteEvent>('write-complete'),
   writeConflict: makeEvent<WriteConflictEvent>('write-conflict'),
@@ -14232,6 +14240,16 @@ export type VolumesChanged = {
   data: LocationInfo[]
   // Whether the local volume listing timed out (some volumes may be missing).
   timedOut: boolean
+}
+
+/**
+ *  Typed `volumes-ejecting-changed` Tauri event. Wraps the ID list in a struct
+ *  because `tauri_specta::Event` payloads must be named types; the struct name
+ *  kebab-cases to the wire name.
+ */
+export type VolumesEjectingChanged = {
+  // IDs of volumes whose eject is still running (sorted).
+  volumeIds: string[]
 }
 
 /**

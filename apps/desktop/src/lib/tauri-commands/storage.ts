@@ -16,6 +16,7 @@ import {
   type VolumeContextAction,
   type VolumeRootChanged,
   type VolumesBusyChanged,
+  type VolumesEjectingChanged,
   type VolumeSpaceChanged,
   type VolumeUnmounted,
 } from '$lib/ipc/bindings'
@@ -142,9 +143,10 @@ export async function getVolumeSpace(path: string): Promise<TimedOut<SpaceInfo |
  *
  * Resolves once the unmount or disconnect is initiated. The volume disappears
  * from the picker shortly after, via `volume-unmounted` or
- * `mtp-device-disconnected`. A refusal throws an `EjectFailure` carrying the
- * typed `EjectError`; `asEjectError` gets it back, and
- * `renderEjectError` words it.
+ * `mtp-device-disconnected`. A call for a volume whose eject is still running
+ * joins that eject and settles with its answer. A refusal throws an
+ * `EjectFailure` carrying the typed `EjectError`; `asEjectError` gets it back,
+ * and `renderEjectError` words it.
  */
 export async function ejectVolume(volumeId: string): Promise<void> {
   const res = await commands.ejectVolume(volumeId)
@@ -159,6 +161,15 @@ export async function ejectVolume(volumeId: string): Promise<void> {
  */
 export async function getBusyVolumeIds(): Promise<string[]> {
   return commands.getBusyVolumeIds()
+}
+
+/**
+ * Returns the IDs of volumes whose eject is still running. The volume picker
+ * bootstraps its ejecting set from this, then keeps it live via the
+ * `volumes-ejecting-changed` event, to show those Eject controls in progress.
+ */
+export async function getEjectingVolumeIds(): Promise<string[]> {
+  return commands.getEjectingVolumeIds()
 }
 
 /** Volume-list-changed payload, with `data` exposed as the FE-wide `VolumeInfo` type. */
@@ -222,6 +233,17 @@ export function onVolumeConnectionChanged(handler: (payload: VolumeConnectionCha
  */
 export function onVolumesBusyChanged(handler: (payload: VolumesBusyChanged) => void): Promise<UnlistenFn> {
   return events.volumesBusyChanged.listen((event) => {
+    handler(event.payload)
+  })
+}
+
+/**
+ * Subscribes to ejecting-volume-set changes. The handler receives the sorted list
+ * of volume IDs whose eject is still running.
+ * Call the returned `UnlistenFn` on component destroy to avoid leaks.
+ */
+export function onVolumesEjectingChanged(handler: (payload: VolumesEjectingChanged) => void): Promise<UnlistenFn> {
+  return events.volumesEjectingChanged.listen((event) => {
     handler(event.payload)
   })
 }

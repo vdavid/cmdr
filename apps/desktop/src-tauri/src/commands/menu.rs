@@ -302,11 +302,11 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
 ) -> Result<(), String> {
     let app = window.app_handle();
     let accelerator = frontend_shortcut_to_accelerator(&shortcut).unwrap_or_default();
-    // Disable the eject item while a write op touches this volume (the picker's
-    // inline eject button is disabled the same way).
+    // Disable the eject item while a write op touches this volume or its eject is
+    // still running (the picker's inline eject button is disabled the same way).
     let eject_busy = eject_volume_id
         .as_ref()
-        .is_some_and(|id| crate::file_system::busy_volume_ids().contains(id));
+        .is_some_and(|id| crate::file_system::busy_volume_ids().contains(id) || is_ejecting(id));
     let detach_word = eject_volume_id
         .as_deref()
         .map_or(DetachWord::Eject, DetachWord::for_volume_id);
@@ -331,6 +331,22 @@ pub fn show_breadcrumb_context_menu<R: Runtime>(
     focus_for_context_menu(&window);
     menu.popup(window).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// Whether `volume_id`'s eject is still running, so a native Eject item renders disabled
+/// the way it does for a busy volume. A second pick would only join that eject anyway.
+fn is_ejecting(volume_id: &str) -> bool {
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        crate::file_system::volume::eject::ejecting_volume_ids()
+            .iter()
+            .any(|id| id == volume_id)
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    {
+        let _ = volume_id;
+        false
+    }
 }
 
 /// Shows a native context menu for a row in the volume-selector dropdown (fire-and-forget).
@@ -358,10 +374,11 @@ pub fn show_volume_row_context_menu<R: Runtime>(
 ) -> Result<(), String> {
     let app = window.app_handle();
 
-    // Disable the eject item while a write op touches this volume (matches the inline
-    // eject button and the breadcrumb menu). Favorites are never ejectable.
+    // Disable the eject item while a write op touches this volume or its eject is
+    // still running (matches the inline eject button and the breadcrumb menu).
+    // Favorites are never ejectable.
     let busy = crate::file_system::busy_volume_ids().contains(&volume_id);
-    let eject_busy = is_ejectable && busy;
+    let eject_busy = is_ejectable && (busy || is_ejecting(&volume_id));
     let eject_name = (is_ejectable && !is_favorite).then_some(volume_name.as_str());
     let server = server.map(|s| ServerRowMenu { busy, ..s });
     let menu = build_volume_row_context_menu(

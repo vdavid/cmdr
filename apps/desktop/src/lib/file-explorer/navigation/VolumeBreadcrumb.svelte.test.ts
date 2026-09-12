@@ -6,7 +6,7 @@
  * lives in `DualPaneExplorer.routeToVolumeChooser`; here we pin the leaf guard.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick, flushSync } from 'svelte'
 import VolumeBreadcrumb from './VolumeBreadcrumb.svelte'
 
@@ -24,7 +24,7 @@ const listSavedServers = vi.fn(() =>
  * can put a place in the switcher without shifting the favorite indices every
  * other block here counts on.
  */
-const stubs = vi.hoisted(() => ({ volumes: null as unknown[] | null }))
+const stubs = vi.hoisted(() => ({ volumes: null as unknown[] | null, ejecting: new Set<string>() }))
 
 // Captures the `volume-context-action` listener the component registers in `onMount`, so a
 // test can fire a native row-menu pick (Rename / Remove) the same way the backend would.
@@ -67,7 +67,10 @@ vi.mock('$lib/stores/volume-store.svelte', () => ({
   requestVolumeRefresh: vi.fn(),
 }))
 
-vi.mock('$lib/stores/volume-busy-store.svelte', () => ({ isVolumeBusy: () => false }))
+vi.mock('$lib/stores/volume-busy-store.svelte', () => ({
+  isVolumeBusy: () => false,
+  isVolumeEjecting: (id: string) => stubs.ejecting.has(id),
+}))
 
 vi.mock('$lib/ui/toast', () => ({ addToast: vi.fn(() => 'toast-id'), dismissToast: vi.fn() }))
 
@@ -360,6 +363,85 @@ describe('VolumeBreadcrumb server rows', () => {
       isSaved: true,
       pinned: false,
     })
+  })
+})
+
+/**
+ * An eject that's still running. One took 10.5 s with no sign of life in a user's
+ * log, which invites another click; the backend joins that click to the running
+ * eject anyway, and the control shows the eject is underway so nobody has to try.
+ */
+describe('VolumeBreadcrumb eject in progress', () => {
+  const drive = {
+    id: 'volumes-backup',
+    name: 'Backup',
+    path: '/Volumes/Backup',
+    category: 'attached_volume',
+    isEjectable: true,
+  }
+
+  async function openWith(rows: unknown[]) {
+    stubs.volumes = rows
+    const { instance, target } = mountBreadcrumb()
+    instance.open()
+    await tick()
+    flushSync()
+    return target
+  }
+
+  beforeEach(() => {
+    document.body.innerHTML = ''
+    stubs.volumes = null
+    stubs.ejecting = new Set()
+    ejectVolume.mockClear()
+  })
+
+  afterEach(() => {
+    stubs.volumes = null
+    stubs.ejecting = new Set()
+  })
+
+  it('shows a drive whose eject is running as in progress, and a click starts nothing', async () => {
+    stubs.ejecting = new Set([drive.id])
+    const target = await openWith([drive])
+    const button = target.querySelector('.volume-item .eject-button') as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+    expect(button.getAttribute('aria-label')).toBe('Ejecting Backup…')
+    expect(button.querySelector('.spinner')).toBeTruthy()
+
+    button.click()
+    await tick()
+    expect(ejectVolume).not.toHaveBeenCalled()
+  })
+
+  it('says Disconnecting on a phone whose disconnect is running', async () => {
+    const phone = {
+      id: 'adb-pixel-7-a1b2c3d',
+      name: 'Pixel 7',
+      path: 'adb://R58M12345',
+      category: 'mobile_device',
+      fsType: 'adb',
+      isEjectable: true,
+      deviceReadiness: { kind: 'ready' },
+    }
+    stubs.ejecting = new Set([phone.id])
+    const target = await openWith([phone])
+    const button = target.querySelector('.volume-item .eject-button') as HTMLButtonElement
+    expect(button.disabled).toBe(true)
+    expect(button.getAttribute('aria-label')).toBe('Disconnecting Pixel 7…')
+    expect(button.querySelector('.spinner')).toBeTruthy()
+  })
+
+  it('keeps an idle drive pressable, with its eject glyph', async () => {
+    const target = await openWith([drive])
+    const button = target.querySelector('.volume-item .eject-button') as HTMLButtonElement
+    expect(button.disabled).toBe(false)
+    expect(button.getAttribute('aria-label')).toBe('Eject Backup')
+    expect(button.querySelector('.spinner')).toBeNull()
+
+    button.click()
+    await tick()
+    expect(ejectVolume).toHaveBeenCalledWith(drive.id)
   })
 })
 

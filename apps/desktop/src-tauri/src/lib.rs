@@ -375,6 +375,10 @@ pub fn run() {
             // `volumes-busy-changed` (drives disabling Eject while a transfer touches a
             // device). Before any write op can run.
             file_system::init_busy_volume_emitter(app.handle());
+            // Its eject twin, `volumes-ejecting-changed`: which Eject controls show an
+            // eject still running. Before the frontend can ask for one.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
+            file_system::volume::eject::init_ejecting_volume_emitter(app.handle());
 
             // Operation-manager emitter for `operations-changed` (the queue window's row set).
             file_system::init_operation_event_emitter(app.handle());

@@ -32,6 +32,7 @@
     import type { VolumeChangePayload } from '../pane/types'
     import { filesystemLabel } from './filesystem-label'
     import { isVolumeEjectable } from './eject-predicate'
+    import { detachControl } from './detach-control'
     import { showsDisconnect } from './connection-state'
     import { disconnectServerPlace, isServerPlaceRow, openServerRowMenu } from './server-row-actions'
     import { wordEjectRefusal } from './eject-error-messages'
@@ -60,16 +61,13 @@
         isVolumeRetryFailed,
         requestVolumeRefresh,
     } from '$lib/stores/volume-store.svelte'
-    import { isVolumeBusy } from '$lib/stores/volume-busy-store.svelte'
+    import { isVolumeBusy, isVolumeEjecting } from '$lib/stores/volume-busy-store.svelte'
 
-    /** Tooltip shown on a disabled Eject control while a transfer touches the volume. */
-    const EJECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.ejectBusyTooltip'))
-    /** Its Disconnect twin: same guard, a server's words for it. */
+    /** A server row's Disconnect control, disabled while a transfer touches the volume. */
     const DISCONNECT_BUSY_TOOLTIP = $derived(tString('fileExplorer.navigation.disconnectBusyTooltip'))
     import { groupByCategory, getIconForVolume } from './volume-grouping'
     import { deviceVolumeLabel } from '$lib/adb/adb-volume-label'
     import { deviceRowState } from '$lib/adb/device-readiness'
-    import { isAdbVolumeId } from '$lib/adb/adb-path-utils'
     import { createVolumeSpaceManager } from './volume-space-manager.svelte'
     import { createDriveIndexManager, isDriveRow } from './drive-index-manager.svelte'
     import DriveIndexBadge from './DriveIndexBadge.svelte'
@@ -624,10 +622,11 @@
 
     async function handleEjectClick(volume: VolumeInfo, event?: MouseEvent) {
         event?.stopPropagation()
-        // Guard: the eject controls are disabled while the volume is busy, but a
-        // keyboard / edge path could still reach here. Don't tear down a volume
-        // mid-transfer.
-        if (isVolumeBusy(volume.id)) return
+        // Guard: the eject controls are disabled while the volume is busy or its
+        // eject is still running, but a keyboard / edge path could still reach here.
+        // Don't tear down a volume mid-transfer, and don't ask twice (the backend
+        // would only join the running eject).
+        if (isVolumeBusy(volume.id) || isVolumeEjecting(volume.id)) return
         breadcrumbPopup.close()
         // Keep the dropdown open so several drives can be ejected in a row; the ejected
         // volume disappears on its own via `volume-unmounted` / `mtp-device-disconnected`.
@@ -806,27 +805,30 @@
             <ImageIndexDriveBadge volumeId={currentVolume.id} volumeState={activeImageState} breadcrumb />
         {/if}
     {/if}
-    {#if currentVolume && isVolumeEjectable(currentVolume)}
-        <!-- A phone says Disconnect and wears the unplug icon, matching its row in
-             the dropdown and its native menu; the ACTION is the same eject path,
-             which for ADB is `DeviceDisconnect`. -->
-        {@const onAPhone = isAdbVolumeId(currentVolume.id)}
-        {@const headerDetachLabel = isVolumeBusy(currentVolume.id)
-            ? (onAPhone ? tString('adb.disconnectBusyTooltip') : EJECT_BUSY_TOOLTIP)
-            : tString(
-                  onAPhone ? 'adb.disconnectDeviceAriaLabel' : 'fileExplorer.navigation.ejectVolumeAriaLabel',
-                  { name: currentVolume.name },
-              )}
+    <!-- The eject-or-disconnect control, shared by the header chip and each dropdown
+         row. Its words, glyph, and states (ejecting, busy, idle) are `detachControl`'s. -->
+    {#snippet detachButton(volume: VolumeInfo, inHeader: boolean)}
+        {@const control = detachControl(volume, { busy: isVolumeBusy(volume.id), ejecting: isVolumeEjecting(volume.id) })}
         <button
             type="button"
-            class="eject-button breadcrumb-eject-button"
-            aria-label={headerDetachLabel}
-            disabled={isVolumeBusy(currentVolume.id)}
-            use:tooltip={headerDetachLabel}
-            onclick={(e: MouseEvent) => { void handleEjectClick(currentVolume, e) }}
+            class="eject-button"
+            class:breadcrumb-eject-button={inHeader}
+            class:is-ejecting={control.ejecting}
+            aria-label={control.label}
+            disabled={control.disabled}
+            use:tooltip={control.label}
+            onclick={(e: MouseEvent) => { void handleEjectClick(volume, e) }}
         >
-            <Icon name={onAPhone ? 'unplug' : 'eject'} size={14} aria-hidden="true" />
+            {#if control.ejecting}
+                <Spinner size="sm" />
+            {:else}
+                <Icon name={control.icon} size={14} aria-hidden="true" />
+            {/if}
         </button>
+    {/snippet}
+    {#if currentVolume && isVolumeEjectable(currentVolume)}
+        <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
+        {@render detachButton(currentVolume, true)}
     {/if}
 
     {#if isOpen && (groupedVolumes.length > 0 || volumesTimedOut)}
@@ -972,35 +974,7 @@
                                 <ImageIndexDriveBadge volumeId={volume.id} volumeState={rowImageState} />
                             {/if}
                         {/if}
-                        {#if isAdbVolumeId(volume.id) && isVolumeEjectable(volume)}
-                            <!-- ❗ A phone says Disconnect, ❌ never Eject: `adb` has
-                                 no per-client detach, so nothing is made safe to
-                                 unplug — the device stays on the cable and the next
-                                 navigation re-dials it. The ACTION is the ordinary
-                                 eject path, which for ADB is `DeviceDisconnect`;
-                                 only the word and the icon differ. MTP keeps Eject,
-                                 which it earns by closing the device session.
-
-                                 ❗ Gated on `isVolumeEjectable`, which for a phone
-                                 reads its READINESS: a device row carries
-                                 `isEjectable: true` unconditionally and no
-                                 `connectionState` at all, so without the gate a
-                                 greyed `unavailable` row nobody can open still
-                                 offered a live Disconnect. -->
-                            {@const deviceDisconnectLabel = isVolumeBusy(volume.id)
-                                ? tString('adb.disconnectBusyTooltip')
-                                : tString('adb.disconnectDeviceAriaLabel', { name: volume.name })}
-                            <button
-                                type="button"
-                                class="eject-button"
-                                aria-label={deviceDisconnectLabel}
-                                disabled={isVolumeBusy(volume.id)}
-                                use:tooltip={deviceDisconnectLabel}
-                                onclick={(e: MouseEvent) => { void handleEjectClick(volume, e) }}
-                            >
-                                <Icon name="unplug" size={14} aria-hidden="true" />
-                            </button>
-                        {:else if isServerPlaceRow(volume) && showsDisconnect(volume.connectionState)}
+                        {#if isServerPlaceRow(volume) && showsDisconnect(volume.connectionState)}
                             <!-- A server has nothing to unplug, so its slot says Disconnect
                                  (D6). The place stays saved; only the session goes. -->
                             {@const disconnectLabel = isVolumeBusy(volume.id)
@@ -1017,20 +991,13 @@
                                 <Icon name="unplug" size={14} aria-hidden="true" />
                             </button>
                         {:else if isVolumeEjectable(volume)}
-                            <button
-                                type="button"
-                                class="eject-button"
-                                aria-label={isVolumeBusy(volume.id)
-                                    ? EJECT_BUSY_TOOLTIP
-                                    : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: volume.name })}
-                                disabled={isVolumeBusy(volume.id)}
-                                use:tooltip={isVolumeBusy(volume.id)
-                                    ? EJECT_BUSY_TOOLTIP
-                                    : tString('fileExplorer.navigation.ejectVolumeAriaLabel', { name: volume.name })}
-                                onclick={(e: MouseEvent) => { void handleEjectClick(volume, e) }}
-                            >
-                                <Icon name="eject" size={14} aria-hidden="true" />
-                            </button>
+                            <!-- ❗ Gated on `isVolumeEjectable`, which for a phone reads its
+                                 READINESS: a device row carries `isEjectable: true`
+                                 unconditionally and no `connectionState` at all, so
+                                 without the gate a greyed `unavailable` row nobody can
+                                 open still offered a live Disconnect. -->
+                            <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression -- Svelte {@render} syntax -->
+                            {@render detachButton(volume, false)}
                         {/if}
                     </div>
                     {#if volumeSpaceMap.has(volume.id)}
@@ -1816,6 +1783,17 @@
     .eject-button:disabled {
         opacity: 0.4;
         cursor: default;
+    }
+
+    /* Ejecting: the eject is underway, not unavailable, so the spinner keeps full
+       strength. The 12px spinner plus its margin fills the 14px glyph's box, so the
+       row doesn't shift when it swaps in. */
+    .eject-button.is-ejecting:disabled {
+        opacity: 1;
+    }
+
+    .eject-button.is-ejecting :global(.spinner) {
+        margin: 1px;
     }
 
     /* In the dropdown row, push the button to the far right when it's the only

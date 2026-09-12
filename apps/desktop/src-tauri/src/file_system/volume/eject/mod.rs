@@ -23,6 +23,7 @@
 //! The `commands::eject` IPC layer is a thin delegate over [`eject`]: [`EjectError`]
 //! IS the wire type, so nothing is flattened on the way out.
 
+mod in_flight;
 mod unmount_tool;
 
 use serde::{Deserialize, Serialize};
@@ -30,6 +31,8 @@ use std::sync::Arc;
 
 use crate::device_volumes::DeviceVolumeProvider;
 use unmount_tool::{Settled, UnmountVerb};
+
+pub use in_flight::{VolumesEjectingChanged, ejecting_volume_ids, init_ejecting_volume_emitter};
 
 /// Action the eject pipeline takes for a given volume.
 #[derive(Debug, PartialEq, Eq)]
@@ -192,12 +195,24 @@ impl From<EjectDecisionError> for EjectError {
 
 /// Ejects a volume. Picks the right teardown for the volume's kind.
 ///
+/// One eject at a time per volume: a call for a volume whose eject is still
+/// running joins it and gets the same answer (`in_flight`), so a repeat click,
+/// the native menu, and MCP never start a second teardown.
+///
 /// Returns `Ok(())` once the unmount or disconnect is initiated. The frontend
 /// shouldn't wait for the volume to fully disappear — `volume-unmounted` (for
 /// disk volumes) or `mtp-device-disconnected` (for MTP) will fire shortly
 /// after and panes rooted at the volume redirect to root.
 pub async fn eject(volume_id: &str) -> Result<(), EjectError> {
+    let owned_id = volume_id.to_string();
+    in_flight::join_or_start(volume_id, move || eject_now(owned_id)).await
+}
+
+/// The eject itself. [`eject`] runs at most one of these per volume at a time.
+async fn eject_now(volume_id: String) -> Result<(), EjectError> {
     use crate::file_system::volume::manager::get_volume_manager;
+
+    let volume_id = volume_id.as_str();
 
     // Safety gate: never tear down a volume while a write op is reading from or
     // writing to it. The picker disables Eject for busy volumes, so reaching

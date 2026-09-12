@@ -3,7 +3,8 @@
  *
  * Covers: bootstrap via `getBusyVolumeIds`, live updates via the
  * `volumes-busy-changed` event, the bootstrap-vs-event race (an event that
- * arrives before the bootstrap resolves must win), and cleanup.
+ * arrives before the bootstrap resolves must win), cleanup, and the ejecting
+ * set that rides beside the busy one on `volumes-ejecting-changed`.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -12,6 +13,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const mockGetBusyVolumeIds = vi.fn<() => Promise<string[]>>()
 let lastEventHandler: ((payload: { volumeIds: string[] }) => void) | null = null
 const mockUnlisten = vi.fn()
+const mockGetEjectingVolumeIds = vi.fn<() => Promise<string[]>>()
+let lastEjectingHandler: ((payload: { volumeIds: string[] }) => void) | null = null
+const mockUnlistenEjecting = vi.fn()
 
 vi.mock('$lib/tauri-commands', () => ({
   getBusyVolumeIds: () => mockGetBusyVolumeIds(),
@@ -19,9 +23,14 @@ vi.mock('$lib/tauri-commands', () => ({
     lastEventHandler = handler
     return Promise.resolve(mockUnlisten)
   },
+  getEjectingVolumeIds: () => mockGetEjectingVolumeIds(),
+  onVolumesEjectingChanged: (handler: (payload: { volumeIds: string[] }) => void) => {
+    lastEjectingHandler = handler
+    return Promise.resolve(mockUnlistenEjecting)
+  },
 }))
 
-import { initVolumeBusyStore, cleanupVolumeBusyStore, isVolumeBusy } from './volume-busy-store.svelte'
+import { initVolumeBusyStore, cleanupVolumeBusyStore, isVolumeBusy, isVolumeEjecting } from './volume-busy-store.svelte'
 
 /** Drives the listener as if the backend emitted `volumes-busy-changed`. */
 function emit(ids: string[]): void {
@@ -29,11 +38,21 @@ function emit(ids: string[]): void {
   lastEventHandler({ volumeIds: ids })
 }
 
+/** Drives the listener as if the backend emitted `volumes-ejecting-changed`. */
+function emitEjecting(ids: string[]): void {
+  if (!lastEjectingHandler) throw new Error("init() didn't install an ejecting listener")
+  lastEjectingHandler({ volumeIds: ids })
+}
+
 describe('volume-busy-store', () => {
   beforeEach(() => {
     mockGetBusyVolumeIds.mockReset()
     mockUnlisten.mockReset()
     lastEventHandler = null
+    mockGetEjectingVolumeIds.mockReset()
+    mockGetEjectingVolumeIds.mockResolvedValue([])
+    mockUnlistenEjecting.mockReset()
+    lastEjectingHandler = null
     cleanupVolumeBusyStore()
   })
 
@@ -88,5 +107,52 @@ describe('volume-busy-store', () => {
     cleanupVolumeBusyStore()
     expect(mockUnlisten).toHaveBeenCalledOnce()
     expect(isVolumeBusy('usb-drive')).toBe(false)
+  })
+
+  it('tracks the ejecting set on its own event, apart from the busy set', async () => {
+    mockGetBusyVolumeIds.mockResolvedValue([])
+    mockGetEjectingVolumeIds.mockResolvedValue(['usb-drive'])
+    await initVolumeBusyStore()
+
+    expect(isVolumeEjecting('usb-drive')).toBe(true)
+    expect(isVolumeBusy('usb-drive')).toBe(false)
+
+    emitEjecting([])
+    expect(isVolumeEjecting('usb-drive')).toBe(false)
+
+    emitEjecting(['sd-card'])
+    expect(isVolumeEjecting('sd-card')).toBe(true)
+    expect(isVolumeBusy('sd-card')).toBe(false)
+  })
+
+  it('lets an ejecting event that arrives before its bootstrap resolves win', async () => {
+    mockGetBusyVolumeIds.mockResolvedValue([])
+    let resolveBootstrap: (ids: string[]) => void = () => {}
+    mockGetEjectingVolumeIds.mockReturnValue(
+      new Promise<string[]>((resolve) => {
+        resolveBootstrap = resolve
+      }),
+    )
+
+    const initPromise = initVolumeBusyStore()
+    await vi.waitFor(() => {
+      expect(lastEjectingHandler).not.toBeNull()
+    })
+    emitEjecting(['usb-drive'])
+    resolveBootstrap([])
+    await initPromise
+
+    expect(isVolumeEjecting('usb-drive')).toBe(true)
+  })
+
+  it('clears the ejecting set and unlistens on cleanup', async () => {
+    mockGetBusyVolumeIds.mockResolvedValue([])
+    mockGetEjectingVolumeIds.mockResolvedValue(['usb-drive'])
+    await initVolumeBusyStore()
+    expect(isVolumeEjecting('usb-drive')).toBe(true)
+
+    cleanupVolumeBusyStore()
+    expect(mockUnlistenEjecting).toHaveBeenCalledOnce()
+    expect(isVolumeEjecting('usb-drive')).toBe(false)
   })
 })

@@ -1378,6 +1378,10 @@
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "sourceHash": "7165c58"
   },
+  "fileExplorer.navigation.ejectingVolumeAriaLabel": "Éjection de {name}…",
+  "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
+    "sourceHash": "e8bca64"
+  },
   "fileExplorer.navigation.usbSpeed": "{label} (max. {mbps} Mo/s)",
   "@fileExplorer.navigation.usbSpeed": {
     "sourceHash": "07cb80b"

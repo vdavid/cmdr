@@ -1372,6 +1372,10 @@
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "sourceHash": "7165c58"
   },
+  "fileExplorer.navigation.ejectingVolumeAriaLabel": "Đang tháo {name}…",
+  "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
+    "sourceHash": "e8bca64"
+  },
   "fileExplorer.navigation.usbSpeed": "{label} (Tối đa {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {
     "sourceHash": "07cb80b"

@@ -25,3 +25,13 @@ pub async fn eject_volume(volume_id: String) -> Result<(), EjectError> {
 pub fn get_busy_volume_ids() -> Vec<String> {
     crate::file_system::busy_volume_ids()
 }
+
+/// Returns the IDs of volumes whose eject is still running. The volume picker
+/// bootstraps its ejecting set from this once on startup, then keeps it live via
+/// the `volumes-ejecting-changed` event, to show those Eject controls as in
+/// progress.
+#[tauri::command]
+#[specta::specta]
+pub fn get_ejecting_volume_ids() -> Vec<String> {
+    eject::ejecting_volume_ids()
+}

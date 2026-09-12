@@ -325,6 +325,18 @@ The native row / breadcrumb eject items are gated backend-side: `show_volume_row
 ` (busy)` suffix. The real safety net is the `eject_volume` backend guard, which refuses a busy volume even if the UI is
 stale or an MCP caller bypasses it. See `src-tauri/src/file_system/write_operations/CLAUDE.md` § "Busy-volumes set".
 
+**An eject in progress.** While a volume's eject runs (one took 10.5 s in a user's log, with nothing on screen to say
+so), its header chip and dropdown-row control render disabled, with a `Spinner` in the glyph's place and an "Ejecting
+{name}…" label ("Disconnecting {name}…" on a phone), and `handleEjectClick` early-returns. `isVolumeEjecting(id)` lives
+in the same store module as `isVolumeBusy`, fed by the backend's `volumes-ejecting-changed` event, and
+`initVolumeBusyStore` starts both sets. The native row and breadcrumb Eject items render disabled with the busy suffix
+while ejecting (`is_ejecting` in `commands/menu.rs`). All of that is presentation: the backend JOINS a second request
+for a volume to the eject already running, so a stale control or an MCP caller can't start a second teardown
+(`src-tauri/src/file_system/volume/DETAILS.md` § "Eject"). Both controls render through one `detachButton` snippet, and
+its words, glyph, and three states (ejecting, busy, idle) are `detach-control.ts`'s. The spinner keeps full opacity
+(it's underway, not unavailable) and its margin fills the glyph's 14px box, so the row doesn't shift; `Spinner` itself
+stops spinning under `prefers-reduced-motion`.
+
 **A refusal speaks the catalog, never `diskutil`.** `ejectVolume` / `disconnectSmbVolume` throw an `EjectFailure`
 (`eject-error.ts`, a subclass of the shared `TypedFailure` in `$lib/ipc/typed-failure.ts`) carrying the backend's typed
 `EjectError` intact. Three surfaces word one: the dropdown / header button (`VolumeBreadcrumb`'s `handleEjectClick`),

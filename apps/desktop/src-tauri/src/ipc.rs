@@ -61,6 +61,7 @@ use crate::file_system::listing::streaming::{
     ListingCancelledEvent, ListingCompleteEvent, ListingErrorEvent, ListingOpeningEvent, ListingProgressEvent,
     ListingReadCompleteEvent,
 };
+use crate::file_system::volume::eject::VolumesEjectingChanged;
 use crate::file_system::write_operations::{
     ConflictInfo, DryRunResult, ScanPreviewCancelledEvent, ScanPreviewCompleteEvent, ScanPreviewErrorEvent,
     ScanPreviewProgressEvent, ScanProgressEvent, WriteCancelledEvent, WriteCompleteEvent, WriteConflictEvent,
@@ -609,6 +610,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::network::get_volume_sign_in_state,
                     crate::commands::network::disconnect_smb_volume,
                     crate::commands::eject::eject_volume,
+                    crate::commands::eject::get_ejecting_volume_ids,
                     crate::commands::network::remove_manual_server,
                     crate::commands::network::disconnect_network_host,
                     crate::commands::network::ensure_network_discovery_started,
@@ -1010,6 +1012,8 @@ pub fn builder() -> Builder<tauri::Wry> {
             // (network/live_server_edit.rs).
             VolumeRootChanged,
             VolumesBusyChanged,
+            // The volumes with an eject still running (file_system/volume/eject/in_flight.rs).
+            VolumesEjectingChanged,
             VolumeContextAction,
             LowDiskSpacePayload, // event_name = "low-disk-space"
             // Session health of a connecting volume. Backend-neutral: SMB emits it

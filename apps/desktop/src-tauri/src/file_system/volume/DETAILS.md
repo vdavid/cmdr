@@ -446,6 +446,19 @@ unmount notification can land milliseconds after `diskutil` exits. A mount table
 mounted", so a real refusal never turns into a silent success. The decision is the pure `unmount_tool::settle`, with
 the table read passed in as a closure it calls only on failure.
 
+**One eject at a time per volume.** `eject` hands the pipeline to `in_flight::join_or_start`: a request for a volume
+whose eject is still running JOINS that flight and gets its answer, with no second teardown. A slow `diskutil` (10.5 s
+in one user's log) invites repeat clicks, and every caller lands here: both switcher buttons, the native menu, and MCP.
+The join-or-start decision happens under a lock before `join_or_start` returns, so nothing slips in between. The flight
+runs on its own tokio task, so it finishes even if every caller stops waiting, and a panic inside it answers
+`Unexpected`; a drop guard in that task takes the volume out of the set before any caller sees the answer. The volumes
+in flight are the EJECTING set, the busy set's twin: `ejecting_volume_ids()`, pushed as `volumes-ejecting-changed` on
+every change (emitted under the lock, so two changes can't arrive out of order) and bootstrapped with
+`get_ejecting_volume_ids`. The frontend shows those controls in progress and the native menus render their Eject item
+disabled, but the join is what makes a second request harmless when the UI is stale. A request after the flight lands
+starts a new one: nothing caches the answer, so a retry really retries. `disconnect_smb` doesn't join; it's the
+reconnect view's Disconnect, a separate action.
+
 **An ID the registry no longer knows stays `VolumeNotFound`.** It could be a volume that finished unmounting a moment
 ago, or an ID that never existed (an MCP caller's typo), and with no mount root left there's nothing typed to ask, so
 answering `Ok` would hand automation a false success. The UI's own controls reach it only in a narrow race, and its copy

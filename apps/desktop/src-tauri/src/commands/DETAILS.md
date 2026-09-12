@@ -164,9 +164,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   the readings that matter come from a shipped build under a real workload, which is the one condition a debug-only
   command can't reach. Carries no paths or names, only counts. Runs off the IPC thread (one syscall per map entry) with
   a 5 s backstop.
-- **`eject.rs`**: `eject_volume(volume_id)` + `get_busy_volume_ids()`, thin delegates. The teardown logic (kind
-  dispatch, the pure unit-tested `decide_eject_action`, the busy-volume guard, and the `diskutil`/`umount`/MTP
-  shell-out) lives in `file_system::volume::eject`. `EjectError` IS the wire type, so the command returns it unchanged
+- **`eject.rs`**: `eject_volume(volume_id)` + `get_busy_volume_ids()` + `get_ejecting_volume_ids()`, thin delegates.
+  The teardown logic (joining an eject already running, kind dispatch, the pure unit-tested `decide_eject_action`, the
+  busy-volume guard, and the `diskutil`/`umount`/MTP shell-out) lives in `file_system::volume::eject`. `EjectError` IS the wire type, so the command returns it unchanged
   and the frontend words each variant from `errors.eject.*`. `get_busy_volume_ids()` bootstraps the picker's busy set (see
   `write_operations/DETAILS.md` § "Busy-volumes set").
 - **`favorites.rs`**: `add_favorite`, `remove_favorite`, `rename_favorite`, `reorder_favorites`. Thin pass-throughs over

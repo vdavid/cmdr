@@ -141,6 +141,7 @@ vi.mock('$lib/tauri-commands', async (importOriginal) => {
       timedOut: false,
     }),
     getBusyVolumeIds: vi.fn().mockResolvedValue([]),
+    getEjectingVolumeIds: vi.fn().mockResolvedValue([]),
     resolvePathVolume: resolvePathVolumeMock,
     getDefaultVolumeId: getDefaultVolumeIdMock,
     getVolumeSpace: vi.fn().mockResolvedValue({ data: null, timedOut: false }),

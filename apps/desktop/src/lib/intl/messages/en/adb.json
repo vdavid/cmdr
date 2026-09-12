@@ -77,6 +77,13 @@
   "@adb.disconnectBusyTooltip": {
     "description": "Accessible name and hover tooltip on that Disconnect button while it is greyed out, because a file operation is still copying to or from the phone. States the reason, never blames the user."
   },
+  "adb.disconnectingDeviceAriaLabel": "Disconnecting {name}…",
+  "@adb.disconnectingDeviceAriaLabel": {
+    "description": "Accessible name and hover tooltip on that Disconnect button while the disconnect is still running: the button shows a spinner and can't be pressed until it finishes. Present progressive, describing work underway, not a command. It says Disconnecting rather than Ejecting for the same reason the button says Disconnect. Keep the trailing ellipsis character.",
+    "placeholders": {
+      "name": "the device's name, for example Pixel 7"
+    }
+  },
   "adb.volumeLabelWithSuffix": "{deviceName} (ADB)",
   "@adb.volumeLabelWithSuffix": {
     "description": "Volume switcher label for a phone reached over ADB when the same phone is also listed over MTP, so the two rows stay apart. ADB is the Android Debug Bridge tool name; keep it verbatim. Not captured yet: the ADB connect flow has no UI surface in the app yet.",

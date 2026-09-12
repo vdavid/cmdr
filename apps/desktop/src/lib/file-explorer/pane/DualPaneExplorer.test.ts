@@ -79,6 +79,7 @@ vi.mock('$lib/tauri-commands', () => ({
     timedOut: false,
   }),
   getBusyVolumeIds: vi.fn().mockResolvedValue([]),
+  getEjectingVolumeIds: vi.fn().mockResolvedValue([]),
   resolvePathVolume: vi.fn().mockResolvedValue({
     volume: {
       id: 'root',
@@ -133,6 +134,7 @@ vi.mock('$lib/tauri-commands', () => ({
   onVolumeRootChanged: vi.fn().mockResolvedValue(() => {}),
   onVolumesChanged: vi.fn().mockResolvedValue(() => {}),
   onVolumesBusyChanged: vi.fn().mockResolvedValue(() => {}),
+  onVolumesEjectingChanged: vi.fn().mockResolvedValue(() => {}),
   onVolumeConnectionChanged: vi.fn().mockResolvedValue(() => {}),
   onNetworkHostFound: vi.fn().mockResolvedValue(() => {}),
   onNetworkHostLost: vi.fn().mockResolvedValue(() => {}),

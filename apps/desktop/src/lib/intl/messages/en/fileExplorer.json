@@ -1992,6 +1992,13 @@
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume can''t be ejected because a file operation is running on it."
   },
+  "fileExplorer.navigation.ejectingVolumeAriaLabel": "Ejecting {name}…",
+  "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
+    "description": "Accessibility label and tooltip on the eject button of a volume in the breadcrumb and switcher while its eject is still running: the button shows a spinner and can't be pressed until the eject finishes, which can take several seconds. Present progressive, describing work underway, not a command. Keep the trailing ellipsis character.",
+    "placeholders": {
+      "name": "the display name of the volume being ejected, for example Backup Drive"
+    }
+  },
   "fileExplorer.navigation.usbSpeed": "{label} (Max. {mbps} MB/s)",
   "@fileExplorer.navigation.usbSpeed": {
     "description": "First line of the USB-speed tooltip on a volume, naming the negotiated USB standard and its peak throughput, e.g. \"USB 3.2 Gen 2 (Max. 1000 MB/s)\". \"Max.\" is short for maximum and \"MB/s\" is megabytes per second; keep the unit.",
