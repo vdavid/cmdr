@@ -91,12 +91,17 @@ func ReportOpacity(findings []OpacityFinding, rootDir string) bool {
 	fmt.Printf("%s=== Unmodeled opacity (contrast not verified) ===%s\n", colorYellow, colorReset)
 	for _, f := range findings {
 		fmt.Printf(
-			"  %s%s:%d%s  %s%s%s  opacity=%.2g  fix: express as a color token (e.g. --color-text-quiet) so the walker sees it, or hand-model it in a synthesizer (dropdown_states.go / query_dialog_states.go)\n",
+			"  %s%s:%d%s  %s%s%s  opacity=%.2g\n",
 			colorRed, RelPath(rootDir, f.File), f.Line, colorReset,
 			colorDim, f.Selector, colorReset,
 			f.Opacity,
 		)
 	}
+	// Printed once, not per line: every finding above gets the same two fixes.
+	fmt.Printf(
+		"  %sfix: express as a color token (e.g. --color-text-quiet) so the walker sees it, or hand-model it in a synthesizer (dropdown_states.go / query_dialog_states.go)%s\n",
+		colorDim, colorReset,
+	)
 	fmt.Println()
 
 	return true

@@ -47,17 +47,52 @@ func RunA11yContrast(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	if count, ok := readOpacityFindingCount(statusFile); ok {
+		msg := fmt.Sprintf(
+			"%d unmodeled opacity %s (advisory: see scripts/check-a11y-contrast/README.md § Opacity)\n%s",
+			count, Pluralize(count, "dim", "dims"), indentOutput(extractOpacitySection(output)),
+		)
+		if summaryLine := lastNonEmptyLine(output); summaryLine != "" {
+			msg += indentOutput(summaryLine)
+		}
 		return CheckResult{
-			Code: ResultWarning,
-			Message: fmt.Sprintf(
-				"%d unmodeled opacity %s (advisory: see scripts/check-a11y-contrast/README.md § Opacity)\n%s",
-				count, Pluralize(count, "dim", "dims"), indentOutput(output),
-			),
-			Total: -1, Issues: count, Changes: -1,
+			Code:    ResultWarning,
+			Message: msg,
+			Total:   -1, Issues: count, Changes: -1,
 		}, nil
 	}
 
 	return Success("No contrast violations"), nil
+}
+
+// extractOpacitySection pulls just the tool's "Unmodeled opacity" block out of
+// its full stdout (which also carries the WCAG/APCA report and the advisory
+// APCA distribution — noise for a warning whose only actionable content is
+// the opacity findings themselves). Runs from the `=== Unmodeled opacity`
+// header through the next blank line (the tool always follows the block,
+// findings plus its one "fix:" footer, with a blank `fmt.Println()`).
+// Returns "" if the marker isn't found (the caller only calls this when
+// `readOpacityFindingCount` already confirmed findings exist, so that would
+// mean the tool's output shape changed).
+func extractOpacitySection(output string) string {
+	lines := strings.Split(output, "\n")
+	start := -1
+	for i, line := range lines {
+		if strings.Contains(line, "=== Unmodeled opacity") {
+			start = i
+			break
+		}
+	}
+	if start == -1 {
+		return ""
+	}
+	end := len(lines)
+	for i := start + 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "" {
+			end = i
+			break
+		}
+	}
+	return strings.Join(lines[start:end], "\n")
 }
 
 // readOpacityFindingCount reads the finding count the tool wrote to
