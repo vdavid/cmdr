@@ -263,7 +263,7 @@ var surfaceGuardedCrates = []struct {
 		Ceilings: surfaceCeilings{
 			RootPromises:   35,
 			PublicModules:  4,
-			SubsystemItems: 36,
+			SubsystemItems: 35,
 		},
 	},
 }
