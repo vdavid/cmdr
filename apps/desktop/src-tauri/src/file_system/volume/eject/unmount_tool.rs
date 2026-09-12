@@ -558,7 +558,10 @@ mod tests {
         )
         .await;
 
-        assert!(result.is_ok(), "the retry after a slow refusal can still succeed, got {result:?}");
+        assert!(
+            result.is_ok(),
+            "the retry after a slow refusal can still succeed, got {result:?}"
+        );
         assert_eq!(runs.get(), 2);
         assert_eq!(started.elapsed(), Duration::from_millis(20_500));
     }
