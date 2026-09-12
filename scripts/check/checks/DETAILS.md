@@ -231,8 +231,21 @@ below for the section-aware patterns to follow.
 - New files not in either section are reported normally.
 - If the allowlist file is missing, all long files are reported (backwards-compatible).
 
+**Two thresholds**: 800 lines for ordinary source, 1,200 for test files (`fileLengthWarnLines` /
+`fileLengthTestWarnLines`). Splitting a test file usually scatters shared mocks and fixtures across siblings rather
+than improving architecture, so tests get more room before warning. `isTestFile` classifies a path by its own naming
+convention, never by content, so an inline `#[cfg(test)] mod tests` block inside an ordinary `.rs` file does NOT count
+as a test file:
+
+- Rust: `*_test.rs`, `*_tests.rs`, a bare `tests.rs`, or any file under a `tests/` directory segment.
+- Go: `*_test.go`.
+- TS/JS: `*.test.ts`, `*.test.js`, `*.spec.ts`, `*.spec.js` (a `.svelte.test.ts` name already ends in `.test.ts`, so it
+  matches the same suffix check), or any file under an `apps/<app>/test/` directory (catches e2e specs' non-test-named
+  helpers, like `archive-helpers.ts`).
+- Everything else (`.astro`, `.css`, `.html`, `.svelte`, `.sh`) is never classified as a test file.
+
 **Shrink-wrap**: on local (non-CI) runs the check rewrites the allowlist to drop staleness — dead entries (file gone)
-and satisfied entries (file back under the 800-line threshold) are removed, and entries with more than 10% slack are
+and satisfied entries (file back under its applicable threshold) are removed, and entries with more than 10% slack are
 ratcheted down to the file's current count. In CI it only reports what a local run would shrink. The 10% ratchet buffer
 mirrors the growth buffer so routine small edits don't churn the JSON.
 

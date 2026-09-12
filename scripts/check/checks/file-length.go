@@ -6,13 +6,21 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 const (
-	fileLengthWarnLines     = 800
+	fileLengthWarnLines = 800
+	// fileLengthTestWarnLines is the threshold for test files (see isTestFile):
+	// splitting a test file scatters shared mocks and fixtures across siblings
+	// rather than improving architecture, so tests get more room before warning.
+	// It happens to equal fileLengthCriticalLines, so a test file that trips it is
+	// red from the start; that's fine, there's no yellow phase for tests.
+	fileLengthTestWarnLines = 1200
 	fileLengthCriticalLines = 1200
 
 	// Tolerate this much growth above each allowlisted file's recorded line count before warning,
@@ -48,6 +56,70 @@ type longFile struct {
 	relPath   string
 	lines     int
 	sizeBytes int64
+}
+
+// isTestFile reports whether relPath (forward-slashed, repo-relative) is a test
+// file under this repo's per-language naming conventions, so it gets
+// fileLengthTestWarnLines instead of fileLengthWarnLines. An inline
+// `#[cfg(test)] mod tests` block inside an ordinary .rs file does NOT count:
+// that file is still source, matching its own name and location.
+func isTestFile(relPath string) bool {
+	base := path.Base(relPath)
+	switch path.Ext(relPath) {
+	case ".rs":
+		return base == "tests.rs" || strings.HasSuffix(base, "_test.rs") ||
+			strings.HasSuffix(base, "_tests.rs") || hasDirSegment(relPath, "tests")
+	case ".go":
+		return strings.HasSuffix(base, "_test.go")
+	case ".ts", ".js":
+		return strings.HasSuffix(base, ".test.ts") || strings.HasSuffix(base, ".test.js") ||
+			strings.HasSuffix(base, ".spec.ts") || strings.HasSuffix(base, ".spec.js") ||
+			underAppsTestDir(relPath)
+	default:
+		return false
+	}
+}
+
+// hasDirSegment reports whether dir is one of relPath's directory components
+// (the file name itself excluded).
+func hasDirSegment(relPath, dir string) bool {
+	for _, seg := range strings.Split(path.Dir(relPath), "/") {
+		if seg == dir {
+			return true
+		}
+	}
+	return false
+}
+
+// underAppsTestDir reports whether relPath sits under an `apps/<app>/test/`
+// directory (e2e specs and their helpers, staged under a non-test filename).
+func underAppsTestDir(relPath string) bool {
+	parts := strings.Split(relPath, "/")
+	return len(parts) >= 3 && parts[0] == "apps" && parts[2] == "test"
+}
+
+// fileLengthThreshold returns the warn threshold that applies to relPath.
+func fileLengthThreshold(relPath string) int {
+	if isTestFile(relPath) {
+		return fileLengthTestWarnLines
+	}
+	return fileLengthWarnLines
+}
+
+// formatWithCommas renders n with thousands separators (1200 -> "1,200").
+func formatWithCommas(n int) string {
+	s := strconv.Itoa(n)
+	neg := strings.HasPrefix(s, "-")
+	if neg {
+		s = s[1:]
+	}
+	for i := len(s) - 3; i > 0; i -= 3 {
+		s = s[:i] + "," + s[i:]
+	}
+	if neg {
+		s = "-" + s
+	}
+	return s
 }
 
 // fileLengthAllowlist is the on-disk shape of file-length-allowlist.json.
@@ -89,19 +161,20 @@ func loadFileLengthAllowlist(rootDir string) fileLengthAllowlist {
 // returns one human-readable line per change.
 func shrinkwrapFileLengthAllowlist(rootDir string, list *fileLengthAllowlist) []string {
 	var changes []string
-	for _, path := range sortedKeys(list.Files) {
-		allowed := list.Files[path]
-		lineCount, err := countLines(filepath.Join(rootDir, path))
+	for _, relPath := range sortedKeys(list.Files) {
+		allowed := list.Files[relPath]
+		threshold := fileLengthThreshold(relPath)
+		lineCount, err := countLines(filepath.Join(rootDir, relPath))
 		switch {
 		case err != nil:
-			delete(list.Files, path)
-			changes = append(changes, fmt.Sprintf("removed %s (file no longer exists)", path))
-		case lineCount < fileLengthWarnLines:
-			delete(list.Files, path)
-			changes = append(changes, fmt.Sprintf("removed %s (now %d lines, under the %d threshold)", path, lineCount, fileLengthWarnLines))
+			delete(list.Files, relPath)
+			changes = append(changes, fmt.Sprintf("removed %s (file no longer exists)", relPath))
+		case lineCount < threshold:
+			delete(list.Files, relPath)
+			changes = append(changes, fmt.Sprintf("removed %s (now %d lines, under the %d threshold)", relPath, lineCount, threshold))
 		case lineCount <= allowed*(100-fileLengthAllowlistBufferPct)/100:
-			list.Files[path] = lineCount
-			changes = append(changes, fmt.Sprintf("ratcheted %s: %d → %d lines", path, allowed, lineCount))
+			list.Files[relPath] = lineCount
+			changes = append(changes, fmt.Sprintf("ratcheted %s: %d → %d lines", relPath, allowed, lineCount))
 		}
 	}
 	for _, path := range sortedKeys(list.Exempt) {
@@ -136,7 +209,7 @@ func scanFileLengths(rootDir string, allowlist fileLengthAllowlist) (fileLengthS
 		}
 		absPath := filepath.Join(rootDir, relPath)
 		lineCount, err := countLines(absPath)
-		if err != nil || lineCount < fileLengthWarnLines {
+		if err != nil || lineCount < fileLengthThreshold(relPath) {
 			continue
 		}
 		if _, exempt := allowlist.Exempt[relPath]; exempt {
@@ -238,9 +311,10 @@ func formatLongFiles(files []longFile, allowlist fileLengthAllowlist, allowliste
 	if allowlistedCount > 0 {
 		suffix = fmt.Sprintf(" (%d allowlisted)", allowlistedCount)
 	}
-	return fmt.Sprintf("%d new %s over %d lines%s:\n%s",
+	return fmt.Sprintf("%d new %s over the length limit (%s lines, %s for tests)%s:\n%s",
 		len(files), Pluralize(len(files), "file", "files"),
-		fileLengthWarnLines, suffix, strings.TrimRight(sb.String(), "\n"))
+		formatWithCommas(fileLengthWarnLines), formatWithCommas(fileLengthTestWarnLines),
+		suffix, strings.TrimRight(sb.String(), "\n"))
 }
 
 // RunFileLength scans the repo for source files exceeding the line count threshold.

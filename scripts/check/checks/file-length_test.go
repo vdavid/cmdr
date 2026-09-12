@@ -277,8 +277,131 @@ func TestRunFileLength_MessageFormat(t *testing.T) {
 	if !strings.Contains(result.Message, "~1k tokens") {
 		t.Errorf("expected '~1k tokens' in message, got: %s", result.Message)
 	}
-	if !strings.Contains(result.Message, "1 new file over 800 lines") {
-		t.Errorf("expected '1 new file over 800 lines' in summary, got: %s", result.Message)
+	if !strings.Contains(result.Message, "1 new file over the length limit (800 lines, 1,200 for tests)") {
+		t.Errorf("expected the length-limit summary line, got: %s", result.Message)
+	}
+}
+
+func TestIsTestFile(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		// Rust
+		{"apps/desktop/src-tauri/src/foo/tests.rs", true},
+		{"apps/desktop/src-tauri/src/foo/caching_test.rs", true},
+		{"apps/desktop/src-tauri/src/foo/cost_tests.rs", true},
+		{"apps/desktop/src-tauri/src/agent/wake/tests/coalesce.rs", true},
+		{"apps/desktop/src-tauri/src/agent/store/proposals/tests/mod.rs", true},
+		{"apps/desktop/src-tauri/src/foo/mod.rs", false},
+		{"apps/desktop/src-tauri/src/foo/manifest.rs", false},
+		// Go
+		{"scripts/check/checks/file-length_test.go", true},
+		{"scripts/check/checks/file-length.go", false},
+		// TS/JS
+		{"apps/desktop/src/lib/foo.test.ts", true},
+		{"apps/desktop/src/lib/foo.spec.ts", true},
+		{"apps/desktop/src/lib/foo.svelte.test.ts", true},
+		{"apps/desktop/eslint-plugins/no-title-attribute.test.js", true},
+		{"apps/desktop/src/lib/foo.ts", false},
+		{"apps/desktop/test/e2e-playwright/mtp.spec.ts", true},
+		// A helper file (not itself named like a test) staged under apps/*/test/
+		{"apps/desktop/test/e2e-playwright/archive-helpers.ts", true},
+		{"apps/desktop/src/lib/foo/test/not-an-apps-test-dir.ts", false},
+		// A "tests" dir segment doesn't count for TS/JS (only apps/*/test/ does)
+		{"tools/intellij-plugin/src/test/kotlin/Foo.kt", false},
+		// Non-code extensions never count, regardless of name
+		{"apps/desktop/src/app.test.css", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			if got := isTestFile(tt.path); got != tt.want {
+				t.Errorf("isTestFile(%q) = %v, want %v", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFileLengthThreshold(t *testing.T) {
+	if got := fileLengthThreshold("scripts/check/checks/file-length.go"); got != fileLengthWarnLines {
+		t.Errorf("expected source file threshold %d, got %d", fileLengthWarnLines, got)
+	}
+	if got := fileLengthThreshold("scripts/check/checks/file-length_test.go"); got != fileLengthTestWarnLines {
+		t.Errorf("expected test file threshold %d, got %d", fileLengthTestWarnLines, got)
+	}
+}
+
+func TestFormatWithCommas(t *testing.T) {
+	tests := []struct {
+		n    int
+		want string
+	}{
+		{0, "0"},
+		{800, "800"},
+		{999, "999"},
+		{1000, "1,000"},
+		{1200, "1,200"},
+		{1000000, "1,000,000"},
+	}
+	for _, tt := range tests {
+		if got := formatWithCommas(tt.n); got != tt.want {
+			t.Errorf("formatWithCommas(%d) = %q, want %q", tt.n, got, tt.want)
+		}
+	}
+}
+
+// TestRunFileLength_TestFileGetsHigherThreshold is the core contract: a _test.go
+// file past the ordinary 800-line threshold but under the 1,200-line test
+// threshold doesn't warn, while an ordinary .go file at the same length does.
+func TestRunFileLength_TestFileGetsHigherThreshold(t *testing.T) {
+	tmp := t.TempDir()
+
+	testPath := filepath.Join(tmp, "big_test.go")
+	if err := os.WriteFile(testPath, []byte(strings.Repeat("line\n", 1000)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	srcPath := filepath.Join(tmp, "big.go")
+	if err := os.WriteFile(srcPath, []byte(strings.Repeat("line\n", 1000)), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := &CheckContext{RootDir: tmp}
+	result, err := RunFileLength(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Code != ResultWarning {
+		t.Fatalf("expected warning for the over-threshold source file, got code %d: %s", result.Code, result.Message)
+	}
+	if strings.Contains(result.Message, "big_test.go") {
+		t.Errorf("expected big_test.go (1000 lines, under the 1,200 test threshold) to be excluded, got: %s", result.Message)
+	}
+	if !strings.Contains(result.Message, "big.go") {
+		t.Errorf("expected big.go (1000 lines, over the 800 source threshold) in message, got: %s", result.Message)
+	}
+}
+
+// TestRunFileLength_ShrinkwrapUsesTestThreshold: a _test.go allowlist entry now
+// under 1,200 lines (but still over 800) is removed as satisfied, not kept.
+func TestRunFileLength_ShrinkwrapUsesTestThreshold(t *testing.T) {
+	tmp := t.TempDir()
+
+	path := filepath.Join(tmp, "shrunk_test.go")
+	if err := os.WriteFile(path, []byte(strings.Repeat("line\n", 1000)), 0644); err != nil {
+		t.Fatal(err)
+	}
+	writeAllowlistFull(t, tmp, nil, map[string]int{"shrunk_test.go": 1400})
+
+	result, err := RunFileLength(&CheckContext{RootDir: tmp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.MadeChanges {
+		t.Errorf("expected MadeChanges after removing the now-satisfied test-file entry, got: %+v", result)
+	}
+	reloaded := loadFileLengthAllowlist(tmp)
+	if _, ok := reloaded.Files["shrunk_test.go"]; ok {
+		t.Error("expected shrunk_test.go removed: 1,000 lines is under its 1,200 test threshold")
 	}
 }
 
