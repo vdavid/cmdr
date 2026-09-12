@@ -17,7 +17,7 @@ use crate::file_system::{
 use std::path::{Path, PathBuf};
 use tokio::time::Duration;
 
-use crate::commands::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+use crate::deadline::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
 use crate::file_system::listing::brief_columns::BriefColumnsError;
 use crate::file_system::listing::fuzzy_jump::FuzzyJumpError;
 use crate::file_system::validation::{MAX_NAME_BYTES, MAX_PATH_BYTES};

@@ -6,7 +6,7 @@
 
 use tokio::time::Duration;
 
-use crate::commands::util::{DeadlineError, blocking_typed_result_with_timeout};
+use crate::deadline::{DeadlineError, blocking_typed_result_with_timeout};
 use crate::go_to_path::history::{MAX_RECENTS, RECENT_PATHS, RecentPathEntry};
 use crate::go_to_path::{self, GoToPathResolution};
 

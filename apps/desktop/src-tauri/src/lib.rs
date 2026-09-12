@@ -43,6 +43,8 @@ mod commands;
 pub mod config;
 mod crash_reporter;
 mod crate_deps;
+// Timeouts and budgets for blocking work: IPC commands and the subsystems under them share one policy.
+mod deadline;
 /// The dialog gallery's fixture tree (Debug > Soft dialogs). Dev and E2E builds:
 /// `dialog-inset.spec.ts` drives the gallery, and the disk-backed dialogs need a
 /// real tree to scan. Never in a shipped build.

@@ -238,7 +238,7 @@ pull can report progress to that window and stop when it closes. `pending_open.r
 - **Progress is a window-targeted event** (`viewer-pull-progress`, `emit_to(label)`). The FE listens on its own
   `Window`, since a global listener would hear every viewer's pull. Pinned by `commands::file_viewer::tests` (a quiet
   pull answers `StoppedResponding` and removes its temp; progress reports only news, against the declared size) and
-  `commands::util::stall_tests` (given-up work runs to its end; work that delivered answers its result).
+  `deadline::stall_tests` (given-up work runs to its end; work that delivered answers its result).
 - **Analytics** see a stalled pull as `failure = stopped_responding` and a closed one as `cancelled`.
 
 **Per-instance extract dir + startup reaper.** The dir is `<app_data_dir>/viewer-extract` (set by

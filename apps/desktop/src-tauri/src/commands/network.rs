@@ -434,7 +434,7 @@ pub async fn disconnect_network_host(
     host_name: String,
     ip_address: Option<String>,
 ) -> Result<Vec<String>, String> {
-    use crate::commands::util::blocking_with_timeout;
+    use crate::deadline::blocking_with_timeout;
     use std::time::Duration;
 
     // Drop the cached share list so a later browse re-fetches fresh shares and

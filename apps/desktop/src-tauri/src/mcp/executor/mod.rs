@@ -387,7 +387,7 @@ pub(crate) fn is_virtual_path(path: &str) -> bool {
 ///
 /// The local probe runs on the blocking pool under a 2 s timeout because
 /// `Path::exists()` on a dead network mount can block indefinitely, and an MCP handler
-/// must never do un-timed filesystem I/O (same contract as `commands/util.rs`).
+/// must never do un-timed filesystem I/O (same contract as `crate::deadline`).
 async fn validate_path_exists(path: &str) -> Result<(), ToolError> {
     if is_virtual_path(path)
         || crate::file_system::volume::manager::path_routes_over_its_parent(std::path::Path::new(path))

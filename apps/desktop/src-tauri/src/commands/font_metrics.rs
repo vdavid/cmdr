@@ -11,7 +11,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use crate::commands::util::blocking_typed_result_with_timeout;
+use crate::deadline::blocking_typed_result_with_timeout;
 use crate::font_metrics;
 
 /// Writing the metrics file is a small serialize plus one `fs::write` to the

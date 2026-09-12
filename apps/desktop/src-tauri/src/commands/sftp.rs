@@ -225,7 +225,7 @@ pub async fn save_sftp_credentials(
     secret: String,
 ) -> Result<(), KeychainError> {
     let service = credential_key(&host, port);
-    crate::commands::util::blocking_with_timeout(
+    crate::deadline::blocking_with_timeout(
         std::time::Duration::from_secs(15),
         Err(keychain_timed_out()),
         move || keychain::save_credentials(&service, Some(&username), &username, &secret),
@@ -246,7 +246,7 @@ pub async fn save_sftp_credentials(
 #[specta::specta]
 pub async fn has_sftp_credentials(host: String, port: u16, username: String) -> bool {
     let service = credential_key(&host, port);
-    crate::commands::util::blocking_with_timeout(std::time::Duration::from_secs(15), false, move || {
+    crate::deadline::blocking_with_timeout(std::time::Duration::from_secs(15), false, move || {
         keychain::has_credentials(&service, Some(&username))
     })
     .await
@@ -257,7 +257,7 @@ pub async fn has_sftp_credentials(host: String, port: u16, username: String) -> 
 #[specta::specta]
 pub async fn delete_sftp_credentials(host: String, port: u16, username: String) -> Result<(), KeychainError> {
     let service = credential_key(&host, port);
-    crate::commands::util::blocking_with_timeout(
+    crate::deadline::blocking_with_timeout(
         std::time::Duration::from_secs(15),
         Err(keychain_timed_out()),
         move || keychain::delete_credentials(&service, Some(&username)),

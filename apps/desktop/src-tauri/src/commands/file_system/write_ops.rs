@@ -22,7 +22,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::time::Duration;
 
-use crate::commands::util::{DeadlineError, timeout_detached_typed};
+use crate::deadline::{DeadlineError, timeout_detached_typed};
 use crate::file_system::Volume;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;

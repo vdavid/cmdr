@@ -110,7 +110,7 @@ there's no `list_favorites` command.
 - `rename_favorite(id: String, name: String) -> Result<(), DeadlineError>`
 - `reorder_favorites(ordered_ids: Vec<String>) -> Result<(), DeadlineError>`
 
-`DeadlineError` (`commands/util.rs`) rather than a vocabulary of their own, because the store
+`DeadlineError` (`deadline/mod.rs`) rather than a vocabulary of their own, because the store
 swallows its own write errors: a favorite that doesn't reach disk still applies in memory, so a
 missed deadline (or a panicked blocking task) is the only thing these four can report. Every other
 command family owns its error type; the map is `docs/guides/error-handling.md`.

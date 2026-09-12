@@ -79,7 +79,7 @@ is noise plus about 1.5 minutes of retries on roughly half the runs, never a fal
    - **Why:** 318 lines of conflict pre-check logic plus 375 lines of its tests sit in the IPC commands layer, which its
      own `CLAUDE.md` says holds no business logic.
    - **Move:** into `write_operations/conflict_precheck.rs` plus a tests file, leaving about 290 lines.
-   - **One detail:** it needs the deadline helpers from `commands/util.rs`, which I'd move down a layer with it.
+   - **One detail:** the deadline helpers already live in `crate::deadline`, below the IPC layer.
 2. **`ids.rs`:** a genuine win for one block.
    - **Why:** about 125 lines build and parse app path schemes (`adb://`, `sftp://`, `webdav://`), a different concept
      from volume IDs.

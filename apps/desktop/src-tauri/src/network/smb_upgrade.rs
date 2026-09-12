@@ -94,7 +94,7 @@ async fn read_identity_within(
     read: impl FnOnce(&str) -> Option<MountIdentity> + Send + 'static,
 ) -> IdentityRead {
     let path = mount_path.to_string();
-    crate::commands::util::blocking_with_timeout(limit, IdentityRead::NotResponding, move || {
+    crate::deadline::blocking_with_timeout(limit, IdentityRead::NotResponding, move || {
         IdentityRead::Answered(read(&path))
     })
     .await

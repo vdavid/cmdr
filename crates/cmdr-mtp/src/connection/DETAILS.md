@@ -507,8 +507,8 @@ within one round trip's latency — prompt from the user's point of view, and ne
 **Detach, don't abort, when a caller must answer NOW.** Some callers genuinely have a deadline (an IPC reply, the index
 walk giving up on a directory). They run the work in its own task and race the deadline against that task's JOIN HANDLE.
 Dropping a `JoinHandle` DETACHES the task, it does not cancel it: the caller answers on time, the transaction finishes
-safely behind it. `commands::util::timeout_detached_typed` is the shared helper (it mints the caller's OWN error type at
-the deadline, so a command ships one union rather than a typed error plus a stringly-typed timeout);
+safely behind it. `deadline::timeout_detached_typed` is the shared helper (it mints the caller's OWN error type at the
+deadline, so a command ships one union rather than a typed error plus a stringly-typed timeout);
 `indexing::network_scanner`'s `list_one_directory` and the streaming listing's cancel arm use the same shape.
 
 **Where a deadline looks tempting**, so nobody adds one back: every device op in `file_ops.rs`, `directory_ops.rs`,

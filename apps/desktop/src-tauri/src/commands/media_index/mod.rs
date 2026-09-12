@@ -27,7 +27,7 @@
 use cmdr_index::host::config::{IndexConfig, MediaConfig};
 use cmdr_index::media_index::network::config::NetworkEnrichConfig;
 
-use crate::commands::util::BlockingBudget;
+use crate::deadline::BlockingBudget;
 
 /// The shared blocking-pool budget for the queries the FRONTEND re-issues on its own
 /// schedule: the per-file badge, the per-folder coverage badge, the per-volume state

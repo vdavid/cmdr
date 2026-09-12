@@ -5,7 +5,7 @@
 
 use tokio::time::Duration;
 
-use crate::commands::util::{blocking_typed_result_with_timeout, blocking_with_timeout};
+use crate::deadline::{blocking_typed_result_with_timeout, blocking_with_timeout};
 use crate::dock::{DockPinBlocker, DockPinFailure, DockPinState};
 
 /// Reading the Dock's preferences goes through `cfprefsd` over XPC, which can wait on a busy

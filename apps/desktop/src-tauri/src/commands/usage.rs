@@ -6,7 +6,7 @@
 
 use tokio::time::Duration;
 
-use crate::commands::util::blocking_with_timeout;
+use crate::deadline::blocking_with_timeout;
 
 /// The ledger is a small file in the app data dir, but that dir can sit on a hung network home, so
 /// the read still carries the standard 2 s read deadline.

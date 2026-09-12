@@ -57,9 +57,6 @@ pub mod sftp;
 pub mod smb_diagnostics;
 pub mod sync_status; // Has both macOS and non-macOS implementations
 pub mod usage;
-// Crate-visible: `network::one_shot_credentials` writes a secret on the same
-// deadline every secret command uses, so the timeout policy stays in one place.
-pub(crate) mod util;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod volumes;
 // WebDAV: the same gate and the same reason as `sftp`. ❌ No stub counterpart.

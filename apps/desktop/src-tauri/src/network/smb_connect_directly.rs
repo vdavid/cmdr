@@ -16,7 +16,7 @@
 //! they go through `smb_upgrade::register_smb_volume` instead, and it's their
 //! failure the OS-mount notice announces.
 
-use crate::commands::util::blocking_with_timeout;
+use crate::deadline::blocking_with_timeout;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::network::keychain;
 use crate::network::smb_connect_failure::{Refusal, RefusedAt, SignInIdentity, UpgradeError, UpgradeFailure};

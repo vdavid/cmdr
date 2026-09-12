@@ -51,11 +51,11 @@ mis-renders at runtime). Change both sides in the same commit.
 
 ## Every command family owns its error type
 
-There is deliberately no shared IPC error struct. The one that used to sit in `commands/util.rs`
-(`IpcError { message, timed_out }`, plus a `from_err` constructor) was ergonomic enough to reach 39 call sites, and it
-stringified whatever typed error arrived. `EjectError::Busy`, a proper enum with fields and doc comments, came out the
-other side as an English sentence that a _translated_ toast then interpolated verbatim: the worst of both worlds, in
-nine locales. Adding a shared error type back is how that regrows.
+There is deliberately no shared IPC error struct. A generic `IpcError { message, timed_out }` with a `from_err`
+constructor once carried every command's failure. It was ergonomic enough to reach 39 call sites, and it stringified
+whatever typed error arrived. `EjectError::Busy`, a proper enum with fields and doc comments, came out the other side as
+an English sentence that a _translated_ toast then interpolated verbatim: the worst of both worlds, in nine locales.
+Adding a shared error type back is how that regrows.
 
 The rule that replaced it:
 
@@ -124,7 +124,7 @@ These sit between the layers, so neither side's doc owns them alone.
   variants are defined to carry the PATH, which a bare `io::Error` doesn't hold, so io errors convert through
   `VolumeError::from_io_at(&err, path)` (or `from_io_without_path` where none exists).
   `conformance::assert_not_found_carries_the_path` holds every backend to it.
-- **A typed IPC error needs a typed TIMEOUT too.** `commands/util.rs`'s `timeout_detached_typed` /
+- **A typed IPC error needs a typed TIMEOUT too.** `deadline`'s `timeout_detached_typed` /
   `blocking_typed_result_with_timeout` mint the caller's own error type on the deadline, so the frontend matches ONE
   exhaustive union instead of a typed error plus a stringly-typed timeout beside it. A `MutationError::TimedOut` or an
   `EjectError::TimedOut` also means the work may STILL LAND (the deadline detaches, it doesn't cancel), and the copy

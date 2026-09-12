@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
-use super::util::timeout_detached_typed;
+use crate::deadline::timeout_detached_typed;
 use crate::file_system::write_operations::trash::{trash_dir_for_path, trash_single_journaled};
 use crate::file_system::write_operations::{
     MutationError, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,

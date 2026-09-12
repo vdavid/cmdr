@@ -8,12 +8,6 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   `#[cfg(any(target_os = "macos", target_os = "linux"))]`. There's no `volumes_linux` module and no alias for one: the
   volume commands are cross-platform and `commands/volumes.rs` serves both. See `../volumes_linux/DETAILS.md` § "One
   command module".
-- **`util.rs`**: `TimedOut<T>`, `DeadlineError`, `blocking_with_timeout`, `blocking_with_timeout_flag`,
-  `blocking_typed_result_with_timeout`, `timeout_detached_typed`, `Deadline` (`elapsed` / `remaining` / `total` /
-  `fraction`) + `timeout_detached_within`, and `BlockingBudget`. Plus `blocking_typed_result_until_stalled` with its
-  `StallWatch`: no total deadline, it gives up once the watch reports the work idle for the stall limit, and detaches
-  rather than drops like the deadline helpers. Its one caller is the viewer's pulling open
-  (`file_viewer/DETAILS.md` § "Watching a pull").
 - **`file_system/`**: directory module split by operation type. `mod.rs` has `expand_tilde()`, re-exports, tests.
   `listing.rs`: streaming + virtual-scroll listing, path queries, `find_first_fuzzy_match` (type-to-jump),
   benchmarking, `get_brief_column_text_widths` (per-column widest-filename text widths for Brief mode). `refresh_listing`
@@ -368,15 +362,11 @@ doesn't protect against hung NFS/SMB mounts where even `path.exists()` can block
 returns a fallback (or error) instead of freezing the IPC thread or exhausting the blocking pool. Commands that already
 use `spawn_blocking` wrap it with `tokio::time::timeout` instead.
 
-**Timeout-aware return types.** A plain fallback is indistinguishable from a real empty/none result ("no volumes
-mounted" vs "timed out before listing volumes"). `TimedOut<T>` (`{ data, timedOut }`) carries the distinction for
-non-`Result` returns; the bare `blocking_with_timeout` stays for the rare read where it genuinely doesn't matter. A
-`Result` return carries it as a VARIANT of the command family's own error enum (`MutationError::TimedOut`,
-`EjectError::TimedOut`, `DeadlineError::TimedOut`), which is why `timeout_detached_typed` takes an `on_timeout` that
-mints the caller's type.
+**Timeout-aware return types** (`TimedOut<T>`, or a variant of the family's own error enum):
+`../deadline/DETAILS.md` § "Decision: timeout-aware return types".
 
 **Every command's `Err` is a typed enum, and there is deliberately no shared one.** A generic
-`IpcError { message, timed_out }` with a `from_err` constructor used to sit in `util.rs`. Being ergonomic, it spread to
+`IpcError { message, timed_out }` with a `from_err` constructor once carried every command's failure. Being ergonomic, it spread to
 39 call sites and stringified whatever typed error reached it, so `EjectError::Busy` (a proper enum with fields and doc
 comments) arrived on the frontend as an English sentence that a translated toast then interpolated verbatim. The rule
 that replaced it: reuse the vocabulary the command belongs to (`MutationError` for a mutation, `ViewerError` for the

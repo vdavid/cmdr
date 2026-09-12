@@ -11,7 +11,7 @@ use tauri_plugin_clipboard_manager::ClipboardExt;
 use tokio::time::Duration;
 
 #[cfg(target_os = "macos")]
-use super::util::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
+use crate::deadline::{TimedOut, blocking_typed_result_with_timeout, blocking_with_timeout_flag};
 use crate::file_system::google_drive::DriveItemLinks;
 #[cfg(target_os = "macos")]
 use crate::file_system::terminal::{OpenTerminalError, OpenTerminalOutcome, TerminalAppList};

@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use super::util::TimedOut;
+use crate::deadline::TimedOut;
 
 #[cfg(target_os = "macos")]
 use tokio::time::Duration;

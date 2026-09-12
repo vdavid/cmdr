@@ -319,6 +319,8 @@ All under `apps/desktop/src-tauri/src/`.
 - `redact/`: Shared PII redactor (path-shape preserving). Used by both crash and error reporters
 - `logging/`: Log directory resolver, `KeepSome(N)` post-rotation pruner, `list_recent_log_files`
 - `commands/`: Tauri command definitions (IPC entry points)
+- `deadline/`: Timeouts and budgets for blocking work (`blocking_with_timeout`, `Deadline`, `BlockingBudget`), shared by
+  commands and the subsystems under them. See `apps/desktop/src-tauri/src/deadline/CLAUDE.md`
 - `capabilities/`: Per-window Tauri API permissions; update when using new Tauri APIs from a window
 - `icons/`: App icons for all platforms + macOS Tahoe Liquid Glass (Assets.car), all generated from
   `brand/logos/cmdr.svg` by `pnpm icons`. Procedure: [update the icon](guides/updating-icon.md)

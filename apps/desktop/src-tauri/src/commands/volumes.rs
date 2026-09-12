@@ -8,7 +8,7 @@
 use serde::Serialize;
 use tokio::time::Duration;
 
-use super::util::{TimedOut, blocking_with_timeout_flag};
+use crate::deadline::{TimedOut, blocking_with_timeout_flag};
 use crate::location::{Location, ResolveLocationResult};
 use crate::volume_listing;
 

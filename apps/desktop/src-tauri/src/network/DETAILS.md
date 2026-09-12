@@ -581,7 +581,7 @@ removes a `/Volumes` mount point along with its mount. A mount point left behind
 `NotSmbMount`, which the frontend answers the same way.
 
 **The mount read is bounded, and only the mount read.** `find_mounted_share` reads the root (`statfs`, then
-`Path::exists`) through `commands::util::blocking_with_timeout` under `smb_upgrade::MOUNT_READ_LIMIT` (5 s), the bound the
+`Path::exists`) through `deadline::blocking_with_timeout` under `smb_upgrade::MOUNT_READ_LIMIT` (5 s), the bound the
 auto paths' identity read shares (§ "A mount's identity comes off the mount, not the request"). A mount whose server went
 quiet blocks that read for 30–120 s, which kept "Connecting directly…" spinning for all of it; now it answers
 `MountNotResponding` without dialing. ❌ Never bound the whole flow: the saved-password door goes on to wait for the

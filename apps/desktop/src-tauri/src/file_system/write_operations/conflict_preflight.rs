@@ -17,7 +17,7 @@ use std::sync::Arc;
 
 use tokio::time::Duration;
 
-use crate::commands::util::{Deadline, timeout_detached_within};
+use crate::deadline::{Deadline, timeout_detached_within};
 use crate::file_system::listing::FileEntry;
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::file_system::volume::{ScanConflict, Volume, VolumeError};

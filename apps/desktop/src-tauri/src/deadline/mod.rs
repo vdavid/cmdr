@@ -1,4 +1,5 @@
-//! Shared utilities for Tauri command modules.
+//! Deadlines, timeouts, and budgets for blocking work. IPC commands wrap their I/O in these, and so do
+//! the subsystems under the IPC layer (network, reveal, write operations), so one timeout policy covers both.
 
 #[cfg(test)]
 mod budget_tests;

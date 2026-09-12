@@ -39,7 +39,7 @@
 //! **Privacy**: every field is a byte count, a region count, or a fixed tag name. No
 //! paths, no filenames, no user data — nothing here can carry any.
 
-use crate::commands::util::blocking_with_timeout;
+use crate::deadline::blocking_with_timeout;
 use std::time::Duration;
 
 /// How long the walk gets before the command gives up and reports what it has. A Mach

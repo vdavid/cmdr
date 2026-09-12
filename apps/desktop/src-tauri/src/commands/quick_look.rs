@@ -20,7 +20,7 @@ use tauri::Manager;
 #[specta::specta]
 #[cfg(target_os = "macos")]
 pub async fn quick_look_open(app: AppHandle, path: String, volume_id: String) -> Result<(), String> {
-    use crate::commands::util::blocking_with_timeout;
+    use crate::deadline::blocking_with_timeout;
     use std::sync::mpsc::channel;
     use tokio::time::Duration;
 
@@ -57,7 +57,7 @@ pub async fn quick_look_open(app: AppHandle, path: String, volume_id: String) ->
 #[specta::specta]
 #[cfg(target_os = "macos")]
 pub async fn quick_look_set_path(app: AppHandle, path: String, volume_id: String) -> Result<(), String> {
-    use crate::commands::util::blocking_with_timeout;
+    use crate::deadline::blocking_with_timeout;
     use std::sync::mpsc::channel;
     use tokio::time::Duration;
 
@@ -94,7 +94,7 @@ pub async fn quick_look_set_path(app: AppHandle, path: String, volume_id: String
 #[specta::specta]
 #[cfg(target_os = "macos")]
 pub async fn quick_look_close(app: AppHandle) -> Result<(), String> {
-    use crate::commands::util::blocking_with_timeout;
+    use crate::deadline::blocking_with_timeout;
     use std::sync::mpsc::channel;
     use tokio::time::Duration;
 

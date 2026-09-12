@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::time::Duration;
 
-use crate::commands::util::{Deadline, timeout_detached_typed};
+use crate::deadline::{Deadline, timeout_detached_typed};
 use crate::file_system::volume::manager::get_volume_manager;
 use crate::operation_log::types::Initiator;
 

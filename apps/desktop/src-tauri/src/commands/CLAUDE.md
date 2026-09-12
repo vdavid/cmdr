@@ -5,19 +5,19 @@ Thin Tauri IPC layer. Each file groups one domain's `#[tauri::command]` function
 
 ## Module map
 
-One file per domain plus `mod.rs` (re-exports + platform gates), `util.rs` (timeouts and budgets), and the directories
-`agent/`, `file_system/`, `media_index/`, and `servers/` (`servers.rs`'s own wire-vocabulary sibling, `wire.rs`).
-`servers.rs` is the protocol-agnostic facade over `sftp.rs`, `webdav.rs`, and `network.rs`. AI and space-poller
-commands register themselves; the index subsystems are the reverse, since they can't carry `tauri::`.
+One file per domain plus `mod.rs` (re-exports + platform gates), and the directories `agent/`, `file_system/`,
+`media_index/`, and `servers/` (`servers.rs`'s own wire-vocabulary sibling, `wire.rs`). `servers.rs` is the
+protocol-agnostic facade over `sftp.rs`, `webdav.rs`, and `network.rs`. AI and space-poller commands register
+themselves; the index subsystems are the reverse, since they can't carry `tauri::`. Timeouts and budgets come from
+`crate::deadline` (`../deadline/CLAUDE.md`).
 
 ## Must-knows
 
 - **Every filesystem-touching command is `async` + timeout-wrapped**, as is any whose cost grows with the data: a sync
   `#[tauri::command]` runs on the MAIN thread (an in-memory scan of a 74k listing once stopped the app answering IPC).
   Tiers: 2 s reads, 5 s writes, 15 s trash, 30 s recursive scans.
-- **Time out through `util.rs`, ❌ never a bare `tokio::time::timeout`**: it drops the future and wedges an MTP phone
-  mid-transaction. Its helpers time out the JOIN HANDLE instead and mint the command's own error type. Multi-leg
-  commands share ONE `Deadline`, ❌ never a fresh 30 s per leg. ❌ Don't wrap `sync_status`: it carries its own.
+- **Time out through `crate::deadline`, ❌ never a bare `tokio::time::timeout`** (it drops the future and wedges an MTP
+  phone mid-transaction). Multi-leg commands share ONE `Deadline`. ❌ Don't wrap `sync_status`: it carries its own.
 - **❌ Every command's `Err` is its own typed enum, never a shared message-carrying struct**, or typed refusals flatten
   into untranslated English sentences that reach users (a generic one had spread to 39 call sites). Reuse the family's
   vocabulary (`MutationError`, `ViewerError`, `VolumeError`) or add a small enum beside it.

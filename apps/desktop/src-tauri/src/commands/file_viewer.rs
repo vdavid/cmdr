@@ -5,7 +5,7 @@ use std::sync::Arc;
 use tauri_specta::Event as _;
 use tokio::time::Duration;
 
-use super::util::{StallWatch, blocking_typed_result_until_stalled, blocking_typed_result_with_timeout};
+use crate::deadline::{StallWatch, blocking_typed_result_until_stalled, blocking_typed_result_with_timeout};
 use crate::file_viewer::{
     self, AbandonReason, EncodingOptions, FileEncoding, LineChunk, PendingOpen, RangeEnd, SearchMode, SearchPollResult,
     SeekTarget, SeekTargetKind, ViewerError, ViewerOpenResult, ViewerPullProgress, ViewerSessionStatus,

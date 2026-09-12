@@ -154,7 +154,7 @@ pub(super) fn spawn_delivery<R: Runtime>(app: &AppHandle<R>, paths: Vec<PathBuf>
 async fn deliver<R: Runtime>(app: &AppHandle<R>, paths: Vec<PathBuf>) {
     let requested = paths.len();
     let probe = paths.clone();
-    let plan = crate::commands::util::blocking_with_timeout(CLASSIFY_TIMEOUT, None, move || {
+    let plan = crate::deadline::blocking_with_timeout(CLASSIFY_TIMEOUT, None, move || {
         plan_reveal(&probe, &|path| path.is_dir())
     })
     .await;

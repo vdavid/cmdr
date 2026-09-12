@@ -7,7 +7,7 @@
 
 use tokio::time::Duration;
 
-use crate::commands::util::{DeadlineError, blocking_typed_result_with_timeout};
+use crate::deadline::{DeadlineError, blocking_typed_result_with_timeout};
 use crate::favorites::store;
 
 /// 5s matches the write timeout other persisting commands use. The store write is local-only, but a

@@ -223,7 +223,7 @@ pub async fn host_for_dial(
         // ❗ On a blocking task with a deadline, like every other write: the store
         // can put a Keychain prompt in front of this, and a modal dialog on the
         // async runtime stalls every volume.
-        let written = crate::commands::util::blocking_with_timeout(
+        let written = crate::deadline::blocking_with_timeout(
             std::time::Duration::from_secs(15),
             Err(crate::network::keychain::KeychainError::Other(
                 "the secret store didn't answer".to_string(),

@@ -12,7 +12,7 @@
 //! batch. The caller treats `None` as "fall back to today's approximate
 //! behavior" rather than blocking the drop.
 
-use crate::commands::util::{TimedOut, blocking_with_timeout_flag};
+use crate::deadline::{TimedOut, blocking_with_timeout_flag};
 use std::path::Path;
 use tokio::time::Duration;
 
