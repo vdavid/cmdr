@@ -331,25 +331,6 @@ func TestFileLengthThreshold(t *testing.T) {
 	}
 }
 
-func TestFormatWithCommas(t *testing.T) {
-	tests := []struct {
-		n    int
-		want string
-	}{
-		{0, "0"},
-		{800, "800"},
-		{999, "999"},
-		{1000, "1,000"},
-		{1200, "1,200"},
-		{1000000, "1,000,000"},
-	}
-	for _, tt := range tests {
-		if got := formatWithCommas(tt.n); got != tt.want {
-			t.Errorf("formatWithCommas(%d) = %q, want %q", tt.n, got, tt.want)
-		}
-	}
-}
-
 // TestRunFileLength_TestFileGetsHigherThreshold is the core contract: a _test.go
 // file past the ordinary 800-line threshold but under the 1,200-line test
 // threshold doesn't warn, while an ordinary .go file at the same length does.

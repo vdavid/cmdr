@@ -440,23 +440,6 @@ func formatHeaviestDocs(docs []invariantDoc) string {
 	return strings.Join(parts, ", ")
 }
 
-// formatThousands renders n with thousands separators.
-func formatThousands(n int) string {
-	digits := fmt.Sprintf("%d", n)
-	sign := ""
-	if strings.HasPrefix(digits, "-") {
-		sign, digits = "-", digits[1:]
-	}
-	var sb strings.Builder
-	for i, r := range digits {
-		if i > 0 && (len(digits)-i)%3 == 0 {
-			sb.WriteByte(',')
-		}
-		sb.WriteRune(r)
-	}
-	return sign + sb.String()
-}
-
 // RunInvariantDensity gauges how many ❌ "never do X" rules each subsystem's agent
 // docs carry, absolute and per 1,000 source lines. Warn-only: it reports a
 // subsystem whose count rose above its allowlisted number (or that isn't listed

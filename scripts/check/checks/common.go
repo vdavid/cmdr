@@ -619,6 +619,23 @@ func Pluralize(count int, singular, plural string) string {
 	return plural
 }
 
+// formatThousands renders n with thousands separators.
+func formatThousands(n int) string {
+	digits := fmt.Sprintf("%d", n)
+	sign := ""
+	if strings.HasPrefix(digits, "-") {
+		sign, digits = "-", digits[1:]
+	}
+	var sb strings.Builder
+	for i, r := range digits {
+		if i > 0 && (len(digits)-i)%3 == 0 {
+			sb.WriteByte(',')
+		}
+		sb.WriteRune(r)
+	}
+	return sign + sb.String()
+}
+
 // runOxfmtCheck runs oxfmt formatting check/fix for a given directory.
 // extensions is optional. If nil, file count is parsed from oxfmt output instead of `find`.
 func runOxfmtCheck(ctx *CheckContext, dir string, extensions []string) (CheckResult, error) {

@@ -9,7 +9,6 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -104,22 +103,6 @@ func fileLengthThreshold(relPath string) int {
 		return fileLengthTestWarnLines
 	}
 	return fileLengthWarnLines
-}
-
-// formatWithCommas renders n with thousands separators (1200 -> "1,200").
-func formatWithCommas(n int) string {
-	s := strconv.Itoa(n)
-	neg := strings.HasPrefix(s, "-")
-	if neg {
-		s = s[1:]
-	}
-	for i := len(s) - 3; i > 0; i -= 3 {
-		s = s[:i] + "," + s[i:]
-	}
-	if neg {
-		s = "-" + s
-	}
-	return s
 }
 
 // fileLengthAllowlist is the on-disk shape of file-length-allowlist.json.
@@ -313,7 +296,7 @@ func formatLongFiles(files []longFile, allowlist fileLengthAllowlist, allowliste
 	}
 	return fmt.Sprintf("%d new %s over the length limit (%s lines, %s for tests)%s:\n%s",
 		len(files), Pluralize(len(files), "file", "files"),
-		formatWithCommas(fileLengthWarnLines), formatWithCommas(fileLengthTestWarnLines),
+		formatThousands(fileLengthWarnLines), formatThousands(fileLengthTestWarnLines),
 		suffix, strings.TrimRight(sb.String(), "\n"))
 }
 
