@@ -185,7 +185,11 @@ pnpm check [flags]
 - **`stack_orchestrator.go`**: Runner-level Docker fixture lifecycle: acquires a machine-wide lease per stack (via
   `stacklease`) at init, releases each at exit
 - **`stacklease/`**: Library: the machine-wide flock + holder-id refcount that makes a shared fixture stack safe across
-  worktrees. `registry.go` holds the registered stacks (`smb`, `sftp`, `webdav`); everything else is per-`Stack` methods
+  worktrees. `registry.go` holds the registered stacks (`smb`, `sftp`, `webdav`); `stack.go` the `Stack` value itself.
+  `stacklease.go` keeps the core (`Acquire`, `decideAction`, `Reconcile`, `Release`, `PrintStatus`, service resolution);
+  `log.go` the two log sinks and the `OnReconcileStart`/`OnTeardown` hooks; `confighash.go` the config-hash stamp and
+  compare; `leases.go` the per-holder lease files and the dead-PID sweep; `keymaterial.go` the host-key-material
+  heal/wait pair; `lock.go` the flock, `compose.go` the real `Composer`
 - **`stack-lease/`**: Thin `package main` CLI onto `stacklease` (`acquire`/`release`/`reconcile`/`status`, each taking
   the stack name first) that the bash scripts shell out to
 - **`checks/`**: One file per check, plus `common.go` (shared utils) and `registry.go` (the `AllChecks` ordered list)
@@ -764,9 +768,8 @@ the shared `smb-consumer` Docker Compose project. Two layers of contention had t
 The standalone scripts (`start.sh`, `e2e-linux.sh::start_smb_containers`) take their **own** leases (`manual` for
 `start.sh`, `$$` for `e2e-linux.sh`), so a manual run alongside a `check.sh` run just registers as a second holder and
 neither tears the other's stack down. The SIGINT handler in `main.go` captures the orchestrator via shared variable so a
-Ctrl+C also releases every held lease (with a banner) before exiting 130. See
-[`stacklease/stacklease.go`](stacklease/stacklease.go) for the lock/lease/policy model, and § "Two fixture stacks, two
-lease namespaces" for how a second protocol plugs in.
+Ctrl+C also releases every held lease (with a banner) before exiting 130. See the `stacklease/` module map above for
+the lock/lease/policy model, and § "Two fixture stacks, two lease namespaces" for how a second protocol plugs in.
 
 **Decision**: bring-up and teardown are silent on the common path; only the decisions that cost real wall-clock time
 print. **Why**: adopting an already-serving stack is the overwhelmingly common case (every worktree racing to reuse the
@@ -917,7 +920,7 @@ A leaked or lingering stack (a forgotten manual `start.sh`, or a numeric holder 
 direction: it stays up until a human reaps it. Check state with `(cd scripts/check && go run ./stack-lease status)`
 (every stack) or `... status smb` (one); force SMB down with
 `rm -rf /tmp/cmdr-smb-leases && apps/desktop/test/smb-servers/stop.sh`. See `apps/desktop/test/smb-servers/README.md` §
-"Shared stack across worktrees" and `stacklease/stacklease.go`.
+"Shared stack across worktrees" and `stacklease/`.
 
 ## Dependencies
 

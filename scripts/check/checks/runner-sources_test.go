@@ -452,15 +452,15 @@ func runnerFixture(t *testing.T, files map[string]string) string {
 func TestRunnerSourcesReachSharedHelpers(t *testing.T) {
 	_, idx := runnerSourcesForTest(t)
 	for _, tc := range []struct{ id, helper string }{
-		{"desktop-rust-clippy", "scripts/check/checks/cargo-workspace.go"},          // takes its selection from `HostCargoLaneArgs`
-		{"desktop-rust-jscpd", "scripts/check/checks/jscpd.go"},                     // the lane body both copy-paste checks share
-		{"file-length", "scripts/check/checks/allowlist.go"},                        // the allowlist shrink-wrap
-		{"desktop-rust-lock-poison", "scripts/check/checks/directives.go"},          // the opt-out comment tracker
-		{"desktop-rust-integration-tests", "scripts/check/checks/sftp_ports.go"},    // the fixture ports it runs against
-		{"claude-md-length", "scripts/check/checks/docs_graph.go"},                  // the doc graph it walks
-		{"desktop-svelte-e2e-playwright", "scripts/check/checks/e2e-build.go"},      // the binary it builds
-		{"desktop-rust-tests", "scripts/check/checks/rust-test-diagnostics.go"},     // how a red lane is re-run and reported
-		{"desktop-rust-module-cycles", "scripts/check/checks/invariant-density.go"}, // the shared subsystem table
+		{"desktop-rust-clippy", "scripts/check/checks/cargo-workspace.go"},       // takes its selection from `HostCargoLaneArgs`
+		{"desktop-rust-jscpd", "scripts/check/checks/jscpd.go"},                  // the lane body both copy-paste checks share
+		{"file-length", "scripts/check/checks/allowlist.go"},                     // the allowlist shrink-wrap
+		{"desktop-rust-lock-poison", "scripts/check/checks/directives.go"},       // the opt-out comment tracker
+		{"desktop-rust-integration-tests", "scripts/check/checks/sftp_ports.go"}, // the fixture ports it runs against
+		{"claude-md-length", "scripts/check/checks/docs_graph.go"},               // the doc graph it walks
+		{"desktop-svelte-e2e-playwright", "scripts/check/checks/e2e-build.go"},   // the binary it builds
+		{"desktop-rust-tests", "scripts/check/checks/rust-test-diagnostics.go"},  // how a red lane is re-run and reported
+		{"desktop-rust-module-cycles", "scripts/check/checks/common.go"},         // formatThousands, the shared thousands-separator helper
 		// Reached only through a METHOD on a type it names, which is the rule that
 		// stands in for type information: drop it and this line goes red.
 		{"invariant-density", "scripts/check/checks/docs-dead-links.go"},

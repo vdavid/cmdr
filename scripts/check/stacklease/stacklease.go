@@ -59,20 +59,23 @@
 // lets e2e-linux.sh's own $$ lease and the child start.sh's "manual" lease
 // coexist as two distinct holders without double-counting, and lets the runner
 // hold one lease per stack under a single PID.
+//
+// # Module map
+//
+// This file holds the core: Acquire (adopt-or-reconcile), decideAction (the
+// policy table), Reconcile, Release, PrintStatus, and service-set resolution.
+// log.go holds the two log sinks (Logf/InfoLogf) and the OnReconcileStart/
+// OnTeardown hooks; confighash.go the config-hash stamp/compare; leases.go the
+// per-holder lease files and the dead-PID sweep; keymaterial.go the
+// host-key-material heal/wait pair.
 package stacklease
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
-	"syscall"
-	"time"
 )
 
 // ManualHolder is the sentinel lease the dead-PID sweep never reaps. It's
@@ -130,53 +133,6 @@ type Composer interface {
 	// set is "all".
 	RunningServices() ([]string, error)
 }
-
-// stderrLogf is the package's one real printer: every default log sink
-// (Logf, InfoLogf, and SetVerbose(true)'s restore) prints through it, so the
-// "[stacklease] "-prefixed stderr line has exactly one definition.
-func stderrLogf(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "[stacklease] "+format+"\n", args...)
-}
-
-// Logf is the package's WARNING sink: every `WARN:`-prefixed line, printed
-// unconditionally. Defaults to stderrLogf; the CLI main and tests can
-// redirect it. Anything logged here is a human reading a leaked-stack
-// situation needs to reconstruct what happened, so it is never silenced.
-var Logf = stderrLogf
-
-// InfoLogf is the package's routine-decision sink: adopt/reconcile rationale,
-// swept-dead-lease notices, release/teardown notes, and republished-key
-// confirmations. Defaults to the same real printer as Logf, so every direct
-// caller (start.sh/stop.sh/e2e-linux.sh via the `stack-lease` CLI, `go run`,
-// the test binary before a test silences it) keeps seeing what it always has.
-// The check runner is the one caller that dials this down: SetVerbose(false)
-// swaps it to a no-op so a `pnpm check` run that just adopts an already-serving
-// stack (the common case) prints nothing here; -v or CI restore it.
-var InfoLogf = stderrLogf
-
-// SetVerbose turns InfoLogf on (the default) or off. The check runner calls
-// this once at startup from its -v/--verbose flag (CI passes true too).
-func SetVerbose(v bool) {
-	if v {
-		InfoLogf = stderrLogf
-		return
-	}
-	InfoLogf = func(format string, args ...any) {}
-}
-
-// OnReconcileStart is called synchronously, under the stack's lock, the
-// moment Acquire decides the stack needs `up -d` — before that (possibly
-// slow) command runs. The check runner's orchestrator uses this to print one
-// friendly line while Docker does the work it's waiting on; every other
-// caller defaults to a no-op.
-var OnReconcileStart = func(stackName string) {}
-
-// OnTeardown is called synchronously, under the stack's lock, the moment
-// Release decides this was the stack's last holder and is about to run
-// `compose down`. The check runner's orchestrator uses this to print one
-// friendly line when a stack it held actually goes down; every other caller
-// defaults to a no-op.
-var OnTeardown = func(stackName string) {}
 
 // newComposer is overridable in tests to inject a fake Composer.
 var newComposer = func(s *Stack) Composer { return &dockerComposer{stack: s} }
@@ -260,67 +216,6 @@ func (s *Stack) Acquire(holderID, mode string) (AcquireResult, error) {
 	}
 
 	return AcquireResult{Action: action, Services: services}, nil
-}
-
-// keyMaterialDeadline bounds the wait for a container to publish its pair, and
-// keyMaterialPoll is the probe interval inside that wait. Generous rather than
-// tight: the deadline is never reached on the happy path, and the alternative to
-// waiting is a suite that races the regeneration. A var so a test can shorten
-// it (`withKeyMaterialDeadline`).
-var keyMaterialDeadline = 90 * time.Second
-
-const keyMaterialPoll = 100 * time.Millisecond
-
-// healKeyMaterial republishes key material that went missing from the host while
-// the containers kept running, and reports rather than returning to a caller
-// whose key-auth cells would all fail.
-//
-// ❗ Restarting is the whole mechanism: the container's entrypoint regenerates
-// the pair and rewrites its own `authorized_keys` from it, which is the only
-// thing that can put the two halves back in agreement. `up -d` won't do it (it
-// never touches a healthy container) and neither will anything on the host,
-// which has no way to add a public key to a running sshd's account.
-func (s *Stack) healKeyMaterial(c Composer, requested []string, broughtUp bool) error {
-	if len(s.servicesMissingKeyMaterial(requested)) == 0 {
-		return nil
-	}
-	// A stack this call just brought up is still writing. `up -d` returns when a
-	// container reaches "running", which is well before its entrypoint has
-	// generated anything, so reaching for a restart here would bounce a
-	// perfectly healthy container that was seconds from publishing.
-	if broughtUp {
-		if err := s.waitForKeyMaterial(requested); err == nil {
-			return nil
-		}
-	}
-	gaps := s.servicesMissingKeyMaterial(requested)
-	Logf("WARN: %s has no published key material for %s under %s; restarting so each entrypoint regenerates the pair its authorized_keys names",
-		s.Name, strings.Join(gaps, ", "), s.KeysDir())
-	if err := c.Restart(gaps); err != nil {
-		return fmt.Errorf("restart %s service(s) with no key material (%s): %w", s.Name, strings.Join(gaps, ", "), err)
-	}
-	if err := s.waitForKeyMaterial(requested); err != nil {
-		return err
-	}
-	InfoLogf("%s republished key material for %s", s.Name, strings.Join(gaps, ", "))
-	return nil
-}
-
-// waitForKeyMaterial polls until every requested leaf holds its private key, so
-// a suite never races a container that is still generating one.
-func (s *Stack) waitForKeyMaterial(requested []string) error {
-	deadline := time.Now().Add(keyMaterialDeadline)
-	for {
-		still := s.servicesMissingKeyMaterial(requested)
-		if len(still) == 0 {
-			return nil
-		}
-		if time.Now().After(deadline) {
-			return fmt.Errorf("%s publishes no private key for %s after %s; every key-auth cell would fail an auth rung against a server whose authorized_keys names a key nothing can read. The usual cause is a container running an image older than the entrypoint that knows how to republish: stop.sh then start.sh rebuilds it",
-				s.Name, strings.Join(still, ", "), keyMaterialDeadline)
-		}
-		time.Sleep(keyMaterialPoll)
-	}
 }
 
 // decideAction implements the adopt-vs-reconcile policy table under the held
@@ -485,20 +380,6 @@ func sortedSet(m map[string]bool) []string {
 	return names
 }
 
-// ---- lease-file helpers (all callers hold the flock) ----
-
-func validateHolderID(holderID string) error {
-	if holderID == "" {
-		return fmt.Errorf("holder-id must not be empty")
-	}
-	// A holder-id becomes a filename in LeaseDir; reject path separators so a
-	// caller can't escape the dir.
-	if strings.ContainsAny(holderID, "/\\") || holderID == "." || holderID == ".." {
-		return fmt.Errorf("invalid holder-id %q", holderID)
-	}
-	return nil
-}
-
 // validateMode refuses a mode the stack doesn't define. A silent fallback to the
 // default service set would bring up the wrong containers and then wait for
 // services the caller never asked for.
@@ -513,102 +394,6 @@ func (s *Stack) validateMode(mode string) error {
 // the project defines".
 func (s *Stack) modeServicesFor(mode string) []string {
 	return s.modeServices[mode]
-}
-
-func (s *Stack) writeLease(holderID, mode string) error {
-	body := fmt.Sprintf("stack=%s\nmode=%s\nwhen=%s\nwd=%s\n", s.Name, mode, time.Now().Format(time.RFC3339), workingDir())
-	return os.WriteFile(filepath.Join(s.LeaseDir(), holderID), []byte(body), 0o644)
-}
-
-func (s *Stack) removeLease(holderID string) error {
-	err := os.Remove(filepath.Join(s.LeaseDir(), holderID))
-	if os.IsNotExist(err) {
-		return nil // already gone; idempotent
-	}
-	return err
-}
-
-// sweepDeadLeases removes numeric-PID lease files whose process is gone. The
-// "manual" sentinel and any non-numeric holder-id are skipped by construction.
-// Called ONLY under the acquire lock — never on a timer.
-func (s *Stack) sweepDeadLeases() {
-	holders, err := s.listLeaseHolders()
-	if err != nil {
-		Logf("WARN: %s lease dir unreadable during sweep (%v); skipping sweep", s.Name, err)
-		return
-	}
-	for _, h := range holders {
-		pid, err := strconv.Atoi(h)
-		if err != nil {
-			continue // non-numeric (e.g. "manual") → never swept
-		}
-		if !processAlive(pid) {
-			if rmErr := os.Remove(filepath.Join(s.LeaseDir(), h)); rmErr == nil {
-				InfoLogf("swept dead %s lease %d (process gone)", s.Name, pid)
-			}
-		}
-	}
-}
-
-// processAlive reports whether pid names a live process via kill(pid, 0).
-// Accepts the PID-reuse caveat by design: a recycled PID reads as alive and
-// won't be swept, lingering the stack a bit longer — the benign direction.
-func processAlive(pid int) bool {
-	if pid <= 0 {
-		return false
-	}
-	// On Unix, FindProcess always succeeds; Signal(0) is the liveness probe.
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return false
-	}
-	err = proc.Signal(syscall.Signal(0))
-	if err == nil {
-		return true
-	}
-	// EPERM means the process exists but we can't signal it → still alive.
-	return err == syscall.EPERM
-}
-
-func (s *Stack) listLeaseHolders() ([]string, error) {
-	entries, err := os.ReadDir(s.LeaseDir())
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	var out []string
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		out = append(out, e.Name())
-	}
-	sort.Strings(out)
-	return out, nil
-}
-
-func (s *Stack) leaseCount() (int, error) {
-	holders, err := s.listLeaseHolders()
-	if err != nil {
-		return 0, err
-	}
-	return len(holders), nil
-}
-
-func (s *Stack) otherLeaseCount(self string) int {
-	holders, err := s.listLeaseHolders()
-	if err != nil {
-		return 0
-	}
-	n := 0
-	for _, h := range holders {
-		if h != self {
-			n++
-		}
-	}
-	return n
 }
 
 // ---- service-state helpers ----
@@ -661,149 +446,4 @@ func (s *Stack) missingServices(services []string, running, healthy map[string]b
 		}
 	}
 	return out
-}
-
-// ---- config-hash ----
-//
-// The hash captures the merged compose inputs so a later adopter can tell
-// whether the running stack matches this session's config. We hash the stack's
-// compose files, the resolved service set, and the stack's port env. We stamp it
-// to a file next to the lock on `up` (writeConfigHash) and compare at adopt time
-// (configHashMatches) — simpler and more reliable than round-tripping a compose
-// label.
-
-func (s *Stack) configHashPath() string {
-	return s.LockPath() + ".confighash"
-}
-
-// repoRoot is the in-process override for compose-dir resolution. The check
-// runner sets it once so every stack resolves against the repo it's checking,
-// independent of the orchestrator's cwd.
-var repoRoot string
-
-// SetRepoRoot points compose-dir resolution at a known repo root.
-func SetRepoRoot(dir string) { repoRoot = dir }
-
-// composeDir resolves this stack's compose directory: the stack's own env
-// override first, then the repo root the runner set, then a best-effort walk up
-// from cwd. Returns "" when none of them find it, which `Up` reports rather than
-// falling back to docker's default file lookup.
-func (s *Stack) composeDir() string {
-	if d := os.Getenv(s.composeDirEnv); d != "" {
-		return d
-	}
-	rel := filepath.FromSlash(s.composeDirRel)
-	if repoRoot != "" {
-		if candidate := filepath.Join(repoRoot, rel); isDir(candidate) {
-			return candidate
-		}
-	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return ""
-	}
-	for dir := wd; ; {
-		if candidate := filepath.Join(dir, rel); isDir(candidate) {
-			return candidate
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return ""
-		}
-		dir = parent
-	}
-}
-
-func isDir(path string) bool {
-	st, err := os.Stat(path)
-	if err != nil || st == nil {
-		return false
-	}
-	return st.IsDir()
-}
-
-func (s *Stack) computeConfigHash(mode string) string {
-	h := sha256.New()
-	cd := s.composeDir()
-	for _, f := range s.composeFiles {
-		if cd != "" {
-			if b, err := os.ReadFile(filepath.Join(cd, f)); err == nil {
-				h.Write(b)
-			}
-		}
-	}
-	fmt.Fprintf(h, "stack=%s\nmode=%s\n", s.Name, mode)
-	for _, svc := range s.modeServicesFor(mode) {
-		fmt.Fprintf(h, "svc=%s\n", svc)
-	}
-	// Port env: the one config dimension that genuinely changes container
-	// bindings across worktrees/sessions.
-	var ports []string
-	for _, kv := range os.Environ() {
-		if strings.HasPrefix(kv, s.portEnvPrefix) && strings.Contains(kv, "_PORT=") {
-			ports = append(ports, kv)
-		}
-	}
-	sort.Strings(ports)
-	for _, kv := range ports {
-		fmt.Fprintf(h, "%s\n", kv)
-	}
-	// A first-party image: its build context decides what the containers RUN, so
-	// an edited entrypoint has to read as staleness the same way an edited
-	// compose file does. Nothing else would notice.
-	//
-	// ❗ The context's own name goes into the hash beside each file's, so two
-	// contexts holding a same-named file (`Dockerfile`, say) can't cancel each
-	// other out and leave an edit invisible.
-	for _, ctx := range s.BuildContextDirs() {
-		var files []string
-		_ = filepath.WalkDir(ctx, func(path string, d fs.DirEntry, err error) error {
-			if err != nil || d.IsDir() {
-				return nil //nolint:nilerr // an unreadable entry just doesn't contribute
-			}
-			files = append(files, path)
-			return nil
-		})
-		sort.Strings(files)
-		for _, f := range files {
-			rel, _ := filepath.Rel(ctx, f)
-			fmt.Fprintf(h, "build=%s/%s\n", filepath.Base(ctx), filepath.ToSlash(rel))
-			if b, err := os.ReadFile(f); err == nil {
-				h.Write(b)
-			}
-		}
-	}
-	// The keys dir is a bind SOURCE, so a running stack that mounts a different
-	// one is exactly as stale as one bound to different ports — and far quieter
-	// about it, since the containers stay healthy while every key-auth cell
-	// fails.
-	if keys := s.KeysDir(); keys != "" {
-		fmt.Fprintf(h, "keys=%s\n", keys)
-	}
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-func (s *Stack) writeConfigHash(mode string) {
-	if err := os.WriteFile(s.configHashPath(), []byte(s.computeConfigHash(mode)), 0o644); err != nil {
-		Logf("WARN: could not stamp the %s config hash (%v); future adopters will treat config as mismatched", s.Name, err)
-	}
-}
-
-// configHashMatches reports whether the stamped hash equals this session's
-// computed hash. A missing stamp means "unknown" → treat as mismatch so the
-// caller errs toward reconcile-when-safe / adopt-and-warn-under-foreign-lease.
-func (s *Stack) configHashMatches(mode string) bool {
-	stamped, err := os.ReadFile(s.configHashPath())
-	if err != nil {
-		return false
-	}
-	return strings.TrimSpace(string(stamped)) == s.computeConfigHash(mode)
-}
-
-func workingDir() string {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "?"
-	}
-	return wd
 }
