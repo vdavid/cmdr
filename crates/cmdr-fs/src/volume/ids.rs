@@ -394,6 +394,20 @@ pub fn is_adb_volume_id(id: &str) -> bool {
     id.starts_with("adb-")
 }
 
+/// Whether `id` names a volume whose root is an OS mount: a local volume
+/// ([`local_volume_id`], or its [`path_volume_id`] fallback) or an SMB mount
+/// ([`smb_volume_id`]).
+///
+/// Shape-only, like [`is_adb_volume_id`]: it does NOT prove the mount is still
+/// there. Eject reads it before trusting "no longer in the mount table", because
+/// a root that was never a mount (a `cloud-` drive's plain folder) is never
+/// listed, which says nothing about whether it's gone. False for
+/// [`DEFAULT_VOLUME_ID`], the `cloud-`/`fav-` literals, and the server and device
+/// schemes.
+pub fn is_mount_backed_volume_id(id: &str) -> bool {
+    id.starts_with("vol-") || id.starts_with("path-") || id.starts_with("smb-")
+}
+
 /// Whether `id` predates the current ID scheme, so the state it keys can never
 /// be reached again.
 ///

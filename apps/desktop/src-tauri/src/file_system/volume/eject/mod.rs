@@ -237,6 +237,16 @@ async fn eject_now(volume_id: String) -> Result<(), EjectError> {
                 volume_id: volume_id.to_string(),
             })?;
         let mount_path = volume.root().to_string_lossy().to_string();
+        // A drive whose eject just landed lingers in the switcher until
+        // `volumes-changed` arrives, and a click there would read "not ejectable"
+        // from `resolve_is_ejectable` on a path that's gone. Its goal is met.
+        if is_already_unmounted(volume_id, || unmount_tool::is_still_mounted(&mount_path)) {
+            log::info!(
+                target: "eject",
+                "{volume_id} at {mount_path} is no longer mounted, so there's nothing left to eject"
+            );
+            return Ok(());
+        }
         let is_smb = volume.backend_kind() == cmdr_fs::volume::BackendKind::Smb;
         (mount_path, is_smb)
     };
@@ -339,6 +349,18 @@ async fn run_teardown(volume_id: &str, teardown: Teardown<'_>) -> Result<(), Eje
             }
         }
     }
+}
+
+/// Whether a registered volume's eject is already done before anything runs: its
+/// mount root has left the OS mount table. Pure: `still_mounted` is the
+/// non-probing table read ([`unmount_tool::is_still_mounted`]).
+///
+/// Trusts "not listed" only for an ID whose scheme names a mount
+/// ([`cmdr_fs::volume::is_mount_backed_volume_id`]), and doesn't read the table
+/// for any other: a cloud drive's root is a plain folder that was never listed, so
+/// answering `Ok` for it would be a false success where `NotEjectable` is right.
+fn is_already_unmounted(volume_id: &str, still_mounted: impl FnOnce() -> bool) -> bool {
+    cmdr_fs::volume::is_mount_backed_volume_id(volume_id) && !still_mounted()
 }
 
 /// Stop the volume's index (if any) BEFORE running the unmount/eject.
@@ -594,6 +616,34 @@ mod tests {
             device_provider: None,
         };
         assert_eq!(decide_eject_action(&ctx).unwrap(), EjectAction::DiskutilUnmount);
+    }
+
+    #[test]
+    fn a_drive_whose_root_left_the_mount_table_is_already_ejected() {
+        // Its eject landed a moment ago and the row still lingers in the
+        // switcher: a click there must not reach `resolve_is_ejectable`, which
+        // answers "not ejectable" for a path that's gone.
+        let drive = cmdr_fs::volume::local_volume_id(Some("5C1A2D4E-0000-4000-8000-00000000BEEF"), "/Volumes/Backup");
+        assert!(is_already_unmounted(&drive, || false));
+
+        let share = cmdr_fs::volume::smb_volume_id("naspolya", 445, "public");
+        assert!(is_already_unmounted(&share, || false));
+    }
+
+    #[test]
+    fn a_drive_still_in_the_mount_table_is_not_already_ejected() {
+        let drive = cmdr_fs::volume::local_volume_id(None, "/Volumes/NO NAME");
+        assert!(!is_already_unmounted(&drive, || true));
+    }
+
+    #[test]
+    fn a_cloud_drive_is_never_already_unmounted_and_never_reads_the_mount_table() {
+        // A cloud drive's root is a plain folder that was never in the mount
+        // table, so "not listed" says nothing about it: it must keep answering
+        // `NotEjectable` instead of a false success.
+        assert!(!is_already_unmounted("cloud-dropbox", || panic!(
+            "a root that was never a mount must not read the mount table"
+        )));
     }
 }
 

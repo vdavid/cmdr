@@ -444,7 +444,10 @@ what the tool said. The evidence is typed and can't block: ❌ not the tool's st
 probe of the mount root (a `statfs` on a hung network mount blocks 30–120 s), and not the registry either, because the
 unmount notification can land milliseconds after `diskutil` exits. A mount table that can't be read counts as "still
 mounted", so a real refusal never turns into a silent success. The decision is the pure `unmount_tool::settle`, with
-the table read passed in as a closure it calls only on failure.
+the table read passed in as a closure it calls only on failure. ❗ Known gap: it asks about THIS volume's mount root
+only, so an eject that unmounted it while a sibling partition on the same disk refused counts as done and leaves the
+disk powered on, with the refusal kept only in the `info` line; a whole-disk status from DiskArbitration is what closes
+it.
 
 **One eject at a time per volume.** `eject` hands the pipeline to `in_flight::join_or_start`: a request for a volume
 whose eject is still running JOINS that flight and gets its answer, with no second teardown. A slow `diskutil` (10.5 s
@@ -458,6 +461,15 @@ every change (emitted under the lock, so two changes can't arrive out of order) 
 disabled, but the join is what makes a second request harmless when the UI is stale. A request after the flight lands
 starts a new one: nothing caches the answer, so a retry really retries. `disconnect_smb` doesn't join; it's the
 reconnect view's Disconnect, a separate action.
+
+**A registered volume whose mount root already left the table is done before anything runs.** Once a flight lands,
+the control re-enables while the row lingers until `volumes-changed` arrives, and a click there would reach
+`resolve_is_ejectable`, which answers "not ejectable" for a path that's gone. So `eject_now` asks `is_already_unmounted`
+first, for every registered non-device volume, and answers `Ok` with an `info` line. It trusts "not listed" only for
+an ID whose scheme names a mount (`cmdr_fs::volume::is_mount_backed_volume_id`: `vol-`, `path-`, `smb-`): a cloud
+drive's root is a plain folder that was never in the table, so it keeps answering `NotEjectable`, and `root` is always
+mounted. It's the same non-probing read `settle` uses, so a hung mount can't block it and an unreadable table counts as
+still mounted.
 
 **An ID the registry no longer knows stays `VolumeNotFound`.** It could be a volume that finished unmounting a moment
 ago, or an ID that never existed (an MCP caller's typo), and with no mount root left there's nothing typed to ask, so

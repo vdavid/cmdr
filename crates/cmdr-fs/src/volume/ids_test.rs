@@ -1,6 +1,28 @@
 use super::super::mtp_ids::{device_id_for, mtp_volume_id};
 use super::*;
 
+// ── Scheme shape: which IDs name an OS mount ──────────────────────────
+
+#[test]
+fn only_the_ids_minted_for_a_mount_are_mount_backed() {
+    // Eject trusts "no longer in the mount table" only for these: a root that was
+    // never a mount (a cloud drive's plain folder) is never listed, which says
+    // nothing about whether it's still there.
+    assert!(is_mount_backed_volume_id(&local_volume_id(
+        Some("5C1A2D4E-0000-4000-8000-00000000BEEF"),
+        "/Volumes/Backup"
+    )));
+    assert!(is_mount_backed_volume_id(&path_volume_id("/Volumes/NO NAME")));
+    assert!(is_mount_backed_volume_id(&smb_volume_id("naspolya", 445, "public")));
+
+    assert!(!is_mount_backed_volume_id(DEFAULT_VOLUME_ID));
+    assert!(!is_mount_backed_volume_id("cloud-dropbox"));
+    assert!(!is_mount_backed_volume_id("fav-1"));
+    assert!(!is_mount_backed_volume_id(&sftp_volume_id("naspolya", 22, "ada")));
+    assert!(!is_mount_backed_volume_id(&webdav_volume_id("naspolya", 443, "ada")));
+    assert!(!is_mount_backed_volume_id(&adb_volume_id("R58M12345")));
+}
+
 // ── The property the whole module exists for: injectivity ─────────────
 
 #[test]
