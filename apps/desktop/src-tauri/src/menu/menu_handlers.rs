@@ -495,16 +495,24 @@ pub fn handle_menu_event(app: &AppHandle<tauri::Wry>, event: tauri::menu::MenuEv
         return;
     }
 
-    // === Share on Google Drive: Drive's own share dialog ===
-    // Not through `menu_id_to_command`: the item exists only once File Provider vouched for
-    // the right-clicked row, which a palette entry or shortcut couldn't check first. The
-    // dialog is Drive's own window, so nothing needs the main thread; the File Provider
-    // calls run on a thread of their own.
+    // === A File Provider action: the provider's own ===
+    // The ID carries an index into the offer the menu was built from, so the action runs on
+    // exactly the rows and domain that offer was evaluated for. Not through
+    // `menu_id_to_command`: the items exist only once File Provider vouched for the rows,
+    // which a palette entry or shortcut couldn't check first. The provider shows its own
+    // windows, and the File Provider calls run on a thread of their own.
     #[cfg(target_os = "macos")]
-    if id == super::DRIVE_SHARE_ID {
+    if let Some(index) = super::file_provider_items::file_provider_action_index(id) {
         let menu_state = app.state::<MenuState<tauri::Wry>>();
-        let path = menu_state.context.lock_ignore_poison().path.clone();
-        crate::file_system::google_drive::share_dialog::open_share_dialog(std::path::PathBuf::from(path));
+        let offer = menu_state.context.lock_ignore_poison().file_provider_offer.clone();
+        match offer {
+            Some(offer) => {
+                if let Err(reason) = crate::file_system::file_provider_actions::perform(&offer, index) {
+                    log::warn!(target: "menu", "File Provider action didn't start: {reason:?}");
+                }
+            }
+            None => log::warn!(target: "menu", "File Provider action clicked with no offer armed"),
+        }
         return;
     }
 

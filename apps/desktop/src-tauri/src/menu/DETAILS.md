@@ -59,6 +59,9 @@ window focus context.
   `IconMenuItem` per service in `FileContextInfo::share_services`, plus the `share-service:<index>` id
   pair (`share_service_id` / `share_service_index`). The services themselves and the click side live in
   `file_system/share.rs`.
+- `file_provider_items.rs` (macOS): the file context menu's File Provider group, `append_file_provider_group` over a
+  `ProviderOffer`, plus the `fp-action:<index>` id pair (`file_provider_action_id` / `file_provider_action_index`).
+  The offer itself and the click side live in `file_system/file_provider_actions/`.
 - `context_menu_icons.rs` (macOS): `lend_context_menu_icons` and the `FILE_CONTEXT_ICONS` table, the SF Symbols the
   file context menu carries. See "SF Symbols on a CONTEXT menu" for why the images land on the tracking notification
   rather than through `IconMenuItem`.
@@ -191,12 +194,13 @@ Exceptions that do NOT use `"execute-command"`:
   **The click is deferred one main-thread turn** (`run_on_main_thread`) rather than performed inline.
   `on_menu_event` runs while muda's own menu-tracking loop is still unwinding, and a service usually
   puts a window or sheet up, which that unwind can dismiss.
-- **Share on Google Drive** (macOS): `DRIVE_SHARE_ID`, right below "Open in Google Drive", shown only
-  when `FileContextInfo.google_drive_can_share` says File Provider vouched for the ONE right-clicked
-  item. Routed in `handle_menu_event` rather than `menu_id_to_command`, since a palette entry or
-  shortcut couldn't make that check first. The click hands the path to
-  `share_dialog::open_share_dialog`, which works off the main thread: the dialog is Drive's own
-  window. `file_system/DETAILS.md` § "Google Drive links".
+- **Provider actions** (macOS): one flat line per File Provider action the rows' provider offers,
+  below Cmdr's own cloud items, in the provider's own words and without icons
+  (`file_provider_items.rs`). Ids are `fp-action:<index>` into the offer
+  `MenuContext.file_provider_offer` keeps, prefix-routed in `handle_menu_event` like `share-service:`,
+  since the items exist only once File Provider vouched for the rows, which a palette entry or shortcut
+  couldn't check first. The click runs `file_provider_actions::perform` off the main thread; the
+  provider shows its own windows. `file_system/DETAILS.md` § "File Provider actions".
 - **Image-search group** (media_index): a folder's context menu carries TWO items, shown only while
   image indexing is enabled: chosen-folder membership ("Add to indexed folders" / "Remove from indexed
   folders", `media_index_{add,remove}_folder`) and the privacy veto ("Don't index images in this
@@ -484,13 +488,13 @@ menu never enters the menu bar, so none of the resolution machinery above transf
 on its bare `NSMenuItem`s directly — no arming, no tracking observer, because it owns the items rather
 than borrowing Tauri's. That menu's own rules: `../dock/menu/CLAUDE.md`.
 
-Today the table is the four Google Drive items: `arrow.up.forward.app` for "Open in Google Drive"
-(distinct from the menu bar's plain `arrow.up.forward` on `Open`), `person.crop.circle.badge.plus`
-for "Share on Google Drive" (the add-people glyph, which is what Drive's dialog is for), `link` for
-"Copy Google Drive link" — deliberately the same symbol the menu bar's `Copy path` carries, since
-`Copy` already shares `document.on.document` across two menus — and `sparkles` for "Ask Gemini", the
-glyph Apple and Google both spell AI with, shared with `Ask Cmdr` in the menu bar. All verified
-present with `NSImage(systemSymbolName:)` on macOS 26.6.2 (2026-09-09; the share glyph 2026-09-11).
+Today the table is the three Google Drive items: `arrow.up.forward.app` for "Open in Google Drive"
+(distinct from the menu bar's plain `arrow.up.forward` on `Open`), `link` for "Copy Google Drive
+link" — deliberately the same symbol the menu bar's `Copy path` carries, since `Copy` already shares
+`document.on.document` across two menus — and `sparkles` for "Ask Gemini", the glyph Apple and Google
+both spell AI with, shared with `Ask Cmdr` in the menu bar. All verified present with
+`NSImage(systemSymbolName:)` on macOS 26.6.2, 2026-09-09. Provider actions carry none: their labels
+are the provider's, and a glyph Cmdr picked would claim to know what each one does.
 
 **Full-color non-template images do render correctly** through `IconMenuItem`, and that is what stays
 there: app-bundle icons in "Open with" (via `file_system::open_with::load_app_icon`), each
@@ -618,6 +622,9 @@ do, rather than one iCloud-shaped block.
   keyed on `SyncStatus`. ❌ Don't widen it to other providers: the `FileManager` ubiquity APIs behind it reject
   everything but iCloud, and a provider's own pin/unpin is a File Provider custom action reserved for the app that
   bundles the extension. `CloudProvider::supports_eviction` is where that limit is stated.
+- **The provider's own actions** come last, as one flat group (Dropbox, Google Drive, MacDroid, any provider),
+  evaluated the way Finder evaluates them, minus Drive's three that duplicate the Drive items above. See **Provider
+  actions** above.
 
 All three Drive items also reach the command palette, re-resolving the links from the path so the palette and the menu
 agree.

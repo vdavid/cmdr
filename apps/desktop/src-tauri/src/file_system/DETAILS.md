@@ -15,8 +15,9 @@ badges). The leaves beside them:
   read as a refusal.
 - `backend_settings.rs`: live per-backend knobs.
 - `cloud_actions.rs`: iCloud download and eviction. `cloud_provider.rs`: who owns a path, and what they can do.
-- `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback, and `share_dialog.rs` for
-  Drive's own share dialog (stream mode).
+- `google_drive/`: Drive item links, with `mirror_db.rs` as the mirror-mode fallback.
+- `file_provider_actions/`: every provider's own File Provider actions in the file context menu (Dropbox, Google Drive,
+  MacDroid, any provider).
 - `open_with.rs`: the "Open with" candidate apps. `share.rs`: the `Share` submenu's services.
 - `tags.rs`: Finder tags. `terminal.rs`: "open terminal here". `text_editor.rs`: which app F4 opens a file in (wire
   types; the macOS half in `text_editor_macos.rs`, its tests in `text_editor_test.rs`).
@@ -107,26 +108,51 @@ added later can't silently inherit actions it can't perform.
 user picks (`~/My Drive` by default), indistinguishable from any other directory by path. So a `None` from `locate` does
 not prove a path is outside Google Drive.
 
+## File Provider actions (`file_provider_actions/`)
+
+Every custom action a File Provider extension declares, shown in the file context menu as one flat group below Cmdr's
+own cloud items, in the provider's order and words, the way Finder shows them. Dropbox 270.3.3261 declares 25, Google
+Drive for desktop 130.0 declares 22, MacDroid 2.10 declares seven, and iCloud Drive none. `objc.rs`'s header carries the
+private mechanism and its evidence, `mod.rs`'s header the gate, and `declarations.rs` the pure rules.
+
+- **Finder's rules, evaluated in-process.** Each `NSExtensionFileProviderActionActivationRule` is an `NSPredicate` over
+  `{fileproviderItems, domainUserInfo}`: the selection's `FPItem`s and the domain's live user info. That matched
+  `fileproviderctl evaluate` exactly on a Dropbox file, a Dropbox folder, a file-plus-folder selection, and a streamed
+  Drive folder (verified on macOS 26.6.2, private-API probe, 2026-09-12). Dropbox mirrors its own "Right-click actions"
+  settings into `domainUserInfo`, so following the rules also follows the user's Dropbox choices.
+- **The pre-gate is the domains' storage roots.** A cached registry (`providerDomainsWithError:`, 2.4 ms for four
+  domains, refreshed on a thread of its own at most every 30 s) holds each acting domain's `storageURLs`. A row under no
+  root never reaches File Provider, so a plain local right-click pays a lock read and at most two `readlink`s, and a
+  hung `fileproviderd` can't slow it down. The roots come from File Provider itself, so a domain on an external volume
+  or a provider installed later needs no path table. A symlink in the top two levels of home (`~/Dropbox`) is followed
+  once; nothing past a link that points elsewhere is read.
+- **Then a bounded fetch.** Every row resolves concurrently (`fetchItemForURL:`), then the domain's user info
+  (`fetchProviderDomainWithID:`), all inside the menu's 250 ms budget (`commands/menu.rs`). Measured 12–23 ms for one
+  row and 51 ms for 20 (same probe). All rows in one domain, or no group; past 100 rows, no group.
+- **Identifiers repeat** (Drive declares `ACTION_SHARE` three times, each with its own rule and label), so menu IDs are
+  `fp-action:<index>` into the offer `MenuContext` keeps, and a click runs exactly the evaluated action on exactly the
+  evaluated rows (`../menu/file_provider_items.rs`).
+- **Labels are the provider's.** `NSExtensionFileProviderActionName` is a key into the extension's
+  `Localizable.strings`. `NSBundle` picks the localization for Cmdr's UI language, then English, then the raw key.
+  Label tables and parsed rules are cached per bundle and version.
+- **Cmdr hides its duplicates by name** (`declarations.rs`'s `HIDDEN_BY_CMDR`): Drive's open, copy-link, and Gemini
+  actions, since Cmdr's own Drive items do the same and also work in mirror mode.
+- **Mirror-mode Drive can't have Drive's actions.** A mirrored file isn't a File Provider item, and Drive's Finder menu
+  there comes from a Finder Sync extension that only Finder can host.
+- **Private API, so it fails closed**: runtime class and selector checks, `objc2::exception::catch` around every call,
+  and bounded waits. The operation's completion block goes unused, since its signature is private.
+- **Every block handed to File Provider needs a type signature** (`RcBlock::with_encoding`, never `RcBlock::new`). File
+  Provider wraps completion handlers through `_Block_signature`, and a block without one becomes a nil handler inside
+  File Provider that crashes the app when the reply arrives. The ignored real-item tests in `mod.rs`
+  (`CMDR_DRIVE_STREAM_ITEM`, `CMDR_DROPBOX_FILE` / `CMDR_DROPBOX_FOLDER`) cover the late-reply case against real items.
+
 ## Google Drive links (`google_drive/`)
 
 Backs "Open in Google Drive", "Copy Google Drive link", and "Ask Gemini". Drive registers no URL scheme (no
-`CFBundleURLTypes`, no `NSServices` in its `Info.plist`), so these build web URLs.
-
-**"Share on Google Drive" is the one item that opens Drive itself, in stream mode only** (`share_dialog.rs`, whose
-header carries the mechanism and its evidence). It runs Drive's own `ACTION_SHARE` File Provider custom action through
-FileProvider.framework's private host API, the way Finder does, gated on Drive's own activation rule. What a reader
-needs before touching it:
-
-- **Mirror mode can't have it.** A mirrored file isn't a File Provider item, and Drive's Finder menu there comes from
-  its Finder Sync extension, which only Finder can host. The fetch answers nil, so the menu stays as it was.
-- **Private API, so it fails closed.** Runtime class and selector checks, `objc2::exception::catch` around every call,
-  and a 250 ms wait at menu build (`commands/menu.rs`). Anything off means no menu item, never a crash.
-- **No completion block on the operation.** Its signature is private, and a guessed argument we'd dereference could
-  crash the app, so a click reports only whether it scheduled.
-- **Every block handed to File Provider needs a type signature** (`RcBlock::with_encoding`, never `RcBlock::new`).
-  File Provider wraps completion handlers through `_Block_signature`, and a block without one becomes a nil handler
-  inside File Provider that crashes the app when the reply arrives. The ignored
-  `file_provider_answers_a_real_stream_item_without_crashing` test reproduces it against a real streamed item.
+`CFBundleURLTypes`, no `NSServices` in its `Info.plist`), so these build web URLs, which also work in mirror mode.
+Drive's own File Provider actions, Share among them, come through `file_provider_actions/` (§ "File Provider
+actions"), which leaves out Drive's `ACTION_OPEN`, `ACTION_COPY_LINK`, and `ACTION_OPEN_GEMINI_WEB` because these three
+items already do their jobs.
 
 **One resolution, every URL.** `item_links()` resolves the item ONCE into a private `ResolvedItem` (id + kind +
 resource key) and formats each URL from it, so a context menu never pays two xattr reads or two SQLite round-trips for

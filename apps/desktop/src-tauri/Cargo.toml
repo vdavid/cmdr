@@ -343,7 +343,8 @@ objc2-foundation = { version = "0.3", features = [
     "NSData", "NSFileManager", "NSNotification", "NSBundle", "NSDistributedNotificationCenter", "NSUserDefaults",
     # `NSCurrentLocaleDidChangeNotification`, half of the live-language-change signal (`intl/live_locale.rs`).
     "NSLocale",
-    "NSOperation", "NSProcessInfo",
+    # `NSPredicate`: evaluating File Provider actions' activation rules (`file_system/file_provider_actions/`).
+    "NSOperation", "NSPredicate", "NSProcessInfo",
     # `NSSearchPathDirectory::TrashDirectory`, how `trash_dir_for_path` asks Cocoa which
     # trash a given volume uses instead of reconstructing it from `statfs` + `getuid`.
     "NSPathUtilities",

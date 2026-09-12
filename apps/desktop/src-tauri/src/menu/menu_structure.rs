@@ -12,6 +12,8 @@ use tauri::{
 };
 
 #[cfg(target_os = "macos")]
+use crate::file_system::file_provider_actions::ProviderOffer;
+#[cfg(target_os = "macos")]
 use crate::file_system::google_drive::DriveItemLinks;
 #[cfg(target_os = "macos")]
 use crate::file_system::open_with::OpenWithChoices;
@@ -33,7 +35,7 @@ use super::menu_items::{COPY_FILENAME_MAX_CHARS, DetachWord, detach_label, pin_t
 #[cfg(target_os = "macos")]
 use super::{
     CLOUD_MAKE_OFFLINE_ID, CLOUD_REMOVE_DOWNLOAD_ID, DRIVE_ASK_GEMINI_ID, DRIVE_COPY_LINK_ID, DRIVE_OPEN_ID,
-    DRIVE_SHARE_ID, GET_INFO_ID, HELP_MENU_ID, QUICK_LOOK_ID,
+    GET_INFO_ID, HELP_MENU_ID, QUICK_LOOK_ID,
 };
 use super::{
     COPY_CURRENT_DIR_PATH_ID, COPY_FILENAME_ID, COPY_PATH_ID, EDIT_ID, EDIT_MENU_ID, EJECT_VOLUME_ID,
@@ -65,10 +67,10 @@ pub struct FileContextInfo {
     /// `file_system/google_drive/` for why this isn't a path-prefix check (Drive's
     /// mirror mode puts real files outside `~/Library/CloudStorage`).
     pub google_drive_links: Option<DriveItemLinks>,
-    /// Whether "Share on Google Drive" is offered: File Provider vouched that Drive's
-    /// own Share action applies to this one item. Stream mode only; see
-    /// `file_system/google_drive/share_dialog.rs`.
-    pub google_drive_can_share: bool,
+    /// The right-clicked rows' File Provider actions, when their provider offers any. Drawn
+    /// as one flat group below the cloud items, and kept in `MenuContext` so a click can run
+    /// one. `file_system/file_provider_actions/`.
+    pub file_provider_offer: Option<ProviderOffer>,
     pub open_with: OpenWithChoices,
     /// The services macOS offers for this selection, in its own order, one `Share`
     /// submenu item each. EMPTY means macOS offers none and the whole item is left
@@ -335,11 +337,10 @@ pub fn build_context_menu<R: Runtime>(
     // actions it can actually carry out, so the group is a concatenation rather
     // than one iCloud-shaped block.
     //
-    // Google Drive: open on the web / share / copy the link / ask Gemini about it.
-    // Share is Drive's own dialog, reached through File Provider's private action API,
-    // so it shows only where File Provider vouched for the item (stream mode). Everywhere
-    // else the web page is one click from Share. `file_system/google_drive/` has the
-    // full story.
+    // Google Drive: open on the web / copy the link / ask Gemini about it. These build
+    // web URLs, so they work in mirror mode too; Drive's own File Provider actions (Share
+    // among them) come in the provider group below, minus these three.
+    // `file_system/google_drive/` has the full story.
     #[cfg(target_os = "macos")]
     if let Some(links) = &info.google_drive_links {
         let open_item = MenuItem::with_id(
@@ -358,16 +359,6 @@ pub fn build_context_menu<R: Runtime>(
         )?;
         menu.append(&PredefinedMenuItem::separator(app)?)?;
         menu.append(&open_item)?;
-        if info.google_drive_can_share {
-            let share_item = MenuItem::with_id(
-                app,
-                DRIVE_SHARE_ID,
-                menu_t("menu.context.shareOnGoogleDrive"),
-                true,
-                None::<&str>,
-            )?;
-            menu.append(&share_item)?;
-        }
         menu.append(&copy_link_item)?;
         // Files only: Gemini's `?di=` names a document, and a folder resolves no
         // Gemini URL at all.
@@ -413,6 +404,13 @@ pub fn build_context_menu<R: Runtime>(
             menu.append(&PredefinedMenuItem::separator(app)?)?;
             menu.append(&item)?;
         }
+    }
+
+    // The provider's own actions (Dropbox, Google Drive, MacDroid, …), evaluated the way
+    // Finder does and in the provider's order and words, below Cmdr's own cloud items.
+    #[cfg(target_os = "macos")]
+    if let Some(offer) = &info.file_provider_offer {
+        super::file_provider_items::append_file_provider_group(app, &menu, offer)?;
     }
 
     // Quick Look and Get Info are macOS-only

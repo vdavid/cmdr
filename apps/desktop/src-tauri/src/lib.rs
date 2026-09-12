@@ -322,6 +322,12 @@ pub fn run() {
             // Initialize the volume manager with the root volume
             file_system::init_volume_manager();
 
+            // Read which File Provider domains exist and what their extensions declare, on
+            // a thread of its own, so the first right-click in Dropbox or Google Drive
+            // already finds its actions.
+            #[cfg(target_os = "macos")]
+            file_system::file_provider_actions::warm();
+
             // Stash the AppHandle so the MCP `indexing` tool can drive
             // enable/rescan (which need a concrete handle) from its generic
             // executor. Disable/forget need no handle.

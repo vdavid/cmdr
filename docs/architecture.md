@@ -471,12 +471,13 @@ for backend work and live in `apps/desktop/src-tauri/CLAUDE.md` § Platform cons
 - **Keychain**: stores network credentials and trial state. Uses `security-framework` crate.
 - **copyfile(3)**: preserves xattrs, ACLs, resource forks. `COPYFILE_CLONE` for instant APFS clones.
 - **ptpcamerad**: auto-claims USB devices. MTP shows workaround dialog with Terminal command.
-- **File Provider integration**: `file_system/cloud_actions.rs` calls `NSFileProviderManager` for evict / download on
-  iCloud Drive, Dropbox, Google Drive, OneDrive, Box. `file_system/open_with.rs` uses
-  `NSWorkspace.URLsForApplicationsToOpenURL:` for "Open with" candidates. Both APIs descend into `fileproviderd` XPC for
-  cloud-stub files, which can blow rayon's 2 MB worker stack, so both modules use dedicated 8 MB-stack OS threads. The
-  Services menu (Quick Actions, third-party action extensions) is wired via `PredefinedMenuItem::services` in the `cmdr`
-  app menu.
+- **File Provider integration**: `file_system/cloud_actions.rs` evicts / downloads on iCloud Drive only (the
+  `FileManager` ubiquity APIs). `file_system/file_provider_actions/` offers every provider's own custom actions
+  (Dropbox, Google Drive, MacDroid, …) in the file context menu through FileProvider.framework's private host API.
+  `file_system/open_with.rs` uses `NSWorkspace.URLsForApplicationsToOpenURL:` for "Open with" candidates. These descend
+  into `fileproviderd` XPC for cloud-stub files, which can blow rayon's 2 MB worker stack, so they stay on dedicated 8
+  MB-stack OS threads. The Services menu (Quick Actions, third-party action extensions) is wired via
+  `PredefinedMenuItem::services` in the `cmdr` app menu.
 
 ### Dev mode
 

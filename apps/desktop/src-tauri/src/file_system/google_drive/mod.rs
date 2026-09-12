@@ -7,10 +7,10 @@
 //!
 //! Drive for desktop never registers a URL scheme (its `Info.plist` carries no
 //! `CFBundleURLTypes` and no `NSServices`, verified on Drive for desktop
-//! 2025-08 / macOS 15), so these items reach Drive through its web pages. The
-//! one exception is "Share on Google Drive", which opens Drive's own share
-//! dialog through File Provider's private action API, in stream mode only:
-//! [`share_dialog`] has the mechanism and why mirror mode can't have it.
+//! 2025-08 / macOS 15), so these items reach Drive through its web pages, which
+//! also work in mirror mode. Drive's own File Provider actions, Share among them,
+//! come through `file_system/file_provider_actions/`, which leaves out the three
+//! this module already covers.
 //!
 //! ## Where the item ID comes from
 //!
@@ -47,8 +47,6 @@
 //! an ID actually resolves, which is self-validating in every Drive setup.
 
 mod mirror_db;
-#[cfg(target_os = "macos")]
-pub mod share_dialog;
 
 use std::path::Path;
 

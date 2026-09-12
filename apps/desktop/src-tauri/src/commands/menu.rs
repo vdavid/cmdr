@@ -138,6 +138,8 @@ pub fn show_file_context_menu<R: Runtime>(
         {
             // Filled in from build_context_menu's return value below.
             context.open_with_apps.clear();
+            // What an `fp-action:<index>` click indexes into, replacing the last menu's.
+            context.file_provider_offer = info.file_provider_offer.clone();
         }
     }
 
@@ -211,6 +213,11 @@ pub fn show_file_context_menu<R: Runtime>(
 #[cfg(target_os = "macos")]
 const MENU_SYNC_STATUS_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(500);
 
+/// How long a context menu waits on File Provider for its rows' provider actions. Past it,
+/// the provider's group is left out rather than the menu held back.
+#[cfg(target_os = "macos")]
+const FILE_PROVIDER_ACTIONS_BUDGET: std::time::Duration = std::time::Duration::from_millis(250);
+
 #[cfg(target_os = "macos")]
 fn build_file_context_info(primary_path: &str, all_paths: &[String], is_directory: bool) -> FileContextInfo {
     use crate::file_system::cloud_actions::is_in_icloud_drive;
@@ -247,16 +254,14 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String], is_director
     // caches the account scan for exactly that reason).
     let google_drive_links = crate::file_system::google_drive::item_links(&path_buf, is_directory);
 
-    // "Share on Google Drive" asks File Provider over XPC, so only for ONE right-clicked
-    // item Drive already resolved (Drive's own action takes exactly one), and bounded: no
-    // answer in time means no item. A mirrored file isn't a File Provider item, so mirror
-    // mode always answers no here and its menu stays as it was.
-    const DRIVE_SHARE_GATE_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(250);
-    let google_drive_can_share = google_drive_links.is_some()
-        && all_paths.len() == 1
-        && crate::file_system::google_drive::share_dialog::can_share(&path_buf, DRIVE_SHARE_GATE_TIMEOUT);
+    // The rows' File Provider actions, the ones Finder would show. Bounded, because this
+    // runs before a context menu pops: a row outside every domain costs no File Provider
+    // call at all, and one inside waits at most the budget.
+    let path_bufs: Vec<PathBuf> = all_paths.iter().map(PathBuf::from).collect();
+    let file_provider_offer =
+        crate::file_system::file_provider_actions::offer_for(&path_bufs, FILE_PROVIDER_ACTIONS_BUDGET);
 
-    let open_with = compute_open_with_choices(all_paths.iter().map(PathBuf::from).collect());
+    let open_with = compute_open_with_choices(path_bufs);
 
     // Which color tags the WHOLE selection already carries (drives the checked circle).
     // Read each path's tags once; `applied_colors` marks a color only when every path
@@ -271,7 +276,7 @@ fn build_file_context_info(primary_path: &str, all_paths: &[String], is_director
         sync_status,
         is_icloud_drive,
         google_drive_links,
-        google_drive_can_share,
+        file_provider_offer,
         open_with,
         // Filled in by the caller, which holds the main-thread marker the enumeration
         // has to share with the click handler.

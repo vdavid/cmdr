@@ -35,6 +35,8 @@ mod command_map;
 mod context_menu_header;
 #[cfg(target_os = "macos")]
 mod context_menu_icons;
+#[cfg(target_os = "macos")]
+mod file_provider_items;
 pub mod install;
 mod item_states;
 // `pub(crate)` for one helper: `dock::menu` builds its own `NSMenu` by hand (Tauri
@@ -234,6 +236,10 @@ pub struct MenuContext {
     /// `open-with:<bundle-id>` item.
     #[cfg(target_os = "macos")]
     pub open_with_apps: HashMap<String, PathBuf>,
+    /// The File Provider actions the most recent file context menu offered, which an
+    /// `fp-action:<index>` click indexes into. Set when the menu is built.
+    #[cfg(target_os = "macos")]
+    pub file_provider_offer: Option<crate::file_system::file_provider_actions::ProviderOffer>,
     /// The focused pane's `listing_id` at the time the menu was shown, so a
     /// `tag-color:N` click can refresh that listing's cache after writing tags.
     /// Empty when the caller has no listing to refresh (the tag still writes to disk).
