@@ -113,7 +113,7 @@ cmdr-git = { path = "../../../crates/cmdr-git" }
 cmdr-index = { path = "../../../crates/cmdr-index" }
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
-tauri-plugin-mcp-bridge = "0.12"
+tauri-plugin-mcp-bridge = "0.13"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2.6"
 tauri-plugin-notification = "2.3.3"
@@ -306,7 +306,7 @@ freedesktop-icons = "0.4"
 # It carries `mtp-rs`, which the app no longer names directly.
 cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
-mdns-sd = { version = "0.20", features = ["logging"] }
+mdns-sd = { version = "0.21", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md

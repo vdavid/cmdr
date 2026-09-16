@@ -56,12 +56,12 @@ tar = "0.4"
 flate2 = "1"
 bzip2 = "0.6.1"
 ruzstd = "0.9.0"
-lzma-rust2 = "0.18.0"
+lzma-rust2 = "0.20.0"
 # 7z: metadata-only index, then per-block streaming. LZMA/LZMA2 decode is built in
 # (via `lzma-rust2`); `bzip2`/`deflate`/`ppmd` add the other common 7z codecs.
 # `aes256` decrypts a password-protected 7z. `compress` (the encoders) stays off
 # except under the `testing` feature, which fixtures need.
-sevenz-rust2 = { version = "0.21.2", default-features = false, features = [
+sevenz-rust2 = { version = "0.22.0", default-features = false, features = [
   "aes256",
   "bzip2",
   "deflate",
@@ -97,7 +97,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 uuid = { version = "1.19.0", features = ["v4"] }
 # The zstd ENCODER for `.tar.zst` fixtures (the shipped path decodes with the
 # pure-Rust `ruzstd`). Dev-only, so no C dependency reaches a shipped build.
-zstd = "0.13"
+zstd = "0.14"
 # `CancellationToken`, for the cancelable-listing test. Same version and feature
 # shape as `cmdr-fs`'s, so no second copy enters the graph.
 tokio-util = { version = "0.7.18", default-features = false }
