@@ -33,7 +33,7 @@ cmdr-fs = { path = "../cmdr-fs" }
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
 # PROPFIND `multistatus` parsing, namespace-aware: servers prefix `DAV:` as `D:`,
 # `d:`, `a:`, or nothing at all.
-quick-xml = "0.41"
+quick-xml = "0.42"
 url = "2"
 # Per-segment encoding of remote paths on their way into a URL.
 percent-encoding = "2"
