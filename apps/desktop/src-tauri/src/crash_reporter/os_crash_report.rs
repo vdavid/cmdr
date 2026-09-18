@@ -29,16 +29,12 @@
 //! redactor would pass them straight through (verified against a real `Cmdr-*.ips` on macOS 26.6.2,
 //! 2026-09-18).
 
-#[cfg(target_os = "macos")]
 use std::path::{Path, PathBuf};
-#[cfg(target_os = "macos")]
-use std::time::Duration;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 /// How far from the recorded crash time a report may sit and still be the same crash. `ReportCrash`
 /// writes within seconds, so this is slack for a busy machine rather than a real window. Anything
 /// wider risks attaching the previous crash's stack to this report, which is worse than no stack.
-#[cfg(target_os = "macos")]
 const MATCH_WINDOW: Duration = Duration::from_secs(120);
 
 /// Frames kept from the faulting thread. Deep enough for the whole run-loop path in a WebKit crash
@@ -52,7 +48,6 @@ const MAX_FRAME_CHARS: usize = 300;
 
 /// Biggest `.ips` we'll read. Real ones run 20 KB to 500 KB (most of it threads we don't keep);
 /// the cap is only here so a pathological file can't be pulled into memory at launch.
-#[cfg(target_os = "macos")]
 const MAX_IPS_BYTES: u64 = 8 * 1024 * 1024;
 
 /// What we lift out of one macOS crash report.
@@ -72,7 +67,6 @@ pub struct OsCrashReport {
 /// problem: the directory may be unreadable, `ReportCrash` may not have finished writing yet when
 /// the user relaunches quickly, or the crash may predate this code. The caller still has its own
 /// raw addresses and `imageBase`.
-#[cfg(target_os = "macos")]
 pub fn extract_near(process_name: &str, crash_time: SystemTime) -> Option<OsCrashReport> {
     let dir = diagnostic_reports_dir()?;
     let path = find_report(&dir, process_name, crash_time)?;
@@ -85,12 +79,6 @@ pub fn extract_near(process_name: &str, crash_time: SystemTime) -> Option<OsCras
     parse_report(&text)
 }
 
-#[cfg(not(target_os = "macos"))]
-pub fn extract_near(_process_name: &str, _crash_time: SystemTime) -> Option<OsCrashReport> {
-    None
-}
-
-#[cfg(target_os = "macos")]
 fn diagnostic_reports_dir() -> Option<PathBuf> {
     // `$HOME` rather than a crate: this runs at launch on the startup path, and the per-user
     // directory has been at this exact location for every macOS we support.
@@ -105,7 +93,6 @@ fn diagnostic_reports_dir() -> Option<PathBuf> {
 /// wins rather than the first, so a user who crashed twice in a minute still gets the right one.
 /// ❌ Never fall back to "the newest report for this process": that silently attaches an unrelated
 /// stack to the report, and a wrong stack costs more than a missing one.
-#[cfg(target_os = "macos")]
 fn find_report(dir: &Path, process_name: &str, crash_time: SystemTime) -> Option<PathBuf> {
     let prefix = format!("{process_name}-");
     let mut best: Option<(Duration, PathBuf)> = None;

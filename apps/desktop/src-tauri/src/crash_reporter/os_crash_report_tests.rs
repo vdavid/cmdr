@@ -205,7 +205,6 @@ fn a_path_inside_a_symbol_is_redacted() {
     assert!(!report.frames[0].contains("Secret"), "got {}", report.frames[0]);
 }
 
-#[cfg(target_os = "macos")]
 mod finding_the_file {
     use super::*;
     use std::time::Duration;

@@ -6,6 +6,7 @@
 
 mod contain;
 mod next_launch;
+#[cfg(target_os = "macos")]
 mod os_crash_report;
 mod panic_courier;
 #[cfg(unix)]

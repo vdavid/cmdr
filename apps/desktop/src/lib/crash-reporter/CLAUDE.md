@@ -9,8 +9,8 @@ and collects the user's choices.
 
 - `CrashReportDialog.svelte`: the decide-and-send dialog (report ID, expandable JSON, "Always send", attach-email,
   Dismiss / Send report).
-- `CrashReportToastContent.svelte`: the after-auto-send toast (one line, the "Attach logs" offer, and "Change in Settings >
-  Updates").
+- `CrashReportToastContent.svelte`: the after-auto-send toast (one line, the "Attach logs" offer, and "Change in
+  Settings > Updates").
 - `crash-copy.ts`: maps the report's `appFate` to the body, title, and sent-toast keys that are true of it.
 - `pending-crash-report.ts`: the next-launch check `routes/(main)/+layout.svelte` runs after settings load. Auto-sends
   and toasts, or hands the report to the dialog.
@@ -24,8 +24,8 @@ and collects the user's choices.
   The three report consents.
 - **The sent toast's "Attach logs" button IS the consent for that one bundle**, and changes no setting. ❌ Never call
   `sendCrashLogReport` without the press, and ❌ never let it grow an email: `AttachedEmail` comes from the Flow A
-  dialog alone. It scopes the bundle around the CRASH timestamp, not around this launch, and the offer is one-shot:
-  gone once a send lands OR fails. `DETAILS.md` § Sending the log with a crash report.
+  dialog alone. It scopes the bundle around the CRASH timestamp, not around this launch, and the offer is one-shot: gone
+  once a send lands OR fails. `DETAILS.md` § Sending the log with a crash report.
 - **A crash loop overrides the opt-in.** Auto-send needs `updates.crashReports` AND `!report.possibleCrashLoop`;
   otherwise the dialog shows. A crashing app must never silently fire a report per launch. Don't simplify that condition
   to the setting alone.

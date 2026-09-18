@@ -53,8 +53,8 @@ A crash report carries no log, and `updates.errorReports` is opt-in, so most cra
 nothing about what the person was doing. `CRASH-V2SCH` is the case that argued for this: a `SIGSEGV` with no note, no
 email, and no bundle from that install anywhere in the same window.
 
-The sent-confirmation toast therefore offers "Attach logs", under a line asking whether the user wants to help
-diagnose the crash and saying that private info is anonymized first. That press calls `send_crash_log_report`
+The sent-confirmation toast therefore offers "Attach logs", under a line asking whether the user wants to help diagnose
+the crash and saying that private info is anonymized first. That press calls `send_crash_log_report`
 (`commands/error_reporter.rs`) and is the whole consent model here:
 
 - **It changes no setting.** ❌ Never make it flip `updates.errorReports`, and ❌ never send without the press. The
@@ -71,9 +71,9 @@ diagnose the crash and saying that private info is anonymized first. That press 
   ❌ No email is ever attached: `AttachedEmail` has one constructor and it belongs to the Flow A dialog.
 - **The offer is one-shot**: it goes away once the log lands, and also once a send DOESN'T. A toast carrying an
   invitation, a failure, and a retry all at once reads as three things competing, and the crash report this is about
-  went out either way, so nothing urgent is lost. `Help > Send error report` is still there for someone who wants to
-  try again. `offerOpen` in the component is the single derived flag, so the message, the hint, and the button can't
-  drift into disagreeing about it.
+  went out either way, so nothing urgent is lost. `Help > Send error report` is still there for someone who wants to try
+  again. `offerOpen` in the component is the single derived flag, so the message, the hint, and the button can't drift
+  into disagreeing about it.
 - A failed send stays at `warn`. An `error` there would try to auto-report through the server that just didn't answer.
 
 ## Dialog states and choices

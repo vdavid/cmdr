@@ -267,6 +267,10 @@ Our signal handler can only capture raw addresses, and the frames that matter in
 WebKit or AppKit, where our own symbols would be no help even with an `imageBase`. macOS writes a fully symbolicated
 report for the same crash to `~/Library/Logs/DiagnosticReports/`, and `os_crash_report.rs` reads it at the next launch.
 
+- ❗ **The whole `os_crash_report` module is `#[cfg(target_os = "macos")]`, not just its entry point.** `.ips` files
+  are macOS's, so on Linux every parser and renderer in it is unreachable and the build fails on dead code (it did,
+  after this shipped). `next_launch::attach_os_crash_report` has a non-macOS twin that returns `false`. ❌ Don't gate
+  item-by-item and leave the parser compiled everywhere.
 - **It exists because the handler re-raises.** `install()` registers with `SA_RESETHAND` and the handler ends in
   `raise(sig)`, so the default disposition runs and `ReportCrash` does its work. ❌ Don't change either without
   understanding that this whole section depends on them.
