@@ -458,6 +458,39 @@ Two invariants the sweep must keep, both pinned by tests in `src/scheduled.test.
 
 Every statement is idempotent: each `WHERE` excludes what it already cleared, so re-running after an outage is free.
 
+## The backlog board
+
+Two repos feed the Cmdr backlog project (`https://github.com/users/vdavid/projects/2`), by two different routes, and the
+split is forced by how GitHub scopes project access.
+
+- **`vdavid/cmdr` (PUBLIC)** → `POST /webhook/github` (`webhook-github.ts` + `project-board.ts`). An `issues`/`opened`
+  delivery adds the issue and sets Status to Triage.
+- **`vdavid/cmdr-reports` (PRIVATE)** → the project's own built-in "Auto-add to project" workflow, configured in
+  GitHub's UI.
+
+**Why not one mechanism for both.** The free plan allows exactly ONE auto-add workflow, so one repo has to be served
+some other way. It has to be the public one: adding a PRIVATE repo's issue to a USER-OWNED project requires a classic
+PAT with `repo` scope (full read/write over every repo the account owns), because a `project`-scoped token cannot
+resolve a private issue's node at all (verified against the live API, 2026-09-19:
+`Could not resolve to a node with the global id`). A fine-grained PAT can carry `Projects: Read and write`, but only as
+an ORGANIZATION permission, so it does nothing for a user-owned board. ❌ Never widen `GITHUB_PROJECT_TOKEN` to `repo`
+to collapse these two paths: it would put a credential with full access to every repo next to the one thing this
+subsystem exists to keep narrow. The real fix, if the split ever becomes a problem, is moving the project to an
+organization, where a fine-grained token scoped to that org's projects plus read on one repo does everything.
+
+**What the token can do**, and why it is safe in a Worker secret: `project` scope alone rearranges project boards. It
+reads no repository contents, no private data, and no user reports.
+
+**Failures are loud.** A classic PAT expires, and the failure mode is issues quietly not arriving. `addIssueToBoard`
+returns false on every failure and the route posts to the Discord alarm channel, naming the issue and pointing at the
+token. The status update is deliberately NOT part of that answer: an item in the wrong column is cosmetic, an item that
+never arrived is not.
+
+**The signature is the only thing that refuses.** Everything the route understands answers 204, including ignored
+events, because a 4xx on a normal delivery is a red cross in GitHub's webhook UI forever. Renovate and Dependabot are
+skipped by author: Renovate's long-lived Dependency Dashboard issue carries no labels, so a label filter cannot catch
+it.
+
 ## The reports repo
 
 `github-issues.ts` files each in-app error report and feedback message as an issue in the PRIVATE repo named by

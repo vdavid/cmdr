@@ -10,6 +10,7 @@ import { feedback } from './telemetry/feedback'
 import { likes } from './website/likes'
 import { betaSignup } from './website/beta-signup'
 import { linkCodes } from './website/link-codes'
+import { webhookGitHub } from './webhook-github'
 import {
   handleCrashNotifications,
   handleEmailPathProbe,
@@ -43,6 +44,7 @@ app.route('/', errorReportAmend)
 app.route('/', betaSignup)
 app.route('/', feedback)
 app.route('/', linkCodes)
+app.route('/', webhookGitHub)
 
 export { app }
 

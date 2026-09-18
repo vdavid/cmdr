@@ -180,6 +180,17 @@ LISTMONK_NEWSLETTER_LIST_ID = 3
 # a same-named secret, which a later `wrangler deploy` would silently clobber back to this value.
 GITHUB_ISSUES_REPO = "vdavid/cmdr-reports"
 
+# The Cmdr backlog project board (https://github.com/users/vdavid/projects/2) and the Status field's
+# Triage option. Not secret: these are opaque node ids, useless without the token.
+#
+# Fed by POST /webhook/github when an issue opens in the PUBLIC repo. The PRIVATE cmdr-reports repo
+# is served by the project's own built-in "Auto-add to project" workflow instead, because adding a
+# private repo's issue to a user-owned project needs a classic PAT with `repo` scope, and that is a
+# credential this Worker should not hold. See src/project-board.ts.
+GITHUB_PROJECT_ID = "PVT_kwHOACbxyc4BiPbZ"
+GITHUB_PROJECT_STATUS_FIELD_ID = "PVTSSF_lAHOACbxyc4BiPbZzhhIMOg"
+GITHUB_PROJECT_TRIAGE_OPTION_ID = "6d6cdf53"
+
 # Secrets (set via `wrangler secret put <NAME>`):
 # - PADDLE_WEBHOOK_SECRET_LIVE     (from Paddle live dashboard)
 # - PADDLE_WEBHOOK_SECRET_SANDBOX  (from Paddle sandbox dashboard)
@@ -222,6 +233,15 @@ GITHUB_ISSUES_REPO = "vdavid/cmdr-reports"
 # - R2_ACCOUNT_ID                  (for minting presigned R2 GET URLs)
 # - R2_ACCESS_KEY_ID               (R2 S3-compatible access key; read-only suffices)
 # - R2_SECRET_ACCESS_KEY           (paired secret for R2_ACCESS_KEY_ID)
+# - GITHUB_PROJECT_TOKEN          (classic PAT carrying `project` scope ALONE, for the backlog board.
+#                                   Verified 2026-09-19: it resolves PUBLIC issues and cannot resolve
+#                                   a private repo's issue at all, so a leak costs project boards and
+#                                   nothing else. ❌ Never add `repo` to make private issues work;
+#                                   src/project-board.ts says what to do instead. Classic PATs expire,
+#                                   and the route alerts Discord when an add fails, which is what an
+#                                   expired token looks like.)
+# - GITHUB_WEBHOOK_SECRET          (HMAC secret GitHub signs `issues` deliveries with; the webhook on
+#                                   vdavid/cmdr holds the same value. Unset disables the route.)
 # - GITHUB_ISSUES_TOKEN            (fine-grained PAT, scoped to the ONE repo in GITHUB_ISSUES_REPO,
 #                                   with Issues: read and write plus the mandatory Metadata: read.
 #                                   ❌ Never a classic PAT: `repo` scope would make this Worker's env

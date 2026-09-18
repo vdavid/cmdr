@@ -168,6 +168,17 @@ export function buildPersonalComment(input: PersonalCommentInput): string | null
   return truncate(sections.join('\n\n'), SAFE_TEXT_BUDGET)
 }
 
+/**
+ * `macOS <version>`, without doubling the prefix when the client already sent one.
+ *
+ * Older clients send a bare `15.3.1`, some send `macOS 10.15.8`. ERR-KVERS was titled
+ * "macOS macOS 10.15.8" before this existed.
+ */
+function macOsLabel(osVersion: string): string {
+  const trimmed = osVersion.trim()
+  return /^macos\b/i.test(trimmed) ? trimmed : `macOS ${trimmed}`
+}
+
 /** The three parts of an issue, built before anything touches the network. */
 export interface IssueContent {
   title: string
@@ -202,7 +213,7 @@ export function buildErrorReportIssue(input: ErrorReportIssueInput): IssueConten
     `**Report id**: \`${input.id}\``,
     `**Kind**: ${input.kind === 'user' ? 'hand-written' : 'auto-sent'}`,
     `**App version**: ${input.appVersion}`,
-    `**macOS**: ${input.osVersion} · **Arch**: ${input.arch}`,
+    `**OS**: ${macOsLabel(input.osVersion)} · **Arch**: ${input.arch}`,
     `**Bundle**: ${formatBytes(input.sizeBytes)}, uploaded ${uploadedAt} UTC`,
     `**R2 key**: \`${input.r2Key}\``,
     '',
@@ -215,7 +226,7 @@ export function buildErrorReportIssue(input: ErrorReportIssueInput): IssueConten
   if (input.email?.trim()) labels.push('needs-reply')
 
   return {
-    title: `${input.id}: ${kindWord} report on ${input.appVersion} (macOS ${input.osVersion})`,
+    title: `${input.id}: ${kindWord} report on ${input.appVersion} (${macOsLabel(input.osVersion)})`,
     body,
     labels,
   }
@@ -241,7 +252,7 @@ export function buildFeedbackIssue(input: FeedbackIssueInput): IssueContent {
   const body = [
     `**Feedback row**: \`${String(input.rowId)}\` in the D1 \`feedback\` table`,
     `**App version**: ${input.appVersion}`,
-    `**macOS**: ${input.osVersion}`,
+    `**OS**: ${macOsLabel(input.osVersion)}`,
     '',
     '**What they wrote**',
     '',
@@ -256,7 +267,7 @@ export function buildFeedbackIssue(input: FeedbackIssueInput): IssueContent {
   if (input.email?.trim()) labels.push('needs-reply')
 
   return {
-    title: `Feedback #${String(input.rowId)} on ${input.appVersion} (macOS ${input.osVersion})`,
+    title: `Feedback #${String(input.rowId)} on ${input.appVersion} (${macOsLabel(input.osVersion)})`,
     body: truncate(body, SAFE_TEXT_BUDGET),
     labels,
   }

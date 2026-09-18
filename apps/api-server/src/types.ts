@@ -89,6 +89,17 @@ export type Bindings = {
   // publish a user's note. The var lives in wrangler.toml; the token is a secret.
   GITHUB_ISSUES_REPO?: string
   GITHUB_ISSUES_TOKEN?: string
+  // The Cmdr backlog project board, fed by `POST /webhook/github` when an issue opens in the PUBLIC
+  // repo. `GITHUB_PROJECT_TOKEN` is a classic PAT carrying `project` scope ALONE: it can rearrange
+  // project boards and cannot read a private repo at all, which is what makes it safe to hold here.
+  // ❌ Never widen it to `repo`; see `project-board.ts`. `GITHUB_WEBHOOK_SECRET` is the HMAC secret
+  // GitHub signs deliveries with. All optional: with any of them unset the route answers 204 and
+  // adds nothing. The field and option ids are vars (they're not secret); the two tokens are secrets.
+  GITHUB_PROJECT_TOKEN?: string
+  GITHUB_PROJECT_ID?: string
+  GITHUB_PROJECT_STATUS_FIELD_ID?: string
+  GITHUB_PROJECT_TRIAGE_OPTION_ID?: string
+  GITHUB_WEBHOOK_SECRET?: string
   // R2 S3-compatible credentials, used to mint long-TTL presigned download URLs
   // for the Discord embed. Bindings can't presign on their own, but the S3 API can.
   R2_ACCOUNT_ID?: string

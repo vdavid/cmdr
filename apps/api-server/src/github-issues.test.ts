@@ -135,6 +135,19 @@ describe('buildErrorReportIssue', () => {
     expect(labels).toContain('error-report')
   })
 
+  it('does not double the macOS prefix a client already sent', () => {
+    // ERR-KVERS arrived titled "macOS macOS 10.15.8": some clients send the prefix, some don't.
+    expect(buildErrorReportIssue({ ...errorReport, osVersion: 'macOS 10.15.8' }).title).toBe(
+      'ERR-A2345: user report on 0.46.0 (macOS 10.15.8)',
+    )
+    expect(buildErrorReportIssue({ ...errorReport, osVersion: '15.3.1' }).title).toBe(
+      'ERR-A2345: user report on 0.46.0 (macOS 15.3.1)',
+    )
+    expect(buildFeedbackIssue({ ...feedbackInput, osVersion: 'macOS 10.15.8' }).title).toBe(
+      'Feedback #42 on 0.46.0 (macOS 10.15.8)',
+    )
+  })
+
   it('labels a report that carries a reply-to so it can be answered', () => {
     expect(buildErrorReportIssue({ ...errorReport, email: 'jane@example.com' }).labels).toContain('needs-reply')
     expect(buildErrorReportIssue(errorReport).labels).not.toContain('needs-reply')
