@@ -19,8 +19,7 @@ use objc2_disk_arbitration::DASession;
 use objc2_io_kit::{
     IOBSDNameMatching, IOIteratorNext, IOObjectRelease, IOObjectRetain, IORegistryEntryCreateCFProperty,
     IORegistryEntryCreateIterator, IORegistryEntryGetParentEntry, IORegistryEntryGetRegistryEntryID,
-    IOServiceGetMatchingService, io_object_t, io_registry_entry_t, kIOMainPortDefault, kIORegistryIterateRecursively,
-    kIOServicePlane,
+    IOServiceGetMatchingService, io_object_t, io_registry_entry_t, kIORegistryIterateRecursively, kIOServicePlane,
 };
 
 use super::in_flight::DiskKey;
@@ -151,9 +150,15 @@ fn media_for(bsd_name: &str) -> Option<io_object_t> {
 }
 
 /// The default IOKit main port.
+///
+/// ❗ The literal 0, ❌ never `kIOMainPortDefault`: that global arrived in macOS 12, dyld binds it
+/// before `main`, and v0.46.0 died on the 10.15 floor with `Symbol not found: _kIOMainPortDefault`
+/// before any of our code ran. `IOKitLib.h` calls the constant "a synonym for NULL", and NULL is
+/// what every IOKit entry point documents as "use the default", so 0 says the same thing on every
+/// version (`sysinfo` and `licensing::device_id` take the same route). Enforced by
+/// `desktop-macos-symbol-floor`.
 fn main_port() -> libc::mach_port_t {
-    // SAFETY: `kIOMainPortDefault` is an `extern "C"` IOKit global, read by value.
-    unsafe { kIOMainPortDefault }
+    0
 }
 
 /// The topmost WHOLE media at or above `media`: the hardware, rather than a

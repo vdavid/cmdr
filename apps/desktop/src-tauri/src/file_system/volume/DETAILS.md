@@ -416,6 +416,12 @@ destination goes through, plus `path_exists`.
 trait it dispatches over: `mod.rs` holds the pipeline and `EjectError`, `unmount_tool.rs` the `diskutil` / `umount`
 subprocess, `disk_target.rs` + `disk_flight.rs` (macOS) the per-physical-disk eject below, and `holders/` the scan that
 names a refusal's holders.
+❗ **`disk_target.rs` asks IOKit for the default port with the literal 0, ❌ never `kIOMainPortDefault`.** That global
+arrived in macOS 12, dyld binds a data symbol before `main`, and v0.46.0 shipped it: every macOS 10.15 and 11 user got
+`Symbol not found: _kIOMainPortDefault` and an abort at launch, with IOKit itself present all along. `IOKitLib.h` calls
+the constant "a synonym for NULL", so 0 names the same port on every version. `desktop-macos-symbol-floor` fails a build
+that imports a symbol newer than the floor now.
+
 `commands::eject::eject_volume` is a thin delegate; the pipeline is:
 
 1. **Busy gate**: refuse (`EjectError::Busy`) if a write op is touching the volume (`file_system::busy_volume_ids`), so
