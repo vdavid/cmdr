@@ -190,8 +190,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   resolve the `volume_id`, and apply the 5 s write timeout, shipping the typed `MutationError` unchanged; the logic and the managed instant op live
   in `file_system::write_operations::{create,rename}`. For a non-root `volume_id`, `delete_files` uses the volume-aware
   delete and skips local `validate_sources` (MTP virtual paths fail `symlink_metadata`), and `rename_file` passes the id
-  through and skips permission checks. The local rename notifies the listing cache via `notify_rename_in_listing`, the
-  volume one via its own `notify_mutation`.
+  through. The local rename notifies the listing cache via `notify_rename_in_listing`, the volume one via its own
+  `notify_mutation`. `check_rename_permission` takes the id too, and hands the whole decision to
+  `write_operations::rename::check_rename_permission_for_volume`: its three syscalls only speak plain POSIX paths, so a
+  volume whose `supports_local_fs_access()` is false (and an id that resolves to no volume at all) answers `Ok`
+  untouched. ❗ It used to run unconditionally, which made every F2 on an SFTP / WebDAV / ADB pane fail with a
+  `NotFound` naming the scheme-prefixed path (ERR-KVERS).
 - **`operation_log.rs`**: the journal's read side (`get_recent_operation_log_entries`, `get_operation_log_detail`, both
   thin pass-throughs over `operation_log::query` on a short-lived read-only connection) plus two write entries over the
   same rollback engine. `rollback_operation` reverses ONE and returns after DISPATCH, so the history dialog's Roll back

@@ -5,7 +5,7 @@
 //! timeout tiers (2 s validity/permission, 5 s rename). All the business logic
 //! lives here per "smart backend / thin frontend".
 //!
-//! - **Validation** (`check_rename_permission_sync`, `check_rename_validity_impl`)
+//! - **Validation** (`check_rename_permission_for_volume`, `check_rename_validity_impl`)
 //!   is the snappy, UNMANAGED path: read-only, runs per-keystroke / on-commit,
 //!   never touches the operation manager.
 //! - **The mutation** (`rename_managed`) is a managed instant op: it runs the
@@ -85,10 +85,32 @@ pub(crate) async fn rename_managed(
     // renames and quietly miss every in-zip one.
     let (result, target) = rename_managed_inner(from, to, force, volume_id, initiator).await;
     if let Err(error) = &result {
-        log_rename_refusal(&attempted, &attempted_volume, error);
+        log_rename_refusal(RenameStage::Rename, &attempted, &attempted_volume, error);
     }
     super::analytics::emit_rename_analytics(initiator, target, &result);
     result
+}
+
+/// Which of the two points a rename can be refused at.
+///
+/// Both reach the user as the same one-line message under the name field, so a
+/// log line that doesn't say which one answered sends the next reader to the
+/// wrong half of the flow.
+#[derive(Clone, Copy)]
+enum RenameStage {
+    /// `check_rename_permission_for_volume`, before the editor opens.
+    Preflight,
+    /// `rename_managed`, the rename itself.
+    Rename,
+}
+
+impl RenameStage {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Preflight => "rename pre-flight",
+            Self::Rename => "rename",
+        }
+    }
 }
 
 /// Writes the one line that says why a rename didn't happen.
@@ -102,7 +124,7 @@ pub(crate) async fn rename_managed(
 /// A name that's taken or empty is an ordinary answer to an ordinary typo, so it
 /// stays at debug; the rest mean something went wrong and carry the detail
 /// (errno included) that says what.
-fn log_rename_refusal(from: &Path, volume_id: &str, error: &MutationError) {
+fn log_rename_refusal(stage: RenameStage, from: &Path, volume_id: &str, error: &MutationError) {
     let expected = matches!(
         error,
         MutationError::AlreadyExists { .. }
@@ -110,10 +132,11 @@ fn log_rename_refusal(from: &Path, volume_id: &str, error: &MutationError) {
             | MutationError::NameHasDisallowedCharacter
             | MutationError::CantRenameVolumeRoot
     );
+    let stage = stage.label();
     if expected {
-        log::debug!(target: "volume", "rename refused on '{volume_id}': {error} ({})", from.display());
+        log::debug!(target: "volume", "{stage} refused on '{volume_id}': {error} ({})", from.display());
     } else {
-        log::warn!(target: "volume", "rename refused on '{volume_id}': {error} ({})", from.display());
+        log::warn!(target: "volume", "{stage} refused on '{volume_id}': {error} ({})", from.display());
     }
 }
 
@@ -436,9 +459,59 @@ async fn notify_rename_in_listing(volume_id: &str, from: &Path, to: &Path) {
     }
 }
 
+/// The pre-flight the inline editor runs before it opens: may this path be
+/// renamed at all?
+///
+/// **Whether it applies is the VOLUME's answer, ❌ never the id's spelling.**
+/// The check below is `lstat` + `access`, so it means something only for a path
+/// an OS syscall can open by itself. A volume that serves its own I/O spells its
+/// paths with a scheme (`sftp://root@host:22/srv/data/x.xml`), and handing one to
+/// `symlink_metadata` doesn't ask a question, it manufactures a `NotFound`:
+/// ERR-KVERS reached a user as "There's nothing at "sftp://…" any more" on every
+/// F2, because the rename itself was never reached. Skipping is safe on those
+/// volumes — `rename_managed` is the authority, and it refuses with the backend's
+/// own typed answer.
+///
+/// An id that resolves to no volume skips too: it's an unmount race, and the
+/// rename behind it will say so properly.
+pub(crate) async fn check_rename_permission_for_volume(path: PathBuf, volume_id: String) -> Result<(), MutationError> {
+    if !preflight_reaches(&volume_id) {
+        log::debug!(
+            target: "volume",
+            "rename pre-flight skipped on '{volume_id}': the volume serves its own I/O ({})",
+            path.display()
+        );
+        return Ok(());
+    }
+
+    let attempted = path.clone();
+    let result = match tokio::task::spawn_blocking(move || check_rename_permission_sync(&path)).await {
+        Ok(result) => result,
+        Err(join_err) => Err(MutationError::Unexpected {
+            detail: format!("the permission check didn't finish: {join_err}"),
+        }),
+    };
+    if let Err(error) = &result {
+        log_rename_refusal(RenameStage::Preflight, &attempted, &volume_id, error);
+    }
+    result
+}
+
+/// Whether a local `lstat` / `access` can answer for a path on this volume.
+fn preflight_reaches(volume_id: &str) -> bool {
+    if volume_id == "root" {
+        return true;
+    }
+    crate::file_system::volume::manager::get_volume_manager()
+        .get(volume_id)
+        .is_some_and(|volume| volume.supports_local_fs_access())
+}
+
 /// Synchronous permission check: file exists, parent writable, and (macOS) not
-/// immutable / SIP-protected. Runs in `spawn_blocking` at the command layer.
-pub(crate) fn check_rename_permission_sync(path: &Path) -> Result<(), MutationError> {
+/// immutable / SIP-protected. Runs on the blocking pool, behind the volume gate
+/// in [`check_rename_permission_for_volume`] — ❌ never on a path off a volume
+/// that serves its own I/O.
+fn check_rename_permission_sync(path: &Path) -> Result<(), MutationError> {
     // Check that the file itself exists
     if std::fs::symlink_metadata(path).is_err() {
         return Err(MutationError::NotFound {

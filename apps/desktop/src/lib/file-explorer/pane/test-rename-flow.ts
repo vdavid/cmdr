@@ -160,6 +160,8 @@ export function buildFlow(
   getEntry: () => Entry | undefined = () => PASTED,
   showHiddenFiles = true,
   listingDeps: ReturnType<typeof chainListing>['deps'] | typeof NO_NEIGHBOURS = NO_NEIGHBOURS,
+  /** The pane's volume, for the tests that care which one the flow passes on. */
+  volumeId = 'root',
 ) {
   const rename = createRenameState()
   const onRequestFocus = vi.fn()
@@ -170,7 +172,7 @@ export function buildFlow(
     getIncludeHidden: () => false,
     getCurrentPath: () => '/dir',
     getShowHiddenFiles: () => showHiddenFiles,
-    getVolumeId: () => 'root',
+    getVolumeId: () => volumeId,
     getEntryUnderCursor: () => getEntry() as never,
     onRequestFocus,
     ...listingDeps,

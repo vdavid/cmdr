@@ -37,11 +37,19 @@ Depth and rationale for inline rename. `CLAUDE.md` holds the must-knows.
 Conflict resolution calls `performRename(target, newName, force: true)` after "Overwrite and trash/delete". The
 `moveToTrash` call in the overwrite-trash path also has timeout detection (persistent toast + refresh).
 
-## Permission check on activation (`checkRenamePermission(path)`)
+## Permission check on activation (`checkRenamePermission(path, volumeId)`)
 
 Verifies: parent dir writable (Unix `access(W_OK)`), file not immutable (`UF_IMMUTABLE`), file not SIP-protected
 (`SF_IMMUTABLE`). On failure, auto-cancel and notify. On read-only volumes, show modal alert "This is a read-only
-volume. Renaming isn't possible here." Skipped for MTP volumes (Unix `access()` doesn't work on MTP virtual paths).
+volume. Renaming isn't possible here."
+
+**Who it applies to is Rust's call, per volume**, which is why `volumeId` rides along: the check is local, and a volume
+serving its own I/O answers `Ok` untouched. Mechanism, rationale, and the refusal logging:
+`apps/desktop/src-tauri/src/file_system/write_operations/DETAILS.md` § "The rename pre-flight, and who it applies to".
+
+The flow itself skips one thing on its own: an archive-inner path (`pathInsideArchive`, kind-from-path, which no volume
+id can express). ❌ Don't reintroduce a frontend prefix test — `!volumeId.startsWith('mtp-')` was the whole gate once,
+and every backend that arrived after MTP refused F2 outright (ERR-KVERS).
 
 ## Validation
 

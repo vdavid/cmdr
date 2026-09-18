@@ -529,8 +529,7 @@ capability record is the "differently complicated" failure mode to avoid:
 - **Namespace / path mechanics (which string scheme, not what's allowed).** `navigate.ts` and `navigate-refusals.ts`
   (the on-network / on-MTP refusal sources + the `smb://` / `search-results://` drop-foreign-listings prefix +
   `validateMtpNavigation` path parse), `DualPaneExplorer.svelte` (synthetic `smb://` path/name synthesis + the
-  network-mirror / copy-path-between-panes identity branches), `rename-flow.svelte.ts` (skip the Unix-`access()`
-  permission check on MTP virtual paths — a syscall-support mechanic, not a "may rename" capability).
+  network-mirror / copy-path-between-panes identity branches).
 - **Display / view selection.** `VolumeBreadcrumb.svelte` (the "Network" / "Search results" labels + the
   network-disabled gate), `FilePane.svelte` (`paneViewKind` in the `{#if}` chain, sourced off `caps.kind`; the
   `isNetworkView` / `isSearchResultsView` named deriveds; the MTP device-only sub-state + the `loadDirectory` skip for

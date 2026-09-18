@@ -431,6 +431,28 @@ the only `Err` it can produce is the deadline or a panicked task; and `paste_cli
 `CreateFile` op under the hood and refuses the way one does (`paste_clipboard.rs`). A volume's own refusal rides through
 `MutationError::Volume` carrying the whole `VolumeError`. Full rules: `docs/guides/error-handling.md`.
 
+## The rename pre-flight, and who it applies to
+
+`check_rename_permission_for_volume` (`rename.rs`) is what the inline editor asks before it opens: parent writable
+(`access(W_OK)`), not user-immutable, not SIP-protected. All three are local syscalls, so **whether the check applies at
+all is the volume's answer, ❌ never the shape of its id**: it runs when `volume_id` is `"root"` or a registered volume
+reports `supports_local_fs_access()`, and returns `Ok` untouched otherwise, an id that resolves to no volume included
+(an unmount race is the rename's to word, and it does).
+
+A volume serving its own I/O spells its paths with a scheme (`sftp://root@host:22/srv/data/x.xml`), which
+`symlink_metadata` can't open, so running the check there doesn't answer the question — it manufactures a `NotFound`
+carrying the URL. ERR-KVERS was exactly that: the frontend gate skipped only `mtp-`-prefixed ids, so SFTP, WebDAV, and
+ADB each inherited a rename that refused before anything was attempted, and the user saw "There's nothing at
+"sftp://…" any more" four times in 45 seconds. Skipping costs nothing: `rename_managed` is the authority and refuses
+with the backend's own typed answer.
+
+**Both refusal points log, and say which one they are.** `log_rename_refusal` takes a `RenameStage`
+(`rename pre-flight` / `rename`) and writes one line at `target: "volume"` — `debug` for an ordinary typo
+(`AlreadyExists`, `NameEmpty`, …), `warn` for anything technical, where the `Display` carries the errno. Without the
+stage a reader can't tell which half answered, and without the line at all a refusal reaches the error-report bundle
+over an empty log: that was ERR-8RFN4, and the pre-flight kept that blind spot for one release after the rename closed
+it. Only the file log chain is `Debug` unconditionally, so both levels land in the bundle.
+
 ## Cmdr-own-write hook (downloads watcher)
 
 Every write-op driver MUST register its destination with the downloads watcher's ignore set BEFORE issuing the syscall. This is what makes the watcher silently suppress events Cmdr itself caused, so the user doesn't see a "Downloaded foo.bin" toast when they just used Cmdr to copy 100 files into `~/Downloads`.

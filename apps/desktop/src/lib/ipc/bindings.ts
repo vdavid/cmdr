@@ -1143,9 +1143,13 @@ export const commands = {
   /**
    *  Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not
    *  locked).
+   *
+   *  Local-only by nature, so `volume_id` decides whether it runs at all: a volume
+   *  serving its own I/O answers `Ok` untouched. See
+   *  [`check_rename_permission_for_volume`].
    */
-  checkRenamePermission: (path: string) =>
-    typedError<null, MutationError>(__TAURI_INVOKE('check_rename_permission', { path })),
+  checkRenamePermission: (path: string, volumeId: string | null) =>
+    typedError<null, MutationError>(__TAURI_INVOKE('check_rename_permission', { path, volumeId })),
   /**
    *  Validates a new filename and checks for conflicts in the same directory.
    *  Uses inode comparison to detect case-only renames (valid on case-insensitive APFS).

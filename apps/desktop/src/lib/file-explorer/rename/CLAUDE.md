@@ -24,18 +24,17 @@ Full details (save flow, validation tiers, cursor tracking, decisions): `DETAILS
   APFS `readme.txt` → `README.txt` is the same file, which `exists()` would call a conflict.
 - **A `renameFile` / `moveToTrash` timeout is not a failure**: the rename may have landed on disk, so warn honestly
   ("may have succeeded"), never as a kept name, and refresh. Chained ones share ONE toast and ONE debounced refresh.
-- **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Conflict checks work on
-  every volume via the Volume trait; permission checks are skipped for MTP (Unix `access()` can't reach MTP paths).
+- **Thread `volumeId` through `renameFile` / `checkRenameValidity` / `checkRenamePermission`.** Conflict checks ride the
+  Volume trait; the permission check is LOCAL, so whether it applies is Rust's call per volume. ❌ Never re-classify
+  volumes here by id prefix: an `mtp-` test was the whole gate once, and F2 died on every SFTP, WebDAV, and ADB pane
+  (ERR-KVERS). `DETAILS.md` § Permission check on activation.
 - **Async work carries the session id it started with; a superseded session may only toast and refresh.** A save,
   permission check, or editor cancel landing after a newer activation must never cancel, focus, shake, move the cursor,
   or open a dialog. `DETAILS.md` § Rename sessions.
-- **A bare arrow chains the rename to the next row; five things inside that step fail silently.** The save fires BEFORE
-  the next activation (that's what tags it with the session that typed it); the new editor opens on the entry captured
-  at keypress time, never on `entryUnderCursor` (still the file just left); that entry is the row BESIDE the editor's
-  own, never one at an index (backend, cursor, and window disagree about indices mid-chain); a conflict is dropped on
-  the BACKEND's answer only, never on the cached sibling names the chain makes stale (the keypress tests
-  `severity === 'error'`, which also honors the "no" extension policy); and kept names go into ONE running toast,
-  unconfirmed ones into another, since a persistent toast each is dropped past the fifth. `DETAILS.md` § Chaining.
+- **A bare arrow chains the rename to the next row, and five orderings inside that step fail silently**: the save fires
+  BEFORE the next activation; the editor opens on the entry captured at keypress time, which is the row BESIDE it, ❌
+  never one at an index; a conflict is dropped on the BACKEND's answer, ❌ never on cached sibling names; and kept vs
+  unconfirmed names pool into two running toasts. Each one's why: `DETAILS.md` § Chaining.
 - **Clicking outside the editor SAVES; losing focus any other way discards.** The commit hangs off a document
   `mousedown` (capture), never off blur: blur can't tell a click from the row scrolling out of the virtual window, and
   committing on a scroll would rename a file nobody chose. Enter saves too. Guards and the invalid-name toast:

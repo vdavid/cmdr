@@ -156,10 +156,16 @@ function renameFailureMessage(e: unknown, isDirectory: boolean): string {
   return renderMutationError({ type: 'unexpected', detail: '' }, isDirectory ? 'folder' : 'file')
 }
 
-/** Checks rename permission and returns a message to show, or null if permitted. */
-export async function checkPermission(path: string, isDirectory = false): Promise<string | null> {
+/**
+ * Checks rename permission and returns a message to show, or null if permitted.
+ *
+ * `volumeId` rides along because the check is a LOCAL one: the backend answers
+ * `Ok` untouched for a volume that serves its own I/O, whose paths no `lstat`
+ * can open.
+ */
+export async function checkPermission(path: string, isDirectory = false, volumeId?: string): Promise<string | null> {
   try {
-    await checkRenamePermission(path)
+    await checkRenamePermission(path, volumeId)
     return null
   } catch (e) {
     return renameFailureMessage(e, isDirectory)

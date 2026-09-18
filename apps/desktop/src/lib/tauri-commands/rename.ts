@@ -19,9 +19,15 @@ export interface RenameValidityResult {
   conflict: RenameConflictFileInfo | null
 }
 
-/** Throws a `MutationFailure` carrying the backend's typed refusal. */
-export async function checkRenamePermission(path: string): Promise<void> {
-  const res = await commands.checkRenamePermission(path)
+/**
+ * Throws a `MutationFailure` carrying the backend's typed refusal.
+ *
+ * `volumeId` is what decides whether the check runs at all: it's an `lstat` +
+ * `access` pair, which means nothing on a volume that serves its own I/O. Pass
+ * the pane's volume, never omit it for a remote one.
+ */
+export async function checkRenamePermission(path: string, volumeId?: string): Promise<void> {
+  const res = await commands.checkRenamePermission(path, volumeId ?? null)
   if (res.status === 'error') throwMutationError(res.error)
 }
 

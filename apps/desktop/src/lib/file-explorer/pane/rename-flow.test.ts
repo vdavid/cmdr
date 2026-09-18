@@ -116,6 +116,31 @@ describe('rename pre-flight permission check (archive-inner paths skip it)', () 
 
     expect(checkPermissionSpy).not.toHaveBeenCalled()
   })
+
+  it("passes the pane's volume, so the backend decides whether a local check applies", async () => {
+    // The flow no longer classifies volumes itself. It used to skip the check for
+    // an `mtp-`-shaped id and run it on everything else, which refused F2 outright
+    // on every backend that arrived after MTP (ERR-KVERS: SFTP renames died on a
+    // `NotFound` naming the `sftp://` URL). The volume rides along instead, and
+    // `check_rename_permission_for_volume` asks the volume itself.
+    const { flow } = buildFlow(undefined, true, undefined, 'sftp-nas-local-22-ada-9f3c')
+
+    flow.startRename()
+
+    await vi.waitFor(() => {
+      expect(checkPermissionSpy).toHaveBeenCalledWith(PASTED.path, false, 'sftp-nas-local-22-ada-9f3c')
+    })
+  })
+
+  it('an MTP volume gets the call too: the prefix short-circuit is gone', async () => {
+    const { flow } = buildFlow(undefined, true, undefined, 'mtp-pixel-8-0001')
+
+    flow.startRename()
+
+    await vi.waitFor(() => {
+      expect(checkPermissionSpy).toHaveBeenCalledWith(PASTED.path, false, 'mtp-pixel-8-0001')
+    })
+  })
 })
 
 describe('rename extension-warning suppression (paste auto-rename)', () => {

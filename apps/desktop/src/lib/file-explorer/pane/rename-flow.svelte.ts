@@ -172,12 +172,18 @@ export function createRenameFlow(deps: RenameFlowDeps) {
     // a chained activation reuses what the chain already read.
     void siblingNames.ensure(currentScope())
 
-    // Skip the permission check for MTP AND archive-inner paths (see startRename below).
+    // Skip the permission check for archive-inner paths (see startRename below).
     // NARROW: renaming the `.zip` (or `.docx`) file itself is an ordinary rename on
     // a real file, so it still gets its pre-flight permission check.
+    //
+    // Whether it applies to the VOLUME is Rust's call, not a prefix test here: the
+    // check is local, and a volume serving its own I/O answers `Ok` untouched
+    // (`write_operations::rename::check_rename_permission_for_volume`). An
+    // `mtp-`-shaped id was the whole gate once, so every backend that arrived
+    // after MTP — SFTP, WebDAV, ADB — refused F2 outright (ERR-KVERS).
     const currentVolumeId = deps.getVolumeId()
-    if (!currentVolumeId.startsWith('mtp-') && !pathInsideArchive(entry.path)) {
-      void checkPermission(entry.path, entry.isDirectory).then((errorMsg) => {
+    if (!pathInsideArchive(entry.path)) {
+      void checkPermission(entry.path, entry.isDirectory, currentVolumeId).then((errorMsg) => {
         if (errorMsg && rename.active && !rename.isSuperseded(sessionId)) {
           rename.cancel()
           addToast(errorMsg, { level: 'error' })

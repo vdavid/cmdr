@@ -15,7 +15,7 @@ use super::file_system::expand_tilde;
 use crate::deadline::timeout_detached_typed;
 use crate::file_system::write_operations::trash::{trash_dir_for_path, trash_single_journaled};
 use crate::file_system::write_operations::{
-    MutationError, RenameValidityResult, check_rename_permission_sync, check_rename_validity_impl, rename_managed,
+    MutationError, RenameValidityResult, check_rename_permission_for_volume, check_rename_validity_impl, rename_managed,
 };
 
 // ============================================================================
@@ -80,24 +80,29 @@ pub async fn get_trash_dir(path: String) -> Result<Option<String>, MutationError
 
 /// Checks if a file/folder can be renamed (parent writable, not immutable, not SIP-protected, not
 /// locked).
+///
+/// Local-only by nature, so `volume_id` decides whether it runs at all: a volume
+/// serving its own I/O answers `Ok` untouched. See
+/// [`check_rename_permission_for_volume`].
 #[tauri::command]
 #[specta::specta]
-pub async fn check_rename_permission(path: String) -> Result<(), MutationError> {
-    let expanded = expand_tilde(&path);
-    let path_buf = PathBuf::from(&expanded);
+pub async fn check_rename_permission(path: String, volume_id: Option<String>) -> Result<(), MutationError> {
+    let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
-    match tokio::time::timeout(
+    // Non-local volume paths are volume-relative; never tilde-expand them.
+    let path_buf = if volume_id_str == "root" {
+        PathBuf::from(expand_tilde(&path))
+    } else {
+        PathBuf::from(&path)
+    };
+
+    timeout_detached_typed(
         Duration::from_secs(2),
-        tokio::task::spawn_blocking(move || check_rename_permission_sync(&path_buf)),
+        || MutationError::TimedOut,
+        |detail| MutationError::Unexpected { detail },
+        check_rename_permission_for_volume(path_buf, volume_id_str),
     )
     .await
-    {
-        Ok(Ok(result)) => result,
-        Ok(Err(join_err)) => Err(MutationError::Unexpected {
-            detail: format!("the permission check didn't finish: {join_err}"),
-        }),
-        Err(_) => Err(MutationError::TimedOut),
-    }
 }
 
 /// Validates a new filename and checks for conflicts in the same directory.
@@ -197,15 +202,67 @@ mod tests {
         let tmp = create_test_dir("rename_perm_ok");
         let file = tmp.join("test.txt");
         fs::write(&file, "content").unwrap();
-        let result = check_rename_permission(file.to_string_lossy().to_string()).await;
+        let result = check_rename_permission(file.to_string_lossy().to_string(), None).await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn test_check_rename_permission_nonexistent() {
-        let result = check_rename_permission("/nonexistent_12345/file.txt".to_string()).await;
+        let result = check_rename_permission("/nonexistent_12345/file.txt".to_string(), None).await;
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), MutationError::NotFound { .. }));
+    }
+
+    /// A volume that serves its own I/O is never asked a local filesystem
+    /// question: its paths carry a scheme, and `lstat` can't open one.
+    ///
+    /// Pre-fix the pre-flight ran `symlink_metadata("sftp://…")` on every F2 and
+    /// turned the failure into `NotFound`, which closed the inline editor before
+    /// the rename was ever attempted — on every SFTP, WebDAV, and ADB volume
+    /// (ERR-KVERS). `CapabilityStub` panics on any I/O call, so a regression here
+    /// fails loudly rather than quietly.
+    #[tokio::test]
+    async fn a_volume_serving_its_own_io_skips_the_local_rename_preflight() {
+        use crate::file_system::volume::manager::get_volume_manager;
+        use crate::test_support::CapabilityStub;
+        use std::sync::Arc;
+
+        let volume_id = "sftp-preflight-skip-test";
+        get_volume_manager().register_if_absent(
+            volume_id,
+            Arc::new(CapabilityStub {
+                supports_local_fs_access: false,
+                paths_are_os_visible: false,
+            }),
+        );
+
+        let result = check_rename_permission(
+            "sftp://ada@nas.local:22/srv/data/nothing-here.xml".to_string(),
+            Some(volume_id.to_string()),
+        )
+        .await;
+
+        assert!(
+            result.is_ok(),
+            "the pre-flight has nothing to say about a path lstat can't open, so it must not refuse: {result:?}"
+        );
+    }
+
+    /// The other half of the gate: an id nothing serves is an unmount race, and
+    /// the rename behind it words that properly. The pre-flight stays quiet
+    /// rather than inventing a `NotFound` from a path it can't resolve.
+    #[tokio::test]
+    async fn an_unregistered_volume_skips_the_local_rename_preflight() {
+        let result = check_rename_permission(
+            "sftp://ada@nas.local:22/srv/data/nothing-here.xml".to_string(),
+            Some("sftp-never-registered-test".to_string()),
+        )
+        .await;
+
+        assert!(
+            result.is_ok(),
+            "an unmount race is the rename's answer to give: {result:?}"
+        );
     }
 
     // ========================================================================
