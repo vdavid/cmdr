@@ -101,6 +101,13 @@ D1 table `downloads`. One row per download event with `app_version`, `arch`, `co
   download burst costs one origin fetch. D1 stores the RESOLVED version, never `latest`. When neither source answers,
   the handler 302s to the GitHub releases page and writes NO row. `getcmdr.com/download/latest/<arch>` is the public
   face of this, an nginx redirect in `apps/website/nginx.conf`.
+- **`/download/:version/checksums` is a sibling redirect, not an architecture.** It resolves `latest` through the same
+  `resolveLatestVersion` and 302s to the release's `checksums.txt`, which the website links as `SHA-256 checksums` in
+  the download card so a person who took a DMG from the site can verify it (the Homebrew cask and the updater already
+  verify themselves). Two things keep it honest: it is registered BEFORE `/:version/:arch`, so the static segment wins
+  over the param rather than building `Cmdr_<v>_checksums.dmg`, and ❌ it writes no `downloads` row, because a checksum
+  fetch is not an app download and counting one would inflate the per-version breakdown. `checksums` is deliberately
+  absent from `validArchitectures`, which answers a different question the D1 rollups read.
 - **Bot/unfurler hits are dropped:** link-preview bots (Discord, Slack, etc.) and crawlers would inflate the count, so a
   User-Agent denylist skips the D1 write (the 302 is still served). A missing UA is treated as a bot too. Homebrew
   downloads via curl, which would match the `curl` rule, so Homebrew is explicitly exempted.

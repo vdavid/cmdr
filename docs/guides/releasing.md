@@ -200,7 +200,10 @@ One GitHub release per tag, carrying these assets for each of the three arches (
   minisign signature, so this covers the one install route that had nothing. The publish job builds it by downloading
   the DMGs back FROM the release, ❌ never from the runner's `target/`, so it describes what users actually receive, and
   it fails the job unless all three lines are there. First published with v0.46.0 (uploaded by hand after the fact;
-  every release from v0.47.0 on gets it from the workflow).
+  every release from v0.47.0 on gets it from the workflow). The website links it as `SHA-256 checksums` in the download
+  card through `getcmdr.com/download/latest/checksums`, an api-server redirect beside the per-arch DMG ones that
+  resolves `latest` the same way; ❌ it writes no `downloads` row, since a checksum fetch is not an app download and
+  would inflate the per-version counts.
 
 Two naming details are load-bearing:
 

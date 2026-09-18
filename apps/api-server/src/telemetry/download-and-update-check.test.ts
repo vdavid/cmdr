@@ -38,6 +38,40 @@ const browserUa = {
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Safari/605.1.15',
 }
 
+describe('GET /download/:version/checksums', () => {
+  it('redirects to the release checksums file', async () => {
+    const bindings = createBindings()
+    const res = await app.request('/download/1.2.3/checksums', { headers: browserUa }, bindings)
+
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('https://github.com/vdavid/cmdr/releases/download/v1.2.3/checksums.txt')
+  })
+
+  it('wins over the :arch route rather than being read as an architecture', async () => {
+    const bindings = createBindings()
+    const res = await app.request('/download/1.2.3/checksums', { headers: browserUa }, bindings)
+
+    // The :arch route would answer 400 for an unknown architecture; a DMG URL here would mean the
+    // param route matched first and built `Cmdr_1.2.3_checksums.dmg`.
+    expect(res.headers.get('location')).not.toContain('.dmg')
+  })
+
+  it('records no download, so checksum fetches cannot inflate the per-version counts', async () => {
+    const { db, prepareMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+    await app.request('/download/1.2.3/checksums', { headers: browserUa }, bindings)
+
+    expect(prepareMock).not.toHaveBeenCalled()
+  })
+
+  it('refuses a malformed version instead of building a URL from it', async () => {
+    const bindings = createBindings()
+    const res = await app.request('/download/not-a-version/checksums', { headers: browserUa }, bindings)
+
+    expect(res.status).toBe(400)
+  })
+})
+
 describe('GET /download/:version/:arch', () => {
   it('redirects aarch64 to the matching DMG', async () => {
     const bindings = createBindings()

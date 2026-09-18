@@ -571,6 +571,32 @@ async function resolveLatestVersion(): Promise<string | null> {
   return null
 }
 
+// The SHA-256 list for a release's DMGs, so someone who downloaded from the website can check what
+// they got. Registered BEFORE `/:version/:arch` so the static `checksums` segment wins over the
+// param; `checksums` is deliberately NOT an entry in `validArchitectures`, which answers a different
+// question and is read by the D1 breakdown.
+//
+// ❌ Writes no `downloads` row. A checksum fetch is not an app download, and counting one would
+// inflate the per-version numbers with people who never took a DMG. That's also why the website
+// links it without the `data-download-link` attribution hook.
+telemetry.get('/download/:version/checksums', async (c) => {
+  const requestedVersion = c.req.param('version')
+  const wantsLatest = requestedVersion === 'latest'
+
+  if (!wantsLatest && !versionPattern.test(requestedVersion)) {
+    return c.json({ error: 'Invalid version' }, 400)
+  }
+
+  const version = wantsLatest ? await resolveLatestVersion() : requestedVersion
+  if (!version) {
+    // Same fallback as the DMG redirect: the releases page lists every asset, `checksums.txt`
+    // included, so the visitor can still get there by hand.
+    return c.redirect(releasesPageUrl, 302)
+  }
+
+  return c.redirect(`https://github.com/vdavid/cmdr/releases/download/v${version}/checksums.txt`, 302)
+})
+
 telemetry.get('/download/:version/:arch', async (c) => {
   const { version: requestedVersion, arch } = c.req.param()
   const wantsLatest = requestedVersion === 'latest'
