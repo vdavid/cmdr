@@ -232,6 +232,11 @@ jobs:
           fi
           echo "Reading $BINARY"
           CMDR_MACOS_BINARY="$BINARY" ./scripts/check/check --check desktop-macos-framework-floor --ci
+          # The same gate one level down: a symbol INSIDE a framework that does exist.
+          # `kIOMainPortDefault` (macOS 12) shipped in v0.46.0 and aborted every macOS
+          # 10.15 and 11 launch with `Symbol not found`, which the framework check above
+          # can't see. Runs here too because it needs both the SDK headers and a Mach-O.
+          CMDR_MACOS_BINARY="$BINARY" ./scripts/check/check --check desktop-macos-symbol-floor --ci
 
       - name: Delete llama-server signing keychain
         if: always()

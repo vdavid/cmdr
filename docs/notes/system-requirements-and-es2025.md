@@ -7,11 +7,14 @@ Reference for minimum-OS pinning and for adopting newer JS features.
 Three numbers, and nothing but this note ties them together:
 
 - **`bundle.macOS.minimumSystemVersion` in `apps/desktop/src-tauri/tauri.conf.json`** is what the `.app` claims: macOS
-  10.15 Catalina. Two checks hold the native side to it. `desktop-rust-macos-availability` enforces every Objective-C
-  selector against it, so anything newer needs a `crate::platform::macos_at_least` gate plus the
-  `allowed-newer-selector` marker. `desktop-macos-framework-floor` enforces every framework the built binary LOADS
-  against it, which is the harder half: a framework link is a hard `LC_LOAD_DYLIB` that dyld resolves before `main`, so
-  a too-new one is not a call that might not happen, it's an app that won't open and can't be gated out of it.
+  10.15 Catalina. Three checks hold the native side to it, one per way the promise can break.
+  `desktop-rust-macos-availability` enforces every Objective-C selector against it, so anything newer needs a
+  `crate::platform::macos_at_least` gate plus the `allowed-newer-selector` marker. `desktop-macos-framework-floor`
+  enforces every framework the built binary LOADS, which is the harder half: a framework link is a hard `LC_LOAD_DYLIB`
+  that dyld resolves before `main`, so a too-new one is not a call that might not happen, it's an app that won't open
+  and can't be gated out of it. `desktop-macos-symbol-floor` enforces the symbols INSIDE those frameworks, the gap
+  between the two: `kIOMainPortDefault` (macOS 12) lives in an IOKit that exists all the way back, and v0.46.0 aborted
+  at launch on 10.15 and 11 with every framework present and every selector fine.
 - **`build.target` in `apps/desktop/vite.config.js`** is what the frontend bundle is transpiled to: `safari15`.
   `build.cssTarget` follows it, so JS and CSS share one floor. `desktop-vite-build-target` fails the build if the pin
   goes missing or stops naming a Safari version, but it deliberately enforces no relationship between the numbers:

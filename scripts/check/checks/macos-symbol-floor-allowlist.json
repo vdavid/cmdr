@@ -1,0 +1,4 @@
+{
+  "comment": "Symbols newer than `bundle.macOS.minimumSystemVersion` that the built binary may import anyway, each with the reason it's safe. The ONLY honest reason is that the symbol is weak-linked AND every call is version-gated, so dyld binds it to null instead of refusing to launch the app. A strongly-linked one aborts the process before `main` on an older Mac, which no runtime gate can rescue. Adding an entry needs David's explicit consent (`.claude/rules/file-length-allowlist.md`); the usual fix is an older API that says the same thing, the way the literal 0 replaces `kIOMainPortDefault`. Enforced by `desktop-macos-symbol-floor`.",
+  "exempt": {}
+}

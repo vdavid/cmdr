@@ -140,6 +140,7 @@ var rustMetaChecks = map[string]string{
 	"desktop-shipped-locales-fresh": "it regenerates ONE file in the app crate from the message-catalog dirs and diffs it; the inputs are catalog directories, not workspace sources",
 	"desktop-native-strings-fresh":  "same shape as shipped-locales-fresh: it regenerates ONE file in the app crate from the message catalogs and diffs it, so its inputs are catalog files, not workspace sources",
 	"desktop-macos-framework-floor": "it reads a BUILT binary's Mach-O load commands, which is the linked whole rather than any member's sources; every member that contributes a framework link is in it by construction",
+	"desktop-macos-symbol-floor":    "same reason as its framework sibling: it reads a BUILT binary's imported symbols, so every member that contributes one is in it by construction",
 }
 
 // rustCheckClassification is the partition of the Rust checks: each is a cargo

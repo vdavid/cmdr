@@ -191,6 +191,17 @@ var AllChecks = []CheckDefinition{
 		Run:         RunMacOSFrameworkFloor,
 	},
 	{
+		ID:          "desktop-macos-symbol-floor",
+		Nickname:    "macos-symbol-floor",
+		DisplayName: "macos-symbol-floor",
+		App:         AppDesktop,
+		Tech:        "🦀 Rust",
+		DependsOn:   nil,
+		IsFast:      true,
+		Inputs:      macOSSymbolFloorInputs,
+		Run:         RunMacOSSymbolFloor,
+	},
+	{
 		ID:          "desktop-rust-macos-availability",
 		Nickname:    "macos-availability",
 		DisplayName: "macos-availability",

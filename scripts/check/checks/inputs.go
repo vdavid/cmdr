@@ -201,6 +201,22 @@ var macOSFrameworkFloorInputs = inputs(
 	runnerDataInputs("macos-framework-versions.json"),
 )
 
+// macOSSymbolFloorInputs is what decides which symbols the binary ends up
+// importing: the manifests (a dependency's bindings are where a too-new symbol
+// usually rides in), the floor being enforced, and the justified exceptions. Like
+// its framework sibling, the binary is NOT an input: it lives in `target/`, so a
+// lane fingerprinting it would miss on every rebuild while answering the same.
+// Neither is the SDK, for the same reason in the other direction: an Xcode update
+// can move a symbol's recorded availability under a cached pass. Both are why the
+// gate that decides a release reads the signed binary in `release.yml` rather than
+// trusting a local run.
+var macOSSymbolFloorInputs = inputs(
+	rustWorkspaceConfigInputs,
+	[]string{"apps/desktop/src-tauri/Cargo.toml", "crates/*/Cargo.toml"},
+	[]string{"apps/desktop/src-tauri/tauri.conf.json"},
+	runnerDataInputs(macOSSymbolAllowlistFile),
+)
+
 // rustCompileInputs is what a lane that runs cargo over the whole workspace
 // reads: every member's tree plus the workspace configs.
 //

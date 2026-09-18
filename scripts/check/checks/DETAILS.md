@@ -1648,6 +1648,40 @@ How it decides:
   binary right after `tauri-action` builds it; that's the only run that sees what users actually get, which is also why
   `ci-coverage` counts it as wired without a `ci.yml` step.
 
+## macOS symbol floor
+
+`desktop-macos-symbol-floor` fails when the built binary imports a C symbol or an Objective-C class newer than
+`bundle.macOS.minimumSystemVersion`. The third rung: the framework check above judges whole frameworks,
+`macos-availability` judges selectors, and this one judges what's INSIDE a framework that does exist.
+
+The hole it fills: v0.46.0's eject code read `kIOMainPortDefault`, which arrived in macOS 12. dyld binds a data symbol
+before `main`, so every macOS 10.15 and 11 user got `dyld: Symbol not found: _kIOMainPortDefault` and an abort, with the
+app's own frameworks all present and every selector fine. The fix was the literal 0, which `IOKitLib.h` calls "a synonym
+for NULL".
+
+How it decides:
+
+- **`nm -u` plus the headers, nothing else.** The imported-symbol list is read from the Mach-O (every architecture
+  slice, underscore stripped), and the versions come from the SDK headers of the frameworks the binary actually loads. A
+  symbol from a framework we don't link can't be imported, so the load commands are the natural jurisdiction.
+- **Objective-C classes ride along.** A class reference links as `_OBJC_CLASS_$_Name`, so a class newer than the floor
+  fails here. `macos-availability` can't see that: it reads selectors, and a class is resolved by dyld.
+- **Selectors and properties are deliberately skipped**, since the Objective-C runtime resolves those. Too-new ones
+  raise an exception instead of refusing to launch, which is the sibling check's half of the problem.
+- **The parse follows Apple's real shapes**: a declaration runs to its semicolon and often spans lines, the name sits
+  before the parameter list for a function and last for a global, `__API_AVAILABLE` and the bare macro both count, and a
+  class takes the availability on its own line rather than its first method's. A symbol declared twice keeps the OLDEST
+  version, so a platform-specific redeclaration can't invent a violation.
+  `TestRealSDKDeclaresTheSymbolThatBrokeCatalina` holds the parser against the real IOKit headers, which is what caught
+  `filepath.Walk` silently reading nothing: in the SDK a framework's `Headers` is a symlink, and Walk doesn't follow
+  one.
+- **The allowlist is for weak linking only.** `macos-symbol-floor-allowlist.json` excuses a symbol that is weak-linked
+  AND version-gated at every call, so dyld binds it to null rather than aborting. A strongly-linked one can't be
+  excused, and an entry needs David's consent.
+- **Where it runs**: it needs both a Mach-O and the SDK headers, so it skips on Linux CI and anywhere without a build.
+  `release.yml` runs it right after the framework check, against the signed bundled binary, which is the gate that can't
+  be skipped.
+
 ## Vendored credits
 
 `third-party-vendored.json` credits the third-party material Cmdr ships as files that no lockfile knows about: icon
