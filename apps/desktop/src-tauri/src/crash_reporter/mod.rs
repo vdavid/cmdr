@@ -207,7 +207,7 @@ pub struct CrashReport {
     /// The subtype is the single most diagnostic thing about a native crash and nothing we capture
     /// ourselves can produce it: a fault at a small address is a null dereference at that struct
     /// offset. Attached at next-launch assembly from `~/Library/Logs/DiagnosticReports/`; see
-    /// [`os_crash_report`] for the allowlist and why it's an allowlist.
+    /// `os_crash_report.rs` for the allowlist and why it's an allowlist.
     ///
     /// `None` when no matching report was found, which is a normal outcome (see § macOS crash
     /// reports in `DETAILS.md`), and on every platform but macOS.
