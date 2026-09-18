@@ -170,6 +170,7 @@ export {
   setOpenTerminalHereEnabled,
   getChildWindowRect,
   setChildWindowRect,
+  closeChildWindow,
   updateMenuAccelerator,
   setUiLanguage,
 } from './app-state'

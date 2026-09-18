@@ -771,7 +771,10 @@ describe('the macOS crash report extract', () => {
     const { db, bindMock } = createMockD1()
     const bindings = createBindings({ TELEMETRY_DB: db })
 
-    const report = { ...validCrashReport, osFrames: Array.from({ length: 500 }, (_, i) => `Image symbol${String(i)} + 0`) }
+    const report = {
+      ...validCrashReport,
+      osFrames: Array.from({ length: 500 }, (_, i) => `Image symbol${String(i)} + 0`),
+    }
 
     const res = await postCrashReport(report, bindings)
 

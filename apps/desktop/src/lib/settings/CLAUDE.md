@@ -40,8 +40,8 @@ Registry-based user settings: defined once in `settings-registry.ts`, accessed u
 - **`ai.*` hot-applies via `ai-config.ts::pushConfigToBackend()`, which re-reads fresh**: callers `setSetting(...)`, ❌
   never pass cached values. A cloud API key lives in the OS secret store, never `settings.json` or a pre-filled field
   (`docs/security.md` § "AI API keys").
-- **A self-closing webview defers `close()` via `deferWindowClose()`** (100 ms, ❌ never `0`/`rAF`): sync `close()`
-  stalls webkit2gtk IPC, `0` segfaults macOS WebKit. DETAILS § Gotchas.
+- **A self-closing webview calls `closeSelfWindow()`** (backend hide + 100 ms, ❌ never a frontend timer): sync
+  `close()` stalls webkit2gtk IPC, `0` segfaults macOS WebKit. DETAILS § Gotchas.
 
 Architecture, flows, and decisions: `DETAILS.md`. Read it before any non-trivial work here: editing, planning,
 reorganizing, or advising.

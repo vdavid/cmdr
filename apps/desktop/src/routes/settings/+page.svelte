@@ -27,7 +27,7 @@
     import { loadLastSettingsSection, saveLastSettingsSection } from '$lib/app-status-store'
     import { getAppLogger } from '$lib/logging/logger'
     import { trackOwnRect } from '$lib/window-positioning'
-    import { deferWindowClose } from '$lib/window-close-defer'
+    import { closeSelfWindow } from '$lib/child-window-close'
 
     const log = getAppLogger('settings')
 
@@ -231,29 +231,11 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Escape') {
             event.preventDefault()
-            // Defer the close() past the current event-loop iteration so the
-            // keydown handler can settle (including any in-flight IPC ack to
-            // the Tauri runtime) before webkit2gtk begins destroying this
-            // webview. Without this, the synchronous close() runs inside the
-            // same GTK main-loop tick that handled the keydown, and the
-            // destruction can stall queued IPC calls from other webviews —
-            // the root cause of the Linux E2E flake on this binding. Mirrors
-            // the pattern in `routes/viewer/+page.svelte`'s `closeWindow()`.
-            //
-            // Uses `setTimeout` instead of nested `requestAnimationFrame`s
-            // because macOS WKWebView throttles rAF for windows that opened
-            // without focus (E2E case: `openSettingsWindow` passes `focus: false`
-            // under `CMDR_E2E_MODE`). Throttled rAF can push the deferred
-            // close past the test's 3 s close-confirmation budget.
-            //
-            // The delay is a real one, not `0`: a next-tick defer covers the
-            // Linux stall but NOT the macOS WebKit teardown crash (destroying
-            // this webview while a layer-tree commit is still in flight
-            // segfaults the whole app). See `$lib/window-close-defer`.
-            const win = getCurrentWindow()
-            deferWindowClose(() => {
-                void win.close()
-            })
+            // ❌ Never `getCurrentWindow().close()` here: destroying this webview from inside the
+            // handler that asked for it stalls queued IPC on webkit2gtk and can segfault the whole
+            // app on macOS WebKit. The backend hides it and destroys it a moment later.
+            // See `$lib/child-window-close`.
+            void closeSelfWindow()
         }
         // Prevent Space from triggering Quick Look (bound to Space in main window menu)
         // Space should only activate focused buttons/controls, not bubble up
@@ -376,10 +358,7 @@
             // `handleKeydown` and `$lib/window-close-defer`.
             unlistenMcpClose = await onMcpSettingsClose(() => {
                 log.debug('Received mcp-settings-close, closing window')
-                const win = getCurrentWindow()
-                deferWindowClose(() => {
-                    void win.close()
-                })
+                void closeSelfWindow()
             })
 
             // On macOS the app-level menu bar is shared, so this window swaps in the

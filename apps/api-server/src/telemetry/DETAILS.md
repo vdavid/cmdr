@@ -45,13 +45,13 @@ Update check proxy: GET /update-check/:version → hash IP with daily salt → I
 ## Crash reports
 
 D1 table `crash_reports`. Columns: `hashed_ip`, `app_version`, `os_version`, `arch`, `signal`, `top_function`,
-`backtrace`, `image_base` (nullable), `build_mode` (`'release'` / `'debug'`, nullable for legacy rows), `short_id` (`CRASH-XXXXX`, nullable for
-legacy rows), `diag_id` (`diag_<uuid>`, nullable), `email` (nullable), `panic_message` (nullable: signal crashes carry
-no panic payload, and legacy rows predate the column), `app_fate` (nullable, migration `0015`). Validates payload size
-(max 64 KB), required fields, and the shape of optional fields before writing. `diagId` must match
-`^diag_[0-9a-f-]{36}$` (a malformed value, including any `anal_`-prefixed one, is rejected 400); `email` is loosely
-shape-checked and surfaced as the "Reply to" column in the crash-notification email (`../scheduled.ts` /
-`../email/crash.ts`). No authentication required.
+`backtrace`, `image_base` (nullable), `build_mode` (`'release'` / `'debug'`, nullable for legacy rows), `short_id`
+(`CRASH-XXXXX`, nullable for legacy rows), `diag_id` (`diag_<uuid>`, nullable), `email` (nullable), `panic_message`
+(nullable: signal crashes carry no panic payload, and legacy rows predate the column), `app_fate` (nullable, migration
+`0015`), `os_exception` and `os_frames` (nullable, migration `0019`). Validates payload size (max 64 KB), required
+fields, and the shape of optional fields before writing. `diagId` must match `^diag_[0-9a-f-]{36}$` (a malformed value,
+including any `anal_`-prefixed one, is rejected 400); `email` is loosely shape-checked and surfaced as the "Reply to"
+column in the crash-notification email (`../scheduled.ts` / `../email/crash.ts`). No authentication required.
 
 **`app_fate` is what ranks a report's severity:** `'ended'` (the app went down with it) versus `'keptRunning'` (a
 background-thread panic it survived), plus `'unknown'` / `'unconfirmed'`, which claim nothing. Without it a real crash
@@ -65,11 +65,19 @@ not read it.
 **`image_base` is what makes a signal crash's `backtrace` mean anything.** A SIGSEGV/SIGBUS/SIGABRT report carries raw
 instruction-pointer addresses rather than symbol names, and macOS re-slides the binary on every launch, so two reports
 of the identical crash site hold different numbers. `frame - image_base` is the stable per-build offset that groups
-them, and `atos -o <released binary> -l <image_base> <frame…>` resolves them. Shape-checked against
-`^0x[0-9a-f]{1,16}$` and stored verbatim; NULL for panic reports, for non-macOS Unix, and for clients older than the
-field. PII-free by construction (one randomized address), and deliberately NOT accompanied by the loaded-image path
-list macOS's own `.ips` carries, since those embed `/Users/<name>`. The client side: `crash_reporter/DETAILS.md` §
-Image base.
+them, and `atos -o <released binary> -l <image_base> <frame…>` resolves them. Shape-checked against `^0x[0-9a-f]{1,16}$`
+and stored verbatim; NULL for panic reports, for non-macOS Unix, and for clients older than the field. PII-free by
+construction (one randomized address), and deliberately NOT accompanied by the loaded-image path list macOS's own `.ips`
+carries, since those embed `/Users/<name>`. The client side: `crash_reporter/DETAILS.md` § Image base.
+
+**`os_exception` / `os_frames` are macOS's own view of the same crash**, lifted by the client from the report
+`ReportCrash` writes and shipped as an allowlist (the exception line plus the faulting thread's symbolicated frames,
+each run through the app's log redactor). They're the only way a native crash gets names on its stack, since the frames
+that matter are usually in WebKit or AppKit. `os_frames` is stored as the client's JSON array truncated to the
+`backtrace` byte budget, so a long stack can leave a partial array in the column: the digest's reader treats a parse
+failure as "no frames" rather than an error. NULL when macOS wrote no report, which is the normal case for a panic that
+unwound. The allowlist and what it deliberately leaves behind: `apps/desktop/src-tauri/src/crash_reporter/DETAILS.md` §
+macOS crash reports.
 
 **`top_function` derivation (`extractTopFunction`):** the grouping key is the topmost backtrace frame that is real
 application code. Frames belonging to the panic machinery are skipped first (`crash_reporter`, `std::panicking`,

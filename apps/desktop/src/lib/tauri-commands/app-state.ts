@@ -277,6 +277,14 @@ export function setChildWindowRect(label: string, rect: ChildWindowRect): Promis
   return commands.setChildWindowRect(label, rect)
 }
 
+/**
+ * Hides a child window, then destroys it a moment later. Call it through `closeSelfWindow`
+ * (`$lib/child-window-close`) rather than directly; that module says why the wait is in Rust.
+ */
+export function closeChildWindow(label: string): Promise<void> {
+  return commands.closeChildWindow(label)
+}
+
 /** Updates the menu accelerator for a command, called when a keyboard shortcut is changed. */
 export async function updateMenuAccelerator(commandId: string, shortcut: string): Promise<void> {
   const res = await commands.updateMenuAccelerator(commandId, shortcut)

@@ -265,6 +265,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   Beside it sits the macOS-only `list_text_editors(app_choice)` (2 s, `TimedOut`). `open_path`, `open_in_editor`, and
   `open_terminal_here` all record into `crate::open_mock` instead of launching under `playwright-e2e`, so a suite run
   leaves no orphan windows.
+- **`child_window_state.rs`**: also `close_child_window(label)`, the only way a child webview closes itself. It hides
+  the window and destroys it 100 ms later, in Rust rather than in the page, because WebKit throttles timers in a hidden
+  page to roughly 1 Hz. `docs/notes/child-window-close-webkit-crash.md`.
 - **`child_window_state.rs`**: `get_child_window_rect` / `set_child_window_rect(label, rect)` cache per-label
   child-window geometry via `State<ChildWindowRectStore>`. In-memory and session-only, never on disk; used by Settings
   and Debug. Viewers don't use it (they cascade, see `lib/window-positioning.ts`). Only the main window persists across

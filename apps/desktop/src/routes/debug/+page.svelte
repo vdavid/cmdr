@@ -2,7 +2,7 @@
     import { onDestroy, onMount, tick } from 'svelte'
     import ToastContainer from '$lib/ui/toast/ToastContainer.svelte'
     import { trackOwnRect } from '$lib/window-positioning'
-    import { deferWindowClose } from '$lib/window-close-defer'
+    import { closeSelfWindow } from '$lib/child-window-close'
     import { initWindowSettings, initWindowLanguageSync } from '$lib/settings/window-settings'
     import { initAccentColor, cleanupAccentColor } from '$lib/accent-color'
     import { initReduceTransparency, cleanupReduceTransparency } from '$lib/reduce-transparency'
@@ -211,19 +211,10 @@
     }
 
     async function closeWindow() {
-        try {
-            const { getCurrentWindow } = await import('@tauri-apps/api/window')
-            // Deferred like every other self-closing webview: destroying this
-            // one straight from the Escape handler risks the macOS WebKit
-            // teardown crash (and stalls cross-webview IPC on webkit2gtk).
-            // See `$lib/window-close-defer`.
-            const win = getCurrentWindow()
-            deferWindowClose(() => {
-                void win.close()
-            })
-        } catch {
-            // Not in Tauri
-        }
+        // Like every other self-closing webview: the backend hides the window and destroys it a
+        // moment later, so this one never destroys itself from inside the Escape handler.
+        // See `$lib/child-window-close`.
+        await closeSelfWindow()
     }
 </script>
 

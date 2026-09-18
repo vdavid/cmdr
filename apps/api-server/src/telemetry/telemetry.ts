@@ -262,7 +262,11 @@ telemetry.post('/crash-report', async (c) => {
   const osFrames = Array.isArray(report.osFrames) ? report.osFrames.filter((f) => typeof f === 'string') : []
   const osFramesTruncated = osFrames.length > 0 ? JSON.stringify(osFrames).slice(0, maxBacktraceBytes) : null
 
-  const dbWrite = writeCrashReportToD1(c.env.TELEMETRY_DB, report, { topFunction, backtraceTruncated, osFramesTruncated })
+  const dbWrite = writeCrashReportToD1(c.env.TELEMETRY_DB, report, {
+    topFunction,
+    backtraceTruncated,
+    osFramesTruncated,
+  })
 
   try {
     c.executionCtx.waitUntil(dbWrite)

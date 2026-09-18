@@ -30,7 +30,7 @@
     import { tooltip } from '$lib/tooltip/tooltip'
     import { getAppLogger } from '$lib/logging/logger'
     import { pluralize } from '$lib/utils/pluralize'
-    import { deferWindowClose } from '$lib/window-close-defer'
+    import { closeSelfWindow } from '$lib/child-window-close'
     import { createViewerSearch } from './viewer-search.svelte'
     import { createViewerScroll } from './viewer-scroll.svelte'
     import { createTextWidthTracker } from './viewer-text-width.svelte'
@@ -462,25 +462,13 @@
             viewerClose(sessionId).catch(() => {})
         }
 
-        const currentWindow = getCurrentWindow()
-
-        // Defer the close() past the current event-loop iteration so the keydown
-        // handler (or whichever caller invoked us) can settle before webkit2gtk
-        // begins destroying this webview — the Linux GTK-main-loop-stall fix.
-        // setTimeout instead of nested rAFs: macOS WKWebView throttles rAF on
-        // unfocused windows (e.g. the E2E case where a viewer opens without
-        // grabbing focus), which can push close past the test's confirmation budget.
-        //
-        // The delay is a real one, not `0`: a next-tick defer covers the Linux
-        // stall but NOT the macOS WebKit teardown crash (destroying this webview
-        // while a layer-tree commit is still in flight segfaults the whole app).
-        // See `$lib/window-close-defer`.
-        deferWindowClose(() => {
-            log.debug('closeWindow: calling close() after {elapsed}ms', {
+        // ❌ Never `getCurrentWindow().close()` here: destroying this webview from inside the
+        // handler that asked for it stalls queued IPC on webkit2gtk and can segfault the whole app
+        // on macOS WebKit. The backend hides it and destroys it a moment later.
+        // See `$lib/child-window-close`.
+        void closeSelfWindow().then(() => {
+            log.debug('closeWindow: close requested after {elapsed}ms', {
                 elapsed: Math.round(performance.now() - start),
-            })
-            currentWindow.close().catch((e: unknown) => {
-                log.error('closeWindow: close failed: {error}', { error: String(e) })
             })
         })
     }

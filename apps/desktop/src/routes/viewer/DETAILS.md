@@ -684,19 +684,19 @@ so the page shows how far it got. Backend half: `apps/desktop/src-tauri/src/file
   the run wraps to fit; without it, it overflows on one row. The probe must reproduce whatever `.line-text` does, or it
   over/under-counts and drifts the scroll. Keep the probe's flex row + `min-width:0` in lockstep with
   `.word-wrap .line-text` in `+page.svelte`. Pinned by the no-space-run line in `viewer-wordwrap-scroll.spec.ts` (E2E).
-- `closeWindow()`'s `deferWindowClose()` wrapper around `currentWindow.close()` is load-bearing — not decoration, and
-  the delay is a real `100` ms rather than `0`. It defends two different failures. (a) Calling `close()` synchronously
-  from inside a webview event handler runs webkit2gtk's destruction on the same GTK main-loop tick, stalling other
-  webviews' IPC for an undefined duration; a next-tick defer covers this. (b) On macOS, destroying a content-heavy
-  webview while a layer-tree commit from its web content process is in flight makes WebKit's
-  `RemoteLayerTreeDrawingAreaProxy::commitLayerTree` fault on freed state and kill the whole app with a `SIGSEGV`; a
-  next-tick defer does NOT cover this, because that commit arrives on WebKit's own IPC run loop. Measured: `0` ms
-  crashed on the 36th close, `100` ms survived 80 closes. Don't lower it, and keep both windows on the shared
-  `$lib/window-close-defer` constant. The settings page (`routes/settings/+page.svelte`'s Escape handler) mirrors this
-  exact pattern; see `lib/settings/DETAILS.md`, `docs/notes/child-window-close-webkit-crash.md`, and commit `46481b29`
-  for the original post-mortem. `setTimeout` also avoids the rAF throttling that WKWebView applies to unfocused windows.
-  **The same trap applies to `windowReady`** (the `data-window-ready` attribute every viewer E2E spec waits on) and to
-  `canClose`: `windowReady` is set via `setTimeout(0)` after session open, `canClose` via `setTimeout(0)` right after
-  mount, NOT rAF — an rAF there starved in unfocused E2E windows and timed out the whole viewer suite whenever a human
-  was using the machine. Canonical rule + recurrence history: `docs/testing.md` § "`requestAnimationFrame` in unfocused
-  windows".
+- `closeWindow()`'s `closeSelfWindow()` call is load-bearing, not decoration: the backend hides this window and destroys
+  it `100` ms later, rather than the webview closing itself. It defends two different failures. (a) Calling `close()`
+  synchronously from inside a webview event handler runs webkit2gtk's destruction on the same GTK main-loop tick,
+  stalling other webviews' IPC for an undefined duration. (b) On macOS, destroying a content-heavy webview while a
+  layer-tree commit from its web content process is in flight makes WebKit's
+  `RemoteLayerTreeDrawingAreaProxy::commitLayerTree` fault on freed state and kill the whole app with a `SIGSEGV`.
+  Measured: `0` ms crashed on the 36th close, `100` ms survived 80 closes; the hide on top pulls the view out of the
+  compositor so no NEW commits are produced. Don't lower the delay, and ❌ don't move the wait back into the frontend
+  (WebKit throttles timers in a hidden page to roughly 1 Hz, which is also why it sidesteps the rAF throttling WKWebView
+  applies to unfocused windows). The settings page (`routes/settings/+page.svelte`'s Escape handler) uses the same call;
+  see `lib/settings/DETAILS.md`, `docs/notes/child-window-close-webkit-crash.md`, and commit `46481b29` for the original
+  post-mortem. **The same trap applies to `windowReady`** (the `data-window-ready` attribute every viewer E2E spec waits
+  on) and to `canClose`: `windowReady` is set via `setTimeout(0)` after session open, `canClose` via `setTimeout(0)`
+  right after mount, NOT rAF — an rAF there starved in unfocused E2E windows and timed out the whole viewer suite
+  whenever a human was using the machine. Canonical rule + recurrence history: `docs/testing.md` §
+  "`requestAnimationFrame` in unfocused windows".

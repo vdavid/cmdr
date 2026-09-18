@@ -97,20 +97,29 @@ Same harness, same machine, only the close delay changed:
 
 ## What shipped
 
-`deferWindowClose()` / `WINDOW_CLOSE_DEFER_MS` (`apps/desktop/src/lib/window-close-defer.ts`), used by both self-closing
-child windows: `routes/settings/+page.svelte` and `routes/viewer/+page.svelte`.
+`closeSelfWindow()` (`apps/desktop/src/lib/child-window-close.ts`) asks the backend to hide the window and destroy it
+`WINDOW_CLOSE_DEFER_MS` (100 ms) later, in `commands/child_window_state.rs`. Every self-closing child window uses it:
+`routes/settings/+page.svelte`, `lib/settings/sections/LicenseSection.svelte`, `routes/viewer/+page.svelte`, and
+`routes/debug/+page.svelte`.
 
-This is a mitigation: it widens the drain window for in-flight commits and makes the race very unlikely, but it does not
-prove the race is gone. 80 clean cycles against a baseline that failed at 36 is decent evidence, not a guarantee.
+The hide is option 1 below, taken after the delay alone proved insufficient: `CRASH-SK5RW` (0.39.0) and `CRASH-V2SCH`
+(0.45.1) are both post-mitigation `SIGSEGV`s from one install, sharing a 17-frame outer path through the main run loop
+into WebKit's IPC dispatch. Their fault sites differ from the `commitLayerTree` one above, so they are the same family
+rather than provably this crash.
+
+The wait runs in RUST rather than in the closing webview, and that is not incidental: WebKit throttles timers in a
+hidden page to roughly 1 Hz, so hiding a window and then relying on its own `setTimeout` to close it can leave an
+invisible window alive for a second or more, still holding a web content process. Keeping the timer out of the page also
+means no `core:window:allow-hide` capability is needed, since nothing calls `hide` from JavaScript.
+
+This is still a mitigation. Pulling the view out of the compositor stops NEW layer-tree commits, but commits already in
+flight still land, so the race is narrowed rather than removed.
 
 ## If it comes back
 
 Options considered, in rough order of expected effectiveness:
 
-1. **Hide before closing.** `win.hide()` first, then `close()`. Pulling the webview out of the compositor should stop
-   new layer-tree commits outright rather than merely waiting them out. Needs `core:window:allow-hide` in
-   `apps/desktop/src-tauri/capabilities/settings.json` (only `allow-close` is granted today), so it costs a Rust
-   rebuild. This was the next candidate and is untested.
+1. ~~**Hide before closing.**~~ Shipped, see above.
 2. **Quiesce live sections on close**, so nothing is committing during teardown.
 3. **Reuse the window instead of destroying it** (hide on close, show on open). This removes the teardown entirely, so
    it should remove the crash, but it keeps a webview resident for the session, turns "close" into "hide" (the red

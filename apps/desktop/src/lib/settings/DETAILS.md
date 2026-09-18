@@ -723,11 +723,12 @@ Only warn when the same key combo is used in overlapping scopes (for example, `M
 Both settings and shortcuts save immediately (after debounce). There's no undo stack. Users must use "Reset to default"
 to recover from mistakes.
 
-### Escape closing the settings window must defer `close()` via `deferWindowClose()`
+### Escape closing the settings window goes through `closeSelfWindow()`
 
-`routes/settings/+page.svelte`'s `handleKeydown` wraps `getCurrentWindow().close()` in `deferWindowClose()` from
-`$lib/window-close-defer` (mirroring `routes/viewer/+page.svelte`'s `closeWindow()`). Two separate problems force the
-defer, and the constant (`$lib/window-close-defer`) is set by the stricter one:
+`routes/settings/+page.svelte`'s `handleKeydown` calls `closeSelfWindow()` from `$lib/child-window-close`, which asks
+the backend to hide this window and destroy it a moment later (`commands/child_window_state.rs`). ❌ Never
+`getCurrentWindow().close()` from a handler. Two separate problems force the wait, and the delay is set by the stricter
+one:
 
 - **Linux / webkit2gtk IPC stall.** Calling `close()` synchronously from inside the keydown handler runs the destruction
   on the same GTK main-loop tick that handled the keydown, which stalls **any IPC call queued behind the destruction
@@ -744,15 +745,15 @@ The macOS crash is an upstream WebKit bug (verified on macOS 26.5.2 / 25F84); th
 than removing the race. Notably it is NOT caused by the settings window's transparency or vibrancy: the opaque file
 viewer churns renderers the same way.
 
-**`setTimeout` instead of two `requestAnimationFrame`s** — the earlier rAF-based version flaked on macOS E2E because
-WKWebView throttles `requestAnimationFrame` on windows that opened without focus (in E2E, `openSettingsWindow` passes
-`focus: false` so the host machine stays usable while tests run). Throttled rAFs could push the deferred close past the
-test's 3 s close-confirmation budget. `setTimeout` isn't subject to the same throttling, and a fixed delay is also what
-the macOS teardown crash needs.
+**The hide-and-wait runs in Rust, and that placement is the point.** WebKit throttles timers in a hidden page to roughly
+1 Hz, so a frontend timer inside a webview that just hid itself can slip by a second or more, leaving an invisible
+window alive and still holding a web content process. A Rust timer can't be throttled by the page it's about to close.
+It also means the child windows need no `core:window:allow-hide` in their capabilities, since nothing calls `hide` from
+JavaScript. The same placement sidesteps WKWebView's rAF throttling in unfocused windows, which flaked the macOS E2E
+close before the frontend timer moved out.
 
-When adding a new self-closing webview (escape, close button, etc.), defer the `close()` call the same way, reusing
-`deferWindowClose()` rather than hand-rolling a `setTimeout` with a fresh number. See commit `46481b29` for the original
-bug-fix and the subsequent settings-escape-flake hunt for the macOS-throttle follow-up.
+When adding a new self-closing webview (escape, close button, etc.), call `closeSelfWindow()` rather than hand-rolling
+anything. See commit `46481b29` for the original bug-fix and the subsequent settings-escape-flake hunt.
 
 The rAF-throttling half of this gotcha is a repo-wide rule with its own recurrence history (three sightings: settings
 close, viewer close, viewer readiness marker): `docs/testing.md` § "`requestAnimationFrame` in unfocused windows". Check

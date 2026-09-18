@@ -1,6 +1,5 @@
 <script lang="ts">
     import { onMount } from 'svelte'
-    import { getCurrentWindow } from '@tauri-apps/api/window'
     import SettingsSection from '../components/SettingsSection.svelte'
     import {
         openExternalUrl,
@@ -14,7 +13,7 @@
     import SectionCard from '$lib/ui/SectionCard.svelte'
     import { tString } from '$lib/intl/messages.svelte'
     import { getLicenseTypeLabel, getStatusText } from './license-section-utils'
-    import { deferWindowClose } from '$lib/window-close-defer'
+    import { closeSelfWindow } from '$lib/child-window-close'
 
     let licenseInfo = $state<LicenseInfo | null>(null)
     let licenseStatus = $state<LicenseStatus | null>(null)
@@ -41,13 +40,9 @@
         // `COMMAND_IDS` entry (it's narrowed by `isCommandId` in `+page.svelte` before
         // dispatch). The `rust-command-id-drift.test.ts` test pins it to the registry.
         await emitExecuteCommand('app.licenseKey')
-        // Defer like every other settings-window self-close: destroying the webview
-        // straight from a handler risks the macOS WebKit teardown crash (and stalls
-        // cross-webview IPC on webkit2gtk). See `$lib/window-close-defer`.
-        const win = getCurrentWindow()
-        deferWindowClose(() => {
-            void win.close()
-        })
+        // Like every other settings-window self-close: the backend hides the window and destroys
+        // it a moment later. See `$lib/child-window-close`.
+        void closeSelfWindow()
     }
 
     async function handleBuyLicense() {
