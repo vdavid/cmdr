@@ -147,9 +147,10 @@ export function derivePatternChip(input: {
 /**
  * Returns the chip state for the Search in (scope) filter.
  *
- * `defaultScopeLabel` names where an EMPTY box searches ("Current folder" / "This volume"),
- * which the chip shows UNCONFIGURED: the search really is scoped there, so hiding it would
- * read as "everywhere", but the user didn't choose it, so there's nothing to clear.
+ * `defaultScopeLabel` names where an EMPTY box searches ("Current folder" / "This volume").
+ * That case returns a summary with `configured: false`: the search really is scoped there, so
+ * `Chip` tints it like any other live constraint, but the user didn't choose it, so there's no
+ * `×` to clear. See `$lib/ui/Chip.svelte`'s TINT note for why the two split.
  */
 export function deriveScopeChip(scope: string, excludeSystemDirs: boolean, defaultScopeLabel: string): FilterChipState {
   const trimmed = scope.trim()

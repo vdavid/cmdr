@@ -1012,10 +1012,18 @@ section), `children: Snippet`.
 
 A small pill button with two variants:
 
-- `filter` (default): a popover trigger. Default state shows just the label ("Size"); configured state shows "Size: >
-  100 MB" plus a decorative `×` clear marker. Carries `aria-haspopup="dialog"` + `aria-expanded`. Activates on click /
-  Enter / Space; Backspace on a focused configured chip clears it (the `×` is mouse-only, by design — a nested
-  `<button>` would trip axe's `nested-interactive`).
+- `filter` (default): a popover trigger. Default state shows just the label ("Size"); a chip carrying a value shows
+  "Size: > 100 MB", tinted, and a CONFIGURED one adds a decorative `×` clear marker. Carries `aria-haspopup="dialog"` +
+  `aria-expanded`. Activates on click / Enter / Space; Backspace on a focused configured chip clears it (the `×` is
+  mouse-only, by design — a nested `<button>` would trip axe's `nested-interactive`).
+
+**`value` drives the TINT, `configured` drives the `×`, and they must stay apart.** The tint answers "is this
+constraining the results", the `×` answers "did you set it, can you unset it". The scope chip is the one that needs the
+first without the second: an empty scope box still means the pane's current folder, so the chip always constrains, but
+the user usually didn't choose it and there'd be nothing to clear. Collapsing the two drew that chip exactly like an
+unset Size or Modified slot, and a user reported search as broken when it was only scoped to a folder (`ERR-FCAXU`). The
+style hook is `.is-filled`, ❌ never re-derive it from `configured`.
+
 - `recent`: a denser history pill with a leading mode badge (via the `leading` snippet) and a middle-truncated label.
   Activates on click; `onContextMenu` handles right-click "remove from history". No popover ARIA, no clear.
 
@@ -1025,11 +1033,11 @@ A small pill button with two variants:
 and the chips shoulder to shoulder. If `ToggleGroup`'s cell padding moves, move this with it. The `recent` variant keeps
 its own tighter padding on purpose: it stacks in a history list, not beside segmented controls.
 
-Props: `variant?`, `label` (required), `value?`, `configured?`, `isOpen?`, `disabled?`, `highlighted?`, `onActivate`
-(required), `onClear?`, `onContextMenu?`, `ariaLabel?`, `tooltipContent?` (a `TooltipParam`), `leading?` (Snippet),
-`chipElement?` (bindable button ref). The two variants render through `class:chip-filter` / `class:chip-recent`
-directives (not a `chip--{variant}` interpolation, which the `css-unused` checker can't resolve, and the `--` form trips
-its var-definition regex against `:not(...)`).
+Props (see the tint/`×` split above before touching `value` or `configured`): `variant?`, `label` (required), `value?`,
+`configured?`, `isOpen?`, `disabled?`, `highlighted?`, `onActivate` (required), `onClear?`, `onContextMenu?`,
+`ariaLabel?`, `tooltipContent?` (a `TooltipParam`), `leading?` (Snippet), `chipElement?` (bindable button ref). The two
+variants render through `class:chip-filter` / `class:chip-recent` directives (not a `chip--{variant}` interpolation,
+which the `css-unused` checker can't resolve, and the `--` form trips its var-definition regex against `:not(...)`).
 
 ## LinkButton
 

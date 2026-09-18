@@ -3,12 +3,19 @@
      * Chip: a small pill button used across the query dialogs. Two flavors, one component:
      *
      *   - Filter chip (`variant="filter"`, default): opens a popover. Default state shows just the
-     *     label ("Size", "Modified"); configured state shows "Size: > 100 MB" plus an `×` clear
-     *     affordance. Carries `aria-haspopup="dialog"` + `aria-expanded`. Backspace on a focused
-     *     configured chip clears it.
+     *     label ("Size", "Modified"); a chip carrying a value shows "Size: > 100 MB", tinted.
+     *     Carries `aria-haspopup="dialog"` + `aria-expanded`. Backspace on a focused configured
+     *     chip clears it.
      *   - Recent pill (`variant="recent"`): a denser pill with a leading mode badge and a
      *     middle-truncated label. Click loads + runs the entry; right-click removes it. No popover
      *     semantics, no clear.
+     *
+     * TINT and the `×` answer different questions, and the scope chip is why they had to split.
+     * The tint says "this chip is CONSTRAINING the search" and follows `value`; the `×` says "you
+     * set this, you can unset it" and follows `configured`. The scope chip always constrains (an
+     * empty scope box means the pane's current folder, never "everywhere") but often wasn't
+     * chosen, so it needs the tint without the `×`. Drawn untinted it read as an empty filter
+     * slot, and a user reported search as broken when it was merely scoped (`ERR-FCAXU`).
      *
      * The chip is a single button. The `×` is a decorative span (not a nested `<button>`, which is
      * invalid HTML and trips axe's `nested-interactive`); the keyboard clear path is Backspace.
@@ -27,10 +34,10 @@
         /**
          * Summary rendered as "label: value" whenever it's set. Independent of `configured`:
          * a chip can voice a DEFAULT it didn't get from the user (the scope chip's "Current
-         * folder") without offering to clear it.
+         * folder") without offering to clear it. Drives the tint (see the TINT note above).
          */
         value?: string
-        /** Whether the USER configured this filter. Drives the filled style and the × affordance. */
+        /** Whether the USER configured this filter. Drives the × affordance and Backspace-clears. */
         configured?: boolean
         /** True when the popover this chip controls is open. Drives the active-style ring. */
         isOpen?: boolean
@@ -73,6 +80,11 @@
 
     const computedAriaLabel = $derived(ariaLabel ?? (value ? `${label}: ${value}` : label))
     const haspopup = $derived(variant === 'filter')
+    /**
+     * A filter chip carrying a value is narrowing the results, whoever put the value there, so
+     * it reads as active. The recent pill has its own hover-only treatment and opts out.
+     */
+    const filled = $derived(variant === 'filter' && value !== '')
 
     function handleKeyDown(e: KeyboardEvent): void {
         if (disabled) return
@@ -108,7 +120,7 @@
     class="chip"
     class:chip-filter={variant === 'filter'}
     class:chip-recent={variant === 'recent'}
-    class:is-configured={configured}
+    class:is-filled={filled}
     class:is-open={isOpen}
     class:is-highlighted={highlighted}
     aria-haspopup={haspopup ? 'dialog' : undefined}
@@ -192,10 +204,10 @@
         color: var(--color-text-primary);
     }
 
-    .chip.is-configured,
+    .chip.is-filled,
     .chip.is-open {
-        /* When the chip's popover is open OR it carries a configured value, it reads as the
-           "active" target via the same tinted treatment. */
+        /* When the chip's popover is open OR it carries a value, it reads as the "active"
+           target via the same tinted treatment. */
         background: var(--color-accent-subtle);
         border-color: var(--color-accent);
         color: var(--color-text-primary);

@@ -47,6 +47,35 @@ describe('Chip filter variant', () => {
     target.remove()
   })
 
+  // ── The tint / × split ────────────────────────────────────────────────────
+  //
+  // `value` drives the tint ("this is constraining the search"), `configured` drives the ×
+  // ("you set it, you can unset it"). The scope chip needs the first without the second: an
+  // empty scope box still means the pane's current folder. Drawn untinted it read as an empty
+  // filter slot, and a user reported search as broken when it was only scoped (`ERR-FCAXU`).
+
+  it('tints a chip carrying a value the user did not set, without offering a ×', async () => {
+    const target = mountChip({
+      label: 'Search in',
+      value: 'Current folder',
+      configured: false,
+      isOpen: false,
+      onActivate: () => {},
+    })
+    await tick()
+    const button = target.querySelector('button')
+    expect(button?.classList.contains('is-filled')).toBe(true)
+    expect(target.querySelector('.chip-clear')).toBeNull()
+    target.remove()
+  })
+
+  it('leaves a chip with no value untinted, so an unset filter still reads as unset', async () => {
+    const target = mountChip({ label: 'Size', configured: false, isOpen: false, onActivate: () => {} })
+    await tick()
+    expect(target.querySelector('button')?.classList.contains('is-filled')).toBe(false)
+    target.remove()
+  })
+
   it('fires onActivate on Enter and aria-expanded reflects isOpen', async () => {
     const onActivate = vi.fn()
     const target = mountChip({ label: 'Size', configured: false, isOpen: true, onActivate })

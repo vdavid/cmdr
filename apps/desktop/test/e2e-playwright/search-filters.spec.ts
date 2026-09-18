@@ -19,8 +19,12 @@ import { ensureMcpClient } from '../e2e-shared/mcp-client.js'
 import { SEARCH_OVERLAY, closeSearchDialog, openSearchDialog } from './search-helpers.js'
 
 const SIZE_CHIP_DEFAULT = '.search-overlay .chip-filter[aria-label="Size"]'
-const SIZE_CHIP_CONFIGURED = '.search-overlay .chip-filter.is-configured'
-const SIZE_CHIP_CLEAR = '.search-overlay .chip-filter.is-configured .chip-clear'
+// A configured chip is identified by its own aria-label ("Size: > 100 MB"), NOT by the shared
+// `.is-filled` tint class: that one follows `value`, so the Search-in chip wears it from the
+// moment the dialog opens (an empty scope box still means the pane's current folder). See
+// `$lib/ui/DETAILS.md` § Chip.
+const SIZE_CHIP_CONFIGURED = '.search-overlay .chip-filter[aria-label^="Size: "]'
+const SIZE_CHIP_CLEAR = '.search-overlay .chip-filter[aria-label^="Size: "] .chip-clear'
 const FILTER_POPOVER = '.search-overlay .ui-popover'
 // The Size popover renders as a list-style grid: each comparator / preset / unit is a
 // `role="radio"` button inside a labeled `role="radiogroup"` column. The "≥" cell sits
@@ -34,7 +38,7 @@ test.describe('Search dialog: filter chips', () => {
     await ensureMcpClient(tauriPage)
     await openSearchDialog(tauriPage)
 
-    // Default state: chip exists, no `.is-configured` modifier.
+    // Default state: the chip exists and carries no value, so its label is the bare "Size".
     expect(await tauriPage.count(SIZE_CHIP_DEFAULT)).toBe(1)
     expect(await tauriPage.count(SIZE_CHIP_CONFIGURED)).toBe(0)
 
@@ -62,8 +66,8 @@ test.describe('Search dialog: filter chips', () => {
     await dismissOverlay(tauriPage)
     expect(await tauriPage.count(SEARCH_OVERLAY)).toBe(1)
 
-    // Click × to clear. The chip drops `is-configured` and the value vanishes
-    // from the popover state (re-opening would show comparator `any`).
+    // Click × to clear. The chip drops its value (so its label is the bare "Size" again)
+    // and the value vanishes from the popover state (re-opening would show comparator `any`).
     await tauriPage.evaluate(`(function(){
         var x = document.querySelector(${JSON.stringify(SIZE_CHIP_CLEAR)});
         if (x) x.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
