@@ -1,4 +1,6 @@
 use super::*;
+// The next-launch assembly moved to its own module; these tests drive it directly.
+use super::next_launch::{is_crash_loop, process_pending_crash};
 
 #[test]
 fn crash_report_roundtrip() {

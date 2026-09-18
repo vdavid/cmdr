@@ -63,11 +63,11 @@ The sent-confirmation toast therefore offers "Also send the log", which calls `s
   back 30 minutes from when the app died. Flow A's "last hour of this session" would be wrong by however long the
   machine sat closed between the crash and this launch. The crash file's `timestamp` is the moment of death for both
   capture paths (the signal path reads it from the raw file's mtime), which is what makes this work.
-- **The note is ours**: `Log for CRASH-XXXXX`, so triage can put the bundle and the crash row side by side. The short
-  id is validated before it goes in, since it crosses IPC; anything malformed falls back to a generic note rather than
+- **The note is ours**: `Log for CRASH-XXXXX`, so triage can put the bundle and the crash row side by side. The short id
+  is validated before it goes in, since it crosses IPC; anything malformed falls back to a generic note rather than
   carrying an arbitrary string into a report we email ourselves.
-- **`BundleKind::User`**, because a person asked for it, which is also what gets it emailed rather than left in
-  Discord. ❌ No email is ever attached: `AttachedEmail` has one constructor and it belongs to the Flow A dialog.
+- **`BundleKind::User`**, because a person asked for it, which is also what gets it emailed rather than left in Discord.
+  ❌ No email is ever attached: `AttachedEmail` has one constructor and it belongs to the Flow A dialog.
 - A failed send leaves the button in place as the retry and stays at `warn`. An `error` there would try to auto-report
   through the server that just didn't answer.
 

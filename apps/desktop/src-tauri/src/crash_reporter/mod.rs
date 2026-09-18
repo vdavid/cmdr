@@ -5,6 +5,7 @@
 //! - **Signal handler**: async-signal-safe only, writes raw addresses to a pre-opened fd
 
 mod contain;
+mod next_launch;
 mod os_crash_report;
 mod panic_courier;
 #[cfg(unix)]
@@ -106,7 +107,7 @@ pub enum AppFate {
     /// The panic hook wrote the report and nothing has confirmed the app is still alive.
     ///
     /// **Transient, on-disk only.** A living process upgrades it to [`Self::KeptRunning`]
-    /// (see `survival.rs`), and [`process_pending_crash`] resolves whatever is left to
+    /// (see `survival.rs`), and `next_launch::process_pending_crash` resolves whatever is left to
     /// [`Self::Ended`] at the next launch, where the absence of that upgrade is proof the
     /// process didn't outlive the panic. The frontend therefore never sees this value.
     Unconfirmed,
@@ -179,7 +180,7 @@ pub struct CrashReport {
     #[serde(default)]
     pub email: Option<String>,
     /// Machine snapshot (model, CPU, RAM, disk headroom, drive-index sizes) attached at next-launch
-    /// assembly in [`process_pending_crash`], NEVER in the panic hook or signal handler (compromised
+    /// assembly in `next_launch`, NEVER in the panic hook or signal handler (compromised
     /// context). Always the stable form (`live: None`): a crash report is assembled after relaunch,
     /// where live values describe the fresh process, not the crash. `None` only for reports written
     /// before this field existed, or when the data dir can't be resolved.
@@ -250,7 +251,7 @@ pub fn init<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
     cache_active_settings(app);
 
     // Process any pending crash file from a previous session
-    process_pending_crash(&crash_path, &raw_crash_path);
+    next_launch::process_pending_crash(&crash_path, &raw_crash_path);
 
     // Only now: arming the hook's disk write before the previous session's report has been
     // read would let a panic in `process_pending_crash` overwrite the report it was reading.
@@ -582,153 +583,6 @@ fn read_crash_report(path: &Path) -> Option<CrashReport> {
     }
 }
 
-/// Process any pending raw signal crash file from a previous session.
-/// Symbolicates if the version matches, then converts to JSON format.
-fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
-    // Check for a JSON crash report with crash loop detection
-    if let Some(mut report) = read_crash_report(crash_json_path) {
-        // Already delivered in-session, so the user has heard about this panic once. Saying it
-        // again on the next launch spends trust and adds nothing. Dropped here rather than
-        // hidden in the frontend, so a report nobody will be offered can't linger on disk.
-        if report.reported_in_session {
-            log::info!("Crash reporter: pending report already went out in-session, discarding");
-            let _ = std::fs::remove_file(crash_json_path);
-            return;
-        }
-        let mut dirty = false;
-        if is_crash_loop(&report.timestamp) {
-            report.possible_crash_loop = true;
-            dirty = true;
-        }
-        // The panic hook can't know the app's fate, so it writes `Unconfirmed` and
-        // `survival.rs` upgrades it from a thread that can only run while the process is
-        // alive. Reaching a LATER LAUNCH still unconfirmed is therefore the proof that no
-        // such upgrade happened: the app went down with the panic. Resolving it here, at
-        // the one moment the evidence is conclusive, is what lets the dialog pick its
-        // opening sentence from a settled value.
-        if report.app_fate == AppFate::Unconfirmed {
-            report.app_fate = AppFate::Ended;
-            dirty = true;
-        }
-        // The panic hook couldn't gather the snapshot (compromised context), so attach the stable
-        // form now, at next launch where the full stdlib is safe. Only when missing, so we don't
-        // rewrite on every launch the report lingers.
-        if report.system_snapshot.is_none()
-            && let Some(dir) = crash_json_path.parent()
-        {
-            report.system_snapshot = Some(crate::diagnostics_snapshot::SystemSnapshot::collect_stable(dir));
-            dirty = true;
-        }
-        // A panic that UNWINDS leaves macOS nothing to report, so this usually misses and costs one
-        // directory scan. It hits for the aborting kind ("panic in a function that cannot unwind"),
-        // which is exactly the class where our backtrace stops at the tao/wry event loop and the
-        // symbolicated stack says what the app was actually doing.
-        if report.os_exception.is_none()
-            && report.os_frames.is_empty()
-            && let Some(crash_time) = parse_timestamp(&report.timestamp)
-            && attach_os_crash_report(&mut report, crash_time)
-        {
-            dirty = true;
-        }
-        if dirty {
-            let _ = write_crash_report(crash_json_path, &report);
-        }
-        // JSON report exists, leave it for the frontend to handle
-        return;
-    }
-
-    // Check for a raw signal crash file
-    #[cfg(unix)]
-    if raw_crash_path.exists() {
-        // The raw file is written BY THE HANDLER, mid-crash, so its mtime is when the app actually
-        // died. Read it before anything else touches the file. Everything downstream wants that
-        // moment rather than now: it's what matches macOS's own report to this crash, and what a
-        // later log bundle scopes itself around. `now` only as a fallback, which keeps the field
-        // populated on a filesystem that won't answer.
-        let crash_time = std::fs::metadata(raw_crash_path)
-            .and_then(|m| m.modified())
-            .unwrap_or_else(|_| std::time::SystemTime::now());
-
-        if let Some((signal, addresses, image_base, crash_app_version)) = signal_handler::read_raw_crash(raw_crash_path)
-        {
-            let current_version = env!("CARGO_PKG_VERSION");
-            let versions_match = crash_app_version == current_version;
-
-            let backtrace_frames = if versions_match {
-                symbolicate::symbolicate_addresses(&addresses)
-            } else {
-                log::info!(
-                    "Crash reporter: version mismatch (crash={crash_app_version}, \
-                     current={current_version}), sending raw addresses"
-                );
-                addresses.iter().map(|a| format!("0x{a:016x}")).collect()
-            };
-
-            let signal_name = signal_name(signal);
-
-            let mut report = CrashReport {
-                version: CRASH_FILE_VERSION,
-                // When the app DIED, taken from the raw file the handler wrote, never the moment
-                // this next launch got round to assembling the report. The gap between the two is
-                // however long the machine sat closed, and everything that reads this field (the
-                // macOS-report match, the crash-loop check, a log bundle's window) wants the crash.
-                timestamp: to_iso8601(crash_time),
-                signal: Some(signal_name),
-                panic_message: None,
-                backtrace_frames,
-                thread_name: None,
-                thread_count: 0,
-                app_version: crash_app_version,
-                os_version: crate::platform::os_version(),
-                arch: std::env::consts::ARCH.to_string(),
-                uptime_secs: 0.0, // Unknown for signal crashes from previous session
-                active_settings: CACHED_SETTINGS.get().cloned().unwrap_or_default(),
-                possible_crash_loop: false,
-                // No ambiguity on this path: SIGSEGV/SIGBUS/SIGABRT are unrecoverable, the
-                // handler re-raises them, and we're reading the evidence from the NEXT
-                // launch. The app is definitively gone.
-                app_fate: AppFate::Ended,
-                // A signal crash is never delivered in-session: the process died in the handler.
-                reported_in_session: false,
-                build_mode: Some(current_build_mode().to_string()),
-                short_id: Some(crate::short_id::generate(CRASH_SHORT_ID_PREFIX)),
-                // Signal path: the async-signal-safe handler couldn't touch the diag id (no
-                // alloc/lock). We attach it HERE, at next-launch assembly, where full stdlib is
-                // available. `email` stays `None` (send-time field, set by the dialog).
-                diag_id: crate::install_id::diagnostics_id(),
-                email: None,
-                // Stable snapshot, assembled here at next launch (full stdlib available). The data
-                // dir is the crash file's parent; the snapshot reads only index sizes and capacity.
-                system_snapshot: crash_json_path
-                    .parent()
-                    .map(crate::diagnostics_snapshot::SystemSnapshot::collect_stable),
-                // The base recorded BY THE CRASHED PROCESS, never this one's: ASLR gives the
-                // relaunched process a different slide, which would make every offset wrong.
-                // `0` means that build couldn't resolve it (non-macOS Unix).
-                image_base: (image_base != 0).then(|| format!("0x{image_base:x}")),
-                // Filled in just below: the constructor stays a plain description of what the raw
-                // file held, and the one field that comes from outside it is attached separately.
-                os_exception: None,
-                os_frames: Vec::new(),
-            };
-
-            // The payoff for the signal path. `backtrace_frames` above are bare addresses; this is
-            // the same stack with names on it, system frames included.
-            // The bool says whether anything attached, which the JSON path above needs to decide
-            // whether to rewrite a file already on disk. Here the report is written unconditionally
-            // either way.
-            // allowed-discarded-outcome: nothing on this path branches on whether a report attached
-            attach_os_crash_report(&mut report, crash_time);
-
-            if let Err(e) = write_crash_report(crash_json_path, &report) {
-                log::warn!("Crash reporter: couldn't write symbolicated crash report: {e}");
-            }
-        }
-
-        let _ = std::fs::remove_file(raw_crash_path);
-    }
-}
-
 /// Cache active settings for crash reports, using the app's settings loader.
 /// This piggybacks on `settings::load_settings` so defaults stay in sync.
 /// Fields that are `None` in the settings struct mean "user hasn't changed this":
@@ -750,52 +604,6 @@ fn cache_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 fn now_iso8601() -> String {
     // Use chrono (already a dependency) for ISO 8601 timestamp
     chrono::Utc::now().to_rfc3339()
-}
-
-/// A [`SystemTime`](std::time::SystemTime) as the same ISO 8601 string [`now_iso8601`] writes, so
-/// every crash-file timestamp has one shape whatever produced it.
-fn to_iso8601(time: std::time::SystemTime) -> String {
-    chrono::DateTime::<chrono::Utc>::from(time).to_rfc3339()
-}
-
-/// The inverse, for a timestamp already on disk. `None` for a value that isn't ISO 8601, which
-/// callers treat as "can't place this crash in time" rather than as an error.
-fn parse_timestamp(timestamp: &str) -> Option<std::time::SystemTime> {
-    chrono::DateTime::parse_from_rfc3339(timestamp)
-        .ok()
-        .map(|dt| dt.with_timezone(&chrono::Utc).into())
-}
-
-/// Attach macOS's own view of this crash, if it wrote one. Returns whether anything was attached.
-///
-/// Best-effort by design: a miss is normal (the report may not be written yet when someone
-/// relaunches quickly, the directory may be unreadable, or the crash may be a panic that unwound
-/// and produced no OS report at all), and the crash report is still worth sending without it.
-fn attach_os_crash_report(report: &mut CrashReport, crash_time: std::time::SystemTime) -> bool {
-    let Some(process_name) = current_process_name() else {
-        return false;
-    };
-    let Some(extracted) = os_crash_report::extract_near(&process_name, crash_time) else {
-        log::debug!("Crash reporter: no matching macOS crash report for this crash");
-        return false;
-    };
-    log::info!(
-        "Crash reporter: attached macOS crash report ({} symbolicated frames)",
-        extracted.frames.len()
-    );
-    report.os_exception = extracted.exception;
-    report.os_frames = extracted.frames;
-    true
-}
-
-/// The name macOS files our crash reports under: the executable's own file stem (`Cmdr` in a
-/// shipped build). Taken from `current_exe` rather than hardcoded so a dev build, whose binary is
-/// named differently, still finds its own reports.
-fn current_process_name() -> Option<String> {
-    std::env::current_exe()
-        .ok()?
-        .file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
 }
 
 /// Seconds since the process started, or 0.0 before [`init`] runs. Shared with the diagnostics
@@ -852,24 +660,4 @@ fn current_thread_count() -> usize {
     {
         0
     }
-}
-
-#[cfg(unix)]
-fn signal_name(sig: i32) -> String {
-    match sig {
-        libc::SIGSEGV => "SIGSEGV".to_string(),
-        libc::SIGBUS => "SIGBUS".to_string(),
-        libc::SIGABRT => "SIGABRT".to_string(),
-        other => format!("signal {other}"),
-    }
-}
-
-/// Check if the crash timestamp indicates a crash loop (< 5 seconds before current launch).
-fn is_crash_loop(crash_timestamp: &str) -> bool {
-    let Ok(crash_time) = chrono::DateTime::parse_from_rfc3339(crash_timestamp) else {
-        return false;
-    };
-    let now = chrono::Utc::now();
-    let elapsed = now.signed_duration_since(crash_time);
-    elapsed.num_seconds() >= 0 && (elapsed.num_seconds() as u64) < CRASH_LOOP_THRESHOLD_SECS
 }

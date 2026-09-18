@@ -1709,7 +1709,7 @@ export const commands = {
       email?: string | null
       /**
        *  Machine snapshot (model, CPU, RAM, disk headroom, drive-index sizes) attached at next-launch
-       *  assembly in [`process_pending_crash`], NEVER in the panic hook or signal handler (compromised
+       *  assembly in `next_launch`, NEVER in the panic hook or signal handler (compromised
        *  context). Always the stable form (`live: None`): a crash report is assembled after relaunch,
        *  where live values describe the fresh process, not the crash. `None` only for reports written
        *  before this field existed, or when the data dir can't be resolved.
@@ -5088,7 +5088,7 @@ export type AppFate =
    *  The panic hook wrote the report and nothing has confirmed the app is still alive.
    *
    *  **Transient, on-disk only.** A living process upgrades it to [`Self::KeptRunning`]
-   *  (see `survival.rs`), and [`process_pending_crash`] resolves whatever is left to
+   *  (see `survival.rs`), and `next_launch::process_pending_crash` resolves whatever is left to
    *  [`Self::Ended`] at the next launch, where the absence of that upgrade is proof the
    *  process didn't outlive the panic. The frontend therefore never sees this value.
    */
@@ -6139,7 +6139,7 @@ export type CrashReport = {
   email?: string | null
   /**
    *  Machine snapshot (model, CPU, RAM, disk headroom, drive-index sizes) attached at next-launch
-   *  assembly in [`process_pending_crash`], NEVER in the panic hook or signal handler (compromised
+   *  assembly in `next_launch`, NEVER in the panic hook or signal handler (compromised
    *  context). Always the stable form (`live: None`): a crash report is assembled after relaunch,
    *  where live values describe the fresh process, not the crash. `None` only for reports written
    *  before this field existed, or when the data dir can't be resolved.

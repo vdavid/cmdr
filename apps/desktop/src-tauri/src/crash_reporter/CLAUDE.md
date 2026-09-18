@@ -5,7 +5,9 @@ reporter's Flow B. Everything else: `error_reporter/`.
 
 ## Module map
 
-- **`mod.rs`** (hook install, crash file I/O, crash-loop detection, `AppFate`), **`contain.rs`** (the one exemption),
+- **`mod.rs`** (hook install, crash file I/O, the `CrashReport` shape), **`next_launch.rs`** (reading the previous
+  session's evidence and assembling a report: fate, snapshot, crash-loop, the macOS extract),
+  **`contain.rs`** (the one exemption),
   **`panic_courier.rs`** (in-session delivery of a survived panic), **`survival.rs`** (amendments only a live process
   can make), **`signal_handler.rs`** (the async-signal-safe path + raw file format), **`symbolicate.rs`** (its
   addresses), **`os_crash_report.rs`** (macOS's own exception line and stack). Tests in `*_tests.rs` siblings.

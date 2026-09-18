@@ -250,6 +250,17 @@ all three; nextest never sees the race, so a test green only under nextest is th
   uploaded (§ Told once, not twice). A bool that carries no information off the machine, kept in the payload only so the
   on-disk file stays self-describing.
 
+## Where a field is filled in
+
+Two contexts, and every field belongs to one of them. **Capture** (`mod.rs`'s panic hook,
+`signal_handler.rs`) runs compromised: the hook must not panic, the handler must stay async-signal-safe, so it writes
+only what it can reach without allocating or locking. **Assembly** (`next_launch.rs`) runs at the next launch in an
+ordinary process with the full stdlib, and fills in everything else: the settled `app_fate`, the system snapshot, the
+diagnostics id on the signal path, and the macOS crash-report extract.
+
+That's the seam the module split follows. When adding a field, the question is which side it belongs on, and anything
+that reads the filesystem or allocates belongs on the assembly side.
+
 ## macOS crash reports
 
 Our signal handler can only capture raw addresses, and the frames that matter in a native crash are almost always in
