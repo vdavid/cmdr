@@ -1,0 +1,17 @@
+-- The main executable's load address in the crashed process, as `"0x…"`.
+--
+-- A signal crash (SIGSEGV/SIGBUS/SIGABRT) has no Rust backtrace, only raw instruction-pointer
+-- addresses, and macOS re-randomizes the load base on every launch (ASLR). Without the base those
+-- addresses can't be compared between two launches, let alone two installs: `frame - image_base` is
+-- the stable per-build offset that groups identical crash sites, and
+-- `atos -o <binary> -l <image_base> <frame…>` is what resolves them to function names.
+--
+-- The client has recorded it since the raw crash file went to v2 and ships it on every report; this
+-- column is where it finally lands. Reports sent before this column existed stay NULL, as do panic
+-- reports from non-macOS Unix (no `_dyld_*` to ask).
+--
+-- PII-free by construction: one randomized virtual address, no user data. Deliberately only the
+-- numeric base and never the loaded-image path list macOS's own `.ips` carries, because those embed
+-- `/Users/<name>`. Source of truth for the field: `CrashReport::image_base` in
+-- `apps/desktop/src-tauri/src/crash_reporter/mod.rs`.
+ALTER TABLE crash_reports ADD COLUMN image_base TEXT;

@@ -110,6 +110,76 @@ describe('handleCrashNotifications', () => {
     expect(emailCall.html).not.toContain('>null<')
   })
 
+  it('renders the image base for a signal crash, which has no panic message to show instead', async () => {
+    // Without the base, the row's raw addresses resolve to nothing; with it, `atos -o <binary> -l
+    // <base>` does. So it earns the detail cell exactly when there's no message competing for it.
+    const responses = new Map<string, unknown>([
+      [
+        'SELECT id',
+        {
+          results: [
+            {
+              id: 1,
+              app_version: '0.45.1',
+              os_version: '26.7',
+              arch: 'arm64',
+              signal: 'SIGSEGV',
+              top_function: 'unknown',
+              created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-B6789',
+              email: null,
+              panic_message: null,
+              image_base: '0x104870000',
+            },
+          ],
+        },
+      ],
+    ])
+    const { db } = createMockD1(responses)
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleCrashNotifications(env as never)
+
+    expect(lastEmailCall().html).toContain('image base 0x104870000')
+  })
+
+  it('keeps the panic message in the detail cell when a report has both', async () => {
+    // A panic that also carried a base is not a symbolication job: the message is the story, and
+    // showing both would push the thing you actually read below the noise.
+    const responses = new Map<string, unknown>([
+      [
+        'SELECT id',
+        {
+          results: [
+            {
+              id: 1,
+              app_version: '0.45.1',
+              os_version: '26.7',
+              arch: 'arm64',
+              signal: 'panic',
+              top_function: 'cmdr::sync::run',
+              created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-B6789',
+              email: null,
+              panic_message: 'index out of bounds',
+              image_base: '0x104870000',
+            },
+          ],
+        },
+      ],
+    ])
+    const { db } = createMockD1(responses)
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleCrashNotifications(env as never)
+
+    const html = lastEmailCall().html
+    expect(html).toContain('index out of bounds')
+    expect(html).not.toContain('image base')
+  })
+
   it('escapes HTML in the panic message', async () => {
     const responses = new Map<string, unknown>([
       [

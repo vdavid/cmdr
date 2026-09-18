@@ -63,6 +63,13 @@ interface CrashReport {
    * `crash_reporter/DETAILS.md`). Absent for clients older than the field.
    */
   appFate?: AppFate
+  /**
+   * Optional. The main executable's load address in the crashed process, as `"0x…"`. Absent for
+   * clients older than the field, and on non-macOS Unix where the client can't resolve it.
+   * `frame - imageBase` is the stable per-build offset that makes `backtraceFrames` mean something
+   * across launches; without it a signal crash's raw addresses are unusable. See migration `0018`.
+   */
+  imageBase?: string
   backtraceFrames?: string[]
   [key: string]: unknown
 }
@@ -84,6 +91,10 @@ const crashShortIdPattern = /^CRASH-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{5}$/
 // `diag_` + a v4 UUID (36 chars: 32 hex digits plus the 4 dashes). An `anal_`-prefixed value
 // fails this check by construction, so the analytics id can never land in a crash column.
 const diagIdPattern = /^diag_[0-9a-f-]{36}$/
+// A 64-bit load address the client formats with `format!("0x{image_base:x}")`: lowercase hex, no
+// padding, at most 16 digits. Shape-checked rather than trusted because it crosses the wire, and a
+// column that only ever holds addresses stays greppable.
+const imageBasePattern = /^0x[0-9a-f]{1,16}$/
 
 /**
  * Frames belonging to the panic machinery rather than to the code that broke. Every panic
@@ -182,6 +193,7 @@ function validateCrashReportShape(report: Record<string, unknown>): string | nul
     validateOptionalEnum(report.appFate, appFateValues, 'Invalid appFate') ??
     validateOptionalPattern(report.shortId, crashShortIdPattern, 'Invalid shortId') ??
     validateOptionalPattern(report.diagId, diagIdPattern, 'Invalid diagId') ??
+    validateOptionalPattern(report.imageBase, imageBasePattern, 'Invalid imageBase') ??
     validateOptionalPattern(report.email, emailShapePattern, 'Invalid email')
   )
 }
@@ -248,8 +260,8 @@ interface CrashReportDerived {
 
 /**
  * Fire-and-forget D1 insert of a crash report. `build_mode`, `short_id`, `diag_id`, `email`,
- * `panic_message`, and `app_fate` are nullable; rows from older clients (or reports without an
- * attached email, or signal crashes, which carry no panic payload) stay NULL.
+ * `panic_message`, `app_fate`, and `image_base` are nullable; rows from older clients (or reports
+ * without an attached email, or signal crashes, which carry no panic payload) stay NULL.
  *
  * `hashed_ip` is written as the empty string: nothing reads it (crash rows are grouped by
  * `top_function` and, where present, `diag_id`), so there is no reason to derive anything from the
@@ -258,8 +270,8 @@ interface CrashReportDerived {
 function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: CrashReportDerived): Promise<unknown> {
   return db
     .prepare(
-      `INSERT INTO crash_reports (hashed_ip, app_version, os_version, arch, signal, top_function, backtrace, build_mode, short_id, diag_id, email, panic_message, app_fate)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO crash_reports (hashed_ip, app_version, os_version, arch, signal, top_function, backtrace, build_mode, short_id, diag_id, email, panic_message, app_fate, image_base)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       '',
@@ -275,6 +287,7 @@ function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: Cras
       report.email ?? null,
       capPanicMessage(report.panicMessage),
       report.appFate ?? null,
+      report.imageBase ?? null,
     )
     .run()
     .catch(() => {}) // Don't let D1 failure block the response

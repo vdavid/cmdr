@@ -646,3 +646,55 @@ describe('appFate', () => {
     expect(body.error).toBe('Invalid appFate')
   })
 })
+
+/**
+ * `imageBase` is the load address of the main executable in the crashed process. A signal crash
+ * ships raw instruction-pointer addresses, and ASLR re-slides the binary every launch, so without
+ * the base those addresses can't be compared across launches or resolved with `atos`. The client
+ * has recorded it for a while; these tests pin that it now reaches the column.
+ */
+describe('imageBase', () => {
+  /** bindArgs index of `image_base` in the INSERT. */
+  const imageBaseIndex = 13
+
+  it('stores the base when supplied', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport({ ...validCrashReport, imageBase: '0x104f2c000' }, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][imageBaseIndex]).toBe('0x104f2c000')
+  })
+
+  it('stores NULL when the field is absent, so an older client can still report', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport(validCrashReport, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][imageBaseIndex]).toBeNull()
+  })
+
+  it('accepts an explicit null (non-macOS Unix can not resolve a base)', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport({ ...validCrashReport, imageBase: null }, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][imageBaseIndex]).toBeNull()
+  })
+
+  it('rejects anything that is not a lowercase hex address', async () => {
+    for (const base of ['104f2c000', '0x104F2C000', '0xnothex', '0x', '0x1234567890abcdef0']) {
+      const bindings = createBindings()
+      const res = await postCrashReport({ ...validCrashReport, imageBase: base }, bindings)
+
+      expect(res.status).toBe(400)
+      const body = await res.json<{ error: string }>()
+      expect(body.error).toBe('Invalid imageBase')
+    }
+  })
+})

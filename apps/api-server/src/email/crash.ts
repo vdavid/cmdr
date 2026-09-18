@@ -52,6 +52,13 @@ export interface CrashEmailRow {
    * signal crashes (no payload) and for rows written before the column existed.
    */
   message: string | null
+  /**
+   * `image_base`: where the main executable was loaded in the crashed process. Rendered only for a
+   * report with no panic message, which is exactly the signal crash whose raw addresses need it:
+   * paired with the release binary it feeds `atos -o <binary> -l <imageBase> <frame…>`. `null` for
+   * panic reports and for clients older than the field.
+   */
+  imageBase: string | null
 }
 
 /**
@@ -67,7 +74,24 @@ function crashSubject(totalCount: number, keptRunningCount: number): string {
   return `${base} (${String(keptRunningCount)} kept running)`
 }
 
-/** Two `<tr>`s per report: the fact columns, then the panic payload across the full width. */
+/**
+ * The full-width detail cell under a report's fact columns.
+ *
+ * A panic carries a message and that's the whole story. A signal crash carries none, and its detail
+ * line is the load base instead: the one value that turns the row's raw addresses into something
+ * `atos` can resolve. A report with neither renders the same em dash it always did.
+ */
+function renderDetailCell(entry: CrashEmailRow): string {
+  if (entry.message) {
+    return `<span style="color: #b91c1c;">${escapeHtml(entry.message)}</span>`
+  }
+  if (entry.imageBase) {
+    return `<span style="color: #6b7280;">image base ${escapeHtml(entry.imageBase)}</span>`
+  }
+  return '<span style="color: #9ca3af; font-family: inherit;">—</span>'
+}
+
+/** Two `<tr>`s per report: the fact columns, then the detail line across the full width. */
 function renderCrashRow(entry: CrashEmailRow): string {
   const nowrapCell = `${CELL_STYLE} font-size: 13px; white-space: nowrap;`
   const plainCell = `${CELL_STYLE} font-size: 13px;`
@@ -89,9 +113,7 @@ function renderCrashRow(entry: CrashEmailRow): string {
             }</td>
         </tr>
         <tr>
-            <td colspan="8" style="padding: 6px 12px 12px; border: 1px solid #e5e7eb; border-top: 0; font-family: monospace; font-size: 12px; color: #b91c1c; word-break: break-word;">${
-              entry.message ? escapeHtml(entry.message) : '<span style="color: #9ca3af; font-family: inherit;">—</span>'
-            }</td>
+            <td colspan="8" style="padding: 6px 12px 12px; border: 1px solid #e5e7eb; border-top: 0; font-family: monospace; font-size: 12px; word-break: break-word;">${renderDetailCell(entry)}</td>
         </tr>`
 }
 

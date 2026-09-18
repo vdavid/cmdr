@@ -91,7 +91,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
         </li>
         <li>
             <strong>Crash reports</strong> (opt-in): the app version, macOS version, where in our code the crash
-            happened, and the crash message, cleaned of personal data on your Mac first. No file names, no file
+            happened, and the crash message, cleaned of personal data on your Mac first. For a crash with no message,
+            we also include the memory addresses the code stopped at and the address Cmdr itself was loaded at, which
+            is what lets us turn those numbers back into a place in our code. They're randomized by macOS on every
+            launch and say nothing about you or your Mac. No file names, no file
             contents. If you've added a beta contact email, you can tick a box to attach it so we can reply; we include
             it only when you do, and delete it after 90 days. Switch crash reports on or off anytime in Settings &gt;
             Updates &amp; privacy.

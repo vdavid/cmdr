@@ -45,7 +45,7 @@ Update check proxy: GET /update-check/:version → hash IP with daily salt → I
 ## Crash reports
 
 D1 table `crash_reports`. Columns: `hashed_ip`, `app_version`, `os_version`, `arch`, `signal`, `top_function`,
-`backtrace`, `build_mode` (`'release'` / `'debug'`, nullable for legacy rows), `short_id` (`CRASH-XXXXX`, nullable for
+`backtrace`, `image_base` (nullable), `build_mode` (`'release'` / `'debug'`, nullable for legacy rows), `short_id` (`CRASH-XXXXX`, nullable for
 legacy rows), `diag_id` (`diag_<uuid>`, nullable), `email` (nullable), `panic_message` (nullable: signal crashes carry
 no panic payload, and legacy rows predate the column), `app_fate` (nullable, migration `0015`). Validates payload size
 (max 64 KB), required fields, and the shape of optional fields before writing. `diagId` must match
@@ -61,6 +61,15 @@ outside them, because the column exists to be grouped on and an invented value w
 nightly email. Absent or `null` stores NULL, so a client older than the field still reports. The one consumer is the
 email's Fate column and subject (`../../DETAILS.md` § Cron handler); `/admin/crashes` groups by day/site/signal and does
 not read it.
+
+**`image_base` is what makes a signal crash's `backtrace` mean anything.** A SIGSEGV/SIGBUS/SIGABRT report carries raw
+instruction-pointer addresses rather than symbol names, and macOS re-slides the binary on every launch, so two reports
+of the identical crash site hold different numbers. `frame - image_base` is the stable per-build offset that groups
+them, and `atos -o <released binary> -l <image_base> <frame…>` resolves them. Shape-checked against
+`^0x[0-9a-f]{1,16}$` and stored verbatim; NULL for panic reports, for non-macOS Unix, and for clients older than the
+field. PII-free by construction (one randomized address), and deliberately NOT accompanied by the loaded-image path
+list macOS's own `.ips` carries, since those embed `/Users/<name>`. The client side: `crash_reporter/DETAILS.md` §
+Image base.
 
 **`top_function` derivation (`extractTopFunction`):** the grouping key is the topmost backtrace frame that is real
 application code. Frames belonging to the panic machinery are skipped first (`crash_reporter`, `std::panicking`,
