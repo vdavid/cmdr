@@ -350,6 +350,30 @@ jobs:
           TAG="${{ github.ref_name }}"
           gh release upload "$TAG" /tmp/latest.json --clobber
 
+      # The only way someone who clicks Download on the website can check what they got. The
+      # Homebrew cask carries a `sha256` and the updater verifies a minisign signature, but a
+      # plain download had nothing to compare against, and Cmdr is listed on aggregator sites
+      # that have historically served hijacked downloads (MacUpdate, 2018).
+      # ❗ Hash the assets AS PUBLISHED, by downloading them back from the release, ❌ never a
+      # local copy: the point is to describe what a user will actually receive.
+      - name: Publish SHA-256 checksums for the DMGs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          rm -rf /tmp/checksums && mkdir -p /tmp/checksums
+          for arch in aarch64 x64 universal; do
+              gh release download "$TAG" -R "$GITHUB_REPOSITORY" \
+                  -p "Cmdr_${VERSION}_${arch}.dmg" -D /tmp/checksums
+          done
+          ( cd /tmp/checksums && shasum -a 256 ./*.dmg | sed 's| \./| |' > checksums.txt )
+          # Three lines, one per arch: a missing DMG would silently ship a short file.
+          LINES=$(wc -l < /tmp/checksums/checksums.txt)
+          [ "$LINES" -eq 3 ] || { echo "expected 3 checksum lines, got $LINES"; cat /tmp/checksums/checksums.txt; exit 1; }
+          cat /tmp/checksums/checksums.txt
+          gh release upload "$TAG" /tmp/checksums/checksums.txt --clobber
+
       - name: Update release body with changelog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

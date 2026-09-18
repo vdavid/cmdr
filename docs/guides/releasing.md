@@ -195,6 +195,12 @@ One GitHub release per tag, carrying these assets for each of the three arches (
 - `Cmdr_<version>_<arch>.app.tar.gz` plus its `.sig`: the updater payload and its minisign signature.
 - `latest.json`, whose copy in `apps/website/public/latest.json` (committed by the publish job) is what
   `getcmdr.com/latest.json` serves.
+- `checksums.txt`: one `shasum -a 256` line per DMG, the only way a person who downloaded from the website (or from an
+  aggregator listing) can check what they got. The Homebrew cask carries its own `sha256` and the updater verifies a
+  minisign signature, so this covers the one install route that had nothing. The publish job builds it by downloading
+  the DMGs back FROM the release, ❌ never from the runner's `target/`, so it describes what users actually receive, and
+  it fails the job unless all three lines are there. First published with v0.46.0 (uploaded by hand after the fact;
+  every release from v0.47.0 on gets it from the workflow).
 
 Two naming details are load-bearing:
 
