@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "Stuur ook het logboek",
+  "crashReporter.sentToast.sendLog": "Logboek bijvoegen",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "Het logboek bevat veel meer details, waardoor een crash veel makkelijker te achterhalen is. Bestands- en mapnamen worden eerst vervangen.",
+  "crashReporter.sentToast.sendLogHint": "Wil je helpen dit te onderzoeken door ook een stukje van je Cmdr-logboek bij te voegen? Het logboek bevat veel meer details. Privégegevens zoals bestands- en mapnamen worden voor het versturen geanonimiseerd.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "Logboek verstuurd als {id}. Daarmee is dit veel makkelijker te achterhalen.",
   "@crashReporter.sentToast.logSent": {

@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "Auch das Protokoll senden",
+  "crashReporter.sentToast.sendLog": "Protokoll anhängen",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "Das Protokoll enthält viel mehr Details, was einen Absturz deutlich leichter auffindbar macht. Datei- und Ordnernamen werden vorher ersetzt.",
+  "crashReporter.sentToast.sendLogHint": "Möchtest du bei der Diagnose helfen und auch einen Ausschnitt aus deinem Cmdr-Protokoll anhängen? Das Protokoll enthält viel mehr Details. Private Angaben wie Datei- und Ordnernamen werden vor dem Senden anonymisiert.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "Protokoll als {id} gesendet. Damit lässt sich das viel leichter aufspüren.",
   "@crashReporter.sentToast.logSent": {

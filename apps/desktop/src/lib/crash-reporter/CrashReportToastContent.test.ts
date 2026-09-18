@@ -67,7 +67,7 @@ describe('CrashReportToastContent', () => {
   it('scopes the bundle to the crash, and ties it to the crash report', async () => {
     const target = render()
 
-    buttonWith(target, 'Also send the log')?.click()
+    buttonWith(target, 'Attach logs')?.click()
     await tick()
 
     // The crash's own timestamp, never `Date.now()`: the lines worth reading are in the previous
@@ -78,24 +78,27 @@ describe('CrashReportToastContent', () => {
   it('names the new report so the user can quote it, and drops the offer', async () => {
     const target = render()
 
-    buttonWith(target, 'Also send the log')?.click()
+    buttonWith(target, 'Attach logs')?.click()
     await vi.waitFor(() => {
       expect(target.textContent).toContain('ERR-8RFN4')
     })
 
-    expect(buttonWith(target, 'Also send the log')).toBeUndefined()
+    expect(buttonWith(target, 'Attach logs')).toBeUndefined()
   })
 
-  it('keeps the button as the retry when the send does not land', async () => {
+  it('drops the offer when the send does not land, rather than stacking a retry on a failure', async () => {
+    // A toast carrying an invitation, a failure, and a retry all at once reads as three things
+    // competing. The crash report itself already went out, so there's nothing urgent to recover.
     sendCrashLogReport.mockRejectedValueOnce(new Error('offline'))
     const target = render()
 
-    buttonWith(target, 'Also send the log')?.click()
+    buttonWith(target, 'Attach logs')?.click()
     await vi.waitFor(() => {
       expect(target.querySelector('[role="alert"]')).not.toBeNull()
     })
 
-    expect(buttonWith(target, 'Also send the log')).toBeDefined()
+    expect(buttonWith(target, 'Attach logs')).toBeUndefined()
+    expect(target.textContent).not.toContain('Would you like to help diagnose')
   })
 
   it('does not send twice when the button is pressed again mid-flight', async () => {
@@ -103,7 +106,7 @@ describe('CrashReportToastContent', () => {
     sendCrashLogReport.mockReturnValueOnce(new Promise((resolve) => (release = resolve)))
     const target = render()
 
-    buttonWith(target, 'Also send the log')?.click()
+    buttonWith(target, 'Attach logs')?.click()
     await tick()
     buttonWith(target, 'Sending...')?.click()
     await tick()

@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "Napló küldése is",
+  "crashReporter.sentToast.sendLog": "Napló csatolása",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "A napló sokkal részletesebb, így az összeomlás okát jóval könnyebb megtalálni. A fájl- és mappaneveket előtte lecseréljük.",
+  "crashReporter.sentToast.sendLogHint": "Szeretnél segíteni a hiba felderítésében azzal, hogy csatolsz egy részletet a Cmdr naplójából? A napló sokkal részletesebb. A magánjellegű adatokat, például a fájl- és mappaneveket, küldés előtt anonimizáljuk.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "A naplót elküldtük, azonosítója: {id}. Így az okát jóval könnyebb megtalálni.",
   "@crashReporter.sentToast.logSent": {

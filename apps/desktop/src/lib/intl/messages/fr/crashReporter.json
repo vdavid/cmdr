@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "Envoyer aussi le journal",
+  "crashReporter.sentToast.sendLog": "Joindre le journal",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "Le journal contient beaucoup plus de détails, ce qui rend un incident bien plus facile à localiser. Les noms de fichiers et de dossiers sont remplacés au préalable.",
+  "crashReporter.sentToast.sendLogHint": "Voulez-vous aider à diagnostiquer le problème en joignant aussi un extrait de votre journal Cmdr ? Le journal contient beaucoup plus de détails. Les informations privées comme les noms de fichiers et de dossiers sont anonymisées avant l''envoi.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "Journal envoyé sous l''identifiant {id}. Cela rend le problème bien plus facile à localiser.",
   "@crashReporter.sentToast.logSent": {

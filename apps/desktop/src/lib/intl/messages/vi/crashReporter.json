@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "Gửi kèm nhật ký",
+  "crashReporter.sentToast.sendLog": "Đính kèm nhật ký",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "Nhật ký có nhiều chi tiết hơn hẳn, giúp việc tìm ra nguyên nhân sự cố dễ hơn nhiều. Tên tệp và thư mục được thay thế trước.",
+  "crashReporter.sentToast.sendLogHint": "Bạn có muốn giúp chẩn đoán vấn đề này bằng cách đính kèm một đoạn nhật ký Cmdr không? Nhật ký có nhiều chi tiết hơn hẳn. Thông tin riêng tư như tên tệp và thư mục sẽ được ẩn danh trước khi gửi.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "Đã gửi nhật ký với mã {id}. Việc tìm ra nguyên nhân sẽ dễ hơn nhiều.",
   "@crashReporter.sentToast.logSent": {

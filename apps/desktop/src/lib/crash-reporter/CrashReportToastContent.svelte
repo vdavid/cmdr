@@ -29,8 +29,14 @@
     /** `null` until someone presses the button; then the id of the log report that landed. */
     let sentLogId = $state<string | null>(null)
     let sendingLog = $state(false)
-    /** Why the last attempt didn't land, worded from the catalog, or `null` before any attempt did that. */
+    /** Why the attempt didn't land, worded from the catalog, or `null` before an attempt did that. */
     let logNotSentReason = $state<string | null>(null)
+
+    // The offer is a one-shot. It goes away once the log lands, and also once a send DOESN'T: a
+    // toast carrying an invitation, a failure, and a retry all at once reads as three things
+    // competing, and the report this is about has already been sent either way. Someone who wants
+    // to try again still has Help > Send error report.
+    const offerOpen = $derived(!sentLogId && !logNotSentReason)
 
     function handleOpenSettings() {
         dismissToast('crash-report-sent')
@@ -38,7 +44,7 @@
     }
 
     async function handleSendLog() {
-        if (sendingLog || sentLogId) return
+        if (sendingLog || !offerOpen) return
         sendingLog = true
         logNotSentReason = null
         try {
@@ -48,9 +54,8 @@
             sentLogId = id
             log.info('Crash log report sent as {id}', { id })
         } catch (e) {
-            // The button stays and is the retry. No network or a server having a bad moment isn't
-            // worth an error line: it would try to auto-report through the server that just didn't
-            // answer.
+            // No network or a server having a bad moment isn't worth an error line: it would try to
+            // auto-report through the server that just didn't answer.
             log.warn('Sending the crash log report returned an error: {error}', { error: String(e) })
             logNotSentReason = errorReportSendReason(errorReportSendFailureOf(e))
         } finally {
@@ -67,7 +72,7 @@
             {tString(crashSentToastKey(report))}
         {/if}
     </span>
-    {#if !sentLogId}
+    {#if offerOpen}
         <p class="hint">{t('crashReporter.sentToast.sendLogHint')}</p>
     {/if}
     {#if logNotSentReason}
@@ -76,7 +81,7 @@
         </p>
     {/if}
     <div class="actions">
-        {#if !sentLogId}
+        {#if offerOpen}
             <Button size="mini" variant="secondary" disabled={sendingLog} onclick={handleSendLog}>
                 {sendingLog
                     ? tString('crashReporter.dialog.sending')
@@ -112,6 +117,7 @@
 
     .actions {
         display: flex;
+        flex-wrap: wrap;
         justify-content: flex-end;
         gap: var(--spacing-sm);
         margin-top: var(--spacing-lg);

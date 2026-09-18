@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "Skicka även loggen",
+  "crashReporter.sentToast.sendLog": "Bifoga logg",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "Loggen har mycket mer detaljer, vilket gör en krasch betydligt lättare att spåra. Fil- och mappnamn ersätts först.",
+  "crashReporter.sentToast.sendLogHint": "Vill du hjälpa till att felsöka det här genom att även bifoga ett utdrag ur din Cmdr-logg? Loggen har mycket mer detaljer. Privata uppgifter som fil- och mappnamn anonymiseras innan de skickas.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "Loggen skickades som {id}. Det gör det här mycket lättare att spåra.",
   "@crashReporter.sentToast.logSent": {

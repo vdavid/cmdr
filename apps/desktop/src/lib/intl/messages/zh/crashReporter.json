@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "同时发送日志",
+  "crashReporter.sentToast.sendLog": "附上日志",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "日志包含的细节多得多，能让崩溃原因容易查得多。文件名和文件夹名会先被替换掉。",
+  "crashReporter.sentToast.sendLogHint": "要不要顺便附上一段 Cmdr 日志，帮忙诊断这个问题？日志包含的细节多得多。文件名和文件夹名这类隐私信息会在发送前匿名化。",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "日志已发送，编号 {id}。这会让排查容易得多。",
   "@crashReporter.sentToast.logSent": {

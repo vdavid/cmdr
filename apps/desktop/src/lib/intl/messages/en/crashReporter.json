@@ -104,15 +104,15 @@
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-  "crashReporter.sentToast.sendLog": "Also send the log",
+  "crashReporter.sentToast.sendLog": "Attach logs",
   "@crashReporter.sentToast.sendLog": {
-    "description": "Button on the sent-confirmation toast that sends the app log from the session that crashed, as a separate report. Crash reports carry no log, so this is an extra thing the user chooses to send. Keep it short (a tight button).",
+    "description": "Button on the sent-confirmation toast that attaches the app log from the session that crashed, sent as a separate report. Crash reports carry no log, so this is an extra thing the user chooses to send. Keep it short (a tight button).",
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-  "crashReporter.sentToast.sendLogHint": "The log has much more detail, which makes a crash far easier to track down. File and folder names are replaced first.",
+  "crashReporter.sentToast.sendLogHint": "Would you like to help diagnose this by also attaching a snippet of your Cmdr log? The log has much more detail. Any private info like file and folder names are anonymized before sending.",
   "@crashReporter.sentToast.sendLogHint": {
-    "description": "One-line explanation under the sent-confirmation toast, saying what the \"Also send the log\" button would send and why it helps. It has to be honest about the log being more than the crash report already sent.",
+    "description": "Explanation under the sent-confirmation toast, asking whether the user also wants to attach a log snippet and saying why it helps. Phrased as a question because the \"Attach logs\" button beside it is the answer. The anonymizing sentence is load-bearing: logs are not sent by default, so this is where the user learns what would go.",
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },

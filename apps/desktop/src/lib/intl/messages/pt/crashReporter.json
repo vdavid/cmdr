@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "Enviar também o registro",
+  "crashReporter.sentToast.sendLog": "Anexar registro",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "O registro tem muito mais detalhes, o que torna uma falha bem mais fácil de rastrear. Nomes de arquivos e pastas são substituídos antes.",
+  "crashReporter.sentToast.sendLogHint": "Quer ajudar a diagnosticar isso anexando também um trecho do seu registro do Cmdr? O registro tem muito mais detalhes. Informações privadas como nomes de arquivos e pastas são anonimizadas antes do envio.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "Registro enviado como {id}. Isso torna o problema bem mais fácil de rastrear.",
   "@crashReporter.sentToast.logSent": {

@@ -75,13 +75,13 @@
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
   },
-  "crashReporter.sentToast.sendLog": "一併傳送記錄檔",
+  "crashReporter.sentToast.sendLog": "附上記錄檔",
   "@crashReporter.sentToast.sendLog": {
-    "sourceHash": "346e065"
+    "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "記錄檔的細節多得多，能讓當機原因容易追查得多。檔案和資料夾名稱會先被取代。",
+  "crashReporter.sentToast.sendLogHint": "要不要順便附上一段 Cmdr 記錄檔，幫忙診斷這個問題？記錄檔的細節多得多。檔案和資料夾名稱這類隱私資訊會在傳送前匿名化。",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "9a0c29a"
+    "sourceHash": "6c84232"
   },
   "crashReporter.sentToast.logSent": "記錄檔已傳送，編號 {id}。這會讓追查容易得多。",
   "@crashReporter.sentToast.logSent": {
