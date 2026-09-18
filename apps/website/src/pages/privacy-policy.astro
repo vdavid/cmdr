@@ -94,7 +94,10 @@ import LegalLayout from '../layouts/LegalLayout.astro'
             happened, and the crash message, cleaned of personal data on your Mac first. For a crash with no message,
             we also include the memory addresses the code stopped at and the address Cmdr itself was loaded at, which
             is what lets us turn those numbers back into a place in our code. They're randomized by macOS on every
-            launch and say nothing about you or your Mac. No file names, no file
+            launch and say nothing about you or your Mac. We read the crash report macOS writes for the same crash and
+            take two things from it: the one-line reason the crash happened, and the list of function names the code
+            was in. We pick those out by name and leave the rest of that file on your Mac, including the id that
+            identifies your machine and the name of whatever app launched Cmdr. No file names, no file
             contents. If you've added a beta contact email, you can tick a box to attach it so we can reply; we include
             it only when you do, and delete it after 90 days. Switch crash reports on or off anytime in Settings &gt;
             Updates &amp; privacy.

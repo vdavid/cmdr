@@ -1,0 +1,24 @@
+-- macOS's own view of a crash, lifted from the report `ReportCrash` writes to
+-- `~/Library/Logs/DiagnosticReports/` and attached by the client at the next launch.
+--
+-- `os_exception`: one line, like `EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at
+-- 0x0000000000000010`. The subtype is the most diagnostic field we have for a native crash and
+-- nothing the app captures itself can produce it: a fault at a small address is a null dereference
+-- at that struct offset.
+--
+-- `os_frames`: the faulting thread's SYMBOLICATED frames as a JSON array of
+-- `"<image> <symbol> + <offset>"` strings, truncated to the same budget as `backtrace`. Distinct
+-- from that column, which holds the raw addresses the async-signal-safe handler could capture.
+-- These carry names for the system frames (WebKit, AppKit) where a native crash usually is, and
+-- where our own symbols would never have helped.
+--
+-- Both nullable: a panic that unwinds leaves macOS nothing to report, the file may not be written
+-- yet when someone relaunches quickly, and clients older than the fields send neither.
+--
+-- What is NOT here is the point of the design: the client ships an allowlist (exception plus those
+-- frames) rather than the report, so `crashReporterKey` (stable per machine), `bootSessionUUID`,
+-- `userID`, and `parentProc` / `responsibleProc` / `coalitionName` (which name whatever launched
+-- Cmdr) never leave the user's disk. Every line is also run through the app's log redactor.
+-- Source of truth: `apps/desktop/src-tauri/src/crash_reporter/os_crash_report.rs`.
+ALTER TABLE crash_reports ADD COLUMN os_exception TEXT;
+ALTER TABLE crash_reports ADD COLUMN os_frames TEXT;

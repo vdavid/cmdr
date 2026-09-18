@@ -1716,6 +1716,29 @@ export const commands = {
        *  can't resolve it (non-macOS Unix).
        */
       imageBase?: string | null
+      /**
+       *  The exception line from macOS's own crash report, like
+       *  `"EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x0000000000000010"`.
+       *
+       *  The subtype is the single most diagnostic thing about a native crash and nothing we capture
+       *  ourselves can produce it: a fault at a small address is a null dereference at that struct
+       *  offset. Attached at next-launch assembly from `~/Library/Logs/DiagnosticReports/`; see
+       *  [`os_crash_report`] for the allowlist and why it's an allowlist.
+       *
+       *  `None` when no matching report was found, which is a normal outcome (see § macOS crash
+       *  reports in `DETAILS.md`), and on every platform but macOS.
+       */
+      osException?: string | null
+      /**
+       *  The faulting thread's SYMBOLICATED frames from macOS's own crash report, rendered as
+       *  `"<image> <symbol> + <offset>"`.
+       *
+       *  Distinct from [`Self::backtrace_frames`], which on the signal path holds the raw addresses
+       *  our async-signal-safe handler could capture. These carry names, including for the system
+       *  frames (WebKit, AppKit) where a native crash usually actually is and where our own symbols
+       *  would never have helped. Empty when no report matched.
+       */
+      osFrames?: string[]
     } | null>('check_pending_crash_report'),
   // Deletes the crash report file without sending it.
   dismissCrashReport: () => __TAURI_INVOKE<void>('dismiss_crash_report'),
@@ -6102,6 +6125,29 @@ export type CrashReport = {
    *  can't resolve it (non-macOS Unix).
    */
   imageBase?: string | null
+  /**
+   *  The exception line from macOS's own crash report, like
+   *  `"EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x0000000000000010"`.
+   *
+   *  The subtype is the single most diagnostic thing about a native crash and nothing we capture
+   *  ourselves can produce it: a fault at a small address is a null dereference at that struct
+   *  offset. Attached at next-launch assembly from `~/Library/Logs/DiagnosticReports/`; see
+   *  [`os_crash_report`] for the allowlist and why it's an allowlist.
+   *
+   *  `None` when no matching report was found, which is a normal outcome (see § macOS crash
+   *  reports in `DETAILS.md`), and on every platform but macOS.
+   */
+  osException?: string | null
+  /**
+   *  The faulting thread's SYMBOLICATED frames from macOS's own crash report, rendered as
+   *  `"<image> <symbol> + <offset>"`.
+   *
+   *  Distinct from [`Self::backtrace_frames`], which on the signal path holds the raw addresses
+   *  our async-signal-safe handler could capture. These carry names, including for the system
+   *  frames (WebKit, AppKit) where a native crash usually actually is and where our own symbols
+   *  would never have helped. Empty when no report matched.
+   */
+  osFrames?: string[]
 }
 
 /**

@@ -59,7 +59,22 @@ export interface CrashEmailRow {
    * panic reports and for clients older than the field.
    */
   imageBase: string | null
+  /**
+   * `os_exception`: macOS's own one-line verdict, like
+   * `EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x10`. It leads the detail cell whenever we
+   * have it, because a fault address of `0x10` says more than any other single field in the row.
+   */
+  osException: string | null
+  /**
+   * `os_frames` already parsed: the faulting thread's symbolicated frames. Only the top few are
+   * rendered; the rest are a click away in the row's D1 record, and a 35-frame stack per report
+   * would make the digest unreadable.
+   */
+  osFrames: string[]
 }
+
+/** Frames of macOS's stack shown per report. Enough to name the crash, short enough to scan past. */
+const OS_FRAMES_SHOWN = 6
 
 /**
  * The subject line, which is the whole email for anyone who doesn't open it. A survived panic is
@@ -77,18 +92,33 @@ function crashSubject(totalCount: number, keptRunningCount: number): string {
 /**
  * The full-width detail cell under a report's fact columns.
  *
- * A panic carries a message and that's the whole story. A signal crash carries none, and its detail
- * line is the load base instead: the one value that turns the row's raw addresses into something
- * `atos` can resolve. A report with neither renders the same em dash it always did.
+ * Ordered by what actually tells you what broke. A panic message is the whole story when there is
+ * one. Otherwise macOS's exception line leads (a fault address names a null dereference outright),
+ * followed by the top of its symbolicated stack, which is the only stack with names on it when the
+ * crash is in WebKit or AppKit. The load base comes last and only when nothing better exists: it is
+ * a tool for resolving addresses by hand, not a finding. A report with none of these keeps the em
+ * dash it always had.
  */
 function renderDetailCell(entry: CrashEmailRow): string {
+  const lines: string[] = []
   if (entry.message) {
-    return `<span style="color: #b91c1c;">${escapeHtml(entry.message)}</span>`
+    lines.push(`<span style="color: #b91c1c;">${escapeHtml(entry.message)}</span>`)
   }
-  if (entry.imageBase) {
-    return `<span style="color: #6b7280;">image base ${escapeHtml(entry.imageBase)}</span>`
+  if (entry.osException) {
+    lines.push(`<span style="color: #b91c1c;">${escapeHtml(entry.osException)}</span>`)
   }
-  return '<span style="color: #9ca3af; font-family: inherit;">—</span>'
+  for (const frame of entry.osFrames.slice(0, OS_FRAMES_SHOWN)) {
+    lines.push(`<span style="color: #4b5563;">&nbsp;&nbsp;${escapeHtml(frame)}</span>`)
+  }
+  if (entry.osFrames.length > OS_FRAMES_SHOWN) {
+    const rest = entry.osFrames.length - OS_FRAMES_SHOWN
+    lines.push(`<span style="color: #9ca3af;">&nbsp;&nbsp;+ ${String(rest)} more</span>`)
+  }
+  if (lines.length === 0 && entry.imageBase) {
+    lines.push(`<span style="color: #6b7280;">image base ${escapeHtml(entry.imageBase)}</span>`)
+  }
+  if (lines.length === 0) return '<span style="color: #9ca3af; font-family: inherit;">—</span>'
+  return lines.join('<br>')
 }
 
 /** Two `<tr>`s per report: the fact columns, then the detail line across the full width. */

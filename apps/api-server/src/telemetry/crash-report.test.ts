@@ -698,3 +698,93 @@ describe('imageBase', () => {
     }
   })
 })
+
+/**
+ * `osException` and `osFrames` come from macOS's own crash report, which the client reads at the
+ * next launch and reduces to an allowlist. They're what makes a native crash diagnosable: the
+ * exception subtype names a null dereference outright, and the frames carry symbols for the system
+ * libraries where such a crash usually is.
+ */
+describe('the macOS crash report extract', () => {
+  /** bindArgs indices of `os_exception` and `os_frames` in the INSERT. */
+  const osExceptionIndex = 14
+  const osFramesIndex = 15
+
+  it('stores the exception line and the frames as JSON', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = {
+      ...validCrashReport,
+      osException: 'EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x0000000000000010',
+      osFrames: ['WebKit WebKit::commitLayerTree + 280', 'CoreFoundation __CFRunLoopRun + 1992'],
+    }
+
+    const res = await postCrashReport(report, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][osExceptionIndex]).toBe(
+      'EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x0000000000000010',
+    )
+    expect(JSON.parse(String(bindMock.mock.calls[0][osFramesIndex]))).toEqual([
+      'WebKit WebKit::commitLayerTree + 280',
+      'CoreFoundation __CFRunLoopRun + 1992',
+    ])
+  })
+
+  it('stores NULL rather than an empty array when macOS wrote no report', async () => {
+    // "We have the OS stack and it was empty" is not a thing that happens, so `'[]'` in the column
+    // would only ever be a lie about which reports we could look at.
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport({ ...validCrashReport, osFrames: [] }, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][osFramesIndex]).toBeNull()
+  })
+
+  it('stores NULL for both when the client is older than the fields', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const res = await postCrashReport(validCrashReport, bindings)
+
+    expect(res.status).toBe(204)
+    expect(bindMock.mock.calls[0][osExceptionIndex]).toBeNull()
+    expect(bindMock.mock.calls[0][osFramesIndex]).toBeNull()
+  })
+
+  it('drops non-string entries instead of losing the report over them', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = { ...validCrashReport, osFrames: ['WebKit good + 1', 42, null, { evil: true }] }
+
+    const res = await postCrashReport(report, bindings)
+
+    expect(res.status).toBe(204)
+    expect(JSON.parse(String(bindMock.mock.calls[0][osFramesIndex]))).toEqual(['WebKit good + 1'])
+  })
+
+  it('truncates a runaway stack rather than rejecting it', async () => {
+    const { db, bindMock } = createMockD1()
+    const bindings = createBindings({ TELEMETRY_DB: db })
+
+    const report = { ...validCrashReport, osFrames: Array.from({ length: 500 }, (_, i) => `Image symbol${String(i)} + 0`) }
+
+    const res = await postCrashReport(report, bindings)
+
+    expect(res.status).toBe(204)
+    expect(String(bindMock.mock.calls[0][osFramesIndex]).length).toBeLessThanOrEqual(5_000)
+  })
+
+  it('rejects a non-string exception line', async () => {
+    const bindings = createBindings()
+    const res = await postCrashReport({ ...validCrashReport, osException: { evil: true } }, bindings)
+
+    expect(res.status).toBe(400)
+    const body = await res.json<{ error: string }>()
+    expect(body.error).toBe('Invalid osException')
+  })
+})

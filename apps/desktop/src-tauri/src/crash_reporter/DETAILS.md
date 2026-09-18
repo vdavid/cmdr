@@ -239,6 +239,8 @@ all three; nextest never sees the race, so a test green only under nextest is th
   handler; `live` is always `None` for crashes (see the `CLAUDE.md` invariant). PII-free: no hostname, paths, or volume
   names.
 - `imageBase` (optional): the main executable's load address at crash time, as `"0x…"`. See § Image base.
+- `osException` (optional) and `osFrames`: macOS's own verdict on the same crash, lifted from the report `ReportCrash`
+  writes. See § macOS crash reports.
 - `appFate`: `"unknown"` / `"unconfirmed"` / `"ended"` / `"keptRunning"` (§ App fate). PII-free by construction: a
   four-value enum about the app's own behavior. Stored server-side in `crash_reports.app_fate`, where the nightly crash
   email reads it to rank a real crash apart from a panic the app walked away from
@@ -247,6 +249,40 @@ all three; nextest never sees the race, so a test green only under nextest is th
 - `reportedInSession`: always `false` in anything that reaches the server, since a stamped report is deleted rather than
   uploaded (§ Told once, not twice). A bool that carries no information off the machine, kept in the payload only so the
   on-disk file stays self-describing.
+
+## macOS crash reports
+
+Our signal handler can only capture raw addresses, and the frames that matter in a native crash are almost always in
+WebKit or AppKit, where our own symbols would be no help even with an `imageBase`. macOS writes a fully symbolicated
+report for the same crash to `~/Library/Logs/DiagnosticReports/`, and `os_crash_report.rs` reads it at the next launch.
+
+- **It exists because the handler re-raises.** `install()` registers with `SA_RESETHAND` and the handler ends in
+  `raise(sig)`, so the default disposition runs and `ReportCrash` does its work. ❌ Don't change either without
+  understanding that this whole section depends on them.
+- **Allowlist, never denylist**: the `exception` block and the faulting thread's frames, rendered against the report's
+  own image table into `"<image> <symbol> + <offset>"` strings. A future macOS can add a field, and a denylist would
+  ship it. Deliberately left behind: `crashReporterKey` (stable per machine), `bootSessionUUID`, `sleepWakeUUID`,
+  `incident_id`, `userID`, and `parentProc` / `responsibleProc` / `coalitionName`, which name whatever launched Cmdr
+  rather than Cmdr itself (a real report named the user's terminal app).
+- **Rendering here rather than shipping the JSON** is what keeps the payload small and the PII surface flat: the image
+  table is consumed to produce names and then discarded, so no loaded-image path list ever travels. A real 21-frame
+  extract is about 1.3 KB against a 64 KB budget (measured on a `Cmdr-*.ips`, macOS 26.6.2, 2026-09-18).
+- **Gotcha: macOS pre-redacts a third-party app's report**, so `procPath` reads `/Users/USER/*/Cmdr` and the home paths
+  the redactor exists for are already gone. Every line still goes through [`crate::redact`], which is insurance rather
+  than the load-bearing defense. ❌ Don't let that tempt anyone into widening the allowlist: the fields above are not
+  path-shaped and the redactor would pass them straight through.
+- **Matching is by the raw crash file's mtime**, which is when the handler wrote it, so the report's `timestamp` is the
+  moment the app DIED rather than when this launch assembled the report. The closest `.ips` within 120 s wins.
+  ❌ Never fall back to "the newest report for this process": a wrong stack costs more than a missing one, and the same
+  rule is why an absent `faultingThread` yields no frames instead of thread 0.
+- **A miss is normal, not a failure.** A panic that unwinds leaves macOS nothing to report; `ReportCrash` may not have
+  finished when someone relaunches within a second or two; the directory may be unreadable. The report still carries
+  its own addresses and `imageBase`. **Known gap**: there's no "look again next launch" retry, because that needs
+  persisted state for a case that resolves itself the vast majority of the time. If misses turn out to be common, that
+  retry is the fix.
+- **Unverified**: whether reading that directory needs Full Disk Access. The file permissions allow it
+  (`rwxrwx--- <user>:_analyticsusers`), and nothing here is gated on the FDA flag; if reports come back with
+  `osFrames` always empty on machines without the grant, that's the answer.
 
 ## Signal-handler limits we accept
 

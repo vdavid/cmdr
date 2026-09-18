@@ -35,12 +35,28 @@ function appFateToLabel(appFate: string | null | undefined): CrashFate {
   return '?'
 }
 
+/**
+ * `os_frames` is stored as the JSON array the client sent, truncated to a byte budget at write
+ * time, so a long stack can leave the column holding a partial array. A parse failure therefore
+ * means "the stack didn't fit", not "something is broken": drop the frames and let the rest of the
+ * row render. ❌ Never let this throw; it runs inside the cron job that mails every crash.
+ */
+function parseOsFrames(stored: string | null | undefined): string[] {
+  if (!stored) return []
+  try {
+    const parsed: unknown = JSON.parse(stored)
+    return Array.isArray(parsed) ? parsed.filter((frame): frame is string => typeof frame === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 async function handleCrashNotifications(env: Bindings): Promise<void> {
   if (!env.CRASH_NOTIFICATION_EMAIL || !env.RESEND_API_KEY) return
 
   // One row per crash, newest first. No grouping: the email shows every report.
   const { results } = await env.TELEMETRY_DB.prepare(
-    `SELECT id, app_version, os_version, arch, signal, top_function, created_at, build_mode, short_id, email, panic_message, app_fate, image_base
+    `SELECT id, app_version, os_version, arch, signal, top_function, created_at, build_mode, short_id, email, panic_message, app_fate, image_base, os_exception, os_frames
          FROM crash_reports
          WHERE notified_at IS NULL
          ORDER BY created_at DESC`,
@@ -58,6 +74,8 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
     panic_message: string | null
     app_fate: string | null
     image_base: string | null
+    os_exception: string | null
+    os_frames: string | null
   }>()
 
   if (results.length === 0) return
@@ -73,6 +91,8 @@ async function handleCrashNotifications(env: Bindings): Promise<void> {
     email: row.email,
     message: row.panic_message,
     imageBase: row.image_base,
+    osException: row.os_exception,
+    osFrames: parseOsFrames(row.os_frames),
   }))
 
   // Stamp AFTER the send, matching `handleFeedbackNotifications`. `sendViaResend` throws on a

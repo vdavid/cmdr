@@ -33,6 +33,8 @@ fn write_report(path: &Path, fate: AppFate) {
         email: None,
         system_snapshot: None,
         image_base: None,
+        os_exception: None,
+        os_frames: Vec::new(),
     };
     write_crash_report(path, &report).unwrap();
 }

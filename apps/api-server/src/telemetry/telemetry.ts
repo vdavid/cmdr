@@ -70,6 +70,18 @@ interface CrashReport {
    * across launches; without it a signal crash's raw addresses are unusable. See migration `0018`.
    */
   imageBase?: string
+  /**
+   * Optional. The exception line from macOS's own crash report, like
+   * `"EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x…"`. Free text from the OS by way of the
+   * client's redactor, so only the type is checked; over-length is truncated at write time.
+   */
+  osException?: string
+  /**
+   * Optional. The faulting thread's SYMBOLICATED frames from macOS's own crash report, as
+   * `"<image> <symbol> + <offset>"`. Distinct from `backtraceFrames`, which on the signal path
+   * holds raw addresses. See migration `0019`.
+   */
+  osFrames?: string[]
   backtraceFrames?: string[]
   [key: string]: unknown
 }
@@ -188,6 +200,12 @@ function validateCrashReportShape(report: Record<string, unknown>): string | nul
   if (panicMessage !== undefined && panicMessage !== null && typeof panicMessage !== 'string') {
     return 'Invalid panicMessage'
   }
+  // `osException` comes from macOS by way of the client's redactor, so it's free text on the same
+  // terms as `panicMessage`: type-checked, truncated at write time rather than rejected.
+  const osException = report.osException
+  if (osException !== undefined && osException !== null && typeof osException !== 'string') {
+    return 'Invalid osException'
+  }
   return (
     validateOptionalEnum(report.buildMode, buildModeValues, 'Invalid buildMode') ??
     validateOptionalEnum(report.appFate, appFateValues, 'Invalid appFate') ??
@@ -239,8 +257,12 @@ telemetry.post('/crash-report', async (c) => {
 
   const topFunction = extractTopFunction(report.backtraceFrames)
   const backtraceTruncated = JSON.stringify(report.backtraceFrames ?? []).slice(0, maxBacktraceBytes)
+  // NULL rather than `'[]'` when macOS wrote no report for this crash, so "we have the OS stack"
+  // and "the OS stack was empty" stay distinguishable in the column.
+  const osFrames = Array.isArray(report.osFrames) ? report.osFrames.filter((f) => typeof f === 'string') : []
+  const osFramesTruncated = osFrames.length > 0 ? JSON.stringify(osFrames).slice(0, maxBacktraceBytes) : null
 
-  const dbWrite = writeCrashReportToD1(c.env.TELEMETRY_DB, report, { topFunction, backtraceTruncated })
+  const dbWrite = writeCrashReportToD1(c.env.TELEMETRY_DB, report, { topFunction, backtraceTruncated, osFramesTruncated })
 
   try {
     c.executionCtx.waitUntil(dbWrite)
@@ -256,12 +278,14 @@ telemetry.post('/crash-report', async (c) => {
 interface CrashReportDerived {
   topFunction: string
   backtraceTruncated: string
+  osFramesTruncated: string | null
 }
 
 /**
  * Fire-and-forget D1 insert of a crash report. `build_mode`, `short_id`, `diag_id`, `email`,
- * `panic_message`, `app_fate`, and `image_base` are nullable; rows from older clients (or reports
- * without an attached email, or signal crashes, which carry no panic payload) stay NULL.
+ * `panic_message`, `app_fate`, `image_base`, `os_exception`, and `os_frames` are nullable; rows from
+ * older clients (or reports without an attached email, or signal crashes, which carry no panic
+ * payload, or crashes macOS wrote no report for) stay NULL.
  *
  * `hashed_ip` is written as the empty string: nothing reads it (crash rows are grouped by
  * `top_function` and, where present, `diag_id`), so there is no reason to derive anything from the
@@ -270,8 +294,8 @@ interface CrashReportDerived {
 function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: CrashReportDerived): Promise<unknown> {
   return db
     .prepare(
-      `INSERT INTO crash_reports (hashed_ip, app_version, os_version, arch, signal, top_function, backtrace, build_mode, short_id, diag_id, email, panic_message, app_fate, image_base)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO crash_reports (hashed_ip, app_version, os_version, arch, signal, top_function, backtrace, build_mode, short_id, diag_id, email, panic_message, app_fate, image_base, os_exception, os_frames)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       '',
@@ -288,6 +312,8 @@ function writeCrashReportToD1(db: D1Database, report: CrashReport, derived: Cras
       capPanicMessage(report.panicMessage),
       report.appFate ?? null,
       report.imageBase ?? null,
+      capPanicMessage(report.osException),
+      derived.osFramesTruncated,
     )
     .run()
     .catch(() => {}) // Don't let D1 failure block the response

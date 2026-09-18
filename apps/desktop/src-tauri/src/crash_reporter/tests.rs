@@ -35,6 +35,8 @@ fn crash_report_roundtrip() {
         email: Some("tester@example.com".to_string()),
         system_snapshot: Some(crate::diagnostics_snapshot::SystemSnapshot::collect_stable(dir.path())),
         image_base: Some("0x104f2c000".to_string()),
+        os_exception: Some("EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x10".to_string()),
+        os_frames: vec!["WebKit WebKit::commitLayerTree + 280".to_string()],
     };
 
     write_crash_report(&path, &report).unwrap();
@@ -48,6 +50,13 @@ fn crash_report_roundtrip() {
     // Without the base, the absolute frame addresses can't be compared across
     // installs or resolved with atos (ASLR re-slides every launch).
     assert_eq!(loaded.image_base.as_deref(), Some("0x104f2c000"));
+    // macOS's own view of the same crash: the exception subtype our capture can never produce, and
+    // the stack with names on it. Both survive the on-disk round trip like every other field.
+    assert_eq!(
+        loaded.os_exception.as_deref(),
+        Some("EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x10")
+    );
+    assert_eq!(loaded.os_frames, vec!["WebKit WebKit::commitLayerTree + 280"]);
     assert_eq!(loaded.version, CRASH_FILE_VERSION);
     assert_eq!(loaded.timestamp, "2026-03-22T10:00:00+00:00");
     assert_eq!(loaded.signal.as_deref(), Some("panic"));
@@ -494,6 +503,8 @@ fn make_test_report() -> CrashReport {
         email: None,
         system_snapshot: None,
         image_base: Some("0x104f2c000".to_string()),
+        os_exception: None,
+        os_frames: Vec::new(),
     }
 }
 

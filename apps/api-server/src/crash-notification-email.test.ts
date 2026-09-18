@@ -144,6 +144,89 @@ describe('handleCrashNotifications', () => {
     expect(lastEmailCall().html).toContain('image base 0x104870000')
   })
 
+  it("renders macOS's exception line and the top of its symbolicated stack", async () => {
+    // This is the payoff: `top_function` reads `unknown` for a native crash, and before the OS
+    // extract the digest row said nothing at all about what broke.
+    const frames = Array.from({ length: 10 }, (_, i) => `WebKit frame${String(i)} + 0`)
+    const responses = new Map<string, unknown>([
+      [
+        'SELECT id',
+        {
+          results: [
+            {
+              id: 1,
+              app_version: '0.45.1',
+              os_version: '26.7',
+              arch: 'arm64',
+              signal: 'SIGSEGV',
+              top_function: 'unknown',
+              created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-B6789',
+              email: null,
+              panic_message: null,
+              image_base: '0x104870000',
+              os_exception: 'EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x10',
+              os_frames: JSON.stringify(frames),
+            },
+          ],
+        },
+      ],
+    ])
+    const { db } = createMockD1(responses)
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleCrashNotifications(env as never)
+
+    const html = lastEmailCall().html
+    expect(html).toContain('KERN_INVALID_ADDRESS at 0x10')
+    expect(html).toContain('WebKit frame0 + 0')
+    expect(html).toContain('WebKit frame5 + 0')
+    // Capped, so a 35-frame stack per report can't make the digest unreadable.
+    expect(html).not.toContain('WebKit frame6 + 0')
+    expect(html).toContain('+ 4 more')
+    // The load base is a hand-resolution tool, not a finding: it yields to anything that explains.
+    expect(html).not.toContain('image base')
+  })
+
+  it('survives an os_frames value that was truncated mid-array at write time', async () => {
+    // The column is capped by bytes, so a long stack can leave a partial JSON array behind. That
+    // must cost the frames, never the whole crash digest.
+    const responses = new Map<string, unknown>([
+      [
+        'SELECT id',
+        {
+          results: [
+            {
+              id: 1,
+              app_version: '0.45.1',
+              os_version: '26.7',
+              arch: 'arm64',
+              signal: 'SIGSEGV',
+              top_function: 'unknown',
+              created_at: '2026-03-23T10:00:00Z',
+              build_mode: 'release',
+              short_id: 'CRASH-B6789',
+              email: null,
+              panic_message: null,
+              image_base: null,
+              os_exception: 'EXC_BAD_ACCESS (SIGSEGV)',
+              os_frames: '["WebKit frame0 + 0", "WebKit fra',
+            },
+          ],
+        },
+      ],
+    ])
+    const { db } = createMockD1(responses)
+    const env = createBaseEnv({ TELEMETRY_DB: db })
+
+    await handleCrashNotifications(env as never)
+
+    const html = lastEmailCall().html
+    expect(html).toContain('EXC_BAD_ACCESS (SIGSEGV)')
+    expect(html).not.toContain('WebKit fra')
+  })
+
   it('keeps the panic message in the detail cell when a report has both', async () => {
     // A panic that also carried a base is not a symbolication job: the message is the story, and
     // showing both would push the thing you actually read below the noise.

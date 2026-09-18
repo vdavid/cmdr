@@ -5,6 +5,7 @@
 //! - **Signal handler**: async-signal-safe only, writes raw addresses to a pre-opened fd
 
 mod contain;
+mod os_crash_report;
 mod panic_courier;
 #[cfg(unix)]
 mod signal_handler;
@@ -198,6 +199,27 @@ pub struct CrashReport {
     /// can't resolve it (non-macOS Unix).
     #[serde(default)]
     pub image_base: Option<String>,
+    /// The exception line from macOS's own crash report, like
+    /// `"EXC_BAD_ACCESS (SIGSEGV), KERN_INVALID_ADDRESS at 0x0000000000000010"`.
+    ///
+    /// The subtype is the single most diagnostic thing about a native crash and nothing we capture
+    /// ourselves can produce it: a fault at a small address is a null dereference at that struct
+    /// offset. Attached at next-launch assembly from `~/Library/Logs/DiagnosticReports/`; see
+    /// [`os_crash_report`] for the allowlist and why it's an allowlist.
+    ///
+    /// `None` when no matching report was found, which is a normal outcome (see § macOS crash
+    /// reports in `DETAILS.md`), and on every platform but macOS.
+    #[serde(default)]
+    pub os_exception: Option<String>,
+    /// The faulting thread's SYMBOLICATED frames from macOS's own crash report, rendered as
+    /// `"<image> <symbol> + <offset>"`.
+    ///
+    /// Distinct from [`Self::backtrace_frames`], which on the signal path holds the raw addresses
+    /// our async-signal-safe handler could capture. These carry names, including for the system
+    /// frames (WebKit, AppKit) where a native crash usually actually is and where our own symbols
+    /// would never have helped. Empty when no report matched.
+    #[serde(default)]
+    pub os_frames: Vec<String>,
 }
 
 /// Points the crash reporter at the app data dir: settings cache, previous session's
@@ -422,6 +444,10 @@ fn build_panic_report(info: &std::panic::PanicHookInfo<'_>) -> CrashReport {
         // Safe here (unlike the signal handler): the panic hook runs in normal Rust, and this
         // process IS the crashing one, so its slide is the right one to record.
         image_base: current_image_base_hex(),
+        // Like `system_snapshot`, attached at next launch: macOS hasn't written its report yet
+        // (this panic may not even kill us), and the hook must not go reading the filesystem.
+        os_exception: None,
+        os_frames: Vec::new(),
     }
 }
 
@@ -593,6 +619,17 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
             report.system_snapshot = Some(crate::diagnostics_snapshot::SystemSnapshot::collect_stable(dir));
             dirty = true;
         }
+        // A panic that UNWINDS leaves macOS nothing to report, so this usually misses and costs one
+        // directory scan. It hits for the aborting kind ("panic in a function that cannot unwind"),
+        // which is exactly the class where our backtrace stops at the tao/wry event loop and the
+        // symbolicated stack says what the app was actually doing.
+        if report.os_exception.is_none()
+            && report.os_frames.is_empty()
+            && let Some(crash_time) = parse_timestamp(&report.timestamp)
+            && attach_os_crash_report(&mut report, crash_time)
+        {
+            dirty = true;
+        }
         if dirty {
             let _ = write_crash_report(crash_json_path, &report);
         }
@@ -603,6 +640,15 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
     // Check for a raw signal crash file
     #[cfg(unix)]
     if raw_crash_path.exists() {
+        // The raw file is written BY THE HANDLER, mid-crash, so its mtime is when the app actually
+        // died. Read it before anything else touches the file. Everything downstream wants that
+        // moment rather than now: it's what matches macOS's own report to this crash, and what a
+        // later log bundle scopes itself around. `now` only as a fallback, which keeps the field
+        // populated on a filesystem that won't answer.
+        let crash_time = std::fs::metadata(raw_crash_path)
+            .and_then(|m| m.modified())
+            .unwrap_or_else(|_| std::time::SystemTime::now());
+
         if let Some((signal, addresses, image_base, crash_app_version)) = signal_handler::read_raw_crash(raw_crash_path)
         {
             let current_version = env!("CARGO_PKG_VERSION");
@@ -620,9 +666,13 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
 
             let signal_name = signal_name(signal);
 
-            let report = CrashReport {
+            let mut report = CrashReport {
                 version: CRASH_FILE_VERSION,
-                timestamp: now_iso8601(),
+                // When the app DIED, taken from the raw file the handler wrote, never the moment
+                // this next launch got round to assembling the report. The gap between the two is
+                // however long the machine sat closed, and everything that reads this field (the
+                // macOS-report match, the crash-loop check, a log bundle's window) wants the crash.
+                timestamp: to_iso8601(crash_time),
                 signal: Some(signal_name),
                 panic_message: None,
                 backtrace_frames,
@@ -656,7 +706,19 @@ fn process_pending_crash(crash_json_path: &Path, raw_crash_path: &Path) {
                 // relaunched process a different slide, which would make every offset wrong.
                 // `0` means that build couldn't resolve it (non-macOS Unix).
                 image_base: (image_base != 0).then(|| format!("0x{image_base:x}")),
+                // Filled in just below: the constructor stays a plain description of what the raw
+                // file held, and the one field that comes from outside it is attached separately.
+                os_exception: None,
+                os_frames: Vec::new(),
             };
+
+            // The payoff for the signal path. `backtrace_frames` above are bare addresses; this is
+            // the same stack with names on it, system frames included.
+            // The bool says whether anything attached, which the JSON path above needs to decide
+            // whether to rewrite a file already on disk. Here the report is written unconditionally
+            // either way.
+            // allowed-discarded-outcome: nothing on this path branches on whether a report attached
+            attach_os_crash_report(&mut report, crash_time);
 
             if let Err(e) = write_crash_report(crash_json_path, &report) {
                 log::warn!("Crash reporter: couldn't write symbolicated crash report: {e}");
@@ -688,6 +750,52 @@ fn cache_active_settings<R: tauri::Runtime>(app: &tauri::AppHandle<R>) {
 fn now_iso8601() -> String {
     // Use chrono (already a dependency) for ISO 8601 timestamp
     chrono::Utc::now().to_rfc3339()
+}
+
+/// A [`SystemTime`](std::time::SystemTime) as the same ISO 8601 string [`now_iso8601`] writes, so
+/// every crash-file timestamp has one shape whatever produced it.
+fn to_iso8601(time: std::time::SystemTime) -> String {
+    chrono::DateTime::<chrono::Utc>::from(time).to_rfc3339()
+}
+
+/// The inverse, for a timestamp already on disk. `None` for a value that isn't ISO 8601, which
+/// callers treat as "can't place this crash in time" rather than as an error.
+fn parse_timestamp(timestamp: &str) -> Option<std::time::SystemTime> {
+    chrono::DateTime::parse_from_rfc3339(timestamp)
+        .ok()
+        .map(|dt| dt.with_timezone(&chrono::Utc).into())
+}
+
+/// Attach macOS's own view of this crash, if it wrote one. Returns whether anything was attached.
+///
+/// Best-effort by design: a miss is normal (the report may not be written yet when someone
+/// relaunches quickly, the directory may be unreadable, or the crash may be a panic that unwound
+/// and produced no OS report at all), and the crash report is still worth sending without it.
+fn attach_os_crash_report(report: &mut CrashReport, crash_time: std::time::SystemTime) -> bool {
+    let Some(process_name) = current_process_name() else {
+        return false;
+    };
+    let Some(extracted) = os_crash_report::extract_near(&process_name, crash_time) else {
+        log::debug!("Crash reporter: no matching macOS crash report for this crash");
+        return false;
+    };
+    log::info!(
+        "Crash reporter: attached macOS crash report ({} symbolicated frames)",
+        extracted.frames.len()
+    );
+    report.os_exception = extracted.exception;
+    report.os_frames = extracted.frames;
+    true
+}
+
+/// The name macOS files our crash reports under: the executable's own file stem (`Cmdr` in a
+/// shipped build). Taken from `current_exe` rather than hardcoded so a dev build, whose binary is
+/// named differently, still finds its own reports.
+fn current_process_name() -> Option<String> {
+    std::env::current_exe()
+        .ok()?
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
 }
 
 /// Seconds since the process started, or 0.0 before [`init`] runs. Shared with the diagnostics
