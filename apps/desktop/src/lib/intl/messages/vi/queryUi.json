@@ -214,6 +214,14 @@
   "@queryUi.results.criteria.modified": {
     "sourceHash": "fc2268a"
   },
+  "queryUi.results.criteria.scope": "Đã tìm trong: {scope}",
+  "@queryUi.results.criteria.scope": {
+    "sourceHash": "960a4c8"
+  },
+  "queryUi.results.widenToVolume": "Tìm trong ổ đĩa này",
+  "@queryUi.results.widenToVolume": {
+    "sourceHash": "7dfc278"
+  },
   "queryUi.results.indexNotReady": "Chỉ mục ổ đĩa chưa sẵn sàng. Bạn có thể tìm kiếm sau khi quá trình quét ban đầu hoàn tất.",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"

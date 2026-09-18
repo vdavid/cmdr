@@ -404,6 +404,12 @@ builds on live in `$lib/ui/`. Only the layout facts that none of those carry liv
   column needs, and its header label ellipsized to "Ac…" at the dialog's width.
 - **`EmptyState`'s example chips come from `config.emptyState.examples`** (forwarded by `QueryResults`), falling back to
   Search-flavoured defaults when a consumer omits them.
+- **The no-results state lists the SCOPE too, because it's the criterion nobody chose.** `scope-summary.ts` turns the
+  dialog's scope state into a name for the bullet (`scopeSummaryFor`) and the path a widen compares against
+  (`effectiveScopePath`); `QueryDialog` gates both on `visibleChips.scope`, so Selection renders neither. The widen
+  button MUST re-run, for the same reason `showResultsFromCount` does: setting the scope alone leaves the user looking
+  at the empty list that prompted the click. Why the bullet earns its place: `$lib/search/DETAILS.md` § "The empty box
+  means the current folder".
 - **The results header and the result rows are two separate grid containers, so every track has to resolve identically
   in both.** `ch` tracks resolve against the font-size of the element that owns the grid, so `.column-header` declares
   `--font-size-md` exactly like `.result-row` does; without it the header's `10ch` / `16ch` tracks came out ~14% wider

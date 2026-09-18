@@ -61,6 +61,21 @@
         query: string
         sizeFilter: string
         dateFilter: string
+        /**
+         * How to NAME the ground the run covered, for the no-results criteria list ("Downloads",
+         * or a typed scope verbatim). Search wires it; Selection passes `null` (one folder, so
+         * there's no scope to voice) and the bullet doesn't render. See `scope-summary.ts` for
+         * why the bullet exists at all.
+         */
+        scopeSummary?: string | null
+        /**
+         * Re-runs the search across the whole volume, wired to the "Search this volume instead"
+         * button under the criteria list. Absent when there's nowhere wider to go (the run
+         * already covered the volume) or no scope at all (Selection), and the button then
+         * doesn't render. Like `onShowResults`, the handler MUST re-run: widening the scope
+         * without one leaves the same empty list on screen.
+         */
+        onWidenToVolume?: () => void
         scanning: boolean
         entriesScanned: number
         totalCount: number
@@ -125,6 +140,8 @@
         query,
         sizeFilter,
         dateFilter,
+        scopeSummary = null,
+        onWidenToVolume,
         scanning,
         entriesScanned,
         totalCount,
@@ -215,6 +232,10 @@
         if (q) out.push(tString('queryUi.results.criteria.query', { query: q }))
         if (sizeFilter !== 'any') out.push(tString('queryUi.results.criteria.size'))
         if (dateFilter !== 'any') out.push(tString('queryUi.results.criteria.modified'))
+        // Last, and unconditional for a scoped consumer: it's the criterion the user didn't
+        // choose, so it's the one they're least likely to suspect, and the most likely answer
+        // to "why did this find nothing".
+        if (scopeSummary) out.push(tString('queryUi.results.criteria.scope', { scope: scopeSummary }))
         return out
     }
 
@@ -544,6 +565,14 @@
                         <li>{item}</li>
                     {/each}
                 </ul>
+                {#if onWidenToVolume}
+                    <!-- The scope bullet above names the constraint; this undoes it in one click.
+                         ⌥V in the scope popover does the same, but nobody opens a popover to
+                         explain an empty list. -->
+                    <Button variant="secondary" onclick={onWidenToVolume}>
+                        {tString('queryUi.results.widenToVolume')}
+                    </Button>
+                {/if}
             </div>
         {:else if !hasSearched && !query.trim() && isIndexReady && sizeFilter === 'any' && dateFilter === 'any'}
             <EmptyState {aiEnabled} {indexEntryCount} examples={emptyExamples} onPick={onPickExample} />

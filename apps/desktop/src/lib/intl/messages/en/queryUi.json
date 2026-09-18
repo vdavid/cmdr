@@ -322,6 +322,21 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
+  "queryUi.results.criteria.scope": "Searched in: {scope}",
+  "@queryUi.results.criteria.scope": {
+    "description": "One bullet in the 'No files match these criteria' list, naming the folder the search was limited to. A search is always limited to somewhere, and this bullet is often the reason a search found nothing, so keep it as plain and direct as the other bullets.",
+    "placeholders": {
+      "scope": "the folder's name, or the scope expression the user typed; shown verbatim and not translated"
+    },
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
+  },
+  "queryUi.results.widenToVolume": "Search this volume instead",
+  "@queryUi.results.widenToVolume": {
+    "description": "Button under the 'No files match these criteria' list. Re-runs the same search across the whole volume (disk, drive, or network share) rather than the one folder it was limited to. 'This volume' names the same scope as the 'This volume' button in the scope popover, so use the same wording for it. 'Instead' means replacing the narrower scope, not adding to it.",
+    "screenshot": "search-dialog.png",
+    "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
+  },
   "queryUi.results.indexNotReady": "Drive index not ready. Search is available after the initial scan completes.",
   "@queryUi.results.indexNotReady": {
     "description": "Message in the results area when the drive index hasn't finished its first build, so search can't run yet.",

@@ -214,6 +214,14 @@
   "@queryUi.results.criteria.modified": {
     "sourceHash": "fc2268a"
   },
+  "queryUi.results.criteria.scope": "Buscou em: {scope}",
+  "@queryUi.results.criteria.scope": {
+    "sourceHash": "960a4c8"
+  },
+  "queryUi.results.widenToVolume": "Buscar neste volume",
+  "@queryUi.results.widenToVolume": {
+    "sourceHash": "7dfc278"
+  },
   "queryUi.results.indexNotReady": "Índice do disco não está pronto. A busca fica disponível depois que a análise inicial termina.",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"

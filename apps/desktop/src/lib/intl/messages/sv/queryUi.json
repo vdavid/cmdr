@@ -214,6 +214,14 @@
   "@queryUi.results.criteria.modified": {
     "sourceHash": "fc2268a"
   },
+  "queryUi.results.criteria.scope": "Sökte i: {scope}",
+  "@queryUi.results.criteria.scope": {
+    "sourceHash": "960a4c8"
+  },
+  "queryUi.results.widenToVolume": "Sök i den här volymen i stället",
+  "@queryUi.results.widenToVolume": {
+    "sourceHash": "7dfc278"
+  },
   "queryUi.results.indexNotReady": "Enhetsindexet är inte klart. Sökning blir tillgänglig när den första genomsökningen är klar.",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"

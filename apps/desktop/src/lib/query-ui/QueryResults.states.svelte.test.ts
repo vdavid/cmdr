@@ -43,6 +43,8 @@ const baseProps = {
   indexEntryCount: 1000,
   countOnly: false,
   showPathColumn: true,
+  scopeSummary: null as string | null,
+  onWidenToVolume: undefined as (() => void) | undefined,
   onShowResults: undefined as (() => void) | undefined,
   iconCacheVersion: 0,
   aiEnabled: false,
@@ -210,6 +212,79 @@ describe('SearchResults round 2 states', () => {
     await tick()
     const text = target.querySelector('.no-results-criteria')?.textContent ?? ''
     expect(text.toLowerCase()).toContain('size')
+  })
+
+  // ── The scope criterion and the widen button ──────────────────────────────
+  //
+  // A search is always scoped, and the scope is the one criterion the user didn't choose, so
+  // it's the likeliest reason an empty list is a surprise. `ERR-FCAXU`: "linear" found nothing
+  // in the pane's folder while Finder, searching the whole Mac, found five files.
+
+  it('names the searched folder in the criteria list, so a scoped miss says so', async () => {
+    const target = mountWith({
+      isSearching: false,
+      hasSearched: true,
+      query: 'linear',
+      scopeSummary: 'Downloads',
+      results: [],
+      totalCount: 0,
+    })
+    await tick()
+    const text = target.querySelector('.no-results-criteria')?.textContent ?? ''
+    expect(text).toContain('linear')
+    expect(text).toContain('Downloads')
+  })
+
+  it('omits the scope criterion for a consumer that has no scope', async () => {
+    // Selection runs against one in-memory folder, so there'd be nothing to name.
+    const target = mountWith({
+      isSearching: false,
+      hasSearched: true,
+      query: 'linear',
+      scopeSummary: null,
+      results: [],
+      totalCount: 0,
+    })
+    await tick()
+    const items = target.querySelectorAll('.no-results-criteria li')
+    expect(items).toHaveLength(1)
+    expect(items[0].textContent).toContain('linear')
+  })
+
+  it('offers the widen button, and clicking it re-runs wider', async () => {
+    let widened = 0
+    const target = mountWith({
+      isSearching: false,
+      hasSearched: true,
+      query: 'linear',
+      scopeSummary: 'Downloads',
+      onWidenToVolume: () => {
+        widened += 1
+      },
+      results: [],
+      totalCount: 0,
+    })
+    await tick()
+    const button = [...target.querySelectorAll('.no-results button')].find((b) => b.textContent.includes('this volume'))
+    expect(button).toBeTruthy()
+    ;(button as HTMLButtonElement).click()
+    await tick()
+    expect(widened).toBe(1)
+  })
+
+  it('hides the widen button when there is nowhere wider to go', async () => {
+    // The dialog withholds the handler once the run already covered the volume.
+    const target = mountWith({
+      isSearching: false,
+      hasSearched: true,
+      query: 'linear',
+      scopeSummary: 'This volume',
+      onWidenToVolume: undefined,
+      results: [],
+      totalCount: 0,
+    })
+    await tick()
+    expect(target.querySelector('.no-results button')).toBeFalsy()
   })
 
   // R4 status-bar dedup: when the result list area shows "Loading drive index...",

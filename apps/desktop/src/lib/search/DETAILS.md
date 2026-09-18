@@ -385,12 +385,20 @@ A search covers at most one volume, so the popover offers exactly two rungs, bot
 ### The empty box means the current folder
 
 An empty box is NOT "everywhere": `buildRunQuery()` sends `defaultScope.path` as the sole include path, which is the
-current folder, or the volume root when the pane has no real folder behind it. Three consequences worth knowing:
+current folder, or the volume root when the pane has no real folder behind it. Four consequences worth knowing:
 
 - The Search-in chip renders the default's NAME ("Current folder" / "This volume") with `configured: false`, so it shows
   where the search goes without offering an × to clear something the user never set. `Chip` renders `value` whenever
-  it's set, independently of `configured`, precisely for this.
+  it's set, independently of `configured`, precisely for this, and TINTS on `value` rather than `configured` so a
+  defaulted scope still reads as a live constraint.
 - The scope textarea's placeholder is the resolved default PATH, so the popover says exactly what will be searched.
+- **The no-results state names the scope and offers to widen it.** A scoped-out row returns `ScopeVerdict::OutsideRoots`
+  and is dropped silently and uncounted (`engine.rs`) — unlike `Excluded`, which bumps `hidden_by_excludes` — so nothing
+  downstream can tell "empty folder" from "wrong folder". `QueryDialog` derives both from `filterChipsExtras` via
+  `../query-ui/scope-summary.ts` and hands them to `QueryResults`: a "Searched in: Downloads" bullet, and a "Search this
+  volume instead" button (withheld once the run already covered the volume). The engine's log lines carry the same fact
+  via `summarize_scope` (`src-tauri/src/search/query.rs`), which is how an error-report bundle can answer the question
+  at all.
 - **A defaulted scope is never persisted.** `scope` state stays `''`, so recent searches and snapshots record "wherever
   I was" instead of baking in a machine-specific absolute path nobody chose; replaying one re-resolves against the pane
   you're standing in then. It also keeps the history dedupe key meaningful — one "report" entry, not one per folder

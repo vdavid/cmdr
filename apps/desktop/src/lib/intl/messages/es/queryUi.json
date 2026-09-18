@@ -214,6 +214,14 @@
   "@queryUi.results.criteria.modified": {
     "sourceHash": "fc2268a"
   },
+  "queryUi.results.criteria.scope": "Se buscó en: {scope}",
+  "@queryUi.results.criteria.scope": {
+    "sourceHash": "960a4c8"
+  },
+  "queryUi.results.widenToVolume": "Buscar en este volumen",
+  "@queryUi.results.widenToVolume": {
+    "sourceHash": "7dfc278"
+  },
   "queryUi.results.indexNotReady": "El índice de la unidad no está listo. La búsqueda estará disponible cuando termine el análisis inicial.",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"

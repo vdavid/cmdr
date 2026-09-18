@@ -61,6 +61,7 @@
     import { createQueryRunner, hasRunnableQuery, shouldShowRunHint } from './query-runner.svelte'
     import { createRecentPopover } from './recent-popover.svelte'
     import { routeModifierShortcut } from './query-shortcuts'
+    import { effectiveScopePath, scopeSummaryFor } from './scope-summary'
     import {
         activatePrimary,
         activatePrimaryOnResults,
@@ -389,6 +390,34 @@
         runner.runFromButton()
     }
 
+    /**
+     * What the no-results state says about WHERE the run looked, and how to widen it.
+     *
+     * Only a consumer with a scope chip has either (Selection searches one in-memory folder), so
+     * both fall away when `visibleChips.scope` is false.
+     */
+    const scopeSummaryInput = $derived({
+        scope: config.filterChipsExtras.scope,
+        defaultScopePath: config.filterChipsExtras.defaultScope.path,
+        defaultScopeLabel: config.filterChipsExtras.defaultScope.label,
+    })
+    const scopeSummary = $derived(config.visibleChips.scope ? scopeSummaryFor(scopeSummaryInput) : null)
+    /** Nothing to offer when the run already covered the volume: that's the widest a search goes. */
+    const canWidenToVolume = $derived(
+        config.visibleChips.scope &&
+            effectiveScopePath(scopeSummaryInput) !== config.filterChipsExtras.scopePresets.volumeRoot,
+    )
+
+    /**
+     * "Search this volume instead": widen the scope AND re-run, for the same reason
+     * `showResultsFromCount` re-runs. Setting the scope alone leaves the user looking at the
+     * empty list that prompted them to click.
+     */
+    function widenToVolume(): void {
+        config.filterChipsExtras.onSetScope(config.filterChipsExtras.scopePresets.volumeRoot)
+        runner.runFromButton()
+    }
+
     /** Empty-state chip pick: load + run, mirroring the recent-search activation path. */
     function pickExample(chip: { mode: SearchMode; query: string }): void {
         config.state.setQuery(chip.query)
@@ -663,6 +692,8 @@
             {query}
             {sizeFilter}
             {dateFilter}
+            {scopeSummary}
+            onWidenToVolume={canWidenToVolume ? widenToVolume : undefined}
             scanning={config.scanning}
             entriesScanned={config.entriesScanned}
             {totalCount}
