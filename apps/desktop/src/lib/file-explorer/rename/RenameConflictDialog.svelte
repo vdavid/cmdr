@@ -11,10 +11,23 @@
         renamedFile: ConflictFileInfo
         /** The existing file that would be overwritten */
         existingFile: ConflictFileInfo
+        /**
+         * Whether the clobbered file has a Trash to go to (`paneOffersTrash`).
+         *
+         * False hides that button and leaves the permanent overwrite as the only
+         * way through, Enter included. ❗ Offering it anyway is not a cosmetic
+         * mistake: `moveToTrash` is refused on a volume serving its own I/O and
+         * inside an archive, and the rename chained behind it is dropped, so the
+         * dialog closes having done nothing at all.
+         */
+        supportsTrash: boolean
         onResolve: (resolution: RenameConflictResolution) => void
     }
 
-    const { renamedFile, existingFile, onResolve }: Props = $props()
+    const { renamedFile, existingFile, supportsTrash, onResolve }: Props = $props()
+
+    /** What Enter means here: overwrite, reversibly where the volume allows it. */
+    const enterResolution = $derived<RenameConflictResolution>(supportsTrash ? 'overwrite-trash' : 'overwrite-delete')
 
     // Group A wire-format: IPC may send `null` for modifiedAt; accept both null and undefined.
     const renamedIsNewer = $derived(
@@ -27,7 +40,7 @@
     function handleKeydown(event: KeyboardEvent) {
         if (event.key === 'Enter') {
             event.preventDefault()
-            onResolve('overwrite-trash')
+            onResolve(enterResolution)
         }
     }
 </script>
@@ -90,12 +103,14 @@
     </div>
 
     <div class="button-row">
-        <Button
-            variant="primary"
-            onclick={() => {
-                onResolve('overwrite-trash')
-            }}>{tString('fileExplorer.renameConflict.overwriteTrash')}</Button
-        >
+        {#if supportsTrash}
+            <Button
+                variant="primary"
+                onclick={() => {
+                    onResolve('overwrite-trash')
+                }}>{tString('fileExplorer.renameConflict.overwriteTrash')}</Button
+            >
+        {/if}
         <Button
             variant="danger"
             onclick={() => {

@@ -210,7 +210,8 @@ describe('InlineRenameEditor a11y', () => {
  *
  * `alertdialog` role with a side-by-side file comparison and four action
  * buttons. Tests cover the "renamed is newer", "existing is newer", and
- * "same mtime, different size" cases.
+ * "same mtime, different size" cases. The last one also carries
+ * `supportsTrash: false`, the three-button footer a volume with no Trash draws.
  */
 describe('RenameConflictDialog a11y', () => {
   it('renamed is newer has no a11y violations', async () => {
@@ -221,6 +222,7 @@ describe('RenameConflictDialog a11y', () => {
       props: {
         renamedFile: { name: 'report.md', size: 2048, modifiedAt: 1710000000000 },
         existingFile: { name: 'report.md', size: 1024, modifiedAt: 1700000000000 },
+        supportsTrash: true,
         onResolve: () => {},
       },
     })
@@ -236,6 +238,7 @@ describe('RenameConflictDialog a11y', () => {
       props: {
         renamedFile: { name: 'draft.txt', size: 5000, modifiedAt: 1700000000000 },
         existingFile: { name: 'draft.txt', size: 5200, modifiedAt: 1710000000000 },
+        supportsTrash: true,
         onResolve: () => {},
       },
     })
@@ -251,6 +254,7 @@ describe('RenameConflictDialog a11y', () => {
       props: {
         renamedFile: { name: 'notes.txt', size: 1024, modifiedAt: undefined },
         existingFile: { name: 'notes.txt', size: 2048, modifiedAt: undefined },
+        supportsTrash: false,
         onResolve: () => {},
       },
     })

@@ -255,10 +255,11 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
     label: 'Rename conflict',
     hostWindow: 'main',
     status: 'ready',
-    note: 'The dialog is a comparison: it highlights whichever side is newer and whichever is larger, so both directions are here.',
+    note: 'The dialog is a comparison: it highlights whichever side is newer and whichever is larger, so both directions are here. On a volume with no Trash the primary button is gone and Enter overwrites for good.',
     states: [
       { id: 'newer-and-larger', label: 'Yours is newer and larger' },
       { id: 'older-and-smaller', label: 'Yours is older and smaller' },
+      { id: 'no-trash', label: 'No Trash on this volume' },
     ],
   },
   {

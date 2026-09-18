@@ -97,6 +97,10 @@ suite:
   Name column. `SearchResultEntry.parentPath` is home-relative too, so it is display text and never a path to join onto.
 - `snapshot-source-volume.ts`: which real volume a search-results pane's rows live on, for the delete and transfer
   openers. ❌ Never assume `root` there — any volume with a persisted index is searchable, SMB and MTP included.
+- `trash-availability.ts`: `paneOffersTrash`, the one answer to "can this pane trash rather than delete" (the volume's
+  `supportsTrash`, plus the archive boundary), shared by the delete opener and the rename conflict dialog. A volume
+  missing from the list answers YES on purpose: a refused trash is honest and reversible, a permanent delete isn't. A
+  caller with its own reason to force permanence (an online-only cloud file) folds it in on top.
 - `network-host-state.svelte.ts`: the open Network host and its queued auto-mount share.
 - `context-menu-anchor.ts`: where a keyboard-opened context menu pops (cursor row, else the scroll surface), as a pure
   rect → point function plus a DOM reader over it. § Keyboard context menu.

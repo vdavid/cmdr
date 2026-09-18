@@ -2076,6 +2076,7 @@
             size: renameFlow.conflictDialogState.validity.conflict.size,
             modifiedAt: renameFlow.conflictDialogState.validity.conflict.modified ?? undefined,
         }}
+        supportsTrash={renameFlow.conflictDialogState.supportsTrash}
         onResolve={handleConflictResolve}
     />
 {/if}

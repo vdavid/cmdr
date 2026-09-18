@@ -37,6 +37,14 @@ Depth and rationale for inline rename. `CLAUDE.md` holds the must-knows.
 Conflict resolution calls `performRename(target, newName, force: true)` after "Overwrite and trash/delete". The
 `moveToTrash` call in the overwrite-trash path also has timeout detection (persistent toast + refresh).
 
+**The trash option appears only where a trash exists.** `RenameConflictDialog` takes `supportsTrash`, which
+`rename-flow` reads once as the dialog opens (`pane/trash-availability.ts::paneOffersTrash`: the volume's own answer,
+plus the archive boundary), and a `false` drops the button AND moves Enter to the permanent overwrite. ❗ Offering it
+anyway isn't cosmetic: `moveToTrash` is refused on a volume serving its own I/O and inside an archive, the chained
+`performRename` behind it never runs, and the dialog closes having done nothing. Snapshot at open rather than derived,
+so a volume list refreshing mid-dialog can't move the primary button under the user's hand. Enter is destructive by
+design here: overwriting is the answer the dialog exists to take, reversibly where the volume allows it.
+
 ## Permission check on activation (`checkRenamePermission(path, volumeId)`)
 
 Verifies: parent dir writable (Unix `access(W_OK)`), file not immutable (`UF_IMMUTABLE`), file not SIP-protected

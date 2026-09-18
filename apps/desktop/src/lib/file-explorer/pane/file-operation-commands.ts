@@ -28,6 +28,7 @@ import {
 } from './transfer-operations'
 import { capabilitiesFor, capabilitiesForPane } from './volume-capabilities'
 import { pathCrossesArchiveBoundary } from './archive-paths'
+import { paneOffersTrash } from './trash-availability'
 import { checkTransferDestinationGuard } from './transfer-entry'
 import { operationStartIsBlocked } from './operation-start-gate'
 import { duplicateInPlace } from './duplicate-command'
@@ -698,10 +699,8 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     }))
     const sourcePaths = validEntries.map((e) => e.path)
 
-    // Look up supportsTrash from the source volume
     const sourceVolId = access.getPaneVolumeId(access.getFocusedPane())
     const sourceFolderPath = access.getPanePath(access.getFocusedPane())
-    const sourceVolume = access.getVolumes().find((v) => v.id === sourceVolId)
     // Deleting an entry INSIDE a zip is permanent: there's no Trash inside an
     // archive (the backend rejects trashing an archive-inner path), so force
     // permanent + the archive warning regardless of the parent drive's trash
@@ -711,7 +710,10 @@ export function createFileOperationCommands(access: PaneAccess, dialogs: DialogS
     // Shift+F8 back to the trash, into the download this routing exists to
     // avoid. An archive already has no trash, so it never needs asking.
     const cloud = sourceIsArchive ? NO_ONLINE_ONLY : await cloudOnlineOnlyRouting(sourcePaths)
-    const supportsTrash = sourceIsArchive || cloud.onlineOnly !== null ? false : sourceVolume?.supportsTrash !== false
+    // `paneOffersTrash` answers CAN it (volume + archive); online-only is this
+    // site's own reason to force a permanent delete, laid on top.
+    const supportsTrash =
+      cloud.onlineOnly === null && paneOffersTrash(sourceVolId, sourceFolderPath, access.getVolumes())
 
     const { sortBy, sortOrder } = access.getPaneSort(access.getFocusedPane())
 

@@ -54,7 +54,13 @@ vi.mock('../rename/rename-operations', () => ({
 vi.mock('$lib/settings', () => ({ getSetting: getSettingSpy }))
 vi.mock('$lib/ui/toast', () => ({ addToastForPane: addToastSpy, dismissTransientToastsForPane: vi.fn() }))
 vi.mock('$lib/intl/messages.svelte', () => ({ tString: (k: string) => k }))
-vi.mock('./archive-paths', () => ({ pathInsideArchive: pathInsideArchiveSpy }))
+// Spread the real module: `trash-availability.ts` reaches for
+// `pathCrossesArchiveBoundary` through here too, and a mock that answers for only
+// one export throws when the conflict dialog asks for the other.
+vi.mock('./archive-paths', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  pathInsideArchive: pathInsideArchiveSpy,
+}))
 
 import { refreshListing } from '$lib/tauri-commands'
 import { buildFlow, deferred, PASTED, type Entry } from './test-rename-flow'

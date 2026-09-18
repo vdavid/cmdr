@@ -10,6 +10,8 @@ import type { RenameConflictResolution } from '../rename/rename-operations'
 import { addToastForPane, dismissTransientToastsForPane, type ToastOriginPane } from '$lib/ui/toast'
 import { tString } from '$lib/intl/messages.svelte'
 import { pathInsideArchive } from './archive-paths'
+import { paneOffersTrash } from './trash-availability'
+import { getVolumes } from '$lib/stores/volume-store.svelte'
 import type { FileEntry } from '../types'
 import type { StartRenameOptions } from './types'
 import type { createRenameState, RenameSessionId, RenameTarget } from '../rename/rename-state.svelte'
@@ -56,6 +58,8 @@ export function createRenameFlow(deps: RenameFlowDeps) {
   let conflictDialogState = $state<{
     validity: RenameValidityResult
     trimmedName: string
+    /** Whether the file being clobbered has a Trash to go to, read when the dialog opened. */
+    supportsTrash: boolean
   } | null>(null)
 
   // Post-rename: name to select after file watcher refresh
@@ -404,7 +408,14 @@ export function createRenameFlow(deps: RenameFlowDeps) {
         break
       case 'conflict':
         suppressBlurCancel = !commitFromClickAway
-        conflictDialogState = { validity: result.validity, trimmedName }
+        // Snapshot at open: the dialog lives for a few seconds, and the answer
+        // decides which buttons it draws, so re-deriving it mid-dialog could move
+        // the primary action under the user's hand.
+        conflictDialogState = {
+          validity: result.validity,
+          trimmedName,
+          supportsTrash: paneOffersTrash(deps.getVolumeId(), deps.getCurrentPath(), getVolumes()),
+        }
         break
       case 'success':
         finalizeRename(result.newName)

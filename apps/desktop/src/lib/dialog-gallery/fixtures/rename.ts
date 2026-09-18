@@ -19,6 +19,7 @@ export interface ExtensionChangeFixture {
 export interface RenameConflictFixture {
   renamedFile: ConflictFileInfo
   existingFile: ConflictFileInfo
+  supportsTrash: boolean
 }
 
 /** Keyed by the `extension-change` entry's state ids in `gallery-registry.ts`. */
@@ -40,7 +41,8 @@ export const extensionChangeFixtures: Record<string, ExtensionChangeFixture | un
  *
  * Both directions are here because the dialog is a COMPARISON: it tints whichever
  * side is newer and whichever is larger, so a single state leaves half the
- * treatment unreviewed.
+ * treatment unreviewed. The third state is the volume with no Trash, where the
+ * footer loses its primary button and Enter lands on the red one.
  */
 export const renameConflictFixtures: Record<string, RenameConflictFixture | undefined> = {
   'newer-and-larger': {
@@ -54,6 +56,7 @@ export const renameConflictFixtures: Record<string, RenameConflictFixture | unde
       size: 41_238_912,
       modifiedAt: daysAgo(214),
     },
+    supportsTrash: true,
   },
   'older-and-smaller': {
     renamedFile: {
@@ -66,5 +69,19 @@ export const renameConflictFixtures: Record<string, RenameConflictFixture | unde
       size: 184_320,
       modifiedAt: hoursAgo(1),
     },
+    supportsTrash: true,
+  },
+  'no-trash': {
+    renamedFile: {
+      name: 'MIG008 Odberateľ.2026-03-31.swm.full.01.xml',
+      size: 1_204_224,
+      modifiedAt: hoursAgo(2),
+    },
+    existingFile: {
+      name: 'MIG008 Odberateľ.2026-03-31.swm.full.01.xml',
+      size: 1_198_080,
+      modifiedAt: daysAgo(31),
+    },
+    supportsTrash: false,
   },
 }
