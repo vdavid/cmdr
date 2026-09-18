@@ -266,6 +266,70 @@ fn flow_a_request(
     })
 }
 
+/// Send the log from the session that produced a crash report, as its own error report.
+///
+/// Reached only from the "crash report sent" toast's action, which is why it's a command of its
+/// own rather than a flag on [`send_error_report`]. Two things make it different from Flow A:
+///
+/// - **Scope is the crash, not now.** `BundleScope::Window { first_error_at: crash_time }` walks
+///   back 30 minutes from the crash rather than an hour from this launch. The interesting log
+///   lines are in the PREVIOUS session, and however long the machine sat closed between the crash
+///   and this launch is exactly how wrong Flow A's "last hour" would be.
+/// - **The note is ours, not the user's.** `Log for CRASH-XXXXX` ties the bundle to the crash row
+///   so triage can put the two side by side. It carries no user text, so nothing needs previewing.
+///
+/// [`BundleKind::User`] because a person clicked a button asking for this, which is also what gets
+/// it emailed rather than left in Discord. ❌ No email is attached: `AttachedEmail` only comes from
+/// the Flow A dialog, where someone typed an address in the same interaction.
+#[tauri::command]
+#[specta::specta]
+pub async fn send_crash_log_report(
+    app: tauri::AppHandle,
+    crash_short_id: String,
+    crash_timestamp: String,
+) -> Result<SendResult, ErrorReportSendError> {
+    let request = BundleRequest {
+        kind: BundleKind::User,
+        scope: crash_log_scope(&crash_timestamp),
+        id: None,
+        user_note: Some(crash_log_note(&crash_short_id)),
+        email: None,
+    };
+    let bundle = error_reporter::build_bundle(&app, request)
+        .map_err(|detail| ErrorReportSendError::BundleUnavailable { detail })?;
+    let capped = error_reporter::cap_bundle_to_mb(bundle.zip_bytes, FLOW_A_BUNDLE_CAP_MB);
+    let result = error_reporter::upload(capped, &bundle.manifest, &error_reporter::error_report_url()).await?;
+    Ok(SendResult { id: result.id })
+}
+
+/// The note tying a crash-log bundle to its crash row.
+///
+/// The short id crosses IPC, so it's vetted rather than interpolated: anything that isn't a
+/// well-formed `CRASH-XXXXX` is left out entirely rather than written into a note we email
+/// ourselves. Losing the cross-reference beats carrying an arbitrary string into the report.
+fn crash_log_note(crash_short_id: &str) -> String {
+    if crate::short_id::matches(crate::crash_reporter::CRASH_SHORT_ID_PREFIX, crash_short_id) {
+        format!("Log for {crash_short_id}")
+    } else {
+        "Log for a crash report".to_string()
+    }
+}
+
+/// 30 minutes before the crash through now, or Flow A's last-hour window when the timestamp
+/// doesn't parse. The fallback is deliberately still a send: a bundle scoped slightly wrong is
+/// worth more than a button that quietly does nothing.
+fn crash_log_scope(crash_timestamp: &str) -> BundleScope {
+    match chrono::DateTime::parse_from_rfc3339(crash_timestamp) {
+        Ok(at) => BundleScope::Window {
+            first_error_at: at.with_timezone(&chrono::Utc),
+        },
+        Err(e) => {
+            log::warn!("Crash log report: couldn't read the crash timestamp ({e}), falling back to the recent window");
+            BundleScope::flow_a_default()
+        }
+    }
+}
+
 fn validate_user_note(user_note: Option<String>) -> Result<Option<String>, ErrorReportSendError> {
     match user_note {
         Some(n) if n.chars().count() > MAX_USER_NOTE_CHARS => Err(ErrorReportSendError::NoteTooLong {

@@ -4,94 +4,79 @@
     "description": "Title of the dialog shown on the next launch when Cmdr went down with the crash it is reporting. A dialog title, so keep it short. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.title.report": "Send report?",
   "@crashReporter.dialog.title.report": {
     "description": "Title of the same dialog when Cmdr did NOT crash: the problem hit a background task and the app carried on, or the report is from an older version that did not record what happened. It must NOT say \"crash\", which is why this is a separate title from the crash one. A dialog title, so keep it short.",
     "screenshot": "crash-report-survived-panic.png"
   },
-
   "crashReporter.dialog.body.ended": "Cmdr quit unexpectedly last time. Here''s a crash report with details that can help fix this.",
   "@crashReporter.dialog.body.ended": {
     "description": "Main explanation in the crash-report dialog, shown on the next launch when Cmdr went down with the crash it is reporting. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.body.keptRunning": "Cmdr ran into a problem in the background last time and kept running. Here''s a report with details that can help fix this.",
   "@crashReporter.dialog.body.keptRunning": {
     "description": "Main explanation in the crash-report dialog, shown on the next launch when the problem hit a background task and Cmdr carried on, so the user quit it themselves. It must NOT say Cmdr crashed or quit, because it did neither. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "crash-report-survived-panic.png"
   },
-
   "crashReporter.dialog.body.unknown": "Cmdr ran into a problem last time. Here''s a report with details that can help fix this.",
   "@crashReporter.dialog.body.unknown": {
     "description": "Main explanation in the crash-report dialog, shown on the next launch for a report from an older version of Cmdr that did not record whether the app kept running afterwards. It has to read true whether Cmdr quit or carried on, so it must NOT say either. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "crash-report-signal-no-report-id.png"
   },
-
   "crashReporter.dialog.privacyNote": "It includes the app version, macOS version, and which part of the code ran into the problem. No file names or personal data.",
   "@crashReporter.dialog.privacyNote": {
     "description": "Privacy reassurance in the crash-report dialog, listing what the report contains and confirming it has no personal data. One string for all three cases of the dialog, so it says the code \"ran into the problem\" rather than \"crashed\": that stays true whether Cmdr went down or carried on. Don't reintroduce a crash word. \"macOS\" is Apple's OS name (do not translate).",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.reportIdLabel": "Report ID:",
   "@crashReporter.dialog.reportIdLabel": {
     "description": "Label before the short crash-report identifier. The identifier itself follows in a code-styled badge and is not part of this string.",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.reportIdHelp": "Mention this if you reach out about the issue.",
   "@crashReporter.dialog.reportIdHelp": {
     "description": "Small helper line under the crash-report ID, telling the user to quote the ID if they contact support.",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.showDetails": "Show report details",
   "@crashReporter.dialog.showDetails": {
     "description": "Toggle that expands a panel showing the raw crash-report JSON. Preceded by a disclosure triangle.",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.copy": "Copy",
   "@crashReporter.dialog.copy": {
     "description": "Button that copies the raw crash-report JSON to the clipboard. Swaps to the \"copied\" confirmation for two seconds after a click. Keep it short (a tight button).",
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-
   "crashReporter.dialog.copied": "Copied",
   "@crashReporter.dialog.copied": {
     "description": "Confirmation shown for two seconds on the copy button right after the crash report is copied to the clipboard. Keep it short (a tight button).",
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-
   "crashReporter.dialog.alwaysSend": "Always send crash reports",
   "@crashReporter.dialog.alwaysSend": {
     "description": "Label for a checkbox that opts the user into sending future crash reports automatically without asking.",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.dismiss": "Dismiss",
   "@crashReporter.dialog.dismiss": {
     "description": "Button that closes the crash-report dialog without sending. Keep it short (a tight button).",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.send": "Send report",
   "@crashReporter.dialog.send": {
     "description": "Primary button that sends the crash report. Keep it short (a tight button).",
     "screenshot": "crash-report-panic.png"
   },
-
   "crashReporter.dialog.sending": "Sending...",
   "@crashReporter.dialog.sending": {
     "description": "Label on the send button while the crash report is being sent (button is disabled meanwhile). Ends with three dots. Keep it short.",
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-
   "crashReporter.dialog.notSent": "The report didn''t go out. {reason}",
   "@crashReporter.dialog.notSent": {
     "description": "Line shown inside the crash-report dialog when pressing Send didn't get the report to Cmdr's server. The dialog stays open, and the Send button is the retry. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn't reach its server. Check your internet connection and try again.\"), so end your sentence with a period and let the reason follow it. Say \"report\", not \"crash report\": not every report this dialog shows describes a crash. Avoid the words \"error\" and \"failed\".",
@@ -101,24 +86,51 @@
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-
   "crashReporter.sentToast.message.crash": "Crash report sent. Thanks for helping improve Cmdr.",
   "@crashReporter.sentToast.message.crash": {
     "description": "Toast confirming the report was sent, thanking the user. This is the wording for a report about a crash Cmdr went down with. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-
   "crashReporter.sentToast.message.report": "Report sent. Thanks for helping improve Cmdr.",
   "@crashReporter.sentToast.message.report": {
     "description": "The same toast when Cmdr did NOT crash: the problem hit a background task and the app carried on, or the report is from an older version that did not record what happened. It must NOT say \"crash\", which is why this is a separate string. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-
   "crashReporter.sentToast.changeSettings": "Change in Settings > Updates",
   "@crashReporter.sentToast.changeSettings": {
     "description": "Button on the sent-confirmation toast that opens the app's Settings to the Updates section. \"Settings\" and \"Updates\" are names of in-app navigation locations; keep them consistent with how those sections are named elsewhere in the app.",
+    "screenshot": "error-report.png",
+    "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+  },
+  "crashReporter.sentToast.sendLog": "Also send the log",
+  "@crashReporter.sentToast.sendLog": {
+    "description": "Button on the sent-confirmation toast that sends the app log from the session that crashed, as a separate report. Crash reports carry no log, so this is an extra thing the user chooses to send. Keep it short (a tight button).",
+    "screenshot": "error-report.png",
+    "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+  },
+  "crashReporter.sentToast.sendLogHint": "The log has much more detail, which makes a crash far easier to track down. File and folder names are replaced first.",
+  "@crashReporter.sentToast.sendLogHint": {
+    "description": "One-line explanation under the sent-confirmation toast, saying what the \"Also send the log\" button would send and why it helps. It has to be honest about the log being more than the crash report already sent.",
+    "screenshot": "error-report.png",
+    "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+  },
+  "crashReporter.sentToast.logSent": "Log sent as {id}. That makes this much easier to track down.",
+  "@crashReporter.sentToast.logSent": {
+    "description": "Replaces the toast message once the log has been sent, naming the new report''s identifier so the user can quote it.",
+    "placeholders": {
+      "id": "the short report identifier, like ERR-8RFN4; never translated"
+    },
+    "screenshot": "error-report.png",
+    "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
+  },
+  "crashReporter.sentToast.logNotSent": "The log didn''t go out. {reason}",
+  "@crashReporter.sentToast.logNotSent": {
+    "description": "Line shown on the toast when sending the log didn''t reach Cmdr''s server. The button stays, so pressing it again retries.",
+    "placeholders": {
+      "reason": "one or two already-translated sentences saying why it didn''t go out and what to do; Cmdr controls the wording"
+    },
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   }

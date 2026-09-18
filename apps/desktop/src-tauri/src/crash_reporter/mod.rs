@@ -38,7 +38,7 @@ const CRASH_FILE_VERSION: u32 = 1;
 const CRASH_LOOP_THRESHOLD_SECS: u64 = 5;
 /// Short-ID prefix used in `CRASH-XXXXX`. The alphabet lives in [`crate::short_id`]
 /// and is shared with error reports.
-const CRASH_SHORT_ID_PREFIX: &str = "CRASH";
+pub(crate) const CRASH_SHORT_ID_PREFIX: &str = "CRASH";
 /// Max chars kept from a redacted panic message. Generous enough for a real message plus a
 /// chained `caused by:` tail, small enough that it can't crowd out the backtrace in the
 /// 64 KB report budget. The api server caps again on its own side.

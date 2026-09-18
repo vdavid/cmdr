@@ -47,6 +47,30 @@ The layout runs it as one init step and owns the dialog's visibility; the decisi
 `pending-crash-report.ts`, where a test reaches them without mounting the layout. Same split as
 `error-reporter/error-report-flow.svelte.ts`.
 
+## Sending the log with a crash report
+
+A crash report carries no log, and `updates.errorReports` is opt-in, so most crash reports arrive with a stack and
+nothing about what the person was doing. `CRASH-V2SCH` is the case that argued for this: a `SIGSEGV` with no note, no
+email, and no bundle from that install anywhere in the same window.
+
+The sent-confirmation toast therefore offers "Also send the log", which calls `send_crash_log_report`
+(`commands/error_reporter.rs`). That press is the whole consent model here:
+
+- **It changes no setting.** ❌ Never make it flip `updates.errorReports`, and ❌ never send without the press. The
+  reason the default split exists is in § The three report consents; this is per-report consent at the one moment it
+  means something, which is a different thing from moving the line.
+- **The bundle is scoped to the CRASH, not to now**: `BundleScope::Window { first_error_at: <crash timestamp> }` walks
+  back 30 minutes from when the app died. Flow A's "last hour of this session" would be wrong by however long the
+  machine sat closed between the crash and this launch. The crash file's `timestamp` is the moment of death for both
+  capture paths (the signal path reads it from the raw file's mtime), which is what makes this work.
+- **The note is ours**: `Log for CRASH-XXXXX`, so triage can put the bundle and the crash row side by side. The short
+  id is validated before it goes in, since it crosses IPC; anything malformed falls back to a generic note rather than
+  carrying an arbitrary string into a report we email ourselves.
+- **`BundleKind::User`**, because a person asked for it, which is also what gets it emailed rather than left in
+  Discord. ❌ No email is ever attached: `AttachedEmail` has one constructor and it belongs to the Flow A dialog.
+- A failed send leaves the button in place as the retry and stays at `warn`. An `error` there would try to auto-report
+  through the server that just didn't answer.
+
 ## Dialog states and choices
 
 `CrashReportDialog` renders one report and calls the IPC itself. A send that lands closes it through `onClose()`. One

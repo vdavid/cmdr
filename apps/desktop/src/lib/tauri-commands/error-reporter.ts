@@ -83,6 +83,22 @@ export async function sendErrorReport(userNote?: string, email?: string, id?: st
 }
 
 /**
+ * Send the log from the session a crash report describes, as its own error report.
+ *
+ * Reached only from the "crash report sent" toast's action, which IS the consent: crash reports are
+ * on by default and carry no log, while `updates.errorReports` is opt-in, so nothing here may be
+ * called without a person pressing the button. The bundle is scoped around `crashTimestamp` rather
+ * than around now, because the lines worth reading are in the previous session.
+ *
+ * A send that doesn't land throws an `ErrorReportSendFailure` carrying the typed reason.
+ */
+export async function sendCrashLogReport(crashShortId: string, crashTimestamp: string): Promise<{ id: string }> {
+  const res = await commands.sendCrashLogReport(crashShortId, crashTimestamp)
+  if (res.status === 'error') throwErrorReportSendError(res.error)
+  return res.data
+}
+
+/**
  * What Flow B auto-sent this run, for the dialog's amend mode: no bundle rebuild, and the
  * manifest and sample lines are the ones that actually shipped. `null` means nothing was
  * auto-sent, so there's nothing to add to.

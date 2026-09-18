@@ -286,6 +286,7 @@ macro_rules! ipc_command_manifest {
                     crate::commands::crash_reporter::dismiss_crash_report,
                     crate::commands::crash_reporter::send_crash_report,
                     crate::commands::error_reporter::send_error_report,
+                    crate::commands::error_reporter::send_crash_log_report,
                     crate::commands::error_reporter::amend_error_report,
                     // prepare_error_report_preview and get_auto_sent_report_preview: BundleManifest
                     // contains Breadcrumb.ctx: Option<Value> which specta can't represent. Excluded;

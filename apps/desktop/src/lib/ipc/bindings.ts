@@ -1776,6 +1776,27 @@ export const commands = {
   sendErrorReport: (userNote: string | null, email: string | null, id: string | null) =>
     typedError<SendResult, ErrorReportSendError>(__TAURI_INVOKE('send_error_report', { userNote, email, id })),
   /**
+   *  Send the log from the session that produced a crash report, as its own error report.
+   *
+   *  Reached only from the "crash report sent" toast's action, which is why it's a command of its
+   *  own rather than a flag on [`send_error_report`]. Two things make it different from Flow A:
+   *
+   *  - **Scope is the crash, not now.** `BundleScope::Window { first_error_at: crash_time }` walks
+   *    back 30 minutes from the crash rather than an hour from this launch. The interesting log
+   *    lines are in the PREVIOUS session, and however long the machine sat closed between the crash
+   *    and this launch is exactly how wrong Flow A's "last hour" would be.
+   *  - **The note is ours, not the user's.** `Log for CRASH-XXXXX` ties the bundle to the crash row
+   *    so triage can put the two side by side. It carries no user text, so nothing needs previewing.
+   *
+   *  [`BundleKind::User`] because a person clicked a button asking for this, which is also what gets
+   *  it emailed rather than left in Discord. ❌ No email is attached: `AttachedEmail` only comes from
+   *  the Flow A dialog, where someone typed an address in the same interaction.
+   */
+  sendCrashLogReport: (crashShortId: string, crashTimestamp: string) =>
+    typedError<SendResult, ErrorReportSendError>(
+      __TAURI_INVOKE('send_crash_log_report', { crashShortId, crashTimestamp }),
+    ),
+  /**
    *  Add a note (and optionally a reply-to address) to the report Flow B already sent.
    *
    *  Takes no id: there's only ever one stashed report. Returns its id so the UI can confirm

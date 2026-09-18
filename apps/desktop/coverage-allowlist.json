@@ -10,9 +10,6 @@
     "benchmark.ts": {
       "reason": "Dev tooling, not critical path"
     },
-    "crash-reporter/CrashReportToastContent.svelte": {
-      "reason": "UI toast content, depends on Tauri window APIs"
-    },
     "debug/debug-window.ts": {
       "reason": "Depends on Tauri WebviewWindow API; dev-only"
     },

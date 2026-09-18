@@ -74,5 +74,21 @@
   "crashReporter.sentToast.changeSettings": "Thay đổi trong Cài đặt > Cập nhật",
   "@crashReporter.sentToast.changeSettings": {
     "sourceHash": "25d151d"
+  },
+  "crashReporter.sentToast.sendLog": "Gửi kèm nhật ký",
+  "@crashReporter.sentToast.sendLog": {
+    "sourceHash": "346e065"
+  },
+  "crashReporter.sentToast.sendLogHint": "Nhật ký có nhiều chi tiết hơn hẳn, giúp việc tìm ra nguyên nhân sự cố dễ hơn nhiều. Tên tệp và thư mục được thay thế trước.",
+  "@crashReporter.sentToast.sendLogHint": {
+    "sourceHash": "9a0c29a"
+  },
+  "crashReporter.sentToast.logSent": "Đã gửi nhật ký với mã {id}. Việc tìm ra nguyên nhân sẽ dễ hơn nhiều.",
+  "@crashReporter.sentToast.logSent": {
+    "sourceHash": "9a0dc9e"
+  },
+  "crashReporter.sentToast.logNotSent": "Nhật ký chưa được gửi đi. {reason}",
+  "@crashReporter.sentToast.logNotSent": {
+    "sourceHash": "617245e"
   }
 }
