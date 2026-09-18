@@ -3,9 +3,22 @@
 Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form creates
 and modifies a listing (search the app name at the top to modify).
 
-Status: submitted 2026-07-29 for v0.36.2. The fields below are refreshed for v0.40.0 and ready to paste; that refresh is
-not submitted yet. Edit them here first when refreshing, then paste. Because the 0.37.0 and 0.38.0 refreshes were
-prepared but never submitted, "Version changes" below covers everything from 0.37.0 through 0.40.0.
+Status: **submitted 2026-09-18 for v0.46.0** (the fields below are what went in). Their confirmation said they review
+and reply by email within 10 days, so silence past 2026-09-28 is itself a data point.
+
+Two earlier submissions (2026-07-29 for v0.36.2, and one before it) were **never accepted** and drew no reply, so
+MacUpdate has published no listing and every attempt is a fresh CREATE. ❌ Don't use the form's "Modify an existing
+listing?" search; it will find nothing until they accept one.
+
+❗ **The Download URL must be a DIRECT link to the installer**, not a redirect. Their guidelines say "the direct URL to
+the installer package (e.g., .pkg .dmg, .zip)", and `getcmdr.com/download/latest/universal` takes 3 redirects to a
+signed `release-assets.githubusercontent.com` blob URL that doesn't end in `.dmg` (verified 2026-09-18). That is the
+best guess for why the first two submissions went nowhere, so this one used the version-pinned GitHub Releases URL
+instead, at the cost of the `?ref=macupdate.com` attribution and a bump per release.
+
+Because no version of this listing was ever published, "Version changes" covers v0.46.0 alone rather than accumulating
+every unsubmitted release: for a listing with no history, it's the changes in the version being submitted, and a reader
+meeting Cmdr for the first time gets the Description for everything else.
 
 Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
@@ -20,12 +33,12 @@ the Price field and the note to the review team instead.
 - **Download URL**: `https://getcmdr.com/download/latest/universal?ref=macupdate.com`
   - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
     in the dashboard. Plain fallback if they reject redirects:
-    `https://github.com/vdavid/cmdr/releases/download/v0.40.0/Cmdr_0.40.0_universal.dmg` (version-pinned, so it would
+    `https://github.com/vdavid/cmdr/releases/download/v0.46.0/Cmdr_0.46.0_universal.dmg` (version-pinned, so it would
     need bumping per release).
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
-- **Version number**: `0.40.0`
+- **Version number**: `0.46.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
 
@@ -122,163 +135,83 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 
 ### Version changes
 
-Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers 0.37.0
-through 0.40.0, since none of those refreshes was ever submitted; the 0.36 line went in with the previous submission.
+Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. No listing was ever
+published, so this covers v0.46.0 alone; everything older is the Description's job.
 
 ```html
 <h5>New</h5>
 <ul>
   <li>
-    The agent watches your folders and suggests moves, renames, and cleanups on its own, which you review and approve or
-    reject one by one. It can only ever suggest.
+    Press Ctrl-D for your favorites, then a number key to jump straight to one. Drag to reorder them, press 0 to add the
+    folder you're standing in.
   </li>
   <li>
-    Three settings for how it behaves on its own: whether it watches at all, how calm it is (five seconds to two hours),
-    and whether it announces itself. A wake shows in the status corner with a way in and a way to stop it.
+    Option-Shift-= selects the rest of the files like the one you're on: every PDF, every folder, every file with no
+    extension. The menu item says what it would pick before you press it.
+  </li>
+  <li>Finder's tag colors as one row of circles in the right-click menu, instead of seven stacked items.</li>
+  <li>Ctrl-Return opens the right-click menu on the row you're on, so 40-odd file actions stop needing a mouse.</li>
+  <li>A refused eject now names the app holding the drive, so there's something to go and close.</li>
+  <li>A search counts its hits in the footer, and results open in a tab of their own.</li>
+  <li>
+    A badge in the title bar when Full Disk Access is missing, and a refused trash that explains itself instead of
+    saying "try again".
   </li>
   <li>
-    The agent keeps notes on what it learns about you and on what you decided about its suggestions, in a folder you can
-    open and wipe whenever you like.
-  </li>
-  <li>
-    Suggested ops: ask for something and the AI proposes the file operations, each reviewable beside what Cmdr knows
-    about the file.
-  </li>
-  <li>
-    The native menu bar, the right-click menus, and the startup alerts in all nine shipped languages. Cmdr switches the
-    moment you switch your Mac's language, no restart, and follows your region for dates, times, and number grouping.
-  </li>
-  <li>
-    Drive indexing goes folder by folder in the order you care about, starting where you last were, and keeps every
-    second of it across a quit.
-  </li>
-  <li>Duplicate with ⌘D, in the command palette, the right-click menu, and the File menu, on phones and shares too.</li>
-  <li>Rename a run of files in one keyboard flow: ArrowUp and ArrowDown carry the editor to the next file.</li>
-  <li>⌘R re-reads the folder you're looking at, phones and network shares included.</li>
-  <li>A notice when a share drops to the slow macOS mount, with a "Try connecting directly" button.</li>
-  <li>Escalate an F8 trash to a permanent delete by holding Shift.</li>
-  <li>
-    Ways out of every error screen: "Go to home folder", "Go back", ⌘D for technical details, and a Home command (⌘⇧H).
-  </li>
-  <li>"Show hidden files" in Settings &gt; Appearance.</li>
-  <li>
-    Search reaches folders Cmdr hasn't indexed yet: it walks them live and streams matches as it finds them, and offers
-    the permission for a folder macOS refused.
-  </li>
-  <li>Scope a search to the current folder (the new default) or the whole volume, with ⌥C and ⌥V.</li>
-  <li>
-    A corner chip in the main window for a backgrounded operation, showing its progress and one click from the queue.
-  </li>
-  <li>
-    The Operation queue, opened with ⌥⌘Q, renamed from "Transfer queue" since it holds deletes, renames, and archive
-    edits too.
-  </li>
-  <li>A failed background operation keeps its reason until you dismiss it, in the queue and as a toast.</li>
-  <li>Cmdr asks before quitting with a transfer in flight, and clears away whatever it left half-written.</li>
-  <li>Resize dialogs from any edge, and hover any shortened path or label to see the whole thing.</li>
-  <li>Copy the current folder's path with ⌘⌥C on the ".." row.</li>
-  <li>An Acknowledgements dialog crediting all 775 open-source packages Cmdr ships.</li>
-  <li>Right-click any text field for Cut, Copy, Paste, and Select all.</li>
-  <li>Undo for an AI bulk rename, one batch at a time or a whole multi-batch run at once.</li>
-  <li>
-    Every rename review row now shows the file itself and the evidence behind its proposed name, and you can correct a
-    name in place before approving it.
-  </li>
-  <li>Recent searches live in the query field as a dropdown, each row showing its age, result count, and filters.</li>
-  <li>Transfer speed in the Transfers window, plus an honest readout when a transfer has stopped moving.</li>
-  <li>
-    A "Chat memory size" setting for the AI chat, from Automatic up to 200,000 tokens, with a bar showing how full the
-    conversation is.
+    Unplug a drive mid-index and Cmdr says why its folder sizes get recomputed, rather than rescanning in silence.
   </li>
 </ul>
 <h5>Improved</h5>
 <ul>
   <li>
-    A huge folder no longer stalls the pane: rows, watcher events, and Finder tags stop re-walking the whole listing.
+    Ejecting takes the drive's whole physical disk down, or says why it couldn't, instead of reporting success over a
+    partition that's still mounted.
   </li>
   <li>
-    An idle Mac costs less: far fewer cloud-provider checks, lighter indexing ticks, and a memory ceiling that actually
-    holds.
+    Every unmount waits for Cmdr's index to let go first, whoever started it: Finder, Disk Utility, or another app.
   </li>
-  <li>Every refusal in the app speaks your language, instead of quoting a system error in English.</li>
-  <li>The app is 2.8 MB smaller.</li>
-  <li>Resuming a half-covered drive is seven times faster: 185 seconds down to 26 on the benchmark tree.</li>
-  <li>
-    A privacy policy rewritten to match what Cmdr actually collects, keeps, and shares, with personal data expiring on a
-    schedule instead of being kept forever.
-  </li>
-  <li>
-    A new terms of service: a third shorter, accurate about what Cmdr actually does, and each release now converts to
-    open source three years after it ships rather than every version on one shared date.
-  </li>
-  <li>
-    An idle Mac stays idle: a dotfile write in your home folder no longer rescores the whole drive (5.25 s per pass
-    becomes 2.1 ms), 51,081 folder-ranking rows a minute stop being rewritten for an unchanged result, and roughly 9,400
-    log lines an hour are gone.
-  </li>
-  <li>About 97 MB less peak memory during a search, and half the write cost of keeping the index live.</li>
-  <li>
-    The Transfers window shows the same honest readout as the copy dialog: both bars labelled, percentages, speed, and a
-    time left that doesn't shift the layout.
-  </li>
-  <li>What's new opens on the headlines, with each release's details behind a Show more.</li>
-  <li>The copy conflict question is now a card you can read at a glance.</li>
-  <li>One line-height scale across the whole app, so text spacing stops varying screen by screen.</li>
-  <li>
-    A broad search returns in under half a second instead of twelve, and the dialog opens and takes typing without
-    waiting on an index rebuild.
-  </li>
-  <li>
-    The Search and Select dialog is redesigned to match the rest of the app: standard window chrome, a tidy 2x2 query
-    block, and a Path column with its width back.
-  </li>
-  <li>
-    Copying to a network drive is up to 3.8 times faster, and a small file now costs one round trip instead of two.
-  </li>
-  <li>
-    A network drive that goes silent recovers in about 50 seconds instead of hanging forever, and a single file retries
-    after a blip rather than ending the whole transfer.
-  </li>
-  <li>Every text field shares one look: 8px corners, an accent-colored caret, and a solid focus ring.</li>
-  <li>The main window appears a second sooner at startup.</li>
+  <li>A drive pulled from its port stops its index instead of leaving one reading a filesystem that isn't there.</li>
+  <li>A cloud drive mounted in your home folder, like pCloud's, gets its own row in the drive list beside Dropbox.</li>
+  <li>Cmdr is now $59 bought once, with a year of updates. The yearly subscription is retired.</li>
 </ul>
 <h5>Fixed</h5>
 <ul>
-  <li>A rename that blinked mid-copy could delete the file it was landing next to.</li>
-  <li>The crash dialog could tell you Cmdr quit unexpectedly when it hadn't, and tell you twice.</li>
-  <li>A share mounted twice broke the panes and the volume switcher, and froze the app on F6.</li>
-  <li>A dead NAS mount hung every operation instead of handing over to the mount that still answers.</li>
-  <li>The panes and the volume picker froze during a big transfer.</li>
-  <li>Shares named "café" or "公開" refused to mount.</li>
-  <li>A failed mount trapped the pane, with every key dead.</li>
-  <li>The cursor and selection could land on a neighbouring file when a listing reordered itself mid-delete.</li>
-  <li>A panic on a background indexing thread crashed the app at the next drive start.</li>
-  <li>Copying, moving, or compressing into a subfolder of a network share failed outright.</li>
-  <li>A crash mid bulk-rename left renamed files with no undo.</li>
-  <li>A rescan blanked the index underneath a search that was still writing to it.</li>
-  <li>One purchase could mint more than one set of license keys.</li>
-  <li>The macOS app menu said "cmdr" instead of "Cmdr".</li>
   <li>
-    A folder move to a phone or a NAS could destroy the files you chose to keep or skip, and a folder copy that failed
-    could wipe the destination folder.
+    A drive pulled mid-transfer kept every original, and the message names the drive and how far it got. A move to a USB
+    stick no longer deletes the sources before the files are really on it.
   </li>
-  <li>Copying a local folder to a NAS or a phone could fail outright.</li>
+  <li>A crash or force-quit mid-overwrite could lose the file being replaced.</li>
   <li>
-    A force-quit or a crash mid-copy could leave a truncated file wearing your real filename, on every kind of drive.
+    A drive that left mid-scan could blank its own index, and an eject could unmount a drive Cmdr was still reading.
   </li>
-  <li>Two disks could be handed one identity, which could route reads and file operations to the wrong drive.</li>
-  <li>⌘- and ⌘+ could freeze the app for up to 46 seconds while fonts were measured.</li>
-  <li>Copying to a NAS died on a filename containing a "?" or a quote.</li>
-  <li>Quick Look and dragging files out did nothing on a direct-SMB pane.</li>
-  <li>A burst of changes on a phone pegged a CPU core and froze the pane.</li>
-  <li>A file with a newline in its name was unfindable, in search, selection, and excludes.</li>
-  <li>A pane could strand itself on "Path not found" after its network drive disappeared.</li>
-  <li>A saved cloud AI key could come back out of the OS secret store.</li>
-  <li>⌘V pasted twice in dialogs, and ⌥⌘A opened the AI chat and selected every file at once.</li>
-  <li>Resizing the window could freeze the entire interface.</li>
-  <li>Folders on network drives, inside archives, and on phones showed no size or date.</li>
-  <li>The AI could invent names for screenshots whose contents it was never actually shown.</li>
-  <li>A maximized window came back in the wrong place after a restart.</li>
+  <li>Renaming anything on a mounted network share failed every time.</li>
+  <li>Copying and moving did nothing on an SFTP, WebDAV, or Android server rooted at "/".</li>
+  <li>
+    A company share published as a DFS namespace root crawled on the slow macOS mount instead of connecting directly.
+  </li>
+  <li>F8 in a Dropbox or Google Drive folder failed with a message about the wrong disk.</li>
+  <li>A batch trash that left items behind reported a clean success.</li>
+  <li>A drive mounted outside /Volumes dead-ended on "Volume not found".</li>
+  <li>Photos in a folder you excluded still showed up in photo search, find similar, and the AI's photo tools.</li>
+  <li>A search handed back at most 1,000 rows, and "Show all in main window" opened with only 30.</li>
+  <li>
+    The right-click menu showed the default keys after you rebound a command, and Option shortcuts showed no key at all.
+  </li>
+  <li>The viewer's Edit menu acted on the status bar instead of the file.</li>
+  <li>
+    "Add to favorites" could write a favorite nobody could ever see, on phones, archives, and protocol-only servers.
+  </li>
+  <li>Activating a license left "Personal use only" in the Dock until a relaunch.</li>
+  <li>Onboarding could stack macOS permission popups when Full Disk Access was revoked or half-granted.</li>
+  <li>An offline update check showed raw request text, and a crash report that didn't go out closed as if it had.</li>
+  <li>Turning the AI off didn't stick when the database refused the write.</li>
+  <li>Saved SFTP and WebDAV places with an email address as the username wouldn't open or sign in.</li>
+</ul>
+<h5>Security</h5>
+<ul>
+  <li>An AI client can no longer change your consent answers over Cmdr's automation interface.</li>
+  <li>A multi-word filename could leak part of itself into an uploaded error report.</li>
+  <li>A password typed into a network address or server path could reach the log file.</li>
 </ul>
 ```
 
@@ -309,10 +242,12 @@ Hi folks!
 
 Cmdr is a two-pane file manager for macOS, written in Rust, in open beta. I'd love to get some early users to test-run it. It's a free app for individuals. Thanks for your work at MacUpdate!
 
+I've submitted Cmdr twice before (most recently on 2026-07-29 I think) and didn't hear back either time, and I can't find a listing for Cmdr. If something in those submissions was missing, unclear, or disqualifying, I'd appreciate a line about what to fix. Happy to correct anything or provide whatever else you need.
+
 My notes:
-- The download URL redirects to the signed DMG on GitHub Releases. The app is Developer ID signed and notarized by Rymdskottkärra AB (my Swedish company), and ships as a universal binary.
-- I left the price empty because, as I said above, Cmdr is free for personal use, with no trial timer and no nags. Work use needs a paid license ($59/year, or $199 one-time), sold at https://getcmdr.com/pricing.
-- The source is available under BSL 1.1 at https://github.com/vdavid/cmdr.
+- The download URL points straight at the signed DMG on GitHub Releases. The app is dev ID signed and notarized by Rymdskottkärra AB (my Swedish company), and ships as a universal binary.
+- I left the price empty because, as I said above, Cmdr is free for personal use. Work use needs a license ($59 once, 1 year of updates), see https://getcmdr.com/pricing.
+- Source is available under BSL 1.1 at https://github.com/vdavid/cmdr.
 - Anything you need from me, write to me at hello@getcmdr.com and I'll answer usually the same day.
 
 Thanks for the review!

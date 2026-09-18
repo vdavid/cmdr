@@ -3,9 +3,9 @@
 Live: https://alternativeto.net/software/cmdr/about/. Edit it while signed in; changes go through an admin approval
 queue, and the "Note about your changes" field at the bottom speeds that up.
 
-Status: last refresh submitted 2026-08-13. The fields below are refreshed for v0.45.0 (2026-09-12) and not submitted
-yet; edit them here first when refreshing, then paste. Refresh cadence and what to update per release:
-`docs/guides/releasing.md` § "Refreshing the app-directory listings".
+Status: submitted 2026-09-18 for v0.46.0, together with the note to the admins below (the same BSL wording request went
+in with the v0.45.0 refresh). The fields below are what was submitted. Edit them here first when refreshing, then paste.
+Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
 ## Main info
 
@@ -72,7 +72,10 @@ AI features (optional, off by default, and can stay fully local with a built-in 
 - **Supported languages**: English, German, Spanish, French, Hungarian, Dutch, Portuguese, Swedish, Vietnamese, Chinese.
   (The 13 locales the app ships, with British and Australian English folded into English:
   `apps/desktop/src/lib/intl/messages`. Traditional/Simplified Chinese split is not supported in their list.)
-- **Pricing**: `Free for personal use`. Model `Purchase`, min `$59`, max `$199`
+- **Pricing**: `Free for personal use`. Model `Purchase`, min `$59`, max `$59`. One figure in both fields, so the page
+  renders a single price rather than a range: v0.46.0 retired the $59/year subscription and the $199 perpetual, leaving
+  Commercial at $59 paid once (a year of updates included, $39/year after that to keep getting them). Enterprise
+  publishes no number, so it contributes none here.
 - **Is Opensource?**: checked. License `Other`. Source URL `https://github.com/vdavid/cmdr`
 
 ## Tags
@@ -144,19 +147,26 @@ Their optional box for the reviewing admin. Use it to head off the licensing mis
 Hi! Cmdr got a bunch of new stuff since my last edit (2026-08-13), so I've:
 - refreshed the desc (SFTP, WebDAV, and ADB support, cloud provider right-click menus, AI file organization),
 - added Traditional Chinese to the supported languages,
-- and added four tags: sftp, webdav, adb, android.
+- added four tags: sftp, webdav, adb, android,
+- and corrected the price: it's one $59 purchase now, not a range. I retired the old $59/year subscription and the $199 perpetual, so "between $59 and $199" no longer describes anything I sell.
 
 Also, my ask from last time (if it's not done already): Cmdr is source-available under BSL 1.1, not OSI open source. I keep the "Is Opensource?" box ticked because unticking it hides the Source URL field, and the code really _is_ public, but the page summary at https://alternativeto.net/software/cmdr/ calls Cmdr "open-source", which isn't strictly true in the OSI sense. If you can change that wording to "source available", I'd appreciate it. Otherwise never mind, most people don't know the diff anyway. :)
 ```
 
 ## Still pending after this pass
 
-- **Pricing model**: `Purchase` with a $59–$199 range renders on the page as "One time purchase (perpetual license)
-  ranging between $59 and $199", which misstates the $59/year subscription. Revisit when the new pricing ships.
+Nothing. The pricing mismatch that sat here through several passes is gone: `Purchase` was always the right model and
+only the range was wrong, and v0.46.0's move to a single $59 one-time price makes the page's "One time purchase
+(perpetual license)" wording true as written.
 
 ## Settled calls
 
 So they don't get re-litigated at the next edit pass:
+
+- **The full description sits at 2,999 of their 3,000-character cap.** Every addition has to be paid for by a cut, so
+  measure before and after; the form rejects an over-long one outright. Nothing in v0.46.0 made the description false
+  (no feature graduated out of alpha, no claim broke, and the description names no prices), so that release changed
+  nothing here, per `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
 - **Keep "Is Opensource?" checked.** Unchecking it hides the Source URL field, and a public link to the source is worth
   more than a precise badge. The description carries the BSL correction instead, in its third paragraph rather than as
