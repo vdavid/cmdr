@@ -106,6 +106,13 @@ pure.
 - **Unscoped**: the boot volume, whole-volume, not `from_scope`. It's the MCP default (the dialog always sends a scope);
   an agent that wants a different volume names it.
 
+**The engine's two log lines carry the scope, via `summarize_scope` beside `summarize_query`** (`query.rs`). Keep them
+separate: `summarize_query` is also the MCP response's `interpreted_query` and answers "what was asked", while
+`summarize_scope` answers "where", and only the logs want it. A 0-match line can't be read without it, because the
+dialog's empty scope box resolves to the pane's CURRENT FOLDER rather than the whole drive, and a scoped-out row is
+dropped by `ScopeVerdict::OutsideRoots` silently and uncounted (unlike `Excluded`, which bumps `hidden_by_excludes`).
+`ERR-FCAXU` is the report that cost an afternoon for exactly this reason.
+
 **Why one volume** (`docs/specs/unindexed-search-plan.md` Decision 4): a fan-out is the only way a search can quietly
 omit a drive, or report a 2%-walked drive as covered. The ceiling has to hold at the API rather than in the dialog,
 because MCP and the AI translator both build queries the UI never sees. What it costs: searching the boot disk and a NAS

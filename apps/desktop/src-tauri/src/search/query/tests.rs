@@ -268,6 +268,71 @@ fn summarize_empty_name_pattern() {
     assert_eq!(summarize_query(&q), "(all entries)");
 }
 
+// ── summarize_scope ──────────────────────────────────────────────
+//
+// The engine's two log lines carry this beside `summarize_query`, so a 0-match line in an
+// error-report bundle says where it looked. `ERR-FCAXU` is why: a search scoped to the pane's
+// folder found nothing, and the log couldn't tell that apart from an empty drive.
+
+fn scoped(include_paths: Option<Vec<&str>>, exclude_dir_names: Option<Vec<&str>>) -> SearchQuery {
+    let mut q = make_query(None, PatternType::Glob, None, None, None, None, None);
+    q.include_paths = include_paths.map(|v| v.into_iter().map(String::from).collect());
+    q.exclude_dir_names = exclude_dir_names.map(|v| v.into_iter().map(String::from).collect());
+    q
+}
+
+#[test]
+fn summarize_scope_unscoped_says_whole_volume() {
+    // An unscoped query really does cover the volume, and the line must not read as a
+    // narrow scope whose path just happened to be empty.
+    assert_eq!(summarize_scope(&scoped(None, None)), "in (whole volume)");
+    assert_eq!(summarize_scope(&scoped(Some(vec![]), None)), "in (whole volume)");
+}
+
+#[test]
+fn summarize_scope_single_root_is_quoted() {
+    assert_eq!(
+        summarize_scope(&scoped(Some(vec!["/Users/j/Downloads"]), None)),
+        "in \"/Users/j/Downloads\""
+    );
+}
+
+#[test]
+fn summarize_scope_counts_several_roots() {
+    assert_eq!(
+        summarize_scope(&scoped(Some(vec!["/a", "/b"]), None)),
+        "in 2 folders: \"/a\", \"/b\""
+    );
+}
+
+#[test]
+fn summarize_scope_caps_the_list_but_keeps_the_count_honest() {
+    // A 40-path scope must not own the log line, and the total still has to be readable.
+    assert_eq!(
+        summarize_scope(&scoped(Some(vec!["/a", "/b", "/c", "/d", "/e"]), None)),
+        "in 5 folders: \"/a\", \"/b\", \"/c\", +2 more"
+    );
+}
+
+#[test]
+fn summarize_scope_appends_the_users_own_exclusions() {
+    assert_eq!(
+        summarize_scope(&scoped(Some(vec!["/a"]), Some(vec!["tmp", "node_modules"]))),
+        "in \"/a\" minus [\"tmp\", \"node_modules\"]"
+    );
+    // An empty list is the same as none: no trailing "minus []" noise.
+    assert_eq!(summarize_scope(&scoped(Some(vec!["/a"]), Some(vec![]))), "in \"/a\"");
+}
+
+#[test]
+fn summarize_scope_quotes_a_path_holding_a_quote_or_space() {
+    // Paths are `{:?}`-formatted precisely so a space or quote can't make the line ambiguous.
+    assert_eq!(
+        summarize_scope(&scoped(Some(vec!["/a b/c\"d"]), None)),
+        "in \"/a b/c\\\"d\""
+    );
+}
+
 // ── canonicalize_scope_path ─────────────────────────────────────
 
 /// A scope path the PANE reports can be tilde-form: a tab sitting in the home

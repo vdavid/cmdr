@@ -76,6 +76,53 @@ pub(crate) fn summarize_query(query: &SearchQuery) -> String {
     }
 }
 
+/// Build the GROUND half of a log line: which folders the query was allowed to match in.
+///
+/// Kept apart from `summarize_query` on purpose. That one answers "what was asked", feeds the
+/// MCP response's `interpreted_query`, and stays the caller's contract; this one answers "where
+/// it was asked", and only the two engine log lines want it.
+///
+/// Why it exists: a 0-match line is uninterpretable without it. An empty scope box in the dialog
+/// is NOT "everywhere" (it resolves to the focused pane's folder, see
+/// `src/lib/search/search-runners.ts`), so a search that found nothing on a drive full of hits
+/// looks identical in the log to a search of a genuinely empty drive. `ERR-FCAXU` was exactly
+/// that, and cost an afternoon.
+///
+/// Examples: `in "/Users/j/Downloads"`, `in 2 folders: "/a", "/b"`, `in (whole volume)`,
+/// `in "/a" minus ["tmp"]`
+pub(crate) fn summarize_scope(query: &SearchQuery) -> String {
+    /// Enough roots to recognize the scope, without letting a 40-path scope own the line.
+    const MAX_SHOWN: usize = 3;
+
+    let mut summary = match query.include_paths.as_deref() {
+        None | Some([]) => "in (whole volume)".to_string(),
+        Some([one]) => format!("in {one:?}"),
+        Some(paths) => {
+            let shown = paths
+                .iter()
+                .take(MAX_SHOWN)
+                .map(|p| format!("{p:?}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+            let rest = paths.len().saturating_sub(MAX_SHOWN);
+            if rest == 0 {
+                format!("in {} folders: {shown}", paths.len())
+            } else {
+                format!("in {} folders: {shown}, +{rest} more", paths.len())
+            }
+        }
+    };
+
+    // The user's own `!name` exclusions only. The `SYSTEM_DIR_EXCLUDES` baseline is added later,
+    // in `ExcludeRules::from_query`, so it never reaches the query and would be noise on every line.
+    if let Some(names) = query.exclude_dir_names.as_deref()
+        && !names.is_empty()
+    {
+        summary.push_str(&format!(" minus {names:?}"));
+    }
+    summary
+}
+
 pub(crate) fn format_size(bytes: u64) -> String {
     const KB: u64 = 1_024;
     const MB: u64 = 1_024 * KB;
