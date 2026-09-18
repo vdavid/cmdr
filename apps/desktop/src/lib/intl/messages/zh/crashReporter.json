@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "要不要顺便附上一段 Cmdr 日志，帮忙诊断这个问题？日志包含的细节多得多。文件名和文件夹名这类隐私信息会在发送前匿名化。",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "日志已发送，编号 {id}。这会让排查容易得多。",
   "@crashReporter.sentToast.logSent": {

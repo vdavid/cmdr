@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "要不要順便附上一段 Cmdr 記錄檔，幫忙診斷這個問題？記錄檔的細節多得多。檔案和資料夾名稱這類隱私資訊會在傳送前匿名化。",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "記錄檔已傳送，編號 {id}。這會讓追查容易得多。",
   "@crashReporter.sentToast.logSent": {

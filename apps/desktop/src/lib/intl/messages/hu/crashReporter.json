@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "Szeretnél segíteni a hiba felderítésében azzal, hogy csatolsz egy részletet a Cmdr naplójából? A napló sokkal részletesebb. A magánjellegű adatokat, például a fájl- és mappaneveket, küldés előtt anonimizáljuk.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "A naplót elküldtük, azonosítója: {id}. Így az okát jóval könnyebb megtalálni.",
   "@crashReporter.sentToast.logSent": {

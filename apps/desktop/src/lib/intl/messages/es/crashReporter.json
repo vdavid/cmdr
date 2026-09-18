@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "¿Quieres ayudar a diagnosticar esto adjuntando también un fragmento de tu registro de Cmdr? El registro tiene mucho más detalle. La información privada, como los nombres de archivos y carpetas, se anonimiza antes de enviarla.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "Registro enviado como {id}. Así el problema es mucho más fácil de localizar.",
   "@crashReporter.sentToast.logSent": {

@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "Möchtest du bei der Diagnose helfen und auch einen Ausschnitt aus deinem Cmdr-Protokoll anhängen? Das Protokoll enthält viel mehr Details. Private Angaben wie Datei- und Ordnernamen werden vor dem Senden anonymisiert.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "Protokoll als {id} gesendet. Damit lässt sich das viel leichter aufspüren.",
   "@crashReporter.sentToast.logSent": {

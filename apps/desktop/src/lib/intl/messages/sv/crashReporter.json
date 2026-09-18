@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "Vill du hjälpa till att felsöka det här genom att även bifoga ett utdrag ur din Cmdr-logg? Loggen har mycket mer detaljer. Privata uppgifter som fil- och mappnamn anonymiseras innan de skickas.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "Loggen skickades som {id}. Det gör det här mycket lättare att spåra.",
   "@crashReporter.sentToast.logSent": {

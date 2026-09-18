@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "Wil je helpen dit te onderzoeken door ook een stukje van je Cmdr-logboek bij te voegen? Het logboek bevat veel meer details. Privégegevens zoals bestands- en mapnamen worden voor het versturen geanonimiseerd.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "Logboek verstuurd als {id}. Daarmee is dit veel makkelijker te achterhalen.",
   "@crashReporter.sentToast.logSent": {

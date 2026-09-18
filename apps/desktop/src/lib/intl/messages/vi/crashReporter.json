@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "Bạn có muốn giúp chẩn đoán vấn đề này bằng cách đính kèm một đoạn nhật ký Cmdr không? Nhật ký có nhiều chi tiết hơn hẳn. Thông tin riêng tư như tên tệp và thư mục sẽ được ẩn danh trước khi gửi.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "Đã gửi nhật ký với mã {id}. Việc tìm ra nguyên nhân sẽ dễ hơn nhiều.",
   "@crashReporter.sentToast.logSent": {

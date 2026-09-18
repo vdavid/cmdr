@@ -81,7 +81,7 @@
   },
   "crashReporter.sentToast.sendLogHint": "Voulez-vous aider à diagnostiquer le problème en joignant aussi un extrait de votre journal Cmdr ? Le journal contient beaucoup plus de détails. Les informations privées comme les noms de fichiers et de dossiers sont anonymisées avant l''envoi.",
   "@crashReporter.sentToast.sendLogHint": {
-    "sourceHash": "6c84232"
+    "sourceHash": "aec472c"
   },
   "crashReporter.sentToast.logSent": "Journal envoyé sous l''identifiant {id}. Cela rend le problème bien plus facile à localiser.",
   "@crashReporter.sentToast.logSent": {
