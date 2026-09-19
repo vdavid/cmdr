@@ -113,7 +113,7 @@ cmdr-git = { path = "../../../crates/cmdr-git" }
 cmdr-index = { path = "../../../crates/cmdr-index" }
 tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
-tauri-plugin-mcp-bridge = "0.12"
+tauri-plugin-mcp-bridge = "0.13"
 tauri-plugin-store = "2"
 tauri-plugin-dialog = "2.6"
 tauri-plugin-notification = "2.3.3"
@@ -306,7 +306,7 @@ freedesktop-icons = "0.4"
 # It carries `mtp-rs`, which the app no longer names directly.
 cmdr-mtp = { path = "../../../crates/cmdr-mtp" }
 # mDNS discovery for network host browsing (pure Rust, cross-platform)
-mdns-sd = { version = "0.20", features = ["logging"] }
+mdns-sd = { version = "0.21", features = ["logging"] }
 # SMB2/3 protocol client for share enumeration (pure Rust, pipelined I/O).
 # When bumping: also re-vendor the test containers per
 # apps/desktop/test/smb-servers/.compose/VENDORED.md
@@ -338,7 +338,7 @@ tar = "0.4"
 percent-encoding = "2"
 core-foundation = "0.10.1"
 core-services = "1.0.0"
-icns = "0.4.0"
+icns = "0.5.0"
 plist = "1.8.0"
 objc2 = { version = "0.6", features = ["std", "exception"] }
 objc2-foundation = { version = "0.3", features = [
@@ -449,7 +449,7 @@ objc2-io-kit = { version = "0.3.2", default-features = false, features = ["std",
 # ❗ `default-features = false` is load-bearing, not tidiness: muda's defaults turn on `libxdo`,
 # whose `libxdo` + `libxdo-sys` crates Tauri deliberately leaves off (`tauri-2.11.5/Cargo.toml:344`)
 # and which a parser test has no use for. With it on, this dev-dependency ADDS two packages.
-muda = { version = "0.19", default-features = false }
+muda = { version = "0.20", default-features = false }
 # `Bytes`, the chunk type the MTP upload cells feed a fake source stream with.
 # Dev-only now: the production upload path moved into `cmdr-mtp`, which declares
 # its own copy.
