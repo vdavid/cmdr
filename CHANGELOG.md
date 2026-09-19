@@ -5,6 +5,34 @@ This file holds all notable changes to Cmdr over time.
 The format is based on [keep a changelog](https://keepachangelog.com/en/1.1.0/), and we use
 [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [0.46.1] - 2026-09-19
+
+Small fixes: renames on SFTP, WebDAV, and Android phones; better crash reports, search UI improvements.
+
+### Added
+
+- Name the folder a search covered when it finds nothing, with a `Search this volume instead` button (216163ce6)
+- Offer to attach that session's log to a crash report, with file and folder names anonymized first (c53da5236,
+  131b04bb5, 40b063d48)
+- Publish SHA-256 checksums for every release, linked from the download card on getcmdr.com (4f5f97d30, 9ad5ff69e)
+
+### Fixed
+
+- Fix Cmdr aborting at launch on macOS Catalina and Big Sur (86c381c32)
+- Fix `F2` refusing to rename on SFTP, WebDAV, and Android before the rename was ever attempted (e147d6f7b)
+- Fix a rename conflict doing nothing on a volume with no trash, like SFTP, WebDAV, phones, and archives (cf8118efd)
+- Fix closing Settings or the file viewer crashing the app (ff015c58a)
+- Fix the `Search in` chip drawing itself as unset, making a folder-scoped search look unscoped (c76f6f908)
+
+### Non-app
+
+- Land in-app error reports, feedback, and public GitHub issues on one private triage board, with personal data in a
+  comment that expires (106fa1d1e, 797f689c1, 19f1acd7a, 488fd88c1)
+- Attach macOS's own symbolicated stack and exception verdict to a native crash report, and store the load base that
+  makes raw addresses resolvable (e9136993c, 2b3644115)
+- Fail the build on any symbol newer than the macOS floor, the gap that shipped the Catalina launch abort (a4b5faa35)
+- Log the scope a search ran against, not just its query (a61ed2d77)
+
 ## [0.46.0] - 2026-09-17
 
 50+ fixes, a few smaller features, and a few internal redesigns. The highlights:

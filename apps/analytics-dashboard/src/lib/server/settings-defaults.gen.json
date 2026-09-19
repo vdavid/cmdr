@@ -8,7 +8,7 @@
     "`promotedThrough` is the newest release `--promote` recorded, stamped even when it changed no default.",
     "`next` is the unreleased working-tree state; it is never resolved against."
   ],
-  "promotedThrough": "0.46.0",
+  "promotedThrough": "0.46.1",
   "versions": {
     "0.25.0": {
       "advanced.diskSpaceChangeThreshold": 1,
