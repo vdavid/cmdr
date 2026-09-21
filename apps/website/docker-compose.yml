@@ -22,7 +22,7 @@ services:
     # extractor. Deploy deliberately; the open-redirect fix wires
     # `AllowedRedirectHosts`, so verify Google/GitHub sign-in still completes
     # after the first deploy.
-    image: umputun/remark42:v1.16.4
+    image: umputun/remark42:v1.17.1
     container_name: remark42
     restart: unless-stopped
     volumes:
