@@ -6,8 +6,8 @@
 //! that can block forever**, while the caller is a file pane that re-asks for every
 //! visible path several times a second.
 //!
-//! - `pool.rs`: a long-lived, hard-capped set of 8 MB-stack OS threads. The probe
-//!   never runs anywhere else (never rayon, never tokio's blocking pool).
+//! - `../framework_pool.rs`: a long-lived, hard-capped set of 8 MB-stack OS threads.
+//!   The probe never runs anywhere else (never rayon, never tokio's blocking pool).
 //! - `cache.rs`: per-directory, TTL'd answers, so an unchanged folder is free.
 //! - `service.rs`: one batch in flight at a time, cancellable, with a deadline that
 //!   bounds the caller's wait and never the work.
@@ -16,12 +16,11 @@
 
 mod bench;
 mod cache;
-mod pool;
 mod probe;
 mod service;
 
+use crate::file_system::framework_pool::PoolConfig;
 use cache::Ttls;
-use pool::PoolConfig;
 use serde::{Deserialize, Serialize};
 use service::Service;
 use std::collections::HashMap;

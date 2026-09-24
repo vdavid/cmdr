@@ -30,7 +30,7 @@ type Job = Box<dyn FnOnce() + Send + 'static>;
 /// How a [`Pool`] is sized. Every field is explicit so tests can build a pool with
 /// timings they can actually wait for.
 #[derive(Clone, Copy, Debug)]
-pub(super) struct PoolConfig {
+pub(crate) struct PoolConfig {
     /// Thread-name prefix, so `sample` and Instruments name the wedged threads.
     pub name: &'static str,
     /// Worker count the pool grows to while every existing worker is busy.
@@ -42,7 +42,7 @@ pub(super) struct PoolConfig {
     pub wedged_after: Duration,
 }
 
-pub(super) struct Pool {
+pub(crate) struct Pool {
     inner: Arc<Inner>,
 }
 
@@ -61,7 +61,7 @@ struct State {
 }
 
 impl Pool {
-    pub(super) fn new(config: PoolConfig) -> Self {
+    pub(crate) fn new(config: PoolConfig) -> Self {
         Self {
             inner: Arc::new(Inner {
                 config,
@@ -76,7 +76,7 @@ impl Pool {
 
     /// Queues `job`, spawning a worker first if every existing one is busy and the
     /// ceiling allows it.
-    pub(super) fn submit(&self, job: Job) {
+    pub(crate) fn submit(&self, job: Job) {
         let worker_index = {
             let mut state = self.inner.state.lock_ignore_poison();
             state.jobs.push_back(job);
@@ -93,13 +93,13 @@ impl Pool {
 
     /// Threads this pool has ever spawned. They never exit, so this is also the
     /// live count.
-    pub(super) fn worker_count(&self) -> usize {
+    pub(crate) fn worker_count(&self) -> usize {
         self.inner.state.lock_ignore_poison().busy_since.len()
     }
 
     /// Workers currently inside a job.
     #[cfg(test)]
-    pub(super) fn busy_count(&self) -> usize {
+    pub(crate) fn busy_count(&self) -> usize {
         self.inner
             .state
             .lock_ignore_poison()
@@ -111,13 +111,13 @@ impl Pool {
 
     /// Workers that have been on the same job longer than `wedged_after`, so
     /// presumed lost inside a provider that never answered.
-    pub(super) fn wedged_count(&self) -> usize {
+    pub(crate) fn wedged_count(&self) -> usize {
         let state = self.inner.state.lock_ignore_poison();
         self.inner.wedged_count(&state)
     }
 
     /// Jobs queued but not yet picked up.
-    pub(super) fn queue_len(&self) -> usize {
+    pub(crate) fn queue_len(&self) -> usize {
         self.inner.state.lock_ignore_poison().jobs.len()
     }
 }
@@ -158,7 +158,7 @@ impl Inner {
             // pool, so hand it back and let the next submit try again.
             let mut state = self.state.lock_ignore_poison();
             state.busy_since.truncate(index);
-            log::warn!(target: "sync_status", "could not spawn worker {name}: {err}");
+            log::warn!(target: "framework_pool", "could not spawn worker {name}: {err}");
         }
     }
 

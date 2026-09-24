@@ -6,8 +6,8 @@
   (`cmdr_fs::file_provider`, an xattr read memoized per directory)? If not, done. Then `stat`'s `SF_DATALESS` flag
   answers "is this a stub?" off the inode; then an `NSURL` ubiquitous-item resource value answers "is it moving right
   now?", the expensive, unbounded part.
-- **`pool.rs`** — a long-lived, hard-capped set of 8 MB-stack OS threads. Generic over boxed jobs; sync status is its
-  only consumer today.
+- **`../framework_pool.rs`** — a long-lived, hard-capped set of 8 MB-stack OS threads, generic over boxed jobs. Sync
+  status runs its own instance; the file context menu's slow facts run another (`menu/context_menu_facts.rs`).
 - **`cache.rs`** — answers keyed by directory then file name, with a four-tier TTL, LRU-by-directory eviction, and an
   injected clock so TTL behaviour is testable without sleeping.
 - **`service.rs`** — cache lookup, batch join-or-supersede, cancellation, and the deadline. The public functions in
@@ -40,7 +40,7 @@ Each is addressed by one piece: (1) the deadline now bounds only the wait, and t
 answering never returns, so the worker is gone for the process's lifetime. With a plain fixed pool, one bad Dropbox
 day would silently disable cloud badges until the user restarted Cmdr.
 
-So `pool.rs` has both a `target_workers` (what it grows to lazily while every existing worker is busy) and a
+So `../framework_pool.rs` has both a `target_workers` (what it grows to lazily while every existing worker is busy) and a
 `max_workers` (threads ever spawned, never exceeded). A worker on the same job for longer than `wedged_after` counts as
 lost and may be replaced — within the ceiling. The leak is bounded by construction; a transient hang costs latency, not
 the feature.
@@ -198,7 +198,7 @@ holds; it just hands it down rather than wrapping.
 
 ## Testing
 
-- `pool.rs` tests pin the properties that matter with jobs that block on a channel, standing in for a provider that
+- `../framework_pool.rs` tests pin the properties that matter with jobs that block on a channel, standing in for a provider that
   never replies: bounded threads across repeated bursts, never exceeding the ceiling when every job wedges, replacing a
   lost worker, and not fanning out for a single job.
 - `service.rs` tests inject a counting `Probe`, so join, supersede, cancellation, the deadline, and the cache are all
@@ -217,6 +217,6 @@ holds; it just hands it down rather than wrapping.
 
 ## Follow-ups
 
-- `pool.rs` is generic over boxed jobs and would suit `icons/mod.rs::fetch_path_icons` and `open_with.rs`, which both
+- `../framework_pool.rs` is generic over boxed jobs and would suit `icons/mod.rs::fetch_path_icons` and `open_with.rs`, which both
   still spawn a per-call `std::thread::scope` of 8 MB threads for the same reason. Give each its own instance rather
   than sharing one: a wedged File Provider must not be able to stop icon fetching too.

@@ -1,7 +1,7 @@
 # Sync status (cloud badges)
 
 The per-row cloud badge (Dropbox, iCloud Drive, Google Drive, …) on macOS. `probe.rs` asks macOS about one file;
-`pool.rs`, `cache.rs`, and `service.rs` exist only to keep that question from costing threads, CPU, or a frozen pane.
+`../framework_pool.rs`, `cache.rs`, and `service.rs` exist only to keep that question from costing threads, CPU, or a frozen pane.
 
 Design rationale, the incident behind it, and the tuning numbers: `DETAILS.md`.
 
@@ -16,7 +16,7 @@ Design rationale, the incident behind it, and the tuning numbers: `DETAILS.md`.
 - **The cache stores `SyncKnowledge`, not `SyncStatus`, and that's load-bearing.** `Unknown` means both "no provider
   owns this file" (kept 30 min) and "the read didn't answer" (kept 2 s); the badge collapses them, the cache must not.
   A new kind of answer earns a variant, so `Ttls::for_knowledge` has to say out loud how long it lives.
-- **The probe runs on `pool.rs` and nowhere else.** Never rayon (2 MB stacks blow up on provider override chains, see
+- **The probe runs on its `../framework_pool.rs` instance and nowhere else.** Never rayon (2 MB stacks blow up on provider override chains, see
   `file_system/CLAUDE.md`), never tokio's blocking pool (`spawn_blocking` work can't be cancelled, and the runtime needs
   those threads). The pool is hard-capped at `max_workers` threads for the process lifetime, including ones lost inside
   a provider that stopped answering.

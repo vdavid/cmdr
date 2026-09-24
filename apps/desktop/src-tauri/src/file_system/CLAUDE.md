@@ -20,7 +20,7 @@ Directory listing, file writing, sync status, volume management, and file watchi
 - **Tag writes (`tags.rs`) touch ONLY `_kMDItemUserTags`, never `com.apple.FinderInfo`** (zeroing it destroys custom
   folder icons), and encode a **binary** plist.
 - **Never call macOS frameworks from rayon or any constrained-stack pool**: FileProvider XPC blows the 2 MB stack and
-  can block forever. Use pooled, hard-capped 8 MB OS threads (`sync_status/pool.rs`), not a per-call
+  can block forever. Use pooled, hard-capped 8 MB OS threads (`framework_pool.rs`), not a per-call
   `std::thread::scope`. § "Threading".
 - **Watcher rules.** Each has its own section in `DETAILS.md`; read them before touching `watcher.rs`:
   - ❌ Never `tokio::spawn` from a watcher OS thread (no reactor: it panics). Use `tauri::async_runtime::spawn`, and

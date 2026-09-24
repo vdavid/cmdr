@@ -23,7 +23,7 @@
 //!    that is the one thing no cancellation can take back.
 
 use super::cache::{Cache, Ttls};
-use super::pool::{Pool, PoolConfig};
+use crate::file_system::framework_pool::{Pool, PoolConfig};
 use super::{SyncKnowledge, SyncStatus};
 use cmdr_fs::ignore_poison::IgnorePoison;
 use cmdr_fs::log_rollup::LogRollup;

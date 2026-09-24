@@ -449,8 +449,8 @@ target paths off the pane state and refreshing via `apply_tags_to_listing`. `cmd
 
 ## Threading
 
-The 8 MB-stack OS thread pattern (instead of rayon) for macOS framework calls is in `sync_status/pool.rs` as the
-reference. The reasoning: NSURL resource-value lookups and FileProvider queries make synchronous XPC round-trips that
+The 8 MB-stack OS thread pattern (instead of rayon) for macOS framework calls is in `framework_pool.rs` as the
+reference, a bounded pool shared by sync status and the file context menu's slow facts. The reasoning: NSURL resource-value lookups and FileProvider queries make synchronous XPC round-trips that
 can consume deep stack frames through FileProvider override chains (iCloud, Dropbox), exceeding rayon's 2 MB worker
 stack; running them on rayon would also starve the pool, which should stay reserved for CPU-bound work.
 
