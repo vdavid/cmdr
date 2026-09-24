@@ -47,7 +47,7 @@
     ],
     "chosen": "toevoegen",
     "confidence": "high",
-    "decision": "Aanvullen wat al verstuurd is: het notitievenster bij een automatisch foutrapport (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)",
+    "decision": "Aanvullen wat al verstuurd is: het notitievenster bij een automatisch foutrapport",
     "forms": "button Voeg … toe with the particle LAST (Voeg aan rapport toe, Voeg server toe…, Voeg huidige map aan favorieten toe); window title Toevoegen aan je foutrapport; participle toegevoegd",
     "sources": "macOS Finder (Add Password → Voeg wachtwoord toe, Add Tags → Voeg tags toe), AppKit (Voeg aan begin van knoppenbalk toe)"
   },
@@ -102,7 +102,7 @@
     ],
     "chosen": "antwoorden",
     "confidence": "high",
-    "decision": "Het losse conflictvenster (`fileOperations.operationConflict.*`)",
+    "decision": "Het losse conflictvenster",
     "forms": "intransitive antwoorden (totdat je antwoordt); with an object beantwoorden (Beantwoord de vraag …); status Antwoord nodig",
     "sources": "MS (answer → beantwoorden); catalog totdat-shape"
   },
@@ -150,7 +150,7 @@
     ],
     "chosen": "Apps",
     "confidence": "high",
-    "decision": "Het Dock-aanbod (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)",
+    "decision": "Het Dock-aanbod",
     "forms": "de map ‘Apps’",
     "sources": "macOS Finder (TL5 / GROUP_APPLICATIONS = Apps, Go menu 258.title, TL_HELP_APPS = Ga naar de map 'Apps')"
   },
@@ -174,7 +174,7 @@
     ],
     "chosen": "Goedkeuren",
     "confidence": "high",
-    "decision": "Voorgestelde bewerkingen: het venster met wat Ask Cmdr voorstelt (`suggestedOps.*`, `commands.suggestedOpsShow.*`)",
+    "decision": "Voorgestelde bewerkingen: het venster met wat Ask Cmdr voorstelt",
     "forms": "suggested-ops buttons are infinitives (Goedkeuren / Weigeren)",
     "sources": "MS / standard NL"
   },
@@ -305,7 +305,7 @@
   "camera-details": {
     "chosen": "cameragegevens",
     "confidence": "tentative",
-    "decision": "Ask Cmdr looks inside files: the `inspectFile` tool line and the reworded consent screen (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)",
+    "decision": "Ask Cmdr looks inside files: the `inspectFile` tool line and the reworded consent screen",
     "sources": "coined compound (camera + the catalog's gegevens for metadata)"
   },
   "cancel": {
@@ -331,7 +331,7 @@
     "accept": ["changelog"],
     "chosen": "Wijzigingenlogboek",
     "confidence": "high",
-    "decision": "Native menu's: menubalk, contextmenu's, venstertitels (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)",
+    "decision": "Native menu's: menubalk, contextmenu's, venstertitels",
     "forms": "the Help-menu item is Wijzigingenlogboek, distinct from Wat is er nieuw (the news)",
     "sources": "MS terminology"
   },
@@ -403,7 +403,7 @@
     ],
     "chosen": "opruimen",
     "confidence": "tentative",
-    "decision": "Het stoppoortje: afsluiten terwijl er nog werk loopt (`main.quit.*`)",
+    "decision": "Het stoppoortje: afsluiten terwijl er nog werk loopt",
     "forms": "separable: ruimt … op",
     "sources": "plain Dutch; no pile string names this act"
   },
@@ -434,7 +434,7 @@
     "accept": ["Cloud-AI"],
     "chosen": "cloud-AI",
     "confidence": "high",
-    "decision": "De schakelaar ‘Cloud-AI toestaan’ en de toestanden waarin cloud-AI uit staat (`ai.cloudConsent.label`, `ai.cloudConsent.description`, `askCmdr.gate.cloudOff.body`, `settings.ai.cloudConsent.lockedHint`, `settings.askCmdr.enabled.label`)",
+    "decision": "De schakelaar ‘Cloud-AI toestaan’ en de toestanden waarin cloud-AI uit staat",
     "forms": "de-woord: refer back with die or repeat it; switch Cloud-AI toestaan, verb form Sta … cloud-AI toe",
     "sources": "catalog (settings.ai.provider.opt.cloud)"
   },
@@ -474,7 +474,7 @@
     ],
     "chosen": "voltooid",
     "confidence": "high",
-    "decision": "Een half teruggedraaide bewerking afmaken (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)",
+    "decision": "Een half teruggedraaide bewerking afmaken",
     "forms": "Copy complete → Kopiëren voltooid; wizard button Voltooi; Finish rolling back → Voltooi terugdraaien; an unfinished copy → onvolledig exemplaar",
     "sources": "macOS (voltooid for completed operations; NE108 Finish Copying → Voltooi kopiëren)"
   },
@@ -507,7 +507,7 @@
     "accept": ["bevestig", "bevestiging"],
     "chosen": "bevestigen",
     "confidence": "high",
-    "decision": "De onbevestigde naamwijziging en de onbruikbare naam (`fileExplorer.rename.unconfirmed`/`unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)",
+    "decision": "De onbevestigde naamwijziging en de onbruikbare naam",
     "forms": "\"Couldn't confirm …\" → We konden … niet bevestigen / Cmdr kon … niet bevestigen; heading Kon het verplaatsen niet bevestigen",
     "sources": "MS (confirm → bevestigen), macOS AppKit (Bevestig)"
   },
@@ -660,7 +660,7 @@
     ],
     "chosen": "Deselecteer",
     "confidence": "high",
-    "decision": "Het selectievenster: bestanden selecteren en deselecteren (`selection.*`)",
+    "decision": "Het selectievenster: bestanden selecteren en deselecteren",
     "forms": "Deselect all → Deselecteer alles; Deselecteer bestanden (menu, command, and the dialog title it opens stay identical)",
     "sources": "Double Commander (Deselecteer alles, Deselecteer een groep…), macOS Finder NE18 (deselecteer het aankruisvak)"
   },
@@ -702,7 +702,7 @@
     "accept": ["verbreken", "verbroken", "Verbreek verbinding", "losgekoppeld", "koppel"],
     "chosen": "Verbreek",
     "confidence": "high",
-    "decision": "De serverhub: verbindingsscherm, verbindingstooltips en de vergeet-bevestigingen (`servers.*`, `fileExplorer.navigation.connectionTooltip*`, `.disconnect*`, `.forget*`)",
+    "decision": "De serverhub: verbindingsscherm, verbindingstooltips en de vergeet-bevestigingen",
     "forms": "button Verbreek; command Verbreek verbinding met server; in a sentence always Verbreek de verbinding (met {name}), never Verbreek de server; toast wrapper Verbinding verbreken lukte niet: …; grayed state Verbreek (bezet)",
     "sources": "macOS Finder (MR10.1, N200), AppKit SavePanel"
   },
@@ -733,7 +733,7 @@
   "dock": {
     "chosen": "Dock",
     "confidence": "high",
-    "decision": "Het Dock-aanbod (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)",
+    "decision": "Het Dock-aanbod",
     "forms": "untranslated; het Dock in a sentence, no article in a short label (Voeg toe aan Dock, Apple's verbatim label); je Dock where English says your Dock",
     "sources": "macOS Finder (Voeg toe aan Dock), Dock.app DockMenus.strings, System Settings (Toon/verberg het Dock automatisch)"
   },
@@ -776,7 +776,7 @@
     "accept": ["dupliceren"],
     "chosen": "Dupliceer",
     "confidence": "high",
-    "decision": "Dupliceer: de opdracht die in dezelfde map kopieert (`commands.fileDuplicate.*`)",
+    "decision": "Dupliceer: de opdracht die in dezelfde map kopieert",
     "sources": "macOS Finder nl menu Archief > Dupliceer (N154), verified on macOS 26.6.1, 2026-08-19"
   },
   "edit": {
@@ -801,7 +801,7 @@
     ],
     "chosen": "uitwerpen",
     "confidence": "high",
-    "decision": "De negen uitwerp- en verbreekzinnen (`errors.eject.*`)",
+    "decision": "De negen uitwerp- en verbreekzinnen",
     "forms": "button Werp {name} uit / Werp uit; toast wrapper {volumeName} uitwerpen lukte niet: …; can't be ejected → Deze schijf kun je niet uitwerpen",
     "sources": "Nautilus, KDE Dolphin, Thunar, Double Commander, MS (Uitwerpen)"
   },
@@ -942,7 +942,7 @@
     "accept": ["favoriet"],
     "chosen": "favorieten",
     "confidence": "high",
-    "decision": "Het favorietenmenu (`commands.favoritesOpen.label`/`.description`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)",
+    "decision": "Het favorietenmenu",
     "forms": "lowercase in a verb phrase (Toon favorieten), capitalized as a group heading (Favorieten); favorites menu → favorietenmenu",
     "sources": "macOS Finder (Favorieten; kan niet aan je favorieten worden toegevoegd), AppKit"
   },
@@ -956,7 +956,7 @@
     "accept": ["haal", "opgehaald"],
     "chosen": "ophalen",
     "confidence": "high",
-    "decision": "Het weergavevenster haalt een bestand eerst op (`viewer.pull.*`, `viewer.error.stoppedResponding`)",
+    "decision": "Het weergavevenster haalt een bestand eerst op",
     "forms": "progress {fileName} ophalen om te bekijken; Pull a model → Haal een model op",
     "sources": "macOS Finder IN_MD1 (Fetching… → Ophalen…), MS (fetch → ophalen)"
   },
@@ -1009,7 +1009,7 @@
     ],
     "chosen": "vingerafdruk",
     "confidence": "high",
-    "decision": "Het serververbindingsvenster en de sleutelvraag (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`, `goToPath.dialog.opensServer`/`.addsServer`, `commands.serversConnect.label`)",
+    "decision": "Het serververbindingsvenster en de sleutelvraag",
     "forms": "Key fingerprint → Vingerafdruk van de sleutel (possessor after the noun, not a compound)",
     "sources": "macOS system-wide (De vingerafdruk van de SCEP-server '%@' komt niet overeen)"
   },
@@ -1051,7 +1051,7 @@
     "accept": ["schermvullend"],
     "chosen": "schermvullende weergave",
     "confidence": "high",
-    "decision": "Escape en de schermvullende weergave (`main.escapeFullScreenHint.*`, `settings.advanced.exitFullScreenOnEscape*`)",
+    "decision": "Escape en de schermvullende weergave",
     "forms": "noun schermvullende weergave, adjective schermvullend; Exit full screen on Escape → Schermvullende weergave uitschakelen met Escape",
     "sources": "macOS AppKit (Enter Full Screen → Schakel schermvullende weergave in, Full Screen → Schermvullend)"
   },
@@ -1185,7 +1185,7 @@
     ],
     "chosen": "sleutel",
     "confidence": "tentative",
-    "decision": "De vastzet-hint, de vertrouwde serversleutels en het ADB-paneel (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.summary.servers`/`.adb`, `settings.appearance.tintSmb.*`)",
+    "decision": "De vastzet-hint, de vertrouwde serversleutels en het ADB-paneel",
     "forms": "in the server panel where English says only key → de sleutel (van {host}); where English says host key (the Settings list) → serversleutel, SSH-serversleutels; SSH key → SSH-sleutel",
     "sources": "catalog (servers.refusal.hostKeyUntrusted); Apple ScreenSharing (SSH key → SSH-sleutel)"
   },
@@ -1248,7 +1248,7 @@
     "accept": ["bezet", "gebruikt", "gebruiken"],
     "chosen": "in gebruik",
     "confidence": "high",
-    "decision": "Wie de schijf vasthoudt: de zes geweigerde-uitwerpzinnen (`errors.eject.unmountRefusedBy*`, `.otherApps`)",
+    "decision": "Wie de schijf vasthoudt: de zes geweigerde-uitwerpzinnen",
     "forms": "full sentence is in gebruik; a grayed-out menu item repeats its base label plus (bezet); with a named holder: {app} gebruikt deze schijf nog",
     "sources": "macOS Finder (… is in gebruik), MS (busy → bezet)"
   },
@@ -1298,7 +1298,7 @@
     "accept": ["onderdelen"],
     "chosen": "onderdeel",
     "confidence": "high",
-    "decision": "Namen die er hetzelfde uitzien (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.title`, `errors.volume.ambiguousName`)",
+    "decision": "Namen die er hetzelfde uitzien",
     "forms": "het-woord; one other file → één ander bestand, N other items → N andere onderdelen; keeps item only for non-files (menu-item, stash-item, recent-list entries)",
     "sources": "macOS Finder (items → onderdelen), Keychain Access (Alle onderdelen)"
   },
@@ -1306,7 +1306,7 @@
     "accept": ["behouden", "behoudt", "houdt", "gehouden"],
     "chosen": "Behoud",
     "confidence": "high",
-    "decision": "De terugdraaibevestiging en de rij die op antwoord wacht (`fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `transferProgress.foregroundBusyToast`/`rollbackTooltip`)",
+    "decision": "De terugdraaibevestiging en de rij die op antwoord wacht",
     "exceptions": {
       "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "\"May keep the names they have now\": houden misschien hun huidige naam."
     },
@@ -1369,7 +1369,7 @@
     ],
     "chosen": "ongemoeid",
     "confidence": "high",
-    "decision": "De terugdraaimelding: wat er weg is, en wat Cmdr met rust liet (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)",
+    "decision": "De terugdraaimelding: wat er weg is, en wat Cmdr met rust liet",
     "forms": "leave alone → ongemoeid laten / ongemoeid gelaten; left where it is (a move that doesn't travel back) → laten staan",
     "sources": "catalog (askCmdr.renameUndo.skipReason.*)"
   },
@@ -1464,7 +1464,7 @@
     "accept": ["gekeken", "kijken", "inspecteren", "kijkt"],
     "chosen": "kijkt in",
     "confidence": "tentative",
-    "decision": "Ask Cmdr looks inside files: the `inspectFile` tool line and the reworded consent screen (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)",
+    "decision": "Ask Cmdr looks inside files: the `inspectFile` tool line and the reworded consent screen",
     "forms": "tool line Kijkt in bestanden / In bestanden gekeken; kijkt alleen in een bestand als je ernaar vraagt",
     "sources": "coined in the shape of the sibling tool lines"
   },
@@ -1536,7 +1536,7 @@
     ],
     "chosen": "aankoppelen",
     "confidence": "high",
-    "decision": "Het favorietenmenu (`commands.favoritesOpen.label`/`.description`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)",
+    "decision": "Het favorietenmenu",
     "forms": "a mounted share → een gekoppelde netwerkshare; Gedeelde map aankoppelen lukte niet",
     "sources": "Double Commander (unmounted → niet-aangekoppelde); macOS koppel for disks"
   },
@@ -1550,7 +1550,7 @@
     ],
     "chosen": "Verplaats",
     "confidence": "high",
-    "decision": "Files a drive brings back from a move that never finished (`fileOperations.leftovers.stagingFolderKept`)",
+    "decision": "Files a drive brings back from a move that never finished",
     "exceptions": {
       "fileOperations.cancelRollback.stoppedMovingBack": "Moving back is the put-back concept: terugzetten.",
       "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing the move is the rollback concept: terugdraaien."
@@ -1581,7 +1581,7 @@
     "accept": ["systeemverbinding"],
     "chosen": "systeemeigen",
     "confidence": "high",
-    "decision": "De terugvalmelding voor de systeem-SMB-verbinding (`fileExplorer.network.osMountFallback.*`)",
+    "decision": "De terugvalmelding voor de systeem-SMB-verbinding",
     "exceptions": {
       "onboarding.stepOptional.mtp.summary": "Terse summary row: de macOS-afhandeling."
     },
@@ -1611,7 +1611,7 @@
     "accept": ["netwerkshare", "share", "gedeelde mappen"],
     "chosen": "gedeelde map",
     "confidence": "high",
-    "decision": "Waarom een gedeelde map niet aankoppelt of de lijst niet laadt (`errors.mount.*`, `errors.shareList.*`)",
+    "decision": "Waarom een gedeelde map niet aankoppelt of de lijst niet laadt",
     "forms": "in the pane, share lists, and mount messages → gedeelde map; \"not a network share\" and the error family → netwerkshare; compounds keep share (SMB-share, SMB-/netwerkshares)",
     "sources": "macOS Finder (Shared folder → Gedeelde map), MS (network share → netwerkshare)"
   },
@@ -1678,7 +1678,7 @@
     ],
     "chosen": "alleen online beschikbaar",
     "confidence": "tentative",
-    "decision": "De waarschuwing voor alleen-online inhoud (`fileOperations.delete.cloudOnlineOnlyMixedWarning` / `fileOperations.delete.cloudOnlineOnlyAllWarning` / `fileOperations.delete.cloudOnlineOnlyHandedBack`)",
+    "decision": "De waarschuwing voor alleen-online inhoud",
     "forms": "predicate is alleen online beschikbaar; attributive through a relative clause (bestanden die alleen online beschikbaar zijn)",
     "sources": "catalog (commands.cloudRemoveDownload.description: … zodat het alleen online beschikbaar blijft); Finder nl has no online-only label, MS terminology and the file managers have no hit"
   },
@@ -1874,7 +1874,7 @@
     ],
     "chosen": "vastzetten",
     "confidence": "high",
-    "decision": "De vastzet-hint, de vertrouwde serversleutels en het ADB-paneel (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.summary.servers`/`.adb`, `settings.appearance.tintSmb.*`)",
+    "decision": "De vastzet-hint, de vertrouwde serversleutels en het ADB-paneel",
     "forms": "menu items Maak tabblad vast / Maak tabblad los, Maak vast in volumekiezer / Maak los; toggle Tabblad vastzetten aan/uit; state Vastgezet; palette command Zet server vast / maak hem los; Dock body vastzetten / losmaken",
     "sources": "Safari (Maak tabblad vast / los), macOS (Pin in Menu Bar → Maak vast in menubalk, Unpin → Maak los in eight bundles)"
   },
@@ -1949,7 +1949,7 @@
     "accept": ["terugzetten", "teruggezet", "terug te zetten", "zet"],
     "chosen": "Zet terug",
     "confidence": "high",
-    "decision": "De twee knoppen van de prullenmandmelding en de terugzet-familie (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)",
+    "decision": "De twee knoppen van de prullenmandmelding en de terugzet-familie",
     "forms": "button Zet terug; progress Bezig met terugzetten...; result teruggezet; old names put back → De oude namen … teruggezet",
     "sources": "macOS Finder (N153.1 Put Back → Zet terug; PE130_V2 konden niet worden teruggezet)"
   },
@@ -1982,7 +1982,7 @@
     ],
     "chosen": "Stop",
     "confidence": "high",
-    "decision": "Het stoppoortje: afsluiten terwijl er nog werk loopt (`main.quit.*`)",
+    "decision": "Het stoppoortje: afsluiten terwijl er nog werk loopt",
     "forms": "button and menu Stop (Stop Cmdr, Stop nu); in a sentence stoppen; quit unexpectedly → onverwachts gestopt",
     "sources": "macOS Finder (Stop Finder; A17 De Finder kan niet worden gestopt), AppKit (Quit Anyway → Stop toch)"
   },
@@ -2015,7 +2015,7 @@
     "accept": ["Opnieuw verbinden", "opnieuw verbinding", "Verbind opnieuw", "verbinding", "opnieuw"],
     "chosen": "opnieuw verbinden",
     "confidence": "high",
-    "decision": "Twee paneelregels erbij: automatisch opnieuw verbinden en inloggen met een sleutel (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)",
+    "decision": "Twee paneelregels erbij: automatisch opnieuw verbinden en inloggen met een sleutel",
     "forms": "progress heading Opnieuw verbinden met {name}…; in a full sentence opnieuw verbinding maken; button Verbind opnieuw, Verbind automatisch opnieuw",
     "sources": "macOS ScreenSharing.loctable (Reconnecting… → Opnieuw verbinden…, Reconnect → Verbind opnieuw), Finder (opnieuw verbinding maken met '^0'), PPP family"
   },
@@ -2171,7 +2171,7 @@
     "accept": ["Terugdraaien", "teruggedraaid", "draai", "terug te draaien"],
     "chosen": "terugdraaien",
     "confidence": "high",
-    "decision": "De terugdraaimelding: wat er weg is, en wat Cmdr met rust liet (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)",
+    "decision": "De terugdraaimelding: wat er weg is, en wat Cmdr met rust liet",
     "forms": "button Terugdraaien (kept identical to the button that opened the prompt, over the imperative rule); roll them back → draai ze terug; status Teruggedraaid, Gedeeltelijk teruggedraaid; progress Bezig met terugdraaien; badges Terug te draaien / Niet terug te draaien; Finish rolling back → Voltooi terugdraaien",
     "note": "Never for a single item: an item is deleted (verwijderen) or put back (terugzetten).",
     "sources": "standard NL; MS (roll back → terugdraaien)"
@@ -2194,7 +2194,7 @@
     ],
     "chosen": "hoofdmap",
     "confidence": "high",
-    "decision": "Hoofdmap en beginmap van een opgeslagen server (`servers.sheet.rootFolder*`, `servers.sheet.startFolder*`, `servers.refusal.*`)",
+    "decision": "Hoofdmap en beginmap van een opgeslagen server",
     "forms": "the server ceiling and a volume's top folder → hoofdmap; where a pane opens → beginmap (tentative)",
     "sources": "MS (root folder → hoofdmap), Thunar, KDE Dolphin; Double Commander (Start path → Beginpad)"
   },
@@ -2287,7 +2287,7 @@
     "accept": ["selecteren", "geselecteerd", "selectie", "selecties"],
     "chosen": "Selecteer",
     "confidence": "high",
-    "decision": "Het selectievenster: bestanden selecteren en deselecteren (`selection.*`)",
+    "decision": "Het selectievenster: bestanden selecteren en deselecteren",
     "exceptions": {
       "ui.select.placeholder": "Dropdown placeholder, the choose concept: Kies..."
     },
@@ -2344,7 +2344,7 @@
     "accept": ["deel"],
     "chosen": "Deel",
     "confidence": "high",
-    "decision": "Wachtregels in \"Open met\" en \"Deel\" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)",
+    "decision": "Wachtregels in \"Open met\" en \"Deel\"",
     "forms": "share options → deelopties (tentative); No share options → Geen deelopties",
     "sources": "macOS Share submenu"
   },
@@ -2366,7 +2366,7 @@
     "accept": ["Toon in Finder"],
     "chosen": "‘Toon in Finder’",
     "confidence": "high",
-    "decision": "Het ‘Toon in Finder’-aanbod en de melding bij de eerste keer (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)",
+    "decision": "Het ‘Toon in Finder’-aanbod en de melding bij de eerste keer",
     "sources": "catalog (settings.navigationAndFileOps.card.showInFinder); macOS"
   },
   "side-panel": {
@@ -2557,7 +2557,7 @@
     "accept": ["Terminal"],
     "chosen": "terminal",
     "confidence": "high",
-    "decision": "‘Terminal hier openen’ en de app-keuze (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)",
+    "decision": "‘Terminal hier openen’ en de app-keuze",
     "forms": "the generic app kind → terminal, terminal app → terminal-app; Apple's app → Terminal; Open terminal here → Terminal hier openen",
     "sources": "macOS Finder N67 (Open in Terminal)"
   },
@@ -2565,7 +2565,7 @@
     "accept": ["editor", "standaardeditor"],
     "chosen": "teksteditor",
     "confidence": "high",
-    "decision": "F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)",
+    "decision": "F4 and its text editor",
     "forms": "default text editor → standaardeditor; Edit files in [app] → Bewerk bestanden in",
     "sources": "MS terminology (text editor → teksteditor)"
   },
@@ -2701,7 +2701,7 @@
     "accept": ["ontgrendel", "ontgrendelt", "ontgrendeld", "beveiliging op"],
     "chosen": "Ontgrendelen",
     "confidence": "high",
-    "decision": "Het archiefwachtwoord (`fileOperations.archivePassword.*`)",
+    "decision": "Het archiefwachtwoord",
     "forms": "the archive-password button Ontgrendelen; om het te ontgrendelen",
     "sources": "macOS AppKit (Ontgrendelen)"
   },
@@ -2709,7 +2709,7 @@
     "accept": ["losgekoppeld", "koppel", "aangesloten", "aansluit", "verbroken", "niet verbonden"],
     "chosen": "loskoppelen",
     "confidence": "high",
-    "decision": "A drive pulled mid-transfer (`errors.write.deviceDisconnected.sided.destination.copy`)",
+    "decision": "A drive pulled mid-transfer",
     "forms": "unplug it → koppel het los; a drive that dropped off → wordt losgekoppeld (in progress) / werd losgekoppeld (already gone); a phone or device on a cable → aangesloten; reseat the cable → sluit de kabel opnieuw aan",
     "sources": "catalog (mtp.permissionDialog.helpText); macOS koppel family; Thunar (Ontkoppelen van apparaat...)"
   },
@@ -2753,7 +2753,7 @@
     ],
     "chosen": "gebruik",
     "confidence": "high",
-    "decision": "Usage stats: \"anonieme\" dropped, \"een willekeurige id\" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)",
+    "decision": "Usage stats: \"anonieme\" dropped, \"een willekeurige id\" named",
     "forms": "usage stats → gebruiksstatistieken (toggle and onboarding title Gebruiksstatistieken sturen); spending → Uitgaven; a random id → een willekeurige id; tied to → gekoppeld aan",
     "sources": "MS (usage → gebruik, spending → uitgaven, random → willekeurig, identifier → id)"
   },
@@ -2761,7 +2761,7 @@
     "accept": ["foutopsporing"],
     "chosen": "USB-foutopsporing",
     "confidence": "high",
-    "decision": "Het telefoonpaneel via ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`)",
+    "decision": "Het telefoonpaneel via ADB",
     "forms": "debugging → foutopsporing; Turn on USB debugging → Zet USB-foutopsporing aan",
     "sources": "AOSP SettingsLib values-nl enable_adb (fetched 2026-09-07); Safari foutopsporingsmodus"
   },

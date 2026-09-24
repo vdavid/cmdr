@@ -33,7 +33,7 @@
   "add": {
     "chosen": "thêm",
     "confidence": "high",
-    "decision": "Thêm ghi chú vào báo cáo đã gửi (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)",
+    "decision": "Thêm ghi chú vào báo cáo đã gửi",
     "forms": "button Thêm; Thêm vào X (Thêm vào báo cáo, Thêm vào Dock, Thêm vào mục ưa thích); progress Đang thêm…; toast Đã thêm …",
     "sources": "macOS (Thêm, Thêm vào Dock, Thêm vào Mục ưa thích), Xfce Thunar, MS (add → thêm)"
   },
@@ -79,7 +79,7 @@
     ],
     "chosen": "trả lời",
     "confidence": "high",
-    "decision": "Câu hỏi làm dừng một hàng trong hàng đợi + hộp thoại hoàn tác (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, `transferProgress.foregroundBusyToast`/`.rollbackTooltip`)",
+    "decision": "Câu hỏi làm dừng một hàng trong hàng đợi + hộp thoại hoàn tác",
     "forms": "status Cần bạn trả lời; cho đến khi bạn trả lời",
     "sources": "macOS AppKit (Reply → trả lời); catalog"
   },
@@ -158,7 +158,7 @@
     ],
     "chosen": "tệp nén",
     "confidence": "high",
-    "decision": "Duyệt và chỉnh sửa tệp nén (`fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.*`, `settings.archives.*`, `fileOperations.archivePassword.*`, `errors.listing.archiveUnreadable.*`)",
+    "decision": "Duyệt và chỉnh sửa tệp nén",
     "forms": "zip archives → tệp nén zip; archive format → định dạng nén; the new archive the Compress dialog names → tệp lưu trữ (Finder Zip archive → Tệp lưu trữ Zip)",
     "sources": "catalog (settings.listing.sizeDisplay.description, settings.fileViewer.suppressBinaryWarning); GNOME/MS nén; Finder đã nén"
   },
@@ -221,7 +221,7 @@
     ],
     "chosen": "nền",
     "confidence": "high",
-    "decision": "Nút \"Chạy nền\": trạng thái hàng đợi trống của nút Hàng đợi (`fileOperations.transferProgress.background`/`.backgroundAria`)",
+    "decision": "Nút \"Chạy nền\": trạng thái hàng đợi trống của nút Hàng đợi",
     "forms": "a sentence says chạy ở chế độ nền / ở chế độ nền; a control label says Chạy nền (button-length compression)",
     "sources": "MS terminology (background task → tác vụ nền); catalog (nine strings on ở chế độ nền); Total Commander (Nền beside Hàng đợi)"
   },
@@ -258,7 +258,7 @@
   "camera-details": {
     "chosen": "thông tin máy ảnh",
     "confidence": "high",
-    "decision": "Ask Cmdr xem bên trong tệp: hai nhãn công cụ + hai khóa đồng ý (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.empty.hint`, `settings.askCmdr.intro`)",
+    "decision": "Ask Cmdr xem bên trong tệp: hai nhãn công cụ + hai khóa đồng ý",
     "forms": "a photo's … → … của một bức ảnh (the classifier bức only next to máy ảnh)",
     "sources": "macOS AppKit (NSStillCameraTemplate → máy ảnh), MS (camera → máy ảnh), GNOME Nautilus (Nhãn hiệu máy ảnh)"
   },
@@ -352,7 +352,7 @@
     ],
     "chosen": "dọn dẹp",
     "confidence": "high",
-    "decision": "Hộp thoại thoát khi thao tác đang chạy (`main.quit.*`)",
+    "decision": "Hộp thoại thoát khi thao tác đang chạy",
     "sources": "MS terminology (dọn dẹp nhanh, dọn dẹp phân phối)"
   },
   "clear": {
@@ -374,7 +374,7 @@
   "cloud-ai": {
     "chosen": "AI đám mây",
     "confidence": "high",
-    "decision": "Công tắc \"Cho phép AI đám mây\" và các trạng thái AI đám mây đang tắt (`ai.cloudConsent.*`, `askCmdr.gate.*`)",
+    "decision": "Công tắc \"Cho phép AI đám mây\" và các trạng thái AI đám mây đang tắt",
     "forms": "switch label Cho phép AI đám mây; cloud AI is off → AI đám mây đang tắt",
     "sources": "catalog (settings.ai.provider.opt.cloud)"
   },
@@ -411,7 +411,7 @@
     ],
     "chosen": "hoàn tất",
     "confidence": "high",
-    "decision": "Thao tác mới hoàn tác được một nửa: làm tiếp cho hết (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)",
+    "decision": "Thao tác mới hoàn tác được một nửa: làm tiếp cho hết",
     "exceptions": {
       "fileOperations.rollbackConfirm.finishRollBack": "Finish rolling back is `Tiếp tục hoàn tác`: `Hoàn tất việc hoàn tác` puts two words one mark apart side by side.",
       "operationLog.dialog.finishRollBack": "Finish rolling back is `Tiếp tục hoàn tác`: `Hoàn tất việc hoàn tác` puts two words one mark apart side by side."
@@ -422,7 +422,7 @@
   "compress": {
     "chosen": "nén",
     "confidence": "high",
-    "decision": "Nén (`commands.fileCompress.*`, `fileOperations.transferDialog.toggleCompress`, `fileOperations.transferDialog.confirmCompress`, `fileOperations.transferDialog.pathErrorNotZip`, `settings.archives.compressionLevel.*`)",
+    "decision": "Nén",
     "forms": "button Nén; progress Đang nén; toast Đã nén; level → Mức nén",
     "sources": "macOS Finder (Nén các mục, Compress ${sources} → Nén ${sources})"
   },
@@ -442,7 +442,7 @@
   "confirm": {
     "chosen": "xác nhận",
     "confidence": "high",
-    "decision": "A move that could not be confirmed (`errors.write.moveNotConfirmed.title`)",
+    "decision": "A move that could not be confirmed",
     "forms": "couldn't confirm → chưa xác nhận được (not yet proven), never a flat không thể",
     "sources": "MS terminology (confirm → xác nhận); catalog (fileOperations.mkdir.timeoutMessage)"
   },
@@ -480,7 +480,7 @@
   "continue": {
     "chosen": "tiếp tục",
     "confidence": "high",
-    "decision": "Hộp thoại thoát khi thao tác đang chạy (`main.quit.*`)",
+    "decision": "Hộp thoại thoát khi thao tác đang chạy",
     "forms": "Keep working (quit dialog) → Tiếp tục làm việc; carries on → sẽ tiếp tục",
     "sources": "macOS Finder (Tiếp tục, tiếp tục sao chép)"
   },
@@ -506,7 +506,7 @@
     ],
     "chosen": "báo cáo sự cố",
     "confidence": "high",
-    "decision": "`thoát bất ngờ`, `ở chế độ nền`, và hai hướng đã loại (`crashReporter.dialog.body.ended`, `crashReporter.dialog.privacyNote`, `crashReporter.dialog.title*`)",
+    "decision": "`thoát bất ngờ`, `ở chế độ nền`, và hai hướng đã loại",
     "forms": "crash report → báo cáo sự cố; a report without \"crash\" → báo cáo; quit unexpectedly → thoát bất ngờ; ran into a problem → gặp sự cố (no quitting implied); a third-party process crashed → sập",
     "sources": "macOS Problem Reporter (Problem Report for %@ → Báo cáo Sự cố cho %@), AppKitErrors (ứng dụng thoát bất ngờ)"
   },
@@ -636,7 +636,7 @@
     ],
     "chosen": "Bỏ qua",
     "confidence": "high",
-    "decision": "Huy hiệu tiến trình ở góc + thông báo chưa hoàn tất (`queue.chip.*`, `queue.failureToast.*`, `queue.row.dismiss*`, `queue.toolbar.dismissAll`)",
+    "decision": "Huy hiệu tiến trình ở góc + thông báo chưa hoàn tất",
     "forms": "Dismiss all → Bỏ qua tất cả; row SR label Bỏ qua thao tác này; the same word also renders Skip, which never shares a surface",
     "sources": "MS terminology (dismiss → bỏ qua); catalog (eleven keys)"
   },
@@ -649,7 +649,7 @@
     ],
     "chosen": "Dock",
     "confidence": "high",
-    "decision": "Lời mời ghim Cmdr vào Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)",
+    "decision": "Lời mời ghim Cmdr vào Dock",
     "sources": "macOS Finder MenuBar 300772 (Add to Dock → Thêm vào Dock), Dock.app DockMenus.strings"
   },
   "documents": {
@@ -831,7 +831,7 @@
     ],
     "chosen": "không thể",
     "confidence": "high",
-    "decision": "Giọng lỗi: các cụm đã chốt (`errors.*`, `updates.failure.*`, `fileExplorer.network.browser.status.error`)",
+    "decision": "Giọng lỗi: các cụm đã chốt",
     "forms": "Couldn't X → Không thể X / không X được; a gentle failed status → Chưa hoàn tất được; the operation hasn't been proven → Chưa … được",
     "sources": "GNOME (Không thể), Xfce Thunar (Không thể gắn kết); style.md voice"
   },
@@ -844,7 +844,7 @@
     ],
     "chosen": "mục ưa thích",
     "confidence": "high",
-    "decision": "Menu mục ưa thích (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent` / `.favoritesAlreadyAdded` / `.favoritesCantAddHere` / `.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)",
+    "decision": "Menu mục ưa thích",
     "forms": "lowercase mid-sentence; Mục ưa thích as a heading; favorites menu → menu mục ưa thích",
     "sources": "macOS Finder (Mục ưa thích, Máy chủ ưa thích), AppKit FontManager"
   },
@@ -864,7 +864,7 @@
     ],
     "chosen": "tải",
     "confidence": "high",
-    "decision": "Trình xem tải tệp từ điện thoại, máy chủ hoặc tệp nén (`viewer.pull.*`, `viewer.error.stoppedResponding`)",
+    "decision": "Trình xem tải tệp từ điện thoại, máy chủ hoặc tệp nén",
     "forms": "Fetching (for the viewer) → Đang tải; stopped arriving → đã ngừng tải",
     "sources": "catalog (viewer.loading = Đang tải...)"
   },
@@ -948,7 +948,7 @@
     ],
     "chosen": "quyền truy cập đầy đủ vào ổ đĩa",
     "confidence": "high",
-    "decision": "The title-bar full-disk-access badge (`onboarding.fdaBadge.*`, `onboarding.stepAi.bannerTitle.denied`)",
+    "decision": "The title-bar full-disk-access badge",
     "forms": "where a string NAMES the setting → Quyền truy cập đầy đủ vào ổ đĩa (Apple's pane name); the FDA step's running prose still says truy cập toàn bộ đĩa",
     "sources": "macOS SecurityPrivacyExtension Localizable.loctable ALL_FILES (macOS 27.0 build 26A428, 2026-09-16)"
   },
@@ -979,7 +979,7 @@
     ],
     "chosen": "Lấy thông tin",
     "confidence": "high",
-    "decision": "Apple CÓ dịch \"Get Info\" và \"Locked\" sang tiếng Việt (`errors.write.fileLocked.suggestion.mac`, `errors.write.permissionDenied.suggestion.deleteMac`)",
+    "decision": "Apple CÓ dịch \"Get Info\" và \"Locked\" sang tiếng Việt",
     "forms": "the panel → cửa sổ Lấy thông tin; its Locked checkbox → Đã khóa; Sharing & Permissions → phần Chia sẻ & quyền",
     "sources": "macOS Finder (N165, TL22, Localizable.json Get Info → Lấy thông tin; AXNODE1 Đã khóa)"
   },
@@ -1047,7 +1047,7 @@
   "go-to-trash": {
     "chosen": "đi tới thùng rác",
     "confidence": "high",
-    "decision": "Toast thùng rác: hoàn tác và đi tới thùng rác (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)",
+    "decision": "Toast thùng rác: hoàn tác và đi tới thùng rác",
     "sources": "catalog Đi tới family; macOS Đi tới thư mục chính"
   },
   "got-it": {
@@ -1129,7 +1129,7 @@
     "accept": ["ảnh"],
     "chosen": "hình ảnh",
     "confidence": "high",
-    "decision": "Lập chỉ mục hình ảnh (`settings.mediaIndex.*`, `fileExplorer.imageIndex.*`, `search.imageResults.*`)",
+    "decision": "Lập chỉ mục hình ảnh",
     "forms": "the feature-level word → hình ảnh (Lập chỉ mục nội dung hình ảnh, the fileExplorer.imageIndex.* family); concrete photo counts → ảnh (Đã lập chỉ mục {totalText} ảnh)",
     "sources": "MS (hình ảnh); English splits image (feature) from photos (counts)"
   },
@@ -1231,7 +1231,7 @@
     "accept": ["để nguyên"],
     "chosen": "giữ nguyên",
     "confidence": "high",
-    "decision": "Toast sau khi hoàn tác thao tác đang chạy (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)",
+    "decision": "Toast sau khi hoàn tác thao tác đang chạy",
     "forms": "Cmdr protecting the user's files → giữ nguyên (Giữ nguyên {name}: …); Cmdr not touching something of its own → để nguyên",
     "sources": "catalog (askCmdr.renameUndo.skipReason.*, fileOperations.cancelRollback.reason.*)"
   },
@@ -1310,7 +1310,7 @@
   "look-inside": {
     "chosen": "xem bên trong",
     "confidence": "high",
-    "decision": "Ask Cmdr xem bên trong tệp: hai nhãn công cụ + hai khóa đồng ý (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.empty.hint`, `settings.askCmdr.intro`)",
+    "decision": "Ask Cmdr xem bên trong tệp: hai nhãn công cụ + hai khóa đồng ý",
     "forms": "tool labels Đang xem bên trong tệp / Đã xem bên trong tệp",
     "sources": "catalog (bên trong), sibling tool labels"
   },
@@ -1456,7 +1456,7 @@
     ],
     "chosen": "mục chia sẻ",
     "confidence": "high",
-    "decision": "Tên tiện ích macOS, mục chia sẻ, liên kết mềm, beta công khai (`errors.listing.*`, `settings.network.*`, `settings.behavior.*Seen.*`, `queryUi.results.live.*`, `settings.mediaIndex.*`)",
+    "decision": "Tên tiện ích macOS, mục chia sẻ, liên kết mềm, beta công khai",
     "forms": "a share → mục chia sẻ (also inside Settings); shared folder → thư mục chia sẻ",
     "sources": "macOS Finder (Thư mục được chia sẻ, chia sẻ); catalog (37 keys)"
   },
@@ -1559,7 +1559,7 @@
     ],
     "chosen": "thao tác",
     "confidence": "high",
-    "decision": "Hàng đợi thao tác: \"operation queue\" (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`)",
+    "decision": "Hàng đợi thao tác: \"operation queue\"",
     "forms": "Operations (heading) → Các thao tác; this operation → thao tác này; a counted noun takes no marker ({countText} thao tác)",
     "sources": "macOS Finder (thao tác sao chép ^0 mục, thao tác này ×7)"
   },
@@ -1580,7 +1580,7 @@
     ],
     "chosen": "hàng đợi",
     "confidence": "high",
-    "decision": "Hàng đợi thao tác: \"operation queue\" (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`)",
+    "decision": "Hàng đợi thao tác: \"operation queue\"",
     "forms": "the window, View menu item, and palette entry → Hàng đợi thao tác; send to the queue → Đưa vào hàng đợi thao tác; a queued status → Đang chờ",
     "sources": "MS terminology (queue → hàng đợi), GNOME Nautilus (trong hàng đợi)"
   },
@@ -1681,7 +1681,7 @@
   "photo": {
     "chosen": "ảnh",
     "confidence": "high",
-    "decision": "Lập chỉ mục hình ảnh (`settings.mediaIndex.*`, `fileExplorer.imageIndex.*`, `search.imageResults.*`)",
+    "decision": "Lập chỉ mục hình ảnh",
     "forms": "next to máy ảnh write một bức ảnh so ảnh doesn't double up; a photo archive → kho ảnh",
     "sources": "macOS (Chọn ảnh, Cắt ảnh; Photos app Ảnh)"
   },
@@ -1747,7 +1747,7 @@
     "accept": ["tiến triển", "tiến độ", "đang chạy", "đang tiến hành", "đang quét", "dở dang"],
     "chosen": "tiến trình",
     "confidence": "tentative",
-    "decision": "Lần truyền bị đứng yên: thông báo trên hộp thoại + hàng đợi (`fileOperations.transferProgress.stall*`, `fileOperations.transferProgress.close`)",
+    "decision": "Lần truyền bị đứng yên: thông báo trên hộp thoại + hàng đợi",
     "forms": "the bar/status → tiến trình; negated \"no progress\" → Không có tiến triển; operations in progress → thao tác đang chạy",
     "sources": "macOS Finder SD24 (tiến trình sao chép); shared-root pick for the negated form"
   },
@@ -1771,7 +1771,7 @@
     ],
     "chosen": "đưa trở lại",
     "confidence": "high",
-    "decision": "Toast thùng rác: hoàn tác và đi tới thùng rác (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)",
+    "decision": "Toast thùng rác: hoàn tác và đi tới thùng rác",
     "exceptions": {
       "askCmdr.renameUndo.unavailable": "The rename-undo family puts back old NAMES (`đặt lại tên cũ`), nothing moves; `đưa trở lại` is for files leaving the trash."
     },
@@ -1797,7 +1797,7 @@
     ],
     "chosen": "thoát",
     "confidence": "high",
-    "decision": "Hộp thoại thoát khi thao tác đang chạy (`main.quit.*`)",
+    "decision": "Hộp thoại thoát khi thao tác đang chạy",
     "forms": "Quit now → Thoát ngay; Quitting in N seconds → Sẽ thoát sau N giây; quit unexpectedly → thoát bất ngờ",
     "sources": "macOS AppKit (Quit → Thoát), MS"
   },
@@ -1994,13 +1994,13 @@
   "review": {
     "chosen": "xem lại",
     "confidence": "high",
-    "decision": "Xem lại việc đổi tên hàng loạt (`askCmdr.renameReview.*`)",
+    "decision": "Xem lại việc đổi tên hàng loạt",
     "sources": "macOS AppKit (Review Changes… → Xem lại Thay đổi…)"
   },
   "rollback": {
     "chosen": "hoàn tác",
     "confidence": "high",
-    "decision": "Nhật ký thao tác (`operationLog.*`, `commands.logOperationLog.*`)",
+    "decision": "Nhật ký thao tác",
     "forms": "Roll back / Rolling back / Rolled back / Partly rolled back → Hoàn tác / Đang hoàn tác / Đã hoàn tác / Đã hoàn tác một phần; Finish rolling back → Tiếp tục hoàn tác; the rollback tooltip's Stop → Dừng lại",
     "sources": "macOS AppKit (Undo → Hoàn tác); catalog"
   },
@@ -2018,7 +2018,7 @@
     ],
     "chosen": "thư mục gốc",
     "confidence": "high",
-    "decision": "Thư mục gốc và thư mục bắt đầu của máy chủ đã lưu (`servers.sheet.rootFolder*`, `servers.sheet.startFolder*`, `servers.sheet.nameHelp`, `servers.refusal.startFolderOutsideRoot`, `.rootNotFound`, `.startFolderNotFound`, `.saveUnconfirmed`)",
+    "decision": "Thư mục gốc và thư mục bắt đầu của máy chủ đã lưu",
     "forms": "a saved server's start folder → thư mục bắt đầu",
     "sources": "MS terminology (root folder → thư mục gốc), Xfce Thunar"
   },
@@ -2088,7 +2088,7 @@
     "accept": ["lựa chọn"],
     "chosen": "chọn",
     "confidence": "high",
-    "decision": "Chọn và bỏ chọn: hộp thoại Select / Deselect (`selection.*`)",
+    "decision": "Chọn và bỏ chọn: hộp thoại Select / Deselect",
     "exceptions": {
       "viewer.saveAs.defaultName": "A default FILENAME, ASCII-folded like the email placeholder (`vung-chon`, from `vùng chọn`)."
     },
@@ -2448,7 +2448,7 @@
     "accept": ["truyền"],
     "chosen": "lần truyền",
     "confidence": "tentative",
-    "decision": "Hàng đợi thao tác: \"operation queue\" (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`)",
+    "decision": "Hàng đợi thao tác: \"operation queue\"",
     "forms": "the narrow copy-or-move sense only (the transfer dialog); the queue says thao tác",
     "sources": "descriptive (lần + truyền)"
   },
@@ -2535,7 +2535,7 @@
     ],
     "chosen": "sử dụng",
     "confidence": "high",
-    "decision": "Usage stats: bỏ \"ẩn danh\", nêu rõ \"một mã định danh ngẫu nhiên\" (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, `onboarding.stepBeta.emailNote`)",
+    "decision": "Usage stats: bỏ \"ẩn danh\", nêu rõ \"một mã định danh ngẫu nhiên\"",
     "forms": "usage stats → thống kê sử dụng; token usage → mức sử dụng; Spending → Chi tiêu",
     "sources": "catalog"
   },
@@ -2635,7 +2635,7 @@
   "write": {
     "chosen": "ghi",
     "confidence": "high",
-    "decision": "Hộp thoại thoát khi thao tác đang chạy (`main.quit.*`)",
+    "decision": "Hộp thoại thoát khi thao tác đang chạy",
     "exceptions": {
       "suggestedOps.reversibleDeleteWritten": "Matches the sibling `fileOperations.rollbackConfirm.bodyUndoByDeleting` wording, `những gì … tạo ra`."
     },
@@ -2665,7 +2665,7 @@
         "why": "Apple localizes it; the English name isn't on a vi Mac"
       }
     ],
-    "decision": "Tên tiện ích macOS, mục chia sẻ, liên kết mềm, beta công khai (`errors.listing.*`, `settings.network.*`, `settings.behavior.*Seen.*`, `queryUi.results.live.*`, `settings.mediaIndex.*`)"
+    "decision": "Tên tiện ích macOS, mục chia sẻ, liên kết mềm, beta công khai"
   },
   "first-aid": {
     "chosen": "Sửa nhanh",

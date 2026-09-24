@@ -155,7 +155,7 @@
     ],
     "confidence": "high",
     "sources": "Double Commander (Várakozás felhasználói válaszra); catalog (operationConflict.pausedNote)",
-    "decision": "Visszagörgetés-megerősítő + a válaszra váró sor állapota (`fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `transferProgress.foregroundBusyToast`/`rollbackTooltip`)"
+    "decision": "Visszagörgetés-megerősítő + a válaszra váró sor állapota"
   },
   "api-key": {
     "chosen": "API-kulcs",
@@ -198,7 +198,7 @@
     ],
     "confidence": "high",
     "sources": "macOS Finder (Applications = Alkalmazások, TL5, TL_HELP_APPS); AppKit (az Alkalmazások mappába húzni)",
-    "decision": "A Dockba kerülés egyszeri ajánlata (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)"
+    "decision": "A Dockba kerülés egyszeri ajánlata"
   },
   "apply": {
     "chosen": "alkalmaz",
@@ -293,14 +293,14 @@
     ],
     "confidence": "high",
     "sources": "Total Commander (4004 Háttérben beside 4005 Sorba állít); Double Commander (Háttérben futtatás); ms (background task → háttérben futó feladat)",
-    "decision": "A progress-párbeszéd gombja üres sornál (`fileOperations.transferProgress.background`, `.backgroundAria`)"
+    "decision": "A progress-párbeszéd gombja üres sornál"
   },
   "badge": {
     "chosen": "jelvény",
     "forms": "status badge → állapotjelvény; small badge → kis jelvény; title-bar pill → jelvény",
     "confidence": "high",
     "sources": "ms (badge → jelvény, notification badge → értesítési jelvény); macOS Finder file-icon status badges (BADGE_AX_LABEL)",
-    "decision": "A képindex jelvényei (`fileExplorer.imageIndex.file.*`/`.folder.*`/`.drive.*`, `settings.mediaIndex.showFileStatusIcons.*`)"
+    "decision": "A képindex jelvényei"
   },
   "blocked": {
     "chosen": "blokkolva",
@@ -355,7 +355,7 @@
     "forms": "a greyed-out menu item → the base label + ` (foglalt)`, the base label unchanged letter for letter (Kiadás ({name}) (foglalt), Leválasztás (foglalt)); a provider or system that's busy → elfoglalt",
     "confidence": "high",
     "sources": "ms (foglalt, the line-busy sense); catalog (menu.volume.*Busy)",
-    "decision": "busy: a kiszürkített menüpontok jelölője (`menu.volume.ejectBusy`, `menu.volume.disconnectBusy`, `menu.volume.forgetServerBusy`, `menu.volume.forgetSavedPasswordBusy`)"
+    "decision": "busy: a kiszürkített menüpontok jelölője"
   },
   "cache": {
     "chosen": "gyorsítótár",
@@ -481,7 +481,7 @@
     "confidence": "high",
     "sources": "ms (checklist → ellenőrzőlista)",
     "note": "The checklist rows are informal imperatives (Csillagozd meg a repót a GitHubon), not nominal labels: one row has to be a sentence around an inline field.",
-    "decision": "A bevezető átírt lépései: ellenőrzőlista, lépésbuborék, összefoglalók (`onboarding.*`)"
+    "decision": "A bevezető átírt lépései: ellenőrzőlista, lépésbuborék, összefoglalók"
   },
   "chip": {
     "chosen": "címke",
@@ -537,7 +537,7 @@
     "forms": "switch Felhő-AI engedélyezése; in a sentence a felhő-AI, accusative felhő-AI-t (engedélyezd a felhő-AI-t); compound felhő-AI-szolgáltatás",
     "confidence": "high",
     "sources": "catalog (settings.ai.provider.opt.cloud, settings.ai.cloudProvider.description)",
-    "decision": "A „Felhő-AI engedélyezése” kapcsoló és a kikapcsolt felhő-AI állapotai (`ai.cloudConsent.label`, `ai.cloudConsent.description`, `askCmdr.gate.cloudOff.body`, `settings.ai.cloudConsent.lockedHint`, `settings.askCmdr.enabled.label`)"
+    "decision": "A „Felhő-AI engedélyezése” kapcsoló és a kikapcsolt felhő-AI állapotai"
   },
   "cloud-provider": {
     "chosen": "felhőszolgáltató",
@@ -620,7 +620,7 @@
     ],
     "confidence": "high",
     "sources": "catalog (fileExplorer.pane.trashUnconfirmedToast, fileOperations.mkdir.timeoutMessage); macOS AppKit (Confirm = Megerősítés, the approval sense)",
-    "decision": "A move that could not be confirmed (`errors.write.moveNotConfirmed.*`)"
+    "decision": "A move that could not be confirmed"
   },
   "conflict": {
     "chosen": "ütközés",
@@ -646,7 +646,7 @@
     "confidence": "high",
     "sources": "macOS Finder (N84 Kapcsolódás szerverre…, MN1 Kapcsolódás ide: ^0…); AppKit SavePanel (Connected = Kapcsolódva); Home (Csatlakozás…)",
     "note": "The two stems are a deliberate split: the pane title keeps Apple's kapcsolód-, the sheet's button and its siblings keep csatlakoz- because Connect is shared with fileExplorer.network.connect.",
-    "decision": "A szerverlap, az SSH-kulcs jóváhagyása és a Go-to-path előnézete (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`, `goToPath.dialog.opensServer`/`.addsServer`, `commands.serversConnect.label`)"
+    "decision": "A szerverlap, az SSH-kulcs jóváhagyása és a Go-to-path előnézete"
   },
   "context-menu": {
     "chosen": "helyi menü",
@@ -700,7 +700,7 @@
     "forms": "crash → összeomlás; quit unexpectedly → váratlanul bezárult; the Settings label → Összeomlás-jelentések küldése; a report that must not claim a crash → jelentés (Elküldöd a jelentést?)",
     "confidence": "high",
     "sources": "ms (crash → összeomlás, report → jelentés); macOS CrashReporterSupport (probléma family)",
-    "decision": "Ha a Cmdr nem állt le: az összeomlásjelentő két új nyitómondata (`crashReporter.dialog.body.keptRunning`/`.unknown`)"
+    "decision": "Ha a Cmdr nem állt le: az összeomlásjelentő két új nyitómondata"
   },
   "create": {
     "chosen": "létrehozás",
@@ -816,7 +816,7 @@
     ],
     "confidence": "high",
     "sources": "macOS 26.6.2 Finder MenuBar.strings (300488.title Kijelölés törlése), 2026-08-29",
-    "decision": "Kijelölés és a kijelölés törlése: a Select / Deselect párbeszéd (`selection.*`)"
+    "decision": "Kijelölés és a kijelölés törlése: a Select / Deselect párbeszéd"
   },
   "desktop": {
     "chosen": "Asztal",
@@ -1104,7 +1104,7 @@
     ],
     "confidence": "high",
     "sources": "macOS (Kedvenc); ms; catalog",
-    "decision": "A kedvencek menüje (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`, `fileExplorer.navigation.favoritesAlreadyAdded`, `fileExplorer.navigation.favoritesCantAddHere`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)"
+    "decision": "A kedvencek menüje"
   },
   "feedback": {
     "chosen": "visszajelzés",
@@ -1127,7 +1127,7 @@
     ],
     "confidence": "high",
     "sources": "catalog (viewer.loading = Betöltés…)",
-    "decision": "A megjelenítő betölti a telefonon, szerveren vagy archívumban lévő fájlt (`viewer.pull.*`, `viewer.error.stoppedResponding`)"
+    "decision": "A megjelenítő betölti a telefonon, szerveren vagy archívumban lévő fájlt"
   },
   "file": {
     "chosen": "fájl",
@@ -1211,7 +1211,7 @@
     ],
     "confidence": "high",
     "sources": "macOS BluetoothUIServer (Forget = Elfelejtés)",
-    "decision": "A szerverközpont: kapcsolódási állapotok, elutasítások, elfelejtés (`servers.*`, `fileExplorer.navigation.connectionTooltip*`/`.disconnect*`/`.forget*`)"
+    "decision": "A szerverközpont: kapcsolódási állapotok, elutasítások, elfelejtés"
   },
   "format": {
     "chosen": "formátum",
@@ -1239,7 +1239,7 @@
     ],
     "confidence": "high",
     "sources": "macOS 27.0 (26A428) SecurityPrivacyExtension.appex Localizable.loctable ALL_FILES, 2026-09-16",
-    "decision": "The title-bar full-disk-access badge (`onboarding.fdaBadge.*`, `onboarding.stepAi.bannerTitle.denied`)"
+    "decision": "The title-bar full-disk-access badge"
   },
   "full-screen": {
     "chosen": "teljes képernyős mód",
@@ -1271,7 +1271,7 @@
     "forms": "the window → a Finder Infó megjelenítése ablaka; in prose → válaszd az Infó megjelenítése parancsot (article az)",
     "confidence": "high",
     "sources": "macOS 26.5.2 Finder (Localizable Get Info, MenuBar 300801.title, N165, TL22, NE18), 2026-08-23",
-    "decision": "A macOS-panelnevek magyarul: `Infó megjelenítése` és `Zárolt` (`errors.write.fileLocked.suggestion.mac`, `errors.write.permissionDenied.suggestion.deleteMac`, `errors.listing.noPermissionErrno.suggestion`, `errors.listing.permissionDenied.suggestion`)"
+    "decision": "A macOS-panelnevek magyarul: `Infó megjelenítése` és `Zárolt`"
   },
   "git-branch": {
     "chosen": "ág",
@@ -1517,7 +1517,7 @@
     ],
     "confidence": "high",
     "sources": "ms (index → index); Total Commander (2050 nincs indexelve); catalog",
-    "decision": "A meghajtó indexelésének kikapcsolása (`fileExplorer.navigation.driveIndex.*IndexingOff*`, `settings.indexing.masterOffNote`/`.overriddenBadge`)"
+    "decision": "A meghajtó indexelésének kikapcsolása"
   },
   "input-source": {
     "chosen": "beviteli forrás",
@@ -1611,7 +1611,7 @@
     ],
     "confidence": "high",
     "sources": "macOS Security.prefPane Localizable.loctable (Last Used = Utolsó használat)",
-    "decision": "A szerverközpont táblázata és a kötetváltó rögzítése (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.server*Toast`/`.pinRefusedToast`/`.networkVolume`, `shortcuts.scope.servers`/`.places`)"
+    "decision": "A szerverközpont táblázata és a kötetváltó rögzítése"
   },
   "later": {
     "chosen": "Később",
@@ -1634,7 +1634,7 @@
     ],
     "confidence": "high",
     "sources": "catalog (askCmdr.renameUndo.skipReason.*)",
-    "decision": "A megszakított visszagörgetés eredményértesítése (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`)"
+    "decision": "A megszakított visszagörgetés eredményértesítése"
   },
   "license": {
     "chosen": "licenc",
@@ -1731,7 +1731,7 @@
     "forms": "prose → belenéz (egy fájlba csak akkor néz bele, ha arról kérdezed); the tool pair → Fájlok átnézése / Fájlok átnézve",
     "confidence": "tentative",
     "sources": "catalog (search.coverage.denied)",
-    "decision": "Belenézés a fájlokba: az `inspect_file` eszköz és a hozzájárulási képernyő új ígérete (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)"
+    "decision": "Belenézés a fájlokba: az `inspect_file` eszköz és a hozzájárulási képernyő új ígérete"
   },
   "mailing-list": {
     "chosen": "levelezőlista",
@@ -1934,7 +1934,7 @@
     "forms": "the user's note on a report → megjegyzés (A megjegyzésed); Ask Cmdr's saved notes → jegyzet",
     "confidence": "high",
     "sources": "ms (comment → megjegyzés); Double Commander (Megjegyzés szerkesztése)",
-    "decision": "A már elküldött jelentés kiegészítése (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)"
+    "decision": "A már elküldött jelentés kiegészítése"
   },
   "notification": {
     "chosen": "értesítés",
@@ -1987,7 +1987,7 @@
       "errors.write.cancelled.message.trash": "The move to trash operation was canceled → A Kukába helyezést megszakítottad: the action noun names the operation.",
       "queue.row.foregroundAria": "Show this operation in the main window → Megjelenítés a főablakban: the aria of a row button already scoped to that operation."
     },
-    "decision": "A műveleti sor: a Transfer queue átnevezése (`queue.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`)"
+    "decision": "A műveleti sor: a Transfer queue átnevezése"
   },
   "operation-log": {
     "chosen": "Műveletnapló",
@@ -2016,7 +2016,7 @@
     ],
     "confidence": "high",
     "sources": "Double Commander (Queue = Sor, New queue = Új sor); ms (print queue → nyomtatási sor)",
-    "decision": "A műveleti sor: a Transfer queue átnevezése (`queue.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`)"
+    "decision": "A műveleti sor: a Transfer queue átnevezése"
   },
   "options": {
     "chosen": "beállítás",
@@ -2178,7 +2178,7 @@
     ],
     "confidence": "high",
     "sources": "ms (phone → telefon); catalog (adb.*)",
-    "decision": "A telefon elavult indexe (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`)"
+    "decision": "A telefon elavult indexe"
   },
   "photo": {
     "chosen": "fotó",
@@ -2257,7 +2257,7 @@
       "errors.listing.symlinkLoopErrno.suggestion": "which link is the problem → melyik link okozza a hurkot: names what the link does wrong.",
       "fileExplorer.navigation.driveIndex.tooltipFailed": "a problem saving the index → nem sikerült elmenteni: the house couldn't form."
     },
-    "decision": "Ha a Cmdr nem állt le: az összeomlásjelentő két új nyitómondata (`crashReporter.dialog.body.keptRunning`/`.unknown`)"
+    "decision": "Ha a Cmdr nem állt le: az összeomlásjelentő két új nyitómondata"
   },
   "process": {
     "chosen": "folyamat",
@@ -2296,7 +2296,7 @@
     ],
     "confidence": "high",
     "sources": "macOS Finder (PE130 …visszahelyezése nem sikerült; the menu command is Visszatevés)",
-    "decision": "A Kuka-értesítés két gombja és a visszavonás családja (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)"
+    "decision": "A Kuka-értesítés két gombja és a visszavonás családja"
   },
   "query": {
     "chosen": "lekérdezés",
@@ -2332,7 +2332,7 @@
     ],
     "confidence": "high",
     "sources": "macOS (Kilépés, Kilépés a Finderből); ms; Double Commander; Total Commander",
-    "decision": "A kilépési kapu (`main.quit.*`)"
+    "decision": "A kilépési kapu"
   },
   "quota": {
     "chosen": "kvóta",
@@ -2379,7 +2379,7 @@
     ],
     "confidence": "high",
     "sources": "catalog (errors.listing.deviceReconnecting.title); macOS DisplaysSettingsIntentsExtension (Automatikus újracsatlakozás)",
-    "decision": "Az automatikus újracsatlakozás és a kulcsos bejelentkezés panelsora (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)"
+    "decision": "Az automatikus újracsatlakozás és a kulcsos bejelentkezés panelsora"
   },
   "redact": {
     "chosen": "kitakarás",
@@ -2610,7 +2610,7 @@
     ],
     "confidence": "high",
     "sources": "catalog (fileOperations.transferProgress.*); descriptive (no Tier-1 hit)",
-    "decision": "A Műveletnapló (`operationLog.*`, `commands.logOperationLog.*`)"
+    "decision": "A Műveletnapló"
   },
   "root-folder": {
     "chosen": "gyökérmappa",
@@ -2628,7 +2628,7 @@
     ],
     "confidence": "high",
     "sources": "ms (root folder → gyökérmappa); Xfce (A gyökérmappának nincs szülője); Double Commander; Total Commander (Induló mappa)",
-    "decision": "A szerver gyökérmappája és kezdőmappája (`servers.sheet.rootFolder`/`.rootFolderHelp`/`.startFolder`/`.startFolderHelp`/`.nameHelp`, `servers.refusal.startFolderOutsideRoot`/`.rootNotFound`/`.startFolderNotFound`/`.saveUnconfirmed`)"
+    "decision": "A szerver gyökérmappája és kezdőmappája"
   },
   "row": {
     "chosen": "sor",
@@ -2881,7 +2881,7 @@
     ],
     "confidence": "tentative",
     "sources": "no source names a stalled-but-alive transfer; composed from átvitel + megáll",
-    "decision": "A megtorpant átvitel értesítése (`fileOperations.transferProgress.stall*`, `fileOperations.transferProgress.close`)"
+    "decision": "A megtorpant átvitel értesítése"
   },
   "start-up": {
     "chosen": "elindul",
@@ -3205,7 +3205,7 @@
     ],
     "confidence": "high",
     "sources": "ms (usage → felhasználás, spending → kiadás)",
-    "decision": "Usage stats: \"névtelen\" dropped, \"egy véletlenszerű azonosító\" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)"
+    "decision": "Usage stats: \"névtelen\" dropped, \"egy véletlenszerű azonosító\" named"
   },
   "usb-debugging": {
     "chosen": "USB-hibakeresés",

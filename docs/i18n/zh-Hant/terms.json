@@ -25,7 +25,7 @@
     ],
     "chosen": "重音符號",
     "confidence": "high",
-    "decision": "伺服器上「看起來一樣、寫法不同」的名稱（`fileOperations.transferProgress.lookAlikeHint`、`errors.listing.ambiguousName.*`、`errors.volume.ambiguousName`）",
+    "decision": "伺服器上「看起來一樣、寫法不同」的名稱",
     "forms": "accented letter → 帶重音符號的字母; diacritic → 變音符號",
     "sources": "MS (accent → 重音符號, diacritic → 變音符號); TC (將帶有重音符號的名稱…)"
   },
@@ -110,7 +110,7 @@
   "ai-feature": {
     "chosen": "AI",
     "confidence": "high",
-    "decision": "AI 文案的主詞：`Cmdr` / `AI`，`Ask Cmdr` 只指面板（`suggestedOps.*`、`settings.askCmdr.*`、`askCmdr.error.notConfigured`、`ai.cloud.askCmdrOverrideHint`）",
+    "decision": "AI 文案的主詞：`Cmdr` / `AI`，`Ask Cmdr` 只指面板",
     "forms": "AI features → AI 功能 (AI 功能已關閉); the AI as a subject → AI (the suggestedOps.* four, kept apart from Cmdr 知道的事實)",
     "sources": "catalog settings.ai.tooltipOff, suggestedOps.agentReason"
   },
@@ -135,7 +135,7 @@
     ],
     "chosen": "允許",
     "confidence": "high",
-    "decision": "「允許使用雲端 AI」開關，以及雲端 AI 關閉時的提示（`ai.cloudConsent.*`、`askCmdr.gate.*`）",
+    "decision": "「允許使用雲端 AI」開關，以及雲端 AI 關閉時的提示",
     "exceptions": {
       "search.coverage.denied": "Wasn't allowed to look inside (a macOS permission refusal) → 沒有權限."
     },
@@ -187,7 +187,7 @@
     ],
     "chosen": "App",
     "confidence": "high",
-    "decision": "退出被擋下來時，說出是誰佔著磁碟機（`errors.eject.unmountRefusedBy*`、`errors.eject.otherApps`）",
+    "decision": "退出被擋下來時，說出是誰佔著磁碟機",
     "exceptions": {
       "main.instanceLock.alertBody": "The running app refers back to the other copy: 那一個.",
       "shortcuts.system.appWindows": "Names the macOS reserved shortcut by Apple's own label: 應用程式視窗."
@@ -237,7 +237,7 @@
     ],
     "chosen": "同意",
     "confidence": "high",
-    "decision": "狀態角落的兩條 AI 提示、`同意` 的統一，與 `上下文`（`askCmdr.wake.needsFullDiskAccess`、`settings.askCmdr.proactive.description`、`settings.ai.localContextSize.label`、`settings.ai.tooltipLocal`、`askCmdr.error.localWindowTooSmall`、`askCmdr.event.contextTrimmed`）",
+    "decision": "狀態角落的兩條 AI 提示、`同意` 的統一，與 `上下文`",
     "exceptions": {
       "errors.provider.pCloudFuse.needsAction": "Re-approving a macOS system extension is Apple's 允許 button, not Cmdr's approve gate.",
       "errors.provider.pCloudFuse.serious": "Same as needsAction: Apple's 允許."
@@ -261,7 +261,7 @@
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
     "confidence": "confirmed",
-    "decision": "AI 文案的主詞：`Cmdr` / `AI`，`Ask Cmdr` 只指面板（`suggestedOps.*`、`settings.askCmdr.*`、`askCmdr.error.notConfigured`、`ai.cloud.askCmdrOverrideHint`）",
+    "decision": "AI 文案的主詞：`Cmdr` / `AI`，`Ask Cmdr` 只指面板",
     "note": "Names the chat panel only (its title, the View-menu item, the palette command, the settings section and its on/off copy, and sentences that point at that section). A sentence about what the AI does takes Cmdr as its subject.",
     "sources": "product name, kept verbatim"
   },
@@ -313,7 +313,7 @@
     ],
     "chosen": "標記",
     "confidence": "high",
-    "decision": "入門引導的檢查清單、步驟計數與開關摘要（`onboarding.stepBeta.*`、`onboarding.stepOptional.*`、`onboarding.moreAbout`、`onboarding.wizard.*`、`settings.revealHandler.notProductionBuild`）",
+    "decision": "入門引導的檢查清單、步驟計數與開關摘要",
     "forms": "the alpha status badge → 標記 (看到 <alpha></alpha> 標記的地方); the title-bar pill → 警告標記 (tentative)",
     "sources": "catalog onboarding.stepBeta.openBeta"
   },
@@ -493,7 +493,7 @@
   "cloud-ai": {
     "chosen": "雲端 AI",
     "confidence": "high",
-    "decision": "「允許使用雲端 AI」開關，以及雲端 AI 關閉時的提示（`ai.cloudConsent.*`、`askCmdr.gate.*`）",
+    "decision": "「允許使用雲端 AI」開關，以及雲端 AI 關閉時的提示",
     "forms": "the consent switch 允許使用雲端 AI; off state 雲端 AI 已關閉; cloud AI service → 雲端 AI 服務",
     "sources": "catalog settings.ai.provider.opt.cloud"
   },
@@ -602,7 +602,7 @@
   "confirm": {
     "chosen": "確認",
     "confidence": "confirmed",
-    "decision": "A move that could not be confirmed (`errors.write.moveNotConfirmed.title`)",
+    "decision": "A move that could not be confirmed",
     "forms": "Couldn't confirm → 無法確認 (never 移動失敗)",
     "sources": "AP-TW = AP-HK, MS"
   },
@@ -645,7 +645,7 @@
     "accept": ["上下文"],
     "chosen": "上下文視窗",
     "confidence": "tentative",
-    "decision": "狀態角落的兩條 AI 提示、`同意` 的統一，與 `上下文`（`askCmdr.wake.needsFullDiskAccess`、`settings.askCmdr.proactive.description`、`settings.ai.localContextSize.label`、`settings.ai.tooltipLocal`、`askCmdr.error.localWindowTooSmall`、`askCmdr.event.contextTrimmed`）",
+    "decision": "狀態角落的兩條 AI 提示、`同意` 的統一，與 `上下文`",
     "forms": "context size → 上下文大小; the head noun context → 上下文",
     "sources": "MS zh-Hant TBX id 38882; Apple has no LLM sense (脈絡 and 上下文 both 0)"
   },
@@ -765,7 +765,7 @@
     "accept": ["取消全選"],
     "chosen": "取消選取",
     "confidence": "high",
-    "decision": "Select / Deselect files dialog (`selection.*`)",
+    "decision": "Select / Deselect files dialog",
     "forms": "Deselect All → 取消全選",
     "note": "Simplified diverges on the same MS entry (取消选择); never convert either way.",
     "sources": "MS id 44722 → 44741; AP-TW = AP-HK MenuBar 300488.title"
@@ -868,7 +868,7 @@
     "accept": ["映像檔"],
     "chosen": "磁碟映像檔",
     "confidence": "confirmed",
-    "decision": "退出被擋下來時，說出是誰佔著磁碟機（`errors.eject.unmountRefusedBy*`、`errors.eject.otherApps`）",
+    "decision": "退出被擋下來時，說出是誰佔著磁碟機",
     "sources": "AP-TW = AP-HK Finder InfoWindowGeneralView (磁碟映像檔：), BN53"
   },
   "dismiss": {
@@ -885,7 +885,7 @@
   "dock": {
     "chosen": "Dock",
     "confidence": "confirmed",
-    "decision": "「要不要把 Cmdr 留在 Dock 上」那則提示（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeOfferedAt.*`）",
+    "decision": "「要不要把 Cmdr 留在 Dock 上」那則提示",
     "forms": "spaced: 加入 Dock, 從 Dock 中移除, 保留在 Dock 上",
     "sources": "AP-TW = AP-HK never translate it (Finder MenuBar 300772.title)"
   },
@@ -1053,7 +1053,7 @@
     ],
     "chosen": "無法",
     "confidence": "high",
-    "decision": "Failure-sentence shapes (Apple's four) and the busy-tooltip shape (`fileExplorer.navigation.ejectBusyTooltip`, `.disconnectBusyTooltip`, `adb.disconnectBusyTooltip`)",
+    "decision": "Failure-sentence shapes (Apple's four) and the busy-tooltip shape",
     "forms": "無法 + verb (+ 因為 reason); a failed count or status → 未完成 (operationLog.status.failed); didn't pass a check → 沒有通過; if it fails → 還是不行; a deliberate stop → 停止 / 不會; Something went wrong → 出了點狀況",
     "sources": "AP-TW/HK systematic (Failed to open color palette. → 無法打開色盤。)"
   },
@@ -1066,7 +1066,7 @@
     ],
     "chosen": "喜好項目",
     "confidence": "high",
-    "decision": "喜好項目選單（`commands.favoritesOpen.*`、`commands.favoritesOpenByNumber.label`、`commands.favoritesAdd.description`、`fileExplorer.navigation.favoritesAddCurrent`／`.favoritesAlreadyAdded`／`.favoritesCantAddHere`／`.seeFavorites`、`menu.go.showFavorites`、`shortcuts.scope.favoritesMenu`）",
+    "decision": "喜好項目選單",
     "forms": "favorites menu → 喜好項目選單 (a real menu, never 面板 / 清單 / 切換器)",
     "sources": "AP-TW = AP-HK SystemSettings FAVORITE_LABEL"
   },
@@ -1099,7 +1099,7 @@
     ],
     "chosen": "取得",
     "confidence": "high",
-    "decision": "入門引導的檢查清單、步驟計數與開關摘要（`onboarding.stepBeta.*`、`onboarding.stepOptional.*`、`onboarding.moreAbout`、`onboarding.wizard.*`、`settings.revealHandler.notProductionBuild`）",
+    "decision": "入門引導的檢查清單、步驟計數與開關摘要",
     "forms": "viewer title 正在取得「{fileName}」以便預覽; ollama pull → 提取",
     "sources": "AP-HK (Fetching Menu Item → 正在取得⋯); MS pull → 提取 (3 of 4)"
   },
@@ -1240,7 +1240,7 @@
     "accept": ["星"],
     "chosen": "star",
     "confidence": "high",
-    "decision": "入門引導的檢查清單、步驟計數與開關摘要（`onboarding.stepBeta.*`、`onboarding.stepOptional.*`、`onboarding.moreAbout`、`onboarding.wizard.*`、`settings.revealHandler.notProductionBuild`）",
+    "decision": "入門引導的檢查清單、步驟計數與開關摘要",
     "forms": "count → 顆星 (225 顆星)",
     "sources": "MS id 3097426 → 3109098 (GitHub sense, kept star, HKG, TWN)"
   },
@@ -1259,7 +1259,7 @@
     ],
     "chosen": "返回",
     "confidence": "high",
-    "decision": "Go forward: `往前` (`menu.go.forward`, `commands.navForward.label`)",
+    "decision": "Go forward: `往前`",
     "forms": "back / forward → 返回 / 往前 (Finder's Go menu 211.title / 249.title, TW = HK)",
     "sources": "AP-TW = AP-HK Finder MenuBar 211.title 返回, 249.title 往前"
   },
@@ -1373,7 +1373,7 @@
     ],
     "chosen": "主機金鑰",
     "confidence": "tentative",
-    "decision": "連線伺服器的表單與主機金鑰那一步（`servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`、`goToPath.dialog.opensServer`/`.addsServer`、`commands.serversConnect.label`）",
+    "decision": "連線伺服器的表單與主機金鑰那一步",
     "note": "English often says just key; Chinese adds 主機 so it can't read as an API key. The user's own login key is bare 金鑰, never 主機金鑰.",
     "sources": "composed: 主機 + the catalog's 金鑰; no Apple host-key string"
   },
@@ -1423,7 +1423,7 @@
     "accept": ["在用", "佔著", "開著", "使用", "佔用"],
     "chosen": "使用中",
     "confidence": "high",
-    "decision": "退出被擋下來時，說出是誰佔著磁碟機（`errors.eject.unmountRefusedBy*`、`errors.eject.otherApps`）",
+    "decision": "退出被擋下來時，說出是誰佔著磁碟機",
     "forms": "a busy menu item → base label + （使用中）; prose → 還在用這個磁碟機",
     "sources": "catalog menu.volume.*Busy, errors.eject.unmountRefused"
   },
@@ -1501,7 +1501,7 @@
     ],
     "chosen": "金鑰檔案",
     "confidence": "high",
-    "decision": "連線伺服器的表單與主機金鑰那一步（`servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`、`goToPath.dialog.opensServer`/`.addsServer`、`commands.serversConnect.label`）",
+    "decision": "連線伺服器的表單與主機金鑰那一步",
     "forms": "passphrase → 密語; key passphrase → 金鑰密語",
     "sources": "composed on 金鑰; AP-TW = AP-HK passphrase → 密語 (P12Password 23.title)"
   },
@@ -1514,14 +1514,14 @@
     ],
     "chosen": "鑰匙圈",
     "confidence": "confirmed",
-    "decision": "Keychain and keyring: `鑰匙圈` (`ai.secretError.*`, `fileExplorer.network.share.credentialsStoredLocally`, `servers.sheet.remember`)",
+    "decision": "Keychain and keyring: `鑰匙圈`",
     "forms": "the app → 「鑰匙圈存取」; Remember in Keychain → 記住在鑰匙圈中; a Linux system keyring is also 鑰匙圈",
     "sources": "AP-TW = AP-HK (Keychain Access CFBundleName 鑰匙圈存取, MainMenu 825.title); GNOME gnome-keyring / gcr zh_TW 鑰匙圈"
   },
   "kind": {
     "chosen": "種類",
     "confidence": "high",
-    "decision": "Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)",
+    "decision": "Select all of the same kind",
     "sources": "AP Finder ArrangeByMenu 119.title / 338.title"
   },
   "language": {
@@ -1545,7 +1545,7 @@
     "accept": ["沒有動", "留在", "沒動"],
     "chosen": "維持原樣",
     "confidence": "high",
-    "decision": "What a cancelled rollback reports (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`)",
+    "decision": "What a cancelled rollback reports",
     "forms": "named / counted pair: {name} 維持原樣：它…。 / 有 {countText} 個…維持原樣：它們…。",
     "sources": "catalog fileOperations.rollbackConfirm.leaveAsIs, askCmdr.renameUndo.skipReason.*"
   },
@@ -1596,7 +1596,7 @@
   "like": {
     "chosen": "讚",
     "confidence": "high",
-    "decision": "入門引導的檢查清單、步驟計數與開關摘要（`onboarding.stepBeta.*`、`onboarding.stepOptional.*`、`onboarding.moreAbout`、`onboarding.wizard.*`、`settings.revealHandler.notProductionBuild`）",
+    "decision": "入門引導的檢查清單、步驟計數與開關摘要",
     "forms": "verb → 按讚; the AlternativeTo button itself is English Like",
     "sources": "MS id 2349285 → 2352483 (HKG, TWN)"
   },
@@ -1625,7 +1625,7 @@
     ],
     "chosen": "列表",
     "confidence": "high",
-    "decision": "The termbase migration's drift fixes (`errors.listing.connectionRefused.explanation`, `main.oldWebkit.body`, `settings.behavior.textEditorApp.description`, `settings.behavior.openTerminalHereApp.description`, `errors.volume.notConnected`, `settings.search.autoApply.description`, `errors.mount.shareNotFound`, `errors.shareList.protocolError`, `fileOperations.delete.cloudOnlineOnly*`, `mtp.*.retry`, `commands.tabMcpAction.label`, `fileExplorer.network.forgotPassword`)",
+    "decision": "The termbase migration's drift fixes",
     "sources": "AP-TW (53), AP-HK (58), live TW (75), live HK (71)"
   },
   "load": {
@@ -1668,7 +1668,7 @@
     ],
     "chosen": "區域網路",
     "confidence": "confirmed",
-    "decision": "伺服器中心（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.server*Toast`）",
+    "decision": "伺服器中心",
     "forms": "discovery → 探索 (區域網路探索已關閉); Found nearby → 在附近找到",
     "sources": "AP-TW LOCAL_NETWORK → 區域網路 (HK 本地網絡)"
   },
@@ -1708,7 +1708,7 @@
     "accept": ["讀取", "裡面"],
     "chosen": "查看",
     "confidence": "high",
-    "decision": "Ask Cmdr looks inside files (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.empty.hint`, `settings.askCmdr.intro`)",
+    "decision": "Ask Cmdr looks inside files",
     "forms": "查看…裡的內容 (正在查看檔案裡的內容 / 已查看檔案裡的內容); where English says read → 讀取",
     "sources": "catalog askCmdr.tool.listVolumes.*, askCmdr.tool.imageFacts.*"
   },
@@ -1722,7 +1722,7 @@
     ],
     "chosen": "郵寄清單",
     "confidence": "high",
-    "decision": "入門引導的檢查清單、步驟計數與開關摘要（`onboarding.stepBeta.*`、`onboarding.stepOptional.*`、`onboarding.moreAbout`、`onboarding.wizard.*`、`settings.revealHandler.notProductionBuild`）",
+    "decision": "入門引導的檢查清單、步驟計數與開關摘要",
     "forms": "signup server → 註冊伺服器",
     "sources": "MS id 2791 → 2806, id 210512 → 2773512 (HKG, TWN)"
   },
@@ -1798,7 +1798,7 @@
     ],
     "chosen": "中繼資料",
     "confidence": "high",
-    "decision": "metadata: `中繼資料`, and why macOS-first can't settle it (`errors.listing.attributeNotFound.explanation`/`.suggestion`)",
+    "decision": "metadata: `中繼資料`, and why macOS-first can't settle it",
     "sources": "MS (HKG + TWN), the only form tagged for both"
   },
   "model": {
@@ -1892,7 +1892,7 @@
     "accept": ["共享"],
     "chosen": "共享資料夾",
     "confidence": "tentative",
-    "decision": "共享資料夾裝載不了、共享列表載入不出來時的那句話（`errors.mount.*`、`errors.shareList.*`）",
+    "decision": "共享資料夾裝載不了、共享列表載入不出來時的那句話",
     "forms": "mounted share → 已裝載的共享資料夾; a share named X → 名為「X」的共享資料夾",
     "sources": "derived from Apple Shared → 已共享 + folder; NetAuthAgent EINFO_NO_SHARE says bare 共享"
   },
@@ -2171,7 +2171,7 @@
     "accept": ["改回", "放回"],
     "chosen": "放回原處",
     "confidence": "high",
-    "decision": "The three get-it-back words: undo, rollback, restore (`menu.edit.undo`, `fileOperations.trash.undoAction`, `askCmdr.renameUndo.undo`, `operationLog.dialog.rollBack`, `fileOperations.cancelRollback.*`)",
+    "decision": "The three get-it-back words: undo, rollback, restore",
     "forms": "trashed files → 已把 … 放回原處; old names → 把原本的名稱改回去",
     "sources": "catalog fileOperations.trash.undone, queue.row.reversalMovingBack"
   },
@@ -2251,7 +2251,7 @@
     ],
     "chosen": "重新連線",
     "confidence": "confirmed",
-    "decision": "自動重連的窗格與「沒東西可問」那一行（`servers.paneState.reconnecting`、`servers.paneState.signedOutNothingToAsk`）",
+    "decision": "自動重連的窗格與「沒東西可問」那一行",
     "forms": "a state → 正在重新連線… / 正在重新連線到 {name}…; telling the user to plug it back in → 重新連接 / 重新接上; unplug and reconnect → 拔掉再重新接上",
     "sources": "AP-TW = AP-HK Screen Sharing reconnectingMessage, FaceTime, Phone"
   },
@@ -2306,7 +2306,7 @@
   "relevance": {
     "chosen": "關聯性",
     "confidence": "high",
-    "decision": "`Sort by relevance`：搜尋結果欄的浮動提示（`fileExplorer.columns.sortByRelevance`）",
+    "decision": "`Sort by relevance`：搜尋結果欄的浮動提示",
     "forms": "Sort by relevance → 依關聯性排序",
     "sources": "AP-TW = AP-HK WorkflowKit, AppStoreKit, Automator (macOS 26.6.2, 2026-09-06)"
   },
@@ -2367,7 +2367,7 @@
     ],
     "chosen": "存放庫",
     "confidence": "high",
-    "decision": "Repository: `存放庫` (`errors.git.*`, `onboarding.stepBeta.checklist.star`)",
+    "decision": "Repository: `存放庫`",
     "sources": "MS repository / repo → 存放庫 (source-control definition)"
   },
   "reset": {
@@ -2428,7 +2428,7 @@
     ],
     "chosen": "回復",
     "confidence": "high",
-    "decision": "The three get-it-back words: undo, rollback, restore (`menu.edit.undo`, `fileOperations.trash.undoAction`, `askCmdr.renameUndo.undo`, `operationLog.dialog.rollBack`, `fileOperations.cancelRollback.*`)",
+    "decision": "The three get-it-back words: undo, rollback, restore",
     "sources": "AP-TW Finder (Some items can't be restored. → 部分項目無法回復。; 以回復的卷宗來取代); MS and NAU/DOL's 還原 lose to the catalog-internal collision"
   },
   "resume": {
@@ -2458,7 +2458,7 @@
     ],
     "chosen": "復原",
     "confidence": "high",
-    "decision": "The three get-it-back words: undo, rollback, restore (`menu.edit.undo`, `fileOperations.trash.undoAction`, `askCmdr.renameUndo.undo`, `operationLog.dialog.rollBack`, `fileOperations.cancelRollback.*`)",
+    "decision": "The three get-it-back words: undo, rollback, restore",
     "forms": "partly rolled back → 已部分復原; Finish rolling back → 完成復原 (two keys byte-identical)",
     "sources": "MS"
   },
@@ -2480,7 +2480,7 @@
     ],
     "chosen": "根資料夾",
     "confidence": "high",
-    "decision": "連線伺服器的表單與主機金鑰那一步（`servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`、`goToPath.dialog.opensServer`/`.addsServer`、`commands.serversConnect.label`）",
+    "decision": "連線伺服器的表單與主機金鑰那一步",
     "forms": "start folder → 起始資料夾 (composed); a volume's top folder → 最上層資料夾; the label and every sentence citing it use the same word",
     "sources": "DC (移到根資料夾), THU (檔案系統根資料夾), MS"
   },
@@ -2573,7 +2573,7 @@
     ],
     "chosen": "選取",
     "confidence": "confirmed",
-    "decision": "Select / Deselect files dialog (`selection.*`)",
+    "decision": "Select / Deselect files dialog",
     "exceptions": {
       "ui.select.placeholder": "A dropdown placeholder is choose-one: Apple's 請選擇….",
       "viewer.copy.readTooLong": "A smaller selection of text: 選少一點.",
@@ -2886,13 +2886,13 @@
     ],
     "chosen": "輕觸",
     "confidence": "high",
-    "decision": "Android 手機的連線窗格、就緒提示與那一行 USB 偵錯提示（`adb.connect.*`、`adb.readiness.*`、`adb.hint.*`、`adb.disconnect*`、`settings.behavior.adbHintDismissed.*`）",
+    "decision": "Android 手機的連線窗格、就緒提示與那一行 USB 偵錯提示",
     "sources": "AOSP zh-rTW throughout"
   },
   "terminal": {
     "chosen": "終端機",
     "confidence": "high",
-    "decision": "「在此開啟終端機」與它的 App 選擇器（`settings.behavior.openTerminalHereApp.*`、`settings.navigationAndFileOps.card.terminal`）",
+    "decision": "「在此開啟終端機」與它的 App 選擇器",
     "forms": "Apple's Terminal app is translated too (在「終端機」中打開); Open terminal here → 在此開啟終端機; terminal app → 終端機 App",
     "sources": "TC + file managers (58), MS (86); AP Finder N67"
   },
@@ -2900,7 +2900,7 @@
     "accept": ["編輯器"],
     "chosen": "文字編輯器",
     "confidence": "high",
-    "decision": "F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)",
+    "decision": "F4 and its text editor",
     "forms": "default text editor → 預設文字編輯器",
     "sources": "MS (text editor → 文字編輯器)"
   },
@@ -2926,7 +2926,7 @@
     ],
     "chosen": "這部 Mac",
     "confidence": "high",
-    "decision": "The termbase migration's drift fixes (`errors.listing.connectionRefused.explanation`, `main.oldWebkit.body`, `settings.behavior.textEditorApp.description`, `settings.behavior.openTerminalHereApp.description`, `errors.volume.notConnected`, `settings.search.autoApply.description`, `errors.mount.shareNotFound`, `errors.shareList.protocolError`, `fileOperations.delete.cloudOnlineOnly*`, `mtp.*.retry`, `commands.tabMcpAction.label`, `fileExplorer.network.forgotPassword`)",
+    "decision": "The termbase migration's drift fixes",
     "sources": "AP-TW live 8 這部Mac / 1 這台Mac"
   },
   "throughput": {
@@ -3023,7 +3023,7 @@
     ],
     "chosen": "還原",
     "confidence": "high",
-    "decision": "The three get-it-back words: undo, rollback, restore (`menu.edit.undo`, `fileOperations.trash.undoAction`, `askCmdr.renameUndo.undo`, `operationLog.dialog.rollBack`, `fileOperations.cancelRollback.*`)",
+    "decision": "The three get-it-back words: undo, rollback, restore",
     "exceptions": {
       "fileOperations.cancelRollback.reason.failed.counted": "English says undo, but the act is a rollback, which Chinese names 復原; 還原 is spent on Undo.",
       "fileOperations.cancelRollback.reason.failed.named": "English says undo, but the act is a rollback, which Chinese names 復原; 還原 is spent on Undo.",
@@ -3078,7 +3078,7 @@
   "usb-debugging": {
     "chosen": "USB 偵錯",
     "confidence": "confirmed",
-    "decision": "Android 手機的連線窗格、就緒提示與那一行 USB 偵錯提示（`adb.connect.*`、`adb.readiness.*`、`adb.hint.*`、`adb.disconnect*`、`settings.behavior.adbHintDismissed.*`）",
+    "decision": "Android 手機的連線窗格、就緒提示與那一行 USB 偵錯提示",
     "forms": "quoted 「USB 偵錯」; the generic verb debug stays 除錯",
     "sources": "AOSP SettingsLib values-zh-rTW enable_adb (2026-09-07); Google zh-TW docs"
   },
@@ -3165,7 +3165,7 @@
     ],
     "chosen": "卷宗切換器",
     "confidence": "confirmed",
-    "decision": "伺服器中心（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.server*Toast`）",
+    "decision": "伺服器中心",
     "sources": "AP-TW = AP-HK switcher → 切換器 (App切換器); catalog"
   },
   "wake": {
