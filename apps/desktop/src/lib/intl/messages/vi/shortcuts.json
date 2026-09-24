@@ -71,7 +71,7 @@
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "2c2c76f"
   },
-  "shortcuts.conflict.systemShortcut": "{combo} thường được macOS dùng ({label}), nên nó có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng nó trong System Settings > Keyboard.",
+  "shortcuts.conflict.systemShortcut": "{combo} thường được macOS dùng ({label}), nên nó có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng nó trong Cài đặt hệ thống > Bàn phím.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },

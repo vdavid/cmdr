@@ -3,7 +3,7 @@
   "@common.attachEmail": {
     "sourceHash": "6ce573e"
   },
-  "common.attachEmailInputLabel": "Email của bạn",
+  "common.attachEmailInputLabel": "Địa chỉ email của bạn",
   "@common.attachEmailInputLabel": {
     "sourceHash": "3fa7c5e"
   },
@@ -19,7 +19,7 @@
   "@common.attachEmailPrompt": {
     "sourceHash": "703760b"
   },
-  "common.downloadsFdaHint": "Cmdr cần quyền Truy cập toàn bộ đĩa để theo dõi thư mục Tải về của bạn. <settingsLink>Mở Cài đặt hệ thống</settingsLink>",
+  "common.downloadsFdaHint": "Cmdr cần quyền truy cập đầy đủ vào ổ đĩa để theo dõi thư mục Tải về của bạn. <settingsLink>Mở Cài đặt hệ thống</settingsLink>",
   "@common.downloadsFdaHint": {
     "sourceHash": "315e1d8"
   }

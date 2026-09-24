@@ -672,7 +672,7 @@
   "@commands.selectionDeselectFiles.label": {
     "sourceHash": "6fb10d5"
   },
-  "commands.selectionDeselectFiles.description": "Mở hộp thoại Bỏ chọn tệp để loại các tệp khớp khỏi lựa chọn",
+  "commands.selectionDeselectFiles.description": "Mở hộp thoại Bỏ chọn tệp để gỡ bỏ các tệp khớp khỏi lựa chọn",
   "@commands.selectionDeselectFiles.description": {
     "sourceHash": "2a6f82f"
   },
@@ -780,7 +780,7 @@
   "@commands.handler.noRecentlyClosedTabs": {
     "sourceHash": "e560789"
   },
-  "commands.handler.cloudDownloadFailed": "Chưa tải được từ đám mây. {detail}",
+  "commands.handler.cloudDownloadFailed": "Chưa tải về được từ đám mây. {detail}",
   "@commands.handler.cloudDownloadFailed": {
     "sourceHash": "70792cf"
   },

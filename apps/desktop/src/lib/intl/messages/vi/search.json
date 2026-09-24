@@ -147,7 +147,7 @@
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
   },
-  "search.coverage.walk.cancelled": "Bạn đã dừng lần tìm kiếm này, nên đây là những gì Cmdr tìm được đến lúc đó. Mọi thứ đã đọc dọc đường đều được giữ lại, nên tìm lại sẽ đi tiếp từ đó.",
+  "search.coverage.walk.cancelled": "Bạn đã dừng lần tìm kiếm này, nên đây là những gì Cmdr tìm được đến lúc đó. Mọi thứ đã đọc dọc đường đều được lưu lại, nên tìm kiếm lại sẽ đi tiếp từ đó.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
   },
@@ -155,11 +155,11 @@
   "@search.coverage.walk.interrupted": {
     "sourceHash": "4c6a0a4"
   },
-  "search.coverage.walk.abandoned": "Vài thư mục ngừng phản hồi nên Cmdr bỏ qua chúng, và danh sách này có thể còn thiếu. Tìm lại sẽ thử lại những thư mục đó.",
+  "search.coverage.walk.abandoned": "Vài thư mục ngừng phản hồi nên Cmdr bỏ qua chúng, và danh sách này có thể còn thiếu. Tìm kiếm lại sẽ thử lại những thư mục đó.",
   "@search.coverage.walk.abandoned": {
     "sourceHash": "4a6a2af"
   },
-  "search.coverage.walk.abandonedCount": "{count, plural, other {{countText} chỗ trên ổ đĩa này đã ngừng phản hồi, nên Cmdr đi tiếp mà không có chúng và danh sách này có thể bị thiếu. Cmdr sẽ quay lại sau, và tìm lại một lần nữa cũng cho chúng thêm một cơ hội.}}",
+  "search.coverage.walk.abandonedCount": "{count, plural, other {{countText} chỗ trên ổ đĩa này đã ngừng phản hồi, nên Cmdr đi tiếp mà không có chúng và danh sách này có thể bị thiếu. Cmdr sẽ quay lại sau, và tìm kiếm lại một lần nữa cũng cho chúng thêm một cơ hội.}}",
   "@search.coverage.walk.abandonedCount": {
     "sourceHash": "2a79bc5"
   },

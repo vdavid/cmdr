@@ -84,11 +84,11 @@
   "@queryUi.empty.tryLine": {
     "sourceHash": "469fb7f"
   },
-  "queryUi.empty.tip": "Mẹo: <newKey>⌘N</newKey> bắt đầu lại, <historyKey>⌘H</historyKey> hiện các tìm kiếm gần đây.",
+  "queryUi.empty.tip": "Mẹo: <newKey>⌘N</newKey> bắt đầu lại, <historyKey>⌘H</historyKey> hiển thị các tìm kiếm gần đây.",
   "@queryUi.empty.tip": {
     "sourceHash": "6d00976"
   },
-  "queryUi.empty.tipAi": "Mẹo: <newKey>⌘N</newKey> bắt đầu lại, <historyKey>⌘H</historyKey> hiện các tìm kiếm gần đây, <aiKey>⌘Enter</aiKey> chạy tìm kiếm AI.",
+  "queryUi.empty.tipAi": "Mẹo: <newKey>⌘N</newKey> bắt đầu lại, <historyKey>⌘H</historyKey> hiển thị các tìm kiếm gần đây, <aiKey>⌘Enter</aiKey> chạy tìm kiếm AI.",
   "@queryUi.empty.tipAi": {
     "sourceHash": "e83a0d6"
   },
@@ -222,11 +222,11 @@
   "@queryUi.results.criteria.modified": {
     "sourceHash": "fc2268a"
   },
-  "queryUi.results.criteria.scope": "Đã tìm trong: {scope}",
+  "queryUi.results.criteria.scope": "Đã tìm kiếm trong: {scope}",
   "@queryUi.results.criteria.scope": {
     "sourceHash": "960a4c8"
   },
-  "queryUi.results.widenToVolume": "Tìm trong ổ đĩa này",
+  "queryUi.results.widenToVolume": "Tìm kiếm trong ổ đĩa này",
   "@queryUi.results.widenToVolume": {
     "sourceHash": "7dfc278"
   },
@@ -258,11 +258,11 @@
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "07b501d"
   },
-  "queryUi.results.live.waitingForAnotherWalk": "Đang đợi một lượt duyệt khác của các thư mục này...",
+  "queryUi.results.live.waitingForAnotherWalk": "Đang chờ một lượt quét khác của các thư mục này...",
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "21163fe"
   },
-  "queryUi.results.live.waitingOnPathAria": "Một lượt duyệt khác đang đọc {path}",
+  "queryUi.results.live.waitingOnPathAria": "Một lượt quét khác đang đọc {path}",
   "@queryUi.results.live.waitingOnPathAria": {
     "sourceHash": "a54a689"
   },
@@ -278,7 +278,7 @@
   "@queryUi.results.live.matchesSoFar": {
     "sourceHash": "5c09eb4"
   },
-  "queryUi.results.live.foldersScanned": "Đã duyệt {countText} {count, plural, other {thư mục}}",
+  "queryUi.results.live.foldersScanned": "Đã quét {countText} {count, plural, other {thư mục}}",
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
@@ -338,7 +338,7 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> để di chuyển · <selectKey>Enter</selectKey> điền vào ô · nhấp chuột phải để xóa",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> để di chuyển · <selectKey>Enter</selectKey> điền vào ô · bấm chuột phải để gỡ bỏ",
   "@queryUi.recent.popoverHint": {
     "sourceHash": "a7ccaef"
   },
@@ -445,7 +445,7 @@
   "@queryUi.dialog.runQueryToast": {
     "sourceHash": "02a3bba"
   },
-  "queryUi.dialog.runQueryUnknownReason": "Chưa rõ lý do. Thử tìm kiếm hẹp hơn?",
+  "queryUi.dialog.runQueryUnknownReason": "Chưa rõ lý do. Thử một truy vấn hẹp hơn?",
   "@queryUi.dialog.runQueryUnknownReason": {
     "sourceHash": "4f79b0f"
   },

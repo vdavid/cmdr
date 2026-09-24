@@ -557,7 +557,7 @@
   "@menu.mediaIndex.addFolderExcluded": {
     "sourceHash": "fc7c7ce"
   },
-  "menu.mediaIndex.coveredByParent": "Đã lập chỉ mục qua thư mục cấp trên",
+  "menu.mediaIndex.coveredByParent": "Đã lập chỉ mục qua thư mục cha",
   "@menu.mediaIndex.coveredByParent": {
     "sourceHash": "9dffdcd"
   },

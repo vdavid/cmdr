@@ -20,11 +20,11 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Một phần lựa chọn của bạn chỉ có trực tuyến. Chuyển chúng vào thùng rác sẽ <strong>tải chúng về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy nhấp “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải sẵn tất cả tệp về máy trước, hoặc bỏ chọn tất cả tệp chỉ có trực tuyến.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Một phần lựa chọn của bạn chỉ có trực tuyến. Chuyển chúng vào thùng rác sẽ <strong>tải chúng về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy bấm “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải về tất cả tệp để dùng ngoại tuyến trước, hoặc bỏ chọn tất cả tệp chỉ có trực tuyến.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2a49037"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Mọi thứ bạn đã chọn đều chỉ có trực tuyến. Chuyển nó vào thùng rác sẽ <strong>tải nó về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy nhấp “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải sẵn các tệp này về máy trước.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Mọi thứ bạn đã chọn đều chỉ có trực tuyến. Chuyển nó vào thùng rác sẽ <strong>tải nó về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy bấm “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải về các tệp này để dùng ngoại tuyến trước.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "0e52a2b"
   },
@@ -240,7 +240,7 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Chia sẻ này dùng kết nối hệ thống. Việc hủy có thể bị trễ. Dùng \"Kết nối trực tiếp\" trong bộ chọn ổ đĩa để truyền nhanh hơn và hủy đáng tin cậy.",
+  "fileOperations.transferDialog.smbNativeNote": "Mục chia sẻ này dùng kết nối hệ thống. Việc hủy có thể bị trễ. Dùng \"Kết nối trực tiếp\" trong bộ chọn ổ đĩa để truyền nhanh hơn và hủy đáng tin cậy.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
   },
@@ -324,23 +324,23 @@
   "@fileOperations.transferDialog.conflictsSummary": {
     "sourceHash": "f93d158"
   },
-  "fileOperations.transferDialog.policySkip": "{count, plural, other {Bỏ qua tất cả}}",
+  "fileOperations.transferDialog.policySkip": "{count, plural, =1 {Bỏ qua} other {Bỏ qua tất cả}}",
   "@fileOperations.transferDialog.policySkip": {
     "sourceHash": "af89aba"
   },
-  "fileOperations.transferDialog.policyOverwrite": "{count, plural, other {Ghi đè tất cả}}",
+  "fileOperations.transferDialog.policyOverwrite": "{count, plural, =1 {Ghi đè} other {Ghi đè tất cả}}",
   "@fileOperations.transferDialog.policyOverwrite": {
     "sourceHash": "e81a8ec"
   },
-  "fileOperations.transferDialog.policyOverwriteSmaller": "{count, plural, other {Ghi đè tất cả nhỏ hơn}}",
+  "fileOperations.transferDialog.policyOverwriteSmaller": "{count, plural, =1 {Ghi đè nếu nhỏ hơn} other {Ghi đè tất cả nhỏ hơn}}",
   "@fileOperations.transferDialog.policyOverwriteSmaller": {
     "sourceHash": "6b53558"
   },
-  "fileOperations.transferDialog.policyOverwriteOlder": "{count, plural, other {Ghi đè tất cả cũ hơn}}",
+  "fileOperations.transferDialog.policyOverwriteOlder": "{count, plural, =1 {Ghi đè nếu cũ hơn} other {Ghi đè tất cả cũ hơn}}",
   "@fileOperations.transferDialog.policyOverwriteOlder": {
     "sourceHash": "97128f3"
   },
-  "fileOperations.transferDialog.policyStop": "{count, plural, other {Hỏi cho từng cái}}",
+  "fileOperations.transferDialog.policyStop": "{count, plural, =1 {Hỏi sau} other {Hỏi cho từng cái}}",
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
@@ -632,7 +632,7 @@
   "@fileOperations.transferProgress.etaRemaining": {
     "sourceHash": "a6b154c"
   },
-  "fileOperations.transferProgress.smbNativeNote": "Chia sẻ này dùng kết nối hệ thống. Việc hủy và hoàn tác có thể bị trễ.",
+  "fileOperations.transferProgress.smbNativeNote": "Mục chia sẻ này dùng kết nối hệ thống. Việc hủy và hoàn tác có thể bị trễ.",
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
@@ -900,7 +900,7 @@
   "@fileOperations.validation.pathTooLong": {
     "sourceHash": "1658c7a"
   },
-  "fileOperations.validation.extensionChangeBlocked": "Không được phép thay đổi phần mở rộng của tệp (trước là \"{oldExt}\")",
+  "fileOperations.validation.extensionChangeBlocked": "Không được phép thay đổi đuôi tệp (trước là \"{oldExt}\")",
   "@fileOperations.validation.extensionChangeBlocked": {
     "sourceHash": "43c2dc1"
   },

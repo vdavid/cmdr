@@ -252,7 +252,7 @@
   "@askCmdr.error.unfinishedReply": {
     "sourceHash": "7cc85f5"
   },
-  "askCmdr.error.provider": "Đã xảy ra sự cố phía nhà cung cấp. Thử lại?",
+  "askCmdr.error.provider": "Có gì đó không ổn phía nhà cung cấp. Thử lại?",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
@@ -673,11 +673,11 @@
   "@askCmdr.wake.stop": {
     "sourceHash": "1eae5cb"
   },
-  "askCmdr.wake.needsFullDiskAccess": "Các tính năng AI chưa nhìn thấy được thư mục của bạn. Nhấp để thiết lập quyền truy cập toàn bộ đĩa.",
+  "askCmdr.wake.needsFullDiskAccess": "Các tính năng AI chưa nhìn thấy được thư mục của bạn. Bấm để thiết lập quyền truy cập toàn bộ đĩa.",
   "@askCmdr.wake.needsFullDiskAccess": {
     "sourceHash": "0c301b5"
   },
-  "askCmdr.wake.needsApiKey": "Các tính năng AI đang bật, nhưng cần một nhà cung cấp mới hoạt động được. Nhấp để thiết lập một cái trong cài đặt.",
+  "askCmdr.wake.needsApiKey": "Các tính năng AI đang bật, nhưng cần một nhà cung cấp mới hoạt động được. Bấm để thiết lập một cái trong cài đặt.",
   "@askCmdr.wake.needsApiKey": {
     "sourceHash": "0f71f75"
   },
@@ -729,11 +729,11 @@
   "@askCmdr.decision.rejected": {
     "sourceHash": "19d12c1"
   },
-  "askCmdr.decision.approved": "Bạn đã chấp nhận {verbName} {countText} {count, plural, other {mục}}",
+  "askCmdr.decision.approved": "Bạn đã phê duyệt {verbName} {countText} {count, plural, other {mục}}",
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} xong, {skippedText} bỏ qua, {failedText} lỗi",
+  "askCmdr.decision.result": "{doneText} xong, {skippedText} bỏ qua, {failedText} chưa hoàn tất được",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },

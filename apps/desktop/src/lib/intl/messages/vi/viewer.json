@@ -71,7 +71,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Đây là chế độ xem thô của tệp. Bạn có thể muốn xem <kindName>{kind}</kindName> thực tế thay vì vậy. Để làm điều đó, hãy đóng cửa sổ này và nhấn <quickLookKey></quickLookKey> để mở chế độ xem nhanh, hoặc nhấn <openKey></openKey> (hoặc nhấp đúp vào tệp) để mở bằng ứng dụng liên kết.",
+  "viewer.binaryWarning.body": "Đây là chế độ xem thô của tệp. Bạn có thể muốn xem <kindName>{kind}</kindName> thực tế thay vì vậy. Để làm điều đó, hãy đóng cửa sổ này và nhấn <quickLookKey></quickLookKey> để mở chế độ xem nhanh, hoặc nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở bằng ứng dụng liên kết.",
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
@@ -250,7 +250,7 @@
   "@viewer.statusBar.badge.streaming": {
     "sourceHash": "b304adc"
   },
-  "viewer.statusBar.badge.streamingTooltip": "Đây là tệp lớn ở chế độ phát trực tiếp. Việc lập chỉ mục sẽ mất hơn {seconds} giây, nên Cmdr đã bỏ qua. Số dòng là ước lượng.",
+  "viewer.statusBar.badge.streamingTooltip": "Đây là tệp lớn ở chế độ phát trực tiếp. Việc lập chỉ mục sẽ mất hơn {seconds} giây, nên Cmdr đã bỏ qua. Số dòng chỉ là ước tính.",
   "@viewer.statusBar.badge.streamingTooltip": {
     "sourceHash": "1752e59"
   },
@@ -262,7 +262,7 @@
   "@viewer.statusBar.badge.wrapTooltip": {
     "sourceHash": "af2ca76"
   },
-  "viewer.statusBar.hint.image": "Nhấp 100% / vừa khít · Cuộn để thu phóng · Kéo để di chuyển",
+  "viewer.statusBar.hint.image": "Bấm 100% / vừa khít · Cuộn để thu phóng · Kéo để di chuyển",
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },

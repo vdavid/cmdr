@@ -71,7 +71,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr cần Full Disk Access để theo dõi thư mục Tải về của bạn.",
+  "downloads.fda.message": "Cmdr cần quyền truy cập đầy đủ vào ổ đĩa để theo dõi thư mục Tải về của bạn.",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },
@@ -79,7 +79,7 @@
   "@downloads.fda.dismiss": {
     "sourceHash": "48845bf"
   },
-  "downloads.fda.openSystemSettings": "Mở System Settings",
+  "downloads.fda.openSystemSettings": "Mở Cài đặt hệ thống",
   "@downloads.fda.openSystemSettings": {
     "sourceHash": "18196b3"
   },

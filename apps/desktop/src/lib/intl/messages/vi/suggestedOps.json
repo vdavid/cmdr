@@ -127,7 +127,7 @@
   "@suggestedOps.approvalUnsure": {
     "sourceHash": "0cd408c"
   },
-  "suggestedOps.indicatorTooltip": "Có đề xuất từ AI đang chờ. Nhấp để xem lại.",
+  "suggestedOps.indicatorTooltip": "Có đề xuất từ AI đang chờ. Bấm để xem lại.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
   }

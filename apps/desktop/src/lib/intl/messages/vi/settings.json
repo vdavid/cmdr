@@ -55,7 +55,7 @@
   "@settings.appearance.sizeColors.label": {
     "sourceHash": "7598e9a"
   },
-  "settings.appearance.sizeColors.description": "Tô màu kích cỡ tệp trong danh sách theo bậc. Cầu vồng dùng xanh lá/vàng/cam/đỏ/tím. Ứng dụng dùng các sắc độ của màu ứng dụng.",
+  "settings.appearance.sizeColors.description": "Tô màu kích cỡ tệp trong danh sách tệp theo bậc. Cầu vồng dùng xanh lá/vàng/cam/đỏ/tím. Ứng dụng dùng các sắc độ của màu ứng dụng.",
   "@settings.appearance.sizeColors.description": {
     "sourceHash": "ecb064a"
   },
@@ -75,7 +75,7 @@
   "@settings.appearance.dateColors.label": {
     "sourceHash": "25e5672"
   },
-  "settings.appearance.dateColors.description": "Tô màu ngày sửa đổi trong danh sách theo độ tuổi. Ứng dụng làm mờ dần ngày cũ về màu chữ mặc định. Phai tàn chuyển xanh lá cho tệp mới, vàng cho tệp đang cũ dần, và nâu cho tệp cũ.",
+  "settings.appearance.dateColors.description": "Tô màu ngày sửa đổi trong danh sách tệp theo độ tuổi. Ứng dụng làm mờ dần ngày cũ về màu chữ mặc định. Phai tàn chuyển xanh lá cho tệp mới, vàng cho tệp đang cũ dần, và nâu cho tệp cũ.",
   "@settings.appearance.dateColors.description": {
     "sourceHash": "382ce25"
   },
@@ -152,7 +152,7 @@
   "@settings.appearance.tintSmb.label": {
     "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Màu nền phủ lên các khung hiển thị bản chia sẻ SMB, máy chủ SFTP, hoặc máy chủ WebDAV.",
+  "settings.appearance.tintSmb.description": "Màu nền phủ lên các khung hiển thị mục chia sẻ SMB, máy chủ SFTP, hoặc máy chủ WebDAV.",
   "@settings.appearance.tintSmb.description": {
     "sourceHash": "2e071d3"
   },
@@ -411,7 +411,7 @@
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
   },
-  "settings.archives.bundle.description": "Nhấn Enter sẽ làm gì với tệp .app, .bundle, hoặc .framework.",
+  "settings.archives.bundle.description": "Nhấn Enter sẽ làm gì với tệp .app, .bundle hoặc .framework.",
   "@settings.archives.bundle.description": {
     "sourceHash": "9d30dcc"
   },
@@ -471,15 +471,15 @@
   "@settings.mediaIndex.clip.comingSoon": {
     "sourceHash": "9e3090d"
   },
-  "settings.mediaIndex.clip.download": "Tải mô hình (~{sizeText} MB)",
+  "settings.mediaIndex.clip.download": "Tải về mô hình (~{sizeText} MB)",
   "@settings.mediaIndex.clip.download": {
     "sourceHash": "1eced44"
   },
-  "settings.mediaIndex.clip.downloading": "Đang tải…",
+  "settings.mediaIndex.clip.downloading": "Đang tải về…",
   "@settings.mediaIndex.clip.downloading": {
     "sourceHash": "a778d34"
   },
-  "settings.mediaIndex.clip.failed": "Quá trình tải chưa hoàn tất. Hãy kiểm tra kết nối và thử lại.",
+  "settings.mediaIndex.clip.failed": "Quá trình tải về chưa hoàn tất. Hãy kiểm tra kết nối và thử lại.",
   "@settings.mediaIndex.clip.failed": {
     "sourceHash": "5feb349"
   },
@@ -659,7 +659,7 @@
   "@settings.mediaIndex.importanceThreshold.bucket.everywhere": {
     "sourceHash": "14b0e89"
   },
-  "settings.mediaIndex.importanceThreshold.preview": "{images, plural, one {Lập chỉ mục khoảng {imagesText} ảnh} other {Lập chỉ mục khoảng {imagesText} ảnh}} {folders, plural, one {trong {foldersText} thư mục} other {trong {foldersText} thư mục}}",
+  "settings.mediaIndex.importanceThreshold.preview": "{images, plural, other {Lập chỉ mục khoảng {imagesText} ảnh}} {folders, plural, other {trong {foldersText} thư mục}}",
   "@settings.mediaIndex.importanceThreshold.preview": {
     "sourceHash": "487dc79"
   },
@@ -683,11 +683,11 @@
   "@settings.mediaIndex.importanceThreshold.pending": {
     "sourceHash": "c144f80"
   },
-  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, one {Thêm khoảng {imagesText} ảnh} other {Thêm khoảng {imagesText} ảnh}}",
+  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, other {Thêm khoảng {imagesText} ảnh}}",
   "@settings.mediaIndex.importanceThreshold.deltaAdd": {
     "sourceHash": "d5fcbb4"
   },
-  "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, one {Bỏ bớt khoảng {imagesText} ảnh} other {Bỏ bớt khoảng {imagesText} ảnh}}",
+  "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, other {Bỏ bớt khoảng {imagesText} ảnh}}",
   "@settings.mediaIndex.importanceThreshold.deltaRemove": {
     "sourceHash": "1c1486e"
   },
@@ -695,11 +695,11 @@
   "@settings.mediaIndex.importanceThreshold.floor": {
     "sourceHash": "8839d14"
   },
-  "settings.mediaIndex.progress.local": "Mac này",
+  "settings.mediaIndex.progress.local": "Máy Mac này",
   "@settings.mediaIndex.progress.local": {
     "sourceHash": "79a4aef"
   },
-  "settings.mediaIndex.progress.ofTotal": "{total, plural, one {Đã lập chỉ mục {enrichedText} trên {totalText} ảnh} other {Đã lập chỉ mục {enrichedText} trên {totalText} ảnh}}",
+  "settings.mediaIndex.progress.ofTotal": "{total, plural, other {Đã lập chỉ mục {enrichedText} trên {totalText} ảnh}}",
   "@settings.mediaIndex.progress.ofTotal": {
     "sourceHash": "2acda74"
   },
@@ -707,15 +707,15 @@
   "@settings.mediaIndex.progress.counting": {
     "sourceHash": "fa08ea7"
   },
-  "settings.mediaIndex.progress.done": "{total, plural, one {Đã lập chỉ mục {totalText} ảnh} other {Đã lập chỉ mục {totalText} ảnh}}",
+  "settings.mediaIndex.progress.done": "{total, plural, other {Đã lập chỉ mục {totalText} ảnh}}",
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Bạn đã lập chỉ mục {totalText} ảnh; thiết lập của bạn bao gồm {coveredText}. {doomed, plural, one {{doomedText} mục bổ sung vẫn có thể tìm kiếm cho đến khi bạn xóa chúng} other {{doomedText} mục bổ sung vẫn có thể tìm kiếm cho đến khi bạn xóa chúng}}.",
+  "settings.mediaIndex.reclaim.line": "Bạn đã lập chỉ mục {totalText} ảnh; thiết lập của bạn bao gồm {coveredText}. {doomed, plural, other {{doomedText} mục bổ sung vẫn có thể tìm kiếm cho đến khi bạn xóa chúng}}.",
   "@settings.mediaIndex.reclaim.line": {
     "sourceHash": "aaef941"
   },
-  "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Xóa các mục bổ sung và giải phóng khoảng {size}} other {Xóa các mục bổ sung và giải phóng khoảng {size}}}",
+  "settings.mediaIndex.reclaim.button": "{doomed, plural, other {Xóa các mục bổ sung và giải phóng khoảng {size}}}",
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
@@ -723,7 +723,7 @@
   "@settings.mediaIndex.reclaim.confirmTitle": {
     "sourceHash": "778e9c6"
   },
-  "settings.mediaIndex.reclaim.confirmBody": "Xóa {doomed, plural, one {{doomedText} mục đã lập chỉ mục} other {{doomedText} mục đã lập chỉ mục}} để giải phóng khoảng {size}? Bạn có thể lập chỉ mục lại các ảnh này sau, nhưng việc đọc lại chúng mất thời gian.",
+  "settings.mediaIndex.reclaim.confirmBody": "Xóa {doomed, plural, other {{doomedText} mục đã lập chỉ mục}} để giải phóng khoảng {size}? Bạn có thể lập chỉ mục lại các ảnh này sau, nhưng việc đọc lại chúng mất thời gian.",
   "@settings.mediaIndex.reclaim.confirmBody": {
     "sourceHash": "1491b12"
   },
@@ -747,7 +747,7 @@
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"
   },
-  "settings.indexing.askForEachDrive.description": "Khi bạn lần đầu mở một bản chia sẻ mạng hoặc thiết bị, hỏi có lập chỉ mục nó không.",
+  "settings.indexing.askForEachDrive.description": "Khi bạn lần đầu mở một mục chia sẻ mạng hoặc thiết bị, hỏi có lập chỉ mục nó không.",
   "@settings.indexing.askForEachDrive.description": {
     "sourceHash": "189552c"
   },
@@ -828,7 +828,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Nhấn ⌃⌥⌘J từ bất kỳ ứng dụng nào để nhảy đến bản tải về mới nhất của bạn. Cần Toàn quyền truy cập đĩa.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Nhấn ⌃⌥⌘J từ bất kỳ ứng dụng nào để nhảy đến bản tải về mới nhất của bạn. Cần quyền truy cập đầy đủ vào ổ đĩa.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
@@ -836,7 +836,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.label": {
     "sourceHash": "cf811fe"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "Tổ hợp phím toàn hệ thống kích hoạt đến-tệp-tải-về-mới-nhất. Chỉnh trong Phím tắt.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": "Tổ hợp phím toàn hệ thống kích hoạt đi-tới-bản-tải-về-mới-nhất. Chỉnh trong Phím tắt.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.binding.description": {
     "sourceHash": "77e5c31"
   },
@@ -949,31 +949,31 @@
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
-  "settings.network.enabled.description": "Tìm các máy chủ SMB trên mạng cục bộ của bạn và kết nối tới chúng. Khi tắt, Cmdr vẫn đọc và ghi tệp được trên các bản chia sẻ đã gắn kết, nhưng sẽ không xin quyền Mạng cục bộ từ macOS.",
+  "settings.network.enabled.description": "Tìm các máy chủ SMB trên mạng cục bộ của bạn và kết nối tới chúng. Khi tắt, Cmdr vẫn đọc và ghi tệp được trên các mục chia sẻ đã gắn kết, nhưng sẽ không xin quyền Mạng cục bộ từ macOS.",
   "@settings.network.enabled.description": {
     "sourceHash": "3500345"
   },
-  "settings.network.firstTriggerDone.label": "Đã bắt đầu tìm kiếm mạng",
+  "settings.network.firstTriggerDone.label": "Đã bắt đầu tìm máy chủ trên mạng cục bộ",
   "@settings.network.firstTriggerDone.label": {
     "sourceHash": "06aa851"
   },
-  "settings.network.firstTriggerDone.description": "Nội bộ: theo dõi việc tìm kiếm đã được kích hoạt ít nhất một lần hay chưa. Ẩn khỏi giao diện.",
+  "settings.network.firstTriggerDone.description": "Nội bộ: theo dõi việc tìm máy chủ trên mạng cục bộ đã được kích hoạt ít nhất một lần hay chưa. Ẩn khỏi giao diện.",
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
-  "settings.network.directSmbConnection.label": "Kết nối trực tiếp tới bản chia sẻ SMB",
+  "settings.network.directSmbConnection.label": "Kết nối trực tiếp tới mục chia sẻ SMB",
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "Khi bật, Cmdr thiết lập kết nối trực tiếp tới các bản chia sẻ SMB để thao tác tệp nhanh hơn. Bản gắn kết hệ thống vẫn giữ cho Finder và các ứng dụng khác.",
+  "settings.network.directSmbConnection.description": "Khi bật, Cmdr thiết lập kết nối trực tiếp tới các mục chia sẻ SMB để thao tác tệp nhanh hơn. Bản gắn kết hệ thống vẫn giữ cho Finder và các ứng dụng khác.",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
-  "settings.network.shareCacheDuration.label": "Thời lượng bộ đệm bản chia sẻ",
+  "settings.network.shareCacheDuration.label": "Thời lượng bộ đệm mục chia sẻ",
   "@settings.network.shareCacheDuration.label": {
     "sourceHash": "ff627cd"
   },
-  "settings.network.shareCacheDuration.description": "Lưu danh sách bản chia sẻ khả dụng trên một máy chủ vào bộ đệm bao lâu trước khi làm mới.",
+  "settings.network.shareCacheDuration.description": "Lưu danh sách mục chia sẻ khả dụng trên một máy chủ vào bộ đệm bao lâu trước khi làm mới.",
   "@settings.network.shareCacheDuration.description": {
     "sourceHash": "18190c5"
   },
@@ -1001,7 +1001,7 @@
   "@settings.network.timeoutMode.label": {
     "sourceHash": "5d1c989"
   },
-  "settings.network.timeoutMode.description": "Chờ bao lâu khi kết nối tới các bản chia sẻ mạng.",
+  "settings.network.timeoutMode.description": "Chờ bao lâu khi kết nối tới các mục chia sẻ mạng.",
   "@settings.network.timeoutMode.description": {
     "sourceHash": "9f6de9d"
   },
@@ -1125,7 +1125,7 @@
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"
   },
-  "settings.developer.mcpPort.description": "Cổng ưu tiên cho máy chủ MCP. Để 0 cho hệ điều hành tự chọn một cổng tạm thời (khuyến nghị; cổng thực tế hiện ở bên dưới khi đang chạy). Cố định một cổng cụ thể nếu công cụ bên ngoài cần.",
+  "settings.developer.mcpPort.description": "Cổng ưu tiên cho máy chủ MCP. Để 0 cho hệ điều hành tự chọn một cổng tạm thời (khuyến nghị; cổng thực tế được hiển thị bên dưới khi đang chạy). Cố định một cổng cụ thể nếu công cụ bên ngoài cần.",
   "@settings.developer.mcpPort.description": {
     "sourceHash": "174e807"
   },
@@ -1165,7 +1165,7 @@
   "@settings.analytics.enabled.label": {
     "sourceHash": "89b309e"
   },
-  "settings.analytics.enabled.description": "Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta mở.\nThống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên.\nCmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh.\nKhi tắt, Cmdr không gửi bất kỳ thống kê nào.",
+  "settings.analytics.enabled.description": "Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta công khai.\nThống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên.\nCmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh.\nKhi tắt, Cmdr không gửi bất kỳ thống kê nào.",
   "@settings.analytics.enabled.description": {
     "sourceHash": "23bafcb"
   },
@@ -1253,7 +1253,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr dùng Space để bật/tắt chọn tệp và ⇧Space cho Xem nhanh (Finder dùng Space thường cho Xem nhanh). Mỗi lần bạn nhấn Space trong danh sách tệp, Cmdr hiện một đoạn nhắc về khác biệt này. Bật mục này (hoặc bấm ''Đừng hiện nữa'' trên thông báo nhỏ) để ẩn lời nhắc vĩnh viễn.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr dùng Space để bật/tắt chọn tệp và ⇧Space cho Xem nhanh (Finder dùng Space thường cho Xem nhanh). Mỗi lần bạn nhấn Space trong danh sách tệp, Cmdr hiển thị một đoạn nhắc về khác biệt này. Bật mục này (hoặc bấm ''Không hiển thị lại'' trên thông báo nhỏ) để ẩn lời nhắc vĩnh viễn.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },
@@ -1293,7 +1293,7 @@
   "@settings.fileExplorer.typeToJump.resetDelay.label": {
     "sourceHash": "16ac047"
   },
-  "settings.fileExplorer.typeToJump.resetDelay.description": "Bộ đệm gõ-để-nhảy còn sống bao lâu sau lần gõ phím cuối. Giá trị thấp hơn đặt lại nhanh hơn giữa các lần tìm; giá trị cao hơn dễ chịu hơn cho người gõ chậm.",
+  "settings.fileExplorer.typeToJump.resetDelay.description": "Bộ đệm gõ-để-nhảy còn sống bao lâu sau lần gõ phím cuối. Giá trị thấp hơn đặt lại nhanh hơn giữa các lần tìm kiếm; giá trị cao hơn dễ chịu hơn cho người gõ chậm.",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
@@ -1325,7 +1325,7 @@
   "@settings.advanced.mountTimeout.label": {
     "sourceHash": "b5bce4f"
   },
-  "settings.advanced.mountTimeout.description": "Thời gian chờ khi gắn kết các bản chia sẻ mạng.",
+  "settings.advanced.mountTimeout.description": "Thời gian chờ khi gắn kết các mục chia sẻ mạng.",
   "@settings.advanced.mountTimeout.description": {
     "sourceHash": "3da30e1"
   },
@@ -1333,7 +1333,7 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "Khi các ứng dụng như TextEdit và Preview lưu một tệp, macOS ghi phiên bản mới bên cạnh dưới một tên tạm (kết thúc bằng \".sb-\") rồi hoán đổi. Tắt tùy chọn này để giữ chúng ngoài danh sách tệp.",
+  "settings.advanced.showSafeSaveFiles.description": "Khi các ứng dụng như TextEdit và Xem trước lưu một tệp, macOS ghi phiên bản mới bên cạnh dưới một tên tạm (kết thúc bằng \".sb-\") rồi hoán đổi. Tắt tùy chọn này để giữ chúng ngoài danh sách tệp.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
@@ -1349,7 +1349,7 @@
   "@settings.advanced.logLlmCalls.label": {
     "sourceHash": "f865b3e"
   },
-  "settings.advanced.logLlmCalls.description": "Lưu mỗi yêu cầu và phản hồi AI vào một thư mục cục bộ (llm-logs) để gỡ lỗi. Các tệp này ở lại trên Mac của bạn và bao gồm tên tệp và đường dẫn mà Cmdr gửi đến nhà cung cấp của bạn.",
+  "settings.advanced.logLlmCalls.description": "Lưu mỗi yêu cầu và phản hồi AI vào một thư mục cục bộ (llm-logs) để gỡ lỗi. Các tệp này ở lại trên máy Mac của bạn và bao gồm tên tệp và đường dẫn mà Cmdr gửi đến nhà cung cấp của bạn.",
   "@settings.advanced.logLlmCalls.description": {
     "sourceHash": "86b3d34"
   },
@@ -1381,15 +1381,15 @@
   "@settings.advanced.oldMacosNoticeShown.label": {
     "sourceHash": "21b14e0"
   },
-  "settings.advanced.oldMacosNoticeShown.description": "Nội bộ: theo dõi việc thông báo một lần dành cho máy Mac thấp hơn phiên bản macOS được hỗ trợ đã hiện hay chưa. Ẩn khỏi giao diện.",
+  "settings.advanced.oldMacosNoticeShown.description": "Nội bộ: theo dõi việc thông báo một lần dành cho máy Mac thấp hơn phiên bản macOS được hỗ trợ đã hiển thị hay chưa. Ẩn khỏi giao diện.",
   "@settings.advanced.oldMacosNoticeShown.description": {
     "sourceHash": "8ae26f2"
   },
-  "settings.onboarding.upgradeNudgeShown.label": "Đã hiển thị nhắc nâng cấp khi nhập môn",
+  "settings.onboarding.upgradeNudgeShown.label": "Đã hiển thị lời nhắc về thiết lập ban đầu sau khi nâng cấp",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
   },
-  "settings.onboarding.upgradeNudgeShown.description": "Nội bộ: theo dõi việc thông báo nhỏ một lần \"mục menu Nhập môn nay đã có\" đã hiện cho người dùng hiện hữu sau khi làm lại trình hướng dẫn hay chưa. Ẩn khỏi giao diện.",
+  "settings.onboarding.upgradeNudgeShown.description": "Nội bộ: theo dõi việc thông báo nhỏ một lần \"mục menu Thiết lập ban đầu nay đã có\" đã hiển thị cho người dùng hiện hữu sau khi làm lại trình thiết lập hay chưa. Ẩn khỏi giao diện.",
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
@@ -1401,7 +1401,7 @@
   "@settings.ai.cloudConsentRevokePending.label": {
     "sourceHash": "16456dc"
   },
-  "settings.onboarding.completed.label": "Đã hoàn tất phần giới thiệu",
+  "settings.onboarding.completed.label": "Đã hoàn tất thiết lập ban đầu",
   "@settings.onboarding.completed.label": {
     "sourceHash": "4730c4f"
   },
@@ -1578,11 +1578,11 @@
   "@settings.behavior.textEditorApp.checking": {
     "sourceHash": "0d6957f"
   },
-  "settings.behavior.textEditorHintSeen.label": "Đã hiện gợi ý về trình soạn thảo văn bản",
+  "settings.behavior.textEditorHintSeen.label": "Đã hiển thị gợi ý về trình soạn thảo văn bản",
   "@settings.behavior.textEditorHintSeen.label": {
     "sourceHash": "4d2a7fc"
   },
-  "settings.behavior.textEditorHintSeen.description": "Gợi ý một lần về việc chọn trình soạn thảo văn bản đã hiện hay chưa.",
+  "settings.behavior.textEditorHintSeen.description": "Gợi ý một lần về việc chọn trình soạn thảo văn bản đã hiển thị hay chưa.",
   "@settings.behavior.textEditorHintSeen.description": {
     "sourceHash": "65440fb"
   },
@@ -1606,11 +1606,11 @@
   "@settings.behavior.openTerminalHereApp.checking": {
     "sourceHash": "0d6957f"
   },
-  "settings.behavior.openTerminalHereToastSeen.label": "Đã hiện gợi ý về “Mở terminal tại đây”",
+  "settings.behavior.openTerminalHereToastSeen.label": "Đã hiển thị gợi ý về “Mở terminal tại đây”",
   "@settings.behavior.openTerminalHereToastSeen.label": {
     "sourceHash": "22f31aa"
   },
-  "settings.behavior.openTerminalHereToastSeen.description": "Gợi ý một lần về việc chọn ứng dụng terminal đã hiện hay chưa.",
+  "settings.behavior.openTerminalHereToastSeen.description": "Gợi ý một lần về việc chọn ứng dụng terminal đã hiển thị hay chưa.",
   "@settings.behavior.openTerminalHereToastSeen.description": {
     "sourceHash": "f976886"
   },
@@ -1634,11 +1634,11 @@
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
-  "settings.behavior.serversPinHintSeen.label": "Đã hiện gợi ý về nhóm Mạng dài",
+  "settings.behavior.serversPinHintSeen.label": "Đã hiển thị gợi ý về nhóm Mạng dài",
   "@settings.behavior.serversPinHintSeen.label": {
     "sourceHash": "8d632ca"
   },
-  "settings.behavior.serversPinHintSeen.description": "Gợi ý một lần về việc bỏ ghim máy chủ đã hiện hay chưa.",
+  "settings.behavior.serversPinHintSeen.description": "Gợi ý một lần về việc bỏ ghim máy chủ đã hiển thị hay chưa.",
   "@settings.behavior.serversPinHintSeen.description": {
     "sourceHash": "fc0722f"
   },
@@ -1658,11 +1658,11 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "2b9d5b4"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Đã hiện thông báo lần đầu tiên",
+  "settings.behavior.revealActivationNoticeSeen.label": "Đã hiển thị thông báo lần đầu tiên",
   "@settings.behavior.revealActivationNoticeSeen.label": {
     "sourceHash": "a62b8f1"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Thông báo về lần đầu “Hiển thị trong Finder” mở trong Cmdr đã hiện hay chưa.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Thông báo về lần đầu “Hiển thị trong Finder” mở trong Cmdr đã hiển thị hay chưa.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "f2107a5"
   },
@@ -1825,7 +1825,7 @@
   "@settings.askCmdr.spend.title": {
     "sourceHash": "c2c7ae2"
   },
-  "settings.askCmdr.spend.empty": "Chưa có sử dụng nào. Lượng token dùng và chi phí ước tính của bạn sẽ hiện ở đây.",
+  "settings.askCmdr.spend.empty": "Chưa có sử dụng nào. Lượng token dùng và chi phí ước tính của bạn sẽ xuất hiện ở đây.",
   "@settings.askCmdr.spend.empty": {
     "sourceHash": "baaf9d6"
   },
@@ -1837,7 +1837,7 @@
   "@settings.section.fileSystems": {
     "sourceHash": "d1fad23"
   },
-  "settings.section.smbNetworkShares": "Bản chia sẻ SMB/mạng",
+  "settings.section.smbNetworkShares": "Mục chia sẻ SMB/mạng",
   "@settings.section.smbNetworkShares": {
     "sourceHash": "d971dec"
   },
@@ -1985,7 +1985,7 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "Bật kết nối mạng, kết nối SMB trực tiếp, bộ đệm bản chia sẻ, và thời gian chờ.",
+  "settings.summary.smbNetworkShares": "Bật kết nối mạng, kết nối SMB trực tiếp, bộ đệm mục chia sẻ, và thời gian chờ.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
   },
@@ -2017,7 +2017,7 @@
   "@settings.summary.askCmdr": {
     "sourceHash": "67eef6a"
   },
-  "settings.summary.driveIndexing": "Lập chỉ mục ổ đĩa chạy ngầm để tìm kiếm nhanh chóng tìm thấy tệp của bạn.",
+  "settings.summary.driveIndexing": "Lập chỉ mục ổ đĩa ở chế độ nền để tìm kiếm nhanh chóng tìm thấy tệp của bạn.",
   "@settings.summary.driveIndexing": {
     "sourceHash": "ef8be32"
   },
@@ -2282,7 +2282,7 @@
   "@settings.network.localNetworkAccessLabel": {
     "sourceHash": "61ce300"
   },
-  "settings.network.permissionIntroPrefix": "Cmdr cần {localNetwork} để tìm máy chủ SMB, liệt kê các bản chia sẻ khả dụng, và kết nối trực tiếp cho việc truyền tệp nhanh hơn. Lần đầu bạn mở Mạng hoặc dùng ",
+  "settings.network.permissionIntroPrefix": "Cmdr cần {localNetwork} để tìm máy chủ SMB, liệt kê các mục chia sẻ khả dụng, và kết nối trực tiếp cho việc truyền tệp nhanh hơn. Lần đầu bạn mở Mạng hoặc dùng ",
   "@settings.network.permissionIntroPrefix": {
     "sourceHash": "4f7f54f"
   },
@@ -2303,7 +2303,7 @@
     "sourceHash": "b87dc1e",
     "sameAsSourceJustification": "Placeholder-only navigation path: all three placeholders are OS-localized macOS labels injected at runtime (do-not-translate), joined by the literal '> ' separator. Nothing to translate."
   },
-  "settings.network.permissionWithout": "Không có nó, Cmdr vẫn đọc và ghi tệp được trên các bản chia sẻ đã gắn kết, nhưng bạn không thể tìm máy chủ mới hay dùng kết nối trực tiếp nhanh hơn của chúng tôi.",
+  "settings.network.permissionWithout": "Không có nó, Cmdr vẫn đọc và ghi tệp được trên các mục chia sẻ đã gắn kết, nhưng bạn không thể tìm máy chủ mới hay dùng kết nối trực tiếp nhanh hơn của chúng tôi.",
   "@settings.network.permissionWithout": {
     "sourceHash": "4beca45"
   },
@@ -2439,7 +2439,7 @@
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
   },
-  "settings.mediaIndex.chosenFolders.help": "Ảnh trong những thư mục này luôn được lập chỉ mục, dù bạn chọn gì ở trên. Gỡ một thư mục sẽ dừng việc lập chỉ mục mới; những gì đã lập chỉ mục vẫn tìm kiếm được.",
+  "settings.mediaIndex.chosenFolders.help": "Ảnh trong những thư mục này luôn được lập chỉ mục, dù bạn chọn gì ở trên. Gỡ bỏ một thư mục sẽ dừng việc lập chỉ mục mới; những gì đã lập chỉ mục vẫn tìm kiếm được.",
   "@settings.mediaIndex.chosenFolders.help": {
     "sourceHash": "c48ff3f"
   },

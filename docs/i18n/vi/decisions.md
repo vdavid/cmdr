@@ -1,858 +1,298 @@
-# vi glossary
-
-The living term glossary for translating Cmdr into this language: one entry per recurring term, in the
-`chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
-
-- **Source every term from the reference pile, never guess.** Mine `_ignored/i18n/vi/` for how Apple, Microsoft, and
-  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the
-  source(s) and a confidence (`confirmed` / `high` / `tentative`).
-- **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
-
-Format, the confidence scale, and the full process: `docs/guides/i18n-translation.md`.
-
-## Terms
-
-Settled during the `errors.json` pass (2026-06-21), each mined from `_ignored/i18n/vi/`:
-
-- **network: `mạng`** · macOS AppKit (`NSNetwork` → "mạng"). `high`.
-- **server: `máy chủ`** · macOS AppKit (`Servers` → "Máy chủ"), GNOME ("máy chủ"). `high`.
-- **computer: `máy tính`** · macOS AppKit (`NSComputer` → "máy tính"). `high`.
-- **connection: `kết nối`** · Xfce Thunar ("kết nối mạng"), macOS ("Ngắt kết nối"). The verb connect/disconnect pair is
-  `kết nối` / `ngắt kết nối`. `high`.
-- **device: `thiết bị`** · GNOME ("thiết bị này"), Xfce Thunar ("Ngắt kết nối thiết bị"). `high`.
-- **permission / access: `quyền`** · Xfce Thunar ("Quyền hạn", "không có quyền"). "Write access" → `quyền ghi`; "don't
-  have permission" → `không có quyền`. `high`.
-- **password: `mật khẩu`** · GNOME ("bằng mật khẩu"). `high`.
-- **username: `tên người dùng`** · standard MS/GNOME convention. `tentative` (not directly grepped, but unambiguous).
-- **mount / unmount: `gắn kết` / `bỏ gắn kết`** · Xfce Thunar ("Gắn kết", "\_Bỏ gắn kết"). Remount → `gắn kết lại`.
-  `high`.
-- **read-only: `chỉ đọc`** · Xfce Thunar, GNOME ("Chỉ đọc"). `high`.
-- **try again / retry: `thử lại`** · GNOME ("Thử \_lại"). `high`.
-- **sign in / log in: `đăng nhập`** · MS terminology (`sign in` → "đăng nhập", VNM). `high`.
-- **internet: `internet`** (loanword, lowercase) · kept as-is; "internet connection" → `kết nối internet`. `tentative`.
-- **couldn't / can't / unable to: `không thể`** · GNOME ("Không thể"), Xfce Thunar ("Không thể gắn kết"). The calm
-  negative-capability framing Cmdr's error voice wants (avoids a bare "lỗi"/"failed"). `high`.
-
-Added during the `fileExplorer.json` pass (2026-06-21), triangulated (macOS Finder/AppKit Tier 1, MS terminology Tier 2,
-GNOME Nautilus Tier 3); macOS wins ties since Cmdr is a macOS app:
-
-- **host: `máy chủ`** · macOS Finder ("Kết nối với máy chủ"), MS terminology. Same word as server; vi doesn't
-  distinguish. `high`.
-- **hostname: `tên máy chủ`** · MS terminology, macOS ("Máy chủ:"). `high`.
-- **connect to server: `kết nối với máy chủ`** · macOS Finder verbatim ("Kết nối với máy chủ"). `high`.
-- **server address: `địa chỉ máy chủ`** · macOS Finder ("Địa chỉ máy chủ"). `high`.
-- **share (network share, noun): `chia sẻ`; shared folder: `thư mục chia sẻ`** · macOS Finder ("Thư mục được chia sẻ",
-  "chia sẻ"). NOT MS's first hit "cổ phần" (financial sense, wrong). `high`.
-- **eject: `tháo`** · macOS Finder/AppKit ("Tháo", `NSNavEjectButton` → "tháo"). Overrides the style guide's tentative
-  "đẩy ra" — macOS Tier 1 says "tháo". `high`.
-- **credentials: `thông tin đăng nhập`** · MS terminology. `high`.
-- **guest: `khách`** · MS terminology, macOS. `high`.
-- **Keychain -> `chuỗi khóa`; Keychain Access (the app) -> `Truy cập chuỗi khóa`** · macOS Vietnamese · `high`. The
-  localized Apple feature name: Apple localizes "Keychain" as the common noun "chuỗi khóa" and the app as "Truy cập
-  chuỗi khóa" (Apple vi support guide, `support.apple.com/vi-vn/guide/keychain-access`, verified 2026-06-21). Not kept
-  verbatim because Apple does localize it for vi macOS users (Decision 1; same rule as Quick Look). Supersedes the old
-  "keep Keychain verbatim" note. Applied to `ai.secretError.keychainTitle/Body` and the three
-  `fileExplorer.network`/`navigation` strings referencing the credential store.
-- **favorites / favorite: `mục ưa thích`** · macOS Finder ("Mục ưa thích", "Máy chủ ưa thích"). `high`.
-- **tab (UI tab): `tab`; Finder tag: `thẻ`** · macOS Finder vi keeps the loanword for the UI tab ("Hiển thị Tất cả Tab",
-  "Ẩn Thanh Tab") and reserves `Thẻ` for a Finder tag ("Thẻ…", "Thêm thẻ…"), macOS 26.6.2, verified 2026-08-30. ⚠️ The
-  earlier "Thẻ ưa thích" citation was a TAG string ("Favorite Tags"), not a tab one. Swept 2026-08-30; see the
-  drift-audit section below. `high`.
-- **refresh / rescan: `làm mới` / `quét lại`** · refresh → MS "làm mới"; rescan → "quét lại" (scan = "quét", natural).
-  `high` / `tentative`.
-- **index (noun): `chỉ mục`; indexing (verb): `lập chỉ mục`; indexed/up to date: `đã lập chỉ mục`** · macOS ("chỉ mục",
-  "Đang cập nhật chỉ mục", "Đã lập chỉ mục"), MS terminology. `high`.
-- **drive / volume: `ổ đĩa`** · macOS ("Ổ đĩa khởi động"), MS terminology. `high` (drive); `tentative` (volume reuse).
-- **browse: `duyệt`** · macOS Finder ("Duyệt các máy chủ khả dụng"). `high`.
-- **pane: `khung`** · the two file lists; style-guide tentative kept. `tentative`.
-- **timeout (verb): `hết thời gian chờ`** · phrased naturally; no single term. `tentative`.
-- **disk usage / disk space: `dung lượng đĩa`** · "dung lượng" (capacity) per macOS ("Giá trị dung lượng"). `tentative`.
-- **read-only device/volume: `chỉ đọc`** · MS terminology, GNOME. `high`.
-
-UI section/group names used (keep consistent across files):
-
-- Favorites → **Mục ưa thích**; Volumes → **Ổ đĩa**; Cloud → **Đám mây**; Mobile → **Thiết bị di động**; Network →
-  **Mạng**.
-
-UI/section phrasings settled here (for consistency in other files):
-
-- **"Here's what to try" (error-list lead-in): `Bạn có thể thử:`** · natural friendly framing, ends in a colon before
-  the bullet list. `tentative`.
-- **Terminal, Disk Utility, First Aid, Activity Monitor, Spotlight, Finder, System Settings** · macOS feature/app names
-  Cmdr's error copy references as proper names alongside literal commands.
-- ⚠️ **Get Info is NOT one of them: Apple localizes it as `Lấy thông tin`**, the Locked checkbox as `Đã khóa`, and the
-  Sharing & Permissions section as `Chia sẻ & quyền`. See § Lỗi khi tháo ổ đĩa / ngắt kết nối, 2026-08-23, and § Hai
-  khóa `errors.listing.*`, 2026-08-24, for the Tier-1 keys. The other names above are still owed a per-name check
-  against `_ignored/i18n/vi/macOS/` rather than a blanket keep-English rule.
-
-Added during the `settings.json` pass (2026-06-21). Reuses the prior-pass terms above (eject → `tháo`, tab → `thẻ`, pane
-→ `khung`, share → `chia sẻ`, mount → `gắn kết`, index → `chỉ mục`/`lập chỉ mục`, drive/volume → `ổ đĩa`); new terms
-below:
-
-- **theme (light/dark/system): `Sáng` / `Tối` / `Hệ thống`** · MS ("Sáng"/"tối"), macOS ("Hệ thống"). `high`.
-- **download (verb): `tải xuống`; Downloads (folder): `Tải về`** · MS verb ("tải xuống"), macOS folder ("Tải về").
-  `high`.
-- **notification: `thông báo`** · macOS/MS. `high`.
-- **update(s): `cập nhật`** · macOS ("Cập nhật"), MS. `high`.
-- **port: `cổng`** · MS ("cổng"). `high`.
-- **cache (noun/verb): `bộ đệm` / `lưu vào bộ đệm`** · MS ("bộ đệm ẩn"); plain "bộ đệm" for UI brevity. `high`.
-- **timeout: `thời gian chờ`** · standard MS phrasing. `high`.
-- **threshold: `ngưỡng`** · MS ("ngưỡng"). `high`.
-- **provider: `nhà cung cấp`** · MS. `high`.
-- **service: `dịch vụ`** · MS. `high`.
-- **context window: `cửa sổ ngữ cảnh`** · literal, no single source. `tentative`.
-- **token (LLM): `token`** (loanword) · MS lists "token"/"mã thông báo"; keep `token` for the LLM sense. `tentative`.
-- **binary / decimal (size base): `nhị phân` / `thập phân`** · MS. `high`.
-- **reset: `đặt lại`** · macOS ("Đặt lại"). `high`.
-- **restart: `khởi động lại`** · macOS ("Khởi động lại"). `high`.
-- **preview: `xem trước`** · macOS ("Xem trước"). `high`.
-- **sidebar: `thanh bên`** · macOS ("Thanh bên"), MS. (Overrides the style guide's GNOME "khung bên" — macOS wins.)
-  `high`.
-- **git terms — branch: `nhánh`, commit: `commit`, tag: `thẻ`, repository: `kho`, worktree: `worktree`** · MS ("nhánh",
-  "kho lưu trữ"); commit/worktree kept as loanwords (dev audience, no clean native UI source). `tentative`.
-- **stale (index): `lỗi thời`** · natural phrasing for an out-of-date index. `tentative`.
-- **toast / chip / banner (UI): `thông báo nhỏ` / `huy hiệu` / `biểu ngữ`** · descriptive renderings; no single source.
-  `tentative`.
-
-Settings section/UI names (keep consistent across files):
-
-- Appearance: `Giao diện` · Behavior: `Hành vi` · File systems: `Hệ thống tệp` · Search: `Tìm kiếm` · Viewer:
-  `Trình xem` · Developer: `Nhà phát triển` · Advanced: `Nâng cao` · Keyboard shortcuts: `Phím tắt` · License:
-  `Giấy phép` · Updates & privacy: `Cập nhật & quyền riêng tư`.
-- View modes — Full: `Đầy đủ` · Brief: `Rút gọn`. Columns — Name: `Tên` · Ext: `Đuôi`.
-- Commands — Rename: `Đổi tên` · View: `Xem` · Copy: `Sao chép` (keep aligned with other catalog files).
-
-Added during the `licensing.json` + `ai.json` + `viewer.json` pass (2026-06-21). Reuses prior terms (server → `máy chủ`,
-organization → `tổ chức`, model → `mô hình`, download → `tải xuống`, restart → `khởi động lại`, cancel → `hủy`, close →
-`đóng`, retry/try again → `thử lại`); new terms below, each mined from `_ignored/i18n/vi/`:
-
-- **license (noun): `giấy phép`; license key: `khóa giấy phép`** · MS terminology ("digital license" → "giấy phép kỹ
-  thuật số"; "product key" → "khóa sản phẩm", adapted to "khóa giấy phép" for the license sense). macOS Tier 1 has no
-  clean "License" string. `high` (giấy phép); `high` (khóa giấy phép).
-- **activate / deactivate: `kích hoạt` / `hủy kích hoạt`** · MS terminology ("activate" → "kích hoạt", "deactivate" →
-  "hủy kích hoạt"). `high`.
-- **subscription: `đăng ký`** · MS terminology ("subscription" → "đăng ký"). Note: also the verb "subscribe"; context
-  disambiguates. `high`.
-- **renew: `gia hạn`** · MS terminology ("renew" → "gia hạn"). `high`.
-- **expire / expired: `hết hạn`** · MS terminology ("expire" → "hết hạn"). `high`.
-- **verify: `xác minh`** · MS terminology ("verify" → "xác minh"). `high`.
-- **perpetual (license): `vĩnh viễn`** · no source term; natural rendering for a one-time/forever license. `tentative`.
-- **valid / validity: `có hiệu lực` / `hiệu lực`** · natural legal-doc phrasing; no single source term. `tentative`.
-- **commercial / personal (license tiers): `Thương mại` / `Cá nhân`** · standard rendering; kept capitalized as tier
-  names. `high`.
-- **(open) beta: `beta` (loanword)** · kept as-is, lowercase; "open beta" → "beta công khai". `tentative`.
-- **clipboard: `bảng nhớ tạm`** · macOS Finder/AppKit verbatim ("Clipboard" → "bảng nhớ tạm"). `high`.
-- **select all: `chọn tất cả`** · macOS AppKit ("Select All" → "Chọn Tất cả"; sentence-cased to "Chọn tất cả"). `high`.
-- **viewer (file viewer): `trình xem`; file viewer: `trình xem tệp`** · Total Commander ("trình xem", "trình xem tập
-  tin"; orthodox file-manager lineage). NOT MS's first hit "người xem" (audience sense, wrong). `high`.
-- **view (verb) / view mode: `xem` / `chế độ xem`** · macOS Finder ("chế độ xem"), TC ("Xem"). `high`.
-- **image: `hình ảnh`; document: `tài liệu`** · MS ("hình ảnh"), GNOME/Dolphin ("Tài liệu"). `high`.
-- **(character) encoding: `mã hóa ký tự`** · MS terminology ("character encoding" → "mã hóa ký tự"). `high`.
-- **regex: `Regex` (loanword)** · kept as the short form per the EN copy; "regular expression" has no clean native UI
-  term. `tentative`.
-- **line / character (of text): `dòng` / `ký tự`** · GNOME ("dòng"), standard. `high`.
-- **memory (RAM): `bộ nhớ`** · MS ("memory" → "bộ nhớ"). `high`.
-- **word wrap: `ngắt dòng`** · natural rendering (wrap at edge); no single source. `tentative`.
-- **streaming (large-file mode): `phát trực tiếp`** · MS-style rendering for streaming. `tentative`.
-- **zoom / pan / fit: `thu phóng` / `di chuyển` / `vừa khít`** · MS ("zoom" → "thu phóng"); pan/fit are natural
-  renderings. `high` (zoom); `tentative` (pan, fit).
-- **clipboard limit / paste: `dán`** · macOS AppKit ("Dán"). `high`.
-- **endpoint: `điểm cuối`** · MS terminology ("endpoint" → "điểm cuối"). `high`.
-- **API key: `khóa API`** · standard; "API" kept verbatim. `high`.
-- **quota: `hạn ngạch`; rate-limit: `giới hạn tần suất`** · MS ("quota" → "hạn ngạch"); rate-limit is a natural
-  rendering. `high` (quota); `tentative` (rate-limit).
-- **provider (AI/sync): `nhà cung cấp`** · MS, reused from settings pass. `high`.
-- **AI: `AI`** (loanword, kept verbatim) · universal in vi tech UI; "AI-powered" → "do AI hỗ trợ". `high`.
-- **model (AI/ML): `mô hình`** · MS "model" lists "mô hình 3D" for the 3D sense; the bare ML sense is "mô hình". `high`.
-- **endpoint URL / cloud: `URL điểm cuối` / `đám mây`** · cloud reused from settings (`Đám mây`). `high`.
-
-UI/section phrasings settled here (for consistency in other files):
-
-- **Settings > AI (nav path): `Cài đặt > AI`** · "Cài đặt" per macOS; "AI" kept verbatim; the `>` separator preserved.
-- **Viewer window name: `Trình xem`** (matches the settings-pass Viewer section `Trình xem`).
-
-Added during the `queryUi.json` + `commands.json` pass (2026-06-21), macOS Finder/AppKit Tier 1 (`vi/macOS/`), MS
-terminology Tier 2 (`VIETNAMESE.tbx`); macOS wins ties:
-
-- **search / search (the action): `tìm kiếm`** · macOS Finder ("Tìm kiếm"), MS. `high`.
-- **query (noun, e.g. "Query:"): `truy vấn`** · macOS Finder ("Truy vấn để tìm kiếm trong Finder"), MS. `high`.
-- **results: `kết quả`** · MS ("kết quả"). `high`.
-- **scan / scanning: `quét` / `đang quét`** · MS ("quét"). "Scan in progress" → `Đang quét`. `high`.
-- **pattern: `mẫu`** · MS ("mẫu hình"); short UI form `mẫu`. `high`.
-- **wildcard: `ký tự đại diện`** · MS ("kí tự đại diện"; standard spelling `ký`). `high`.
-- **glob / regex: kept verbatim (`Glob`, `Regex`)** · technical loanwords, no native UI source. `tentative`.
-- **case-sensitive: `phân biệt chữ hoa/thường`** · macOS Finder ("Phân biệt Chữ hoa/thường"). `high`.
-- **ascending / descending: `tăng dần` / `giảm dần`** · MS ("thứ tự tăng dần", "thứ tự giảm dần"). `high`.
-- **sort by: `sắp xếp theo`** · macOS Finder ("sắp xếp theo tên"). `high`.
-- **zoom in / out: `phóng to` / `thu nhỏ`; zoom level: `mức phóng`** · macOS AppKit ("thu phóng"), GNOME ("Phóng
-  to"/"Thu nhỏ"). `high`.
-- **clipboard: `bảng nhớ tạm`** · macOS AppKit ("Bảng nhớ tạm"). `high`.
-- **context menu: `menu chuột phải`** · MS ("menu chuột phải"). `high`.
-- **quit: `thoát`; hide: `ẩn`** · macOS AppKit/MS. `high`.
-- **offline (cloud): `ngoại tuyến`; "make available offline": `tải xuống để dùng ngoại tuyến`** · standard MS/macOS
-  convention; reworded for clarity. `tentative`.
-- **command palette: `bảng lệnh`** · descriptive (no single source); `bảng` (panel) + `lệnh` (command). `tentative`.
-- **onboarding (the first-launch wizard, noun): `thiết lập ban đầu`** · the setup sense (the wizard walks through FDA,
-  AI, and optional setup), matching the wizard's own title `Thiết lập ban đầu Cmdr`. Unified app-wide post-translation
-  (the earlier `hướng dẫn ban đầu` / "guide" rendering in `queryUi`/`commands`/`shortcuts` was retired so the menu item,
-  command-palette entry, shortcut scope, and wizard title all match). MS "triển khai" is the deployment sense, wrong
-  here. `high`.
-- **scope (search scope): `phạm vi`** · macOS Finder ("phạm vi tìm kiếm"). `high`.
-- **cursor (file-list cursor): `con trỏ`** · standard. `high`.
-- **toggle (verb prefix): `bật/tắt`** · standard MS UI form for on/off commands. `high`.
-- **Recents / recent: `gần đây`** · macOS Finder ("Gần đây"). `high`.
-- **byte/bytes (unit): `byte`** (loanword, no plural inflection) · MS, macOS. `high`.
-
-`queryUi`/`commands` phrasings settled (for consistency):
-
-- **"Coming soon": `Sắp ra mắt`** · natural friendly framing. `tentative`.
-- **"Hide boring folders" (playful): `Ẩn các thư mục nhàm chán`** · keeps the casual product voice per the en `@key`
-  note. `tentative`.
-- **agent (AI agent): `tác nhân`** · MS sense for software agent. Used in the `queryUi.ai.*` strip and the
-  `onboarding.stepAi.*` comparison table. Unified app-wide post-translation (the onboarding pass's loanword `agent` was
-  retired in favor of this). `high`.
-- **`View > Zoom > 100%` (literal menu path in `commands.handler.zoomResetHintMenu`)** kept in English per the en
-  `@key`: it's a literal menu-bar path, not prose.
-
-Added during the `onboarding.json` + `fileOperations.json` pass (2026-06-21), triangulated (macOS Finder/AppKit Tier 1,
-MS Tier 2, GNOME Nautilus/Xfce Thunar Tier 3); macOS wins ties. Reuses prior-pass terms (trash → `thùng rác`, delete →
-`xóa`, copy → `sao chép`, move → `di chuyển`, rename → `đổi tên`, cancel → `hủy`, drive/volume → `ổ đĩa`, share →
-`chia sẻ`, scan → `quét`/`đang quét`, cursor → `con trỏ`, network → `mạng`, server → `máy chủ`, restart →
-`khởi động lại`, download → `tải xuống`, provider → `nhà cung cấp`, toast → `thông báo nhỏ`, quit → `thoát`); new terms
-below:
-
-- **overwrite / replace: `ghi đè`** · macOS Finder ("Ghi đè hay giữ lại phần mở rộng tệp"), GNOME ("ghi đè"). Cmdr uses
-  `ghi đè` (overwrite) consistently; GNOME's "thay thế" (replace) not used. `high`.
-- **permanently delete: `xóa vĩnh viễn`** · GNOME ("xóa vĩnh viễn"). `high`.
-- **move to trash: `chuyển vào thùng rác`** · macOS Finder ("Di chuyển các mục vào Thùng rác"), GNOME. `high`.
-- **skip: `bỏ qua`** · GNOME ("\_Bỏ qua"). Also used for Dismiss (timeout warning button) → `bỏ qua`. `high`.
-- **merge (folders): `hòa trộn`** · GNOME ("\_Hòa trộn", "Hòa trộn thư mục"). `high`.
-- **symlink / symbolic link: `liên kết mềm`** · GNOME ("liên kết mềm"). Link "target" → `đích`. `high`.
-- **hardlink: `liên kết cứng`** · descriptive (parallels `liên kết mềm`); no single UI source. `tentative`.
-- **destination: `đích` / `đích đến`; source: `nguồn`** · GNOME ("thư mục đích", "thư mục nguồn", "đích đến").
-  Destination volume/path → `ổ đĩa đích` / `đường dẫn đích`. `high`.
-- **rollback (undo an operation's partial work): `hoàn tác`** · natural Vietnamese; no single UI source (GNOME uses
-  "\_Hoàn lại" for plain undo). Conflict-step Rollback button + tooltips use `hoàn tác`. `tentative`.
-- **conflict (file clash): `xung đột`; "file already exists": `tệp đã tồn tại`** · standard MS/dev phrasing. `high`.
-- **verify (before copy/move): `xác minh`** · "Verifying before copy" → `Đang xác minh trước khi sao chép`. `tentative`.
-- **technical details: `chi tiết kỹ thuật`** · MS/standard. `high`.
-- **retry / try again: `thử lại`** · macOS Finder ("Thử lại"). `high`.
-- **close: `đóng`** · macOS ("Đóng"). `high`.
-- **endpoint (URL): `điểm cuối`** · descriptive; "Endpoint URL" → `URL điểm cuối`. `tentative`.
-- **API key: `khóa API`** · "API" verbatim, "key" → `khóa`. `high`.
-- **model (AI/LLM): `mô hình`** · MS ("model" Noun sense). LLM kept verbatim. `high`.
-- **full disk access: the pane NAME is `Quyền truy cập đầy đủ vào ổ đĩa`**; running prose in the catalog still says
-  `truy cập toàn bộ đĩa` · the pane name is Apple's own, from the live bundle
-  (`/System/Library/ExtensionKit/Extensions/SecurityPrivacyExtension.appex/Contents/Resources/Localizable.loctable`, key
-  `ALL_FILES`, macOS 27.0 build 26A428, verified 2026-09-16) · `high` (supersedes the earlier `tentative` descriptive
-  form as the NAME). Privacy & Security pane → `Quyền riêng tư & Bảo mật` (macOS SystemSettings verbatim) · `high`.
-  Boundary: § The title-bar full-disk-access badge.
-- **review and apply / at will: `xem lại rồi áp dụng` / `tùy ý`** · the with/without-AI table's recurring phrasing.
-  `tentative`.
-
-**Cross-pass terms resolved post-translation** (2026-06-21 reconciliation pass; both unified app-wide):
-
-- **onboarding** → `thiết lập ban đầu` (setup sense), matching the wizard title `Thiết lập ban đầu Cmdr`. The
-  `queryUi`/`commands`/`shortcuts` `hướng dẫn ban đầu` was retired. See the `onboarding` term entry above.
-- **agent** → `tác nhân` (MS sense). The onboarding loanword `agent` was retired. See the `agent` term entry above.
-
-macOS proper-name labels referenced in onboarding instructions (Vietnamese macOS wording where the pile has it, else
-best-effort + `tentative`): Quit & Reopen → `Thoát & Mở lại` (macOS "Reopen" → `Mở lại`); Applications → `Ứng dụng`;
-Documents → `Tài liệu`; Downloads → `Tải về`; Desktop → `Màn hình nền` (all macOS Finder); Full Disk Access →
-`Quyền truy cập đầy đủ vào ổ đĩa` (Apple's own pane name, see the full-disk-access entry above, `high`), Local network
-access → `Truy cập mạng cục bộ`, Accepting incoming connections → `Chấp nhận kết nối đến` (those two: no pile string;
-best-effort, `tentative`).
-
-File-operation toggle/action names (keep consistent across files): Trash/Delete toggle → `Thùng rác` / `Xóa`; Copy/Move
-toggle → `Sao chép` / `Di chuyển`; conflict actions — Skip → `Bỏ qua`, Overwrite → `Ghi đè`, Rename → `Đổi tên`,
-Rollback → `Hoàn tác`.
-
-Added during the `indexing.json` + `downloads.json` + `errorReporter.json` + `shortcuts.json` + `mtp.json` + `ui.json`
-pass (2026-06-21, wave 1 vi batch 3). Reuses prior terms (index/indexing → `chỉ mục`/`lập chỉ mục`, scan → `quét`,
-drive/volume → `ổ đĩa`, stale → `lỗi thời`, download → `tải xuống`/Tải về folder, default → `mặc định`, reset →
-`đặt lại`, retry → `thử lại`, close → `đóng`, dismiss → `bỏ qua`, preview → `xem trước`, clipboard → `bảng nhớ tạm`,
-network → `mạng`, server/hostname → `máy chủ`/`tên máy chủ`, device → `thiết bị`, permission → `quyền`, command palette
-→ `bảng lệnh`, file list → `danh sách tệp`); new terms below, each mined from `_ignored/i18n/vi/`:
-
-- **report (error report): `báo cáo`; error report: `báo cáo sự cố`** · MS terminology ("report" → "báo cáo"). "Error
-  report" rendered `báo cáo sự cố` (sự cố = incident/issue) to keep the calm voice — avoids a bare "lỗi" status label
-  per the style guide. `high` (báo cáo); `tentative` (sự cố framing for "error").
-- **log / log file / logs: `nhật ký` / `tệp nhật ký`** · standard vi convention for logs (MS's `.tbx` "log" hit is a
-  fragment; `nhật ký` is canonical). "Log lines" → `dòng nhật ký`; "file change log" (FS journal) →
-  `nhật ký thay đổi tệp`. `high`.
-- **redact / scrub (privacy): `lược bỏ` / `xóa`** · descriptive; no single source. "Redacted client-side" →
-  `lược bỏ phía máy của bạn`. `tentative`.
-- **send: `gửi`** · MS terminology ("send" → "gửi"). `high`.
-- **process (OS process): `tiến trình`** · standard vi OS term (NOT MS's first hit "quy trình", which is the
-  business-process sense — wrong here). `high`.
-- **daemon: `daemon`** (loanword, kept) · no clean native UI term; macOS system-daemon names (ptpcamerad) kept literal
-  alongside. `tentative`.
-- **bundle (log bundle): `gói`** · natural rendering for a packaged set of files. `tentative`.
-- **manifest: `bản kê`** · descriptive (a listing of contents); no single source. `tentative`.
-- **event (filesystem/change event): `sự kiện`** · standard MS/vi. "events processed" → `đã xử lý ... sự kiện`. `high`.
-- **buffer / channel (internal): `bộ đệm` / `kênh`** · buffer reused from settings pass (`bộ đệm`); channel → `kênh`
-  (standard). `high` (buffer); `tentative` (channel).
-- **watcher (file-change watcher): `bộ theo dõi`** · descriptive ("watch" → `theo dõi`, reused from downloads "watch
-  your Downloads folder"). `tentative`.
-- **shortcut (keyboard): `phím tắt`; modifier (key): `phím bổ trợ`** · MS terminology ("shortcut" → "phím tắt");
-  modifier → `phím bổ trợ` (the ⌘/⌃/⌥/⇧ keys; descriptive, glyphs kept literal). `high` (phím tắt); `tentative` (phím bổ
-  trợ).
-- **register (a shortcut): `đăng ký`** · MS terminology ("register" → "đăng ký"). Reuses the sign-in word; context
-  disambiguates. `high`.
-- **combo / key combination: `tổ hợp` / `tổ hợp phím`** · descriptive (tổ hợp = combination); no single UI source.
-  `tentative`.
-- **conflict (shortcut clash): `xung đột`** · MS terminology, reused from fileOperations pass. `high`.
-- **scope (shortcut group): `phạm vi`** · reused from queryUi pass; here used as section-heading framing for shortcut
-  groups. `high`.
-- **bind / bound (shortcut → command): `gán`** · descriptive ("bound to" → `được gán cho`). `tentative`.
-- **global (shortcut scope): `toàn cục`** · standard vi for system-wide. "global shortcut" → `phím tắt toàn cục`.
-  `high`.
-- **jump (to a file/download): `nhảy đến`** · natural friendly rendering for the "jump to" action. `tentative`.
-- **reference ID: `ID tham chiếu`** · "ID" kept verbatim; "reference" → `tham chiếu` (MS). `high`.
-- **note (free-text): `ghi chú`; optional: `tùy chọn`** · MS/standard. `high`.
-- **MTP / PTP / udev / USB / ptpcamerad / Terminal / daemon names: kept verbatim** · protocol/system proper names per
-  the do-not-translate rule; surrounding prose translated.
-
-`shortcuts`/`indexing`/`downloads` phrasings settled here (for consistency in other files):
-
-- **Shortcut scope/group names**: App → `Ứng dụng`; Main window → `Cửa sổ chính`; File list → `Danh sách tệp`; Brief
-  mode → `Chế độ rút gọn`; Full mode → `Chế độ đầy đủ`; Volume chooser → `Bộ chọn ổ đĩa`; Network → `Mạng`; Share
-  browser → `Trình duyệt chia sẻ`; Command palette → `Bảng lệnh`; About window → `Cửa sổ Giới thiệu`; Onboarding →
-  `Thiết lập ban đầu` (unified app-wide; see the `onboarding` term entry).
-- **macOS feature names inside conflict warnings kept in English** (Spotlight, Mission Control, Spaces, App windows,
-  Force Quit, Character Viewer): they read as proper nouns and match what a vi macOS often shows. Descriptive lowercase
-  mid-sentence phrases ARE translated (the app switcher → `bộ chuyển ứng dụng`, screenshots → `chụp màn hình`, screen
-  recording → `quay màn hình`, logging out → `đăng xuất`, locking the screen → `khóa màn hình`, input source switching →
-  `chuyển nguồn nhập`). Finder kept verbatim; "Finder search window" → `Cửa sổ tìm kiếm Finder`.
-- **System Settings > Keyboard** (macOS settings path) kept in English (matches `downloads.fda.openSystemSettings` → "Mở
-  System Settings"; the pile has no clean vi string for the Keyboard pane).
-- **"Almost done" → `Sắp xong`; ETA `Ns left`/`Nm left` → `còn Ns`/`còn Nm`** (the `s`/`m` abbreviations kept attached,
-  "còn" = remaining, leading word per vi grammar).
-
-**Onboarding** here was unified to `Thiết lập ban đầu` in the 2026-06-21 reconciliation pass (see the `onboarding` term
-entry).
-
-Added during the wave-1 prep pass (2026-06-21): `search` + `feedback` + `crashReporter` + `goToPath` + `transfer` +
-`updates` + `lowDiskSpace` + `commandPalette` + `whatsNew` + `main` + `common` + `notifications`. Reuses prior terms
-(tìm kiếm, thư mục/tệp, thùng rác, sao chép/di chuyển/đổi tên, hủy, đóng, thử lại, bảng lệnh, lệnh, đường dẫn, tải về,
-khởi động lại, cập nhật, thông báo, đích, gần đây, ổ đĩa/dung lượng đĩa, Truy cập toàn bộ đĩa, Cài đặt hệ thống); new
-terms below, each mined from `_ignored/i18n/vi/`:
-
-- **crash / crash report: `sự cố` / `báo cáo sự cố`** · macOS ("problem" → "sự cố", verbatim in Finder/AppKit), MS
-  ("crash" → "sự cố"). The calm framing Cmdr's error voice wants — avoids a bare "lỗi". `high`.
-- **report (noun): `báo cáo`; report ID: `mã báo cáo`** · MS terminology ("report" → "báo cáo"). `high`.
-- **send: `gửi`** · MS terminology ("send" → "gửi"). `high`.
-- **feedback: `phản hồi`** · MS ("feedback" → "ý kiến phản hồi"; shortened to `phản hồi` for UI brevity). `high`.
-- **version: `phiên bản`** · macOS Finder/AppKit ("version" → "phiên bản", verbatim). `high`.
-- **changelog: `nhật ký thay đổi`** · MS terminology ("changelog" → "nhật ký thay đổi"). `high`.
-- **attach: `đính kèm`** · MS terminology ("attach" → "đính kèm"). `high`.
-- **character (text length): `ký tự`** · MS terminology, reused from viewer pass. `high`.
-- **dismiss (close-without-action button): `bỏ qua`** · reuses the file-ops Skip/Dismiss → `bỏ qua`. macOS "dismiss" has
-  no clean single string; `bỏ qua` reads natural. `high`.
-- **restart: `khởi động lại`** · macOS AppKit ("Restart" → "Khởi động lại"), reused from settings pass. `high`.
-- **startup disk: `đĩa khởi động`** · descriptive (boot volume); no single macOS string. `tentative`.
-- **command (palette item): `lệnh`; command palette: `bảng lệnh`** · MS ("command" → "lệnh"); `bảng lệnh` reused from
-  queryUi pass. `high` (lệnh); `tentative` (bảng lệnh).
-- **"quit unexpectedly" (crash body): `thoát đột ngột`** · `thoát` (quit, macOS) + `đột ngột` (sudden). No single
-  source; natural rendering. `tentative`.
-- **build folder (e.g. node_modules): `thư mục build`** · `build` kept as a dev loanword (no clean native term; dev
-  audience). `tentative`.
-
-UI/path phrasings settled here (keep consistent across files):
-
-- **Onboarding (menu item / wizard): `Thiết lập ban đầu`** · the unified app-wide rendering (setup sense). The menu path
-  `Cmdr > Thiết lập ban đầu…` keeps the trailing ellipsis. `high`.
-- **"What's new in Cmdr" (dialog title): `Có gì mới trong Cmdr`** · natural friendly framing. `tentative`.
-- **Settings > Updates & privacy: `Cài đặt > Cập nhật & quyền riêng tư`** · reuses the settings-pass section name.
-  `high`.
-- **Settings > Updates (crash-toast button): `Cài đặt > Cập nhật`** · matches the settings-pass Updates section. `high`.
-- **An update check that didn't land (`updates.failure.check`): whole sentences,
-  `Cmdr không kiểm tra được bản cập nhật. {reason}`** · no "Error:" prefix is left, and no bare "Lỗi" label, keeping the
-  calm voice. `high`.
-
-Settled term decision (2026-06-21):
-
-- **Quick Look -> `Xem nhanh`** · macOS Vietnamese · `high`. The localized Apple feature name: macOS Finder localizes it
-  as "Xem nhanh" (`vi/macOS/Finder` `TL14`, sentence case; AppKit uses title-case "Xem Nhanh" — Cmdr follows Finder's
-  sentence case). Applied to `commands.fileQuickLook.mac.label` and the three settings strings that reference the
-  feature. Not kept verbatim because Apple does localize it for vi macOS users.
-
-Added during the wave-1 prep pass (2026-06-21): `queue.json` (new transfer-queue window) + the new
-pause/queue/background keys in `fileOperations.json` and `commands.json`. macOS Finder/AppKit Tier 1, MS terminology
-Tier 2; macOS wins ties. Reuses prior terms (sao chép/di chuyển/xóa, thùng rác, hủy, đóng, thử lại, đích, con trỏ, "còn
-{duration}" ETA framing). New terms below, each mined from `_ignored/i18n/vi/`:
-
-- **pause: `tạm dừng`** · macOS AppKit (`NSPauseTemplate`/`NSTouchBarPauseTemplate` → "tạm dừng"), MS terminology (verb
-  "pause" → "tạm dừng"). "Paused" (status/title) → `Đã tạm dừng`. `high`.
-- **resume: `tiếp tục`** · macOS Finder ("Tiếp tục", the Continue/Resume action `66.title`). NOT the MS "resume" noun
-  "sơ yếu lý lịch" (the CV/résumé sense — wrong here). `high`.
-- **queue (noun): `hàng đợi`; queue (verb, "send to the queue"): `đưa vào hàng đợi`** · MS terminology ("queue" noun →
-  "hàng đợi", verb → "cho vào hàng"; adapted to `đưa vào hàng đợi` for the UI action). `high`. (The window-name
-  rendering that once sat here, "Transfer queue" → `hàng đợi truyền`, is SUPERSEDED: the window is now the operation
-  queue, `Hàng đợi thao tác`. See the 2026-08-08 rename section at the end of this file.)
-- **background / run in the background: `nền` / `chạy ở chế độ nền`** · MS terminology ("background task" → "tác vụ
-  nền"). "Keep running in the background" → `giữ chạy ở chế độ nền`. `high`.
-- **transfer (a copy or move, as a countable noun): `lần truyền`** · descriptive (`lần` = instance/occurrence + `truyền`
-  = transfer). Still current for the NARROW copy-or-move sense (`fileOperations.transferProgress.pauseAria`,
-  `settings.network.smbConcurrency.description`, the stalled-transfer strings). `tentative`. (The queue-window use that
-  once sat here, heading "Transfers" → `Các lần truyền`, is SUPERSEDED by `Các thao tác`; see the 2026-08-08 rename
-  section at the end of this file.)
-
-Wave-1-prep phrasings settled (keep consistent): "Waiting" (queued status) → `Đang chờ`; "Running" → `Đang chạy`; "Done"
-→ `Xong`; "Cancelled" → `Đã hủy`; "Couldn''t finish" (gentle failed wording) → `Chưa hoàn tất được` (negative-capability
-framing per the error voice, avoids a bare "lỗi"/"thất bại"). "Cancel selected" → `Hủy mục đã chọn`. The command that
-opens the window (`commands.queueShow.label`) reads exactly like the window title, `Hàng đợi thao tác`; the 2026-08-08
-rename section at the end of this file argues that name.
-
-Added during the navigation-and-file-ops pass (2026-06-26): the new `settings` Navigation & file ops section + the
-`fileExplorer` breadcrumb tooltip and double-click-to-parent hint toast. RE-VALIDATED against the reference pile
-(`_ignored/i18n/vi/`, mined 2026-06-26) after a first pass that wrongly assumed the pile absent. Two terms have a
-macOS-vs-shipped-catalog split: the pile's macOS-ideal form differs from what the shipped vi catalog already uses, and
-catalog consistency wins (one catalog must not carry two terms for one concept; adopting the macOS form is a
-full-catalog migration, not a 14-key split). Reuses prior terms (pane → `khung`, file list → `danh sách tệp`, rename →
-`đổi tên`, file ops/file operations → `Thao tác tệp`):
-
-- **navigation / navigate (section + card heading): `điều hướng`** · macOS Finder (the `điều hướng` verb/noun, e.g.
-  "Location to navigate to" → `Vị trí sẽ điều hướng đến`) and GNOME Nautilus ("Điều hướng"). Used for the `Navigation`
-  card heading and the `Navigation & file ops` section (`Điều hướng & thao tác tệp`, joined with `&` like the
-  `Cập nhật & quyền riêng tư` section). `high`.
-- **navigate to (an action, "go to X"): `đi tới`** · macOS Finder ("Go To Folder" → `Đi tới Thư mục`, "Go To Location" →
-  `Đi tới vị trí`) and the in-catalog command convention (`commands.navParent` → `Đi tới thư mục cha`,
-  `commands.navGoToPath` → `Đi tới đường dẫn…`). Breadcrumb "Click to navigate to {path}" → `Bấm để đi tới {path}`.
-  "Navigates to parent" rendered `đi tới thư mục cha` (matching `commands.navParent`), not the first pass's
-  `lên thư mục cha`. `high`.
-- **double-click: `bấm đúp`** (kept for catalog consistency) · the shipped vi catalog uses `bấm đúp`
-  (`fileExplorer.network.browser.tooltip.doubleClickToConnect` = "Bấm đúp để kết nối…"), so these keys match it. Note
-  `bấm đúp` already uses macOS's click verb `bấm` (macOS Finder/AppKit: `bấm` for "click", 54 occurrences, ZERO `nhấp`
-  in `vi/macOS/`), paired with the common `đúp` for "double". The pile-IDEAL form is `bấm kép` (macOS `kép` = "double",
-  e.g. "Gạch chân kép"; MS terminology "double-click" → `bấm kép` VNM), deferred to a full-catalog migration to avoid
-  forking terminology. A stray `nhấp đúp` (`viewer.binaryWarning.body`) is a separate pre-existing catalog
-  inconsistency, not touched here. `high` (catalog-consistent).
-- **click (single, the action): `bấm`** · macOS Finder/AppKit (`bấm` for "click", 54×, ZERO `nhấp`). Breadcrumb "Click
-  to navigate" → `Bấm để đi tới`. (The catalog also has `nhấp` in `viewer.statusBar.hint.image` — same pre-existing
-  inconsistency as `nhấp đúp`.) `high`.
-- **parent folder: `thư mục cha`** (kept for catalog consistency) · the shipped vi catalog uses `thư mục cha`
-  (`commands.navParent` → `Đi tới thư mục cha`; multiple `errors.json` suggestions), so these keys match it. The
-  pile-IDEAL form is macOS's `thư mục chứa` (macOS Finder localizes the exact up-navigation command "Go To Enclosing
-  Folder" → `Đi tới thư mục chứa`, and uses it generically, "thư mục chứa tệp này"), deferred to a full-catalog
-  migration to avoid forking. `high` (catalog-consistent).
-- **pane: `khung`** (UPGRADES the prior `tentative` to `high`) · macOS AppKit/Finder uses `khung` for a UI pane: "Khung
-  Xem trước" (Preview pane), "Khung hiện tại" (current pane). Total Commander also uses `khung`. `high`.
-- **pane background: `nền khung`** · `nền` (background, macOS-attested: "màu nền chữ") + `khung` (pane, above); the
-  constructed compound is sound. KDE Dolphin has the parallel concept "double clicking view background" (untranslated in
-  vi, but it confirms the "background" framing). `high`.
-- **hint (one-time UI hint/tip): `gợi ý`** · macOS ("Cửa sổ gợi ý" = hint window, "Gợi ý mật khẩu" = password hint); MS
-  terminology "hint" Noun. `high`.
-- **empty space (in a list): `khoảng trống`** · natural rendering ("the empty space in a file list" → "khoảng trống
-  trong danh sách tệp"; "the empty space around the file list" → "khoảng trống xung quanh danh sách tệp"). `high`.
-- **row (file-list row): `hàng`** · Cmdr's own catalog already uses `hàng` for file-list rows ("Hàng sọc xen kẽ" =
-  alternating striped rows; "Bộ đệm ảo hóa (hàng)" / "Số hàng dựng thêm phía trên và dưới vùng hiển thị" = list
-  virtualization rows), reserving `dòng` for text LINES in the viewer ("{count} dòng", "ngắt dòng"). MS terminology
-  agrees (row → `hàng`). "a file row" → `một hàng tệp`. KDE Dolphin's `dòng` ("click anywhere on the row" → "trong
-  dòng") is overridden by Cmdr's own established `hàng`. `high` (catalog-consistent).
-
-A later copy revision (2026-06-26, David picked shorter wording) reworded this switch's label + description; the keys
-now read: label `Bấm đúp vào nền khung để lên thư mục cha` ("go up a folder" → `lên thư mục cha`, the shorter
-directional form), description `Đó là khoảng trống xung quanh danh sách tệp, không phải một hàng tệp.` ("That''s…, not a
-file row").
-
-Phrasings settled this pass (double-click-to-parent hint toast, casual/friendly product voice — free copy, no single
-pile source):
-
-- **"What just happened?" → `Chuyện gì vừa xảy ra?`** · natural friendly framing. `tentative`.
-- **"Don''t like it?" → `Không thích à?`** · `à` casual softening particle; matches the friendly voice. `tentative`.
-- **"Never do this again" (button) → `Đừng làm vậy nữa`** · natural imperative. `tentative`.
-- **"I like it" (primary button) → `Tôi thích`** · the user speaking in first person; `Tôi` (I) here, not the app''s
-  `bạn`. `tentative`.
-- **"This navigates to the parent folder" (hint body) → `Thao tác này đưa bạn đến thư mục cha`** · `đưa bạn đến` (takes
-  you to) for a friendly, concrete rendering. `tentative`.
-- preset (value in a settings-picker dropdown) → đặt trước, rendered as "tùy chọn đặt trước" (preset options); "back to
-  presets" → "Quay lại tùy chọn đặt trước" · Microsoft terminology (preset → "đặt trước", e.g. "khung thời gian đặt
-  trước"); "tùy chọn" (options) heavily attested. "đặt trước" can also read as "reserved", so pairing it with "tùy chọn"
-  disambiguates · tentative
-
-Added during the filesystem-size-guard pass (2026-06-30): the FAT32 file-too-large error
-(`errors.write.filesTooLargeForFilesystem.*`) + the `fileOperations.errorDialog.tooLargeAndMore` count line. Reuses
-prior terms (tệp, ổ đĩa = drive, không thể = can''t). New terms below, each mined from `_ignored/i18n/vi/`:
-
-- **too large (for X): `quá lớn (đối với X)`** · GNOME Nautilus ("Tập tin quá lớn đối với vị trí dán" = "File too large
-  for the paste location"), a near-exact structural parallel. `đối với` = "for / with respect to". `high`.
-- **format (filesystem format, noun): `định dạng`; "formatted as FAT32": `được định dạng FAT32`** · macOS Finder Get
-  Info ("Định dạng:" = "Format:"). The passive state "is formatted as" → `được định dạng` (no "as" word needed). `high`.
-- **FAT32 / exFAT: kept verbatim** · filesystem-format names; not translated (per the en `@key` note). `high`.
-- **limit (size/quota limit): `giới hạn`; "no such limit": `không có giới hạn như vậy`** · GNOME/Xfce/MS terminology
-  ("Không giới hạn" = "No limit", "không có giới hạn"). `high`.
-- **store / hold (a drive holding files): `chứa`** · `chứa` (contain/hold) for a drive storing files; "can''t store
-  files larger than X" → `không thể chứa các tệp lớn hơn {maxSize}`. Reads more natural than `lưu trữ` (archive) for a
-  drive''s capacity. `tentative` (no single pile source; natural rendering).
-- **larger than: `lớn hơn`** · standard comparative; `lớn` (large) + `hơn` (more/than). `high`.
-- **"{name} is {size}" (size statement): `{name} có dung lượng {size}`** · `có dung lượng` (has a size of), matching
-  macOS Get Info "Dung lượng:" (Size:). `high`.
-- **"files this large": `các tệp lớn cỡ này`** · `cỡ này` (of this size) — casual, everyday rendering. `tentative`.
-- **"and N more files" (overflow count line): `và thêm {countText} tệp nữa`** · `và thêm … nữa` = "and … more"; noun
-  uninflected (vi has one plural category, `other`). `high`.
-- preset (value in a settings-picker dropdown) → đặt trước, rendered as "tùy chọn đặt trước" (preset options); "back to
-  presets" → "Quay lại tùy chọn đặt trước" · Microsoft terminology (preset → "đặt trước", e.g. "khung thời gian đặt
-  trước"); "tùy chọn" (options) heavily attested. "đặt trước" can also read as "reserved", so pairing it with "tùy chọn"
-  disambiguates · tentative
-
-Added during the dialog-polish pass (2026-06-30): short labels / tooltips in `fileOperations.json` (the copy/move +
-delete dialogs). Reuses prior terms (scan/scanning → `quét`/`đang quét`, source → `nguồn`, destination → `đích`, file
-ops → `Thao tác tệp`):
-
-- **action (what a control chooses; screen-reader label `transferDialog.operationAria`): `Thao tác`** · the catalog''s
-  established operation term (`Thao tác tệp` = file operations). Names which operation to run; `thao tác` (operation,
-  user-performed action) reads more natural here than MS''s `hành động` (action, behavioral sense) or macOS''s `tác vụ`
-  (task; macOS uses it for "undo this action"). Catalog-consistent. `high`.
-- **"Scanning…" (spinner tooltip / SR label while counting): `Đang quét…`** · reuses the glossary''s "scan in progress"
-  → `Đang quét`; ellipsis `…` kept. `high`.
-- **"This folder doesn''t exist yet. Cmdr will create it during the copy/move." (yellow inline warning under the
-  destination box): `Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi sao chép.` / `… khi di chuyển.`** · `chưa tồn tại`
-  (not-yet-exist) is the precise "doesn''t exist yet" counterpart to the catalog''s `đã tồn tại` (already exists); GNOME
-  Nautilus attests plain `không tồn tại` ("đích đến là "%s" không tồn tại") and `chưa` for "not yet". `tạo nó` (create
-  it, inanimate pronoun) is attested in the pile (Nautilus "không có quyền tạo nó ở đích đến");
-  `khi sao chép`/`khi di chuyển` (when copying/moving) renders "during the copy/move" concisely. Two literal sentences
-  per the en `@key` (no ICU select; the verb is operation-specific). `high`.
-- **queue.row.label progress arms (rename / create folder / create file)** · `Đang đổi tên` / `Đang tạo thư mục` /
-  `Đang tạo tệp` · "Đang [verb]" style of the sibling arms; Nautilus ("Đang đổi tên", "Đang tạo"), settled `đổi tên`,
-  `thư mục`/`tệp` · high
-
-Added during the archive-browsing pass (2026-07-05): the 28 archive/bundle keys (browse-into-zip feature). Reuses prior
-terms (browse → `duyệt`, folder → `thư mục`, file → `tệp`, open → `mở`, default → `mặc định`, read-only → `chỉ đọc`,
-trash → `thùng rác`, delete → `xóa`, copy/move → `sao chép`/`di chuyển`, permanently/for good → `vĩnh viễn`, format →
-`định dạng`, preview → `xem trước`, can't → `không thể`). New terms below:
-
-- **archive (a zip/tar/7z browsed like a folder): `tệp nén`** · Cmdr's OWN catalog already renders compressed/archive
-  files as `tệp nén` (`settings.listing.sizeDisplay.description` "tệp nén", `settings.fileViewer.suppressBinaryWarning`
-  "tệp nén"), so these keys MATCH it (catalog-consistency, the no-forking-terminology rule). Corroborated by GNOME
-  Nautilus + MS terminology "nén" (compress) and macOS Finder "đã nén" (compressed). Deliberately NOT the archival
-  `kho lưu trữ` (GNOME's "Archive" menu) or `Bộ lưu trữ` (macOS "iOS Package Archive"): both read as backup/storage, the
-  wrong register for a browsable zip. Renders zip/tar/7z generically; "zip archives" → `tệp nén zip`, "archive format" →
-  `định dạng nén`. `high` (catalog-consistent).
-- **app bundle: `gói ứng dụng`** · macOS Finder `gói` for package/bundle ("iOS Package Archive" → "Bộ lưu trữ gói iOS")
-  - `ứng dụng` (app, macOS Finder "Ứng dụng"). The .app/.bundle/.framework folders macOS shows as one item. `high`.
-- **extract (an archive): `giải nén`** · Cmdr's own catalog (`ai.local.installStepExtracting` "Đang giải nén"), GNOME
-  Nautilus ("Giải nén"). Used in `readOnly.archiveMessage` ("browses and extracts" → "duyệt và giải nén"). `high`.
-- **edit (an archive's contents): `chỉnh sửa`** · catalog reserves `chỉnh sửa` for "edited" (`errors` "đã bị chỉnh sửa
-  bên ngoài git") vs `sửa đổi` for the "modified" date; editing zip entries is the `chỉnh sửa` sense.
-  `readOnly.archiveMessage` "can be edited" → "có thể chỉnh sửa"; `queue.row.label` `archive_edit` "Editing archive" →
-  `Đang chỉnh sửa tệp nén`. `high`.
-- **configure (menu item): `Cấu hình`** · MS terminology ("configure" → "cấu hình", many hits). Trailing `…` kept (opens
-  Settings). `high`.
-- **damaged / corrupt (of a file): `hỏng`** · catalog's established term (`errors` "đĩa đang hỏng dần", "vùng hỏng").
-  "It may be damaged" → "Có thể tệp bị hỏng". `high`.
-- **encrypted: `được mã hóa` / `bị mã hóa`** · catalog (`errors.provider.veraCrypt` "ổ đĩa được mã hóa"). `high`.
-- **default app: `ứng dụng mặc định`** · `mặc định` (default, settings pass) + `ứng dụng` (app). `high`.
-- **fresh copy (of a file): `một bản mới`** · `bản` (copy/version) + `mới` (new); "ask whoever sent it for a fresh copy"
-  → "nhờ người đã gửi nó cung cấp một bản mới". Natural rendering, no single pile source. `tentative`.
-- **pressing Enter (does X): `nhấn Enter (sẽ làm gì)`** · catalog convention `nhấn Enter` (`queryUi` "nhấn Enter để tìm
-  kiếm"); Enter key name kept verbatim (macOS vi keeps "Enter"). "What pressing Enter does" → "Nhấn Enter sẽ làm gì".
-  `high`.
-- **ask (each time / on Enter): `hỏi`** · segmented-control opt + `enterBehavior` "ask each time" → "hỏi mỗi lần". macOS
-  Finder attests `hỏi` in prompts. `high`.
-
-Added during the paste-clipboard-as-file pass (2026-07-07): the 7 keys for pasting non-file clipboard content (text,
-image, PDF) into a folder as a new file. Reuses prior terms (paste → `dán`, clipboard → `bảng nhớ tạm`, file → `tệp`,
-image → `hình ảnh`, folder → `thư mục`, rename → `đổi tên`, copy → `sao chép`, Settings → `Cài đặt`, hold/contain →
-`chứa`, ⌘V kept verbatim). New terms below:
-
-- **content (of the clipboard): `nội dung`** · Cmdr's own catalog uses `nội dung` throughout for content (e.g.
-  `settings.listing.sizeDisplay` "kích thước nội dung", `dirSize.contentLabel` "Nội dung"), and MS terminology attests
-  it. "Paste clipboard content as a file" → `Dán nội dung bảng nhớ tạm thành tệp`. `high`.
-- **text (clipboard content, not text lines): `văn bản`** · the shipped vi catalog already uses `văn bản` for text
-  (`settings.developer`/`fileViewer` "nội dung phi văn bản" = non-text content); MS "text" → "văn bản". Distinct from
-  `dòng` (text LINES in the viewer). The `other` (non-image, non-PDF) branch of `clipboard.pastedAsFile` → `văn bản`.
-  `high` (catalog-consistent).
-- **as a file / into a file (result form): `thành tệp` / `thành {filename}`** · `thành` (into/becomes) for the
-  transform-into-a-file sense; the catalog also attests `dưới dạng` for "as" (git portal "dưới dạng thư mục ảo"), but
-  `thành` is the tighter fit for content turning into a file and reads shorter in a label. `high`.
-- **do nothing (radio option): `Không làm gì`** · plain negation of `làm` (do); natural. `high`.
-
-Settled during the archive-password dialog pass (encrypted-zip unlock modal `fileOperations.archivePassword.*`,
-2026-07-08):
-
-- password-protected → `được bảo vệ bằng mật khẩu` · TC/DC vi phrasing · high. Body: "… được bảo vệ bằng mật khẩu."
-- password (noun) → `Mật khẩu` · macOS/MS · high.
-- unlock (button + verb) → `Mở khóa` · macOS AppKit ("Mở khóa") · high.
-- archive (the `{name}` head / input label) → `tệp nén` (compressed file) · settled vi glossary · high. Input aria-label
-  "Mật khẩu tệp nén".
-
-Settled while translating the Compress feature:
-
-- compress (verb / control label) → `Nén` · Finder `vi/macOS` ("Nén các mục", `Compress ${sources}` → "Nén ${sources}")
-  · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and both title-verb branches.
-- compressing (progress form) → `Đang nén` · derived on the sibling `Đang sao chép`/`Đang di chuyển` · high.
-  `scanTitleCompress` = "Đang xác minh trước khi nén...".
-- compressed (result toast) → `Đã nén` · mirrors `transfer.split.clean` ("Đã sao chép {phrase}") · high. Plural uses
-  only the `other` CLDR category (Vietnamese has no plural distinction), matching the sibling toasts.
-- replace (overwrite warning) → `thay thế` · Finder `Replace` → "Thay thế" · high.
-- archive (name) → `tệp lưu trữ` · Finder `Zip archive` → "Tệp lưu trữ Zip" · high. `.zip` in straight double quotes.
-- compression level (slider label) → `Mức nén` · TC `vi` "Sự nén ZIP nội (0-9)"; `mức` (level) + `nén` (compress),
-  standard vi 7-Zip `Mức nén` · high. `settings.archives.compressionLevel.label`.
-- faster (slider low end, level 1) → `Nhanh hơn` · TC `vi` "nén nhanh nhất (1)" (root `nhanh`) · high. Marks quicker
-  packing, not app speed. `.faster`.
-- smaller (slider high end, level 9) → `Nhỏ hơn` · pairs with `Nhanh hơn`; marks the smaller output file (TC `vi` high
-  end "nén tối đa") · high. `.smaller`.
-- No `sameAsSourceJustification` needed: all values differ from English.
-
-Settled while translating the Operation log feature (alpha `operationLog.json` + `commands.logOperationLog.*`,
-2026-07-09). Reuses prior terms (sao chép/di chuyển/xóa/đổi tên/nén, thùng rác, tệp/thư mục, thử lại → `thử lại`, close
-→ `đóng`, không thể, agent → `tác nhân`, archive → `tệp nén`, extract → `giải nén`, edit archive → `chỉnh sửa`). New/
-confirmed terms below:
-
-- **operation (a file operation, as a logged event): `thao tác`** · macOS Finder (`thao tác di chuyển ^0 mục`,
-  `thao tác chưa hoàn tất`, `Thao tác lưu tệp`), matching the catalog''s `Thao tác tệp` (file operations) and the
-  `Thao tác:` action-field label. `high`.
-- **operation log (dialog title + command label): `Nhật ký thao tác`** · `nhật ký` (log, settled glossary term) +
-  `thao tác` (operation, macOS). `high`. Used for `operationLog.dialog.title` and `commands.logOperationLog.label`.
-- **history (operation history): `lịch sử`** · macOS (`NSToolbarHistoryTemplate` → "lịch sử", "lịch sử phiên bản" =
-  version history), MS ("Nhật ký Lịch sử"). "your operation history" → `lịch sử thao tác của bạn`. `high`.
-- **roll back / rollback (reverse a completed operation): `hoàn tác`** · macOS AppKit Undo → "Hoàn tác"; catalog already
-  renders the file-ops Rollback button as `Hoàn tác`. Catalog-consistent, so the whole rollback state set uses it:
-  "Can''t roll back" → `Không thể hoàn tác`, "Can roll back" → `Có thể hoàn tác`, "Rolling back" → `Đang hoàn tác`,
-  "Rolled back" → `Đã hoàn tác`, "Partly rolled back" → `Đã hoàn tác một phần`. "roll them back" (command description) →
-  `hoàn tác chúng` (`chúng` = them, inanimate; pile attests `tạo nó`). `high` (catalog-consistent).
-- **client (AI client, an external app over the automation interface): `máy khách`** · MS/standard client-server term
-  (counterpart to `máy chủ` = server). "AI client" → `Máy khách AI` (AI kept verbatim). `high`.
-- **item (generic logged item, vs file/folder): `mục`** · macOS Finder ("các mục", "^0 mục"). English keeps item generic
-  (distinct from file → `tệp`, folder → `thư mục`); the summary lines use `mục`. `high`.
-
-Operation-log status/outcome set, aligned to `queue.json` for catalog consistency (queue lifecycle already ships these):
-Queued → `Đang chờ`; Running → `Đang chạy`; Done → `Xong`; Canceled → `Đã hủy`; "Didn''t finish" (gentle failed, avoids
-"lỗi"/"thất bại") → `Chưa hoàn tất được` (macOS also attests `thao tác chưa hoàn tất`). Per-item outcomes: Skipped →
-`Đã bỏ qua` (past aspect, matches the other completed-aspect outcomes); Done → `Xong`; "Didn''t finish" →
-`Chưa hoàn tất được`; "Rolled back" → `Đã hoàn tác`. Initiator provenance: You → `Bạn`; AI client → `Máy khách AI`;
-Agent → `Tác nhân`. Summary verbs reuse the transfer past-tense forms (`Đã sao chép`/`Đã di chuyển`/`Đã xóa`/
-`Đã chuyển … vào thùng rác`/`Đã đổi tên`/`Đã tạo`/`Đã nén`). Plurals collapse to a single `other` branch (vi has one
-CLDR category), keeping the `{count}`/`{countText}` placeholders. "and N more items" → `và thêm {countText} mục nữa`. No
-`sameAsSourceJustification` needed: all values differ from English.
-
-Settled while translating Ask Cmdr (the read-only AI chat rail: `askCmdr.json` + `settings.askCmdr.*` +
-`settings.advanced.logLlmCalls.*` + `settings.section.askCmdr` + `commands.askCmdrToggle.*`, 2026-07-13). Reuses prior
-terms (chỉ đọc = read-only, thao tác/lịch sử thao tác = operation/operation history, nhà cung cấp = provider, mô hình =
-model, token loanword, hạn ngạch = quota, giới hạn = limit, cục bộ = local, cơ sở dữ liệu = database, không thể =
-can''t, sự cố = issue/problem framing, thử lại = retry, ổ đĩa = drive, con trỏ = cursor, mục = item, khóa API = API key,
-nhật ký = log, đóng = close, đổi tên = rename, mục đã chọn = selected item(s), đính kèm = attach/attachment, Cài đặt =
-Settings, Nâng cao = Advanced). New terms below, each mined from `_ignored/i18n/vi/`:
-
-- **chat (a conversation with the AI, noun): `trò chuyện`** · MS terminology (`chat` → `trò chuyện`, VNM). Used as the
-  section/nav noun ("Chats" → `Trò chuyện`) and in compounds ("New chat" → `Trò chuyện mới`, "Back to chat" →
-  `Quay lại trò chuyện`). Vietnamese has no plural inflection so the same noun covers "chat"/"chats". `high`.
-- **message (a chat message): `tin nhắn`** · MS terminology (`message` → `tin nhắn`, VNM). "Send message" →
-  `Gửi tin nhắn`; "Load earlier messages" → `Tải tin nhắn trước đó`. `high`.
-- **archive (a chat, verb) / archived: `lưu trữ` / `đã lưu trữ`** · macOS Finder (key `AR40`, `Archive` → `Lưu trữ`,
-  cross-referenced key-to-key en↔vi). Deliberately NOT the browsable-zip sense `tệp nén` (a different concept — hiding a
-  conversation from the active list, not compressing a file). `high`.
-- **unarchive (a chat): `bỏ lưu trữ`** · no direct pile hit (the pile has no chat/mail app); mirrors the common
-  Vietnamese-software convention for undoing an archive action (Gmail/Zalo-style `Lưu trữ`/`Bỏ lưu trữ` pairing).
-  `tentative`.
-- **attachment (a staged file/folder attached to a question, noun): `tệp đính kèm`** · MS terminology (`attachment` →
-  `đính kèm`, VNM), combined with the established `tệp`/`thư mục` nouns. "Remove attachment" → `Gỡ tệp đính kèm` (`gỡ` =
-  detach, distinct from `xóa` = delete; the attachment is unstaged, not deleted). `high`.
-- **Not now (decline/dismiss button): `Để sau`** · macOS AppKit (`Not Now` → `Để sau`, `en/macOS/AppKit/Document.json`).
-  `high`.
-- **database: `cơ sở dữ liệu`** · MS terminology (`database` → `Cơ sở dữ liệu`, VNM). "local database" →
-  `cơ sở dữ liệu cục bộ`. `high`.
-- **dashboard (a provider's billing dashboard): `bảng thông tin`** · MS terminology (`dashboard` → `bảng thông tin`,
-  VNM). `high`.
-- **bill (verb, "your provider bills you"): `thanh toán`** · MS terminology (`billing` → `thanh toán`, VNM). "bills you
-  directly" → `thanh toán trực tiếp với bạn`. `high`.
-- **free (cost-free, not gratis-as-liberty): `miễn phí`** · standard everyday Vietnamese for "free of charge"; NOT MS's
-  first hit `tự do` (the liberty/freedom sense, wrong here — mining gotcha 4). "free, on-device" → `miễn phí, cục bộ`
-  (reuses `cục bộ` = local from `settings.ai.provider.opt.local` → `LLM cục bộ`). `high`.
-- **reach (couldn't reach the provider): reframed as `kết nối` (connect)** · macOS Finder
-  (`Could not connect to the server.` → `Không thể kết nối máy chủ.`, keys `CS204`/`CS208`) is the closest structural
-  parallel for an unreachable-network-endpoint sentence; there's no literal "reach" verb in the pile, so the sentence is
-  restructured around the attested "couldn't connect" pattern rather than translated word-for-word. `high` (structural
-  match).
-- **estimate / estimated (a spend estimate, adjective/adverb use): `ước tính`** · natural rendering; NOT MS's `báo giá`
-  (a price quotation, the sales-quote sense — wrong here). "about {amount}" → `khoảng {amount}`; "These are estimates" →
-  `Đây chỉ là ước tính`. `tentative` (no direct pile string for this UI sense, quotation sense rejected).
-- **cost (noun, chat spend): `chi phí`** · standard Vietnamese for a general cost/expense; NOT MS's `giá vốn` (cost of
-  goods sold, an accounting term — wrong here). "cost unknown" → `chi phí không rõ`. `tentative`.
-- **spending (settings section heading): `chi tiêu`** · standard Vietnamese for personal/app spending. `tentative` (no
-  direct pile hit; natural rendering).
-- **usage (token/spend usage): `sử dụng` / `mức sử dụng`** · standard Vietnamese tech usage; "This chat's usage" →
-  `Mức sử dụng của cuộc trò chuyện này`. `tentative`.
-- **debugging (verb, "for debugging"): `gỡ lỗi`** · standard Vietnamese dev term. `tentative` (no direct pile hit;
-  universal dev-audience convention).
-- **working (generic tool-call fallback status): `đang xử lý`** · natural present-tense fallback ("processing"), used
-  only when no specific tool label applies. `tentative`.
-- **look up (a logged operation's detail, verb): `tra cứu`** · standard Vietnamese for looking up a record. "Looking up
-  an operation" → `Đang tra cứu một thao tác`. `high`.
-- **available (a tool request that wasn't possible, read-only refusal): `khả dụng`** · standard Vietnamese IT adjective.
-  "That request wasn't available" → `Yêu cầu đó không khả dụng` (avoids "lỗi"/"thất bại" per the error voice). `high`.
-
-`askCmdr` phrasings settled here (for consistency in other files):
-
-- **"Chats" (nav/heading, both the rail-header button and the sessions-panel title) → `Trò chuyện`**; "New chat" →
-  `Trò chuyện mới`; "Start a fresh chat" → `Bắt đầu trò chuyện mới`.
-- **"file history" (the operation log, as referenced from Ask Cmdr's tool descriptions) → `lịch sử thao tác`**, not a
-  literal `lịch sử tệp` — Ask Cmdr's file history tool reads the operation log (past copies/moves/deletes/renames), so
-  this reuses the `operationLog` pass's `lịch sử thao tác` rather than coining a new "file history" term. "Searching
-  your file history" → `Đang tìm kiếm trong lịch sử thao tác của bạn`. Confidence: `high` (catalog-consistent with the
-  `operationLog` pass). Note: this is a small tension with the app-facing English string "file history", which reads
-  slightly broader than "operation history" — flagged here so a future pass doesn't fork the term if the English copy is
-  ever split.
-- **"Try again?" (short retry question, several error strings): `Thử lại?`** kept as a plain question (no softening
-  particle) for consistency across the five error strings that use it.
-- **Consent-screen items ("Sentence case, no period" per the en `@key` notes) keep no trailing period** in Vietnamese,
-  matching the English constraint.
-
-Added during the network-drive image-indexing pass (2026-07-13): the 19 `settings.mediaIndex.networkVolumes.*` /
-`.alwaysIndex*` keys + `search.imageResults.networkOff`/`.paused` (opting an SMB drive into background photo-content
-indexing so photos become searchable by the text inside them). Reuses prior terms (index/indexing → `chỉ mục`/
-`lập chỉ mục`, indexed → `đã lập chỉ mục`, drive/volume → `ổ đĩa`, network → `mạng`, folder → `thư mục`, image →
-`hình ảnh`, text → `văn bản`, search → `tìm kiếm`, pause/paused → `tạm dừng`/`Đã tạm dừng`, resume → `tiếp tục`,
-disconnect → `ngắt kết nối`, browse → `duyệt`, background → `ở chế độ nền`, Settings → `Cài đặt`, Mac → `Mac` verbatim,
-"in the background" → `ở chế độ nền` per `settings.indexing.enabled.description`, "Internal:" → `Nội bộ:`). New terms
-below:
-
-- **photo (vs image): `ảnh`** · macOS (`Chọn ảnh` = Choose Photo, `Cắt ảnh` = Crop photo; Apple's Photos app is `Ảnh`).
-  Deliberately distinct from the feature-level "image" → `hình ảnh` (`settings.mediaIndex.enabled.label` =
-  `Lập chỉ mục nội dung hình ảnh`, `fileExplorer.imageIndex.drive.ariaLabel` =
-  `Trạng thái tìm kiếm hình ảnh của ổ đĩa này`): the English copy itself splits "image" (feature/card) from "photos"
-  (the concrete per-drive strings), and `ảnh` is the natural concrete word. "photos indexed" → `Đã lập chỉ mục … ảnh`;
-  "photos on {name}" → `ảnh trên {name}`. `high`.
-- **network drive: `ổ đĩa mạng`** · `ổ đĩa` (drive) + `mạng` (network), both settled. `high`.
-- **reconnect: `kết nối lại`** · macOS (`Để kết nối lại, hãy bấm…`). "resumes when this drive reconnects" →
-  `sẽ tiếp tục khi ổ đĩa này kết nối lại`. `high`.
-- **photo archive (a rarely-browsed NAS of photos): `kho ảnh`** · `kho` (store/archive, the archival-storage sense, NOT
-  the browsable-zip `tệp nén`) + `ảnh`. Register matches "an archive you rarely browse". `tentative` (constructed
-  compound; no single pile source).
-- **gently (reads photos gently): `một cách nhẹ nhàng`** · adverbial rendering; no pile hit. `tentative`.
-- **at a limited speed: `ở tốc độ giới hạn`** · `tốc độ` (speed, macOS "Tốc độ ghi đĩa") + `giới hạn` (limit, settled).
-  `high`.
-- **so far (photos indexed so far): `cho đến nay`** · standard temporal phrasing. `high`.
-- **mark (a drive/folder, internal): `đánh dấu`** · `đánh dấu` (mark). Internal dev strings for the always-index lists.
-  `high`.
-- **The `indexed` ICU plural collapses to a single `other` branch** (vi has one CLDR category), keeping both `{count}`
-  (selector) and `{countText}` (preformatted display): `{count, plural, other {Đã lập chỉ mục {countText} ảnh}}`.
-- No `sameAsSourceJustification` needed: all 19 values differ from English.
-
-Quality-review pass over the 54 keys of the bulk-rename review, image-index scope, and Ask Cmdr tool labels (2026-07-21;
-the keys had been translated mid-feature without the process, so this pass re-mined them against `_ignored/i18n/vi/`).
-Reuses prior terms (đổi tên, tệp/thư mục, ghi đè, hủy, ảnh vs hình ảnh, chỉ mục/lập chỉ mục, quét, ổ đĩa, thùng rác, thử
-lại, không thể, gỡ, mức độ quan trọng). New or newly-sourced below:
-
-- **review (verb + the review modal): `xem lại`** · macOS AppKit (`Review Changes…` → `Xem lại Thay đổi…`,
-  `Review Unsaved Items` → `Xem lại Mục chưa lưu`, and the running "Nếu bạn không xem lại…" alerts), sentence-cased for
-  Cmdr. Confirms the modal title `Xem lại việc đổi tên tệp` and "this review" → `Lần xem lại này`. `high`.
-- **allow / deny (per-row approval buttons): `Cho phép` / `Từ chối`** · MS terminology (`deny` Verb → `từ chối`;
-  `Allow …` entries → `Cho phép …`), macOS Finder AirDrop (`Decline` → `Từ chối`). "Allow all"/"Deny all" →
-  `Cho phép tất cả` / `Từ chối tất cả`. `high`.
-- **"this rename" (one proposed row): `lần đổi tên này`** · `lần` (instance/occurrence, the catalog's counter for a
-  single operation, as in `lần truyền` = a transfer). Unified across the row message, the overwrite tooltip, and the SR
-  status line; the generic heading keeps the gerund `việc đổi tên tệp`. `high` (catalog-consistent).
-- **"needs attention" (blocked row): `cần được xem lại`** · no `chú ý` anywhere in the macOS pile, and the passive "cần
-  được chú ý" reads stilted; `xem lại` (above) is both attested and the action the modal asks for. `high`.
-- **rename cycle (a → b → a dependency loop): `chu trình đổi tên`** · `chu trình` is the graph-theory "cycle" in
-  Vietnamese. MS's `chu kỳ` (time cycle) and `vòng tròn` (SmartArt circle) are the wrong senses (mining gotcha 2), and
-  the pile has no file-manager string for it. Badge `(chu trình)`, tooltip explains it. `tentative`.
-- **filename extension: `đuôi tệp`** (kept) · the shipped vi catalog uses `đuôi tệp` throughout
-  (`Cho phép đổi đuôi tệp`, `Đổi đuôi tệp?`, the `Đuôi` column), so the badge `(đuôi tệp)` and its tooltip match it.
-  macOS's fuller `phần mở rộng tệp` is the pile-ideal form but adopting it is a full-catalog migration, not a two-key
-  split, and it's too long for a compact badge. `high` (catalog-consistent).
-- **remove (from a list, not a deletion): `Gỡ`** (kept) · GNOME Nautilus (`Gỡ biểu tượng tự chọn` = Remove custom icon),
-  and the catalog's `Gỡ tệp đính kèm`. Deliberately NOT macOS's `Xóa` (`Xóa khỏi thanh bên` = Remove from Sidebar):
-  `xóa` is Cmdr's delete verb, and this button's own help text promises nothing is deleted. `high`.
-- **image (the feature-level word) vs photo: `hình ảnh` vs `ảnh`** · applied to the whole `fileExplorer.imageIndex.*`
-  status-bar family, which had drifted to `ảnh`. English splits them deliberately, and the same feature's settings pane
-  already ships `Tìm kiếm hình ảnh` (the card) and `Lập chỉ mục nội dung hình ảnh`, so the pane labels and their
-  tooltips now read `hình ảnh` and only the concrete per-drive photo counts keep `ảnh`. `high`.
-- **folder/file size: `kích cỡ`** (not `kích thước`) · macOS vi uses `kích cỡ` 33 times and `kích thước` zero times, and
-  Microsoft terminology agrees; the whole catalog now says `kích cỡ`, including the physical-dimension sense
-  (`Đổi kích cỡ khung` = resize panes). Full evidence: the drift-audit section below. `high`.
-- **indexing pass: `lượt quét`** · `lượt` (round/turn) + the settled `quét` (scan); "on the next pass" →
-  `ở lượt quét tiếp theo`. `tentative` (no pile string; constructed on settled parts).
-- **"Ask Cmdr to prepare it again": `Hãy nhờ Cmdr chuẩn bị lại.`** · `nhờ` (ask someone to do something as a favor) is
-  the natural verb for asking a helper; `yêu cầu` (demand/request) reads formal and made the rail's brand name ("yêu cầu
-  Ask Cmdr") read as an object. The English is a deliberate double reading (the imperative "ask Cmdr" and the feature
-  name); Vietnamese keeps the imperative one, and `Cmdr` stays verbatim. `tentative`.
-- No `sameAsSourceJustification` needed anywhere in these 54: every value differs from English.
-
-Added during the image-index-indicator pass (2026-07-22): the 13 new keys for the per-file / per-folder / per-drive
-image-search status badges (`fileExplorer.imageIndex.file.*`, `.folder.*`, `.drive.*` +
-`settings.mediaIndex.showFileStatusIcons.*`). Reuses prior terms (image, feature-level → `hình ảnh` per the 2026-07-21
-decision on the whole `fileExplorer.imageIndex.*` family; image search → `tìm kiếm hình ảnh`, as in
-`fileExplorer.imageIndex.drive.off` = `Tìm kiếm hình ảnh đang tắt cho ổ đĩa này.`; index/indexed/re-index →
-`lập chỉ mục`/ `đã lập chỉ mục`/`lập chỉ mục lại`; drive → `ổ đĩa`; file list → `danh sách tệp`; scope → `phạm vi`;
-can't → `không thể`; "of" in a count → `trên`, matching `settings.mediaIndex.progress.ofTotal`; toggle off → `tắt`).
-New/confirmed below:
-
-- **status badge (the small per-file indicator): `huy hiệu`** · reuses the settled toast/chip/**badge** → `huy hiệu`
-  rendering. "status badge" → `huy hiệu trạng thái`. `tentative` (descriptive; no single pile source).
-- **status (state indicator): `trạng thái`** · standard vi UI term (MS/macOS convention). "Image search status" →
-  `Trạng thái tìm kiếm hình ảnh`. `high`.
-- **waiting (queued to be indexed): `Đang chờ`** · reuses the queue lifecycle "Waiting" → `Đang chờ`. "Waiting to be
-  indexed" → `Đang chờ lập chỉ mục`. `high` (catalog-consistent).
-- **is off (a feature turned off for a drive): `đang tắt`** · the toggle `bật/tắt` verb in its present-state form.
-  "Image search is off for this drive." → `Tìm kiếm hình ảnh đang tắt cho ổ đĩa này.` `high`.
-- **still working (an indexing pass in progress): `vẫn đang xử lý`** · reuses the `đang xử lý` (processing) fallback
-  status. `tentative`.
-- **The four ICU-plural keys (`folder.allIndexed`/`someIndexed`, `drive.indexing`/`done`) collapse to a single `other`
-  branch wrapping just the noun** (`{total, plural, other {hình ảnh}}`; vi has one CLDR category), keeping the full
-  placeholder set. `drive.indexing` fronts the drive ("Trên ổ đĩa này, …") to avoid a double `trên` (of / on this
-  drive).
-- No `sameAsSourceJustification` needed: all 13 values differ from English.
-
-Added during the dialog-polish pass (2026-07-23): the delete dialog swapped its Thùng rác/Xóa picker for a "Move to
-trash" switch plus a matching confirm button, and the copy/move/compress dialog groups the source path and the
-destination volume+path under "From" and "To" headings.
-
-- **"Move to trash" (`delete.trashSwitch`; switch in the delete dialog, on = thùng rác, off = permanent delete):
-  `Chuyển vào thùng rác`** · identical to this file''s `transferDialog.titleVerbOnly` `other {Chuyển vào thùng rác}`
-  arm, so the switch and the confirm button read as one pair; macOS Finder vi AL13/N153 `Chuyển vào Thùng rác` confirms
-  the phrase. The catalog capitalizes `Thùng rác` only where it names the Trash location itself ("check the Trash"), and
-  lowercases it inside an action phrase. `high`.
-- **"Delete" (`delete.confirmDelete`; destructive confirm button while the switch is off): `Xóa`** · settled delete
-  verb, identical to `transferDialog.titleVerbOnly`''s `delete {Xóa}` arm. `high`.
-- **"From" / "To" (`transferDialog.sourceGroupTitle` / `targetGroupTitle`; headings over the source path and over the
-  destination volume + path): `Từ` / `Đến`** · Total Commander vi ships this exact label pair in its copy/move dialog
-  (entries 662/663; the `.LNG` file sits in the pile as UTF-8 misread as Latin-1, so decode before reading it); macOS
-  "Move To" = `Di chuyển đến` confirms `đến` for a destination. The settled nouns `nguồn` / `đích` stay for the
-  destination CONTROLS (`Ổ đĩa đích`, `Đường dẫn đích`); the headings take the light prepositional pair the English
-  uses. `high`.
-
-Reviewed during the master-drive-indexing-switch pass (2026-07-27): the five keys that explain why the per-drive index
-controls are overridden while the master switch is off (`fileExplorer.navigation.driveIndex.refusedIndexingOff` /
-`.tooltipIndexingOff` / `.menuIndexingOffNote`, `settings.indexing.masterOffNote` / `.overriddenBadge`). Reuses the
-settled head terms (index/indexing → `chỉ mục`/`lập chỉ mục`, indexed → `được lập chỉ mục`, drive → `ổ đĩa`, Settings →
-`Cài đặt`, off → `đang tắt`). Settled here:
-
-- **"no drive is indexed" (a flat present state, not an unfulfilled expectation):
-  `không có ổ đĩa nào được lập chỉ mục`** · use `không` (not), never `chưa` (not yet), when the English states what IS
-  the case right now; `chưa` belongs only where the sentence really means "not yet" (`refusedIndexingOff` keeps
-  `vẫn chưa được lập chỉ mục` for "stays unindexed", where the drive is expected to get indexed once the switch is back
-  on). The existential `có` is required: the catalog's own passive-negative shape is `không có + N + nào + được + V`
-  (`operationLog` "không có mục nào được ghi lại", plus six more `không có … nào` lines), and `hiện không` is the
-  settled "right now" adverb pair (`hiện không khả dụng`, `hiện không có quyền truy cập toàn bộ đĩa`). GNOME Nautilus
-  attests the bare variant ("Nếu không thư mục nào được chọn"), so both parse, but the catalog's `có` form is the one
-  this app ships. `high` (catalog-consistent).
-- **"off with X" (a control the master switch overrides): `Tắt theo X`** · `theo` in its follows-another-setting sense,
-  as in the catalog's `settings.theme.mode.description` ("hoặc theo hệ thống" = or follow the system). Badge
-  `settings.indexing.overriddenBadge` → `Tắt theo lập chỉ mục ổ đĩa` (25 chars, same glance weight as the English).
-  `high`.
-- **"turn this back on" (referring to a settings toggle, not a file): `bật lại mục này`** · the catalog already renders
-  "if you turn this off" as `nếu tắt mục này` (`settings.indexing.staleNotify.description`), so `mục này` is the
-  established stand-in for the setting itself. `high` (catalog-consistent).
-- **folder sizes in the indexing pane: `kích cỡ thư mục`** · the cross-file `kích thước` / `kích cỡ` split this entry
-  once recorded was closed on 2026-08-30: the whole catalog says `kích cỡ`, on macOS Tier-1 evidence. See the
-  drift-audit section below.
-- No `sameAsSourceJustification` needed: all five values differ from English.
-
-## Chỉ mục ổ đĩa: lượt kiểm tra thay đổi (2026-07-28)
+# vi decisions
+
+The rationale journal behind `terms.json`: why a term won, which catalog keys a ruling shaped, and the incidents that
+encode a constraint. Not read by default; `pnpm i18n:brief` pulls the sections whose heading cites a batch's keys, so
+keep citing keys in backticks in every heading. The term rulings themselves live in `terms.json` (one entry per concept
+from `../concepts.json`, plus this locale's `concepts-proposed.json`); open questions for a native reviewer live in
+`review-queue.md`. Style and voice: `style.md`.
+
+Evidence tiers throughout: macOS Finder/AppKit/System Settings (Tier 1, from the pile or read live off the installed
+bundles), Microsoft terminology `VIETNAMESE.tbx` (Tier 2), GNOME Nautilus / Xfce Thunar / KDE Dolphin / Total Commander
+(Tier 3). macOS wins ties, and catalog consistency wins over a pile-ideal form that would fork a term mid-catalog.
+
+## Tên mục Cài đặt, nhóm và phạm vi phím tắt (`settings.section.*`, `shortcuts.scope.*`, `fileExplorer.navigation.group*`)
+
+Keep these identical everywhere a string names them:
+
+- Volume-switcher groups: Favorites → `Mục ưa thích`, Volumes → `Ổ đĩa`, Cloud → `Đám mây`, Mobile →
+  `Thiết bị di động`, Network → `Mạng`.
+- Settings sections: Appearance → `Giao diện`, Behavior → `Hành vi`, File systems → `Hệ thống tệp`, Search →
+  `Tìm kiếm`, Viewer → `Trình xem`, Advanced → `Nâng cao`, Keyboard shortcuts → `Phím tắt`, License → `Giấy phép`,
+  Updates & privacy → `Cập nhật & quyền riêng tư`, Navigation & file ops → `Điều hướng & thao tác tệp` (joined with `&`
+  like the Updates section), SMB/Network shares → `Mục chia sẻ SMB/mạng`.
+- A path to a Settings section is `Cài đặt › <tên mục>` with the section name verbatim from `settings.section.*`. The AI
+  family (`ai.translateError.*`, `ai.cloudConsent.*`, `askCmdr.gate.*`) and `fileExplorer.quickLookHint.configurable`
+  keep EN's `>` (`Cài đặt > AI`, `Cài đặt > Nâng cao`, `Cài đặt > Phím tắt`), as their `@key` asks.
+- View modes: Full → `Đầy đủ`, Brief → `Rút gọn`. Columns: Name → `Tên`, Ext → `Đuôi`.
+- Shortcut scopes: App → `Ứng dụng`, Main window → `Cửa sổ chính`, File list → `Danh sách tệp`, Brief mode →
+  `Chế độ rút gọn`, Full mode → `Chế độ đầy đủ`, Volume chooser → `Bộ chọn ổ đĩa`, Command palette → `Bảng lệnh`, About
+  window → `Cửa sổ Giới thiệu`, Onboarding → `Thiết lập ban đầu`, Places → `Vị trí`, Servers → `Máy chủ`.
+- The onboarding menu path keeps its ellipsis: `Cmdr > Thiết lập ban đầu…`. "What's new in Cmdr" (dialog title) →
+  `Có gì mới trong Cmdr`. Settings > Updates (crash-toast button) → `Cài đặt > Cập nhật`.
+
+## Giọng lỗi: các cụm đã chốt (`errors.*`, `updates.failure.*`, `fileExplorer.network.browser.status.error`)
+
+- "Here's what to try:" → `Bạn có thể thử:`, in all 60 `errors.json` keys that carry it, including after an opening
+  sentence (`errors.provider.*`). ❌ Not `Đây là những cách để thử:`: word-for-word and longer.
+- couldn't / can't / unable to → `không thể` (GNOME "Không thể", Thunar "Không thể gắn kết"): the calm
+  negative-capability frame, never a bare `lỗi` / `thất bại`.
+- "Try again?" (several short error strings) → `Thử lại?`, a plain question with no softening particle, so the five
+  strings that use it stay alike.
+- "Something went wrong" → `Có gì đó không ổn` (`ai.cloud.genericError`, `licensing.error.generic`,
+  `onboarding.cloudSetup.status.genericError`, `errors.mutation.unexpected`, `askCmdr.error.provider`).
+- "Try again in a moment" → `Hãy thử lại sau giây lát.`
+- An update check that didn't land (`updates.failure.check`) is whole sentences: `Cmdr không kiểm tra được bản cập nhật.
+  {reason}`. No "Error:" prefix survives anywhere in the catalog.
+- "Error" as a bare status cell (`fileExplorer.network.browser.status.error`) → `Sự cố`; its `@key` asks to avoid the
+  word where the language has a friendlier one.
+- "fixes" → `việc khắc phục`, never `sửa lỗi` (the voice avoids `lỗi`). The exception is David's own "helps me fix bugs"
+  (`onboarding.stepBeta.openBeta`, `sửa lỗi`) against "spot bugs" (`feedbackIntro`, `phát hiện lỗi`), which is his
+  first-person talk about software bugs.
+
+## Trạng thái hàng đợi và nhật ký thao tác (`queue.row.status`, `operationLog.status.*`, `operationLog.outcome.*`, `operationLog.initiator.*`, `indexing.eta.*`)
+
+One status vocabulary for both windows, since the queue shipped first and the log aligned to it:
+
+- Waiting / Queued → `Đang chờ`; Running → `Đang chạy`; Paused → `Đã tạm dừng`; Done → `Xong`; Cancelled → `Đã hủy`;
+  "Couldn't finish" (the gentle failed wording) → `Chưa hoàn tất được` (macOS attests `thao tác chưa hoàn tất`).
+- Per-item outcomes: Skipped → `Đã bỏ qua` (past aspect, like the other completed outcomes), Rolled back →
+  `Đã hoàn tác`.
+- Initiators: You → `Bạn`, AI client → `Máy khách AI` (`máy khách`, the client-server counterpart of `máy chủ`), Agent →
+  `Tác nhân`.
+- "Cancel selected" → `Hủy mục đã chọn`. "and N more items" → `và thêm {countText} mục nữa`.
+- ETA: "Almost done" → `Sắp xong`; `Ns left` / `Nm left` → `còn Ns` / `còn Nm` (`còn` leads, the unit letters stay
+  attached).
+- Summary verbs reuse the transfer past tense: `Đã sao chép`, `Đã di chuyển`, `Đã xóa`, `Đã chuyển … vào thùng rác`,
+  `Đã đổi tên`, `Đã tạo`, `Đã nén`. Plurals collapse to one `other` branch.
+
+## Nhãn macOS trong phần thiết lập ban đầu (`onboarding.stepFda.*`, `onboarding.stepOptional.*`, `onboarding.stepAi.*`)
+
+- Quit & Reopen → `Thoát & Mở lại` (macOS "Reopen" → `Mở lại`); Applications → `Ứng dụng`; Documents → `Tài liệu`;
+  Downloads → `Tải về`; Desktop → `Màn hình nền` (all macOS Finder).
+- Full Disk Access (the pane name) → `Quyền truy cập đầy đủ vào ổ đĩa` (live bundle, see `full-disk-access` in
+  `terms.json`); Local Network (the permission) → `Mạng cục bộ`; "Accepting incoming connections" →
+  `Chấp nhận kết nối đến` (no pile string, best effort).
+- "review and apply" / "at will" (the with/without-AI table) → `xem lại rồi áp dụng` / `tùy ý`.
+- "Here is a report…" style lines and the checklist live in the onboarding rewrite section further down.
+
+## Gợi ý bấm đúp vào nền khung (`fileExplorer.doubleClickHint.*`, `settings.behavior.doubleClickPaneNavigatesToParent.*`, `settings.behavior.doubleClickOnPaneNotificationSeen.*`)
+
+Casual product voice, free copy (no pile source):
+
+- "What just happened?" → `Chuyện gì vừa xảy ra?`; "Don't like it?" → `Không thích à?` (`à` softens); "Never do this
+  again" → `Đừng làm vậy nữa`; "I like it" → `Tôi thích` (the USER speaking, so `Tôi`, not David's `mình`).
+- Body: `Thao tác này đưa bạn đến thư mục cha`.
+- The switch reads `Bấm đúp vào nền khung để lên thư mục cha` ("go up a folder" → `lên thư mục cha`), description
+  `Đó là khoảng trống xung quanh danh sách tệp, không phải một hàng tệp.` Empty space in a list → `khoảng trống`; pane
+  background → `nền khung`.
+
+## Tệp quá lớn cho hệ thống tệp (`errors.write.filesTooLargeForFilesystem.*`, `fileOperations.errorDialog.tooLargeAndMore`)
+
+- too large (for X) → `quá lớn (đối với X)` (GNOME "Tập tin quá lớn đối với vị trí dán").
+- "formatted as FAT32" → `được định dạng FAT32` (Finder Get Info "Định dạng:"); FAT32 / exFAT stay verbatim.
+- a drive holding files → `chứa` (`không thể chứa các tệp lớn hơn {maxSize}`), which reads more natural than `lưu trữ`
+  (archive) for capacity.
+- "{name} is {size}" → `{name} có dung lượng {size}`; "files this large" → `các tệp lớn cỡ này`; "and N more files" →
+  `và thêm {countText} tệp nữa`; "no such limit" → `không có giới hạn như vậy`.
+
+## Hộp thoại sao chép, di chuyển và xóa (`fileOperations.transferDialog.*`, `fileOperations.delete.trashSwitch`, `fileOperations.delete.confirmDelete`, `queue.row.label`)
+
+- The control that picks which operation to run (`transferDialog.operationAria`) → `Thao tác`: the catalog's operation
+  word, over MS `hành động` (behavioral) and macOS `tác vụ` (task).
+- "Scanning…" (spinner / SR label while counting) → `Đang quét…`.
+- "This folder doesn't exist yet. Cmdr will create it during the copy/move." →
+  `Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi sao chép.` / `… khi di chuyển.` (`chưa tồn tại` pairs with `đã tồn tại`;
+  two literal sentences per the `@key`, no ICU select).
+- Queue row progress arms: `Đang đổi tên` / `Đang tạo thư mục` / `Đang tạo tệp`; archive edit → `Đang chỉnh sửa tệp nén`.
+- The conflict-policy radios (`transferDialog.policySkip`, `.policyOverwrite`, `.policyOverwriteSmaller`,
+  `.policyOverwriteOlder`, `.policyStop`) change their WORDING for a single clash ("Skip" vs "Skip all", "Ask later" vs
+  "Ask for each"), so they carry an exact `=1 {…}` arm (`Bỏ qua`, `Ghi đè`, `Ghi đè nếu nhỏ hơn`, `Ghi đè nếu cũ hơn`,
+  `Hỏi sau`) beside `other`. This is not the forbidden English-shaped `one` arm: the noun doesn't inflect, the meaning
+  does, and without it one clash read "Skip all".
+- The delete dialog's switch (`delete.trashSwitch`) → `Chuyển vào thùng rác`, identical to the
+  `transferDialog.titleVerbOnly` arm so switch and button read as one pair; the confirm button with the switch off →
+  `Xóa`. `Thùng rác` is capitalized only where a string names the Trash location itself ("check the Trash"), lowercase
+  inside an action phrase.
+- "From" / "To" headings (`transferDialog.sourceGroupTitle` / `.targetGroupTitle`) → `Từ` / `Đến` (Total Commander vi
+  ships this exact pair, entries 662/663); the controls under them keep `Ổ đĩa đích` / `Đường dẫn đích`.
+
+## Duyệt và chỉnh sửa tệp nén (`fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.*`, `settings.archives.*`, `fileOperations.archivePassword.*`, `errors.listing.archiveUnreadable.*`)
+
+- A browsable zip/tar/7z is `tệp nén` (the catalog already said so in `settings.listing.sizeDisplay.description` and
+  `settings.fileViewer.suppressBinaryWarning`). ❌ Not the archival `kho lưu trữ` (GNOME) or `Bộ lưu trữ` (macOS "iOS
+  Package Archive"): both read as backup storage. "zip archives" → `tệp nén zip`, "archive format" → `định dạng nén`.
+- "a fresh copy (of a file)" → `một bản mới` (`nhờ người đã gửi nó cung cấp một bản mới`).
+- "What pressing Enter does" → `Nhấn Enter sẽ làm gì`; the Enter key name stays `Enter`. Row descriptions
+  (`settings.archives.zip.description`, `.bundle.description`, `.ooxml.description`) share the frame
+  `Nhấn Enter sẽ làm gì với tệp …, … hoặc ….`, with no comma before `hoặc`.
+- The password dialog: body `… được bảo vệ bằng mật khẩu.` (TC/DC phrasing), input aria-label `Mật khẩu tệp nén`, button
+  `Mở khóa`.
+
+## Nén (`commands.fileCompress.*`, `fileOperations.transferDialog.toggleCompress`, `fileOperations.transferDialog.confirmCompress`, `fileOperations.transferDialog.pathErrorNotZip`, `settings.archives.compressionLevel.*`)
+
+- compress → `Nén` (Finder "Nén các mục", `Compress ${sources}` → "Nén ${sources}"); progress → `Đang nén`; result toast →
+  `Đã nén` (mirrors `Đã sao chép {phrase}`); `scanTitleCompress` → `Đang xác minh trước khi nén...`.
+- The NEW archive the dialog is about to write is named `tệp lưu trữ` (Finder "Zip archive" → "Tệp lưu trữ Zip"), e.g.
+  `pathErrorNotZip` = `Tên tệp lưu trữ phải kết thúc bằng ".zip".`; every archive the user browses stays `tệp nén`.
+- replace (overwrite warning) → `thay thế` (Finder "Replace" → "Thay thế").
+- compression level → `Mức nén`; slider ends Faster / Smaller → `Nhanh hơn` / `Nhỏ hơn` (TC "nén nhanh nhất (1)",
+  "nén tối đa").
+
+## Dán nội dung bảng nhớ tạm thành tệp (`settings.fileOperations.pasteClipboardAsFile.*`, `fileExplorer.clipboard.pastedAsFile*`)
+
+- content (of the clipboard) → `nội dung`; text (content, not viewer lines) → `văn bản`, distinct from `dòng`.
+- "as a file" → `thành tệp` / `thành {filename}` (transform-into; tighter than `dưới dạng`): `Dán nội dung bảng nhớ tạm
+  thành tệp`. The `other` branch of `pastedAsFile` → `văn bản`.
+- "Do nothing" (radio option) → `Không làm gì`.
+
+## Nhật ký thao tác (`operationLog.*`, `commands.logOperationLog.*`)
+
+- operation log → `Nhật ký thao tác` (dialog title and command label); "your operation history" →
+  `lịch sử thao tác của bạn`.
+- The rollback state set uses one verb: "Can't roll back" → `Không thể hoàn tác`, "Can roll back" → `Có thể hoàn tác`,
+  "Rolling back" → `Đang hoàn tác`, "Rolled back" → `Đã hoàn tác`, "Partly rolled back" → `Đã hoàn tác một phần`, "roll
+  them back" → `hoàn tác chúng`.
+- item (generic logged item) → `mục`; the summary lines count `mục`.
+
+## Ask Cmdr: trò chuyện, chi phí và công cụ (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)
+
+- chat (noun) → `trò chuyện` (MS): "Chats" → `Trò chuyện` (rail button and sessions title alike), "New chat" →
+  `Trò chuyện mới`, "Start a fresh chat" → `Bắt đầu trò chuyện mới`, "Back to chat" → `Quay lại trò chuyện`.
+- message → `tin nhắn` ("Send message" → `Gửi tin nhắn`, "Load earlier messages" → `Tải tin nhắn trước đó`).
+- archive / unarchive a chat → `Lưu trữ` / `Bỏ lưu trữ` (Finder `AR40`; the Gmail/Zalo pairing for the undo), never the
+  zip sense `tệp nén`.
+- "Remove attachment" → `Gỡ tệp đính kèm` (the attachment is unstaged, not deleted).
+- database → `cơ sở dữ liệu`; dashboard → `bảng thông tin`; "bills you directly" → `thanh toán trực tiếp với bạn`; free
+  (of charge) → `miễn phí` (❌ not MS's `tự do`); "free, on-device" → `miễn phí, cục bộ`.
+- "couldn't reach the provider" is restructured around Finder's "Không thể kết nối máy chủ": `kết nối`, no literal
+  "reach".
+- estimate → `ước tính` (❌ not MS's `báo giá`, a sales quote); "about {amount}" → `khoảng {amount}`; "These are
+  estimates" → `Đây chỉ là ước tính`; cost → `chi phí` (❌ not `giá vốn`); "cost unknown" → `chi phí không rõ`; spending
+  → `chi tiêu`; usage → `mức sử dụng`.
+- debugging → `gỡ lỗi`; the generic tool-call fallback "working" → `đang xử lý`; look up (a logged operation) →
+  `tra cứu`; a request that wasn't possible → `Yêu cầu đó không khả dụng`.
+- Ask Cmdr's "file history" tool reads the operation log, so "file history" → `lịch sử thao tác` ("Searching your file
+  history" → `Đang tìm kiếm trong lịch sử thao tác của bạn`). If English ever splits the two, don't fork silently.
+- Consent-screen items ("Sentence case, no period" per `@key`) keep no trailing period.
+
+## Lập chỉ mục hình ảnh (`settings.mediaIndex.*`, `fileExplorer.imageIndex.*`, `search.imageResults.*`)
+
+- The feature-level word is `hình ảnh` (card `Tìm kiếm hình ảnh`, `Lập chỉ mục nội dung hình ảnh`, the whole
+  `fileExplorer.imageIndex.*` status family); concrete per-drive photo counts say `ảnh` (`Đã lập chỉ mục … ảnh`,
+  `ảnh trên {name}`). English splits them the same way.
+- network drive → `ổ đĩa mạng`; a rarely browsed photo NAS ("photo archive") → `kho ảnh` (`kho`, the storage sense, not
+  `tệp nén`); "gently" → `một cách nhẹ nhàng`; "at a limited speed" → `ở tốc độ giới hạn`; "so far" → `cho đến nay` (the
+  live counters use `đến giờ`); mark (internal lists) → `đánh dấu`.
+- status badge → `huy hiệu trạng thái`; status → `trạng thái`; "Waiting to be indexed" → `Đang chờ lập chỉ mục`; a
+  feature off for a drive → `đang tắt` (`Tìm kiếm hình ảnh đang tắt cho ổ đĩa này.`); still working → `vẫn đang xử lý`;
+  "of" in a count → `trên` (`settings.mediaIndex.progress.ofTotal`).
+- Every count plural here is a single `other` branch, keeping both `{count}` and `{countText}`. `drive.indexing` fronts
+  the drive (`Trên ổ đĩa này, …`) to avoid a double `trên`.
+
+## Xem lại việc đổi tên hàng loạt (`askCmdr.renameReview.*`)
+
+- review (verb and modal) → `xem lại` (AppKit "Review Changes…" → `Xem lại Thay đổi…`): title `Xem lại việc đổi tên
+  tệp`, "this review" → `Lần xem lại này`, "needs attention" → `cần được xem lại` (no `chú ý` anywhere in macOS vi).
+- Allow / Deny (per row) → `Cho phép` / `Từ chối`; Allow all / Deny all → `Cho phép tất cả` / `Từ chối tất cả`.
+- "this rename" (one row) → `lần đổi tên này` (`lần`, the catalog's counter for one operation); the generic heading
+  keeps the gerund `việc đổi tên tệp`.
+- rename cycle (a → b → a) → `chu trình đổi tên` (graph-theory "cycle"; MS `chu kỳ` / `vòng tròn` are other senses);
+  badge `(chu trình)`.
+- The extension badge says `(đuôi tệp)`, matching the catalog's `đuôi tệp`.
+- "Ask Cmdr to prepare it again" → `Hãy nhờ Cmdr chuẩn bị lại.` (`nhờ` asks a helper; `yêu cầu` read formal and turned
+  the brand into an object).
+- "on the next pass" → `ở lượt quét tiếp theo`.
+
+## Lập chỉ mục ổ đĩa đang tắt (`fileExplorer.navigation.driveIndex.refusedIndexingOff`, `.tooltipIndexingOff`, `.menuIndexingOffNote`, `settings.indexing.masterOffNote`, `.overriddenBadge`)
+
+- A flat present state takes `không`, never `chưa` ("not yet"): "no drive is indexed" →
+  `không có ổ đĩa nào được lập chỉ mục` (the catalog's `không có + N + nào + được + V` shape). `chưa` only where the
+  sentence really means "not yet" (`refusedIndexingOff`: `vẫn chưa được lập chỉ mục`).
+- "off with X" (overridden by the master switch) → `Tắt theo X`: badge `Tắt theo lập chỉ mục ổ đĩa`.
+- "turn this back on" (a settings toggle) → `bật lại mục này`, matching `nếu tắt mục này`.
+
+## Tên tiện ích macOS, mục chia sẻ, liên kết mềm, beta công khai (`errors.listing.*`, `settings.network.*`, `settings.behavior.*Seen.*`, `queryUi.results.live.*`, `settings.mediaIndex.*`)
+
+Rulings the whole catalog now follows, each one a place it had drifted:
+
+- **Apple's utility names are localized in vi, so the error advice uses them**: Disk Utility → `Tiện ích ổ đĩa`, First
+  Aid → `Sửa nhanh`, Activity Monitor → `Giám sát hoạt động` (verified on macOS 27.0, live bundles: `Disk Utility.app`
+  `InfoPlist.loctable` `CFBundleDisplayName`, `MainMenu.loctable` "First Aid", `Activity Monitor.app`
+  `InfoPlist.loctable`, 2026-09-24), in `errors.listing.couldntReadUnknown.suggestion`, `.ioSerious.suggestion`,
+  `.diskReadProblem.suggestion`, `.unexpectedSystemResponse.suggestion`, `.notEnoughMemory.suggestion`,
+  `.temporarilyUnavailable.suggestion`. Spotlight and Mission Control stay English (Apple keeps them). The same live read
+  shows Preview → `Xem trước` and TextEdit → `TextEdit` (`settings.advanced.showSafeSaveFiles.description`); Force Quit
+  → `Bắt buộc Thoát` and Character Viewer → `Biểu tượng & Ký hiệu` (pile, `vi/macOS/`) already shipped that way.
+- **System Settings is `Cài đặt hệ thống`** wherever the catalog wrote it by hand (`downloads.fda.openSystemSettings`,
+  `shortcuts.conflict.systemShortcut` with the Keyboard pane → `Bàn phím`); the runtime `{system_settings}` tokens stay
+  tokens.
+- **A share is `mục chia sẻ`**: the settings cluster that said `bản chia sẻ` (`settings.network.*`,
+  `settings.section.smbNetworkShares`, `settings.summary.smbNetworkShares`, `settings.appearance.tintSmb.description`,
+  `settings.indexing.askForEachDrive.description`, `settings.advanced.mountTimeout.description`,
+  `errors.listing.remotePermissionDenied.*`) and the bare `Chia sẻ này` (`fileOperations.transferDialog.smbNativeNote`,
+  `fileOperations.transferProgress.smbNativeNote`) now match the 37 other keys.
+- **symlink → `liên kết mềm`** everywhere (`errors.listing.symlinkLoopErrno.*`, `errors.write.symlinkLoop.*`,
+  `fileExplorer.entry.brokenSymlink`, `fileExplorer.selectionInfo.symlinkHint`), replacing `liên kết tượng trưng` and
+  the bare loanword `symlink`.
+- **open beta → `beta công khai`** (`onboarding.stepBeta.openBeta`, `.analyticsLede`,
+  `settings.analytics.enabled.description`, alongside `licensing.about.version`), replacing `open beta` and `beta mở`.
+- **The internal "has been shown" flags say `hiển thị`** (`settings.behavior.*Seen.*`,
+  `settings.advanced.oldMacosNoticeShown.description`), and "show up here" says `xuất hiện`
+  (`operationLog.dialog.empty`, `settings.askCmdr.spend.empty`).
+- **A search-walk "scan" is `quét`** (`queryUi.results.live.foldersScanned`, `.waitingForAnotherWalk`,
+  `.waitingOnPathAria`); "walking" keeps `duyệt` (`queryUi.results.live.walking`). "Waiting" is `Đang chờ`.
+- **English-shaped `one` arms removed** from eight `settings.mediaIndex.*` plurals whose two arms were identical.
+- `settings.fileExplorer.suppressQuickLookHint.description` quoted a button that doesn't exist (`Đừng hiện nữa`); it now
+  quotes `fileExplorer.quickLookHint.dontShowAgain` verbatim (`Không hiển thị lại`).
+
+## Các quyết định lẻ khác
+
+Rulings with no concept in the registry, kept so they aren't relitigated:
+
+- computer → `máy tính`; the user's machine in prose → `máy Mac` (`trên máy Mac này`, `Máy Mac này`), never a bare `Mac`
+  as a noun phrase.
+- theme options Light / Dark / System → `Sáng` / `Tối` / `Hệ thống`; binary / decimal (size base) → `nhị phân` /
+  `thập phân`.
+- sidebar (a macOS sidebar) → `thanh bên` (macOS); Cmdr's own side panel is `khung bên` (see `side-panel`).
+- git: branch → `nhánh`, commit → `commit`, tag → `thẻ`, repo → `repo` (full "repository" → `kho`), worktree →
+  `worktree`, a pack file / object stay English in `errors.git.*`.
+- subscription → `đăng ký` (`Gói đăng ký thương mại`); renew → `gia hạn`; deactivate → `hủy kích hoạt`; valid /
+  validity → `có hiệu lực` / `hiệu lực`; perpetual → `vĩnh viễn`; tiers Commercial / Personal → `Thương mại` /
+  `Cá nhân`.
+- regex → `Regex` as a mode label, `biểu thức chính quy` in prose; glob → `Glob`; pattern → `mẫu`; wildcard →
+  `ký tự đại diện`.
+- zoom level → `mức phóng`; pan / fit → `di chuyển` / `vừa khít`; `View > Zoom > 100%` in
+  `commands.handler.zoomResetHintMenu` stays English (a literal menu path, per its `@key`).
+- rate limit → `giới hạn tần suất`; hardlink → `liên kết cứng`; event → `sự kiện`; buffer → `bộ đệm`; channel →
+  `kênh`; log bundle → `gói`; register (a shortcut) → `đăng ký`; bound to → `được gán cho`; key combination →
+  `tổ hợp phím`; jump to → `nhảy đến`; byte → `byte`; cursor → `con trỏ`; toggle (prefix) → `bật/tắt`; recent →
+  `gần đây`; offline → `ngoại tuyến`; agent → `tác nhân`; build folder → `thư mục build`.
+- "Coming soon" → `Sắp ra mắt`; "Hide boring folders" → `Ẩn các thư mục nhàm chán`.
+- click → `bấm` (Finder: 54 `bấm`, zero `nhấp`); press a key → `nhấn`; double-click → `bấm đúp`; a row → `hàng`, a text
+  line → `dòng`.
+- placeholder (a template token) → `phần giữ chỗ` (MS `chỗ dành sẵn` reads "reserved space"); bookmark → `dấu trang`;
+  listing → `danh sách tệp`; preset → `tùy chọn đặt trước` ("back to presets" → `Quay lại tùy chọn đặt trước`), since
+  bare `đặt trước` can read "reserved".
+- Azure: deployment → `bản triển khai`, resource → `tài nguyên` (Microsoft's product, so MS outranks macOS); a model
+  catalog → `thư viện`, qualified as `thư viện mô hình` where Finder's gallery `chế độ xem thư viện` could collide.
+- a shell command → `lệnh` (`lệnh "adb"`); leave a field empty → `để trống`; "the usual way" →
+  `theo cách thông thường`; "at any time" → `bất cứ lúc nào` (nine shipped strings), even though macOS writes
+  `bất kỳ lúc nào`.
+- "one" standing in for a just-named thing → `một cái` (`Hãy bật một cái trong cài đặt`, `Bấm để thiết lập một cái
+  trong cài đặt`).
+
+## Chỉ mục ổ đĩa: lượt kiểm tra thay đổi (`indexing.run.changeCheck`, `indexing.step.updateFileList`, `fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning`)
 
 - **"Checking for changes" (run-kind header) → `Kiểm tra thay đổi`** · verb-phrase shape matching the sibling headers
   (`Quét toàn bộ lần đầu`, `Cập nhật nhanh`); `Kiểm tra` is macOS VI's checking verb (Finder BN9 "Kiểm tra nội dung
-  của…"), `thay đổi` is catalog-settled (`các thay đổi gần đây`) and glossary-settled as the MS term · high.
+  của…"), `thay đổi` is catalog-settled (`các thay đổi gần đây`) and termbase-settled as the MS term · high.
 - **"Update the file list" → `Cập nhật danh sách tệp`** · composed from the settled siblings `Lưu danh sách tệp` +
   `Cập nhật chỉ mục` · high.
 - **"the check running right now" → `lần kiểm tra đang chạy ngay bây giờ`** · reuses `lần kiểm tra` as this catalog's
   settled phrase for a full check (`tooltipCoalesced`: "lần kiểm tra toàn bộ tiếp theo của Cmdr") and that string's
   closing `sẽ chỉnh lại cho đúng` · high.
 
-## Lần truyền bị đứng yên: thông báo trên hộp thoại + hàng đợi (2026-07-31)
+## Lần truyền bị đứng yên: thông báo trên hộp thoại + hàng đợi (`fileOperations.transferProgress.stall*`, `fileOperations.transferProgress.close`)
 
 The seven stalled-transfer strings (`fileOperations.transferProgress.stall*` + `close`). Mined 2026-07-31 against
 `_ignored/i18n/vi/` (macOS Finder/AppKit Tier 1, MS terminology Tier 2, GNOME Nautilus + Total Commander Tier 3). Reuses
@@ -861,7 +301,7 @@ settled terms (close → `đóng`, cancel → `hủy`, destination/source → `�
 
 - **progress (advancement, in "no progress"): `tiến triển`** · shared-root pick (mining gotcha 4): macOS renders the
   progress noun as `tiến trình` (Finder SD24 "Hiển thị tiến trình sao chép", PW60 "Hiển thị cửa sổ tiến trình") and MS
-  terminology as `Tiến độ` (12×). Neither fits a negated "no progress": `tiến trình` is this glossary's word for an OS
+  terminology as `Tiến độ` (12×). Neither fits a negated "no progress": `tiến trình` is this locale's word for an OS
   **process**, so `không có tiến trình` misreads, and `không có tiến độ` is unidiomatic (a rate, not a countable). Same
   `tiến` root, most natural negated form. Progress-the-bar/status stays `tiến trình` (catalog:
   `Tiến trình theo kích thước`). `tentative`.
@@ -886,7 +326,6 @@ settled terms (close → `đóng`, cancel → `hủy`, destination/source → `�
   The `được` passive is natural here and keeps the file (not Cmdr) as the subject. `high`.
 - **"The log has the details.": `Chi tiết có trong nhật ký.`** · `nhật ký` (log, settled) + GNOME Nautilus's
   `Chi tiết: `. Fronting `Chi tiết` keeps it short and puts the useful noun first. `high`.
-- No `sameAsSourceJustification` needed: all seven values differ from English.
 
 Phrasings settled (keep consistent): "No progress for {duration}" → `Không có tiến triển trong {duration}` (one value on
 `fileOperations.transferProgress.stallNotice`, no final period, shown on both the progress dialog and the queue row,
@@ -894,18 +333,17 @@ matching English); "Cancel it, or leave it running in the background." →
 `Hãy hủy, hoặc để nó tiếp tục chạy ở chế độ nền.` (`tiếp tục chạy ở chế độ nền` composed from the catalog's
 `Giữ chạy ở chế độ nền` + `Vẫn đang chạy ở chế độ nền`).
 
-## Đường dẫn đã sao chép: xác nhận bảng nhớ tạm (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+## Đường dẫn đã sao chép: xác nhận bảng nhớ tạm (`fileExplorer.clipboard.copiedPath`)
 
 Một khóa: dòng thông báo thông tin sau ⌘⌥C. Đường dẫn hiện ngay bên dưới trên một dòng riêng với phông chữ đơn cách, nên
 nó KHÔNG phải chỗ giữ chỗ trong câu: câu kết thúc bằng dấu hai chấm và phải đứng vững khi thiếu đường dẫn.
 
 - **"Copied the path, it's now on your clipboard:" → `Đã sao chép đường dẫn vào bảng nhớ tạm:`** · dùng lại
-  `clipboard → bảng nhớ tạm` và `path → đường dẫn` đã chốt trong glossary (macOS AppKit) · high. Mở đầu bằng `Đã` khớp
+  `clipboard → bảng nhớ tạm` và `path → đường dẫn` đã chốt trong termbase (macOS AppKit) · high. Mở đầu bằng `Đã` khớp
   các thông báo anh em (`Đã sao chép {countText} mục`). Gộp "it's now on your clipboard" vào cụm `vào bảng nhớ tạm`:
   dịch sát bằng đại từ `nó` sẽ lủng củng, và tiếng Việt không dùng sở hữu cho một bảng nhớ tạm duy nhất.
-- Không cần `sameAsSourceJustification`: giá trị khác tiếng Anh.
 
-## Hàng đợi thao tác: đổi tên từ "transfer queue" sang "operation queue" (2026-08-08)
+## Hàng đợi thao tác: "operation queue" (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`)
 
 The queue window widened from "Transfer queue" to **"Operation queue"** in English. This is a MEANING change, not a copy
 tweak: the window lists deletes, trashes, renames, folder and file creations, and archive edits, not only transfers, and
@@ -952,9 +390,8 @@ re-translated across `queue.json`, `commands.json`, and `fileOperations.json`.
   ahead of it and invert the sentence's meaning.
 - `queue.empty.title` (`Không có gì trong hàng đợi`) needed no change: it names the queue generically, and its English
   didn't move.
-- No `sameAsSourceJustification` needed: all fourteen values differ from English.
 
-## Huy hiệu tiến trình ở góc + thông báo chưa hoàn tất (2026-08-08)
+## Huy hiệu tiến trình ở góc + thông báo chưa hoàn tất (`queue.chip.*`, `queue.failureToast.*`, `queue.row.dismiss*`, `queue.toolbar.dismissAll`)
 
 Nine new keys in `queue.json` for two new surfaces: the main window's corner progress chip (`queue.chip.*`) and the
 failure notice plus its per-row / toolbar Dismiss buttons (`queue.failureToast.*`, `queue.row.dismiss*`,
@@ -1025,9 +462,8 @@ re-derives them.
   `tentative`.
 - ETA / time-left inside `{detail}` is formatted elsewhere and arrives as the settled `còn {duration}`; these keys pass
   it through untouched.
-- No `sameAsSourceJustification` needed: all nine values differ from English.
 
-## Lời nhắc xung đột đứng riêng: dòng ngữ cảnh + ghi chú tạm dừng (2026-08-09)
+## Lời nhắc xung đột đứng riêng: dòng ngữ cảnh + ghi chú tạm dừng (`fileOperations.operationConflict.context`/`.pausedNote`)
 
 Two keys for the standalone conflict prompt (`fileOperations.operationConflict.context` / `.pausedNote`), the surface
 that asks which operation a name clash belongs to. Both are edits of settled siblings, not fresh translations:
@@ -1056,10 +492,10 @@ the paused word.
   with the settled head noun `thao tác` plus `Các` (the definite-set plural marker, same as `queue.heading`). The state
   word is `queue.row.status`'s `Đã tạm dừng` verbatim, so the note and the rows the user then opens read alike;
   `tạm dừng cho đến khi …` is the ordinary vi collocation for a pause with an endpoint. `trả lời` (answer) over
-  `phản hồi` (respond): the glossary reserves `phản hồi` for a machine responding (macOS AppKit "ứng dụng không phản
+  `phản hồi` (respond): the termbase reserves `phản hồi` for a machine responding (macOS AppKit "ứng dụng không phản
   hồi"). `high` (on the parts); `tentative` (on `trả lời` for answering a dialog).
 
-## Nút "Chạy nền": trạng thái hàng đợi trống của nút Hàng đợi (2026-08-09)
+## Nút "Chạy nền": trạng thái hàng đợi trống của nút Hàng đợi (`fileOperations.transferProgress.background`/`.backgroundAria`)
 
 Two keys, `fileOperations.transferProgress.background` + `.backgroundAria`: the SAME button as `.queue`/`.queueAria`,
 worded for an EMPTY operation queue (nothing to queue behind, so the button names what it does). "Background" is a VERB
@@ -1093,9 +529,8 @@ in the English, not the backdrop noun.
   containment English ships (`Background` ⊂ `…in the background`), the `G`/`C` difference being Vietnamese sentence case
   on the label's first letter. Any future rewording of either key must preserve the containment: the aria is not free to
   drop the label's words.
-- No `sameAsSourceJustification` needed: both values differ from English.
 
-## Hộp thoại thoát khi thao tác đang chạy (`main.quit.*`, 2026-08-10)
+## Hộp thoại thoát khi thao tác đang chạy (`main.quit.*`)
 
 Seven keys for the modal Cmdr raises when the user quits while a copy, move, delete, trash, or archive edit is still
 running: a title, a reassuring body, the running-operations heading, a live countdown plus its aria label, and the two
@@ -1132,7 +567,7 @@ buttons. Reuses the settled head terms (operation → `thao tác`, item → `m�
 - **"half-written file": `tệp ghi dở`** (kept) · the shipped vi catalog already renders this exact English phrase in
   `settings.advanced.showStagingTempFiles.description` ("a crash can't leave a half-written file under a real name" →
   `sự cố không thể để lại tệp ghi dở dưới một tên thật`), so the dialog matches it rather than coining a second form.
-  The glossary's `đã được ghi một phần` (`stallInFlight`) stays for the predicative "may already be partly written";
+  The termbase's `đã được ghi một phần` (`stallInFlight`) stays for the predicative "may already be partly written";
   `ghi dở` is the attributive one. `high` (catalog-consistent).
 - **"clears away" (removing the leftover partial file): `dọn dẹp`** · MS terminology's cleanup verb (`dọn dẹp nhanh`,
   `dọn dẹp phân phối`, `dọn dẹp bản ghi ghost`). Deliberately NOT `xóa` (delete): `xóa` is Cmdr's delete verb, and a
@@ -1146,8 +581,8 @@ buttons. Reuses the settled head terms (operation → `thao tác`, item → `m�
 - **"Anything still being written": `Những gì đang được ghi`** · **the body must stay number-neutral**: one operation
   writes several files at once and several operations can run at once, so `Mục duy nhất đang được ghi` states something
   false. Vietnamese nouns carry no number, so dropping `duy nhất` was the whole fix and `tệp ghi dở còn sót lại` was
-  already neutral. `đang được ghi` is the same `được` + write-verb passive the glossary settled in
-  `đã được ghi một phần`. ⚠️ **Never open this clause with `Chỉ mục …`**: `chỉ mục` is this glossary's word for an
+  already neutral. `đang được ghi` is the same `được` + write-verb passive the termbase settled in
+  `đã được ghi một phần`. ⚠️ **Never open this clause with `Chỉ mục …`**: `chỉ mục` is this locale's word for an
   INDEX, so `Chỉ mục đang được ghi` would read "the index being written". `high`.
 - **"Whatever's finished stays done": `Những gì đã xong vẫn được giữ nguyên.`** · `Xong` is `queue.row.status`'s Done,
   and `giữ nguyên` is the catalog's keep-as-is verb (`Đã giữ nguyên tên gốc`, `Cmdr giữ nguyên tên hiện tại`). NOT
@@ -1173,24 +608,21 @@ buttons. Reuses the settled head terms (operation → `thao tác`, item → `m�
   own" (`thường tự hết trong vài giây`, `Tự lặng lẽ tiến lên mỗi lần khởi chạy`). `còn lại` names what the number
   actually measures (time remaining), which the visible countdown doesn't spell out. This key has NO visible label to
   contain, so WCAG 2.5.3 doesn't bind it; it may be reworded independently of `main.quit.countdown`. `high`.
-- No `sameAsSourceJustification` needed: all seven values differ from English.
 
-## Usage stats: bỏ "ẩn danh", nêu rõ "một mã định danh ngẫu nhiên" (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+## Usage stats: bỏ "ẩn danh", nêu rõ "một mã định danh ngẫu nhiên" (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, `onboarding.stepBeta.emailNote`)
 
 English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
 plainly what they're tied to. The English stays deliberately everyday, so ❌ never `bút danh` / `giả danh` — that jargon
 is exactly what the copy avoids.
 
 - **usage stats → `thống kê sử dụng`** · the settings label's existing term; only the `ẩn danh` adjective was cut ·
-  high. The five keys touched here are now uniform on it. ⚠️ `onboarding.stepBeta.emailNote` (untouched, its English
-  didn't change) still says `số liệu sử dụng` — fold it in on the next pass over that key.
+  high. Every key that names the stats uses it, `onboarding.stepBeta.emailNote` included; ❌ not `số liệu sử dụng`.
 - **a random id → `một mã định danh ngẫu nhiên`** · MS terminology (random → `ngẫu nhiên`, identifier → `mã định danh`)
   · high. ❌ Not a bare `mã ngẫu nhiên`: `mã` alone reads as a code (a coupon, a PIN), which loses the identifier sense.
 - **tied to → `gắn với`** · plain everyday Vietnamese for the relation; `liên kết với` (used in
   `onboarding.stepBeta.emailNote`) is the heavier, more technical register and is kept for the linking sense · high
-- No `sameAsSourceJustification` needed: every value differs from English.
 
-## Câu hỏi làm dừng một hàng trong hàng đợi + hộp thoại hoàn tác (2026-08-13; `queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, bốn khóa `fileOperations.rollbackConfirm.*`, và hai khóa viết lại `transferProgress.foregroundBusyToast`/`.rollbackTooltip`)
+## Câu hỏi làm dừng một hàng trong hàng đợi + hộp thoại hoàn tác (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, `transferProgress.foregroundBusyToast`/`.rollbackTooltip`)
 
 - **"Needs your answer" (queue-row status) → `Cần bạn trả lời`** · ⚠️ NOT anything opening on `Đang chờ`: that is the
   queued status in the same narrow column. `trả lời` is the catalog's own answering verb
@@ -1210,9 +642,8 @@ is exactly what the copy avoids.
 - `foregroundBusyToast` no longer claims another operation holds the window ("Ở đây đang mở một thứ khác"): the blocker
   can be any dialog. "bring this one up" → `hiện thao tác này lên`, the phrasal `hiện … lên` (bring up) rather than the
   standalone Show verb, which is `Hiển thị` on the row's button (`queue.row.foreground`) · high
-- No `sameAsSourceJustification` needed: all eight values differ from English.
 
-## Đổi tên liên tiếp: thông báo gộp khi nhiều tệp giữ nguyên tên (2026-08-18; `fileExplorer.rename.chainKeptOriginalNameAndOthers`)
+## Đổi tên liên tiếp: thông báo gộp khi nhiều tệp giữ nguyên tên (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
 The growing sibling of `fileExplorer.rename.chainKeptOriginalName` (`{reason}. "{name}" vẫn giữ nguyên tên.`). One
 toast, rewritten each time another file in the arrow-key rename run keeps its name, so the two must read as one voice:
@@ -1234,9 +665,8 @@ don't switch this pair to the style guide's curly `“…”` alone — that's a
   rule. `{others}` is kept solely to drive the selection; ❌ never add an `=1`/`one` arm reproducing English's split —
   `tệp` doesn't inflect. The framing words (`và`, `cũng vậy`) sit OUTSIDE the branch so the arm holds exactly what
   English's arm holds.
-- No `sameAsSourceJustification` needed: the value differs from English.
 
-## Đổi tên không xác nhận được + tên không dùng được (2026-08-18; `fileExplorer.rename.unconfirmed`/`.unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
+## Đổi tên không xác nhận được + tên không dùng được (`fileExplorer.rename.unconfirmed`/`.unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
 
 Cặp `unconfirmed*` là anh em của cặp `chainKeptOriginalName*` (cùng dạng thông báo nhỏ), nhưng NGHĨA khác hẳn:
 `chainKept*` khẳng định tệp vẫn giữ nguyên tên, còn `unconfirmed*` nói rằng Cmdr chưa biết, và việc đổi tên vẫn có thể
@@ -1265,9 +695,8 @@ Cặp `unconfirmed*` là anh em của cặp `chainKeptOriginalName*` (cùng dạ
   KHÔNG có dấu chấm cuối (nó được ghép vào câu dài hơn của `chainKeptOriginalName`:
   `Không thể dùng tên tệp đó. "notes.txt" vẫn giữ nguyên tên.`). Cố ý KHÔNG đoán lý do (`không hợp lệ` ám chỉ một quy
   tắc cụ thể), giữ đúng vai trò chuỗi bắt-tất-cả · high
-- Không cần `sameAsSourceJustification`: cả ba giá trị đều khác bản tiếng Anh.
 
-## Thao tác được đề xuất: hộp thoại cho những gì Ask Cmdr đề xuất (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
+## Thao tác được đề xuất: hộp thoại cho những gì Ask Cmdr đề xuất (`suggestedOps.*`, `commands.suggestedOpsShow.*`, `askCmdr.decision.*`)
 
 - ops (các thao tác tệp do tác nhân đề xuất) → `thao tác`; tiêu đề là `Thao tác được đề xuất` · theo thuật ngữ sẵn có
   ("File operations" → "Thao tác tệp") · high
@@ -1276,7 +705,7 @@ Cặp `unconfirmed*` là anh em của cặp `chainKeptOriginalName*` (cùng dạ
 - "This can't be undone" → `Bạn không thể hoàn tác việc này` · macOS Finder ("Bạn không thể hoàn tác tác vụ này") · high
 - pattern → `mẫu` · đã có trong `queryUi.json` · high
 
-## Nhân bản: lệnh sao chép ngay trong cùng thư mục (`commands.fileDuplicate.*`, 2026-08-19)
+## Nhân bản: lệnh sao chép ngay trong cùng thư mục (`commands.fileDuplicate.*`)
 
 - **duplicate (lệnh sao chép mục đã chọn ngay trong thư mục của nó) → `Nhân bản`** · macOS Finder `vi`, menu "Tệp > Nhân
   bản" (`N154`), cùng "Nhân bản các mục" và "Nhân bản các mục trong vị trí hiện tại của chúng" (kiểm chứng trên macOS
@@ -1286,7 +715,7 @@ Cặp `unconfirmed*` là anh em của cặp `chainKeptOriginalName*` (cùng dạ
   theo các mô tả lân cận ("Sao chép các tệp đã chọn…"); `bản sao` là từ đã chốt cho "copy" (danh từ), và "cùng thư mục"
   là thư mục các tệp đang nằm sẵn · high.
 
-## Menu gốc: thanh menu, menu chuột phải, tiêu đề cửa sổ (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+## Menu gốc: thanh menu, menu chuột phải, tiêu đề cửa sổ (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)
 
 Nguồn cho cả nhóm này: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/vi.lproj`, `MenuBar.strings` +
 `LocalizableMerged.strings`) là Tier 1 và quyết định gần như mọi thứ; phía tiếng Anh đọc từ `en_GB.lproj`, vì
@@ -1294,11 +723,9 @@ Nguồn cho cả nhóm này: macOS 26.5.2 Finder (`Finder.app/Contents/Resources
 bù vào chỗ Apple không đặt tên. Họ RAW: **dấu nháy đơn**, một `''` sẽ hiện thành hai dấu trên menu.
 
 - **Thanh menu → `Tệp`, `Sửa`, `Xem`, `Đi`, `Cửa sổ`, `Trợ giúp`, `Dịch vụ`** · macOS Finder và Safari `vi` · high.
-- **⚠️ tab (thẻ giao diện): Tier 1 dùng từ mượn `tab`, không phải `thẻ`.** macOS Finder `vi` viết „Tab mới”, „Hiển thị
-  Tất cả Tab”, và Safari `vi` viết „Tab mới”, „Đóng tab”, „Ghim tab” (kiểm chứng trên macOS 26.5.2, 2026-08-19). Catalog
-  Cmdr hiện dùng `thẻ` ở 36 chỗ trong 6 tệp, nên đợt này giữ `thẻ` cho nhất quán toàn ứng dụng. **Việc cần làm:** một
-  đợt riêng nên đổi toàn bộ `thẻ` → `tab` và nâng mục này trong `style.md` từ `tentative` lên `high`. Không tự ý đổi lẻ
-  một chỗ.
+- **tab (thẻ giao diện) → `tab`, không phải `thẻ`.** macOS Finder `vi` viết „Tab mới”, „Hiển thị Tất cả Tab”, và
+  Safari `vi` viết „Tab mới”, „Đóng tab”, „Ghim tab” (kiểm chứng trên macOS 26.5.2, 2026-08-19). `thẻ` là thẻ Finder
+  (tag). Bằng chứng và đợt quét toàn catalog: § Rà soát trôi thuật ngữ toàn catalog.
 - **pane → `khung`, vẫn `tentative`** · Total Commander `vi` dùng `bảng` (`WCMD.INC` 104, 531), Microsoft dùng `ngăn`,
   catalog Cmdr dùng `khung`. Ba nguồn, ba từ; giữ `khung` vì catalog đã dùng, và ghi lại hai lựa chọn kia.
 - **Quick Look → `Xem nhanh`** · macOS Finder (`TL14`) · high. Apple có dịch tên tính năng này nên nó KHÔNG nằm trong
@@ -1313,8 +740,7 @@ bù vào chỗ Apple không đặt tên. Họ RAW: **dấu nháy đơn**, một 
 - **changelog → `Nhật ký thay đổi`** · thuật ngữ Microsoft · high. Khác với Trợ giúp > `Có gì mới`: một bên gọi tên tài
   liệu, một bên gọi tên tin tức.
 - **word wrap → `Tự ngắt dòng`** · thuật ngữ Microsoft · high.
-- **pin / unpin tab → `Ghim thẻ` / `Bỏ ghim thẻ`** · Safari `vi` („Ghim tab”), chuyển sang thuật ngữ `thẻ` của catalog ·
-  high.
+- **pin / unpin tab → `Ghim tab` / `Bỏ ghim tab`** · Safari `vi` („Ghim tab”) · high.
 - **Màu nhãn Finder → `Đỏ, Cam, Vàng, Lục, Lam, Tía, Xám`** · macOS Finder (`TG_COLOR_*`) · high.
 - **Hàng thẻ (`menu.tag.rowLabel`, `menu.tag.addNamed`, `menu.tag.removeNamed`) → `Thẻ`, `Thêm “{color}”`,
   `Gỡ bỏ “{color}”`** · macOS Finder (`TG5` = `Thêm “^0”`, `N169.37` = `Thẻ`) · high. `TG6` là `Xóa “^0”`, nhưng dùng
@@ -1325,7 +751,7 @@ bù vào chỗ Apple không đặt tên. Họ RAW: **dấu nháy đơn**, một 
   high. `Gỡ bỏ` tránh nghe giống `Xóa` (xóa tệp).
 - **Giống hệt tiếng Anh có chủ đích** (`sameAsSourceJustification`): `menu.zoom.percent*` và `menu.view.askCmdr`.
 
-## Thông báo dự phòng khi phải dùng kết nối SMB của macOS (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+## Thông báo dự phòng khi phải dùng kết nối SMB của macOS (`fileExplorer.network.osMountFallback.*`)
 
 Ba khóa: phần thân thông báo, nút thử lại, và tooltip của nút X. Dùng lại từ vựng đã chốt của nhóm
 `fileExplorer.network` /`navigation` (kết nối trực tiếp → `kết nối trực tiếp`, share → `mục chia sẻ`, thử lại →
@@ -1348,7 +774,7 @@ Ba khóa: phần thân thông báo, nút thử lại, và tooltip của nút X. 
 - **Dismiss (tooltip nút X) → `Bỏ qua`** · dùng lại `lowDiskSpace.toast.closeTooltip`; thuật ngữ Microsoft (`dismiss` →
   `bỏ qua`) · high.
 
-## Lỗi khi đổi tên / tạo mới: 31 khóa `errors.mutation.*` + `errors.volume.*` (2026-08-23)
+## Lỗi khi đổi tên / tạo mới (`errors.mutation.*`, `errors.volume.*`)
 
 Một dòng hiện ngay dưới ô nhập tên (hoặc trong thông báo nhỏ) khi việc đổi tên, tạo thư mục, hay tạo tệp bị từ chối. Họ
 RAW, không phải ICU: dùng dấu nháy đơn thường, giữ `{path}` nguyên vẹn. `{path}` là phần chèn không kiểm soát được
@@ -1363,9 +789,8 @@ tránh `lỗi`/`thất bại` theo giọng lỗi trong `style.md`. Mới hoặc 
   hoa của Apple; `macOS` vẫn nguyên văn · high
 - **Get Info (bảng thông tin của Finder) → `cửa sổ Lấy thông tin`** · macOS Finder ("Get Info" → "Lấy thông tin"; "Shows
   the Get Info window for an item or items" → "Hiển thị cửa sổ Lấy thông tin cho một hoặc nhiều mục"), khớp luôn với
-  `commands.fileGetInfo.mac.label` mà catalog đã ship (`Lấy thông tin`) · high. ⚠️ Ba khóa cũ hơn trong `errors.write.*`
-  (`fileLocked.suggestion.mac`, `permissionDenied.suggestion.deleteMac`) vẫn để "Get Info" và "Locked" bằng tiếng Anh;
-  đó là chỗ chưa đồng bộ có sẵn, gộp lại ở đợt sau chứ đừng sửa lẻ.
+  `commands.fileGetInfo.mac.label` mà catalog đã ship (`Lấy thông tin`) · high. Mọi khóa `errors.*` nhắc tới bảng này
+  đều dùng `Lấy thông tin` (xem mục ngay dưới về `Get Info` và `Locked`).
 - **locked / unlock (cờ Locked của macOS) → `bị khóa` / `mở khóa`** · macOS Finder (`NE17` "tệp "^0" đã bị khóa", `NE18`
   "bỏ chọn "Đã khóa" rồi thử lại", `AXNODE1` "Đã khóa") · high
 - **top folder của một ổ đĩa (root folder) → `thư mục gốc`** · thuật ngữ Microsoft (`root folder` / `top-level folder` /
@@ -1417,9 +842,8 @@ Ghi chú khác:
   `{name}` (`fileExplorer.renameConflict.description`, cặp `rename.chainKeptOriginalName*`). Đổi sang nháy cong `“…"` là
   việc của một đợt di trú toàn catalog, không sửa lẻ ở đây.
 - `errors.mutation.notFound` và `errors.volume.notFound` có bản tiếng Anh giống hệt nhau nên dùng chung một bản dịch.
-- Không cần `sameAsSourceJustification`: cả 31 giá trị đều khác bản tiếng Anh.
 
-## Lỗi khi đổi tên / tạo mới, đợt 2: hai khóa `errors.mutation.trash*` (2026-08-23)
+## Lỗi khi chuyển vào Thùng rác (`errors.mutation.trash*`)
 
 Hai khóa thêm sau đợt 31 khóa ở trên, cùng bề mặt (một dòng dưới ô nhập tên hoặc trong thông báo nhỏ), cùng họ RAW, cùng
 luật giọng (không `lỗi`/`thất bại`). Dùng lại từ đã chốt: ổ đĩa (volume), mục (item), `macOS` nguyên văn.
@@ -1440,7 +864,7 @@ luật giọng (không `lỗi`/`thất bại`). Dùng lại từ đã chốt: �
   `errors.mutation.fileLocked` ("Mục này đang bị khóa."). Chuỗi cố ý ngắn vì lý do kỹ thuật hiện riêng dưới "Chi tiết kỹ
   thuật", nên đừng thêm gợi ý khắc phục · high
 
-## Ba biến thể phần thân của hộp thoại báo cáo sự cố (`crashReporter.dialog.body.*`, 2026-08-23)
+## Ba biến thể phần thân của hộp thoại báo cáo sự cố (`crashReporter.dialog.body.*`)
 
 Hộp thoại lần khởi động kế tiếp giờ chọn một trong ba câu tùy theo những gì báo cáo ghi lại. `.ended` (Cmdr thoát đột
 ngột) giữ nguyên bản dịch cũ; hai khóa mới phải nói ĐÚNG sự thật:
@@ -1479,7 +903,7 @@ Giá trị đã chốt:
   `Lần trước Cmdr đã gặp sự cố ở chế độ nền nhưng vẫn tiếp tục chạy. Đây là báo cáo kèm chi tiết có thể giúp khắc phục việc này.`
 - `.unknown` → `Lần trước Cmdr đã gặp sự cố. Đây là báo cáo kèm chi tiết có thể giúp khắc phục việc này.`
 
-## Bổ sung: `thoát bất ngờ`, `ở chế độ nền`, và hai hướng đã loại
+## `thoát bất ngờ`, `ở chế độ nền`, và hai hướng đã loại (`crashReporter.dialog.body.ended`, `crashReporter.dialog.privacyNote`, `crashReporter.dialog.title*`)
 
 - **SỬA — "quit unexpectedly" → `thoát bất ngờ`** · `macOS/AppKit/AppKitErrors.json:90` ("ứng dụng thoát bất ngờ") ·
   high. Đây là lần duy nhất `bất ngờ` xuất hiện trong toàn bộ kho tham chiếu tiếng Việt ngoài Total Commander, và nó nằm
@@ -1521,7 +945,7 @@ tới việc Cmdr thoát nữa. Mọi thành phần lấy từ mục hộp tho�
 - **Câu thứ hai lấy từ `crashReporter.dialog.privacyNote`** (`phần mã nào đã gặp sự cố`), thay cho `vị trí sự cố`, vốn
   chỉ đúng khi ứng dụng thật sự đã thoát · high.
 
-## Lỗi khi tháo ổ đĩa / ngắt kết nối (`errors.eject.*`, 2026-08-23)
+## Lỗi khi tháo ổ đĩa / ngắt kết nối (`errors.eject.*`)
 
 Chín khóa mới, tất cả đều rơi vào thông báo nhỏ ở góc trên bên phải, sau dấu hai chấm của
 `fileExplorer.pane.ejectFailedToast` (`Không thể tháo {volumeName}: …`) hoặc `.disconnectFailedToast`
@@ -1561,9 +985,8 @@ share → `mục chia sẻ`, `thao tác` cho hạng mục thao tác tệp.
   nguyên văn: `Có gì đó không ổn, và Cmdr không rõ là gì.` · high.
 - **`errors.eject.volumeNotFound` đi theo khung của `errors.mutation.volumeGone`** (`Ổ đĩa đó không còn … nữa, nên …`),
   chỉ đổi `khả dụng` thành `kết nối` vì bản tiếng Anh nói "isn't connected any more" · high.
-- Không cần `sameAsSourceJustification`: cả chín giá trị đều khác bản tiếng Anh.
 
-### SỬA: Apple CÓ dịch "Get Info" và "Locked" sang tiếng Việt
+### Apple CÓ dịch "Get Info" và "Locked" sang tiếng Việt (`errors.write.fileLocked.suggestion.mac`, `errors.write.permissionDenied.suggestion.deleteMac`)
 
 Hai khóa cũ (`errors.write.fileLocked.suggestion.mac`, `errors.write.permissionDenied.suggestion.deleteMac`) để nguyên
 `Get Info` và `Locked` bằng tiếng Anh giữa câu tiếng Việt. Đó là lỗi: macOS `vi` dịch cả hai, nên người dùng mở Finder
@@ -1580,7 +1003,7 @@ ra sẽ không thấy chữ nào khớp.
 - **`@key.description` bên `en` đã được sửa** (2026-08-24): bốn mô tả từng ghi "do NOT translate" nay nói rõ Apple có
   dịch `Get Info`, `Locked` và `Sharing & Permissions`, nên hãy dùng cách viết trong Finder của ngôn ngữ mình.
 
-## Hai khóa `errors.listing.*`: `Get Info` và `Sharing & Permissions` (2026-08-24)
+## `Get Info` và `Sharing & Permissions` (`errors.listing.noPermissionErrno.suggestion`, `errors.listing.permissionDenied.suggestion`)
 
 `errors.listing.noPermissionErrno.suggestion` và `errors.listing.permissionDenied.suggestion` là ổ tiếng Anh còn sót lại
 sau đợt trên; chúng viết `chọn Get Info, và xem mục Sharing & Permissions`. Nay là
@@ -1594,7 +1017,7 @@ sau đợt trên; chúng viết `chọn Get Info, và xem mục Sharing & Permis
 - **`phần`, không phải `mục`** · Apple dùng `phần` cho đúng chỗ này trong đúng câu này (`N30`/`N32`/`NE43`); `mục` là từ
   catalog dùng cho một hạng mục trong danh sách · high.
 
-## Toast thùng rác: hoàn tác và đi tới thùng rác (2026-08-27; `fileOperations.trash.*` + `commands.fileGoToTrash.*`)
+## Toast thùng rác: hoàn tác và đi tới thùng rác (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)
 
 Toast hiện ngay sau khi tệp được chuyển vào thùng rác, với hai nút `Hoàn tác` và `Đi tới thùng rác`, cùng lệnh cùng tên
 trong bảng lệnh. Dùng lại `thùng rác`, `ổ đĩa`, `tệp`, `mục`. Các quyết định mới:
@@ -1619,9 +1042,8 @@ trong bảng lệnh. Dùng lại `thùng rác`, `ổ đĩa`, `tệp`, `mục`. C
 - **"This drive doesn't keep a trash." → `Ổ đĩa này không có thùng rác.`** · cùng khung với câu chị em
   `fileOperations.delete.archiveWarningStrong` ("Không có thùng rác bên trong tệp nén.") · `high`. Là một câu nói về ổ
   đĩa, không phải lời trách người dùng.
-- Cả chín giá trị đều khác tiếng Anh, nên không cần `sameAsSourceJustification`.
 
-## Thêm ghi chú vào báo cáo đã gửi (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`, 2026-08-28)
+## Thêm ghi chú vào báo cáo đã gửi (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)
 
 Cmdr tự gửi báo cáo (người dùng đã chọn bật), rồi toast "Đã gửi báo cáo sự cố" cho một nút mở hộp thoại xem lại đúng
 những gì đã gửi và viết thêm ghi chú **vào chính báo cáo đó**; không có lần tải lên thứ hai. Mười một khóa dùng lại
@@ -1657,11 +1079,9 @@ những gì đã gửi và viết thêm ghi chú **vào chính báo cáo đó**;
   hữu đã hiển nhiên · `high`.
 - **"and it''ll join what the team already has" → `và nó sẽ được thêm vào chính báo cáo mà nhóm đã có`** · `tentative`.
   Kho tham chiếu không có câu nào tương đương; `chính … mà` là cách nêu bật "vẫn là báo cáo đó, không gửi cái thứ hai",
-  đúng ý `@key.description`. Nhờ người bản ngữ soát lại câu này nếu có dịp.
-- Cả 11 giá trị đều khác tiếng Anh, nên không cần `sameAsSourceJustification`. Không giá trị nào chứa dấu nháy đơn, nên
-  không phát sinh chuyện nhân đôi `''` của ICU; `{error}` giữ nguyên.
+  đúng ý `@key.description`.
 
-## Chọn và bỏ chọn: hộp thoại Select / Deselect (`selection.*`, 2026-08-29)
+## Chọn và bỏ chọn: hộp thoại Select / Deselect (`selection.*`)
 
 - **select → `chọn`, deselect → `bỏ chọn`** · macOS 26.6.2 Finder `vi`
   (`Finder.app/Contents/Resources/vi.lproj/MenuBar.strings`, `172.title` = `Chọn tất cả`, `300488.title` =
@@ -1694,10 +1114,8 @@ những gì đã gửi và viết thêm ghi chú **vào chính báo cáo đó**;
   trùng nhau). `applyAria` theo khuôn `search.recent.runAria` (`Chạy lại tìm kiếm {mode} gần đây: {query}`):
   `Áp dụng lựa chọn {mode} gần đây: {query}`. `{query}` là chữ người dùng tự gõ nên đặt cuối câu, sau dấu hai chấm, để
   chứa được bất cứ thứ gì.
-- Cả 15 giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
-  không phát sinh chuyện nhân đôi `''` của ICU; `{mode}` và `{query}` giữ nguyên.
 
-## Rà soát trôi thuật ngữ toàn catalog (2026-08-30)
+## Rà soát trôi thuật ngữ toàn catalog
 
 Đợt rà soát theo `docs/guides/i18n-translation.md` § "Auditing a finished locale for term drift". Kiểm tra tự động
 (`desktop-i18n-term-consistency`) đi từ **24 xuống 3**, và ba mục còn lại là ba ranh giới cố ý ghi ở cuối mục này. Phần
@@ -1797,7 +1215,7 @@ các `*.loctable` của AppKit / các app hệ thống (macOS 26 đã chuyển p
   `Đang tìm...`.
 - **"Refresh network hosts" → `Làm mới các máy chủ mạng`** · nhãn trợ năng của nút quét lại vốn dài hơn nhãn lệnh cùng
   nội dung; lấy theo `commands.networkRefresh.label`. "Refresh listing" cũng về `Làm mới danh sách tệp` thay cho
-  `Tải lại…` (glossary: refresh → `làm mới`).
+  `Tải lại…` (termbase: refresh → `làm mới`).
 - **"Tab limit reached" → `Đã đạt giới hạn số tab`** · `số` giữ lại vì giới hạn là ở SỐ LƯỢNG tab; `giới hạn tab` trần
   đọc mơ hồ (giới hạn _của_ một tab?).
 - **Hai câu đăng ký beta** · `onboarding.stepBeta.signup.*` và `settings.updates.email*` là hai bản của cùng một câu.
@@ -1828,7 +1246,7 @@ các `*.loctable` của AppKit / các app hệ thống (macOS 26 đã chuyển p
   Tiếng Anh dùng lại một chữ cho hai khái niệm; tiếng Việt tách ra thì rõ hơn, và gộp lại sẽ khiến bộ lọc phím tắt đọc
   như một bộ lọc theo ngày.
 
-## Shared `en` fixes: menu wording, System Settings panes, email placeholder (2026-08-30)
+## Menu wording, System Settings panes, email placeholder (`menu.app.hideOthers`, `commands.appHideOthers.label`, `errors.git.*`, `errors.provider.*`, `settings.updates.emailPlaceholder`, `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`, `askCmdr.renameUndo.undone`/`.partial`)
 
 Fallout from four `en` self-inconsistency fixes. Evidence is macOS 26.6.2 (build 25G83), read live off the installed
 bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference-pile/how-to-mine.md`, 2026-08-30, plus
@@ -1875,7 +1293,7 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   (`StorageSettingsIntentsExtension.appex/AppIntents.loctable`, `SETTINGS_DEEPLINKS.ROOT.TITLE`), all on macOS 26.6.2
   (build 25G83), verified 2026-08-30. No restamp: `en` didn't change, the Vietnamese was just incomplete. · `high`
 
-## Thao tác mới hoàn tác được một nửa: làm tiếp cho hết (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+## Thao tác mới hoàn tác được một nửa: làm tiếp cho hết (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)
 
 - **`Finish rolling back` → `Tiếp tục hoàn tác`** · giữ nguyên họ từ `hoàn tác` đã chốt (§ roll back / rollback) và lấy
   khuôn của macOS Finder `vi` cho một thao tác tệp còn dở: `Tiếp tục sao chép`, cùng câu “Đã phát hiện thấy bản sao một
@@ -1910,10 +1328,8 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   `fileExplorer.navigation.driveIndex.deferredRescan` = `Cmdr đang tìm kiếm trong {name}`) · `high`. Cả hàng đọc thành
   `Đang xóa những gì đã tạo trong Backup`, đúng ý cần: xóa thứ nằm TRONG thư mục đó, không phải xóa chính thư mục. Tiếng
   Việt không biến hình nên tên thư mục nào cũng vừa, và không cần thêm dấu ngoặc kép.
-- Cả năm giá trị đều khác tiếng Anh nên không cần `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn nên
-  không phát sinh `''` của ICU; `{folder}` giữ nguyên.
 
-## Toast sau khi hoàn tác thao tác đang chạy (`fileOperations.cancelRollback.*` + `rollbackConfirm.body`, 2026-08-31)
+## Toast sau khi hoàn tác thao tác đang chạy (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)
 
 Người dùng bấm `Hoàn tác` trên một lần sao chép/di chuyển đang chạy, lượt hoàn tác chạy xong, và toast này báo nó làm
 được tới đâu. Toast xếp tối đa ba phần: một dòng tiêu đề (`doneDeleting` / `doneMovingBack` / `someDeleted` /
@@ -1986,18 +1402,18 @@ danh sách `reason.*`: ở đó Cmdr bảo vệ tệp của người dùng, còn
 - ⚠️ **`trong một lần truyền sau`, ❌ không bao giờ "lần tới".** Việc dọn dẹp của Cmdr bỏ qua mọi thứ chưa đủ một giờ,
   nên thử lại ngay sẽ không dọn được gì. Một lời hứa không giữ được chính là lỗi mà dòng này sinh ra để loại bỏ.
 
-## Màn hình chặn khi WebKit quá cũ (`main.oldWebkit.*`, 2026-09-02)
+## Màn hình chặn khi WebKit quá cũ (`main.oldWebkit.*`)
 
 Ba chuỗi Cmdr hiển thị thay cho giao diện khi Safari của máy Mac quá cũ. Chúng nằm trong lớp vỏ HTML chứ không nằm trong
 app, nên đây là thứ duy nhất người dùng đó thấy được của Cmdr.
 
 - **`Software Update` → `Cập nhật phần mềm`** · tên bảng trong Cài đặt hệ thống của macOS; dấu vết Tier 1 từ Finder xác
   nhận cụm từ (`Apple Device Software Update File` → `Tệp cập nhật phần mềm thiết bị Apple`) · `high`.
-- **`Quit` → `Thoát`** · đã có trong glossary, khớp với macOS AppKit · `high`.
+- **`Quit` → `Thoát`** · đã có trong termbase, khớp với macOS AppKit · `high`.
 - **`Safari`, `Mac` và `15.4` giữ nguyên.** `Safari` nay nằm trong `BRAND_WORDS`.
 - Dấu thanh đầy đủ ở mọi chữ, theo quyết định trong `style.md`.
 
-## Thông báo về macOS cũ (`main.oldMacos.*`, 2026-09-02)
+## Thông báo về macOS cũ (`main.oldMacos.*`)
 
 Hộp thoại hiện đúng một lần trên máy Mac thấp hơn macOS 12: Cmdr vẫn chạy, nhưng nằm ngoài dải đã kiểm thử. Giọng thành
 thật và thoải mái, không xin lỗi và không cảnh báo, vì ứng dụng vẫn chạy được.
@@ -2010,7 +1426,7 @@ thật và thoải mái, không xin lỗi và không cảnh báo, vì ứng dụ
   việc mà không mang chữ đó.
 - **Câu cuối là David ở ngôi thứ nhất, dùng `mình`**, đúng như `onboarding.stepBeta.greeting`; người dùng vẫn là `bạn`.
 
-## Ask Cmdr xem bên trong tệp: hai nhãn công cụ + hai khóa đồng ý (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, 2026-09-02)
+## Ask Cmdr xem bên trong tệp: hai nhãn công cụ + hai khóa đồng ý (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.empty.hint`, `settings.askCmdr.intro`)
 
 Năm khóa cho công cụ `inspect_file` (Ask Cmdr đọc một phần có giới hạn của tệp khi được hỏi) và màn hình đồng ý viết lại
 quanh nó. Dùng lại các thuật ngữ đã chốt (tệp nén → `tệp nén`, văn bản → `văn bản`, dòng → `dòng`, ảnh → `ảnh`, thẻ →
@@ -2074,7 +1490,7 @@ quanh nó. Dùng lại các thuật ngữ đã chốt (tệp nén → `tệp né
   `contentsRule`) · `high`. ❌ Bỏ hẳn `chỉ đọc` / `không bao giờ đọc nội dung tệp` /
   `không bao giờ thay đổi bất cứ điều gì` của bản cũ: tiếng Anh mới không còn hứa những điều đó.
 
-## Hai chú giải của nút Rollback (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+## Hai chú giải của nút Rollback (`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
 
 Bề mặt mới: chú giải của nút giờ nói rõ lần hoàn tác NÀY làm gì với các tệp, và nút bị tắt ngay khi một lần di chuyển
 giữa hai hệ thống tệp bước sang chặng cuối (xóa các bản gốc, khi mọi thứ đã ở đích).
@@ -2086,7 +1502,6 @@ giữa hai hệ thống tệp bước sang chặng cuối (xóa các bản gốc
 - **`rollbackAlreadyLandedTooltip`** · câu đầu lặp lại hình ảnh của `cancelRollback.moveAlreadyLanded` („đều đã ở
   đích”), `hoàn tác` là từ đã chốt cho rollback (`rollbackUnavailableTooltip`), và `Hủy` là nhãn của nút bên cạnh
   (`fileOperations.button.cancel`) nên giữ nguyên · `high`.
-- Không có `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.
 
 ## “Mở terminal tại đây” và bộ chọn ứng dụng (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
 
@@ -2101,7 +1516,6 @@ lệnh sẽ mở. macOS dựng danh sách; ở đây chỉ dịch các nhãn.
   vị trí · `high`. Bản dịch của chính lệnh đó (menu, bảng lệnh) phải dùng đúng dạng này.
 - **Choose an app… → `Chọn ứng dụng…`** · đúng nguyên văn `Choose Application…` của Apple (khóa `N137`) trong Finder
   tiếng Việt · `confirmed`.
-- Không giá trị nào chứa dấu nháy đơn.
 
 ## `Sort by relevance`: chú giải của cột kết quả tìm kiếm (`fileExplorer.columns.sortByRelevance`)
 
@@ -2123,16 +1537,15 @@ Bề mặt mới: một hàng trong cùng thẻ với `Tệp nén zip`, nằm tr
 Office (.docx, .xlsx, .pptx) và gói ứng dụng (.jar, .apk), nên ngay cả bản tiếng Anh cũng không nêu tên Office.
 
 - **documents (loại tệp) → `Tài liệu`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Tài liệu`; tên loại `Tài liệu RTF`,
-  `Tài liệu văn bản thuần túy`), khớp mục glossary `document → tài liệu` · `high`.
-- **packages (chung, không chỉ ứng dụng) → `gói`** · macOS Finder (`Hiển thị nội dung gói`) và mục glossary
+  `Tài liệu văn bản thuần túy`), khớp mục termbase `document → tài liệu` · `high`.
+- **packages (chung, không chỉ ứng dụng) → `gói`** · macOS Finder (`Hiển thị nội dung gói`) và mục termbase
   `app bundle → gói ứng dụng` · `high`. Giữ `gói` trần để hàng này rộng hơn thẻ `Gói ứng dụng` bên dưới, đúng như tiếng
   Anh tách `packages` với `app bundles`.
 - **Khung câu → `Nhấn Enter sẽ làm gì với tệp …, … hoặc ….`** · đúng khuôn của các khóa anh em
   `settings.archives.zip.description` và `settings.archives.bundle.description`, nhưng bỏ dấu phẩy trước `hoặc` theo quy
-  ước đã chốt · `high`. ❗ `settings.archives.bundle.description` vẫn còn dấu phẩy đó (`.bundle, hoặc .framework`); nằm
-  ngoài phạm vi lần này, nên hai hàng khác nhau về dấu câu cho tới khi có người sửa.
+  ước đã chốt · `high`. Cả ba hàng (`zip`, `bundle`, `ooxml`) giờ cùng dấu câu.
 
-## Trung tâm máy chủ: khung trạng thái kết nối + quên máy chủ / mật khẩu (`servers.*` 15 khóa, `fileExplorer.navigation.connectionTooltip*` / `.disconnect*` / `.forget*` 13 khóa, 2026-09-06)
+## Trung tâm máy chủ: khung trạng thái kết nối + quên máy chủ / mật khẩu (`servers.refusal.*`, `servers.paneState.*`, `fileExplorer.navigation.connectionTooltip*`, `fileExplorer.navigation.disconnect*`, `fileExplorer.navigation.forget*`)
 
 Bề mặt mới: một khung riêng cho máy chủ (SMB/SFTP/WebDAV) đang kết nối hoặc bị từ chối, cộng với hàng máy chủ trong bộ
 chuyển ổ đĩa (chấm trạng thái, nút ngắt kết nối ở đúng chỗ mà ổ rời hiện `Tháo`, hai hộp thoại xác nhận `Quên`).
@@ -2210,7 +1623,7 @@ Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1), nên toàn bộ
 - **`on this Mac` → `trên máy Mac này`** · macOS `IOBluetoothUI`, `FileProvider` · `high`.
 - Không khóa nào trong 28 khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.
 
-## Trung tâm máy chủ, đợt 2: bảng máy chủ + hàng "Máy chủ" trong bộ chọn ổ đĩa (28 khóa `servers.hub.*` / `commands.servers*` / `fileExplorer.navigation.server*Toast` / `shortcuts.scope.servers`+`.places`, 2026-09-06)
+## Trung tâm máy chủ: bảng máy chủ + hàng "Máy chủ" trong bộ chọn ổ đĩa (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.server*Toast`, `shortcuts.scope.servers`, `shortcuts.scope.places`)
 
 Bề mặt: hàng `Network` cũ trong bộ chọn ổ đĩa (chỉ liệt kê máy chủ SMB mDNS thấy ngay lúc đó) nay là hàng **`Servers`**
 mở ra một cái bảng: mọi máy chủ đã lưu (SFTP, WebDAV, SMB) cộng với những máy tìm thấy quanh đó, các cột Name / Type /
@@ -2287,7 +1700,7 @@ làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
   không biến đổi theo số.
 - Không khóa nào trong 28 khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn.
 
-## Trung tâm máy chủ, đợt 3: tấm thêm/sửa máy chủ + câu hỏi tin cậy khóa SSH (46 khóa `servers.sheet.*` / `servers.hostKey.*` / `servers.paneState.*` + `goToPath.dialog.opens|addsServer` + `commands.serversConnect.label`, 2026-09-07)
+## Trung tâm máy chủ: tấm thêm/sửa máy chủ + câu hỏi tin cậy khóa SSH (`servers.sheet.*`, `servers.hostKey.*`, `goToPath.dialog.opensServer`, `goToPath.dialog.addsServer`, `commands.serversConnect.label`)
 
 Bề mặt: một tấm (sheet) duy nhất dùng cho cả ba việc — thêm một máy chủ mới (SMB / SFTP / WebDAV), đăng nhập lại vào một
 máy chủ đang hỏi mật khẩu, và sửa một máy chủ đã lưu — cộng bước hỏi có tin cậy khóa SSH của máy chủ hay không (lần đầu,
@@ -2391,9 +1804,8 @@ tấm của Cmdr cần.
   giao thức, macOS vi giữ nguyên: NetAuthAgent `WEBDAV_PASSWORD` → `Mật khẩu WebDAV`, `FTP_PASSWORD` → `Mật khẩu FTP`)
   và `servers.sheet.addressPlaceholder` (`nas.local`, một tên máy ví dụ: `nas` là chữ viết tắt catalog giữ nguyên,
   `.local` là hậu tố mDNS).
-- Không giá trị nào trong 46 khóa chứa dấu nháy đơn, nên không có dấu nháy nào phải nhân đôi.
 
-## Trung tâm máy chủ, đợt 4: khung đang kết nối lại + dòng "không có gì để nhập" (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`, 2026-09-07)
+## Trung tâm máy chủ: khung đang kết nối lại + dòng "không có gì để nhập" (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)
 
 Bề mặt: hai chuỗi trong cùng khung trạng thái máy chủ của đợt 3. Một là tiêu đề của khung Cmdr TỰ tìm lại kết nối đã rớt
 (dưới nó là vòng quay, đồng hồ đếm ngược tới lần thử sau, và ba nút Thử lại ngay / Hủy / Ngắt kết nối). Hai là dòng thay
@@ -2449,7 +1861,7 @@ làm: `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
 - Không khóa nào trong hai khóa mang `sameAsSourceJustification`; không giá trị nào chứa dấu nháy đơn, nên không có dấu
   nháy nào phải nhân đôi.
 
-## Trung tâm máy chủ, đợt 5: ghim/bỏ ghim + trang Cài đặt cho máy chủ và ADB (`menu.network.pinToSwitcher`, `.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section|summary.servers|adb`, `settings.appearance.tintSmb.*`, 2026-09-07)
+## Trung tâm máy chủ: ghim/bỏ ghim + trang Cài đặt cho máy chủ và ADB (`menu.network.pinToSwitcher`, `.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`, `settings.section.adb`, `settings.summary.servers`, `settings.summary.adb`, `settings.appearance.tintSmb.*`)
 
 Bề mặt: (1) hai mục menu chuột phải trên hàng máy chủ trong bộ chọn ổ đĩa; (2) một thông báo một lần khi nhóm `Mạng`
 trong bộ chọn có tới năm máy chủ; (3) hai tiểu mục mới của Cài đặt > Hệ thống tệp (`Máy chủ (SFTP, WebDAV)` và
@@ -2542,7 +1954,7 @@ Nguồn: kho tham chiếu KHÔNG có trên máy này (hộp M1). Mọi dẫn ch�
   dấu nháy đơn nên không có dấu nháy nào phải nhân đôi. Hai khóa `menu.*` thuộc họ RAW (không ICU) và cũng không có dấu
   nháy.
 
-## Điện thoại Android qua ADB: khung kết nối, chú giải bộ chọn ổ đĩa, dòng gợi ý (19 khóa `adb.*` + `settings.behavior.adbHintDismissed.*`, 2026-09-07)
+## Điện thoại Android qua ADB: khung kết nối, chú giải bộ chọn ổ đĩa, dòng gợi ý (`adb.*`, `settings.behavior.adbHintDismissed.*`)
 
 Nguồn của đợt này khác thường: máy dịch (M1 agent box) không có `_ignored/i18n/vi/`, nên bằng chứng macOS lấy trực tiếp
 từ bundle đang cài (macOS 26.6.2 build 25G83, quét `.loctable`, 2026-09-07), còn hai thuật ngữ của Android thì lấy từ
@@ -2600,9 +2012,8 @@ Các quyết định theo từng chuỗi:
   `fileExplorer.navigation.disconnectPlaceAriaLabel`, cũng cùng bản tiếng Anh; hai nút này phải đọc y hệt nhau.
 - **`adb.disconnectBusyTooltip` → `Không thể ngắt kết nối khi còn thao tác đang chạy trên thiết bị này`** · lấy khuôn
   của chuỗi chị em cùng động từ `fileExplorer.navigation.disconnectBusyTooltip` (`…trên máy chủ này`) và chỉ đổi danh
-  từ. Lưu ý sẵn: `fileExplorer.navigation.ejectBusyTooltip` đang dùng một khuôn thứ hai
-  (`trong khi có thao tác đang diễn ra trên thiết bị này`) cho cùng một ý; đó là trôi có sẵn từ trước, chưa sửa trong
-  đợt này.
+  từ. `fileExplorer.navigation.ejectBusyTooltip` dùng cùng khuôn (`Không thể tháo khi còn thao tác đang chạy trên thiết
+  bị này`); ❌ đừng quay lại `trong khi có thao tác đang diễn ra`.
 - **`adb.connect.openSettings` → `Mở cài đặt`** · dùng lại nguyên văn ba khóa đã ship (`commands.appSettings.label`,
   `commands.handler.openTerminalHere.openSettings`, `askCmdr.wake.needsApiKey`). Viết thường theo luật sentence case của
   tiếng Việt, dù bản tiếng Anh viết hoa `Settings`.
@@ -2645,9 +2056,9 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
 - **`{name}` đứng sau `cho`, không cần loại từ**, nên tên máy chủ có hình dạng nào cũng đọc trôi. Không dùng chữ `lỗi`
   hay `không thể`: chẳng có gì hỏng cả.
 - Kho tham chiếu không có trên máy này (`_ignored/i18n/` cũng không có trong bản clone chính), nên quyết định dựa vào
-  catalog đã xuất bản và bảng thuật ngữ này.
+  catalog đã xuất bản và termbase này.
 
-## Tổng thời gian thử lại, tiêu đề khóa máy chủ và nút Cho phép của Android
+## Tổng thời gian thử lại, tiêu đề khóa máy chủ và nút Cho phép của Android (`servers.paneState.retryTotalSeconds`/`.retryTotalMinutes`, `servers.paneState.hostKeyChanged`, `adb.connect.unauthorized`)
 
 - **`{seconds}`/`{minutes}` giờ là khối số nhiều ICU với HAI chỗ giữ** (`servers.paneState.retryTotalSeconds`,
   `.retryTotalMinutes`): `{seconds}` chỉ để chọn nhánh, thứ người dùng đọc là `{secondsText}`, con số đã được định dạng
@@ -2663,9 +2074,9 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
   (`Hãy xem điện thoại của bạn rồi nhấn vào Cho phép.`), không đặt trong ngoặc kép, cùng động từ `nhấn vào`, để chữ
   trong câu trùng với chữ trên màn hình · `high`.
 - Kho tham chiếu không có trên máy này (`_ignored/i18n/` cũng không có trong bản clone chính), nên quyết định dựa vào
-  catalog đã xuất bản và bảng thuật ngữ này.
+  catalog đã xuất bản và termbase này.
 
-## Menu chuột phải trên hàng máy chủ: `Mở` và `Sửa máy chủ…`
+## Menu chuột phải trên hàng máy chủ: `Mở` và `Sửa máy chủ…` (`menu.network.open`, `menu.network.edit`)
 
 - **`Open` (trên một hàng máy chủ) → `Mở`** (`menu.network.open`) · giống hệt `menu.file.open`, vì cùng một nghĩa: đi
   vào bên trong một thứ, không phải giao tệp cho một ứng dụng. Tiếng Việt không tách hai nghĩa đó, macOS cũng vậy:
@@ -2681,12 +2092,12 @@ Hai dòng dưới hai ô đã bị làm mờ `Địa chỉ` và `Tên người d
 - Kho tham chiếu không có trên máy này, nhưng `Finder.app` cho đúng bằng chứng Tier 1 lấy thẳng từ hệ thống
   (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
 
-## Function key bar context menu (2026-09-07)
+## Function key bar context menu (`menu.context.hideFunctionKeyBar`, `fileExplorer.functionKeyBar.hiddenToast`)
 
 - function key bar (hàng nút lệnh phím chức năng ở cuối cửa sổ) → thanh phím chức năng · đã được chốt trong danh mục
   (`settings.appearance.showFunctionKeyBar.label`); dùng lại cho mục menu ngữ cảnh và thông báo đi kèm · high
 
-## Lời mời ghim Cmdr vào Dock (`main.dockPinNudge.*` 9 khóa + `settings.behavior.dockPinNudgeOfferedAt.*`, 2026-09-09)
+## Lời mời ghim Cmdr vào Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 
 Bề mặt: một thông báo một lần, hiện ra sau vài ngày dùng Cmdr, hỏi xem ứng dụng có được tự thêm biểu tượng của mình vào
 Dock macOS hay không, cộng bốn câu ngắn báo kết quả sau khi người dùng đồng ý. Hai khóa `settings.*` là cờ nội bộ, người
@@ -2761,7 +2172,7 @@ chứng Tier 1 lấy thẳng từ `Dock.app` đang cài (`vi.lproj/DockMenus.str
 - **Không giá trị nào có dấu nháy đơn**, nên phần nhân đôi `''` của ICU không đụng tới đợt này. Không có placeholder,
   không có `<tag>`, không có plural/select.
 
-## Menu chuột phải trên biểu tượng Dock (`menu.dock.*` 5 khóa, 2026-09-09)
+## Menu chuột phải trên biểu tượng Dock (`menu.dock.*`)
 
 Bề mặt: menu bật ra khi bấm chuột phải vào biểu tượng Cmdr trong Dock macOS. Đây là menu gốc do Rust vẽ, thuộc họ RAW
 (`menu.*`), nên dấu nháy đơn giữ nguyên MỘT dấu và `{name}` / `{parent}` là đích thay thế theo nghĩa đen, không phải
@@ -2801,7 +2212,7 @@ Nguồn Tier 1, đọc thẳng từ macOS 26.6.2 đang cài, ngày 2026-09-09:
   menu con.
 - **Không có `bạn` trong bất kỳ nhãn nào**: nhãn hành động là động từ trần, đúng luật trong `style.md` § Formality.
 
-## Lời mời về “Hiển thị trong Finder” và thông báo lần đầu (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+## Lời mời về “Hiển thị trong Finder” và thông báo lần đầu (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)
 
 Hai thời điểm của cùng một tính năng: lời mời một lần để “Hiển thị trong Finder” từ ứng dụng khác mở trong Cmdr, và
 thông báo một lần vào lần đầu một yêu cầu như vậy rơi vào đây. Cả hai bề mặt đều trỏ tới lệnh của chính macOS, nên cách
@@ -2817,7 +2228,7 @@ dùng từ của macOS thắng (style.md § bề mặt hệ thống).
 - **Thông báo lần đầu ❌ không phải lời xin lỗi** · Nó nói vừa xảy ra chuyện gì, vì sao, và công tắc nằm ở đâu. Vì thế
   `Cmdr được đặt để nhận những lệnh này`, ❌ không dùng “xin lỗi” · `high`.
 
-## Viết lại phần thiết lập ban đầu: bảng kiểm, chú giải bước, tóm tắt tùy chọn (23 khóa `onboarding.*`, 2026-09-09)
+## Phần thiết lập ban đầu: bảng kiểm, chú giải bước, tóm tắt tùy chọn (`onboarding.*`, `settings.revealHandler.notProductionBuild`)
 
 Bề mặt: bốn bước của trình thiết lập ban đầu. Mới hoàn toàn là chú giải hàng chấm tiến độ, nhãn trợ năng của biểu tượng
 chữ i, chú giải mô hình cục bộ, cảnh báo thiếu khóa API, cả bảng kiểm bốn dòng ở bước 3 (sao GitHub, Like trên
@@ -2908,7 +2319,7 @@ cài, quét toàn bộ `*.loctable` theo công thức trong `docs/i18n/reference
   nhưng viết `xóa` theo `style.md` thay vì `xoá` của khóa anh em · `high` (thuật ngữ), `tentative`
   (`chỉ tồn tại tạm thời`).
 
-## Trình xem tải tệp từ điện thoại, máy chủ hoặc tệp nén (`viewer.pull.*`, `viewer.error.stoppedResponding`, 2026-09-10)
+## Trình xem tải tệp từ điện thoại, máy chủ hoặc tệp nén (`viewer.pull.*`, `viewer.error.stoppedResponding`)
 
 Bề mặt: khung giữa cửa sổ trình xem khi Cmdr chép một tệp ở xa vào tệp tạm trước khi hiển thị (tiêu đề, thanh tiến
 trình, dòng "x trên y", nút Hủy), và thông báo khi không có dữ liệu nào tới trong khoảng 45 giây. Bằng chứng Tier 1 đọc
@@ -2932,7 +2343,7 @@ thẳng từ macOS 26.6.2 (build 25G83), 2026-09-10.
   `errors.listing.couldntReadUnknown.suggestion` (`Kiểm tra xem … có còn kết nối không`) và `rồi` của
   `viewer.error.tooLargeToPreview`.
 
-## Chỉ mục lỗi thời của điện thoại qua ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`, `.bodyPhone`, 2026-09-11)
+## Chỉ mục lỗi thời của điện thoại qua ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`, `.bodyPhone`)
 
 Bề mặt: chú giải khi rê chuột lên chấm vàng của chỉ mục và hộp thoại giải thích một lần, cho điện thoại Android qua gỡ
 lỗi qua USB. Điện thoại vẫn đang cắm; chỉ mục đọc là lỗi thời vì điện thoại không bao giờ báo thay đổi của nó. Đây là
@@ -2957,7 +2368,7 @@ tới `ngắt kết nối`.
 - Tên điện thoại `{name}` đứng đầu câu (`{name} không báo cho Cmdr biết…`): tiếng Việt không biến hình nên tên nào cũng
   vừa, kể cả `Pixel 9 Pro XL`. Không giá trị nào chứa dấu nháy đơn.
 
-## Thư mục gốc và thư mục bắt đầu của máy chủ đã lưu (`servers.sheet.rootFolder*` / `.startFolder*` / `.nameHelp`, `servers.refusal.startFolderOutsideRoot` / `.rootNotFound` / `.startFolderNotFound` / `.saveUnconfirmed`, 2026-09-11)
+## Thư mục gốc và thư mục bắt đầu của máy chủ đã lưu (`servers.sheet.rootFolder*`, `servers.sheet.startFolder*`, `servers.sheet.nameHelp`, `servers.refusal.startFolderOutsideRoot`, `.rootNotFound`, `.startFolderNotFound`, `.saveUnconfirmed`)
 
 Bề mặt: biểu mẫu thêm hoặc sửa một máy chủ SFTP / WebDAV đã lưu. Thư mục gốc là TRẦN: Cmdr không bao giờ đi lên cao hơn
 nó. Thư mục bắt đầu là nơi khung mở ra, và phải là thư mục gốc hoặc nằm bên trong nó; để trống nghĩa là thư mục gốc.
@@ -2973,7 +2384,7 @@ nó. Thư mục bắt đầu là nơi khung mở ra, và phải là thư mục g
   từ chắc chắn, nhưng nguồn là nghĩa lộ trình của Shortcuts, không phải thư mục). ❌ Không dùng `thư mục khởi động`:
   macOS dành `khởi động` cho startup (`Startup Disk` → `Ổ đĩa khởi động`). ❌ Không dùng `thư mục mặc định` (MS
   `default folder`), nghĩa khác.
-- **host trong `nameHelp` → `địa chỉ`** · `host` và `server` đều là `máy chủ` (đầu bảng này), nên dịch sát "by its
+- **host trong `nameHelp` → `địa chỉ`** · `host` và `server` đều là `máy chủ` (`host` và `server` trong `terms.json`), nên dịch sát "by its
   account and host" thành `máy chủ này theo tài khoản và máy chủ` đọc lẫn lộn. `địa chỉ` là nhãn của chính ô đó
   (`servers.sheet.address`) và là chữ `servers.sheet.identityLocked` đã dùng cho cặp `Địa chỉ và tài khoản` · `high`.
 - **"goes above this folder" → `đi lên cao hơn thư mục này`** · cùng gốc `lên` với `lên thư mục cha` đã ship
@@ -2993,7 +2404,7 @@ nó. Thư mục bắt đầu là nơi khung mở ra, và phải là thư mục g
   `settings.askCmdr.interactiveModel.description` (`Để trống để dùng chung mô hình…`).
 - Không giá trị tiếng Việt nào có dấu nháy đơn, nên không có `''` nào phải nhân đôi; `{host}` giữ nguyên.
 
-## Vì sao mục chia sẻ không gắn kết được hoặc danh sách không tải được (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+## Vì sao mục chia sẻ không gắn kết được hoặc danh sách không tải được (`errors.mount.*`, `errors.shareList.*`)
 
 Các câu dưới tiêu đề `Không thể gắn kết mục chia sẻ` (`fileExplorer.networkMount.mountFailedTitle`) và
 `Không thể kết nối tới {hostName}` (`fileExplorer.network.share.connectFailedTitle`), cùng các toast
@@ -3304,7 +2715,7 @@ dấu hai chấm của `Không thể tháo {volumeName}: …`, nên chỉ nêu l
   so `i18n-terms` holds each pair identical. Reword neither alone. The only legitimate difference is the apostrophe:
   `menu.*` is a RAW family (single `'`), `commands.*` is ICU (doubled `''`), and the check normalizes that away.
 
-## The title-bar full-disk-access badge
+## The title-bar full-disk-access badge (`onboarding.fdaBadge.*`, `onboarding.stepAi.bannerTitle.denied`)
 
 Huy hiệu cảnh báo trên thanh tiêu đề cùng tooltip của nó, hiện ra khi Cmdr chưa có quyền truy cập đầy đủ vào ổ đĩa; bấm
 vào thì phần thiết lập ban đầu mở lại ở bước 1.
@@ -3350,7 +2761,7 @@ replacement target. Four rules bind this whole group:
   `thanh tiêu đề` · high.
 - The quoted badge text is `onboarding.fdaBadge.label` verbatim, in the catalog's `“…”` quotes.
 - **trash stays lowercase `thùng rác` here**, matching the four sibling titles this key is locked to; the older
-  `errors.mutation.trashRefused` capitalizes it. Worth unifying in a later pass.
+  `errors.mutation.trashRefused` capitalizes it because it names the Trash location ("to the Trash").
 - "somewhere macOS keeps to itself" → `nơi mà macOS giữ riêng cho mình`, reusing the wording settled for
   `onboarding.fdaBadge.tooltip`. Plain, ❌ never a macOS feature name.
 
@@ -3362,7 +2773,7 @@ một cho lựa chọn mà mọi thứ đều chỉ có trực tuyến. Chúng c
 nghị. Khóa thứ ba là dòng hiện ra khi Cmdr trả lại một lần nhấn.
 
 - **`.cloudOnlineOnlyMixedWarning`** · `chỉ có trực tuyến` là cách Finder gọi một tệp đã được dọn khỏi máy; `thùng rác`
-  và `dịch vụ đám mây` lấy từ § Terms · medium.
+  và `dịch vụ đám mây` lấy từ `terms.json` · medium.
 - **`.cloudOnlineOnlyAllWarning`** · cùng một đoạn, chỉ đổi “Mọi thứ bạn đã chọn” thay cho “Một phần lựa chọn của bạn”,
   và bỏ lối thoát bỏ chọn: nếu mọi thứ đều chỉ có trực tuyến thì sẽ không còn gì được chọn · medium.
 - **`.cloudOnlineOnlyHandedBack`** · dòng phía trên nút, sau một lần nhấn mà Cmdr cố ý không thực hiện. Giọng điềm đạm,
@@ -3372,11 +2783,11 @@ nghị. Khóa thứ ba là dòng hiện ra khi Cmdr trả lại một lần nh�
   thoát mà dải cảnh báo nêu ra.
 - **Hai đoạn `<strong>` phải giữ nguyên**, ở “tải chúng về trước” và ở động từ “xóa”. Và “Xóa” trong ngoặc kép là nhãn
   của nút: luôn trùng với `fileOperations.delete.confirmDelete`.
-- Không cần `sameAsSourceJustification`: mọi giá trị đều khác tiếng Anh.
-- Xem lại khi kiểm tra tràn chữ: dải cảnh báo dài và nằm trong một băng hẹp phía trên danh sách tệp.
-- ⚠️ Bản nháp, chưa có người rà soát.
+- **Lối thoát "make available offline" gọi đúng tên lệnh**: `tải về … để dùng ngoại tuyến`, theo
+  `commands.cloudMakeOffline.label` / `menu.context.makeAvailableOffline` (`Tải về để dùng ngoại tuyến`), để người đọc
+  tìm được lệnh đó.
 
-## Khi máy chủ nói là không có mục chia sẻ đó (`fileExplorer.network.osMountFallback.shareNotOnServer`, `fileExplorer.pane.directConnectionShareNotOnServerToast`, 2026-09-17)
+## Khi máy chủ nói là không có mục chia sẻ đó (`fileExplorer.network.osMountFallback.shareNotOnServer`, `fileExplorer.pane.directConnectionShareNotOnServerToast`)
 
 Trường hợp duy nhất trong nhóm này mà thử lại cũng vô ích: máy chủ trả lời rõ ràng rằng nó không có mục chia sẻ nào tên
 như vậy. Vì thế thông báo này không có nút, và giọng văn không được gợi ý điều gì tạm thời (không `hiện`, không
@@ -3398,9 +2809,8 @@ như vậy. Vì thế thông báo này không có nút, và giọng văn không 
   `high`.
 - **Thông báo ngắn gọi lại mục chia sẻ là `mục này`** để khỏi lặp `mục chia sẻ` hai lần trong một câu · `high`. Phần
   đuôi `vẫn dùng kết nối hệ thống` là của ba thông báo anh em (`fileExplorer.pane.directConnectionUnreachableToast`…).
-- Both values differ from English, so neither needs a `sameAsSourceJustification`.
 
-## Tên trông giống hệt nhau trên máy chủ (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.*`, `errors.volume.ambiguousName`, 2026-09-23)
+## Tên trông giống hệt nhau trên máy chủ (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.*`, `errors.volume.ambiguousName`)
 
 Hai mục có tên hiện ra y hệt nhau nhưng máy chủ lưu bằng chuỗi ký tự khác (é một ký tự so với e + dấu rời, hoặc chữ hoa
 so với chữ thường). Bốn khóa phải kể cùng một câu chuyện bằng cùng một cụm từ.
@@ -3420,12 +2830,12 @@ so với chữ thường). Bốn khóa phải kể cùng một câu chuyện b�
 - **"Choose it from its folder instead" → `Hãy mở thư mục chứa nó rồi chọn ở đó.`** · ở đây `thư mục chứa nó` là cụm mô
   tả ("thư mục đang chứa nó"), không phải thuật ngữ parent folder; bản gợi ý dài vẫn dùng `thư mục cha` như catalog ·
   `high`.
-- **Lời dẫn "Here's what to try" là `Bạn có thể thử:`**, đúng như mục đầu glossary, ở cả 60 khóa `errors.json` có lời
+- **Lời dẫn "Here's what to try" là `Bạn có thể thử:`**, đúng như § Giọng lỗi, ở cả 60 khóa `errors.json` có lời
   dẫn này (kể cả khi nó đứng sau một câu mở, như `errors.provider.*`). ❌ Không `Đây là những cách để thử:`: dịch sát
   từng chữ và dài hơn. Trong `errors.listing.notFound.suggestion` / `…pathNotFoundErrno.suggestion`, "the share" là
   `mục chia sẻ` như catalog đã chốt, không phải `thư mục chia sẻ` (shared folder).
 
-## Công tắc "Cho phép AI đám mây" và các trạng thái AI đám mây đang tắt (`ai.cloudConsent.*`, `askCmdr.gate.*`, 2026-09-23)
+## Công tắc "Cho phép AI đám mây" và các trạng thái AI đám mây đang tắt (`ai.cloudConsent.*`, `askCmdr.gate.*`)
 
 Một công tắc đồng ý về quyền riêng tư: mặc định tắt, và không gì rời khỏi máy Mac cho đến khi bật. Câu chữ phải bình
 tĩnh và không bao giờ hứa nhiều hơn những gì Cmdr làm. Nguồn lấy từ macOS đang cài (máy M1 không có kho tham chiếu),
@@ -3477,6 +2887,8 @@ theo `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
   cùng một toast.
 
 ## Dòng chờ trong "Mở bằng" và "Chia sẻ" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+## Dòng chờ trong "Mở bằng" và "Chia sẻ" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)
 
 - **Finding apps…: `Đang tìm ứng dụng…`** · mẫu `Đang …` của macOS ("Searching…" = `Đang tìm kiếm…`); `ứng dụng` như
   `settings.behavior.textEditorApp.checking`. `high`.

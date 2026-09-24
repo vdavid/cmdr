@@ -1,5 +1,5 @@
 {
-  "ai.toast.downloadingTitle": "Đang tải mô hình AI...",
+  "ai.toast.downloadingTitle": "Đang tải về mô hình AI...",
   "@ai.toast.downloadingTitle": {
     "sourceHash": "453ec3b"
   },
@@ -135,7 +135,7 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Nếu bạn bật tính năng ghi nhật ký lệnh gọi LLM trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên Mac của bạn. Các nhật ký đó cũng chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.",
+  "ai.cloudConsent.logsNote": "Nếu bạn bật tính năng ghi nhật ký lệnh gọi LLM trong phần cài đặt Nâng cao, Cmdr cũng sẽ lưu mỗi yêu cầu và câu trả lời vào một thư mục trên máy Mac của bạn. Các nhật ký đó cũng chỉ ở cục bộ, không bao giờ được gửi đi bất cứ đâu.",
   "@ai.cloudConsent.logsNote": {
     "sourceHash": "7e211fc"
   },
@@ -307,7 +307,7 @@
   "@ai.local.installStepExtracting": {
     "sourceHash": "941db20"
   },
-  "ai.local.installStepDownloading": "Bước 2/4: Đang tải mô hình...",
+  "ai.local.installStepDownloading": "Bước 2/4: Đang tải về mô hình...",
   "@ai.local.installStepDownloading": {
     "sourceHash": "56596cb"
   },
@@ -405,7 +405,7 @@
   "@ai.local.deleteModel": {
     "sourceHash": "b7828ba"
   },
-  "ai.local.downloadModel": "Tải mô hình",
+  "ai.local.downloadModel": "Tải về mô hình",
   "@ai.local.downloadModel": {
     "sourceHash": "9979bea"
   },

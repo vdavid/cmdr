@@ -1,26 +1,74 @@
 # Vietnamese (vi) translation style guide
 
 Working notes for translating Cmdr into Vietnamese. Read `../README.md` for how this fits the translation process, and
-the app-wide `docs/style-guide.md` for the English voice these notes carry into Vietnamese.
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Vietnamese. Term rulings live in
+`terms.json` (keyed by the shared `../concepts.json`), their rationale in `decisions.md`, and open questions in
+`review-queue.md`.
 
 Vietnamese is well-resourced: the pile (`_ignored/i18n/vi/`) has macOS Finder/AppKit/SystemSettings, MS terminology +
 style guide, GNOME Nautilus, Xfce Thunar, KDE Dolphin, and Total Commander, so both UI families are covered. Most terms
 reach `high`. Evidence verified against the pile on 2026-06-20, source list re-checked 2026-07-21.
 
-## Decisions to confirm with David
+## Digest
 
-The calls a translator can't make alone. The rest of the guide assumes them; both carry a confident default and are
-listed so they're never relitigated.
+The must-know rules; the rest of this file elaborates them.
 
-- **Second person: `bạn` recommended (high).** Vietnamese has no T-V formality axis, but it has a huge kinship-based
-  pronoun system (anh/chị/em/cô/chú…) keyed to relative age, gender, and status. A file manager can't know any of that,
-  so it uses the neutral software pronoun **`bạn`** ("you", lit. "friend"). macOS, the MS Vietnamese style guide
-  ("Address the user as you… third-person references like 'user' should be avoided", verified 2026-06-20), and the
-  general SaaS convention all land on `bạn`. Flagging only because `bạn` can read slightly distant/flat to a native ear
-  (unverified, web sources), but every major product accepts that tradeoff because picking any kinship term would be
-  wrong for most users. Recommended default: **`bạn`, and often drop the pronoun entirely** where the sentence reads
-  fine without it (Vietnamese imperatives commonly omit the subject).
-- **Diacritics are mandatory, never optional (high).** See the decision point, this is the biggest technical hazard.
+- **Address**: `bạn`, the neutral software pronoun (macOS, the MS vi style guide), and drop it wherever the sentence
+  reads fine without it. Buttons and menu items are the bare verb with no pronoun (`Sao chép`, `Hủy`, `Mở`). David
+  speaking in the first person is `mình` (onboarding step 3, `openBeta`); the USER speaking, as on a radio option, is
+  `tôi` (`Có, tôi muốn AI`).
+- **Voice**: friendly, concise, calm. Error copy states the problem and the next step and never uses `lỗi` or
+  `thất bại` as a label: "Couldn't X" → `Không thể X` / `Không X được`; a gentle failed status → `Chưa hoàn tất được`;
+  an outcome not yet proven → `Chưa xác nhận được`; "Something went wrong" → `Có gì đó không ổn`; "Here's what to
+  try:" → `Bạn có thể thử:`. A flat present state takes `không`, "not yet" takes `chưa`; a thing that WILL happen (the
+  Dock redraws next login, a retry will save) takes `chưa`, never a verdict of failure.
+- **Diacritics**: always full, NFC. Never strip marks to save space. Tone placement is modern: `hủy`, `xóa`, `khóa`,
+  `hòa` (never `huỷ`, `xoá`, `khoá`).
+- **Capitalization**: sentence case in every title, label, and button; proper nouns keep theirs (`Thùng rác` when a
+  string names the Trash location, `thùng rác` inside an action).
+- **Menu-bar and Apple names follow the vi macOS**: `Tệp`, `Sửa`, `Xem`, `Đi`, `Cửa sổ`, `Trợ giúp`; Get Info →
+  `Lấy thông tin`, Locked → `Đã khóa`, Quick Look → `Xem nhanh`, Keychain → `chuỗi khóa` (app `Truy cập chuỗi khóa`),
+  Applications → `thư mục Ứng dụng`, System Settings → `Cài đặt hệ thống`, Disk Utility → `Tiện ích ổ đĩa`, First Aid →
+  `Sửa nhanh`, Activity Monitor → `Giám sát hoạt động`, Preview → `Xem trước`, Force Quit → `Bắt buộc Thoát`, the Full
+  Disk Access pane → `Quyền truy cập đầy đủ vào ổ đĩa`. Kept English: Finder, Dock, Terminal, Spotlight, Mission
+  Control, TextEdit, Safari, `Ask Cmdr`. Localize whatever Apple localizes, whatever a `@key` description says; on a
+  phone, Android's own vi wins (`Gỡ lỗi qua USB`, `Cho phép`, `nhấn vào`).
+- **Punctuation**: follow the quoting style of the file you're in (most of the catalog mirrors EN's straight `"`; the
+  curly `“…”` is for prose with no quoting neighbours, and a quoted Apple UI name keeps Apple's curly quotes). Keep the
+  EN ellipsis glyph per key (`…` or `...`); no space before `%`; a Settings path is `Cài đặt › <mục>` except where EN
+  writes `>`. No comma before `và` / `hoặc` in new lists. ICU values double a straight apostrophe; RAW families
+  (`errors.*`, `menu.*`) don't.
+- **Plurals**: CLDR `other` only. One `other` arm, the noun uninflected (`{countText} tệp`); ❌ never an English-shaped
+  `one` / `=1` arm. `=0 {…}` is fine where the zero case says something different. A counted noun takes no `các`.
+- **Placeholders**: `{name}`, `{path}`, `{volumeName}`, `{app}` stand bare, with no classifier before them (the value
+  may already contain it). Don't point back at an uncontrolled placeholder with `nó` when two subjects are in play;
+  repeat the noun (`chỉ mục của điện thoại`).
+- **Sibling strings**: where EN varies one sentence across a set, translate the shared tail once and reuse it byte for
+  byte; two keys with the same EN must read the same (`i18n-terms` checks it). One surface has one vi name even when EN
+  has two (`bộ chọn ổ đĩa` for volume chooser and switcher).
+- **Top traps** (details in `terms.json`):
+  - show → `hiển thị`, never `hiện` (reads as "current"); show up → `xuất hiện`.
+  - size → `kích cỡ`, never `kích thước` (`Cỡ chữ` for text size); download → `tải về`, never `tải xuống`.
+  - search → `tìm kiếm` wherever EN says search; find / discover → `tìm`.
+  - tab → `tab`; Finder tag → `thẻ`. Tag colors are Apple's `Lam`, `Lục`, `Tía`, never `Xanh dương` / `Xanh lá` / `Tím`.
+  - delete → `xóa` (bytes gone, incl. Remove download); remove from a list → `gỡ bỏ`; Forget → `Quên`; dismiss →
+    `Bỏ qua`.
+  - eject → `tháo`; disconnect (deliberate) → `ngắt kết nối`; a dropped connection → `Đã mất kết nối`; unplug → `rút`
+    (only when EN really says pull the cable).
+  - operation → `thao tác` (queue `Hàng đợi thao tác`, log `Nhật ký thao tác`); transfer → `lần truyền`, narrow
+    copy-or-move only; `di chuyển` is the Move operation alone, a loose "moving files" is `chuyển tệp`.
+  - rollback and undo → `hoàn tác`; Finish rolling back → `Tiếp tục hoàn tác`; put back from the trash →
+    `đưa trở lại`; old names back → `đặt lại tên cũ`.
+  - crash report → `báo cáo sự cố`, error report → `báo cáo trục trặc`, bare "report" → `báo cáo`; `sự cố` alone is
+    "problem" and never claims Cmdr quit; quit unexpectedly → `thoát bất ngờ`.
+  - Back in the folder history → `Trở lại`; back to a screen or step → `Quay lại`.
+  - click → `bấm` (never `nhấp`), press a key → `nhấn`; double-click → `bấm đúp`.
+  - reach a SERVER → `không kết nối được tới`; reach a path or drive → `không thể truy cập`; respond (a machine) →
+    `phản hồi`, answer (the user) → `trả lời`.
+  - share → `mục chia sẻ`; symlink → `liên kết mềm`; extension → `đuôi tệp`; archive (zip) → `tệp nén`; disk image →
+    `ảnh đĩa`, never bare `ảnh`; image (the feature) → `hình ảnh`, photos in a count → `ảnh`.
+  - in the background → `ở chế độ nền` in a sentence, `Chạy nền` on a control; ❌ never `ngầm`.
+  - `Ask Cmdr` names the panel only; prose about what the assistant does says `Cmdr`, about the model says `AI`.
 
 ## Voice and tone
 
@@ -68,134 +116,16 @@ avoids "error"/"failed".
   rather than affixes, and UI strings run longer than English. Overflow-check buttons and labels against the
   pseudolocale (`en-XA`). (web sources, unverified on exact %.) Confidence: high on the direction.
 
-## Terminology and glossary
+## Terminology
 
-Format per term: `chosen · sources · confidence`. Confidence: `confirmed` (native sign-off), `high` (authoritative
-sources agree), `tentative` (sources conflict or none had it). Evidence from `_ignored/i18n/vi/` (macOS Finder/AppKit,
-MS terminology, GNOME Nautilus, Xfce Thunar), verified 2026-06-20. Sources decide the term; Cmdr writes its own value
-(Apple/MS copyrighted, GNOME/Xfce GPL, never copied verbatim).
-
-Settled terms (sources agree):
-
-- **folder: `thư mục`** · macOS Finder ("Thư mục"), GNOME ("Thư mục"). No plural inflection (Vietnamese has no number
-  morphology). `high`.
-- **file: `tệp`** · macOS/MS convention ("tệp"); GNOME sometimes "tập tin" (Southern-flavored). Prefer **`tệp`** to
-  match macOS. `high`.
-- **trash: `thùng rác`** · macOS Finder ("Thùng rác"), GNOME ("Thùng rác"). `high`.
-- **move to trash: `chuyển vào thùng rác`** · GNOME ("Cho vào Thùng rác"). `high`.
-- **delete: `xóa`** · macOS AppKit ("Xóa"). `high`.
-- **copy: `sao chép`** · macOS AppKit ("Sao chép"). `high`.
-- **paste: `dán`** · macOS AppKit ("Dán"). `high`.
-- **cut: `cắt`** · macOS AppKit ("Cắt"). `high`.
-- **cancel: `hủy`** · macOS Finder/AppKit ("Hủy"). `high`.
-- **open: `mở`** · macOS AppKit ("Mở"). `high`.
-- **save: `lưu`** · macOS AppKit ("Lưu"). `high`.
-- **move: `di chuyển`** · macOS AppKit ("Di chuyển"). `high`.
-- **search: `tìm kiếm`** · macOS AppKit ("Tìm kiếm"). `high`.
-- **eject: `đẩy ra`** · GNOME ("Đẩy ra"). `high`.
-- **rename: `đổi tên`** · GNOME ("Đổi tên"). `high`.
-- **sort: `sắp xếp`** · GNOME ("Sắp xếp"). `high`.
-- **sidebar: `khung bên`** · GNOME ("khung bên"). `high`.
-- **disconnect: `ngắt kết nối`** · macOS AppKit ("Ngắt kết nối"). `high`.
-- **tab (a UI tab): `tab`; a Finder tag: `thẻ`** · macOS Finder vi ("Hiển thị Tất cả Tab", "Ẩn Thanh Tab") and Safari vi
-  ("Tab mới", "Đóng tab", "Ghim tab") keep the loanword for the UI tab, while Finder's tag menu is `Thẻ…` / `Thêm thẻ…`
-  (macOS 26.6.2, per-nib `MenuBar.strings` / `InfoWindowTaggingHeaderView.strings`, verified 2026-08-30). The catalog
-  now names them apart across all 28 tab keys; `menu.bar.tab` is deliberately identical to English and carries a
-  `sameAsSourceJustification`. `high`.
-- **show: `hiển thị`, never `hiện`** · macOS vi says `Hiển thị` 147 times across Finder/AppKit/System Settings and never
-  uses `hiện` as the verb (every `hiện` there is `hiện tại` / `hiện có` = "current"), so a label starting with `Hiện`
-  reads as "current…". `high`.
-- **size: `kích cỡ`, never `kích thước`** · macOS vi: 33 hits for `kích cỡ`, zero for `kích thước`; Microsoft
-  terminology agrees (`size → kích cỡ`). `high`. The one compound that keeps its own shape is `Cỡ chữ` ("Text size").
-- **search: `tìm kiếm`; find: `tìm`** · macOS AppKit splits them exactly this way (Search → `Tìm kiếm`, Find → `Tìm`,
-  Finder `MenuBar 300783.title`). `high`.
-- **download (noun and verb): `tải về`, never `tải xuống`** · macOS vi: 35 hits for `tải về`, zero for `tải xuống`
-  (Microsoft's `tải xuống` is the Windows convention). A downloaded item is `bản tải về` (Finder "Remove Download" →
-  `Xóa bản tải về`). `high`.
-- **filesystem: `hệ thống tệp`** · macOS vi renders "file system"/"filesystem" as `hệ thống tệp` throughout Disk Utility
-  and ASR (`Localizable.loctable`, `ASRLocalizable.loctable`: "Verifying file system." → `Đang xác minh hệ thống tệp.`),
-  and the Cmdr catalog already uses it in `errors.listing.*`. `high`.
-- **debugging: `gỡ lỗi`; USB debugging: `gỡ lỗi qua USB`** · macOS vi Safari `DeveloperPreferences.strings` ("Enable …
-  debug mode" → `Bật chế độ gỡ lỗi …`, verified on macOS 26.6.2 build 25G83, live-bundle mining, 2026-09-06), and the
-  catalog's `settings.advanced.logLlmCalls.description` already says `để gỡ lỗi`. The Android toggle's own Vietnamese
-  name is `Gỡ lỗi qua USB`: AOSP `frameworks/base/packages/SettingsLib/res/values-vi/strings.xml`, key `enable_adb`,
-  with `usb_debugging_title` in `packages/SystemUI/res/values-vi/strings.xml` reading `Cho phép gỡ lỗi qua USB?`
-  (verified on `main`, 2026-09-07). Write it word for word so a reader finds the switch on their phone. `high`.
-- **Android platform tools: `bộ công cụ nền tảng Android`** · Google's own Vietnamese developer docs render "SDK
-  Platform-Tools" as `bộ công cụ nền tảng SDK` in the nav and in prose ("Xoá e2fsdroid khỏi công cụ nền tảng SDK"),
-  while the download buttons keep the product name `Android SDK Platform-Tools` in English
-  (`developer.android.com/tools/releases/platform-tools?hl=vi`, verified 2026-09-07). So the descriptive phrase is
-  `bộ công cụ nền tảng`; `Android` and the command name `adb` stay verbatim. `high`.
-- **command (a shell/CLI command): `lệnh`** · macOS vi loctables ("What command should be run?" → `Nên chạy lệnh nào?`,
-  "Menu Command" → `Lệnh menu`), verified 2026-09-06. Name a specific one as `lệnh "adb"`. `high`.
-- **location (of a file or binary, as a field label): `vị trí`** · macOS Finder vi `Localizable.strings` ("Location" →
-  `Vị trí`, "Go To Location" → `Đi tới vị trí`), verified on macOS 26.6.2, 2026-09-06. Matches the catalog's use of
-  `vị trí` for where something sits, against `đường dẫn` for the path string itself. `high`.
-- **leave (a field) empty: `để trống`** · macOS vi ("You may also leave them blank to bind anonymously." →
-  `Bạn cũng có thể để trống chúng để liên kết ẩn danh.`, `Localizable.loctable`), verified 2026-09-06. `high`.
-- **the usual way: `theo cách thông thường`** · macOS vi uses `thông thường` for "normal/usual" ("as normal disk" →
-  `như ổ đĩa thông thường`), verified 2026-09-06. `high`.
-- **get info: `Lấy thông tin`; the Locked checkbox in that panel: `Đã khóa`** · macOS Finder Tier 1 (`N165`, `TL22`, the
-  `"Get Info"` key in `Localizable.json`; `AXNODE1` is the checkbox's own accessibility name, and `NE18` builds our
-  exact sentence: `Chọn Tệp > Lấy thông tin, bỏ chọn “Đã khóa” rồi thử lại.`), verified 2026-08-23. Apple DOES localize
-  both, so ❌ never leave "Get Info" or "Locked" in English inside Vietnamese prose, whatever an `en` `@key.description`
-  says. `high`.
-
-- **AI provider: `nhà cung cấp AI`; provider on its own: `nhà cung cấp`** · Microsoft terminology ("A company that
-  provides services or content for its customers" → `nhà cung cấp`), and the catalog already ships it. `high`.
-- **AI features: `các tính năng AI`** · the catalog's own `settings.askCmdr.interactiveModel.description`
-  (`các tính năng AI khác của Cmdr`). `high`.
-- **model (an LLM): `mô hình`** · Microsoft terminology, machine-learning sense ("An artifact resulting from running a
-  machine learning algorithm…" → `mô hình`). `high`.
-- **endpoint (an API URL): `điểm cuối`** · Microsoft terminology, three separate senses all render `điểm cuối`. `high`.
-- **deployment (Azure OpenAI's named model instance): `bản triển khai`** · Microsoft terminology (`deployment` /
-  `deploy` → `triển khai`). Azure is Microsoft's own product, so Microsoft outranks macOS here. `high`.
-- **resource (an Azure resource): `tài nguyên`** · Microsoft terminology (three senses agree). `high`.
-- **library (a catalog of things to pick from, like Ollama's model list): `thư viện`** · Microsoft terminology and macOS
-  vi (`thư viện` in several senses). `high`. Qualify it when the surrounding screen has no other library:
-  `thư viện mô hình` in `onboarding.cloudSetup.step.ollamaModel`, because bare `thư viện` collides with macOS vi's
-  `chế độ xem thư viện` (Finder's gallery view).
-- **Terminal (the command-line app): `Terminal`, capitalized, kept verbatim** · macOS vi Finder (`Mở trong Terminal`),
-  verified 2026-09-09. `high`. ❌ Not KDE Dolphin's `dòng lệnh`: that names the command line, and macOS is Tier 1 for an
-  app the user actually opens. `lệnh` still stays the word for one command, per the entry above.
-- **why: `Tại sao?`** · macOS `PhotosUICore.framework` `.loctable`, English key `Why?` → `Tại sao?` (macOS 26.6.2 build
-  25G83, live-bundle sweep, 2026-09-09). The reference pile has no "why" string at all; only the live sweep finds it.
-  `high`.
-- **learn more / more about: `Tìm hiểu thêm`** · macOS Finder `LocalizableMerged` `NE115` plus three system
-  `.loctable`s, verified 2026-09-09. ❌ Not `Thông tin khác`, which macOS uses for "More Info" (a details panel).
-  `high`.
-- **star (GitHub's verb): `gắn sao`; a star: `sao`; repo: `repo`, kept verbatim** · GitHub ships no Vietnamese UI, so
-  there is no vendor wording to copy. The catalog settled it (`onboarding.stepBeta.checklist.star`), and GNOME Nautilus
-  vi renders the same concept on the same root (`Star` → `Sao`, "starred" → `đã đánh sao`). `high`. Write `kho` only
-  where the English spells out "repository" (`settings.fileExplorer.git.showRepoChip.label` = `Huy hiệu kho`).
-- **like (a site's upvote button): `Thích`** · no Tier 1 source (AlternativeTo is English-only); the catalog already
-  ships the root at `fileExplorer.doubleClickHint.iLikeIt` (`Tôi thích`). `high`.
-- **checklist: `danh sách kiểm tra`** · Microsoft terminology (two entries agree). `high`.
-- **mailing list: `danh sách gửi thư`** · Microsoft terminology. `high`.
-- **Local Network (the macOS permission's name): `Mạng cục bộ`** · three macOS bundles agree (`AppSystemSettingsUI` and
-  two more, key `Local Network` / `LOCAL_NETWORK`), plus `TCC.framework` for the prose form (`mạng cục bộ`), macOS
-  26.6.2 build 25G83, verified 2026-09-09. Both `onboarding.stepOptional.networking.summary` and `…networking.desc`
-  quote that label verbatim; ❌ never the paraphrase `Truy cập mạng cục bộ`, which is not what the user finds in System
-  Settings. `high`.
-- **native (belonging to the OS): `gốc`** · matches the settled `menu gốc`; used in
-  `onboarding.stepOptional.mtp.summary` as `trình xử lý gốc của macOS`. `high`.
-- **warning: `cảnh báo`** · Xfce Thunar and KDE Dolphin agree. `high`.
-
-Tentative / needs a native check:
-
-- **volume: `ổ đĩa` / `phân vùng`** · no clean macOS "volume" string in the pile; "ổ đĩa" (drive) reads natural for a
-  mounted volume, "phân vùng" = partition. `tentative`.
-- **pane: `khung`** · three sources, three words: Total Commander vi says `bảng`, Microsoft says `ngăn`, and the Cmdr
-  catalog uses `khung`. No macOS "pane" string exists. `khung` stays for catalog consistency. `tentative`.
-- **bookmark: `dấu trang`** · GNOME phrasing for bookmarking; "đánh dấu" is the verb. `tentative`.
-- **listing: `danh sách tệp`** · reads natural for the file list; no single canonical source term. `tentative`.
-- **placeholder (a template token in an address or a format string): `phần giữ chỗ`** · no macOS source; Microsoft says
-  `chỗ dành sẵn`, which reads as "reserved space" and fits a slide layout better than a URL token. Catalog consistency
-  picks `phần giữ chỗ` (`indexing.json`, `onboarding.cloudSetup.hint.azureEndpoint`). `tentative`.
-- **progress (advancement, in a negated "no progress"): `tiến triển`** · shared-root pick over macOS `tiến trình` (which
-  this catalog uses for an OS process) and MS `Tiến độ`. Progress-the-bar stays `tiến trình`. `tentative`.
-- **"has stopped moving" (running but not advancing): `đang đứng yên`** · plain everyday Vietnamese; no source names the
-  state. Avoids `treo` (hung), which reads as a crash. `tentative`.
+Every term ruling lives in `terms.json`, keyed by the concept IDs in `../concepts.json` (plus this locale's
+`concepts-proposed.json` until the lead merges it): `chosen`, accepted forms, usage notes, forms to avoid with the
+reason, a confidence (`confirmed` / `high` / `tentative`), and sources. Tier order is macOS (Tier 1) → Microsoft
+(Tier 2) → the file-manager catalogs (Tier 3); a vendor's own vi UI (Apple, Android) beats a `@key` description, and
+catalog consistency beats a pile-ideal form that would fork a term mid-catalog. Rationale worth more than a line sits in
+`decisions.md` under a heading that cites its keys, and the term's `decision` field names that heading. Never guess a
+term: mine the reference pile first (`../reference-pile/how-to-mine.md`), and sweep the installed OS when the pile is
+silent (see the note below).
 
 ## Brand and do-not-translate
 
@@ -216,9 +146,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
 ## Notes and decisions
 
 - **Menu gốc theo cách dùng từ của Finder, không theo catalog.** Chỗ nào macOS có tương ứng thì lấy của macOS
-  (`Thư mục chứa`, `Nhà`, `Trở lại`, `Kích cỡ`). Ngoại lệ đã ghi: `tab` vs `thẻ`, xem `glossary.md` § Menu gốc.
-- **Quotation marks: `"…"`** (curly double quotes, U+201C/U+201D) are standard; guillemets `«…»` also appear in some
-  formal text. Prefer the curly doubles to match macOS. Avoid straight ASCII `"`.
+  (`Thư mục chứa`, `Nhà`, `Trở lại`, `Kích cỡ`, `tab`). Chi tiết: `decisions.md` § Menu gốc.
 - **Numbers and dates come from the formatter layer.** Vietnamese uses a comma decimal and a period (or space) thousands
   separator (1.000 or 1 000); `formatNumber()`/`formatByteSize()` produce these from the locale. Never hardcode
   separators.
@@ -254,18 +182,18 @@ Vietnamese has no grammatical number, so one form covers all counts.
   alone.
 - **Sibling copy variants share every sentence they can.** Where English varies only the first sentence across a set of
   keys (the three crash-dialog bodies), translate the shared tail ONCE and reuse it verbatim, so the dialog reads as one
-  string with a swapped opener. Wording details and the settled values: `glossary.md` § Ba biến thể phần thân.
+  string with a swapped opener. Wording details and the settled values: `decisions.md` § Ba biến thể phần thân.
 - **Eject / disconnect error copy sits AFTER a colon.** `errors.eject.*` is dropped into
   `Không thể tháo {volumeName}: …` or `Không thể ngắt kết nối: …`, so the wrapper already carries the "couldn't" part.
-  Write only the reason plus the next step; don't restate the refusal. Terms and evidence: `glossary.md` § Lỗi khi tháo
+  Write only the reason plus the next step; don't restate the refusal. Terms and evidence: `decisions.md` § Lỗi khi tháo
   ổ đĩa / ngắt kết nối.
 - **Một danh sách tên ứng dụng không làm động từ đổi dạng, nên đừng bịa dấu hiệu số.**
   `errors.eject.unmountRefusedByApp` và `…ByApps` chỉ khác nhau đúng một đại từ (`nó` / `chúng`); danh sách tên đứng
   ngay trước đã nói số rồi. Mục cuối của danh sách (`errors.eject.otherApps`) thì PHẢI có loại từ: `các ứng dụng khác`,
-  vì `và ứng dụng khác` đọc thành "và một cái nữa". Bằng chứng: `glossary.md` § macOS từ chối tháo ổ đĩa.
+  vì `và ứng dụng khác` đọc thành "và một cái nữa". Bằng chứng: `decisions.md` § macOS từ chối tháo ổ đĩa.
 - **disk image là `ảnh đĩa`, và không bao giờ rút gọn thành `ảnh`** (`ảnh` một mình là bức ảnh chụp). Kho tham chiếu
   không có chuỗi nào; nguồn Tier 1 nằm trong Disk Utility và `DiskImages.framework` của máy, phải quét `.loctable` mới
-  thấy. `glossary.md` § macOS từ chối tháo ổ đĩa.
+  thấy. `decisions.md` § macOS từ chối tháo ổ đĩa.
 - **`di chuyển` is reserved for the Move operation.** When English uses a loose "moving files" that also covers copies
   and deletes, write the plain `chuyển tệp`; `di chuyển tệp` would narrow the sentence to one operation.
 - **`rút` (unplug) has no pile source in Vietnamese** and rests entirely on catalog consistency (four shipped MTP
@@ -273,7 +201,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
 - **Một gốc từ cho cả họ "add".** Mọi chỗ nói tới việc thêm ghi chú vào một báo cáo đã gửi đều đi từ `thêm`:
   `Thêm vào báo cáo sự cố của bạn` (tiêu đề), `Thêm vào báo cáo` (nút), `Đang thêm…` (đang chạy),
   `Đã thêm ghi chú vào báo cáo` (toast), `Không thể thêm ghi chú của bạn: {error}` (toast hỏng). Bằng chứng và các quyết
-  định kèm theo: `glossary.md` § Thêm ghi chú vào báo cáo đã gửi.
+  định kèm theo: `decisions.md` § Thêm ghi chú vào báo cáo đã gửi.
 - **Đừng lặp `của bạn` hai lần trong một câu ngắn.** Tiếng Anh rải "your" thoải mái; tiếng Việt thì nặng. Giữ `của bạn`
   ở chỗ nó mang thông tin (hoặc ở chỗ một chuỗi chị em đã dùng, để hai chuỗi khớp nhau) và bỏ ở chỗ quyền sở hữu đã hiển
   nhiên. Ví dụ `errorReporter.amendedToast.message`.
@@ -282,7 +210,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
   vì viết một biến thể mới.
 - **"Back" has two right answers, and macOS draws the line.** Going back in the folder HISTORY is `Trở lại` (Finder Go >
   Back); returning to the previous SCREEN or step inside a flow is `Quay lại` (macOS Setup Assistant, the Apple ID and
-  iCloud sheets). Don't flatten them: `glossary.md` § Rà soát trôi thuật ngữ.
+  iCloud sheets). Don't flatten them: `decisions.md` § Rà soát trôi thuật ngữ toàn catalog.
 - **Two report flows, two names.** A crash report is `báo cáo sự cố` (macOS Problem Reporter), an error report is
   `báo cáo trục trặc`. They sit next to each other as two toggles in Settings > Updates & privacy, so one word for both
   would make the panel unreadable.
@@ -290,7 +218,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
   taking an item off a list while it lives on is `gỡ bỏ`. macOS says `Xóa` for both because Finder never shows the two
   side by side; Cmdr does.
 - **"Error" as a bare status cell is `Sự cố`; as a diagnostic prefix it's `Lỗi:`.** The `@key.description` of each key
-  says which surface it is. Both are deliberate; see `glossary.md`.
+  says which surface it is. Both are deliberate; see `decisions.md` § Giọng lỗi.
 - **An English article that means "all of them" becomes `cả`.** English separates "Removed **the** N items" (everything)
   from "Removed N items" (only some) with an article alone; Vietnamese has no article, so two sibling strings collapse
   into one. Put `cả` in the complete one (`Đã đưa trở lại cả {countText} mục.`) and leave the partial one bare. ❌ Not
@@ -301,12 +229,12 @@ Vietnamese has no grammatical number, so one form covers all counts.
   English writes them nearly identically, so Vietnamese has to read as one feature: reuse the `Giữ nguyên {name}: …` /
   `Giữ nguyên {countText} … : …` frame, and where the English strings are IDENTICAL the Vietnamese values must match
   word for word. The two sets today: `askCmdr.renameUndo.skipReason.*` and `fileOperations.cancelRollback.reason.*`;
-  details and the `mục` vs `tệp` line: `glossary.md` § Toast sau khi hoàn tác thao tác đang chạy.
+  details and the `mục` vs `tệp` line: `decisions.md` § Toast sau khi hoàn tác thao tác đang chạy.
 - **Ask Cmdr "looks inside" a file: `xem bên trong tệp`, and the three photo words stay apart.** The inspect tool and
   the consent copy share one root (`Đang xem bên trong tệp`, `có thể xem bên trong tệp mà bạn hỏi đến`). Around it:
   thumbnail is `hình thu nhỏ` (macOS + MS; not GNOME's `ảnh thu nhỏ`), a photo's camera is `máy ảnh`, and where it was
   taken is `vị trí chụp` (never bare `vị trí`, which the catalog uses for a file's path). When "photo" lands right next
-  to "camera", write `một bức ảnh` so `ảnh` doesn't double up; elsewhere keep bare `ảnh`. Evidence: `glossary.md` § Ask
+  to "camera", write `một bức ảnh` so `ảnh` doesn't double up; elsewhere keep bare `ảnh`. Evidence: `decisions.md` § Ask
   Cmdr xem bên trong tệp.
 - **`gỡ lỗi qua USB` and `bộ công cụ nền tảng Android` get translated, `adb` / `ADB` / `Android SDK` / `Homebrew`
   don't.** The `en` `@key.description` on `settings.fileOperations.adbEnabled.*` asks for both phrases the way the
@@ -326,14 +254,14 @@ Vietnamese has no grammatical number, so one form covers all counts.
   hiệu: `menu.volume.ejectBusy` (`Tháo ({name}) (đang bận)`), `menu.volume.disconnectBusy` (`Ngắt kết nối (đang bận)`),
   `menu.volume.forgetSavedPasswordBusy` (`Quên mật khẩu đã lưu (đang bận)`), `menu.volume.forgetServerBusy`
   (`Quên máy chủ (đang bận)`). Mục gốc và dạng mờ phải khớp từng chữ để người đọc thấy đó là một mục ở hai trạng thái;
-  ❌ đừng nghĩ ra dấu hiệu thứ hai (`đang dùng`, `bận`) cho khóa mới. Thuật ngữ: `glossary.md` § busy.
+  ❌ đừng nghĩ ra dấu hiệu thứ hai (`đang dùng`, `bận`) cho khóa mới. Thuật ngữ: `decisions.md` § Menu gốc.
 - **`Quên` là ngoại lệ có chủ ý của luật `xóa` / `gỡ bỏ`.** Khi tiếng Anh gọi hành động là "Forget" (bỏ một máy chủ hay
   một mật khẩu đã lưu khỏi danh sách của Cmdr), tiếng Việt viết `Quên` ở mọi bề mặt: mục menu, tiêu đề hộp thoại, thân
   hộp thoại, và cả toast hỏng (`Cmdr không thể quên {name}.`). macOS làm y vậy với Wi‑Fi (`Forget` → `Quên`). Chỉ dùng
   `xóa` khi tiếng Anh thật sự nói "delete"/"remove" (`fileExplorer.network.deletePasswordFailed`).
 - **"Reach" có hai lối, tùy đích đến.** Một MÁY CHỦ thì `không kết nối được tới` (`licensing.error.network`,
   `servers.refusal.unreachable`); một ĐƯỜNG DẪN hay ổ đĩa thì `không thể truy cập` (`fileExplorer.unreachable.title`,
-  `.locationUnreachableToast`). Bằng chứng: `glossary.md` § Trung tâm máy chủ.
+  `.locationUnreachableToast`). Bằng chứng: `decisions.md` § Trung tâm máy chủ.
 - **Một cú rớt mạng là `Đã mất kết nối`, không phải `Kết nối đã bị ngắt`.** `ngắt` thuộc về hành động chủ ý
   (`Ngắt kết nối`), nên dùng nó cho sự cố sẽ làm hai trạng thái khác hẳn nhau đọc y như nhau. macOS: `CFNetwork`
   (`The network connection was lost.` → `Đã mất kết nối mạng.`).
@@ -355,7 +283,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `servers.paneState.signedOutNothingToAsk`.
 - **"rather than" / "instead of" là `thay vì`, và "type/enter vào một ô" là `nhập`.** Cả hai đã ship nhiều chỗ trong
   catalog; đừng nghĩ ra `chứ không phải` hay `gõ` cho chuỗi mới (`gõ ký tự` của macOS dành cho việc gõ trên bàn phím).
-  Bằng chứng: `glossary.md` § Trung tâm máy chủ, đợt 4.
+  Bằng chứng: `decisions.md` § Trung tâm máy chủ: khung đang kết nối lại.
 - **`Ask Cmdr` names the chat panel only; prose about what the assistant DOES says `Cmdr`, and prose about the model
   says `AI`.** English draws the same line: `Ask Cmdr` survives in the panel title, the View menu, the palette command,
   the settings section, and the on/off switch, and is gone from every sentence that merely described the behavior. So a
@@ -370,18 +298,18 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `tải về`, zero `tải xuống`); it now reads `Tải về và cài đặt`. The separable form is normal: `tải một mô hình về`.
 - **"one" standing in for a just-named countable thing is `một cái`.** English leans on it twice in the AI copy ("Turn
   one on in settings", "Click to set one up in settings"); repeating `một nhà cung cấp` in the second sentence is heavy
-  in Vietnamese, so `Hãy bật một cái trong cài đặt` / `Nhấp để thiết lập một cái trong cài đặt`. Both keys use the same
+  in Vietnamese, so `Hãy bật một cái trong cài đặt` / `Bấm để thiết lập một cái trong cài đặt`. Both keys use the same
   shape on purpose (`askCmdr.error.notConfigured`, `askCmdr.wake.needsApiKey`).
 - **Tên bề mặt của macOS: `Dock` và `Finder` giữ tiếng Anh, `Applications` thì dịch.** Apple quyết định từng nhãn một,
   nên đừng suy từ nhãn này sang nhãn kia: `Dock` và `Finder` không bao giờ được dịch trong macOS `vi`, còn thư mục
-  `Applications` luôn là `thư mục Ứng dụng`. Bằng chứng: `glossary.md` § Lời mời ghim Cmdr vào Dock.
+  `Applications` luôn là `thư mục Ứng dụng`. Bằng chứng: `decisions.md` § Lời mời ghim Cmdr vào Dock.
 - **"at any time" → `bất cứ lúc nào`, kể cả khi macOS viết `bất kỳ lúc nào`.** Cả hai đều đúng tiếng Việt, nhưng catalog
   đã ship `bất cứ lúc nào` ở chín chỗ; một chuỗi mới đi lệch sẽ làm hai câu chị em đọc như hai giọng khác nhau.
 - **Menu chuột phải trên biểu tượng Dock có nguồn Tier 1 riêng, và kho tham chiếu KHÔNG chứa nó.**
   `/System/Library/CoreServices/Dock.app/Contents/Resources/vi.lproj/DockMenus.strings` (đọc bằng
   `plutil -convert json -o -`) chính là menu mà `menu.dock.*` rơi vào; macOS có ship `vi.lproj` cho bundle này. Nó chốt
   luật **tên ỨNG DỤNG đi trần, tên TỆP mới đóng ngoặc kép** (`Ẩn %@` / `Hiển thị %@` so với `Mở “%@”`), nên
-  `menu.dock.openCmdr` là `Mở Cmdr`. Chi tiết: `glossary.md` § Menu chuột phải trên biểu tượng Dock.
+  `menu.dock.openCmdr` là `Mở Cmdr`. Chi tiết: `decisions.md` § Menu chuột phải trên biểu tượng Dock.
 - **Khuôn `{a} ({b})` để phân biệt hai hàng trùng tên giữ nguyên như tiếng Anh.** AppKit vi dịch `"%@ (%@)"` thành
   `"%1$@ (%2$@)"`: tiếng Việt đặt phần bổ nghĩa sau danh từ chính, nên không đảo thứ tự và không thêm giới từ vào trong
   ngoặc (`menu.dock.locationInParent`).
@@ -404,8 +332,18 @@ Vietnamese has no grammatical number, so one form covers all counts.
   it before recording a term as `tentative`.
 - Record any case-by-case rulings here so they aren't relitigated.
 
-## Glossary
+## Open questions
 
-The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/vi/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+Subjective calls, coined terms, and deferred migrations that a native reviewer should settle live in
+`review-queue.md`; each already ships a reasoned value.
+
+## Termbase files
+
+- `../concepts.json`: the shared, language-agnostic concept registry (sense, `match` patterns, confusable neighbors).
+- `concepts-proposed.json`: concepts this locale needed that the registry lacks, staged for the lead to merge.
+- `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
+- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `review-queue.md`: open questions for a native reviewer.
+
+Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section
+when the reason needs more than a line.

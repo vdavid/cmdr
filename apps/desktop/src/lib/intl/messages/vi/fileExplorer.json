@@ -128,7 +128,7 @@
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
     "sourceHash": "6c29cca"
   },
-  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} không phải mục chia sẻ mạng, nên không có gì để tăng tốc.",
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} không phải mục chia sẻ mạng, nên không có kết nối nào để tăng tốc.",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "sourceHash": "193a804"
   },
@@ -984,7 +984,7 @@
   "@fileExplorer.selectionTooltip.onDiskHeader": {
     "sourceHash": "9795f99"
   },
-  "fileExplorer.entry.brokenSymlink": "(symlink hỏng)",
+  "fileExplorer.entry.brokenSymlink": "(liên kết mềm hỏng)",
   "@fileExplorer.entry.brokenSymlink": {
     "sourceHash": "a7ffd43"
   },
@@ -1072,7 +1072,7 @@
   "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
     "sourceHash": "2f69a1b"
   },
-  "fileExplorer.selectionInfo.symlinkHint": "Thư mục này chứa các symlink. Nội dung được liên kết bằng symlink không được tính vào tổng để tránh đếm trùng.",
+  "fileExplorer.selectionInfo.symlinkHint": "Thư mục này chứa các liên kết mềm. Nội dung mà các liên kết mềm trỏ tới không được tính vào tổng để tránh đếm trùng.",
   "@fileExplorer.selectionInfo.symlinkHint": {
     "sourceHash": "414ed75"
   },
@@ -1276,7 +1276,7 @@
   "@fileExplorer.navigation.seeFavorites": {
     "sourceHash": "7a7e169"
   },
-  "fileExplorer.navigation.favoriteTooltip": "{path}\nKéo để sắp xếp lại, hoặc {reorder}. Bấm chuột phải để đổi tên hoặc xóa.",
+  "fileExplorer.navigation.favoriteTooltip": "{path}\nKéo để sắp xếp lại, hoặc {reorder}. Bấm chuột phải để đổi tên hoặc gỡ bỏ.",
   "@fileExplorer.navigation.favoriteTooltip": {
     "sourceHash": "88d54d3"
   },
@@ -1440,7 +1440,7 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Không thể tháo trong khi có thao tác đang diễn ra trên thiết bị này",
+  "fileExplorer.navigation.ejectBusyTooltip": "Không thể tháo khi còn thao tác đang chạy trên thiết bị này",
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "sourceHash": "7165c58"
   },
@@ -1536,11 +1536,11 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
-  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr không đọc được {count, plural, other {{countText} chỗ}} trên ổ đĩa này, nên kết quả tìm ở đây có thể hơi thiếu.",
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr không đọc được {count, plural, other {{countText} chỗ}} trên ổ đĩa này, nên kết quả tìm kiếm ở đây có thể hơi thiếu.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
     "sourceHash": "5369ab3"
   },
-  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr không đọc được {count, plural, other {{countText} chỗ}} trên ổ đĩa này, nên kết quả tìm ở đây có thể hơi thiếu. Cmdr sẽ tự quay lại với chúng.",
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr không đọc được {count, plural, other {{countText} chỗ}} trên ổ đĩa này, nên kết quả tìm kiếm ở đây có thể hơi thiếu. Cmdr sẽ tự quay lại với chúng.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
     "sourceHash": "a74a60f"
   },

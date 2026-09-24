@@ -19,7 +19,7 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "Bạn có thể thử:\n- Đóng bớt vài ứng dụng để giải phóng bộ nhớ, nhất là những ứng dụng dùng nhiều tài nguyên (trình duyệt mở nhiều tab, trình soạn thảo, ứng dụng đa phương tiện)\n- Kiểm tra mức dùng bộ nhớ trong **Activity Monitor** (tìm nó trong Spotlight)\n- Mở lại nơi này để thử lại",
+  "errors.listing.notEnoughMemory.suggestion": "Bạn có thể thử:\n- Đóng bớt vài ứng dụng để giải phóng bộ nhớ, nhất là những ứng dụng dùng nhiều tài nguyên (trình duyệt mở nhiều tab, trình soạn thảo, ứng dụng đa phương tiện)\n- Kiểm tra mức dùng bộ nhớ trong **Giám sát hoạt động** (tìm kiếm nó trong Spotlight)\n- Mở lại nơi này để thử lại",
   "@errors.listing.notEnoughMemory.suggestion": {
     "sourceHash": "26a7a46"
   },
@@ -43,7 +43,7 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "Mở lại nơi này để thử lại. Việc này thường tự ổn lại. Nếu vẫn cứ vậy, có thể hệ thống đang chịu tải nặng. Hãy xem **Activity Monitor** để tìm ứng dụng đang ngốn nhiều tài nguyên.",
+  "errors.listing.temporarilyUnavailable.suggestion": "Mở lại nơi này để thử lại. Việc này thường tự ổn lại. Nếu vẫn cứ vậy, có thể hệ thống đang chịu tải nặng. Hãy xem **Giám sát hoạt động** để tìm ứng dụng đang ngốn nhiều tài nguyên.",
   "@errors.listing.temporarilyUnavailable.suggestion": {
     "sourceHash": "1ec4aef"
   },
@@ -299,15 +299,15 @@
   "@errors.listing.connectionRefused.suggestion": {
     "sourceHash": "4afa12d"
   },
-  "errors.listing.symlinkLoopErrno.title": "Vòng lặp liên kết tượng trưng",
+  "errors.listing.symlinkLoopErrno.title": "Vòng lặp liên kết mềm",
   "@errors.listing.symlinkLoopErrno.title": {
     "sourceHash": "3d41981"
   },
-  "errors.listing.symlinkLoopErrno.explanation": "Cmdr tìm thấy một chuỗi liên kết tượng trưng vòng tròn (các lối tắt trỏ tới các lối tắt khác) tại `{path}`. Đi theo các liên kết này sẽ dẫn thành vòng tròn, nên Cmdr không tới được tệp hay thư mục thật.",
+  "errors.listing.symlinkLoopErrno.explanation": "Cmdr tìm thấy một chuỗi liên kết mềm vòng tròn (các lối tắt trỏ tới các lối tắt khác) tại `{path}`. Đi theo các liên kết này sẽ dẫn thành vòng tròn, nên Cmdr không tới được tệp hay thư mục thật.",
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "cb728c1"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "Bạn có thể thử:\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem các liên kết tượng trưng trỏ tới đâu\n- Tìm và sửa liên kết tạo ra vòng lặp\n- Nếu bạn không chắc liên kết nào là vấn đề, hãy lần theo từng cái một bằng `readlink <path>`",
+  "errors.listing.symlinkLoopErrno.suggestion": "Bạn có thể thử:\n- Trong Terminal, chạy `ls -la` trên đường dẫn này để xem các liên kết mềm trỏ tới đâu\n- Tìm và sửa liên kết tạo ra vòng lặp\n- Nếu bạn không chắc liên kết nào là vấn đề, hãy lần theo từng cái một bằng `readlink <path>`",
   "@errors.listing.symlinkLoopErrno.suggestion": {
     "sourceHash": "0a439fb"
   },
@@ -399,7 +399,7 @@
   "@errors.listing.attributeNotFound.title": {
     "sourceHash": "e12f4be"
   },
-  "errors.listing.attributeNotFound.explanation": "Cmdr đã cố đọc một thuộc tính tệp (siêu dữ liệu bổ sung như nhãn hay quyền) không tồn tại trên mục này. Điều này có thể xảy ra khi hệ thống tệp không hỗ trợ thuộc tính mở rộng, hoặc khi thuộc tính đã bị gỡ bỏ.",
+  "errors.listing.attributeNotFound.explanation": "Cmdr đã cố đọc một thuộc tính tệp (siêu dữ liệu bổ sung như thẻ hay quyền) không tồn tại trên mục này. Điều này có thể xảy ra khi hệ thống tệp không hỗ trợ thuộc tính mở rộng, hoặc khi thuộc tính đã bị gỡ bỏ.",
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee5c696"
   },
@@ -415,7 +415,7 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối đúng cách không\n- Mở **Disk Utility** (tìm nó trong Spotlight) và chạy **First Aid** trên ổ đĩa này\n- Nếu việc này cứ tiếp diễn, hãy sao lưu dữ liệu của bạn càng sớm càng tốt. Đĩa có thể đang sinh các vùng hỏng hoặc bắt đầu xuống cấp.",
+  "errors.listing.diskReadProblem.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối đúng cách không\n- Mở **Tiện ích ổ đĩa** (tìm kiếm nó trong Spotlight) và chạy **Sửa nhanh** trên ổ đĩa này\n- Nếu việc này cứ tiếp diễn, hãy sao lưu dữ liệu của bạn càng sớm càng tốt. Đĩa có thể đang sinh các vùng hỏng hoặc bắt đầu xuống cấp.",
   "@errors.listing.diskReadProblem.suggestion": {
     "sourceHash": "792c921"
   },
@@ -427,7 +427,7 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "eeddaa7"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "Bạn có thể thử:\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Disk Utility** (tìm nó trong Spotlight) và chạy **First Aid** trên ổ đĩa này để kiểm tra hệ thống tệp",
+  "errors.listing.unexpectedSystemResponse.suggestion": "Bạn có thể thử:\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Tiện ích ổ đĩa** (tìm kiếm nó trong Spotlight) và chạy **Sửa nhanh** trên ổ đĩa này để kiểm tra hệ thống tệp",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
     "sourceHash": "4e5a9bb"
   },
@@ -451,7 +451,7 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "80b9ff5"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Disk Utility** và chạy **First Aid** trên ổ đĩa này",
+  "errors.listing.couldntReadUnknown.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Mở lại nơi này để thử lại\n- Nếu việc này cứ tiếp diễn, mở **Tiện ích ổ đĩa** và chạy **Sửa nhanh** trên ổ đĩa này",
   "@errors.listing.couldntReadUnknown.suggestion": {
     "sourceHash": "0073987"
   },
@@ -495,11 +495,11 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "1fceff5"
   },
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` nằm trên một bản chia sẻ mạng, và tài khoản bạn dùng để kết nối không có quyền mở nó. Máy chủ từ chối yêu cầu trước cả khi macOS tham gia, nên đây không phải là một thiết lập riêng tư trên máy Mac của bạn.",
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` nằm trên một mục chia sẻ mạng, và tài khoản bạn dùng để kết nối không có quyền mở nó. Máy chủ từ chối yêu cầu trước cả khi macOS tham gia, nên đây không phải là một thiết lập riêng tư trên máy Mac của bạn.",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "4e6b9ef"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "Bạn có thể thử:\n- Kiểm tra quyền của thư mục trên máy chủ, và tài khoản bạn đã dùng để gắn kết bản chia sẻ\n- Một số thư mục thuộc về tài khoản hệ thống của chính máy chủ (ví dụ `lost+found` trên một bản chia sẻ Linux) và luôn đóng với mọi người khác\n- Để kết nối bằng tài khoản khác, hãy đẩy bản chia sẻ ra rồi gắn kết lại với thông tin đăng nhập đó",
+  "errors.listing.remotePermissionDenied.suggestion": "Bạn có thể thử:\n- Kiểm tra quyền của thư mục trên máy chủ, và tài khoản bạn đã dùng để gắn kết mục chia sẻ\n- Một số thư mục thuộc về tài khoản hệ thống của chính máy chủ (ví dụ `lost+found` trên một mục chia sẻ Linux) và luôn đóng với mọi người khác\n- Để kết nối bằng tài khoản khác, hãy tháo mục chia sẻ rồi gắn kết lại với thông tin đăng nhập đó",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "506e57a"
   },
@@ -655,7 +655,7 @@
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Thử lại\n- Nếu việc này cứ tiếp diễn, thử chạy **Disk Utility > First Aid** trên ổ đĩa này",
+  "errors.listing.ioSerious.suggestion": "Bạn có thể thử:\n- Kiểm tra xem đĩa hoặc thiết bị có còn kết nối không\n- Thử lại\n- Nếu việc này cứ tiếp diễn, thử chạy **Tiện ích ổ đĩa > Sửa nhanh** trên ổ đĩa này",
   "@errors.listing.ioSerious.suggestion": {
     "sourceHash": "6c5be6d"
   },
@@ -1169,11 +1169,11 @@
   "@errors.write.symlinkLoop.title": {
     "sourceHash": "0bbdc9c"
   },
-  "errors.write.symlinkLoop.message": "Thư mục này chứa các liên kết tượng trưng tạo thành một vòng lặp vô tận.",
+  "errors.write.symlinkLoop.message": "Thư mục này chứa các liên kết mềm tạo thành một vòng lặp vô tận.",
   "@errors.write.symlinkLoop.message": {
     "sourceHash": "00931eb"
   },
-  "errors.write.symlinkLoop.suggestion": "Cấu trúc thư mục chứa các tham chiếu vòng tròn. Bạn có thể cần gỡ bỏ một số liên kết tượng trưng.",
+  "errors.write.symlinkLoop.suggestion": "Cấu trúc thư mục chứa các tham chiếu vòng tròn. Bạn có thể cần xóa một số liên kết mềm.",
   "@errors.write.symlinkLoop.suggestion": {
     "sourceHash": "87ddbca"
   },
@@ -1817,7 +1817,7 @@
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
   },
-  "errors.serverRequest.unreachable": "Cmdr không kết nối được với máy chủ của mình. Hãy kiểm tra kết nối internet rồi thử lại.",
+  "errors.serverRequest.unreachable": "Cmdr không kết nối được tới máy chủ của mình. Hãy kiểm tra kết nối internet rồi thử lại.",
   "@errors.serverRequest.unreachable": {
     "sourceHash": "7f2a23e"
   },

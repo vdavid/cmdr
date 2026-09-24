@@ -11,7 +11,7 @@
   "@operationLog.dialog.loadError": {
     "sourceHash": "cf26c51"
   },
-  "operationLog.dialog.empty": "Chưa có thao tác nào. Sao chép, di chuyển, đổi tên hoặc xóa thứ gì đó và nó sẽ hiện ở đây.",
+  "operationLog.dialog.empty": "Chưa có thao tác nào. Sao chép, di chuyển, đổi tên hoặc xóa thứ gì đó và nó sẽ xuất hiện ở đây.",
   "@operationLog.dialog.empty": {
     "sourceHash": "2dea414"
   },
@@ -171,7 +171,7 @@
   "@operationLog.rollback.refusalJournalIncomplete": {
     "sourceHash": "4176739"
   },
-  "operationLog.rollback.refusalDirectoryMerge": "Khi di chuyển, thư mục đã được gộp vào một thư mục trùng tên vốn đã có ở đó. Cmdr không phân biệt được tệp nào mới chuyển tới và tệp nào vốn đã nằm trong đó, nên không có cách nào quay lại một cách an toàn.",
+  "operationLog.rollback.refusalDirectoryMerge": "Khi di chuyển, thư mục đã được hòa trộn vào một thư mục trùng tên vốn đã có ở đó. Cmdr không phân biệt được tệp nào mới chuyển tới và tệp nào vốn đã nằm trong đó, nên không có cách nào quay lại một cách an toàn.",
   "@operationLog.rollback.refusalDirectoryMerge": {
     "sourceHash": "2dad38d"
   },

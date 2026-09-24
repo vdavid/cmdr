@@ -93,7 +93,7 @@
   "@indexing.step.findFilesFirstScan": {
     "sourceHash": "5e9ea25"
   },
-  "indexing.step.findFilesChangeCheck": "Đang so sánh từng thư mục với chỉ mục. Kích cỡ thư mục của bạn vẫn hiển thị trong lúc này.",
+  "indexing.step.findFilesChangeCheck": "Đang đối chiếu từng thư mục với chỉ mục. Kích cỡ thư mục của bạn vẫn hiển thị trong lúc này.",
   "@indexing.step.findFilesChangeCheck": {
     "sourceHash": "8c23f1f"
   },
