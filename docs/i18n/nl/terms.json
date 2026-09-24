@@ -49,9 +49,7 @@
     "confidence": "high",
     "decision": "Aanvullen wat al verstuurd is: het notitievenster bij een automatisch foutrapport (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)",
     "exceptions": {
-      "fileExplorer.navigation.spaceMtpHint": "\"Add up to\" is arithmetic (komen samen op), not adding to a list.",
-      "onboarding.stepAi.table.renameWith": "Quoted example prompt \"add ISO date prefix\", rendered as natural speech (zet er … voor).",
-      "settings.mediaIndex.showInSearch.description": "\"Search adds a row\" means places a row (zet), not the add-to-a-list act."
+      "onboarding.stepAi.table.renameWith": "Quoted example prompt \"add ISO date prefix\", rendered as natural speech (zet er … voor)."
     },
     "forms": "button Voeg … toe with the particle LAST (Voeg aan rapport toe, Voeg server toe…, Voeg huidige map aan favorieten toe); window title Toevoegen aan je foutrapport; participle toegevoegd",
     "sources": "macOS Finder (Add Password → Voeg wachtwoord toe, Add Tags → Voeg tags toe), AppKit (Voeg aan begin van knoppenbalk toe)"
@@ -68,11 +66,6 @@
     "avoid": [{ "form": "synchronisatievoorziening", "why": "MS's first hit is the sync-provider sense" }],
     "chosen": "aanbieder",
     "confidence": "high",
-    "exceptions": {
-      "errors.provider.genericCloudStorage.displayName": "Sync-service sense (the cloud-provider concept): je cloudprovider.",
-      "errors.provider.genericCloudStorage.nonTransient": "Sync-service sense (the cloud-provider concept): een cloudprovider.",
-      "errors.provider.genericCloudStorage.transient": "Sync-service sense (the cloud-provider concept): een cloudprovider."
-    },
     "forms": "AI provider → AI-aanbieder; naar je aanbieder",
     "sources": "general NL; catalog throughout (askCmdr.error.notConfigured)"
   },
@@ -156,8 +149,7 @@
     "chosen": "Pas toe",
     "confidence": "high",
     "exceptions": {
-      "selection.recent.applyAria": "Separable verb with the particle last: Pas recente {mode}-selectie toe.",
-      "settings.network.smbConcurrency.description": "\"Changes apply\" means take effect: Wijzigingen gaan in."
+      "selection.recent.applyAria": "Separable verb with the particle last: Pas recente {mode}-selectie toe."
     },
     "forms": "separable particle last: Pas recente {mode}-selectie toe: {query}",
     "sources": "macOS AppKit (NSFontOptionsPanel, NSPreferences = Pas toe)"
@@ -175,9 +167,6 @@
     "accept": ["archieven", "zip-", "tar-", "7z-"],
     "chosen": "archief",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.sessions.archive": "The chat-archiving sense (archive-chat): Archiveer."
-    },
     "forms": "pl. archieven; format tokens hyphenate lowercase (zip-archief, zip-archieven, tar-archieven, 7z-archieven, zip-bestand); archive format → archiefstructuur, an entry's compression method → structuur; archive edit → archiefbewerking",
     "sources": "macOS Finder (Zip archive → Zip-archief, Kind is archives → Soort is Archief, Zip archive format → Zip-archiefstructuur)"
   },
@@ -214,9 +203,6 @@
     "chosen": "Terug",
     "confidence": "high",
     "decision": "Eén ding, één naam: de interne driftronde",
-    "exceptions": {
-      "settings.updates.emailPrivacyNote": "\"Tied back to you\" is not the back button; gekoppeld aan jou."
-    },
     "forms": "Terug = the standalone back button in a list you drill into (network browser); Vorige = the paired previous/next of the Go menu and the wizard",
     "sources": "standard NL UI; macOS Vorige for the pair"
   },
@@ -240,9 +226,6 @@
     ],
     "chosen": "markering",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.openBeta": "The Alpha pill is a visible labelled badge in the UI, not a status marker on an icon; <alpha></alpha>-badges."
-    },
     "forms": "badge → markering, status badge → statusmarkering",
     "sources": "macOS Finder Markeer (QK4); catalog gemarkeerd"
   },
@@ -308,9 +291,6 @@
     "accept": ["tekens"],
     "chosen": "teken",
     "confidence": "high",
-    "exceptions": {
-      "shortcuts.system.characterViewer": "Apple's picker name (character-viewer concept): Emoji's en symbolen."
-    },
     "forms": "null character → null-teken",
     "sources": "MS (character → teken, null character → null-teken)"
   },
@@ -324,9 +304,6 @@
     "avoid": [{ "form": "sessie", "why": "MS's generic session; Cmdr calls a saved conversation a chat throughout" }],
     "chosen": "chat",
     "confidence": "high",
-    "exceptions": {
-      "queryUi.ai.refineTooltip": "\"Chat back\" is the verb; praat terug met de agent."
-    },
     "sources": "MS terminology (chat, NLD/BEL); catalog (askCmdr.sessions.title)"
   },
   "check": {
@@ -341,10 +318,7 @@
     "confidence": "high",
     "decision": "Schijfindex: de wijzigingscontrole",
     "exceptions": {
-      "errors.git.blobTooLarge.suggestion": "Git's own verb \"check out\", kept as uitchecken.",
-      "errors.listing.authRequiredEneedauth.suggestion": "\"Check with the administrator\" means ask: neem contact op met de beheerder.",
-      "errors.write.originalsKeptAside.suggestion.many": "Restructured: the details below say where each file is.",
-      "fileExplorer.git.tooltip.worktreeOnBranch": "Git's \"checked out\": uitgecheckt."
+      "errors.write.originalsKeptAside.suggestion.many": "Restructured: the details below say where each file is."
     },
     "forms": "progress Controleren; Checking for changes → Controleren op wijzigingen; Re-check → Controleer opnieuw; noun controle (de volgende volledige controle)",
     "sources": "Double Commander (Controleer …), Nautilus (controleren op), Mail/SoftwareUpdate (Check Again → Controleer opnieuw)"
@@ -375,10 +349,6 @@
     "chosen": "opruimen",
     "confidence": "tentative",
     "decision": "Het stoppoortje: afsluiten terwijl er nog werk loopt (`main.quit.*`)",
-    "exceptions": {
-      "errors.git.corruptRepo.suggestion": "\"Clears it up\" means fixes it: lost dit op.",
-      "fileExplorer.navigation.driveIndex.refusedInternal": "\"Clears it\" means fixes the snag: lost het op."
-    },
     "forms": "separable: ruimt … op",
     "sources": "plain Dutch; no pile string names this act"
   },
@@ -387,15 +357,6 @@
     "chosen": "wissen",
     "confidence": "high",
     "exceptions": {
-      "errors.git.corruptRepo.suggestion": "\"Clears it up\" means fixes it: lost dit op.",
-      "errors.listing.temporarilyUnavailable.explanation": "\"Clears up on its own\" means passes: gaat vanzelf over.",
-      "errors.write.permissionDenied.suggestion.systemProtectedOther": "A flag that has to come off: die er eerst af moet.",
-      "fileExplorer.navigation.driveIndex.refusedInternal": "\"Clears it\" means fixes the snag: lost het op.",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "Cmdr tidying its own leftovers (clean-up concept): ruimt … op.",
-      "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr tidying its own leftover (clean-up concept): ruimt … op.",
-      "licensing.dialog.serverInvalidError": "A payment that didn't clear: niet is verwerkt.",
-      "main.quit.body": "Cmdr tidying half-written output (clean-up concept): ruimt Cmdr op.",
-      "queryUi.dialog.runQueryUnknownReason": "Adjective \"clear\" (obvious): onduidelijk.",
       "settings.mediaIndex.reclaim.alreadyCleared": "Index entries that are gone: al verwijderd."
     },
     "forms": "Index wissen, Zoekopdracht wissen, Druk op ESC om te wissen",
@@ -411,10 +372,6 @@
     "accept": ["sluiten", "gesloten"],
     "chosen": "Sluit",
     "confidence": "high",
-    "exceptions": {
-      "errors.eject.deviceDisconnectRefused": "A device ending its connection: wilde de verbinding niet verbreken.",
-      "errors.listing.connectionReset.explanation": "A server closing a connection: sloot de verbinding."
-    },
     "forms": "button Sluit",
     "sources": "macOS Finder (Close → Sluit, FR26)"
   },
@@ -437,11 +394,6 @@
     "accept": ["opdrachten"],
     "chosen": "opdracht",
     "confidence": "high",
-    "exceptions": {
-      "errors.git.indexLocked.message": "A git command in a git context: git-commando.",
-      "errors.git.indexLocked.suggestion": "A git command in a git context: git-commando.",
-      "errors.provider.macFuse.serious": "A third-party mount command in a shell context: mount-commando."
-    },
     "forms": "Search commands → Zoek opdrachten; the command adb → de opdracht adb",
     "sources": "Double Commander (command line → opdrachtregel), MS (command → opdracht)"
   },
@@ -464,9 +416,7 @@
     "confidence": "high",
     "decision": "Een half teruggedraaide bewerking afmaken (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)",
     "exceptions": {
-      "errors.write.newDataKeptAt.message": "\"Written and complete\" describes the file: volledig weggeschreven.",
-      "operationLog.rollback.refusalJournalIncomplete": "An incomplete record: niet volledig vastgelegd.",
-      "settings.advanced.showStagingTempFiles.description": "A file that is complete (whole), not an operation: compleet."
+      "operationLog.rollback.refusalJournalIncomplete": "An incomplete record: niet volledig vastgelegd."
     },
     "forms": "Copy complete → Kopiëren voltooid; wizard button Voltooi; Finish rolling back → Voltooi terugdraaien; an unfinished copy → onvolledig exemplaar",
     "sources": "macOS (voltooid for completed operations; NE108 Finish Copying → Voltooi kopiëren)"
@@ -510,8 +460,7 @@
     "chosen": "verbinden",
     "confidence": "high",
     "exceptions": {
-      "fileExplorer.pane.directConnectionNotNetworkShareToast": "Rephrased: er valt niets te versnellen (no connection to speed up).",
-      "onboarding.stepBeta.emailNote": "\"Never connected to your usage stats\" means tied to: nooit gekoppeld aan."
+      "fileExplorer.pane.directConnectionNotNetworkShareToast": "Rephrased: er valt niets te versnellen (no connection to speed up)."
     },
     "forms": "button Verbind; Connect to server → Verbind met server; Connect as guest → Verbind als gast; progress Verbinden met {name}…; status Verbonden; in a sentence verbinding maken; a phone plugged in by cable is aangesloten, not verbonden",
     "sources": "macOS Finder (Connect to server → Verbind met server, Connect As… → Verbind als…), AppKit (Connecting… → Verbinden…, Connected → Verbonden)"
@@ -536,9 +485,6 @@
     "accept": ["doorgaan", "gaat door", "gaat verder", "Werk door", "verder"],
     "chosen": "Ga door",
     "confidence": "high",
-    "exceptions": {
-      "settings.mediaIndex.clip.deleteConfirmBody": "\"Keep working\" said of search features: blijft werken."
-    },
     "forms": "button Ga door; Keep working (calls the quit off) → Werk door",
     "sources": "macOS (Continue → Ga door)"
   },
@@ -552,9 +498,6 @@
     "accept": ["kopiëren", "gekopieerd", "kopie", "exemplaar"],
     "chosen": "Kopieer",
     "confidence": "high",
-    "exceptions": {
-      "settings.revealHandler.notProductionBuild": "\"A released copy\" is a release: een uitgebrachte versie."
-    },
     "forms": "button Kopieer; verb kopiëren; participle gekopieerd; noun kopie; an unfinished copy → onvolledig exemplaar",
     "sources": "macOS (Copy → Kopieer), Nautilus (Copied … → … gekopieerd)"
   },
@@ -569,10 +512,6 @@
     "accept": ["maak", "aangemaakt", "aanmaak", "maken"],
     "chosen": "aanmaken",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.symlinkLoopErrno.suggestion": "A link that causes a loop: veroorzaakt.",
-      "errors.write.symlinkLoop.message": "Links that form a loop: vormen."
-    },
     "forms": "separable: Cmdr maakt hem aan; radio options Bestand aanmaken / Aanmaken en naam wijzigen; column header Aanmaakdatum; date balloon Aangemaakt",
     "sources": "macOS Finder (Create a folder named … → Maak … een map aan; Date Created → Aanmaakdatum)"
   },
@@ -664,9 +603,6 @@
     "avoid": [{ "form": "toestel", "why": "the drift round unified on macOS's apparaat" }],
     "chosen": "apparaat",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.cost.free": "Terse cost readout: on-device → lokaal."
-    },
     "forms": "an idle device → niet meer bezig (counterpart of Het apparaat is bezig)",
     "sources": "macOS Dutch"
   },
@@ -794,9 +730,6 @@
     "accept": ["ingeschakeld", "schakel", "zet", "aan"],
     "chosen": "inschakelen",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.checklist.starNote": "\"Enable a command\" means make it possible: mogelijk te maken."
-    },
     "forms": "Settings label inschakelen; a setting that is on → ingeschakeld (prefer over aanstaat); a hint telling the user to switch it on → Zet … aan (Zet het aan in Instellingen, Zet USB-foutopsporing aan)",
     "sources": "MS (enable → inschakelen), macOS System Settings (is turned on → is ingeschakeld), AOSP (Zet … aan)"
   },
@@ -909,10 +842,6 @@
     "chosen": "ophalen",
     "confidence": "high",
     "decision": "Het weergavevenster haalt een bestand eerst op (`viewer.pull.*`, `viewer.error.stoppedResponding`)",
-    "exceptions": {
-      "errors.git.missingObject.suggestion": "Git's own command name git fetch, verbatim.",
-      "errors.git.shallowBoundary.suggestion": "Git's own command name git fetch, verbatim."
-    },
     "forms": "progress {fileName} ophalen om te bekijken; Pull a model → Haal een model op",
     "sources": "macOS Finder IN_MD1 (Fetching… → Ophalen…), MS (fetch → ophalen)"
   },
@@ -922,16 +851,10 @@
     "confidence": "high",
     "exceptions": {
       "askCmdr.renameReview.title": "The modal context supplies the files: Naamwijzigingen beoordelen.",
-      "commands.handler.openTerminalHere.hint": "Quotes the short section name Navigatie en bewerkingen.",
       "errors.write.readOnlyDevice.source.suggestion": "Pronoun ze for the files already named.",
       "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Restructured into a free relative (Wat daarbij is vervangen).",
-      "indexing.rescan.journalGap": "\"File change log\" is the system's change log: wijzigingslogboek.",
       "menu.bar.file": "The menu bar's File menu is Apple's title: Archief.",
-      "onboarding.stepAi.table.selectWith": "Quoted example prompt: selecteer alle afbeeldingen.",
-      "settings.section.navigationAndFileOps": "Short section name: Navigatie en bewerkingen.",
-      "settings.viewer.showTextCursor.description": "\"File viewer\" is the viewer concept: weergavevenster.",
-      "settings.viewer.wordWrap.description": "\"File viewer\" is the viewer concept: weergavevenster.",
-      "viewer.srHeading": "\"File viewer\" is the viewer concept: Weergavevenster."
+      "onboarding.stepAi.table.selectWith": "Quoted example prompt: selecteer alle afbeeldingen."
     },
     "forms": "pl. bestanden; compounds bestandsnaam, bestandenlijst",
     "note": "The menu bar's File menu is Apple's Archief; never replace a menu-bar title with the ordinary word.",
@@ -1119,10 +1042,6 @@
     "accept": ["hosts"],
     "chosen": "host",
     "confidence": "tentative",
-    "exceptions": {
-      "settings.servers.card.trustedHostKeys": "Where English says host key, the Settings list says serversleutel (host-key concept).",
-      "settings.summary.servers": "Where English says host key, the Settings list says serversleutel (host-key concept)."
-    },
     "sources": "technical term; no native macOS term for an SMB host"
   },
   "host-key": {
@@ -1189,9 +1108,6 @@
     "chosen": "in gebruik",
     "confidence": "high",
     "decision": "Wie de schijf vasthoudt: de zes geweigerde-uitwerpzinnen (`errors.eject.unmountRefusedBy*`, `.otherApps`)",
-    "exceptions": {
-      "licensing.expiration.info": "\"Still using it for work\": Gebruik je het nog steeds voor je werk."
-    },
     "forms": "full sentence is in gebruik; a grayed-out menu item repeats its base label plus (bezet); with a named holder: {app} gebruikt deze schijf nog",
     "sources": "macOS Finder (… is in gebruik), MS (busy → bezet)"
   },
@@ -1217,9 +1133,6 @@
     "accept": ["geïnstalleerd", "installeer", "installatie"],
     "chosen": "installeren",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.checklist.starNote": "Homebrew command brew install cmdr, verbatim."
-    },
     "forms": "progress wordt geïnstalleerd",
     "sources": "macOS System Settings (… wordt samen met macOS geïnstalleerd)"
   },
@@ -1228,9 +1141,6 @@
     "chosen": "onderdeel",
     "confidence": "high",
     "decision": "Namen die er hetzelfde uitzien (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.title`, `errors.volume.ambiguousName`)",
-    "exceptions": {
-      "fileExplorer.navigation.connectionTooltipSystem": "A menu item, not a file: menu-item."
-    },
     "forms": "het-woord; one other file → één ander bestand, N other items → N andere onderdelen; keeps item only for non-files (menu-item, stash-item, recent-list entries)",
     "sources": "macOS Finder (items → onderdelen), Keychain Access (Alle onderdelen)"
   },
@@ -1273,9 +1183,6 @@
   "later": {
     "chosen": "Later",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.functionKeyBar.hiddenToast": "\"Any time later\" is not the defer button: op elk moment."
-    },
     "forms": "the defer-for-now button",
     "sources": "same word in NL"
   },
@@ -1351,9 +1258,6 @@
     "chosen": "beveiligd",
     "confidence": "high",
     "decision": "Get Info en Beveiligd (macOS-UI-namen die Apple wél vertaalt)",
-    "exceptions": {
-      "errors.git.indexLocked.message": "Git's lock file, not the Finder Locked flag: vergrendeld."
-    },
     "forms": "the Get Info checkbox Beveiligd, quoted ‘Beveiligd’; uncheck Locked → deselecteer ‘Beveiligd’; unlock the file → de beveiliging opheffen",
     "sources": "macOS Finder (InfoWindowGeneralView 1073.title, AXNODE1, NE17, NE18, BN43), AppKit AutosaveButton"
   },
@@ -1455,20 +1359,8 @@
     "confidence": "high",
     "decision": "Files a drive brings back from a move that never finished (`fileOperations.leftovers.stagingFolderKept`)",
     "exceptions": {
-      "commands.navLeft.label": "Cursor movement, not a file move: Ga naar linkerkolom.",
-      "commands.navRight.label": "Cursor movement, not a file move: Ga naar rechterkolom.",
-      "commands.selectionToggleAndDown.description": "Cursor movement: gaat omlaag.",
-      "commands.selectionToggleAndDown.label": "Cursor movement: omlaag.",
-      "errors.write.originalsKeptAside.suggestion.many": "\"Moved the folders out of the way\": opzij gezet.",
-      "errors.write.originalsKeptAside.suggestion.one": "\"Moved the folder out of the way\": opzij gezet.",
       "fileOperations.cancelRollback.stoppedMovingBack": "Moving back is the put-back concept: terugzetten.",
-      "fileOperations.delete.confirmMoveToTrash": "The move-to-trash concept: Naar prullenmand.",
-      "fileOperations.delete.trashSwitch": "The move-to-trash concept: Naar prullenmand.",
-      "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Moving back is the put-back concept: zet terug.",
-      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing the move is the rollback concept: terugdraaien.",
-      "fileOperations.transferProgress.stallUnknown": "\"Stopped moving\" means stalled: komt niet meer vooruit.",
-      "search.coverage.walk.abandoned": "\"Moved on\" means continued: ging verder.",
-      "search.coverage.walk.abandonedCount": "\"Moved on\" means continued: ging verder."
+      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing the move is the rollback concept: terugdraaien."
     },
     "forms": "button Verplaats; the move as a noun → het verplaatsen (voordat Cmdr het verplaatsen kon voltooien)",
     "sources": "macOS Finder (move → verplaatsen; NE111 het kopiëren)"
@@ -1484,9 +1376,6 @@
     "accept": ["namen", "Naam"],
     "chosen": "naam",
     "confidence": "high",
-    "exceptions": {
-      "servers.sheet.identityLocked": "\"What name this server\" is a verb (identify); bepalen welke server dit is, to avoid pointing at the Name field."
-    },
     "forms": "column Naam; a pronoun never refers back to an uncontrolled {name}",
     "sources": "macOS Finder (Name → Naam)"
   },
@@ -1525,11 +1414,6 @@
     "chosen": "gedeelde map",
     "confidence": "high",
     "decision": "Waarom een gedeelde map niet aankoppelt of de lijst niet laadt (`errors.mount.*`, `errors.shareList.*`)",
-    "exceptions": {
-      "menu.context.share": "The Share submenu (share-menu concept): Deel.",
-      "menu.context.shareLoading": "The Share submenu (share-menu concept): deelopties.",
-      "menu.context.shareNone": "The Share submenu (share-menu concept): deelopties."
-    },
     "forms": "in the pane, share lists, and mount messages → gedeelde map; \"not a network share\" and the error family → netwerkshare; compounds keep share (SMB-share, SMB-/netwerkshares)",
     "sources": "macOS Finder (Shared folder → Gedeelde map), MS (network share → netwerkshare)"
   },
@@ -1537,9 +1421,6 @@
     "accept": ["Bestand aanmaken", "Maak nieuw bestand", "Maak bestand"],
     "chosen": "Nieuw bestand",
     "confidence": "high",
-    "exceptions": {
-      "errors.write.newDataKeptAt.title": "\"Your new file\" is not the New file command."
-    },
     "forms": "Create new file → Maak nieuw bestand; radio option Bestand aanmaken",
     "sources": "nieuw + macOS bestand"
   },
@@ -1560,7 +1441,6 @@
     "confidence": "high",
     "decision": "De voortgangschip en het niet-voltooid-bericht",
     "exceptions": {
-      "fileOperations.transferDialog.scanStopped": "A size count, not an operation: niet helemaal doormeten.",
       "indexing.rescan.incompletePreviousScan": "A scan, not a file operation, is afgerond."
     },
     "forms": "status Niet voltooid; headline X niet voltooid (Kopiëren niet voltooid, …); count headline {countText} bewerking is / bewerkingen zijn niet voltooid",
@@ -1570,10 +1450,6 @@
     "accept": ["notities", "bericht"],
     "chosen": "notitie",
     "confidence": "high",
-    "exceptions": {
-      "fileOperations.delete.cloudOnlineOnlyHandedBack": "A note on screen (the banner text): de opmerking.",
-      "onboarding.stepBeta.analyticsCaption": "\"Note that\" is the discourse marker: Let op."
-    },
     "forms": "error-report notes and the free-text field → notitie; the feedback dialog's Your note → je bericht (that surface only; never mix the two in one dialog)",
     "sources": "MS (note → notitie)"
   },
@@ -1581,9 +1457,6 @@
     "accept": ["meldingen"],
     "chosen": "melding",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.checklist.alternativeToNote": "\"Notice Cmdr\" is the verb: valt op."
-    },
     "forms": "dismiss aria Sluit melding",
     "sources": "MS (notification → melding)"
   },
@@ -1598,7 +1471,6 @@
     "chosen": "Open",
     "confidence": "high",
     "exceptions": {
-      "fileExplorer.edit.notOnThisMac": "\"Open in an editor\" is edit: in een editor bewerken.",
       "fileExplorer.searchResults.unavailableBody": "Open a new search: Start een nieuwe zoekopdracht."
     },
     "forms": "button, menu item, and segmented option Open (same as English, justified); Open with default app → Open met standaardapp; loading line Map openen...",
@@ -1681,9 +1553,6 @@
     "accept": ["pagina's"],
     "chosen": "pagina",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.forget.message": "Idiom \"a blank page\": een leeg blad."
-    },
     "forms": "pl. pagina''s (ICU-doubled); PDF pages → PDF-pagina''s; Page up / down → Pagina omhoog / omlaag",
     "sources": "macOS Finder (Webpagina's), Dolphin (Aantal pagina's)"
   },
@@ -1724,9 +1593,6 @@
     "accept": ["paden"],
     "chosen": "pad",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.resourceBusy.suggestion": "Matches only the literal shell argument <folder-path>, verbatim."
-    },
     "forms": "the ~/Documents sample stays verbatim; het volledige pad",
     "sources": "standard NL"
   },
@@ -1800,9 +1666,6 @@
     "avoid": [{ "form": "Voorbeeld", "why": "the drift round unified on Voorvertoning" }],
     "chosen": "Voorvertoning",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.quickLookHint.finderComparison": "Finder's Quick Look action (quick-look concept): ‘Snelle weergave’."
-    },
     "forms": "noun Voorvertoning; the verb preview → bekijken (om vanaf hier te bekijken); Apple's Preview app → Voorvertoning",
     "sources": "macOS AppKit, Finder TL45 (Preview → Voorvertoning)"
   },
@@ -2069,9 +1932,6 @@
     "accept": ["rijen", "bestandsrij"],
     "chosen": "rij",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.interrupted.suggestion": "Idiom \"twice in a row\": twee keer achter elkaar."
-    },
     "forms": "file row → bestandsrij",
     "sources": "MS (row → rij), Double Commander (één per rij)"
   },
@@ -2081,7 +1941,6 @@
     "confidence": "high",
     "decision": "Eén ding, één naam: de interne driftronde",
     "exceptions": {
-      "lowDiskSpace.toast.message": "\"Running low on space\" is the free-space concept: raakt vol.",
       "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "Restructured: De schijf wordt nog doorzocht."
     },
     "forms": "an operation or task in progress → Bezig (Bezig met …, Nog bezig); a local AI server that is up → Actief; a running operation keeps going → doorlopen",
@@ -2155,8 +2014,6 @@
     "confidence": "high",
     "decision": "Het selectievenster: bestanden selecteren en deselecteren (`selection.*`)",
     "exceptions": {
-      "onboarding.stepAi.cloud.pickerTitle": "Picking from a list is the choose concept: Kies een aanbieder.",
-      "onboarding.stepAi.table.searchWithout": "Picking a filter option is the choose concept: kiest.",
       "ui.select.placeholder": "Dropdown placeholder, the choose concept: Kies..."
     },
     "forms": "button and menu Selecteer, Selecteer alles; the selection (a noun, the submenu title) → Selectie; recent selections → recente selecties; onboarding feature-row name → Selecteren",
@@ -2185,9 +2042,6 @@
     "accept": ["Adres", "adres"],
     "chosen": "serveradres",
     "confidence": "high",
-    "exceptions": {
-      "commands.cloudCopyGoogleDriveLink.description": "A web address (URL) of an item: de link."
-    },
     "forms": "column Adres",
     "sources": "macOS Finder ConnectToWindow (Server Address → Serveradres)"
   },
@@ -2202,9 +2056,6 @@
     "accept": ["instellingen", "instelling", "instel"],
     "chosen": "Instellingen",
     "confidence": "high",
-    "exceptions": {
-      "settings.mediaIndex.parallelism.description": "\"Higher settings\" means higher values: hogere waarden."
-    },
     "forms": "Cmdr's own window, capitalized: Instellingen; navigation paths Instellingen > AI (separator mirrors English per key); leave a field empty → laat dit leeg (macOS, verbatim with dit)",
     "sources": "macOS, MS (settings → instellingen)"
   },
@@ -2220,9 +2071,6 @@
     "accept": ["sneltoetsen", "toets"],
     "chosen": "sneltoets",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.symlinkLoopErrno.explanation": "Glosses symbolic links as shortcuts (aliases): snelkoppelingen."
-    },
     "forms": "Keyboard shortcuts (section) → Sneltoetsen; bound → toegewezen; fixed key → vaste toets / Vast; reserved → gereserveerd; register a global hotkey → registreren (Registreren lukte niet)",
     "sources": "common macOS / NL UI; MS toetsencombinatie is the longer form"
   },
@@ -2230,11 +2078,6 @@
     "accept": ["tonen", "getoond", "toont", "verschijn", "zien", "weergegeven", "weergave"],
     "chosen": "Toon",
     "confidence": "high",
-    "exceptions": {
-      "search.coverage.walk.cancelled": "\"It shows what Cmdr found\": je ziet wat.",
-      "selection.notice.snapshotPane": "\"What is shown in the list\": wat in de lijst staat.",
-      "settings.mediaIndex.showFileStatusIcons.description": "\"A badge showing whether\": die aangeeft of."
-    },
     "forms": "button and menu Toon (Toon favorieten, Toon alles, Toon details); Settings label infinitive-last (Verborgen bestanden tonen)",
     "sources": "macOS AppKit (Show Details → Toon details, Show Sidebar → Toon navigatiekolom), Finder (Toon alles)"
   },
@@ -2310,9 +2153,6 @@
     "accept": ["Van", "Vanuit"],
     "chosen": "bron",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepFda.con.body": "The licensing term source-available, kept verbatim."
-    },
     "forms": "dialog heading pair Van / Naar; the inline label before a path Vanuit:",
     "sources": "Double Commander (Source → Bron), MS; Total Commander / Double Commander (Van: / Naar:)"
   },
@@ -2334,15 +2174,6 @@
     ],
     "chosen": "Stop",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.navigation.forgetServerConfirm": "\"Stops listing it\": haalt de server uit de lijst.",
-      "fileOperations.transferProgress.stallUnknown": "\"Stopped moving\" means stalled: komt niet meer vooruit.",
-      "search.coverage.walk.abandoned": "\"Stopped answering\": gaven geen antwoord meer.",
-      "search.coverage.walk.abandonedCount": "\"Stopped answering\": gaf geen antwoord meer.",
-      "search.walkHandoff.superseded": "\"Stopped adding\": voegt niets meer toe.",
-      "settings.updates.emailPrivacyNote": "\"To stop getting emails\": om geen e-mails meer te ontvangen.",
-      "viewer.error.stoppedResponding": "\"Stopped arriving\": er komen geen gegevens meer binnen."
-    },
     "forms": "button Stop everywhere (Stop met zoeken, Stop en verwijder …); a button that stops running work is the imperative even when only a screen reader hears it",
     "sources": "macOS Finder (BN62, PE107, SD23)"
   },
@@ -2629,9 +2460,6 @@
     "accept": ["versies", "appversie"],
     "chosen": "versie",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.cloudSetup.hint.azureEndpoint": "The API parameter name api-version, verbatim."
-    },
     "forms": "app version → appversie (closed); macOS-versie (hyphen after the brand); a released copy → uitgebrachte versie",
     "sources": "MS (version → versie)"
   },
@@ -2639,9 +2467,6 @@
     "accept": ["Weergavevenster"],
     "chosen": "weergavevenster",
     "confidence": "tentative",
-    "exceptions": {
-      "shortcuts.system.characterViewer": "Apple's picker name (character-viewer concept): Emoji's en symbolen."
-    },
     "forms": "Settings section Viewer → Weergavevenster",
     "sources": "compositional (weergave + venster)"
   },
@@ -2667,9 +2492,6 @@
     "accept": ["wacht", "wachten", "wachtende"],
     "chosen": "Wachten",
     "confidence": "high",
-    "exceptions": {
-      "suggestedOps.indicatorTooltip": "Suggestions ready for you: Er staan AI-suggesties klaar."
-    },
     "forms": "queue status Wachten; Waiting for <noun> → Wachten op …; Waiting for X to respond → Wachten tot X reageert; Waiting to be indexed → Wacht op indexering",
     "sources": "macOS Finder (Wachten; Waiting for disc drive… → Wachten op schijfeenheid…)"
   },
@@ -2703,7 +2525,6 @@
     "chosen": "schrijven",
     "confidence": "high",
     "exceptions": {
-      "errorReporter.amend.description": "Composing a note: Schrijf een notitie.",
       "suggestedOps.reversibleDeleteWritten": "\"What it writes\" as a noun: het gemaakte."
     },
     "forms": "partly written → gedeeltelijk geschreven; every file written so far → elk bestand dat tot nu toe is geschreven",
