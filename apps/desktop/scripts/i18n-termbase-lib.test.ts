@@ -50,6 +50,9 @@ describe('englishMatchText', () => {
   it('strips raw {tokens} from a raw-family value', () => {
     expect(englishMatchText('errors.x', 'Open {system_settings} now')).toBe('Open  now')
   })
+  it('drops markdown code spans, which are literal commands rather than copy', () => {
+    expect(englishMatchText('errors.x', 'Try `ping <hostname>` in Terminal')).toBe('Try  in Terminal')
+  })
   it('unescapes the doubled ICU apostrophe', () => {
     expect(englishMatchText('a.b', "Couldn''t copy")).toBe("Couldn't copy")
   })

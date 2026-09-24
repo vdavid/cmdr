@@ -154,11 +154,13 @@ export function compileMatch(forms: readonly string[]): (text: string) => boolea
  * placeholder names, plural/select categories, and tag names removed (a
  * `{count, plural, …}` must not read as the word "count"). A raw-family value, or
  * one that isn't valid ICU, drops its `{token}` spans instead. ICU's doubled
- * apostrophe reads as one.
+ * apostrophe reads as one. Markdown code spans go too: `` `ping <hostname>` `` in
+ * an error suggestion is a command the reader types verbatim, so the locale keeps
+ * it English and it says nothing about the concept "hostname".
  */
 export function englishMatchText(key: string, value: string): string {
   const literals = isRawKey(key) ? undefined : visibleLiterals(value)
-  const text = literals ?? value.replace(/\{[^{}]*\}/g, '')
+  const text = (literals ?? value.replace(/\{[^{}]*\}/g, '')).replace(/`[^`\n]*`/g, '')
   return isRawKey(key) ? text : text.replace(/''/g, "'")
 }
 
