@@ -351,27 +351,40 @@ function conceptsInPlay(ctx: BriefContext): ConceptsInPlay {
   return { hitsBy, neighbors }
 }
 
-/** One concept's block: sense and boundaries once, then a ruling line per language. */
-function conceptBlock(ctx: BriefContext, id: string, { hitsBy, neighbors }: ConceptsInPlay): string[] {
+/** A hit concept's block: sense and boundaries once, then a full ruling line per language. */
+function conceptBlock(ctx: BriefContext, id: string, keys: readonly string[]): string[] {
   const concept = ctx.concepts[id]
   const about = [concept.sense]
   if (concept.note) about.push(concept.note)
-  const distinct = (concept.distinct ?? []).filter((other) => other !== neighbors.get(id))
-  if (distinct.length > 0) about.push(`Distinct from: ${distinct.join(', ')}.`)
-  const keys = hitsBy.get(id)
-  about.push(
-    keys
-      ? `In: ${keys.map((key) => `\`${key}\``).join(', ')}.`
-      : `Not in this batch; listed so it isn't confused with ${neighbors.get(id) ?? ''}.`,
-  )
+  if (concept.distinct?.length) about.push(`Distinct from: ${concept.distinct.join(', ')}.`)
+  about.push(`In: ${keys.map((key) => `\`${key}\``).join(', ')}.`)
   return ['', `### ${id}: "${concept.en}"`, about.join(' '), ...ctx.opts.langs.map((tag) => rulingLine(ctx, tag, id))]
 }
 
+/**
+ * A `distinct` neighbor no batch key hits, in one line: its sense and each
+ * language's chosen form. Enough to keep it apart from the concept that named it;
+ * the full ruling is a `--keys` run away if a translator needs it.
+ */
+function neighborLine(ctx: BriefContext, id: string, namedBy: string): string {
+  const concept = ctx.concepts[id]
+  const rulings = ctx.opts.langs.map((tag) => {
+    const term = ctx.termbases.get(tag)?.[id]
+    return term ? `${tag}: **${term.chosen}**` : `${tag}: no ruling`
+  })
+  return `- \`${id}\` ("${concept.en}", vs ${namedBy}): ${concept.sense} ${rulings.join(' · ')}`
+}
+
 function termsSection(ctx: BriefContext): BriefSection {
-  const inPlay = conceptsInPlay(ctx)
-  const ids = [...[...inPlay.hitsBy.keys()].sort(), ...[...inPlay.neighbors.keys()].sort()]
-  const lines = [`## Terms in play (${String(ids.length)})`, ...ids.flatMap((id) => conceptBlock(ctx, id, inPlay))]
-  if (ids.length === 0) lines.push('', 'No registered concept appears in this batch.')
+  const { hitsBy, neighbors } = conceptsInPlay(ctx)
+  const hit = [...hitsBy.keys()].sort()
+  const lines = [`## Terms in play (${String(hit.length)})`]
+  for (const id of hit) lines.push(...conceptBlock(ctx, id, hitsBy.get(id) ?? []))
+  if (hit.length === 0) lines.push('', 'No registered concept appears in this batch.')
+  if (neighbors.size > 0) {
+    lines.push('', '### Easy to confuse with the above (not in this batch)', '')
+    for (const id of [...neighbors.keys()].sort()) lines.push(neighborLine(ctx, id, neighbors.get(id) ?? ''))
+  }
   return { name: 'terms', text: lines.join('\n') }
 }
 
