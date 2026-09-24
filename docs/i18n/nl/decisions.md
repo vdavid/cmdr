@@ -2612,9 +2612,9 @@ uitwegen die ze kunnen noemen. De derde sleutel is de regel die verschijnt als C
 
 - **`.cloudOnlineOnlyMixedWarning`** · `alleen online beschikbaar` (de term `online-only`), `prullenmand` en
   `cloudservice` · medium. **De download als gevolg, niet als handeling van het verplaatsen**:
-  `Als je die onderdelen naar de prullenmand verplaatst, worden ze <strong>eerst gedownload</strong>.` ❌ Niet het calque
-  `Verplaatsen naar de prullenmand zou ze eerst downloaden`, waarin het verplaatsen zelf downloadt. Het Engelse "In this
-  case" wordt `In dit geval`, geen causaal `Daarom`. De eigen bewaartermijn van de service heet
+  `Als je die onderdelen naar de prullenmand verplaatst, worden ze <strong>eerst gedownload</strong>.` ❌ Niet het
+  calque `Verplaatsen naar de prullenmand zou ze eerst downloaden`, waarin het verplaatsen zelf downloadt. Het Engelse
+  "In this case" wordt `In dit geval`, geen causaal `Daarom`. De eigen bewaartermijn van de service heet
   `bewaren verwijderde bestanden`, geen `prullenmand`.
 - **`.cloudOnlineOnlyAllWarning`** · dezelfde tekst, met «Alles wat je hebt geselecteerd» in plaats van «Een deel van je
   selectie», en zonder de uitweg deselecteren: als alles alleen online is, blijft er niets geselecteerd · medium.

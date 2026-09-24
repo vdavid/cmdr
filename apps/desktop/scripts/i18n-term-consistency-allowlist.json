@@ -3,11 +3,161 @@
     "de": [
       {
         "source": "Browse",
-        "reason": "Two senses of one English word, each sourced separately in `docs/i18n/de/glossary.md`. `Durchsuchen…` is the button that opens the system file picker (`servers.sheet.browse`, `settings.adb.browse`), taken from Finder's own `ConnectToWindow.strings` `48.title`. `Durchsehen` is the archives segmented cell (`settings.archives.opt.browse`), which means step INTO the archive and list it like a folder (KDE Dolphin, \"Archive durchsehen\"). The archive sense cannot take `Durchsuchen`: that is the settled scan/search verb (\"Laufwerk wird durchsucht …\"), so merging them would tell the reader the app is searching the archive."
+        "reason": "Two senses of one English word, split into the `browse-file-picker` and `browse` rulings in `docs/i18n/de/terms.json`. `Durchsuchen…` is the button that opens the system file picker (`servers.sheet.browse`, `settings.adb.browse`), taken from Finder's own `ConnectToWindow.strings` `48.title`. `Durchsehen` is the archives segmented cell (`settings.archives.opt.browse`), which means step INTO the archive and list it like a folder (KDE Dolphin, \"Archive durchsehen\"). The archive sense cannot take `Durchsuchen`: that is the settled scan/search verb (\"Laufwerk wird durchsucht …\"), so merging them would tell the reader the app is searching the archive."
+      },
+      {
+        "source": "Checking",
+        "reason": "Two different checks. `Wird geprüft …` checks a connection or a key (`ai.cloud.checking`, `licensing.dialog.checking`); `Wird gesucht …` is macOS Software Update's own idiom for checking for updates (Nach Updates suchen), so `updates.status.checking` follows Apple. `docs/i18n/de/decisions.md` § Ein englisches Wort, ein deutsches Wort."
+      },
+      {
+        "source": "Dismiss",
+        "reason": "`Schließen` closes a dialog, toast, or notice that can come back; `Ausblenden` hides a queue row (`queue.row.dismiss`) or a hint line (`adb.hint.dismiss`) for good. A row can't be closed, and the @key says nothing is undone, retried, or deleted. The `dismiss` ruling in `docs/i18n/de/terms.json`."
+      },
+      {
+        "source": "File",
+        "reason": "`menu.bar.file` is the native File menu, which German macOS calls `Ablage` and its @key asks for Finder's own word; a table column (`suggestedOps.columnFile`) is plain `Datei`."
+      },
+      {
+        "source": "Indexing now",
+        "reason": "`Wird gerade indiziert` is the tooltip on ONE image's badge (`fileExplorer.imageIndex.file.indexing`), a passive state; `Indizierung läuft` is the heading over the live progress list (`settings.mediaIndex.progressSummary.title`), a nominal status."
+      },
+      {
+        "source": "Purple",
+        "reason": "`menu.tag.purple` must be macOS's exact Finder tag color name, which German macOS writes `Lila`; `settings.tint.purple` is Cmdr's own pane-tint palette, where Purple is `Violett`."
+      },
+      {
+        "source": "Search",
+        "reason": "`Suchen` is the button that runs the search (`queryUi.bar.runLabel`, an imperative); dialog titles, the tab name, the Settings section, and the task name are the noun `Suche`."
+      },
+      {
+        "source": "View",
+        "reason": "`menu.bar.view` is the native View menu title, which German macOS calls `Darstellung` (a noun that holds the view options); the F3 action is the verb `Ansehen`, kept apart from the show sense `anzeigen`."
+      },
+      {
+        "source": "Zoom",
+        "reason": "`menu.window.zoom` is macOS's Window > Zoom item (the green button), which German macOS calls `Zoomen`; `menu.view.zoom` is the submenu for Cmdr's text size, the noun `Zoom`. The @key asks for macOS's word on the window item."
       }
     ],
     "en-AU": [],
     "en-GB": [],
+    "es": [
+      {
+        "source": "Both",
+        "reason": "The pronoun agrees in gender with what it covers: `Ambos` for files and folders together (masculine plural), `Ambas` for the two kinds of notification (feminine). Neither fits the other's slot."
+      },
+      {
+        "source": "Canceled",
+        "reason": "`Operación cancelada` titles an error pane and names its subject, like its sibling `Operación interrumpida`; `Cancelado` is a lifecycle status in an operation-log cell. See `docs/i18n/es/decisions.md`."
+      },
+      {
+        "source": "Edit",
+        "reason": "The menu bar's Edit menu is Apple's own Spanish title `Edición` (Finder); F4 and the context-menu item are the verb `Editar`. Never replace a menu-bar title with the ordinary word."
+      },
+      {
+        "source": "Modified",
+        "reason": "`Modificación` is Finder's date column (Fecha de modificación) and every date filter; `Modificados` filters the shortcuts the user changed, a masculine plural agreeing with `atajos`, with no date involved."
+      },
+      {
+        "source": "Search",
+        "reason": "`Buscar` is the action (dialog title, run button); the Settings sidebar section is a topic, a noun: `Búsqueda`. `Buscar` there would read as a command."
+      },
+      {
+        "source": "View",
+        "reason": "The menu bar's View menu is Apple's own Spanish title `Visualización` (Finder); F3 and the File-menu item are the action `Ver`."
+      }
+    ],
+    "fr": [
+      {
+        "source": "App",
+        "reason": "The color options name the app as the SOURCE of a tint in a very short button (`App`); the shortcut scope covers the whole application (`Application`)."
+      },
+      {
+        "source": "Ask about your files",
+        "reason": "The empty chat invites several questions (`Posez des questions…`); the composer field expects one message (`Posez une question…`). French states a number English leaves open."
+      },
+      {
+        "source": "Back",
+        "reason": "The Go menu takes Finder's exact word, `Précédent` (macOS fr has no bare `Retour`); the network and wizard buttons are Cmdr surfaces and say `Retour`. See `docs/i18n/fr/terms.json` `back`."
+      },
+      {
+        "source": "Canceled",
+        "reason": "`Opération annulée` titles a panel and names the implied subject, like `Opération interrompue`; `Annulé` is an operation-log status pill."
+      },
+      {
+        "source": "Edit",
+        "reason": "`Édition` is Finder's Edit MENU title; `Modifier` is the verb on the F4 button and the context menu."
+      },
+      {
+        "source": "Modified",
+        "reason": "`Modifié` is the date column and filter; `Modifiés` is the shortcuts filter, agreeing with the plural shortcuts you changed."
+      },
+      {
+        "source": "Rolling back",
+        "reason": "The progress dialog title keeps its ellipsis (the dots say progress); the operation-log status cell has none, so it spells out `en cours`, parallel to `En cours` for running."
+      },
+      {
+        "source": "Running",
+        "reason": "`En cours d'exécution` is a server PROCESS that is up; `En cours` is a task or operation in progress."
+      },
+      {
+        "source": "Search",
+        "reason": "`Rechercher` is the action (dialog title, run button); the Settings sidebar section is a topic, a noun: `Recherche`."
+      },
+      {
+        "source": "Send feedback",
+        "reason": "The title and the command name the action in general (`Envoyer un retour`); the send button acts on the message in front of you (`Envoyer le retour`), like `Envoyer un rapport d'incident` / `Envoyer le rapport`."
+      },
+      {
+        "source": "View",
+        "reason": "The menu bar's View menu is Finder's `Présentation`; F3 and the File-menu item are the action `Visualiser`."
+      },
+      {
+        "source": "Zoom",
+        "reason": "The window's green-button action is Finder's `Réduire/agrandir` (Window > Zoom); the text-size submenu keeps `Zoom`."
+      }
+    ],
+    "hu": [
+      {
+        "source": "Bytes",
+        "reason": "`Bájtok` is the progress bar's row label, paired with `Fájlok`; `Bájt` is the size-unit picker's button, next to `kB`, `MB`, `GB`."
+      },
+      {
+        "source": "Cancel",
+        "reason": "`Mégsem` is the dialog button (macOS Finder, 52×); `Megszakítás` stops a RUNNING operation from its queue row. See `docs/i18n/hu/terms.json` `cancel`."
+      },
+      {
+        "source": "From",
+        "reason": "`Forrás` is the transfer dialog's heading, paired with `Cél` (Total Commander and Double Commander hu); `Innen` is the inline label before a scan-phase source path."
+      },
+      {
+        "source": "Purple",
+        "reason": "`Bíbor` is one of Finder's seven tag colors, verbatim (`TG_COLOR_3`); `Lila` is Cmdr's own 12-color pane tint, where the everyday color name is right."
+      },
+      {
+        "source": "Rolling back",
+        "reason": "`Visszagörgetés…` is the progress window's title, the ellipsis carrying the ongoing state; the operation log's status cell is `Visszagörgetés folyamatban`, beside capability cells (`Visszagörgethető`), where the bare noun would be ambiguous."
+      },
+      {
+        "source": "Select",
+        "reason": "`Kijelölés` is the file-selection menu and action; `Válassz` is the dropdown placeholder, where the user picks an option rather than selecting files."
+      },
+      {
+        "source": "Send report",
+        "reason": "The dialog title asks the user (`Elküldöd a jelentést?`, the house form for question titles); the button is the nominal `Jelentés küldése`."
+      },
+      {
+        "source": "Something went wrong, and Cmdr couldn't tell what",
+        "reason": "`errors.eject.unexpected` follows the eject wrapper `Nem sikerült kiadni: …`, where the settled `Valami nem sikerült` would repeat itself, so it says `A Cmdr problémába ütközött, …`. See `docs/i18n/hu/decisions.md` § Kiadás és leválasztás."
+      },
+      {
+        "source": "View",
+        "reason": "`Nézet` is the menu bar's View menu (a noun menu title, macOS); `Megtekintés` is the F3 action that opens the viewer."
+      },
+      {
+        "source": "Zoom",
+        "reason": "`Nagyítás` is the text-zoom submenu; `Méretezés` is the Window > Zoom command (macOS AppKit `Zoom All` = `Összes méretezése`)."
+      }
+    ],
     "nl": [
       {
         "source": "Back",
@@ -80,8 +230,118 @@
     ],
     "pt": [
       {
+        "source": "Both",
+        "reason": "Gender agreement, not drift: `Ambos` agrees with files and folders (`queryUi.filters.type.both`), `Ambas` with notifications (`…downloadsNotifications.opt.both`)."
+      },
+      {
         "source": "Browse",
-        "reason": "Two senses of one English word, each sourced separately in `docs/i18n/pt/glossary.md`. `Escolher…` is the button that opens the system file picker (`servers.sheet.browse`, `settings.adb.browse`), taken from Apple's own `Choose…` → `Escolher…`. `Navegar` is the archives segmented cell (`settings.archives.opt.browse`), which means step inside and list like a folder (macOS Finder VoiceOver, Total Commander pt-BR). Apple never says `Navegar` for picking a file, and the archive sense is never `Escolher`, so one word for both would be wrong on whichever surface lost."
+        "reason": "Two senses of one English word, each ruled separately in `docs/i18n/pt/terms.json` (`browse-file-picker`, `browse`). `Escolher…` is the button that opens the system file picker (`servers.sheet.browse`, `settings.adb.browse`), taken from Apple's own `Choose…` → `Escolher…`. `Navegar` is the archives segmented cell (`settings.archives.opt.browse`), which means step inside and list like a folder (macOS Finder VoiceOver, Total Commander pt-BR). Apple never says `Navegar` for picking a file, and the archive sense is never `Escolher`, so one word for both would be wrong on whichever surface lost."
+      },
+      {
+        "source": "Modified",
+        "reason": "Number agreement, not drift: `Modificado` is a file's date column and filter, `Modificados` is the keyboard-shortcuts filter for the shortcuts the user changed (`shortcuts.section.filterModified`)."
+      },
+      {
+        "source": "Preview",
+        "reason": "Noun vs verb, both Finder's: `Pré-visualização` labels a preview panel or sample (`askCmdr.renameReview.preview`, `settings.appearance.datePreviewLabel`), `Pré-visualizar` is the command (`commands.fileQuickLook.other.label`)."
+      },
+      {
+        "source": "Rolled back",
+        "reason": "Gender agreement, not drift: `Revertida` agrees with the operation (`operationLog.rollback.rolledBack`), `Revertido` with the item (`operationLog.outcome.rolledBack`)."
+      },
+      {
+        "source": "Running",
+        "reason": "Two senses: `Em andamento` is a task in progress (`operationLog.status.running`, matching `queue.row.status`), `Em execução` is a local AI server that is up (`ai.local.statusRunning`)."
+      },
+      {
+        "source": "Search",
+        "reason": "Noun vs verb: `Busca` names the Settings section beside nouns like `Aparência` and `Indexação` (`settings.section.search`); `Buscar` is the button that runs a search and the dialog title."
+      }
+    ],
+    "sv": [
+      {
+        "source": "Checking",
+        "reason": "`Kontrollerar` verifies something you already have (an API key, a license); `Söker` looks for something that may exist (`updates.status.checking`), matching the update family's `Sök efter uppdateringar`. See `docs/i18n/sv/terms.json` `check`."
+      },
+      {
+        "source": "File",
+        "reason": "The menu bar's File menu is Apple's own Swedish title `Arkiv` (Finder, AppKit); the suggested-ops column names an ordinary file, `Fil`."
+      },
+      {
+        "source": "Modified",
+        "reason": "`Ändrad` describes one file's date (the column and the date filters); the keyboard-shortcuts filter chip `Ändrade` filters a set of commands, so the participle agrees in the plural."
+      },
+      {
+        "source": "Running",
+        "reason": "`Körs` is a local AI server process that is up; `Pågår` is a file operation in progress, the queue and log status. macOS Finder has the same pair (medan Finder körs / en annan åtgärd pågår)."
+      },
+      {
+        "source": "Select",
+        "reason": "`Markera` marks files (the menu-bar Select menu, macOS Markera allt); `Välj` picks an option, which is what a dropdown placeholder asks for."
+      },
+      {
+        "source": "View",
+        "reason": "The menu bar's View menu is Apple's own Swedish title `Innehåll` (Finder and Safari); F3 and the context-menu item open the viewer, `Visa`."
+      },
+      {
+        "source": "Zoom",
+        "reason": "Finder splits them: the text-zoom submenu is the noun `Zoom`, Window > Zoom is the verb `Zooma`."
+      }
+    ],
+    "vi": [
+      {
+        "source": "Back",
+        "reason": "macOS vi draws this line: going back in the folder HISTORY is `Trở lại` (Finder Go > Back, `menu.go.back`), returning to the previous SCREEN or step inside a flow is `Quay lại` (Setup Assistant, the Apple ID sheets; the network browser and the onboarding wizard). See `docs/i18n/vi/terms.json` `back`."
+      },
+      {
+        "source": "Modified",
+        "reason": "`Đã sửa đổi` is the date column (Finder Get Info \"Modified:\"); `shortcuts.section.filterModified` filters commands whose shortcut the user CHANGED, so `Đã thay đổi`. One word would make the shortcut filter read like a date filter. See `docs/i18n/vi/terms.json` `modified`."
+      }
+    ],
+    "zh": [
+      {
+        "source": "App",
+        "reason": "Two senses. Beside `macOS` as a colour SOURCE (the date and size colour options) the Latin `App` stays, as Apple zh-CN writes it; as a shortcut SCOPE (`shortcuts.scope.app`) it's the translated scope word `应用`, matching its all-Chinese sibling scopes. See `docs/i18n/zh/terms.json` `app`."
+      },
+      {
+        "source": "Back",
+        "reason": "`返回` is navigation back to the previous place (macOS zh-CN renders Back, Go Back, and go back all as `返回`); `上一步` is the onboarding wizard's previous step, paired with `下一步`."
+      },
+      {
+        "source": "Both",
+        "reason": "`两者` is a bare toggle cell beside `文件` / `文件夹`; `两者都用` is a radio option that must pair with its sibling `都不用`, so it needs the verb."
+      },
+      {
+        "source": "Done",
+        "reason": "`完成` is the word a screen reader announces after a checklist step (macOS System Settings Done → `完成`); `已完成` is an operation's lifecycle status value, a perfective state like its siblings `已取消` / `已跳过`."
+      },
+      {
+        "source": "Modified",
+        "reason": "`修改日期` is Finder's Date Modified column and the date filters; the keyboard-shortcuts filter means shortcuts the user changed, with no date involved, so it's `已修改`."
+      },
+      {
+        "source": "Regex",
+        "reason": "Tight mode chips use the short `正则`; the viewer's regex toggle shows only a `.*` glyph, so its tooltip and accessible name spell out `正则表达式` for screen-reader users."
+      },
+      {
+        "source": "Running",
+        "reason": "`运行中` is a local AI server process that is up; `进行中` is a task or operation in progress, the queue and log status value."
+      },
+      {
+        "source": "Scanning",
+        "reason": "`正在扫描` is the in-progress tooltip with an ellipsis; `扫描` is a step NAME in the two-step progress indicator, the same split AppKit makes (Searching → `搜索`, Searching… → `正在搜索…`)."
+      },
+      {
+        "source": "Select",
+        "reason": "`选择` is the verb and the menu-bar title; `请选择` is the dropdown placeholder (English `Select...`), a prompt that nothing is chosen yet."
+      },
+      {
+        "source": "Unreachable",
+        "reason": "`无法连接` is a host the network browser can't connect to; `无法访问` is a tab whose folder or volume can't be reached, where there may be no connection at all (an ejected drive)."
+      },
+      {
+        "source": "View",
+        "reason": "The menu bar's View menu is Apple's own zh-CN title `显示`; F3 and the context-menu item open the file in the viewer, which is `查看`."
       }
     ],
     "zh-Hant": [
@@ -140,13 +400,13 @@
     ]
   },
   "notYetReviewed": {
-    "de": 8,
-    "es": 6,
-    "fr": 12,
-    "hu": 10,
-    "pt": 6,
-    "sv": 7,
-    "vi": 2,
-    "zh": 11
+    "de": 0,
+    "es": 0,
+    "fr": 0,
+    "hu": 0,
+    "pt": 0,
+    "sv": 0,
+    "vi": 0,
+    "zh": 0
   }
 }
