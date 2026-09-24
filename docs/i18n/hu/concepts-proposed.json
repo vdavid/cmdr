@@ -1,0 +1,355 @@
+{
+    "action": {
+        "en": "action",
+        "match": ["action", "actions"],
+        "sense": "Something a control or command does (the action a picker chooses, a dialog's actions, a command's name in the shortcut list).",
+        "distinct": ["operation", "command"]
+    },
+    "ai-agent": {
+        "en": "agent",
+        "match": ["agent", "agents"],
+        "notMatch": ["ssh-agent"],
+        "sense": "Cmdr's own AI acting on the user's behalf, including the provenance label on operations it ran.",
+        "distinct": ["ai-client", "ai-feature"]
+    },
+    "ai-client": {
+        "en": "AI client",
+        "match": ["ai client", "ai clients"],
+        "sense": "An outside AI app driving Cmdr over its automation interface, named as the source of an operation.",
+        "distinct": ["ai-agent"]
+    },
+    "android-platform-tools": {
+        "en": "Android platform tools",
+        "match": ["platform tools", "platform-tools"],
+        "sense": "Google's Android SDK Platform Tools package, which ships adb.",
+        "distinct": ["ai-tool", "android-tools"]
+    },
+    "android-tools": {
+        "en": "Android tools",
+        "match": ["android tools", "android tooling"],
+        "sense": "The Android command-line developer tools installed on the Mac, as a group.",
+        "distinct": ["android-platform-tools", "phone"]
+    },
+    "blocked": {
+        "en": "blocked",
+        "match": ["blocked"],
+        "sense": "Something held back from proceeding: a proposed rename preflight won't let through, or an access macOS or another process prevents.",
+        "distinct": ["deny", "busy"]
+    },
+    "busy": {
+        "en": "busy",
+        "match": ["busy"],
+        "notMatch": ["busy folders"],
+        "sense": "Something that can't take a request right now: a volume with operations running, a device, a provider, a system resource.",
+        "distinct": ["in-use"]
+    },
+    "chip": {
+        "en": "chip",
+        "match": ["chip", "chips"],
+        "sense": "A small labeled pill in the UI, such as the repository chip that shows a folder is inside a git repo.",
+        "distinct": ["badge", "tag"]
+    },
+    "coming-soon": {
+        "en": "Coming soon",
+        "match": ["coming soon"],
+        "sense": "A marker on a feature that isn't available yet."
+    },
+    "conversation": {
+        "en": "conversation",
+        "match": ["conversation", "conversations"],
+        "sense": "One thread of messages between the user and Ask Cmdr, as distinct from chatting as an activity.",
+        "distinct": ["chat"]
+    },
+    "database": {
+        "en": "database",
+        "match": ["database", "databases"],
+        "sense": "A structured data store (the index database, a provider's database)."
+    },
+    "debounce": {
+        "en": "debounce",
+        "match": ["debounce", "debounced"],
+        "sense": "Waiting for a burst of events to settle before acting on them (an advanced setting)."
+    },
+    "deployment": {
+        "en": "deployment",
+        "match": ["deployment", "deployments"],
+        "sense": "A named model instance on Azure OpenAI that a request is routed to.",
+        "distinct": ["install", "model"]
+    },
+    "desktop-folder": {
+        "en": "Desktop",
+        "match": ["desktop"],
+        "sense": "The macOS Desktop folder, named in lists of protected folders."
+    },
+    "exclude": {
+        "en": "exclude",
+        "match": ["exclude", "excluded", "excludes", "exclusion"],
+        "sense": "The user deliberately taking a folder out of indexing or a search scope.",
+        "distinct": ["skip", "remove"]
+    },
+    "file-handle": {
+        "en": "handle",
+        "match": ["open handle", "last handle", "handle closes", "file handle", "file handles"],
+        "sense": "An open reference an app or process holds on a file, which can keep it alive or locked.",
+        "distinct": ["in-use"]
+    },
+    "file-manager": {
+        "en": "file manager",
+        "match": ["file manager", "file managers"],
+        "sense": "The kind of app Cmdr is."
+    },
+    "forget": {
+        "en": "forget",
+        "match": ["forget", "forgets", "forgotten", "forgot"],
+        "sense": "Dropping a saved server, a saved password, a trusted key, or a remembered note so Cmdr no longer keeps it.",
+        "distinct": ["remove", "delete"]
+    },
+    "git-branch": {
+        "en": "branch",
+        "match": ["branch", "branches"],
+        "sense": "A git branch, shown in the repo chip and browsable in the .git portal.",
+        "distinct": ["repository"]
+    },
+    "git-browser": {
+        "en": "git browser",
+        "match": ["git browser"],
+        "sense": "Cmdr's view that lists a repo's branches, tags, commits, and worktrees like folders.",
+        "distinct": ["browse"]
+    },
+    "git-commit": {
+        "en": "commit",
+        "match": ["commit", "commits"],
+        "sense": "A git commit, as a browsable snapshot.",
+        "distinct": ["git-branch"]
+    },
+    "git-dirty": {
+        "en": "dirty",
+        "match": ["dirty"],
+        "sense": "A git working tree with uncommitted changes."
+    },
+    "git-worktree": {
+        "en": "worktree",
+        "match": ["worktree", "worktrees"],
+        "sense": "A git linked checkout (git worktree), including the ones the .git portal lists.",
+        "distinct": ["working-tree"]
+    },
+    "hardlink": {
+        "en": "hardlinked",
+        "match": ["hardlink", "hardlinks", "hardlinked", "hard link", "hard links"],
+        "sense": "Files that share their data through hard links, so a copy writes more than the source takes on disk.",
+        "distinct": ["symlink"]
+    },
+    "help-menu": {
+        "en": "Help menu",
+        "match": ["help menu", "=help"],
+        "sense": "The menu bar's Help menu, named in prose (send a report from the Help menu)."
+    },
+    "history": {
+        "en": "history",
+        "match": ["history"],
+        "notMatch": ["operation history"],
+        "sense": "A record of past items: the file operations Cmdr ran, recent selections, reopenable tabs.",
+        "distinct": ["operation-log"]
+    },
+    "home-folder": {
+        "en": "home folder",
+        "match": ["home folder", "=home"],
+        "sense": "The user's home folder, and the Go menu's Home item.",
+        "distinct": ["root-folder"]
+    },
+    "importance": {
+        "en": "importance",
+        "match": ["importance", "important folders", "matter to you"],
+        "sense": "How much a folder matters to the user, which decides what gets indexed first.",
+        "distinct": ["relevance"]
+    },
+    "interrupted": {
+        "en": "interrupted",
+        "match": ["interrupted", "interruption"],
+        "sense": "Something cut off before it could finish by an outside cause (a signal, a dropped connection).",
+        "distinct": ["not-finished", "cancel"]
+    },
+    "just-now": {
+        "en": "just now",
+        "match": ["just now"],
+        "sense": "The newest step of a relative-time label (just now, 5m ago)."
+    },
+    "key-combination": {
+        "en": "combo",
+        "match": ["combo", "combos", "key combination", "key combinations"],
+        "sense": "A set of keys pressed together, as recorded for a shortcut.",
+        "distinct": ["shortcut"]
+    },
+    "last-used": {
+        "en": "Last used",
+        "match": ["last used"],
+        "sense": "The column that shows when a saved server was last opened.",
+        "distinct": ["modified"]
+    },
+    "linux-distribution": {
+        "en": "distribution",
+        "match": ["distribution", "distributions", "distro"],
+        "sense": "A Linux distribution, whose package manager provides a missing package."
+    },
+    "mcp-server": {
+        "en": "MCP server",
+        "match": ["mcp server"],
+        "sense": "Cmdr's Model Context Protocol server that AI assistants can connect to."
+    },
+    "minimize": {
+        "en": "Minimize",
+        "match": ["minimize"],
+        "sense": "The Window menu's Minimize command.",
+        "distinct": ["zoom", "hide"]
+    },
+    "model-library": {
+        "en": "library",
+        "match": ["library", "model library"],
+        "sense": "A provider's catalog of downloadable models (the Ollama library).",
+        "distinct": ["folder", "model"]
+    },
+    "not-found": {
+        "en": "not found",
+        "match": ["not found"],
+        "sense": "Something Cmdr looked for isn't there (a path, a share, a device, the adb binary).",
+        "distinct": ["unreachable", "already-exists"]
+    },
+    "organization": {
+        "en": "organization",
+        "match": ["organization", "organizations"],
+        "sense": "The company a commercial license is issued to.",
+        "distinct": ["license"]
+    },
+    "original": {
+        "en": "original",
+        "match": ["original", "originals"],
+        "sense": "The source copy of a file that a move leaves in place until it knows the destination copy is safe.",
+        "distinct": ["source"]
+    },
+    "owner": {
+        "en": "owner",
+        "match": ["owner", "owners"],
+        "sense": "The person who runs a server or owns a shared folder, or the account that owns a file.",
+        "distinct": ["account"]
+    },
+    "pattern": {
+        "en": "pattern",
+        "match": ["pattern", "patterns"],
+        "sense": "A filename, regex, or rename pattern the user or the AI writes.",
+        "distinct": ["glob", "regex"]
+    },
+    "placeholder": {
+        "en": "placeholder",
+        "match": ["placeholder", "placeholders"],
+        "sense": "A slot in a title or format string that Cmdr fills in (a date or name token)."
+    },
+    "problem": {
+        "en": "problem",
+        "match": ["problem", "problems", "glitch", "trouble"],
+        "sense": "A non-fatal issue named in explanatory prose, in Cmdr's calm voice.",
+        "distinct": ["failed", "unexpected"],
+        "note": "Cmdr's voice avoids a bare error word; this is the neutral noun for what went wrong."
+    },
+    "recent": {
+        "en": "recent",
+        "match": ["recent", "recently", "most recent"],
+        "sense": "The latest items the user used (recent searches, recent selections, the latest download, recently closed tabs).",
+        "distinct": ["history"]
+    },
+    "regex": {
+        "en": "regex",
+        "match": ["regex", "regular expression", "regular expressions"],
+        "sense": "A regular-expression search or selection mode.",
+        "distinct": ["glob", "pattern"]
+    },
+    "register-shortcut": {
+        "en": "register",
+        "match": ["register", "registered", "unregistered"],
+        "sense": "A global hotkey the system accepted (or refused) for Cmdr.",
+        "distinct": ["shortcut", "global"]
+    },
+    "removable": {
+        "en": "removable",
+        "match": ["removable", "non-removable"],
+        "sense": "A drive that can be ejected and unplugged, as opposed to an internal one.",
+        "distinct": ["eject", "drive"]
+    },
+    "rename-cycle": {
+        "en": "rename cycle",
+        "match": ["cycle", "cycles", "rotating these files"],
+        "sense": "A set of renames that swap names in a loop, so one needs a temporary name.",
+        "distinct": ["rename"]
+    },
+    "repository": {
+        "en": "repo",
+        "match": ["repo", "repos", "repository", "repositories"],
+        "sense": "A git repository (the folder Cmdr shows the repo chip for, or Cmdr's GitHub repo).",
+        "distinct": ["git-worktree"]
+    },
+    "reset": {
+        "en": "reset",
+        "match": ["reset", "reset to default", "reset all"],
+        "notMatch": ["connection reset", "was unexpectedly reset"],
+        "sense": "Putting a setting back to its default, or zoom back to 100%.",
+        "distinct": ["default", "undo"]
+    },
+    "save-panel": {
+        "en": "save panel",
+        "match": ["save panel"],
+        "sense": "The macOS Save dialog Cmdr opens to save content as a file."
+    },
+    "sharing-and-permissions": {
+        "en": "Sharing & Permissions",
+        "match": ["sharing & permissions", "sharing and permissions"],
+        "sense": "The section of Finder's Get Info window that lists who can read and write an item.",
+        "distinct": ["get-info", "permission"]
+    },
+    "snapshot": {
+        "en": "snapshot",
+        "match": ["snapshot", "snapshots"],
+        "sense": "A frozen point-in-time copy: a git commit seen as a folder, or an APFS snapshot folder search skips.",
+        "distinct": ["git-commit"]
+    },
+    "stall": {
+        "en": "stalled",
+        "match": ["stalled", "stopped moving", "stopped arriving"],
+        "sense": "A transfer or file fetch that is still alive but has made no progress for a while.",
+        "distinct": ["stop", "not-finished"]
+    },
+    "status": {
+        "en": "status",
+        "match": ["status"],
+        "notMatch": ["status page", "system status"],
+        "sense": "The current state of something (a server row, a license, a git file, an index), as a label or column.",
+        "distinct": ["progress"]
+    },
+    "subfolder": {
+        "en": "subfolder",
+        "match": ["subfolder", "subfolders"],
+        "sense": "A folder inside another folder.",
+        "distinct": ["parent-folder"]
+    },
+    "subscription": {
+        "en": "subscription",
+        "match": ["subscription", "subscriptions"],
+        "sense": "A time-limited commercial license the user renews.",
+        "distinct": ["license"]
+    },
+    "technical-details": {
+        "en": "Technical details",
+        "match": ["technical details"],
+        "sense": "The disclosure under an error message that holds the raw system code and message."
+    },
+    "wizard": {
+        "en": "wizard",
+        "match": ["wizard"],
+        "sense": "A step-by-step setup flow (the onboarding wizard).",
+        "distinct": ["onboarding"]
+    },
+    "working-tree": {
+        "en": "working tree",
+        "match": ["working tree"],
+        "sense": "The checked-out files of a git repo, in the generic git sense.",
+        "distinct": ["git-worktree"]
+    }
+}

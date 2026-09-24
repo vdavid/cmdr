@@ -120,7 +120,7 @@
   "@queryUi.ai.refineAria": {
     "sourceHash": "fc95971"
   },
-  "queryUi.ai.refineTooltip": "Hamarosan: válaszolhatsz nekem mint ágensnek",
+  "queryUi.ai.refineTooltip": "Hamarosan: válaszolhatsz az ágensnek",
   "@queryUi.ai.refineTooltip": {
     "sourceHash": "4846194"
   },

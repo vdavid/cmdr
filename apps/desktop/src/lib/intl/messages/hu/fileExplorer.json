@@ -469,7 +469,7 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "A(z) ''{shareName}'' megosztás nem található itt: {hostName}",
+  "fileExplorer.network.share.notFound": "A(z) „{shareName}” megosztás nem található itt: {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
@@ -1456,7 +1456,7 @@
   "@fileExplorer.navigation.usbSpeedNegotiated": {
     "sourceHash": "3731939"
   },
-  "fileExplorer.navigation.spaceRetryingAuto": "Automatikus újrapróbálkozás…",
+  "fileExplorer.navigation.spaceRetryingAuto": "Automatikus újrapróbálás…",
   "@fileExplorer.navigation.spaceRetryingAuto": {
     "sourceHash": "aa9f4b8"
   },
@@ -1560,7 +1560,7 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "sourceHash": "70ae907"
   },
-  "fileExplorer.navigation.driveIndex.menuForget": "A meghajtó indexének elvetése",
+  "fileExplorer.navigation.driveIndex.menuForget": "A meghajtó indexének elfelejtése",
   "@fileExplorer.navigation.driveIndex.menuForget": {
     "sourceHash": "a553f83"
   },

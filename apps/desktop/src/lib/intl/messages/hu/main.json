@@ -7,7 +7,7 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "140c57d"
   },
-  "main.upgradeNudge.mac": "Új bevezető beállításokat adtunk hozzá. Nézd át őket itt: Cmdr > Bevezető….",
+  "main.upgradeNudge.mac": "Új bevezető beállításokat adtunk hozzá. Az átnézésükhöz nyisd meg a Cmdr > Bevezető… menüpontot.",
   "@main.upgradeNudge.mac": {
     "sourceHash": "477f3a5"
   },

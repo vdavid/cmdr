@@ -11,7 +11,7 @@
   "@updates.failure.download": {
     "sourceHash": "fdd5095"
   },
-  "updates.failure.install": "A Cmdr nem tudta telepíteni a frissítést. Próbáld újra később, vagy töltsd le a legújabb Cmdr-t a getcmdr.com oldalról.",
+  "updates.failure.install": "A Cmdr nem tudta telepíteni a frissítést. Próbáld újra később, vagy töltsd le a legújabb Cmdrt a getcmdr.com oldalról.",
   "@updates.failure.install": {
     "sourceHash": "c997a13"
   },
@@ -48,11 +48,11 @@
   "@updates.moveToApplicationsDialog.title": {
     "sourceHash": "97f87a0"
   },
-  "updates.moveToApplicationsDialog.translocated": "Kész egy új verzió, de a macOS a Cmdr appot egy ideiglenes, írásvédett másolatból futtatja. Ez akkor történik, ha egy appot közvetlenül a letöltés helyéről nyitsz meg, így a frissítéseknek nincs hova települniük.",
+  "updates.moveToApplicationsDialog.translocated": "Kész egy új verzió, de a macOS a Cmdr appot egy ideiglenes, csak olvasható másolatból futtatja. Ez akkor történik, ha egy appot közvetlenül a letöltés helyéről nyitsz meg, így a frissítéseknek nincs hova települniük.",
   "@updates.moveToApplicationsDialog.translocated": {
     "sourceHash": "510a3a6"
   },
-  "updates.moveToApplicationsDialog.readOnlyVolume": "Kész egy új verzió, de a Cmdr írásvédett helyről fut, jellemzően egy még csatolt lemezképről. Így a frissítéseknek nincs hova települniük.",
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Kész egy új verzió, de a Cmdr csak olvasható helyről fut, jellemzően egy még csatolt lemezképről. Így a frissítéseknek nincs hova települniük.",
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
     "sourceHash": "94edc89"
   },

@@ -572,11 +572,11 @@
   "@commands.tagsToggleGreen.description": {
     "sourceHash": "fa8396b"
   },
-  "commands.tagsTogglePurple.label": "Lila címke be-/kikapcsolása",
+  "commands.tagsTogglePurple.label": "Bíbor címke be-/kikapcsolása",
   "@commands.tagsTogglePurple.label": {
     "sourceHash": "ee137d2"
   },
-  "commands.tagsTogglePurple.description": "Hozzáadja vagy eltávolítja a Lila Finder-címkét a kijelölt fájlokról",
+  "commands.tagsTogglePurple.description": "Hozzáadja vagy eltávolítja a Bíbor Finder-címkét a kijelölt fájlokról",
   "@commands.tagsTogglePurple.description": {
     "sourceHash": "c6872a8"
   },
@@ -620,7 +620,7 @@
   "@commands.selectionToggleAndDown.label": {
     "sourceHash": "72ccb36"
   },
-  "commands.selectionToggleAndDown.description": "Ki- vagy kijelöli a kurzor alatti fájlt, majd lefelé lép (Total Commander módra)",
+  "commands.selectionToggleAndDown.description": "Kijelöli a kurzor alatti fájlt, vagy törli a kijelölését, majd lefelé lép (Total Commander módra)",
   "@commands.selectionToggleAndDown.description": {
     "sourceHash": "378bb7a"
   },
@@ -636,7 +636,7 @@
   "@commands.selectionInvert.label": {
     "sourceHash": "d2e128a"
   },
-  "commands.selectionInvert.description": "Kijelöli az összes nem kijelölt fájlt, és megszünteti a kijelöltek kijelölését",
+  "commands.selectionInvert.description": "Kijelöli az összes nem kijelölt fájlt, és törli a kijelöltek kijelölését",
   "@commands.selectionInvert.description": {
     "sourceHash": "b63ce32"
   },
@@ -672,7 +672,7 @@
   "@commands.selectionDeselectFiles.label": {
     "sourceHash": "6fb10d5"
   },
-  "commands.selectionDeselectFiles.description": "Megnyitja a Fájlok kijelölésének megszüntetése párbeszédet az illeszkedő fájlok kijelölésének megszüntetéséhez",
+  "commands.selectionDeselectFiles.description": "Megnyitja a Fájlok kijelölésének törlése párbeszédet az illeszkedő fájlok kijelölésének törléséhez",
   "@commands.selectionDeselectFiles.description": {
     "sourceHash": "2a6f82f"
   },
@@ -840,7 +840,7 @@
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
   },
-  "commands.handler.zoomResetHintMenu": "A nagyítási szintet 100%-ra állíthatod vissza itt: View > Zoom > 100%.",
+  "commands.handler.zoomResetHintMenu": "A nagyítási szintet 100%-ra állíthatod vissza itt: Nézet > Nagyítás > 100%.",
   "@commands.handler.zoomResetHintMenu": {
     "sourceHash": "f10315d"
   },

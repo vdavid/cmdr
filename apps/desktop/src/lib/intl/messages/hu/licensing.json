@@ -116,7 +116,7 @@
     "sourceHash": "e6ab7e3",
     "sameAsSourceJustification": "'© 2024-2026 David Veszelovszki': copyright glyph, literal year range, and a personal name. Nothing translatable. Listed as kept-verbatim in glossary (licensing pass)."
   },
-  "licensing.commercialReminder.title": "Köszönöm, hogy a Cmdr-t használod!",
+  "licensing.commercialReminder.title": "Köszönöm, hogy a Cmdrt használod!",
   "@licensing.commercialReminder.title": {
     "sourceHash": "6898650"
   },
@@ -124,7 +124,7 @@
   "@licensing.commercialReminder.usingPersonal": {
     "sourceHash": "508c17d"
   },
-  "licensing.commercialReminder.askCommercial": "Ha munkahelyi környezetben használod a Cmdr-t, kérlek, szerezz be egy Kereskedelmi licencet, hogy szabályosan használhasd.",
+  "licensing.commercialReminder.askCommercial": "Ha munkahelyi környezetben használod a Cmdrt, kérlek, szerezz be egy Kereskedelmi licencet, hogy szabályosan használhasd.",
   "@licensing.commercialReminder.askCommercial": {
     "sourceHash": "6bf4031"
   },
@@ -132,7 +132,7 @@
   "@licensing.commercialReminder.priceInfo": {
     "sourceHash": "55bd2ed"
   },
-  "licensing.commercialReminder.declinePersonal": "Csak személyes célra<break></break>használom a Cmdr-t",
+  "licensing.commercialReminder.declinePersonal": "Csak személyes célra<break></break>használom a Cmdrt",
   "@licensing.commercialReminder.declinePersonal": {
     "sourceHash": "49641ff"
   },

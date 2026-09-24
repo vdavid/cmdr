@@ -20,7 +20,7 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "A kijelölésed egy része csak online érhető el. Ha ezek a Kukába kerülnének, előbb <strong>le kellene tölteni őket</strong>. Ezért a Cmdr itt csak a teljes kijelölés <strong>törlését</strong> ajánlja fel. A Kukában nem marad másolat, de a felhőszolgáltatások a sajátjukban általában 30 napig őrzik a törölt fájlokat. Kattints a „Törlés” gombra, ha ez így rendben van, különben zárd be ezt az ablakot, és vagy tedd offline is elérhetővé az összes fájlt, vagy szüntesd meg a csak online elérhető fájlok kijelölését.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "A kijelölésed egy része csak online érhető el. Ha ezek a Kukába kerülnének, előbb <strong>le kellene tölteni őket</strong>. Ezért a Cmdr itt csak a teljes kijelölés <strong>törlését</strong> ajánlja fel. A Kukában nem marad másolat, de a felhőszolgáltatások a sajátjukban általában 30 napig őrzik a törölt fájlokat. Kattints a „Törlés” gombra, ha ez így rendben van, különben zárd be ezt az ablakot, és vagy tedd offline is elérhetővé az összes fájlt, vagy töröld a csak online elérhető fájlok kijelölését.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2a49037"
   },
@@ -136,7 +136,7 @@
   "@fileOperations.mkfile.nameAria": {
     "sourceHash": "3efed3d"
   },
-  "fileOperations.mkfile.placeholder": "Például: jegyzetek.txt",
+  "fileOperations.mkfile.placeholder": "Példa: jegyzetek.txt",
   "@fileOperations.mkfile.placeholder": {
     "sourceHash": "f6b4613"
   },
@@ -152,7 +152,7 @@
   "@fileOperations.mkdir.nameAria": {
     "sourceHash": "14d34ed"
   },
-  "fileOperations.mkdir.placeholder": "Például: uj-projekt",
+  "fileOperations.mkdir.placeholder": "Példa: uj-projekt",
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
@@ -241,7 +241,7 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Ez a megosztás a rendszerkapcsolatot használja. A megszakítás késhet. A gyorsabb átvitelhez és a megbízható megszakításhoz használd a kötetválasztóban a „Közvetlen csatlakozás” lehetőséget.",
+  "fileOperations.transferDialog.smbNativeNote": "Ez a megosztás a rendszerkapcsolatot használja. A megszakítás késhet. A gyorsabb átvitelhez és a megbízható megszakításhoz használd a kötetválasztóban a „Közvetlen kapcsolat a gyorsabb hozzáférésért” menüpontot.",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
   },
@@ -253,7 +253,7 @@
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
   },
-  "fileOperations.transferDialog.destinationReadOnly": "Ez a mappa írásvédett, ide semmit nem lehet tenni.",
+  "fileOperations.transferDialog.destinationReadOnly": "Ez a mappa csak olvasható, ide semmit nem lehet tenni.",
   "@fileOperations.transferDialog.destinationReadOnly": {
     "sourceHash": "f30522f"
   },

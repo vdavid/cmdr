@@ -1,5 +1,5 @@
 {
-  "servers.sheet.usernamePlaceholder": "Például: anna",
+  "servers.sheet.usernamePlaceholder": "Példa: anna",
   "@servers.sheet.usernamePlaceholder": {
     "sourceHash": "1b5b09c"
   },
@@ -395,7 +395,7 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Állítsd le egyelőre a próbálkozást. A kapcsolat elérhető marad. Válts vissza az újrapróbálkozáshoz.",
+  "servers.paneState.cancelCycleTooltip": "Állítsd le egyelőre a próbálkozást. A kapcsolat elérhető marad. Válts vissza az újrapróbáláshoz.",
   "@servers.paneState.cancelCycleTooltip": {
     "sourceHash": "377638b"
   },

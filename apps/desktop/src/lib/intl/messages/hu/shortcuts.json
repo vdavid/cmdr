@@ -85,7 +85,7 @@
   "@shortcuts.system.finderSearch": {
     "sourceHash": "8b2f1c8"
   },
-  "shortcuts.system.characterViewer": "Karaktermegjelenítő",
+  "shortcuts.system.characterViewer": "Karaktermegtekintő",
   "@shortcuts.system.characterViewer": {
     "sourceHash": "1a43164"
   },
@@ -111,7 +111,7 @@
     "sourceHash": "077a293",
     "sameAsSourceJustification": "'Spaces' is an Apple feature name (virtual desktops) kept English in Hungarian macOS (verified verbatim in the Hungarian macOS pile). Reuse the localized macOS name = English here. Glossary lists Spaces as kept (shortcuts pass)."
   },
-  "shortcuts.system.screenshots": "képernyőképek",
+  "shortcuts.system.screenshots": "képernyőfotók",
   "@shortcuts.system.screenshots": {
     "sourceHash": "98d875b"
   },

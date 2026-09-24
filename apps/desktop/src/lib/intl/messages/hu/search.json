@@ -27,7 +27,7 @@
   "@search.recent.runAria": {
     "sourceHash": "fb0939c"
   },
-  "search.systemDirExclude.default": "Kihagyja a gyakori rendszer- és build mappákat",
+  "search.systemDirExclude.default": "Kizárja a gyakori rendszer- és build mappákat",
   "@search.systemDirExclude.default": {
     "sourceHash": "dcdf28a"
   },

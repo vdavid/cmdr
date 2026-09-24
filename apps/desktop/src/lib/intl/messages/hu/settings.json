@@ -1196,7 +1196,7 @@
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
   },
-  "settings.updates.attachEmailToReports.label": "E-mailem alapból csatolása a jelentésekhez",
+  "settings.updates.attachEmailToReports.label": "Az e-mail-címem alapértelmezett csatolása a jelentésekhez",
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
@@ -1308,11 +1308,11 @@
   "@settings.fileOperations.maxConflictsToShow.description": {
     "sourceHash": "1f6bcb9"
   },
-  "settings.fileOperations.progressUpdateInterval.label": "Folyamatfrissítés gyakorisága",
+  "settings.fileOperations.progressUpdateInterval.label": "Az előrehaladás frissítésének gyakorisága",
   "@settings.fileOperations.progressUpdateInterval.label": {
     "sourceHash": "6bcefed"
   },
-  "settings.fileOperations.progressUpdateInterval.description": "Milyen gyakran frissüljön a folyamat a fájlműveletek során. A kisebb értékek érzékenyebbnek hatnak, de több CPU-t használnak.",
+  "settings.fileOperations.progressUpdateInterval.description": "Milyen gyakran frissüljön az előrehaladás a fájlműveletek során. A kisebb értékek érzékenyebbnek hatnak, de több CPU-t használnak.",
   "@settings.fileOperations.progressUpdateInterval.description": {
     "sourceHash": "84e4876"
   },
@@ -1336,7 +1336,7 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "Amikor egy alkalmazás, például a TextEdit vagy a Preview elment egy fájlt, a macOS az új változatot ideiglenes néven írja ki mellé (a név „.sb-” tagra végződik), majd kicseréli. Kapcsold ki, ha ezeket nem szeretnéd látni a fájllistában.",
+  "settings.advanced.showSafeSaveFiles.description": "Amikor egy alkalmazás, például a Szövegszerkesztő vagy a Megtekintő elment egy fájlt, a macOS az új változatot ideiglenes néven írja ki mellé (a név „.sb-” tagra végződik), majd kicseréli. Kapcsold ki, ha ezeket nem szeretnéd látni a fájllistában.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
@@ -1376,7 +1376,7 @@
   "@settings.selection.recentSelections.maxCount.label": {
     "sourceHash": "e8a5d37"
   },
-  "settings.selection.recentSelections.maxCount.description": "Hány legutóbbi kijelölést tartson meg a Fájlok kijelölése / kijelölés megszüntetése párbeszéd láblécéhez és az előzménybuborékhoz. A régebbi bejegyzések kiesnek, ahogy újak érkeznek. A 0 kikapcsolja az előzményeket (a lábléc és a buborék elrejtődik, és nem rögzül új bejegyzés).",
+  "settings.selection.recentSelections.maxCount.description": "Hány legutóbbi kijelölést tartson meg a Fájlok kijelölése / Fájlok kijelölésének törlése párbeszéd láblécéhez és az előzménybuborékhoz. A régebbi bejegyzések kiesnek, ahogy újak érkeznek. A 0 kikapcsolja az előzményeket (a lábléc és a buborék elrejtődik, és nem rögzül új bejegyzés).",
   "@settings.selection.recentSelections.maxCount.description": {
     "sourceHash": "ae04ef0"
   },
@@ -1388,11 +1388,11 @@
   "@settings.advanced.oldMacosNoticeShown.description": {
     "sourceHash": "8ae26f2"
   },
-  "settings.onboarding.upgradeNudgeShown.label": "Beavatási frissítési ösztönzés megjelent",
+  "settings.onboarding.upgradeNudgeShown.label": "A bevezető frissítési ajánlata megjelent",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
   },
-  "settings.onboarding.upgradeNudgeShown.description": "Belső: követi, hogy az egyszeri „a Beavatás menüpont mostantól létezik” buborék elsült-e már egy meglévő felhasználónál a varázsló átalakítása után. Rejtve a felülettől.",
+  "settings.onboarding.upgradeNudgeShown.description": "Belső: követi, hogy egy meglévő felhasználónál megjelent-e már a varázsló átalakítása utáni egyszeri „a Bevezető… menüpont mostantól létezik” buborék. Rejtve a felülettől.",
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
@@ -1404,7 +1404,7 @@
   "@settings.ai.cloudConsentRevokePending.label": {
     "sourceHash": "16456dc"
   },
-  "settings.onboarding.completed.label": "Bevezetés befejezve",
+  "settings.onboarding.completed.label": "Bevezető befejezve",
   "@settings.onboarding.completed.label": {
     "sourceHash": "4730c4f"
   },
@@ -1979,7 +1979,7 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.notifications": "Letöltési értesítések, a globális gyorsbillentyű, amellyel a legutóbbi letöltéshez ugorhatsz, és figyelmeztetések, ha kevés a lemezterület.",
+  "settings.summary.notifications": "Letöltési értesítések, a globális billentyűparancs, amellyel a legutóbbi letöltéshez ugorhatsz, és figyelmeztetések, ha kevés a lemezterület.",
   "@settings.summary.notifications": {
     "sourceHash": "e681776"
   },
@@ -2160,11 +2160,11 @@
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
-  "settings.ai.tooltipLocal": "Teljesen az eszközödön futtat egy kis nyelvi modellt. Maximális adatvédelem: semmi sem hagyja el a számítógépedet. Offline is működik. Kb. 2 GB lemezterületet és kb. 400 MB memóriát használ (a kontextusmérettől függően változik). Apple Siliciont igényel (M1+).",
+  "settings.ai.tooltipLocal": "Teljesen az eszközödön futtat egy kis nyelvi modellt. Maximális adatvédelem: semmi sem hagyja el a számítógépedet. Offline is működik. Kb. 2 GB lemezterületet és kb. 400 MB memóriát használ (a kontextusmérettől függően változik). Apple silicon chippel szerelt Mac kell hozzá (M1+).",
   "@settings.ai.tooltipLocal": {
     "sourceHash": "bf83043"
   },
-  "settings.ai.tooltipLocalDisabled": "A helyi AI Apple Siliciont igényel (M1 vagy újabb). Használd helyette a Felhő-AI-t.",
+  "settings.ai.tooltipLocalDisabled": "A helyi AI-hoz Apple silicon chippel szerelt Mac kell (M1 vagy újabb). Használd helyette a Felhő-AI-t.",
   "@settings.ai.tooltipLocalDisabled": {
     "sourceHash": "147cb2e"
   },

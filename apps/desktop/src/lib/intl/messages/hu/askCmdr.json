@@ -176,19 +176,19 @@
   "@askCmdr.tool.nothingToSuggest.done": {
     "sourceHash": "2287381"
   },
-  "askCmdr.tool.memoryWrite.doing": "Feljegyzés mentése rólad",
+  "askCmdr.tool.memoryWrite.doing": "Jegyzet mentése rólad",
   "@askCmdr.tool.memoryWrite.doing": {
     "sourceHash": "9c2a59e"
   },
-  "askCmdr.tool.memoryWrite.done": "Feljegyzést mentett rólad",
+  "askCmdr.tool.memoryWrite.done": "Jegyzet mentve rólad",
   "@askCmdr.tool.memoryWrite.done": {
     "sourceHash": "cb3d875"
   },
-  "askCmdr.tool.memoryEdit.doing": "Saját feljegyzések frissítése",
+  "askCmdr.tool.memoryEdit.doing": "Saját jegyzetek frissítése",
   "@askCmdr.tool.memoryEdit.doing": {
     "sourceHash": "9cfe004"
   },
-  "askCmdr.tool.memoryEdit.done": "Frissítette a saját feljegyzéseit",
+  "askCmdr.tool.memoryEdit.done": "Saját jegyzetek frissítve",
   "@askCmdr.tool.memoryEdit.done": {
     "sourceHash": "5fdfbdc"
   },
@@ -733,7 +733,7 @@
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} kész, {skippedText} kihagyva, {failedText} sikertelen",
+  "askCmdr.decision.result": "{doneText} kész, {skippedText} kihagyva, {failedText} nem sikerült",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },

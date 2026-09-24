@@ -1,12 +1,73 @@
 # Hungarian (hu) translation style guide
 
 Working notes for translating Cmdr into Hungarian. Read `../README.md` for how this fits the translation process, and
-the app-wide `docs/style-guide.md` for the English voice these notes carry into Hungarian.
+the app-wide `docs/style-guide.md` for the English voice these notes carry into Hungarian. Term rulings live in
+`terms.json` (keyed by the shared `../concepts.json` plus `concepts-proposed.json`), their rationale in `decisions.md`,
+and open questions in `review-queue.md`.
 
 macOS DOES ship a Hungarian UI localization (Finder, AppKit, System Settings), so it's the highest-authority source
 here, exactly as on other languages. Microsoft Windows Hungarian plus the Microsoft Hungarian style guide are Tier 2,
-and the GNOME Nautilus and Xfce Thunar file-manager catalogs are Tier 3 (cross-language parity). Glossary entries below
-cite which sources back each choice.
+and the GNOME Nautilus and Xfce Thunar file-manager catalogs are Tier 3 (cross-language parity), with Total Commander
+and Double Commander as the two-pane family.
+
+## Digest
+
+The must-know rules; the rest of this file elaborates them.
+
+- **Address**: informal `te` (tegezés) in every sentence that speaks to the user (`Megpróbálod újra?`, `Próbáld újra.`);
+  never önözés, even where Apple's sentence önöz. Labels don't address anyone.
+- **Register by UI slot**:
+    - buttons, menu items, window titles, Settings labels, commands, aria labels: nominal (`Másolás`, `Lap bezárása`,
+      `Rejtett fájlok megjelenítése`, `X megjelenítése` for Show X, `X keresése…` for a search placeholder);
+    - a dialog title that asks: a `te` question with definite conjugation (`Törlöd az AI-modellt?`,
+      `Elküldöd a jelentést?`);
+    - a status cell: one word or a `-va/-ve` participle (`Fut`, `Várakozik`, `Kész`, `Szüneteltetve`, `Kijelentkezve`);
+      running prose says `folyamatban van`;
+    - a to-do checklist row is a `te` imperative (`Csillagozd meg a repót a GitHubon`), since one row must be a
+      sentence.
+    - command descriptions: 3rd-person present (`Megnyitja…`) or a nominal phrase, per family.
+- **Voice**: friendly, concise, calm. Never a bare `hiba` or `sikertelen` label: "Couldn't X" → `Nem sikerült X-ni`,
+  "Cmdr couldn't X" → `A Cmdr nem tudta X-ni`, "Something went wrong" → `Valami nem sikerült`. The prose word for a
+  problem is `probléma`, never `gond`. No apology in a notice that reports a deliberate choice.
+- **Localize what Apple localizes**: `Gyorsnézet` (Quick Look), `Infó megjelenítése` (Get Info), `Zárolt` (Locked,
+  quoted in prose), `Kulcskarika-elérés` (the app) / `kulcskarika` (the store), `Rendszerbeállítások`,
+  `Rendszerintegritás-védelem`, `Lemezkezelő` / `Elsősegély`, `Tevékenységfigyelő`, `Karaktermegtekintő`,
+  `Szövegszerkesztő` (TextEdit), `Megtekintő` (Preview), `Alkalmazások` (never `Programok`),
+  `Teljes hozzáférés a lemezhez`. Kept English: Finder, Dock, Spotlight, Mission Control, Terminal (the app), Apple
+  silicon, Safari. The LABEL is Apple's, the SENTENCE is ours.
+- **Brand suffixes**: `Cmdr` takes front-vowel suffixes with no hyphen (`Cmdrt`, `Cmdrben`, `Cmdrnek`, `Cmdrrel`,
+  `Cmdrből`), article `a Cmdr`; so do `Dock` / `Finder` (`a Dockban`, `a Finderben`) and `Mac` (`Macen`, `Macet`).
+  Acronyms and silent-final names take a hyphen (`AI-t`, `NAS-t`, `adb-t`, `Homebrew-ban`, `USB-kábel`). A name whose
+  last letter doesn't spell a Hungarian sound gets a base word instead (`az Android platform tools csomag`,
+  `az AlternativeTo oldalán`, `az Escape billentyűvel`).
+- **Placeholders never take a suffix or a guessed article.** Dodges, in order of preference: a colon slot
+  (`itt: {path}`, `ide: {destination}`, `Letöltve: {fileName}`); a postposition (`{duration} óta`, `{name} szerint`,
+  `{secondsText} másodperc múlva`); a base noun that carries the suffix (`a(z) {volumeName} meghajtón`,
+  `a(z) „{name}” szervert`, `{host} kulcsát`); the possessor slot (`{name} szerkesztése`, `{name} fotói`). An article in
+  front of a name is `A(z) „{name}”` (quotes only around a name the user typed or owns; a brand or app name is bare
+  `a(z) {app}`). A value with one possible first sound gets the real article (`az **{name}**` for iCloud Drive). In
+  front of a number prefer `Az összes X ({N})` over `Mind a(z) N X`. A duration before `ideig` takes `-nyi`.
+- **Plurals**: CLDR `one` / `other`. The noun after a numeral stays SINGULAR in both branches (`3 fájl`, never
+  `3 fájlok`), and a numeral subject takes a singular verb; a later clause may go plural.
+- **Punctuation**: sentence case; quotes `„…”`; the single character `…` everywhere; `%` tight against the number
+  (`42%`); en dash for ranges. Settings paths keep English's separator (`>` or `›`) and follow `itt:`. RAW families
+  (`menu.*`, `errors.*`) use single apostrophes, ICU families double them.
+- **Numbers**: multipliers spelled out (`négyszer lassabb`, never `4x`); numbers, sizes, and dates come from the
+  formatter; `{duration}` is never localized, so it only stands before a postposition.
+- **Top traps** (details in `terms.json`):
+    - cancel: `Mégsem` (dialog button) vs `Megszakítás` (a running operation) vs `Leállítás` (a service or search).
+    - operation → `művelet`; the queue → `Műveleti sor` (never `Műveletsor`); the log → `Műveletnapló`; transfer →
+      `átvitel` only for a copy or move in flight.
+    - dismiss → `Elvetés` (never `Bezárás`, that's Close); undo → `Visszavonás`; put back → `visszahelyezés` for trashed
+      items, `visszaállítás` for an old name; rollback → `visszagörgetés`.
+    - pane → `panel`; tab → `lap` (a PDF page is `oldal`); drive → `meghajtó`; volume → `kötet`; device → `eszköz`,
+      phone → `telefon`; item → `elem`; server → `szerver` (never `kiszolgáló`); host → `gép` / `gazdagép`.
+    - deselect → `kijelölés törlése` (never `megszüntetése`); read-only → `csak olvasható` (never `írásvédett`); scan →
+      `átvizsgálás`, a live folder walk → `átnézés`, the Search feature → `keresés`.
+    - connect: the pane line `Kapcsolódás ide: {name}…`, Connected `Kapcsolódva`, the Connect button `Csatlakozás`,
+      reconnect `újracsatlakozás`, disconnect `leválasztás`, the connection dropping on its own `megszakad a kapcsolat`.
+    - Retrying → `Újrapróbálás`, Try again → `Próbáld újra`; `Example:` → `Példa:`, never `Például:`.
+    - excluded → `kizárva`, skipped → `kihagyva`; busy menu items → base label + ` (foglalt)`.
 
 ## Voice and tone
 
@@ -27,153 +88,24 @@ deliberately picks the warmer consumer-brand register. Formality decision record
   under a `te` register since a label isn't direct address.
 - **Conversational copy and questions: `te` (tegezés).** Where English addresses the user directly, use the informal
   second person. A friendly question is "Megpróbálod újra?", not the önözés "Megpróbálja újra?".
-- **Cancel is "Mégsem"** (the macOS Finder button label), not "Mégse" or "Visszavonás" (that's undo). See the glossary
-  note: this is a real macOS-vs-Windows split and macOS wins here.
+- **Cancel is "Mégsem"** (the macOS Finder button label), not "Mégse" or "Visszavonás" (that's undo). This is a real
+  macOS-vs-Windows split and macOS wins here: `decisions.md` § A macOS-vs-Windows hasadások.
 
-## Terminology and glossary
+## Terminology
 
-Format: each line is `English: chosen · sources · confidence`. Confidence is `confirmed` (a human signed off), `high`
-(authoritative sources agree), or `tentative` (sources conflict or none had it). Sources: mac = macOS Finder/AppKit, ms
-= Microsoft terminology/style guide, gn = GNOME Nautilus, xf = Xfce Thunar. Contested terms get a short block.
-
-- pane: `panel` · Double Commander hu ("Bal panel", "Jobb panel"), Total Commander hu ("a célpanelben") · high. The two
-  file lists. There is no Tier-1 source (macOS Finder is single-pane), but the orthodox two-pane pair is Cmdr's own UI
-  family and both members agree, which settles it; Microsoft's literal "ablaktábla" is the Windows term and stays out.
-- tab: `lap` · mac ("Új lap"), ms ("lap") · high. "fül" is the colloquial alternative; "lap" is the macOS/MS standard.
-- volume: `kötet` · mac ("Kötet"), ms · high.
-- drive: `meghajtó` · mac, ms · high.
-- folder: `mappa` · mac, ms, gn, xf · high.
-- directory: `könyvtár` · mac (Localizable: "…könyvtárban"), ms · high. Technical sense only; prefer `mappa` in UI copy.
-- file: `fájl` · mac, ms, gn, xf · high. Stays singular after a numeral ("3 fájl"). See Plurals.
-- listing: `fájllista` · no direct source · tentative. The file list in a pane; descriptive compound, reads naturally.
-- transfer: `átvitel` · mac, ms · high.
-- delete (permanent): `törlés` · mac, ms, gn, xf · high.
-- move: `áthelyezés` · mac, ms · high.
-- copy: `másolás` · mac ("Másolás"), ms, gn, xf · high.
-- rename: `átnevezés` · mac ("Átnevezés"), ms · high.
-- viewer (the file viewer): `megjelenítő` · no exact Tier-1 match · tentative. macOS uses `Előnézet`/`Gyorsnézet` for
-  preview, but those name Quick Look (a brand, kept verbatim). For Cmdr's own viewer, `megjelenítő` reads naturally.
-- eject: `kiadás` · mac ("Kiadás", "Egy kiadása", "Összes kiadása") · high. "Lemez kiadása".
-- disconnect (network): `leválasztás` · mac ("Leválaszt", "Kapcsolat bontása"), xf ("Failed to unmount" = "leválasztása
-  sikertelen") · high.
-- share (an SMB share): `megosztás` · mac, ms, gn · high.
-- servers (the hub row and its shortcut section): `Szerverek` · mac (AppKit `Menus.loctable`, `Sharing.framework`, and
-  the macOS `Servers` folder name in `SystemFolderLocalizations`) · high. ❗ The GROUP it sits in stays `Hálózat`
-  (`fileExplorer.navigation.groupNetwork`); don't collapse the two back together.
-- volume switcher / volume chooser (one UI, two English names): `kötetválasztó` · the catalog's shipped visible form
-  (`Kötetválasztó bezárása`, `kötetválasztóban`) · high. Don't spread `commands.favoritesAdd.description`'s bare
-  `váltó`.
-- network share: `hálózati megosztás` · ms ("network share" = "hálózati megosztás", HUN) · high.
-- removable (of a drive): `cserélhető` · mac ("Cserélhető kötet", "Cserélhető"), ms ("removable drive" = "cserélhető
-  meghajtó") · high.
-- device (a phone, tablet, or camera on a cable): `eszköz` · mac ("mert az eszköz eltűnt"), Double Commander ("külső
-  eszközök (például okostelefonok)") · high.
-- in use (something still holds the volume): `használatban van` · mac ("A kötet nem adható ki, mert jelenleg
-  használatban van.") · high.
-- Get Info (the Finder info window/command): `Infó megjelenítése` · mac (Finder `Localizable`, `MenuBar` `300801.title`)
-  · high. Apple localizes it, so it is NOT a kept-English brand.
-- Locked (the checkbox in that window): `Zárolt` · mac (Finder `InfoWindowGeneralView` `1073.title`) · high. Quote it in
-  running text (`„Zárolt”`), as Apple does.
-- search: `keresés` · mac ("Keresés"), ms, gn, xf · high.
-- sort: `rendezés` · mac ("Rendezés módja"), ms · high.
-- settings: `beállítások` · mac ("Beállítások"), ms · high.
-- download: `letöltés` · mac, ms · high.
-- index / indexing: `index` / `indexelés` · ms ("index") · high.
-- overwrite: `felülírás` · mac ("Felülír"), ms, xf ("Felülírja?") · high.
-- undo: `visszavonás` · mac (Finder `ME13` „Visszavonás”), a katalógus `askCmdr.renameUndo.undo` · high.
-- put back (elem visszatétele a Kukából): `visszahelyezés` · mac (Finder `PE130` „…visszahelyezése nem sikerült”) ·
-  high. A Finder menüparancsa `Visszatevés`, a mondatbeli alak `visszahelyezés`; mi az utóbbit használjuk, mert a
-  szövegeink mondatok. NEM `visszaállítás` (az a régi NÉV visszaadása, `askCmdr.renameUndo.*`).
-- go to trash: `Ugrás a Kukába` · mac (Finder `TL_HELP_TCAN` „Go to the Trash” = „Ugrás a Kukába”) · high.
-- debugging: `hibakeresés` · mac (Wireless Diagnostics `WDNotConnected` „további hibakeresési információk”,
-  `Security.framework/authorization.prompts` „a hibakeresés folytatásához”, `Feedback.framework` „Hibakeresési panel”,
-  „hibakeresési eszközök”), Android hu (`SettingsLib` `enable_adb_wireless` „Vezeték nélküli hibakeresés”) · high. NEM
-  `hibajavítás` (az Apple gépiesebb sorai használják csak) és nem `hibaelhárítás` (az a troubleshooting).
-- USB debugging (az Android fejlesztői beállítása): `USB-hibakeresés` · Android hu (`SettingsLib` `enable_adb` „USB
-  hibakeresés”, `clear_adb_keys` „USB-s hibakeresésre vonatkozó engedélyek”) · high. A SZÓ az Androidé (a felhasználó a
-  telefonján ezt látja), a KÖTŐJEL a miénk: az AkH szerint a betűszós összetétel kötőjeles, és a katalógus minden USB-s
-  összetétele az (`USB-kábel`, `USB-eszköz`, `USB-hozzáférés`, `USB-fájlátviteli mód`). Az AOSP kötőjel nélkül írja
-  („USB hibakeresés”), ezt tudatosan nem másoljuk.
-- platform tools (az Android SDK Platform Tools csomag): angolul marad, magyar alaptaggal:
-  `az Android platform tools csomag` · nincs magyar forrás (az Android Studio nem jelenik meg magyarul) · high. Az
-  alaptag (`csomag`) azért kell, mert a `tools` végi `s` nem a kiejtett hangot jelöli, tehát a rag kötőjeles és csúnya
-  lenne (`platform tools-t`); alaptaggal a név ragozatlan marad. ❌ NEM `platformeszközök`: az `eszköz` a katalógusban a
-  `device` szava.
-- Android tooling (a gépre telepített Android-parancssori csomagok): `Android-fejlesztőeszköz` · katalógusbelső döntés ·
-  high. A puszta `Android-eszköz` tilos, mert az `Android device`-t jelentene; a `fejlesztő` előtag oldja fel.
-- AI provider: `AI-szolgáltató` · ms (`provider` → `szolgáltató`, HUN), katalógus · high. A betűszós összetétel
-  kötőjeles, ahogy az `USB-` családé.
-- the AI (puszta főnévként, ahol az angol „the AI”-t mond a termék neve helyett): `az AI` · katalógus (`AI-szolgáltató`,
-  `AI-funkció`, `az AI résznél`) · high. A névelő `az`, mert a betűszó kiejtése magánhangzóval kezdődik.
-- AI features: `AI-funkciók` · katalógus (`settings.askCmdr.interactiveModel.description`) · high.
-- model (egy LLM): `modell` · ms (`model`, gépi tanulási jelentés is), katalógus · high.
-- endpoint (egy API URL-je): `végpont` · ms (HUN; a „logical representation of a location, typically expressed in URL
-  form” jelentésre) · high.
-- placeholder (sablonhely egy címben vagy formátumsztringben): `helyőrző` · ms (HUN, két jelentésre is), katalógus
-  (`settings.appearance.formatPlaceholdersTitle`) · high.
-- deployment (az Azure OpenAI névvel ellátott modellpéldánya): `üzembe helyezés` · ms (`deploy` → `üzembe helyez` a
-  „roll out a software package as a cloud service” és az Azure App Service jelentésre; `deployment slot` →
-  `üzembe helyezési pont`) · high. ❌ NEM `telepítés` (az az `install`), és nem `központi telepítés` (az a
-  szervezetszintű kiosztás). Az Azure a Microsoft saját terméke, tehát itt a Microsoft az elsődleges forrás, nem a
-  macOS.
-- terminal (a parancssori alkalmazás): `Terminál`, nagy kezdőbetűvel · kde-dolphin hu („Terminál megnyitása”), xfce hu,
-  Total Commander hu („&Végrehajtás terminálban”), katalógus (`errors.listing.notPermitted.suggestion`: „A Terminálban
-  add ki az `ls -la` parancsot”) · high.
-- local server (egy gépen futó LLM-kiszolgáló): `helyi szerver` · a fenti `server → szerver` döntés (macOS Tier 1) ·
-  high. ❌ NEM `helyi kiszolgáló`: az a Microsoft-alak, és a katalógus máshol mindenütt `szerver`.
-- model library (az Ollama modellgyűjteménye): `modellkönyvtár` · nincs forrás · tentative. Lásd lent, miért nem puszta
-  `könyvtár`.
-
-Contested or split, with the per-source evidence:
-
-### trash → `Kuka`
-
-- mac: `Kuka` (30 occurrences), zero `Lomtár`.
-- ms: gives both `kuka` and `lomtár`, but reserves `Lomtár` specifically for the Windows "Recycle Bin" product name.
-- gn: `Kuka` ("Kukába dobva", "\_Kuka ürítése").
-- xf: `Kuka` ("Áthelyezés a K_ukába", "Az összes fájl és mappa törlése a Kukából").
-- Chosen: `Kuka` · sources mac, gn, xf (ms agrees as common noun) · high. This corrects the earlier "confirm Kuka vs
-  Lomtár" open item: `Kuka` is what every Hungarian platform calls it; `Lomtár` is a Windows-product-name artifact.
-
-### move to trash → `Áthelyezés a Kukába`
-
-- mac: both `Áthelyezés a Kukába` and `Kukába helyezés`.
-- xf: `Áthelyezés a Kukába`.
-- Chosen: `Áthelyezés a Kukába` (nominal label style) · sources mac, xf · high.
-
-### server → `szerver`
-
-- mac: `szerver` (38 occurrences, e.g. "Kapcsolódás szerverre…"), with capitalized `Szerver` a few times.
-- ms: `kiszolgáló` (terminology, HUN).
-- gn/xf: a file manager rarely surfaces the term; `kiszolgáló` where present.
-- Chosen: `szerver` · source mac (Tier 1) · high. A real macOS-vs-Windows split: Microsoft prefers `kiszolgáló`, but
-  Cmdr is a macOS app and Finder users see `szerver`. This resolves the earlier open item in favor of `szerver`.
-
-### bookmark → `könyvjelző`
-
-- mac: `Kedvenc` (26x) names the Favorites sidebar; literal `könyvjelző` appears 3x.
-- ms: `kedvenc`.
-- gn: `könyvjelző` ("Hozzáadás a könyvjelzőkhöz", "Eltávolítás a könyvjelzőkből").
-- Chosen: `könyvjelző` · source gn, plus mac's literal usage · tentative. macOS/MS `Kedvenc` names a Favorites _sidebar
-  concept_, not an explicit bookmark action; for Cmdr's named bookmark feature the file-manager-native `könyvjelző`
-  (GNOME) is clearer. Stays tentative — a macOS(`kedvenc`)-vs-GNOME(`könyvjelző`) split the next pass settles from the
-  file-manager sources, not a call to park for David (see Open terms below).
-
-### cancel → `Mégsem`
-
-- mac: `Mégsem` (52 occurrences, the actual button label), zero `Mégse`.
-- ms: `Mégse` (terminology and style-guide examples).
-- gn/xf: `Mégse` ("\_Mégse", "Mé_gse").
-- Chosen: `Mégsem` · source mac (Tier 1) · high. A genuine macOS-vs-Windows/Linux split. The earlier draft asserted
-  `Mégse` and explicitly rejected `Mégsem`; macOS Finder, the highest authority and what the user sees, uses `Mégsem`,
-  so Cmdr follows macOS. Never "Visszavonás" (undo).
-
-Add lines as terms come up, keeping the `chosen · sources · confidence` format.
+Every term ruling lives in `terms.json`, keyed by the concept IDs in `../concepts.json` and `concepts-proposed.json`:
+`chosen`, accepted forms, usage notes, forms to avoid with the reason, a confidence (`confirmed` / `high` /
+`tentative`), and sources. Tier order is macOS (Tier 1) → Microsoft (Tier 2) → the file-manager catalogs (Tier 3); a
+vendor's own Hungarian UI (Apple, Android) beats a `@key` description. Where macOS and Microsoft split (Kuka vs Lomtár,
+szerver vs kiszolgáló, Mégsem vs Mégse), macOS wins: `decisions.md` § A macOS-vs-Windows hasadások. Rationale worth more
+than a line sits in `decisions.md` under a heading that cites its keys, and the term's `decision` field names that
+heading. Never guess a term: mine the reference pile first (`../reference-pile/how-to-mine.md`).
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`).
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Safari, plus the `{system_settings}`-style tokens.
+Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). Apple feature names
+Apple localizes are NOT on that list and get translated: Quick Look is `Gyorsnézet` (`terms.json` `quick-look`).
 
 ## Plurals
 
@@ -195,7 +127,7 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 
 - **A natív menük a Finder szóhasználatát követik, nem a katalógusét.** Ahol a macOS-nak van megfelelője, az nyer
   (`Nézet`, `Saját`, `Kijelölés törlése`, `Méretezés`), mert a felhasználó a Cmdr menüsorát közvetlenül a Finderé
-  mellett látja. Bizonyítékok és kivételek: `glossary.md` § Natív menük.
+  mellett látja. Bizonyítékok és kivételek: `decisions.md` § Natív menük.
 - **Agglutination + vowel harmony makes suffixed placeholders dangerous.** Hungarian attaches case suffixes that must
   harmonize with the word's vowels (`-ban`/`-ben`, `-ról`/`-ről`, `-hoz`/`-hez`/`-höz`) and sometimes double a final
   consonant. A `{path}` or `{name}` whose value is unknown can't take a correct suffix ("{path}-ban" may be wrong).
@@ -206,24 +138,24 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   genuinely has to precede a name placeholder, write `A(z) „{name}”`** — the `a(z)` house form plus `„…”` quotes, both
   macOS Tier 1 (`A(z) „^0” elemet…`) and the catalog's majority. ❌ Never a bare `A {name}`: it renders "A alma.txt" on
   every vowel-initial name. Nothing is needed after a colon or in a possessive (`Letöltve: {fileName}`). Evidence and
-  the families that were corrected to it: `glossary.md` § A megszakított visszagörgetés eredményértesítése.
-  - **Quotes only around a NAME the user typed or owns.** A brand or provider placeholder takes bare `a(z) {name}`
-    (`a(z) **{name}** kezeli`): the bold or the sentence already delimits it, and `„Dropbox”` reads as scare quotes.
-  - **A placeholder with ONE possible value gets the real article, never the hedge.** `errors.provider.iCloud.*`'s
-    `{name}` is always `iCloud Drive`, so it's `az **{name}**`. The `a(z)` form answers an UNKNOWN first sound; where
-    nothing is unknown it's just noise.
-  - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
-    carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on leaves
-    a half-corrected family, which is worse than either end state.
-  - **In front of a NUMBER the article varies too, so ❌ never a bare `a {countText}`.** It follows the numeral's
-    pronunciation: `a három`, `a négy`, but `az öt`, `a száz` but `az ezer`. In running prose the hedge is the answer
-    and two shipped keys use it (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`); don't sweep
-    those.
-  - **For the phrase "all N X" specifically, prefer `Az összes X ({N})` over `Mind a(z) N X`.** macOS Hungarian words it
-    that way (`Az összes lemez (^0) kiadásához…`), and it's strictly better: the article now agrees with `összes`, a
-    word we choose, so nothing hinges on the runtime value at all. Worth the swap wherever the count can move to a
-    parenthetical or behind a colon, and near-mandatory in a short button, where the hedge is most visible. Worked case:
-    `glossary.md` § `askCmdr.renameUndo.undoJob`.
+  the families that were corrected to it: `decisions.md` § A megszakított visszagörgetés eredményértesítése.
+    - **Quotes only around a NAME the user typed or owns.** A brand or provider placeholder takes bare `a(z) {name}`
+      (`a(z) **{name}** kezeli`): the bold or the sentence already delimits it, and `„Dropbox”` reads as scare quotes.
+    - **A placeholder with ONE possible value gets the real article, never the hedge.** `errors.provider.iCloud.*`'s
+      `{name}` is always `iCloud Drive`, so it's `az **{name}**`. The `a(z)` form answers an UNKNOWN first sound; where
+      nothing is unknown it's just noise.
+    - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
+      carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on
+      leaves a half-corrected family, which is worse than either end state.
+    - **In front of a NUMBER the article varies too, so ❌ never a bare `a {countText}`.** It follows the numeral's
+      pronunciation: `a három`, `a négy`, but `az öt`, `a száz` but `az ezer`. In running prose the hedge is the answer
+      and two shipped keys use it (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`); don't
+      sweep those.
+    - **For the phrase "all N X" specifically, prefer `Az összes X ({N})` over `Mind a(z) N X`.** macOS Hungarian words
+      it that way (`Az összes lemez (^0) kiadásához…`), and it's strictly better: the article now agrees with `összes`,
+      a word we choose, so nothing hinges on the runtime value at all. Worth the swap wherever the count can move to a
+      parenthetical or behind a colon, and near-mandatory in a short button, where the hedge is most visible. Worked
+      case: `decisions.md` § A megszakított visszagörgetés eredményértesítése.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
 - **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`, `Cmdrtől`, `Cmdrre`.** `Cmdr` is
@@ -235,15 +167,15 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   `Ask Cmdrt`.
 - **A foreign name whose final letter doesn't spell a Hungarian sound gets a BASE WORD, not a suffix.** `AlternativeTo`
   is `az AlternativeTo oldalán`, because the English `o` is neither a hyphen case (`AlternativeTo-n`) nor a lengthening
-  case (`AlternativeTón`) you could defend. Same move as `az Android platform tools csomag` above: the base word leaves
-  the name uninflected and the sentence stays short.
+  case (`AlternativeTón`) you could defend. Same move as `az Android platform tools csomag` (`terms.json`
+  `android-platform-tools`): the base word leaves the name uninflected and the sentence stays short.
 - **The nominal-label rule stops at a checklist of things to DO.** `onboarding.stepBeta.checklist.*` rows are link texts
   in a to-do list, and one of them (`…checklist.email`) has to be a sentence wrapped around an inline input, so the
   whole row set is informal imperative (`Csillagozd meg a repót a GitHubon`), not nominal. A mixed form is visible
   inside one list; a difference between two lists never is.
 - **Neither GitHub nor AlternativeTo ships a Hungarian UI**, so "use the site's own verb" has no Tier-1 answer for
   `star` or `like` — a Hungarian user sees the English buttons. Microsoft terminology decides both (`csillagoz`,
-  `kedvel`); evidence in `glossary.md` § A bevezető átírt lépései.
+  `kedvel`); evidence in `decisions.md` § A bevezető átírt lépései.
 - **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too (e.g.
   „^0”). Avoid English `"…"`.
 - **`{duration}` is NOT locale-formatted**, unlike numbers, sizes, and dates: `formatDuration()` in
@@ -264,35 +196,35 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   containment here is always case-insensitive.
 - **Length** runs near English; still overflow-check against the pseudolocale (`en-XA`).
 - **A magyarázó prózában a nem végzetes probléma szava `probléma`**, nem `hiba` (a hiba-regisztert a hang kerüli) és nem
-  `gond` (arra a `hu` pile nulla találatot ad). Forrás és teljes érvelés: `glossary.md` § Ha a Cmdr nem állt le.
+  `gond` (arra a `hu` pile nulla találatot ad). Forrás és teljes érvelés: `decisions.md` § Ha a Cmdr nem állt le.
 - **A macOS panelneveit magyarul írjuk, mert az Apple is lefordítja őket.** `Get Info` → `Infó megjelenítése`, `Locked`
   → `Zárolt`, `Sharing & Permissions` → `Megosztás és jogok`. Egyik sincs a `BRAND_WORDS` listán, tehát az
-  1. terminológiai alapelv (fordítsd, amit az Apple fordít) érvényes rájuk. A CÍMKÉK az Apple-éi, a MONDAT a miénk:
-     tegezünk és köznyelvi maradunk (`vedd ki a „Zárolt” pipát`), nem másoljuk az Apple önöző hivatalnyelvét
-     (`szüntesse meg a … kijelöltségét`). Bizonyítékok: `glossary.md` § A macOS-panelnevek magyarul.
+    1. terminológiai alapelv (fordítsd, amit az Apple fordít) érvényes rájuk. A CÍMKÉK az Apple-éi, a MONDAT a miénk:
+       tegezünk és köznyelvi maradunk (`vedd ki a „Zárolt” pipát`), nem másoljuk az Apple önöző hivatalnyelvét
+       (`szüntesse meg a … kijelöltségét`). Bizonyítékok: `decisions.md` § A macOS-panelnevek magyarul.
 - **Ugyanaz az angol mondat KÉT különböző magyar alakot kaphat, ha a burkoló szöveg eltér.** A `errors.eject.unexpected`
   és a `errors.mutation.unexpected` angolul betű szerint azonos, magyarul mégsem az: az előbbi a
   `Nem sikerült kiadni: …` burkoló után áll, ahol a settled `Valami nem sikerült` közvetlen szóismétlés lenne. Ilyenkor
-  a settled alak marad az alapeset, az eltérést pedig a `glossary.md`-ben indokoljuk, forrással.
+  a settled alak marad az alapeset, az eltérést pedig a `decisions.md`-ben indokoljuk, forrással.
 - **Ha két angol szöveg csak IGEIDŐBEN tér el, a magyar se hozzon be új szerkezetet.** A
   `errorReporter.dialog.detailsToggle` (`Mi kerül elküldésre`) és a testvére, a `errorReporter.amend.detailsToggle`
   (`Mi került elküldésre`) egymás mellett él ugyanabban a funkcióban; a `kerül + -ásra/-ésre` szerkezet megtartása
   varratmentessé teszi a párt, még ha önmagában szebb lenne is egy `-va/-ve` vagy cselekvő alak. Bizonyíték és a többi
-  amend-döntés: `glossary.md` § A már elküldött jelentés kiegészítése.
+  amend-döntés: `decisions.md` § A már elküldött jelentés kiegészítése.
 - **Menübe irányításkor a `-ból/-ből` alak a természetes**: `küldj új jelentést a Súgó menüből`. A macOS ugyanezt önöző
   felszólításként írja (`válassza az Apple menü > Rendszerbeállítások elemet`), a menü NEVE onnan jön, a MONDAT a miénk,
   tehát tegező marad.
 - **Ha két funkció ANGOLJA betű szerint azonos, a magyarnak is egynek kell lennie** (`desktop-i18n-term-consistency`),
   és ilyenkor a szállított alak nyer, még ha egy újabb kulcscsalád szebb keretet találna is. Ha a kényszerített alak
   csak a család EGY sorát érintené, az egész családot igazítsd hozzá: az olvasó egy felsorolásban látja őket egyszerre,
-  a két funkció eltérését viszont soha. Eset és érvelés: `glossary.md` § A megszakított visszagörgetés
+  a két funkció eltérését viszont soha. Eset és érvelés: `decisions.md` § A megszakított visszagörgetés
   eredményértesítése.
 - **Egy PDF oldala `oldal`, soha nem `lap`**: a `lap` a `tab` foglalt szava. Összetételben kötőjellel: `PDF-oldalak`.
-  Fotó esetén a hely `hol készült` / `készítési helye`, a gép adatai `kameraadatok`. Forrás: `glossary.md` § Belenézés a
-  fájlokba.
+  Fotó esetén a hely `hol készült` / `készítési helye`, a gép adatai `kameraadatok`. Forrás: `decisions.md` § Belenézés
+  a fájlokba.
 - **Az `askCmdr.tool.*` címkepár akkor is a családi mintát követi, ha a próza más igét használ**: a hozzájárulási szöveg
   `belenéz`-e az eszközsoron `Fájlok átnézése` / `Fájlok átnézve` lesz, mert a `belenéz`-nek nincs állapotot mondó
-  `-va/-ve` alakja. Indoklás: `glossary.md` § Belenézés a fájlokba.
+  `-va/-ve` alakja. Indoklás: `decisions.md` § Belenézés a fájlokba.
 - **A `Mac` helyhatározós (superessivusi) alakja a katalógusban `Macen`, kötőjel nélkül** (`settings.mediaIndex.*` három
   helyen), a birtokos alak viszont `Mac-eden` (`settings.updates.emailPrivacyNote`). Új szövegben a többségi `Macen`
   alakot használd; a kettősség ismert, de egy fordítási menet ne söpörje át a többi kulcsot.
@@ -303,18 +235,18 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   csak a záró ` (foglalt)` kerül a végére (`menu.volume.ejectBusy`, `menu.volume.disconnectBusy`,
   `menu.volume.forgetServerBusy`, `menu.volume.forgetSavedPasswordBusy`). A `(foglalt)` névszói állapotjelző, ezért
   bármelyik címke után áll, akár ige, akár főnévi szerkezet az alap. Egyetlen jelölő van; új „busy” kulcs ne találjon ki
-  másikat. Forrás: `glossary.md` § busy.
+  másikat. Forrás: `decisions.md` § busy.
 - **Az oszlopcímeknél a betű szerinti Apple-találat veri a katalógus családi mintáját.** A `Last used` azért
   `Utolsó használat` (macOS `Security.prefPane`, ugyanez a szerep: táblázat-oszlopcím) és nem `Utoljára használva`,
   pedig a fájllista dátumoszlopai `-va/-ve` alakúak (`Módosítva`, `Létrehozva`): azoknál nincs Tier-1 forrás a konkrét
-  szóra, itt van. Bizonyíték: `glossary.md` § A szerverközpont táblázata.
+  szóra, itt van. Bizonyíték: `decisions.md` § A szerverközpont táblázata.
 - **A `Mac` tárgyesete `Macet`, kötőjel nélkül** (macOS-attesztált, 161 találat), a `Macen` alakkal egy tőről.
 - **A `reconnect` töve a katalógusé (`újracsatlakoz-`), a panelcím KERETE viszont a családé (`ide: {name}…`).** A
   `servers.paneState.reconnecting` ezért `Újracsatlakozás ide: {name}…`: a tő a szállított
   `errors.listing.deviceReconnecting.title` (`Újracsatlakozás az eszközhöz`) és a vele egy nézetben látszó két
   testvérkulcs alakja, a keret a `servers.paneState.connecting` (`Kapcsolódás ide: {name}…`) idiómája. A macOS a másik
   tőre is ad Tier-1 találatot (`Újrakapcsolódás…`), de a szállított alak nyer, és egy nézeten belüli tőváltás rosszabb,
-  mint két nézet közötti. Bizonyítékok: `glossary.md` § Az automatikus újracsatlakozás.
+  mint két nézet közötti. Bizonyítékok: `decisions.md` § Az automatikus újracsatlakozás.
 - **Az `Ask Cmdr` MÁRKANÉV csak a csevegőpanelt nevezi meg, a próza `a Cmdr`-ről vagy `az AI`-ról beszél.** Az angol
   ugyanezt a vonalat húzza: `Ask Cmdr` maradt a panel címében, a Nézet menüben, a parancspalettán, a beállítási
   szakaszban és a be-/kikapcsolóban, mindenhol máshol `Cmdr` vagy `the AI` áll. A magyarban ez azt jelenti, hogy egy
@@ -339,13 +271,13 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **A `Dock` és a `Finder` angolul marad, és a ragjuk kötőjel nélkül tapad**: `a Dockban`, `a Dockodban`, `a Dockomba`,
   `a Finderben`, `a Finder mellé`. Mindkettő végi betű a kiejtett hangot írja, tehát az AkH kötőjelszabálya nem lép be.
   Összetételben viszont kötőjel jár (`Finder-ablak`, `Dock-ajánlat`). Az `Applications` mappa magyar neve `Alkalmazások`
-  (az Apple lefordítja). Bizonyítékok: `glossary.md` § A Dockba kerülés egyszeri ajánlata.
+  (az Apple lefordítja). Bizonyítékok: `decisions.md` § A Dockba kerülés egyszeri ajánlata.
 - **A Dock helyi menüjének szövegeit magából a `Dock.app`-ból mérd, ne a kupacból.** A referenciakupac `hu/macOS/`
   mappája csak a Findert, az AppKitet és a System Settingset tartalmazza; a Dock saját menüje a
   `/System/Library/CoreServices/Dock.app/Contents/Resources/hu.lproj/DockMenus.strings` fájlban él
   (`plutil -convert json`), és pontosan az a felület, amelybe a `menu.dock.*` elemek kerülnek. Onnan jön az appnevek
   mintája: **puszta név + névszói cselekvés, névelő nélkül** (`%@ elrejtése`, `Cmdr megnyitása`); az
-  `A(z) „%@” megnyitása` hedge csak FÁJLNÉVRE való, ahol a kezdőhang ismeretlen. Bizonyítékok: `glossary.md` § A Dock
+  `A(z) „%@” megnyitása` hedge csak FÁJLNÉVRE való, ahol a kezdőhang ismeretlen. Bizonyítékok: `decisions.md` § A Dock
   helyi menüje.
 - **⚠️ ❌ A `Programok mappa` soha nem jön vissza**: az a régi Mac OS X-es név, nem a mai macOS-é. Semmilyen ellenőrzés
   nem fogja el a visszaesést, mert az érintett kulcsok angolja nem betű szerint azonos.
@@ -355,20 +287,20 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 
 David does NOT break ties for Hungarian. He uses shipped Hungarian as his gauge for the whole language-agnostic
 pipeline, so hand-feeding it a native gut-check would contaminate that gauge (see `docs/guides/i18n-translation.md` §
-Treat every language the same). These resolve the same way they'd resolve for a language no one here speaks: triangulate
-the reference pile (including the file-manager sources and the four mining gotchas in § Researching terms), pick the
-best-evidenced fit, record residual confidence. No Hungarian-specific input.
+Treat every language the same). Open terms resolve the same way they'd resolve for a language no one here speaks:
+triangulate the reference pile (including the file-manager sources and the mining gotchas in
+`../reference-pile/how-to-mine.md`), pick the best-evidenced fit, record residual confidence. Address style is settled
+(`te`, high; `../formal-informal-decisions.md`) and pane is settled (`panel`, from Double Commander and Total
+Commander). The rest wait in `review-queue.md`.
 
-- **Address style: `te` (informal), high** — consumer-brand evidence; see Formality and
-  `../formal-informal-decisions.md`.
-- **pane — settled to `panel`, `high`** (2026-08-19, native-menu pass): Double Commander hu and Total Commander hu both
-  say "panel", and the orthodox pair is Cmdr's own UI family. Resolved by evidence, exactly as intended.
-- **bookmark, viewer, listing — still tentative.** No Tier-1 source (Finder has no own viewer term), so these need the
-  file-manager sources to settle. The next glossary pass mines them like any language; until then they stay open, not
-  parked for David.
+## Termbase files
 
-## Glossary
+- `../concepts.json`: the shared, language-agnostic concept registry (sense, `match` patterns, confusable neighbors);
+  `concepts-proposed.json` holds this locale's proposals until they merge into it.
+- `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
+- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `review-queue.md`: open questions for a native reviewer.
 
-The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/hu/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section
+when the reason needs more than a line. Source every term from the reference pile (`_ignored/i18n/hu/`; recipes in
+`../reference-pile/how-to-mine.md`).

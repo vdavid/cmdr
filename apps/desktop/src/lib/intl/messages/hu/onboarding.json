@@ -279,7 +279,7 @@
   "@onboarding.stepAi.cloud.recommended": {
     "sourceHash": "d70604e"
   },
-  "onboarding.stepAi.cloud.help": "Használj bármilyen felhőszolgáltatót a saját API-kulcsoddal, vagy a saját ollama/egyedi LLM-edet. Állítsd be lent.",
+  "onboarding.stepAi.cloud.help": "Használj bármilyen felhőszolgáltatót a saját API-kulcsoddal, vagy a saját ollama/egyéni LLM-edet. Állítsd be lent.",
   "@onboarding.stepAi.cloud.help": {
     "sourceHash": "0841a0d"
   },
@@ -511,7 +511,7 @@
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },
-  "onboarding.cloudPicker.listAria": "Felhőalapú AI-szolgáltatók",
+  "onboarding.cloudPicker.listAria": "Felhő-AI-szolgáltatók",
   "@onboarding.cloudPicker.listAria": {
     "sourceHash": "9494a49"
   },
@@ -531,7 +531,7 @@
   "@onboarding.cloudSetup.step.install": {
     "sourceHash": "cd0221c"
   },
-  "onboarding.cloudSetup.step.ollamaModel": "Tölts le egy modellt a Terminálban az ollama pull llama3.2 paranccsal, vagy <libraryLink>böngészd a modellkönyvtárat</libraryLink>",
+  "onboarding.cloudSetup.step.ollamaModel": "Tölts le egy modellt egy terminálban az ollama pull llama3.2 paranccsal, vagy <libraryLink>böngészd a modellkönyvtárat</libraryLink>",
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },

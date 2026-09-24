@@ -19,7 +19,7 @@
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
-  "errors.listing.notEnoughMemory.suggestion": "Ezeket próbálhatod:\n- Zárj be néhány appot a memória felszabadításához, főleg az erőforrás-igényeseket (sok lapot nyitva tartó böngészők, szerkesztők, médiaappok)\n- Nézd meg a memóriahasználatot az **Activity Monitor** appban (keresd a Spotlightban)\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.notEnoughMemory.suggestion": "Ezeket próbálhatod:\n- Zárj be néhány appot a memória felszabadításához, főleg az erőforrás-igényeseket (sok lapot nyitva tartó böngészők, szerkesztők, médiaappok)\n- Nézd meg a memóriahasználatot a **Tevékenységfigyelő** appban (keresd a Spotlightban)\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.notEnoughMemory.suggestion": {
     "sourceHash": "26a7a46"
   },
@@ -31,7 +31,7 @@
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "8c7bdd4"
   },
-  "errors.listing.resourceBusy.suggestion": "Várj egy kicsit, majd lépj ide újra. Ha továbbra is előfordul, nézd meg, melyik app tarthatja nyitva a fájlt (a Terminálban add ki a `lsof +D <folder-path>` parancsot, hogy lásd, mely folyamatok használják ezt a mappát).",
+  "errors.listing.resourceBusy.suggestion": "Várj egy kicsit, majd lépj ide újra. Ha továbbra is előfordul, nézd meg, melyik app tarthatja nyitva a fájlt (a Terminalban add ki a `lsof +D <folder-path>` parancsot, hogy lásd, mely folyamatok használják ezt a mappát).",
   "@errors.listing.resourceBusy.suggestion": {
     "sourceHash": "fa266e6"
   },
@@ -43,7 +43,7 @@
   "@errors.listing.temporarilyUnavailable.explanation": {
     "sourceHash": "2193876"
   },
-  "errors.listing.temporarilyUnavailable.suggestion": "Lépj ide újra az ismételt próbához. Ez általában magától megoldódik. Ha továbbra is előfordul, lehet, hogy a rendszer nagy terhelés alatt van. Nézd meg az **Activity Monitor** appban, mely appok használnak sok erőforrást.",
+  "errors.listing.temporarilyUnavailable.suggestion": "Lépj ide újra az ismételt próbához. Ez általában magától megoldódik. Ha továbbra is előfordul, lehet, hogy a rendszer nagy terhelés alatt van. Nézd meg a **Tevékenységfigyelő** appban, mely appok használnak sok erőforrást.",
   "@errors.listing.temporarilyUnavailable.suggestion": {
     "sourceHash": "1ec4aef"
   },
@@ -55,7 +55,7 @@
   "@errors.listing.networkDown.explanation": {
     "sourceHash": "e2106be"
   },
-  "errors.listing.networkDown.suggestion": "Ezeket próbálhatod:\n- Nézd meg a Wi-Fi vagy az Ethernet állapotát itt: **{system_settings} > Hálózat**\n- Ha Wi-Fin vagy, próbáld ki- és bekapcsolni\n- A Terminálban add ki a `ping google.com` parancsot a kapcsolat ellenőrzéséhez\n- Lépj ide újra, amint újra online vagy",
+  "errors.listing.networkDown.suggestion": "Ezeket próbálhatod:\n- Nézd meg a Wi-Fi vagy az Ethernet állapotát itt: **{system_settings} > Hálózat**\n- Ha Wi-Fin vagy, próbáld ki- és bekapcsolni\n- A Terminalban add ki a `ping google.com` parancsot a kapcsolat ellenőrzéséhez\n- Lépj ide újra, amint újra online vagy",
   "@errors.listing.networkDown.suggestion": {
     "sourceHash": "3fe671d"
   },
@@ -87,11 +87,11 @@
   "@errors.listing.connectionReset.title": {
     "sourceHash": "6346f08"
   },
-  "errors.listing.connectionReset.explanation": "A távoli szerver váratlanul lezárta a kapcsolatot. Ez akkor fordulhat elő, ha a szerver újraindul, időtúllépésbe fut, vagy belső gondba ütközik.",
+  "errors.listing.connectionReset.explanation": "A távoli szerver váratlanul lezárta a kapcsolatot. Ez akkor fordulhat elő, ha a szerver újraindul, időtúllépésbe fut, vagy belső problémába ütközik.",
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
-  "errors.listing.connectionReset.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut\n- A Terminálban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.connectionReset.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.connectionReset.suggestion": {
     "sourceHash": "0ee3d15"
   },
@@ -103,7 +103,7 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "33612d4"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminálban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.connectionTimedOutErrno.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminalban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
     "sourceHash": "4172538"
   },
@@ -115,7 +115,7 @@
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "cf59cab"
   },
-  "errors.listing.hostDown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és csatlakozik a hálózathoz\n- A Terminálban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e\n- Ha NAS vagy szerver, nézd meg a felügyeleti felületét\n- Lépj ide újra, amint a gazdagép újra elérhető",
+  "errors.listing.hostDown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és csatlakozik a hálózathoz\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e\n- Ha NAS vagy szerver, nézd meg a felügyeleti felületét\n- Lépj ide újra, amint a gazdagép újra elérhető",
   "@errors.listing.hostDown.suggestion": {
     "sourceHash": "4a09e8e"
   },
@@ -127,7 +127,7 @@
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "Ezeket próbálhatod:\n- Lépj ki ebből a mappából, majd gyere vissza\n- Ha ez hálózati meghajtó, próbáld leválasztani és újracsatolni a Finderben\n- Ellenőrizd, hogy a mappát kiszolgáló szerver fut\n- A Terminálban add ki a `mount` parancsot a jelenleg csatolt kötetek megtekintéséhez",
+  "errors.listing.staleConnection.suggestion": "Ezeket próbálhatod:\n- Lépj ki ebből a mappából, majd gyere vissza\n- Ha ez hálózati meghajtó, próbáld leválasztani és újracsatolni a Finderben\n- Ellenőrizd, hogy a mappát kiszolgáló szerver fut\n- A Terminalban add ki a `mount` parancsot a jelenleg csatolt kötetek megtekintéséhez",
   "@errors.listing.staleConnection.suggestion": {
     "sourceHash": "05960c8"
   },
@@ -139,7 +139,7 @@
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
-  "errors.listing.lockUnavailable.suggestion": "Ezeket próbálhatod:\n- Zárj be néhány appot, főleg a sok fájllal dolgozókat (szerkesztők, IDE-k, biztonsági mentő eszközök)\n- A Terminálban add ki a `lsof | wc -l` parancsot, hogy lásd, hány fájl van megnyitva az összes appban\n- Ha a gond folyamatosan visszatér, a Terminálban a `ulimit -n 4096` paranccsal megemelheted a korlátot\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.lockUnavailable.suggestion": "Ezeket próbálhatod:\n- Zárj be néhány appot, főleg a sok fájllal dolgozókat (szerkesztők, IDE-k, biztonsági mentő eszközök)\n- A Terminalban add ki a `lsof | wc -l` parancsot, hogy lásd, hány fájl van megnyitva az összes appban\n- Ha a probléma folyamatosan visszatér, a Terminalban a `ulimit -n 4096` paranccsal megemelheted a korlátot\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.lockUnavailable.suggestion": {
     "sourceHash": "f9c9f8d"
   },
@@ -163,7 +163,7 @@
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "ddf8a5d"
   },
-  "errors.listing.notPermitted.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ha ez egy rendszer által védett mappa (például rendszerkönyvtár), lehet, hogy a {privacy_and_security} alatt **{full_disk_access}** jogot kell adnod a Cmdrnek\n- A Terminálban add ki az `ls -la` parancsot ezen az útvonalon a tulajdonjog és az engedélyek ellenőrzéséhez",
+  "errors.listing.notPermitted.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ha ez egy rendszer által védett mappa (például rendszerkönyvtár), lehet, hogy a {privacy_and_security} alatt **{full_disk_access}** jogot kell adnod a Cmdrnek\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon a tulajdonjog és az engedélyek ellenőrzéséhez",
   "@errors.listing.notPermitted.suggestion": {
     "sourceHash": "32e9d74"
   },
@@ -175,7 +175,7 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminálban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne",
+  "errors.listing.pathNotFoundErrno.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminalban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -187,7 +187,7 @@
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.noPermissionErrno.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminálban add ki az `ls -la` parancsot ezen az útvonalon a jelenlegi engedélyek megtekintéséhez",
+  "errors.listing.noPermissionErrno.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon a jelenlegi engedélyek megtekintéséhez",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "ea316e7"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.diskFullErrno.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminálban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken\n- Nézd meg a **{system_settings} > Általános > Tárhely** részt a hely felhasználásának részletezéséhez",
+  "errors.listing.diskFullErrno.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminalban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken\n- Nézd meg a **{system_settings} > Általános > Tárhely** részt a hely felhasználásának részletezéséhez",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "bf54d66"
   },
@@ -283,7 +283,7 @@
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "f92dedc"
   },
-  "errors.listing.networkUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- Győződj meg róla, hogy a megfelelő hálózaton vagy (például az irodai Wi-Fin vagy a VPN-en)\n- A Terminálban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra, amint csatlakoztál",
+  "errors.listing.networkUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- Győződj meg róla, hogy a megfelelő hálózaton vagy (például az irodai Wi-Fin vagy a VPN-en)\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra, amint csatlakoztál",
   "@errors.listing.networkUnreachable.suggestion": {
     "sourceHash": "b1754b4"
   },
@@ -295,7 +295,7 @@
   "@errors.listing.connectionRefused.explanation": {
     "sourceHash": "537cf4e"
   },
-  "errors.listing.connectionRefused.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut és a fájlmegosztó szolgáltatása aktív\n- Ellenőrizd, hogy a szerver címe és portja helyes\n- A Terminálban próbáld ki a `ping <hostname>` parancsot, hogy lásd, egyáltalán elérhető-e a szerver\n- Lépj ide újra az ismételt próbához",
+  "errors.listing.connectionRefused.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut és a fájlmegosztó szolgáltatása aktív\n- Ellenőrizd, hogy a szerver címe és portja helyes\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, egyáltalán elérhető-e a szerver\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.connectionRefused.suggestion": {
     "sourceHash": "4afa12d"
   },
@@ -307,7 +307,7 @@
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "cb728c1"
   },
-  "errors.listing.symlinkLoopErrno.suggestion": "Ezeket próbálhatod:\n- A Terminálban add ki az `ls -la` parancsot ezen az útvonalon, hogy lásd, hová mutatnak a szimbolikus linkek\n- Keresd meg és javítsd a hurkot okozó linket\n- Ha nem tudod biztosan, melyik link a gond, kövesd őket egyenként a `readlink <path>` paranccsal",
+  "errors.listing.symlinkLoopErrno.suggestion": "Ezeket próbálhatod:\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon, hogy lásd, hová mutatnak a szimbolikus linkek\n- Keresd meg és javítsd a hurkot okozó linket\n- Ha nem tudod biztosan, melyik link okozza a hurkot, kövesd őket egyenként a `readlink <path>` paranccsal",
   "@errors.listing.symlinkLoopErrno.suggestion": {
     "sourceHash": "0a439fb"
   },
@@ -331,7 +331,7 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "3e5e6f9"
   },
-  "errors.listing.hostUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és ugyanazon a hálózaton van\n- Ha VPN kell az eléréséhez, győződj meg róla, hogy a VPN csatlakozik\n- A Terminálban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra, amint a gazdagép elérhető",
+  "errors.listing.hostUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és ugyanazon a hálózaton van\n- Ha VPN kell az eléréséhez, győződj meg róla, hogy a VPN csatlakozik\n- A Terminalban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra, amint a gazdagép elérhető",
   "@errors.listing.hostUnreachable.suggestion": {
     "sourceHash": "8e7a1cf"
   },
@@ -355,7 +355,7 @@
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "6fa75c0"
   },
-  "errors.listing.quotaExceeded.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok eltávolításával ezen a köteten\n- Kérd meg a rendszergazdát, hogy növelje a kvótádat\n- A Terminálban add ki a `quota` parancsot a jelenlegi használat és a korlát megtekintéséhez",
+  "errors.listing.quotaExceeded.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok eltávolításával ezen a köteten\n- Kérd meg a rendszergazdát, hogy növelje a kvótádat\n- A Terminalban add ki a `quota` parancsot a jelenlegi használat és a korlát megtekintéséhez",
   "@errors.listing.quotaExceeded.suggestion": {
     "sourceHash": "e24428a"
   },
@@ -407,15 +407,15 @@
   "@errors.listing.attributeNotFound.suggestion": {
     "sourceHash": "3c357ac"
   },
-  "errors.listing.diskReadProblem.title": "Lemezolvasási gond",
+  "errors.listing.diskReadProblem.title": "Lemezolvasási probléma",
   "@errors.listing.diskReadProblem.title": {
     "sourceHash": "b953ef4"
   },
-  "errors.listing.diskReadProblem.explanation": "A Cmdr hardveres szintű olvasási gondba ütközött itt: `{path}`. Ez azt jelenti, hogy a lemeznek vagy az eszköznek gondja akadt az adatok beolvasásával, ami lehet átmeneti hiccup vagy egy meghibásodó lemez jele is.",
+  "errors.listing.diskReadProblem.explanation": "A Cmdr hardveres szintű olvasási problémába ütközött itt: `{path}`. Ez azt jelenti, hogy a lemez vagy az eszköz nehezen tudta beolvasni az adatokat, ami lehet átmeneti zavar vagy egy meghibásodó lemez jele is.",
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még megfelelően csatlakozik\n- Nyisd meg a **Disk Utility** appot (keresd a Spotlightban), és futtass **First Aid** ellenőrzést ezen a köteten\n- Ha ez folyamatosan előfordul, mentsd az adataidat mielőbb. Lehet, hogy a lemezen hibás szektorok jelennek meg, vagy kezd elkopni.",
+  "errors.listing.diskReadProblem.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még megfelelően csatlakozik\n- Nyisd meg a **Lemezkezelő** appot (keresd a Spotlightban), és futtasd az **Elsősegélyt** ezen a köteten\n- Ha ez folyamatosan előfordul, mentsd az adataidat mielőbb. Lehet, hogy a lemezen hibás szektorok jelennek meg, vagy kezd elkopni.",
   "@errors.listing.diskReadProblem.suggestion": {
     "sourceHash": "792c921"
   },
@@ -427,19 +427,19 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "eeddaa7"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "Ezeket próbálhatod:\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Disk Utility** appot (keresd a Spotlightban), és futtass **First Aid** ellenőrzést ezen a köteten a fájlrendszeri gondok ellenőrzéséhez",
+  "errors.listing.unexpectedSystemResponse.suggestion": "Ezeket próbálhatod:\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot (keresd a Spotlightban), és futtasd az **Elsősegélyt** ezen a köteten a fájlrendszeri problémák ellenőrzéséhez",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
     "sourceHash": "4e5a9bb"
   },
-  "errors.listing.deviceProblem.title": "Eszközgond",
+  "errors.listing.deviceProblem.title": "Eszközprobléma",
   "@errors.listing.deviceProblem.title": {
     "sourceHash": "3febba2"
   },
-  "errors.listing.deviceProblem.explanation": "Az eszköz hardveres szintű gondot jelzett. Ez lehet laza csatlakozás, elhasználódott kábel, vagy magával az eszközzel kapcsolatos probléma.",
+  "errors.listing.deviceProblem.explanation": "Az eszköz hardveres szintű problémát jelzett. Ez lehet laza csatlakozás, elhasználódott kábel, vagy magával az eszközzel kapcsolatos probléma.",
   "@errors.listing.deviceProblem.explanation": {
     "sourceHash": "a809613"
   },
-  "errors.listing.deviceProblem.suggestion": "Ezeket próbálhatod:\n- Válaszd le, majd csatlakoztasd újra az eszközt\n- Próbálj másik USB-portot vagy kábelt\n- Ha külső meghajtó, próbáld másik számítógéphez csatlakoztatni, hogy lásd, az eszközt követi-e a gond\n- Ha ez folyamatosan előfordul, lehet, hogy az eszközt javítani vagy cserélni kell",
+  "errors.listing.deviceProblem.suggestion": "Ezeket próbálhatod:\n- Válaszd le, majd csatlakoztasd újra az eszközt\n- Próbálj másik USB-portot vagy kábelt\n- Ha külső meghajtó, próbáld másik számítógéphez csatlakoztatni, hogy lásd, az eszközt követi-e a probléma\n- Ha ez folyamatosan előfordul, lehet, hogy az eszközt javítani vagy cserélni kell",
   "@errors.listing.deviceProblem.suggestion": {
     "sourceHash": "2cbb1cf"
   },
@@ -447,11 +447,11 @@
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "1334729"
   },
-  "errors.listing.couldntReadUnknown.explanation": "A Cmdr váratlan gondba ütközött ennek a beolvasásakor: `{path}`. Nézd meg lent a technikai részleteket a konkrét rendszerkódért, ami segíthet a hibakeresésben.",
+  "errors.listing.couldntReadUnknown.explanation": "A Cmdr váratlan problémába ütközött ennek a beolvasásakor: `{path}`. Nézd meg lent a technikai részleteket a konkrét rendszerkódért, ami segíthet a hibakeresésben.",
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "80b9ff5"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Disk Utility** appot, és futtass **First Aid** ellenőrzést ezen a köteten",
+  "errors.listing.couldntReadUnknown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot, és futtasd az **Elsősegélyt** ezen a köteten",
   "@errors.listing.couldntReadUnknown.suggestion": {
     "sourceHash": "0073987"
   },
@@ -463,7 +463,7 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.notFound.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminálban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne",
+  "errors.listing.notFound.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminalban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -487,7 +487,7 @@
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.permissionDenied.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminálban add ki az `ls -la` parancsot az útvonalon a jelenlegi engedélyek megtekintéséhez",
+  "errors.listing.permissionDenied.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminalban add ki az `ls -la` parancsot az útvonalon a jelenlegi engedélyek megtekintéséhez",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
@@ -583,7 +583,7 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.storageFull.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminálban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken",
+  "errors.listing.storageFull.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminalban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "fcdd42d"
   },
@@ -595,7 +595,7 @@
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "5b3f8b2"
   },
-  "errors.listing.connectionTimedOut.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminálban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Próbáld újra",
+  "errors.listing.connectionTimedOut.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Próbáld újra",
   "@errors.listing.connectionTimedOut.suggestion": {
     "sourceHash": "f9b8a2d"
   },
@@ -651,11 +651,11 @@
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
   },
-  "errors.listing.ioSerious.explanation": "A Cmdr gondba ütközött ezzel: `{path}`: {osMessage}. Ez lehet átmeneti hiccup, vagy annak jele, hogy a lemez vagy az eszköz figyelmet igényel.",
+  "errors.listing.ioSerious.explanation": "A Cmdr problémába ütközött ezzel: `{path}`: {osMessage}. Ez lehet átmeneti zavar, vagy annak jele, hogy a lemez vagy az eszköz figyelmet igényel.",
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
-  "errors.listing.ioSerious.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Próbáld újra\n- Ha ez folyamatosan előfordul, próbáld futtatni a **Disk Utility > First Aid** ellenőrzést ezen a köteten",
+  "errors.listing.ioSerious.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Próbáld újra\n- Ha ez folyamatosan előfordul, próbáld lefuttatni a **Lemezkezelő > Elsősegély** ellenőrzést ezen a köteten",
   "@errors.listing.ioSerious.suggestion": {
     "sourceHash": "6c5be6d"
   },
@@ -715,7 +715,7 @@
   "@errors.git.notARepo.message": {
     "sourceHash": "f5b0d17"
   },
-  "errors.git.notARepo.suggestion": "Nyiss meg egy mappát egy git klónon belül, hogy lásd a repó-chipet.",
+  "errors.git.notARepo.suggestion": "Nyiss meg egy mappát egy git klónon belül, hogy lásd a repozitóriumcímkét.",
   "@errors.git.notARepo.suggestion": {
     "sourceHash": "f50fd0b"
   },
@@ -787,7 +787,7 @@
   "@errors.git.blobTooLarge.message": {
     "sourceHash": "6d93691"
   },
-  "errors.git.blobTooLarge.suggestion": "Ha el akarod olvasni, töltsd ki a fájlt egy munkafából.",
+  "errors.git.blobTooLarge.suggestion": "Ha el akarod olvasni, nyisd meg a fájlt egy munkafából.",
   "@errors.git.blobTooLarge.suggestion": {
     "sourceHash": "cae2b3d"
   },
@@ -823,7 +823,7 @@
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
-  "errors.git.gitDirPermissionDenied.suggestion": "Adj a Cmdrnek hozzáférést itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**. A Terminálban az `ls -la .git` mutatja a jelenlegi tulajdonost és módot.",
+  "errors.git.gitDirPermissionDenied.suggestion": "Adj a Cmdrnek hozzáférést itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**. A Terminalban az `ls -la .git` mutatja a jelenlegi tulajdonost és módot.",
   "@errors.git.gitDirPermissionDenied.suggestion": {
     "sourceHash": "b091738"
   },
@@ -1017,7 +1017,7 @@
   "@errors.provider.macFuse.needsAction": {
     "sourceHash": "60e836a"
   },
-  "errors.provider.macFuse.serious": "Ez egy **macFUSE** csatolás. A kiszolgáló FUSE-folyamat valószínűleg összeomlott vagy lekapcsolódott. Ezeket próbálhatod:\n- Kényszerítsd a kötet leválasztását: add ki a `umount -f /Volumes/<name>` parancsot a Terminálban\n- Csatold újra az eredeti csatolási paranccsal\n- Ha ez folyamatosan előfordul, ellenőrizd, hogy a macFUSE naprakész",
+  "errors.provider.macFuse.serious": "Ez egy **macFUSE** csatolás. A kiszolgáló FUSE-folyamat valószínűleg összeomlott vagy lekapcsolódott. Ezeket próbálhatod:\n- Kényszerítsd a kötet leválasztását: add ki a `umount -f /Volumes/<name>` parancsot a Terminalban\n- Csatold újra az eredeti csatolási paranccsal\n- Ha ez folyamatosan előfordul, ellenőrizd, hogy a macFUSE naprakész",
   "@errors.provider.macFuse.serious": {
     "sourceHash": "71d42da"
   },
@@ -1029,7 +1029,7 @@
   "@errors.provider.pCloudFuse.needsAction": {
     "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Ez a mappa a **pCloud** virtuális meghajtóján van. Lehet, hogy a pCloud FUSE-folyamata összeomlott. Ezeket próbálhatod:\n- Lépj ki a pCloud appból, és nyisd meg újra\n- Ha a meghajtó nem jelenik meg újra, kényszerítsd a leválasztását: add ki a `umount -f /Volumes/pCloudDrive` parancsot a Terminálban\n- Egy macOS-frissítés után hagyd jóvá újra a pCloud rendszerbővítményét itt: **{system_settings} > Általános > Indítóelemek és bővítmények**",
+  "errors.provider.pCloudFuse.serious": "Ez a mappa a **pCloud** virtuális meghajtóján van. Lehet, hogy a pCloud FUSE-folyamata összeomlott. Ezeket próbálhatod:\n- Lépj ki a pCloud appból, és nyisd meg újra\n- Ha a meghajtó nem jelenik meg újra, kényszerítsd a leválasztását: add ki a `umount -f /Volumes/pCloudDrive` parancsot a Terminalban\n- Egy macOS-frissítés után hagyd jóvá újra a pCloud rendszerbővítményét itt: **{system_settings} > Általános > Indítóelemek és bővítmények**",
   "@errors.provider.pCloudFuse.serious": {
     "sourceHash": "cba0026"
   },
@@ -1041,7 +1041,7 @@
   "@errors.provider.veraCrypt.needsAction": {
     "sourceHash": "08dec65"
   },
-  "errors.provider.veraCrypt.serious": "Ez egy **{name}** titkosított kötet. Ezeket próbálhatod:\n- Válaszd le, majd csatold újra a kötetet a VeraCryptben\n- Ha a kötettel továbbra is gond van, ellenőrizd a VeraCrypt javítóeszközeivel",
+  "errors.provider.veraCrypt.serious": "Ez egy **{name}** titkosított kötet. Ezeket próbálhatod:\n- Válaszd le, majd csatold újra a kötetet a VeraCryptben\n- Ha a kötettel továbbra is probléma van, ellenőrizd a VeraCrypt javítóeszközeivel",
   "@errors.provider.veraCrypt.serious": {
     "sourceHash": "a5c41a1"
   },
@@ -1313,7 +1313,7 @@
   "@errors.write.readError.message": {
     "sourceHash": "b3b10d6"
   },
-  "errors.write.readError.suggestion": "Próbáld újra. Ha a gond továbbra is fennáll, nézd meg lent a technikai részleteket.",
+  "errors.write.readError.suggestion": "Próbáld újra. Ha a probléma továbbra is fennáll, nézd meg lent a technikai részleteket.",
   "@errors.write.readError.suggestion": {
     "sourceHash": "791f737"
   },
@@ -1337,7 +1337,7 @@
   "@errors.write.writeError.message": {
     "sourceHash": "cb458f0"
   },
-  "errors.write.writeError.suggestion": "Próbáld újra. Ha a gond továbbra is fennáll, nézd meg lent a technikai részleteket.",
+  "errors.write.writeError.suggestion": "Próbáld újra. Ha a probléma továbbra is fennáll, nézd meg lent a technikai részleteket.",
   "@errors.write.writeError.suggestion": {
     "sourceHash": "791f737"
   },
@@ -1429,7 +1429,7 @@
   "@errors.write.ioError.message.trash": {
     "sourceHash": "db053da"
   },
-  "errors.write.ioError.suggestion": "Próbáld újra. Ha a gond továbbra is fennáll, nézd meg lent a technikai részleteket.",
+  "errors.write.ioError.suggestion": "Próbáld újra. Ha a probléma továbbra is fennáll, nézd meg lent a technikai részleteket.",
   "@errors.write.ioError.suggestion": {
     "sourceHash": "791f737"
   },
@@ -1541,11 +1541,11 @@
   "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
-  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Írásvédett mappa",
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Csak olvasható mappa",
   "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
     "sourceHash": "24c9063"
   },
-  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Ez a mappa írásvédett, ezért semmit nem lehet bele másolni vagy áthelyezni.",
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Ez a mappa csak olvasható, ezért semmit nem lehet bele másolni vagy áthelyezni.",
   "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
     "sourceHash": "0c50a60"
   },
@@ -1825,15 +1825,15 @@
   "@errors.serverRequest.timedOut": {
     "sourceHash": "14b0dcd"
   },
-  "errors.serverRequest.serverBusy": "A Cmdr szerverének most gondjai vannak. Próbáld újra később.",
+  "errors.serverRequest.serverBusy": "A Cmdr szerverének most problémái vannak. Próbáld újra később.",
   "@errors.serverRequest.serverBusy": {
     "sourceHash": "2df1f8d"
   },
-  "errors.serverRequest.refused": "A Cmdr szervere ezt elutasította. Ha újra előfordul, töltsd le a legújabb Cmdr-t a getcmdr.com oldalról.",
+  "errors.serverRequest.refused": "A Cmdr szervere ezt elutasította. Ha újra előfordul, töltsd le a legújabb Cmdrt a getcmdr.com oldalról.",
   "@errors.serverRequest.refused": {
     "sourceHash": "f36d8f8"
   },
-  "errors.serverRequest.unexpected": "A Cmdr belső problémába ütközött. Próbáld újra, és ha ismét előfordul, indítsd újra a Cmdr-t.",
+  "errors.serverRequest.unexpected": "A Cmdr belső problémába ütközött. Próbáld újra, és ha ismét előfordul, indítsd újra a Cmdrt.",
   "@errors.serverRequest.unexpected": {
     "sourceHash": "5be7ebd"
   },
