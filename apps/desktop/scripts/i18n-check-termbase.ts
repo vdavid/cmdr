@@ -60,7 +60,7 @@ export interface Baseline {
 /** A concept ID: lowercase kebab-case. */
 const CONCEPT_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-const CONCEPT_FIELDS = new Set(['en', 'match', 'sense', 'distinct', 'note'])
+const CONCEPT_FIELDS = new Set(['en', 'match', 'notMatch', 'sense', 'distinct', 'note'])
 const TERM_FIELDS = new Set([
   'chosen',
   'accept',
@@ -101,6 +101,7 @@ function conceptErrors(at: string, id: string, concept: unknown, known: Readonly
   if (!isNonEmptyString(concept.en)) errors.push(`${at}: missing "en"`)
   if (!isNonEmptyString(concept.sense)) errors.push(`${at}: missing "sense"`)
   errors.push(...matchErrors(at, concept.match), ...distinctErrors(at, id, concept.distinct, known))
+  if (concept.notMatch !== undefined) errors.push(...formErrors(at, 'notMatch', concept.notMatch))
   if (concept.note !== undefined && typeof concept.note !== 'string') errors.push(`${at}: "note" must be a string`)
   return errors
 }
@@ -115,9 +116,15 @@ function unknownFieldErrors(at: string, entry: Record<string, unknown>, fields: 
 /** `match` must be a non-empty list of non-empty lowercase forms. */
 function matchErrors(at: string, match: unknown): string[] {
   if (!isStringList(match) || match.length === 0) return [`${at}: "match" must be a non-empty list of strings`]
-  return match.flatMap((form) => [
-    ...(form !== form.toLowerCase() ? [`${at}: match form "${form}" must be lowercase`] : []),
-    ...(form.trim().length === 0 ? [`${at}: match has an empty form`] : []),
+  return formErrors(at, 'match', match)
+}
+
+/** A `match` / `notMatch` list: strings, each non-empty and lowercase. */
+function formErrors(at: string, field: 'match' | 'notMatch', forms: unknown): string[] {
+  if (!isStringList(forms)) return [`${at}: "${field}" must be a list of strings`]
+  return forms.flatMap((form) => [
+    ...(form !== form.toLowerCase() ? [`${at}: ${field} form "${form}" must be lowercase`] : []),
+    ...(form.replace(/^=/, '').trim().length === 0 ? [`${at}: ${field} has an empty form`] : []),
   ])
 }
 

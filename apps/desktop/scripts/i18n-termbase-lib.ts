@@ -22,6 +22,8 @@ import { isRawKey, visibleLiterals } from './i18n-catalog-lib.ts'
 export interface Concept {
   en: string
   match: string[]
+  /** same syntax as `match`; a text it hits doesn't count for the concept (another English sense) */
+  notMatch?: string[]
   sense: string
   distinct?: string[]
   note?: string
@@ -188,11 +190,18 @@ function stripRawIdentifiers(value: string): string {
 /** Compiled matchers, one per concept, reused across a run. */
 export type ConceptMatchers = Map<string, (text: string) => boolean>
 
-/** Compiles every concept's matcher once. */
+/**
+ * Compiles every concept's matcher once: its `match` hits AND its `notMatch`
+ * doesn't. `notMatch` carries the English-sense exclusions ("come back" is not the
+ * Back button) once for every locale, rather than as the same `exceptions` entry
+ * repeated in each `terms.json`.
+ */
 export function compileConcepts(concepts: Concepts): ConceptMatchers {
   const matchers: ConceptMatchers = new Map()
   for (const [id, concept] of Object.entries(concepts)) {
-    matchers.set(id, compileMatch(Array.isArray(concept.match) ? concept.match : []))
+    const hits = compileMatch(Array.isArray(concept.match) ? concept.match : [])
+    const excluded = compileMatch(Array.isArray(concept.notMatch) ? concept.notMatch : [])
+    matchers.set(id, (text) => hits(text) && !excluded(text))
   }
   return matchers
 }

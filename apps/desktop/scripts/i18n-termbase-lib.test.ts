@@ -82,6 +82,14 @@ describe('conceptsInText', () => {
   it('returns every concept whose match hits, sorted by id', () => {
     expect(conceptsInText(concepts, 'Transferring this operation')).toEqual(['operation', 'transfer'])
   })
+  it('drops a concept whose notMatch hits the same text, whatever its match says', () => {
+    const withNot: Concepts = {
+      operation: { en: 'operation', match: ['operation'], notMatch: ['math operation', '=operation'], sense: 's' },
+    }
+    expect(conceptsInText(withNot, 'Undo the operation')).toEqual(['operation'])
+    expect(conceptsInText(withNot, 'A math operation failed')).toEqual([])
+    expect(conceptsInText(withNot, 'Operation')).toEqual([])
+  })
   it('returns nothing on a miss', () => {
     expect(conceptsInText(concepts, 'Nothing here')).toEqual([])
   })

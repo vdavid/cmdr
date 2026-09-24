@@ -35,6 +35,7 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
     "en": "operation",
     "match": ["operation", "operations"],
     "sense": "The category of file work Cmdr performs: copy, move, delete, trash, rename, folder/file creation, archive edit.",
+    "notMatch": ["math operation"],
     "distinct": ["transfer"],
     "note": "optional, one or two sentences, language-agnostic boundary guidance"
   }
@@ -48,6 +49,10 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
   (`go to path`). A trailing `*` means prefix (`index*`). A leading `=` means the WHOLE value, ignoring edge punctuation
   and case (`=back` hits `Back` and `Back…`, never "come back"): use it for a short UI label whose bare word also runs
   through prose. Keep them tight: they drive both the brief and the drift check.
+- `notMatch` (optional): patterns in the same syntax as `match`. A key whose English hits one doesn't count for this
+  concept, in the brief and the drift check alike. This is where an ENGLISH-sense exclusion goes ("come back" isn't the
+  Back button, "apps like TextEdit" isn't the Like action), written once for every locale. A locale's `exceptions` are
+  only for deviations specific to that language.
 - `sense` (required): one sentence, what this concept means in Cmdr. Split one English word into several concepts when
   it has several senses (`browse-file-picker` vs `browse-archive`), give each a `match` as specific as possible (they
   may overlap; the brief shows both), and link them with `distinct`.
@@ -85,8 +90,8 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
 - `sources` (required): short evidence string.
 - `note` (optional).
 - `exceptions` (optional): catalog key → reason, for keys whose English matches the concept but whose translation
-  legitimately doesn't use `chosen` / `accept`. This is where a boundary gets written down next to the term. Every key
-  must exist in the English catalog.
+  legitimately doesn't use `chosen` / `accept` IN THIS LANGUAGE. A key that's simply another English sense belongs in
+  the concept's `notMatch` instead, once for all locales. Every key must exist in the English catalog.
 - `decision` (optional): the exact heading text (without the `#` marks) of a `##` or `###` section in this locale's
   `decisions.md`.
 - A concept this locale deliberately keeps English still gets an entry, with `chosen` = the English form.

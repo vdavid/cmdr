@@ -47,6 +47,29 @@ describe('validateConcepts', () => {
     expect(errors.join('\n')).toMatch(/b: "match" must be a non-empty list/)
     expect(errors.join('\n')).toMatch(/b: missing "sense"/)
   })
+  it('accepts a notMatch list and holds it to the match rules', () => {
+    expect(validateConcepts({ a: { en: 'a', match: ['a'], notMatch: ['a b', '=a'], sense: 's' } }, 'c.json')).toEqual(
+      [],
+    )
+    const text = validateConcepts(
+      {
+        a: { en: 'a', match: ['a'], notMatch: ['Upper'], sense: 's' },
+        b: { en: 'b', match: ['b'], notMatch: 'x', sense: 's' },
+      },
+      'c.json',
+    ).join('\n')
+    expect(text).toMatch(/a: notMatch form "Upper" must be lowercase/)
+    expect(text).toMatch(/b: "notMatch" must be a list of strings/)
+  })
+  it('keeps a notMatch key out of drift in every locale', () => {
+    const en = { 'q.a': 'Undo the operation', 'q.m': 'A math operation' }
+    const nl = { 'q.a': 'Maak de actie ongedaan', 'q.m': 'Een wiskundige handeling' }
+    const terms = { operation: { chosen: 'bewerking', confidence: 'high' as const, sources: 's' } }
+    const withNot: Concepts = {
+      operation: { en: 'operation', match: ['operation'], notMatch: ['math operation'], sense: 's' },
+    }
+    expect(findDrift({ tag: 'nl', terms, concepts: withNot, en, locale: nl }).map((f) => f.key)).toEqual(['q.a'])
+  })
 })
 
 describe('validateTerms', () => {
