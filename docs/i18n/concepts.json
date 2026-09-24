@@ -138,7 +138,8 @@
     "en": "Ask",
     "match": ["ask each time", "ask"],
     "note": "Also the verb in running prose (Cmdr asks you something); the option label is the short imperative.",
-    "sense": "A setting option meaning \"ask me every time\"."
+    "sense": "A setting option meaning \"ask me every time\".",
+    "notMatch": ["ask cmdr"]
   },
   "ask-cmdr": {
     "distinct": ["ai-feature"],
@@ -870,7 +871,8 @@
     "en": "hour",
     "match": ["hour", "hours", "minute", "minutes", "second", "seconds"],
     "note": "Some languages keep the unit singular after a numeral for durations.",
-    "sense": "Spelled-out durations in a time-remaining line or a countdown."
+    "sense": "Spelled-out durations in a time-remaining line or a countdown.",
+    "notMatch": ["wait a minute"]
   },
   "icon": {
     "en": "icon",
@@ -881,7 +883,8 @@
     "distinct": ["photo", "disk-image"],
     "en": "image",
     "match": ["image", "images", "image file", "image files"],
-    "sense": "A picture file in technical and label contexts (image indexing, image files)."
+    "sense": "A picture file in technical and label contexts (image indexing, image files).",
+    "notMatch": ["disk image*"]
   },
   "image-search": {
     "distinct": ["search", "index"],
@@ -2026,7 +2029,7 @@
     "distinct": ["running", "pause"],
     "en": "Waiting",
     "match": ["waiting", "waits", "wait"],
-    "notMatch": ["suggestions are waiting"],
+    "notMatch": ["suggestions are waiting", "wait a minute", "wait a moment"],
     "sense": "Queued and not yet running, or waiting on the user or a device."
   },
   "warning": {
