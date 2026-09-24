@@ -7,6 +7,7 @@
     import Spinner from '$lib/ui/Spinner.svelte'
     import Trans from '$lib/intl/Trans.svelte'
     import { tString } from '$lib/intl/messages.svelte'
+    import { loadThirdPartyPackages, type AttributedPackage } from './load-third-party-packages'
 
     /** The repo's notices file on GitHub; the full license texts also ship inside the app bundle. */
     const NOTICES_URL = 'https://github.com/vdavid/cmdr/blob/main/THIRD-PARTY-NOTICES.md'
@@ -17,13 +18,6 @@
 
     const { onClose }: Props = $props()
 
-    interface AttributedPackage {
-        name: string
-        version: string
-        license: string
-        url: string
-    }
-
     let vendored = $state<AttributedPackage[]>([])
     let rust = $state<AttributedPackage[]>([])
     let npm = $state<AttributedPackage[]>([])
@@ -32,12 +26,10 @@
     const headings = $state<Record<string, HTMLElement | undefined>>({})
 
     onMount(async () => {
-        // Loaded on open, not at startup: the list is ~119 KB of generated JSON
-        // and nothing else in the app needs it. Vite code-splits the import.
-        const packages = await import('./third-party-packages.gen.json')
-        vendored = packages.default.vendored
-        rust = packages.default.rust
-        npm = packages.default.npm
+        const packages = await loadThirdPartyPackages()
+        vendored = packages.vendored
+        rust = packages.rust
+        npm = packages.npm
         loaded = true
     })
 

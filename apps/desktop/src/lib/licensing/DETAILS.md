@@ -87,6 +87,11 @@ credit goes into the vendored list (`scripts/check/checks/DETAILS.md` § "Vendor
 vendored credit's author, license link, and changes, live only in the notices file. The JSON carries names, versions,
 licenses, and URLs for every list alike, so all three render with the same row markup.
 
+The dialog loads the JSON on open through `load-third-party-packages.ts`, and tests stub that module, ❌ never the JSON
+itself: vitest's mock of the dynamically imported JSON misses once another dynamic import ran earlier in the file, and
+the a11y suite then scanned the real ~850 rows until it timed out in CI. The a11y case asserts the four stubbed rows, so
+a mock that misses again fails loudly instead of slowly.
+
 Shape decisions worth keeping:
 
 - **Loaded with a dynamic import on open**, not at startup. It's ~119 KB of JSON nothing else needs, so Vite code-splits

@@ -19,22 +19,24 @@ vi.mock('$lib/tauri-commands', () => ({
   openExternalUrl: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('./third-party-packages.gen.json', () => ({
-  default: {
-    rust: [
-      { name: 'serde', version: '1.0.228', license: 'MIT OR Apache-2.0', url: 'https://github.com/serde-rs/serde' },
-      { name: 'mystery', version: '1.0.0', license: 'MIT', url: '' },
-    ],
-    npm: [{ name: '@ark-ui/svelte', version: '5.22.1', license: 'MIT', url: 'https://ark-ui.com' }],
-    vendored: [
-      {
-        name: 'Material Symbols',
-        version: '',
-        license: 'Apache-2.0',
-        url: 'https://github.com/google/material-design-icons',
-      },
-    ],
-  },
+vi.mock('./load-third-party-packages', () => ({
+  loadThirdPartyPackages: vi.fn(() =>
+    Promise.resolve({
+      rust: [
+        { name: 'serde', version: '1.0.228', license: 'MIT OR Apache-2.0', url: 'https://github.com/serde-rs/serde' },
+        { name: 'mystery', version: '1.0.0', license: 'MIT', url: '' },
+      ],
+      npm: [{ name: '@ark-ui/svelte', version: '5.22.1', license: 'MIT', url: 'https://ark-ui.com' }],
+      vendored: [
+        {
+          name: 'Material Symbols',
+          version: '',
+          license: 'Apache-2.0',
+          url: 'https://github.com/google/material-design-icons',
+        },
+      ],
+    }),
+  ),
 }))
 
 const NOTICES_URL = 'https://github.com/vdavid/cmdr/blob/main/THIRD-PARTY-NOTICES.md'

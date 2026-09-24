@@ -14,7 +14,7 @@
  * a block that never stubbed one still sees its un-stubbed exports.
  */
 
-import { describe, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, tick } from 'svelte'
 import AboutWindow from './AboutWindow.svelte'
 import AcknowledgementsDialog from './AcknowledgementsDialog.svelte'
@@ -59,22 +59,24 @@ vi.mock('@tauri-apps/api/app', () => ({
 
 // The real file is ~119 KB of generated JSON; a couple of representative rows
 // exercise the same markup, including the URL-less case.
-vi.mock('./third-party-packages.gen.json', () => ({
-  default: {
-    rust: [
-      { name: 'serde', version: '1.0.228', license: 'MIT OR Apache-2.0', url: 'https://github.com/serde-rs/serde' },
-      { name: 'mystery', version: '1.0.0', license: 'MIT', url: '' },
-    ],
-    npm: [{ name: '@ark-ui/svelte', version: '5.22.1', license: 'MIT', url: 'https://ark-ui.com' }],
-    vendored: [
-      {
-        name: 'Material Symbols',
-        version: '',
-        license: 'Apache-2.0',
-        url: 'https://github.com/google/material-design-icons',
-      },
-    ],
-  },
+vi.mock('./load-third-party-packages', () => ({
+  loadThirdPartyPackages: vi.fn(() =>
+    Promise.resolve({
+      rust: [
+        { name: 'serde', version: '1.0.228', license: 'MIT OR Apache-2.0', url: 'https://github.com/serde-rs/serde' },
+        { name: 'mystery', version: '1.0.0', license: 'MIT', url: '' },
+      ],
+      npm: [{ name: '@ark-ui/svelte', version: '5.22.1', license: 'MIT', url: 'https://ark-ui.com' }],
+      vendored: [
+        {
+          name: 'Material Symbols',
+          version: '',
+          license: 'Apache-2.0',
+          url: 'https://github.com/google/material-design-icons',
+        },
+      ],
+    }),
+  ),
 }))
 
 vi.mock('$lib/ui/toast/toast-store.svelte', async (importOriginal) => ({
@@ -189,15 +191,12 @@ describe('AcknowledgementsDialog a11y', () => {
     await expectNoA11yViolations(target)
   })
 
-  // 20s rather than vitest's 5s default: this is the only a11y case that runs axe
-  // over the FULL acknowledgements tree (hundreds of package links), and the
-  // check lane runs the suite under v8 coverage, which costs it about 5x. Plain
-  // `vitest run` finishes it in ~1.6s; instrumented it lands around 8s, so the
-  // default budget fails deterministically in the lane and passes everywhere
-  // else. ❗ The budget is the only thing raised — the assertion is unchanged.
-  it('has no a11y violations once the package lists are rendered', { timeout: 20_000 }, async () => {
+  it('has no a11y violations once the package lists are rendered', async () => {
     const target = mountDialog()
     await waitForPackages(target)
+    // The four stubbed rows, never the real ~850: axe over the real list costs seconds
+    // (10+ under coverage), which timed out on a loaded CI runner.
+    expect(target.querySelectorAll('.package-list li')).toHaveLength(4)
     await expectNoA11yViolations(target)
   })
 })
