@@ -149,7 +149,7 @@
      *  A reversal launched from history is the exception to the exception: its
      *  LABEL already says it's a reversal, so the status cell is free to keep
      *  the lifecycle word. That's what lets a paused reversal read "Paused"
-     *  instead of a "Rolling back..." that hides the pause. */
+     *  instead of a "Rolling back…" that hides the pause. */
     const statusLabel = $derived(
         isRollingBack && reversalVariant === null
             ? tString('fileOperations.transferProgress.titleRollingBack')

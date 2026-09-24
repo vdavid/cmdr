@@ -34,7 +34,7 @@ describe('viewer error + load states (en)', () => {
     expect(tString('viewer.error.readFailed')).toBe('Failed to read file')
     expect(tString('viewer.error.retry')).toBe('Retry')
     expect(tString('viewer.error.cancel')).toBe('Cancel')
-    expect(tString('viewer.loading')).toBe('Loading...')
+    expect(tString('viewer.loading')).toBe('Loading…')
   })
 
   it('says why a file that is gone or a folder has nothing to show, instead of the generic read message', () => {
@@ -82,13 +82,13 @@ describe('viewer search states (en)', () => {
   })
 
   it('matches the searching / partial / no-matches leaves', () => {
-    expect(tString('viewer.search.searching')).toBe('Searching...')
+    expect(tString('viewer.search.searching')).toBe('Searching…')
     expect(tString('viewer.search.partial')).toBe('(partial)')
     expect(tString('viewer.search.noMatches')).toBe('No matches')
   })
 
   it('matches the search-bar control labels and tooltips', () => {
-    expect(tString('viewer.search.placeholder')).toBe('Find in file...')
+    expect(tString('viewer.search.placeholder')).toBe('Find in file…')
     expect(tString('viewer.search.ariaLabel')).toBe('Search text')
     expect(tString('viewer.search.caseSensitive')).toBe('Case sensitive')
     expect(tString('viewer.search.regex')).toBe('Regex')
@@ -128,9 +128,9 @@ describe('viewer toolbar + status bar (en)', () => {
     expect(tString('viewer.statusBar.badge.indexedTooltip')).toBe(
       'You have the file indexed, so the line numbers are accurate, and you can quickly scroll to any point.',
     )
-    expect(tString('viewer.statusBar.badge.streamingIndexing')).toBe('streaming, indexing...')
+    expect(tString('viewer.statusBar.badge.streamingIndexing')).toBe('streaming, indexing…')
     expect(tString('viewer.statusBar.badge.streamingIndexingTooltip', { seconds: 5 })).toBe(
-      "This is a large file in streaming mode. We're building an index in background (max 5 sec)... Line numbers are currently approximate.",
+      "This is a large file in streaming mode. We're building an index in background (max 5 sec)… Line numbers are currently approximate.",
     )
     expect(tString('viewer.statusBar.badge.streaming')).toBe('streaming')
     expect(tString('viewer.statusBar.badge.streamingTooltip', { seconds: 5 })).toBe(

@@ -96,7 +96,7 @@ describe('ViewerStatusBar', () => {
     const { target, instance } = mountStatusBar({ currentMode: 'byteSeek', isIndexing: true })
     await tick()
 
-    expect(target.querySelector('.backend-badge')?.textContent).toBe('streaming, indexing...')
+    expect(target.querySelector('.backend-badge')?.textContent).toBe('streaming, indexing…')
 
     void unmount(instance)
   })

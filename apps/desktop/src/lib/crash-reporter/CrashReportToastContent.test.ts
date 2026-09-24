@@ -108,7 +108,7 @@ describe('CrashReportToastContent', () => {
 
     buttonWith(target, 'Attach logs')?.click()
     await tick()
-    buttonWith(target, 'Sending...')?.click()
+    buttonWith(target, 'Sending…')?.click()
     await tick()
 
     expect(sendCrashLogReport).toHaveBeenCalledOnce()

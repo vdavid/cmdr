@@ -5,7 +5,7 @@
  * the registry snapshot knows — and nothing pane-relative, because the snapshot
  * names paths, not panes. The user crosses from a queue row reading
  * "big → dest" to this dialog, so it has to name the same two ends; a bare
- * "Copying..." over an unnamed transfer is the one thing it must not be.
+ * "Copying…" over an unnamed transfer is the one thing it must not be.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -175,11 +175,11 @@ describe('TransferProgressDialog, adopting a running operation', () => {
 describe('TransferProgressDialog, adopting a REVERSAL', () => {
   it('titles the reversal of a move by what it does, with the scope the journal counted', async () => {
     // Undoing a move is registered as a move, so `operationType` alone would
-    // title this "Moving..." — the thing the person asked to undo.
+    // title this "Moving…" — the thing the person asked to undo.
     const { component, target } = await mountAdopted({ operationType: 'move', reverses: 'move' })
     await emitReversalTick('move', 1240)
 
-    expect(title(target)).toBe('Putting 1,240 files back...')
+    expect(title(target)).toBe('Putting 1,240 files back…')
 
     void unmount(component)
   })
@@ -188,9 +188,9 @@ describe('TransferProgressDialog, adopting a REVERSAL', () => {
     const { component, target } = await mountAdopted({ operationType: 'move', reverses: 'trash' })
     await emitReversalTick('move', 3)
 
-    expect(title(target)).toBe('Putting 3 files back...')
+    expect(title(target)).toBe('Putting 3 files back…')
     expect(title(target)).not.toContain('Deleting')
-    expect(title(target)).not.toBe('Rolling back...')
+    expect(title(target)).not.toBe('Rolling back…')
 
     void unmount(component)
   })
@@ -199,7 +199,7 @@ describe('TransferProgressDialog, adopting a REVERSAL', () => {
     const { component, target } = await mountAdopted({ operationType: 'delete', reverses: 'copy' })
     await emitReversalTick('delete', 1240)
 
-    expect(title(target)).toBe('Deleting the 1,240 files it created...')
+    expect(title(target)).toBe('Deleting the 1,240 files it created…')
 
     void unmount(component)
   })
@@ -211,7 +211,7 @@ describe('TransferProgressDialog, adopting a REVERSAL', () => {
     const { component, target } = await mountAdopted({ operationType: 'copy', reverses: null })
     await emitReversalTick('copy', 1240)
 
-    expect(title(target)).toBe('Rolling back...')
+    expect(title(target)).toBe('Rolling back…')
 
     void unmount(component)
   })
@@ -222,7 +222,7 @@ describe('TransferProgressDialog, adopting a REVERSAL', () => {
 
     const buttons = [...target.querySelectorAll('button')].map((b) => b.textContent.trim())
     expect(buttons).not.toContain('Rollback')
-    expect(buttons).not.toContain('Rolling back...')
+    expect(buttons).not.toContain('Rolling back…')
 
     void unmount(component)
   })

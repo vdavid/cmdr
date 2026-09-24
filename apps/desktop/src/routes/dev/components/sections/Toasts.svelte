@@ -16,7 +16,7 @@
     const MINUTE_MS = 60_000
 
     const previews: Preview[] = [
-        { level: 'default', label: 'default', message: 'Connecting directly...', ageMs: 0 },
+        { level: 'default', label: 'default', message: 'Connecting directly…', ageMs: 0 },
         { level: 'info', label: 'info', message: 'Copied 12 items.', ageMs: 0 },
         { level: 'success', label: 'success', message: 'Share disconnected.', ageMs: 5 * MINUTE_MS },
         {

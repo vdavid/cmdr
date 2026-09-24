@@ -384,7 +384,7 @@ describe('viewer search-bar a11y', () => {
     <div class="search-bar" role="search">
       <input
         type="text"
-        placeholder="Find in file..."
+        placeholder="Find in file…"
         aria-label="Search text"
         class="text-field-control"
       />

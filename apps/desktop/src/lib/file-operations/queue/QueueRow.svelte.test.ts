@@ -208,7 +208,7 @@ describe('QueueRow', () => {
       bytesTotal: 100,
     }
     render({ row: buildRow('running', 'copy', progress, true) })
-    expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Rolling back...')
+    expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Rolling back…')
     expect(rollbackButton()).toBeNull()
     expect(target.querySelector('[aria-label="Cancel this operation"]')).not.toBeNull()
   })
@@ -256,7 +256,7 @@ describe('QueueRow', () => {
   it('lets a paused reversal say Paused, which the in-flight wording hides', () => {
     // The status cell is free here because the LABEL already says it's a
     // reversal. On the in-flight path it isn't, which is why that one still
-    // spends the cell on "Rolling back...".
+    // spends the cell on "Rolling back…".
     render({ row: buildReversalRow('move', 'move', 'paused') })
     expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Paused')
   })

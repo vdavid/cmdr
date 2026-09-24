@@ -24,7 +24,7 @@ afterAll(() => {
 describe('indexing catalog parity (en)', () => {
   it('resolves the scan labels and counters', () => {
     expect(tString('indexing.status.ariaLabel')).toBe('Drive indexing status')
-    expect(tString('indexing.scan.label')).toBe('Indexing your drive...')
+    expect(tString('indexing.scan.label')).toBe('Indexing your drive…')
     expect(tString('indexing.scan.counters', { entriesText: '12,345', dirsText: '678' })).toBe(
       '12,345 entries, 678 dirs',
     )
@@ -57,10 +57,10 @@ describe('indexing catalog parity (en)', () => {
   })
 
   it('resolves the compute-step sub-phase labels (folder-worded)', () => {
-    expect(tString('indexing.aggregation.loading')).toBe('Loading folders...')
-    expect(tString('indexing.aggregation.sorting')).toBe('Sorting folders...')
-    expect(tString('indexing.aggregation.computing')).toBe('Computing folder sizes...')
-    expect(tString('indexing.aggregation.writing')).toBe('Saving folder sizes...')
+    expect(tString('indexing.aggregation.loading')).toBe('Loading folders…')
+    expect(tString('indexing.aggregation.sorting')).toBe('Sorting folders…')
+    expect(tString('indexing.aggregation.computing')).toBe('Computing folder sizes…')
+    expect(tString('indexing.aggregation.writing')).toBe('Saving folder sizes…')
   })
 
   it('resolves the replay detail', () => {

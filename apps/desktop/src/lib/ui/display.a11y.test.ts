@@ -269,14 +269,14 @@ describe('StatusGlyph a11y', () => {
  * loadedCount, finalizingCount) plus the optional cancel hint.
  */
 describe('LoadingIcon a11y', () => {
-  it('default "Loading..." state has no a11y violations', async () => {
+  it('default "Loading…" state has no a11y violations', async () => {
     const target = container()
     mount(LoadingIcon, { target, props: {} })
     await tick()
     await expectNoA11yViolations(target)
   })
 
-  it('"Opening folder..." state has no a11y violations', async () => {
+  it('"Opening folder…" state has no a11y violations', async () => {
     const target = container()
     mount(LoadingIcon, { target, props: { openingFolder: true } })
     await tick()

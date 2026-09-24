@@ -129,7 +129,7 @@ describe('resolveDatePreset (D11)', () => {
   })
 
   it('returns null for unknown keys (caller falls through to free-form)', () => {
-    expect(resolveDatePreset('Custom...', anchor)).toBeNull()
+    expect(resolveDatePreset('Custom…', anchor)).toBeNull()
     expect(resolveDatePreset('', anchor)).toBeNull()
   })
 

@@ -17,13 +17,13 @@ import { unitLabel } from '$lib/units'
 
 // ── Size column 2: numeric presets ────────────────────────────────────────────────────────
 //
-// The brief specifies 0, 1, 5, 10, 20, 50, 100, 200, 500, plus a "Custom..." escape hatch
+// The brief specifies 0, 1, 5, 10, 20, 50, 100, 200, 500, plus a "Custom…" escape hatch
 // that reveals a free-form input. Strings (not numbers) so the legacy `size-state` IPC
 // fields, which carry strings, can land them without coercion.
 
 export const SIZE_PRESETS: readonly string[] = ['0', '1', '5', '10', '20', '50', '100', '200', '500']
 
-/** Special value for "Custom...". Selecting it reveals the inline number input. */
+/** Special value for "Custom…". Selecting it reveals the inline number input. */
 export const CUSTOM_VALUE = '__custom__'
 
 /**
@@ -63,7 +63,7 @@ export function showsUpperBound(comparator: string): boolean {
 // ── Date column 2: preset labels ──────────────────────────────────────────────────────────
 //
 // D11 calls for `today`, `yesterday`, `this week`, `last week`, `this month`, `last month`,
-// `this year`, plus `Custom...`. Each preset has a stable string key the dialog stores; the
+// `this year`, plus `Custom…`. Each preset has a stable string key the dialog stores; the
 // resolver turns the key into the ISO date string the search engine wants.
 
 export interface DatePreset {

@@ -831,7 +831,7 @@ test.describe('Rolling an operation back from the history dialog', () => {
     // The reversal is live and named on the wire as one. Every surface that shows
     // it (queue row, corner chip, progress dialog) words itself off THIS field, so
     // a mock can't pin it: the wording tests would all still pass while the app
-    // silently went back to titling a restore "Rolling back...". Read in the same
+    // silently went back to titling a restore "Rolling back…". Read in the same
     // `list_operations` round trip the pause below needs anyway, so it costs no
     // extra time. `reverses` is the ORIGINAL kind, and this reversal undoes a copy.
     const reverses = await page.evaluate(`(async function() {

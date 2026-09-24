@@ -66,20 +66,20 @@ describe('AiToastContent', () => {
     const target = mountToast()
 
     const title = target.querySelector('.ai-title')
-    expect(title?.textContent).toBe('Downloading AI model...')
+    expect(title?.textContent).toBe('Downloading AI model…')
 
     const progressText = target.querySelector('.ai-progress-text')
     expect(progressText?.textContent).toContain('12%')
   })
 
-  it('renders downloading state with "Starting download..." when no total', () => {
+  it('renders downloading state with "Starting download…" when no total', () => {
     mockState.notificationState = 'downloading'
     mockState.downloadProgress = null
 
     const target = mountToast()
 
     const progressText = target.querySelector('.ai-progress-text')
-    expect(progressText?.textContent).toBe('Starting download...')
+    expect(progressText?.textContent).toBe('Starting download…')
   })
 
   it('calls handleCancel when Cancel is clicked in downloading state', () => {
@@ -101,7 +101,7 @@ describe('AiToastContent', () => {
     const target = mountToast()
 
     const title = target.querySelector('.ai-title')
-    expect(title?.textContent).toBe('Setting up AI...')
+    expect(title?.textContent).toBe('Setting up AI…')
 
     const description = target.querySelector('.ai-description')
     expect(description?.textContent).toBe('Starting server')

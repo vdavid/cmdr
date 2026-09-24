@@ -219,7 +219,7 @@
                 totalText: formatInteger(totalCount),
             })
         }
-        // Index loading: the content area shows the "Loading drive index..." spinner,
+        // Index loading: the content area shows the "Loading drive index…" spinner,
         // so the status bar stays empty to avoid duplication. (R4: same rule as D3 / D4
         // for the searching / no-results states — content is the source of truth.)
         return ''
@@ -532,7 +532,7 @@
             </div>
         {:else if isSearching && !streaming}
             <!-- D1/D2: full result list area is replaced by the standard spinner +
-                 "Searching..." label. No rows render while the fetch is in-flight,
+                 "Searching…" label. No rows render while the fetch is in-flight,
                  since the previous result set is now stale relative to the new
                  query/filter state. -->
             <div class="loading-state">

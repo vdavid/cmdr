@@ -110,7 +110,7 @@ describe('downloads catalog parity (en)', () => {
     expect(flatten(t('downloads.shortcutRow.commandName', { marker: tag }))).toBe('Go to latest download (global)')
     expect(tString('downloads.shortcutRow.modifiedTooltip')).toBe('Modified from default')
     expect(tString('downloads.shortcutRow.resetTooltip')).toBe('Reset to default')
-    expect(tString('downloads.shortcutRow.pressKeys')).toBe('Press keys...')
+    expect(tString('downloads.shortcutRow.pressKeys')).toBe('Press keys…')
     expect(tString('downloads.shortcutRow.registered')).toBe('Registered')
     expect(tString('downloads.shortcutRow.notRegistered')).toBe('Not registered')
     expect(tString('downloads.shortcutRow.invalidCombo')).toBe("Couldn't register: invalid combo")

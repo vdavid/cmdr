@@ -350,7 +350,7 @@ export async function ensureAppReady(
  *
  * - the copy is on disk well before the operation ends — every write lands by
  *   temp+rename and the closing `fdatasync` pass (`write_operations/durability.rs`,
- *   the user-visible "Writing the last piece...") runs AFTER the bytes are in
+ *   the user-visible "Writing the last piece…") runs AFTER the bytes are in
  *   place, and on a loaded Linux Docker box that flush has been measured taking
  *   seconds;
  * - the new row is in the pane before it ends too, because the pane gets it from

@@ -37,7 +37,7 @@ describe('query-ui static-string parity (en)', () => {
 
   it('resolves results-table headers and states', () => {
     expect(tString('queryUi.results.col.name')).toBe('Name')
-    expect(tString('queryUi.results.searching')).toBe('Searching...')
+    expect(tString('queryUi.results.searching')).toBe('Searching…')
     expect(tString('queryUi.results.noMatchHeading')).toBe('No files match these criteria:')
     expect(tString('queryUi.results.indexNotReady')).toBe(
       'Drive index not ready. Search is available after the initial scan completes.',
@@ -70,7 +70,7 @@ describe('query-ui interpolated-string parity (en)', () => {
     expect(tString('queryUi.results.resultCount', { shownText: '30', totalText: '1,234' })).toBe('30 of 1,234 results')
     expect(tString('queryUi.results.indexReadyStatus', { countText: '12.3K' })).toBe('Index ready (12.3K entries)')
     expect(tString('queryUi.results.scanningWithCount', { countText: '999' })).toBe(
-      'Scanning in progress (999 entries)...',
+      'Scanning in progress (999 entries)…',
     )
   })
 })

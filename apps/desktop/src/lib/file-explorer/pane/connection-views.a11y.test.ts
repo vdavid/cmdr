@@ -51,7 +51,7 @@ vi.mock('@tauri-apps/api/event', () => ({
 }))
 
 // Don't resolve: `MtpConnectionView` auto-connects on mount, but a pending
-// promise keeps the UI in the "Connecting..." state we want to audit.
+// promise keeps the UI in the "Connecting…" state we want to audit.
 vi.mock('$lib/mtp/mtp-store.svelte', () => ({
   connect: vi.fn(() => new Promise<never>(() => {})),
 }))

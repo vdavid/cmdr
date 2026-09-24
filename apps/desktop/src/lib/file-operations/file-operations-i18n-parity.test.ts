@@ -91,9 +91,9 @@ describe('delete dialog chrome (en)', () => {
   })
 
   it('resolves the overflow line with plural agreement', () => {
-    expect(t('fileOperations.delete.overflowMore', { countText: '1', count: 1 })).toBe('... and 1 more item')
+    expect(t('fileOperations.delete.overflowMore', { countText: '1', count: 1 })).toBe('… and 1 more item')
     expect(t('fileOperations.delete.overflowMore', { countText: '1,234', count: 1234 })).toBe(
-      '... and 1,234 more items',
+      '… and 1,234 more items',
     )
   })
 
@@ -121,7 +121,7 @@ describe('transfer dialog chrome (en)', () => {
     expect(tString('fileOperations.transferDialog.smbNativeNote')).toBe(
       'This share uses the system connection. Cancellation may be delayed. Use "Connect directly" in the volume picker for faster transfers and reliable cancel.',
     )
-    expect(tString('fileOperations.transferDialog.checkingConflicts')).toBe('Checking for conflicts...')
+    expect(tString('fileOperations.transferDialog.checkingConflicts')).toBe('Checking for conflicts…')
   })
 
   it('resolves merge info and the conflict summary with agreement', () => {
@@ -178,24 +178,22 @@ describe('scan-phase body (en)', () => {
 
 describe('transfer progress dialog chrome (en)', () => {
   it('resolves the phase titles', () => {
-    expect(tString('fileOperations.transferProgress.scanTitleCopy')).toBe('Verifying before copy...')
-    expect(tString('fileOperations.transferProgress.scanTitleMove')).toBe('Verifying before move...')
-    expect(tString('fileOperations.transferProgress.scanTitleDelete')).toBe('Counting items to delete...')
-    expect(tString('fileOperations.transferProgress.scanTitleTrash')).toBe('Counting items to trash...')
-    expect(tString('fileOperations.transferProgress.titleRollingBack')).toBe('Rolling back...')
-    expect(tString('fileOperations.transferProgress.titleCancelling')).toBe('Canceling...')
-    expect(tString('fileOperations.transferProgress.titleCancellingSlow')).toBe(
-      'Canceling... (finishing USB transfers)',
-    )
+    expect(tString('fileOperations.transferProgress.scanTitleCopy')).toBe('Verifying before copy…')
+    expect(tString('fileOperations.transferProgress.scanTitleMove')).toBe('Verifying before move…')
+    expect(tString('fileOperations.transferProgress.scanTitleDelete')).toBe('Counting items to delete…')
+    expect(tString('fileOperations.transferProgress.scanTitleTrash')).toBe('Counting items to trash…')
+    expect(tString('fileOperations.transferProgress.titleRollingBack')).toBe('Rolling back…')
+    expect(tString('fileOperations.transferProgress.titleCancelling')).toBe('Canceling…')
+    expect(tString('fileOperations.transferProgress.titleCancellingSlow')).toBe('Canceling… (finishing USB transfers)')
     expect(tString('fileOperations.transferProgress.titleConflict')).toBe('File already exists')
-    expect(tString('fileOperations.transferProgress.titleFlushing')).toBe('Writing the last piece...')
+    expect(tString('fileOperations.transferProgress.titleFlushing')).toBe('Writing the last piece…')
   })
 
   it('resolves the active-phase title per operation, and the scanning banner', () => {
-    expect(t('fileOperations.transferProgress.titleActive', { gerund: 'copy' })).toBe('Copying...')
-    expect(t('fileOperations.transferProgress.titleActive', { gerund: 'move' })).toBe('Moving...')
-    expect(t('fileOperations.transferProgress.titleActive', { gerund: 'delete' })).toBe('Deleting...')
-    expect(t('fileOperations.transferProgress.titleActive', { gerund: 'trash' })).toBe('Moving to trash...')
+    expect(t('fileOperations.transferProgress.titleActive', { gerund: 'copy' })).toBe('Copying…')
+    expect(t('fileOperations.transferProgress.titleActive', { gerund: 'move' })).toBe('Moving…')
+    expect(t('fileOperations.transferProgress.titleActive', { gerund: 'delete' })).toBe('Deleting…')
+    expect(t('fileOperations.transferProgress.titleActive', { gerund: 'trash' })).toBe('Moving to trash…')
     // The only phase banner left: while it copies, the title says so already.
     expect(tString('fileOperations.transferProgress.stageScanning')).toBe('Scanning')
   })

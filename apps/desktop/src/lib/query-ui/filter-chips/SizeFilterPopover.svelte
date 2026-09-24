@@ -130,7 +130,7 @@
 
 <!-- Size popover: multi-column list-style grid. Col 1 = comparator (`any` /
      `>=` / `<=` / `between`). Col 2 = numeric preset (`0` / `1` / `5` / ... /
-     `Custom...`). Col 3 = unit (`bytes` / `KB` / `MB` / `GB`). When col 1 =
+     `Custom…`). Col 3 = unit (`bytes` / `KB` / `MB` / `GB`). When col 1 =
      `between`, cols 4 + 5 mirror cols 2 + 3 for the upper bound. Cols 2-5 render
      disabled when col 1 = `any` (no range to apply). -->
 <FilterPopover

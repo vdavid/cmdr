@@ -239,7 +239,7 @@
     /** The dialog is showing a reversal launched from the operation history, and
      *  `reverses` says what the operation it undoes DID. Null on an in-flight
      *  rollback (a cancelled copy cleaning up after itself), which keeps its own
-     *  title: there the bar drains backwards and "Rolling back..." is honest. */
+     *  title: there the bar drains backwards and "Rolling back…" is honest. */
     const reversalVariant = $derived(reverses === null ? null : rollbackConfirmVariant(reverses))
     const rollbackUnavailable = $derived(progress.rollbackUnavailable)
 

@@ -134,7 +134,7 @@ describe('runTrashUndo', () => {
     // A restore is a queued operation and waits out the volume's lane, so it can
     // outlive any transient timeout. Nothing must be able to time it out.
     const progress = raised()[0]
-    expect(progress.message).toBe('Putting them back...')
+    expect(progress.message).toBe('Putting them back…')
     expect(progress.options.dismissal).toBe('persistent')
   })
 
@@ -169,7 +169,7 @@ describe('runTrashUndo', () => {
 
   it('still clears the progress toast when the undo never runs', async () => {
     // A wedged volume or a dead journal rejects the IPC. Leaving a persistent
-    // "Putting them back..." on screen forever is the one outcome that must not
+    // "Putting them back…" on screen forever is the one outcome that must not
     // happen, whatever else does.
     undoOperations.mockRejectedValue(new Error('the volume went away'))
     await runTrashUndo('op-1')

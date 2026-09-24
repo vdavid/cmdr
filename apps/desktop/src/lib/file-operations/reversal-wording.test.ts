@@ -100,7 +100,7 @@ describe('the reversal wording, one kind at a time', () => {
     const variant = rollbackConfirmVariant(kind)
     expect(tString(reversalLabelKey(variant))).toBe('Putting files back')
     expect(tString(reversalTitleKey(variant), { count: 1240, countText: formatInteger(1240) })).toBe(
-      'Putting 1,240 files back...',
+      'Putting 1,240 files back…',
     )
   })
 
@@ -111,7 +111,7 @@ describe('the reversal wording, one kind at a time', () => {
       const variant = rollbackConfirmVariant(kind)
       expect(tString(reversalLabelKey(variant))).toBe('Deleting what it created')
       expect(tString(reversalTitleKey(variant), { count: 1240, countText: formatInteger(1240) })).toBe(
-        'Deleting the 1,240 files it created...',
+        'Deleting the 1,240 files it created…',
       )
     },
   )
@@ -120,7 +120,7 @@ describe('the reversal wording, one kind at a time', () => {
     const variant = rollbackConfirmVariant('rename')
     expect(tString(reversalLabelKey(variant))).toBe('Putting the old names back')
     expect(tString(reversalTitleKey(variant), { count: 12, countText: formatInteger(12) })).toBe(
-      'Putting 12 old names back...',
+      'Putting 12 old names back…',
     )
   })
 
@@ -146,7 +146,7 @@ describe('the reversal wording, one kind at a time', () => {
 
   it('says one file without a number, which is how a person would say it', () => {
     expect(tString(reversalTitleKey('undoByMovingBack'), { count: 1, countText: formatInteger(1) })).toBe(
-      'Putting the file back...',
+      'Putting the file back…',
     )
   })
 })

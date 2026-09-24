@@ -417,8 +417,8 @@ describe('onboarding cloud provider picker/setup parity (en)', () => {
   })
 
   it('resolves the API-key placeholders', () => {
-    expect(tString('onboarding.cloudSetup.apiKeyPlaceholder.openai')).toBe('Example: sk-abc123...')
-    expect(tString('onboarding.cloudSetup.apiKeyPlaceholder.anthropic')).toBe('Example: sk-ant-abc123...')
+    expect(tString('onboarding.cloudSetup.apiKeyPlaceholder.openai')).toBe('Example: sk-abc123…')
+    expect(tString('onboarding.cloudSetup.apiKeyPlaceholder.anthropic')).toBe('Example: sk-ant-abc123…')
     expect(tString('onboarding.cloudSetup.apiKeyPlaceholder.generic')).toBe('API key')
   })
 

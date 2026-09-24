@@ -101,7 +101,7 @@ describe('Expiration modal copy (en)', () => {
 
 describe('License key dialog copy (en)', () => {
   it('titles, labels, and validity values', () => {
-    expect(tString('licensing.dialog.loading')).toBe('Loading...')
+    expect(tString('licensing.dialog.loading')).toBe('Loading…')
     expect(tString('licensing.dialog.detailsTitle')).toBe('License details')
     expect(tString('licensing.dialog.enterTitle')).toBe('Enter license key')
     expect(tString('licensing.dialog.validityNotYetVerified')).toBe('Not yet verified')

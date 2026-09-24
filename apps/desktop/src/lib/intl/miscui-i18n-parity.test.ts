@@ -28,7 +28,7 @@ describe('ui area parity (en)', () => {
     expect(tString('ui.alertDialog.defaultButton')).toBe('OK')
     expect(tString('ui.modalDialog.close')).toBe('Close')
     expect(tString('ui.popover.defaultAriaLabel')).toBe('Options')
-    expect(tString('ui.select.placeholder')).toBe('Select...')
+    expect(tString('ui.select.placeholder')).toBe('Select…')
     expect(tString('ui.combobox.emptyText')).toBe('No matches. Keep typing to use your own value.')
     expect(tString('ui.toast.sendErrorReport')).toBe('Send error report…')
     expect(tString('ui.toast.dismissAria')).toBe('Dismiss notification')
@@ -47,13 +47,13 @@ describe('ui area parity (en)', () => {
 
   it('resolves the loading-icon plurals (one/other) byte-identically', () => {
     expect(t('ui.loadingIcon.finalizing', { countText: '1', count: 1 })).toBe(
-      'All 1 file loaded. Sorting your files, preparing view...',
+      'All 1 file loaded. Sorting your files, preparing view…',
     )
     expect(t('ui.loadingIcon.finalizing', { countText: '1,234', count: 1234 })).toBe(
-      'All 1,234 files loaded. Sorting your files, preparing view...',
+      'All 1,234 files loaded. Sorting your files, preparing view…',
     )
-    expect(t('ui.loadingIcon.loaded', { countText: '1', count: 1 })).toBe('Loaded 1 file...')
-    expect(t('ui.loadingIcon.loaded', { countText: '42', count: 42 })).toBe('Loaded 42 files...')
+    expect(t('ui.loadingIcon.loaded', { countText: '1', count: 1 })).toBe('Loaded 1 file…')
+    expect(t('ui.loadingIcon.loaded', { countText: '42', count: 42 })).toBe('Loaded 42 files…')
   })
 
   it('renders the cancel hint with an empty <key> tag (chip filled by the app)', () => {
@@ -65,16 +65,16 @@ describe('ui area parity (en)', () => {
 
 describe('ai area parity (en)', () => {
   it('resolves the toast lifecycle copy', () => {
-    expect(tString('ai.toast.downloadingTitle')).toBe('Downloading AI model...')
-    expect(tString('ai.toast.startingDownload')).toBe('Starting download...')
-    expect(tString('ai.toast.installingTitle')).toBe('Setting up AI...')
+    expect(tString('ai.toast.downloadingTitle')).toBe('Downloading AI model…')
+    expect(tString('ai.toast.startingDownload')).toBe('Starting download…')
+    expect(tString('ai.toast.installingTitle')).toBe('Setting up AI…')
     expect(tString('ai.toast.installingDescription')).toBe('Starting server')
     expect(tString('ai.toast.readyTitle')).toBe('AI ready')
     expect(tString('ai.toast.readyDescription')).toBe(
       'Try creating a new folder (F7) to see AI-powered name suggestions.',
     )
     expect(tString('ai.toast.gotIt')).toBe('Got it')
-    expect(tString('ai.toast.startingTitle')).toBe('AI starting...')
+    expect(tString('ai.toast.startingTitle')).toBe('AI starting…')
     expect(tString('ai.toast.startingDescription')).toBe('Loading the model, this takes a few seconds')
     expect(tString('ai.toast.downloadCloseTooltip')).toBe(
       'Close this notification; the download will continue in the background',
@@ -115,7 +115,7 @@ describe('ai area parity (en)', () => {
 
   it('resolves the local AI section dynamic copy', () => {
     expect(tString('ai.local.statusRunning')).toBe('Running')
-    expect(tString('ai.local.installStepExtracting')).toBe('Step 1 of 4: Extracting runtime...')
+    expect(tString('ai.local.installStepExtracting')).toBe('Step 1 of 4: Extracting runtime…')
     expect(t('ai.local.etaSeconds', { value: '5' })).toBe('~5 sec left')
     expect(t('ai.local.etaMinutes', { value: '3' })).toBe('~3 min left')
     expect(t('ai.local.etaHours', { value: '1' })).toBe('~1 hr left')
@@ -132,7 +132,7 @@ describe('ai area parity (en)', () => {
     expect(tString('ai.cloud.connectedNoModels')).toBe('Connected (model list not available)')
     expect(tString('ai.cloud.connectionError')).toBe("Can't reach server")
     expect(t('ai.cloud.modelPlaceholderExample', { model: 'gpt-4.1-mini' })).toBe('Example: gpt-4.1-mini')
-    expect(tString('ai.cloud.apiKeyPlaceholderAnthropic')).toBe('Example: sk-ant-abc123...')
+    expect(tString('ai.cloud.apiKeyPlaceholderAnthropic')).toBe('Example: sk-ant-abc123…')
   })
 })
 
@@ -143,7 +143,7 @@ describe('mtp area parity (en)', () => {
       'Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.',
     )
     expect(tString('mtp.connectedToast.dontShowAgain')).toBe("Don't show again")
-    expect(tString('mtp.connectedToast.disableMtp')).toBe('Disable MTP...')
+    expect(tString('mtp.connectedToast.disableMtp')).toBe('Disable MTP…')
     expect(tString('mtp.deviceFallbackName')).toBe('MTP device')
   })
 

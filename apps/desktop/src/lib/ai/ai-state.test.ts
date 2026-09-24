@@ -173,7 +173,7 @@ describe('ai-state', () => {
       expect(state.progressText).toContain('25%')
     })
 
-    it('shows "Starting download..." when totalBytes is 0', async () => {
+    it('shows "Starting download…" when totalBytes is 0', async () => {
       vi.mocked(getAiStatus).mockResolvedValue('available')
       vi.mocked(getAiModelInfo).mockResolvedValue(mockModelInfo)
       let progressCallback: ((event: { payload: unknown }) => void) | undefined
@@ -189,7 +189,7 @@ describe('ai-state', () => {
       progressCallback?.({ payload: { bytesDownloaded: 0, totalBytes: 0, speed: 0, etaSeconds: 0 } })
 
       const state = getAiState()
-      expect(state.progressText).toBe('Starting download...')
+      expect(state.progressText).toBe('Starting download…')
     })
 
     it('sets installing state on ai-installing event', async () => {

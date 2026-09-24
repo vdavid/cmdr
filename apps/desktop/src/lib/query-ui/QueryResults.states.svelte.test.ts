@@ -3,10 +3,10 @@
  *
  * Pins:
  * - D1: Searching state renders the project's normal spinner (`.spinner`), not the
- *   glowing-dot pulse. The "Searching..." label sits underneath.
+ *   glowing-dot pulse. The "Searching…" label sits underneath.
  * - D2: When `isSearching` is true post-debounce, the result list area is REPLACED
  *   by the spinner + label (no rows visible during the active fetch).
- * - D3: Status bar is EMPTY while the content area shows "Searching...".
+ * - D3: Status bar is EMPTY while the content area shows "Searching…".
  * - D4: No-results state: content shows `No files match these criteria:` followed
  *   by a bulleted list of the active criteria. Status bar empty.
  */
@@ -72,10 +72,10 @@ describe('SearchResults round 2 states', () => {
     expect(target.querySelector('.loading-pulse')).toBeFalsy()
   })
 
-  it('D1: searching state shows the "Searching..." label underneath the spinner', async () => {
+  it('D1: searching state shows the "Searching…" label underneath the spinner', async () => {
     const target = mountWith({ isSearching: true, hasSearched: true, query: '*.jpg' })
     await tick()
-    expect(target.textContent).toContain('Searching...')
+    expect(target.textContent).toContain('Searching…')
   })
 
   it('D2: while isSearching the result rows are NOT rendered', async () => {
@@ -287,11 +287,11 @@ describe('SearchResults round 2 states', () => {
     expect(target.querySelector('.no-results button')).toBeFalsy()
   })
 
-  // R4 status-bar dedup: when the result list area shows "Loading drive index...",
+  // R4 status-bar dedup: when the result list area shows "Loading drive index…",
   // the status bar must NOT also say "Loading index...". David flagged the duplication
   // and asked that this become the general pattern (content area is the source of truth;
   // status bar stays empty when it would duplicate).
-  it('R4: status bar is empty while the content shows "Loading drive index..."', async () => {
+  it('R4: status bar is empty while the content shows "Loading drive index…"', async () => {
     const target = mountWith({
       isIndexAvailable: true,
       isIndexReady: false,

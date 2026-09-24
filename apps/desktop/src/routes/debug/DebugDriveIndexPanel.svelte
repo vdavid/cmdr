@@ -223,7 +223,7 @@
         <div class="index-status-row">
             <div class="index-status">
                 {#if debugStatus === null}
-                    <span class="status-badge neutral">Loading...</span>
+                    <span class="status-badge neutral">Loading…</span>
                 {:else}
                     <span
                         class="status-badge {phaseStyle(debugStatus.activityPhase)}"

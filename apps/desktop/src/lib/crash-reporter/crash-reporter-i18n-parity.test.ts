@@ -38,7 +38,7 @@ describe('crash-reporter dialog copy parity (en)', () => {
     expect(tString('crashReporter.dialog.alwaysSend')).toBe('Always send crash reports')
     expect(tString('crashReporter.dialog.dismiss')).toBe('Dismiss')
     expect(tString('crashReporter.dialog.send')).toBe('Send report')
-    expect(tString('crashReporter.dialog.sending')).toBe('Sending...')
+    expect(tString('crashReporter.dialog.sending')).toBe('Sending…')
   })
 
   it('says a report that didn’t go out stayed behind, and lets the reason follow', () => {

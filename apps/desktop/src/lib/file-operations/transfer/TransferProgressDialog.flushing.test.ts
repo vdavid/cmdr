@@ -179,7 +179,7 @@ async function mountDialog(operationType: DialogOperationType): Promise<{
 }
 
 describe('TransferProgressDialog flushing phase', () => {
-  it('shows "Writing the last piece..." for a copy in the flushing phase', async () => {
+  it('shows "Writing the last piece…" for a copy in the flushing phase', async () => {
     const { component, target } = await mountDialog('copy')
     expect(progressCb, 'onWriteProgress subscriber registered').toBeTruthy()
     if (!progressCb) throw new Error('subscriber never registered')
@@ -187,18 +187,18 @@ describe('TransferProgressDialog flushing phase', () => {
     progressCb(flushingEvent('copy'))
     await tick()
 
-    expect(target.textContent).toContain('Writing the last piece...')
+    expect(target.textContent).toContain('Writing the last piece…')
     void unmount(component)
   })
 
-  it('shows "Writing the last piece..." for a move in the flushing phase', async () => {
+  it('shows "Writing the last piece…" for a move in the flushing phase', async () => {
     const { component, target } = await mountDialog('move')
     if (!progressCb) throw new Error('subscriber never registered')
 
     progressCb(flushingEvent('move'))
     await tick()
 
-    expect(target.textContent).toContain('Writing the last piece...')
+    expect(target.textContent).toContain('Writing the last piece…')
     void unmount(component)
   })
 })
@@ -211,7 +211,7 @@ describe("TransferProgressDialog: a cross-disk move's source sweep", () => {
     progressCb(sourceSweepEvent('move'))
     await tick()
 
-    expect(target.textContent).toContain('Removing the originals...')
+    expect(target.textContent).toContain('Removing the originals…')
     expect(target.textContent).not.toContain('Moving...')
     void unmount(component)
   })
@@ -253,8 +253,8 @@ describe("TransferProgressDialog: a cross-disk move's source sweep", () => {
     progressCb(sourceSweepEvent('delete'))
     await tick()
 
-    expect(target.textContent).toContain('Deleting...')
-    expect(target.textContent).not.toContain('Removing the originals...')
+    expect(target.textContent).toContain('Deleting…')
+    expect(target.textContent).not.toContain('Removing the originals…')
     void unmount(component)
   })
 })
