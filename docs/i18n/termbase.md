@@ -82,7 +82,8 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
 - `chosen` (required): the canonical form.
 - `accept` (optional): other surface forms that count as this term (inflections, button vs verb form, case forms). The
   drift check treats `chosen` + `accept` as case-insensitive substrings of the visible translation, so a compound
-  (`Bewerkingenwachtrij`) or an inflected brand (`Cmdrben`) counts.
+  (`Bewerkingenwachtrij`) or an inflected brand (`Cmdrben`) counts, and a bare stem already covers its endings. A form
+  ending in `*` is stricter: it must START a word (`wachtrij*` accepts `Wachtrijen`, not `Bewerkingenwachtrij`).
 - `forms` (optional): free-text usage note (button vs verb vs title form, plural, compounding).
 - `avoid` (optional): forms not to use, each `{ form, why }`. Superseded rulings go here.
 - `confidence` (required): `confirmed` (a human signed off) | `high` (authoritative sources agree) | `tentative`
@@ -104,7 +105,7 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
 The brief finds a section by the keys its heading cites, so cite every key the section is about, in backticks:
 
 - A full key: `` `servers.sheet.remember` ``.
-- A wildcard: `` `servers.*` `` or `` `errors.mutation.trash*` ``.
+- A wildcard: `` `servers.*` ``, `` `errors.mutation.trash*` ``, or one mid-key (`` `mtp.*.retry` ``).
 - A sibling shorthand after a full key, with or without the leading dot:
   `` `settings.analytics.enabled.label`/`.description` `` resolves to `settings.analytics.enabled.description`.
 - A citation that doesn't start at a catalog namespace (`` `rollbackConfirm.body` ``) matches as a segment-aligned

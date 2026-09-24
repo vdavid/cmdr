@@ -106,6 +106,12 @@ describe('localeValueCarriesTerm', () => {
     expect(localeValueCarriesTerm('nl', 'Bewerkingenwachtrij', term)).toBe(true)
     expect(localeValueCarriesTerm('nl', 'De actie', term)).toBe(false)
   })
+  it('reads a trailing * on an accept form as a word-start prefix, where a bare form is any substring', () => {
+    const term = { chosen: 'bewerking', accept: ['wachtrij*'], confidence: 'high' as const, sources: 's' }
+    expect(localeValueCarriesTerm('nl', 'Wachtrijen leeg', term)).toBe(true)
+    expect(localeValueCarriesTerm('nl', 'Bewerkingenwachtrij', { ...term, chosen: 'x' })).toBe(false)
+    expect(localeValueCarriesTerm('nl', 'Bewerkingenwachtrij', { ...term, chosen: 'x', accept: ['wachtrij'] })).toBe(true)
+  })
   it('treats a curly apostrophe in the translation or the form as a straight one', () => {
     const term = { chosen: "n'est", confidence: 'high' as const, sources: 's' }
     expect(localeValueCarriesTerm('fr', 'La copie n’est pas terminée', term)).toBe(true)
@@ -184,6 +190,13 @@ describe('sectionCitesKey', () => {
   it('matches a namespace-less citation as a segment-aligned suffix', () => {
     expect(cites('rollbackConfirm.body', 'fileOperations.rollbackConfirm.body')).toBe(true)
     expect(cites('rollbackConfirm.body', 'fileOperations.xrollbackConfirm.body')).toBe(false)
+  })
+  it('resolves a wildcard in the middle of a citation', () => {
+    const ns = new Set(['mtp', 'fileExplorer'])
+    expect(parseDecisions('## Retry (`mtp.*.retry`)\nx')[0].citations).toEqual(['mtp.*.retry'])
+    expect(sectionCitesKey(['mtp.*.retry'], 'mtp.connect.retry', ns)).toBe(true)
+    expect(sectionCitesKey(['mtp.*.retry'], 'mtp.connect.cancel', ns)).toBe(false)
+    expect(sectionCitesKey(['mtp.*.retry'], 'fileExplorer.mtp.connect.retry', ns)).toBe(false)
   })
   it('never suffix-matches a citation that starts at a real namespace', () => {
     expect(cites('servers.*', 'settings.servers.title')).toBe(false)

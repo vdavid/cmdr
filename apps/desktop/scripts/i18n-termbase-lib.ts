@@ -277,7 +277,12 @@ export function localeValueCarriesTerm(tag: string, value: string, term: Pick<Te
   const visible = visibleLiterals(value, tag) ?? stripRawIdentifiers(value).replace(/''/g, "'")
   const text = straightQuotes(visible).toLocaleLowerCase(tag)
   const forms = [term.chosen, ...(term.accept ?? [])].filter((form) => typeof form === 'string' && form.length > 0)
-  return forms.some((form) => text.includes(straightQuotes(form).toLocaleLowerCase(tag)))
+  return forms.some((raw) => {
+    const form = straightQuotes(raw).toLocaleLowerCase(tag)
+    if (!form.endsWith('*')) return text.includes(form)
+    // An explicit prefix: the form has to START a word, where a bare form may sit anywhere.
+    return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(form.slice(0, -1))}`, 'u').test(text)
+  })
 }
 
 /** One `##` or `###` section of a `decisions.md`. */
