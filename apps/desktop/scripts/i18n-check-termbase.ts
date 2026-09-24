@@ -38,8 +38,10 @@ import {
   englishMatchText,
   loadTerms,
   localeValueCarriesTerm,
+  decisionPointers,
   parseDecisions,
   proposedConceptsPath,
+  resolveDecision,
   readJsonIfPresent,
   readTextIfPresent,
 } from './i18n-termbase-lib.ts'
@@ -207,11 +209,18 @@ function exceptionErrors(at: string, exceptions: unknown, enKeys: ReadonlySet<st
   ])
 }
 
-/** `decision` must be the exact text of a `decisions.md` heading. */
+/** Each `decision` pointer must resolve to exactly one `decisions.md` heading (`resolveDecision`). */
 function decisionErrors(at: string, decision: unknown, { tag, decisionHeadings }: ValidateTermsArgs): string[] {
   if (decision === undefined) return []
-  if (typeof decision === 'string' && decisionHeadings.has(decision)) return []
-  return [`${at}: decision ${shownValue(decision)} isn't a heading in ${tag}/decisions.md`]
+  const isList = Array.isArray(decision) && decision.every((entry) => typeof entry === 'string')
+  if (typeof decision !== 'string' && !isList) return [`${at}: "decision" must be a heading string or a list of them`]
+  return decisionPointers(decision).flatMap((pointer) => {
+    const found = resolveDecision(pointer, decisionHeadings)
+    if (found.length === 1) return []
+    return found.length === 0
+      ? [`${at}: decision ${shownValue(pointer)} matches no heading in ${tag}/decisions.md`]
+      : [`${at}: decision ${shownValue(pointer)} matches ${String(found.length)} headings; lengthen it until one is left`]
+  })
 }
 
 /** One shipped key that drifts from a ruling. */

@@ -46,6 +46,7 @@ import type { MemoryIndex } from './i18n-brief-memory.ts'
 import {
   compileConcepts,
   coveredSpans,
+  decisionPointers,
   decisionsPath,
   englishMatchText,
   extractDigest,
@@ -298,7 +299,8 @@ function rulingLine(ctx: BriefContext, tag: string, id: string): string {
     if (exceptions.length > 0) {
       parts.push(`exceptions here: ${exceptions.map(([key, why]) => `\`${key}\` (${why})`).join('; ')}`)
     }
-    if (term.decision) parts.push(`decision: "${term.decision}"`)
+    const pointers = decisionPointers(term.decision)
+    if (pointers.length > 0) parts.push(`decision: ${pointers.map((pointer) => `"${pointer}"`).join('; ')}`)
   }
   return `- ${tag}: ${parts.join(' · ')}`
 }

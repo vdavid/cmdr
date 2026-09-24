@@ -109,8 +109,41 @@ describe('validateTerms', () => {
     expect(text).toMatch(/operation: missing "sources"/)
     expect(text).toMatch(/operation: confidence "sure" must be one of confirmed, high, tentative/)
     expect(text).toMatch(/operation: exception names "queue\.gone", which isn't an English key/)
-    expect(text).toMatch(/operation: decision "No such heading" isn't a heading in nl\/decisions\.md/)
+    expect(text).toMatch(/operation: decision "No such heading" matches no heading in nl\/decisions\.md/)
     expect(text).toMatch(/operation: avoid\[0\] needs a "form" and a "why"/)
+  })
+})
+
+describe('validateTerms: decision resolution', () => {
+  const base = {
+    tag: 'nl',
+    knownConcepts: new Set(['operation']),
+    enKeys: new Set<string>(),
+    decisionHeadings: new Set([
+      'Operation queue: de hernoeming (`queue.*`, 2026-08-08)',
+      'Operation log (`operationLog.*`)',
+      'Operation log (`operationLog.*`) extra',
+      'Archive password',
+    ]),
+  }
+  const withDecision = (decision: unknown) =>
+    validateTerms({ ...base, terms: { operation: { chosen: 'x', confidence: 'high', sources: 's', decision } } })
+
+  it('resolves a unique heading prefix, so a heading can gain a date or keys without breaking the pointer', () => {
+    expect(withDecision('Operation queue')).toEqual([])
+    expect(withDecision('Archive')).toEqual([])
+  })
+  it('keeps an exact heading working even when it is also a prefix of another', () => {
+    expect(withDecision('Operation log (`operationLog.*`)')).toEqual([])
+  })
+  it('accepts a list, checking each entry', () => {
+    expect(withDecision(['Operation queue', 'Archive'])).toEqual([])
+    expect(withDecision(['Archive', 'Nope']).join('\n')).toMatch(/decision "Nope" matches no heading/)
+  })
+  it('flags an ambiguous prefix and a missing one', () => {
+    expect(withDecision('Operation').join('\n')).toMatch(/decision "Operation" matches 3 headings/)
+    expect(withDecision('Nope').join('\n')).toMatch(/decision "Nope" matches no heading in nl\/decisions\.md/)
+    expect(withDecision(3).join('\n')).toMatch(/"decision" must be a heading string or a list of them/)
   })
 })
 

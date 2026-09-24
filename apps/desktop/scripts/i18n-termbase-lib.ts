@@ -54,7 +54,26 @@ export interface Term {
   sources: string
   note?: string
   exceptions?: Record<string, string>
-  decision?: string
+  /** one or more `decisions.md` headings, each exact or a unique prefix (`resolveDecision`) */
+  decision?: string | string[]
+}
+
+/** A term's `decision` pointers as a list, whichever shape the file uses. */
+export function decisionPointers(decision: unknown): string[] {
+  if (typeof decision === 'string') return [decision]
+  return Array.isArray(decision) ? decision.filter((entry): entry is string => typeof entry === 'string') : []
+}
+
+/**
+ * Resolves one `decision` pointer to the heading it names: the exact heading when
+ * one matches, else the only heading that starts with it. A prefix lets a pointer
+ * survive the heading gaining a date or another cited key. Returns every candidate,
+ * so the caller can tell "missing" (none) from "ambiguous" (several).
+ */
+export function resolveDecision(pointer: string, headings: Iterable<string>): string[] {
+  const all = [...headings]
+  if (all.includes(pointer)) return [pointer]
+  return all.filter((heading) => heading.startsWith(pointer.trimEnd()))
 }
 
 /** `<tag>/terms.json`: concept ID → ruling. */

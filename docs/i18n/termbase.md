@@ -92,8 +92,10 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
 - `exceptions` (optional): catalog key → reason, for keys whose English matches the concept but whose translation
   legitimately doesn't use `chosen` / `accept` IN THIS LANGUAGE. A key that's simply another English sense belongs in
   the concept's `notMatch` instead, once for all locales. Every key must exist in the English catalog.
-- `decision` (optional): the exact heading text (without the `#` marks) of a `##` or `###` section in this locale's
-  `decisions.md`.
+- `decision` (optional): a heading of a `##` or `###` section in this locale's `decisions.md` (without the `#` marks),
+  or a list of them. Each is the exact heading or a prefix only one heading starts with (`"Operation queue"` for
+  `Operation queue: de hernoeming (…, 2026-08-08)`), so a heading can gain a date or a cited key without breaking the
+  pointer. A prefix that fits several headings is an error: lengthen it.
 - A concept this locale deliberately keeps English still gets an entry, with `chosen` = the English form.
 - A locale may omit concepts it has no ruling for; the brief then says "no ruling" for it.
 
