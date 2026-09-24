@@ -75,7 +75,7 @@ func TestScanDocForCitationsGatesOnLaneNamespaces(t *testing.T) {
 		"Nothing backticked here: settings.section.advanced.",
 	}, "\n")
 
-	got := scanDocForCitations("docs/i18n/de/glossary.md", content, messageKeyCitationLane, ix)
+	got := scanDocForCitations("docs/i18n/de/decisions.md", content, messageKeyCitationLane, ix)
 	if len(got) != 1 {
 		t.Fatalf("expected exactly the one catalog-namespaced token, got %v", citationTokens(got))
 	}
@@ -96,7 +96,7 @@ func TestScanDocForCitationsComposesGateWithSuffixMatching(t *testing.T) {
 		"The dead one is `mtp.permissionDialog.title`.",
 	}, "\n")
 
-	got := scanDocForCitations("docs/i18n/de/glossary.md", content, messageKeyCitationLane, ix)
+	got := scanDocForCitations("docs/i18n/de/decisions.md", content, messageKeyCitationLane, ix)
 	tokens := citationTokens(got)
 	// `network.tryAgain` is gated out (`network` is no namespace), and
 	// `sheet.connectAsGuest` is gated out for the same reason even though it
@@ -147,73 +147,37 @@ func TestNearestKeysIgnoresAccidentalShortPrefixes(t *testing.T) {
 func TestShrinkwrapDocCitationAllowlistDropsFixedEntries(t *testing.T) {
 	list := docCitationAllowlist{
 		Retired: map[string]map[string]string{
-			"docs/i18n/zh/glossary.md": {"askCmdr.consent.noContents": "quoted as the retired key it replaced"},
+			"docs/i18n/zh/decisions.md": {"askCmdr.consent.noContents": "quoted as the retired key it replaced"},
 		},
 		Pending: map[string]map[string]string{
-			"docs/i18n/de/glossary.md": {
+			"docs/i18n/de/decisions.md": {
 				"fileExplorer.network.login.title":    "renamed to servers.sheet.*",
 				"fileExplorer.network.login.username": "already fixed by the time this runs",
 			},
-			"docs/i18n/gone/glossary.md": {"settings.section.old": "file deleted"},
+			"docs/i18n/gone/decisions.md": {"settings.section.old": "file deleted"},
 		},
 	}
 	live := map[string]map[string]bool{
-		"docs/i18n/zh/glossary.md": {"askCmdr.consent.noContents": true},
-		"docs/i18n/de/glossary.md": {"fileExplorer.network.login.title": true},
+		"docs/i18n/zh/decisions.md": {"askCmdr.consent.noContents": true},
+		"docs/i18n/de/decisions.md": {"fileExplorer.network.login.title": true},
 	}
 
 	changes := shrinkwrapDocCitationAllowlist(&list, live)
 
-	if _, still := list.Pending["docs/i18n/de/glossary.md"]["fileExplorer.network.login.username"]; still {
+	if _, still := list.Pending["docs/i18n/de/decisions.md"]["fileExplorer.network.login.username"]; still {
 		t.Error("a citation that no longer appears should be dropped")
 	}
-	if _, still := list.Pending["docs/i18n/de/glossary.md"]["fileExplorer.network.login.title"]; !still {
+	if _, still := list.Pending["docs/i18n/de/decisions.md"]["fileExplorer.network.login.title"]; !still {
 		t.Error("a citation still present should be kept")
 	}
-	if _, still := list.Pending["docs/i18n/gone/glossary.md"]; still {
+	if _, still := list.Pending["docs/i18n/gone/decisions.md"]; still {
 		t.Error("a file with nothing left should be dropped entirely")
 	}
-	if len(list.Retired["docs/i18n/zh/glossary.md"]) != 1 {
+	if len(list.Retired["docs/i18n/zh/decisions.md"]) != 1 {
 		t.Error("a live retired entry should be kept")
 	}
 	if len(changes) != 2 {
 		t.Errorf("expected 2 shrink-wrap changes, got %d: %v", len(changes), changes)
-	}
-}
-
-// A locale's glossary split into `terms.json` + `decisions.md` carries its
-// deliberate citations along: an entry whose doc stopped citing the key follows it
-// to the successor doc when that one cites it, rather than being dropped and
-// leaving the moved citation unexcused.
-func TestShrinkwrapDocCitationAllowlistFollowsACitationToItsSuccessorDoc(t *testing.T) {
-	list := docCitationAllowlist{
-		Retired: map[string]map[string]string{
-			"docs/i18n/de/glossary.md": {"askCmdr.consent.noContents": "carried over verbatim"},
-			"docs/i18n/fr/glossary.md": {"askCmdr.consent.noContents": "carried over verbatim"},
-		},
-	}
-	live := map[string]map[string]bool{
-		"docs/i18n/de/decisions.md": {"askCmdr.consent.noContents": true},
-	}
-
-	changes := shrinkwrapDocCitationAllowlist(&list, live)
-
-	if got := list.Retired["docs/i18n/de/decisions.md"]["askCmdr.consent.noContents"]; got != "carried over verbatim" {
-		t.Errorf("the de entry should have moved to decisions.md with its reason, got %q", got)
-	}
-	if _, still := list.Retired["docs/i18n/de/glossary.md"]; still {
-		t.Error("the de glossary.md entry should be gone after the move")
-	}
-	if _, still := list.Retired["docs/i18n/fr/glossary.md"]; still {
-		t.Error("the fr entry, cited nowhere, should be dropped")
-	}
-	if dead := (docCitationAllowlist{Retired: list.Retired}).judge([]docCitation{
-		{relPath: "docs/i18n/de/decisions.md", line: 3, token: "askCmdr.consent.noContents"},
-	}); len(dead.reported) != 0 {
-		t.Errorf("the moved entry should excuse the decisions.md citation: %+v", dead)
-	}
-	if len(changes) != 2 {
-		t.Errorf("expected a move and a drop, got %d: %v", len(changes), changes)
 	}
 }
 
@@ -259,10 +223,10 @@ func TestScanDocsForCitationsReadsTheTermbaseJSON(t *testing.T) {
 func TestDocCitationAllowlistIgnoresBlankReasons(t *testing.T) {
 	list := docCitationAllowlist{
 		Retired: map[string]map[string]string{
-			"docs/i18n/zh/glossary.md": {"askCmdr.consent.noContents": "  "},
+			"docs/i18n/zh/decisions.md": {"askCmdr.consent.noContents": "  "},
 		},
 	}
-	dead := []docCitation{{relPath: "docs/i18n/zh/glossary.md", line: 886, token: "askCmdr.consent.noContents"}}
+	dead := []docCitation{{relPath: "docs/i18n/zh/decisions.md", line: 886, token: "askCmdr.consent.noContents"}}
 	if verdict := list.judge(dead); len(verdict.reported) != 1 || verdict.retired != 0 {
 		t.Errorf("a blank reason allowlisted a citation: %+v", verdict)
 	}

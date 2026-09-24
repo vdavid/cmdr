@@ -234,7 +234,7 @@ describe('inspectTermbase + report + shrinkWrap (fixture tree)', () => {
     expect(out.lines.join('\n')).toMatch(/unknown concept/)
   })
 
-  it("flags an exception whose English no longer matches the concept (a stale exception)", () => {
+  it('flags an exception whose English no longer matches the concept (a stale exception)', () => {
     write(join(docsRoot, 'nl', 'terms.json'), {
       operation: {
         chosen: 'bewerking',
@@ -245,7 +245,9 @@ describe('inspectTermbase + report + shrinkWrap (fixture tree)', () => {
     })
     write(join(messagesRoot, 'en', 'q.json'), { 'q.a': 'Undo the operation', 'q.b': 'Activity log' })
     const errors = inspectTermbase({ messagesRoot, docsRoot, baseline: { drift: {} } }).schemaErrors.join('\n')
-    expect(errors).toMatch(/nl\/terms\.json: operation: exception "q\.b" is stale: its English no longer matches the concept/)
+    expect(errors).toMatch(
+      /nl\/terms\.json: operation: exception "q\.b" is stale: its English no longer matches the concept/,
+    )
     expect(errors).not.toMatch(/"q\.a"/)
   })
 

@@ -684,13 +684,6 @@ raw-line scan keeps `file:line` findings. `isTranslatorGuide` names the files; o
 (reference-pile inventories) is mined evidence, not a guide. The `exceptions` KEYS themselves aren't backticked, so
 `desktop-i18n-termbase` validates those against the catalog instead.
 
-**An entry follows its citation to a successor doc.** When a locale moves to the termbase layout, its `glossary.md`
-journal becomes `decisions.md`, carrying the deliberate `retired` citations with it. Shrink-wrap therefore moves an
-entry keyed by `<tag>/glossary.md` to `<tag>/decisions.md` (reason intact) when the glossary stops citing the key and
-the decisions journal does, instead of dropping it and failing the moved citation. It happens in memory before judging,
-so CI passes a migration too. `docCitationSuccessors` holds the one rename; drop it once no locale has a `glossary.md`
-journal left (the overlays' `glossary.md` fork tables cite no dead keys).
-
 ❗ **The check ships green only because the allowlist excuses every finding it has.** Empty the allowlist and it reports
 **91 dead citations, 24 distinct keys, 12 files** (measured 2026-09-09 at `ce0d112ab`); with it, zero. That is the whole
 of the gap, and it's 79 entries seeded in one sitting rather than accrued, so treat the `pending` count as a debt with a

@@ -110,7 +110,9 @@ describe('localeValueCarriesTerm', () => {
     const term = { chosen: 'bewerking', accept: ['wachtrij*'], confidence: 'high' as const, sources: 's' }
     expect(localeValueCarriesTerm('nl', 'Wachtrijen leeg', term)).toBe(true)
     expect(localeValueCarriesTerm('nl', 'Bewerkingenwachtrij', { ...term, chosen: 'x' })).toBe(false)
-    expect(localeValueCarriesTerm('nl', 'Bewerkingenwachtrij', { ...term, chosen: 'x', accept: ['wachtrij'] })).toBe(true)
+    expect(localeValueCarriesTerm('nl', 'Bewerkingenwachtrij', { ...term, chosen: 'x', accept: ['wachtrij'] })).toBe(
+      true,
+    )
   })
   it('treats a curly apostrophe in the translation or the form as a straight one', () => {
     const term = { chosen: "n'est", confidence: 'high' as const, sources: 's' }

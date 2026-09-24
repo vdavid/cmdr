@@ -219,7 +219,9 @@ function decisionErrors(at: string, decision: unknown, { tag, decisionHeadings }
     if (found.length === 1) return []
     return found.length === 0
       ? [`${at}: decision ${shownValue(pointer)} matches no heading in ${tag}/decisions.md`]
-      : [`${at}: decision ${shownValue(pointer)} matches ${String(found.length)} headings; lengthen it until one is left`]
+      : [
+          `${at}: decision ${shownValue(pointer)} matches ${String(found.length)} headings; lengthen it until one is left`,
+        ]
   })
 }
 
@@ -290,12 +292,7 @@ function decisionHeadings(tag: string, docsRoot?: string): Set<string> {
  * excuses nothing today and would silently excuse the key again if the English
  * ever matched, so it's an error: drop it, or fix the concept.
  */
-function staleExceptionErrors(
-  tag: string,
-  terms: Termbase,
-  concepts: Concepts,
-  en: Record<string, string>,
-): string[] {
+function staleExceptionErrors(tag: string, terms: Termbase, concepts: Concepts, en: Record<string, string>): string[] {
   const matchers = compileConcepts(concepts)
   const errors: string[] = []
   for (const [id, term] of Object.entries(terms)) {
@@ -305,7 +302,9 @@ function staleExceptionErrors(
     if (!hits || !isRecord(exceptions)) continue
     for (const key of Object.keys(exceptions)) {
       if (!(key in en) || hits(englishMatchText(key, en[key]))) continue
-      errors.push(`${tag}/terms.json: ${id}: exception "${key}" is stale: its English no longer matches the concept, so drop it`)
+      errors.push(
+        `${tag}/terms.json: ${id}: exception "${key}" is stale: its English no longer matches the concept, so drop it`,
+      )
     }
   }
   return errors

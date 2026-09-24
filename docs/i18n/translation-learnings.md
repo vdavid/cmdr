@@ -290,22 +290,22 @@ parallel":
 100% legit short tokens (cloud-provider brand names, units, loanwords, placeholder-only) — a phrase scan found ZERO
 missed sentences. Spot-check passed both paths (ICU `''`; raw `errors.*` normal `'`; fr `vous`, es `tú`; es used the
 prescribed gender-neutral "Te damos la bienvenida"). Cost: 24 unit-agents, ~4M tokens, ≤3 concurrent. Two reusable wins:
-the **shared `glossary.md` is the cross-file coordination point** (concurrent unit-agents read + append + reconcile term
-clashes mid-run), and **the `many` CLDR plural category is the most common slip** for fr/es (English has only
-`one`/`other`; add a `many` branch to every ICU plural for Romance/Slavic locales).
+the **shared term file is the cross-file coordination point** (concurrent unit-agents read + append + reconcile term
+clashes mid-run; today that's the locale's `terms.json`), and **the `many` CLDR plural category is the most common
+slip** for fr/es (English has only `one`/`other`; add a `many` branch to every ICU plural for Romance/Slavic locales).
 
 Pilot (de: `feedback.json` + `crashReporter.json`, 2026-06-21) validated the pipeline. Learnings:
 
 - **Read the parallel `en/<file>.json` for each key's `@key.description`** — the skeleton carries no descriptions. This
   is the per-string context; skipping it loses screenshot/placeholder notes. Mandatory.
-- **Term home is `style.md`, not `glossary.md`.** The wave-1 guides carry their sourced glossary inline in `style.md`;
-  `glossary.md` is a near-empty stub. Read `style.md` first; ADD newly-settled terms to `glossary.md` as you go.
+- **One home per term.** Settled terms live in the locale's `terms.json` (`termbase.md`), and `style.md` holds only what
+  cuts across terms. Add each newly-settled term there as you go, so the next batch's brief carries it.
 - **Match the English source faithfully; flag inconsistencies, don't silently fix them.** The en catalog has minor
   inconsistencies (e.g. `Sending…` single-char ellipsis vs `Sending...` three dots across files). Preserve each value's
   exact form; note the inconsistency for David rather than normalizing it.
 - **Cross-file term consistency is a real risk** when files are translated independently: a string referencing a UI
   section by name (e.g. "Change in Settings > Updates") must match how that section is translated in `settings.json`.
-  Capture UI section names in the glossary so independent translators agree. Flag any forward reference.
+  Capture UI section names in the termbase so independent translators agree. Flag any forward reference.
 - **ICU tag/placeholder preservation works** when stated explicitly: `<github>…</github>`, `<call>…</call>`, and
   `{email}`/`{maxText}` all survived. The parity + icu checks catch any slip.
 - **Pure-placeholder values stay identical to English** (e.g. `{currentText} / {maxText}`) and correctly remain in the

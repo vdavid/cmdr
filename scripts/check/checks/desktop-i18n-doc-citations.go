@@ -623,18 +623,9 @@ func loadDocCitationAllowlist(rootDir string, lane citationLane) docCitationAllo
 	return list
 }
 
-// docCitationSuccessors maps a guide's base name to the sibling doc that inherits
-// its content when a locale moves to the termbase layout: a glossary's per-feature
-// journal becomes `decisions.md`, so a deliberate citation it carried now lives
-// there. Remove the entry once no locale has a `glossary.md` left.
-var docCitationSuccessors = map[string]string{"glossary.md": "decisions.md"}
-
 // shrinkwrapDocCitationAllowlist drops every entry whose doc no longer cites the
 // dead key, in both sections, and reports what it dropped. That's what keeps the
-// `pending` section a burn-down list rather than a second permanent one. An entry
-// whose doc has a successor (`docCitationSuccessors`) that now cites the key moves
-// there with its reason instead, so migrating a locale can't strand a deliberate
-// citation, in CI either (the move happens in memory before judging).
+// `pending` section a burn-down list rather than a second permanent one.
 func shrinkwrapDocCitationAllowlist(list *docCitationAllowlist, live map[string]map[string]bool) []string {
 	var changes []string
 	for _, section := range []struct {
@@ -646,20 +637,7 @@ func shrinkwrapDocCitationAllowlist(list *docCitationAllowlist, live map[string]
 				if live[relPath][token] {
 					continue
 				}
-				reason := section.entries[relPath][token]
 				delete(section.entries[relPath], token)
-				if successor, ok := docCitationSuccessors[filepath.Base(relPath)]; ok {
-					moved := filepath.ToSlash(filepath.Join(filepath.Dir(relPath), successor))
-					if live[moved][token] {
-						if section.entries[moved] == nil {
-							section.entries[moved] = map[string]string{}
-						}
-						section.entries[moved][token] = reason
-						changes = append(changes, fmt.Sprintf("moved %s / %s in %s to %s (the citation moved there)",
-							relPath, token, section.name, moved))
-						continue
-					}
-				}
 				changes = append(changes, fmt.Sprintf("removed %s / %s from %s (no longer cited)",
 					relPath, token, section.name))
 			}

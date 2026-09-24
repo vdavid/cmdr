@@ -5,6 +5,32 @@ and missed rulings. A structured termbase lets `pnpm i18n:brief` hand a translat
 
 The process that uses all this (who translates, the agent prompt): `docs/guides/i18n-translation.md`.
 
+## What the shape defends against
+
+Prose glossaries rotted in three ways; this is how the termbase stands against each, honestly:
+
+- **Dead citations** (a doc naming a catalog key that's gone, or never existed: 91 found across 24 keys when first
+  counted): DETECTED. `desktop-i18n-doc-citations` checks the markdown and the termbase JSON, and the termbase check
+  holds every `exceptions` key and `decision` pointer to something real.
+- **Value drift** (a quoted shipped value that no longer matches the catalog: 20 found across 14 term families):
+  REDUCED, not impossible. A ruling stores the chosen FORM, never a per-key value; the brief reads the current values
+  from the catalogs, and the drift check flags a key whose translation stopped using the ruling. But `forms`, `note`,
+  `exceptions` reasons, and `decisions.md` prose are free text and can still quote a shipped value that later changes.
+  Point at keys rather than quoting their values.
+- **Self-contradiction** (an append-only entry holding a retired form and its replacement at once, so a translator
+  copies the dead one): PREVENTED in `terms.json`, which holds one current ruling per concept, with a replaced form
+  moved to `avoid` with its reason. `decisions.md` is still a journal and can hold an older rationale, but it prescribes
+  nothing: the ruling wins.
+
+Not fixed by any shape: prose rationale going stale, and evidence citations that point outside the repo (a Microsoft TBX
+id, a macOS bundle path), which stay unverifiable.
+
+Considered and not taken: a per-term `governs:` list of the keys each ruling covers, with the guide markdown generated
+from the rows. The concept's English `match` finds those keys instead (so a new key is covered the day it lands, with no
+list to maintain), and the brief replaces a rendered guide. Also considered: fixing only the citation format (key,
+English, and translation in one checked slot). It would detect value drift but still store a value to maintain, and
+leaves self-contradiction possible.
+
 ## Layout
 
 Shared, language-agnostic:
@@ -177,20 +203,20 @@ Deterministic (no time, RNG, or model), about 0.3 s for a 40-key batch.
   `terms.json`. Same design as `i18n-check-term-consistency.ts`'s `notYetReviewed`.
 - A locale without `terms.json` is skipped silently.
 - `--list` prints every drifting key even under the baseline: the cleanup view.
-- `<tag>/concepts-proposed.json` is validated too, and its IDs count as known for that locale's `terms.json`.
+- A `<tag>/concepts-proposed.json`, when a parallel fan-out leaves one, is validated too, and its IDs count as known for
+  that locale's `terms.json` until they're merged.
 
 ### `desktop-i18n-doc-citations`
 
 Scans `concepts.json`, `<tag>/concepts-proposed.json`, and `<tag>/terms.json` alongside the markdown, so a backticked
-key in a note or an `exceptions` reason must be a real key. An allowlist entry keyed by `<tag>/glossary.md` follows its
-citation to `<tag>/decisions.md` when a locale migrates. Mechanism: `scripts/check/checks/DETAILS.md` § "The
+key in a note or an `exceptions` reason must be a real key. Mechanism: `scripts/check/checks/DETAILS.md` § "The
 doc-citation check".
 
 ## Writing back during translation
 
-- New concept: add it to `concepts.json`. During the parallel per-locale migration only, add it to
-  `<tag>/concepts-proposed.json` instead (same schema, merged into `concepts.json` afterwards), so parallel agents don't
-  collide on the shared file.
+- New concept: add it to `concepts.json`. When several agents work in parallel (a fan-out across locales), each adds its
+  new concepts to `<tag>/concepts-proposed.json` instead (same schema), and one agent merges them into `concepts.json`
+  afterwards, so they don't collide on the shared file.
 - New or changed ruling: edit the entry in place in `terms.json`; a replaced form moves to `avoid` with its reason.
 - A key whose English uses the concept but whose translation rightly doesn't use the ruling: add it to that term's
   `exceptions` with the reason.

@@ -20,8 +20,6 @@ Read this before adding, wiping, or reorganizing a spec.
 - `error-report-triage-plan.md`: **Auto-sent error reports arrive one by one, and nothing says whether one is fixed,
   known, or new.** Stable signatures, a D1 registry, fix trailers, and one daily digest. Issue:
   [#108](https://github.com/vdavid/cmdr/issues/108).
-- `i18n-glossaries-as-data.md`: **The translator glossaries are prose, so nothing can check the facts in them.** Store
-  one typed row per term per locale and generate the markdown. Issue: [#281](https://github.com/vdavid/cmdr/issues/281).
 - `search-arena-snapshot.md`: **Opening search waits ~1 s on every reopen past the idle window, and seconds on a
   session's first open.** Map a journaled columnar arena in place. Issue:
   [#114](https://github.com/vdavid/cmdr/issues/114).
