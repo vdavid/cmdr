@@ -159,6 +159,10 @@ async fn exists_on_volume(volume_id: Option<String>, path: String, spelling: Spe
         // Snapshot whether this volume HAS a session, so the answer can be re-checked
         // against it below.
         let has_session = volume.connection_state().is_some();
+        // A live session waits out a busy server's stall (`deadline::io_budget`):
+        // a "couldn't tell" here lands a volume switch on the share root and walks
+        // a pane past a parent that's still there.
+        let budget = crate::deadline::io_budget(volume.connection_state(), PATH_EXISTS_TIMEOUT);
 
         // The transfer dialog asks about its VOLUME-RELATIVE destination box
         // (`/photos`), the panes about absolute paths. Anchoring folds both into
@@ -181,7 +185,7 @@ async fn exists_on_volume(volume_id: Option<String>, path: String, spelling: Spe
                     .map_err(|_| ())
             }
         };
-        match timeout_detached_typed(PATH_EXISTS_TIMEOUT, || (), |_| (), probe).await {
+        match timeout_detached_typed(budget, || (), |_| (), probe).await {
             Ok(exists) => {
                 // The session dropped while we asked? Then the `false` we got back is
                 // meaningless. Surface it as a timeout-equivalent so callers know.
@@ -655,3 +659,7 @@ mod refresh_listing_test;
 #[cfg(test)]
 #[path = "destination_exists_test.rs"]
 mod destination_exists_test;
+
+#[cfg(test)]
+#[path = "path_exists_budget_test.rs"]
+mod path_exists_budget_test;

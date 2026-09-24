@@ -66,3 +66,26 @@ export function showsDisconnect(state: MaybeState): boolean {
     state === 'direct' || state === 'disconnected' || state === 'needs_sign_in' || state === 'needs_host_key_approval'
   )
 }
+
+/**
+ * How long a path probe waits on a volume Cmdr holds a live session to: the
+ * backend's own session budget (`deadline::SESSION_IO_TIMEOUT`, 10 s) plus
+ * slack, so the backend's typed "couldn't tell" arrives before this timer does.
+ */
+const SESSION_PROBE_TIMEOUT_MS = 11_000
+
+/**
+ * The wait for one path probe on a volume in `connectionState`, given what it
+ * gets on a local disk.
+ *
+ * A live session (`direct`) waits out a busy server: a QNAP under load holds
+ * 0.5–3% of single `stat`s for 0.3–6 s while the session stays healthy, and the
+ * short local bound read those as "gone". Its transport tells slow from dead on
+ * its own (a dead session turns `disconnected` and answers "couldn't tell" at
+ * once), so a short timer on top only adds wrong answers. ❌ Everything else
+ * (a disk, a phone, a kernel mount, `os_mount` included) keeps `localMs`: a
+ * wedged mount answers nothing for minutes.
+ */
+export function probeTimeoutMs(connectionState: MaybeState, localMs: number): number {
+  return connectionState === 'direct' ? Math.max(localMs, SESSION_PROBE_TIMEOUT_MS) : localMs
+}

@@ -85,7 +85,8 @@ deleted → navigate to parent) doesn't push via this callback; it relies on the
 ## `path-navigation.ts`
 
 `determineNavigationPath({ volumeId, volumePath, targetPath, otherPane, landingPath })`: picks best initial path when
-switching volumes. Runs checks **in parallel** with 500ms frontend timeouts per check. Priority:
+switching volumes. Runs checks **in parallel** with 500ms frontend timeouts per check (11 s on a live session, see
+"Non-blocking navigation pattern"). Priority:
 
 1. Favorite path (when `targetPath !== volumePath`)
 2. Other pane's path (if same volume and path exists)
@@ -133,7 +134,8 @@ own 2s timeout, no frontend wrapper needed).
 ## `path-resolution.ts`
 
 `resolveValidPath(targetPath, options?)`: walks parent tree until an existing directory is found. Accepts optional
-`{ pathExistsFn, timeoutMs, volumeRoot, volumeId }`: defaults to Tauri `pathExists` with 1s timeout per step. Used both
+`{ pathExistsFn, timeoutMs, volumeRoot, volumeId, connectionState }`: defaults to Tauri `pathExists` with 1s timeout per
+step, 11 s on the volume's own rungs when `connectionState` is `direct`. Used both
 at runtime (with timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout,
 injected `pathExistsFn`). Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
 
@@ -182,10 +184,18 @@ sites are the same idea, one fixed volume id at a time.
 
 All `pathExists` calls are guarded by two timeout layers:
 
-- **Rust-side**: `blocking_with_timeout` wraps filesystem syscalls in `tokio::time::timeout` (2 seconds). Prevents
-  kernel syscalls on hung network mounts from blocking the Tauri async runtime.
+- **Rust-side**: `path_exists` runs the probe detached under a 2 s deadline, or 10 s on a volume with a live session
+  (`deadline::io_budget`). Prevents kernel syscalls on hung network mounts from blocking the Tauri async runtime.
 - **Frontend-side**: `withTimeout` races each `pathExists` IPC call (500ms for `determineNavigationPath`, 1s for
   `resolveValidPath`). The faster timeout wins.
+- **A live session (`direct`) gets 11 s on both sides** (`connection-state.ts::probeTimeoutMs`, just above the
+  backend's 10 s so its typed "couldn't tell" wins the race). A busy QNAP holds 0.5–3% of single `stat`s for 0.3–6 s
+  while its session stays healthy; under the short bounds a volume switch landed on the share root instead of the
+  remembered folder, and a walk-up skipped a live parent. The session's transport tells slow from dead on its own, so a
+  dead one answers at once. ❌ Don't widen it to `os_mount`, MTP, or a disk: nothing there can tell, and a wedged kernel
+  mount answers nothing for minutes. Who passes `connectionState`: `pane/navigate.ts`'s correction and
+  `listing-loader.ts`'s deleted-path walk-up. ❌ Not the cancel walk-up in `edge-flow-handlers.ts`: the user just
+  declined to wait on this volume.
 
 `navigate()`'s volume-switch arm (in `pane/navigate.ts`) uses **optimistic navigation**: `commitVolumeSwitch` commits
 the new volumeId + path + history synchronously (showing the loading spinner), then `scheduleVolumePathCorrection`

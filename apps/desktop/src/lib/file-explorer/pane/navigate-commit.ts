@@ -5,6 +5,7 @@
  * transaction-token minting. What they mean, and the transaction itself: `navigate.ts`.
  */
 import type { FilePaneAPI } from './types'
+import type { ConnectionState } from '../types'
 import { pushHistoryEntry, type TabManager } from '../tabs/tab-state-manager.svelte'
 import {
   pushPath,
@@ -130,6 +131,12 @@ export interface NavigateDeps {
    * background correction takes it as its last default.
    */
   getVolumeLandingById: (volumeId: string) => string | null | undefined
+  /**
+   * The volume's session state (`VolumeInfo.connectionState`). The background
+   * correction waits longer on a live session, where a busy server holds a
+   * single `stat` for seconds (`probeTimeoutMs`).
+   */
+  getVolumeConnectionStateById: (volumeId: string) => ConnectionState | null | undefined
   /** Whether a pane on this volume shows a listing: the Servers hub and a search snapshot don't. */
   volumeHasListing: (volumeId: string) => boolean
   /** Background "best path" resolver (`determineNavigationPath`), gated by the token. */

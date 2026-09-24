@@ -9,6 +9,8 @@
 
 import { pathExists } from '$lib/tauri-commands'
 import { withTimeout } from '$lib/utils/timing'
+import type { ConnectionState } from '../types'
+import { probeTimeoutMs } from './connection-state'
 
 export interface ResolveValidPathOptions {
   /**
@@ -16,8 +18,16 @@ export interface ResolveValidPathOptions {
    * Defaults to the Tauri `pathExists` command.
    */
   pathExistsFn?: (path: string) => Promise<boolean>
-  /** Timeout per step in ms. Set to 0 to skip timeout wrapping. Defaults to 1000. */
+  /**
+   * Timeout per step in ms. Set to 0 to skip timeout wrapping. Defaults to 1000, stretched by
+   * `connectionState` on the volume's own rungs (`probeTimeoutMs`).
+   */
   timeoutMs?: number
+  /**
+   * The `volumeId` volume's session state. `direct` gives its rungs the session wait, so a busy
+   * NAS's slow `stat` of a live parent isn't skipped as missing. `~` and `/` keep `timeoutMs`.
+   */
+  connectionState?: ConnectionState | null
   /**
    * Volume root path (like "/Volumes/naspi"). When set, the walk-up stops at this
    * boundary instead of continuing to "/" (prevents crossing into a different volume,
@@ -81,7 +91,7 @@ function schemeFloorFor(targetPath: string, volumeRoot: string | undefined): str
 /**
  * Resolves a path to a valid existing path by walking up the parent tree, asking
  * `volumeId` about each parent. Each step has a timeout to prevent hanging on dead
- * mounts (default 1s).
+ * mounts (default 1s, longer on a live session: `probeTimeoutMs`).
  * Fallback chain: parent tree (up to volumeRoot) → user home (~) → filesystem root (/).
  * Returns null if even the root doesn't exist (volume unmounted).
  *
@@ -95,12 +105,14 @@ export async function resolveValidPath(targetPath: string, options?: ResolveVali
   const onVolume = options?.pathExistsFn ?? ((p: string) => pathExists(p, volumeId))
   const onBootDisk = options?.pathExistsFn ?? ((p: string) => pathExists(p))
 
-  const bounded = (probe: Promise<boolean>): Promise<boolean> =>
-    timeoutMs > 0 ? withTimeout(probe, timeoutMs, false) : probe
+  const onVolumeTimeoutMs = timeoutMs > 0 ? probeTimeoutMs(options?.connectionState, timeoutMs) : 0
+
+  const bounded = (probe: Promise<boolean>, ms = timeoutMs): Promise<boolean> =>
+    ms > 0 ? withTimeout(probe, ms, false) : probe
 
   const schemeFloor = schemeFloorFor(targetPath, volumeRoot)
 
-  const walked = await walkUp(targetPath, (p) => bounded(onVolume(p)), { volumeRoot, schemeFloor })
+  const walked = await walkUp(targetPath, (p) => bounded(onVolume(p), onVolumeTimeoutMs), { volumeRoot, schemeFloor })
   if (walked !== null) return walked
   // A scheme path stops here: `~` is on another volume entirely.
   if (schemeFloor) return schemeFloor

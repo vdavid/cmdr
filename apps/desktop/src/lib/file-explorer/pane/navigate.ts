@@ -275,6 +275,7 @@ function scheduleVolumePathCorrection(
         otherPanePath: deps.getPanePath(other),
       },
       landingPath: deps.getVolumeLandingById(volumeId),
+      connectionState: deps.getVolumeConnectionStateById(volumeId),
     })
     .then((betterPath) => {
       // GLOBAL supersede (matches the old `volumeChangeGeneration`, which was a

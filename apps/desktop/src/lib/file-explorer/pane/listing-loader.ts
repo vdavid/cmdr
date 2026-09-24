@@ -27,7 +27,7 @@
  * — this is current behavior and is preserved deliberately; do NOT add re-guards.
  */
 import { tick } from 'svelte'
-import type { FriendlyError } from '../types'
+import type { ConnectionState, FriendlyError } from '../types'
 import type { CancelLoadingPayload, ListingLoad, LoadDirectoryArgs, SwapState, VolumeChangePayload } from './types'
 import {
   type Location,
@@ -95,6 +95,11 @@ export interface ListingLoaderDeps {
   // Reactive reads (props + deriveds).
   getVolumeId: () => string
   getVolumePath: () => string
+  /**
+   * The pane volume's session state. The deleted-path walk-up waits longer on a
+   * live session, where a busy server holds one `stat` for seconds (`probeTimeoutMs`).
+   */
+  getConnectionState: () => ConnectionState | null | undefined
   getCurrentPath: () => string
   setCurrentPath: (path: string) => void
   getCanonicalPath: () => CanonicalPath | null
@@ -504,7 +509,11 @@ export function createListingLoader(deps: ListingLoaderDeps): ListingLoader {
               // connection blip's "false" from reading as "deleted".
               void pathExistsChecked(loadPath, volumeId).then(({ data: exists, timedOut }) => {
                 if (!exists && !timedOut) {
-                  void resolveValidPath(loadPath, { volumeRoot: deps.getVolumePath(), volumeId }).then((validPath) => {
+                  void resolveValidPath(loadPath, {
+                    volumeRoot: deps.getVolumePath(),
+                    volumeId,
+                    connectionState: deps.getConnectionState(),
+                  }).then((validPath) => {
                     // ❗ A walk-up that lands back on the path that just failed (a
                     // volume's own root) or nowhere at all has nothing better to
                     // offer: navigating would re-list the same failure, forever.

@@ -144,6 +144,23 @@ describe('createListingLoader — error / MTP / cancel handling', () => {
     expect(spies.onPathChange).toHaveBeenCalledWith('adb://R58M/sdcard')
   })
 
+  it("tells the walk-up the volume's session state, so a busy server's slow stat of a live parent isn't skipped", async () => {
+    const { loader, state } = makeHarness({
+      volumeId: 'smb-naspi',
+      volumePath: '/Volumes/naspi',
+      connectionState: 'direct',
+    })
+    h.pathExistsChecked.mockResolvedValueOnce({ data: false, timedOut: false })
+    await loader.loadDirectory({ path: '/Volumes/naspi/photos/gone' })
+    h.listeners.error[0]({ listingId: state.listingId, message: 'no such dir' })
+    await vi.waitFor(() => {
+      expect(h.resolveValidPath).toHaveBeenCalledWith(
+        '/Volumes/naspi/photos/gone',
+        expect.objectContaining({ volumeId: 'smb-naspi', connectionState: 'direct' }),
+      )
+    })
+  })
+
   it('walks up to the nearest valid parent when the listing path was deleted', async () => {
     const { loader, state } = makeHarness()
     h.pathExistsChecked.mockResolvedValueOnce({ data: false, timedOut: false })

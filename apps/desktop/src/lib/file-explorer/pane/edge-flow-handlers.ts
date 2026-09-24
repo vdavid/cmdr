@@ -95,6 +95,8 @@ export function createEdgeFlowHandlers(deps: EdgeFlowHandlersDeps): EdgeFlowHand
   function walkUpFrom(pane: 'left' | 'right', cancelled: ListingLoad): void {
     const parentPath = cancelled.path.substring(0, Math.max(1, cancelled.path.lastIndexOf('/')))
     // Asking the load's own volume: the boot disk says "gone" for a phone's or server's folders.
+    // No `connectionState`, so a live session keeps the short 1 s step: the user just cancelled
+    // because this volume was slow, and waiting out its stalls is what they declined.
     const volume = deps.getVolumes().find((v) => v.id === cancelled.volumeId)
     void resolveValidPath(parentPath, { volumeRoot: volume?.path, volumeId: volume?.id }).then((validPath) => {
       const target = validPath ?? '~'

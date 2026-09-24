@@ -485,3 +485,77 @@ describe('resolveValidPath', () => {
     expect(result).toBe('~')
   })
 })
+
+/** Answers `true` for `path` on `volumeId` after `ms`, like a busy NAS holding one `stat`. */
+function answerLate(ms: number, answers: (probe: { path: string; volumeId?: string }) => boolean) {
+  mockPathExists.mockImplementation(
+    (path: string, volumeId?: string): Promise<boolean> =>
+      new Promise((resolve) => setTimeout(() => { resolve(answers({ path, volumeId })); }, ms)),
+  )
+}
+
+describe('a slow-but-alive session (a busy NAS holds one stat for seconds)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('a volume switch still lands on the remembered folder when its stat takes 3 s', async () => {
+    answerLate(3000, ({ path }) => path === '/Volumes/naspi/photos')
+    mockGetLastUsedPath.mockResolvedValue('/Volumes/naspi/photos')
+
+    const resultPromise = determineNavigationPath({
+      volumeId: 'smb-naspi',
+      volumePath: '/Volumes/naspi',
+      targetPath: '/Volumes/naspi',
+      otherPane: { otherPaneVolumeId: 'root', otherPanePath: '/Users/test' },
+      connectionState: 'direct',
+    })
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(await resultPromise).toBe('/Volumes/naspi/photos')
+  })
+
+  it('a volume switch keeps its 500 ms bound on a volume with no session of its own', async () => {
+    answerLate(3000, ({ path }) => path === '/Volumes/usb/photos')
+    mockGetLastUsedPath.mockResolvedValue('/Volumes/usb/photos')
+
+    const resultPromise = determineNavigationPath({
+      volumeId: 'usb',
+      volumePath: '/Volumes/usb',
+      targetPath: '/Volumes/usb',
+      otherPane: { otherPaneVolumeId: 'root', otherPanePath: '/Users/test' },
+    })
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(await resultPromise).toBe('/Volumes/usb')
+  })
+
+  it('the walk-up stops at a live parent whose stat takes 3 s instead of skipping it', async () => {
+    answerLate(3000, ({ path, volumeId }) => volumeId === 'smb-naspi' && path === '/Volumes/naspi/photos')
+
+    const resultPromise = resolveValidPath('/Volumes/naspi/photos/gone', {
+      volumeId: 'smb-naspi',
+      volumeRoot: '/Volumes/naspi',
+      connectionState: 'direct',
+    })
+    await vi.advanceTimersByTimeAsync(6000)
+
+    expect(await resultPromise).toBe('/Volumes/naspi/photos')
+  })
+
+  it('the walk-up keeps its 1 s step on a volume with no session of its own', async () => {
+    answerLate(3000, ({ path, volumeId }) => volumeId === 'usb' && path === '/Volumes/usb/photos')
+
+    const resultPromise = resolveValidPath('/Volumes/usb/photos/gone', {
+      volumeId: 'usb',
+      volumeRoot: '/Volumes/usb',
+    })
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    expect(await resultPromise).not.toBe('/Volumes/usb/photos')
+  })
+})

@@ -3,7 +3,8 @@
  * Extracted from DualPaneExplorer.svelte to improve modularity.
  *
  * All pathExists calls use frontend timeouts to prevent hangs on slow/unresponsive volumes.
- * The Rust backend also enforces a 2-second timeout per pathExists call.
+ * The Rust backend also enforces its own timeout per pathExists call: 2 s, or 10 s on a
+ * volume with a live session.
  */
 
 import { constructAdbPath, parseAdbPath } from '$lib/adb/adb-path-utils'
@@ -12,6 +13,8 @@ import { pathExists } from '$lib/tauri-commands'
 import { getLastUsedPathForVolume } from '$lib/app-status-store'
 import { DEFAULT_VOLUME_ID } from '$lib/tauri-commands'
 import { withTimeout } from '$lib/utils/timing'
+import type { ConnectionState } from '../types'
+import { probeTimeoutMs } from './connection-state'
 
 export { withTimeout }
 
@@ -31,11 +34,19 @@ export interface DetermineNavigationPathArgs {
    * `volumePath`: a server place's start folder (`VolumeInfo.landingPath`).
    */
   landingPath?: string | null
+  /**
+   * The switched-to volume's session state. `direct` waits out a busy server's
+   * slow `stat` (`probeTimeoutMs`), or the pane lands on the share root instead
+   * of the folder the user left there.
+   */
+  connectionState?: ConnectionState | null
 }
 
 /**
  * Determines which path to navigate to when switching volumes.
- * Runs checks in parallel with 500ms frontend timeouts per check.
+ * Runs checks in parallel with 500ms frontend timeouts per check (longer on a live
+ * session, `probeTimeoutMs`). The switch itself already landed on the volume root,
+ * so the wait holds up only this background correction, never the UI.
  * Priority order:
  * 1. Favorite path (if targetPath !== volumePath)
  * 2. Other pane's path (if the other pane is on the same volume)
@@ -43,8 +54,8 @@ export interface DetermineNavigationPathArgs {
  * 4. Default: ~ for main volume, the volume's landing for others (`firstLandingOn`)
  */
 export async function determineNavigationPath(args: DetermineNavigationPathArgs): Promise<string> {
-  const { volumeId, volumePath, targetPath, otherPane, landingPath } = args
-  const pathExistsTimeoutMs = 500
+  const { volumeId, volumePath, targetPath, otherPane, landingPath, connectionState } = args
+  const pathExistsTimeoutMs = probeTimeoutMs(connectionState, 500)
 
   // User navigated to a favorite, so go to the favorite's path directly
   if (targetPath !== volumePath) {

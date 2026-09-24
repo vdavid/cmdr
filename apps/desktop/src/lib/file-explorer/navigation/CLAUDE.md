@@ -20,6 +20,8 @@ Back/forward history, path resolution, paged keyboard shortcuts, and the pane's 
   answer no probe, so a plain walk lands the pane on the boot disk (`path-resolution.ts`, a cycle-breaker).
 - **❗ Pass `volumeId` wherever the walk should stay on the pane's volume**: without it every probe asks the boot disk,
   which says "gone" for a phone's folders. Who passes it: `DETAILS.md` § `path-resolution.ts`.
+- **A path probe's bound comes from `probeTimeoutMs`**: 11 s on a live session (a busy NAS holds one `stat` for
+  seconds), the short local bound everywhere else. ❌ Never widen it past `direct`: a wedged mount answers nothing.
 - **A volume-switch correction has two gates**: ONE global `correctionGen` (❌ not one per pane), plus its pane's token
   and position, so it never moves a pane off a later navigation.
 - **`containingVolumeId` comes from `resolvePathVolume(currentPath)`, ❌ not the `volumeId` prop** (a favorite's is

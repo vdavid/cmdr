@@ -122,6 +122,14 @@ describe('volume switch (P4 — truly optimistic, synchronous commit)', () => {
       expect.objectContaining({ volumeId: 'sftp-nas', landingPath: 'sftp://ada@nas.local:22/srv/data/photos' }),
     )
   })
+
+  it("hands the background correction the volume's session state, so a busy server's slow stat still lands on the remembered folder", () => {
+    const root = 'sftp://ada@nas.local:22/srv/data'
+    navigate({ pane: 'left', to: { selectVolume: { volumeId: 'sftp-nas', path: root } }, source: 'user' }, h.deps)
+    expect(h.determineNavigationPath).toHaveBeenCalledWith(
+      expect.objectContaining({ volumeId: 'sftp-nas', connectionState: 'direct' }),
+    )
+  })
 })
 
 describe('background correction (global correctionGen, the old volumeChangeGeneration)', () => {

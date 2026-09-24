@@ -278,6 +278,8 @@
         paneId,
         getVolumeId: () => volumeId,
         getVolumePath: () => volumePath,
+        // Read at walk-up time, long after `currentVolumeInfo` (declared below) exists.
+        getConnectionState: () => currentVolumeInfo?.connectionState,
         getCurrentPath: () => currentPath,
         setCurrentPath: (path) => {
             currentPath = path

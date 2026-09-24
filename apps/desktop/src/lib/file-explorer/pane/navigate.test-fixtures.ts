@@ -13,6 +13,7 @@ import type { NavigateDeps, PersistEvent, LastUsedPathRecord } from './navigate'
 import { createTabManager, getActiveTab, type TabManager } from '../tabs/tab-state-manager.svelte'
 import { createInitialTabState } from './tab-operations'
 import type { FilePaneAPI } from './types'
+import type { ConnectionState } from '../types'
 import type { DetermineNavigationPathArgs } from '../navigation/path-navigation'
 
 /** A live volume map the fake deps resolve paths/names against (a Map so misses are `undefined`). */
@@ -116,6 +117,9 @@ function makePaneFixture(spec: { path: string; volumeId: string } | undefined, s
 /** Where each volume lands when nothing is remembered, when that isn't its root. */
 const LANDINGS = new Map<string, string>([['sftp-nas', 'sftp://ada@nas.local:22/srv/data/photos']])
 
+/** Each connected server's session state; a disk has none. */
+const CONNECTION_STATES = new Map<string, ConnectionState>([['sftp-nas', 'direct']])
+
 /** Builds a fresh harness: real per-pane tab managers + spied side effects. */
 export function makeHarness(opts?: HarnessOpts): Harness {
   const suppress = new Set(opts?.suppressRef ?? [])
@@ -143,6 +147,7 @@ export function makeHarness(opts?: HarnessOpts): Harness {
     setFocusedPane,
     getVolumePathById: (volumeId) => VOLUMES.get(volumeId)?.path,
     getVolumeLandingById: (volumeId) => LANDINGS.get(volumeId),
+    getVolumeConnectionStateById: (volumeId) => CONNECTION_STATES.get(volumeId),
     determineNavigationPath,
     persist: (event) => {
       persistEvents.push(event)

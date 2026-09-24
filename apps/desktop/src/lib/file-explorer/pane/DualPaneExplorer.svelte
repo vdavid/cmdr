@@ -329,6 +329,7 @@
         getPaneRef,
         getVolumePathById: (volumeId) => volumes.find((v) => v.id === volumeId)?.path,
         getVolumeLandingById: (volumeId) => volumes.find((v) => v.id === volumeId)?.landingPath,
+        getVolumeConnectionStateById: (volumeId) => volumes.find((v) => v.id === volumeId)?.connectionState,
         determineNavigationPath: (args) => determineNavigationPath(args),
         persist: (event) => {
             // The single nav-state persistence subscriber (A5) owns disk writes.

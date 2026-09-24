@@ -9,6 +9,7 @@
  */
 import { vi } from 'vitest'
 import { createListingLoader, type ListingLoaderDeps } from './listing-loader'
+import type { ConnectionState } from '../types'
 
 export interface Deferred<T> {
   promise: Promise<T>
@@ -25,6 +26,7 @@ export function deferred<T>(): Deferred<T> {
 interface PaneState {
   volumeId: string
   volumePath: string
+  connectionState: ConnectionState | null | undefined
   currentPath: string
   canonicalPath: string | null
   includeHidden: boolean
@@ -50,6 +52,7 @@ export function makeHarness(over: Partial<PaneState> = {}) {
   const state: PaneState = {
     volumeId: 'root',
     volumePath: '/',
+    connectionState: undefined,
     currentPath: '/a',
     canonicalPath: '/a',
     includeHidden: false,
@@ -102,6 +105,7 @@ export function makeHarness(over: Partial<PaneState> = {}) {
     paneId: 'left',
     getVolumeId: () => state.volumeId,
     getVolumePath: () => state.volumePath,
+    getConnectionState: () => state.connectionState,
     getCurrentPath: () => state.currentPath,
     setCurrentPath: (p) => {
       state.currentPath = p
