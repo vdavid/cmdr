@@ -352,7 +352,7 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "A single \"?\" placeholder glyph shown when the model size is unknown. There is no translatable text; \"?\" is the universal unknown-value marker."
   },
-  "ai.local.notInstalled": "未安装。本地模型（{modelName}，{modelSize}）完全在你的设备上运行，最大限度保护隐私。需要 Apple Silicon。",
+  "ai.local.notInstalled": "未安装。本地模型（{modelName}，{modelSize}）完全在你的设备上运行，最大限度保护隐私。需要 Apple 芯片。",
   "@ai.local.notInstalled": {
     "sourceHash": "163bf42"
   },

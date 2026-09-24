@@ -193,7 +193,7 @@
   "@indexing.firstConnect.title": {
     "sourceHash": "0734a24"
   },
-  "indexing.firstConnect.body": "Cmdr 可以在后台为这个驱动器建立索引，让目录大小和搜索在这里也能用。它只在驱动器连接时运行。",
+  "indexing.firstConnect.body": "Cmdr 可以在后台为这个驱动器建立索引，让文件夹大小和搜索在这里也能用。它只在驱动器连接时运行。",
   "@indexing.firstConnect.body": {
     "sourceHash": "56ec1e5"
   },
@@ -213,7 +213,7 @@
   "@indexing.staleDialog.title": {
     "sourceHash": "21a78ee"
   },
-  "indexing.staleDialog.body": "在 {name} 断开连接期间，上面的文件可能有过更改。在你重新扫描之前，目录大小和搜索结果可能会有些偏差。出现这种情况时，驱动器旁边始终会显示黄色状态，重新扫描即可刷新。",
+  "indexing.staleDialog.body": "在 {name} 断开连接期间，上面的文件可能有过更改。在你重新扫描之前，文件夹大小和搜索结果可能会有些偏差。出现这种情况时，驱动器旁边始终会显示黄色状态，重新扫描即可刷新。",
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
@@ -221,7 +221,7 @@
   "@indexing.staleDialog.titlePhone": {
     "sourceHash": "6086bac"
   },
-  "indexing.staleDialog.bodyPhone": "{name} 不会在文件有更改时告诉 Cmdr，所以 Cmdr 会把自己做的更改及时更新到它的索引里。在手机上做的更改（比如新照片），要重新扫描后才会显示在目录大小和搜索结果里。手机旁边会一直显示黄色状态，提醒你这一点。",
+  "indexing.staleDialog.bodyPhone": "{name} 不会在文件有更改时告诉 Cmdr，所以 Cmdr 会把自己做的更改及时更新到它的索引里。在手机上做的更改（比如新照片），要重新扫描后才会显示在文件夹大小和搜索结果里。手机旁边会一直显示黄色状态，提醒你这一点。",
   "@indexing.staleDialog.bodyPhone": {
     "sourceHash": "4ba8463"
   },

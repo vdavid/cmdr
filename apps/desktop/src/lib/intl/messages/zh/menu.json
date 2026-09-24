@@ -51,7 +51,7 @@
   "@menu.app.checkForUpdates": {
     "sourceHash": "52d6f7d"
   },
-  "menu.app.changelog": "更改日志",
+  "menu.app.changelog": "更新日志",
   "@menu.app.changelog": {
     "sourceHash": "ead07c8"
   },

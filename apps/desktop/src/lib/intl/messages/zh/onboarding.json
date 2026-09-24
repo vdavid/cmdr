@@ -47,7 +47,7 @@
   "@onboarding.wizard.finish": {
     "sourceHash": "a6c7a84"
   },
-  "onboarding.wizard.restart": "重启 Cmdr",
+  "onboarding.wizard.restart": "重新启动 Cmdr",
   "@onboarding.wizard.restart": {
     "sourceHash": "e62c550"
   },
@@ -159,7 +159,7 @@
   "@onboarding.stepFda.postAction.intro": {
     "sourceHash": "cac5247"
   },
-  "onboarding.stepFda.postAction.body": "准备好后，点按下方的 <restart>重启 Cmdr</restart>。如果你改变了主意，就点按上方的 <deny>拒绝</deny>。",
+  "onboarding.stepFda.postAction.body": "准备好后，点按下方的 <restart>重新启动 Cmdr</restart>。如果你改变了主意，就点按上方的 <deny>拒绝</deny>。",
   "@onboarding.stepFda.postAction.body": {
     "sourceHash": "f87a5fc"
   },
@@ -299,7 +299,7 @@
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
-  "onboarding.stepAi.localTooltip": "本地 LLM 需要 Apple Silicon。云端在 Intel 上也能用。",
+  "onboarding.stepAi.localTooltip": "本地 LLM 需要 Apple 芯片。云端在 Intel 上也能用。",
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
   },
@@ -440,7 +440,7 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "6ad977a"
   },
-  "onboarding.stepOptional.lede": "你选择了走一遍详细设置，所以这里有几个简单的选项。如果你不太在意，点一下下面的按钮就行。这些全都是可选项，默认值是为你着想而选的。",
+  "onboarding.stepOptional.lede": "你选择了走一遍详细设置，所以这里有几个简单的选项。如果你不太在意，点按一下下面的按钮就行。这些全都是可选项，默认值是为你着想而选的。",
   "@onboarding.stepOptional.lede": {
     "sourceHash": "b1242c9"
   },
@@ -504,11 +504,11 @@
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "可以连接 Android 手机之类的设备，会抑制 macOS 原生处理程序",
+  "onboarding.stepOptional.mtp.summary": "可以连接 Android 手机之类的设备，会抑制 macOS 内建的处理程序",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "如果你开启这一项，Cmdr 就能<strong>连接到 Android 手机、Kindle、相机</strong>、一些音乐播放器，以及任何支持 MTP 或 PTP 协议的设备。\n代价是 macOS <em>也</em>想连接这些设备（而且通常会失败，这也是你没法直接用 Finder 从 Android 手机拷贝照片的原因），所以 Cmdr 运行时必须抑制 macOS 的那个进程。\n当你退出 Cmdr 时，它会被妥善恢复。",
+  "onboarding.stepOptional.mtp.desc": "如果你开启这一项，Cmdr 就能<strong>连接到 Android 手机、Kindle、相机</strong>、一些音乐播放器，以及任何支持 MTP 或 PTP 协议的设备。\n代价是 macOS <em>也</em>想连接这些设备（而且通常连不上，这也是你没法直接用 Finder 从 Android 手机拷贝照片的原因），所以 Cmdr 运行时必须抑制 macOS 的那个进程。\n当你退出 Cmdr 时，它会被妥善恢复。",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },

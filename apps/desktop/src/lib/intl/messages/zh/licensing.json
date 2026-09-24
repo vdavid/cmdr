@@ -332,7 +332,7 @@
   "@licensing.error.badSignature": {
     "sourceHash": "e9842df"
   },
-  "licensing.error.badSignatureHint": "请仔细检查有无输入错误，并尝试从购买电子邮件中重新粘贴。",
+  "licensing.error.badSignatureHint": "请仔细检查有没有打错，然后从购买邮件中重新粘贴一次。",
   "@licensing.error.badSignatureHint": {
     "sourceHash": "8734aa5"
   },

@@ -44,7 +44,7 @@
   "@updates.toast.restart": {
     "sourceHash": "09af100"
   },
-  "updates.moveToApplicationsDialog.title": "把 Cmdr 移到你的应用程序文件夹",
+  "updates.moveToApplicationsDialog.title": "把 Cmdr 移到你的“应用程序”文件夹",
   "@updates.moveToApplicationsDialog.title": {
     "sourceHash": "97f87a0"
   },
@@ -56,7 +56,7 @@
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
     "sourceHash": "94edc89"
   },
-  "updates.moveToApplicationsDialog.howTo": "退出 Cmdr，把它拖到你的应用程序文件夹，再从那里打开。之后每次更新都会自动到位。",
+  "updates.moveToApplicationsDialog.howTo": "退出 Cmdr，把它拖到你的“应用程序”文件夹，再从那里打开。之后每次更新都会自动到位。",
   "@updates.moveToApplicationsDialog.howTo": {
     "sourceHash": "76a136d"
   },

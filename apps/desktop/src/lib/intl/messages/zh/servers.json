@@ -7,7 +7,7 @@
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"
   },
-  "servers.pinHint.body": "右键点按某台服务器，选择“取消固定”，或者在命令面板里使用“{command}”。它仍然留在“服务器”列表里。",
+  "servers.pinHint.body": "右键点击某台服务器，选择“取消固定”，或者在命令面板里使用“{command}”。它仍然留在“服务器”列表里。",
   "@servers.pinHint.body": {
     "sourceHash": "0663b02"
   },
@@ -231,7 +231,7 @@
     "sourceHash": "5e0ec1d",
     "sameAsSourceJustification": "An example hostname (`nas.local`), not prose: `.local` is the mDNS suffix a real Bonjour name carries, so translating it would make the hint wrong. The zh catalog keeps sample values Latin elsewhere too (`fileExplorer.network.login.usernamePlaceholderDefault` = `示例：barry`, `goToPath.dialog.inputPlaceholder` keeps `~/Documents`)."
   },
-  "servers.sheet.addressHelp": "主机名、你复制来的地址，或者一整行 ssh 命令都行。Cmdr 会自动判断协议。",
+  "servers.sheet.addressHelp": "主机名、你拷贝来的地址，或者一整行 ssh 命令都行。Cmdr 会自动判断协议。",
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
@@ -259,7 +259,7 @@
   "@servers.sheet.connectionModeLegend": {
     "sourceHash": "2198ec8"
   },
-  "servers.sheet.connectAsGuest": "以来宾身份连接",
+  "servers.sheet.connectAsGuest": "以客人身份连接",
   "@servers.sheet.connectAsGuest": {
     "sourceHash": "d3cee9e"
   },

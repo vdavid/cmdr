@@ -19,7 +19,7 @@
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
-  "queue.row.reversalMovingBack": "正在把文件挪回原处",
+  "queue.row.reversalMovingBack": "正在把文件放回原处",
   "@queue.row.reversalMovingBack": {
     "sourceHash": "19ac5eb"
   },

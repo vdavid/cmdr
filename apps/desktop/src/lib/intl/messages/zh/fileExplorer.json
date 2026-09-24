@@ -343,7 +343,7 @@
   "@fileExplorer.network.browser.refreshAriaLabel": {
     "sourceHash": "73966bd"
   },
-  "fileExplorer.network.browser.refreshHint": "按 <key></key> 或点这里刷新",
+  "fileExplorer.network.browser.refreshHint": "按 <key></key> 或点按这里刷新",
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
   },
@@ -387,7 +387,7 @@
   "@fileExplorer.network.browser.status.loggedInOk": {
     "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.guest": "来宾",
+  "fileExplorer.network.browser.status.guest": "客人",
   "@fileExplorer.network.browser.status.guest": {
     "sourceHash": "5ed8944"
   },

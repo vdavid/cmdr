@@ -187,7 +187,7 @@
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.noPermissionErrno.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点按它，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限",
+  "errors.listing.noPermissionErrno.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点击它，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "ea316e7"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.diskFullErrno.suggestion": "可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点按 Dock 里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间\n- 在 **{system_settings} > 通用 > 储存空间**里查看空间占用明细",
+  "errors.listing.diskFullErrno.suggestion": "可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点击程序坞里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间\n- 在 **{system_settings} > 通用 > 储存空间**里查看空间占用明细",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "bf54d66"
   },
@@ -487,7 +487,7 @@
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.permissionDenied.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点按文件夹，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限",
+  "errors.listing.permissionDenied.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点击文件夹，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
@@ -499,7 +499,7 @@
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "4e6b9ef"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "可以这样试试：\n- 在服务器上查看这个文件夹的权限，以及你是用哪个账户装载的共享\n- 有些文件夹属于服务器自己的系统账户（比如 Linux 共享上的 `lost+found`），对其他所有人都是关闭的\n- 想换个身份连接，就先推出这个共享，再用那套凭据重新装载",
+  "errors.listing.remotePermissionDenied.suggestion": "可以这样试试：\n- 在服务器上查看这个文件夹的权限，以及你是用哪个账户装载的共享\n- 有些文件夹属于服务器自己的系统账户（比如 Linux 共享上的 `lost+found`），对其他所有人都是关闭的\n- 想换个身份连接，就先推出这个共享，再用那套凭证重新装载",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "506e57a"
   },
@@ -583,7 +583,7 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.storageFull.suggestion": "可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点按 Dock 里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间",
+  "errors.listing.storageFull.suggestion": "可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点击程序坞里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "fcdd42d"
   },
@@ -695,11 +695,11 @@
   "@errors.listing.archiveNeedsPassword.suggestion": {
     "sourceHash": "4043af6"
   },
-  "errors.listing.emptyRootICloud.title": "iCloud Drive 看起来是空的",
+  "errors.listing.emptyRootICloud.title": "iCloud 云盘看起来是空的",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"
   },
-  "errors.listing.emptyRootICloud.explanation": "Cmdr 打开了 iCloud Drive，但没返回任何文件。macOS 会对没有**{full_disk_access}**的 App 隐藏 iCloud Drive 的内容，所以给 Cmdr 授予该权限很可能就能解决。\n\n如果你的 iCloud Drive 真的是空的，可以忽略这个提示。",
+  "errors.listing.emptyRootICloud.explanation": "Cmdr 打开了 iCloud 云盘，但没返回任何文件。macOS 会对没有**{full_disk_access}**的 App 隐藏 iCloud 云盘的内容，所以给 Cmdr 授予该权限很可能就能解决。\n\n如果你的 iCloud 云盘真的是空的，可以忽略这个提示。",
   "@errors.listing.emptyRootICloud.explanation": {
     "sourceHash": "d095f83"
   },
@@ -947,10 +947,9 @@
     "sourceHash": "99388b1",
     "sameAsSourceJustification": "Brand/product name \"MacDroid\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"MacDroid\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
   },
-  "errors.provider.iCloud.displayName": "iCloud Drive",
+  "errors.provider.iCloud.displayName": "iCloud 云盘",
   "@errors.provider.iCloud.displayName": {
-    "sourceHash": "416264f",
-    "sameAsSourceJustification": "Brand/product name \"iCloud Drive\" — a cloud-provider company or app name shown in a raw error suggestion (isRawError). Apple zh-CN and Microsoft zh-Hans keep such third-party product names in their Latin form; Chinese users see \"iCloud Drive\" as the recognizable brand. Translating it would break recognition. (style.md § Brand and do-not-translate.)"
+    "sourceHash": "416264f"
   },
   "errors.provider.pCloudFuse.displayName": "pCloud",
   "@errors.provider.pCloudFuse.displayName": {
@@ -1277,7 +1276,7 @@
   "@errors.write.trashNotSupported.message": {
     "sourceHash": "45cf0c6"
   },
-  "errors.write.trashNotSupported.suggestion": "改用 {deletePermanentlyKey} 来永久删除。",
+  "errors.write.trashNotSupported.suggestion": "改用 {deletePermanentlyKey} 来彻底删除。",
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
@@ -1961,7 +1960,7 @@
   "@errors.shareList.authRequired": {
     "sourceHash": "4268ae9"
   },
-  "errors.shareList.signingRequired": "“{server}”不向来宾显示共享。请登录后查看。",
+  "errors.shareList.signingRequired": "“{server}”不向客人显示共享。请登录后查看。",
   "@errors.shareList.signingRequired": {
     "sourceHash": "8ae651a"
   },
@@ -1985,11 +1984,11 @@
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"
   },
-  "errors.write.readOnlyDevice.source.message": "{deviceName} 是只读的。你可以从中复制文件，但无法把文件移出。",
+  "errors.write.readOnlyDevice.source.message": "{deviceName} 是只读的。你可以从中拷贝文件，但无法把文件移出。",
   "@errors.write.readOnlyDevice.source.message": {
     "sourceHash": "ec7d263"
   },
-  "errors.write.readOnlyDevice.source.suggestion": "改用复制。原文件会留在原处。",
+  "errors.write.readOnlyDevice.source.suggestion": "改用拷贝。原文件会留在原处。",
   "@errors.write.readOnlyDevice.source.suggestion": {
     "sourceHash": "f6a307b"
   },

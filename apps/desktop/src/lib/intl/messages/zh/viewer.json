@@ -314,7 +314,7 @@
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "viewer.copyDialog.saveAsFile": "存储为文件…",
+  "viewer.copyDialog.saveAsFile": "保存为文件…",
   "@viewer.copyDialog.saveAsFile": {
     "sourceHash": "7b9b279"
   },
@@ -322,7 +322,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseBody": "这超过了 100 MB 的剪贴板上限。试试用搜索（⌘F）找到你需要的内容，或者把所选内容存储为文件。",
+  "viewer.copyDialog.refuseBody": "这超过了 100 MB 的剪贴板上限。试试用搜索（⌘F）找到你需要的内容，或者把所选内容保存为文件。",
   "@viewer.copyDialog.refuseBody": {
     "sourceHash": "75f3043"
   },
@@ -362,7 +362,7 @@
   "@viewer.copy.readFailed": {
     "sourceHash": "bde5f85"
   },
-  "viewer.saveAs.title": "存储所选内容",
+  "viewer.saveAs.title": "保存所选内容",
   "@viewer.saveAs.title": {
     "sourceHash": "dd183ea"
   },
@@ -371,19 +371,19 @@
     "sourceHash": "6504513",
     "sameAsSourceJustification": "Fallback base file NAME \"selection\" — the description requires lowercase, no spaces, and filename-safe. glossary.md records this kept as \"selection\" (NOT translated) because it becomes part of a saved file name, not display copy."
   },
-  "viewer.saveAs.panelFailed": "无法打开存储面板。要重试吗？",
+  "viewer.saveAs.panelFailed": "无法打开保存面板。要重试吗？",
   "@viewer.saveAs.panelFailed": {
     "sourceHash": "70c3f76"
   },
-  "viewer.saveAs.saved": "所选内容已存储到 {name}",
+  "viewer.saveAs.saved": "所选内容已保存到 {name}",
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
-  "viewer.saveAs.tooLong": "存储耗时过长。试试选择少一些内容？",
+  "viewer.saveAs.tooLong": "保存耗时过长。试试选择少一些内容？",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"
   },
-  "viewer.saveAs.saveFailed": "无法存储所选内容。要重试吗？",
+  "viewer.saveAs.saveFailed": "无法保存所选内容。要重试吗？",
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },

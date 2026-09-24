@@ -528,7 +528,7 @@
   "@commands.cloudRemoveDownload.label": {
     "sourceHash": "5dfc369"
   },
-  "commands.cloudRemoveDownload.description": "移除云端文件的本地副本，仅保留在线版本",
+  "commands.cloudRemoveDownload.description": "移除云端文件的本地副本，让它仅存在云端",
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },

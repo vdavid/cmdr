@@ -19,11 +19,11 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你选中的内容里有一部分仅存在云端。把它们放进废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则请取消此对话框，先把所有文件设为可离线使用，或者取消选择所有仅存在云端的文件。",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你选中的内容里有一部分仅存在云端。把它们移到废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则请取消此对话框，先把所有文件设为离线可用，或者取消选择所有仅存在云端的文件。",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2a49037"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你选中的内容全都仅存在云端。把它放进废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则请取消此对话框，先把这些文件设为可离线使用。",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你选中的内容全都仅存在云端。把它移到废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则请取消此对话框，先把这些文件设为离线可用。",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "0e52a2b"
   },
@@ -427,7 +427,7 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
-  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {正在把文件挪回原处} other {正在把 {countText} 个文件挪回原处}}…",
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {正在把文件放回原处} other {正在把 {countText} 个文件放回原处}}…",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
     "sourceHash": "38c2022"
   },
@@ -639,7 +639,7 @@
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
-  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "停止操作，并把目前已挪走的所有文件放回原处",
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "停止操作，并把目前已移动的所有文件放回原处",
   "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
     "sourceHash": "193c682"
   },
@@ -715,7 +715,7 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
-  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "这会把这项操作已经挪走的东西全部挪回原处。被覆盖掉的文件找不回来了。Cmdr 会跳过没有把握的部分，所以可能有些会留在原处。",
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "这会把这项操作已经移动的东西全部放回原处。被覆盖掉的文件找不回来了。Cmdr 会跳过没有把握的部分，所以可能有些会留在原处。",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a489eb2"
   },
@@ -727,7 +727,7 @@
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "这会把文件挪回原来的位置。Cmdr 会跳过没有把握的部分，所以可能有些会留在原处。",
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "这会把文件放回原来的位置。Cmdr 会跳过没有把握的部分，所以可能有些会留在原处。",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
     "sourceHash": "7d55114"
   },

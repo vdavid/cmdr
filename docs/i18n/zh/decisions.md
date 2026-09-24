@@ -1,501 +1,148 @@
-# zh glossary
+# zh decisions
 
-The living term glossary for translating Cmdr into this language: one entry per recurring term, in the
-`chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
+The rationale journal behind `terms.json`: why a term won, which catalog keys a ruling shaped, and the incidents that
+encode a constraint. Not read by default; `pnpm i18n:brief` pulls the sections whose heading cites a batch's keys, so
+keep citing keys in backticks in every heading. The term rulings themselves live in `terms.json` (one entry per concept
+from `../concepts.json`, plus this locale's `concepts-proposed.json`); open questions for a native reviewer live in
+`review-queue.md`. Style and voice: `style.md`.
 
-- **Source every term from the reference pile, never guess.** Mine `_ignored/i18n/zh-CN/` for how Apple, Microsoft, and
-  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the
-  source(s) and a confidence (`confirmed` / `high` / `tentative`).
-- **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
+Evidence tiers throughout: macOS zh-CN (Finder, AppKit, System Settings, and the live `zh_CN.lproj` bundles) is Tier 1,
+Microsoft zh-Hans terminology Tier 2, and the file-manager family (Double Commander, Total Commander, Nautilus, Thunar,
+Dolphin) Tier 3. The reference pile is `_ignored/i18n/zh/` in the main clone.
 
-Format, the confidence scale, and the full process: `docs/guides/i18n-translation.md`.
+## Settings vocabulary (`settings.section.*`, `settings.appearance.*`, `settings.summary.*`)
 
-## Terms
+Terms with no shared concept, kept consistent across every catalog that names them:
 
-Core file/UI terms (Trash, copy, move, open, settings, etc.) live in `style.md` § Terminology and glossary; this file
-adds the terms settled while translating the catalogs. All `zh-Hans` (Simplified).
+- Section names: Appearance `外观`; Behavior `行为`; Language `语言`; AI `AI`; File systems `文件系统`; SMB/Network
+  shares `SMB/网络共享`; MTP `MTP（Android/Kindle/相机）`; Git `Git`; Viewer `查看器`; Developer `开发者`; Updates &
+  privacy `更新与隐私`; Advanced `高级`; Keyboard shortcuts `键盘快捷键`; License `许可证`; Servers (SFTP, WebDAV)
+  `服务器（SFTP、WebDAV）`; Android (ADB) `Android（ADB）`.
+- Navigation (settings section or card) → `导航` (Microsoft TBX; Finder's `导览` is its verb, and the UI noun is
+  `导航`). File operations → `文件操作`.
+- Theme modes Light / Dark / System → `浅色` / `深色` / `跟随系统` (Finder and System Settings labels). Tint → `着色`
+  (macOS; Microsoft's `淡色` is the other sense), color swatches keep their color names.
+- Buffer `缓冲区`, privacy `隐私`, logging `日志`, network `网络` (Microsoft TBX, macOS). A toast is rendered by
+  meaning, `提示`, never transliterated.
+- Hidden developer strings open with `内部：` (full-width colon), as `settings.indexing.silencedDrives.description`
+  does.
+- Full-width parens and the enumeration comma in labels: `Servers (SFTP, WebDAV)` → `服务器（SFTP、WebDAV）`.
 
-### Settings catalog (first pass, 2026-06-21)
+## View modes, columns, groups, and shortcut scopes (`shortcuts.scope.*`, `shortcuts.section.*`, `fileExplorer.columns.*`, `fileExplorer.navigation.group*`, `queryUi.*`)
 
-- **Appearance** · `外观` · macOS SystemSettings, universal · `confirmed`
-- **Behavior** · `行为` · standard · `high`
-- **Language** · `语言` · macOS, Microsoft · `confirmed`
-- **theme** · `主题` · standard · `high`
-- **theme mode (Light / Dark / System)** · `浅色` / `深色` / `跟随系统` · macOS appearance modes (浅色/深色 are the
-  Finder/System Settings labels), Microsoft `浅色`/`深色` · `confirmed`
-- **notification** · `通知` · macOS, Microsoft · `confirmed`
-- **tint (faint background color)** · `着色` (action) / tint-name swatches keep color names · macOS `着色`; Microsoft
-  TBX `淡色` is the alt sense · `high`
-- **pane** · `窗格` · macOS, Microsoft · `confirmed`
-- **tab** · `标签页` · macOS, Microsoft · `confirmed`
-- **search** · `搜索` · macOS (Simplified) · `confirmed`
-- **settings** · `设置` · macOS (Simplified) · `confirmed`
-- **preview** · `预览` · macOS · `confirmed`
-- **provider (AI service provider)** · `提供方` · generic Chinese term (Microsoft TBX `提供方` for service-provider
-  sense) · `high`
-- **service** · `服务` · standard · `high`
-- **server** · `服务器` · macOS · `confirmed`
-- **share (network share)** · `共享` · macOS Finder (`共享`) · `confirmed`
-- **connect to server / connection** · `连接服务器` / `连接` · macOS Finder · `confirmed`
-- **network** · `网络` · macOS, Microsoft · `confirmed`
-- **mount (a share)** · `装载` · Microsoft TBX; macOS uses 连接/装载 · `high`
-- **drive** · `驱动器` · Microsoft, macOS · `confirmed`
-- **index / indexing** · `索引` (noun) / `建立索引` (verb) · Microsoft TBX `索引` · `high`
-- **cache** · `缓存` · Microsoft TBX · `confirmed`
-- **timeout** · `超时` · Microsoft TBX · `confirmed`
-- **port** · `端口` · macOS, Microsoft · `confirmed`
-- **buffer** · `缓冲区` · Microsoft TBX · `high`
-- **threshold** · `阈值` · Microsoft TBX · `confirmed`
-- **default** · `默认` · macOS · `confirmed`
-- **reset / reset to default** · `重置` (`恢复默认`) · macOS `还原`/`恢复默认`; `重置` is the common modern term ·
-  `high`
-- **advanced** · `高级` · macOS · `confirmed`
-- **custom** · `自定义` · macOS · `confirmed`
-- **updates** · `更新` · macOS, Microsoft · `confirmed`
-- **privacy** · `隐私` · macOS, Microsoft · `confirmed`
-- **license** · `许可证` · Microsoft TBX · `high`
-- **word wrap** · `自动换行` · Microsoft TBX · `confirmed`
-- **logging** · `日志` · Microsoft TBX (`记录`/`日志`) · `high`
-- **verbose** · `详细` · Microsoft TBX `详细的` · `high`
-- **context window** · `上下文窗口` · standard AI term · `high`
-- **token (AI)** · `token` (kept Latin) · no settled Chinese UI term; kept verbatim · `tentative`
-- **regex** · `正则表达式` · standard · `confirmed`
-- **toast (transient notification)** · `提示` · rendered by meaning, not transliterated · `high`
-
-### UI section names (keep consistent across catalogs)
-
-- Appearance `外观`; Behavior `行为`; AI `AI`; File systems `文件系统`; SMB/Network shares `SMB/网络共享`; MTP `MTP`;
-  Git `Git`; Viewer `查看器`; Developer `开发者`; Updates & privacy `更新与隐私`; Advanced `高级`; Keyboard shortcuts
-  `键盘快捷键`; License `许可证`.
-- View modes: Full `完整`; Brief `简洁`. Columns: Name `名称`; Ext `扩展名`.
-
-### Errors catalog (first pass, 2026-06-21)
-
-macOS Finder/AppKit zh-CN as Tier 1, Microsoft zh-Hans cross-check. Reuses settings-pass terms where they overlap.
-
-- **volume (mounted disk)** · `宗卷` · macOS (mounted-disk sense, NOT audio `音量`) · `high`
-- **mount / unmount (a FUSE or network volume, error context)** · `挂载` / `卸载` · general IT + Microsoft. NOTE: the
-  settings pass settled `装载` for "mount a share"; in the error copy (force-unmount, remount, FUSE) `挂载`/`卸载` reads
-  more naturally and is the dominant modern term. Both are understood; pick by context. · `high`
-- **network drive** · `网络驱动器` · Microsoft (consistent with settings `驱动器`) · `high`
-- **disk** · `磁盘` · macOS, Microsoft · `confirmed`
-- **device** · `设备` · macOS, Microsoft · `confirmed`
-- **host** · `主机` · Microsoft TBX · `high`
-- **symbolic link / symlink** · `符号链接` · Microsoft TBX, general · `high`
-- **quota** · `配额` · Microsoft TBX · `high`
-- **credentials** · `凭证` · Microsoft TBX · `high`
-- **handle (open file handle)** · `句柄` · Microsoft TBX · `confirmed`
-- **read-only** · `只读` · macOS, Microsoft · `confirmed`
-- **permission denied / no permission** · `无访问权限` / `没有权限` · macOS-style phrasing · `high`
-- **path** · `路径` · macOS, Microsoft · `confirmed`
-- **Disk Utility / First Aid** · `磁盘工具` / `急救` · macOS · `high`
-- **Activity Monitor** · `活动监视器` · macOS · `high`
-- **Spotlight (the search)** · `聚焦` · macOS · `high`
-- **Get Info** · `显示简介` · macOS Finder · `high`
-- **Sharing & Permissions** · `共享与权限` · macOS Finder Get Info · `high`
-- **Storage (System Settings pane)** · `储存空间` · macOS · `high`
-- **Apple Account** · `Apple 账户` · macOS (Sonoma+) · `high`
-- **Technical details (error-panel section)** · `技术详情` · descriptive, no macOS source · `tentative`
-- **App (application, in cloud-provider copy)** · `App` · Apple zh-CN keeps "App" verbatim · `high`
-- **System Settings panes via tokens** · rendered by `{system_settings}`/`{privacy_and_security}`/`{files_and_folders}`/
-  `{full_disk_access}`, OS-localized at runtime; never hand-translate. Every `errors.*` suggestion uses the tokens,
-  including the git and provider ones; no `errors.*` string writes a pane name as a literal. Spacing rules and the pane
-  names the tokens don't cover: § Shared `en` fixes (2026-08-30) at the end of this file. · `high`
-
-### File explorer catalog (first pass, 2026-06-21)
-
-macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Double Commander zh-CN for two-pane terms, Microsoft zh-Hans
-cross-check. Aligned to the settled `窗格`/`标签页` above (DC's `面板` was rejected to stay consistent with the settings
-pass).
-
-- **file pane** · `文件窗格` · uses settled `窗格` (NOT DC's `面板`) · `high`
-- **file list** · `文件列表` · DC (`file list` → 文件列表) · `high`
-- **favorites** · `个人收藏` · macOS Finder (FI10 `Favorites` → 个人收藏) · `confirmed`
-- **eject** · `推出` · macOS (TL15/N199 → 推出) · `confirmed`
-- **sign in / log in** · `登录` · macOS (NE104 `Sign In…` → 登录…) · `confirmed`
-- **guest** · `来宾` · Microsoft TBX · `high`
-- **credentials** · `登录信息` · reused from settings pass; the errors pass uses `凭证` (both understood, pick by
-  surface: sign-in copy → 登录信息, low-level error copy → 凭证) · `high`
-- **authentication failed** · `无法通过身份验证` · style guide (no bare 失败/错误); macOS "authentication needed" is
-  `需要认证` (CS203) · `high`
-- **password / username** · `密码` / `用户名` · macOS (N15 密码), Microsoft 用户名 (NOT MS password→`访问代码`) ·
-  `confirmed`
-- **Keychain** -> `钥匙串` · macOS Chinese (Simplified) · `high` · the localized Apple FEATURE name (Apple localizes it
-  per-OS, so Cmdr uses the term the user sees, not the English "Keychain"); same Decision-1 rule as Quick Look. The
-  credential store is `钥匙串` (`macOS Keychain` → `macOS 钥匙串`); the **Keychain Access** app is `钥匙串访问`. (The
-  Finder/AppKit/SystemSettings reference pile doesn't surface the term — those apps don't mention Keychain — but
-  `钥匙串` / `钥匙串访问` are the established Apple Chinese (Simplified) names.) Supersedes any earlier "keep Keychain
-  verbatim" note.
-- **host / hostname** · `主机` / `主机名` · Microsoft TBX · `high`
-- **disconnect** · `断开连接` · macOS (N200/MR10.1) · `confirmed`
-- **read-only volume** · `只读宗卷` · macOS FI12 `read-only` → 只读, + 宗卷 · `high`
-- **on disk (vs content size)** · `占用磁盘` · macOS "X on disk" → 占用磁盘空间; shortened to 占用磁盘 for the tight
-  label · `tentative`
-- **Quick Look** -> `快速查看` · macOS Chinese (Simplified) · `high` · the localized Apple FEATURE name (Apple localizes
-  it per-OS, so Cmdr uses the term the user sees in Finder, not the English "Quick Look"). macOS Finder `TL14`/`N169.*`
-  and AppKit `NSQuickLookTemplate` both render `快速查看`; "close Quick Look" → `关闭快速查看`. quick-view/quick-preview
-  sense also `快速查看`/`快速预览`.
-- **MTP device** · `MTP 设备` · keep MTP verbatim · `confirmed`
-- **dir (status-bar abbrev. for directory/folder)** · `目录` · standard · `high`
-- Function-key bar verbs: 拷贝 / 移动 / 重命名 / 删除 / 查看 / 编辑 / 新建文件 / 新建文件夹 / 彻底删除 (彻底 for
-  "permanently") · macOS verbs · `high`
-- Volume-switcher groups: Favorites `个人收藏` · Volumes `宗卷` · Cloud `云` · Mobile `移动设备` · Network `网络`
-
-### File operations + onboarding catalog (first pass, 2026-06-21)
-
-macOS zh-CN Tier 1 (key-based en→zh), Double Commander + GNOME Nautilus zh-CN for conflict-dialog verbs, Microsoft
-zh-Hans cross-check.
-
-- **overwrite** · `覆盖` · DC (`Confirm overwrites` → 确认覆盖), Nautilus · `high`
-- **replace** · `替换` · macOS AppKit SavePanel (`Replace` → 替换); Cmdr's transfer dialog uses `覆盖` (overwrite sense)
-  · `high`
-- **skip** · `跳过` · DC + Nautilus (`Skip` → 跳过) · `confirmed`
-- **rename** · `重命名` · DC + macOS function-key bar · `confirmed`
-- **merge** · `合并` · Nautilus (`Merge` → 合并) · `confirmed`
-- **retry** · `重试` · Nautilus (`Retry` → 重试) · `confirmed`
-- **rollback (undo partial transfer)** · `回滚` · Microsoft TBX (`roll back` → 回滚) · `high`
-- **conflict** · `冲突` · Microsoft TBX · `high`
-- **hard link / hardlinked** · `硬链接` · Microsoft TBX · `high`
-- **stop / cancel** · `停止` / `取消` · macOS AppKit · `confirmed`
-- **close** · `关闭` · macOS AppKit (`Close` → 关闭) · `confirmed`
-- **OK (affirmative button)** · `好` · macOS convention (Apple uses `好` for OK) · `high`
-- **trash (verb, move to trash)** · `移到废纸篓` · macOS Finder (`Move to Trash`) · `high`. Trash noun stays `废纸篓`
-  (style.md).
-- **under cursor** · `光标所在的` · descriptive, no single macOS source · `tentative`
-- **all (in "Skip all"/"Overwrite all")** · `全部` · Chinese collapses ICU one/other to `other`, so the single-conflict
-  case also renders `全部跳过`/`全部覆盖`; chosen because the policy radios act on the whole conflict set · `high`
-- **technical details** · `技术详情` · reused from errors pass · `high`
-
-### Onboarding catalog terms
-
-- **onboarding** · `入门引导` · macOS-flavored (`引导`/`入门` are the Apple setup-flow words) · `high`
-- **full disk access** · `完全磁盘访问权限` · macOS Ventura+ Privacy pane label (Simplified) · `high`. Pane breadcrumb
-  uses errors-pass `隐私与安全性` + `系统设置` (the `{systemSettings}` token).
-- **Quit & Reopen (macOS relaunch dialog button)** · `退出并重新打开` · macOS (`Quit` → 退出, `Reopen` → 重新打开) ·
-  `high`
-- **Applications (folder)** · `应用程序` · macOS Finder (`Applications` → 应用程序) · `confirmed`
-- **deny / allow (permission)** · `拒绝` / `允许` · macOS permission-dialog verbs · `high`
-- **agent (AI assistant)** · `代理` · standard · `high`
-- **API key** · `API 密钥` · macOS/Microsoft (密钥 = key) · `high`
-- **model (AI model)** · `模型` · Microsoft TBX (`model` → 模型) · `high`
-- **endpoint** · `端点` · Microsoft TBX · `high`
-- **command palette** · `命令面板` · standard · `high`
-- **open beta** · `公开测试` · standard · `high`
-- **Local Network / Accepting incoming connections** · `本地网络` / `接受传入连接` · the first is Apple's own
-  Privacy-pane row, read live from `LOCAL_NETWORK` (superseded the paraphrase `本地网络访问`; see the onboarding-rewrite
-  section below); the second describes the firewall prompt rather than quoting a label · `high` / `tentative`
-
-### Search UI + commands catalog (first pass, 2026-06-21)
-
-macOS Finder/AppKit zh-CN Tier 1 (KEY-based en→zh lookup), Microsoft zh-Hans cross-check. Reuses
-settings/errors/explorer terms where they overlap (`窗格`/`标签页`/`搜索`/`宗卷`/`主机`/`驱动器`/`索引`/`路径`).
-
-- **search query / query (noun)** · `查询` · standard (matches the command-palette/search domain) · `high`
-- **run (a search)** · `运行` · Microsoft TBX (`run` → 运行); reused for "run search"/"execute command" · `high`
-- **results** · `结果` · standard; "previous/next result" → `上一个/下一个结果` · `confirmed`
-- **scanning / scan in progress** · `正在扫描` · macOS Finder (`Searching…` → 正在搜索 pattern; scan = 扫描) · `high`
-- **entry (indexed file count)** · `条目` · standard measure-word noun for index entries (`{count} 个条目`) · `high`
-- **filter (noun/verb)** · `筛选` · macOS/Microsoft (`Filter` → 筛选) · `confirmed`
-- **pattern (match pattern)** · `模式` · standard · `high`
-- **glob** · `Glob` · no settled Chinese UI term; kept verbatim like the brand row label (matches en intent) ·
-  `tentative`
-- **comparator (filter operator)** · `比较符` · descriptive; standard math/IT term · `high`
-- **scope (search scope) / "Search in"** · `搜索范围` · descriptive; matches macOS "Search:" scope row intent · `high`
-- **case-sensitive** · `区分大小写` · macOS/Microsoft standard · `confirmed`
-- **wildcard** · `通配符` · macOS/Microsoft standard · `confirmed`
-- **coming soon** · `即将推出` · standard product phrasing · `high`
-- **refine (AI search)** · `优化` · rendered by meaning (improve the query) · `tentative`
-- **agent (AI agent, transparency-strip voice)** · `代理` · reused from onboarding pass (glossary consistency; no
-  special case). NOTE: the en uses a deliberate first-person "agent" voice; `代理` carries it. `智能体` (the modern
-  Chinese "AI agent" term) was considered but rejected to stay consistent with the settled `代理`. · `high`
-- **zoom (UI text size)** · `缩放` (verb in/out → `放大`/`缩小`) · macOS AppKit (`Zoom` → 缩放) · `confirmed`
-- **clipboard** · `剪贴板` · macOS/Microsoft standard · `confirmed`
-- **copy to clipboard / cut / paste** · `拷贝` (Finder copy verb) / `剪切` / `粘贴` · macOS AppKit MenuCommands (`Cut`
-  → 剪切, `Paste` → 粘贴, `Select All` → 全选). NOTE: F5/F6 transfer ops keep the function-key-bar `拷贝`/`移动`;
-  clipboard ops use `拷贝到剪贴板`/`剪切`/`粘贴`. · `confirmed`
-- **select all / deselect all** · `全选` / `取消全选` · macOS (`Select All` → 全选) · `confirmed`
-- **select / deselect (the bare verbs)** · `选择` / `取消选择` · macOS Finder `zh-CN`, MS `zh-Hans` TBX · `high`. Full
-  evidence, and why Traditional says `選取`/`取消選取` on the same Microsoft entry, in § 选择/取消选择文件对话框.
-- **ascending / descending** · `升序` / `降序` · standard sort terms · `confirmed`
-- **sort by / sort order** · `按…排序` / `排序方向` · macOS Finder (`Sort By` → 排序方式) · `high`
-- **swap / switch (panes/tabs)** · `交换` / `切换` · standard · `high`
-- **refresh** · `刷新` · macOS AppKit (`refresh` → 刷新) · `confirmed`
-- **reopen (tab)** · `重新打开` · macOS (`Reopen` → 重新打开) · `confirmed`
-- **parent folder** · `上层文件夹` · macOS Finder (`Enclosing Folder` → 上层文件夹) · `confirmed`
-- **page up / page down** · `向上翻页` / `向下翻页` · standard · `high`
-- **toggle** · `切换` · standard · `confirmed`
-- **make available offline / remove download (cloud)** · `设为离线可用` / `移除下载` · descriptive (cloud-file sense) ·
-  `tentative`
-- **onboarding (command label + every reference)** · `入门引导` · unified across the whole locale: the wizard noun, the
-  `Onboarding…` menu-command label (`commands.cmdrOpenOnboarding`), the `main.upgradeNudge` references to it, the
-  `shortcuts.scope.onboarding` scope, and the `settings.onboarding.*` internal copy all use `入门引导`. (The first-pass
-  command label was `新手引导`; reconciled to the dominant wizard noun so the menu item and the wizard title read as one
-  feature.) · `high`
-- **feedback / What''s new / error report (Help menu commands)** · `反馈` / `新增功能` / `错误报告` · macOS/Microsoft
-  standard menu wording · `high`
-- **boring folders (playful)** · `无聊的文件夹` · kept the friendly/playful en tone literally (style.md: preserve
-  deliberate casual voice) · `tentative`
-
-UI section/label names captured (keep consistent): search modes AI `AI` / Filename `文件名` / Content `内容` / Regex
-`正则`; filter facets Pattern `模式` / Size `大小` / Modified `修改日期` / Search-in `搜索范围`; type toggle Both `两者`
-/ Files `文件` / Folders `文件夹`; result columns Name `名称` / Path `路径` / Size `大小` / Modified `修改日期` /
-Actions `操作`.
-
-### Notes (errors catalog)
-
-- **`{verb}`/`{Verb}`/`{gerund}` placeholders inject ENGLISH words** ("copy"/"move"/"delete"/"copying"). Chinese
-  sentences are phrased so the insertion sits where a verb goes (`无法{verb}到相同位置`, `{gerund}时出现了意外问题`,
-  `无法{verb}这个文件`). The mixed-language result is unavoidable until the verb map itself is localized (tracked task
-  #5).
-- **`{osMessage}`, `{deviceName}`, `{required}`, `{available}`, `{name}`, `{app}`, `{deletePermanentlyKey}`** are
-  runtime values; kept verbatim with natural Chinese spacing around them.
-- Quotes around macOS UI labels use full-width `“…”` (`“显示简介”`, `“已锁定”`, `“共享与权限”`), per the Simplified
-  convention.
-
-### Licensing / AI / Viewer catalogs (wave 1, 2026-06-21)
-
-macOS zh-CN Tier 1, Microsoft zh-Hans cross-check.
-
-- **Formality in licensing.json: formal `您` throughout** · the whole file is contractual/billing copy (license,
-  payment, terms), so per `style.md` § Formality it uses `您`, not the neutral `你`. ai.json and viewer.json use `你`
-  (the default friendly register). · `high`
-- **license** · `许可证` · Microsoft TBX; macOS · `high`
-- **license key** · `许可证密钥` · `密钥` (key/secret), not `钥匙` · `high`
-- **API key** · `API 密钥` · standard; `密钥` = secret key · `confirmed`
-- **activate / deactivate (a license)** · `激活` / `停用` · standard · `high`
-- **perpetual (license)** · `永久` · standard · `high`
-- **commercial / subscription** · `商业` / `订阅` · standard · `high`
-- **organization** · `组织` · standard · `high`
-- **renew (a subscription)** · `续订` · standard · `high`
-- **expire / expired** · `过期` · macOS-style (no bare 失败/错误) · `high`
-- **valid until / validity** · `有效期至` / `有效期` · standard · `high`
-- **open beta** · `公开测试版` · standard · `high`
-- **provider (AI service)** · `提供方` · reused from settings pass (Microsoft TBX) · `high`
-- **endpoint** · `端点` · Microsoft TBX (`端点`) · `confirmed`
-- **model (AI)** · `模型` · standard · `confirmed`
-- **server (local AI)** · `服务器` · macOS, reused from settings · `confirmed`
-- **clipboard** · `剪贴板` · macOS (AppKit MenuCommands `Clipboard` → 剪贴板) · `confirmed`
-- **copy / paste / select all** · `拷贝` / `粘贴` / `全选` · macOS zh-CN MenuCommands · `confirmed`
-- **encoding (text)** · `编码` · Microsoft TBX (`Encoding` → 编码) · `confirmed`
-- **Western (encoding group)** · `西文` · standard for Latin-script encodings; NOT Microsoft TBX's first hit `西部电影`
-  (Western movies, wrong sense) · `high`
-- **Unicode** · `Unicode` · kept verbatim (standard name) · `confirmed`
-- **streaming (large-file mode)** · `流式` / `流式读取` · Microsoft TBX `流式处理`; shortened to `流式读取` for the
-  viewer badge · `high`
-- **word wrap (viewer)** · `换行` / `自动换行` · reused from settings pass (`自动换行`); the terse badge uses `换行` ·
-  `high`
-- **tail (auto-follow file)** · `跟随` · rendered by meaning (follow), not transliterated · `high`
-- **index / indexing (viewer)** · `索引` / `建立索引` · reused from settings pass · `high`
-- **in memory** · `已在内存中` · standard · `high`
-- **viewer (read-only file viewer)** · `查看器` · reused from UI section names · `confirmed`
-- **document (file kind)** · `文稿` · macOS uses 文稿 for document; image kind = `图像` · `high`
-- **App (application, in cloud/AI copy)** · `App` · Apple zh-CN keeps "App" verbatim (reused from errors pass) · `high`
-- **selection (text, in viewer)** · `所选内容` · standard · `high`
-- **retry / reload** · `重试` / `重新加载` · standard · `high`
-- **`viewer.saveAs.defaultName` kept as `selection`** (NOT translated) · it's a filename base; description requires
-  lowercase, no spaces, filename-safe · `confirmed`
-
-### Indexing / downloads / errorReporter / shortcuts / mtp / ui catalogs (wave 1, 2026-06-21)
-
-macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms (`索引`/`建立索引`, `驱动器`, `缓冲区`,
-`快捷键`, `命令面板`, `重置`, `脱敏`).
-
-- **index (build an index for a drive)** · `建立索引` (verb) / `索引` (noun) · reused from settings pass · `high`
-- **scan / rescan (a drive)** · `扫描` / `重新扫描` · macOS Finder (`Searching…` → 正在搜索 pattern) · `high`
-- **entry (indexed file/folder)** · `条目` (measure word `个`) · reused from search pass · `high`
-- **directory (status/aggregation context)** · `目录` · standard; reused dir abbrev from explorer pass · `high`
-- **replay (recorded fs changes)** · `重放` · rendered by meaning (re-apply changes) · `tentative`
-- **drive (external/network drive)** · `驱动器` · reused from settings/errors · `confirmed`
-- **download (noun, the file) / Downloads (folder)** · `下载内容` (the thing) / `“下载”文件夹` (the folder, macOS Finder
-  folder name `下载`) · macOS · `high`
-- **jump to (a file/download)** · `跳转到` · standard · `high`
-- **global shortcut (system-wide hotkey)** · `全局快捷键` · standard (vs `应用内` in-app) · `high`
-- **in-app (scope, vs global)** · `应用内` · standard · `high`
-- **modifier (key)** · `修饰键` · macOS/standard · `high`
-- **register (claim a hotkey)** · `注册` / `已注册` / `未注册` · standard · `high`
-- **key combination / combo** · `按键组合` · standard · `high`
-- **error report (the feature/bundle)** · `错误报告` · reused from search-pass Help-menu command (macOS/Microsoft).
-  NOTE: this is the one place `错误` is used deliberately — it's the established product-feature noun, not a loud
-  failure label; the "Couldn''t …" status strings still render `无法…`. · `high`
-- **redact / redaction (scrub logs)** · `脱敏` · standard privacy/security term (`脱敏` = remove sensitive data) ·
-  `high`
-- **reference ID** · `参考编号` · descriptive · `high`
-- **manifest** · `清单` · Microsoft TBX (`manifest` → 清单) · `high`
-- **bundle (report bundle)** · `报告包` · descriptive (a packaged bundle of logs) · `tentative`
-- **note (free-text field)** · `备注` · macOS/standard · `high`
-- **MTP device / USB device** · `MTP 设备` / `USB 设备` · keep MTP, USB verbatim · `confirmed`
-- **ptpcamerad / udev / Terminal** · `ptpcamerad` / `udev` kept verbatim; Terminal → `终端` (macOS zh-CN app name) ·
-  `high`
-- **daemon (system daemon)** · `守护进程` · standard · `high`
-- **process** · `进程` · standard · `confirmed`
-- **exclusive access** · `独占访问权限` · standard · `high`
-- **suggestions (combobox)** · `建议` · standard · `high`
-- **dismiss (a toast/notification)** · `关闭` · macOS `zh-CN` (`Dismiss Popover` → `关闭弹出窗口`; the same corpus keeps
-  `忽略` for genuine ignore senses) · `confirmed`
-- **finalize / preparing view (loading)** · `准备视图` / `正在准备` · descriptive · `high`
-
-### macOS system-feature names (shortcut-conflict warnings; reuse the localized macOS name)
-
-zh-CN macOS labels: Spotlight `聚焦`; Finder `访达`; Character Viewer `字符检视器`; Mission Control `调度中心`; App
-windows `应用程序窗口`; Spaces `空间`; Force Quit `强制退出`; input source switching `切换输入源`; app switcher
-`应用切换器`; screenshots `截屏`; screen recording `录屏`; logging out `退出登录`; locking the screen `锁定屏幕`.
-`System Settings > Keyboard` → `系统设置 > 键盘` (plain literal, matching the errors-pass `系统设置`). · `high`
-
-### UI section names (this wave; keep consistent across catalogs)
-
-- Shortcut scopes: App `应用`; Main window `主窗口`; File list `文件列表`; Brief mode `简洁模式`; Full mode `完整模式`;
-  Volume chooser `宗卷选择器`; Network `网络`; Share browser `共享浏览器`; Command palette `命令面板`; About window
-  `关于窗口`; Onboarding `入门引导`. (Brief/Full align with the explorer pass's view-mode `简洁`/`完整`.)
+- View modes: Full `完整`, Brief `简洁`; as shortcut scopes `完整模式` / `简洁模式`.
+- Shortcut scopes: App `应用`; Main window `主窗口`; File list `文件列表`; Volume chooser `宗卷选择器`; Servers
+  `服务器`; Places `共享位置`; Favorites menu `个人收藏菜单`; Command palette `命令面板`; About window `关于窗口`;
+  Onboarding `入门引导`.
 - Shortcut filters: All `全部`; Modified `已修改`; Conflicts `冲突`. Badges: macOS `macOS` (verbatim); Fixed `固定`.
+- Columns: Name `名称`; Ext `扩展名`; Size `大小`; Modified `修改日期`; Path `路径`; Actions `操作`.
+- Search modes: AI `AI`, Filename `文件名`, Content `内容`, Regex `正则`; filter facets Pattern `模式`, Size `大小`,
+  Modified `修改日期`, Search in `搜索范围`; type toggle Both `两者`, Files `文件`, Folders `文件夹`.
+- Volume-switcher groups: Favorites `个人收藏`, Volumes `宗卷`, Cloud `云`, Mobile `移动设备`, Network `网络`.
 
-### Wave 1 prep catalogs (search/feedback/crashReporter/goToPath/transfer/updates/lowDiskSpace/commandPalette/whatsNew/main/common/notifications, 2026-06-21)
+## macOS names in the reserved-shortcut list (`shortcuts.system.*`)
 
-macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses prior-pass terms.
+Reuse the localized macOS name: Spotlight `聚焦`; Character Viewer `字符检视器`; Mission Control `调度中心`; App windows
+`应用程序窗口`; Spaces `空间`; Force Quit `强制退出`; input source switching `切换输入源`; app switcher `应用切换器`;
+screenshots `截屏`; screen recording `录屏`; logging out `退出登录`; locking the screen `锁定屏幕`;
+`System Settings > Keyboard` → `系统设置 > 键盘`. Finder is the one exception and stays Latin (`Finder 搜索窗口`), per
+the catalog-wide Finder decision in § 原生菜单.
 
-- **feedback** · `反馈` · reused from search/commands pass (Help-menu wording) · `high`
-- **send feedback** · `发送反馈` · standard · `high`
-- **crash report** · `崩溃报告` · macOS/Microsoft standard (`crash` → 崩溃) · `high`
-- **error report** · `错误报告` · reused from search/commands pass · `high`
-- **report ID** · `报告 ID` · keep ID verbatim · `high`
-- **dismiss / close (toast/dialog button)** · `关闭` · reused (`Close` → 关闭) · `confirmed`
-- **copy / copied (clipboard confirmation)** · `拷贝` / `已拷贝` · macOS Finder copy verb (reused) · `confirmed`
-- **restart (the app, to apply update)** · `重新启动` · macOS (`Restart` → 重新启动) · `high`
-- **What''s new** · `新增功能` · reused from search/commands pass (Help-menu wording) · `high`
-- **changelog** · `更新日志` · standard · `high`
-- **update / updates** · `更新` · reused from settings pass · `confirmed`
-- **available (new version available)** · `可用` · standard · `high`
-- **later (dismiss-for-now button)** · `稍后` · standard · `high`
-- **checking / downloading / installing / ready (update status)** · `正在检查` / `正在下载` / `正在安装` / `已就绪` ·
-  standard progress wording · `high`
-- **go to path** · `前往路径` · macOS Finder (`Go to Folder` → 前往文件夹; path = 路径) · `high`
-- **recent (recent paths/searches)** · `最近` (`最近的路径` / `最近使用`) · macOS (`Recent` → 最近) · `high`
-- **remove from list** · `从列表中移除` · standard (`Remove` → 移除) · `high`
-- **startup disk (boot volume)** · `启动磁盘` · macOS (`Startup Disk` → 启动磁盘) · `high`
-- **low disk space** · `磁盘空间不足` · macOS/Microsoft standard · `high`
-- **free (space)** · `剩余` · descriptive (rephrased; not literal "free") · `high`
-- **target (destination folder, in transfer copy)** · `目标位置` · descriptive; matches the destination sense · `high`
-- **trash (verb, move to trash)** · `移到废纸篓` · reused from file-ops pass; Trash noun `废纸篓` (style.md) · `high`
-- **sending… (in-progress button)** · `正在发送…` · standard · `high`
-- **`feedback.dialog.counter` kept identical** (`{currentText} / {maxText}`) · pure-placeholder fraction, no
-  translatable text · `confirmed`
+## Error-copy conventions (`errors.*`)
 
-### Operation queue catalog (queue window + pause/resume/background, 2026-06-21; head noun renamed 2026-08-08)
+- System Settings panes arrive as runtime tokens (`{system_settings}`, `{privacy_and_security}`, `{files_and_folders}`,
+  `{full_disk_access}`), OS-localized; never hand-translate one. Spacing and the pane names the tokens don't cover: §
+  Shared `en` fixes.
+- Runtime values (`{osMessage}`, `{deviceName}`, `{required}`, `{available}`, `{name}`, `{app}`) stay verbatim, with a
+  space against Han text.
+- macOS UI labels quoted in prose take full-width `“…”` (`“显示简介”`, `“已锁定”`, `“共享与权限”`).
+- Permission denied → `无访问权限` / `没有权限`; authentication failed → `无法通过身份验证` (macOS says `需要认证` for
+  "authentication needed"; the style guide bans a bare failure word).
+- Get Info `显示简介`; Sharing & Permissions `共享与权限`; Storage (System Settings pane) `储存空间`; an open file
+  handle `句柄`; Technical details `技术详情` (descriptive, no macOS source).
+- "Here's what to try:" lists open with `可以这样试试：`; "Navigate here again" is `再次进入这里`, and "if it keeps
+  happening" is `如果一直这样`.
 
-macOS zh-CN Tier 1, Total Commander zh-CN (the feature's origin: queue + background controls), Double Commander zh-CN
-(the same orthodox two-pane feature: operation queues), Microsoft zh-Hans cross-check.
+## Conflict-policy buttons and small dialog words (`fileOperations.transferDialog.policySkip`/`.policyOverwrite`, `fileOperations.transferDialog.operationAria`)
 
-- **pause** · `暂停` · macOS (`暂停`, `已暂停拷贝“^0”`), Total Commander (`暂停`), Microsoft TBX (`暂停`) · `confirmed`
-- **resume (a paused operation)** · `继续` · Microsoft TBX (`resume` → `继续`), macOS (`继续`). NOTE: NOT `恢复` (that's
-  restore/recover, e.g. macOS `恢复` = restore version) — `继续` is the resume-an-operation sense. · `high`
-- **operation (the head noun: any queued copy, move, delete, trash, rename, folder/file creation, or archive edit)** ·
-  `操作` · macOS Finder zh-CN (`NE1` `无法完成此操作。`, `NE82` `…因为正在进行其他操作，例如移动或拷贝项目…`, `NE83`
-  `请在当前操作完成后重试。`), Microsoft TBX (`operation` → `操作`), Double Commander zh-CN (`Current operation:` →
-  `当前操作：`, `File operations` → `文件操作`), and the zh catalog's own 56 existing `操作` hits (`操作日志`,
-  `文件操作`, `这项操作`). Same word as the Operation log window, so the two View-menu items pair. · `confirmed`
-- **operation queue (the window/feature)** · `操作队列` · `操作` (above) + `队列` (below); Microsoft TBX builds queue
-  names exactly this way (`报告队列`, `响应队列`, `呼叫队列`), and Double Commander zh-CN puts the two words in one
-  sentence for this very feature (`…move operations between queues` → `使用拖放在队列之间进行移动操作`). Pairs with
-  `操作日志` (Operation log) in the same View menu block. · `high`. **Supersedes `传输队列`** (the 2026-06-21 term): the
-  English widened from "Transfer queue" to "Operation queue" because the window also lists deletes, trashes, renames,
-  and folder/file creations, and "transfer" already means copy-or-move one level down (the transfer progress dialog, the
-  transfer driver). Never reintroduce `传输队列` for this window.
-- **queue (bare noun)** · `队列` · Total Commander (`队列(&Q)`), Double Commander (`New queue` → `新队列`), Microsoft
-  TBX (`队列`) · `confirmed`. Unchanged by the rename: `队列中没有任务`, `加入队列`.
-- **add to queue / send to the operation queue (the progress-dialog F2 button)** · `加入队列` (button) /
-  `发送到操作队列` (aria) · descriptive, built on `队列` + the renamed `操作队列` · `high`
-- **background / running in the background** · `后台` (`在后台运行` / `在后台继续运行`) · Total Commander (`后台`,
-  `所有上传/下载都在后台进行`), Microsoft TBX (`后台的`). NOTE: NOT `背景` (visual background, wrong sense). · `high`
-- **transfer (a copy or move, the narrow sense)** · `传输` · still the right word for the transfer progress dialog and
-  SMB/USB transfer copy (`这个传输停住不动了`, `文件传输`), but NO LONGER the queue's head noun: a queued unit is
-  `操作`. · `high`
-- **"this operation" (per-row aria labels)** · `这项操作` · `项` is the settled classifier for 操作 in this catalog (six
-  `这项操作` hits, plus `一项系统操作`), and style.md prefers the spoken `这项` over the written `此` that Double
-  Commander uses (`此操作`) · `high`
-- **counted operations (`{count} 项操作`)** · classifier `项`, not `个` · matches `这项操作` / `一项系统操作`; the
-  generic `{count} 个项目` pattern keeps `个` for items · `high`
-- **status words (queue row)** · queued `等待中` / running `进行中` / paused `已暂停` / done `已完成` / cancelled
-  `已取消` / failed `无法完成` (style.md: no bare 失败/错误) · macOS-style · `high`
-- **pause all / resume all / cancel selected (toolbar)** · `全部暂停` / `全部继续` / `取消所选` · built on settled
-  verbs + `全部`/`所选` · `high`
+- "Skip all" / "Overwrite all" → `全部跳过` / `全部覆盖`. Chinese collapses ICU `one`/`other` to `other`, so the
+  single-conflict case reads `全部…` too; chosen because the policy radios act on the whole conflict set.
+- `transferDialog.operationAria` (what the control chooses) → `操作`, with no colon: it's an aria label.
+- Under the cursor → `光标所在的` (descriptive); the affirmative OK button → `好` (Apple's OK); Quit & Reopen (the macOS
+  relaunch prompt) → `退出并重新打开`.
 
-### Navigation & file-ops settings + double-click-to-parent hint (reference-pile pass, 2026-06-26)
+## Licensing, AI, and viewer vocabulary (`licensing.*`, `ai.*`, `viewer.*`)
 
-macOS Finder zh-CN Tier 1, Double Commander zh-CN (the exact two-pane feature) + Microsoft TBX cross-check.
+- Licensing: organization `组织`; renew `续订`; valid until `有效期至` / validity `有效期`; open beta `公开测试版`.
+  Licensing copy uses `你` like every other surface (style.md § Formality); the one `您` is the mail salutation in
+  `licensing.dialog.mailtoBody`.
+- AI: drop (drag-and-drop onto the composer) `拖放`; budget `预算`; rate-limited `速率限制`; out of quota `配额已用完`;
+  estimated cost `预计费用`, "about {amount}" `约 {amount}`; cost unknown `费用未知` (`费用` over Microsoft's `成本费`);
+  "free, on-device" `免费，本地运行`; Log AI model calls `记录 AI 模型调用`.
+- Viewer: the Western encoding group `西文`; in memory `已在内存中`; the text selection `所选内容`;
+  `viewer.saveAs.defaultName` stays the ASCII `selection` (a lowercase, filename-safe base the description requires).
 
-- **navigation (settings section/card)** · `导航` · Microsoft TBX (`Navigation` → 导航, CHN); macOS Finder uses `导览`
-  for the verb `navigate`, but `导航` is the standard UI noun for a navigation section · `high`
-- **file operations** · `文件操作` · Microsoft TBX (`operation` → 操作) · `high`
-- **parent folder** · `上层文件夹` · macOS Finder (`Go To Enclosing Folder` → 前往上层文件夹;
-  `Navigates … to its enclosing folder` → 导览至其上层文件夹). NOTE: Double Commander uses `父文件夹`, but macOS-Tier-1
-  wins — keep `上层文件夹` (matches the explorer-pass `上层文件夹`) · `confirmed`
-- **go to / navigate to (parent, a path piece)** · `前往` · macOS Finder (`Go to ${location}` → 前往${location};
-  `Go To Folder` → 前往文件夹). The breadcrumb tooltip `Click to navigate to {path}` → `点击前往 {path}` · `confirmed`
-- **double-click** · `双击` · macOS + Double Commander (`双击文件视图的空白区域时，切换到父文件夹`) · `confirmed`
-- **pane background / empty space around the file list (double-click target)** · `窗格背景` (label) / `空白区域`
-  (description) · Double Commander attests both framings: `双击视图背景` (view background → 背景) and
-  `双击文件视图的空白区域` (empty area → 空白区域). `窗格` from the settled pane term. Label
-  `双击窗格背景前往上层文件夹` is unchanged across the two en wordings ("…navigates to parent folder" and the shorter
-  "…to go up a folder") — Chinese collapses both to one concise form · `high`
-- **row (a file row in the list)** · `行` · Microsoft TBX (`row` → 行). Description renders "not a file row" as
-  `而不是某个文件所在的行` (the row a file sits on), contrasting the empty area with a clickable file row · `high`
-- **one-time hint (notification)** · `一次性…提示` · descriptive; `提示` = hint, `已显示` = shown · `high`
-- **"What just happened?" (hint title)** · `刚刚发生了什么？` · natural rendering, full-width `？` · `high`
-- **"Don''t like it?" / "Never do this again" / "I like it" (hint buttons)** · `不喜欢？` / `不再这样做` / `我喜欢` ·
-  friendly informal `你`-register per style.md; concise · `high`
+## Indexing, downloads, error reporter, and MTP vocabulary (`indexing.*`, `downloads.*`, `errorReporter.*`, `mtp.*`)
 
-### Ellipsis normalization
+- An index entry `条目` (measure word `个`); replay (recorded file-system changes) `重放`; jump to `跳转到`; register a
+  hotkey `注册` / `已注册` / `未注册`; key combination `按键组合`; the report bundle `报告包`; a system daemon
+  `守护进程`; `ptpcamerad` and `udev` verbatim; preparing the view `正在准备`.
+- Report ID `报告 ID`; update available `可用`; recent `最近` (`最近的路径`, `最近使用`); remove from list
+  `从列表中移除`; low disk space `磁盘空间不足`; free space in a readout `剩余`. `feedback.dialog.counter` stays the
+  bare `{currentText} / {maxText}` fraction.
+- Search: run a search `运行`; entry `条目`; coming soon `即将推出`; refine (AI search) `优化`; swap / switch panes and
+  tabs `交换` / `切换`; reopen a tab `重新打开`; Page Up / Page Down `向上翻页` / `向下翻页`; remove a cloud download
+  `移除下载`; the playful "boring folders" kept playful, `无聊的文件夹`.
 
-- **Ellipsis: always the single full-width `…` (U+2026), regardless of the en source''s `...` vs `…`.** Chinese
-  typography uses `…`, not ASCII three-dots, so every zh status/label string renders `…` (`正在发送…`, `正在加载…`,
-  `正在取消…`). This is a deliberate, locale-wide normalization (not source-faithful byte-copying): the whole zh catalog
-  is consistent on the single `…`. (The doubled literary `……` is NOT used here, even in prose tooltips, to keep one
-  ellipsis form across the UI.)
-- preset (value in a settings-picker dropdown) → 预设; "back to presets" → "返回预设" · Microsoft terminology ("indexing
-  preset" → "索引预设"); 预设 dominates the corpus over 预置 (~30:1) · high
+## Operation queue catalog (`queue.*`)
 
-### FAT32 too-large-file error (2026-06-30)
+Total Commander zh-CN (the feature's origin: queue plus background controls), Double Commander zh-CN (the same orthodox
+two-pane feature), Microsoft zh-Hans cross-check.
 
-macOS Finder zh-CN Tier 1 (`PE4.5` = the same "too large for the volume's format" error:
-`相对于宗卷的格式，项目"^0"太大，无法拷贝。`), Microsoft zh-Hans TBX cross-check.
+- **operation → `操作`**: macOS Finder zh-CN (`NE1` `无法完成此操作。`, `NE82`
+  `…因为正在进行其他操作，例如移动或拷贝项目…`, `NE83` `请在当前操作完成后重试。`), Microsoft TBX, Double Commander
+  (`Current operation:` → `当前操作：`), and the catalog's own `操作日志` / `文件操作`. Same word as the Operation log,
+  so the two View-menu items pair.
+- **operation queue → `操作队列`**, never `传输队列`: the English widened from "Transfer queue" because the window also
+  lists deletes, trashes, renames, and creations, and "transfer" already means copy-or-move one level down. Microsoft
+  builds queue names the same way (`报告队列`, `响应队列`).
+- **classifier `项`** for operations (`这项操作`, `{count} 项操作`, `一项系统操作`), the spoken `这项` over Double
+  Commander's written `此操作`; generic items keep `{count} 个项目`.
+- **background → `后台`** (`在后台运行`), Total Commander and Microsoft; never `背景`, the visual backdrop.
+- **status words**: queued `等待中`, running `进行中`, paused `已暂停`, done `已完成`, cancelled `已取消`, failed
+  `无法完成`; the toolbar `全部暂停` / `全部继续` / `取消所选`; add to queue `加入队列`.
+- **resume → `继续`**, not `恢复` (restore/recover, as macOS uses it for versions).
 
-- **drive (removable/USB/SD disk, the FAT32 error context)** · `驱动器` · reused settled glossary term (`驱动器`,
-  macOS/Microsoft); the en deliberately says "drive" (friendly) not "disk", and `驱动器` is the established equivalent.
-  macOS Finder's `外置磁盘` (external disk) uses 磁盘 for the "disk" sense; kept `驱动器` for catalog consistency ·
-  `high`
-- **too large (file exceeds a limit)** · `太大` · macOS Finder `PE4.5` (`…太大，无法拷贝`) · `high`
-- **format (a filesystem's format, noun) / formatted as X** · `格式` / `采用 X 格式` · macOS Finder `PE4.5`
-  (`宗卷的格式`); Microsoft TBX `format` (noun) → 格式. "formatted as FAT32" rendered `采用 FAT32 格式` (uses FAT32
-  format) · `high`
-- **store (files on a disk)** · `存储` · Microsoft TBX `store` (verb, CHN) → 存储. "store into a drive" rendered `存入`
-  (存入这个驱动器); "store files larger than X" → `存储大于 X 的文件` · `high`
-- **FAT32 / exFAT (filesystem-format names)** · `FAT32` / `exFAT` · kept verbatim (Apple Finder keeps `ExFAT`,
-  `MS-DOS (FAT)` verbatim in zh-CN; do-not-translate format names) · `confirmed`
-- **"and N more files" (trailing line under a too-large list)** · `另有 {countText} 个文件` · `另有` = "in addition
-  there are" (the "more" sense); measure word `个` per the `{count} 个项目` glossary pattern; Chinese plural collapses
-  to a single `other` branch holding `文件` · `high`
-- preset (value in a settings-picker dropdown) → 预设; "back to presets" → "返回预设" · Microsoft terminology ("indexing
-  preset" → "索引预设"); 预设 dominates the corpus over 预置 (~30:1) · high
+## Double-click the pane background (`settings.behavior.doubleClickPaneNavigatesToParent.*`, `fileExplorer.doubleClickHint.*`)
 
-### Copy/delete dialog labels + scan spinner (dialog-polish pass)
+macOS Finder zh-CN and Double Commander zh-CN (the same two-pane feature).
 
-- **action (what a control chooses; screen-reader label `transferDialog.operationAria`)** · `操作` · Microsoft TBX
-  (`action` → `操作`); matches result-column `操作` from the search pass. No colon: it's an aria-label, not a visible
-  field label · `high`
-- **Scanning… (spinner tooltip while counting selected items)** · `正在扫描…` · reused from the search pass
-  (`正在扫描`); the locale-wide `正在…` in-progress pattern + single full-width `…` ellipsis normalization · `high`
-- **"doesn''t exist yet" (destination folder, yellow inline warning)** · `还不存在` · macOS Finder PE131
-  (`doesn''t exist anymore` → `不再存在`) + Nautilus (`does not exist` → `不存在`); `还` carries the "yet" nuance ·
-  `high`
-- **"Cmdr will create it during the copy/move" (auto-create reassurance)** · `Cmdr 会在拷贝时自动创建它` /
-  `Cmdr 会在移动时自动创建它` · `创建` reused from this file''s `创建文件夹` (mkdir); `拷贝`/`移动` settled verbs;
-  `自动` carries the "automatically" reassurance from the @key description; brand `Cmdr` kept verbatim with surrounding
-  space · `high`
-- **queue.row.label progress arms (rename / create folder / create file)** · `正在重命名` / `正在创建文件夹` /
-  `正在创建文件` · "正在[动词]" style of the sibling arms (正在拷贝/移动); reuses settled `重命名` and `创建`
-  (创建文件夹 from mkdir); macOS uses 创建 as the create verb ("未能创建文件夹") while 新建文件夹 is the menu label ·
-  high
+- Go to / navigate to the parent → `前往上层文件夹` (Finder `Go To Enclosing Folder`); the breadcrumb tooltip
+  `点按前往 {path}`.
+- Pane background → `窗格背景` in the label, `空白区域` in the description; Double Commander attests both framings
+  (`双击视图背景`, `双击文件视图的空白区域`). The label reads `双击窗格背景前往上层文件夹` for both English wordings.
+- "not a file row" → `而不是某个文件所在的行`, contrasting the empty area with a clickable row.
+- The hint: title `刚刚发生了什么？`; buttons `不喜欢？` / `不再这样做` / `我喜欢`.
 
-### Archive browsing catalog (2026-07-05)
+## FAT32 too-large-file error (`errors.write.filesTooLargeForFilesystem.*`)
+
+macOS Finder `PE4.5` is the same error: `相对于宗卷的格式，项目"^0"太大，无法拷贝。`
+
+- drive → `驱动器`: the English says "drive" (friendly), not "disk"; Finder's `外置磁盘` is the disk sense.
+- too large → `太大`; formatted as FAT32 → `采用 FAT32 格式`; store → `存储` / `存入` (`存入这个驱动器`).
+- "and N more files" → `另有 {countText} 个文件` (`另有` = in addition there are).
+
+## Copy and delete dialog labels and the scan spinner (`fileOperations.shared.scanningTooltip`, `fileOperations.transferDialog.targetWillBeCreatedCopy`/`.targetWillBeCreatedMove`, `queue.row.label`)
+
+- Scanning… (while counting the selection) → `正在扫描…`.
+- "doesn't exist yet" (destination folder) → `还不存在` (Finder `PE131` `不再存在`; `还` carries "yet").
+- "Cmdr will create it during the copy/move" → `Cmdr 会在拷贝时自动创建它` / `Cmdr 会在移动时自动创建它`; `自动` carries
+  the reassurance.
+- `queue.row.label` progress arms: `正在重命名` / `正在创建文件夹` / `正在创建文件` / `正在编辑压缩文件`, the
+  `正在[动词]` shape of the copy and move arms. `创建` is the act (Finder `未能创建文件夹`); `新建文件夹` is the menu
+  label.
+
+## Archive browsing (`fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.archive*`, `settings.archives.*`, `errors.mutation.archive*`)
 
 macOS Finder zh-CN + the two-pane/explorer file-manager family (Total/Double Commander, Nautilus, Thunar) for the
 "browse an archive like a folder" feature; Microsoft zh-Hans cross-check.
@@ -531,8 +178,8 @@ macOS Finder zh-CN + the two-pane/explorer file-manager family (Total/Double Com
   says `按 Enter 键` + verb (`按 Enter 键搜索` ×2, `按 Enter 键筛选`, `按 Enter 键时的行为` ×4). · `confirmed`
 - **the Escape key** · `Esc 键`, phrased `按 Esc 键` + verb · same shape as `按 Enter 键`; the Mac keycap reads `esc`
   and `Esc 键` is the everyday Chinese name, while AppKit's spelled-out `Escape` reads as a foreign word mid-sentence.
-  Settled for the Escape full-screen switch (`按 Esc 键退出全屏幕`). `shortcuts.section.pressEscToClear` still writes
-  `ESC` (all caps), a candidate to align. · `high`
+  Used by the Escape full-screen switch (`按 Esc 键退出全屏幕`) and `shortcuts.section.pressEscToClear`
+  (`按 Esc 键清除`). · `high`
 - **full screen (macOS window mode)** · `全屏幕` · macOS zh-CN (`Enter Full Screen` → 进入全屏幕, `Exit Full Screen`
   →退出全屏幕, `Full Screen Tile` → 全屏幕平铺; AppKit, reference pile) · `confirmed`
 - **read-only archive** · `只读压缩文件` · settled `只读` (glossary) + `压缩文件`; mirrors `只读宗卷` / `只读设备`
@@ -543,7 +190,7 @@ macOS Finder zh-CN + the two-pane/explorer file-manager family (Total/Double Com
   `移除` = remove; `zip` kept verbatim (format token); reads as a natural continuation of `压缩文件里没有废纸篓。` ·
   `high`
 
-### Paste-clipboard-as-file catalog (2026-07-07)
+## Paste clipboard as a file (`settings.fileOperations.pasteClipboardAsFile.*`, `fileExplorer.clipboard.pastedAsFile*`)
 
 macOS zh-CN Tier 1 (AppKit MenuCommands / Accessibility for paste + image), Double Commander zh-CN for the two-pane
 paste op, Microsoft zh-Hans cross-check. Reuses settled `剪贴板`/`拷贝`/`重命名`/`设置` terms.
@@ -571,7 +218,7 @@ paste op, Microsoft zh-Hans cross-check. Reuses settled `剪贴板`/`拷贝`/`�
 - **⌘V (paste shortcut glyph)** · `⌘V` · kept verbatim per SYSTEM_TOKENS / do-not-translate (matches the catalog's
   `⌘C`/`⌘Enter` handling) · `confirmed`
 
-### Archive-password dialog (encrypted-zip unlock modal, `fileOperations.archivePassword.*`, 2026-07-08)
+## Archive-password dialog and Compress (`fileOperations.archivePassword.*`, `commands.fileCompress.*`, `settings.archives.compressionLevel.*`)
 
 - password-protected → `受密码保护` · TC/DC zh phrasing + macOS · high. Body: "…… 受密码保护。"
 - password (noun) → `密码` · macOS/MS · confirmed.
@@ -596,9 +243,8 @@ Settled while translating the Compress feature:
   · high. Marks quicker packing, not app speed. `.faster`.
 - smaller (slider high end, level 9) → `更小` · pairs with `更快`; marks the smaller output file (TC `zh` high end
   "最大压缩") · high. `.smaller`.
-- No `sameAsSourceJustification` needed: all values differ from English.
 
-### Operation log catalog (`operationLog.*` + `commands.logOperationLog.*`, 2026-07-09)
+## Operation log catalog (`operationLog.*` + `commands.logOperationLog.*`)
 
 macOS zh-CN Tier 1, Microsoft zh-Hans cross-check. Reuses settled queue-status and transfer-verb terms so the log reads
 as one feature with the operation queue (`操作队列`), whose head noun `操作` it shares.
@@ -627,9 +273,8 @@ as one feature with the operation queue (`操作队列`), whose head noun `操�
   `客户端` = client) / Agent `代理` (settled agent → 代理) · `high`
 - **"Load 50 more" (loadMore button)** · `再加载 50 条` · `再加载` = load more; `条` measure word for log records ·
   `high`
-- No `sameAsSourceJustification` needed: every value differs from English (`AI 客户端` keeps only the brand token).
 
-### Network-drive image indexing catalog (`settings.mediaIndex.networkVolumes.*`, `settings.mediaIndex.alwaysIndex*`, `search.imageResults.networkOff/paused`, 2026-07-13)
+## Network-drive image indexing catalog (`settings.mediaIndex.networkVolumes.*`, `settings.mediaIndex.alwaysIndex*`, `search.imageResults.networkOff/paused`)
 
 macOS zh-CN Tier 1 (Finder/Photos), Microsoft zh-Hans TBX cross-check. Reuses settled
 `图像`/`网络驱动器`/`建立索引`/`断开连接`/`暂停`/`继续`/`文件夹` terms. Feature: opting a network (SMB) drive into
@@ -664,10 +309,8 @@ background indexing of the text inside its photos.
 - **"Internal:" prefix on hidden dev strings** · `内部：` · reused verbatim from
   `settings.indexing.silencedDrives.description` (`内部：用户已静默索引提示的驱动器。`); full-width colon per style.md ·
   `high`
-- No `sameAsSourceJustification` needed: every value differs from English (brand `Cmdr`, `Mac`, `SMB`, and
-  `{name}`/`{countText}` placeholders are the only verbatim tokens).
 
-### Ask Cmdr catalog (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `settings.section.askCmdr`, `commands.askCmdrToggle.*`, 2026-07-13)
+## Ask Cmdr catalog (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `settings.section.askCmdr`, `commands.askCmdrToggle.*`)
 
 macOS zh-CN Tier 1 (no macOS coverage for this domain: Apple doesn't ship an AI-chat feature), Microsoft zh-Hans TBX
 Tier 2 cross-check. Reuses settled settings/errors-pass terms (`提供方`, `模型`, `API 密钥`, `设置`, `配额`, `超时`,
@@ -713,7 +356,7 @@ Tier 2 cross-check. Reuses settled settings/errors-pass terms (`提供方`, `模
 - No `sameAsSourceJustification` needed except the three literal "Ask Cmdr" product-name keys (`askCmdr.title`,
   `settings.section.askCmdr`, `commands.askCmdrToggle.label`), each justified per-key as the product name kept verbatim.
 
-### Bulk rename review, image-index scope, and Ask Cmdr tool labels (quality pass, 2026-07-20)
+## Bulk rename review, image-index scope, and Ask Cmdr tool labels (`askCmdr.renameReview.*`, `settings.mediaIndex.scope.*`)
 
 macOS zh-CN Tier 1 (AppKit save/review dialogs, Finder), Microsoft zh-Hans TBX Tier 2, Double Commander zh-CN for the
 rename surface. Reuses settled `重命名`/`覆盖`/`移除`/`添加`/`索引`/`照片` terms.
@@ -748,10 +391,8 @@ rename surface. Reuses settled `重命名`/`覆盖`/`移除`/`添加`/`索引`/`
 - **"lost track of file system changes" (macOS coalesced-events tooltip)** · `没能跟上文件系统的改动` · `改动` matches
   `settings.advanced.fileWatcherDebounce.description` (`文件系统发生改动后…`); phrased as "couldn''t keep up", which
   stays calm and avoids `错误`/`失败` per style.md · `high`
-- No `sameAsSourceJustification` needed anywhere in this pass: every value differs from English (only `Cmdr`, `macOS`,
-  `Ask Cmdr`, and the `{path}`/`{folder}`/`{percent}` placeholders stay verbatim).
 
-### Image-index status badges (`fileExplorer.imageIndex.*`, `settings.mediaIndex.showFileStatusIcons.*`, 2026-07-22)
+## Image-index status badges (`fileExplorer.imageIndex.*`, `settings.mediaIndex.showFileStatusIcons.*`)
 
 macOS zh-CN Tier 1 (AppKit `Indexed` → `已索引`), Total Commander zh-CN (`编入索引`), Dolphin/Nautilus for the index
 verb; Microsoft zh-Hans cross-check. Small per-file/folder/drive badges showing image-search indexing state. Reuses
@@ -781,10 +422,8 @@ settled `图像搜索`/`图像`/`建立索引`/`已索引`/`驱动器`/`此驱�
   `在图像文件上显示状态标记`; description `…添加一个小标记…` · `tentative` (term choice; the strings themselves read
   cleanly)
 - **"indexed for search" (settings description)** · `已建立搜索索引` · settled `建立索引` + `搜索` · `high`
-- No `sameAsSourceJustification` needed: every value differs from English; only the `{doneText}`/`{totalText}`
-  placeholders stay verbatim.
 
-### Image-indexing settings restructure + semantic-search model (`settings.mediaIndex.cards.*`, `.progressSummary.*`, `.semanticSearch.*`, `.clip.*`, `fileExplorer.imageIndex.file.indexing`, 2026-07-23)
+## Image-indexing settings restructure + semantic-search model (`settings.mediaIndex.cards.*`, `.progressSummary.*`, `.semanticSearch.*`, `.clip.*`, `fileExplorer.imageIndex.file.indexing`)
 
 macOS zh-CN Tier 1 (no macOS coverage for "Apple silicon" or on-device semantic-search UI; Apple's canonical marketing
 term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card titles, the Semantic search card, and the
@@ -820,10 +459,8 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
   (tags, from `settings.listing.showTags.description` `macOS Finder 标签`) · `high`
 - **"couldn't be removed just now" (delete-failure toast)** · `暂时无法删除模型。请稍后重试。` · `暂时无法…` (can't for
   now, calm) + `请稍后重试` reused from `operationLog.dialog.loadError`; no bare 失败/错误 per style.md · `high`
-- No `sameAsSourceJustification` needed: every value differs from English; only `Apple`/`Mac`/`Cmdr` and the `{size}`
-  placeholder stay verbatim.
 
-### Delete-dialog trash switch + transfer From/To group headings (`fileOperations.delete.trashSwitch`/`confirmDelete`, `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle`, 2026-07-23)
+## Delete-dialog trash switch + transfer From/To group headings (`fileOperations.delete.trashSwitch`/`confirmDelete`, `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle`)
 
 - **"Move to trash" (switch in the delete dialog, on = 废纸篓, off = permanent delete)** · `移到废纸篓` · macOS Finder
   zh-CN AL13/N153 verbatim; identical to this file's `transferDialog.titleVerbOnly` `other {移到废纸篓}` arm, so the
@@ -836,7 +473,7 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
   contents agree. TC/DC's other rendering (`从:` / `到:`) rejected: `从` and `到` are coverbs that need a following
   object, so they read as fragments once the path sits BELOW the heading instead of after a colon · `high`
 
-### Drive-indexing master-switch strings (`driveIndex.*IndexingOff*`, `settings.indexing.masterOffNote`/`overriddenBadge`, review pass 2026-07-27)
+## Drive-indexing master-switch strings (`driveIndex.*IndexingOff*`, `settings.indexing.masterOffNote`/`overriddenBadge`)
 
 - **Settings-path references inside a sentence: wrap the WHOLE path in full-width quotes, `>` with ASCII spaces** ·
   `在“索引 > 驱动器索引”中开启` · the locale-wide settled shape, attested nine times before this batch
@@ -857,9 +494,8 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
 - **"this drive" in the `driveIndex.*` family** · `此驱动器` · the family is uniformly `此驱动器` (`为此驱动器打开索引`,
   `忘记此驱动器的索引`, the tooltips), which is exactly the terse-label carve-out style.md grants `此`; elsewhere the
   spoken `这个驱动器` still wins · `high`
-- No `sameAsSourceJustification` needed: every value differs from English; only `{name}` stays verbatim.
 
-## 驱动器索引：检查更改这一趟 (2026-07-28)
+## 驱动器索引：检查更改这一趟 (`indexing.run.changeCheck`, `indexing.step.findFilesChangeCheck`)
 
 - **"Checking for changes" (run-kind header)** · `检查更改` · sibling headers are verb-object phrases (`首次完整扫描`,
   `快速更新`); `检查` is the settled checking verb (glossary `正在检查`, macOS Finder BN9 `正在检查“^0”的内容`), `更改`
@@ -868,7 +504,7 @@ term used instead), Microsoft zh-Hans TBX cross-check. Three settings-card title
 - **"the check running right now"** · `正在进行的这次检查` · reuses `检查` as this catalog's settled word for a full
   check (`tooltipCoalesced`: `下一次完整检查`) and that string's closing `恢复准确` · `high`.
 
-## 传输停滞提示 / stalled-transfer notice (`fileOperations.transferProgress.stall*`, `close`, 2026-07-31)
+## 传输停滞提示 / stalled-transfer notice (`fileOperations.transferProgress.stall*`, `close`)
 
 The copy/move progress dialog and the queue row when a transfer has stopped moving (a parked network share or phone),
 replacing the countdown we no longer believe. macOS zh-CN Tier 1, Total Commander zh-CN for the
@@ -911,9 +547,8 @@ wait-on-a-remote-endpoint phrasing (the exact same surface), Microsoft zh-Hans T
 - **Pre-formatted Latin tokens inside Chinese prose.** `{duration}` arrives already formatted and unlocalized (`45s`,
   `2m 30s`, `1h 5m` from `units/duration.ts`), so it lands as Latin text in a Chinese sentence: keep a space on BOTH
   sides (`已有 {duration} 没有进度`), the same way `剩余约 {duration}` already does · `high`
-- No `sameAsSourceJustification` needed: all seven values differ from English.
 
-## 已拷贝路径：剪贴板确认提示 (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+## 已拷贝路径：剪贴板确认提示 (`fileExplorer.clipboard.copiedPath`)
 
 一个键：按 ⌘⌥C 之后的信息提示行。路径本身在下一行以等宽字体单独显示，因此它并不是句中的占位符——句子以全角冒号结尾，去掉路径后也必须读得通。
 
@@ -921,9 +556,8 @@ wait-on-a-remote-endpoint phrasing (the exact same surface), Microsoft zh-Hans T
   `clipboard → 剪贴板`，动词沿用 Finder 的 `拷贝` · confirmed。`已将 X 拷贝到 Y`
   与同批的粘贴提示 (`已将剪贴板{图像/PDF/文本}粘贴为 {filename}`) 同构，`已` 表示动作已完成。英文的 "it's now on your
   clipboard" 合并进 `到剪贴板`：中文不给唯一的剪贴板加物主代词。冒号用全角 `：`。
-- 无需 `sameAsSourceJustification`：该值与英文不同。
 
-### Corner progress chip + failure notice (`queue.chip.*`, `queue.failureToast.*`, `queue.row.dismiss*`, `queue.toolbar.dismissAll`, 2026-08-08)
+## Corner progress chip + failure notice (`queue.chip.*`, `queue.failureToast.*`, `queue.row.dismiss*`, `queue.toolbar.dismissAll`)
 
 Nine keys for two new surfaces: the main window's ~80 px corner progress chip (a button that opens the queue window) and
 the never-auto-dismissing failure notice plus its failed queue row. Head noun `操作`, window name `操作队列`, and the
@@ -974,9 +608,8 @@ classifier `项` all come from the operation-queue section above; this section o
   reads right when the count clause drops out) · `high`
 - **time left, in the tooltip's `{detail}` slot** · nothing to settle: the runtime fills it from the already-settled
   `fileOperations.transferProgress.etaRemaining` = `剩余 {duration}`, or from `queue.row.status`'s `已暂停` · n/a
-- No `sameAsSourceJustification` needed: all nine values differ from English.
 
-### Standalone conflict prompt (`fileOperations.operationConflict.context`/`.pausedNote`, 2026-08-09)
+## Standalone conflict prompt (`fileOperations.operationConflict.context`/`.pausedNote`)
 
 The context line under the `文件已存在` title of the main-window conflict prompt, plus the quiet note under its buttons.
 The context line is a `select` VARIANT of `queue.row.label`, so its arms start from that key's settled `正在[动词]`
@@ -1010,7 +643,7 @@ forms and only add the destination clause.
   `做出选择` over a literal `回答`: the Chinese title `文件已存在` is a STATEMENT, not a question, so "answer" has
   nothing to answer, while the buttons below are literally a choice · `high`
 
-### Empty-queue state of the progress dialog's F2 button (`fileOperations.transferProgress.background`/`backgroundAria`, 2026-08-09)
+## Empty-queue state of the progress dialog's F2 button (`fileOperations.transferProgress.background`/`backgroundAria`)
 
 The same button as `transferProgress.queue`, worded for an EMPTY operation queue: with nothing to queue behind, it names
 what it does instead. Total Commander zh-CN carries this one (its copy dialog has this exact button pair in one
@@ -1029,9 +662,8 @@ cross-check. macOS has NO coverage: every `background` hit in the Finder/AppKit 
   visible label `后台运行` survives as a verbatim substring (WCAG 2.5.3 Label in Name: a voice-control user says the
   label they see). `继续在后台运行` is the equally idiomatic word order, so nothing is lost. **Don't "fix" this back to
   the tooltip's order**: that silently breaks the containment · `high`
-- No `sameAsSourceJustification` needed: both values differ from English.
 
-### Quit-while-running gate (`main.quit.*`, 2026-08-10)
+## Quit-while-running gate (`main.quit.*`)
 
 The modal that appears when the user quits (⌘Q, the menu, closing the main window) while copies, moves, deletes,
 trashes, or archive edits are still going: a title, a reassuring body, a list of the running operations, and a 15-second
@@ -1092,9 +724,8 @@ operation-queue section above.
 - **Pre-formatted Latin count tokens** · `{countText}` and `{secondsText}` arrive as Latin digits, so they keep a space
   on BOTH sides (`有 {countText} 项操作`, `将在 {secondsText} 秒后`), per style.md and the `{duration}` precedent ·
   `high`
-- No `sameAsSourceJustification` needed: all seven values differ from English.
 
-### 使用统计：去掉“匿名”，写明“一个随机标识符” (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+## 使用统计：去掉“匿名”，写明“一个随机标识符” (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)
 
 English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
 plainly what they're tied to. The English stays deliberately everyday, so ❌ never `假名化` / `匿名化` — that jargon is
@@ -1106,9 +737,8 @@ exactly what the copy avoids.
   `标识符` is the established native term the style guide prefers over an English `ID` loan, and it is plain enough for
   consumer copy (Apple's Chinese privacy wording uses the same word).
 - **tied to → `关联到`** · the catalog's own verb (`onboarding.stepBeta.emailNote` “绝不会和你的使用统计关联”) · `high`
-- No `sameAsSourceJustification` needed: every value differs from English.
 
-### 等待回答的队列行 + 回滚确认框 (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, 改写的 `transferProgress.foregroundBusyToast`/`.rollbackTooltip`, 2026-08-13)
+## 等待回答的队列行 + 回滚确认框 (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, 改写的 `transferProgress.foregroundBusyToast`/`.rollbackTooltip`)
 
 - **"Needs your answer" (queue-row status) → `需要你回答`** · ⚠️ must not open on `等待`: `等待中` is the queued status
   in the same narrow column. `回答` is the catalog's own answering verb (`askCmdr` "来回答问题") and keeps the second
@@ -1128,9 +758,8 @@ exactly what the copy avoids.
   `找不回来了`, the spoken register style.md asks for.
 - `foregroundBusyToast` no longer claims another operation holds the window (`这里已经打开了别的东西`): the blocker can
   be any dialog. "bring this one up" → `再显示这一项`, tying to the row's `显示` (Show) button · high
-- No `sameAsSourceJustification` needed: all eight values differ from English.
 
-### 重命名链的其他文件计数 (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, 2026-08-18)
+## 重命名链的其他文件计数 (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
 macOS Finder zh-CN Tier 1 (KEY-based en→zh), Xfce Thunar zh-CN cross-check.
 
@@ -1147,7 +776,7 @@ macOS Finder zh-CN Tier 1 (KEY-based en→zh), Xfce Thunar zh-CN cross-check.
 - Plural: only the `other` branch, per the Chinese CLDR category; the branch reads naturally for `{others}` = 1 as well
   (`其他 1 个文件也是如此`).
 
-### 无法确认的重命名 + 名称不可用 (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`, 2026-08-18)
+## 无法确认的重命名 + 名称不可用 (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
 
 macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "couldn't confirm" family.
 
@@ -1176,7 +805,7 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
   (`文件名不能为空`, `文件名过长（…）`, `文件名中不能包含“/”或空字符`). "That" → the spoken `这个` per style.md. No
   closing `。`: the string is composed into `{reason}。“{name}”保留了原来的名称。` · `high`
 
-## 建议的操作：Ask Cmdr 提议内容的对话框（`suggestedOps.*`、`commands.suggestedOpsShow.*`，2026-08-19）
+## 建议的操作：Ask Cmdr 提议内容的对话框（`suggestedOps.*`、`commands.suggestedOpsShow.*`）
 
 - ops（代理提议的文件操作）→ `操作`；标题定为 `建议的操作` · 沿用目录中的 "File operations" → `文件操作` · high
 - approve → `批准` · 通用译法；未采用 macOS 的 `接受`（那是 AirDrop 接收文件的用词），此处是授权执行 · high
@@ -1184,7 +813,7 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
 - "This can't be undone" → `此操作无法撤销` · macOS Finder 原句（立即删除警告）· high
 - pattern → `模式` · 已在 `queryUi.json` 中 · high
 
-## 复制（Duplicate）：在同一文件夹内拷贝的命令（`commands.fileDuplicate.*`，2026-08-19）
+## 复制（Duplicate）：在同一文件夹内拷贝的命令（`commands.fileDuplicate.*`）
 
 - **duplicate（把所选项目拷贝到它自己所在文件夹的命令）→ `复制`** · macOS Finder
   zh-CN 的“文件 > 复制”（`N154`），另有“复制项目”和“在当前位置复制项目”（在 macOS 26.6.1 的
@@ -1195,7 +824,7 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
   `当前文件夹`（`commands.editPaste.description`）和 `副本`（`commands.cloudRemoveDownload.description` 的 `本地副本`）·
   `high`。
 
-## 原生菜单：菜单栏、右键菜单、窗口标题（`menu.*`、`licensing.windowTitle.*`、`main.instanceLock.*`，2026-08-19）
+## 原生菜单：菜单栏、右键菜单、窗口标题（`menu.*`、`licensing.windowTitle.*`、`main.instanceLock.*`）
 
 这一组的证据来源：macOS 26.5.2 Finder（`Finder.app/Contents/Resources/zh_CN.lproj` 的 `MenuBar.strings` 与
 `LocalizableMerged.strings`）是 Tier 1，几乎决定了全部选词；英文一侧读 `en_GB.lproj`，因为 `Base.lproj`
@@ -1215,7 +844,9 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
   `复制`、Copy → `拷贝`** · macOS Finder Tier 1 · high。注意 `复制` 是 Duplicate，`拷贝` 才是 Copy，两者不能互换。
 - **pane → `窗格`** · Microsoft 术语库 `zh-Hans`，Double Commander `zh-CN`（「左侧面板」）· high。目录里一直用 `窗格`。
 - **ascending / descending → `升序` / `降序`** · Thunar + Dolphin `zh-CN` · high。
-- **changelog → `更改日志`** · Microsoft 术语库 `zh-Hans` · high。与帮助 > `新增功能` 区分：一个指文档，一个指消息。
+- **changelog → `更新日志`**（`menu.app.changelog`）· 与
+  `whatsNew.dialog.seeFullChangelog`（`查看完整更新日志`）指同一份文档，所以同字；Microsoft 术语库的 `更改日志`
+  曾让菜单项和对话框各叫各的 · high。与帮助 > `新增功能` 区分：一个指文档，一个指消息。
 - **word wrap → `自动换行`** · Microsoft 术语库 `zh-Hans`，Double Commander `zh-CN` · high。
 - **pin / unpin tab → `固定标签页` / `取消固定标签页`** · Safari `zh-CN`（「固定标签页」）· high。
 - **Finder 标签颜色 → `红色、橙色、黄色、绿色、蓝色、紫色、灰色`** · macOS Finder（`TG_COLOR_*`）· high。
@@ -1225,29 +856,30 @@ macOS Finder/AppKit zh-CN Tier 1, plus the zh catalog's own already-settled "cou
 - **busy（宗卷正在使用）→ `（占用中）`** · Microsoft 术语库（`忙碌`）· high。磁盘用「占用中」比「忙碌」自然。
 - **Eject → `推出`、Disconnect → `断开连接`、Remove（从列表中移除）→ `移除`** · macOS Finder · high。
 - **括号与引号用全角**：`{app}（默认）`、`推出（{name}）`、`拷贝“{name}”`。占位符本身保持半角原样。
-- **有意与英文相同**（已写 `sameAsSourceJustification`）：`menu.zoom.percent*` 与 `menu.view.askCmdr`。
 
-## 系统连接回退通知（`fileExplorer.network.osMountFallback.*`，2026-08-21）
+## 系统连接回退通知（`fileExplorer.network.osMountFallback.*`）
 
 Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时弹出的通知。语气是安抚，不是报错：共享能用，只是慢。
 
 - **native（macOS 内建的）→ `内建`** · macOS Finder/AppKit `zh-CN` 只用 `内建`（4 处，`内置`、`自带` 各 0 处）·
-  `high`。目录里此前混用 `内置`（4 处）和 `自带`（1 处），以后统一到 `内建`。
+  `high`。「macOS 原生的某个东西」一律写 `内建`（`onboarding.stepOptional.mtp.summary` 的 native handler 也是
+  `macOS 内建的处理程序`）；`内置驱动器`（internal
+  drive）、`Apple 内置的 Vision 框架`（built-in）是别的英文，不受这条约束。
 - **macOS's native SMB network connection → `macOS 内建的 SMB 网络连接`** · 与目录里已定的 `系统连接`
   （`fileExplorer.pane.directConnection*Toast`、`fileExplorer.navigation.connectionTooltipSystem`）指同一件事；这条正文第一次介绍它，所以写全称，短提示里继续用
   `系统连接` · `high`。
 - **"4x slower" 这类倍数 → `慢 4 倍`** · 用阿拉伯数字 + `倍`，前后加空格。中文口语里 `慢 N 倍`
   略有歧义（1/N 还是 1/(N+1)），但这里传达的是「慢很多」，精确值不承重；需要精确时改写成 `速度只有…的 1/4` · `high`。
 - **click（按钮/链接）→ `点按`** · macOS `zh-CN` 全用 `点按`（`点击` 0 处），onboarding 的
-  `点按下方的 <strong>…</strong>` 已是同一句式 · `high`。目录里 `点击` 还有 10 处，以后向 `点按` 收敛。
+  `点按下方的 <strong>…</strong>` 已是同一句式 · `high`。名词用法也避开 `点击`：写 `每一次点按“在 Finder 中显示”`，不写
+  `…的点击`（`settings.revealHandler.*`）。
 - **Try connecting directly（按钮）→ `试试直接连接`** · 复用已定的 `直接连接`（`fileExplorer.navigation.connectDirectly`
   = `直接连接，访问更快`）；`试试` 是动词重叠的祈使式，保留英文 "Try" 的「不一定成」的意味，比 `尝试`
   更贴 Cmdr 的口语声音 · `high`。
 - **Dismiss（关闭通知的 X 的悬停提示）→ `关闭`** · 与 `lowDiskSpace.toast.closeTooltip` 完全同一个控件、同一个
-  `sourceHash`，直接复用 · `confirmed`。注意与 `queue.row.dismiss*` 的 `忽略` 区分：`忽略`
-  是写在按钮上的「不再管它」，X 的提示是 `关闭`。
+  `sourceHash`，直接复用 · `confirmed`。所有 Dismiss 都是 `关闭`，见 § 术语漂移审计。
 
-## 重命名/新建被拒绝时的一行提示（`errors.mutation.*`、`errors.volume.*`，2026-08-23）
+## 重命名/新建被拒绝时的一行提示（`errors.mutation.*`、`errors.volume.*`）
 
 重命名、新建文件夹、新建文件被拒绝时，在名称输入框下方或提示条里显示的一句话。RAW 家族：**用单个撇号**，`{path}`
 原样保留。这一批几乎全部复用目录里 `errors.listing.*` / `errors.write.*`
@@ -1303,14 +935,14 @@ Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时�
   `这个宗卷没有废纸篓，只能彻底删除。`** · `废纸篓` 是 Trash 的简体名（style.md），`彻底删除`
   是目录里已定的「永久删除」命令名（功能键栏
   `fileExplorer.functionKeyBar.deletePermanentlyAction`、`menu.file.deletePermanently`、`commands.fileDeletePermanently.label`、`fileExplorer.renameConflict.overwriteDelete`，共 4 处），所以这句话里的说法正好等于用户要去按的那个命令；最近的同义句
-  `fileOperations.delete.noTrashWarningStrong/Rest`（`这个宗卷不支持废纸篓。文件将被彻底删除。`）也是这么写的。目录里另有一处
-  `永久删除`（`errors.write.trashNotSupported.suggestion`），以后向 `彻底删除` 收敛 · `high`
+  `fileOperations.delete.noTrashWarningStrong/Rest`（`这个宗卷不支持废纸篓。文件将被彻底删除。`）也是这么写的；
+  `errors.write.trashNotSupported.suggestion`（`改用 {deletePermanentlyKey} 来彻底删除。`）和
+  `operationLog.rollback.refusalPermanentDelete` 同样用 `彻底删除`，目录里不再有 `永久删除` · `high`
 - **"macOS wouldn't …"（系统拒绝了这次操作）→ `macOS 拒绝把这个项目移到废纸篓。`** · 动词 `拒绝` 来自 macOS Finder zh-CN
   `MR100`（`“^0”已拒绝你的请求。`），是「系统/服务器不肯照做」这个意思的现成说法；`移到废纸篓`
   是已定的固定搭配（`errors.write.*.trash`
   一族）。英文有意写得短，因为具体原因另在“技术详情”里显示，所以中文也不补原因；宾语用 `这个项目`（同
   `errors.mutation.fileLocked` 的 `这个项目`），因为提示显示在名称输入框下方，光写 `它` 没有先行词 · `high`
-- 无需 `sameAsSourceJustification`：这一批 33 条全部与英文不同。
 
 ## 崩溃对话框的三种开场白（`crashReporter.dialog.body.*`）
 
@@ -1348,7 +980,7 @@ Cmdr 没能建立自己的直接连接，共享改走 macOS 提供的连接时�
   `high`。顺带把 `App 版本` 统一成 `应用版本`：同一个字段在两个界面上不该有两种写法，而 `App`
   那条术语是给云服务商文案用的。
 
-### Eject / disconnect error copy (`errors.eject.*`, 2026-08-23)
+## Eject / disconnect error copy (`errors.eject.*`)
 
 Toast sentences that land after a colon in `fileExplorer.pane.ejectFailedToast` (`无法推出 {volumeName}：…`) or
 `fileExplorer.pane.disconnectFailedToast` (`无法断开连接：…`), so they start mid-sentence and stay one or two short
@@ -1384,7 +1016,7 @@ Conventions worth keeping for this family:
 - **`errors.eject.unexpected` is word-for-word `errors.mutation.unexpected`** (`出了点问题，Cmdr 也说不清是什么。`): the
   English sources are identical, so the Chinese is too.
 
-## 废纸篓提示条：撤销与前往废纸篓（2026-08-27；`fileOperations.trash.*` + `commands.fileGoToTrash.*`）
+## 废纸篓提示条：撤销与前往废纸篓（`fileOperations.trash.*` + `commands.fileGoToTrash.*`）
 
 文件被移到废纸篓后立刻出现的提示条，带 `撤销` 和 `前往废纸篓` 两个按钮，外加同名的命令面板命令。复用 `废纸篓`、
 `驱动器`、`个文件`、`个项目`。新定的词：
@@ -1409,9 +1041,8 @@ Conventions worth keeping for this family:
   `fileOperations.delete.archiveWarningStrong`（「压缩文件里没有废纸篓。」）同一句式 ·
   `high`。这是在讲驱动器的事实，不是说用户做错了；按 style.md 的口语指示代词规则用 `这个`，`此驱动器`
   只留给已经定型的驱动器索引短标签。
-- 九条值都与英文不同，无需 `sameAsSourceJustification`。
 
-## 给已发送的错误报告补充备注 / amending a sent error report（`errorReporter.amend.*`、`errorReporter.amendedToast.message`、`errorReporter.autoSentToast.viewOrAddNotes`，2026-08-28）
+## 给已发送的错误报告补充备注（`errorReporter.amend.*`、`errorReporter.amendedToast.message`、`errorReporter.autoSentToast.viewOrAddNotes`）
 
 自动发送的错误报告发出去之后，提示条上多了一个按钮，打开一个对话框：里面能看到刚才发出去了什么，也能写备注附到**同一份**报告上（不会再传一次）。如果那份报告已经不能再补充（Cmdr 重启过，或服务器没留入口），对话框改为提示，并把人指向「帮助 > 发送错误报告…」。复用上一轮已经定下的
 `错误报告`、`备注`、`参考编号`、`报告包`、`团队`、`忽略`，以及 `common.attachEmail*` 的 `附上你的邮箱`。新定的词：
@@ -1441,9 +1072,8 @@ Conventions worth keeping for this family:
   （`错误报告已发送。你的参考编号是`）同一节奏，句尾不加标点，后面紧跟参考编号徽章 · `high`。
 - **"Couldn''t add your note: {error}"** · `无法添加你的备注：{error}` · 与同目录的
   `无法发送错误报告：{error}`、`无法保存报告包：{error}` 同一句式，全角冒号 · `high`。
-- 十一条值都与英文不同，无需 `sameAsSourceJustification`。中文没有撇号，ICU 的 `''` 规则在这一批里用不上。
 
-## 选择/取消选择文件对话框（`selection.*`，2026-08-29）
+## 选择/取消选择文件对话框（`selection.*`）
 
 Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，英文一侧读 `en-GB/macOS/Finder/`），Microsoft
 `zh-Hans` TBX 补充动词条目，Nautilus/Double Commander `zh-CN` 作旁证。
@@ -1457,7 +1087,8 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
   `取消选择“锁定”`）、DC `zh-CN`（`Unselect a Group…` → `取消选择一组文件`） · `high`。
 - ⚠️ **繁简在这里是真正的用词分歧，不是字形转换。** 同一条 Microsoft 词条（id 44722）繁体给的是
   `取消選取`，因为繁体的 select 是 `選取` 而不是 `選擇`；Apple 的繁体也把 `選擇` 留给「choose 一个东西」，`選取`
-  才是「从列表里挑项目」。两边各自按自己的 macOS 源翻，永远不要互转。繁体一侧见 `../zh-Hant/glossary.md`。
+  才是「从列表里挑项目」。两边各自按自己的 macOS 源翻，永远不要互转。繁体一侧见
+  `../zh-Hant/terms.json`（`select`、`deselect`）。
 - **"Select these files" / "Deselect these files"（对话框底部主按钮）** · `选择这些文件` / `取消选择这些文件`
   ·在上面两个动词上直接构词 · `high`。
 - **"… in the focused pane"（按钮的悬停提示）** · 处所状语提到句首：`在焦点窗格中选择这些文件` /
@@ -1477,14 +1108,13 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 - **"Apply recent {mode} selection: {query}"** · `应用最近的 {mode} 选择：{query}` · `应用` =
   Apply（`ai.local.applyContextSize`）；全角冒号与 `queryUi.recent.scopeSummary`（`范围：{scope}`）一致；`{mode}`
   两侧加空格，因为它可能是拉丁文的 `AI` · `high`。`{query}` 是不可控的用户输入，放在冒号后的句尾，落什么进来都读得通。
-- 15 条值全部与英文不同，无需 `sameAsSourceJustification`。这批里没有撇号，ICU 的 `''` 规则用不上。
 
-## 术语漂移审计：同一英文串的多种译法（全目录，2026-08-30）
+## 术语漂移审计：同一英文串的多种译法
 
 `desktop-i18n-term-consistency` 把 `zh`
 报出 28 处「同一条英文、两种中文」。逐条查证后：15 处是真漂移，已收敛；13 处是**真正的语义分界**，两种译法各自正确，故意保留。分界必须写成规则，否则下一轮翻译会「修」回去。
 
-### 收敛掉的 15 处（真漂移）
+### 收敛掉的真漂移
 
 - **Dismiss** · `关闭` · macOS `zh-CN` 把 `Dismiss Popover` 译作 `关闭弹出窗口`；同一份语料里 `忽略`
   专门留给真正的「ignore」（`Ignore Spelling` → `忽略拼写`、`Ignored` → `已忽略`、`ignores ownership` →
@@ -1523,7 +1153,7 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
   `settings.updates.emailSignupError` 统一为 `抱歉，我们现在没能帮你注册。要再试一次吗？`（`没能` 比 `无法`
   更软，合乎风格指南「不用响亮的失败词」）。
 
-### 故意保留的 13 处分界（英文一词多义，中文必须分开）
+### 故意保留的分界（英文一词多义，中文必须分开）
 
 英文用一个词兼了两份差事，中文合并反而会错。每条都写清界线在哪：
 
@@ -1573,7 +1203,7 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
   `queue.row.dismissAria` 仍写着 `忽略这项操作`，`desktop-i18n-aria-label` 立刻报 WCAG 2.5.3 不达标。
 - 占位符示例键的英文自带尾部 `...`（`Example: sk-abc123...`），改写译文时别把它抹掉。
 
-## 术语漂移审计：英文不同、中文该同的那一半（手工排查，2026-08-30）
+## 术语漂移审计：英文不同、中文该同的那一半
 
 `desktop-i18n-term-consistency`
 只看得见**英文完全相同**的键。英文稍有出入的漂移它一概看不到，而这一半往往更难看：菜单栏和命令面板本来就用不同的英文措辞指同一个动作。按
@@ -1609,7 +1239,10 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 
 - **`双击` 与 `右键点击` 不跟着 `点按` 走。** 单独的 click 用 Apple 的 `点按`（Tier 1）；但复合词 double-click /
   right-click 在 macOS 语料里查无实据，而 Tier 3 四家（GNOME、Xfce、KDE、Double Commander）**一致**写 `双击`、
-  `右键点击`。没有 Tier 1 反证就不要动它们，尤其别凭印象改成 `连按`／`右键点按`。 · `high`
+  `右键点击`。没有 Tier 1 反证就不要动它们，尤其别凭印象改成 `连按`／`右键点按`。 · `high`。后来有五个键又写成了
+  `右键点按`（`errors.listing.noPermissionErrno.suggestion`、`errors.listing.permissionDenied.suggestion`、
+  `errors.listing.diskFullErrno.suggestion`、`errors.listing.storageFull.suggestion`、`servers.pinHint.body`），已收回
+  `右键点击`。
 - **`Queued` = `等待中`**（`operationLog.status.queued`），不写 `已排队`。它跟 `进行中`／`已完成`
   是同一组状态值，跟队列这个名词（`队列`）不必同形。 · `high`
 
@@ -1620,7 +1253,7 @@ Tier 1 是 macOS Finder `zh-CN`（`MenuBar.json`、`LocalizableMerged.json`，�
 `stop 停止`、`open 打开` / `go to 前往` —— 全目录逐键对照，除上面那条 `verbCopy`
 外没有互串。下次复审可以从这份清单接着往下走。
 
-## Shared `en` fixes: menu wording, System Settings tokens, name-restore verb (2026-08-30)
+## Shared `en` fixes: menu wording, System Settings tokens, name-restore verb
 
 Fallout from four `en` self-inconsistency fixes. Evidence is macOS 26.6.2 (build 25G83), read live off the installed
 bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference-pile/how-to-mine.md`, 2026-08-30, plus
@@ -1656,7 +1289,7 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   Latin-script local part is the Chinese convention, all three keys already agree, and the existing
   `sameAsSourceJustification` stands. `example.com` is RFC 2606's reserved domain. · `high`
 
-## 完成中断的回滚（`operationLog.dialog.finishRollBack`、`operationLog.rollback.partiallyRolledBackNotice`、`fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`、`queue.row.reversalInFolder`，2026-08-30）
+## 完成中断的回滚（`operationLog.dialog.finishRollBack`、`operationLog.rollback.partiallyRolledBackNotice`、`fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`、`queue.row.reversalInFolder`）
 
 操作日志多了一种状态：回滚做到一半被取消，那一行就变成“已部分回滚”，按钮从“回滚”换成“完成回滚”。这一批五条值全部锚在目录已有的回滚词汇上，没有新造词。
 
@@ -1664,7 +1297,7 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   `回滚`、`rollingBack` = `正在回滚`、`partiallyRolledBack` = `已部分回滚`，见本文件 `roll back (reverse an operation)`
   条）· `medium-high`。`完成` 说的是“把这一次回滚做完”，不会读成“重新回滚一次”；和同一行的徽章 `已部分回滚`
   连起来看，意思很清楚。备选 `继续回滚` 在“不是新开一次”这一点上更直白，但英文写的是 Finish 而不是 Continue，而且 `继续`
-  已经给了 `queue.row.resume`，再用一次会撞车。母语审校时这条值得再看一眼。
+  已经给了 `queue.row.resume`，再用一次会撞车（待母语复核，见 `review-queue.md`）。
 - ⚠️ **`operationLog.dialog.finishRollBack` 和 `fileOperations.rollbackConfirm.finishRollBack` 必须逐字相同**（都写
   `完成回滚`）· 同一个英文串、同一个动作，一个是日志行上的按钮，一个是它打开的确认框上的按钮；同一 locale 里同串异译会被
   `i18n-terms` 报警。改动其中一条就要同时改另一条。
@@ -1688,9 +1321,8 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   一致，也与队列行里别的行一样：那一格平时就只放一个裸的文件夹名 · `high`。⚠️ 这一点**和 `de`、`es`
   有意不同**，那两个 locale 写的是 `in „{folder}“` / `en “{folder}”`。以后若决定各 locale 统一加引号，简体按 style
   guide 用 `“…”`。
-- 五条值都与英文不同，无需 `sameAsSourceJustification`。这批里没有撇号，ICU 的 `''` 规则用不上。
 
-## 回滚结束后的提示条
+## 回滚结束后的提示条 (`fileOperations.cancelRollback.*`、`fileOperations.rollbackConfirm.body`)
 
 覆盖 `fileOperations.cancelRollback.*` 与改写后的 `fileOperations.rollbackConfirm.body`（2026-08-31）。
 
@@ -1717,12 +1349,10 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
   留给「从列表／压缩包里拿掉」（`fileOperations.delete.archiveWarningRest`）。
 - **「Put … back」→ `放回原处`** · 按 `fileOperations.trash.undone`（`已将 … 放回原处。`）走，macOS Finder `Put Back` →
   `放回原处` 是 Tier 1，而且英文这里和废纸篓提示条用的是同一个动词 · `high`。
-- ⚠️ **待收敛：`挪回` vs `放回`。** 同一次移动回滚里，队列行写
-  `正在把文件挪回原处`（`queue.row.reversalMovingBack`），确认框写
-  `这会把文件挪回原来的位置`（`rollbackConfirm.bodyUndoByMovingBack`），而这批提示条写
-  `放回原处`。两者中文都通顺，语义也一样，英文那边三处也都是 "put/move
-  back"，所以检查抓不到。下一次做这个家族时建议统一到 `放回原处`（它是 Finder 的 Tier
-  1 词，而且明说「回到原来的位置」）· `tentative`。
+- **移动回滚的整个家族都用 `放回`，不用 `挪回`。** 队列行 `正在把文件放回原处`（`queue.row.reversalMovingBack`、
+  `fileOperations.transferProgress.titleReversalMovingBack`）、确认框 `这会把文件放回原来的位置`
+  （`rollbackConfirm.bodyUndoByMovingBack`、`.bodyStopAndMoveBack`）和这批提示条说的是同一个动作，英文三处也都是 "put/move
+  back"，所以检查抓不到分歧；`放回原处` 是 Finder 的 Tier 1 词，而且明说「回到原来的位置」· `high`。
 - **「the …」（doneDeleting／doneMovingBack 里那个定冠词）→ `全部`** ·英文靠 `the` 把「干净收场」和只报部分的
   `someDeleted`／`someMovedBack` 分开，中文没有冠词，用 `全部` 扛这个对比：`已删除 Cmdr 写入的全部 …` vs `已删除 …` ·
   `high`。⚠️ 别给 `some*` 那两条加 `全部`，它们后面紧跟着 `leftBehind`，说「全部」就是撒谎。
@@ -1756,8 +1386,6 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 - **`rollbackConfirm.body` 重译**（英文加了第三句，并改口称 `Cmdr`）· 前两句保留原有译文，第三句逐字接上
   `bodyUndoByDeleting` 的 `Cmdr 会跳过没有把握的部分，所以可能会剩下一些。`
   —— 英文那一句在两个键里**完全相同**，中文也就必须相同 · `confirmed`
-- 18 条值都与英文不同，无需 `sameAsSourceJustification`。中文侧没有撇号，ICU 的 `''` 规则用不上； `{count}` 只写 `other`
-  分支（中文 CLDR 只有这一类）。
 
 ### `cancelRollback.stagedLeftover.*`（Cmdr 自己留在目标位置的残留）
 
@@ -1773,7 +1401,7 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 - ⚠️ **写 `之后往那里传输时`，❌ 绝不写「下次」。**
   Cmdr 的清理会跳过不满一小时的文件，所以马上重试并不会清掉它。给一个兑现不了的承诺，正是这条文案要消除的毛病。
 
-## WebKit 过旧时的拦截页（`main.oldWebkit.*`，2026-09-02）
+## WebKit 过旧时的拦截页（`main.oldWebkit.*`）
 
 三条文案，在 Mac 的 Safari 过旧时代替 Cmdr 的界面显示。它们写在 HTML 外壳里而不是应用里，所以这是那位用户能看到的 Cmdr 的全部内容。
 
@@ -1783,7 +1411,7 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 - **`Safari`、`Mac`、`15.4` 保持原样**，两侧按 § 间距规则加空格。`Safari` 已加入 `BRAND_WORDS`。
 - 面板名用直角引号之外的全角引号 `“软件更新”`，与目录里其余简体文案一致。
 
-## 旧版 macOS 提示（`main.oldMacos.*`，2026-09-02）
+## 旧版 macOS 提示（`main.oldMacos.*`）
 
 低于 macOS
 12 的 Mac 上只出现一次的对话框：Cmdr 能跑，但超出了测试范围。语气坦率轻松，既不是道歉也不是警告，因为应用确实在运行。
@@ -1795,7 +1423,7 @@ bundles with the `.loctable` / `MenuBar.strings` recipes in `docs/i18n/reference
 - **`look off` → `不太对`** · 口语，且避开了语气规则禁止的「错误」「失败」。
 - **最后一句是 David 的第一人称**，仍用 `你`，与 `onboarding.stepBeta.greeting` 一致。
 
-### Ask Cmdr inspect-file consent + tool labels (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, 2026-09-02)
+## Ask Cmdr inspect-file consent + tool labels (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)
 
 macOS zh-CN Tier 1 (Finder/AppKit pile + live Preview.app and Photos.app `zh_CN` loctables, macOS 26, `plutil`),
 Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses settled `压缩文件`, `文本`, `照片`,
@@ -1839,8 +1467,6 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
   paragraph stays consistent with the rest of the consent screen · `confirmed` (previously shipped wording)
 - **"That's a bigger promise than the one you agreed to…"** · kept verbatim from the previous what's-new text
   (askCmdr.consent.whatsNew.body, retired) (`这比你当初同意的范围更大，所以这里再完整说明一次。`) · `confirmed`
-- No apostrophes on the Chinese side (the U+2019 in the English carries no ICU meaning anyway); no placeholders; no
-  `sameAsSourceJustification` needed, all five values differ from English.
 - **looks inside a file only when you ask about it (`askCmdr.empty.hint`, `settings.askCmdr.intro`)** ·
   `只有在你问到某个文件时才会查看它的内容` · the same `查看…内容` / `问到` wording as the tool line and the retired
   what's-new text above; the old `从不读取文件内容` / `是只读的…从不修改任何内容` promises were removed because the
@@ -1848,32 +1474,28 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **never changes a file without your approval** · `未经你批准，绝不会更改任何文件` · `批准` matches the settled
   `在你批准之前，任何文件都不会有变化` (`consent.contentsRule`); `更改` for "change" (macOS AppKit `复查更改…`) · `high`
 
-## 回滚按钮的两条提示 (2026-09-04；`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+## 回滚按钮的两条提示 (`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
 
 新界面：按钮提示现在说清这一次回滚会对文件做什么；跨文件系统的移动一进入最后一步（所有文件都已到达目标位置，正在移除原文件），按钮就会关掉。
 
-- **`rollbackTooltipStopAndMoveBack` → `停止操作，并把目前已挪走的所有文件放回原处`** · 句式沿用同胞键
+- **`rollbackTooltipStopAndMoveBack` → `停止操作，并把目前已移动的所有文件放回原处`** · 句式沿用同胞键
   `rollbackTooltip`（`停止操作，并…`），`放回原处` 是目录里已定的说法（`cancelRollback.doneMovingBack`“放回原处”）·
   `high`。❌ 不用 `删除`：回滚一次移动不删除任何东西。
 - **`rollbackAlreadyLandedTooltip`** · 前半句沿用 `cancelRollback.moveAlreadyLanded`
   的说法（“已经在目标位置了”），`回滚` 是已定的术语（`rollbackUnavailableTooltip`），`取消`
   直接用旁边按钮自己的标签（`fileOperations.button.cancel`），按目录惯例加上引号 · `high`。
-- 无 `sameAsSourceJustification`；两个值都不含撇号。
 
 ## “在此处打开终端”与它的 App 选择器（`settings.behavior.openTerminalHereApp.*`、`settings.navigationAndFileOps.card.terminal`）
 
 新界面：`行为 > 导航与文件操作` 下的一张卡片，用来选这个命令启动哪个终端 App。列表由 macOS 生成，这里只翻译标签。
 
-- **terminal（这类 App）→ `终端`；Terminal（Apple 的 App）→ `终端`** ·
-  Apple 的简体中文 macOS 把名字译了出来（`在终端中打开`，`macOS/Finder/LocalizableMerged.json` 里的 `N67` 键）·
-  `high`。所以卡片标题照常翻译，不加 `sameAsSourceJustification`。
 - **Open terminal here（命令名）→ `在此处打开终端`** · 沿用 Apple 的 `在终端中打开`，用 `在此处` 表示位置 ·
   `high`。命令本身的翻译（菜单、命令面板）必须用完全一样的写法。
 - **Choose an app… → `选取 App…`** · Apple 的 `Choose Application…`（`N137` 键）写作 `选取应用程序…`；`App`
   沿用词汇表里已定的说法 · `high`。
 - **terminal app → `终端 App`** · 拉丁词前后留空格，与目录里其余 `App` 用法一致 · `high`。两个值都不含撇号。
 
-## git 的 worktree（`errors.git.orphanedWorktree.*`、`settings.fileExplorer.git.showVirtualGitPortal.description`、`fileExplorer.git.size.linkedWorktrees`，2026-09-05）
+## git 的 worktree（`errors.git.orphanedWorktree.*`、`settings.fileExplorer.git.showVirtualGitPortal.description`、`fileExplorer.git.size.linkedWorktrees`）
 
 英文把 "worktree" 和 "working tree" 当成两个词用，中文目录也照此分开。
 
@@ -1894,8 +1516,6 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **relevance（结果与搜索的匹配程度）→ `相关性`** · macOS 的四个来源一致：WorkflowKit（`Relevance (WFSearchSortOrder)` →
   `相关性`）、AppStoreKit（`SEARCH_FACET_RELEVANCE` → `相关性`）、Automator（`%1$[相关性]@ …`）和“音乐” ·
   `high`。（在 macOS 26.6.2、版本号 25G83 上用 `plutil` 导出随系统附带的本地化文件核对，2026-09-06）
-- **句式 → `按相关性排序`** · 与 `commands.json` 中同类键完全相同的格式（`按名称排序`、`按大小排序`） · `high`。不需要
-  `sameAsSourceJustification`，值中也没有撇号。
 
 ## `Documents and packages`：新增的 OOXML 行（`settings.archives.ooxml.*`）
 
@@ -1910,11 +1530,10 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **句式 → `在 …、…、… 或 … 上按 Enter 键时的行为。`** · 与同类键 `settings.archives.zip.description`、
   `settings.archives.bundle.description` 完全相同的格式 · `high`。值中没有撇号。
 
-## 服务器面板与卷切换器里的服务器行（`servers.*`、`fileExplorer.navigation.connectionTooltip*`/`disconnect*`/`forget*`，2026-09-06）
+## 服务器面板与卷切换器里的服务器行（`servers.*`、`fileExplorer.navigation.connectionTooltip*`/`disconnect*`/`forget*`）
 
 新界面：窗格里的服务器连接状态（正在连接 / 被拒绝的各种原因），以及卷切换器里每一行服务器的连接圆点提示、断开连接按钮、“忘记服务器”和“清除保存的密码”两个确认对话框。
 
-参考堆（`_ignored/i18n/zh-CN/`）在这台机器上不存在，改用指南许可的实时 macOS 包取词：Finder、NetAuthAgent、“钥匙串访问”（都验证于 macOS
 26.6.2 / 25G83，`plutil` 读 `zh_CN.lproj`，2026-09-06）。
 
 - **server → `服务器`** · Finder zh_CN（`Connect to Server` → `连接服务器`）、NetAuthAgent、目录里既有用法 ·
@@ -1954,16 +1573,14 @@ Microsoft zh-Hans TBX Tier 2, Nautilus/Thunar/Dolphin/TC/DC zh-CN Tier 3. Reuses
 - **Cmdr couldn't X → `Cmdr 无法X`** · 目录通用写法 · `confirmed`。`servers.refusal.unreachable` 例外，用更口语的
   `Cmdr 连不上 {host}。`，与 `无法连到` 同义但更短，适合窗格里的一行。
 - **compromised（主机密钥被吊销）→ `已泄露`** · 无 Apple 对应词；`已泄露` 在中文安全语境里通用，且比 `已失陷` 好懂 ·
-  `tentative`，建议母语者复核。
-- 28 个值都不含撇号，所以没有 ICU 转义问题；也没有一个与英文相同，不需要 `sameAsSourceJustification`。
+  `tentative`（待母语复核，见 `review-queue.md`）。
 
-## 服务器中心：表格列、状态与固定到宗卷选择器（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.*Pin*`、`shortcuts.scope.servers`/`places`，2026-09-06）
+## 服务器中心：表格列、状态与固定到宗卷选择器（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.*Pin*`、`shortcuts.scope.servers`/`places`）
 
 卷切换器里原来的「网络」行改叫「服务器」，点开是一张表：所有保存过的服务器（SFTP / WebDAV /
 SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 / 上次使用时间，最后一行是「添加服务器…」。行所在的**分组**仍叫
 `网络` （`fileExplorer.navigation.groupNetwork`）。
 
-参考堆（`_ignored/i18n/zh-CN/`）在这台机器上不存在，改用指南许可的实时 macOS 包取词（`plutil` 读 `.loctable` /
 `.strings` 的 `zh_CN`，全部验证于 macOS 26.6.2 / 25G83，2026-09-06）。
 
 - **Name（列头）→ `名称`** · Finder zh_CN（`N220`），目录里 `fileExplorer.columns.name`、`menu.sort.name`、
@@ -2031,15 +1648,12 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `开机`，不是 `打开`。
 - **量词** · 服务器用 `台`（`在下面添加一台`、`{countText} 台服务器`），与本文件上一节的 `这台服务器` 一致 ·
   `confirmed`。
-- **ICU** · 28 个值都不含撇号，没有转义问题。`servers.hub.rowCount` 只写 `other` 一支（中文 CLDR 只有
-  `other`）。没有一个值与英文相同，不需要 `sameAsSourceJustification`。
 
-## 添加服务器的模态表单、SSH 主机密钥确认、前往路径的预览行（`servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`、`goToPath.dialog.opensServer`/`.addsServer`、`commands.serversConnect.label`，2026-09-07）
+## 添加服务器的模态表单、SSH 主机密钥确认、前往路径的预览行（`servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`、`goToPath.dialog.opensServer`/`.addsServer`、`commands.serversConnect.label`）
 
 服务器中心里「添加服务器…」打开的那张表单（协议 SMB / SFTP / WebDAV、地址、账户、`高级`
 折叠区），第一次连 SSH 服务器时核对主机密钥的那一步，以及「前往路径」输入框下面的两行预览。
 
-参考堆（`_ignored/i18n/zh-CN/`）在这台机器上仍然不存在（`~/projects-git/vdavid/cmdr/_ignored/`
 整个目录都没有，不是 worktree 陷阱），改用指南许可的实时 macOS 包取词：`plutil` 读 `.loctable` 的 `zh_CN`
 分支，全部验证于 macOS 26.6.2 / 25G83，2026-09-07。
 
@@ -2056,11 +1670,6 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `退出 {name} 的登录` 顺 · `high`。
 - **Protocol（无障碍名）→ `协议`** · AddPrinter `IP.plugin` 的 IP 协议选择器无障碍描述（`Protocol` → `协议`）·
   `confirmed`。⚠️ 别用 Finder 的 `种类`（Kind，文件种类）。
-- **SMB / SFTP / WebDAV（协议选项）→ 原样保留** · NetAuthAgent 把同族缩写都留拉丁（`SMB_PASSWORD` → `SMB密码`、
-  `WEBDAV_PASSWORD` → `WebDAV密码`、`AFP_PASSWORD` → `AFP密码`）· `confirmed`。三个键都带 `sameAsSourceJustification`。
-- **`nas.local`（地址框占位符）→ 原样保留** · `.local`
-  是 mDNS 后缀，翻了就不再是个能用的示例；目录里示例值一向留拉丁（`goToPath.dialog.inputPlaceholder` 的 `~/Documents`）·
-  `confirmed`。带 `sameAsSourceJustification`。
 - **hostname → `主机名`** · Automator `Variables.loctable`、Security `OID.loctable`、Terminal `ServiceBrowser`
   （`host name` → `主机名`），目录里 `fileExplorer.network.browser.tooltip.resolving` 已经是它 · `confirmed`。
 - **Username → `用户名`；Password → `密码`；Name → `名称`；Address → `地址`；Advanced → `高级`；Cancel → `取消`** ·除
@@ -2079,11 +1688,10 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **Remember in Keychain → `记住到钥匙串`** · Apple 自己的说法是 `在我的钥匙串中记住此密码` （NetAuthAgent
   `AuthDialog.loctable`），词根 `钥匙串` 一致 · `confirmed`。`servers.sheet.needsStoredSecret` 正文里引用这个复选框时用
   `“记住到钥匙串”`，必须与复选框同字，`i18n-terms` 会比。
-- **Connect as guest → `以来宾身份连接`** · 词根 `来宾` 与目录里的 `fileExplorer.network.browser.status.guest` （`Guest`
-  → `来宾`）一致 · `high`。⚠️ 分歧待复审：macOS `zh_CN` 里 Guest 一律是 `客人`（NetAuthAgent `GUEST`、LoginUIKit
-  `GUEST_ACCOUNT_RECORD_NAME`、AppKit `NSUserGuest`），微软才用 `来宾`。真要按「macOS 优先」改，得
-  `servers.sheet.connectAsGuest` 和 `fileExplorer.network.browser.status.guest`
-  两个键一起改，属于单独一趟收敛，别只改一边（`i18n-terms` 会立刻报新分歧）。
+- **Connect as guest → `以客人身份连接`** · macOS `zh_CN` 里 Guest 一律是 `客人`（NetAuthAgent `GUEST` 与
+  `EINFO_NO_ACCESS_GUEST`、LoginUIKit `GUEST_ACCOUNT_RECORD_NAME`、AppKit `NSUserGuest`；pile 里 `来宾`
+  0 次），只有微软用 `来宾`，所以按「macOS 优先」取 `客人` · `high`。三个键同字：`servers.sheet.connectAsGuest`、
+  `fileExplorer.network.browser.status.guest`（`客人`）、`errors.shareList.signingRequired`（`不向客人显示共享`）；改其中一个就要三个一起改。
 - **Sign in with a username and password → `用用户名和密码登录`** · NetAuthAgent `GENERIC_MSG_NONAME`
   （`Enter your user name and password.` → `输入你的用户名和密码。`）· `high`。它是 `以来宾身份连接`
   的对照项，Apple对应的单选是 `注册用户`，但我们的英文是动词短语，所以照动词写。
@@ -2112,14 +1720,11 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   （`正在连接到 {name}…`）同一句式，读起来是同一件事的两个结局 · `high`。
 - **Opens {name} / Adds a server（前往路径的预览行）→ `打开 {name}` / `添加一台服务器`**
   ·第三人称描述回车会做什么；量词沿用服务器的 `台` · `high`。
-- **ICU** · 46 个值都不含撇号，没有转义问题；没有 plural 键。4 个值与英文相同（三个协议名 + `nas.local`），都写了
-  `sameAsSourceJustification`。
 
-## 自动重连的面板标题 + 无需输入的退出登录说明（`servers.paneState.reconnecting`、`.signedOutNothingToAsk`，2026-09-07）
+## 自动重连的面板标题 + 无需输入的退出登录说明（`servers.paneState.reconnecting`、`.signedOutNothingToAsk`）
 
 连接掉线后 Cmdr 自己按退避节奏重连时那个面板的标题（下面是转圈、倒计时和「立即重试 / 取消 / 断开连接」），以及服务器用 SSH 密钥（或 ssh-agent 身份）证明自己时，替代「登录…」按钮的那一行说明。
 
-参考堆（`_ignored/i18n/zh-CN/`）在这台机器上仍然不存在，继续按指南许可的方式从实时 macOS 包取词：`plutil` 读 `.loctable`
 的 `zh_CN` 分支，全部验证于 macOS 26.6.2 / 25G83，2026-09-07。
 
 - **Reconnecting… → `正在重新连接…`，所以 `Reconnecting to {name}…` → `正在重新连接到 {name}…`** ·
@@ -2140,13 +1745,11 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **不用「认证 / 验证身份」**
   · 英文这里刻意说大白话（`signs in with a key`），中文照着走，别把 SSH 术语补回来。同一条原则见上面
   `有东西夹在你和它之间` 那一行。
-- **ICU** · 两个值都不含撇号，没有转义问题；`{name}` 原样保留，句首放得下任意长度、任意字符的服务器名。
 
-## 固定/取消固定的右键项与一次性提示、可信主机密钥页、Android（ADB）设置页（`menu.network.pinToSwitcher`/`.unpin`、`servers.pinHint.*`、`settings.servers.*`、`settings.adb.*`、`settings.section.servers`/`.adb`、`settings.summary.servers`/`.adb`、`settings.behavior.serversPinHintSeen.*`、`settings.appearance.tintSmb.*`，2026-09-07）
+## 固定/取消固定的右键项与一次性提示、可信主机密钥页、Android（ADB）设置页（`menu.network.pinToSwitcher`/`.unpin`、`servers.pinHint.*`、`settings.servers.*`、`settings.adb.*`、`settings.section.servers`/`.adb`、`settings.summary.servers`/`.adb`、`settings.behavior.serversPinHintSeen.*`、`settings.appearance.tintSmb.*`）
 
 宗卷选择器里服务器行的右键菜单（固定 / 取消固定），「网络」分组太长时弹的一次性提示条，设置里新的「服务器（SFTP、WebDAV）」页（可信主机密钥列表）和「Android（ADB）」页（adb 状态、重新查找、安装说明、路径选择），以及改名后的服务器窗格着色项。
 
-参考堆（`_ignored/i18n/zh-CN/`）在这台机器上不存在（`~/projects-git/vdavid/cmdr/_ignored/`
 整个目录都没有，不是 worktree 陷阱），继续按指南许可的方式从实时 macOS 包取词：`plutil` 读 `.loctable` 的 `zh_CN`
 分支，全部验证于 macOS 26.6.2 / 25G83，2026-09-07。
 
@@ -2202,17 +1805,12 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **服务器窗格着色改名** · 英文从 "Tint SMB panes" 改成了 `Tint server panes (SMB, SFTP, WebDAV)`，中文跟着改成
   `为服务器窗格着色（SMB、SFTP、WebDAV）`，说明句照兄弟键 `settings.appearance.tintLocal.description` 的句式写成
   `为显示 SMB 共享、SFTP 服务器或 WebDAV 服务器的窗格添加的背景着色。` · `high`。旧值只提 SMB 和网络共享，已经不成立。
-- **ICU** · 31 个值都不含撇号，没有转义问题；`{command}`、`{host}`、`{path}`
-  原样保留，句中位置对任意长度都成立；没有 plural 键。没有一个值与英文相同（`Android（ADB）`
-  是全角括号，与英文不同），不需要 `sameAsSourceJustification`。`menu.network.*`
-  两个键属于 RAW 家族，值里没有撇号，也没有 `{token}`。
 
-## Android（ADB）手机的窗格状态、卷切换器提示与那条一行提示（`adb.*`、`settings.behavior.adbHintDismissed.*`，2026-09-07）
+## Android（ADB）手机的窗格状态、卷切换器提示与那条一行提示（`adb.*`、`settings.behavior.adbHintDismissed.*`）
 
 三个新界面：手机没打开成的时候窗格里那条整版消息（`adb.connect.*`）、宗卷选择器里手机那一行的悬停提示（`adb.readiness.*`、
 `adb.disconnect*`），以及手机走普通「照片和音乐」连接时窗格顶上那条安静的提示（`adb.hint.*`）。
 
-参考堆（`_ignored/i18n/zh-CN/`）在这台机器上不存在（`~/projects-git/vdavid/cmdr/_ignored/`
 整个目录都没有，不是 worktree 陷阱），所以两路取词：Apple 的词从实时 macOS 包取（`plutil` 扫 `.loctable` 的 `zh_CN`
 分支，验证于 macOS 26.6.2 / 25G83，2026-09-07）；Android 自己的词直接从 AOSP 的 `values-zh-rCN` 取（2026-09-07 抓取
 `main` 分支）。
@@ -2267,9 +1865,6 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   是模板（`已显示“网络”分组过长提示` / `是否已显示过关于取消固定服务器的一次性提示。`），所以 `adbHintDismissed` 写成
   `已关闭 USB 调试提示` / `是否已关闭那条建议开启 USB 调试的一次性提示。` ·
   `high`。这两个键从不出现在界面上，但覆盖率检查要它们。动词跟着英文的 dismissed 走，用已定的 `关闭`。
-- **ICU** · 19 个值都不含撇号，没有转义问题；`{name}` 与 `{deviceName}`
-  原样保留，句中位置对任意长度都成立；没有 plural 键。没有一个值与英文相同，不需要
-  `sameAsSourceJustification`。窗格里那三条整版消息都不用 `错误` / `失败`，与目录的口径一致。
 - **`You stopped opening your phone.` → `你停止了打开手机。`**（`adb.connect.cancelled`）· 动词照平行键
   `search.coverage.walk.cancelled`（`你停止了这次搜索`）和 `errors.volume.cancelled` 取 `停止` · `high`。❌ 不写
   `取消`：`取消`
@@ -2299,9 +1894,8 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **`{name}`
   放主语位置最自然**，也避开了「为 {name} 保存的密码」这类要补介词的说法。中文不标时态，英文的过去式由「没有」直接承担；不加「过」，否则会读成「从来没保存过」，而不是「这次查下来没有」。
 - 占位符后面留一个半角空格（§ style.md 的拉丁占位符间距规则）。不用「失败」「错误」：什么都没出错。
-- 这台机器上没有参考语料库（主克隆里也没有 `_ignored/i18n/`），所以这条决定依据的是已发布的目录和本词汇表。
 
-## 重试总时长、主机密钥标题，以及 Android 的“允许”按钮
+## 重试总时长、主机密钥标题，以及 Android 的“允许”按钮 (`servers.paneState.retryTotalSeconds`/`.retryTotalMinutes`)
 
 - **`{seconds}`/`{minutes}`
   现在是带两个占位符的 ICU 复数块**（`servers.paneState.retryTotalSeconds`、`.retryTotalMinutes`）：`{seconds}`
@@ -2316,9 +1910,8 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **`Allow` 是 Android 自己的按钮 → `“允许”`**，一字不差取自
   `adb.connect.unauthorized`（`看一下你的手机，然后点按“允许”。`），连引号和动词「点按」一起沿用，这样用户在屏幕上能对上同一个词·
   `high`。
-- 这台机器上没有参考语料库（主克隆里也没有 `_ignored/i18n/`），所以这条决定依据的是已发布的目录和本词汇表。
 
-## 服务器行的右键菜单：`打开` 与 `编辑服务器…`
+## 服务器行的右键菜单：打开与编辑服务器… (`menu.network.open`、`menu.network.edit`)
 
 - **`Open`（在服务器行上）→ `打开`**（`menu.network.open`）· 与 `menu.file.open`
   一字不差，因为是同一个意思：走进某个东西里，而不是把文件交给某个 App。中文不区分这两种意思，macOS 也不区分：Finder 的
@@ -2330,16 +1923,14 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   会在两个英文值相同的键在中文里分叉时报出来。以后要改写其中一个，必须把另一个一起改。
 - **`menu.*` 属于 RAW 家族**：菜单由 Rust 通过 `menu_t` 绘制，从不走 `t()`。所以撇号保持单个，写成 `''` 会让 `i18n-icu`
   失败。这两个值里没有撇号。
-- 这台机器上没有参考语料库，但 `Finder.app` 能直接从系统里给出同样的一级证据（`docs/i18n/reference-pile/how-to-mine.md`
-  § "No pile on this machine?"）。
 
-## Function key bar context menu (2026-09-07)
+## Function key bar context menu (`fileExplorer.functionKeyBar.*`)
 
 - function key
   bar（窗口底部的功能键命令按钮行）→ 功能键栏 · 已在目录中确定（`settings.appearance.showFunctionKeyBar.label`）；用于右键菜单项及其提示 ·
   high
 
-## AI 文案改写：主语从 “Ask Cmdr” 换成 `Cmdr` / `AI`（2026-09-09）
+## AI 文案改写：主语从 “Ask Cmdr” 换成 `Cmdr` / `AI`
 
 英文做了一次扫尾：`Ask Cmdr` 现在只在**指代聊天面板本身**时出现（面板标题、`menu.view.askCmdr`、
 `commands.askCmdrToggle.label`、`settings.section.askCmdr`、开关它的那几条 `settings.askCmdr.status.*` / `turnOn` /
@@ -2358,7 +1949,7 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
   `在“设置 › AI”中开启一个 AI 提供方，即可开始聊天。` · `high`
 - **“What Cmdr sends” / “What Cmdr remembers” 是一对**，中文也要读成一对：`Cmdr 发送的内容` / `Cmdr 记住的内容` · `high`
 
-## 状态角落的两条 AI 提示与“复查”这个动词（2026-09-09）
+## 状态角落的两条 AI 提示与“复查”这个动词 (`askCmdr.wake.*`, `askCmdr.wakeToast.*`)
 
 - **“AI features” → `AI 功能`** · 沿用 `settings.ai.tooltipOff`（`AI 功能已关闭`）· `high`
 - **`askCmdr.wake.needsFullDiskAccess` 的第二句必须一字不差包含
@@ -2368,9 +1959,12 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **review（复查建议的操作）→ `复查`** · 沿用 `suggestedOps.review`（`复查这些文件`）与
   `commands.suggestedOpsShow.description` · `high`。❗ 边界：`复查`
   只用在「再看一遍待批准的建议」这一个动作上；读报告、看文件内容仍是 `查看`（style.md 的 `查看` / `显示`
-  之分不受影响）。
+  之分不受影响）。所以建议提示条的主按钮 `askCmdr.wakeToast.action`（打开待批准的建议列表）是 `复查`，它的设置说明
+  `settings.askCmdr.wakeToast.description` 写 `待你复查的内容`；旁边那个安静的链接 `askCmdr.wakeToast.openThread`
+  说的是「为什么」，写 `看看原因`。入门引导里「review and apply」是先看一眼再应用（`检查后应用`），升级提示里「review
+  them」是去看新选项（`查看`），都不是批准门槛，不用 `复查`。
 
-## AI 提供方设置向导的用词（`onboarding.cloudSetup.*`，2026-09-09 复核）
+## AI 提供方设置向导的用词（`onboarding.cloudSetup.*`）
 
 上一轮是绕过流程翻的，这轮按流程逐条核过证据，结论是**五条都保留原样**。
 
@@ -2382,7 +1976,7 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **pull（`ollama pull`）→ `拉取`** · Microsoft zh-Hans 术语库的现代条目（id 2306935 / 2309495 → `拉取`）；早期的 `请求`
   是 pull request 的一半，不适用 · `high`
 
-## 程序坞邀请（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeOfferedAt.*`，2026-09-09）
+## 程序坞邀请（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeOfferedAt.*`）
 
 用了几天之后弹一次的通知：问用户要不要把 Cmdr 放进 macOS 的程序坞，加上答应之后的四条结果提示。设置里那两个键是内部状态，界面上永远看不到。
 
@@ -2425,7 +2019,7 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **「a few days」不许变成数字 → `好几天`** · 阈值会改，写成「三天」对一半人就是假话；`好几天`
   是中文里正好的模糊小量词 · `high`。
 
-## 程序坞图标右键菜单（`menu.dock.*`，2026-09-09）
+## 程序坞图标右键菜单（`menu.dock.*`）
 
 右键点按程序坞里的 Cmdr 图标弹出的那个原生菜单：置前主窗口、三条常用命令，外加几行最近去过的文件夹。原生菜单没有截图，
 `@key` 说明就是全部依据。
@@ -2457,7 +2051,7 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **省略号照旧是单个全角 `…`（U+2026）**，见本文件 § Ellipsis normalization。`menu.*`
   是 RAW 家族，不过 Chinese 这五条里没有撇号，ICU 转义无关。
 
-## “在 Finder 中显示”的邀请与首次接手提示（`main.revealNudge.*`、`main.revealActivation.*`、`settings.behavior.reveal*`，2026-09-09）
+## “在 Finder 中显示”的邀请与首次接手提示（`main.revealNudge.*`、`main.revealActivation.*`、`settings.behavior.reveal*`）
 
 同一个功能的两个时刻：一次性地询问是否让其他 App 的“在 Finder 中显示”改在 Cmdr 中打开，以及这类请求第一次落到这里时的一次性提示。两处都指向 macOS 自己的命令，所以按 style.md
 § 系统界面，采用 macOS 的说法。
@@ -2471,7 +2065,7 @@ SMB）加上本地网络上找到的，列是 名称 / 类型 / 地址 / 状态 
 - **首次接手提示 ❌ 不是道歉** · 它说明刚才发生了什么、为什么，以及开关在哪里。所以写
   `Cmdr 设置成了接手这类请求`，❌ 不写“抱歉”· `high`。
 
-### 入门引导改版：清单、步骤提示、可选项摘要（2026-09-09）
+## 入门引导改版：清单、步骤提示、可选项摘要 (`onboarding.stepBeta.checklist.*`, `onboarding.stepOptional.*`, `onboarding.wizard.stepTooltip`, `onboarding.stepFda.*`, `onboarding.stepAi.*`)
 
 覆盖 `onboarding.moreAbout`、`onboarding.wizard.stepTooltip`、`onboarding.stepFda.*`、`onboarding.stepAi.*`、
 `onboarding.stepBeta.checklist.*`、`onboarding.stepBeta.signup.*`、`onboarding.stepOptional.*.summary` 这一批。macOS
@@ -2512,8 +2106,9 @@ zh-CN 为 Tier 1，GitHub 自家中文文档用于 GitHub 专有动词，Microso
 - **Step {step} of {mandatory}+1（步骤圆点的 tooltip）** · `第 {step} 步，共 {mandatory}+1 步` ·沿用兄弟键
   `onboarding.wizard.stepProgress` 已定的 `第 {step} 步，共 {total} 步` 句形；字面量 `+1`
   原样保留（英文特意不写成 4，是要点明最后一步可选）· `high`
-- **native handler（被 Cmdr 临时抑制的 macOS 进程）** · `原生处理程序` · 与 `onboarding.stepOptional.mtp.desc` 里的
-  `抑制 macOS 的那个进程` 同指，摘要一行取更短的名词说法 · `high`
+- **native handler（被 Cmdr 临时抑制的 macOS 进程）** · `macOS 内建的处理程序` · 与 `onboarding.stepOptional.mtp.desc`
+  里的 `抑制 macOS 的那个进程` 同指，摘要一行取更短的名词说法；native 按 § 系统连接回退通知 用 Apple 的 `内建`，不用
+  `原生` · `high`
 - **dumber（本地模型比云端模型弱）** · `笨不少` · 英文特意用口语的 "dumber"，中文保留同样直白的口语调子，不改写成
   `能力较弱` 这类中性说法（style.md：保留刻意的随意语气）· `high`
 - **released copy / Dev and test builds（`settings.revealHandler.notProductionBuild`）** · `正式发布的 Cmdr 版本` /
@@ -2584,9 +2179,8 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
 - **"didn''t answer in time, so nothing was saved. Try again in a moment." →
   `{host} 没能及时响应，所以什么都没保存。过一会儿再试一次。`** · `没能及时响应` 逐字沿用
   `servers.refusal.timedOut`；`过一会儿再试一次` 与 `ai.translateError.timeout.body` 同型 · `high`。
-- **ICU** · 九个值都不含撇号；`{host}` 原样保留，两侧留半角空格。没有值与英文相同，不需要 `sameAsSourceJustification`。
 
-## 共享装载不上、共享列表加载不出来时的那句话（`errors.mount.*`、`errors.shareList.*`，2026-09-11）
+## 共享装载不上、共享列表加载不出来时的那句话（`errors.mount.*`、`errors.shareList.*`）
 
 `无法装载共享`（`fileExplorer.networkMount.mountFailedTitle`）和 `无法连接到 {hostName}`
 （`fileExplorer.network.share.connectFailedTitle`）下面的那句话，外加
@@ -2597,8 +2191,8 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
 26.6.2，25G83，2026-09-11）：它正是「连接服务器」这些出错情形的文案，参考堆里没有。
 
 - **share → `共享`** · NetAuthAgent `EINFO_NO_SHARE`（`服务器上不存在共享“%@”。`）· `high`
-- **guest → `来宾`** · 沿用目录的 `fileExplorer.network.browser.status.guest` · `high`。⚠️ NetAuthAgent
-  `EINFO_NO_ACCESS_GUEST` 写 `客人`，与本文件已记的 `来宾` / `客人` 分歧相同，这一批不改。
+- **guest → `客人`** · NetAuthAgent `EINFO_NO_ACCESS_GUEST`，与 `servers.sheet.connectAsGuest`
+  同字（见 § 添加服务器的模态表单）· `high`。
 - **reach → `连不上`** · `servers.refusal.unreachable` · `high`
 - **didn't answer in time → `没能及时响应`**、**isn't responding → `没有响应`** · `servers.refusal.timedOut`、
   `adb.readiness.offline` · `high`
@@ -2639,9 +2233,8 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
 - **was disconnected（已经发生，驱动器已不在）→ `断开了连接`** · 沿用已定的 `disconnect → 断开连接`，取完成态，同
   `indexing.staleDialog.body`（「在 {name} 断开连接期间」）· `high`。不用
   `fileExplorer.navigation.driveIndex.driveLeaving` 的进行态「正在断开连接」，那里弹出还没结束。「Starts from
-  scratch」→「从头开始」，同 `indexing.rescan.incompletePreviousScan`；`扫描` 与 `文件夹大小` 取自同一文件。注意
-  `indexing.staleDialog.body`、`indexing.staleDialog.bodyPhone`、`indexing.firstConnect.body`
-  仍写作「目录大小」，属旧漂移，待统一。
+  scratch」→「从头开始」，同 `indexing.rescan.incompletePreviousScan`；`扫描` 与 `文件夹大小` 取自同一文件，
+  `indexing.staleDialog.body`、`indexing.staleDialog.bodyPhone`、`indexing.firstConnect.body` 也都写 `文件夹大小`。
 
 ## A drive pulled mid-transfer (`errors.write.deviceDisconnected.sided.destination.copy`)
 
@@ -2725,7 +2318,6 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
   spacing 两侧加空格（`在 {volumeName} 上`、`名为 {folderName} 的`）。
 - **「in place, in a hidden folder…」这个同位语 → `…原处，也就是在…里`** · 英文用逗号同位，中文直接接一个 `在…里`
   会读成后加的状语（像是 Cmdr 把文件搬了进去）。`也就是在…` 明确它就是「原处」本身，事情的经过没变 · `high`。
-- 值与英文不同，无需 `sameAsSourceJustification`。中文侧没有撇号，ICU 的 `''` 规则用不上。
 
 ## 个人收藏菜单（`commands.favoritesOpen.label`/`.description`、`commands.favoritesOpenByNumber.label`、`commands.favoritesAdd.description`、`fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`、`menu.go.showFavorites`、`shortcuts.scope.favoritesMenu`）
 
@@ -2796,8 +2388,6 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
 - **`menu.go.showFavorites`
   是 RAW 键**：用普通半角撇号（这条中文没有撇号，无影响），不带省略号 —— 它拉开的是菜单不是对话框，和
   `menu.go.showServers` 一样光板收尾，而 `menu.go.goToPath`（`前往路径…`）那种开对话框的才留 `…`。
-- 十条值都与英文不同，均不需要 `sameAsSourceJustification`。中文侧没有撇号，ICU 的 `''` 规则用不上。这批没有 `*Aria`
-  键， `fileExplorer.navigation.renameFavoriteAriaLabel` 与 `menu.volume.renameFavorite` 的包含关系未被触碰。
 
 ## 推出被拒时说清是谁占着盘（`errors.eject.unmountRefusedByApp`/`…ByApps`/`otherApps`/`…ByDiskImage`/`…BySystem`/`…ByCmdr`）
 
@@ -2849,7 +2439,6 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
 - **if it keeps happening → `如果一直这样`** · 本目录已成句式，见 `errors.listing.resourceBusy.suggestion`、
   `errors.listing.diskReadProblem.suggestion`、`errors.serverRequest.refused` 等九处 · `confirmed`。用全角分号 `；`
   接在前半句后面，对应英文的 `or`，比拆成第三句更贴原文。
-- 六个值都与英文不同，无需 `sameAsSourceJustification`；中文侧没有撇号。
 
 ## Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)
 
@@ -2869,7 +2458,7 @@ WebDAV 服务器的表单里两个字段：根文件夹是这台服务器的「�
   so `i18n-terms` holds each pair identical. Reword neither alone. The only legitimate difference is the apostrophe:
   `menu.*` is a RAW family (single `'`), `commands.*` is ICU (doubled `''`), and the check normalizes that away.
 
-## The title-bar full-disk-access badge
+## The title-bar full-disk-access badge (`onboarding.fdaBadge.*`)
 
 标题栏里的警告小标签和它的悬停提示，在 Cmdr 还没拿到完全磁盘访问权限时显示；点按会把入门引导重新打开到第 1 步。
 
@@ -2915,8 +2504,10 @@ replacement target. Four rules bind this whole group:
 
 云文件夹里被选中的项目如果仅存在云端，放进废纸篓得先把它下载回来。所以 Cmdr 改开永久删除的对话框，并在警告条里说清楚。警告条有两个版本：一个用于混合选择，一个用于全部仅存在云端的选择。两者只在第一句和能给出的出路上不同。第三个键是 Cmdr 把一次按键交还给用户时显示的那行字。
 
-- **`.cloudOnlineOnlyMixedWarning`** · 「仅存在云端」对应 Finder 对被清出本地的文件的说法；「废纸篓」「云服务」取自 §
-  Terms · medium。
+- **`.cloudOnlineOnlyMixedWarning`**
+  · 「仅存在云端」对应 Finder 对被清出本地的文件的说法（`commands.cloudRemoveDownload.description` 也写
+  `让它仅存在云端`）；「废纸篓」「云服务」取自 `terms.json`。移到废纸篓用固定搭配 `移到废纸篓`，出路写
+  `设为离线可用`，与 `commands.cloudMakeOffline.label` 同字 · medium。
 - **`.cloudOnlineOnlyAllWarning`**
   · 同一段文字，只把「你选中的内容里有一部分」换成「你选中的内容全都」，并去掉「取消选择」这条出路：全部仅存在云端时，取消选择就什么都不剩了 ·
   medium。
@@ -2925,11 +2516,9 @@ replacement target. Four rules bind this whole group:
 - **四个事实都得保留**：（1）废纸篓会先下载文件，（2）所以 Cmdr 只提供删除整个选择，（3）之后废纸篓里没有副本，但云服务自己有（❌ 不要写成「反正还在废纸篓里」），（4）警告条里点出的出路。
 - **两处 `<strong>` 必须保留**，分别在「先下载回来」和动词「删除」上。引号里的「删除」是按钮的文字：始终与
   `fileOperations.delete.confirmDelete` 一致。
-- 不需要 `sameAsSourceJustification`：所有值都与英文不同。
 - 做溢出检查时看一下：警告条很长，且位于文件列表上方的窄条里。
-- ⚠️ 草稿，尚未经人工审阅。
 
-## 服务器明确说没有这个共享（`fileExplorer.network.osMountFallback.shareNotOnServer`、`fileExplorer.pane.directConnectionShareNotOnServerToast`，2026-09-17）
+## 服务器明确说没有这个共享（`fileExplorer.network.osMountFallback.shareNotOnServer`、`fileExplorer.pane.directConnectionShareNotOnServerToast`）
 
 这一族里唯一「再试也没用」的情况：服务器给出明确答复，上面没有这个名字的共享。所以这条通知不带按钮，语气里也不能有任何「暂时」的暗示（不写
 `暂时`，不写 `再试一次`），这正是它和兄弟键的区别。
@@ -2947,9 +2536,8 @@ replacement target. Four rules bind this whole group:
 - **"a lot slower" → `慢得多`** · 这里英文没给倍数，和给了 `4 倍` 的兄弟键不同 · `high`。
 - **短提示省略主语（`所以继续使用系统连接`）** · 前半句已经把话题定在共享上，中文再写一次 `此共享` 就啰嗦了；结尾
   `继续使用系统连接` 与 `fileExplorer.pane.directConnectionUnreachableToast` 等三条一致 · `high`。
-- 两条值都与英文不同，无需 `sameAsSourceJustification`；`{server}`、`macOS`、`SMB` 前后留空格。
 
-## 服务器上「看起来一样」的名称（`fileOperations.transferProgress.lookAlikeHint`、`errors.listing.ambiguousName.explanation`、`errors.volume.ambiguousName`，2026-09-23）
+## 服务器上「看起来一样」的名称（`fileOperations.transferProgress.lookAlikeHint`、`errors.listing.ambiguousName.explanation`、`errors.volume.ambiguousName`）
 
 两个名称在屏幕上一模一样，只是服务器存的字符不同（带重音的字母两种存法，或大小写不同）。这一族共用同一套说法，改一处要连着看另外两处。
 
@@ -2971,7 +2559,7 @@ replacement target. Four rules bind this whole group:
   里已有的口语说法（`先给其中一个改名`，`进入上一级文件夹`），不换成按钮/菜单用的
   `重命名`、`上层文件夹`：正文和标签分开 · `high`。
 
-## “允许使用云端 AI”开关，以及云端 AI 关闭时的提示（`ai.cloudConsent.*`、`askCmdr.gate.*`，2026-09-23）
+## “允许使用云端 AI”开关，以及云端 AI 关闭时的提示（`ai.cloudConsent.*`、`askCmdr.gate.*`）
 
 这是一个隐私同意开关：默认关闭，打开之前什么都不会离开这台 Mac。文字要平静，绝不能夸大 Cmdr 做的事。M1 上没有参考资料库，证据取自已安装的 macOS，做法见
 `docs/i18n/reference-pile/how-to-mine.md` 的 "No pile on this machine?" 一节。
@@ -3005,7 +2593,51 @@ replacement target. Four rules bind this whole group:
 
 ## “打开方式”和“共享”子菜单里的等待行（`menu.context.openWithLoading`、`.shareLoading`、`.shareNone`，2026-09-24）
 
+## “打开方式”和“共享”子菜单里的等待行（`menu.context.openWithLoading`、`.shareLoading`、`.shareNone`）
+
 - **Finding apps…** · `正在查找 App…` · `正在…` 模式（macOS `Searching…` → `正在搜索…`）；`App` 同
   `settings.behavior.textEditorApp.checking`，中英之间加空格 · `high`
 - **share options** · `共享选项` · `共享` 即子菜单名 · `high`
 - **No share options** · `没有共享选项` · macOS 空菜单的说法（`No Services Apply` → `没有服务可应用`） · `high`
+
+## Apple app and product names Apple localizes (`settings.advanced.showSafeSaveFiles.description`, `errors.provider.iCloud.*`, `errors.listing.emptyRootICloud.*`, `shortcuts.system.finderSearch`)
+
+What a zh-CN Mac shows wins over the English name, the same rule as Quick Look → `快速查看` and Dock → `程序坞`:
+
+- **iCloud Drive → `iCloud 云盘`** · macOS zh-CN writes `iCloud云盘` (49 hits in the pile, `iCloud Drive` 5), with
+  Cmdr's Latin/Han space · `high`. Third-party products (Google Drive, Box Drive, pCloud Drive, Synology Drive, Proton
+  Drive) keep their Latin names.
+- **TextEdit / Preview → `“文本编辑”` / `“预览”`** · Apple's zh-CN app names, quoted in running text like
+  `“钥匙串访问”`.
+- **Finder stays Latin** everywhere, including the reserved-shortcut list (`Finder 搜索窗口`); see § 原生菜单.
+
+## Whole-catalog wording rules checked by the termbase (`viewer.saveAs.*`, `viewer.copyDialog.*`, `askCmdr.renameReview.evidence.*`, `settings.onboarding.completed.label`, `onboarding.wizard.restart`, `onboarding.stepFda.postAction.body`)
+
+Rules the termbase drift check holds the catalog to, with the keys that last strayed:
+
+- **Save → `保存`, never `存储`** (Apple's older word): the viewer's save-selection family (`viewer.saveAs.*`,
+  `viewer.copyDialog.saveAsFile`, `.refuseBody`) says `保存`. `存储` stays for storing data on a drive
+  (`无法存储大于…的文件`).
+- **Copy → `拷贝`, never `复制`** outside Duplicate: `errors.write.readOnlyDevice.source.*`,
+  `servers.sheet.addressHelp`, `settings.archives.compressionLevel.description`,
+  `settings.advanced.showStagingTempFiles.description`.
+- **Image indexing → `图像`, never `图片`**, including the rename-review evidence labels
+  (`askCmdr.renameReview.evidence.imageText` / `.imageTags`).
+- **Onboarding → `入门引导`** in full, internal labels included (`settings.onboarding.completed.label` =
+  `已完成入门引导`).
+- **Restart buttons take Apple's `重新启动`**: `onboarding.wizard.restart` = `重新启动 Cmdr`, and the sentence that
+  quotes it (`onboarding.stepFda.postAction.body`) matches it verbatim. Running prose may say `重启`.
+- **No `失败` / `错误` as a label**: `askCmdr.decision.result` counts `{failedText} 个无法完成`,
+  `onboarding.stepOptional.mtp.desc` says macOS `通常连不上`, and a typo hint says `有没有打错`
+  (`licensing.error.badSignatureHint`).
+- **Dock → `程序坞`** in error suggestions too (`errors.listing.diskFullErrno.suggestion`,
+  `errors.listing.storageFull.suggestion`).
+- **Credentials → `凭证` or `登录信息`**, never `凭据` (`errors.listing.remotePermissionDenied.suggestion`); **AI
+  provider → `提供方`**, never `提供商` (`settings.mediaIndex.privacyNote`); **Apple silicon → `Apple 芯片`**
+  (`ai.local.notInstalled`, `onboarding.stepAi.localTooltip`).
+- **On-disk size → `占用磁盘`** in every description that contrasts it with content size
+  (`settings.listing.sizeDisplay.description`, `settings.listing.sizeMismatchWarning.description`).
+- **Make available offline → `设为离线可用`** in the command and in the warnings that point at it; online-only →
+  `仅存在云端` (`commands.cloudRemoveDownload.description`).
+- **The folder count scanned by a search is `已扫描`** (`queryUi.results.live.foldersScanned`), the scan verb, not
+  `已查看`.

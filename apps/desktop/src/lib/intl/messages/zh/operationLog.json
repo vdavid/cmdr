@@ -155,7 +155,7 @@
   "@operationLog.rollback.refusalOverwrote": {
     "sourceHash": "c4fb3c4"
   },
-  "operationLog.rollback.refusalPermanentDelete": "永久删除不会留下任何可以放回去的东西。",
+  "operationLog.rollback.refusalPermanentDelete": "彻底删除不会留下任何可以放回去的东西。",
   "@operationLog.rollback.refusalPermanentDelete": {
     "sourceHash": "5073539"
   },

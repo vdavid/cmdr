@@ -456,11 +456,11 @@
   "@askCmdr.renameReview.nameRejected": {
     "sourceHash": "028029d"
   },
-  "askCmdr.renameReview.evidence.imageText": "图片中的文字",
+  "askCmdr.renameReview.evidence.imageText": "图像中的文字",
   "@askCmdr.renameReview.evidence.imageText": {
     "sourceHash": "520b47b"
   },
-  "askCmdr.renameReview.evidence.imageTags": "Cmdr 在图片中看到的内容",
+  "askCmdr.renameReview.evidence.imageTags": "Cmdr 在图像中看到的内容",
   "@askCmdr.renameReview.evidence.imageTags": {
     "sourceHash": "9adc5f7"
   },
@@ -716,7 +716,7 @@
   "@askCmdr.wakeToast.title": {
     "sourceHash": "881baf8"
   },
-  "askCmdr.wakeToast.action": "查看",
+  "askCmdr.wakeToast.action": "复查",
   "@askCmdr.wakeToast.action": {
     "sourceHash": "aff0766"
   },
@@ -732,7 +732,7 @@
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} 个完成，{skippedText} 个跳过，{failedText} 个失败",
+  "askCmdr.decision.result": "{doneText} 个完成，{skippedText} 个跳过，{failedText} 个无法完成",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },

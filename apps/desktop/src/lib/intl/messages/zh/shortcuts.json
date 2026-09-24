@@ -79,7 +79,7 @@
   "@shortcuts.system.spotlight": {
     "sourceHash": "fca7aa8"
   },
-  "shortcuts.system.finderSearch": "访达搜索窗口",
+  "shortcuts.system.finderSearch": "Finder 搜索窗口",
   "@shortcuts.system.finderSearch": {
     "sourceHash": "8b2f1c8"
   },
@@ -139,7 +139,7 @@
   "@shortcuts.section.filterByKeysPlaceholder": {
     "sourceHash": "87cd416"
   },
-  "shortcuts.section.pressEscToClear": "按 ESC 清除",
+  "shortcuts.section.pressEscToClear": "按 Esc 键清除",
   "@shortcuts.section.pressEscToClear": {
     "sourceHash": "3d32f9c"
   },

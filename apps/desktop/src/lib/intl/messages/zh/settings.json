@@ -198,7 +198,7 @@
   "@settings.listing.sizeDisplay.label": {
     "sourceHash": "114b4a5"
   },
-  "settings.listing.sizeDisplay.description": "智能会显示内容大小和占用空间中较小的一个。这对两者不同的磁盘映像和压缩文件很有帮助。",
+  "settings.listing.sizeDisplay.description": "智能会显示内容大小和占用磁盘大小中较小的一个。这对两者不同的磁盘映像和压缩文件很有帮助。",
   "@settings.listing.sizeDisplay.description": {
     "sourceHash": "52567b4"
   },
@@ -265,7 +265,7 @@
   "@settings.listing.sizeMismatchWarning.label": {
     "sourceHash": "791c344"
   },
-  "settings.listing.sizeMismatchWarning.description": "当文件夹的内容大小和占用空间相差超过 50% 且超过 200 MB 时，显示一个警告图标。",
+  "settings.listing.sizeMismatchWarning.description": "当文件夹的内容大小和占用磁盘大小相差超过 50% 且超过 200 MB 时，显示一个警告图标。",
   "@settings.listing.sizeMismatchWarning.description": {
     "sourceHash": "1b232eb"
   },
@@ -433,7 +433,7 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
-  "settings.archives.compressionLevel.description": "Cmdr 创建 zip 时的压缩强度。级别越高，文件越小，但打包耗时越长。此设置适用于压缩命令，以及将文件复制或移动到 zip 中。",
+  "settings.archives.compressionLevel.description": "Cmdr 创建 zip 时的压缩强度。级别越高，文件越小，但打包耗时越长。此设置适用于压缩命令，以及将文件拷贝或移动到 zip 中。",
   "@settings.archives.compressionLevel.description": {
     "sourceHash": "0ebedaf"
   },
@@ -453,7 +453,7 @@
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
-  "settings.mediaIndex.privacyNote": "这一切完全在你的 Mac 上通过 Apple 内置的 Vision 框架运行。你的图像绝不离开你的电脑，也不涉及任何 AI 提供商或 API 密钥。",
+  "settings.mediaIndex.privacyNote": "这一切完全在你的 Mac 上通过 Apple 内置的 Vision 框架运行。你的图像绝不离开你的电脑，也不涉及任何 AI 提供方或 API 密钥。",
   "@settings.mediaIndex.privacyNote": {
     "sourceHash": "817fc60"
   },
@@ -1335,7 +1335,7 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "TextEdit、Preview 等应用保存文件时，macOS 会在旁边用临时名称（以“.sb-”结尾）写入新版本，然后再替换。关闭此项可让它们不出现在文件列表中。",
+  "settings.advanced.showSafeSaveFiles.description": "“文本编辑”和“预览”等应用保存文件时，macOS 会在旁边用临时名称（以“.sb-”结尾）写入新版本，然后再替换。关闭此项可让它们不出现在文件列表中。",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
@@ -1343,7 +1343,7 @@
   "@settings.advanced.showStagingTempFiles.label": {
     "sourceHash": "5a7636d"
   },
-  "settings.advanced.showStagingTempFiles.description": "复制时，Cmdr 会先用临时名称写入每个文件，写完后再重命名，这样崩溃就不会留下用真实名称保存的半个文件。中断的复制留下的残余文件始终会显示。",
+  "settings.advanced.showStagingTempFiles.description": "拷贝时，Cmdr 会先用临时名称写入每个文件，写完后再重命名，这样崩溃就不会留下用真实名称保存的半个文件。中断的拷贝留下的残余文件始终会显示。",
   "@settings.advanced.showStagingTempFiles.description": {
     "sourceHash": "2d88a78"
   },
@@ -1403,7 +1403,7 @@
   "@settings.ai.cloudConsentRevokePending.label": {
     "sourceHash": "16456dc"
   },
-  "settings.onboarding.completed.label": "已完成引导",
+  "settings.onboarding.completed.label": "已完成入门引导",
   "@settings.onboarding.completed.label": {
     "sourceHash": "4730c4f"
   },
@@ -1539,15 +1539,15 @@
   "@settings.revealHandler.heldByOtherApp": {
     "sourceHash": "d0aa283"
   },
-  "settings.revealHandler.uninstallWarning": "<lead>卸载 Cmdr 之前，请先关闭这一项。</lead>macOS 仍会把“在 Finder 中显示”送到这里，而 Cmdr 一旦不在了，这些点击就悄悄没了反应。",
+  "settings.revealHandler.uninstallWarning": "<lead>卸载 Cmdr 之前，请先关闭这一项。</lead>macOS 仍会把“在 Finder 中显示”送到这里，而 Cmdr 一旦不在了，点按它就会悄悄没了反应。",
   "@settings.revealHandler.uninstallWarning": {
     "sourceHash": "3c10fd3"
   },
-  "settings.revealHandler.notInApplications": "把 Cmdr 移到你的应用程序文件夹，才能开启这一项。从它现在运行的位置，移动或删除 Cmdr 会让每一次“在 Finder 中显示”的点击都指向空处。",
+  "settings.revealHandler.notInApplications": "把 Cmdr 移到你的“应用程序”文件夹，才能开启这一项。从它现在运行的位置，移动或删除 Cmdr 会让每一次点按“在 Finder 中显示”都指向空处。",
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
-  "settings.revealHandler.notProductionBuild": "只有正式发布的 Cmdr 版本才能开启这一项。开发版和测试版来来去去，一旦删掉其中一个，每一次“在 Finder 中显示”的点击就都会指向空处。",
+  "settings.revealHandler.notProductionBuild": "只有正式发布的 Cmdr 版本才能开启这一项。开发版和测试版来来去去，一旦删掉其中一个，每一次点按“在 Finder 中显示”就都会指向空处。",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "20648ba"
   },
@@ -1798,7 +1798,7 @@
   "@settings.askCmdr.wakeToast.label": {
     "sourceHash": "58b4167"
   },
-  "settings.askCmdr.wakeToast.description": "当 Cmdr 准备好待你查看的内容时，在角落显示一条小提示。",
+  "settings.askCmdr.wakeToast.description": "当 Cmdr 准备好待你复查的内容时，在角落显示一条小提示。",
   "@settings.askCmdr.wakeToast.description": {
     "sourceHash": "dd04b0a"
   },
