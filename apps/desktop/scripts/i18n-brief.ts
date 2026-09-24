@@ -7,6 +7,7 @@
  *
  *   --lang nl | nl,de | all          target locales (`all` = every full translation)
  *   --keys a.b.c,servers.sheet.*     exact keys or `*` globs
+ *   --keys-file <path>               the same, one per line (`#` comments allowed)
  *   --missing                        English keys absent in any target locale
  *   --changed-since <git-ref>        English keys added or changed since the ref
  *   --exclude-target-values          blind run: withhold the batch's current translations and decisions
@@ -20,7 +21,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import {
   BASE_LOCALE,
@@ -87,25 +88,36 @@ function resolveLangs(langFlag: string | undefined, messagesRoot?: string): stri
   return langs
 }
 
+/**
+ * The `--keys` patterns (comma-separated) plus the `--keys-file` ones (one per
+ * line; blank lines and `#` comments skipped), or `undefined` when neither was passed.
+ */
+function keyPatterns(args: readonly string[]): string[] | undefined {
+  const inline = flagValue(args, '--keys')?.split(',') ?? []
+  const file = flagValue(args, '--keys-file')
+  const fromFile = file ? readFileSync(file, 'utf8').split('\n') : []
+  const patterns = [...inline, ...fromFile].map((p) => p.trim()).filter((p) => p.length > 0 && !p.startsWith('#'))
+  return patterns.length > 0 ? patterns : undefined
+}
+
 /** The batch, from whichever key selectors were passed, plus how to describe it in the header. */
 function resolveKeys(args: readonly string[], langs: readonly string[], messagesRoot?: string) {
-  const keysFlag = flagValue(args, '--keys')
+  const patterns = keyPatterns(args)
   const changedRef = flagValue(args, '--changed-since')
   const missing = args.includes('--missing')
-  if (!keysFlag && !changedRef && !missing)
-    throw new Error('Pick keys: --keys, --missing, and/or --changed-since <ref>')
+  if (!patterns && !changedRef && !missing)
+    throw new Error('Pick keys: --keys, --keys-file, --missing, and/or --changed-since <ref>')
   const en = loadCatalog(BASE_LOCALE, messagesRoot).messages
   const keys = selectKeys({
     en,
-    patterns: keysFlag?.split(',').map((pattern) => pattern.trim()),
+    patterns,
     missingIn: missing ? langs.map((tag) => loadCatalog(tag, messagesRoot).messages) : undefined,
     changed: changedRef ? new Set(changedKeys(en, englishAt(changedRef, messagesRoot))) : undefined,
   })
-  const selection = [
-    keysFlag && `--keys ${keysFlag}`,
-    missing && '--missing',
-    changedRef && `--changed-since ${changedRef}`,
-  ]
+  // A long list is already spelled out in the keys section; the header only says how it was picked.
+  const keysPart =
+    patterns && (patterns.length <= 3 ? `--keys ${patterns.join(',')}` : `--keys (${String(patterns.length)} patterns)`)
+  const selection = [keysPart, missing && '--missing', changedRef && `--changed-since ${changedRef}`]
     .filter(Boolean)
     .join(' ')
   return { keys, selection }

@@ -113,41 +113,50 @@ A `###` section whose `##` parent also matches is left out, since the parent's b
 
 ## Tooling
 
-### `pnpm i18n:brief` (`apps/desktop/scripts/i18n-brief.ts`, assembly in `i18n-brief-lib.ts`)
+### `pnpm i18n:brief` (`apps/desktop/scripts/i18n-brief.ts`, assembly in `i18n-brief-lib.ts`, memory in `i18n-brief-memory.ts`)
 
 - `--lang nl` | `--lang nl,de` | `--lang all` (every full translation; overlays are refused).
 - Key selectors, which narrow each other when combined: `--keys a.b.c,servers.sheet.*` (exact keys or `*` globs; a
-  pattern matching nothing is an error), `--missing` (English keys absent from any target locale),
-  `--changed-since <git-ref>` (English keys added or whose value changed since the ref).
+  pattern matching nothing is an error), `--keys-file <path>` (the same, one per line, `#` comments allowed),
+  `--missing` (English keys absent from any target locale), `--changed-since <git-ref>` (English keys added or whose
+  value changed since the ref).
 - `--out <file>` (default stdout), `--stats` (chars and rough tokens per section, to stderr).
-- `--exclude-target-values`: a blind run for A/B tests. Withholds the batch keys' current translations AND the decision
-  excerpts, since a section citing a batch key discusses exactly those translations. The translation memory never
-  contains batch keys anyway.
+- `--exclude-target-values`: a blind run for A/B tests. Withholds the batch keys' current translations and the decision
+  excerpts (a section citing a batch key discusses exactly those translations), drops a ruling's batch-key `exceptions`
+  and its `decision` pointer, and redacts the batch's shipped values, whole or clause by clause (10+ chars), wherever
+  the digest or a ruling quotes them. Best-effort: a doc that paraphrases a value still gets through. The translation
+  memory never contains batch keys anyway.
 - `--messages-root <dir>` / `--docs-root <dir>`: fixtures.
 
 Sections, each selected by the batch:
 
-1. Header: languages, how the keys were chosen, the absolute reference-pile path in the MAIN clone
-   (`<main clone>/_ignored/i18n/<tag>/`, resolved through `git rev-parse --git-common-dir`, so it's right from a
-   worktree), and for a single language, the path of the full `style.md`.
-2. Each language's `## Digest`, or a pointer to `style.md` when it has none yet.
-3. Keys: key, English value, `@key` description, placeholders (described ones from `@key.placeholders`, the rest bare)
-   and tags, and each target's current value.
-4. Terms in play: every concept whose `match` hits a batch key's English. The sense, note, and hit keys print once; then
-   one line per language with chosen / accept / forms / avoid / note / confidence, the `exceptions` for batch keys, and
-   the `decision` heading, or "no ruling". Their `distinct` neighbors that no batch key hits follow as one line each
-   (sense plus each language's chosen form): enough to keep two senses apart at a fraction of the size.
-5. Translation memory: per key, the nearest SHIPPED keys (at least one target has them), never batch keys. Same-parent
+1. Header: languages, how the keys were chosen (a list over three patterns is summarized: the keys section spells it
+   out), the absolute reference-pile path in the MAIN clone (`<main clone>/_ignored/i18n/<tag>/`, resolved through
+   `git rev-parse --git-common-dir`, so it's right from a worktree), and for a single language, the full `style.md`.
+2. Instructions: everything under `## Instructions` in `docs/i18n/translator-instructions.md`, with `{{LANGUAGE}}`
+   ("Dutch (nl)") and `{{TAG}}` (`<tag>` for several languages) filled in, once. That file is the only home of the
+   translator's standing instructions, so the guide and every brief can't drift apart.
+3. Each language's `## Digest`, or a pointer to `style.md` when it has none yet.
+4. Keys: key, English value, `@key` description, placeholders (described ones from `@key.placeholders`, the rest bare)
+   and tags, each target's current value, and "No concept yet": the key's content words no concept's `match` covers,
+   leaving out generic English, brand words, and words fewer than three English keys use (a concept recurs). That line
+   is how a missing concept ("offline") shows up as work instead of passing for settled.
+5. Terms in play: every concept whose `match` hits (and `notMatch` doesn't) a batch key's English. The sense, note, and
+   hit keys print once; then one line per language with chosen / accept / forms / avoid / note / confidence, the
+   `exceptions` for batch keys, and the `decision` heading, or "no ruling". Then up to eight `distinct` neighbors no key
+   hits, one line each (sense plus each language's chosen form), and only those whose `match` head word appears
+   somewhere in the batch's English: a neighbor the batch never mentions can't be confused with anything in it.
+6. Translation memory: per key, the nearest SHIPPED keys (at least one target has them), never batch keys. Same-parent
    siblings take up to half the slots (they share a dialog, so they share its voice), ranked by word overlap then
-   catalog distance; the rest go to the highest IDF-weighted English word overlap across the catalog, so the same phrase
-   on another surface shows up. Four neighbors for one language, three for several; a neighbor already listed under an
-   earlier key is referenced as "(above)".
-6. Decision excerpts per language: the sections citing a batch key, narrowest citation first, capped (1,500 chars and
+   catalog distance. The rest must share two content words with the key, or be a short label whose every word the key
+   contains ("Overwrite"): one shared word ("screen" in "Exit full screen" vs "Error screen") is noise, and an unfilled
+   slot stays empty. Four neighbors for one language, three for several; a neighbor already listed under an earlier key
+   is referenced as "(above)".
+7. Decision excerpts per language: the sections citing a batch key, narrowest citation first, capped (1,500 chars and
    six sections for one language, 700 chars and three for several) with a `file:line` pointer to the full section; the
    overflow is listed by heading.
-7. Footer: the write-back instructions below.
 
-Deterministic (no time, RNG, or model), about 0.2 s for a 40-key batch.
+Deterministic (no time, RNG, or model), about 0.3 s for a 40-key batch.
 
 ### `pnpm i18n:check-termbase` (`apps/desktop/scripts/i18n-check-termbase.ts`, Go check `desktop-i18n-termbase`)
 

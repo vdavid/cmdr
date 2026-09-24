@@ -10,24 +10,42 @@
  * batch, not the history of the locale. Sections, in order:
  *
  *  - header: languages, how the keys were chosen, the reference pile, the style guide
+ *  - instructions: the translator's standing instructions, single-sourced from
+ *    `docs/i18n/translator-instructions.md` and rendered for the language(s)
  *  - digest: the `## Digest` section of each language's style guide
- *  - keys: key, English, `@key` description, placeholders/tags, current value(s)
- *  - terms: every concept whose `match` hits a batch key's English, plus its
- *    `distinct` neighbors; sense once, then one ruling line per language
- *  - memory: per key, the nearest SHIPPED keys (siblings first, then IDF-weighted
- *    English word overlap), with their translations; batch keys never appear here
+ *  - keys: key, English, `@key` description, placeholders/tags, current value(s),
+ *    and the content words no concept covers ("No concept yet")
+ *  - terms: every concept whose `match` hits a batch key's English, plus those of
+ *    its `distinct` neighbors whose words appear in the batch; sense once, then one
+ *    ruling line per language
+ *  - memory: per key, the nearest SHIPPED keys (`i18n-brief-memory.ts`); batch keys
+ *    never appear here
  *  - decisions: `decisions.md` sections whose heading cites a batch key, most
  *    specific first, each capped with a pointer to the full section
- *  - footer: where to write back
+ *
+ * A blind run (`excludeTargetValues`) withholds the batch's current values and the
+ * decisions, drops a ruling's batch-key `exceptions` and `decision` pointer, and
+ * redacts the batch's shipped values wherever the digest or a ruling quotes them.
  *
  * Schemas: `docs/i18n/termbase.md`. Deterministic: no time, RNG, or git here.
  */
 
 import { relative, isAbsolute, join } from 'node:path'
-import { BASE_LOCALE, loadCatalog, parseMessage, isRawKey, rawTokens } from './i18n-catalog-lib.ts'
+import {
+  BASE_LOCALE,
+  BRAND_WORDS,
+  loadCatalog,
+  parseMessage,
+  isRawKey,
+  rawTokens,
+  visibleLiterals,
+} from './i18n-catalog-lib.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
+import { buildMemoryIndex, contentWords, isGenericWord, nearestKeys } from './i18n-brief-memory.ts'
+import type { MemoryIndex } from './i18n-brief-memory.ts'
 import {
   compileConcepts,
+  coveredSpans,
   decisionsPath,
   englishMatchText,
   extractDigest,
@@ -115,108 +133,6 @@ export function changedKeys(current: Record<string, string>, previous: Record<st
   return Object.keys(current).filter((key) => previous[key] !== current[key])
 }
 
-/** Words too common to say two strings are related. */
-const STOPWORDS = new Set(
-  'the and for you your this that with from are was not but can will its has have into our out all any'.split(' '),
-)
-
-/** The content words of a key's English: lowercase, three letters or more, no stopwords. */
-function contentWords(key: string, value: string): Set<string> {
-  const words =
-    englishMatchText(key, value)
-      .toLowerCase()
-      .match(/\p{L}+/gu) ?? []
-  return new Set(words.filter((word) => word.length >= 3 && !STOPWORDS.has(word)))
-}
-
-/** Per-key content words plus their IDF, built once per run. */
-export interface MemoryIndex {
-  order: Map<string, number>
-  words: Map<string, Set<string>>
-  idf: Map<string, number>
-}
-
-/** Indexes the English catalog for `nearestKeys`. */
-export function buildMemoryIndex(en: Record<string, string>): MemoryIndex {
-  const order = new Map<string, number>()
-  const words = new Map<string, Set<string>>()
-  const df = new Map<string, number>()
-  for (const [position, key] of Object.keys(en).entries()) {
-    order.set(key, position)
-    const set = contentWords(key, en[key])
-    words.set(key, set)
-    for (const word of set) df.set(word, (df.get(word) ?? 0) + 1)
-  }
-  const total = Math.max(order.size, 1)
-  const idf = new Map([...df].map(([word, count]) => [word, Math.log(1 + total / count)]))
-  return { order, words, idf }
-}
-
-/** Cosine-style similarity of two keys' content words, each word weighted by its IDF. */
-function similarity(index: MemoryIndex, a: string, b: string): number {
-  const wordsA = index.words.get(a) ?? new Set<string>()
-  const wordsB = index.words.get(b) ?? new Set<string>()
-  const weight = (word: string) => index.idf.get(word) ?? 0
-  let shared = 0
-  for (const word of wordsA) if (wordsB.has(word)) shared += weight(word)
-  if (shared === 0) return 0
-  const norm = (set: Set<string>) => [...set].reduce((sum, word) => sum + weight(word), 0)
-  return shared / Math.sqrt(norm(wordsA) * norm(wordsB))
-}
-
-/** The parent path of a key (`a.b.c` → `a.b`). */
-const parentOf = (key: string) => key.slice(0, Math.max(key.lastIndexOf('.'), 0))
-
-/**
- * A key's translation memory: the nearest keys that at least one target locale
- * has shipped, excluding the batch. Same-parent siblings come first (they share a
- * dialog, so they share its voice), capped at half the slots so a strong match
- * elsewhere in the catalog, often the same phrase on another surface, still gets
- * in. Siblings rank by word overlap, then by distance in the catalog; the rest need
- * at least one shared content word.
- */
-export function nearestKeys({
-  key,
-  en,
-  targets,
-  batch,
-  count,
-  index,
-}: {
-  key: string
-  en: Record<string, string>
-  targets: readonly Record<string, string>[]
-  batch: ReadonlySet<string>
-  count: number
-  index?: MemoryIndex
-}): string[] {
-  const ix = index ?? buildMemoryIndex(en)
-  const parent = parentOf(key)
-  const position = ix.order.get(key) ?? 0
-  const candidates = Object.keys(en).filter(
-    (other) => other !== key && !batch.has(other) && targets.some((target) => other in target),
-  )
-  const scored = candidates.map((other) => ({
-    key: other,
-    score: similarity(ix, key, other),
-    distance: Math.abs((ix.order.get(other) ?? 0) - position),
-    sibling: parentOf(other) === parent,
-  }))
-  const byScore = (a: (typeof scored)[number], b: (typeof scored)[number]) =>
-    b.score - a.score || a.distance - b.distance || a.key.localeCompare(b.key)
-  const siblings = scored.filter((entry) => entry.sibling).sort(byScore)
-  const picked = siblings.slice(0, Math.ceil(count / 2)).map((entry) => entry.key)
-  const rest = scored
-    .filter((entry) => entry.score > 0 && !picked.includes(entry.key))
-    .sort(byScore)
-    .map((entry) => entry.key)
-  for (const other of [...rest, ...siblings.map((entry) => entry.key)]) {
-    if (picked.length >= count) break
-    if (!picked.includes(other)) picked.push(other)
-  }
-  return picked
-}
-
 /** Renders a path for the brief: repo-relative when it's inside the repo. */
 function shown(path: string, repoRoot: string): string {
   const rel = relative(repoRoot, path)
@@ -232,6 +148,7 @@ interface BriefContext {
   concepts: Record<string, Concept>
   batch: Set<string>
   multi: boolean
+  memory: MemoryIndex
 }
 
 /** Placeholder and tag notes for a key: described ones from `@key.placeholders`, the rest bare. */
@@ -279,6 +196,61 @@ function headerSection(ctx: BriefContext): BriefSection {
   return { name: 'header', text: lines.join('\n') }
 }
 
+/** "Dutch (nl)", or the bare tag when `Intl` doesn't know it. */
+function languageName(tag: string): string {
+  const name = new Intl.DisplayNames(['en'], { type: 'language', fallback: 'none' }).of(tag)
+  return name ? `${name} (${tag})` : tag
+}
+
+/**
+ * The translator's standing instructions: everything under `## Instructions` in
+ * `translator-instructions.md`, with `{{LANGUAGE}}` and `{{TAG}}` filled in (the
+ * tag reads `<tag>` for several languages). Single-sourced there, so the guide and
+ * every brief can't drift apart.
+ */
+function instructionsSection(ctx: BriefContext): BriefSection {
+  const markdown = readTextIfPresent(join(resolveDocsRoot(ctx.opts.docsRoot), 'translator-instructions.md'))
+  const start = markdown?.search(/^## Instructions\s*$/m) ?? -1
+  if (markdown === undefined || start === -1) return { name: 'instructions', text: '' }
+  const body = markdown
+    .slice(start)
+    .replace(/^## Instructions\s*\n/, '')
+    .trim()
+    .replaceAll('{{LANGUAGE}}', ctx.opts.langs.map(languageName).join(', '))
+    .replaceAll('{{TAG}}', ctx.multi ? '<tag>' : ctx.opts.langs[0])
+  return { name: 'instructions', text: `## Instructions\n\n${body}` }
+}
+
+/** A word must appear in at least this many English keys to be a candidate term: concepts recur. */
+const MIN_TERM_FREQUENCY = 3
+
+/** Brand words, lowercased: kept verbatim, never a term to rule on. */
+const BRANDS = new Set(BRAND_WORDS.map((word) => word.toLowerCase()))
+
+/**
+ * A key's content words no registered concept's `match` covers, in order: the
+ * terms a translator has to mine the pile for, named so a missing concept
+ * ("offline") can't slip by as if it were settled. Generic English, brands, and
+ * words fewer than `MIN_TERM_FREQUENCY` keys use are left out.
+ */
+function uncoveredWords(ctx: BriefContext, key: string): string[] {
+  const text = englishMatchText(key, ctx.en.messages[key])
+  const content = new Set(contentWords(key, ctx.en.messages[key]))
+  const spans = Object.values(ctx.concepts).flatMap((concept) =>
+    Array.isArray(concept.match) ? coveredSpans(concept.match, text) : [],
+  )
+  const out: string[] = []
+  for (const hit of text.matchAll(/\p{L}+/gu)) {
+    const word = hit[0].toLowerCase()
+    const end = hit.index + hit[0].length
+    if (!content.has(word) || out.includes(word) || isGenericWord(word) || BRANDS.has(word)) continue
+    if ((ctx.memory.df.get(word) ?? 0) < MIN_TERM_FREQUENCY) continue
+    if (spans.some(([from, to]) => from < end && hit.index < to)) continue
+    out.push(word)
+  }
+  return out
+}
+
 function digestSection(ctx: BriefContext): BriefSection {
   const blocks = ctx.opts.langs.map((tag) => {
     const path = stylePath(tag, ctx.opts.docsRoot)
@@ -299,6 +271,8 @@ function keysSection(ctx: BriefContext): BriefSection {
     if (typeof metadata?.description === 'string') lines.push(`  - Note: ${metadata.description}`)
     const notes = placeholderNotes(key, value, metadata)
     if (notes.length > 0) lines.push(`  - ${notes.join(' · ')}`)
+    const uncovered = uncoveredWords(ctx, key)
+    if (uncovered.length > 0) lines.push(`  - No concept yet: ${uncovered.join(', ')}`)
     if (ctx.opts.excludeTargetValues) continue
     for (const tag of ctx.opts.langs) {
       const current = ctx.targets.get(tag)?.[key]
@@ -317,11 +291,15 @@ function rulingLine(ctx: BriefContext, tag: string, id: string): string {
   if (term.forms) parts.push(`forms: ${term.forms}`)
   if (term.avoid?.length) parts.push(`avoid: ${term.avoid.map((a) => `${a.form} (${a.why})`).join('; ')}`)
   if (term.note) parts.push(`note: ${term.note}`)
-  const exceptions = Object.entries(term.exceptions ?? {}).filter(([key]) => ctx.batch.has(key))
-  if (exceptions.length > 0) {
-    parts.push(`exceptions here: ${exceptions.map(([key, why]) => `\`${key}\` (${why})`).join('; ')}`)
+  // A blind run drops both: a batch key's exception names how it deviates, and
+  // the decision it points at is withheld anyway.
+  if (!ctx.opts.excludeTargetValues) {
+    const exceptions = Object.entries(term.exceptions ?? {}).filter(([key]) => ctx.batch.has(key))
+    if (exceptions.length > 0) {
+      parts.push(`exceptions here: ${exceptions.map(([key, why]) => `\`${key}\` (${why})`).join('; ')}`)
+    }
+    if (term.decision) parts.push(`decision: "${term.decision}"`)
   }
-  if (term.decision) parts.push(`decision: "${term.decision}"`)
   return `- ${tag}: ${parts.join(' · ')}`
 }
 
@@ -342,13 +320,35 @@ function conceptsInPlay(ctx: BriefContext): ConceptsInPlay {
       if (hit(text)) hitsBy.set(id, [...(hitsBy.get(id) ?? []), key])
     }
   }
+  const batchText = ctx.opts.keys
+    .map((key) => englishMatchText(key, ctx.en.messages[key]))
+    .join('\n')
+    .toLowerCase()
   const neighbors = new Map<string, string>()
   for (const id of [...hitsBy.keys()].sort()) {
     for (const other of ctx.concepts[id].distinct ?? []) {
-      if (!hitsBy.has(other) && !neighbors.has(other) && other in ctx.concepts) neighbors.set(other, id)
+      if (hitsBy.has(other) || neighbors.has(other) || !(other in ctx.concepts)) continue
+      if (neighbors.size < MAX_NEIGHBORS && mentionedIn(ctx.concepts[other], batchText)) neighbors.set(other, id)
     }
   }
   return { hitsBy, neighbors }
+}
+
+/** How many easy-to-confuse neighbors a brief lists at most. */
+const MAX_NEIGHBORS = 8
+
+/**
+ * Whether a neighbor is plausibly in play: the head word of one of its `match`
+ * forms appears anywhere in the batch's English, loosely (a substring, so
+ * `queue` counts for "Operation queue" even when the form is `=queue`). A neighbor
+ * whose words the batch never uses can't be confused with anything in it.
+ */
+function mentionedIn(concept: Concept, batchText: string): boolean {
+  const forms = Array.isArray(concept.match) ? concept.match : []
+  return forms.some((form) => {
+    const head = form.replace(/^=/, '').replace(/\*$/, '').trim().split(/\s+/)[0]
+    return head.length > 0 && batchText.includes(head)
+  })
 }
 
 /** A hit concept's block: sense and boundaries once, then a full ruling line per language. */
@@ -391,7 +391,7 @@ function termsSection(ctx: BriefContext): BriefSection {
 function memorySection(ctx: BriefContext): BriefSection {
   const count = ctx.multi ? 3 : 4
   const targets = ctx.opts.langs.map((tag) => ctx.targets.get(tag) ?? {})
-  const index = buildMemoryIndex(ctx.en.messages)
+  const index = ctx.memory
   const shownKeys = new Set<string>()
   const lines = [
     '## Translation memory',
@@ -488,20 +488,41 @@ function decisionsSection(ctx: BriefContext): BriefSection {
   return { name: 'decisions', text: blocks.join('\n\n') }
 }
 
-function footerSection(ctx: BriefContext): BriefSection {
-  const docs = shown(resolveDocsRoot(ctx.opts.docsRoot), ctx.opts.repoRoot)
-  const tag = ctx.multi ? '<tag>' : ctx.opts.langs[0]
-  const lines = [
-    '## Writing back',
-    '',
-    `- A new or changed ruling: edit its entry in \`${docs}/${tag}/terms.json\`; a replaced form moves to \`avoid\` with its reason.`,
-    `- A recurring concept with no entry: add it to \`${docs}/concepts.json\` (during the parallel migration, \`${docs}/${tag}/concepts-proposed.json\`).`,
-    `- A key whose English uses a concept but whose translation rightly doesn't use the ruling: record it in that term's \`exceptions\` with the reason.`,
-    `- Rationale worth more than a line: a section in \`${docs}/${tag}/decisions.md\` whose heading cites the keys in backticks; point the term's \`decision\` at it.`,
-    `- Anything only a native reviewer can settle: \`${docs}/${tag}/review-queue.md\`.`,
-    '- Then run the i18n checks from the repo root (`docs/guides/i18n-translation.md` § Add a new language, step 5).',
-  ]
-  return { name: 'footer', text: lines.join('\n') }
+/** A shipped value shorter than this, with no space, is too generic to redact (`Sluit` is everywhere). */
+const MIN_REDACTED_LENGTH = 10
+
+/**
+ * The batch's shipped values in the forms a doc might quote them: raw, with ICU's
+ * doubled apostrophe read as one, and as its visible text. Longest first, so a
+ * value is withheld before any shorter one inside it.
+ */
+function shippedValues(ctx: BriefContext): string[] {
+  const values = new Set<string>()
+  for (const tag of ctx.opts.langs) {
+    for (const key of ctx.opts.keys) {
+      const value = ctx.targets.get(tag)?.[key]
+      if (value === undefined) continue
+      for (const form of [value, value.replace(/''/g, "'"), visibleLiterals(value, tag)?.trim()]) {
+        if (!form) continue
+        // A rule often quotes one clause of a value rather than all of it.
+        for (const part of [form, ...form.split(/\s*[.:;!?…]+(?:\s+|$)/)]) {
+          const clause = part.trim()
+          if (clause.length >= MIN_REDACTED_LENGTH || (clause.includes(' ') && clause === form)) values.add(clause)
+        }
+      }
+    }
+  }
+  return [...values].sort((a, b) => b.length - a.length)
+}
+
+/**
+ * Best-effort blind-run redaction: a ruling's `forms` or the style digest can quote
+ * a batch key's exact shipped value, which would hand the translator the answer.
+ */
+function redactShipped(section: BriefSection, values: readonly string[]): BriefSection {
+  let text = section.text
+  for (const value of values) text = text.replaceAll(value, '[withheld]')
+  return { ...section, text }
 }
 
 /** Loads everything once and builds every section. */
@@ -527,10 +548,22 @@ export function buildBrief(opts: BriefOptions): Brief {
     concepts,
     batch: new Set(opts.keys),
     multi: opts.langs.length > 1,
+    memory: buildMemoryIndex(en.messages),
   }
-  const sections = [headerSection(ctx), digestSection(ctx), keysSection(ctx), termsSection(ctx), memorySection(ctx)]
-  if (!opts.excludeTargetValues) sections.push(decisionsSection(ctx))
-  sections.push(footerSection(ctx))
+  let sections = [
+    headerSection(ctx),
+    instructionsSection(ctx),
+    digestSection(ctx),
+    keysSection(ctx),
+    termsSection(ctx),
+    memorySection(ctx),
+  ]
+  if (opts.excludeTargetValues) {
+    const values = shippedValues(ctx)
+    sections = sections.map((section) =>
+      section.name === 'digest' || section.name === 'terms' ? redactShipped(section, values) : section,
+    )
+  } else sections.push(decisionsSection(ctx))
   return { sections: sections.filter((section) => section.text.trim().length > 0) }
 }
 

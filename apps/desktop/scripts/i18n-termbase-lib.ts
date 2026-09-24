@@ -151,6 +151,24 @@ export function compileMatch(forms: readonly string[]): (text: string) => boolea
   return (text) => (re?.test(text) ?? false) || (wholeValues.size > 0 && wholeValues.has(wholeValueOf(text)))
 }
 
+/**
+ * The character spans of `text` that any of `forms` covers: every hit of a word or
+ * phrase form, or the whole text for a matching `=` form. The brief uses it to tell
+ * which content words of a key no concept speaks for.
+ */
+export function coveredSpans(forms: readonly string[], text: string): [number, number][] {
+  const spans: [number, number][] = []
+  const whole = forms.filter((form) => form.trim().startsWith('='))
+  if (whole.length > 0 && compileMatch(whole)(text)) spans.push([0, text.length])
+  for (const form of forms.map((f) => f.trim()).filter((f) => f.length > 0 && !f.startsWith('='))) {
+    const prefix = form.endsWith('*')
+    const body = (prefix ? form.slice(0, -1) : form).split(/\s+/).map(escapeRegExp).join('\\s+')
+    const re = new RegExp(`(?<![\\p{L}\\p{N}])${body}${prefix ? '[\\p{L}\\p{N}]*' : '(?![\\p{L}\\p{N}])'}`, 'giu')
+    for (const hit of text.matchAll(re)) spans.push([hit.index, hit.index + hit[0].length])
+  }
+  return spans
+}
+
 /** Edge punctuation and whitespace a whole-value (`=back`) match ignores: `Back…` and ` Back ` are `back`. */
 const WHOLE_VALUE_EDGES = /^[\s\p{P}]+|[\s\p{P}]+$/gu
 

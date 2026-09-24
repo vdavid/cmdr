@@ -66,5 +66,5 @@ surface them and nobody relitigates them.
 
 - **ICU mechanics** (catalog-level, not language-specific, but easy to miss when handed only "translate these"): double
   every apostrophe in a value (`'` becomes `''`; ICU treats a lone `'` as an escape and silently swallows text), and
-  keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
+  keep every `{placeholder}` and `<tag>` verbatim. Full rules: `docs/i18n/translator-instructions.md` (embedded in every
+  brief) and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.

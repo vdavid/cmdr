@@ -8,7 +8,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { buildBrief, changedKeys, nearestKeys, renderBrief, selectKeys } from './i18n-brief-lib.ts'
+import { buildBrief, changedKeys, renderBrief, selectKeys } from './i18n-brief-lib.ts'
+import { nearestKeys } from './i18n-brief-memory.ts'
 import type { BriefOptions } from './i18n-brief-lib.ts'
 
 describe('selectKeys', () => {
@@ -44,7 +45,7 @@ describe('nearestKeys', () => {
     'servers.sheet.user': 'User name',
     'servers.sheet.pass': 'Password',
     'servers.sheet.remember': 'Remember password in Keychain',
-    'settings.keychain': 'Forget saved passwords in Keychain',
+    'settings.keychain': 'Forget a password saved in Keychain',
     'other.cats': 'Cats and dogs',
   }
   const target = { ...en }
@@ -61,6 +62,18 @@ describe('nearestKeys', () => {
     expect(near).toContain('settings.keychain')
     expect(near).not.toContain('servers.sheet.title')
     expect(near).not.toContain('other.cats')
+  })
+  it('keeps a far neighbor only on two shared words, or when all its words are in the key', () => {
+    const far = {
+      'main.hint': 'Exit full screen with Escape',
+      'shortcuts.errorScreen': 'Error screen',
+      'settings.fullScreen': 'Leave full screen',
+      'queue.escape': 'Escape',
+    }
+    const near = nearestKeys({ key: 'main.hint', en: far, targets: [far], batch: new Set(['main.hint']), count: 4 })
+    expect(near).toContain('settings.fullScreen')
+    expect(near).toContain('queue.escape')
+    expect(near).not.toContain('shortcuts.errorScreen')
   })
   it('skips a neighbor no selected locale has translated', () => {
     const near = nearestKeys({
@@ -96,9 +109,12 @@ describe('buildBrief (fixture tree)', () => {
       },
       'queue.empty': 'Nothing queued',
       'queue.undo': 'Undo the operation',
+      'queue.hint': 'Nothing sparkly: Cmdr still keeps it offline',
+      'queue.offlineA': 'Make available offline',
+      'queue.offlineB': 'Offline copy',
     })
     write(join(messagesRoot, 'nl', 'queue.json'), {
-      'queue.title': 'Bewerkingenwachtrij',
+      'queue.title': 'Bewerkingenwachtrij: {app} houdt de wachtrij vast.',
       'queue.row.label': '{count, plural, one {# overdracht} other {# overdrachten}} naar {folder}',
       'queue.empty': 'Niets in de wachtrij',
       'queue.undo': 'Maak de bewerking ongedaan',
@@ -112,14 +128,21 @@ describe('buildBrief (fixture tree)', () => {
         en: 'operation',
         match: ['operation', 'operations'],
         sense: 'The file work Cmdr performs.',
-        distinct: ['transfer'],
+        distinct: ['transfer', 'task', 'queue-word'],
       },
       transfer: { en: 'transfer', match: ['transfer*'], sense: 'Bytes moving between places.' },
       unrelated: { en: 'cat', match: ['cat'], sense: 'Not in play.' },
+      task: { en: 'task', match: ['task', 'tasks'], sense: 'A to-do item, nowhere in this batch.' },
+      'queue-word': { en: 'queue', match: ['=queue'], sense: 'The bare Queue label.' },
     })
+    write(
+      join(docsRoot, 'translator-instructions.md'),
+      '# Translator instructions\n\nIntro for humans.\n\n## Instructions\n\nTranslate into {{LANGUAGE}}; read docs/i18n/{{TAG}}/style.md.\n',
+    )
     write(join(docsRoot, 'nl', 'terms.json'), {
       operation: {
         chosen: 'bewerking',
+        forms: 'window title Bewerkingenwachtrij; with an app named, {app} houdt de wachtrij vast',
         accept: ['bewerkingen'],
         avoid: [{ form: 'actie', why: 'reads as a user action' }],
         confidence: 'high',
@@ -130,7 +153,7 @@ describe('buildBrief (fixture tree)', () => {
     })
     write(
       join(docsRoot, 'nl', 'style.md'),
-      '# nl\n\nIntro.\n\n## Digest\n\n- Use `je`.\n\n## Voice\n\nLong elaboration.',
+      '# nl\n\nIntro.\n\n## Digest\n\n- Use `je`.\n- The queue window is Bewerkingenwachtrij.\n\n## Voice\n\nLong elaboration.',
     )
     write(
       join(docsRoot, 'nl', 'decisions.md'),
@@ -196,17 +219,49 @@ describe('buildBrief (fixture tree)', () => {
     expect(memory).not.toContain('- `queue.row.label`')
   })
 
-  it('leaks none of the batch keys own translations in a blind run', () => {
+  it('leaks none of the batch keys own translations in a blind run, even quoted in a ruling or the digest', () => {
     const text = renderBrief(buildBrief({ ...opts, excludeTargetValues: true }))
     expect(text).not.toContain('Bewerkingenwachtrij')
+    expect(text).not.toContain('houdt de wachtrij vast')
     expect(text).not.toContain('overdracht')
+    expect(text).not.toContain('names transfers, not operations')
+    expect(text).not.toContain('decision: "Operation queue')
+    expect(text).toContain('- Use `je`.')
     expect(text).toContain('Maak de bewerking ongedaan')
+  })
+
+  it('embeds the translator instructions once, rendered for the language', () => {
+    const text = renderBrief(buildBrief(opts))
+    expect(text).toContain('Translate into Dutch (nl); read docs/i18n/nl/style.md.')
+    expect(text).not.toContain('Intro for humans.')
+    const multi = renderBrief(buildBrief({ ...opts, langs: ['de', 'nl'] }))
+    expect(multi.split('Translate into').length - 1).toBe(1)
+    expect(multi).toContain('Translate into German (de), Dutch (nl); read docs/i18n/<tag>/style.md.')
+  })
+
+  it('lists an easy-to-confuse neighbor only when its words appear in the batch English', () => {
+    const text = renderBrief(buildBrief(opts))
+    expect(text).toContain('The bare Queue label.')
+    expect(text).not.toContain('A to-do item, nowhere in this batch.')
+  })
+
+  it("names each key's content words that no concept covers, so missing concepts are explicit", () => {
+    const keys = buildBrief(opts).sections.find((section) => section.name === 'keys')?.text ?? ''
+    // `{folder}` is a placeholder and `to` a stopword; `transfers` is covered by `transfer*`.
+    expect(keys.slice(keys.indexOf('`queue.row.label`'))).not.toContain('No concept yet')
+  })
+
+  it('leaves generic English and one-off words out of "No concept yet"', () => {
+    const brief = buildBrief({ ...opts, keys: ['queue.hint'] })
+    const keys = brief.sections.find((section) => section.name === 'keys')?.text ?? ''
+    // "offline" recurs in three keys; "nothing", "still", "Cmdr" are generic or a brand; "sparkly" is a one-off.
+    expect(keys).toMatch(/No concept yet: offline\n|No concept yet: offline$/)
   })
 
   it('reports per-section sizes for --stats', () => {
     const brief = buildBrief(opts)
     expect(brief.sections.map((section) => section.name)).toEqual(
-      expect.arrayContaining(['header', 'digest', 'keys', 'terms', 'memory', 'decisions', 'footer']),
+      expect.arrayContaining(['header', 'instructions', 'digest', 'keys', 'terms', 'memory', 'decisions']),
     )
   })
 })
