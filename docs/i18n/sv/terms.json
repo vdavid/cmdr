@@ -217,9 +217,6 @@
     "accept": ["autentisering", "logga in", "inloggning"],
     "chosen": "autentisera",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.network.browser.tooltip.authFailed": "The calm failure line names the user's act: Det gick inte att logga in."
-    },
     "sources": "MS terminology (autentisering), macOS"
   },
   "available-offline": {

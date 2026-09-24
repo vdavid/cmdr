@@ -1236,10 +1236,6 @@
     "accept": ["masque", "masqu"],
     "chosen": "Masquer",
     "confidence": "high",
-    "exceptions": {
-      "settings.search.recentSearches.maxCount.description": "Intransitive hide (the footer and popover hide) reads as disparaître in French.",
-      "settings.selection.recentSelections.maxCount.description": "Intransitive hide (the footer and popover hide) reads as disparaître in French."
-    },
     "forms": "Hide Others → Masquer les autres",
     "sources": "macOS app menu (Finder MenuBar 300729.title)"
   },

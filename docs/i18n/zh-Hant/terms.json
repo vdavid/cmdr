@@ -461,9 +461,6 @@
     "accept": ["選", "挑", "換一", "換個", "取個"],
     "chosen": "選擇",
     "confidence": "high",
-    "exceptions": {
-      "settings.developer.mcpPort.description": "The OS picks a port → 挑選 is accepted; kept here only because the key also carries pin a port."
-    },
     "forms": "choose one thing → 選擇 (選擇 App…, 選擇 adb 指令); casual pick → 選一個 / 挑一個; pick a different X → 換一個 X / 換個 X; picking items out of a list is select → 選取",
     "sources": "AP-TW (選擇啟動磁碟; Choose Application… → 選擇應用程式⋯)"
   },
