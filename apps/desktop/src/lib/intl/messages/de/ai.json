@@ -353,9 +353,9 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "Punctuation-only placeholder ('?'); identical across locales."
   },
-  "ai.local.notInstalled": "Nicht installiert. Das lokale Modell ({modelName}, {modelSize}) läuft für maximalen Datenschutz vollständig auf deinem Gerät. Erfordert Apple Silicon.",
+  "ai.local.notInstalled": "Nicht installiert. Das lokale Modell ({modelName}, {modelSize}) läuft für maximalen Datenschutz vollständig auf deinem Gerät. Erfordert Apple silicon.",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "Anwenden",
   "@ai.local.applyContextSize": {

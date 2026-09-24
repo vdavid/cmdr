@@ -639,7 +639,7 @@
   },
   "settings.mediaIndex.parallelism.description": "影像索引同時執行多少個工作程序。數量越多可能越快，但在 Apple 晶片上超過兩個之後提升就趨於平緩，而且當你的 Mac 變熱時，較高的設定會自動回落。",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "只有我最常用的資料夾",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2160,11 +2160,11 @@
   },
   "settings.ai.tooltipLocal": "在你的裝置上完整執行一個小型語言模型。隱私最大化：沒有任何內容離開你的電腦。可以離線運作。佔用約 2 GB 磁碟空間和約 400 MB 記憶體（隨上下文大小而變）。需要 Apple 晶片（M1 以上）。",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
   "settings.ai.tooltipLocalDisabled": "本機 AI 需要 Apple 晶片（M1 或更新）。請改用雲端 AI。",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "索引大小",
   "@settings.fileSystemWatching.indexSize": {

@@ -354,7 +354,7 @@
   },
   "ai.local.notInstalled": "No instalado. El modelo local ({modelName}, {modelSize}) se ejecuta por completo en tu dispositivo para una privacidad máxima. Requiere Apple silicon.",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "Aplicar",
   "@ai.local.applyContextSize": {

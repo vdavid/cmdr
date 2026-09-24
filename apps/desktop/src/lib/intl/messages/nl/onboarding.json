@@ -301,9 +301,9 @@
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
-  "onboarding.stepAi.localTooltip": "Lokale LLM vereist Apple Silicon. Cloud werkt op Intel.",
+  "onboarding.stepAi.localTooltip": "Lokale LLM vereist Apple silicon. Cloud werkt op Intel.",
   "@onboarding.stepAi.localTooltip": {
-    "sourceHash": "dc194e8"
+    "sourceHash": "75c6d48"
   },
   "onboarding.stepAi.missingKeyWarning": "Je hebt AI ingeschakeld, maar geen API-sleutel ingevuld. AI werkt dan niet en je krijgt een waarschuwing te zien. Los dit hierboven op.\n\n<strong>Klik nogmaals op ‘{nextLabel}’ om dit te negeren en verder te gaan.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {

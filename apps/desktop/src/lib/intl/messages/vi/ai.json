@@ -352,9 +352,9 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "Punctuation-only placeholder value: a single question mark shown when the backend reports no model size. No translatable text; '?' is locale-neutral."
   },
-  "ai.local.notInstalled": "Chưa cài đặt. Mô hình cục bộ ({modelName}, {modelSize}) chạy hoàn toàn trên thiết bị của bạn để bảo mật tối đa. Yêu cầu Apple Silicon.",
+  "ai.local.notInstalled": "Chưa cài đặt. Mô hình cục bộ ({modelName}, {modelSize}) chạy hoàn toàn trên thiết bị của bạn để bảo mật tối đa. Yêu cầu Apple silicon.",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "Áp dụng",
   "@ai.local.applyContextSize": {

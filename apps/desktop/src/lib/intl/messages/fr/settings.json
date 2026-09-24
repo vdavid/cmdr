@@ -641,7 +641,7 @@
   },
   "settings.mediaIndex.parallelism.description": "Combien de processus l''indexation des images exécute en même temps. Un nombre plus élevé peut être plus rapide, mais sur Apple Silicon le gain plafonne au-delà de deux, et les réglages plus élevés se réduisent d''eux-mêmes quand votre Mac chauffe.",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Uniquement mes dossiers les plus utilisés",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2173,11 +2173,11 @@
   },
   "settings.ai.tooltipLocal": "Exécute un petit modèle de langage entièrement sur votre appareil. Confidentialité maximale : rien ne quitte votre ordinateur. Fonctionne hors ligne. Utilise ~2 GB d''espace disque et ~400 MB de mémoire (varie selon la taille du contexte). Nécessite Apple Silicon (M1+).",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
   "settings.ai.tooltipLocalDisabled": "L''IA locale nécessite Apple Silicon (M1 ou ultérieur). Utilisez plutôt l''IA dans le cloud.",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "Taille de l''index",
   "@settings.fileSystemWatching.indexSize": {

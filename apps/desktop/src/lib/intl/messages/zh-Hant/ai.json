@@ -352,9 +352,9 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "A single question mark, shown in parentheses where a model's size would go when the backend reported none. The full-width `？` is for sentence-final questions, and Traditional Chinese uses the same half-width `?` glyph as a bare unknown-value placeholder (Apple writes unknown numeric fields as `--` or `?` without localizing the glyph). There is no word to translate; the sibling `ai.local.modelUnknown` handles the case where a WORD is wanted and IS translated (`不明`)."
   },
-  "ai.local.notInstalled": "尚未安裝。本機模型（{modelName}，{modelSize}）完全在你的裝置上執行，隱私最有保障。需要 Apple Silicon。",
+  "ai.local.notInstalled": "尚未安裝。本機模型（{modelName}，{modelSize}）完全在你的裝置上執行，隱私最有保障。需要 Apple 晶片。",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "套用",
   "@ai.local.applyContextSize": {

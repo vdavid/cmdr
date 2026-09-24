@@ -1237,8 +1237,7 @@
     "chosen": "ausblenden",
     "confidence": "high",
     "exceptions": {
-      "errors.listing.emptyRootICloud.explanation": "macOS hides contents FROM apps → verbirgt … vor Apps, not taken out of view",
-      "queryUi.pathPills.hiddenAria": "collapsed path segments read as Verborgene; review whether Ausgeblendete fits the hide ruling better"
+      "errors.listing.emptyRootICloud.explanation": "macOS hides contents FROM apps → verbirgt … vor Apps, not taken out of view"
     },
     "forms": "Hide Others → Andere ausblenden; stay hidden → bleiben ausgeblendet; show/hide a panel → einblenden/ausblenden",
     "sources": "macOS Finder MenuBar (300729.title Andere ausblenden); MS terminology (hidden → ausgeblendet)"

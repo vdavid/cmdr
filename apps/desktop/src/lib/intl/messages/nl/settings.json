@@ -642,7 +642,7 @@
   },
   "settings.mediaIndex.parallelism.description": "Hoeveel processen het indexeren van afbeeldingen tegelijk uitvoert. Meer kan sneller zijn, maar op Apple silicon vlakt de winst boven twee af, en hogere waarden schroeven zichzelf terug wanneer je Mac warm wordt.",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Alleen mijn meest gebruikte mappen",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2169,11 +2169,11 @@
   },
   "settings.ai.tooltipLocal": "Draait een klein taalmodel volledig op je apparaat. Maximale privacy: er verlaat niets je computer. Werkt offline. Gebruikt ~2 GB schijfruimte en ~400 MB geheugen (varieert met de contextgrootte). Vereist Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
   "settings.ai.tooltipLocalDisabled": "Lokale AI vereist Apple silicon (M1 of later). Gebruik in plaats daarvan Cloud-AI.",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "Indexgrootte",
   "@settings.fileSystemWatching.indexSize": {

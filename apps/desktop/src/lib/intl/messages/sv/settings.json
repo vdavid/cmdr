@@ -641,7 +641,7 @@
   },
   "settings.mediaIndex.parallelism.description": "Hur många processer bildindexeringen kör samtidigt. Fler kan gå snabbare, men på Apple silicon planar vinsten ut efter två, och högre värden drar ner sig själva när din Mac blir varm.",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Bara mina mest använda mappar",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2169,11 +2169,11 @@
   },
   "settings.ai.tooltipLocal": "Kör en liten språkmodell helt på din enhet. Maximal integritet: ingenting lämnar din dator. Fungerar offline. Använder ~2 GB diskutrymme och ~400 MB minne (varierar med kontextstorlek). Kräver Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
   "settings.ai.tooltipLocalDisabled": "Lokal AI kräver Apple silicon (M1 eller senare). Använd Moln-AI i stället.",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "Indexstorlek",
   "@settings.fileSystemWatching.indexSize": {

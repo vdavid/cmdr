@@ -301,7 +301,7 @@
   },
   "onboarding.stepAi.localTooltip": "Lokal LLM kräver Apple silicon. Moln fungerar på Intel.",
   "@onboarding.stepAi.localTooltip": {
-    "sourceHash": "dc194e8"
+    "sourceHash": "75c6d48"
   },
   "onboarding.stepAi.missingKeyWarning": "Du har aktiverat AI men inte angett någon API-nyckel. AI fungerar inte och du får se en varning. Åtgärda det här ovanför.\n\n<strong>Klicka på ”{nextLabel}” igen för att strunta i det här och gå vidare.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {

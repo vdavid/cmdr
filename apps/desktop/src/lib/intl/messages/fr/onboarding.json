@@ -301,7 +301,7 @@
   },
   "onboarding.stepAi.localTooltip": "Le LLM local nécessite Apple Silicon. Le cloud fonctionne sur Intel.",
   "@onboarding.stepAi.localTooltip": {
-    "sourceHash": "dc194e8"
+    "sourceHash": "75c6d48"
   },
   "onboarding.stepAi.missingKeyWarning": "Vous avez activé l''IA mais vous n''avez pas saisi de clé d''API. L''IA ne fonctionnera pas et vous verrez un avertissement. Corrigez cela ci-dessus.\n\n<strong>Cliquez à nouveau sur « {nextLabel} » pour ignorer ceci et continuer.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {

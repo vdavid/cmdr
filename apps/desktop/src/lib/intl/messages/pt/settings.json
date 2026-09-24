@@ -640,7 +640,7 @@
   },
   "settings.mediaIndex.parallelism.description": "Quantos processos a indexação de imagens executa ao mesmo tempo. Mais pode ser mais rápido, mas no Apple silicon o ganho estabiliza acima de dois, e valores mais altos se reduzem sozinhos quando o seu Mac esquenta.",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Somente minhas pastas mais usadas",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2161,13 +2161,13 @@
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
-  "settings.ai.tooltipLocal": "Roda um pequeno modelo de linguagem inteiramente no seu dispositivo. Privacidade máxima: nada sai do seu computador. Funciona offline. Usa ~2 GB de espaço em disco e ~400 MB de memória (varia com o tamanho do contexto). Requer Apple Silicon (M1+).",
+  "settings.ai.tooltipLocal": "Roda um pequeno modelo de linguagem inteiramente no seu dispositivo. Privacidade máxima: nada sai do seu computador. Funciona offline. Usa ~2 GB de espaço em disco e ~400 MB de memória (varia com o tamanho do contexto). Requer Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
-  "settings.ai.tooltipLocalDisabled": "A IA local requer Apple Silicon (M1 ou posterior). Use a IA na nuvem.",
+  "settings.ai.tooltipLocalDisabled": "A IA local requer Apple silicon (M1 ou posterior). Use a IA na nuvem.",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "Tamanho do índice",
   "@settings.fileSystemWatching.indexSize": {

@@ -301,7 +301,7 @@
   },
   "onboarding.stepAi.localTooltip": "本地 LLM 需要 Apple 芯片。云端在 Intel 上也能用。",
   "@onboarding.stepAi.localTooltip": {
-    "sourceHash": "dc194e8"
+    "sourceHash": "75c6d48"
   },
   "onboarding.stepAi.missingKeyWarning": "你开启了 AI，但还没填写 API 密钥。AI 用不了，而且你会看到一条警告。请在上面补上。\n\n<strong>再点按一次“{nextLabel}”就会忽略这个提示，继续往下。</strong>",
   "@onboarding.stepAi.missingKeyWarning": {

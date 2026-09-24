@@ -637,7 +637,7 @@
   },
   "settings.mediaIndex.parallelism.description": "Số tiến trình mà việc lập chỉ mục hình ảnh chạy cùng lúc. Nhiều hơn có thể nhanh hơn, nhưng trên Apple silicon mức lợi ích chững lại sau hai, và các giá trị cao hơn tự giảm khi máy Mac của bạn nóng lên.",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Chỉ các thư mục tôi dùng nhiều nhất",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2158,13 +2158,13 @@
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
-  "settings.ai.tooltipLocal": "Chạy một mô hình ngôn ngữ nhỏ hoàn toàn trên thiết bị của bạn. Riêng tư tối đa: không gì rời khỏi máy tính của bạn. Hoạt động ngoại tuyến. Dùng ~2 GB dung lượng đĩa và ~400 MB bộ nhớ (thay đổi theo cỡ ngữ cảnh). Cần Apple Silicon (M1+).",
+  "settings.ai.tooltipLocal": "Chạy một mô hình ngôn ngữ nhỏ hoàn toàn trên thiết bị của bạn. Riêng tư tối đa: không gì rời khỏi máy tính của bạn. Hoạt động ngoại tuyến. Dùng ~2 GB dung lượng đĩa và ~400 MB bộ nhớ (thay đổi theo cỡ ngữ cảnh). Cần Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
-  "settings.ai.tooltipLocalDisabled": "AI cục bộ cần Apple Silicon (M1 trở lên). Hãy dùng AI đám mây thay vào đó.",
+  "settings.ai.tooltipLocalDisabled": "AI cục bộ cần Apple silicon (M1 trở lên). Hãy dùng AI đám mây thay vào đó.",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "Kích cỡ chỉ mục",
   "@settings.fileSystemWatching.indexSize": {

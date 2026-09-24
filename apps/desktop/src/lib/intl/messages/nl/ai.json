@@ -354,9 +354,9 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "Placeholder-only value: a single '?' punctuation glyph carrying no translatable text."
   },
-  "ai.local.notInstalled": "Niet geïnstalleerd. Het lokale model ({modelName}, {modelSize}) draait volledig op je apparaat voor maximale privacy. Vereist Apple Silicon.",
+  "ai.local.notInstalled": "Niet geïnstalleerd. Het lokale model ({modelName}, {modelSize}) draait volledig op je apparaat voor maximale privacy. Vereist Apple silicon.",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "Pas toe",
   "@ai.local.applyContextSize": {

@@ -639,7 +639,7 @@
   },
   "settings.mediaIndex.parallelism.description": "图像索引同时运行多少个任务。数量越多可能越快，但在 Apple 芯片上超过两个后提升就趋于平缓，而且当你的 Mac 变热时，较高的设置会自动回落。",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "仅我最常用的文件夹",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2160,11 +2160,11 @@
   },
   "settings.ai.tooltipLocal": "在你的设备上完整运行一个小型语言模型。隐私最大化：没有任何内容离开你的电脑。可离线工作。占用约 2 GB 磁盘空间和约 400 MB 内存（随上下文大小而变）。需要 Apple 芯片（M1+）。",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
   "settings.ai.tooltipLocalDisabled": "本地 AI 需要 Apple 芯片（M1 或更新）。请改用云端 AI。",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "索引大小",
   "@settings.fileSystemWatching.indexSize": {

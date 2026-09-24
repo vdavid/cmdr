@@ -637,9 +637,9 @@
   "@settings.mediaIndex.parallelism.label": {
     "sourceHash": "ded85c9"
   },
-  "settings.mediaIndex.parallelism.description": "Hány folyamat végzi egyszerre a képek indexelését. A több gyorsabb lehet, de Apple siliconon kettő fölött már alig javít a sebességen, a magasabb értékek pedig maguktól mérséklődnek, ha a Mac felmelegszik.",
+  "settings.mediaIndex.parallelism.description": "Hány folyamat végzi egyszerre a képek indexelését. A több gyorsabb lehet, de Apple silicon chippel szerelt Macen kettő fölött már alig javít a sebességen, a magasabb értékek pedig maguktól mérséklődnek, ha a Mac felmelegszik.",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Csak a legtöbbet használt mappáim",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2162,11 +2162,11 @@
   },
   "settings.ai.tooltipLocal": "Teljesen az eszközödön futtat egy kis nyelvi modellt. Maximális adatvédelem: semmi sem hagyja el a számítógépedet. Offline is működik. Kb. 2 GB lemezterületet és kb. 400 MB memóriát használ (a kontextusmérettől függően változik). Apple silicon chippel szerelt Mac kell hozzá (M1+).",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
   "settings.ai.tooltipLocalDisabled": "A helyi AI-hoz Apple silicon chippel szerelt Mac kell (M1 vagy újabb). Használd helyette a Felhő-AI-t.",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "Index mérete",
   "@settings.fileSystemWatching.indexSize": {

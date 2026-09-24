@@ -352,9 +352,9 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "A single literal punctuation glyph (question mark) used as a missing-value placeholder; carries no translatable text."
   },
-  "ai.local.notInstalled": "Não instalado. O modelo local ({modelName}, {modelSize}) roda inteiramente no seu dispositivo para máxima privacidade. Requer Apple Silicon.",
+  "ai.local.notInstalled": "Não instalado. O modelo local ({modelName}, {modelSize}) roda inteiramente no seu dispositivo para máxima privacidade. Requer Apple silicon.",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "Aplicar",
   "@ai.local.applyContextSize": {

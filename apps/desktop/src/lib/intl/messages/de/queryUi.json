@@ -311,7 +311,7 @@
   "@queryUi.results.countOnly.soFar": {
     "sourceHash": "dbdb208"
   },
-  "queryUi.pathPills.hiddenAria": "Verborgene Pfadsegmente: {segments}",
+  "queryUi.pathPills.hiddenAria": "Ausgeblendete Pfadsegmente: {segments}",
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },

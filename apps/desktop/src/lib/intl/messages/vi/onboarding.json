@@ -299,9 +299,9 @@
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
-  "onboarding.stepAi.localTooltip": "LLM cục bộ cần Apple Silicon. Đám mây hoạt động trên Intel.",
+  "onboarding.stepAi.localTooltip": "LLM cục bộ cần Apple silicon. Đám mây hoạt động trên Intel.",
   "@onboarding.stepAi.localTooltip": {
-    "sourceHash": "dc194e8"
+    "sourceHash": "75c6d48"
   },
   "onboarding.stepAi.missingKeyWarning": "Bạn đã bật AI nhưng chưa nhập khóa API. AI sẽ không hoạt động và bạn sẽ thấy một cảnh báo. Hãy sửa việc này ở phía trên.\n\n<strong>Nhấn \"{nextLabel}\" lần nữa để bỏ qua và đi tiếp.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {

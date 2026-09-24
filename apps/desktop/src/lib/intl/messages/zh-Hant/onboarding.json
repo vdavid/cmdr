@@ -299,9 +299,9 @@
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
-  "onboarding.stepAi.localTooltip": "本機 LLM 需要 Apple Silicon。雲端在 Intel 上也能用。",
+  "onboarding.stepAi.localTooltip": "本機 LLM 需要 Apple 晶片。雲端在 Intel 上也能用。",
   "@onboarding.stepAi.localTooltip": {
-    "sourceHash": "dc194e8"
+    "sourceHash": "75c6d48"
   },
   "onboarding.stepAi.missingKeyWarning": "你開啟了 AI，但還沒填 API 金鑰。AI 不會運作，而且你會看到一則警告。請在上面補上。\n\n<strong>再按一下「{nextLabel}」，就會忽略這件事繼續往下走。</strong>",
   "@onboarding.stepAi.missingKeyWarning": {

@@ -352,9 +352,9 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "Placeholder-only glyph: a bare question mark ('?') meaning the size is unknown. No translatable text; matches the '?' size-unknown glyph kept verbatim across the catalog (glossary, viewer/licensing pass)."
   },
-  "ai.local.notInstalled": "Nincs telepítve. A helyi modell ({modelName}, {modelSize}) teljes egészében az eszközödön fut a maximális adatvédelemért. Apple Silicon szükséges hozzá.",
+  "ai.local.notInstalled": "Nincs telepítve. A helyi modell ({modelName}, {modelSize}) teljes egészében az eszközödön fut a maximális adatvédelemért. Apple silicon szükséges hozzá.",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "Alkalmaz",
   "@ai.local.applyContextSize": {

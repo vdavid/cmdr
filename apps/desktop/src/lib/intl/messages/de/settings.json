@@ -641,7 +641,7 @@
   },
   "settings.mediaIndex.parallelism.description": "Wie viele Prozesse die Bildindizierung gleichzeitig ausführt. Mehr kann schneller sein, aber auf Apple silicon flacht der Zuwachs jenseits von zwei ab, und höhere Werte regeln sich von selbst herunter, wenn dein Mac warm wird.",
   "@settings.mediaIndex.parallelism.description": {
-    "sourceHash": "12ecc91"
+    "sourceHash": "8a42808"
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Nur meine meistgenutzten Ordner",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -2167,13 +2167,13 @@
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
-  "settings.ai.tooltipLocal": "Führt ein kleines Sprachmodell vollständig auf deinem Gerät aus. Maximaler Datenschutz: nichts verlässt deinen Computer. Funktioniert offline. Nutzt ~2 GB Speicherplatz und ~400 MB Arbeitsspeicher (variiert mit der Kontextgröße). Erfordert Apple Silicon (M1+).",
+  "settings.ai.tooltipLocal": "Führt ein kleines Sprachmodell vollständig auf deinem Gerät aus. Maximaler Datenschutz: nichts verlässt deinen Computer. Funktioniert offline. Nutzt ~2 GB Speicherplatz und ~400 MB Arbeitsspeicher (variiert mit der Kontextgröße). Erfordert Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
-    "sourceHash": "bf83043"
+    "sourceHash": "f7acdc8"
   },
-  "settings.ai.tooltipLocalDisabled": "Lokale KI erfordert Apple Silicon (M1 oder neuer). Nutze stattdessen Cloud-KI.",
+  "settings.ai.tooltipLocalDisabled": "Lokale KI erfordert Apple silicon (M1 oder neuer). Nutze stattdessen Cloud-KI.",
   "@settings.ai.tooltipLocalDisabled": {
-    "sourceHash": "147cb2e"
+    "sourceHash": "8119608"
   },
   "settings.fileSystemWatching.indexSize": "Indexgröße",
   "@settings.fileSystemWatching.indexSize": {

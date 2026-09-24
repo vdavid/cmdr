@@ -355,7 +355,7 @@
   },
   "ai.local.notInstalled": "Inte installerad. Den lokala modellen ({modelName}, {modelSize}) körs helt på din enhet för maximal integritet. Kräver Apple silicon.",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "Tillämpa",
   "@ai.local.applyContextSize": {

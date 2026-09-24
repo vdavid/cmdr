@@ -354,7 +354,7 @@
   },
   "ai.local.notInstalled": "未安装。本地模型（{modelName}，{modelSize}）完全在你的设备上运行，最大限度保护隐私。需要 Apple 芯片。",
   "@ai.local.notInstalled": {
-    "sourceHash": "163bf42"
+    "sourceHash": "c865b94"
   },
   "ai.local.applyContextSize": "应用",
   "@ai.local.applyContextSize": {

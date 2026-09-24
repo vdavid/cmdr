@@ -299,9 +299,9 @@
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
-  "onboarding.stepAi.localTooltip": "A helyi LLM-hez Apple Silicon szükséges. A felhő Intelen is működik.",
+  "onboarding.stepAi.localTooltip": "A helyi LLM-hez Apple silicon szükséges. A felhő Intelen is működik.",
   "@onboarding.stepAi.localTooltip": {
-    "sourceHash": "dc194e8"
+    "sourceHash": "75c6d48"
   },
   "onboarding.stepAi.missingKeyWarning": "Bekapcsoltad az AI-t, de nem adtál meg API-kulcsot. Az AI így nem fog működni, és figyelmeztetést fogsz látni. Kérlek, javítsd ezt fent.\n\n<strong>Kattints újra a „{nextLabel}” gombra, ha ezt figyelmen kívül hagyva továbbmennél.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {

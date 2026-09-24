@@ -213,6 +213,22 @@
     "forms": "spaced against Apple's tight Apple帳號, per style.md § Spacing",
     "sources": "AP ClassKitSettings.loctable APPLE_ID = Apple帳號 (macOS 26.6.2, 2026-08-30)"
   },
+  "apple-silicon": {
+    "avoid": [
+      {
+        "form": "Apple Silicon",
+        "why": "Apple localizes it in Traditional Chinese; the catalog had two English leftovers"
+      },
+      {
+        "form": "Apple 芯片",
+        "why": "the zh-CN form; Taiwan's word for chip is 晶片"
+      }
+    ],
+    "chosen": "Apple 晶片",
+    "confidence": "high",
+    "forms": "\"a Mac with Apple silicon\" → 搭載 Apple 晶片的 Mac",
+    "sources": "support.apple.com/zh-tw (搭載 Apple 晶片的 Mac, Mac mini and Mac Pro security guides, 2026-09-24); no hit in the macOS pile"
+  },
   "applications-folder": {
     "chosen": "應用程式",
     "confidence": "high",
