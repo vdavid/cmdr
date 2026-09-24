@@ -14,8 +14,11 @@ shipped translations, and the past decisions about these keys. Also read the ful
 new evidence, and then edit it in place (the old form moves to "avoid" with its reason). Where a ruling's form and the
 style guide disagree, the style guide's general rule wins unless the ruling says why it's an exception; flag it.
 
-- **Where to write**: edit each value in place in apps/desktop/src/lib/intl/messages/{{TAG}}/<area>.json. When you
-  translate or re-translate a key, set its `@key.sourceHash` to the hash of the current English value in the same edit.
+- **Where to write**: edit each value in place in apps/desktop/src/lib/intl/messages/{{TAG}}/<area>.json. Then stamp
+  what you translated as current: in apps/desktop, run
+  `node scripts/sync-locale-keys.ts {{TAG}} --restamp <key> --restamp <key> …` (one `--restamp` per key; it only moves
+  a hash that's out of date). It clears `reviewed` and `sameAsSourceJustification` on those keys, so add a
+  justification after restamping, never before.
 - **ICU**: keep every {placeholder}, <tag>…</tag>, and plural/select structure exactly; translate only the text between
   them. Reorder placeholders only as grammar needs; the set stays identical. Write plural branches for YOUR language's
   CLDR categories, not English's. Double every apostrophe (' becomes '').
