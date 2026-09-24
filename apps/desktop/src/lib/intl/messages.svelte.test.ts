@@ -187,6 +187,32 @@ describe('the script boundary in the fallback chain', () => {
   })
 })
 
+describe('an overlay whose base is not English', () => {
+  // `es-419` is the shape a Latin American overlay takes over `es`, the way
+  // `en-GB` overlays `en`: it forks a handful of keys and inherits the rest.
+  // With `en` as the base the inherited text is English anyway, so only a
+  // non-English base shows whether the chain really walks through it.
+  afterEach(() => {
+    for (const tag of ['es', 'es-419']) _setCatalogForTests(tag, null)
+  })
+
+  it('reads an unforked key from its base language, not English', () => {
+    _setCatalogForTests('es', { 'transfer.trash': 'SPAIN', 'common.attachEmail': 'INHERITED' })
+    _setCatalogForTests('es-419', { 'transfer.trash': 'LATAM' })
+    _setLocaleForTests('es-419')
+    expect(tString('transfer.trash', { countText: '1', count: 1 })).toBe('LATAM')
+    expect(getMessage('common.attachEmail')).toBe('INHERITED')
+    expect(resolvedCatalogLocale('es-419')).toBe('es-419')
+  })
+
+  it('leaves Spain on its own catalog', () => {
+    _setCatalogForTests('es', { 'transfer.trash': 'SPAIN' })
+    _setCatalogForTests('es-419', { 'transfer.trash': 'LATAM' })
+    _setLocaleForTests('es')
+    expect(tString('transfer.trash', { countText: '1', count: 1 })).toBe('SPAIN')
+  })
+})
+
 describe('fallback chain (locale → base language → en → key)', () => {
   it('prefers an exact-locale catalog entry when present', () => {
     _setCatalogForTests(TEST_LOCALE, { 'transfer.trash': 'EXACT' })

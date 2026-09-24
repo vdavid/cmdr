@@ -25,6 +25,10 @@ describe('localeDisplayName', () => {
     expect(localeDisplayName('en', SHIPPED)).toBe('English')
     expect(localeDisplayName('en-GB', SHIPPED)).toBe('British English')
     expect(localeDisplayName('en-AU', SHIPPED)).toBe('Australian English')
+    // The Spanish split lands the same way, with no edit to the labeller.
+    const withLatinAmerica = [...SHIPPED, 'es-419']
+    expect(localeDisplayName('es', withLatinAmerica)).toBe('Español')
+    expect(localeDisplayName('es-419', withLatinAmerica)).toBe('Español latinoamericano')
   })
 
   it('names the script when a sibling is written in a different one', () => {

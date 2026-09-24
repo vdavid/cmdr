@@ -74,6 +74,30 @@ synthetic test-only locale).
 Language picker, so a newly-added locale dir auto-appears with no code edit. The non-locale `screenshots/` dir never
 shows up there (the same `BCP47_DIR` gate).
 
+### Adding a regional overlay: the plumbing checklist
+
+There's no locale registry: the catalog DIR is the registration, and every layer derives from it. For an overlay like
+`es-419` over `es` (or `pt-PT` over `pt`), the translation process is `docs/guides/i18n.md` § Adding an overlay; the
+code side is:
+
+1. Create `messages/es-419/` holding only the forked keys. The runtime picks it up with no edit: `availableLocales()`
+   lists it, `fallbackChain('es-419')` is `['es-419', 'es', 'en']`, and the picker labels it "Español latinoamericano"
+   beside "Español" (both pinned in `messages.svelte.test.ts` and `locale-display-names.test.ts`).
+2. Regenerate the two Rust tables from `apps/desktop/`: `pnpm intl:shipped-locales` and `pnpm intl:native-strings` (or
+   let `shipped-locales-fresh` / `native-strings-fresh` rewrite them on a local `pnpm check`). CLDR's `es-MX` → `es-419`
+   parents are already in `shipped_locales.gen.rs`, so every Latin American and US Spanish Mac starts opening the
+   overlay. Don't add a `CATALOG_COVERS` entry: that's only for a catalog standing in for a CLDR node it isn't named
+   after (`en-GB` for `en-001`).
+3. Update the one hardcoded expectation: `the_overlays_are_the_only_locales_held_to_the_overlay_contract` in
+   `src-tauri/src/intl/native_strings.rs` lists the overlays by name. `every_shipped_locale_speaks_its_own_menu_bar`
+   then holds the overlay's `menu.*` forks against `es`, and `menu_t` inherits the rest from `es`.
+4. Refresh the docs that count catalogs (`apps/desktop/CLAUDE.md`'s "13 catalogs ship", `docs/guides/i18n.md`
+   § Overlay catalogs) and the `SHIPPED` list in `locale-display-names.test.ts`.
+
+Nothing outside the desktop app changes: the analytics language events carry `availableLocales()` tags, so the new tag
+reaches the api-server and dashboard as data. The one path that still truncates is the Linux webview
+(`src-tauri/src/intl/DETAILS.md` § Known gap), where `es-MX` reads `es`.
+
 **The glob is wholesale, and the native strings ride along.** `menu.json` holds the labels only Rust ever draws (the
 menu bar, the window title, the already-running alert), so the frontend loads roughly 55 KB of message values across the
 ten catalogs it will never render (measured over `messages/*/menu.json`, metadata excluded, 2026-08-20). That's an
