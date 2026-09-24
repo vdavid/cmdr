@@ -11,9 +11,9 @@
   "@viewer.srHeading": {
     "sourceHash": "b32f632"
   },
-  "viewer.loading": "Đang tải...",
+  "viewer.loading": "Đang tải…",
   "@viewer.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "viewer.error.noPath": "Chưa chỉ định đường dẫn tệp",
   "@viewer.error.noPath": {
@@ -91,9 +91,9 @@
   "@viewer.binaryWarning.suppressForever": {
     "sourceHash": "b85b92b"
   },
-  "viewer.search.placeholder": "Tìm trong tệp...",
+  "viewer.search.placeholder": "Tìm trong tệp…",
   "@viewer.search.placeholder": {
-    "sourceHash": "c1dc89b"
+    "sourceHash": "a3268b3"
   },
   "viewer.search.ariaLabel": "Tìm kiếm văn bản",
   "@viewer.search.ariaLabel": {
@@ -112,9 +112,9 @@
   "@viewer.search.matchPosition": {
     "sourceHash": "ec24db4"
   },
-  "viewer.search.searching": "Đang tìm kiếm...",
+  "viewer.search.searching": "Đang tìm kiếm…",
   "@viewer.search.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "viewer.search.partial": "(một phần)",
   "@viewer.search.partial": {
@@ -238,13 +238,13 @@
   "@viewer.statusBar.badge.indexedTooltip": {
     "sourceHash": "2604f1a"
   },
-  "viewer.statusBar.badge.streamingIndexing": "phát trực tiếp, đang lập chỉ mục...",
+  "viewer.statusBar.badge.streamingIndexing": "phát trực tiếp, đang lập chỉ mục…",
   "@viewer.statusBar.badge.streamingIndexing": {
-    "sourceHash": "506ef27"
+    "sourceHash": "db1718e"
   },
-  "viewer.statusBar.badge.streamingIndexingTooltip": "Đây là tệp lớn ở chế độ phát trực tiếp. Cmdr đang lập chỉ mục ở chế độ nền (tối đa {seconds} giây)... Số dòng hiện tại là gần đúng.",
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Đây là tệp lớn ở chế độ phát trực tiếp. Cmdr đang lập chỉ mục ở chế độ nền (tối đa {seconds} giây)… Số dòng hiện tại là gần đúng.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "6407733"
+    "sourceHash": "033d82d"
   },
   "viewer.statusBar.badge.streaming": "phát trực tiếp",
   "@viewer.statusBar.badge.streaming": {

@@ -48,9 +48,9 @@
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
-  "fileOperations.trash.undoing": "Colocando de volta...",
+  "fileOperations.trash.undoing": "Colocando de volta…",
   "@fileOperations.trash.undoing": {
-    "sourceHash": "1be7766"
+    "sourceHash": "3272a7a"
   },
   "fileOperations.trash.undone": "{count, plural, one {{countText} arquivo colocado de volta} many {{countText} arquivos colocados de volta} other {{countText} arquivos colocados de volta}}.",
   "@fileOperations.trash.undone": {
@@ -72,9 +72,9 @@
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
-  "fileOperations.delete.overflowMore": "... e mais {countText} {count, plural, one {item} many {itens} other {itens}}",
+  "fileOperations.delete.overflowMore": "… e mais {countText} {count, plural, one {item} many {itens} other {itens}}",
   "@fileOperations.delete.overflowMore": {
-    "sourceHash": "2fb7f0e"
+    "sourceHash": "3b9968a"
   },
   "fileOperations.delete.scanFile": "{count, plural, one {arquivo} many {arquivos} other {arquivos}}",
   "@fileOperations.delete.scanFile": {
@@ -309,9 +309,9 @@
   "@fileOperations.transferDialog.conflictsUnknown": {
     "sourceHash": "1bc997a"
   },
-  "fileOperations.transferDialog.checkingConflicts": "Verificando conflitos...",
+  "fileOperations.transferDialog.checkingConflicts": "Verificando conflitos…",
   "@fileOperations.transferDialog.checkingConflicts": {
-    "sourceHash": "bc10126"
+    "sourceHash": "11be123"
   },
   "fileOperations.transferDialog.mergeInfoSingle": "1 pasta será mesclada com uma pasta existente",
   "@fileOperations.transferDialog.mergeInfoSingle": {
@@ -401,53 +401,53 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.transferProgress.scanTitleCopy": "Verificando antes de copiar...",
+  "fileOperations.transferProgress.scanTitleCopy": "Verificando antes de copiar…",
   "@fileOperations.transferProgress.scanTitleCopy": {
-    "sourceHash": "fd21ea9"
+    "sourceHash": "f641ae3"
   },
-  "fileOperations.transferProgress.scanTitleMove": "Verificando antes de mover...",
+  "fileOperations.transferProgress.scanTitleMove": "Verificando antes de mover…",
   "@fileOperations.transferProgress.scanTitleMove": {
-    "sourceHash": "5e79da2"
+    "sourceHash": "2d904be"
   },
-  "fileOperations.transferProgress.scanTitleCompress": "Verificando antes de comprimir...",
+  "fileOperations.transferProgress.scanTitleCompress": "Verificando antes de comprimir…",
   "@fileOperations.transferProgress.scanTitleCompress": {
-    "sourceHash": "f01b959"
+    "sourceHash": "c610c90"
   },
-  "fileOperations.transferProgress.scanTitleDelete": "Contando itens a apagar...",
+  "fileOperations.transferProgress.scanTitleDelete": "Contando itens a apagar…",
   "@fileOperations.transferProgress.scanTitleDelete": {
-    "sourceHash": "1bb559a"
+    "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Contando itens para o Lixo...",
+  "fileOperations.transferProgress.scanTitleTrash": "Contando itens para o Lixo…",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "d11467e"
+    "sourceHash": "6df6c7f"
   },
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "A reversão não está disponível para movimentações no mesmo volume",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "sourceHash": "da6af1f"
   },
-  "fileOperations.transferProgress.titleRollingBack": "Revertendo...",
+  "fileOperations.transferProgress.titleRollingBack": "Revertendo…",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "sourceHash": "c3fed24"
+    "sourceHash": "f89ef2e"
   },
-  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Levando os arquivos de volta} one {Levando o arquivo de volta} many {Levando {countText} arquivos de volta} other {Levando {countText} arquivos de volta}}...",
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Levando os arquivos de volta} one {Levando o arquivo de volta} many {Levando {countText} arquivos de volta} other {Levando {countText} arquivos de volta}}…",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
-    "sourceHash": "38c2022"
+    "sourceHash": "4de9c69"
   },
-  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Apagando o que foi criado} one {Apagando o arquivo criado} many {Apagando os {countText} arquivos criados} other {Apagando os {countText} arquivos criados}}...",
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Apagando o que foi criado} one {Apagando o arquivo criado} many {Apagando os {countText} arquivos criados} other {Apagando os {countText} arquivos criados}}…",
   "@fileOperations.transferProgress.titleReversalDeleting": {
-    "sourceHash": "bce7510"
+    "sourceHash": "587f4a3"
   },
-  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Devolvendo os nomes antigos} one {Devolvendo o nome antigo} many {Devolvendo {countText} nomes antigos} other {Devolvendo {countText} nomes antigos}}...",
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Devolvendo os nomes antigos} one {Devolvendo o nome antigo} many {Devolvendo {countText} nomes antigos} other {Devolvendo {countText} nomes antigos}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
-    "sourceHash": "e3f6bc3"
+    "sourceHash": "2ad8510"
   },
-  "fileOperations.transferProgress.titleCancelling": "Cancelando...",
+  "fileOperations.transferProgress.titleCancelling": "Cancelando…",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "37b4fbc"
+    "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.titleCancellingSlow": "Cancelando... (concluindo transferências USB)",
+  "fileOperations.transferProgress.titleCancellingSlow": "Cancelando… (concluindo transferências USB)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "ac2ee1a"
+    "sourceHash": "80d6761"
   },
   "fileOperations.transferProgress.close": "Fechar",
   "@fileOperations.transferProgress.close": {
@@ -489,17 +489,17 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
-  "fileOperations.transferProgress.titleFlushing": "Gravando a última parte...",
+  "fileOperations.transferProgress.titleFlushing": "Gravando a última parte…",
   "@fileOperations.transferProgress.titleFlushing": {
-    "sourceHash": "e0ba096"
+    "sourceHash": "3aa5686"
   },
-  "fileOperations.transferProgress.titleRemovingOriginals": "Apagando os originais...",
+  "fileOperations.transferProgress.titleRemovingOriginals": "Apagando os originais…",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
-    "sourceHash": "71465d5"
+    "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copiando} move {Movendo} compress {Comprimindo} delete {Apagando} other {Movendo para o Lixo}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copiando} move {Movendo} compress {Comprimindo} delete {Apagando} other {Movendo para o Lixo}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "fe64f70"
+    "sourceHash": "0c636e5"
   },
   "fileOperations.transferProgress.stageScanning": "Analisando",
   "@fileOperations.transferProgress.stageScanning": {

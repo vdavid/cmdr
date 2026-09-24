@@ -120,9 +120,9 @@
   "@settings.appearance.dateTimeFormat.optDesc.short": {
     "sourceHash": "4475197"
   },
-  "settings.appearance.dateTimeFormat.opt.custom": "Tùy chỉnh...",
+  "settings.appearance.dateTimeFormat.opt.custom": "Tùy chỉnh…",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.appearance.customDateTimeFormat.label": "Định dạng ngày/giờ tùy chỉnh",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -2041,9 +2041,9 @@
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"
   },
-  "settings.control.customOption": "Tùy chỉnh...",
+  "settings.control.customOption": "Tùy chỉnh…",
   "@settings.control.customOption": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.control.customPrefix": "Tùy chỉnh: {value}",
   "@settings.control.customPrefix": {
@@ -2053,9 +2053,9 @@
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
   },
-  "settings.sidebar.searchPlaceholder": "Tìm kiếm trong cài đặt...",
+  "settings.sidebar.searchPlaceholder": "Tìm kiếm trong cài đặt…",
   "@settings.sidebar.searchPlaceholder": {
-    "sourceHash": "6801207"
+    "sourceHash": "57054c5"
   },
   "settings.sidebar.clearSearch": "Xóa tìm kiếm",
   "@settings.sidebar.clearSearch": {
@@ -2146,9 +2146,9 @@
   "@settings.ai.providerAria": {
     "sourceHash": "8791254"
   },
-  "settings.ai.loading": "Đang tải...",
+  "settings.ai.loading": "Đang tải…",
   "@settings.ai.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "settings.ai.tooltipOff": "Các tính năng AI đang tắt. Cmdr hoạt động đầy đủ mà không cần AI: gợi ý và tính năng thông minh chỉ đơn giản là được ẩn đi.",
   "@settings.ai.tooltipOff": {
@@ -2170,9 +2170,9 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.fileSystemWatching.clearing": "Đang xóa...",
+  "settings.fileSystemWatching.clearing": "Đang xóa…",
   "@settings.fileSystemWatching.clearing": {
-    "sourceHash": "07a8243"
+    "sourceHash": "9a81378"
   },
   "settings.fileSystemWatching.clearIndex": "Xóa chỉ mục",
   "@settings.fileSystemWatching.clearIndex": {
@@ -2363,9 +2363,9 @@
   "@settings.mcp.portInUseFallback": {
     "sourceHash": "bf23daa"
   },
-  "settings.mcp.checkingPort": "Đang kiểm tra cổng có sẵn không...",
+  "settings.mcp.checkingPort": "Đang kiểm tra cổng có sẵn không…",
   "@settings.mcp.checkingPort": {
-    "sourceHash": "c5432bf"
+    "sourceHash": "6069f12"
   },
   "settings.mcp.portAvailable": "Cổng {port} có sẵn",
   "@settings.mcp.portAvailable": {

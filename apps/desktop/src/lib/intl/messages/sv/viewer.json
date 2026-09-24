@@ -11,9 +11,9 @@
   "@viewer.srHeading": {
     "sourceHash": "b32f632"
   },
-  "viewer.loading": "Läser in...",
+  "viewer.loading": "Läser in…",
   "@viewer.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "viewer.error.noPath": "Ingen sökväg angiven",
   "@viewer.error.noPath": {
@@ -91,9 +91,9 @@
   "@viewer.binaryWarning.suppressForever": {
     "sourceHash": "b85b92b"
   },
-  "viewer.search.placeholder": "Sök i filen...",
+  "viewer.search.placeholder": "Sök i filen…",
   "@viewer.search.placeholder": {
-    "sourceHash": "c1dc89b"
+    "sourceHash": "a3268b3"
   },
   "viewer.search.ariaLabel": "Sök text",
   "@viewer.search.ariaLabel": {
@@ -112,9 +112,9 @@
   "@viewer.search.matchPosition": {
     "sourceHash": "ec24db4"
   },
-  "viewer.search.searching": "Söker...",
+  "viewer.search.searching": "Söker…",
   "@viewer.search.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "viewer.search.partial": "(ofullständig)",
   "@viewer.search.partial": {
@@ -241,13 +241,13 @@
   "@viewer.statusBar.badge.indexedTooltip": {
     "sourceHash": "2604f1a"
   },
-  "viewer.statusBar.badge.streamingIndexing": "strömmar, indexerar...",
+  "viewer.statusBar.badge.streamingIndexing": "strömmar, indexerar…",
   "@viewer.statusBar.badge.streamingIndexing": {
-    "sourceHash": "506ef27"
+    "sourceHash": "db1718e"
   },
-  "viewer.statusBar.badge.streamingIndexingTooltip": "Det här är en stor fil i strömningsläge. Vi bygger ett index i bakgrunden (max {seconds} sek)... Radnumren är än så länge ungefärliga.",
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Det här är en stor fil i strömningsläge. Vi bygger ett index i bakgrunden (max {seconds} sek)… Radnumren är än så länge ungefärliga.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "6407733"
+    "sourceHash": "033d82d"
   },
   "viewer.statusBar.badge.streaming": "strömmar",
   "@viewer.statusBar.badge.streaming": {

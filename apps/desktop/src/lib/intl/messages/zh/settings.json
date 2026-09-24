@@ -124,7 +124,7 @@
   },
   "settings.appearance.dateTimeFormat.opt.custom": "自定义…",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.appearance.customDateTimeFormat.label": "自定义日期/时间格式",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -2043,7 +2043,7 @@
   },
   "settings.control.customOption": "自定义…",
   "@settings.control.customOption": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.control.customPrefix": "自定义：{value}",
   "@settings.control.customPrefix": {
@@ -2055,7 +2055,7 @@
   },
   "settings.sidebar.searchPlaceholder": "搜索设置…",
   "@settings.sidebar.searchPlaceholder": {
-    "sourceHash": "6801207"
+    "sourceHash": "57054c5"
   },
   "settings.sidebar.clearSearch": "清除搜索",
   "@settings.sidebar.clearSearch": {
@@ -2148,7 +2148,7 @@
   },
   "settings.ai.loading": "正在加载…",
   "@settings.ai.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "settings.ai.tooltipOff": "AI 功能已关闭。没有 AI，Cmdr 也能完整工作：只是隐藏了建议和智能功能。",
   "@settings.ai.tooltipOff": {
@@ -2172,7 +2172,7 @@
   },
   "settings.fileSystemWatching.clearing": "正在清除…",
   "@settings.fileSystemWatching.clearing": {
-    "sourceHash": "07a8243"
+    "sourceHash": "9a81378"
   },
   "settings.fileSystemWatching.clearIndex": "清除索引",
   "@settings.fileSystemWatching.clearIndex": {
@@ -2366,7 +2366,7 @@
   },
   "settings.mcp.checkingPort": "正在检查端口可用性…",
   "@settings.mcp.checkingPort": {
-    "sourceHash": "c5432bf"
+    "sourceHash": "6069f12"
   },
   "settings.mcp.portAvailable": "端口 {port} 可用",
   "@settings.mcp.portAvailable": {

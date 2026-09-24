@@ -49,7 +49,7 @@
   },
   "fileOperations.trash.undoing": "正在放回原處…",
   "@fileOperations.trash.undoing": {
-    "sourceHash": "1be7766"
+    "sourceHash": "3272a7a"
   },
   "fileOperations.trash.undone": "已把 {countText} 個{count, plural, other {檔案}}放回原處。",
   "@fileOperations.trash.undone": {
@@ -73,7 +73,7 @@
   },
   "fileOperations.delete.overflowMore": "…還有 {countText} 個{count, plural, other {項目}}",
   "@fileOperations.delete.overflowMore": {
-    "sourceHash": "2fb7f0e"
+    "sourceHash": "3b9968a"
   },
   "fileOperations.delete.scanFile": "{count, plural, other {個檔案}}",
   "@fileOperations.delete.scanFile": {
@@ -309,7 +309,7 @@
   },
   "fileOperations.transferDialog.checkingConflicts": "正在檢查衝突…",
   "@fileOperations.transferDialog.checkingConflicts": {
-    "sourceHash": "bc10126"
+    "sourceHash": "11be123"
   },
   "fileOperations.transferDialog.mergeInfoSingle": "有 1 個資料夾會和現有的資料夾合併",
   "@fileOperations.transferDialog.mergeInfoSingle": {
@@ -401,23 +401,23 @@
   },
   "fileOperations.transferProgress.scanTitleCopy": "複製前正在核對…",
   "@fileOperations.transferProgress.scanTitleCopy": {
-    "sourceHash": "fd21ea9"
+    "sourceHash": "f641ae3"
   },
   "fileOperations.transferProgress.scanTitleMove": "移動前正在核對…",
   "@fileOperations.transferProgress.scanTitleMove": {
-    "sourceHash": "5e79da2"
+    "sourceHash": "2d904be"
   },
   "fileOperations.transferProgress.scanTitleCompress": "壓縮前正在核對…",
   "@fileOperations.transferProgress.scanTitleCompress": {
-    "sourceHash": "f01b959"
+    "sourceHash": "c610c90"
   },
   "fileOperations.transferProgress.scanTitleDelete": "正在統計要刪除的項目…",
   "@fileOperations.transferProgress.scanTitleDelete": {
-    "sourceHash": "1bb559a"
+    "sourceHash": "d64adf2"
   },
   "fileOperations.transferProgress.scanTitleTrash": "正在統計要移至垃圾桶的項目…",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "d11467e"
+    "sourceHash": "6df6c7f"
   },
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "同一個卷宗內的移動無法復原",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
@@ -425,27 +425,27 @@
   },
   "fileOperations.transferProgress.titleRollingBack": "正在復原…",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "sourceHash": "c3fed24"
+    "sourceHash": "f89ef2e"
   },
   "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {正在把檔案放回原處} other {正在把 {countText} 個檔案放回原處}}…",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
-    "sourceHash": "38c2022"
+    "sourceHash": "4de9c69"
   },
   "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {正在刪除這項操作建立的東西} other {正在刪除這項操作建立的 {countText} 個檔案}}…",
   "@fileOperations.transferProgress.titleReversalDeleting": {
-    "sourceHash": "bce7510"
+    "sourceHash": "587f4a3"
   },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {正在把原本的名稱改回去} other {正在把 {countText} 個原本的名稱改回去}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
-    "sourceHash": "e3f6bc3"
+    "sourceHash": "2ad8510"
   },
   "fileOperations.transferProgress.titleCancelling": "正在取消…",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "37b4fbc"
+    "sourceHash": "7d0901a"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "正在取消…（正在完成 USB 傳輸）",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "ac2ee1a"
+    "sourceHash": "80d6761"
   },
   "fileOperations.transferProgress.close": "關閉",
   "@fileOperations.transferProgress.close": {
@@ -489,15 +489,15 @@
   },
   "fileOperations.transferProgress.titleFlushing": "正在寫入最後一部分…",
   "@fileOperations.transferProgress.titleFlushing": {
-    "sourceHash": "e0ba096"
+    "sourceHash": "3aa5686"
   },
   "fileOperations.transferProgress.titleRemovingOriginals": "正在移除原檔案…",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
-    "sourceHash": "71465d5"
+    "sourceHash": "15a457d"
   },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {正在複製} move {正在移動} compress {正在壓縮} delete {正在刪除} other {正在移至垃圾桶}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "fe64f70"
+    "sourceHash": "0c636e5"
   },
   "fileOperations.transferProgress.stageScanning": "掃描",
   "@fileOperations.transferProgress.stageScanning": {

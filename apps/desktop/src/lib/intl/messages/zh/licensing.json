@@ -166,7 +166,7 @@
   },
   "licensing.dialog.loading": "正在加载…",
   "@licensing.dialog.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.dialog.detailsTitle": "许可证详情",
   "@licensing.dialog.detailsTitle": {
@@ -278,7 +278,7 @@
   },
   "licensing.dialog.checking": "正在检查…",
   "@licensing.dialog.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "licensing.dialog.tryAgain": "重试",
   "@licensing.dialog.tryAgain": {
@@ -286,7 +286,7 @@
   },
   "licensing.dialog.activating": "正在激活…",
   "@licensing.dialog.activating": {
-    "sourceHash": "fd2db6a"
+    "sourceHash": "230f6d1"
   },
   "licensing.dialog.activate": "激活",
   "@licensing.dialog.activate": {
@@ -382,7 +382,7 @@
   },
   "licensing.section.loading": "正在加载…",
   "@licensing.section.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.section.labelType": "许可证类型",
   "@licensing.section.labelType": {

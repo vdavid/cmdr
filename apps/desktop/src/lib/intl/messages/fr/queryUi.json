@@ -183,13 +183,13 @@
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
   },
-  "queryUi.results.scanningWithCount": "Analyse en cours ({countText} entrées)...",
+  "queryUi.results.scanningWithCount": "Analyse en cours ({countText} entrées)…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "0c05667"
+    "sourceHash": "67fb5ac"
   },
-  "queryUi.results.scanning": "Analyse en cours...",
+  "queryUi.results.scanning": "Analyse en cours…",
   "@queryUi.results.scanning": {
-    "sourceHash": "091ba9a"
+    "sourceHash": "c19b8ea"
   },
   "queryUi.results.indexUnavailable": "Index du disque indisponible",
   "@queryUi.results.indexUnavailable": {
@@ -235,45 +235,45 @@
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
-  "queryUi.results.scanProgressWithCount": "Analyse en cours ({countText} entrées)...",
+  "queryUi.results.scanProgressWithCount": "Analyse en cours ({countText} entrées)…",
   "@queryUi.results.scanProgressWithCount": {
-    "sourceHash": "3c5b987"
+    "sourceHash": "563387d"
   },
-  "queryUi.results.scanProgress": "Analyse en cours...",
+  "queryUi.results.scanProgress": "Analyse en cours…",
   "@queryUi.results.scanProgress": {
-    "sourceHash": "091ba9a"
+    "sourceHash": "c19b8ea"
   },
-  "queryUi.results.loadingIndex": "Chargement de l''index du disque...",
+  "queryUi.results.loadingIndex": "Chargement de l''index du disque…",
   "@queryUi.results.loadingIndex": {
-    "sourceHash": "ab62214"
+    "sourceHash": "e9a7368"
   },
-  "queryUi.results.searching": "Recherche...",
+  "queryUi.results.searching": "Recherche…",
   "@queryUi.results.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "queryUi.results.noMatchHeading": "Aucun fichier ne correspond à ces critères :",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
-  "queryUi.results.live.resolvingCoverage": "Vérification de ce qui est déjà indexé...",
+  "queryUi.results.live.resolvingCoverage": "Vérification de ce qui est déjà indexé…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "07b501d"
+    "sourceHash": "524487d"
   },
-  "queryUi.results.live.waitingForAnotherWalk": "En attente d'un autre parcours de ces dossiers...",
+  "queryUi.results.live.waitingForAnotherWalk": "En attente d'un autre parcours de ces dossiers…",
   "@queryUi.results.live.waitingForAnotherWalk": {
-    "sourceHash": "21163fe"
+    "sourceHash": "4a3b061"
   },
   "queryUi.results.live.waitingOnPathAria": "Un autre parcours lit actuellement {path}",
   "@queryUi.results.live.waitingOnPathAria": {
     "sourceHash": "a54a689"
   },
-  "queryUi.results.live.readingIndex": "Lecture de ce qui est déjà indexé...",
+  "queryUi.results.live.readingIndex": "Lecture de ce qui est déjà indexé…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "5a048c9"
+    "sourceHash": "ed4159a"
   },
-  "queryUi.results.live.walking": "Parcours des dossiers pas encore indexés...",
+  "queryUi.results.live.walking": "Parcours des dossiers pas encore indexés…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "b2dbe67"
+    "sourceHash": "3829650"
   },
   "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {résultat} many {résultats} other {résultats}} pour l''instant",
   "@queryUi.results.live.matchesSoFar": {

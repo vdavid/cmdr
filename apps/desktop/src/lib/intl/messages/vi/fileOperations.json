@@ -48,9 +48,9 @@
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
-  "fileOperations.trash.undoing": "Đang đưa chúng trở lại...",
+  "fileOperations.trash.undoing": "Đang đưa chúng trở lại…",
   "@fileOperations.trash.undoing": {
-    "sourceHash": "1be7766"
+    "sourceHash": "3272a7a"
   },
   "fileOperations.trash.undone": "Đã đưa trở lại {countText} {count, plural, other {tệp}}.",
   "@fileOperations.trash.undone": {
@@ -72,9 +72,9 @@
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
-  "fileOperations.delete.overflowMore": "... và thêm {countText} {count, plural, other {mục}}",
+  "fileOperations.delete.overflowMore": "… và thêm {countText} {count, plural, other {mục}}",
   "@fileOperations.delete.overflowMore": {
-    "sourceHash": "2fb7f0e"
+    "sourceHash": "3b9968a"
   },
   "fileOperations.delete.scanFile": "{count, plural, other {tệp}}",
   "@fileOperations.delete.scanFile": {
@@ -308,9 +308,9 @@
   "@fileOperations.transferDialog.conflictsUnknown": {
     "sourceHash": "1bc997a"
   },
-  "fileOperations.transferDialog.checkingConflicts": "Đang kiểm tra xung đột...",
+  "fileOperations.transferDialog.checkingConflicts": "Đang kiểm tra xung đột…",
   "@fileOperations.transferDialog.checkingConflicts": {
-    "sourceHash": "bc10126"
+    "sourceHash": "11be123"
   },
   "fileOperations.transferDialog.mergeInfoSingle": "1 thư mục sẽ hòa trộn với một thư mục hiện có",
   "@fileOperations.transferDialog.mergeInfoSingle": {
@@ -400,53 +400,53 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.transferProgress.scanTitleCopy": "Đang xác minh trước khi sao chép...",
+  "fileOperations.transferProgress.scanTitleCopy": "Đang xác minh trước khi sao chép…",
   "@fileOperations.transferProgress.scanTitleCopy": {
-    "sourceHash": "fd21ea9"
+    "sourceHash": "f641ae3"
   },
-  "fileOperations.transferProgress.scanTitleMove": "Đang xác minh trước khi di chuyển...",
+  "fileOperations.transferProgress.scanTitleMove": "Đang xác minh trước khi di chuyển…",
   "@fileOperations.transferProgress.scanTitleMove": {
-    "sourceHash": "5e79da2"
+    "sourceHash": "2d904be"
   },
-  "fileOperations.transferProgress.scanTitleCompress": "Đang xác minh trước khi nén...",
+  "fileOperations.transferProgress.scanTitleCompress": "Đang xác minh trước khi nén…",
   "@fileOperations.transferProgress.scanTitleCompress": {
-    "sourceHash": "f01b959"
+    "sourceHash": "c610c90"
   },
-  "fileOperations.transferProgress.scanTitleDelete": "Đang đếm các mục cần xóa...",
+  "fileOperations.transferProgress.scanTitleDelete": "Đang đếm các mục cần xóa…",
   "@fileOperations.transferProgress.scanTitleDelete": {
-    "sourceHash": "1bb559a"
+    "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Đang đếm các mục cần chuyển vào thùng rác...",
+  "fileOperations.transferProgress.scanTitleTrash": "Đang đếm các mục cần chuyển vào thùng rác…",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "d11467e"
+    "sourceHash": "6df6c7f"
   },
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "Không thể hoàn tác khi di chuyển trong cùng một ổ đĩa",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "sourceHash": "da6af1f"
   },
-  "fileOperations.transferProgress.titleRollingBack": "Đang hoàn tác...",
+  "fileOperations.transferProgress.titleRollingBack": "Đang hoàn tác…",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "sourceHash": "c3fed24"
+    "sourceHash": "f89ef2e"
   },
-  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Đang đưa các tệp về chỗ cũ} other {Đang đưa {countText} tệp về chỗ cũ}}...",
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Đang đưa các tệp về chỗ cũ} other {Đang đưa {countText} tệp về chỗ cũ}}…",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
-    "sourceHash": "38c2022"
+    "sourceHash": "4de9c69"
   },
-  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Đang xóa những gì đã tạo} other {Đang xóa {countText} tệp đã tạo}}...",
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Đang xóa những gì đã tạo} other {Đang xóa {countText} tệp đã tạo}}…",
   "@fileOperations.transferProgress.titleReversalDeleting": {
-    "sourceHash": "bce7510"
+    "sourceHash": "587f4a3"
   },
-  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Đang trả lại tên cũ} other {Đang trả lại {countText} tên cũ}}...",
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Đang trả lại tên cũ} other {Đang trả lại {countText} tên cũ}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
-    "sourceHash": "e3f6bc3"
+    "sourceHash": "2ad8510"
   },
-  "fileOperations.transferProgress.titleCancelling": "Đang hủy...",
+  "fileOperations.transferProgress.titleCancelling": "Đang hủy…",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "37b4fbc"
+    "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.titleCancellingSlow": "Đang hủy... (đang hoàn tất các lần truyền qua USB)",
+  "fileOperations.transferProgress.titleCancellingSlow": "Đang hủy… (đang hoàn tất các lần truyền qua USB)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "ac2ee1a"
+    "sourceHash": "80d6761"
   },
   "fileOperations.transferProgress.close": "Đóng",
   "@fileOperations.transferProgress.close": {
@@ -488,17 +488,17 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
-  "fileOperations.transferProgress.titleFlushing": "Đang ghi phần cuối cùng...",
+  "fileOperations.transferProgress.titleFlushing": "Đang ghi phần cuối cùng…",
   "@fileOperations.transferProgress.titleFlushing": {
-    "sourceHash": "e0ba096"
+    "sourceHash": "3aa5686"
   },
-  "fileOperations.transferProgress.titleRemovingOriginals": "Đang xóa các bản gốc...",
+  "fileOperations.transferProgress.titleRemovingOriginals": "Đang xóa các bản gốc…",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
-    "sourceHash": "71465d5"
+    "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Đang sao chép} move {Đang di chuyển} compress {Đang nén} delete {Đang xóa} other {Đang chuyển vào thùng rác}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "fe64f70"
+    "sourceHash": "0c636e5"
   },
   "fileOperations.transferProgress.stageScanning": "Đang quét",
   "@fileOperations.transferProgress.stageScanning": {

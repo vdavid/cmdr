@@ -1,7 +1,7 @@
 {
-  "commandPalette.searchPlaceholder": "Zoek opdrachten...",
+  "commandPalette.searchPlaceholder": "Zoek opdrachten…",
   "@commandPalette.searchPlaceholder": {
-    "sourceHash": "dd6c6ab"
+    "sourceHash": "baad3d0"
   },
   "commandPalette.searchAriaLabel": "Zoek opdrachten",
   "@commandPalette.searchAriaLabel": {

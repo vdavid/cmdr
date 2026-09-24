@@ -17,7 +17,7 @@
   },
   "ui.select.placeholder": "请选择…",
   "@ui.select.placeholder": {
-    "sourceHash": "1339bdd"
+    "sourceHash": "731fe04"
   },
   "ui.combobox.emptyText": "没有匹配项。继续输入即可使用你自己的值。",
   "@ui.combobox.emptyText": {
@@ -65,19 +65,19 @@
   },
   "ui.loadingIcon.finalizing": "已加载全部 {countText} 个{count, plural, other {文件}}。正在排序你的文件并准备视图…",
   "@ui.loadingIcon.finalizing": {
-    "sourceHash": "2aac2cb"
+    "sourceHash": "0de5a42"
   },
   "ui.loadingIcon.loaded": "已加载 {countText} 个{count, plural, other {文件}}…",
   "@ui.loadingIcon.loaded": {
-    "sourceHash": "93e45fc"
+    "sourceHash": "69d2b22"
   },
   "ui.loadingIcon.openingFolder": "正在打开文件夹…",
   "@ui.loadingIcon.openingFolder": {
-    "sourceHash": "818cbbb"
+    "sourceHash": "c3ab98e"
   },
   "ui.loadingIcon.loading": "正在加载…",
   "@ui.loadingIcon.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "ui.loadingIcon.cancelHint": "按 <key></key> 取消并返回",
   "@ui.loadingIcon.cancelHint": {

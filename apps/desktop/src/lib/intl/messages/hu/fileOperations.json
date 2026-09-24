@@ -50,7 +50,7 @@
   },
   "fileOperations.trash.undoing": "Az elemek visszahelyezése…",
   "@fileOperations.trash.undoing": {
-    "sourceHash": "1be7766"
+    "sourceHash": "3272a7a"
   },
   "fileOperations.trash.undone": "{countText} {count, plural, one {fájl} other {fájl}} visszahelyezve.",
   "@fileOperations.trash.undone": {
@@ -74,7 +74,7 @@
   },
   "fileOperations.delete.overflowMore": "… és még {countText} {count, plural, one {elem} other {elem}}",
   "@fileOperations.delete.overflowMore": {
-    "sourceHash": "2fb7f0e"
+    "sourceHash": "3b9968a"
   },
   "fileOperations.delete.scanFile": "{count, plural, one {fájl} other {fájl}}",
   "@fileOperations.delete.scanFile": {
@@ -311,7 +311,7 @@
   },
   "fileOperations.transferDialog.checkingConflicts": "Ütközések keresése…",
   "@fileOperations.transferDialog.checkingConflicts": {
-    "sourceHash": "bc10126"
+    "sourceHash": "11be123"
   },
   "fileOperations.transferDialog.mergeInfoSingle": "1 mappa egyesül egy meglévő mappával",
   "@fileOperations.transferDialog.mergeInfoSingle": {
@@ -403,23 +403,23 @@
   },
   "fileOperations.transferProgress.scanTitleCopy": "Ellenőrzés a másolás előtt…",
   "@fileOperations.transferProgress.scanTitleCopy": {
-    "sourceHash": "fd21ea9"
+    "sourceHash": "f641ae3"
   },
   "fileOperations.transferProgress.scanTitleMove": "Ellenőrzés az áthelyezés előtt…",
   "@fileOperations.transferProgress.scanTitleMove": {
-    "sourceHash": "5e79da2"
+    "sourceHash": "2d904be"
   },
   "fileOperations.transferProgress.scanTitleCompress": "Ellenőrzés a tömörítés előtt…",
   "@fileOperations.transferProgress.scanTitleCompress": {
-    "sourceHash": "f01b959"
+    "sourceHash": "c610c90"
   },
   "fileOperations.transferProgress.scanTitleDelete": "Törlendő elemek számolása…",
   "@fileOperations.transferProgress.scanTitleDelete": {
-    "sourceHash": "1bb559a"
+    "sourceHash": "d64adf2"
   },
   "fileOperations.transferProgress.scanTitleTrash": "Kukába helyezendő elemek számolása…",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "d11467e"
+    "sourceHash": "6df6c7f"
   },
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "A visszagörgetés nem érhető el az azonos köteten belüli áthelyezéseknél",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
@@ -427,27 +427,27 @@
   },
   "fileOperations.transferProgress.titleRollingBack": "Visszagörgetés…",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "sourceHash": "c3fed24"
+    "sourceHash": "f89ef2e"
   },
   "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Fájlok visszavitele} one {A fájl visszavitele} other {{countText} fájl visszavitele}}…",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
-    "sourceHash": "38c2022"
+    "sourceHash": "4de9c69"
   },
   "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {A létrehozottak törlése} one {A létrehozott fájl törlése} other {A létrehozott {countText} fájl törlése}}…",
   "@fileOperations.transferProgress.titleReversalDeleting": {
-    "sourceHash": "bce7510"
+    "sourceHash": "587f4a3"
   },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Régi nevek visszaadása} one {A régi név visszaadása} other {{countText} régi név visszaadása}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
-    "sourceHash": "e3f6bc3"
+    "sourceHash": "2ad8510"
   },
   "fileOperations.transferProgress.titleCancelling": "Megszakítás…",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "37b4fbc"
+    "sourceHash": "7d0901a"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Megszakítás… (USB-átvitelek befejezése)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "ac2ee1a"
+    "sourceHash": "80d6761"
   },
   "fileOperations.transferProgress.close": "Bezárás",
   "@fileOperations.transferProgress.close": {
@@ -491,15 +491,15 @@
   },
   "fileOperations.transferProgress.titleFlushing": "Az utolsó darab kiírása…",
   "@fileOperations.transferProgress.titleFlushing": {
-    "sourceHash": "e0ba096"
+    "sourceHash": "3aa5686"
   },
   "fileOperations.transferProgress.titleRemovingOriginals": "Az eredeti fájlok eltávolítása…",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
-    "sourceHash": "71465d5"
+    "sourceHash": "15a457d"
   },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Másolás} move {Áthelyezés} compress {Tömörítés} delete {Törlés} other {Áthelyezés a Kukába}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "fe64f70"
+    "sourceHash": "0c636e5"
   },
   "fileOperations.transferProgress.stageScanning": "Átvizsgálás",
   "@fileOperations.transferProgress.stageScanning": {

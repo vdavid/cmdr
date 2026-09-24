@@ -301,7 +301,7 @@
   },
   "fileExplorer.network.connecting": "正在連線…",
   "@fileExplorer.network.connecting": {
-    "sourceHash": "5f04ae9"
+    "sourceHash": "72021eb"
   },
   "fileExplorer.network.back": "返回",
   "@fileExplorer.network.back": {
@@ -333,7 +333,7 @@
   },
   "fileExplorer.network.browser.searching": "正在搜尋…",
   "@fileExplorer.network.browser.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "fileExplorer.network.browser.refresh": "重新整理",
   "@fileExplorer.network.browser.refresh": {
@@ -349,11 +349,11 @@
   },
   "fileExplorer.network.browser.status.resolving": "正在解析…",
   "@fileExplorer.network.browser.status.resolving": {
-    "sourceHash": "0660108"
+    "sourceHash": "6d2b99e"
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "正在等待網路…",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
-    "sourceHash": "78199e3"
+    "sourceHash": "d1c5574"
   },
   "fileExplorer.network.browser.status.notChecked": "尚未檢查",
   "@fileExplorer.network.browser.status.notChecked": {
@@ -397,7 +397,7 @@
   },
   "fileExplorer.network.browser.tooltip.resolving": "正在解析主機名稱和 IP 位址…",
   "@fileExplorer.network.browser.tooltip.resolving": {
-    "sourceHash": "1dc4c96"
+    "sourceHash": "cac249d"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "正在等待網路解析名稱",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -473,7 +473,7 @@
   },
   "fileExplorer.network.share.connecting": "正在連線到 {hostName}…",
   "@fileExplorer.network.share.connecting": {
-    "sourceHash": "633622a"
+    "sourceHash": "fe38aec"
   },
   "fileExplorer.network.share.connectFailedTitle": "無法連線到 {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
@@ -549,7 +549,7 @@
   },
   "fileExplorer.mtp.connecting": "正在連線到裝置…",
   "@fileExplorer.mtp.connecting": {
-    "sourceHash": "ad85006"
+    "sourceHash": "860bb9b"
   },
   "fileExplorer.mtp.tryAgain": "再試一次",
   "@fileExplorer.mtp.tryAgain": {
@@ -557,7 +557,7 @@
   },
   "fileExplorer.networkMount.mounting": "正在裝載 {target}…",
   "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "222982d"
+    "sourceHash": "7b7368d"
   },
   "fileExplorer.networkMount.shareFallback": "共享資料夾",
   "@fileExplorer.networkMount.shareFallback": {
@@ -589,7 +589,7 @@
   },
   "fileExplorer.unreachable.retrying": "正在重試…",
   "@fileExplorer.unreachable.retrying": {
-    "sourceHash": "84a657b"
+    "sourceHash": "a16c8b1"
   },
   "fileExplorer.unreachable.retry": "再試一次",
   "@fileExplorer.unreachable.retry": {
@@ -1335,11 +1335,11 @@
   },
   "fileExplorer.navigation.connectingDirectly": "正在直接連線…",
   "@fileExplorer.navigation.connectingDirectly": {
-    "sourceHash": "2c431fc"
+    "sourceHash": "1f2d487"
   },
   "fileExplorer.navigation.connectingWithSavedPassword": "正在使用已儲存的密碼連線…",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
-    "sourceHash": "1cb249f"
+    "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr 可以沿用 macOS 已經為「{displayName}」儲存的密碼。你會看到系統跳出提示，要求允許取用鑰匙圈。這是正常的，請按「允許」。",
   "@fileExplorer.navigation.useSavedPasswordMessage": {

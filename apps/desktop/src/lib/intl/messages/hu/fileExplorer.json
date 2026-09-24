@@ -303,7 +303,7 @@
   },
   "fileExplorer.network.connecting": "Csatlakozás…",
   "@fileExplorer.network.connecting": {
-    "sourceHash": "5f04ae9"
+    "sourceHash": "72021eb"
   },
   "fileExplorer.network.back": "Vissza",
   "@fileExplorer.network.back": {
@@ -335,7 +335,7 @@
   },
   "fileExplorer.network.browser.searching": "Keresés…",
   "@fileExplorer.network.browser.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "fileExplorer.network.browser.refresh": "Frissítés",
   "@fileExplorer.network.browser.refresh": {
@@ -351,11 +351,11 @@
   },
   "fileExplorer.network.browser.status.resolving": "Feloldás…",
   "@fileExplorer.network.browser.status.resolving": {
-    "sourceHash": "0660108"
+    "sourceHash": "6d2b99e"
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "Várakozás a hálózatra…",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
-    "sourceHash": "78199e3"
+    "sourceHash": "d1c5574"
   },
   "fileExplorer.network.browser.status.notChecked": "Nincs ellenőrizve",
   "@fileExplorer.network.browser.status.notChecked": {
@@ -399,7 +399,7 @@
   },
   "fileExplorer.network.browser.tooltip.resolving": "Gépnév és IP-cím feloldása…",
   "@fileExplorer.network.browser.tooltip.resolving": {
-    "sourceHash": "1dc4c96"
+    "sourceHash": "cac249d"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Várakozás a hálózati névfeloldásra",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -475,7 +475,7 @@
   },
   "fileExplorer.network.share.connecting": "Csatlakozás ehhez: {hostName}…",
   "@fileExplorer.network.share.connecting": {
-    "sourceHash": "633622a"
+    "sourceHash": "fe38aec"
   },
   "fileExplorer.network.share.connectFailedTitle": "Nem sikerült csatlakozni ehhez: {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
@@ -551,7 +551,7 @@
   },
   "fileExplorer.mtp.connecting": "Csatlakozás az eszközhöz…",
   "@fileExplorer.mtp.connecting": {
-    "sourceHash": "ad85006"
+    "sourceHash": "860bb9b"
   },
   "fileExplorer.mtp.tryAgain": "Próbáld újra",
   "@fileExplorer.mtp.tryAgain": {
@@ -559,7 +559,7 @@
   },
   "fileExplorer.networkMount.mounting": "Csatolás: {target}…",
   "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "222982d"
+    "sourceHash": "7b7368d"
   },
   "fileExplorer.networkMount.shareFallback": "megosztás",
   "@fileExplorer.networkMount.shareFallback": {
@@ -591,7 +591,7 @@
   },
   "fileExplorer.unreachable.retrying": "Újrapróbálás…",
   "@fileExplorer.unreachable.retrying": {
-    "sourceHash": "84a657b"
+    "sourceHash": "a16c8b1"
   },
   "fileExplorer.unreachable.retry": "Újra",
   "@fileExplorer.unreachable.retry": {
@@ -1338,11 +1338,11 @@
   },
   "fileExplorer.navigation.connectingDirectly": "Közvetlen csatlakozás…",
   "@fileExplorer.navigation.connectingDirectly": {
-    "sourceHash": "2c431fc"
+    "sourceHash": "1f2d487"
   },
   "fileExplorer.navigation.connectingWithSavedPassword": "Csatlakozás a mentett jelszóval…",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
-    "sourceHash": "1cb249f"
+    "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "A Cmdr újra fel tudja használni a macOS által „{displayName}” számára már elmentett jelszót. Megjelenik egy rendszerüzenet, amely a kulcskarikához való hozzáférést kéri. Ez így van rendjén, ezért kattints az Engedélyezésre.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {

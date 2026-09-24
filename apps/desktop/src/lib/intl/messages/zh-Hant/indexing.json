@@ -10,7 +10,7 @@
   },
   "indexing.scan.label": "正在為你的磁碟機建立索引…",
   "@indexing.scan.label": {
-    "sourceHash": "3758d47"
+    "sourceHash": "5b0433c"
   },
   "indexing.scan.counters": "{entriesText} 個項目、{dirsText} 個資料夾",
   "@indexing.scan.counters": {
@@ -111,19 +111,19 @@
   },
   "indexing.aggregation.loading": "正在載入資料夾…",
   "@indexing.aggregation.loading": {
-    "sourceHash": "f553c87"
+    "sourceHash": "d0aa0da"
   },
   "indexing.aggregation.sorting": "正在排序資料夾…",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "3a7c827"
+    "sourceHash": "5c5a247"
   },
   "indexing.aggregation.computing": "正在計算資料夾大小…",
   "@indexing.aggregation.computing": {
-    "sourceHash": "19f54fc"
+    "sourceHash": "d693bcf"
   },
   "indexing.aggregation.writing": "正在儲存資料夾大小…",
   "@indexing.aggregation.writing": {
-    "sourceHash": "9466e98"
+    "sourceHash": "4cec9d8"
   },
   "indexing.replay.detail": "已處理 {eventsText} 個事件",
   "@indexing.replay.detail": {

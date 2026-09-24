@@ -48,9 +48,9 @@
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
-  "fileOperations.trash.undoing": "Lägger tillbaka dem...",
+  "fileOperations.trash.undoing": "Lägger tillbaka dem…",
   "@fileOperations.trash.undoing": {
-    "sourceHash": "1be7766"
+    "sourceHash": "3272a7a"
   },
   "fileOperations.trash.undone": "Lade tillbaka {countText} {count, plural, one {fil} other {filer}}.",
   "@fileOperations.trash.undone": {
@@ -72,9 +72,9 @@
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
-  "fileOperations.delete.overflowMore": "... och {countText} {count, plural, one {objekt} other {objekt}} till",
+  "fileOperations.delete.overflowMore": "… och {countText} {count, plural, one {objekt} other {objekt}} till",
   "@fileOperations.delete.overflowMore": {
-    "sourceHash": "2fb7f0e"
+    "sourceHash": "3b9968a"
   },
   "fileOperations.delete.scanFile": "{count, plural, one {fil} other {filer}}",
   "@fileOperations.delete.scanFile": {
@@ -309,9 +309,9 @@
   "@fileOperations.transferDialog.conflictsUnknown": {
     "sourceHash": "1bc997a"
   },
-  "fileOperations.transferDialog.checkingConflicts": "Söker efter konflikter...",
+  "fileOperations.transferDialog.checkingConflicts": "Söker efter konflikter…",
   "@fileOperations.transferDialog.checkingConflicts": {
-    "sourceHash": "bc10126"
+    "sourceHash": "11be123"
   },
   "fileOperations.transferDialog.mergeInfoSingle": "1 mapp slås samman med en befintlig mapp",
   "@fileOperations.transferDialog.mergeInfoSingle": {
@@ -401,53 +401,53 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.transferProgress.scanTitleCopy": "Verifierar före kopiering...",
+  "fileOperations.transferProgress.scanTitleCopy": "Verifierar före kopiering…",
   "@fileOperations.transferProgress.scanTitleCopy": {
-    "sourceHash": "fd21ea9"
+    "sourceHash": "f641ae3"
   },
-  "fileOperations.transferProgress.scanTitleMove": "Verifierar före flytt...",
+  "fileOperations.transferProgress.scanTitleMove": "Verifierar före flytt…",
   "@fileOperations.transferProgress.scanTitleMove": {
-    "sourceHash": "5e79da2"
+    "sourceHash": "2d904be"
   },
-  "fileOperations.transferProgress.scanTitleCompress": "Verifierar före komprimering...",
+  "fileOperations.transferProgress.scanTitleCompress": "Verifierar före komprimering…",
   "@fileOperations.transferProgress.scanTitleCompress": {
-    "sourceHash": "f01b959"
+    "sourceHash": "c610c90"
   },
-  "fileOperations.transferProgress.scanTitleDelete": "Räknar objekt att radera...",
+  "fileOperations.transferProgress.scanTitleDelete": "Räknar objekt att radera…",
   "@fileOperations.transferProgress.scanTitleDelete": {
-    "sourceHash": "1bb559a"
+    "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Räknar objekt att flytta till papperskorgen...",
+  "fileOperations.transferProgress.scanTitleTrash": "Räknar objekt att flytta till papperskorgen…",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "d11467e"
+    "sourceHash": "6df6c7f"
   },
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "Det går inte att ångra flyttar inom samma volym",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "sourceHash": "da6af1f"
   },
-  "fileOperations.transferProgress.titleRollingBack": "Ångrar...",
+  "fileOperations.transferProgress.titleRollingBack": "Ångrar…",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "sourceHash": "c3fed24"
+    "sourceHash": "f89ef2e"
   },
-  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Flyttar tillbaka filerna} one {Flyttar tillbaka filen} other {Flyttar tillbaka {countText} filer}}...",
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Flyttar tillbaka filerna} one {Flyttar tillbaka filen} other {Flyttar tillbaka {countText} filer}}…",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
-    "sourceHash": "38c2022"
+    "sourceHash": "4de9c69"
   },
-  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Raderar det som skapades} one {Raderar filen som skapades} other {Raderar de {countText} filer som skapades}}...",
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Raderar det som skapades} one {Raderar filen som skapades} other {Raderar de {countText} filer som skapades}}…",
   "@fileOperations.transferProgress.titleReversalDeleting": {
-    "sourceHash": "bce7510"
+    "sourceHash": "587f4a3"
   },
-  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Ger tillbaka de gamla namnen} one {Ger tillbaka det gamla namnet} other {Ger tillbaka {countText} gamla namn}}...",
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Ger tillbaka de gamla namnen} one {Ger tillbaka det gamla namnet} other {Ger tillbaka {countText} gamla namn}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
-    "sourceHash": "e3f6bc3"
+    "sourceHash": "2ad8510"
   },
-  "fileOperations.transferProgress.titleCancelling": "Avbryter...",
+  "fileOperations.transferProgress.titleCancelling": "Avbryter…",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "37b4fbc"
+    "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.titleCancellingSlow": "Avbryter... (slutför USB-överföringar)",
+  "fileOperations.transferProgress.titleCancellingSlow": "Avbryter… (slutför USB-överföringar)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "ac2ee1a"
+    "sourceHash": "80d6761"
   },
   "fileOperations.transferProgress.close": "Stäng",
   "@fileOperations.transferProgress.close": {
@@ -489,17 +489,17 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
-  "fileOperations.transferProgress.titleFlushing": "Skriver den sista biten...",
+  "fileOperations.transferProgress.titleFlushing": "Skriver den sista biten…",
   "@fileOperations.transferProgress.titleFlushing": {
-    "sourceHash": "e0ba096"
+    "sourceHash": "3aa5686"
   },
-  "fileOperations.transferProgress.titleRemovingOriginals": "Tar bort originalen...",
+  "fileOperations.transferProgress.titleRemovingOriginals": "Tar bort originalen…",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
-    "sourceHash": "71465d5"
+    "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Kopierar} move {Flyttar} compress {Komprimerar} delete {Raderar} other {Flyttar till papperskorgen}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Kopierar} move {Flyttar} compress {Komprimerar} delete {Raderar} other {Flyttar till papperskorgen}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "fe64f70"
+    "sourceHash": "0c636e5"
   },
   "fileOperations.transferProgress.stageScanning": "Söker igenom",
   "@fileOperations.transferProgress.stageScanning": {

@@ -137,13 +137,13 @@
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "Zoek op actienaam...",
+  "shortcuts.section.searchByNamePlaceholder": "Zoek op actienaam…",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "sourceHash": "3dae3b6"
+    "sourceHash": "b20d3e3"
   },
-  "shortcuts.section.filterByKeysPlaceholder": "Filter op toetsen...",
+  "shortcuts.section.filterByKeysPlaceholder": "Filter op toetsen…",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "sourceHash": "87cd416"
+    "sourceHash": "22706d1"
   },
   "shortcuts.section.pressEscToClear": "Druk op ESC om te wissen",
   "@shortcuts.section.pressEscToClear": {
@@ -210,9 +210,9 @@
   "@shortcuts.section.fixedBadge": {
     "sourceHash": "1246fc9"
   },
-  "shortcuts.section.pressKeys": "Druk toetsen in...",
+  "shortcuts.section.pressKeys": "Druk toetsen in…",
   "@shortcuts.section.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "shortcuts.section.removeShortcutTooltip": "Verwijder sneltoets",
   "@shortcuts.section.removeShortcutTooltip": {

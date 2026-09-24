@@ -15,9 +15,9 @@
   "@mtp.connectedToast.dontShowAgain": {
     "sourceHash": "d98ab77"
   },
-  "mtp.connectedToast.disableMtp": "Tắt MTP...",
+  "mtp.connectedToast.disableMtp": "Tắt MTP…",
   "@mtp.connectedToast.disableMtp": {
-    "sourceHash": "2057a3d"
+    "sourceHash": "17c54f2"
   },
   "mtp.connectedToast.ok": "OK",
   "@mtp.connectedToast.ok": {

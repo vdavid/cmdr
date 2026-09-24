@@ -11,9 +11,9 @@
   "@viewer.srHeading": {
     "sourceHash": "b32f632"
   },
-  "viewer.loading": "Chargement...",
+  "viewer.loading": "Chargement…",
   "@viewer.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "viewer.error.noPath": "Aucun chemin de fichier indiqué",
   "@viewer.error.noPath": {
@@ -93,9 +93,9 @@
   "@viewer.binaryWarning.suppressForever": {
     "sourceHash": "b85b92b"
   },
-  "viewer.search.placeholder": "Rechercher dans le fichier...",
+  "viewer.search.placeholder": "Rechercher dans le fichier…",
   "@viewer.search.placeholder": {
-    "sourceHash": "c1dc89b"
+    "sourceHash": "a3268b3"
   },
   "viewer.search.ariaLabel": "Rechercher du texte",
   "@viewer.search.ariaLabel": {
@@ -114,9 +114,9 @@
   "@viewer.search.matchPosition": {
     "sourceHash": "ec24db4"
   },
-  "viewer.search.searching": "Recherche...",
+  "viewer.search.searching": "Recherche…",
   "@viewer.search.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "viewer.search.partial": "(partiel)",
   "@viewer.search.partial": {
@@ -241,13 +241,13 @@
   "@viewer.statusBar.badge.indexedTooltip": {
     "sourceHash": "2604f1a"
   },
-  "viewer.statusBar.badge.streamingIndexing": "streaming, indexation...",
+  "viewer.statusBar.badge.streamingIndexing": "streaming, indexation…",
   "@viewer.statusBar.badge.streamingIndexing": {
-    "sourceHash": "506ef27"
+    "sourceHash": "db1718e"
   },
-  "viewer.statusBar.badge.streamingIndexingTooltip": "Ceci est un gros fichier en mode streaming. Nous construisons un index en arrière-plan (max {seconds} s)... Les numéros de ligne sont actuellement approximatifs.",
+  "viewer.statusBar.badge.streamingIndexingTooltip": "Ceci est un gros fichier en mode streaming. Nous construisons un index en arrière-plan (max {seconds} s)… Les numéros de ligne sont actuellement approximatifs.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "6407733"
+    "sourceHash": "033d82d"
   },
   "viewer.statusBar.badge.streaming": "streaming",
   "@viewer.statusBar.badge.streaming": {

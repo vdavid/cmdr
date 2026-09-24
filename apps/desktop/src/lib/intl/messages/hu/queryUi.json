@@ -184,11 +184,11 @@
   },
   "queryUi.results.scanningWithCount": "Átvizsgálás folyamatban ({countText} bejegyzés)…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "0c05667"
+    "sourceHash": "67fb5ac"
   },
   "queryUi.results.scanning": "Átvizsgálás folyamatban…",
   "@queryUi.results.scanning": {
-    "sourceHash": "091ba9a"
+    "sourceHash": "c19b8ea"
   },
   "queryUi.results.indexUnavailable": "A meghajtóindex nem érhető el",
   "@queryUi.results.indexUnavailable": {
@@ -236,19 +236,19 @@
   },
   "queryUi.results.scanProgressWithCount": "Átvizsgálás folyamatban ({countText} bejegyzés)…",
   "@queryUi.results.scanProgressWithCount": {
-    "sourceHash": "3c5b987"
+    "sourceHash": "563387d"
   },
   "queryUi.results.scanProgress": "Átvizsgálás folyamatban…",
   "@queryUi.results.scanProgress": {
-    "sourceHash": "091ba9a"
+    "sourceHash": "c19b8ea"
   },
   "queryUi.results.loadingIndex": "Meghajtóindex betöltése…",
   "@queryUi.results.loadingIndex": {
-    "sourceHash": "ab62214"
+    "sourceHash": "e9a7368"
   },
   "queryUi.results.searching": "Keresés…",
   "@queryUi.results.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "queryUi.results.noMatchHeading": "Nincs ezeknek a feltételeknek megfelelő fájl:",
   "@queryUi.results.noMatchHeading": {
@@ -256,11 +256,11 @@
   },
   "queryUi.results.live.resolvingCoverage": "Kiderítjük, mi van már indexelve…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "07b501d"
+    "sourceHash": "524487d"
   },
   "queryUi.results.live.waitingForAnotherWalk": "Megvárjuk, amíg egy másik átnézés végez ezekkel a mappákkal…",
   "@queryUi.results.live.waitingForAnotherWalk": {
-    "sourceHash": "21163fe"
+    "sourceHash": "4a3b061"
   },
   "queryUi.results.live.waitingOnPathAria": "Egy másik átnézés olvassa: {path}",
   "@queryUi.results.live.waitingOnPathAria": {
@@ -268,11 +268,11 @@
   },
   "queryUi.results.live.readingIndex": "A már indexelt rész olvasása…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "5a048c9"
+    "sourceHash": "ed4159a"
   },
   "queryUi.results.live.walking": "Még nem indexelt mappák átnézése…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "b2dbe67"
+    "sourceHash": "3829650"
   },
   "queryUi.results.live.matchesSoFar": "Eddig {countText} {count, plural, one {találat} other {találat}}",
   "@queryUi.results.live.matchesSoFar": {

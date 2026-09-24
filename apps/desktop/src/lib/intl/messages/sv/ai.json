@@ -1,11 +1,11 @@
 {
-  "ai.toast.downloadingTitle": "Hämtar AI-modell...",
+  "ai.toast.downloadingTitle": "Hämtar AI-modell…",
   "@ai.toast.downloadingTitle": {
-    "sourceHash": "453ec3b"
+    "sourceHash": "85d48ae"
   },
-  "ai.toast.startingDownload": "Startar hämtning...",
+  "ai.toast.startingDownload": "Startar hämtning…",
   "@ai.toast.startingDownload": {
-    "sourceHash": "d02eaf4"
+    "sourceHash": "22309b1"
   },
   "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · {eta} kvar}}",
   "@ai.toast.progress": {
@@ -15,9 +15,9 @@
   "@ai.toast.cancel": {
     "sourceHash": "19766ed"
   },
-  "ai.toast.installingTitle": "Ställer in AI...",
+  "ai.toast.installingTitle": "Ställer in AI…",
   "@ai.toast.installingTitle": {
-    "sourceHash": "509f6c1"
+    "sourceHash": "85f7001"
   },
   "ai.toast.installingDescription": "Startar servern",
   "@ai.toast.installingDescription": {
@@ -35,9 +35,9 @@
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "ai.toast.startingTitle": "AI startar...",
+  "ai.toast.startingTitle": "AI startar…",
   "@ai.toast.startingTitle": {
-    "sourceHash": "29fdbca"
+    "sourceHash": "d0a6a15"
   },
   "ai.toast.startingDescription": "Läser in modellen, det tar några sekunder",
   "@ai.toast.startingDescription": {
@@ -231,9 +231,9 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.apiKeyPlaceholderAnthropic": "Exempel: sk-ant-abc123...",
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Exempel: sk-ant-abc123…",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
-    "sourceHash": "5a4d18d"
+    "sourceHash": "89347d5"
   },
   "ai.cloud.askCmdrOverrideHint": "Chatten använder en egen modell ({model}) i stället för den här. Ändra den i Ask Cmdr-avsnittet.",
   "@ai.cloud.askCmdrOverrideHint": {
@@ -243,9 +243,9 @@
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },
-  "ai.cloud.checking": "Kontrollerar...",
+  "ai.cloud.checking": "Kontrollerar…",
   "@ai.cloud.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "ai.cloud.connected": "Ansluten",
   "@ai.cloud.connected": {
@@ -287,13 +287,13 @@
   "@ai.local.warningCaution": {
     "sourceHash": "f8070e9"
   },
-  "ai.local.statusRestarting": "Startar om...",
+  "ai.local.statusRestarting": "Startar om…",
   "@ai.local.statusRestarting": {
-    "sourceHash": "2c5bfcb"
+    "sourceHash": "75d0f14"
   },
-  "ai.local.statusStarting": "Startar...",
+  "ai.local.statusStarting": "Startar…",
   "@ai.local.statusStarting": {
-    "sourceHash": "82b9363"
+    "sourceHash": "bbe5fc3"
   },
   "ai.local.statusRunning": "Körs",
   "@ai.local.statusRunning": {
@@ -303,25 +303,25 @@
   "@ai.local.statusStopped": {
     "sourceHash": "1a4f630"
   },
-  "ai.local.installStepExtracting": "Steg 1 av 4: Packar upp körtiden...",
+  "ai.local.installStepExtracting": "Steg 1 av 4: Packar upp körtiden…",
   "@ai.local.installStepExtracting": {
-    "sourceHash": "941db20"
+    "sourceHash": "44fc84b"
   },
-  "ai.local.installStepDownloading": "Steg 2 av 4: Hämtar modellen...",
+  "ai.local.installStepDownloading": "Steg 2 av 4: Hämtar modellen…",
   "@ai.local.installStepDownloading": {
-    "sourceHash": "56596cb"
+    "sourceHash": "99d712f"
   },
-  "ai.local.installStepVerifying": "Steg 3 av 4: Verifierar hämtningen...",
+  "ai.local.installStepVerifying": "Steg 3 av 4: Verifierar hämtningen…",
   "@ai.local.installStepVerifying": {
-    "sourceHash": "4133988"
+    "sourceHash": "302f79a"
   },
-  "ai.local.installStepStarting": "Steg 4 av 4: Startar servern...",
+  "ai.local.installStepStarting": "Steg 4 av 4: Startar servern…",
   "@ai.local.installStepStarting": {
-    "sourceHash": "39acba1"
+    "sourceHash": "696bd5e"
   },
-  "ai.local.startingDownload": "Startar hämtning...",
+  "ai.local.startingDownload": "Startar hämtning…",
   "@ai.local.startingDownload": {
-    "sourceHash": "d02eaf4"
+    "sourceHash": "22309b1"
   },
   "ai.local.etaSeconds": "~{value} sek kvar",
   "@ai.local.etaSeconds": {
@@ -411,25 +411,25 @@
   "@ai.local.downloadModel": {
     "sourceHash": "9979bea"
   },
-  "ai.local.deleteDialogTitleDeleting": "Raderar modell...",
+  "ai.local.deleteDialogTitleDeleting": "Raderar modell…",
   "@ai.local.deleteDialogTitleDeleting": {
-    "sourceHash": "413e1b9"
+    "sourceHash": "d3a7e58"
   },
   "ai.local.deleteDialogTitle": "Radera AI-modellen?",
   "@ai.local.deleteDialogTitle": {
     "sourceHash": "c486f0c"
   },
-  "ai.local.deletingStatus": "Stoppar servern och tar bort filer...",
+  "ai.local.deletingStatus": "Stoppar servern och tar bort filer…",
   "@ai.local.deletingStatus": {
-    "sourceHash": "6671ac7"
+    "sourceHash": "e9de1ca"
   },
   "ai.local.deleteConfirmMessage": "Det här frigör {modelSize} diskutrymme. Du behöver hämta den på nytt för att använda lokal AI igen.",
   "@ai.local.deleteConfirmMessage": {
     "sourceHash": "1a6ca0d"
   },
-  "ai.local.deleteButtonDeleting": "Raderar...",
+  "ai.local.deleteButtonDeleting": "Raderar…",
   "@ai.local.deleteButtonDeleting": {
-    "sourceHash": "685ecb9"
+    "sourceHash": "43b5894"
   },
   "ai.local.deleteButton": "Radera",
   "@ai.local.deleteButton": {

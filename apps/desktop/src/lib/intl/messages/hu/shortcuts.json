@@ -137,11 +137,11 @@
   },
   "shortcuts.section.searchByNamePlaceholder": "Keresés művelet neve szerint…",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "sourceHash": "3dae3b6"
+    "sourceHash": "b20d3e3"
   },
   "shortcuts.section.filterByKeysPlaceholder": "Szűrés billentyűk szerint…",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "sourceHash": "87cd416"
+    "sourceHash": "22706d1"
   },
   "shortcuts.section.pressEscToClear": "Nyomj ESC-et a törléshez",
   "@shortcuts.section.pressEscToClear": {
@@ -210,7 +210,7 @@
   },
   "shortcuts.section.pressKeys": "Nyomj billentyűket…",
   "@shortcuts.section.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "shortcuts.section.removeShortcutTooltip": "Billentyűparancs eltávolítása",
   "@shortcuts.section.removeShortcutTooltip": {

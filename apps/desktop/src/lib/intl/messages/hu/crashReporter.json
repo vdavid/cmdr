@@ -57,7 +57,7 @@
   },
   "crashReporter.dialog.sending": "Küldés…",
   "@crashReporter.dialog.sending": {
-    "sourceHash": "286a3af"
+    "sourceHash": "b8ed527"
   },
   "crashReporter.dialog.notSent": "A jelentés nem ment el. {reason}",
   "@crashReporter.dialog.notSent": {

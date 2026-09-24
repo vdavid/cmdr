@@ -13,7 +13,7 @@
   },
   "viewer.loading": "正在加载…",
   "@viewer.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "viewer.error.noPath": "未指定文件路径",
   "@viewer.error.noPath": {
@@ -93,7 +93,7 @@
   },
   "viewer.search.placeholder": "在文件中查找…",
   "@viewer.search.placeholder": {
-    "sourceHash": "c1dc89b"
+    "sourceHash": "a3268b3"
   },
   "viewer.search.ariaLabel": "搜索文本",
   "@viewer.search.ariaLabel": {
@@ -113,7 +113,7 @@
   },
   "viewer.search.searching": "正在搜索…",
   "@viewer.search.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "viewer.search.partial": "（部分）",
   "@viewer.search.partial": {
@@ -239,11 +239,11 @@
   },
   "viewer.statusBar.badge.streamingIndexing": "流式读取，正在建立索引…",
   "@viewer.statusBar.badge.streamingIndexing": {
-    "sourceHash": "506ef27"
+    "sourceHash": "db1718e"
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "这是一个以流式模式打开的大文件。我们正在后台建立索引（最长 {seconds} 秒）…当前行号为近似值。",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "6407733"
+    "sourceHash": "033d82d"
   },
   "viewer.statusBar.badge.streaming": "流式读取",
   "@viewer.statusBar.badge.streaming": {

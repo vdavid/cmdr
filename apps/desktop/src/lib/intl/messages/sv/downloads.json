@@ -112,9 +112,9 @@
   "@downloads.shortcutRow.resetTooltip": {
     "sourceHash": "bc5b45a"
   },
-  "downloads.shortcutRow.pressKeys": "Tryck på tangenter...",
+  "downloads.shortcutRow.pressKeys": "Tryck på tangenter…",
   "@downloads.shortcutRow.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "downloads.shortcutRow.registered": "Registrerad",
   "@downloads.shortcutRow.registered": {

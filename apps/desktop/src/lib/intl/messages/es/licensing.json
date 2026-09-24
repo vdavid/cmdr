@@ -164,9 +164,9 @@
   "@licensing.expiration.continue": {
     "sourceHash": "b5c90b4"
   },
-  "licensing.dialog.loading": "Cargando...",
+  "licensing.dialog.loading": "Cargando…",
   "@licensing.dialog.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.dialog.detailsTitle": "Detalles de la licencia",
   "@licensing.dialog.detailsTitle": {
@@ -276,17 +276,17 @@
   "@licensing.dialog.cancelButton": {
     "sourceHash": "19766ed"
   },
-  "licensing.dialog.checking": "Comprobando...",
+  "licensing.dialog.checking": "Comprobando…",
   "@licensing.dialog.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "licensing.dialog.tryAgain": "Reintentar",
   "@licensing.dialog.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "licensing.dialog.activating": "Activando...",
+  "licensing.dialog.activating": "Activando…",
   "@licensing.dialog.activating": {
-    "sourceHash": "fd2db6a"
+    "sourceHash": "230f6d1"
   },
   "licensing.dialog.activate": "Activar",
   "@licensing.dialog.activate": {
@@ -380,9 +380,9 @@
   "@licensing.section.title": {
     "sourceHash": "c011d60"
   },
-  "licensing.section.loading": "Cargando...",
+  "licensing.section.loading": "Cargando…",
   "@licensing.section.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.section.labelType": "Tipo de licencia",
   "@licensing.section.labelType": {

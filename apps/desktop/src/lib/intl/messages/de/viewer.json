@@ -13,7 +13,7 @@
   },
   "viewer.loading": "Wird geladen …",
   "@viewer.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "viewer.error.noPath": "Kein Dateipfad angegeben",
   "@viewer.error.noPath": {
@@ -93,7 +93,7 @@
   },
   "viewer.search.placeholder": "In Datei suchen …",
   "@viewer.search.placeholder": {
-    "sourceHash": "c1dc89b"
+    "sourceHash": "a3268b3"
   },
   "viewer.search.ariaLabel": "Text suchen",
   "@viewer.search.ariaLabel": {
@@ -114,7 +114,7 @@
   },
   "viewer.search.searching": "Wird gesucht …",
   "@viewer.search.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "viewer.search.partial": "(teilweise)",
   "@viewer.search.partial": {
@@ -242,11 +242,11 @@
   },
   "viewer.statusBar.badge.streamingIndexing": "Streaming, Indizierung …",
   "@viewer.statusBar.badge.streamingIndexing": {
-    "sourceHash": "506ef27"
+    "sourceHash": "db1718e"
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "Das ist eine große Datei im Streaming-Modus. Wir erstellen im Hintergrund einen Index (max. {seconds} Sek.) … Die Zeilennummern sind derzeit ungefähr.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "6407733"
+    "sourceHash": "033d82d"
   },
   "viewer.statusBar.badge.streaming": "streaming",
   "@viewer.statusBar.badge.streaming": {

@@ -1,7 +1,7 @@
 {
   "commandPalette.searchPlaceholder": "搜索命令…",
   "@commandPalette.searchPlaceholder": {
-    "sourceHash": "dd6c6ab"
+    "sourceHash": "baad3d0"
   },
   "commandPalette.searchAriaLabel": "搜索命令",
   "@commandPalette.searchAriaLabel": {

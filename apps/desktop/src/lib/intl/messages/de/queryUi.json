@@ -185,11 +185,11 @@
   },
   "queryUi.results.scanningWithCount": "Laufwerk wird durchsucht ({countText} Einträge) …",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "0c05667"
+    "sourceHash": "67fb5ac"
   },
   "queryUi.results.scanning": "Laufwerk wird durchsucht …",
   "@queryUi.results.scanning": {
-    "sourceHash": "091ba9a"
+    "sourceHash": "c19b8ea"
   },
   "queryUi.results.indexUnavailable": "Laufwerksindex nicht verfügbar",
   "@queryUi.results.indexUnavailable": {
@@ -237,19 +237,19 @@
   },
   "queryUi.results.scanProgressWithCount": "Laufwerk wird durchsucht ({countText} Einträge) …",
   "@queryUi.results.scanProgressWithCount": {
-    "sourceHash": "3c5b987"
+    "sourceHash": "563387d"
   },
   "queryUi.results.scanProgress": "Laufwerk wird durchsucht …",
   "@queryUi.results.scanProgress": {
-    "sourceHash": "091ba9a"
+    "sourceHash": "c19b8ea"
   },
   "queryUi.results.loadingIndex": "Laufwerksindex wird geladen …",
   "@queryUi.results.loadingIndex": {
-    "sourceHash": "ab62214"
+    "sourceHash": "e9a7368"
   },
   "queryUi.results.searching": "Wird gesucht …",
   "@queryUi.results.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "queryUi.results.noMatchHeading": "Keine Dateien entsprechen diesen Kriterien:",
   "@queryUi.results.noMatchHeading": {
@@ -257,11 +257,11 @@
   },
   "queryUi.results.live.resolvingCoverage": "Wird geprüft, was bereits indiziert ist …",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "07b501d"
+    "sourceHash": "524487d"
   },
   "queryUi.results.live.waitingForAnotherWalk": "Warten auf einen anderen Suchlauf für diese Ordner …",
   "@queryUi.results.live.waitingForAnotherWalk": {
-    "sourceHash": "21163fe"
+    "sourceHash": "4a3b061"
   },
   "queryUi.results.live.waitingOnPathAria": "Ein anderer Suchlauf liest gerade {path}",
   "@queryUi.results.live.waitingOnPathAria": {
@@ -269,11 +269,11 @@
   },
   "queryUi.results.live.readingIndex": "Bereits Indiziertes wird gelesen …",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "5a048c9"
+    "sourceHash": "ed4159a"
   },
   "queryUi.results.live.walking": "Ordner ohne Index werden durchsucht …",
   "@queryUi.results.live.walking": {
-    "sourceHash": "b2dbe67"
+    "sourceHash": "3829650"
   },
   "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {Treffer} other {Treffer}} bisher",
   "@queryUi.results.live.matchesSoFar": {

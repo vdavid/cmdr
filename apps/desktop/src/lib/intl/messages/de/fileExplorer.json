@@ -303,7 +303,7 @@
   },
   "fileExplorer.network.connecting": "Verbindung wird hergestellt …",
   "@fileExplorer.network.connecting": {
-    "sourceHash": "5f04ae9"
+    "sourceHash": "72021eb"
   },
   "fileExplorer.network.back": "Zurück",
   "@fileExplorer.network.back": {
@@ -335,7 +335,7 @@
   },
   "fileExplorer.network.browser.searching": "Wird gesucht …",
   "@fileExplorer.network.browser.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "fileExplorer.network.browser.refresh": "Aktualisieren",
   "@fileExplorer.network.browser.refresh": {
@@ -351,11 +351,11 @@
   },
   "fileExplorer.network.browser.status.resolving": "Wird aufgelöst …",
   "@fileExplorer.network.browser.status.resolving": {
-    "sourceHash": "0660108"
+    "sourceHash": "6d2b99e"
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "Warte auf Netzwerk …",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
-    "sourceHash": "78199e3"
+    "sourceHash": "d1c5574"
   },
   "fileExplorer.network.browser.status.notChecked": "Nicht geprüft",
   "@fileExplorer.network.browser.status.notChecked": {
@@ -399,7 +399,7 @@
   },
   "fileExplorer.network.browser.tooltip.resolving": "Hostname und IP-Adresse werden aufgelöst …",
   "@fileExplorer.network.browser.tooltip.resolving": {
-    "sourceHash": "1dc4c96"
+    "sourceHash": "cac249d"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Warte auf die Namensauflösung im Netzwerk",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -475,7 +475,7 @@
   },
   "fileExplorer.network.share.connecting": "Verbindung zu {hostName} wird hergestellt …",
   "@fileExplorer.network.share.connecting": {
-    "sourceHash": "633622a"
+    "sourceHash": "fe38aec"
   },
   "fileExplorer.network.share.connectFailedTitle": "Verbindung zu {hostName} nicht möglich",
   "@fileExplorer.network.share.connectFailedTitle": {
@@ -551,7 +551,7 @@
   },
   "fileExplorer.mtp.connecting": "Verbindung zum Gerät wird hergestellt …",
   "@fileExplorer.mtp.connecting": {
-    "sourceHash": "ad85006"
+    "sourceHash": "860bb9b"
   },
   "fileExplorer.mtp.tryAgain": "Erneut versuchen",
   "@fileExplorer.mtp.tryAgain": {
@@ -559,7 +559,7 @@
   },
   "fileExplorer.networkMount.mounting": "{target} wird eingebunden …",
   "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "222982d"
+    "sourceHash": "7b7368d"
   },
   "fileExplorer.networkMount.shareFallback": "Freigabe",
   "@fileExplorer.networkMount.shareFallback": {
@@ -591,7 +591,7 @@
   },
   "fileExplorer.unreachable.retrying": "Erneuter Versuch …",
   "@fileExplorer.unreachable.retrying": {
-    "sourceHash": "84a657b"
+    "sourceHash": "a16c8b1"
   },
   "fileExplorer.unreachable.retry": "Erneut versuchen",
   "@fileExplorer.unreachable.retry": {
@@ -1341,11 +1341,11 @@
   },
   "fileExplorer.navigation.connectingDirectly": "Direkte Verbindung wird hergestellt …",
   "@fileExplorer.navigation.connectingDirectly": {
-    "sourceHash": "2c431fc"
+    "sourceHash": "1f2d487"
   },
   "fileExplorer.navigation.connectingWithSavedPassword": "Verbindung mit dem gespeicherten Passwort wird hergestellt …",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
-    "sourceHash": "1cb249f"
+    "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kann das Passwort wiederverwenden, das macOS bereits für „{displayName}“ gespeichert hat. Du siehst eine Systemabfrage, die um Zugriff auf den Schlüsselbund bittet. Das ist zu erwarten, klicke also auf „Erlauben“.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {

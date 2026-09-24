@@ -16,9 +16,9 @@
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"
   },
-  "ui.select.placeholder": "Välj...",
+  "ui.select.placeholder": "Välj…",
   "@ui.select.placeholder": {
-    "sourceHash": "1339bdd"
+    "sourceHash": "731fe04"
   },
   "ui.combobox.emptyText": "Inga träffar. Fortsätt skriva för att använda ditt eget värde.",
   "@ui.combobox.emptyText": {
@@ -64,21 +64,21 @@
   "@ui.toast.age": {
     "sourceHash": "6dcfed0"
   },
-  "ui.loadingIcon.finalizing": "Alla {countText} {count, plural, one {filen} other {filerna}} har lästs in. Sorterar dina filer, förbereder vyn...",
+  "ui.loadingIcon.finalizing": "Alla {countText} {count, plural, one {filen} other {filerna}} har lästs in. Sorterar dina filer, förbereder vyn…",
   "@ui.loadingIcon.finalizing": {
-    "sourceHash": "2aac2cb"
+    "sourceHash": "0de5a42"
   },
-  "ui.loadingIcon.loaded": "Läste in {countText} {count, plural, one {fil} other {filer}}...",
+  "ui.loadingIcon.loaded": "Läste in {countText} {count, plural, one {fil} other {filer}}…",
   "@ui.loadingIcon.loaded": {
-    "sourceHash": "93e45fc"
+    "sourceHash": "69d2b22"
   },
-  "ui.loadingIcon.openingFolder": "Öppnar mappen...",
+  "ui.loadingIcon.openingFolder": "Öppnar mappen…",
   "@ui.loadingIcon.openingFolder": {
-    "sourceHash": "818cbbb"
+    "sourceHash": "c3ab98e"
   },
-  "ui.loadingIcon.loading": "Läser in...",
+  "ui.loadingIcon.loading": "Läser in…",
   "@ui.loadingIcon.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "ui.loadingIcon.cancelHint": "Tryck på <key></key> för att avbryta och gå tillbaka",
   "@ui.loadingIcon.cancelHint": {

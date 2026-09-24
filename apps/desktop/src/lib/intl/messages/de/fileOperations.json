@@ -50,7 +50,7 @@
   },
   "fileOperations.trash.undoing": "Objekte werden zurückgelegt …",
   "@fileOperations.trash.undoing": {
-    "sourceHash": "1be7766"
+    "sourceHash": "3272a7a"
   },
   "fileOperations.trash.undone": "{countText} {count, plural, one {Datei} other {Dateien}} zurückgelegt.",
   "@fileOperations.trash.undone": {
@@ -74,7 +74,7 @@
   },
   "fileOperations.delete.overflowMore": "… und {countText} {count, plural, one {weiteres Objekt} other {weitere Objekte}}",
   "@fileOperations.delete.overflowMore": {
-    "sourceHash": "2fb7f0e"
+    "sourceHash": "3b9968a"
   },
   "fileOperations.delete.scanFile": "{count, plural, one {Datei} other {Dateien}}",
   "@fileOperations.delete.scanFile": {
@@ -311,7 +311,7 @@
   },
   "fileOperations.transferDialog.checkingConflicts": "Konflikte werden geprüft …",
   "@fileOperations.transferDialog.checkingConflicts": {
-    "sourceHash": "bc10126"
+    "sourceHash": "11be123"
   },
   "fileOperations.transferDialog.mergeInfoSingle": "1 Ordner wird mit einem bestehenden Ordner zusammengeführt",
   "@fileOperations.transferDialog.mergeInfoSingle": {
@@ -403,23 +403,23 @@
   },
   "fileOperations.transferProgress.scanTitleCopy": "Prüfung vor dem Kopieren …",
   "@fileOperations.transferProgress.scanTitleCopy": {
-    "sourceHash": "fd21ea9"
+    "sourceHash": "f641ae3"
   },
   "fileOperations.transferProgress.scanTitleMove": "Prüfung vor dem Bewegen …",
   "@fileOperations.transferProgress.scanTitleMove": {
-    "sourceHash": "5e79da2"
+    "sourceHash": "2d904be"
   },
   "fileOperations.transferProgress.scanTitleCompress": "Prüfung vor dem Komprimieren …",
   "@fileOperations.transferProgress.scanTitleCompress": {
-    "sourceHash": "f01b959"
+    "sourceHash": "c610c90"
   },
   "fileOperations.transferProgress.scanTitleDelete": "Zu löschende Objekte werden gezählt …",
   "@fileOperations.transferProgress.scanTitleDelete": {
-    "sourceHash": "1bb559a"
+    "sourceHash": "d64adf2"
   },
   "fileOperations.transferProgress.scanTitleTrash": "Objekte für den Papierkorb werden gezählt …",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "d11467e"
+    "sourceHash": "6df6c7f"
   },
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "Rollback ist bei Bewegungen auf demselben Volume nicht möglich",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
@@ -427,27 +427,27 @@
   },
   "fileOperations.transferProgress.titleRollingBack": "Rollback läuft …",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "sourceHash": "c3fed24"
+    "sourceHash": "f89ef2e"
   },
   "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Dateien werden zurückgelegt} one {Datei wird zurückgelegt} other {{countText} Dateien werden zurückgelegt}} …",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
-    "sourceHash": "38c2022"
+    "sourceHash": "4de9c69"
   },
   "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Angelegtes wird gelöscht} one {Die angelegte Datei wird gelöscht} other {Die {countText} angelegten Dateien werden gelöscht}} …",
   "@fileOperations.transferProgress.titleReversalDeleting": {
-    "sourceHash": "bce7510"
+    "sourceHash": "587f4a3"
   },
   "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Alte Namen werden zurückgegeben} one {Alter Name wird zurückgegeben} other {{countText} alte Namen werden zurückgegeben}} …",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
-    "sourceHash": "e3f6bc3"
+    "sourceHash": "2ad8510"
   },
   "fileOperations.transferProgress.titleCancelling": "Wird abgebrochen …",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "37b4fbc"
+    "sourceHash": "7d0901a"
   },
   "fileOperations.transferProgress.titleCancellingSlow": "Wird abgebrochen … (USB-Übertragungen werden abgeschlossen)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "ac2ee1a"
+    "sourceHash": "80d6761"
   },
   "fileOperations.transferProgress.close": "Schließen",
   "@fileOperations.transferProgress.close": {
@@ -491,15 +491,15 @@
   },
   "fileOperations.transferProgress.titleFlushing": "Letztes Stück wird geschrieben …",
   "@fileOperations.transferProgress.titleFlushing": {
-    "sourceHash": "e0ba096"
+    "sourceHash": "3aa5686"
   },
   "fileOperations.transferProgress.titleRemovingOriginals": "Originale werden entfernt …",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
-    "sourceHash": "71465d5"
+    "sourceHash": "15a457d"
   },
   "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Wird kopiert} move {Wird bewegt} compress {Wird komprimiert} delete {Wird gelöscht} other {Wird in den Papierkorb bewegt}} …",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "fe64f70"
+    "sourceHash": "0c636e5"
   },
   "fileOperations.transferProgress.stageScanning": "Wird durchsucht",
   "@fileOperations.transferProgress.stageScanning": {

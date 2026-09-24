@@ -122,9 +122,9 @@
   "@settings.appearance.dateTimeFormat.optDesc.short": {
     "sourceHash": "4475197"
   },
-  "settings.appearance.dateTimeFormat.opt.custom": "Aangepast...",
+  "settings.appearance.dateTimeFormat.opt.custom": "Aangepast…",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.appearance.customDateTimeFormat.label": "Aangepaste datum-/tijdnotatie",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -2050,9 +2050,9 @@
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"
   },
-  "settings.control.customOption": "Aangepast...",
+  "settings.control.customOption": "Aangepast…",
   "@settings.control.customOption": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.control.customPrefix": "Aangepast: {value}",
   "@settings.control.customPrefix": {
@@ -2062,9 +2062,9 @@
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
   },
-  "settings.sidebar.searchPlaceholder": "Zoek in instellingen...",
+  "settings.sidebar.searchPlaceholder": "Zoek in instellingen…",
   "@settings.sidebar.searchPlaceholder": {
-    "sourceHash": "6801207"
+    "sourceHash": "57054c5"
   },
   "settings.sidebar.clearSearch": "Zoekopdracht wissen",
   "@settings.sidebar.clearSearch": {
@@ -2155,9 +2155,9 @@
   "@settings.ai.providerAria": {
     "sourceHash": "8791254"
   },
-  "settings.ai.loading": "Laden...",
+  "settings.ai.loading": "Laden…",
   "@settings.ai.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "settings.ai.tooltipOff": "AI-functies staan uit. Cmdr werkt volledig zonder AI: suggesties en slimme functies worden simpelweg verborgen.",
   "@settings.ai.tooltipOff": {
@@ -2179,9 +2179,9 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.fileSystemWatching.clearing": "Wissen...",
+  "settings.fileSystemWatching.clearing": "Wissen…",
   "@settings.fileSystemWatching.clearing": {
-    "sourceHash": "07a8243"
+    "sourceHash": "9a81378"
   },
   "settings.fileSystemWatching.clearIndex": "Index wissen",
   "@settings.fileSystemWatching.clearIndex": {
@@ -2375,9 +2375,9 @@
   "@settings.mcp.portInUseFallback": {
     "sourceHash": "bf23daa"
   },
-  "settings.mcp.checkingPort": "Beschikbaarheid van poort controleren...",
+  "settings.mcp.checkingPort": "Beschikbaarheid van poort controleren…",
   "@settings.mcp.checkingPort": {
-    "sourceHash": "c5432bf"
+    "sourceHash": "6069f12"
   },
   "settings.mcp.portAvailable": "Poort {port} is beschikbaar",
   "@settings.mcp.portAvailable": {

@@ -8,9 +8,9 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Indexando seu disco...",
+  "indexing.scan.label": "Indexando seu disco…",
   "@indexing.scan.label": {
-    "sourceHash": "3758d47"
+    "sourceHash": "5b0433c"
   },
   "indexing.scan.counters": "{entriesText} itens, {dirsText} pastas",
   "@indexing.scan.counters": {
@@ -109,21 +109,21 @@
   "@indexing.step.statusPending": {
     "sourceHash": "ba35f0c"
   },
-  "indexing.aggregation.loading": "Carregando pastas...",
+  "indexing.aggregation.loading": "Carregando pastas…",
   "@indexing.aggregation.loading": {
-    "sourceHash": "f553c87"
+    "sourceHash": "d0aa0da"
   },
-  "indexing.aggregation.sorting": "Ordenando pastas...",
+  "indexing.aggregation.sorting": "Ordenando pastas…",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "3a7c827"
+    "sourceHash": "5c5a247"
   },
-  "indexing.aggregation.computing": "Calculando tamanhos das pastas...",
+  "indexing.aggregation.computing": "Calculando tamanhos das pastas…",
   "@indexing.aggregation.computing": {
-    "sourceHash": "19f54fc"
+    "sourceHash": "d693bcf"
   },
-  "indexing.aggregation.writing": "Salvando tamanhos das pastas...",
+  "indexing.aggregation.writing": "Salvando tamanhos das pastas…",
   "@indexing.aggregation.writing": {
-    "sourceHash": "9466e98"
+    "sourceHash": "4cec9d8"
   },
   "indexing.replay.detail": "{eventsText} eventos processados",
   "@indexing.replay.detail": {

@@ -13,7 +13,7 @@
   },
   "viewer.loading": "正在載入…",
   "@viewer.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "viewer.error.noPath": "沒有指定檔案路徑",
   "@viewer.error.noPath": {
@@ -93,7 +93,7 @@
   },
   "viewer.search.placeholder": "在檔案中尋找…",
   "@viewer.search.placeholder": {
-    "sourceHash": "c1dc89b"
+    "sourceHash": "a3268b3"
   },
   "viewer.search.ariaLabel": "搜尋文字",
   "@viewer.search.ariaLabel": {
@@ -113,7 +113,7 @@
   },
   "viewer.search.searching": "正在搜尋…",
   "@viewer.search.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "viewer.search.partial": "（部分）",
   "@viewer.search.partial": {
@@ -239,11 +239,11 @@
   },
   "viewer.statusBar.badge.streamingIndexing": "串流中，正在建立索引…",
   "@viewer.statusBar.badge.streamingIndexing": {
-    "sourceHash": "506ef27"
+    "sourceHash": "db1718e"
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "這是一個以串流模式顯示的大型檔案。我們正在背景建立索引（最多 {seconds} 秒）…目前的行號是估算值。",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "6407733"
+    "sourceHash": "033d82d"
   },
   "viewer.statusBar.badge.streaming": "串流中",
   "@viewer.statusBar.badge.streaming": {

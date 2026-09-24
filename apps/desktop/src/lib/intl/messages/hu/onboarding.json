@@ -565,11 +565,11 @@
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Példa: sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
-    "sourceHash": "f9701a2"
+    "sourceHash": "9352883"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Példa: sk-ant-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
-    "sourceHash": "5a4d18d"
+    "sourceHash": "89347d5"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.generic": "API-kulcs",
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {

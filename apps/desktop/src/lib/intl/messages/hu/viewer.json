@@ -13,7 +13,7 @@
   },
   "viewer.loading": "Betöltés…",
   "@viewer.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "viewer.error.noPath": "Nincs megadva fájlútvonal",
   "@viewer.error.noPath": {
@@ -93,7 +93,7 @@
   },
   "viewer.search.placeholder": "Keresés a fájlban…",
   "@viewer.search.placeholder": {
-    "sourceHash": "c1dc89b"
+    "sourceHash": "a3268b3"
   },
   "viewer.search.ariaLabel": "Szöveg keresése",
   "@viewer.search.ariaLabel": {
@@ -114,7 +114,7 @@
   },
   "viewer.search.searching": "Keresés…",
   "@viewer.search.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "viewer.search.partial": "(részleges)",
   "@viewer.search.partial": {
@@ -240,11 +240,11 @@
   },
   "viewer.statusBar.badge.streamingIndexing": "streamelés, indexelés…",
   "@viewer.statusBar.badge.streamingIndexing": {
-    "sourceHash": "506ef27"
+    "sourceHash": "db1718e"
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "Ez egy nagy fájl streamelési módban. A háttérben indexet építünk (legfeljebb {seconds} mp)… A sorszámok jelenleg közelítőek.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "6407733"
+    "sourceHash": "033d82d"
   },
   "viewer.statusBar.badge.streaming": "streamelés",
   "@viewer.statusBar.badge.streaming": {

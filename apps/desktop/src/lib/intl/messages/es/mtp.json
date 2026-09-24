@@ -15,9 +15,9 @@
   "@mtp.connectedToast.dontShowAgain": {
     "sourceHash": "d98ab77"
   },
-  "mtp.connectedToast.disableMtp": "Desactivar MTP...",
+  "mtp.connectedToast.disableMtp": "Desactivar MTP…",
   "@mtp.connectedToast.disableMtp": {
-    "sourceHash": "2057a3d"
+    "sourceHash": "17c54f2"
   },
   "mtp.connectedToast.ok": "Aceptar",
   "@mtp.connectedToast.ok": {

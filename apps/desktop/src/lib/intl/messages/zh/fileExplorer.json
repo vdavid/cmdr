@@ -301,7 +301,7 @@
   },
   "fileExplorer.network.connecting": "正在连接…",
   "@fileExplorer.network.connecting": {
-    "sourceHash": "5f04ae9"
+    "sourceHash": "72021eb"
   },
   "fileExplorer.network.back": "返回",
   "@fileExplorer.network.back": {
@@ -333,7 +333,7 @@
   },
   "fileExplorer.network.browser.searching": "正在搜索…",
   "@fileExplorer.network.browser.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "fileExplorer.network.browser.refresh": "刷新",
   "@fileExplorer.network.browser.refresh": {
@@ -349,11 +349,11 @@
   },
   "fileExplorer.network.browser.status.resolving": "正在解析…",
   "@fileExplorer.network.browser.status.resolving": {
-    "sourceHash": "0660108"
+    "sourceHash": "6d2b99e"
   },
   "fileExplorer.network.browser.status.waitingForNetwork": "正在等待网络…",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
-    "sourceHash": "78199e3"
+    "sourceHash": "d1c5574"
   },
   "fileExplorer.network.browser.status.notChecked": "未检查",
   "@fileExplorer.network.browser.status.notChecked": {
@@ -397,7 +397,7 @@
   },
   "fileExplorer.network.browser.tooltip.resolving": "正在解析主机名和 IP 地址…",
   "@fileExplorer.network.browser.tooltip.resolving": {
-    "sourceHash": "1dc4c96"
+    "sourceHash": "cac249d"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "正在等待网络解析名称",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -473,7 +473,7 @@
   },
   "fileExplorer.network.share.connecting": "正在连接到 {hostName}…",
   "@fileExplorer.network.share.connecting": {
-    "sourceHash": "633622a"
+    "sourceHash": "fe38aec"
   },
   "fileExplorer.network.share.connectFailedTitle": "无法连接到 {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
@@ -549,7 +549,7 @@
   },
   "fileExplorer.mtp.connecting": "正在连接到设备…",
   "@fileExplorer.mtp.connecting": {
-    "sourceHash": "ad85006"
+    "sourceHash": "860bb9b"
   },
   "fileExplorer.mtp.tryAgain": "重试",
   "@fileExplorer.mtp.tryAgain": {
@@ -557,7 +557,7 @@
   },
   "fileExplorer.networkMount.mounting": "正在装载 {target}…",
   "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "222982d"
+    "sourceHash": "7b7368d"
   },
   "fileExplorer.networkMount.shareFallback": "共享",
   "@fileExplorer.networkMount.shareFallback": {
@@ -589,7 +589,7 @@
   },
   "fileExplorer.unreachable.retrying": "正在重试…",
   "@fileExplorer.unreachable.retrying": {
-    "sourceHash": "84a657b"
+    "sourceHash": "a16c8b1"
   },
   "fileExplorer.unreachable.retry": "重试",
   "@fileExplorer.unreachable.retry": {
@@ -1335,11 +1335,11 @@
   },
   "fileExplorer.navigation.connectingDirectly": "正在直接连接…",
   "@fileExplorer.navigation.connectingDirectly": {
-    "sourceHash": "2c431fc"
+    "sourceHash": "1f2d487"
   },
   "fileExplorer.navigation.connectingWithSavedPassword": "正在使用保存的密码连接…",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
-    "sourceHash": "1cb249f"
+    "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr 可以复用 macOS 已为“{displayName}”保存的密码。你会看到一个系统提示，请求允许访问钥匙串。这是正常的，点按“允许”即可。",
   "@fileExplorer.navigation.useSavedPasswordMessage": {

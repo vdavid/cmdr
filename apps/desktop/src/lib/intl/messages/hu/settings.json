@@ -124,7 +124,7 @@
   },
   "settings.appearance.dateTimeFormat.opt.custom": "Egyéni…",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.appearance.customDateTimeFormat.label": "Egyéni dátum-/időformátum",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -2045,7 +2045,7 @@
   },
   "settings.control.customOption": "Egyéni…",
   "@settings.control.customOption": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.control.customPrefix": "Egyéni: {value}",
   "@settings.control.customPrefix": {
@@ -2057,7 +2057,7 @@
   },
   "settings.sidebar.searchPlaceholder": "Beállítások keresése…",
   "@settings.sidebar.searchPlaceholder": {
-    "sourceHash": "6801207"
+    "sourceHash": "57054c5"
   },
   "settings.sidebar.clearSearch": "Keresés törlése",
   "@settings.sidebar.clearSearch": {
@@ -2150,7 +2150,7 @@
   },
   "settings.ai.loading": "Betöltés…",
   "@settings.ai.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "settings.ai.tooltipOff": "Az AI-funkciók ki vannak kapcsolva. A Cmdr teljesen működik AI nélkül is: a javaslatok és okos funkciók egyszerűen rejtve maradnak.",
   "@settings.ai.tooltipOff": {
@@ -2174,7 +2174,7 @@
   },
   "settings.fileSystemWatching.clearing": "Törlés…",
   "@settings.fileSystemWatching.clearing": {
-    "sourceHash": "07a8243"
+    "sourceHash": "9a81378"
   },
   "settings.fileSystemWatching.clearIndex": "Index törlése",
   "@settings.fileSystemWatching.clearIndex": {
@@ -2367,7 +2367,7 @@
   },
   "settings.mcp.checkingPort": "Port elérhetőségének ellenőrzése…",
   "@settings.mcp.checkingPort": {
-    "sourceHash": "c5432bf"
+    "sourceHash": "6069f12"
   },
   "settings.mcp.portAvailable": "A(z) {port} port elérhető",
   "@settings.mcp.portAvailable": {

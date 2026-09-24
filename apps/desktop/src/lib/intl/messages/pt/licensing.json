@@ -166,7 +166,7 @@
   },
   "licensing.dialog.loading": "Carregando…",
   "@licensing.dialog.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.dialog.detailsTitle": "Detalhes da licença",
   "@licensing.dialog.detailsTitle": {
@@ -278,7 +278,7 @@
   },
   "licensing.dialog.checking": "Verificando…",
   "@licensing.dialog.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "licensing.dialog.tryAgain": "Tentar novamente",
   "@licensing.dialog.tryAgain": {
@@ -286,7 +286,7 @@
   },
   "licensing.dialog.activating": "Ativando…",
   "@licensing.dialog.activating": {
-    "sourceHash": "fd2db6a"
+    "sourceHash": "230f6d1"
   },
   "licensing.dialog.activate": "Ativar",
   "@licensing.dialog.activate": {
@@ -382,7 +382,7 @@
   },
   "licensing.section.loading": "Carregando…",
   "@licensing.section.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.section.labelType": "Tipo de licença",
   "@licensing.section.labelType": {

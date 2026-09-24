@@ -166,7 +166,7 @@
   },
   "licensing.dialog.loading": "Betöltés…",
   "@licensing.dialog.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.dialog.detailsTitle": "Licenc részletei",
   "@licensing.dialog.detailsTitle": {
@@ -278,7 +278,7 @@
   },
   "licensing.dialog.checking": "Ellenőrzés…",
   "@licensing.dialog.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "licensing.dialog.tryAgain": "Próbáld újra",
   "@licensing.dialog.tryAgain": {
@@ -286,7 +286,7 @@
   },
   "licensing.dialog.activating": "Aktiválás…",
   "@licensing.dialog.activating": {
-    "sourceHash": "fd2db6a"
+    "sourceHash": "230f6d1"
   },
   "licensing.dialog.activate": "Aktiválás",
   "@licensing.dialog.activate": {
@@ -382,7 +382,7 @@
   },
   "licensing.section.loading": "Betöltés…",
   "@licensing.section.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.section.labelType": "Licenc típusa",
   "@licensing.section.labelType": {

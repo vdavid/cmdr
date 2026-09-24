@@ -301,9 +301,9 @@
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
   },
-  "fileExplorer.network.connecting": "Conectando...",
+  "fileExplorer.network.connecting": "Conectando…",
   "@fileExplorer.network.connecting": {
-    "sourceHash": "5f04ae9"
+    "sourceHash": "72021eb"
   },
   "fileExplorer.network.back": "Voltar",
   "@fileExplorer.network.back": {
@@ -333,9 +333,9 @@
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "fileExplorer.network.browser.searching": "Buscando...",
+  "fileExplorer.network.browser.searching": "Buscando…",
   "@fileExplorer.network.browser.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "fileExplorer.network.browser.refresh": "Atualizar",
   "@fileExplorer.network.browser.refresh": {
@@ -349,13 +349,13 @@
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
   },
-  "fileExplorer.network.browser.status.resolving": "Resolvendo...",
+  "fileExplorer.network.browser.status.resolving": "Resolvendo…",
   "@fileExplorer.network.browser.status.resolving": {
-    "sourceHash": "0660108"
+    "sourceHash": "6d2b99e"
   },
-  "fileExplorer.network.browser.status.waitingForNetwork": "Aguardando a rede...",
+  "fileExplorer.network.browser.status.waitingForNetwork": "Aguardando a rede…",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
-    "sourceHash": "78199e3"
+    "sourceHash": "d1c5574"
   },
   "fileExplorer.network.browser.status.notChecked": "Não verificado",
   "@fileExplorer.network.browser.status.notChecked": {
@@ -397,9 +397,9 @@
   "@fileExplorer.network.browser.status.connected": {
     "sourceHash": "2296556"
   },
-  "fileExplorer.network.browser.tooltip.resolving": "Resolvendo nome do host e endereço IP...",
+  "fileExplorer.network.browser.tooltip.resolving": "Resolvendo nome do host e endereço IP…",
   "@fileExplorer.network.browser.tooltip.resolving": {
-    "sourceHash": "1dc4c96"
+    "sourceHash": "cac249d"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Aguardando a resolução do nome de rede",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -473,9 +473,9 @@
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
-  "fileExplorer.network.share.connecting": "Conectando a {hostName}...",
+  "fileExplorer.network.share.connecting": "Conectando a {hostName}…",
   "@fileExplorer.network.share.connecting": {
-    "sourceHash": "633622a"
+    "sourceHash": "fe38aec"
   },
   "fileExplorer.network.share.connectFailedTitle": "Não foi possível conectar a {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
@@ -549,17 +549,17 @@
   "@fileExplorer.mtp.noStorage": {
     "sourceHash": "ff30402"
   },
-  "fileExplorer.mtp.connecting": "Conectando ao dispositivo...",
+  "fileExplorer.mtp.connecting": "Conectando ao dispositivo…",
   "@fileExplorer.mtp.connecting": {
-    "sourceHash": "ad85006"
+    "sourceHash": "860bb9b"
   },
   "fileExplorer.mtp.tryAgain": "Tentar novamente",
   "@fileExplorer.mtp.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "fileExplorer.networkMount.mounting": "Montando {target}...",
+  "fileExplorer.networkMount.mounting": "Montando {target}…",
   "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "222982d"
+    "sourceHash": "7b7368d"
   },
   "fileExplorer.networkMount.shareFallback": "compartilhamento",
   "@fileExplorer.networkMount.shareFallback": {
@@ -589,9 +589,9 @@
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
-  "fileExplorer.unreachable.retrying": "Tentando novamente...",
+  "fileExplorer.unreachable.retrying": "Tentando novamente…",
   "@fileExplorer.unreachable.retrying": {
-    "sourceHash": "84a657b"
+    "sourceHash": "a16c8b1"
   },
   "fileExplorer.unreachable.retry": "Tentar novamente",
   "@fileExplorer.unreachable.retry": {
@@ -1342,13 +1342,13 @@
   "@fileExplorer.navigation.connectDirectlyNowTooltip": {
     "sourceHash": "42b6bcc"
   },
-  "fileExplorer.navigation.connectingDirectly": "Conectando diretamente...",
+  "fileExplorer.navigation.connectingDirectly": "Conectando diretamente…",
   "@fileExplorer.navigation.connectingDirectly": {
-    "sourceHash": "2c431fc"
+    "sourceHash": "1f2d487"
   },
-  "fileExplorer.navigation.connectingWithSavedPassword": "Conectando com a senha salva...",
+  "fileExplorer.navigation.connectingWithSavedPassword": "Conectando com a senha salva…",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
-    "sourceHash": "1cb249f"
+    "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "O Cmdr pode reutilizar a senha que o macOS já salvou para \"{displayName}\". Você verá um aviso do sistema pedindo para liberar o acesso ao Acesso às Chaves. Isso é esperado, então clique em Permitir.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {

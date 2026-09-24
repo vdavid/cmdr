@@ -57,7 +57,7 @@
   },
   "crashReporter.dialog.sending": "正在发送…",
   "@crashReporter.dialog.sending": {
-    "sourceHash": "286a3af"
+    "sourceHash": "b8ed527"
   },
   "crashReporter.dialog.notSent": "报告没有发送出去。{reason}",
   "@crashReporter.dialog.notSent": {

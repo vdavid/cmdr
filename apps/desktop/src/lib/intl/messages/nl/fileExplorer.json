@@ -302,9 +302,9 @@
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
   },
-  "fileExplorer.network.connecting": "Verbinden...",
+  "fileExplorer.network.connecting": "Verbinden…",
   "@fileExplorer.network.connecting": {
-    "sourceHash": "5f04ae9"
+    "sourceHash": "72021eb"
   },
   "fileExplorer.network.back": "Terug",
   "@fileExplorer.network.back": {
@@ -334,9 +334,9 @@
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "fileExplorer.network.browser.searching": "Zoeken...",
+  "fileExplorer.network.browser.searching": "Zoeken…",
   "@fileExplorer.network.browser.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "fileExplorer.network.browser.refresh": "Ververs",
   "@fileExplorer.network.browser.refresh": {
@@ -350,13 +350,13 @@
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
   },
-  "fileExplorer.network.browser.status.resolving": "Omzetten...",
+  "fileExplorer.network.browser.status.resolving": "Omzetten…",
   "@fileExplorer.network.browser.status.resolving": {
-    "sourceHash": "0660108"
+    "sourceHash": "6d2b99e"
   },
-  "fileExplorer.network.browser.status.waitingForNetwork": "Wachten op netwerk...",
+  "fileExplorer.network.browser.status.waitingForNetwork": "Wachten op netwerk…",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
-    "sourceHash": "78199e3"
+    "sourceHash": "d1c5574"
   },
   "fileExplorer.network.browser.status.notChecked": "Niet gecontroleerd",
   "@fileExplorer.network.browser.status.notChecked": {
@@ -398,9 +398,9 @@
   "@fileExplorer.network.browser.status.connected": {
     "sourceHash": "2296556"
   },
-  "fileExplorer.network.browser.tooltip.resolving": "Hostnaam en IP-adres omzetten...",
+  "fileExplorer.network.browser.tooltip.resolving": "Hostnaam en IP-adres omzetten…",
   "@fileExplorer.network.browser.tooltip.resolving": {
-    "sourceHash": "1dc4c96"
+    "sourceHash": "cac249d"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Wachten tot het netwerk de naam omzet",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -474,9 +474,9 @@
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
-  "fileExplorer.network.share.connecting": "Verbinden met {hostName}...",
+  "fileExplorer.network.share.connecting": "Verbinden met {hostName}…",
   "@fileExplorer.network.share.connecting": {
-    "sourceHash": "633622a"
+    "sourceHash": "fe38aec"
   },
   "fileExplorer.network.share.connectFailedTitle": "Verbinden met {hostName} lukte niet",
   "@fileExplorer.network.share.connectFailedTitle": {
@@ -550,17 +550,17 @@
   "@fileExplorer.mtp.noStorage": {
     "sourceHash": "ff30402"
   },
-  "fileExplorer.mtp.connecting": "Verbinden met apparaat...",
+  "fileExplorer.mtp.connecting": "Verbinden met apparaat…",
   "@fileExplorer.mtp.connecting": {
-    "sourceHash": "ad85006"
+    "sourceHash": "860bb9b"
   },
   "fileExplorer.mtp.tryAgain": "Probeer opnieuw",
   "@fileExplorer.mtp.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "fileExplorer.networkMount.mounting": "{target} aankoppelen...",
+  "fileExplorer.networkMount.mounting": "{target} aankoppelen…",
   "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "222982d"
+    "sourceHash": "7b7368d"
   },
   "fileExplorer.networkMount.shareFallback": "gedeelde map",
   "@fileExplorer.networkMount.shareFallback": {
@@ -590,9 +590,9 @@
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
-  "fileExplorer.unreachable.retrying": "Opnieuw proberen...",
+  "fileExplorer.unreachable.retrying": "Opnieuw proberen…",
   "@fileExplorer.unreachable.retrying": {
-    "sourceHash": "84a657b"
+    "sourceHash": "a16c8b1"
   },
   "fileExplorer.unreachable.retry": "Probeer opnieuw",
   "@fileExplorer.unreachable.retry": {
@@ -1345,13 +1345,13 @@
   "@fileExplorer.navigation.connectDirectlyNowTooltip": {
     "sourceHash": "42b6bcc"
   },
-  "fileExplorer.navigation.connectingDirectly": "Direct verbinden...",
+  "fileExplorer.navigation.connectingDirectly": "Direct verbinden…",
   "@fileExplorer.navigation.connectingDirectly": {
-    "sourceHash": "2c431fc"
+    "sourceHash": "1f2d487"
   },
-  "fileExplorer.navigation.connectingWithSavedPassword": "Verbinden met het opgeslagen wachtwoord...",
+  "fileExplorer.navigation.connectingWithSavedPassword": "Verbinden met het opgeslagen wachtwoord…",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
-    "sourceHash": "1cb249f"
+    "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan het wachtwoord hergebruiken dat macOS al voor ‘{displayName}’ heeft opgeslagen. Je krijgt een systeemvenster te zien dat om toegang tot Sleutelhanger vraagt. Dat is normaal, dus klik op Sta toe.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {

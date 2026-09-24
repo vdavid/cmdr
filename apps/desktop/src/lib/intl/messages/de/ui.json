@@ -18,7 +18,7 @@
   },
   "ui.select.placeholder": "Auswählen …",
   "@ui.select.placeholder": {
-    "sourceHash": "1339bdd"
+    "sourceHash": "731fe04"
   },
   "ui.combobox.emptyText": "Keine Treffer. Tippe weiter, um deinen eigenen Wert zu verwenden.",
   "@ui.combobox.emptyText": {
@@ -66,19 +66,19 @@
   },
   "ui.loadingIcon.finalizing": "Alle {countText} {count, plural, one {Datei} other {Dateien}} geladen. Dateien werden sortiert, Ansicht wird vorbereitet …",
   "@ui.loadingIcon.finalizing": {
-    "sourceHash": "2aac2cb"
+    "sourceHash": "0de5a42"
   },
   "ui.loadingIcon.loaded": "{countText} {count, plural, one {Datei} other {Dateien}} geladen …",
   "@ui.loadingIcon.loaded": {
-    "sourceHash": "93e45fc"
+    "sourceHash": "69d2b22"
   },
   "ui.loadingIcon.openingFolder": "Ordner wird geöffnet …",
   "@ui.loadingIcon.openingFolder": {
-    "sourceHash": "818cbbb"
+    "sourceHash": "c3ab98e"
   },
   "ui.loadingIcon.loading": "Wird geladen …",
   "@ui.loadingIcon.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "ui.loadingIcon.cancelHint": "Drücke <key></key> zum Abbrechen und Zurückgehen",
   "@ui.loadingIcon.cancelHint": {

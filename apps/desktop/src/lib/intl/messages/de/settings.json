@@ -125,7 +125,7 @@
   },
   "settings.appearance.dateTimeFormat.opt.custom": "Eigenes …",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.appearance.customDateTimeFormat.label": "Eigenes Datums-/Zeitformat",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -2052,7 +2052,7 @@
   },
   "settings.control.customOption": "Eigenes …",
   "@settings.control.customOption": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.control.customPrefix": "Eigenes: {value}",
   "@settings.control.customPrefix": {
@@ -2064,7 +2064,7 @@
   },
   "settings.sidebar.searchPlaceholder": "Einstellungen durchsuchen …",
   "@settings.sidebar.searchPlaceholder": {
-    "sourceHash": "6801207"
+    "sourceHash": "57054c5"
   },
   "settings.sidebar.clearSearch": "Suche löschen",
   "@settings.sidebar.clearSearch": {
@@ -2157,7 +2157,7 @@
   },
   "settings.ai.loading": "Wird geladen …",
   "@settings.ai.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "settings.ai.tooltipOff": "KI-Funktionen sind ausgeschaltet. Cmdr funktioniert voll und ganz ohne KI: Vorschläge und smarte Funktionen sind dann einfach ausgeblendet.",
   "@settings.ai.tooltipOff": {
@@ -2181,7 +2181,7 @@
   },
   "settings.fileSystemWatching.clearing": "Wird gelöscht …",
   "@settings.fileSystemWatching.clearing": {
-    "sourceHash": "07a8243"
+    "sourceHash": "9a81378"
   },
   "settings.fileSystemWatching.clearIndex": "Index löschen",
   "@settings.fileSystemWatching.clearIndex": {
@@ -2377,7 +2377,7 @@
   },
   "settings.mcp.checkingPort": "Portverfügbarkeit wird geprüft …",
   "@settings.mcp.checkingPort": {
-    "sourceHash": "c5432bf"
+    "sourceHash": "6069f12"
   },
   "settings.mcp.portAvailable": "Port {port} ist verfügbar",
   "@settings.mcp.portAvailable": {

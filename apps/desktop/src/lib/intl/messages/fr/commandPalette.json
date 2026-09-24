@@ -1,7 +1,7 @@
 {
-  "commandPalette.searchPlaceholder": "Rechercher des commandes...",
+  "commandPalette.searchPlaceholder": "Rechercher des commandes…",
   "@commandPalette.searchPlaceholder": {
-    "sourceHash": "dd6c6ab"
+    "sourceHash": "baad3d0"
   },
   "commandPalette.searchAriaLabel": "Rechercher des commandes",
   "@commandPalette.searchAriaLabel": {

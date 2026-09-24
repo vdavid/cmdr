@@ -48,9 +48,9 @@
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
-  "fileOperations.trash.undoing": "Bezig met terugzetten...",
+  "fileOperations.trash.undoing": "Bezig met terugzetten…",
   "@fileOperations.trash.undoing": {
-    "sourceHash": "1be7766"
+    "sourceHash": "3272a7a"
   },
   "fileOperations.trash.undone": "{countText} {count, plural, one {bestand} other {bestanden}} teruggezet.",
   "@fileOperations.trash.undone": {
@@ -72,9 +72,9 @@
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
-  "fileOperations.delete.overflowMore": "... en nog {countText} {count, plural, one {onderdeel} other {onderdelen}}",
+  "fileOperations.delete.overflowMore": "… en nog {countText} {count, plural, one {onderdeel} other {onderdelen}}",
   "@fileOperations.delete.overflowMore": {
-    "sourceHash": "2fb7f0e"
+    "sourceHash": "3b9968a"
   },
   "fileOperations.delete.scanFile": "{count, plural, one {bestand} other {bestanden}}",
   "@fileOperations.delete.scanFile": {
@@ -309,9 +309,9 @@
   "@fileOperations.transferDialog.conflictsUnknown": {
     "sourceHash": "1bc997a"
   },
-  "fileOperations.transferDialog.checkingConflicts": "Bezig met controleren op conflicten...",
+  "fileOperations.transferDialog.checkingConflicts": "Bezig met controleren op conflicten…",
   "@fileOperations.transferDialog.checkingConflicts": {
-    "sourceHash": "bc10126"
+    "sourceHash": "11be123"
   },
   "fileOperations.transferDialog.mergeInfoSingle": "1 map wordt samengevoegd met een bestaande map",
   "@fileOperations.transferDialog.mergeInfoSingle": {
@@ -401,53 +401,53 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.transferProgress.scanTitleCopy": "Controleren voor het kopiëren...",
+  "fileOperations.transferProgress.scanTitleCopy": "Controleren voor het kopiëren…",
   "@fileOperations.transferProgress.scanTitleCopy": {
-    "sourceHash": "fd21ea9"
+    "sourceHash": "f641ae3"
   },
-  "fileOperations.transferProgress.scanTitleMove": "Controleren voor het verplaatsen...",
+  "fileOperations.transferProgress.scanTitleMove": "Controleren voor het verplaatsen…",
   "@fileOperations.transferProgress.scanTitleMove": {
-    "sourceHash": "5e79da2"
+    "sourceHash": "2d904be"
   },
-  "fileOperations.transferProgress.scanTitleCompress": "Controleren voor het comprimeren...",
+  "fileOperations.transferProgress.scanTitleCompress": "Controleren voor het comprimeren…",
   "@fileOperations.transferProgress.scanTitleCompress": {
-    "sourceHash": "f01b959"
+    "sourceHash": "c610c90"
   },
-  "fileOperations.transferProgress.scanTitleDelete": "Onderdelen tellen om te verwijderen...",
+  "fileOperations.transferProgress.scanTitleDelete": "Onderdelen tellen om te verwijderen…",
   "@fileOperations.transferProgress.scanTitleDelete": {
-    "sourceHash": "1bb559a"
+    "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Onderdelen tellen voor de prullenmand...",
+  "fileOperations.transferProgress.scanTitleTrash": "Onderdelen tellen voor de prullenmand…",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "d11467e"
+    "sourceHash": "6df6c7f"
   },
   "fileOperations.transferProgress.rollbackUnavailableTooltip": "Terugdraaien is niet beschikbaar voor verplaatsingen binnen hetzelfde volume",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "sourceHash": "da6af1f"
   },
-  "fileOperations.transferProgress.titleRollingBack": "Bezig met terugdraaien...",
+  "fileOperations.transferProgress.titleRollingBack": "Bezig met terugdraaien…",
   "@fileOperations.transferProgress.titleRollingBack": {
-    "sourceHash": "c3fed24"
+    "sourceHash": "f89ef2e"
   },
-  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Bezig met bestanden terugzetten} one {Bezig met het bestand terugzetten} other {Bezig met {countText} bestanden terugzetten}}...",
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Bezig met bestanden terugzetten} one {Bezig met het bestand terugzetten} other {Bezig met {countText} bestanden terugzetten}}…",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
-    "sourceHash": "38c2022"
+    "sourceHash": "4de9c69"
   },
-  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Bezig met het aangemaakte verwijderen} one {Bezig met het aangemaakte bestand verwijderen} other {Bezig met de {countText} aangemaakte bestanden verwijderen}}...",
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Bezig met het aangemaakte verwijderen} one {Bezig met het aangemaakte bestand verwijderen} other {Bezig met de {countText} aangemaakte bestanden verwijderen}}…",
   "@fileOperations.transferProgress.titleReversalDeleting": {
-    "sourceHash": "bce7510"
+    "sourceHash": "587f4a3"
   },
-  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Bezig met oude namen terugzetten} one {Bezig met de oude naam terugzetten} other {Bezig met {countText} oude namen terugzetten}}...",
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Bezig met oude namen terugzetten} one {Bezig met de oude naam terugzetten} other {Bezig met {countText} oude namen terugzetten}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
-    "sourceHash": "e3f6bc3"
+    "sourceHash": "2ad8510"
   },
-  "fileOperations.transferProgress.titleCancelling": "Bezig met annuleren...",
+  "fileOperations.transferProgress.titleCancelling": "Bezig met annuleren…",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "37b4fbc"
+    "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.titleCancellingSlow": "Bezig met annuleren... (USB-overdrachten afronden)",
+  "fileOperations.transferProgress.titleCancellingSlow": "Bezig met annuleren… (USB-overdrachten afronden)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "ac2ee1a"
+    "sourceHash": "80d6761"
   },
   "fileOperations.transferProgress.close": "Sluit",
   "@fileOperations.transferProgress.close": {
@@ -489,17 +489,17 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
-  "fileOperations.transferProgress.titleFlushing": "Het laatste stukje schrijven...",
+  "fileOperations.transferProgress.titleFlushing": "Het laatste stukje schrijven…",
   "@fileOperations.transferProgress.titleFlushing": {
-    "sourceHash": "e0ba096"
+    "sourceHash": "3aa5686"
   },
-  "fileOperations.transferProgress.titleRemovingOriginals": "De originelen verwijderen...",
+  "fileOperations.transferProgress.titleRemovingOriginals": "De originelen verwijderen…",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
-    "sourceHash": "71465d5"
+    "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} compress {Bezig met comprimeren} delete {Bezig met verwijderen} other {Naar prullenmand verplaatsen}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "fe64f70"
+    "sourceHash": "0c636e5"
   },
   "fileOperations.transferProgress.stageScanning": "Doorzoeken",
   "@fileOperations.transferProgress.stageScanning": {

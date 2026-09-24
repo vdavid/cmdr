@@ -1,11 +1,11 @@
 {
-  "ai.toast.downloadingTitle": "Descargando el modelo de IA...",
+  "ai.toast.downloadingTitle": "Descargando el modelo de IA…",
   "@ai.toast.downloadingTitle": {
-    "sourceHash": "453ec3b"
+    "sourceHash": "85d48ae"
   },
-  "ai.toast.startingDownload": "Iniciando la descarga...",
+  "ai.toast.startingDownload": "Iniciando la descarga…",
   "@ai.toast.startingDownload": {
-    "sourceHash": "d02eaf4"
+    "sourceHash": "22309b1"
   },
   "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · quedan {eta}}}",
   "@ai.toast.progress": {
@@ -15,9 +15,9 @@
   "@ai.toast.cancel": {
     "sourceHash": "19766ed"
   },
-  "ai.toast.installingTitle": "Configurando la IA...",
+  "ai.toast.installingTitle": "Configurando la IA…",
   "@ai.toast.installingTitle": {
-    "sourceHash": "509f6c1"
+    "sourceHash": "85f7001"
   },
   "ai.toast.installingDescription": "Iniciando el servidor",
   "@ai.toast.installingDescription": {
@@ -35,9 +35,9 @@
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "ai.toast.startingTitle": "Iniciando la IA...",
+  "ai.toast.startingTitle": "Iniciando la IA…",
   "@ai.toast.startingTitle": {
-    "sourceHash": "29fdbca"
+    "sourceHash": "d0a6a15"
   },
   "ai.toast.startingDescription": "Cargando el modelo, esto tarda unos segundos",
   "@ai.toast.startingDescription": {
@@ -231,9 +231,9 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.apiKeyPlaceholderAnthropic": "Ejemplo: sk-ant-abc123...",
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Ejemplo: sk-ant-abc123…",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
-    "sourceHash": "5a4d18d"
+    "sourceHash": "89347d5"
   },
   "ai.cloud.askCmdrOverrideHint": "El chat usa su propio modelo ({model}) en lugar de este. Cámbialo en la sección Ask Cmdr.",
   "@ai.cloud.askCmdrOverrideHint": {
@@ -243,9 +243,9 @@
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },
-  "ai.cloud.checking": "Comprobando...",
+  "ai.cloud.checking": "Comprobando…",
   "@ai.cloud.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "ai.cloud.connected": "Conectado",
   "@ai.cloud.connected": {
@@ -287,13 +287,13 @@
   "@ai.local.warningCaution": {
     "sourceHash": "f8070e9"
   },
-  "ai.local.statusRestarting": "Reiniciando...",
+  "ai.local.statusRestarting": "Reiniciando…",
   "@ai.local.statusRestarting": {
-    "sourceHash": "2c5bfcb"
+    "sourceHash": "75d0f14"
   },
-  "ai.local.statusStarting": "Iniciando...",
+  "ai.local.statusStarting": "Iniciando…",
   "@ai.local.statusStarting": {
-    "sourceHash": "82b9363"
+    "sourceHash": "bbe5fc3"
   },
   "ai.local.statusRunning": "En ejecución",
   "@ai.local.statusRunning": {
@@ -303,25 +303,25 @@
   "@ai.local.statusStopped": {
     "sourceHash": "1a4f630"
   },
-  "ai.local.installStepExtracting": "Paso 1 de 4: Extrayendo el entorno de ejecución...",
+  "ai.local.installStepExtracting": "Paso 1 de 4: Extrayendo el entorno de ejecución…",
   "@ai.local.installStepExtracting": {
-    "sourceHash": "941db20"
+    "sourceHash": "44fc84b"
   },
-  "ai.local.installStepDownloading": "Paso 2 de 4: Descargando el modelo...",
+  "ai.local.installStepDownloading": "Paso 2 de 4: Descargando el modelo…",
   "@ai.local.installStepDownloading": {
-    "sourceHash": "56596cb"
+    "sourceHash": "99d712f"
   },
-  "ai.local.installStepVerifying": "Paso 3 de 4: Verificando la descarga...",
+  "ai.local.installStepVerifying": "Paso 3 de 4: Verificando la descarga…",
   "@ai.local.installStepVerifying": {
-    "sourceHash": "4133988"
+    "sourceHash": "302f79a"
   },
-  "ai.local.installStepStarting": "Paso 4 de 4: Iniciando el servidor...",
+  "ai.local.installStepStarting": "Paso 4 de 4: Iniciando el servidor…",
   "@ai.local.installStepStarting": {
-    "sourceHash": "39acba1"
+    "sourceHash": "696bd5e"
   },
-  "ai.local.startingDownload": "Iniciando la descarga...",
+  "ai.local.startingDownload": "Iniciando la descarga…",
   "@ai.local.startingDownload": {
-    "sourceHash": "d02eaf4"
+    "sourceHash": "22309b1"
   },
   "ai.local.etaSeconds": "~{value} s restantes",
   "@ai.local.etaSeconds": {
@@ -409,25 +409,25 @@
   "@ai.local.downloadModel": {
     "sourceHash": "9979bea"
   },
-  "ai.local.deleteDialogTitleDeleting": "Eliminando el modelo...",
+  "ai.local.deleteDialogTitleDeleting": "Eliminando el modelo…",
   "@ai.local.deleteDialogTitleDeleting": {
-    "sourceHash": "413e1b9"
+    "sourceHash": "d3a7e58"
   },
   "ai.local.deleteDialogTitle": "¿Eliminar el modelo de IA?",
   "@ai.local.deleteDialogTitle": {
     "sourceHash": "c486f0c"
   },
-  "ai.local.deletingStatus": "Deteniendo el servidor y eliminando archivos...",
+  "ai.local.deletingStatus": "Deteniendo el servidor y eliminando archivos…",
   "@ai.local.deletingStatus": {
-    "sourceHash": "6671ac7"
+    "sourceHash": "e9de1ca"
   },
   "ai.local.deleteConfirmMessage": "Esto libera {modelSize} de espacio en disco. Tendrás que volver a descargarlo para usar la IA local de nuevo.",
   "@ai.local.deleteConfirmMessage": {
     "sourceHash": "1a6ca0d"
   },
-  "ai.local.deleteButtonDeleting": "Eliminando...",
+  "ai.local.deleteButtonDeleting": "Eliminando…",
   "@ai.local.deleteButtonDeleting": {
-    "sourceHash": "685ecb9"
+    "sourceHash": "43b5894"
   },
   "ai.local.deleteButton": "Eliminar",
   "@ai.local.deleteButton": {

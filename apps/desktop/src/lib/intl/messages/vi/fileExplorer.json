@@ -301,9 +301,9 @@
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
   },
-  "fileExplorer.network.connecting": "Đang kết nối...",
+  "fileExplorer.network.connecting": "Đang kết nối…",
   "@fileExplorer.network.connecting": {
-    "sourceHash": "5f04ae9"
+    "sourceHash": "72021eb"
   },
   "fileExplorer.network.back": "Quay lại",
   "@fileExplorer.network.back": {
@@ -333,9 +333,9 @@
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "fileExplorer.network.browser.searching": "Đang tìm kiếm...",
+  "fileExplorer.network.browser.searching": "Đang tìm kiếm…",
   "@fileExplorer.network.browser.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "fileExplorer.network.browser.refresh": "Làm mới",
   "@fileExplorer.network.browser.refresh": {
@@ -349,13 +349,13 @@
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
   },
-  "fileExplorer.network.browser.status.resolving": "Đang phân giải...",
+  "fileExplorer.network.browser.status.resolving": "Đang phân giải…",
   "@fileExplorer.network.browser.status.resolving": {
-    "sourceHash": "0660108"
+    "sourceHash": "6d2b99e"
   },
-  "fileExplorer.network.browser.status.waitingForNetwork": "Đang chờ mạng...",
+  "fileExplorer.network.browser.status.waitingForNetwork": "Đang chờ mạng…",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
-    "sourceHash": "78199e3"
+    "sourceHash": "d1c5574"
   },
   "fileExplorer.network.browser.status.notChecked": "Chưa kiểm tra",
   "@fileExplorer.network.browser.status.notChecked": {
@@ -397,9 +397,9 @@
   "@fileExplorer.network.browser.status.connected": {
     "sourceHash": "2296556"
   },
-  "fileExplorer.network.browser.tooltip.resolving": "Đang phân giải tên máy chủ và địa chỉ IP...",
+  "fileExplorer.network.browser.tooltip.resolving": "Đang phân giải tên máy chủ và địa chỉ IP…",
   "@fileExplorer.network.browser.tooltip.resolving": {
-    "sourceHash": "1dc4c96"
+    "sourceHash": "cac249d"
   },
   "fileExplorer.network.browser.tooltip.waitingForNetwork": "Đang chờ phân giải tên trên mạng",
   "@fileExplorer.network.browser.tooltip.waitingForNetwork": {
@@ -473,9 +473,9 @@
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
-  "fileExplorer.network.share.connecting": "Đang kết nối tới {hostName}...",
+  "fileExplorer.network.share.connecting": "Đang kết nối tới {hostName}…",
   "@fileExplorer.network.share.connecting": {
-    "sourceHash": "633622a"
+    "sourceHash": "fe38aec"
   },
   "fileExplorer.network.share.connectFailedTitle": "Không thể kết nối tới {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
@@ -549,17 +549,17 @@
   "@fileExplorer.mtp.noStorage": {
     "sourceHash": "ff30402"
   },
-  "fileExplorer.mtp.connecting": "Đang kết nối tới thiết bị...",
+  "fileExplorer.mtp.connecting": "Đang kết nối tới thiết bị…",
   "@fileExplorer.mtp.connecting": {
-    "sourceHash": "ad85006"
+    "sourceHash": "860bb9b"
   },
   "fileExplorer.mtp.tryAgain": "Thử lại",
   "@fileExplorer.mtp.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "fileExplorer.networkMount.mounting": "Đang gắn kết {target}...",
+  "fileExplorer.networkMount.mounting": "Đang gắn kết {target}…",
   "@fileExplorer.networkMount.mounting": {
-    "sourceHash": "222982d"
+    "sourceHash": "7b7368d"
   },
   "fileExplorer.networkMount.shareFallback": "mục chia sẻ",
   "@fileExplorer.networkMount.shareFallback": {
@@ -589,9 +589,9 @@
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
-  "fileExplorer.unreachable.retrying": "Đang thử lại...",
+  "fileExplorer.unreachable.retrying": "Đang thử lại…",
   "@fileExplorer.unreachable.retrying": {
-    "sourceHash": "84a657b"
+    "sourceHash": "a16c8b1"
   },
   "fileExplorer.unreachable.retry": "Thử lại",
   "@fileExplorer.unreachable.retry": {
@@ -1336,13 +1336,13 @@
   "@fileExplorer.navigation.connectDirectlyNowTooltip": {
     "sourceHash": "42b6bcc"
   },
-  "fileExplorer.navigation.connectingDirectly": "Đang kết nối trực tiếp...",
+  "fileExplorer.navigation.connectingDirectly": "Đang kết nối trực tiếp…",
   "@fileExplorer.navigation.connectingDirectly": {
-    "sourceHash": "2c431fc"
+    "sourceHash": "1f2d487"
   },
-  "fileExplorer.navigation.connectingWithSavedPassword": "Đang kết nối bằng mật khẩu đã lưu...",
+  "fileExplorer.navigation.connectingWithSavedPassword": "Đang kết nối bằng mật khẩu đã lưu…",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
-    "sourceHash": "1cb249f"
+    "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr có thể dùng lại mật khẩu mà macOS đã lưu cho \"{displayName}\". Bạn sẽ thấy một lời nhắc hệ thống xin phép truy cập chuỗi khóa. Điều đó là bình thường, nên hãy bấm Cho phép.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {

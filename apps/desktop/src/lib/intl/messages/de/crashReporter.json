@@ -57,7 +57,7 @@
   },
   "crashReporter.dialog.sending": "Wird gesendet …",
   "@crashReporter.dialog.sending": {
-    "sourceHash": "286a3af"
+    "sourceHash": "b8ed527"
   },
   "crashReporter.dialog.notSent": "Der Bericht wurde nicht gesendet. {reason}",
   "@crashReporter.dialog.notSent": {

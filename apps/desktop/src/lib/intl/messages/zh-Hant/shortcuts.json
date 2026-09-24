@@ -134,11 +134,11 @@
   },
   "shortcuts.section.searchByNamePlaceholder": "依動作名稱搜尋…",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "sourceHash": "3dae3b6"
+    "sourceHash": "b20d3e3"
   },
   "shortcuts.section.filterByKeysPlaceholder": "依按鍵篩選…",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "sourceHash": "87cd416"
+    "sourceHash": "22706d1"
   },
   "shortcuts.section.pressEscToClear": "按 Esc 鍵清除",
   "@shortcuts.section.pressEscToClear": {
@@ -207,7 +207,7 @@
   },
   "shortcuts.section.pressKeys": "請按鍵…",
   "@shortcuts.section.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "shortcuts.section.removeShortcutTooltip": "移除快速鍵",
   "@shortcuts.section.removeShortcutTooltip": {

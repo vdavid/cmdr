@@ -134,13 +134,13 @@
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "Rechercher par nom d''action...",
+  "shortcuts.section.searchByNamePlaceholder": "Rechercher par nom d''action…",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "sourceHash": "3dae3b6"
+    "sourceHash": "b20d3e3"
   },
-  "shortcuts.section.filterByKeysPlaceholder": "Filtrer par touches...",
+  "shortcuts.section.filterByKeysPlaceholder": "Filtrer par touches…",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "sourceHash": "87cd416"
+    "sourceHash": "22706d1"
   },
   "shortcuts.section.pressEscToClear": "Appuyez sur ÉCHAP pour effacer",
   "@shortcuts.section.pressEscToClear": {
@@ -207,9 +207,9 @@
   "@shortcuts.section.fixedBadge": {
     "sourceHash": "1246fc9"
   },
-  "shortcuts.section.pressKeys": "Appuyez sur des touches...",
+  "shortcuts.section.pressKeys": "Appuyez sur des touches…",
   "@shortcuts.section.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "shortcuts.section.removeShortcutTooltip": "Retirer le raccourci",
   "@shortcuts.section.removeShortcutTooltip": {

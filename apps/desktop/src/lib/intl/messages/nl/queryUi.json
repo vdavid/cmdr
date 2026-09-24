@@ -183,13 +183,13 @@
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
   },
-  "queryUi.results.scanningWithCount": "Bezig met scannen ({countText} onderdelen)...",
+  "queryUi.results.scanningWithCount": "Bezig met scannen ({countText} onderdelen)…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "0c05667"
+    "sourceHash": "67fb5ac"
   },
-  "queryUi.results.scanning": "Bezig met scannen...",
+  "queryUi.results.scanning": "Bezig met scannen…",
   "@queryUi.results.scanning": {
-    "sourceHash": "091ba9a"
+    "sourceHash": "c19b8ea"
   },
   "queryUi.results.indexUnavailable": "Schijfindex niet beschikbaar",
   "@queryUi.results.indexUnavailable": {
@@ -235,45 +235,45 @@
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
-  "queryUi.results.scanProgressWithCount": "Bezig met scannen ({countText} onderdelen)...",
+  "queryUi.results.scanProgressWithCount": "Bezig met scannen ({countText} onderdelen)…",
   "@queryUi.results.scanProgressWithCount": {
-    "sourceHash": "3c5b987"
+    "sourceHash": "563387d"
   },
-  "queryUi.results.scanProgress": "Bezig met scannen...",
+  "queryUi.results.scanProgress": "Bezig met scannen…",
   "@queryUi.results.scanProgress": {
-    "sourceHash": "091ba9a"
+    "sourceHash": "c19b8ea"
   },
-  "queryUi.results.loadingIndex": "Schijfindex laden...",
+  "queryUi.results.loadingIndex": "Schijfindex laden…",
   "@queryUi.results.loadingIndex": {
-    "sourceHash": "ab62214"
+    "sourceHash": "e9a7368"
   },
-  "queryUi.results.searching": "Zoeken...",
+  "queryUi.results.searching": "Zoeken…",
   "@queryUi.results.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "queryUi.results.noMatchHeading": "Geen bestanden voldoen aan deze criteria:",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
-  "queryUi.results.live.resolvingCoverage": "Nagaan wat er al geïndexeerd is...",
+  "queryUi.results.live.resolvingCoverage": "Nagaan wat er al geïndexeerd is…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "07b501d"
+    "sourceHash": "524487d"
   },
-  "queryUi.results.live.waitingForAnotherWalk": "Wachten op een andere doorloop van deze mappen...",
+  "queryUi.results.live.waitingForAnotherWalk": "Wachten op een andere doorloop van deze mappen…",
   "@queryUi.results.live.waitingForAnotherWalk": {
-    "sourceHash": "21163fe"
+    "sourceHash": "4a3b061"
   },
   "queryUi.results.live.waitingOnPathAria": "Een andere doorloop leest {path}",
   "@queryUi.results.live.waitingOnPathAria": {
     "sourceHash": "a54a689"
   },
-  "queryUi.results.live.readingIndex": "Lezen wat er al geïndexeerd is...",
+  "queryUi.results.live.readingIndex": "Lezen wat er al geïndexeerd is…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "5a048c9"
+    "sourceHash": "ed4159a"
   },
-  "queryUi.results.live.walking": "Mappen doorlopen die nog niet geïndexeerd zijn...",
+  "queryUi.results.live.walking": "Mappen doorlopen die nog niet geïndexeerd zijn…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "b2dbe67"
+    "sourceHash": "3829650"
   },
   "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {resultaat} other {resultaten}} tot nu toe",
   "@queryUi.results.live.matchesSoFar": {

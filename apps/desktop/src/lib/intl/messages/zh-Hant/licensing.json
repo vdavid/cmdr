@@ -166,7 +166,7 @@
   },
   "licensing.dialog.loading": "正在載入…",
   "@licensing.dialog.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.dialog.detailsTitle": "授權詳細資訊",
   "@licensing.dialog.detailsTitle": {
@@ -278,7 +278,7 @@
   },
   "licensing.dialog.checking": "正在檢查…",
   "@licensing.dialog.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "licensing.dialog.tryAgain": "再試一次",
   "@licensing.dialog.tryAgain": {
@@ -286,7 +286,7 @@
   },
   "licensing.dialog.activating": "正在啟用…",
   "@licensing.dialog.activating": {
-    "sourceHash": "fd2db6a"
+    "sourceHash": "230f6d1"
   },
   "licensing.dialog.activate": "啟用",
   "@licensing.dialog.activate": {
@@ -382,7 +382,7 @@
   },
   "licensing.section.loading": "正在載入…",
   "@licensing.section.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "licensing.section.labelType": "授權類型",
   "@licensing.section.labelType": {

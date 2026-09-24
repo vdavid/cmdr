@@ -18,7 +18,7 @@
   },
   "ui.select.placeholder": "Válassz…",
   "@ui.select.placeholder": {
-    "sourceHash": "1339bdd"
+    "sourceHash": "731fe04"
   },
   "ui.combobox.emptyText": "Nincs találat. Írj tovább, ha saját értéket szeretnél megadni.",
   "@ui.combobox.emptyText": {
@@ -66,19 +66,19 @@
   },
   "ui.loadingIcon.finalizing": "Mind a(z) {countText} {count, plural, one {fájl} other {fájl}} betöltve. Rendezés, nézet előkészítése…",
   "@ui.loadingIcon.finalizing": {
-    "sourceHash": "2aac2cb"
+    "sourceHash": "0de5a42"
   },
   "ui.loadingIcon.loaded": "{countText} {count, plural, one {fájl} other {fájl}} betöltve…",
   "@ui.loadingIcon.loaded": {
-    "sourceHash": "93e45fc"
+    "sourceHash": "69d2b22"
   },
   "ui.loadingIcon.openingFolder": "Mappa megnyitása…",
   "@ui.loadingIcon.openingFolder": {
-    "sourceHash": "818cbbb"
+    "sourceHash": "c3ab98e"
   },
   "ui.loadingIcon.loading": "Betöltés…",
   "@ui.loadingIcon.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "ui.loadingIcon.cancelHint": "Nyomd meg a(z) <key></key> billentyűt a megszakításhoz és visszalépéshez",
   "@ui.loadingIcon.cancelHint": {

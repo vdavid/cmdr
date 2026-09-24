@@ -1,11 +1,11 @@
 {
-  "ai.toast.downloadingTitle": "Đang tải về mô hình AI...",
+  "ai.toast.downloadingTitle": "Đang tải về mô hình AI…",
   "@ai.toast.downloadingTitle": {
-    "sourceHash": "453ec3b"
+    "sourceHash": "85d48ae"
   },
-  "ai.toast.startingDownload": "Đang bắt đầu tải về...",
+  "ai.toast.startingDownload": "Đang bắt đầu tải về…",
   "@ai.toast.startingDownload": {
-    "sourceHash": "d02eaf4"
+    "sourceHash": "22309b1"
   },
   "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · còn {eta}}}",
   "@ai.toast.progress": {
@@ -15,9 +15,9 @@
   "@ai.toast.cancel": {
     "sourceHash": "19766ed"
   },
-  "ai.toast.installingTitle": "Đang thiết lập AI...",
+  "ai.toast.installingTitle": "Đang thiết lập AI…",
   "@ai.toast.installingTitle": {
-    "sourceHash": "509f6c1"
+    "sourceHash": "85f7001"
   },
   "ai.toast.installingDescription": "Đang khởi động máy chủ",
   "@ai.toast.installingDescription": {
@@ -35,9 +35,9 @@
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "ai.toast.startingTitle": "AI đang khởi động...",
+  "ai.toast.startingTitle": "AI đang khởi động…",
   "@ai.toast.startingTitle": {
-    "sourceHash": "29fdbca"
+    "sourceHash": "d0a6a15"
   },
   "ai.toast.startingDescription": "Đang tải mô hình, việc này mất vài giây",
   "@ai.toast.startingDescription": {
@@ -231,9 +231,9 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.apiKeyPlaceholderAnthropic": "Ví dụ: sk-ant-abc123...",
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Ví dụ: sk-ant-abc123…",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
-    "sourceHash": "5a4d18d"
+    "sourceHash": "89347d5"
   },
   "ai.cloud.askCmdrOverrideHint": "Cuộc trò chuyện dùng mô hình riêng ({model}) thay vì mô hình này. Thay đổi trong phần Ask Cmdr.",
   "@ai.cloud.askCmdrOverrideHint": {
@@ -243,9 +243,9 @@
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },
-  "ai.cloud.checking": "Đang kiểm tra...",
+  "ai.cloud.checking": "Đang kiểm tra…",
   "@ai.cloud.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "ai.cloud.connected": "Đã kết nối",
   "@ai.cloud.connected": {
@@ -287,13 +287,13 @@
   "@ai.local.warningCaution": {
     "sourceHash": "f8070e9"
   },
-  "ai.local.statusRestarting": "Đang khởi động lại...",
+  "ai.local.statusRestarting": "Đang khởi động lại…",
   "@ai.local.statusRestarting": {
-    "sourceHash": "2c5bfcb"
+    "sourceHash": "75d0f14"
   },
-  "ai.local.statusStarting": "Đang khởi động...",
+  "ai.local.statusStarting": "Đang khởi động…",
   "@ai.local.statusStarting": {
-    "sourceHash": "82b9363"
+    "sourceHash": "bbe5fc3"
   },
   "ai.local.statusRunning": "Đang chạy",
   "@ai.local.statusRunning": {
@@ -303,25 +303,25 @@
   "@ai.local.statusStopped": {
     "sourceHash": "1a4f630"
   },
-  "ai.local.installStepExtracting": "Bước 1/4: Đang giải nén môi trường chạy...",
+  "ai.local.installStepExtracting": "Bước 1/4: Đang giải nén môi trường chạy…",
   "@ai.local.installStepExtracting": {
-    "sourceHash": "941db20"
+    "sourceHash": "44fc84b"
   },
-  "ai.local.installStepDownloading": "Bước 2/4: Đang tải về mô hình...",
+  "ai.local.installStepDownloading": "Bước 2/4: Đang tải về mô hình…",
   "@ai.local.installStepDownloading": {
-    "sourceHash": "56596cb"
+    "sourceHash": "99d712f"
   },
-  "ai.local.installStepVerifying": "Bước 3/4: Đang xác minh bản tải về...",
+  "ai.local.installStepVerifying": "Bước 3/4: Đang xác minh bản tải về…",
   "@ai.local.installStepVerifying": {
-    "sourceHash": "4133988"
+    "sourceHash": "302f79a"
   },
-  "ai.local.installStepStarting": "Bước 4/4: Đang khởi động máy chủ...",
+  "ai.local.installStepStarting": "Bước 4/4: Đang khởi động máy chủ…",
   "@ai.local.installStepStarting": {
-    "sourceHash": "39acba1"
+    "sourceHash": "696bd5e"
   },
-  "ai.local.startingDownload": "Đang bắt đầu tải về...",
+  "ai.local.startingDownload": "Đang bắt đầu tải về…",
   "@ai.local.startingDownload": {
-    "sourceHash": "d02eaf4"
+    "sourceHash": "22309b1"
   },
   "ai.local.etaSeconds": "~còn {value} giây",
   "@ai.local.etaSeconds": {
@@ -409,25 +409,25 @@
   "@ai.local.downloadModel": {
     "sourceHash": "9979bea"
   },
-  "ai.local.deleteDialogTitleDeleting": "Đang xóa mô hình...",
+  "ai.local.deleteDialogTitleDeleting": "Đang xóa mô hình…",
   "@ai.local.deleteDialogTitleDeleting": {
-    "sourceHash": "413e1b9"
+    "sourceHash": "d3a7e58"
   },
   "ai.local.deleteDialogTitle": "Xóa mô hình AI?",
   "@ai.local.deleteDialogTitle": {
     "sourceHash": "c486f0c"
   },
-  "ai.local.deletingStatus": "Đang dừng máy chủ và gỡ bỏ tệp...",
+  "ai.local.deletingStatus": "Đang dừng máy chủ và gỡ bỏ tệp…",
   "@ai.local.deletingStatus": {
-    "sourceHash": "6671ac7"
+    "sourceHash": "e9de1ca"
   },
   "ai.local.deleteConfirmMessage": "Việc này giải phóng {modelSize} dung lượng đĩa. Bạn sẽ cần tải lại để dùng AI cục bộ lần nữa.",
   "@ai.local.deleteConfirmMessage": {
     "sourceHash": "1a6ca0d"
   },
-  "ai.local.deleteButtonDeleting": "Đang xóa...",
+  "ai.local.deleteButtonDeleting": "Đang xóa…",
   "@ai.local.deleteButtonDeleting": {
-    "sourceHash": "685ecb9"
+    "sourceHash": "43b5894"
   },
   "ai.local.deleteButton": "Xóa",
   "@ai.local.deleteButton": {

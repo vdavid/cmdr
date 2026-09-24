@@ -123,9 +123,9 @@
   "@settings.appearance.dateTimeFormat.optDesc.short": {
     "sourceHash": "4475197"
   },
-  "settings.appearance.dateTimeFormat.opt.custom": "Anpassat...",
+  "settings.appearance.dateTimeFormat.opt.custom": "Anpassat…",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.appearance.customDateTimeFormat.label": "Anpassat datum-/tidsformat",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -2050,9 +2050,9 @@
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"
   },
-  "settings.control.customOption": "Anpassat...",
+  "settings.control.customOption": "Anpassat…",
   "@settings.control.customOption": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.control.customPrefix": "Anpassat: {value}",
   "@settings.control.customPrefix": {
@@ -2062,9 +2062,9 @@
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
   },
-  "settings.sidebar.searchPlaceholder": "Sök inställningar...",
+  "settings.sidebar.searchPlaceholder": "Sök inställningar…",
   "@settings.sidebar.searchPlaceholder": {
-    "sourceHash": "6801207"
+    "sourceHash": "57054c5"
   },
   "settings.sidebar.clearSearch": "Rensa sökning",
   "@settings.sidebar.clearSearch": {
@@ -2155,9 +2155,9 @@
   "@settings.ai.providerAria": {
     "sourceHash": "8791254"
   },
-  "settings.ai.loading": "Läser in...",
+  "settings.ai.loading": "Läser in…",
   "@settings.ai.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "settings.ai.tooltipOff": "AI-funktioner är avstängda. Cmdr fungerar fullt ut utan AI: förslag och smarta funktioner är helt enkelt dolda.",
   "@settings.ai.tooltipOff": {
@@ -2179,9 +2179,9 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.fileSystemWatching.clearing": "Rensar...",
+  "settings.fileSystemWatching.clearing": "Rensar…",
   "@settings.fileSystemWatching.clearing": {
-    "sourceHash": "07a8243"
+    "sourceHash": "9a81378"
   },
   "settings.fileSystemWatching.clearIndex": "Rensa index",
   "@settings.fileSystemWatching.clearIndex": {
@@ -2372,9 +2372,9 @@
   "@settings.mcp.portInUseFallback": {
     "sourceHash": "bf23daa"
   },
-  "settings.mcp.checkingPort": "Kontrollerar portens tillgänglighet...",
+  "settings.mcp.checkingPort": "Kontrollerar portens tillgänglighet…",
   "@settings.mcp.checkingPort": {
-    "sourceHash": "c5432bf"
+    "sourceHash": "6069f12"
   },
   "settings.mcp.portAvailable": "Port {port} är tillgänglig",
   "@settings.mcp.portAvailable": {

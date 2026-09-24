@@ -16,9 +16,9 @@
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"
   },
-  "ui.select.placeholder": "Chọn...",
+  "ui.select.placeholder": "Chọn…",
   "@ui.select.placeholder": {
-    "sourceHash": "1339bdd"
+    "sourceHash": "731fe04"
   },
   "ui.combobox.emptyText": "Không có kết quả khớp. Cứ tiếp tục gõ để dùng giá trị của riêng bạn.",
   "@ui.combobox.emptyText": {
@@ -64,21 +64,21 @@
   "@ui.toast.age": {
     "sourceHash": "6dcfed0"
   },
-  "ui.loadingIcon.finalizing": "Đã tải xong tất cả {countText} {count, plural, other {tệp}}. Đang sắp xếp các tệp của bạn, chuẩn bị hiển thị...",
+  "ui.loadingIcon.finalizing": "Đã tải xong tất cả {countText} {count, plural, other {tệp}}. Đang sắp xếp các tệp của bạn, chuẩn bị hiển thị…",
   "@ui.loadingIcon.finalizing": {
-    "sourceHash": "2aac2cb"
+    "sourceHash": "0de5a42"
   },
-  "ui.loadingIcon.loaded": "Đã tải {countText} {count, plural, other {tệp}}...",
+  "ui.loadingIcon.loaded": "Đã tải {countText} {count, plural, other {tệp}}…",
   "@ui.loadingIcon.loaded": {
-    "sourceHash": "93e45fc"
+    "sourceHash": "69d2b22"
   },
-  "ui.loadingIcon.openingFolder": "Đang mở thư mục...",
+  "ui.loadingIcon.openingFolder": "Đang mở thư mục…",
   "@ui.loadingIcon.openingFolder": {
-    "sourceHash": "818cbbb"
+    "sourceHash": "c3ab98e"
   },
-  "ui.loadingIcon.loading": "Đang tải...",
+  "ui.loadingIcon.loading": "Đang tải…",
   "@ui.loadingIcon.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "ui.loadingIcon.cancelHint": "Nhấn <key></key> để hủy và quay lại",
   "@ui.loadingIcon.cancelHint": {

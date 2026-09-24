@@ -16,9 +16,9 @@
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"
   },
-  "ui.select.placeholder": "Selecionar...",
+  "ui.select.placeholder": "Selecionar…",
   "@ui.select.placeholder": {
-    "sourceHash": "1339bdd"
+    "sourceHash": "731fe04"
   },
   "ui.combobox.emptyText": "Nenhuma correspondência. Continue digitando para usar seu próprio valor.",
   "@ui.combobox.emptyText": {
@@ -64,21 +64,21 @@
   "@ui.toast.age": {
     "sourceHash": "6dcfed0"
   },
-  "ui.loadingIcon.finalizing": "Todos os {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}} carregados. Ordenando seus arquivos, preparando a visualização...",
+  "ui.loadingIcon.finalizing": "Todos os {countText} {count, plural, one {arquivo} many {arquivos} other {arquivos}} carregados. Ordenando seus arquivos, preparando a visualização…",
   "@ui.loadingIcon.finalizing": {
-    "sourceHash": "2aac2cb"
+    "sourceHash": "0de5a42"
   },
-  "ui.loadingIcon.loaded": "{countText} {count, plural, one {arquivo carregado} many {arquivos carregados} other {arquivos carregados}}...",
+  "ui.loadingIcon.loaded": "{countText} {count, plural, one {arquivo carregado} many {arquivos carregados} other {arquivos carregados}}…",
   "@ui.loadingIcon.loaded": {
-    "sourceHash": "93e45fc"
+    "sourceHash": "69d2b22"
   },
-  "ui.loadingIcon.openingFolder": "Abrindo pasta...",
+  "ui.loadingIcon.openingFolder": "Abrindo pasta…",
   "@ui.loadingIcon.openingFolder": {
-    "sourceHash": "818cbbb"
+    "sourceHash": "c3ab98e"
   },
-  "ui.loadingIcon.loading": "Carregando...",
+  "ui.loadingIcon.loading": "Carregando…",
   "@ui.loadingIcon.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "ui.loadingIcon.cancelHint": "Pressione <key></key> para cancelar e voltar",
   "@ui.loadingIcon.cancelHint": {

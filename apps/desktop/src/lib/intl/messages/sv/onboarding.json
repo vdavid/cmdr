@@ -563,13 +563,13 @@
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Exempel: sk-abc123...",
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Exempel: sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
-    "sourceHash": "f9701a2"
+    "sourceHash": "9352883"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Exempel: sk-ant-abc123...",
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Exempel: sk-ant-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
-    "sourceHash": "5a4d18d"
+    "sourceHash": "89347d5"
   },
   "onboarding.cloudSetup.apiKeyPlaceholder.generic": "API-nyckel",
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {

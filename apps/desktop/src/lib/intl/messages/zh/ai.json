@@ -1,11 +1,11 @@
 {
   "ai.toast.downloadingTitle": "正在下载 AI 模型…",
   "@ai.toast.downloadingTitle": {
-    "sourceHash": "453ec3b"
+    "sourceHash": "85d48ae"
   },
   "ai.toast.startingDownload": "正在开始下载…",
   "@ai.toast.startingDownload": {
-    "sourceHash": "d02eaf4"
+    "sourceHash": "22309b1"
   },
   "ai.toast.progress": "{percentText} · {downloaded} / {total} · {speed}/s{eta, select, none {} other { · 剩余 {eta}}}",
   "@ai.toast.progress": {
@@ -17,7 +17,7 @@
   },
   "ai.toast.installingTitle": "正在设置 AI…",
   "@ai.toast.installingTitle": {
-    "sourceHash": "509f6c1"
+    "sourceHash": "85f7001"
   },
   "ai.toast.installingDescription": "正在启动服务器",
   "@ai.toast.installingDescription": {
@@ -37,7 +37,7 @@
   },
   "ai.toast.startingTitle": "AI 正在启动…",
   "@ai.toast.startingTitle": {
-    "sourceHash": "29fdbca"
+    "sourceHash": "d0a6a15"
   },
   "ai.toast.startingDescription": "正在加载模型，这需要几秒钟",
   "@ai.toast.startingDescription": {
@@ -231,9 +231,9 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.apiKeyPlaceholderAnthropic": "示例：sk-ant-abc123...",
+  "ai.cloud.apiKeyPlaceholderAnthropic": "示例：sk-ant-abc123…",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
-    "sourceHash": "5a4d18d"
+    "sourceHash": "89347d5"
   },
   "ai.cloud.askCmdrOverrideHint": "聊天使用的是它自己的模型（{model}），而不是这一个。请在 Ask Cmdr 部分中更改。",
   "@ai.cloud.askCmdrOverrideHint": {
@@ -245,7 +245,7 @@
   },
   "ai.cloud.checking": "正在检查…",
   "@ai.cloud.checking": {
-    "sourceHash": "2e5f79b"
+    "sourceHash": "ec963ff"
   },
   "ai.cloud.connected": "已连接",
   "@ai.cloud.connected": {
@@ -289,11 +289,11 @@
   },
   "ai.local.statusRestarting": "正在重新启动…",
   "@ai.local.statusRestarting": {
-    "sourceHash": "2c5bfcb"
+    "sourceHash": "75d0f14"
   },
   "ai.local.statusStarting": "正在启动…",
   "@ai.local.statusStarting": {
-    "sourceHash": "82b9363"
+    "sourceHash": "bbe5fc3"
   },
   "ai.local.statusRunning": "运行中",
   "@ai.local.statusRunning": {
@@ -305,23 +305,23 @@
   },
   "ai.local.installStepExtracting": "第 1 步，共 4 步：正在解压运行时…",
   "@ai.local.installStepExtracting": {
-    "sourceHash": "941db20"
+    "sourceHash": "44fc84b"
   },
   "ai.local.installStepDownloading": "第 2 步，共 4 步：正在下载模型…",
   "@ai.local.installStepDownloading": {
-    "sourceHash": "56596cb"
+    "sourceHash": "99d712f"
   },
   "ai.local.installStepVerifying": "第 3 步，共 4 步：正在校验下载…",
   "@ai.local.installStepVerifying": {
-    "sourceHash": "4133988"
+    "sourceHash": "302f79a"
   },
   "ai.local.installStepStarting": "第 4 步，共 4 步：正在启动服务器…",
   "@ai.local.installStepStarting": {
-    "sourceHash": "39acba1"
+    "sourceHash": "696bd5e"
   },
   "ai.local.startingDownload": "正在开始下载…",
   "@ai.local.startingDownload": {
-    "sourceHash": "d02eaf4"
+    "sourceHash": "22309b1"
   },
   "ai.local.etaSeconds": "约剩 {value} 秒",
   "@ai.local.etaSeconds": {
@@ -411,7 +411,7 @@
   },
   "ai.local.deleteDialogTitleDeleting": "正在删除模型…",
   "@ai.local.deleteDialogTitleDeleting": {
-    "sourceHash": "413e1b9"
+    "sourceHash": "d3a7e58"
   },
   "ai.local.deleteDialogTitle": "删除 AI 模型？",
   "@ai.local.deleteDialogTitle": {
@@ -419,7 +419,7 @@
   },
   "ai.local.deletingStatus": "正在停止服务器并移除文件…",
   "@ai.local.deletingStatus": {
-    "sourceHash": "6671ac7"
+    "sourceHash": "e9de1ca"
   },
   "ai.local.deleteConfirmMessage": "这会释放 {modelSize} 的磁盘空间。再次使用本地 AI 时，你需要重新下载它。",
   "@ai.local.deleteConfirmMessage": {
@@ -427,7 +427,7 @@
   },
   "ai.local.deleteButtonDeleting": "正在删除…",
   "@ai.local.deleteButtonDeleting": {
-    "sourceHash": "685ecb9"
+    "sourceHash": "43b5894"
   },
   "ai.local.deleteButton": "删除",
   "@ai.local.deleteButton": {

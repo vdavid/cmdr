@@ -13,7 +13,7 @@
   },
   "viewer.loading": "Carregando…",
   "@viewer.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "viewer.error.noPath": "Nenhum caminho de arquivo especificado",
   "@viewer.error.noPath": {
@@ -93,7 +93,7 @@
   },
   "viewer.search.placeholder": "Localizar no arquivo…",
   "@viewer.search.placeholder": {
-    "sourceHash": "c1dc89b"
+    "sourceHash": "a3268b3"
   },
   "viewer.search.ariaLabel": "Buscar texto",
   "@viewer.search.ariaLabel": {
@@ -114,7 +114,7 @@
   },
   "viewer.search.searching": "Buscando…",
   "@viewer.search.searching": {
-    "sourceHash": "78c9d9f"
+    "sourceHash": "c31723a"
   },
   "viewer.search.partial": "(parcial)",
   "@viewer.search.partial": {
@@ -240,11 +240,11 @@
   },
   "viewer.statusBar.badge.streamingIndexing": "transmitindo, indexando…",
   "@viewer.statusBar.badge.streamingIndexing": {
-    "sourceHash": "506ef27"
+    "sourceHash": "db1718e"
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "Este é um arquivo grande em modo de transmissão. Estamos criando um índice em segundo plano (no máximo {seconds} seg)… Os números das linhas são aproximados por enquanto.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "6407733"
+    "sourceHash": "033d82d"
   },
   "viewer.statusBar.badge.streaming": "transmitindo",
   "@viewer.statusBar.badge.streaming": {

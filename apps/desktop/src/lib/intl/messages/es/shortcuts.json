@@ -135,13 +135,13 @@
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "Buscar por nombre de acción...",
+  "shortcuts.section.searchByNamePlaceholder": "Buscar por nombre de acción…",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "sourceHash": "3dae3b6"
+    "sourceHash": "b20d3e3"
   },
-  "shortcuts.section.filterByKeysPlaceholder": "Filtrar por teclas...",
+  "shortcuts.section.filterByKeysPlaceholder": "Filtrar por teclas…",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "sourceHash": "87cd416"
+    "sourceHash": "22706d1"
   },
   "shortcuts.section.pressEscToClear": "Pulsa ESC para borrar",
   "@shortcuts.section.pressEscToClear": {
@@ -208,9 +208,9 @@
   "@shortcuts.section.fixedBadge": {
     "sourceHash": "1246fc9"
   },
-  "shortcuts.section.pressKeys": "Pulsa las teclas...",
+  "shortcuts.section.pressKeys": "Pulsa las teclas…",
   "@shortcuts.section.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "shortcuts.section.removeShortcutTooltip": "Quitar atajo",
   "@shortcuts.section.removeShortcutTooltip": {

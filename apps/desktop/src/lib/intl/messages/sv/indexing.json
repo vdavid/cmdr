@@ -8,9 +8,9 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Indexerar din enhet ...",
+  "indexing.scan.label": "Indexerar din enhet …",
   "@indexing.scan.label": {
-    "sourceHash": "3758d47"
+    "sourceHash": "5b0433c"
   },
   "indexing.scan.counters": "{entriesText} poster, {dirsText} kat.",
   "@indexing.scan.counters": {
@@ -109,21 +109,21 @@
   "@indexing.step.statusPending": {
     "sourceHash": "ba35f0c"
   },
-  "indexing.aggregation.loading": "Läser in mappar...",
+  "indexing.aggregation.loading": "Läser in mappar…",
   "@indexing.aggregation.loading": {
-    "sourceHash": "f553c87"
+    "sourceHash": "d0aa0da"
   },
-  "indexing.aggregation.sorting": "Sorterar mappar...",
+  "indexing.aggregation.sorting": "Sorterar mappar…",
   "@indexing.aggregation.sorting": {
-    "sourceHash": "3a7c827"
+    "sourceHash": "5c5a247"
   },
-  "indexing.aggregation.computing": "Beräknar mappstorlekar...",
+  "indexing.aggregation.computing": "Beräknar mappstorlekar…",
   "@indexing.aggregation.computing": {
-    "sourceHash": "19f54fc"
+    "sourceHash": "d693bcf"
   },
-  "indexing.aggregation.writing": "Sparar mappstorlekar...",
+  "indexing.aggregation.writing": "Sparar mappstorlekar…",
   "@indexing.aggregation.writing": {
-    "sourceHash": "9466e98"
+    "sourceHash": "4cec9d8"
   },
   "indexing.replay.detail": "{eventsText} händelser bearbetade",
   "@indexing.replay.detail": {

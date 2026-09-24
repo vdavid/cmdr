@@ -135,13 +135,13 @@
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "Sök efter åtgärdsnamn...",
+  "shortcuts.section.searchByNamePlaceholder": "Sök efter åtgärdsnamn…",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "sourceHash": "3dae3b6"
+    "sourceHash": "b20d3e3"
   },
-  "shortcuts.section.filterByKeysPlaceholder": "Filtrera efter tangenter...",
+  "shortcuts.section.filterByKeysPlaceholder": "Filtrera efter tangenter…",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "sourceHash": "87cd416"
+    "sourceHash": "22706d1"
   },
   "shortcuts.section.pressEscToClear": "Tryck på ESC för att rensa",
   "@shortcuts.section.pressEscToClear": {
@@ -208,9 +208,9 @@
   "@shortcuts.section.fixedBadge": {
     "sourceHash": "1246fc9"
   },
-  "shortcuts.section.pressKeys": "Tryck på tangenter...",
+  "shortcuts.section.pressKeys": "Tryck på tangenter…",
   "@shortcuts.section.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "shortcuts.section.removeShortcutTooltip": "Ta bort genväg",
   "@shortcuts.section.removeShortcutTooltip": {

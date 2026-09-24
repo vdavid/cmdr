@@ -55,9 +55,9 @@
   "@crashReporter.dialog.send": {
     "sourceHash": "a44d353"
   },
-  "crashReporter.dialog.sending": "Versturen...",
+  "crashReporter.dialog.sending": "Versturen…",
   "@crashReporter.dialog.sending": {
-    "sourceHash": "286a3af"
+    "sourceHash": "b8ed527"
   },
   "crashReporter.dialog.notSent": "Het rapport is niet verstuurd. {reason}",
   "@crashReporter.dialog.notSent": {

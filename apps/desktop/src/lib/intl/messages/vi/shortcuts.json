@@ -134,13 +134,13 @@
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "Tìm kiếm theo tên hành động...",
+  "shortcuts.section.searchByNamePlaceholder": "Tìm kiếm theo tên hành động…",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "sourceHash": "3dae3b6"
+    "sourceHash": "b20d3e3"
   },
-  "shortcuts.section.filterByKeysPlaceholder": "Lọc theo phím...",
+  "shortcuts.section.filterByKeysPlaceholder": "Lọc theo phím…",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "sourceHash": "87cd416"
+    "sourceHash": "22706d1"
   },
   "shortcuts.section.pressEscToClear": "Nhấn ESC để xóa",
   "@shortcuts.section.pressEscToClear": {
@@ -207,9 +207,9 @@
   "@shortcuts.section.fixedBadge": {
     "sourceHash": "1246fc9"
   },
-  "shortcuts.section.pressKeys": "Nhấn phím...",
+  "shortcuts.section.pressKeys": "Nhấn phím…",
   "@shortcuts.section.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "shortcuts.section.removeShortcutTooltip": "Gỡ bỏ phím tắt",
   "@shortcuts.section.removeShortcutTooltip": {

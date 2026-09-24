@@ -55,9 +55,9 @@
   "@crashReporter.dialog.send": {
     "sourceHash": "a44d353"
   },
-  "crashReporter.dialog.sending": "Envoi...",
+  "crashReporter.dialog.sending": "Envoi…",
   "@crashReporter.dialog.sending": {
-    "sourceHash": "286a3af"
+    "sourceHash": "b8ed527"
   },
   "crashReporter.dialog.notSent": "Le rapport n''a pas été envoyé. {reason}",
   "@crashReporter.dialog.notSent": {

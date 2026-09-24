@@ -133,11 +133,11 @@
   },
   "shortcuts.section.searchByNamePlaceholder": "按操作名称搜索…",
   "@shortcuts.section.searchByNamePlaceholder": {
-    "sourceHash": "3dae3b6"
+    "sourceHash": "b20d3e3"
   },
   "shortcuts.section.filterByKeysPlaceholder": "按按键筛选…",
   "@shortcuts.section.filterByKeysPlaceholder": {
-    "sourceHash": "87cd416"
+    "sourceHash": "22706d1"
   },
   "shortcuts.section.pressEscToClear": "按 Esc 键清除",
   "@shortcuts.section.pressEscToClear": {
@@ -206,7 +206,7 @@
   },
   "shortcuts.section.pressKeys": "请按键…",
   "@shortcuts.section.pressKeys": {
-    "sourceHash": "37aa30c"
+    "sourceHash": "7f34202"
   },
   "shortcuts.section.removeShortcutTooltip": "移除快捷键",
   "@shortcuts.section.removeShortcutTooltip": {

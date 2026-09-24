@@ -122,9 +122,9 @@
   "@settings.appearance.dateTimeFormat.optDesc.short": {
     "sourceHash": "4475197"
   },
-  "settings.appearance.dateTimeFormat.opt.custom": "Personnalisé...",
+  "settings.appearance.dateTimeFormat.opt.custom": "Personnalisé…",
   "@settings.appearance.dateTimeFormat.opt.custom": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.appearance.customDateTimeFormat.label": "Format de date/heure personnalisé",
   "@settings.appearance.customDateTimeFormat.label": {
@@ -2054,9 +2054,9 @@
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"
   },
-  "settings.control.customOption": "Personnalisé...",
+  "settings.control.customOption": "Personnalisé…",
   "@settings.control.customOption": {
-    "sourceHash": "b497c0b"
+    "sourceHash": "c4e69d5"
   },
   "settings.control.customPrefix": "Personnalisé : {value}",
   "@settings.control.customPrefix": {
@@ -2066,9 +2066,9 @@
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
   },
-  "settings.sidebar.searchPlaceholder": "Rechercher dans les réglages...",
+  "settings.sidebar.searchPlaceholder": "Rechercher dans les réglages…",
   "@settings.sidebar.searchPlaceholder": {
-    "sourceHash": "6801207"
+    "sourceHash": "57054c5"
   },
   "settings.sidebar.clearSearch": "Effacer la recherche",
   "@settings.sidebar.clearSearch": {
@@ -2159,9 +2159,9 @@
   "@settings.ai.providerAria": {
     "sourceHash": "8791254"
   },
-  "settings.ai.loading": "Chargement...",
+  "settings.ai.loading": "Chargement…",
   "@settings.ai.loading": {
-    "sourceHash": "47d2a51"
+    "sourceHash": "ba3bbbe"
   },
   "settings.ai.tooltipOff": "Les fonctionnalités d''IA sont désactivées. Cmdr fonctionne pleinement sans IA : les suggestions et les fonctionnalités intelligentes sont simplement masquées.",
   "@settings.ai.tooltipOff": {
@@ -2183,9 +2183,9 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.fileSystemWatching.clearing": "Effacement...",
+  "settings.fileSystemWatching.clearing": "Effacement…",
   "@settings.fileSystemWatching.clearing": {
-    "sourceHash": "07a8243"
+    "sourceHash": "9a81378"
   },
   "settings.fileSystemWatching.clearIndex": "Effacer l''index",
   "@settings.fileSystemWatching.clearIndex": {
@@ -2377,9 +2377,9 @@
   "@settings.mcp.portInUseFallback": {
     "sourceHash": "bf23daa"
   },
-  "settings.mcp.checkingPort": "Vérification de la disponibilité du port...",
+  "settings.mcp.checkingPort": "Vérification de la disponibilité du port…",
   "@settings.mcp.checkingPort": {
-    "sourceHash": "c5432bf"
+    "sourceHash": "6069f12"
   },
   "settings.mcp.portAvailable": "Le port {port} est disponible",
   "@settings.mcp.portAvailable": {
