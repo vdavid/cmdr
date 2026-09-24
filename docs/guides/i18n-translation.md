@@ -53,8 +53,8 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
    job**: record each term you settle in `terms.json` with its sources and a confidence (see Researching terms below).
    This isn't only for terms: whenever you hit a convention, gotcha, decision point, or rule that wasn't already written
    where you looked for it, write it down so the next translator inherits it instead of rediscovering it. Per-language
-   findings go in the style guide; a missing cross-language rule (like an ICU mechanic) goes in this guide or the
-   template. **Every message key you cite is verified**: `pnpm check i18n-citations` (`desktop-i18n-doc-citations`)
+   findings go in the style guide; a missing cross-language rule (like an ICU mechanic) goes to
+   `docs/i18n/source-queue.md` as a proposal, and the lead promotes it into the shared docs. **Every message key you cite is verified**: `pnpm check i18n-citations` (`desktop-i18n-doc-citations`)
    requires each backticked dotted token in a guide or a termbase file whose first segment is a real catalog namespace
    to name a real English key, and it fails the build when one doesn't. So a rename that orphans your evidence surfaces
    at once instead of talking the next translator out of a correct fix. Naming a key that's genuinely gone (recording
@@ -244,16 +244,19 @@ Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` me
    the pseudolocale generator does exactly this and is the reference). The hash is what `desktop-i18n-stale` uses to
    know a translation is still current.
 3. **Write the per-language style guide and start the termbase** (input 2 above): copy `docs/i18n/_template/` to
-   `docs/i18n/<tag>/` (`style.md` with its `## Digest`, an empty `terms.json`, and the `decisions.md` and
-   `review-queue.md` stubs) and fill the style guide.
+   `docs/i18n/<tag>/` (`style.md` with its `## Digest`, an empty `terms.json`, a `mechanics.json` stub, and the
+   `decisions.md` and `review-queue.md` stubs), fill the style guide, and declare the language's typography in
+   `mechanics.json` (quote pairs, apostrophes, required spacing, the hedges its grammar invites; schema in
+   `docs/i18n/termbase.md`).
 4. **Translate** with a translator agent (§ The translator-agent context), in batches, each from a
    `pnpm i18n:brief --lang <tag>` brief. The first batches will mostly say "no ruling": each term you settle becomes a
    `terms.json` entry the next batch inherits.
 5. **Run the checks**:
-   `pnpm check i18n-parity i18n-icu i18n-plural i18n-stale i18n-coverage i18n-dont-translate i18n-aria i18n-terms i18n-termbase i18n-citations`.
+   `pnpm check i18n-parity i18n-icu i18n-plural i18n-stale i18n-coverage i18n-dont-translate i18n-aria i18n-terms i18n-termbase i18n-mechanics i18n-citations`.
    Parity (placeholder/tag/token sets), ICU validity, plural coverage, translation coverage, aria containment,
-   citations, and the termbase schema are ERROR class, so a locale can't ship half-translated; stale, don't-translate,
-   term consistency, and termbase drift are WARN class. What each catches: `i18n.md` § Enforcement.
+   citations, and the termbase and mechanics schemas are ERROR class, so a locale can't ship half-translated; stale,
+   don't-translate, term consistency, termbase drift, `decisions.md` growth, and typography findings are WARN class.
+   What each catches: `i18n.md` § Enforcement (the termbase and mechanics checks: `docs/i18n/termbase.md` § Tooling).
 6. **Overflow-check the layout.** Drive the app and look for clipping; the pseudolocale (`en-XA`) is the deliberately
    long stand-in for this. See `i18n.md` § Pseudolocale.
 7. **Human review (optional, not a ship gate).** If a native reviewer is available, set `@key.reviewed: true` per key as
@@ -387,9 +390,15 @@ translator "fixing" it back.
 metadata, then a separate translator agent takes over. The lever is that the translator actually reads the language's
 style guide and the rulings for the terms in play; every agent already knows every language. `pnpm i18n:brief` (run in
 `apps/desktop`) assembles exactly that for one batch, AND the translator's standing instructions (ICU, raw families,
-aria, gender, write-back), rendered for the language. Those instructions live in `docs/i18n/translator-instructions.md`
-and nowhere else, so the brief is the one document an agent needs besides the full `style.md`. Flags, sections, and the
-blind-run mode: `docs/i18n/termbase.md` § Tooling.
+aria, gender, write-back) rendered for the language, AND the shared principles (voice, names vs prose, no hedged
+grammar, native typography, escalating source problems). Those live in `docs/i18n/translator-instructions.md` and
+`docs/i18n/translation-principles.md` and nowhere else, so the brief is the one document an agent needs besides the full
+`style.md`. Flags, sections, and the blind-run mode: `docs/i18n/termbase.md` § Tooling.
+
+**Closing the loop.** Every translator report ends with a Source feedback section (weak descriptions, missing
+screenshots, ambiguous English, proposed cross-language rules), and each item also lands in `docs/i18n/source-queue.md`.
+The lead resolves the queue with David (fixing the English, the description, or the shared docs) and deletes each entry
+once it's resolved. A locale's own files never carry a workaround for an English problem.
 
 Pick the shape by batch size. Sizes are `--stats` on the migrated `nl` termbase, 2026-09-24.
 
@@ -418,7 +427,8 @@ the path, rather than inlining ten briefs into prompts. The whole handoff prompt
 
 ```
 You are translating UI strings for Cmdr, a macOS file manager, into [LANGUAGE]. Your brief is at [BRIEF PATH]: read it,
-then docs/i18n/[TAG]/style.md, and follow the brief's Instructions section. Report every string you flagged.
+then docs/i18n/[TAG]/style.md, and follow the brief's Instructions and Principles sections. Report every string you
+flagged, and end with the Source feedback section the instructions describe.
 ```
 
 The instructions' "uncontrolled inserts" and "fragment keys" items come from the catalog audit: they're the two highest

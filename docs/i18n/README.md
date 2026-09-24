@@ -2,9 +2,14 @@
 
 Each shippable locale gets a folder at `docs/i18n/<tag>/`, where `<tag>` is the locale's BCP-47 tag (the same tag as its
 `apps/desktop/src/lib/intl/messages/<tag>/` catalog dir, e.g. `de`, `pt-BR`, `en-GB`). A full translation's folder holds
-`style.md` (opening with a `## Digest`), `terms.json` (its term rulings), `decisions.md` (the rationale behind them),
-and `review-queue.md` (flags for a future native reviewer). The concepts those rulings are keyed by live once, for every
-language, in `concepts.json`. Schema and tools (`pnpm i18n:brief`, the termbase check): `termbase.md`.
+`style.md` (opening with a `## Digest`), `terms.json` (its term rulings), `decisions.md` (the distilled rulings behind
+them), `mechanics.json` (its typography: quote marks, spacing, hedges to avoid), and `review-queue.md` (flags for a
+future native reviewer). The concepts those rulings are keyed by live once, for every language, in `concepts.json`.
+Schema and tools (`pnpm i18n:brief`, the termbase and mechanics checks): `termbase.md`.
+
+Shared by every language: `translator-instructions.md` (the standing instructions) and `translation-principles.md`
+(voice, names vs prose, no hedged grammar, native typography, escalation), both embedded in every brief, and
+`source-queue.md`, where translators log English-side problems for the lead to resolve.
 
 A style guide is the per-language half of the translation context. The other half is per-string and lives in the catalog
 (each key's `@key.description`, `placeholders`, and screenshot). The split matters:
@@ -186,6 +191,6 @@ worked example; `en-AU/style.md` shows how a second overlay points at a sibling 
 
 ## Starting a new language
 
-Copy the whole `_template/` folder to `<tag>/` (`style.md`, an empty `terms.json`, and the `decisions.md` and
-`review-queue.md` stubs) and fill in [`style.md`](_template/style.md), digest included, before the first translation
-pass. These files are working notes, not catalog data: they are never loaded by the app and never affect the build.
+Copy the whole `_template/` folder to `<tag>/` (`style.md`, an empty `terms.json`, a `mechanics.json` stub, and the
+`decisions.md` and `review-queue.md` stubs) and fill in [`style.md`](_template/style.md), digest included, and
+`mechanics.json` before the first translation pass. These files are working notes, not catalog data: they are never loaded by the app and never affect the build.

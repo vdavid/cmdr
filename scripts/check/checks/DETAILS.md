@@ -1893,9 +1893,15 @@ doubles as production code.
   it needs no allowlist and grandfathers nothing), i18n-termbase (desktop-i18n-termbase; ERROR on a schema problem in
   `docs/i18n/concepts.json` / `<tag>/terms.json`, WARN on coverage drift past a per-locale ratchet-down count in
   `apps/desktop/scripts/i18n-termbase-baseline.json`: a shipped key whose English uses a ruled concept while its
-  translation carries none of the ruling's forms. Script exit 3 is the ERROR, 1 the WARN; a locale with no `terms.json`
-  is skipped. Its CI step sits in `hygiene` beside i18n-citations, since `docs/i18n/` is outside the `svelte` filter;
-  `docs/i18n/termbase.md`). Those nine locale checks share one classification of every locale as a full translation or
+  translation carries none of the ruling's forms; the same file's `decisionsBytes` warns when a locale's `decisions.md`
+  grows past its byte budget, which local runs ratchet down and record for a first-seen file. Script exit 3 is the
+  ERROR, 1 the WARN; a locale with no `terms.json` is skipped. Its CI step sits in `hygiene` beside i18n-citations,
+  since `docs/i18n/` is outside the `svelte` filter; `docs/i18n/termbase.md`), i18n-mechanics (desktop-i18n-mechanics;
+  ERROR on a malformed `docs/i18n/<tag>/mechanics.json`, WARN past a ratchet-down count in
+  `apps/desktop/scripts/i18n-mechanics-baseline.json` on catalog values breaking the locale's declared typography: a
+  straight `"`, an undeclared quote mark, `...`, or a hit of its spacing or hedge patterns. A locale with no file is
+  skipped, an overlay inherits its base's, and `--adopt <tag>` records a newly declared locale once. Same exit contract
+  and `hygiene` CI step as i18n-termbase; `docs/i18n/termbase.md`). Those locale checks share one classification of every locale as a full translation or
   an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`; rule table in `docs/guides/i18n.md` §
   Overlay catalogs). The Go side deliberately doesn't mirror it: `nonEnLocaleCount` counts catalog dirs for the success
   lines and nothing more, because classifying needs CLDR script data (`zh-Hant` is NOT an overlay of Simplified `zh`)
