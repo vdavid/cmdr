@@ -328,10 +328,10 @@ const toc = [
             main page: <a href="/trust#signing">Signing, notarization, and updates</a>.
         </li>
         <li>
-            <strong>Provenance and SBOMs</strong>: from the next release on, once a release is published, a separate
-            step downloads every file back from it and signs a build attestation for each one (SLSA Build Level 2). It
-            also publishes CycloneDX SBOMs (software bills of materials) for the Rust and JavaScript dependencies, tied
-            to the builds they describe. Check any download with
+            <strong>Provenance and SBOMs</strong>: once a release is published, a separate step downloads every file
+            back from it and signs a build attestation for each one (SLSA Build Level 2). It also publishes CycloneDX
+            SBOMs (software bills of materials) for the Rust and JavaScript dependencies, which from the next release on
+            are signed and tied to the builds they describe. Check any download with
             <code>gh attestation verify &lt;file&gt; --repo vdavid/cmdr</code>.
         </li>
         <li>
@@ -340,9 +340,8 @@ const toc = [
         </li>
     </ul>
     <DevTodo>
-        After the next release, run <code>gh attestation verify</code> on the DMG and then drop the "from the next
-        release" wording here and on <code>/trust</code>. Commands: <code>docs/guides/releasing.md</code> § Provenance
-        and SBOM attestations.
+        After the next release, verify an SBOM attestation and drop "from the next release on" here and on
+        <code>/trust</code>. Commands: <code>docs/guides/releasing.md</code> § Provenance and SBOM attestations.
     </DevTodo>
 
     <h2 id="updates">Update delivery</h2>

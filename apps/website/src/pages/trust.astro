@@ -254,9 +254,8 @@ const toc = [
             <code>source=Notarized Developer ID</code>.
         </li>
         <li>
-            <strong>Hardened runtime</strong> is on. The released version {verifiedAgainst.version} has one entitlement,
-            <code>com.apple.security.cs.disable-library-validation</code>. The source no longer has it, and the next
-            release ships with no entitlements at all.
+            <strong>Hardened runtime</strong> is on, and the released version {verifiedAgainst.version} has no
+            entitlements at all.
         </li>
         <li>
             <strong>Code requirement</strong> for a PPPC profile (to grant Full Disk Access through MDM):
@@ -271,16 +270,16 @@ const toc = [
             publishes SHA-256 checksums. There's no <code>.pkg</code> installer yet.
         </li>
         <li>
-            <strong>Build provenance</strong>: from the next release on, every file in a release carries a signed
+            <strong>Build provenance</strong>: every file in a release carries a signed
             attestation (<a href="https://slsa.dev/spec/v1.0/levels#build-l2">SLSA Build Level 2</a>) saying which
             commit and which GitHub workflow built it. To check a download, run
             <code>gh attestation verify &lt;file&gt; --repo vdavid/cmdr</code> with the
             <a href="https://cli.github.com/">GitHub CLI</a>.
         </li>
         <li>
-            <strong>SBOMs</strong>: from the next release on, each release also includes software bills of materials
-            in CycloneDX format, one for the Rust dependencies of each processor type and one for the JavaScript
-            dependencies. They're signed and tied to the builds they describe, the same way.
+            <strong>SBOMs</strong>: each release also includes software bills of materials in CycloneDX format, one
+            for the Rust dependencies of each processor type and one for the JavaScript dependencies. From the next
+            release on, they're signed and tied to the builds they describe, the same way.
         </li>
         <li>
             <strong>Updates</strong>: the app downloads the new version from GitHub and checks its Ed25519 (minisign)
@@ -300,20 +299,16 @@ const toc = [
         </li>
     </ul>
     <DevTodo>
-        After the next release, run <code>codesign -d --entitlements - Cmdr.app</code> on the downloaded build. If it's
-        empty, replace the entitlement sentence with "no entitlements at all", and bump <code>verifiedAgainst</code> in
-        <code>src/lib/trust.ts</code>. (0.46.1, the current release, still has
-        <code>disable-library-validation</code>: the fix in <code>46146d662</code> landed after its tag. The fact sheet
-        and <code>docs/security.md</code> describe <code>main</code>, not the release.) The code requirement above was
-        read from the 0.46.1 release with <code>codesign -d -r-</code>. Nobody has tested a PPPC profile with it yet.
+        The entitlements (none) and the code requirement above were read from the 0.47.0 release with
+        <code>codesign -d --entitlements -</code> and <code>codesign -d -r-</code>. Nobody has tested a PPPC profile
+        with it yet.
     </DevTodo>
     <DevTodo>
-        After the next release, run <code>gh attestation verify</code> on the DMG and then drop the "from the next
-        release" wording (here, in the "Not in place yet" line in <code>src/lib/trust.ts</code>, and on
-        <code>/trust/development</code>). Check that the three <code>.cdx.json</code> SBOMs are on the release too.
-        The exact commands are in <code>docs/guides/releasing.md</code> § Provenance and SBOM attestations. The
-        attestations are new and have never run: if the <code>attest</code> or <code>sbom</code> job goes red, the
-        release itself is fine, and that guide says how to retry.
+        Provenance verified on the 0.47.0 DMG. Its SBOM attestations failed (the SBOMs lacked the
+        <code>serialNumber</code> the attest action requires, fixed in <code>release.yml</code> since). After the next
+        release, run the SBOM <code>gh attestation verify</code> from <code>docs/guides/releasing.md</code> § Provenance
+        and SBOM attestations, then drop "From the next release on" from the SBOM line here, on
+        <code>/trust/development</code>, and in the "Not in place yet" line in <code>src/lib/trust.ts</code>.
     </DevTodo>
 
     <h2 id="permissions">Sandbox and permissions</h2>
