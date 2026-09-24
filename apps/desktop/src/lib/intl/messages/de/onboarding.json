@@ -91,7 +91,7 @@
   "@onboarding.stepFda.revoked.ifNot": {
     "sourceHash": "24667ee"
   },
-  "onboarding.stepFda.firstAsk.lede": "<strong>Wahrscheinlich willst du einfach loslegen.</strong> Sorry, dass das zuerst kommt, aber es ist nötig.",
+  "onboarding.stepFda.firstAsk.lede": "<strong>Wahrscheinlich willst du einfach loslegen.</strong> Tut mir leid, dass das zuerst kommt, aber es ist nötig.",
   "@onboarding.stepFda.firstAsk.lede": {
     "sourceHash": "7f19b2a"
   },
@@ -555,7 +555,7 @@
   "@onboarding.cloudSetup.step.endpointPlaceholder": {
     "sourceHash": "dbc7343"
   },
-  "onboarding.cloudSetup.step.pasteKey": "Füge deinen API-Schlüssel ein",
+  "onboarding.cloudSetup.step.pasteKey": "Setze deinen API-Schlüssel ein",
   "@onboarding.cloudSetup.step.pasteKey": {
     "sourceHash": "e35b296"
   },

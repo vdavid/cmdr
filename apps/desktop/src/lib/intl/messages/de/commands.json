@@ -120,7 +120,7 @@
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"
   },
-  "commands.navGoToPath.description": "Den fokussierten Bereich zu einem getippten, eingefügten oder zuletzt verwendeten Pfad springen lassen.",
+  "commands.navGoToPath.description": "Den fokussierten Bereich zu einem getippten, eingesetzten oder zuletzt verwendeten Pfad springen lassen.",
   "@commands.navGoToPath.description": {
     "sourceHash": "fc6a00c"
   },
@@ -828,7 +828,7 @@
   "@commands.handler.openTerminalHere.noPath": {
     "sourceHash": "d6520b7"
   },
-  "commands.handler.openTerminalHere.launchRefused": "Cmdr konnte deine Terminal-App nicht starten. Öffne sie einmal selbst und versuch es dann noch mal.",
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr konnte deine Terminal-App nicht starten. Öffne sie einmal selbst und versuche es dann noch mal.",
   "@commands.handler.openTerminalHere.launchRefused": {
     "sourceHash": "ffd6b3a"
   },

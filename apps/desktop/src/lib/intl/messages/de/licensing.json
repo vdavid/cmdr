@@ -28,7 +28,7 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.vendoredHeading": "Icons und andere Dateien ({count, number})",
+  "licensing.acknowledgements.vendoredHeading": "Symbole und andere Dateien ({count, number})",
   "@licensing.acknowledgements.vendoredHeading": {
     "sourceHash": "f5bcd78"
   },
@@ -253,7 +253,7 @@
   "@licensing.dialog.continue": {
     "sourceHash": "31fbef1"
   },
-  "licensing.dialog.enterPrompt": "Füge deinen Lizenzschlüssel aus der E-Mail ein, die du nach dem Kauf erhalten hast. Noch keinen? <getLicense>Lizenz erwerben</getLicense>.",
+  "licensing.dialog.enterPrompt": "Setze deinen Lizenzschlüssel aus der E-Mail ein, die du nach dem Kauf erhalten hast. Noch keinen? <getLicense>Lizenz erwerben</getLicense>.",
   "@licensing.dialog.enterPrompt": {
     "sourceHash": "f6fb47a"
   },
@@ -333,7 +333,7 @@
   "@licensing.error.badSignature": {
     "sourceHash": "e9842df"
   },
-  "licensing.error.badSignatureHint": "Prüfe ihn bitte auf Tippfehler und füge ihn erneut aus deiner Kauf-E-Mail ein.",
+  "licensing.error.badSignatureHint": "Prüfe ihn bitte auf Tippfehler und setze ihn erneut aus deiner Kauf-E-Mail ein.",
   "@licensing.error.badSignatureHint": {
     "sourceHash": "8734aa5"
   },
@@ -349,7 +349,7 @@
   "@licensing.error.shortCodeNotFound": {
     "sourceHash": "c123af8"
   },
-  "licensing.error.shortCodeNotFoundHint": "Vergewissere dich bitte, dass du den richtigen Schlüssel aus deiner Kauf-E-Mail eingefügt hast.",
+  "licensing.error.shortCodeNotFoundHint": "Vergewissere dich bitte, dass du den richtigen Schlüssel aus deiner Kauf-E-Mail eingesetzt hast.",
   "@licensing.error.shortCodeNotFoundHint": {
     "sourceHash": "a2f07d2"
   },

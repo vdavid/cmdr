@@ -499,7 +499,7 @@
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "4e6b9ef"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners auf dem Server und das Konto, mit dem du die Freigabe verbunden hast\n- Manche Ordner gehören dem Systemkonto des Servers selbst (etwa `lost+found` auf einer Linux-Freigabe) und bleiben für alle anderen verschlossen\n- Um dich als jemand anderes anzumelden, wirf die Freigabe aus und verbinde sie erneut mit diesen Zugangsdaten",
+  "errors.listing.remotePermissionDenied.suggestion": "Das kannst du versuchen:\n- Prüfe die Zugriffsrechte des Ordners auf dem Server und das Konto, mit dem du die Freigabe eingebunden hast\n- Manche Ordner gehören dem Systemkonto des Servers selbst (etwa `lost+found` auf einer Linux-Freigabe) und bleiben für alle anderen verschlossen\n- Um dich als jemand anderes anzumelden, wirf die Freigabe aus und binde sie mit diesen Anmeldedaten erneut ein",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "506e57a"
   },
@@ -631,7 +631,7 @@
   "@errors.listing.invalidName.explanation": {
     "sourceHash": "7000b52"
   },
-  "errors.listing.invalidName.suggestion": "Das kannst du versuchen:\n- Benenne das Element kürzer und schlichter um\n- Manche Ziele lehnen reservierte Namen wie `CON`, `NUL` oder `LPT1` ab\n- Ein sehr langer Name kann das eigene Limit des Ziels überschreiten, auch wenn jedes einzelne Zeichen darin in Ordnung ist",
+  "errors.listing.invalidName.suggestion": "Das kannst du versuchen:\n- Benenne das Objekt kürzer und schlichter um\n- Manche Ziele lehnen reservierte Namen wie `CON`, `NUL` oder `LPT1` ab\n- Ein sehr langer Name kann das eigene Limit des Ziels überschreiten, auch wenn jedes einzelne Zeichen darin in Ordnung ist",
   "@errors.listing.invalidName.suggestion": {
     "sourceHash": "9074cf3"
   },
@@ -1101,11 +1101,11 @@
   "@errors.write.destinationNotFound.title": {
     "sourceHash": "215ddfe"
   },
-  "errors.write.destinationNotFound.message.copy": "Der Ordner, in den du kopierst, existiert nicht mehr, also konnte nichts abgelegt werden. Die Originale sind unberührt.",
+  "errors.write.destinationNotFound.message.copy": "Den Ordner, in den du kopierst, gibt es nicht mehr, deine Dateien ließen sich also nirgends ablegen. Die Originale sind unberührt.",
   "@errors.write.destinationNotFound.message.copy": {
     "sourceHash": "cc637e2"
   },
-  "errors.write.destinationNotFound.message.move": "Der Ordner, in den du bewegst, existiert nicht mehr, also konnte nichts abgelegt werden. Die Originale sind unberührt.",
+  "errors.write.destinationNotFound.message.move": "Den Ordner, in den du bewegst, gibt es nicht mehr, deine Dateien ließen sich also nirgends ablegen. Die Originale sind unberührt.",
   "@errors.write.destinationNotFound.message.move": {
     "sourceHash": "1726290"
   },
@@ -1469,11 +1469,11 @@
   "@errors.write.permissionDenied.message.named": {
     "sourceHash": "74994f9"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzer Zugriff zu geben, wähle den Ordner im Finder aus, öffne „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach.",
+  "errors.write.permissionDenied.suggestion.needsAdminMac": "Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, wähle den Ordner im Finder aus, öffne „Informationen“ und sieh unter „Teilen & Zugriffsrechte“ nach.",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
     "sourceHash": "674192a"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminOther": "Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzer Zugriff zu geben, ändere die Zugriffsrechte des Ordners (z. B. per chmod) und versuche es erneut.",
+  "errors.write.permissionDenied.suggestion.needsAdminOther": "Dafür brauchst du Administratorrechte. Um deinem eigenen Benutzerkonto Zugriff zu geben, ändere die Zugriffsrechte des Ordners (z. B. per chmod) und versuche es erneut.",
   "@errors.write.permissionDenied.suggestion.needsAdminOther": {
     "sourceHash": "804027d"
   },
@@ -1545,7 +1545,7 @@
   "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
     "sourceHash": "24c9063"
   },
-  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Dieser Ordner ist schreibgeschützt, daher kann nichts hinein kopiert oder verschoben werden.",
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "Dieser Ordner ist schreibgeschützt, daher kann nichts hinein kopiert oder bewegt werden.",
   "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
     "sourceHash": "0c50a60"
   },
@@ -1569,7 +1569,7 @@
   "@errors.write.destinationNotWritable.unexplained.title": {
     "sourceHash": "628c3aa"
   },
-  "errors.write.destinationNotWritable.unexplained.message": "Dieser Ordner nimmt keine neuen Dateien an, daher kann nichts hinein kopiert oder verschoben werden.",
+  "errors.write.destinationNotWritable.unexplained.message": "Dieser Ordner nimmt keine neuen Dateien an, daher kann nichts hinein kopiert oder bewegt werden.",
   "@errors.write.destinationNotWritable.unexplained.message": {
     "sourceHash": "22ce481"
   },
@@ -1817,15 +1817,15 @@
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
   },
-  "errors.serverRequest.unreachable": "Cmdr hat seinen Server nicht erreicht. Prüfe deine Internetverbindung und versuch es noch einmal.",
+  "errors.serverRequest.unreachable": "Cmdr hat seinen Server nicht erreicht. Prüfe deine Internetverbindung und versuche es noch einmal.",
   "@errors.serverRequest.unreachable": {
     "sourceHash": "7f2a23e"
   },
-  "errors.serverRequest.timedOut": "Der Server von Cmdr hat nicht rechtzeitig geantwortet. Versuch es gleich noch einmal.",
+  "errors.serverRequest.timedOut": "Der Server von Cmdr hat nicht rechtzeitig geantwortet. Versuche es gleich noch einmal.",
   "@errors.serverRequest.timedOut": {
     "sourceHash": "14b0dcd"
   },
-  "errors.serverRequest.serverBusy": "Der Server von Cmdr hat gerade Probleme. Versuch es später noch einmal.",
+  "errors.serverRequest.serverBusy": "Der Server von Cmdr hat gerade Probleme. Versuche es später noch einmal.",
   "@errors.serverRequest.serverBusy": {
     "sourceHash": "2df1f8d"
   },
@@ -1833,7 +1833,7 @@
   "@errors.serverRequest.refused": {
     "sourceHash": "f36d8f8"
   },
-  "errors.serverRequest.unexpected": "Cmdr ist intern auf ein Problem gestoßen. Versuch es noch einmal, und wenn es wieder passiert, starte Cmdr neu.",
+  "errors.serverRequest.unexpected": "Cmdr ist intern auf ein Problem gestoßen. Versuche es noch einmal, und wenn es wieder passiert, starte Cmdr neu.",
   "@errors.serverRequest.unexpected": {
     "sourceHash": "5be7ebd"
   },
@@ -1985,7 +1985,7 @@
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"
   },
-  "errors.write.readOnlyDevice.source.message": "{deviceName} ist schreibgeschützt. Du kannst Dateien daraus kopieren, aber nicht herausverschieben.",
+  "errors.write.readOnlyDevice.source.message": "{deviceName} ist schreibgeschützt. Du kannst Dateien daraus kopieren, aber nicht daraus bewegen.",
   "@errors.write.readOnlyDevice.source.message": {
     "sourceHash": "ec7d263"
   },

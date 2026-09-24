@@ -35,7 +35,7 @@
   "@suggestedOps.reject": {
     "sourceHash": "ab604a3"
   },
-  "suggestedOps.approveCount": "{count, plural, one {# Datei} other {# Dateien}} freigeben",
+  "suggestedOps.approveCount": "{count, plural, one {# Datei} other {# Dateien}} zustimmen",
   "@suggestedOps.approveCount": {
     "sourceHash": "649d66f"
   },
@@ -51,7 +51,7 @@
   "@suggestedOps.reversibleRestoreMove": {
     "sourceHash": "de7f6ff"
   },
-  "suggestedOps.reversibleDeleteWritten": "Rückgängig durch Löschen des Erzeugten",
+  "suggestedOps.reversibleDeleteWritten": "Rückgängig durch Löschen des Geschriebenen",
   "@suggestedOps.reversibleDeleteWritten": {
     "sourceHash": "997843a"
   },
@@ -63,7 +63,7 @@
   "@suggestedOps.folderWillBeCreated": {
     "sourceHash": "26243e5"
   },
-  "suggestedOps.folderWillBeCreatedTooltip": "Den Zielordner gibt es noch nicht. Beim Zustimmen legt Cmdr ihn an, genau wie wenn du das Verschieben selbst startest.",
+  "suggestedOps.folderWillBeCreatedTooltip": "Den Zielordner gibt es noch nicht. Beim Zustimmen legt Cmdr ihn an, genau wie wenn du das Bewegen selbst startest.",
   "@suggestedOps.folderWillBeCreatedTooltip": {
     "sourceHash": "2d28b7c"
   },
@@ -119,7 +119,7 @@
   "@suggestedOps.retryFiles": {
     "sourceHash": "d8b8392"
   },
-  "suggestedOps.decisionNotRecorded": "Cmdr konnte deine Antwort nicht speichern. Versuch es noch mal.",
+  "suggestedOps.decisionNotRecorded": "Cmdr konnte deine Antwort nicht speichern. Versuche es noch mal.",
   "@suggestedOps.decisionNotRecorded": {
     "sourceHash": "d4ee9cf"
   },

@@ -435,7 +435,7 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
-  "settings.archives.compressionLevel.description": "Wie stark komprimiert wird, wenn Cmdr ein Zip erstellt. Höhere Stufen ergeben eine kleinere Datei, brauchen aber länger zum Packen. Gilt für den Befehl Komprimieren und für das Kopieren oder Verschieben von Dateien in ein Zip.",
+  "settings.archives.compressionLevel.description": "Wie stark komprimiert wird, wenn Cmdr ein Zip erstellt. Höhere Stufen ergeben eine kleinere Datei, brauchen aber länger zum Packen. Gilt für den Befehl Komprimieren und für das Kopieren oder Bewegen von Dateien in ein Zip.",
   "@settings.archives.compressionLevel.description": {
     "sourceHash": "0ebedaf"
   },
@@ -832,7 +832,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Drücke ⌃⌥⌘J aus jeder App, um zu deinem neuesten Download zu springen. Erfordert „Voller Festplattenzugriff“.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Drücke ⌃⌥⌘J aus jeder App, um zu deinem neuesten Download zu springen. Erfordert „Festplattenvollzugriff“.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
@@ -893,7 +893,7 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "Führt Dateinamen- und Regex-Suchen automatisch aus, während du tippst (1 Sekunde nach dem letzten Tastendruck). KI-Suchen warten immer auf die Eingabetaste, da sie Geld kosten. Wenn aus, drücke die Eingabetaste oder klicke auf die Schaltfläche zum Ausführen, um zu suchen.",
+  "settings.search.autoApply.description": "Führt Dateinamen- und Regex-Suchen automatisch aus, während du tippst (1 Sekunde nach dem letzten Tastendruck). KI-Suchen warten immer auf die Eingabetaste, da sie Geld kosten. Wenn aus, drücke die Eingabetaste oder klicke auf die Taste zum Ausführen, um zu suchen.",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
@@ -1050,7 +1050,7 @@
   "@settings.fileOperations.mtpEnabled.label": {
     "sourceHash": "6a315a8"
   },
-  "settings.fileOperations.mtpEnabled.description": "Erkennt und verbindet Android- und andere Geräte über ein USB-Kabel zum Durchsuchen und Übertragen von Dateien. Um diese Funktion auf einem Android-Telefon zu nutzen, verwende ein USB-Kabel, geh dann auf dem Telefon zu etwa Einstellungen > USB-Einstellungen und stelle die Verbindung auf „Dateiübertragung“, „Android Auto“ oder Ähnliches. (Variiert je nach Gerät.)",
+  "settings.fileOperations.mtpEnabled.description": "Erkennt und verbindet Android- und andere Geräte über ein USB-Kabel zum Durchsehen und Übertragen von Dateien. Um diese Funktion auf einem Android-Telefon zu nutzen, verwende ein USB-Kabel, geh dann auf dem Telefon zu etwa Einstellungen > USB-Einstellungen und stelle die Verbindung auf „Dateiübertragung“, „Android Auto“ oder Ähnliches. (Variiert je nach Gerät.)",
   "@settings.fileOperations.mtpEnabled.description": {
     "sourceHash": "834ea99"
   },
@@ -1179,7 +1179,7 @@
   "@settings.analytics.email.label": {
     "sourceHash": "71e5c9a"
   },
-  "settings.analytics.email.description": "Beispiel: du@beispiel.de",
+  "settings.analytics.email.description": "Beispiel: du@example.com",
   "@settings.analytics.email.description": {
     "sourceHash": "03574f9"
   },
@@ -1203,7 +1203,7 @@
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
-  "settings.updates.attachEmailToReports.description": "Wenn du einen Absturz- oder Fehlerbericht sendest, deine Beta-Kontakt-E-Mail beilegen, damit wir antworten können. Du kannst das pro Bericht ändern.",
+  "settings.updates.attachEmailToReports.description": "Hängt deine Beta-Kontakt-E-Mail-Adresse an jeden Absturz- oder Fehlerbericht an, den du sendest, damit wir antworten können. Du kannst das pro Bericht ändern.",
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
@@ -1267,7 +1267,7 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Wie viele kürzlich geschlossene Tabs pro Bereich für „Geschlossenen Tab wieder öffnen“ (⌘⇧T) behalten werden. Höhere Werte lassen dich weiter in der Geschichte zurück öffnen; niedrigere Werte geben den Speicher früher frei. Gilt nur für Tabs, die in der aktuellen Sitzung geschlossen wurden.",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Wie viele kürzlich geschlossene Tabs pro Bereich für „Geschlossenen Tab wieder öffnen“ (⌘⇧T) behalten werden. Mit höheren Werten kannst du auch länger geschlossene Tabs wieder öffnen; niedrigere Werte geben den Speicher früher frei. Gilt nur für Tabs, die in der aktuellen Sitzung geschlossen wurden.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "fe01a43"
   },
@@ -1339,11 +1339,11 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "Wenn Apps wie TextEdit und Preview eine Datei speichern, schreibt macOS die neue Version unter einem temporären Namen daneben (endet auf „.sb-“) und tauscht sie dann aus. Schalte das aus, um diese aus der Dateiliste herauszuhalten.",
+  "settings.advanced.showSafeSaveFiles.description": "Wenn Apps wie TextEdit und Vorschau eine Datei speichern, schreibt macOS die neue Version unter einem temporären Namen daneben (endet auf „.sb-“) und tauscht sie dann aus. Schalte das aus, um diese aus der Dateiliste herauszuhalten.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
-  "settings.advanced.showStagingTempFiles.label": "Cmdrs temporäre Dateien anzeigen",
+  "settings.advanced.showStagingTempFiles.label": "Temporäre Dateien von Cmdr anzeigen",
   "@settings.advanced.showStagingTempFiles.label": {
     "sourceHash": "5a7636d"
   },
@@ -1391,11 +1391,11 @@
   "@settings.advanced.oldMacosNoticeShown.description": {
     "sourceHash": "8ae26f2"
   },
-  "settings.onboarding.upgradeNudgeShown.label": "Onboarding-Upgrade-Hinweis gezeigt",
+  "settings.onboarding.upgradeNudgeShown.label": "Hinweis auf neue Einführungsoptionen gezeigt",
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
   },
-  "settings.onboarding.upgradeNudgeShown.description": "Intern: erfasst, ob der einmalige Hinweis „Der Menüpunkt Onboarding existiert jetzt“ für einen bestehenden Nutzer nach der Überarbeitung des Assistenten ausgelöst wurde. In der Oberfläche ausgeblendet.",
+  "settings.onboarding.upgradeNudgeShown.description": "Intern: erfasst, ob der einmalige Hinweis „Den Menüpunkt Einführung gibt es jetzt“ für einen bestehenden Nutzer nach der Überarbeitung des Assistenten ausgelöst wurde. In der Oberfläche ausgeblendet.",
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
@@ -1411,7 +1411,7 @@
   "@settings.onboarding.completed.label": {
     "sourceHash": "4730c4f"
   },
-  "settings.onboarding.fullDiskAccessChoice.label": "Auswahl für Vollen Festplattenzugriff",
+  "settings.onboarding.fullDiskAccessChoice.label": "Auswahl zum Festplattenvollzugriff",
   "@settings.onboarding.fullDiskAccessChoice.label": {
     "sourceHash": "4d73a2b"
   },
@@ -1552,7 +1552,7 @@
   "@settings.revealHandler.uninstallWarning": {
     "sourceHash": "3c10fd3"
   },
-  "settings.revealHandler.notInApplications": "Verschiebe Cmdr in deinen Ordner „Programme“, um das einzuschalten. Von hier aus würde ein Verschieben oder Löschen von Cmdr jeden Klick auf „Im Finder anzeigen“ ins Leere laufen lassen.",
+  "settings.revealHandler.notInApplications": "Bewege Cmdr in deinen Ordner „Programme“, um das einzuschalten. Von hier aus würde ein Bewegen oder Löschen von Cmdr jeden Klick auf „Im Finder anzeigen“ ins Leere laufen lassen.",
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
@@ -1986,7 +1986,7 @@
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.notifications": "Download-Benachrichtigungen, das globale Tastenkürzel, um zum neuesten Download zu springen, und Warnungen bei wenig Speicherplatz.",
+  "settings.summary.notifications": "Download-Benachrichtigungen, den globalen Kurzbefehl, um zum neuesten Download zu springen, und Warnungen bei wenig Speicherplatz.",
   "@settings.summary.notifications": {
     "sourceHash": "e681776"
   },

@@ -445,7 +445,7 @@
   "@fileExplorer.network.browser.hostRemoveFailed": {
     "sourceHash": "9120dd2"
   },
-  "fileExplorer.network.forgotPassword": "Gespeichertes Passwort für {hostName} gelöscht",
+  "fileExplorer.network.forgotPassword": "Gespeichertes Passwort für {hostName} vergessen",
   "@fileExplorer.network.forgotPassword": {
     "sourceHash": "6b53741"
   },
@@ -517,7 +517,7 @@
   "@fileExplorer.network.reconnect.times": {
     "sourceHash": "bf5fc9c"
   },
-  "fileExplorer.network.reconnect.finalAttempt": "{retried} erneut versucht, dies ist der letzte Versuch. Bei einem Fehlschlag wird die Verbindung getrennt.",
+  "fileExplorer.network.reconnect.finalAttempt": "{retried} erneut versucht, dies ist der letzte Versuch. Klappt er nicht, wird die Verbindung getrennt.",
   "@fileExplorer.network.reconnect.finalAttempt": {
     "sourceHash": "7418a78"
   },
@@ -533,7 +533,7 @@
   "@fileExplorer.mtp.exclusiveAccess": {
     "sourceHash": "1fac18c"
   },
-  "fileExplorer.mtp.deviceNotFound": "Gerät nicht gefunden. Es wurde vielleicht abgesteckt.",
+  "fileExplorer.mtp.deviceNotFound": "Gerät nicht gefunden. Es wurde vielleicht abgezogen.",
   "@fileExplorer.mtp.deviceNotFound": {
     "sourceHash": "15d2382"
   },
@@ -609,7 +609,7 @@
   "@fileExplorer.clipboard.copied": {
     "sourceHash": "1c25075"
   },
-  "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {Objekt} other {Objekte}} bereit zum Bewegen. Zum Abschließen einfügen.",
+  "fileExplorer.clipboard.cutReady": "{countText} {count, plural, one {Objekt} other {Objekte}} bereit zum Bewegen. Zum Abschließen einsetzen.",
   "@fileExplorer.clipboard.cutReady": {
     "sourceHash": "846d8af"
   },
@@ -665,7 +665,7 @@
   "@fileExplorer.edit.appMissingUnnamed": {
     "sourceHash": "421e9d9"
   },
-  "fileExplorer.edit.launchRefused": "Cmdr konnte deinen Text-Editor nicht starten. Öffne ihn einmal selbst und versuch es dann noch mal.",
+  "fileExplorer.edit.launchRefused": "Cmdr konnte deinen Text-Editor nicht starten. Öffne ihn einmal selbst und versuche es dann noch mal.",
   "@fileExplorer.edit.launchRefused": {
     "sourceHash": "741e049"
   },
@@ -761,7 +761,7 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "sourceHash": "a0d65fe"
   },
-  "fileExplorer.rename.hiddenAfterRename": "Deine Datei ist aus der Ansicht verschwunden, weil ausgeblendete Dateien nicht angezeigt werden.",
+  "fileExplorer.rename.hiddenAfterRename": "Deine Datei ist aus der Ansicht verschwunden, weil verborgene Dateien nicht angezeigt werden.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "445d02a"
   },
@@ -1204,7 +1204,7 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Wenn du von Finder kommst, ist das vielleicht ungewohnt, weil Finder mit <space></space> eine „Übersicht“ auslöst.",
+  "fileExplorer.quickLookHint.finderComparison": "Wenn du vom Finder kommst, ist das vielleicht ungewohnt, weil der Finder mit <space></space> eine „Übersicht“ auslöst.",
   "@fileExplorer.quickLookHint.finderComparison": {
     "sourceHash": "2089192"
   },
@@ -1476,7 +1476,7 @@
   "@fileExplorer.navigation.spaceStillUnavailable": {
     "sourceHash": "1c37064"
   },
-  "fileExplorer.navigation.spaceFetchFailed": "Speicherplatz ließ sich nicht abrufen. Zum erneuten Versuch klicken",
+  "fileExplorer.navigation.spaceFetchFailed": "Speicherplatz ließ sich nicht laden. Zum erneuten Versuch klicken",
   "@fileExplorer.navigation.spaceFetchFailed": {
     "sourceHash": "6fe88d7"
   },
@@ -1484,7 +1484,7 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
-  "fileExplorer.navigation.spaceMtpHint": "Auf einem Smartphone zählen hier auch Apps und Systemdateien mit. Über USB erreicht Cmdr nur deine freigegebenen Dateien, daher ergeben die Ordner hier zusammen weniger als der belegte Speicherplatz.",
+  "fileExplorer.navigation.spaceMtpHint": "Auf einem Telefon zählen hier auch Apps und Systemdateien mit. Über USB erreicht Cmdr nur deine freigegebenen Dateien, daher ergeben die Ordner hier zusammen weniger als der belegte Speicherplatz.",
   "@fileExplorer.navigation.spaceMtpHint": {
     "sourceHash": "43ec861"
   },
@@ -1524,7 +1524,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
     "sourceHash": "d5a58a7"
   },
-  "fileExplorer.navigation.driveIndex.tooltipFailed": "Die Indizierung wurde gestoppt, weil der Index dieses Laufwerks nicht gespeichert werden konnte. Scanne erneut, um ihn neu aufzubauen.",
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Die Indizierung wurde gestoppt, weil der Index dieses Laufwerks nicht gespeichert werden konnte. Ein erneuter Durchlauf baut ihn neu auf.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
@@ -1552,7 +1552,7 @@
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"
   },
-  "fileExplorer.navigation.driveIndex.menuRescan": "Jetzt erneut scannen",
+  "fileExplorer.navigation.driveIndex.menuRescan": "Jetzt erneut durchsuchen",
   "@fileExplorer.navigation.driveIndex.menuRescan": {
     "sourceHash": "c07d16a"
   },
@@ -1589,7 +1589,7 @@
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
-  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr durchsucht {name} gerade. Der erneute Scan startet, sobald das fertig ist.",
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr durchsucht {name} gerade. Der erneute Durchlauf startet, sobald das fertig ist.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {
     "sourceHash": "4e0f748"
   },
@@ -1597,7 +1597,7 @@
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
     "sourceHash": "b27d24c"
   },
-  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr indiziert {name} gerade. Der gewünschte Scan startet, sobald das fertig ist.",
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr indiziert {name} gerade. Der gewünschte Durchlauf startet, sobald das fertig ist.",
   "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
     "sourceHash": "09106ce"
   },

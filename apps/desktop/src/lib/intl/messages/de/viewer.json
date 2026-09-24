@@ -71,7 +71,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen das eigentliche <kindName>{kind}</kindName> ansehen. Schließe dazu dieses Fenster und drücke <quickLookKey></quickLookKey> für die Übersicht, oder drücke <openKey></openKey> (oder klicke doppelt auf die Datei), um sie in der zugehörigen App zu öffnen.",
+  "viewer.binaryWarning.body": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen das eigentliche <kindName>{kind}</kindName> ansehen. Schließe dazu dieses Fenster und drücke <quickLookKey></quickLookKey> für die Übersicht, oder drücke <openKey></openKey> (oder doppelklicke auf die Datei), um sie in der zugehörigen App zu öffnen.",
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
@@ -310,7 +310,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Große Einfügevorgänge können andere Apps verlangsamen. Grenze die Auswahl mit der Suche (⌘F) ein.",
+  "viewer.copyDialog.confirmBody": "Große Mengen einzusetzen kann andere Apps verlangsamen. Grenze die Auswahl mit der Suche (⌘F) ein.",
   "@viewer.copyDialog.confirmBody": {
     "sourceHash": "c1f2927"
   },
@@ -374,7 +374,7 @@
   "@viewer.saveAs.defaultName": {
     "sourceHash": "6504513"
   },
-  "viewer.saveAs.panelFailed": "Das Sicherungsfenster konnte nicht geöffnet werden. Erneut versuchen?",
+  "viewer.saveAs.panelFailed": "Der Dialog zum Sichern ließ sich nicht öffnen. Erneut versuchen?",
   "@viewer.saveAs.panelFailed": {
     "sourceHash": "70c3f76"
   },
@@ -390,7 +390,7 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
-  "viewer.saveAs.destinationReadOnly": "Dieser Ort ist schreibgeschützt. Wähle einen anderen Ordner zum Speichern?",
+  "viewer.saveAs.destinationReadOnly": "Dieser Ort ist schreibgeschützt. Einen anderen Ordner zum Sichern wählen?",
   "@viewer.saveAs.destinationReadOnly": {
     "sourceHash": "8d627aa"
   },

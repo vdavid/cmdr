@@ -28,7 +28,7 @@
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "0e52a2b"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Deine Auswahl enthält doch nur online verfügbare Inhalte, deshalb bietet der Knopf unten jetzt „Löschen“ an. Lies den Hinweis oben und drücke ihn dann erneut, wenn das in Ordnung ist.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Deine Auswahl enthält doch nur online verfügbare Inhalte, deshalb bietet die Taste unten jetzt „Löschen“ an. Lies den Hinweis oben und drücke sie dann erneut, wenn das in Ordnung ist.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "623e7e0"
   },
@@ -429,7 +429,7 @@
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "c3fed24"
   },
-  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Dateien werden zurückverschoben} one {Datei wird zurückverschoben} other {{countText} Dateien werden zurückverschoben}} …",
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Dateien werden zurückgelegt} one {Datei wird zurückgelegt} other {{countText} Dateien werden zurückgelegt}} …",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
     "sourceHash": "38c2022"
   },
@@ -720,7 +720,7 @@
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
-  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Das verschiebt alles zurück, was der Vorgang bisher verschoben hat, und ersetzte Dateien kommen nicht zurück. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges liegen.",
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Das legt alles zurück, was der Vorgang bisher bewegt hat, und ersetzte Dateien kommen nicht zurück. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges liegen.",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a489eb2"
   },
@@ -732,7 +732,7 @@
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Das verschiebt die Dateien dorthin zurück, wo sie hergekommen sind. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges liegen.",
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Das legt die Dateien dorthin zurück, wo sie hergekommen sind. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges liegen.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
     "sourceHash": "7d55114"
   },
@@ -872,7 +872,7 @@
   "@fileOperations.archivePassword.message": {
     "sourceHash": "ba28841"
   },
-  "fileOperations.archivePassword.retryMessage": "Mit diesem Passwort ließ sich <archive>{name}</archive> nicht entsperren. Versuch es noch mal.",
+  "fileOperations.archivePassword.retryMessage": "Mit diesem Passwort ließ sich <archive>{name}</archive> nicht entsperren. Versuche es noch mal.",
   "@fileOperations.archivePassword.retryMessage": {
     "sourceHash": "88ef11a"
   },

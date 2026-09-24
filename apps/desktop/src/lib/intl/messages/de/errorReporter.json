@@ -73,7 +73,7 @@
   "@errorReporter.dialog.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "errorReporter.dialog.bundleUnavailable": "Cmdr konnte seine Protokolldateien nicht für den Bericht sammeln. Versuch es gleich noch einmal.",
+  "errorReporter.dialog.bundleUnavailable": "Cmdr konnte seine Protokolldateien nicht für den Bericht sammeln. Versuche es gleich noch einmal.",
   "@errorReporter.dialog.bundleUnavailable": {
     "sourceHash": "3743aba"
   },

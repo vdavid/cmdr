@@ -7,7 +7,7 @@
   "@operationLog.dialog.loading": {
     "sourceHash": "ba3bbbe"
   },
-  "operationLog.dialog.loadError": "Dein Verlauf ließ sich nicht laden. Versuch es gleich noch einmal.",
+  "operationLog.dialog.loadError": "Dein Verlauf ließ sich nicht laden. Versuche es gleich noch einmal.",
   "@operationLog.dialog.loadError": {
     "sourceHash": "cf26c51"
   },
@@ -136,7 +136,7 @@
   "@operationLog.rollback.rolledBack": {
     "sourceHash": "7159223"
   },
-  "operationLog.rollback.partiallyRolledBack": "Teilweiser Rollback",
+  "operationLog.rollback.partiallyRolledBack": "Teilweises Rollback",
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
@@ -168,7 +168,7 @@
   "@operationLog.rollback.refusalZipEditUnsupported": {
     "sourceHash": "e0892dd"
   },
-  "operationLog.rollback.refusalJournalIncomplete": "Cmdrs Aufzeichnung dieses Vorgangs ist unvollständig, deshalb könnte ein Rollback die falschen Dateien betreffen.",
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdr hat diesen Vorgang nur unvollständig aufgezeichnet, deshalb könnte ein Rollback die falschen Dateien betreffen.",
   "@operationLog.rollback.refusalJournalIncomplete": {
     "sourceHash": "4176739"
   },
@@ -180,7 +180,7 @@
   "@operationLog.rollback.refusalStagedConflictResolved": {
     "sourceHash": "03ddd6e"
   },
-  "operationLog.rollback.refusalVolumeUnavailable": "Schließ das Laufwerk an, das dieser Vorgang benutzt hat, und versuch es dann noch einmal.",
+  "operationLog.rollback.refusalVolumeUnavailable": "Schließ das Laufwerk an, das dieser Vorgang benutzt hat, und versuche es dann noch einmal.",
   "@operationLog.rollback.refusalVolumeUnavailable": {
     "sourceHash": "935d109"
   },
@@ -188,7 +188,7 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalUnexpected": "Cmdr konnte das Rollback nicht starten. Versuch es gleich noch einmal.",
+  "operationLog.rollback.refusalUnexpected": "Cmdr konnte das Rollback nicht starten. Versuche es gleich noch einmal.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
   },

@@ -7,7 +7,7 @@
   "@goToPath.dialog.inputAriaLabel": {
     "sourceHash": "ac4d152"
   },
-  "goToPath.dialog.inputPlaceholder": "Pfad eingeben oder einfügen, z. B. ~/Documents",
+  "goToPath.dialog.inputPlaceholder": "Pfad eingeben oder einsetzen, z. B. ~/Documents",
   "@goToPath.dialog.inputPlaceholder": {
     "sourceHash": "d84d343"
   },

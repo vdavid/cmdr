@@ -11,7 +11,7 @@
   "@feedback.dialog.label": {
     "sourceHash": "cdb1c0a"
   },
-  "feedback.dialog.placeholder": "Beispiel: Ich hätte gern ein Tastenkürzel, um zwischen Tabs zu springen.",
+  "feedback.dialog.placeholder": "Beispiel: Ich hätte gern einen Kurzbefehl, um zwischen Tabs zu springen.",
   "@feedback.dialog.placeholder": {
     "sourceHash": "dd0214b"
   },

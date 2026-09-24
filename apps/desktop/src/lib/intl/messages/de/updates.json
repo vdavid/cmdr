@@ -3,15 +3,15 @@
   "@updates.failure.check": {
     "sourceHash": "66f0ef1"
   },
-  "updates.failure.checkUntyped": "Cmdr konnte nicht nach Updates suchen. Prüfe deine Internetverbindung und versuch es später noch einmal.",
+  "updates.failure.checkUntyped": "Cmdr konnte nicht nach Updates suchen. Prüfe deine Internetverbindung und versuche es später noch einmal.",
   "@updates.failure.checkUntyped": {
     "sourceHash": "55dcdd7"
   },
-  "updates.failure.download": "Cmdr konnte das Update nicht laden. Versuch es später noch einmal.",
+  "updates.failure.download": "Cmdr konnte das Update nicht laden. Versuche es später noch einmal.",
   "@updates.failure.download": {
     "sourceHash": "fdd5095"
   },
-  "updates.failure.install": "Cmdr konnte das Update nicht installieren. Versuch es später noch einmal, oder hol dir das neueste Cmdr von getcmdr.com.",
+  "updates.failure.install": "Cmdr konnte das Update nicht installieren. Versuche es später noch einmal, oder hol dir das neueste Cmdr von getcmdr.com.",
   "@updates.failure.install": {
     "sourceHash": "c997a13"
   },
@@ -44,7 +44,7 @@
   "@updates.toast.restart": {
     "sourceHash": "09af100"
   },
-  "updates.moveToApplicationsDialog.title": "Verschiebe Cmdr in deinen Ordner „Programme“",
+  "updates.moveToApplicationsDialog.title": "Bewege Cmdr in deinen Ordner „Programme“",
   "@updates.moveToApplicationsDialog.title": {
     "sourceHash": "97f87a0"
   },

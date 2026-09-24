@@ -36,7 +36,7 @@
   "@mtp.permissionDialog.explanation": {
     "sourceHash": "6bc70dd"
   },
-  "mtp.permissionDialog.helpText": "Nachdem du den Befehl ausgeführt hast, trenne das Gerät und schließe es erneut an, dann versuche es noch einmal.",
+  "mtp.permissionDialog.helpText": "Nachdem du den Befehl ausgeführt hast, zieh das Gerät ab, schließe es wieder an und versuche es dann noch einmal.",
   "@mtp.permissionDialog.helpText": {
     "sourceHash": "519f195"
   },
@@ -84,7 +84,7 @@
   "@mtp.error.exclusiveAccess": {
     "sourceHash": "a81f306"
   },
-  "mtp.error.permissionDenied": "USB-Zugriff verweigert. udev-Regeln installieren und Gerät erneut anschließen",
+  "mtp.error.permissionDenied": "Keine USB-Berechtigung. udev-Regeln installieren und Gerät erneut anschließen",
   "@mtp.error.permissionDenied": {
     "sourceHash": "3362501"
   }

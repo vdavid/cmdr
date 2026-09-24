@@ -19,7 +19,7 @@
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
-  "queue.row.reversalMovingBack": "Dateien werden zurückverschoben",
+  "queue.row.reversalMovingBack": "Dateien werden zurückgelegt",
   "@queue.row.reversalMovingBack": {
     "sourceHash": "19ac5eb"
   },

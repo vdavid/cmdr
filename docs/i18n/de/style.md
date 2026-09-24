@@ -1,7 +1,83 @@
 # German (de) translation style guide
 
 Working notes for translating Cmdr into German. Read `../README.md` for how this fits the translation process, and the
-app-wide `docs/style-guide.md` for the English voice these notes carry into German.
+app-wide `docs/style-guide.md` for the English voice these notes carry into German. Term rulings live in `terms.json`
+(keyed by the shared `../concepts.json`), their rationale in `decisions.md`, and open questions in `review-queue.md`.
+
+## Digest
+
+The must-know rules; the rest of this file elaborates them.
+
+- **Address**: informal lowercase `du` / `dich` / `dir` / `dein` everywhere, like macOS German (zero `Sie` in Finder or
+  AppKit). Never Microsoft's or Google's `Sie`. Keep direct address light where German phrases neutrally
+  („Wird geladen …“). Onboarding and About may speak as David in the first person, still with `du`.
+- **Voice**: friendly, concise, active, calm. Prefer a verb to a verbal noun („Suchen“, not „Durchführen einer
+  Suche“). Error copy states the problem and a next step and never uses `Fehler`, `fehlgeschlagen`, or `Fehlschlag` as a
+  label: „Couldn't X“ → `X ließ sich nicht …` / `X nicht möglich`, a stopped operation → `Nicht abgeschlossen`,
+  „Something went wrong“ → `Etwas ist schiefgelaufen`, „ran into a problem“ → `ist auf ein Problem gestoßen` (never
+  `ist ein Problem aufgetreten`). Compounds like `Fehlerbericht` and `Tippfehler` are fine. No apologies where Cmdr
+  made a deliberate choice; native regret (`Tut mir leid`) over the loanword `Sorry` where one is due.
+- **Register by UI slot**:
+  - buttons and menu items: infinitive, like Finder (`Umbenennen`, `Auswerfen`, `Abbrechen`), with the object first
+    (`Server bearbeiten…`, `Zu Favoriten hinzufügen`);
+  - progress lines: passive present with a space before the ellipsis (`Wird kopiert`, `Laufwerk wird durchsucht …`);
+    a menu item or button that opens a dialog attaches the ellipsis with no space (`Einführung…`);
+  - status chips: terse (`Wartet`, `Läuft`, `Angehalten`, `Fertig`, `Nicht abgeschlossen`);
+  - a waiting line in body prose is a full sentence with a subject (`Cmdr wartet auf eine Antwort vom Ziel.`);
+  - „Click to X“: short `Zum X klicken`, long `Klicken, um … zu …`.
+- **Native menus and Apple names follow the German macOS**, even against the catalog's own wording: `Ablage` (File),
+  `Darstellung` (View), `Gehe zu`, `Fenster`, `Hilfe`, `Dienste`, `Im Dock ablegen` (Minimize), `Zoomen` (Window >
+  Zoom), `Widerrufen` / `Wiederholen` / `Einsetzen`, `Informationen` (Get Info), `geschützt` (Locked), `Übersicht`
+  (Quick Look), `Schlüsselbund` / `Schlüsselbundverwaltung`, `Festplattenvollzugriff` (the pane's name),
+  `Datenschutz & Sicherheit`, `Softwareupdate`, `Vorschau` (the app), the folder `Programme`, the Dock pair
+  `Im Dock behalten` / `Aus dem Dock entfernen`. Kept English: Finder, Terminal, Spotlight, Mission Control, Spaces,
+  Apple Account, Apple silicon. On a phone, Android's own German wins (`USB-Debugging`, `Erlauben`, `tippe auf`).
+- **Capitalization**: sentence case, and all nouns capitalized (grammar, not title case). Don't lowercase a noun to
+  match English.
+- **Punctuation**: German quotes `„…“` around UI names and file names in running text, never `"…"`. Ellipsis is always
+  the single `…`. A space before `%` and unit symbols (`42 %`, DIN 5008). Multipliers keep the digit with a hyphen
+  (`4-mal`). ICU values double a straight apostrophe; RAW families (`errors.*`, `menu.*`) don't.
+- **Menus and buttons in prose**: a menu is `das Menü „Hilfe“`, never `das Hilfe-Menü`; an on-screen button is
+  `die Taste „+“`, never `Schaltfläche`. Quote the label byte-for-byte from the catalog.
+- **Brand**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP` stay verbatim and take NO genitive-s: `die Oberfläche von Cmdr`,
+  never `Cmdrs` (the don't-translate check reads it as a dropped brand). In a subordinate clause Cmdr is `es`.
+  `Ask Cmdr` names only the chat panel; compounds couple through (`Ask-Cmdr-Einstellungen`). Prose about what the AI
+  does says `Cmdr` or `die KI`.
+- **Plurals**: CLDR `one` / `other`. Get case right inside each branch: a bare count phrase is nominative
+  (`12 Ordner`), the dative `-n` needs a preposition (`in 3 Ordnern`, `von 12 Bildern`). Text after a plural block must
+  work with both `ist` and `sind`.
+- **Placeholders**: a `{name}`, `{path}`, `{app}`, `{server}` has no known gender, so never refer back with a pronoun or
+  a possessive: repeat the noun (`das Objekt`, `der Server`), use a pronominal adverb (`darauf`, `darin`), or take the
+  article (`am alten Ort`). Keep a placeholder out of case slots: nominative subject, or behind its own preposition
+  (`Unter „{path}“ gibt es …`, `auf {volumeName}`, `namens {folderName}`). Two nouns of different gender take a
+  generic noun, not a shared pronoun (`das Gerät` for „a Mac or NAS“).
+- **Aria labels**: an `*Aria` value must contain its visible label verbatim; give the label the form the natural aria
+  sentence needs (`Im Hintergrund` inside `Im Hintergrund weiterlaufen lassen`, `Anhalten` inside `Diesen Vorgang
+  anhalten`).
+- **One word per thing**: two keys with the same English get the same German (the term-consistency check enforces it),
+  one control has one German name even where English has two (`Volume-Auswahl`), and one dialog keeps one word family
+  (`hinzufügen` → `Wird hinzugefügt …` → `hinzugefügt`). Name a feature in full once (`Fehlerbericht`), then the short
+  word (`Bericht`).
+- **Top traps** (details in `terms.json`):
+  - operation → `Vorgang` (m.: `diesen Vorgang`, `ihn`): `Vorgangswarteschlange`, `Vorgangsprotokoll`; `Operation`
+    only for the protocol-level request and the Settings titles (`Dateioperationen`); transfer → `Übertragung` only
+    where the English says transfer.
+  - move → `bewegen`, never `verschieben`; but a message that also covers copy and delete says `Vorgang`. Putting
+    files back where they were → `zurücklegen`; old names back → `zurücksetzen`.
+  - item → `Objekt`, never `Element`; paste → `einsetzen`, never `einfügen`; save button → `Sichern` (its participle
+    `gesichert`), storing data → `gespeichert`.
+  - delete permanently → `endgültig`; `dauerhaft` only for a setting kept for good.
+  - pause → `anhalten` / `Angehalten`, never the button noun `Pause` or `pausiert`; stop → `stoppen`, never `anhalten`;
+    cancel → `abbrechen`, reserved for the Cancel action.
+  - dismiss → `Schließen` for a dialog or toast, `Ausblenden` for a row or hint line hidden for good.
+  - see/view → `ansehen` (the F3 action `Ansehen`); show → `anzeigen` / `einblenden`.
+  - index → `indizieren`, never `indexieren`; scan → `durchsuchen` / `Durchlauf`, never `Scan`; browse into an archive or
+    phone → `durchsehen`, the file-picker button → `Durchsuchen…`.
+  - hidden files → `verborgen`; taken out of view → `ausgeblendet`.
+  - drive → `Laufwerk` (what the user plugged in), volume → `Volume` (technical); disk image → `Image`.
+  - pin → `fixieren` / `lösen` for tabs and servers, `im Dock behalten` / `aus dem Dock entfernen` for the Dock.
+  - account → `Konto`; credentials → `Anmeldedaten`; the Enter key → `die Eingabetaste`, a terse hint `Enter`; Escape →
+    `esc-Taste`.
 
 ## Formality: `du`, settled
 
@@ -30,7 +106,7 @@ pattern.
 ## Formality mechanics
 
 - **`du`, lowercase**, throughout (see Formality above).
-- **Buttons and menu items: imperative.** "Speichern", "Abbrechen", "Löschen", "Umbenennen", "Kopieren". This matches
+- **Buttons and menu items: infinitive.** "Sichern", "Abbrechen", "Löschen", "Umbenennen", "Kopieren". This matches
   macOS Finder ("Umbenennen", "Auswerfen", "Kopieren").
 - Keep direct address light; German UI often phrases neutrally ("Wird geladen …") where English would say "Loading your
   files". Don't force `du` into every line.
@@ -58,132 +134,22 @@ Formality is settled above (`du`). These are the remaining German-specific calls
   layout call, covered under Notes → Length; flagged here because it's the German decision most likely to force a copy
   rewrite. Confidence: confirmed.
 
-## Terminology and glossary
+## Terminology
 
-Format per term: `English → chosen · sources · confidence`. Sources cite concrete evidence; tier order is macOS
-(highest, Tier 1) → Microsoft (Tier 2) → GNOME/Xfce (Tier 3). Confidence is `confirmed` (human signed off), `high`
-(authoritative sources agree), or `tentative` (sources conflict or none had it). German capitalizes all nouns (grammar),
-so noun glossary terms stay capitalized; verbs are lowercase in running text, imperative-capitalized as button labels.
-
-Straightforward (sources agree, `high`):
-
-- file → Datei (plural Dateien) · macOS Finder, MS terminology (DEU/AUT/CHE) · high
-- folder → Ordner · macOS Finder ("Der Ordner konnte nicht erstellt werden."), MS terminology (DEU/AUT/CHE) · high
-- directory → Verzeichnis · MS terminology (DEU/AUT/CHE); technical sense only, prefer Ordner for the UI · high
-- drive → Laufwerk · MS terminology (DEU/AUT/CHE) · high
-- trash → Papierkorb · macOS Finder (consistent), same on Windows · high
-- undo → widerrufen · macOS AppKit MenuCommands ("Undo Smart Dash" → "Intelligenten Bindestrich widerrufen"); NOT
-  Nautilus' "Rückgängig" (Tier 3) · high
-- put back (an item from the trash, to where it was) → zurücklegen · macOS Finder ("Put Back" → "Zurücklegen") · high.
-  Keep it apart from `zurücksetzen`, which the catalog spends on undoing a RENAME (`askCmdr.renameUndo.*`).
-- delete → löschen · macOS ("Delete"→"Löschen", "Erase"→"Löschen") · high
-- copy → kopieren · macOS ("Copy"→"Kopieren") · high
-- rename → umbenennen · macOS Finder ("Umbenennen …") · high
-- viewer → Vorschau · macOS preview UI; Quick Look stays "Quick Look" (brand) · high
-- eject → auswerfen · macOS AppKit ("NSNavEjectButton"→"auswerfen"), Finder ("Auswerfen") · high
-- disconnect → trennen · macOS ("Disconnect"→"Trennen") · high
-- server → Server · macOS ("Mit Server verbinden"), MS terminology · high
-- search → suchen (verb) / Suche (noun) · macOS ("Search"→"Suchen") · high
-- sort → sortieren · macOS sort UI · high
-- settings → Einstellungen · macOS Systemeinstellungen, MS · high
-- cancel → abbrechen · macOS ("Cancel"/"CANCEL"→"Abbrechen") · high
-- overwrite → überschreiben · MS terminology (DEU/AUT/CHE) · high
-- index / indexing → Index / Indizierung · MS terminology (Index, DEU/AUT/CHE) · high
-- transfer → Übertragung · MS terminology (Übertragung), Xfce Thunar ("Dateiübertragung") · high
-- tab → Tab (plural Tabs) · macOS, MS terminology (ProperNoun) · high
-- bookmark → Lesezeichen · macOS, MS terminology ("Lesezeichen erstellen") · high
-- sidebar → Seitenleiste · macOS Finder · high
-- download → Download (noun) / laden (verb) · MS/macOS common usage · high
-- removable (media) → Wechselmedium · macOS Finder („Wechselmedien auswerfen und von Servern trennen“), MS terminology
-  (`removable media` → Wechselmedien) · high
-- in use → in Verwendung · macOS Finder („Das Volume ist gerade in Verwendung …“) · high
-- idle → nicht mehr beschäftigt · the catalog's own pair (`indexing.enrich.pausedIdle`, `fileExplorer.mtp.deviceBusy`) ·
-  high
-- unplug → abziehen · the catalog („Du musst nichts abziehen.“, „Zieh das USB-Kabel ab …“) · high
-- operation (a copy/move/delete) → Vorgang · the catalog throughout (Vorgangswarteschlange, Vorgangsprotokoll) · high
-
-Contested or sense-specific (read the block):
-
-- move → Bewegen · macOS Finder vs Microsoft · high
-  - macOS Finder is decisive and consistent: "Move"→"Bewegen", "Move Document"→"Dokument bewegen", "move to the Trash"→
-    "in den Papierkorb bewegen", "Copy and Move Items"→"Objekte kopieren und bewegen".
-  - Microsoft German uses "Verschieben" for move. Since Cmdr is a macOS app, pick Bewegen; note Verschieben is what a
-    Windows-trained user might expect.
-- move to trash → in den Papierkorb bewegen · macOS · high
-  - macOS phrasings: "Trash ${entities}"→"${entities} in den Papierkorb bewegen", "Moves items to the Trash"→"Legt
-    Objekte in den Papierkorb", "Möchtest du das Dokument wirklich in den Papierkorb bewegen?". Both "in den Papierkorb
-    bewegen" and "in den Papierkorb legen" appear in Finder; prefer "bewegen" to stay consistent with the move verb
-    above.
-- volume → Volume · macOS · high
-  - macOS keeps "Volume" for a mounted disk volume: "Servervolume", "Zielvolume", "Backup-Volume", "Volumeformat", "^1
-    auf dem Volume". Do NOT use the MS-terminology first hit "Lautstärke", that is the audio-volume sense.
-- pane → Bereich · macOS vs Microsoft · high
-  - macOS uses "Bereich" for a panel/area of a window ("Der Bereich „Bewegen“ …", "Bereich „Schreibtools“ anzeigen").
-    Microsoft terminology's "Blatt" is the spreadsheet-sheet sense and doesn't fit a file-list pane. Use Bereich;
-    "Fensterbereich" only if disambiguation is needed.
-- share (network) → Freigabe · macOS · high
-  - macOS uses Freigabe for sharing ("Bildschirmfreigabe"). An SMB share is a Netzwerkfreigabe / SMB-Freigabe.
-- listing → Dateiliste · no direct source · tentative
-  - "listing" (the file list in a pane) has no single canonical source term. Dateiliste reads naturally and is
-    unambiguous; macOS calls list view "Listendarstellung". Confirm with David if "Liste" alone reads better in context.
-- item → Objekt · macOS · high
-  - Not in the original glossary but pervasive: macOS Finder calls a file-or-folder row an "Objekt" ("Ausgewählte
-    Objekte", "Objekte komprimieren", "^0 Objekte werden sofort gelöscht"). Use Objekt for the generic file-or-folder
-    entity.
-
-- file system → Dateisystem · macOS AppKit `DocumentDragging.loctable` („… kann im Dateisystem nicht gefunden werden.“),
-  `ErrnoErrors.loctable` („Read-only file system“ → „Dateisystem ist schreibgeschützt“), `InfoPlist.loctable` („File
-  System Plug-in“ → „Dateisystem-Plug-in“); Finder `NE29` („Das Objekt ist zu groß für dieses Dateisystem.“) (live macOS
-  26.6.2, build 25G83, 2026-09-06) · high
-- file access → Dateizugriff (Kompositum) bzw. „Zugriff auf Dateien“ (analytisch) · macOS TCC `Localizable.loctable`
-  schreibt durchweg analytisch (`„%@“ möchte Zugriff auf Dateien auf einem Wechselmedium.`); das Kompositum
-  `Dateizugriff` kommt in macOS `de` nicht vor, ist aber normale deutsche Wortbildung und hält ein Schalter-Label kurz.
-  Für Fließtext die analytische Form nehmen, für ein Label das Kompositum (`settings.fileOperations.adbEnabled.label` =
-  „Dateizugriff auf Android über ADB“) · high
-- location (a place on disk a user picks or names) → Speicherort · macOS Finder `BU39` („Choose Location…“ →
-  „Speicherort wählen …“), `BU37_V1` („at its original location“ → „am ursprünglichen Speicherort“) · high. Abgrenzung:
-  der ALLGEMEINE Ort im Dateisystem heißt schlicht `Ort` (Finder `FI12` „Dieser Ort ist schreibgeschützt.“, `SD5`/`FI9`
-  „Locations“ → „Orte“), und `PV56`/`PV5` „Location“ → „Standort“ ist der GEO-Ort eines Fotos. Für ein Feld, in das der
-  Nutzer einen Programmpfad einträgt, gewinnt `Speicherort` (`settings.fileOperations.adbBinaryPath.label` =
-  „Speicherort von adb“)
-- USB debugging → USB-Debugging · Googles deutsche Android-Doku, die Entwickleroptionen-Bezeichnung im Gerät
-  („Aktivieren Sie **USB-Debugging** in den Geräteeinstellungen unter **Entwickleroptionen**.“,
-  developer.android.com/studio/debug/dev-options?hl=de, abgerufen 2026-09-06) · high. Der Feature-Name aus Googles
-  Sprachhoheit, nicht übersetzen; Googles `Sie`-Register aus derselben Quelle NICHT übernehmen (Cmdr siezt nie).
-- Android platform tools → Android Platform Tools · Googles deutsche adb-Doku nennt das Paket „Android SDK Platform
-  Tools“ (developer.android.com/tools/adb?hl=de, abgerufen 2026-09-06); der englische Katalogtext sagt „Android platform
-  tools“, also bleibt der Name unübersetzt und ohne `SDK`, damit er zum Nachbarschlüssel passt, der `Android SDK`
-  separat nennt · high
-- tooling (generisch, nicht als Produktname) → Tools · der Katalog selbst („Backup-Tools“ in
-  `errors.listing.lockUnavailable.suggestion`, „externe Tools“ in `settings.developer.mcpPort.description`); NICHT
-  `Werkzeuge`, das der Katalog für die Werkzeuge eines KI-Agenten reserviert (`askCmdr.tool.unknown.done`) · high
-
-From the AI-copy sweep and the provider-setup pass (the app stopped calling its AI „Ask Cmdr“ everywhere it just meant
-„AI“; the name now survives only where it names the chat panel):
-
-- AI features → KI-Funktionen · der Katalog selbst (`settings.ai.tooltipOff` „KI-Funktionen sind ausgeschaltet“,
-  `settings.ai.provider.description` „Wähle, wie KI-Funktionen betrieben werden.“, `onboarding.stepAi.intro`) · high
-- the AI (als handelndes Subjekt, wo das Englische bewusst nicht „Cmdr“ sagt) → die KI · der Katalog
-  (`settings.askCmdr.intro` „Chatte mit einer KI …“) · high. Abgrenzung: `Cmdr` bleibt `Cmdr`, und `Ask Cmdr` bleibt
-  `Ask Cmdr`; siehe die Notiz unten dazu, welcher der drei Namen wann steht
-- AI provider → KI-Anbieter · der Katalog durchgehend (`askCmdr.error.notConfigured` und der entfernte Zustimmungstext
-  askCmdr.consent.intro) · high
-- file operations → Dateivorgänge · der Katalog (`commands.logOperationLog.description` „Verlauf deiner Dateivorgänge“,
-  `fileExplorer` „schnelle Dateivorgänge“, `settings` mehrfach) · high. Die Settings-Karte heißt dagegen
-  `Dateioperationen`, weil sie eine Rubrik benennt, keine laufenden Vorgänge
-- placeholder → Platzhalter · Microsoft terminology (`GERMAN.tbx`, beide Sinne) · high
-- endpoint → Endpunkt · Microsoft terminology (`GERMAN.tbx`, 4 von 6 Sinnen; `Teilnehmer`/`Endgerät` sind die Telefonie-
-  und Geräte-Sinne) · high
-- deployment (eine Azure-Bereitstellung) → Bereitstellung · Microsoft terminology (`GERMAN.tbx`, 5 Sinne) · high
-- resource (eine Azure-Ressource) → Ressource · Microsoft terminology (`GERMAN.tbx`, 4 Sinne) · high
-
-Add rows as terms come up, each with sources and a confidence.
+Every term ruling lives in `terms.json`, keyed by the concept IDs in `../concepts.json`: `chosen`, accepted forms, usage
+notes, forms to avoid with the reason, a confidence (`confirmed` / `high` / `tentative`), and sources. Tier order is
+macOS (Tier 1) → Microsoft (Tier 2) → the file-manager catalogs (Tier 3); a vendor's own German UI (Apple, Android)
+beats a `@key` description. Rationale worth more than a line sits in `decisions.md` under a heading that cites its keys,
+and the term's `decision` field names that heading. German capitalizes all nouns (grammar), so a noun ruling stays
+capitalized; a verb is lowercase in running text and capitalized as a button label. Never guess a term: mine the
+reference pile first (`../reference-pile/how-to-mine.md`).
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, Quick Look, plus the `{system_settings}`-style
-tokens. Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). macOS UI names
-Cmdr opens into (System Settings panes, "Papierkorb") should match a German macOS.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, plus the `{system_settings}`-style tokens.
+Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). macOS UI names Cmdr
+opens into (System Settings panes, "Papierkorb") should match a German macOS. Quick Look is NOT verbatim: Apple's German
+macOS calls it `Übersicht`, so Cmdr does too.
 
 ## Plurals
 
@@ -216,9 +182,9 @@ Dateien".
 
 - **Native Menüs folgen dem Finder-Wortlaut, nicht dem Katalog-Wortlaut.** Wo macOS ein Gegenstück hat, gewinnt es
   (`Ablage`, `Darstellung`, `Im Dock ablegen`, `Widerrufen`, `Einsetzen`), weil der Nutzer Cmdrs Menüleiste direkt neben
-  der des Finders sieht. Belege und die Ausnahmen: `glossary.md` § Native Menüs.
+  der des Finders sieht. Belege und die Ausnahmen: `decisions.md` § Native Menüs.
 - **Nouns are always capitalized.** This is grammar, not title case. The app's sentence-case rule still holds (only the
-  first word and nouns are capitalized), so "Datei umbenennen" but "Save"→"Speichern" at sentence start. Don't
+  first word and nouns are capitalized), so "Datei umbenennen" but "Save"→"Sichern" at sentence start. Don't
   title-case adjectives/verbs.
 - **Compound nouns concatenate** ("Dateiübertragung", "Netzwerkfreigabe"). This is correct German, but it lengthens
   strings: see Length below.
@@ -244,13 +210,13 @@ Dateien".
   Nomen: „Habe {name} unverändert gelassen: **das Objekt** hat sich geändert …“
   (`fileOperations.cancelRollback.reason.*`), „… ob sich **die Datei** geändert hat“
   (`askCmdr.renameUndo.skipReason.*`). Possessive („sein alter Ort“) fallen aus demselben Grund weg; nimm den Artikel
-  („am alten Ort“). Belege und die Wortwahl: `glossary.md` § Der Toast nach einem abgebrochenen Vorgang.
+  („am alten Ort“). Belege und die Wortwahl: `decisions.md` § Der Toast nach einem abgebrochenen Vorgang.
 - **Case-marked placeholders are a trap.** A `{name}` that lands in a genitive/dative slot can't be inflected by the
   catalog. Restructure the sentence so the placeholder stays nominative, or carries its own preposition.
 - **German case marking is what breaks aria containment** (the shared rule: `../../guides/i18n-translation.md` § An
   `*Aria` key must contain its visible label). The natural label and the natural aria sentence often want different
   cases: `In den Hintergrund` is not inside "… im Hintergrund weiterlaufen lassen". Take the case the aria needs. Worked
-  example: `glossary.md` § The progress dialog's empty-queue button.
+  example: `decisions.md` § The progress dialog's empty-queue button.
 - **Numbers and dates come from the formatter layer** (comma decimal, period/space thousands). Never hardcode
   separators.
 - **A space goes before the percent sign** (`{percent} %`, "Auf 100 % zoomen"), per DIN 5008 and the rest of the
@@ -259,14 +225,14 @@ Dateien".
   aside into the middle of the comparison („4x slower for most connections (sometimes 100x) than …“); German has to keep
   `langsamer … als` together, so move the aside to the end of the sentence.
 - **`button` on screen is „die Taste“**, not MS-terminology's „Schaltfläche“ (Windows convention); macOS de and the
-  existing catalog both say „Klicke unten auf die Taste …“. Terms: `glossary.md`.
+  existing catalog both say „Klicke unten auf die Taste …“. Terms: `terms.json`.
 - **„auf ein Problem stoßen“, nicht „es ist ein Problem aufgetreten“.** Der Microsoft-Styleguide führt die
   `aufgetreten`-Form als Negativbeispiel; die `stoßen`-Form hält Cmdr im Nominativ und passt zur Stilregel „kein
-  ‚Fehler‘“. Belege: `glossary.md` § Absturzdialog.
+  ‚Fehler‘“. Belege: `decisions.md` § Absturzdialog.
 - **A toast value that lands AFTER a colon still has to be a whole sentence.** The `errors.eject.*` values are dropped
   into „{volumeName} ließ sich nicht auswerfen: …“ and „Trennen nicht möglich: …“, and the same value serves both
   frames. So write each one so it stands alone, and accept a repeated verb („… nichts zu trennen“ after „Trennen nicht
-  möglich:“) rather than trimming the value to fit one frame. Worked sets: `glossary.md` § Auswerfen und Trennen, sowie
+  möglich:“) rather than trimming the value to fit one frame. Worked sets: `decisions.md` § Auswerfen und Trennen, sowie
   § Wer das Laufwerk festhält (die benannten Halter: App, Image, macOS, Cmdr selbst).
 - **Don't translate „moving files“ literally when the message also covers copying and deleting.** `bewegen` is the NAME
   of Cmdr's Move command in German, so it reads as that one operation; use the catalog's `Vorgang` instead („Auf diesem
@@ -274,11 +240,11 @@ Dateien".
 - **Ein Menü im Fließtext heißt `das Menü „Hilfe“`, nicht `das Hilfe-Menü`.** macOS `de` verweist genau so auf seine
   Menüs („Wähle es aus, wähle im Menü „Ablage“ die Option „Informationen“ …“, Finder `BN43`). Den Menünamen selbst
   nimmst du aus `menu.*` im Katalog, nicht aus einer Direktübersetzung des Englischen: `Help` ist `Hilfe`, `File` ist
-  `Ablage`. Belege: `glossary.md` § Native Menüs.
+  `Ablage`. Belege: `decisions.md` § Native Menüs.
 - **Den vollen Feature-Namen einmal nennen, danach das kurze Wort.** Der Katalog trennt `Absturzbericht` /
   `Fehlerbericht` (die Feature-Namen) von schlichtem `Bericht` (das Ding, über das der Dialog gerade spricht). Ein
   Dialogtitel nennt die Sache voll, die Tasten und Toasts darunter kürzen auf `Bericht`: das hält die Tasten schmal und
-  liest sich nicht gestelzt. Worked sets: `glossary.md` § Absturzdialog, `glossary.md` § Fehlerbericht nachträglich
+  liest sich nicht gestelzt. Worked sets: `decisions.md` § Absturzdialog, `decisions.md` § Fehlerbericht nachträglich
   ergänzen.
 - **Eine Wortfamilie pro Dialog durchhalten.** Wenn ein Dialog eine Aktion trägt, nehmen Beschreibung, Taste,
   Fortschrittslabel und Bestätigungs-Toast denselben Stamm (`hinzufügen` → `Wird hinzugefügt …` → `hinzugefügt` →
@@ -286,7 +252,7 @@ Dateien".
   verschiedene Vorgänge.
 - **Metadaten heißen `…angaben`, nicht `…daten` oder `…details`.** Der Katalog nennt Dateimetadaten `Dateiangaben`
   („Dateiangaben, nicht der Inhalt“) und die EXIF-Daten eines Fotos entsprechend `Kameraangaben`. Neue Metadaten-Arten
-  folgen dem Muster. Belege: `glossary.md` § Ask Cmdr schaut jetzt in Dateien hinein.
+  folgen dem Muster. Belege: `decisions.md` § Ask Cmdr schaut jetzt in Dateien hinein.
 - **Ist der Referenz-Stapel auf dieser Maschine nicht da, gilt der dokumentierte Ersatz: die installierten macOS-Bundles
   direkt auslesen.** `_ignored/i18n/de/` liegt nur auf Davids Laptop; auf der M1-Agentenkiste fehlt es komplett, und das
   ist NICHT die Worktree-Falle (der Hauptklon hat dort gar kein `_ignored/`). Die Tier-1-Belege sind trotzdem
@@ -299,7 +265,7 @@ Dateien".
   Marker ist über alle `*Busy`-Schlüssel in `menu.json` derselbe und der Grundwortlaut bleibt zeichengleich, damit beide
   Zustände als ein Eintrag lesbar bleiben: `Auswerfen ({name}) (in Benutzung)`, `Trennen (in Benutzung)`,
   `Server vergessen (in Benutzung)`, `Gespeichertes Passwort vergessen (in Benutzung)`. Keinen zweiten Marker erfinden.
-  Abgrenzung zur Glossarzeile `in use → in Verwendung`: die gilt für den Fließtext im Finder-Ton („Das Volume ist gerade
+  Abgrenzung zur Termbase-Regel `in use → in Verwendung`: die gilt für den Fließtext im Finder-Ton („Das Volume ist gerade
   in Verwendung …“), der Menü-Marker bleibt `in Benutzung`, weil `menu.volume.ejectBusy` ihn gesetzt hat.
 - **Zwei Nomen mit verschiedenem Genus vertragen kein gemeinsames Pronomen.** Wo das Englische mit „it“ auf eine
   Aufzählung zurückzeigt („turn on a Mac or NAS … and Cmdr will find it“), braucht das Deutsche ein Oberbegriff-Nomen,
@@ -313,7 +279,7 @@ Dateien".
   Etikett auch richtig. Sobald ein `{name}` dranhängt, bricht der Satzbau, also übernimmt der Katalog den Rahmen, den
   Apple selbst für die Langform nimmt: `Verbindung zu {name} wird wiederhergestellt …` neben dem Geschwister
   `Verbindung zu {name} wird hergestellt …`. Das Präfix `wieder-` allein trägt den Unterschied
-  Erstverbindung/Rückholung. Belege: `glossary.md` § Der Wiederverbindungs-Zyklus.
+  Erstverbindung/Rückholung. Belege: `decisions.md` § Der Wiederverbindungs-Zyklus.
 - **„There''s nothing to X.“ → `Du musst nichts X-en.`** Das unpersönliche englische „there's nothing to …“ wird im
   Deutschen zur `du`-Entlastung, wie schon in `errors.listing.deviceReconnecting.suggestion` („There''s nothing to
   unplug.“ → „Du musst nichts abziehen.“). Für Tastatureingabe heißt das Verb `eingeben` (Apples Wort in genau diesem
@@ -326,7 +292,7 @@ Dateien".
   dem Panelnamen werden durchgekoppelt: `im Ask-Cmdr-Bereich`, `in den Ask-Cmdr-Einstellungen` (`Cmdr` steht darin als
   ganzes Wort, also greift `desktop-i18n-dont-translate` nicht).
 - **`moves` als Nomen hat kein brauchbares deutsches Nomen.** `Bewegungen` liest sich als Fortbewegung, und
-  `Verschiebungen` widerspricht dem Glossar-Verb `bewegen` (macOS Finder). Wo das Englische Operationen aufzählt
+  `Verschiebungen` widerspricht dem Termbase-Verb `bewegen` (macOS Finder). Wo das Englische Operationen aufzählt
   („renames, moves, and cleanups“), bau die Aufzählung aus Verben: „Cmdr kann vorschlagen, Dateien umzubenennen, zu
   bewegen und aufzuräumen“ (`ai.cloudConsent.askCmdr.contentsRule`). Das deckt sich mit der Stilregel „lieber ein Verb
   als ein Verbalsubstantiv“.
@@ -342,7 +308,7 @@ Dateien".
   (`menu.tab.unpinTab`, `commands.serversTogglePin.label`, Safari `de` „Tab fixieren“); für das Dock heißt es
   `im Dock behalten` / `aus dem Dock entfernen`, weil Apples Dock-Menü genau dieses Paar führt
   (`Dock.app/…/DockMenus.strings` `KEEP_IN_DOCK`/`REMOVE_FROM_DOCK`). Beim Übersetzen eines neuen `pin`-Strings also
-  erst schauen, um welche Fläche es geht. Belege: `glossary.md` § Das Dock-Angebot.
+  erst schauen, um welche Fläche es geht. Belege: `decisions.md` § Das Dock-Angebot.
 - **Wo Apple ein Kontextmenü für dieselbe Handlung hat, gewinnt sein Wortlaut auch im Fließtext.** Der Dock-Toast
   übernimmt `Im Dock behalten`, `Aus dem Dock entfernen` und `Zum Dock hinzufügen` zeichengleich aus dem Dock-Menü, das
   der Nutzer beim Rechtsklick auf dasselbe Symbol sieht. Dieselbe Logik wie bei den nativen Menüs oben, nur eine Ebene
@@ -350,12 +316,12 @@ Dateien".
 - **Das Dock-Menü zählt zu den nativen Menüs und nimmt Apples Wortlaut, auch gegen Cmdrs eigene Menüleiste.** Beim
   Rechtsklick auf Cmdrs Dock-Symbol steht der Eintrag neben Apples Dock-Menü und Finders `Gehe zu`, also gewinnt deren
   Formulierung: `Go to folder…` → `Gehe zu Ordner…` (Finder), obwohl Cmdrs Menüleiste denselben Dialog `Zu Pfad gehen…`
-  nennt. Das Englische unterscheidet die beiden Flächen genauso. Belege: `glossary.md` § Das Dock-Menü von Cmdr.
+  nennt. Das Englische unterscheidet die beiden Flächen genauso. Belege: `decisions.md` § Das Dock-Menü von Cmdr.
 - **Zwei Schlüssel mit demselben englischen Wert bekommen EIN deutsches Wort.** `desktop-i18n-term-consistency` meldet
   jede Stelle, an der derselbe englische String zweimal verschieden übersetzt ist, und identische Werte tragen denselben
   `sourceHash`, sodass man es beim Übersetzen sofort sieht. Deshalb vor jedem Ein-Wort-Label kurz im `en`-Katalog nach
   demselben Wert greppen: `Save` steht in `onboarding.stepBeta.checklist.emailSave` UND `servers.sheet.save`, also
-  heißen beide `Sichern`. Belege und die Abgrenzung `sichern`/`speichern`: `glossary.md` § Die Einführungs-Checkliste.
+  heißen beide `Sichern`. Belege und die Abgrenzung `sichern`/`speichern`: `decisions.md` § Die Einführungs-Checkliste.
 - **Ein einzeiliges Fazit neben einem Schalter darf nicht umbrechen.** Die `…summary`-Schlüssel stehen direkt unter dem
   Titel ihres Schalters, die Langfassung im Geschwister `…desc`. Also verbinitial bauen, jedes Wort weglassen, das der
   `desc` ohnehin trägt, und im Zweifel die kurze Wortform nehmen (`Platz` statt `Speicherplatz`). Deutsch läuft hier
@@ -365,48 +331,17 @@ Dateien".
   …“). Nicht das Tag ans Satzende schieben: das Englische setzt es bewusst in die Mitte.
 - Record case-by-case rulings here.
 
-## Decisions to confirm with David
+## Open questions
 
-The formality and move calls are now settled from the sources (see above); the only open items are subjective:
+Subjective calls, coined terms, and the overflow checks a native reviewer should confirm live in `review-queue.md`; each
+already ships a reasoned value.
 
-- **listing → Dateiliste** (tentative): no canonical source. Confirm whether "Dateiliste" or plain "Liste" reads best in
-  Cmdr's context.
-- **The stall wording** (tentative): no source names a stalled transfer at all (no Microsoft `stall` entry, no
-  file-manager string), so "Kein Fortschritt seit {duration}" and "Die Übertragung kommt nicht mehr voran." are
-  constructions. Details and the runners-up: `glossary.md` § Stalled transfer. Also worth an eye during the overflow
-  check: the queue row's German is noticeably wider than the ETA text it replaces ("Kein Fortschritt seit 2 Min. 30 s"
-  vs "noch 2 Min. 30 s").
-- **`Autor` in `ai.cloudConsent.askCmdr.contentsRule`** (tentative): the PDF metadata field is „Autor:in“ in Apple's
-  German Preview inspector, and the gender-glyph ban (screen readers) rules that form out. Shipping the bare field name
-  `Autor`; the neutral rewrites („wer es verfasst hat“, „Verfasserangabe“) read stilted inside the list. Confirm, or
-  pick a rewrite. Evidence: `glossary.md` § Ask Cmdr schaut jetzt in Dateien hinein.
-- **„AI suggestions are waiting.“ → „KI-Vorschläge warten auf dich.“** (`suggestedOps.indicatorTooltip`, tentative):
-  nichts im Referenz-Stapel formuliert wartende Vorschläge, also ist die Wendung gemünzt. Die Alternative „Es liegen
-  KI-Vorschläge bereit.“ klingt sachlicher und weniger nach Anstupsen; bestätige, welche im Statuseck besser wirkt.
-- **`Klicken, um in den Einstellungen einen einzurichten.`** (`askCmdr.wake.needsApiKey`, tentative): das englische „set
-  one up“ verweist mit `one` auf den Anbieter aus dem ersten Satz, und das Deutsche gibt das mit dem bloßen Pronomen
-  `einen` wieder. Grammatisch einwandfrei, aber am Satzende etwas kahl; die Alternative wiederholt schlicht
-  `einen Anbieter`. Bestätige, welche in einem Tooltip besser liest.
-- **`Gib Cmdr auf AlternativeTo ein Like`** (`onboarding.stepBeta.checklist.alternativeTo`, tentative): AlternativeTo
-  ist einsprachig englisch, es gibt also keinen lokalisierten Button-Text, an dem man sich festhalten könnte, und
-  Microsofts `gefällt mir` ist als Linktext zu lang. `ein Like geben` steht im Duden und hält den Parallelbau zur Zeile
-  darüber (`Vergib dem Repo auf GitHub einen Stern`), liest sich aber jugendlich. Bestätige, oder wähle die längere
-  Form. Belege: `glossary.md` § Die Einführungs-Checkliste.
-- **`Systemintegritätsschutz` vs Apple's on-screen `System-Integrationsschutz`** (product-voice call, currently shipping
-  the first). `errors.mutation.sipProtected` uses Apple's German DOCUMENTATION name for System Integrity Protection.
-  Apple's German Finder shows a different word in exactly one string, and it's a visible mistranslation (Integration
-  instead of Integrität): `LocalizableMerged` `ET6`, "Einige Objekte im Papierkorb konnten aufgrund des
-  **System-Integrationsschutzes** nicht gelöscht werden." (en `ET6` = "Some items in the Trash cannot be deleted because
-  of System Integrity Protection."; re-verified on macOS 26.5.2, 2026-08-24). Term-choice principle 1 says match what
-  the user sees in their Finder, which here would mean shipping Apple's typo. The recommendation is to keep
-  `Systemintegritätsschutz`: Apple's string only ever appears when emptying the Trash (not Cmdr's surface, which is a
-  rename refusal), both share the head `System…schutz` so a user who did see Apple's wording still recognizes ours, and
-  Apple's own German support page (support.apple.com/de-de/102149) uses our form, so a user who searches for help lands
-  in the right place. The counter-argument is real though, so David decides. Full evidence: `glossary.md` § the
-  `Systemintegritätsschutz` row.
+## Termbase files
 
-## Glossary
+- `../concepts.json`: the shared, language-agnostic concept registry (sense, `match` patterns, confusable neighbors).
+- `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
+- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `review-queue.md`: open questions for a native reviewer.
 
-The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/de/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section
+when the reason needs more than a line.
