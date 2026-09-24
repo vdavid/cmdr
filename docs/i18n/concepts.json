@@ -217,7 +217,15 @@
   },
   "case-sensitive": {
     "en": "case-sensitive",
-    "match": ["case-sensitive", "case sensitive", "case-insensitive", "upper case", "lower case", "uppercase", "lowercase"],
+    "match": [
+      "case-sensitive",
+      "case sensitive",
+      "case-insensitive",
+      "upper case",
+      "lower case",
+      "uppercase",
+      "lowercase"
+    ],
     "sense": "Whether upper- and lowercase letters count as different."
   },
   "certificate": {
@@ -282,7 +290,17 @@
     "distinct": ["dismiss", "delete"],
     "en": "clear",
     "match": ["clear", "clears", "cleared"],
-    "notMatch": ["clears away", "clears it on", "clears it up", "clears them on", "clears up", "isn't clear", "or not cleared", "to be cleared", "usually clears it"],
+    "notMatch": [
+      "clears away",
+      "clears it on",
+      "clears it up",
+      "clears them on",
+      "clears up",
+      "isn't clear",
+      "or not cleared",
+      "to be cleared",
+      "usually clears it"
+    ],
     "sense": "Emptying a field, a search, an index, or a list of recent items without deleting files."
   },
   "clipboard": {
@@ -306,7 +324,17 @@
   "cloud-provider": {
     "distinct": ["ai-provider"],
     "en": "cloud provider",
-    "match": ["=your cloud provider", "cloud folder", "cloud folders", "cloud mount", "cloud service", "cloud services", "cloud storage", "managed by a cloud provider", "sync app"],
+    "match": [
+      "=your cloud provider",
+      "cloud folder",
+      "cloud folders",
+      "cloud mount",
+      "cloud service",
+      "cloud services",
+      "cloud storage",
+      "managed by a cloud provider",
+      "sync app"
+    ],
     "sense": "A file-sync service (iCloud Drive, Dropbox, Google Drive) whose folders Cmdr shows."
   },
   "command": {
@@ -858,7 +886,14 @@
   "image-search": {
     "distinct": ["search", "index"],
     "en": "image search",
-    "match": ["image search", "semantic search", "search by description", "photo search", "keyword search", "tag search"],
+    "match": [
+      "image search",
+      "semantic search",
+      "search by description",
+      "photo search",
+      "keyword search",
+      "tag search"
+    ],
     "sense": "Searching pictures by their contents or a description (the image index's search features)."
   },
   "in-use": {
@@ -871,7 +906,17 @@
   "index": {
     "distinct": ["scan", "image-search"],
     "en": "index",
-    "match": ["index", "indexes", "indexing", "indexed", "unindexed", "re-indexed", "drive index", "drive indexing", "image indexing"],
+    "match": [
+      "index",
+      "indexes",
+      "indexing",
+      "indexed",
+      "unindexed",
+      "re-indexed",
+      "drive index",
+      "drive indexing",
+      "image indexing"
+    ],
     "sense": "Cmdr's database of a drive's files and folder sizes, and the image index; also the act of building them."
   },
   "input-source": {
@@ -1056,14 +1101,31 @@
     "distinct": ["copy", "transfer", "move-to-trash"],
     "en": "move",
     "match": ["move", "moves", "moving", "moved"],
-    "notMatch": ["move down", "move to left column", "move to right column", "move to trash", "moved on", "moves down", "moves the files back", "out of the way", "stopped moving"],
+    "notMatch": [
+      "move down",
+      "move to left column",
+      "move to right column",
+      "move to trash",
+      "moved on",
+      "moves down",
+      "moves the files back",
+      "out of the way",
+      "stopped moving"
+    ],
     "note": "\"Move to left column\" and \"moves down\" (cursor movement) are not this concept.",
     "sense": "Relocating files to another folder (F6)."
   },
   "move-to-trash": {
     "distinct": ["delete", "go-to-trash", "trash"],
     "en": "Move to trash",
-    "match": ["move to trash", "move to the trash", "moved to the trash", "moving to the trash", "to the trash", "trashed"],
+    "match": [
+      "move to trash",
+      "move to the trash",
+      "moved to the trash",
+      "moving to the trash",
+      "to the trash",
+      "trashed"
+    ],
     "sense": "Sending files to the trash (the delete dialog's switch, its confirm button, the queue row)."
   },
   "name": {
@@ -1458,7 +1520,16 @@
   "respond": {
     "distinct": ["answer"],
     "en": "respond",
-    "match": ["respond", "responds", "responding", "unresponsive", "didn't answer", "hasn't answered", "doesn't answer", "stopped answering"],
+    "match": [
+      "respond",
+      "responds",
+      "responding",
+      "unresponsive",
+      "didn't answer",
+      "hasn't answered",
+      "doesn't answer",
+      "stopped answering"
+    ],
     "sense": "A device, server, or share answering a request (or not)."
   },
   "restart": {
@@ -1489,7 +1560,16 @@
   "rollback": {
     "distinct": ["undo", "put-back", "cancel"],
     "en": "roll back",
-    "match": ["roll back", "rolls back", "rolling back", "rolled back", "rollback", "rollbacks", "roll them back", "roll this back"],
+    "match": [
+      "roll back",
+      "rolls back",
+      "rolling back",
+      "rolled back",
+      "rollback",
+      "rollbacks",
+      "roll them back",
+      "roll this back"
+    ],
     "sense": "Undoing a running or finished copy or move by deleting what it wrote or moving files back."
   },
   "root-folder": {
@@ -1689,7 +1769,14 @@
     "distinct": ["cancel", "pause", "quit"],
     "en": "Stop",
     "match": ["stop", "stops", "stopped", "stopping"],
-    "notMatch": ["stop getting", "stopped adding", "stopped answering", "stopped arriving", "stopped moving", "stops listing"],
+    "notMatch": [
+      "stop getting",
+      "stopped adding",
+      "stopped answering",
+      "stopped arriving",
+      "stopped moving",
+      "stops listing"
+    ],
     "sense": "Halting something that runs (a search, a local AI server, an operation during rollback)."
   },
   "streaming": {
