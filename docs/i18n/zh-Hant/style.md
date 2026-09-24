@@ -436,7 +436,8 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `shortcuts.scope.volumeChooser` and the two `commands.pane*VolumeChooser.label` moved off `卷宗選擇器` to match the
   `fileExplorer.navigation.server*Toast` pair. ❗ The message KEYS still spell `Chooser`: they mirror the persisted
   command ids `pane.leftVolumeChooser` / `pane.rightVolumeChooser`, which can't be renamed. Translate the value, ignore
-  the key. Same shape recorded in `decisions.md` § "伺服器中心（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.server*Toast`）".
+  the key. Same shape recorded in `decisions.md` §
+  "伺服器中心（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.server*Toast`）".
 - **A grayed-out "(busy)" menu item is its base label plus `（使用中）`, nothing else.** The `*Busy` keys are the
   disabled twin of an ordinary menu item, shown while a transfer still holds the volume or server, so they have to read
   as the same item in a second state. Copy the base key's value character for character and append the marker:
@@ -453,7 +454,8 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `正在重新連線到 {name}…`), and Apple's own Traditional progress strings are `正在重新連線⋯` in three separate bundles.
   A new state in the family copies the shape rather than inventing a second one. ❗ Apple's `重新連接` is its imperative
   form ("unplug it and reconnect the iPhone"); a STATE is always `重新連線`. Evidence and the rest of the pane family:
-  `decisions.md` § "自動重連的窗格與「沒東西可問」那一行（`servers.paneState.reconnecting`、`servers.paneState.signedOutNothingToAsk`）".
+  `decisions.md` §
+  "自動重連的窗格與「沒東西可問」那一行（`servers.paneState.reconnecting`、`servers.paneState.signedOutNothingToAsk`）".
 
 - **English "easy" / "simple" is dodged, not rendered as `簡單`.** The house voice bans trivializing words, and the
   English onboarding copy uses them anyway ("a few easy choices", "Three easy steps"). This catalog resolves the clash

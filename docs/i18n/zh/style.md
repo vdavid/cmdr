@@ -233,7 +233,8 @@ inflection.
   `menu.*` exactly (Help = `帮助`), so a copy edit can't drift the two apart.
 - **`查看` is "look at the contents", `显示` is the View menu.** macOS `zh-CN` splits them, and so does the catalog:
   `menu.bar.view` = `显示` (change the view), while reading a report, a file, or an info panel is `查看`. Picking the
-  wrong one makes a button sound like a view-mode switch. Evidence: `decisions.md` § "给已发送的错误报告补充备注（`errorReporter.amend.*`、`errorReporter.amendedToast.message`、`errorReporter.autoSentToast.viewOrAddNotes`）".
+  wrong one makes a button sound like a view-mode switch. Evidence: `decisions.md` §
+  "给已发送的错误报告补充备注（`errorReporter.amend.*`、`errorReporter.amendedToast.message`、`errorReporter.autoSentToast.viewOrAddNotes`）".
 - **No letter case; the sentence-case rule is moot for Chinese text.** Han characters are unicameral. Just keep Latin
   brand words (Cmdr, macOS) as-is.
 - **Each script is its own pass.** Never machine-convert Simplified↔Traditional (one-to-many mappings + divergent

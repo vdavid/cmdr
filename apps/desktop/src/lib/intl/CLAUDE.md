@@ -28,8 +28,8 @@ for numbers, sizes, dates.
   suppressed: `messages.svelte.test.ts`'s reactivity test is the only guard.
 
 - **The resolver loads ALL locale dirs (`messages/*/*.json`) by dir tag, then falls back per key** to `en`.
-  `screenshots/` isn't a locale: exclude it IN THE GLOB, not only at the runtime gate (which still ships and parses
-  280 kB), or it becomes a fake language.
+  `screenshots/` isn't a locale: exclude it IN THE GLOB, not only at the runtime gate (which still ships and parses 280
+  kB), or it becomes a fake language.
 - **❌ A fallback never crosses a SCRIPT boundary**, so `zh-Hant` skips Simplified `zh` and lands on English. Go through
   `inheritableAncestors()`; the checks and Rust obey the same rule. Regional fallback (`pt-PT` → `pt`) must keep
   working: `DETAILS.md`.
