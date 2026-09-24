@@ -12,6 +12,8 @@
  *   close the panel directly instead of routing, because the menu accelerator
  *   path isn't reliable while the panel is key (it may consume the keydown
  *   before AppKit's menu dispatcher sees it).
+ * - Escape in the main window: a capture listener closes an optimistically
+ *   opened panel before native key focus has moved to Quick Look.
  *
  * The state object is a module-level singleton (`quickLookState`). The
  * command dispatcher reads `isOpen` to choose between `quickLookOpen` and
@@ -83,15 +85,41 @@ export function armQuickLookDispatchGuard(): void {
  *
  * Idempotent: no-op when already closed. Flips `isOpen` synchronously so any
  * subsequent dispatch sees the closed state, then fires the IPC. The
- * close-event observer in Rust will fire `quick-look-closed` once AppKit has
- * animated the panel out, but we don't depend on it: the synchronous flip is
+ * close-event observer in Rust will fire `quick-look-closed` once AppKit hides
+ * the panel, but we don't depend on it: the synchronous flip is
  * what guarantees the next Shift+Space opens again instead of trying to
  * close-already-closed.
  */
-export function closeFromPaneError(): void {
-  if (!quickLookState.isOpen) return
+function closeIfOpen(): boolean {
+  if (!quickLookState.isOpen) return false
   quickLookState.isOpen = false
   void quickLookClose()
+  return true
+}
+
+export function closeFromPaneError(): void {
+  closeIfOpen()
+}
+
+/** Close while the main webview still owns the key event during panel opening. */
+export function closeFromEscape(): boolean {
+  return closeIfOpen()
+}
+
+/** Let a foreground dialog keep Escape even if Quick Look is open behind it. */
+export function shouldCloseFromMainWindowEscape(
+  event: KeyboardEvent,
+  dialogs: { dialogOpen: boolean; paletteOpen: boolean },
+): boolean {
+  return (
+    event.key === 'Escape' &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    quickLookState.isOpen &&
+    !dialogs.dialogOpen &&
+    !dialogs.paletteOpen
+  )
 }
 
 /**

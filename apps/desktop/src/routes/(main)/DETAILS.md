@@ -24,6 +24,10 @@ here:
   shell; the component supplies `dialogsOnScreen()` (the only reactive input, § What `dialogsOnScreen()` is made of) and
   then runs `preventDefault` and `dispatchers.keyboard`. Keeping the decision out of the component is also what stops
   the `file-length`-flagged `+page.svelte` from growing per keyboard rule.
+- **Quick Look Escape runs in capture before the general keydown resolver.** Its small decision lives in
+  `file-explorer/quick-look/quick-look-state.svelte.ts`: only plain Escape with no foreground dialog closes the
+  optimistically opened panel while the main webview still owns the key event. Native-panel Escape is handled in
+  `src-tauri/src/quick_look/DETAILS.md` § Opening and Escape.
 - **`global-contextmenu.ts` is the same split for the right-click**: `resolveGlobalContextMenuAction(event)` is pure
   (`native-text-menu` / `suppress`), `+page.svelte` runs `stopPropagation` or `preventDefault`. § Right-click ownership.
 - **`startup-gates.ts` owns what a launch SHOWS.** § Startup gates.

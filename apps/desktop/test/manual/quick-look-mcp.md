@@ -107,6 +107,13 @@ The native panel rendering itself isn't covered, so verify that visually. See th
   AppKit-driven and only verifiable manually (hold ArrowDown over a multi-file folder with the panel open — preview
   should follow).
 
+## Opening and Escape check
+
+On macOS, use a local file and press Shift+Space, then Escape immediately, before the preview has fully appeared. Repeat
+after leaving the preview open for a moment. Both presses should close it on the first Escape, and the next Shift+Space
+should reopen it. Check that the panel appears without a slow fade. With Quick Look open, bring another Cmdr window or
+dialog forward and confirm Escape still acts on that surface rather than closing the preview behind it.
+
 ## When something fails
 
 - `isOpen` stuck at `true` after step 5: the Rust observer didn't emit `quick-look-closed`. Check

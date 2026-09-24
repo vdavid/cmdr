@@ -71,6 +71,8 @@ import {
   armQuickLookDispatchGuard,
   initQuickLookListeners,
   closeFromPaneError,
+  closeFromEscape,
+  shouldCloseFromMainWindowEscape,
 } from './quick-look-state.svelte'
 
 describe('quickLookState', () => {
@@ -208,6 +210,31 @@ describe('quickLookState', () => {
     closeFromPaneError()
     expect(quickLookState.isOpen).toBe(false)
     expect(quickLookCloseMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('Escape during the opening handoff closes once and clears optimistic state', () => {
+    quickLookState.isOpen = true
+    expect(closeFromEscape()).toBe(true)
+    expect(quickLookState.isOpen).toBe(false)
+    expect(closeFromEscape()).toBe(false)
+    expect(quickLookCloseMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('only takes plain Escape when the main window has no foreground dialog', () => {
+    quickLookState.isOpen = true
+    const noDialogs = { dialogOpen: false, paletteOpen: false }
+    expect(shouldCloseFromMainWindowEscape(new KeyboardEvent('keydown', { key: 'Escape' }), noDialogs)).toBe(true)
+    expect(
+      shouldCloseFromMainWindowEscape(new KeyboardEvent('keydown', { key: 'Escape', metaKey: true }), noDialogs),
+    ).toBe(false)
+    expect(
+      shouldCloseFromMainWindowEscape(new KeyboardEvent('keydown', { key: 'Escape' }), {
+        dialogOpen: true,
+        paletteOpen: false,
+      }),
+    ).toBe(false)
+    quickLookState.isOpen = false
+    expect(shouldCloseFromMainWindowEscape(new KeyboardEvent('keydown', { key: 'Escape' }), noDialogs)).toBe(false)
   })
 
   it('teardown detaches both listeners and allows fresh attachment afterwards', async () => {

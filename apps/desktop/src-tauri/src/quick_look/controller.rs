@@ -30,12 +30,13 @@
 //! source just hands back the stored URL — no wrapper class needed.
 
 use std::path::Path;
+use std::ptr::NonNull;
 use std::sync::Mutex;
 
 use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, Bool, ProtocolObject};
 use objc2::{DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send, sel};
-use objc2_app_kit::{NSEvent, NSEventType, NSWindowDelegate};
+use objc2_app_kit::{NSEvent, NSEventMask, NSEventType, NSWindowAnimationBehavior, NSWindowDelegate};
 use objc2_foundation::{
     NSInteger, NSNotification, NSNotificationCenter, NSNotificationName, NSObject, NSObjectProtocol, NSString, NSURL,
 };
@@ -43,7 +44,10 @@ use objc2_quick_look_ui::{QLPreviewItem, QLPreviewPanel, QLPreviewPanelDataSourc
 use tauri::{AppHandle, Manager, Wry};
 use tauri_specta::Event as _;
 
+use crate::ignore_poison::IgnorePoison;
 use crate::quick_look::{QuickLookClosed, QuickLookKeyEvent};
+
+const ESCAPE_KEY_CODE: u16 = 53;
 
 /// Cross-thread state held by the Tauri-managed `Mutex<QuickLookController>`.
 ///
@@ -54,9 +58,10 @@ pub struct QuickLookController {
     /// Last URL we asked the panel to preview. `None` until the first `open`.
     current_url: Option<std::path::PathBuf>,
     /// Whether we currently consider the panel ours and on-screen. Flipped to
-    /// `false` either by our own `close()` or by the close-notification
-    /// observer when the user dismisses the panel.
+    /// `false` by the close-notification observer when the panel leaves.
     is_open: bool,
+    /// The process-wide local Escape monitor is installed on the first open.
+    escape_monitor_installed: bool,
 }
 
 impl QuickLookController {
@@ -64,6 +69,7 @@ impl QuickLookController {
         Self {
             current_url: None,
             is_open: false,
+            escape_monitor_installed: false,
         }
     }
 
@@ -124,6 +130,9 @@ impl QuickLookController {
         };
 
         let delegate = ensure_delegate(app, &panel, mtm);
+        if !self.escape_monitor_installed {
+            self.escape_monitor_installed = install_escape_monitor(app);
+        }
         set_delegate_url(&delegate, Some(&path));
         self.apply_open(path);
 
@@ -136,6 +145,9 @@ impl QuickLookController {
             panel.setDelegate(Some(&*delegate as &AnyObject));
         }
 
+        // The default Quick Look transition fades the panel in. Show it at once
+        // so it can receive the next keystroke as soon as it is ordered front.
+        panel.setAnimationBehavior(NSWindowAnimationBehavior::None);
         panel.makeKeyAndOrderFront(None);
         // SAFETY: `panel` is the live `sharedPreviewPanel`; `reloadData` re-queries our just-installed
         // data source. We hold a `MainThreadMarker` (asserted at fn entry), and `QLPreviewPanel`
@@ -175,11 +187,11 @@ impl QuickLookController {
         }
     }
 
-    /// Hide the panel. No-op if not open. Calling `orderOut:` triggers the
-    /// close notification, which clears `is_open` via the observer path.
-    pub fn close_on_main(&mut self) {
+    /// Hide the panel. Release the controller lock before `orderOut:` because
+    /// AppKit may deliver a close notification in the same event turn.
+    pub fn close_on_main(state: &Mutex<Self>) {
         let mtm = MainThreadMarker::new().expect("close_on_main requires the AppKit main thread");
-        if !self.is_open {
+        if !state.lock_ignore_poison().is_open {
             return;
         }
         if let Some(panel) = shared_panel(mtm) {
@@ -188,7 +200,7 @@ impl QuickLookController {
         // The close-notification observer will flip `is_open` and emit
         // `quick-look-closed`. We DON'T mirror the flip here: doing it twice
         // races with that callback and could falsely report "closed" before
-        // the panel has fully animated out, causing reopens to fail.
+        // the panel has left the screen, causing reopens to fail.
     }
 
     /// Called by the close-notification observer.
@@ -212,6 +224,53 @@ fn shared_panel(mtm: MainThreadMarker) -> Option<Retained<QLPreviewPanel>> {
     // SAFETY: `sharedPreviewPanel` is the documented entry point and returns
     // an autoreleased panel; objc2 retains it for us.
     unsafe { QLPreviewPanel::sharedPreviewPanel(mtm) }
+}
+
+/// Catch Escape before Quick Look's opening transition or event routing can
+/// discard it. Only consume a key addressed to our panel; other windows keep
+/// their own Escape behavior.
+fn install_escape_monitor(app: &AppHandle<Wry>) -> bool {
+    let app = app.clone();
+    let block = block2::RcBlock::new(move |event: NonNull<NSEvent>| -> *mut NSEvent {
+        // SAFETY: AppKit keeps this event alive throughout the local monitor callback.
+        let event_ref = unsafe { event.as_ref() };
+        let command_modifiers = (1 << 18) | (1 << 19) | (1 << 20);
+        if event_ref.keyCode() != ESCAPE_KEY_CODE || event_ref.modifierFlags().0 & command_modifiers != 0 {
+            return event.as_ptr();
+        }
+        let Some(mtm) = MainThreadMarker::new() else {
+            return event.as_ptr();
+        };
+        let Some(panel) = shared_panel(mtm) else {
+            return event.as_ptr();
+        };
+        if event_ref.windowNumber() != panel.windowNumber() || try_current_delegate(&panel).is_none() {
+            return event.as_ptr();
+        }
+        let Some(state) = app.try_state::<crate::quick_look::QuickLookState>() else {
+            return event.as_ptr();
+        };
+        if !state.lock_ignore_poison().is_open {
+            return event.as_ptr();
+        }
+        // The guard is gone before AppKit can deliver the close notification.
+        panel.orderOut(None);
+        std::ptr::null_mut()
+    });
+
+    // SAFETY: The block has AppKit's `(NSEvent *) -> NSEvent *` signature;
+    // returning the original event passes it on, and null consumes Escape.
+    let monitor = unsafe { NSEvent::addLocalMonitorForEventsMatchingMask_handler(NSEventMask::KeyDown, &block) };
+    match monitor {
+        Some(monitor) => {
+            let _installed = Retained::into_raw(monitor);
+            true
+        }
+        None => {
+            log::warn!(target: "quick_look", "AppKit refused the Quick Look Escape monitor");
+            false
+        }
+    }
 }
 
 fn try_current_delegate(panel: &QLPreviewPanel) -> Option<Retained<QuickLookDelegate>> {
@@ -292,11 +351,11 @@ define_class!(
 
     /// `QLPreviewPanelDelegate`. We only implement `handleEvent:` so we can
     /// intercept key events while the panel is key and forward them to the
-    /// focused pane via Tauri events. Esc and mouse events return NO so the
-    /// panel handles them natively (Esc closes; clicks navigate the panel UI).
+    /// focused pane via Tauri events. Mouse events return NO so the panel can
+    /// handle them natively; Escape closes if the local monitor missed it.
     unsafe impl QLPreviewPanelDelegate for QuickLookDelegate {
         #[unsafe(method(previewPanel:handleEvent:))]
-        fn handle_event(&self, _panel: Option<&QLPreviewPanel>, event: Option<&NSEvent>) -> Bool {
+        fn handle_event(&self, panel: Option<&QLPreviewPanel>, event: Option<&NSEvent>) -> Bool {
             let Some(event) = event else { return Bool::NO };
             let event_type = event.r#type();
             if event_type != NSEventType::KeyDown {
@@ -304,10 +363,13 @@ define_class!(
             }
             let Some(payload) = build_key_event(event) else { return Bool::NO };
 
-            // Esc: let the panel handle it natively (NO close it; our close
-            // observer will fire `quick-look-closed`). Returning NO is the
-            // documented "I didn't handle this" signal.
-            if payload.key == "Escape" {
+            // This delegate only sees keys the panel did not handle. Close on
+            // Escape if it reaches us despite the local monitor above.
+            if payload.key == "Escape" && !payload.meta_key && !payload.ctrl_key && !payload.alt_key {
+                if let Some(panel) = panel {
+                    panel.orderOut(None);
+                    return Bool::YES;
+                }
                 return Bool::NO;
             }
 
@@ -325,10 +387,9 @@ define_class!(
         #[unsafe(method(quickLookPanelWillClose:))]
         fn panel_will_close(&self, _notification: *const NSNotification) {
             let app = self.ivars().app.clone();
-            if let Some(state) = app.try_state::<crate::quick_look::QuickLookState>()
-                && let Ok(mut ctrl) = state.lock() {
-                    ctrl.mark_closed();
-                }
+            if let Some(state) = app.try_state::<crate::quick_look::QuickLookState>() {
+                state.lock_ignore_poison().mark_closed();
+            }
             if let Err(e) = QuickLookClosed.emit(&app) {
                 log::warn!(target: "quick_look", "failed to emit quick-look-closed: {e}");
             }

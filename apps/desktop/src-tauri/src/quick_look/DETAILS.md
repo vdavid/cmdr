@@ -24,6 +24,20 @@ Architecture and decisions for the native macOS Quick Look integration. `CLAUDE.
   it through `setDelegate:`. The observer must outlive any specific open/close cycle. When `AppHandle` drops at process
   shutdown, the delegate (and observer) go with it. This is the documented pattern for singleton observers in AppKit.
 
+## Opening and Escape
+
+`open_on_main` sets `NSWindowAnimationBehaviorNone` before ordering the shared panel front. Cmdr has no preview-item
+source frame for a Quick Look zoom transition; AppKit's fallback is a visible fade. The setting requests no automatic
+window animation. The panel still loads preview content through `reloadData`.
+
+Two event paths cover the focus handoff. While the main webview still receives keydown, its capture listener closes the
+optimistically opened Quick Look state on Escape. Once the panel receives key events, a process-local `NSEvent`
+monitor sees Escape before the panel's event routing. It consumes the event only when its window number is the shared
+panel's and our delegate is installed; it ignores Command, Control, and Option combinations. The monitor reads
+`is_open`, drops the mutex guard, then calls `orderOut` so a close notification cannot reenter a locked controller.
+The delegate's `handleEvent:` also closes on Escape if the panel forwards one as unhandled. The close notification
+remains the native side's source of truth for state and the frontend's `quick-look-closed` event.
+
 ## Coexistence with NSOpenPanel
 
 `QLPreviewPanel` and `NSOpenPanel` are both AppKit panels that take main-thread key focus. Cmdr opens `NSOpenPanel` for

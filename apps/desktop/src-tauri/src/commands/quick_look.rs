@@ -9,6 +9,8 @@
 //! All three commands wrap their main-thread hop in `blocking_with_timeout` (2 s)
 //! so a wedged AppKit pump never freezes the IPC blocking pool.
 
+#[cfg(target_os = "macos")]
+use crate::ignore_poison::IgnorePoison;
 use tauri::AppHandle;
 // `run_on_main_thread` / `state` come from `Manager`, used only on macOS where
 // the real panel lives; the other platforms have no-op stubs.
@@ -41,9 +43,7 @@ pub async fn quick_look_open(app: AppHandle, path: String, volume_id: String) ->
         app_inner
             .run_on_main_thread(move || {
                 let state = app_for_closure.state::<crate::quick_look::QuickLookState>();
-                if let Ok(mut ctrl) = state.lock() {
-                    ctrl.open_on_main(&app_for_closure, path_main);
-                }
+                state.lock_ignore_poison().open_on_main(&app_for_closure, path_main);
                 let _ = tx.send(());
             })
             .map_err(|e| format!("run_on_main_thread failed: {e}"))?;
@@ -78,9 +78,7 @@ pub async fn quick_look_set_path(app: AppHandle, path: String, volume_id: String
         app_inner
             .run_on_main_thread(move || {
                 let state = app_for_closure.state::<crate::quick_look::QuickLookState>();
-                if let Ok(mut ctrl) = state.lock() {
-                    ctrl.set_path_on_main(path_main);
-                }
+                state.lock_ignore_poison().set_path_on_main(path_main);
                 let _ = tx.send(());
             })
             .map_err(|e| format!("run_on_main_thread failed: {e}"))?;
@@ -105,9 +103,7 @@ pub async fn quick_look_close(app: AppHandle) -> Result<(), String> {
         app_inner
             .run_on_main_thread(move || {
                 let state = app_for_closure.state::<crate::quick_look::QuickLookState>();
-                if let Ok(mut ctrl) = state.lock() {
-                    ctrl.close_on_main();
-                }
+                crate::quick_look::QuickLookController::close_on_main(&state);
                 let _ = tx.send(());
             })
             .map_err(|e| format!("run_on_main_thread failed: {e}"))?;

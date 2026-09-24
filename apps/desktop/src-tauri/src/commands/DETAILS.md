@@ -246,7 +246,8 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   - ❗ **The breadcrumb's Eject crosses as the typed `VolumeContextActionKind`**, ❌ never a free string.
     `menu_handlers.rs` maps menu id → action through one table, so what it recognizes and what it emits can't drift.
 - **`quick_look.rs`**: `quick_look_open` / `quick_look_set_path` / `quick_look_close` (native `QLPreviewPanel`
-  singleton on macOS, no-op stubs elsewhere; 2 s main-thread-hop timeout). See `crate::quick_look`.
+  singleton on macOS, no-op stubs elsewhere; 2 s main-thread-hop timeout). Close passes the state mutex to the
+  controller, which releases it before `orderOut` can notify the close observer. See `crate::quick_look`.
 - **`window_ordering.rs`**: `show_main_window` / `order_window_to_back`. `show_main_window` is the ONE path that makes
   Cmdr visible (the window is created `"visible": false`; the frontend calls it from `onMount`), and it takes a
   `ShowReason`: a `launch` show follows `show()` with `set_focus()`, a `repaint-repair` re-show doesn't. The activation

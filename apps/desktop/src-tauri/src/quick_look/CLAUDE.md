@@ -29,6 +29,9 @@ Full details (decisions, NSOpenPanel coexistence, the testing gap, multi-selecti
 - **All three commands hop to the AppKit main thread** via `app.run_on_main_thread()` + a one-shot `mpsc`, wrapped in
   `blocking_with_timeout` (2 s) so a wedged AppKit pump can't freeze the IPC pool. Keep new entry points on this
   pattern.
+- **Escape has two owners during opening.** The main webview catches it before Quick Look takes key focus; a local
+  AppKit monitor catches it once addressed to our panel, before Quick Look's own event routing. Keep the monitor scoped
+  to the panel's window number and our delegate so other windows retain Escape. See `DETAILS.md` § Opening and Escape.
 - **The close observer is the single source of truth for `is_open`; don't add a parallel flip.** `panel.orderOut(nil)`
   posts `NSWindowWillCloseNotification` asynchronously (empirically `QLPreviewPanel` posts it on `orderOut:` too, ~200 ms
   after the close IPC returns; verified via `apps/desktop/test/manual/quick-look-mcp.md`). A synchronous flip in
