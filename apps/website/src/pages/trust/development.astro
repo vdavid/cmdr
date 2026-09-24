@@ -246,16 +246,19 @@ const toc = [
         <li><strong>On demand</strong>: a 30-minute stress test of repeated copies from an SMB server.</li>
     </ul>
     <p>
-        Not in place: fuzzing (random-input testing of the parsers for network protocols, archives, PDFs, and images),
-        automated tests of the macOS-only code on GitHub (the per-push runs use Linux), and a rule that a release
-        waits for GitHub's checks to pass.
+        A release waits for GitHub's checks: before tagging, the release script requires a full, green run of every
+        check on the exact commit being released. The script enforces this, not GitHub.
+    </p>
+    <p>
+        Not in place: fuzzing (random-input testing of the parsers for network protocols, archives, PDFs, and images)
+        and automated tests of the macOS-only code on GitHub (the per-push runs use Linux).
     </p>
     <DevTodo>
         Numbers only you see. In the {window.days} days to {measuredOn}, {ciOnMain.failed} of {ciOnMain.runs} CI runs
         on <code>main</code> failed, and {ciOnMain.releaseCommitsRed} of the last {ciOnMain.releaseCommits} release
-        commits had a red job ({ciOnMain.redJobs}). <code>release.yml</code> never looks at CI, and
-        <code>scripts/release.sh</code> doesn't either. Suggestions: (a) make <code>release.sh</code> refuse to tag
-        unless the latest CI run on HEAD is green, (b) add a macOS runner lane for clippy and the Rust tests (public
+        commits had a red job ({ciOnMain.redJobs}). <code>scripts/release.sh</code> refuses to tag without a green full CI run
+        on HEAD (<code>scripts/release-ci-gate.sh</code>), but <code>release.yml</code> never looks at CI. Suggestions:
+        (a) enforce the same gate in <code>release.yml</code>, (b) add a macOS runner lane for clippy and the Rust tests (public
         repo, so macOS minutes are free), since per-push CI never compiles the <code>cfg(target_os = "macos")</code>
         code, and (c) add <code>cargo-fuzz</code> targets for the parsers that take network or file input. Each one you
         add moves a sentence off this page.

@@ -374,8 +374,7 @@ const toc = [
         </li>
     </ul>
     <p>
-        From the next release on, nothing reaches a cloud AI service until the user turns on "Allow cloud AI" in
-        Settings, which lists what each feature sends. The app's backend enforces this for every AI feature. Cmdr's own
+        Nothing reaches a cloud AI service until the user turns on "Allow cloud AI" in Settings, which lists what each feature sends. The app's backend enforces this for every AI feature. Cmdr's own
         on-device model needs no switch, because nothing leaves the Mac.
     </p>
     <p>With cloud AI, this is what reaches the provider:</p>
@@ -394,11 +393,6 @@ const toc = [
         Text recognition in images, image tags, and image search always run on the Mac, using Apple's built-in
         frameworks. IT can't yet turn AI off centrally or limit which providers are allowed.
     </p>
-    <DevTodo>
-        After the release that ships "Allow cloud AI", drop "From the next release on" from the AI consent sentence
-        here, from the privacy policy's AI bullet, and from the AI row in <code>src/lib/trust.ts</code>, and delete the
-        "Until the next release" sentence from that file's "No central control over AI" gap.
-    </DevTodo>
 
     <h2 id="development">How Cmdr is built</h2>
     <p>
