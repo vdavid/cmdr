@@ -279,7 +279,7 @@ async fn do_download<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         }
     }
 
-    // Emit installing event so UI shows "Setting up AI..." while server starts
+    // Emit installing event so UI shows "Setting up AI…" while server starts
     let _ = AiInstalling.emit(app);
 
     // Start the server FIRST, then emit install complete.

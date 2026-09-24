@@ -18,7 +18,7 @@ use std::time::Duration;
 /// The check must answer, or say it couldn't, within its budget — including
 /// when the volumes it asks have stopped answering entirely.
 ///
-/// A user watching `Checking for conflicts...` over a share whose connection
+/// A user watching `Checking for conflicts…` over a share whose connection
 /// had dropped waited it out for minutes. Each leg owning its own timeout is
 /// not enough: the legs run in sequence, so the promise is their SUM, and a
 /// leg with no timeout at all (the volume resolves) makes it unbounded.

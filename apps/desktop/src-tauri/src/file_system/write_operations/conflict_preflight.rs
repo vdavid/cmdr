@@ -113,7 +113,7 @@ impl std::error::Error for VolumeScanError {}
 
 /// The whole conflict check, under ONE wall-clock budget.
 ///
-/// The dialog says "Checking for conflicts..." while this runs, so what it owes
+/// The dialog says "Checking for conflicts…" while this runs, so what it owes
 /// the user is a knowable wait: an answer, or an honest "couldn't check", within
 /// `deadline`. Every leg below can reach a device that has stopped answering —
 /// two volume resolves (a `.zip`-crossing path probes the network), the source

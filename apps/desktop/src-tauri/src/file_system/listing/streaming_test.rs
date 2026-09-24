@@ -539,7 +539,7 @@ async fn a_local_directory_read_emits_progress_events() {
     let progress = sink.progress.lock_ignore_poison();
     assert!(
         !progress.is_empty(),
-        "reading 5,000 local entries emitted no listing-progress, so the pane would sit on \"Opening folder...\""
+        "reading 5,000 local entries emitted no listing-progress, so the pane would sit on \"Opening folder…\""
     );
     assert!(
         progress.iter().all(|(id, _)| id == listing.id()),

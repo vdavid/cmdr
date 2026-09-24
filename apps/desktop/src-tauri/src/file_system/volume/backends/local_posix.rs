@@ -267,7 +267,7 @@ impl Volume for LocalPosixVolume {
             // `on_progress` is `Sync` but not `Send`, so it can't ride into `spawn_blocking`
             // with the lister. Instead the lister publishes into a shared `ListingTally` and
             // this side samples it on a timer, leaving the callback on the async task that
-            // owns it. Without this the pane sits on "Opening folder..." for a big folder's
+            // owns it. Without this the pane sits on "Opening folder…" for a big folder's
             // whole read. `listing/DETAILS.md` § "Local listing progress".
             let tally = Arc::new(ListingTally::default());
             let tally_for_listing = Arc::clone(&tally);

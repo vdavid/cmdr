@@ -730,7 +730,7 @@ fn test_listing_watch_coverage_flips_with_watcher_lifecycle() {
 }
 
 /// The streaming listing UI renders "Loaded N files..." off these ticks, so a local
-/// listing that never calls `on_progress` leaves a big folder on "Opening folder..."
+/// listing that never calls `on_progress` leaves a big folder on "Opening folder…"
 /// for its entire read.
 #[tokio::test]
 async fn listing_a_local_directory_reports_progress_while_it_reads() {

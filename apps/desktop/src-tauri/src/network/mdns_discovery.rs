@@ -150,7 +150,7 @@ fn process_events(receiver: Receiver<ServiceEvent>) {
                 // Transition to Active on the first found host. The old NSNetServiceBrowser
                 // code used the `moreComing` flag for this, but mdns-sd doesn't expose that
                 // concept. Triggering on the first host is a good approximation: the user
-                // sees a host, so the "Searching..." spinner should stop.
+                // sees a host, so the "Searching…" spinner should stop.
                 if !initial_scan_complete {
                     initial_scan_complete = true;
                     debug!("mDNS initial scan complete, transitioning to Active");
