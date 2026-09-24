@@ -2610,18 +2610,22 @@ opent Cmdr het venster voor definitief verwijderen en legt dat uit in de banner.
 gemengde selectie, één voor een selectie die volledig alleen online is. Ze verschillen alleen in de eerste zin en in de
 uitwegen die ze kunnen noemen. De derde sleutel is de regel die verschijnt als Cmdr een druk teruggeeft.
 
-- **`.cloudOnlineOnlyMixedWarning`** · `alleen online beschikbaar` is de formulering van de Finder voor een uitgeladen
-  bestand; `prullenmand` en `cloudservice` komen uit § Terms · medium.
+- **`.cloudOnlineOnlyMixedWarning`** · `alleen online beschikbaar` (de term `online-only`), `prullenmand` en
+  `cloudservice` · medium. **De download als gevolg, niet als handeling van het verplaatsen**:
+  `Als je die onderdelen naar de prullenmand verplaatst, worden ze <strong>eerst gedownload</strong>.` ❌ Niet het calque
+  `Verplaatsen naar de prullenmand zou ze eerst downloaden`, waarin het verplaatsen zelf downloadt. Het Engelse "In this
+  case" wordt `In dit geval`, geen causaal `Daarom`. De eigen bewaartermijn van de service heet
+  `bewaren verwijderde bestanden`, geen `prullenmand`.
 - **`.cloudOnlineOnlyAllWarning`** · dezelfde tekst, met «Alles wat je hebt geselecteerd» in plaats van «Een deel van je
   selectie», en zonder de uitweg deselecteren: als alles alleen online is, blijft er niets geselecteerd · medium.
 - **`.cloudOnlineOnlyHandedBack`** · de regel boven de knop na een druk die Cmdr bewust niet heeft uitgevoerd. Zakelijk,
-  zonder excuses · medium.
+  zonder excuses · medium. `druk er daarna nog een keer op` (het werkwoord `drukken op` houdt zijn `er … op`), en
+  `bleek` (verleden tijd, zonder "toch").
 - **Alle vier de feiten blijven staan**: (1) de prullenmand zou de bestanden downloaden, (2) daarom biedt Cmdr alleen de
   HELE selectie verwijderen aan, (3) daarna blijft er GEEN kopie in de prullenmand, de service houdt wel een eigen kopie
   (❌ niet afzwakken), (4) de uitwegen die de banner noemt.
 - **De twee `<strong>`-stukken blijven**, op «eerst downloaden» en op het werkwoord «verwijderen». En ‘Verwijder’ tussen
   aanhalingstekens is het label van de knop: altijd hetzelfde als `fileOperations.delete.confirmDelete`.
-- ⚠️ De ICU-apostrof wordt verdubbeld (`zo''n`).
 - Bekijken bij de overflow-controle: de banner is lang en staat in een smalle strook boven de bestandenlijst.
 - ⚠️ Concept, nog niet door een mens nagelezen.
 

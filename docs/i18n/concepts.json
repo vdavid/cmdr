@@ -152,6 +152,12 @@
     "match": ["attachment", "attachments", "attach", "attached"],
     "sense": "A file or folder the user attaches to an Ask Cmdr question."
   },
+  "available-offline": {
+    "distinct": ["online-only"],
+    "en": "available offline",
+    "match": ["available offline", "make available offline"],
+    "sense": "A cloud file kept downloaded on the Mac, and the command that pins it there."
+  },
   "back": {
     "distinct": ["previous-next", "go-back"],
     "en": "Back",
@@ -211,15 +217,7 @@
   },
   "case-sensitive": {
     "en": "case-sensitive",
-    "match": [
-      "case-sensitive",
-      "case sensitive",
-      "case-insensitive",
-      "upper case",
-      "lower case",
-      "uppercase",
-      "lowercase"
-    ],
+    "match": ["case-sensitive", "case sensitive", "case-insensitive", "upper case", "lower case", "uppercase", "lowercase"],
     "sense": "Whether upper- and lowercase letters count as different."
   },
   "certificate": {
@@ -284,17 +282,7 @@
     "distinct": ["dismiss", "delete"],
     "en": "clear",
     "match": ["clear", "clears", "cleared"],
-    "notMatch": [
-      "clears away",
-      "clears it on",
-      "clears it up",
-      "clears them on",
-      "clears up",
-      "isn't clear",
-      "or not cleared",
-      "to be cleared",
-      "usually clears it"
-    ],
+    "notMatch": ["clears away", "clears it on", "clears it up", "clears them on", "clears up", "isn't clear", "or not cleared", "to be cleared", "usually clears it"],
     "sense": "Emptying a field, a search, an index, or a list of recent items without deleting files."
   },
   "clipboard": {
@@ -318,17 +306,7 @@
   "cloud-provider": {
     "distinct": ["ai-provider"],
     "en": "cloud provider",
-    "match": [
-      "=your cloud provider",
-      "cloud folder",
-      "cloud folders",
-      "cloud mount",
-      "cloud service",
-      "cloud services",
-      "cloud storage",
-      "managed by a cloud provider",
-      "sync app"
-    ],
+    "match": ["=your cloud provider", "cloud folder", "cloud folders", "cloud mount", "cloud service", "cloud services", "cloud storage", "managed by a cloud provider", "sync app"],
     "sense": "A file-sync service (iCloud Drive, Dropbox, Google Drive) whose folders Cmdr shows."
   },
   "command": {
@@ -880,14 +858,7 @@
   "image-search": {
     "distinct": ["search", "index"],
     "en": "image search",
-    "match": [
-      "image search",
-      "semantic search",
-      "search by description",
-      "photo search",
-      "keyword search",
-      "tag search"
-    ],
+    "match": ["image search", "semantic search", "search by description", "photo search", "keyword search", "tag search"],
     "sense": "Searching pictures by their contents or a description (the image index's search features)."
   },
   "in-use": {
@@ -900,17 +871,7 @@
   "index": {
     "distinct": ["scan", "image-search"],
     "en": "index",
-    "match": [
-      "index",
-      "indexes",
-      "indexing",
-      "indexed",
-      "unindexed",
-      "re-indexed",
-      "drive index",
-      "drive indexing",
-      "image indexing"
-    ],
+    "match": ["index", "indexes", "indexing", "indexed", "unindexed", "re-indexed", "drive index", "drive indexing", "image indexing"],
     "sense": "Cmdr's database of a drive's files and folder sizes, and the image index; also the act of building them."
   },
   "input-source": {
@@ -923,6 +884,13 @@
     "match": ["install", "installs", "installing", "installed", "installation"],
     "notMatch": ["brew install"],
     "sense": "Installing an update, a tool, or a model."
+  },
+  "invert-selection": {
+    "distinct": ["select", "deselect"],
+    "en": "Invert selection",
+    "match": ["invert selection", "inverts the selection"],
+    "note": "Total Commander and Double Commander have this exact item; the menu item and the palette command share one English string.",
+    "sense": "The command that flips the selection in the active pane (⇧8): selected files become unselected and the rest selected."
   },
   "item": {
     "distinct": ["file", "folder"],
@@ -1088,31 +1056,14 @@
     "distinct": ["copy", "transfer", "move-to-trash"],
     "en": "move",
     "match": ["move", "moves", "moving", "moved"],
-    "notMatch": [
-      "move down",
-      "move to left column",
-      "move to right column",
-      "move to trash",
-      "moved on",
-      "moves down",
-      "moves the files back",
-      "out of the way",
-      "stopped moving"
-    ],
+    "notMatch": ["move down", "move to left column", "move to right column", "move to trash", "moved on", "moves down", "moves the files back", "out of the way", "stopped moving"],
     "note": "\"Move to left column\" and \"moves down\" (cursor movement) are not this concept.",
     "sense": "Relocating files to another folder (F6)."
   },
   "move-to-trash": {
     "distinct": ["delete", "go-to-trash", "trash"],
     "en": "Move to trash",
-    "match": [
-      "move to trash",
-      "move to the trash",
-      "moved to the trash",
-      "moving to the trash",
-      "to the trash",
-      "trashed"
-    ],
+    "match": ["move to trash", "move to the trash", "moved to the trash", "moving to the trash", "to the trash", "trashed"],
     "sense": "Sending files to the trash (the delete dialog's switch, its confirm button, the queue row)."
   },
   "name": {
@@ -1194,6 +1145,12 @@
     "en": "onboarding",
     "match": ["onboarding"],
     "sense": "The first-run setup wizard."
+  },
+  "online-only": {
+    "distinct": ["available-offline", "cloud-provider"],
+    "en": "online-only",
+    "match": ["online-only", "online only"],
+    "sense": "A cloud file whose contents the provider evicted, leaving only a placeholder on the Mac; opening, copying, or trashing it downloads it first."
   },
   "open": {
     "distinct": ["browse", "show"],
@@ -1501,16 +1458,7 @@
   "respond": {
     "distinct": ["answer"],
     "en": "respond",
-    "match": [
-      "respond",
-      "responds",
-      "responding",
-      "unresponsive",
-      "didn't answer",
-      "hasn't answered",
-      "doesn't answer",
-      "stopped answering"
-    ],
+    "match": ["respond", "responds", "responding", "unresponsive", "didn't answer", "hasn't answered", "doesn't answer", "stopped answering"],
     "sense": "A device, server, or share answering a request (or not)."
   },
   "restart": {
@@ -1541,16 +1489,7 @@
   "rollback": {
     "distinct": ["undo", "put-back", "cancel"],
     "en": "roll back",
-    "match": [
-      "roll back",
-      "rolls back",
-      "rolling back",
-      "rolled back",
-      "rollback",
-      "rollbacks",
-      "roll them back",
-      "roll this back"
-    ],
+    "match": ["roll back", "rolls back", "rolling back", "rolled back", "rollback", "rollbacks", "roll them back", "roll this back"],
     "sense": "Undoing a running or finished copy or move by deleting what it wrote or moving files back."
   },
   "root-folder": {
@@ -1750,14 +1689,7 @@
     "distinct": ["cancel", "pause", "quit"],
     "en": "Stop",
     "match": ["stop", "stops", "stopped", "stopping"],
-    "notMatch": [
-      "stop getting",
-      "stopped adding",
-      "stopped answering",
-      "stopped arriving",
-      "stopped moving",
-      "stops listing"
-    ],
+    "notMatch": ["stop getting", "stopped adding", "stopped answering", "stopped arriving", "stopped moving", "stops listing"],
     "sense": "Halting something that runs (a search, a local AI server, an operation during rollback)."
   },
   "streaming": {

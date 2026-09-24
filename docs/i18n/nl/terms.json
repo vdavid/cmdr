@@ -40,10 +40,7 @@
   "add": {
     "accept": ["voeg", "toegevoegd"],
     "avoid": [
-      {
-        "form": "Voeg toe aan …",
-        "why": "English word order; the separable particle goes to the end (exception: Apple's verbatim `Voeg toe aan Dock`)"
-      }
+      { "form": "Voeg toe aan …", "why": "English word order; the separable particle goes to the end (exception: Apple's verbatim `Voeg toe aan Dock`)" }
     ],
     "chosen": "toevoegen",
     "confidence": "high",
@@ -63,7 +60,9 @@
   },
   "ai-provider": {
     "accept": ["AI-aanbieder", "cloudaanbieder"],
-    "avoid": [{ "form": "synchronisatievoorziening", "why": "MS's first hit is the sync-provider sense" }],
+    "avoid": [
+      { "form": "synchronisatievoorziening", "why": "MS's first hit is the sync-provider sense" }
+    ],
     "chosen": "aanbieder",
     "confidence": "high",
     "forms": "AI provider → AI-aanbieder; naar je aanbieder",
@@ -92,7 +91,9 @@
   },
   "answer": {
     "accept": ["antwoord", "beantwoord"],
-    "avoid": [{ "form": "reageren", "why": "reserved for a device or share answering (respond)" }],
+    "avoid": [
+      { "form": "reageren", "why": "reserved for a device or share answering (respond)" }
+    ],
     "chosen": "antwoorden",
     "confidence": "high",
     "decision": "Het losse conflictvenster (`fileOperations.operationConflict.*`)",
@@ -133,10 +134,7 @@
   },
   "applications-folder": {
     "avoid": [
-      {
-        "form": "Programma's",
-        "why": "Dutch macOS names the folder Apps; Programma's survives only in Hulpprogramma's"
-      }
+      { "form": "Programma's", "why": "Dutch macOS names the folder Apps; Programma's survives only in Hulpprogramma's" }
     ],
     "chosen": "Apps",
     "confidence": "high",
@@ -156,7 +154,9 @@
   },
   "approve": {
     "accept": ["goedkeur", "goedgekeurd", "goedkeuring", "keur"],
-    "avoid": [{ "form": "Accepteer", "why": "macOS's accept-something sense; approving grants permission" }],
+    "avoid": [
+      { "form": "Accepteer", "why": "macOS's accept-something sense; approving grants permission" }
+    ],
     "chosen": "Goedkeuren",
     "confidence": "high",
     "decision": "Voorgestelde bewerkingen: het venster met wat Ask Cmdr voorstelt (`suggestedOps.*`, `commands.suggestedOpsShow.*`)",
@@ -192,11 +192,19 @@
   },
   "attachment": {
     "accept": ["bijvoegen", "bij te voegen", "bijgevoegd", "voeg"],
-    "avoid": [{ "form": "beschikbaar maken", "why": "MS's device-attach sense" }],
+    "avoid": [
+      { "form": "beschikbaar maken", "why": "MS's device-attach sense" }
+    ],
     "chosen": "bijlage",
     "confidence": "high",
     "forms": "noun bijlage; verb bijvoegen (Zet hier neer om bij te voegen)",
     "sources": "MS (attachment → bijlage); verb paired with the noun (tentative)"
+  },
+  "available-offline": {
+    "chosen": "offline beschikbaar",
+    "confidence": "high",
+    "forms": "command Maak offline beschikbaar",
+    "sources": "catalog (menu.context.makeAvailableOffline, commands.cloudMakeOffline.label)"
   },
   "back": {
     "accept": ["Vorige", "terug"],
@@ -231,7 +239,9 @@
   },
   "brief-view": {
     "accept": ["beknopt"],
-    "avoid": [{ "form": "Kort", "why": "named a view the menu bar doesn't have" }],
+    "avoid": [
+      { "form": "Kort", "why": "named a view the menu bar doesn't have" }
+    ],
     "chosen": "Beknopte weergave",
     "confidence": "high",
     "sources": "compositional; the View menu name (menu.view.briefView)"
@@ -244,7 +254,9 @@
     "sources": "macOS Finder (Browse → Blader, key 48.title), MS (browse → bladeren)"
   },
   "browse-file-picker": {
-    "avoid": [{ "form": "Bladeren", "why": "Safari's infinitive menu form; this is a button" }],
+    "avoid": [
+      { "form": "Bladeren", "why": "Safari's infinitive menu form; this is a button" }
+    ],
     "chosen": "Blader…",
     "confidence": "high",
     "sources": "macOS Finder ConnectToWindow.strings 48.title"
@@ -301,7 +313,9 @@
   },
   "chat": {
     "accept": ["chats", "gesprek"],
-    "avoid": [{ "form": "sessie", "why": "MS's generic session; Cmdr calls a saved conversation a chat throughout" }],
+    "avoid": [
+      { "form": "sessie", "why": "MS's generic session; Cmdr calls a saved conversation a chat throughout" }
+    ],
     "chosen": "chat",
     "confidence": "high",
     "sources": "MS terminology (chat, NLD/BEL); catalog (askCmdr.sessions.title)"
@@ -309,10 +323,7 @@
   "check": {
     "accept": ["controleer", "controle", "gecontroleerd", "kijk", "verifi", "naar updates", "vergelijk", "vergeleken"],
     "avoid": [
-      {
-        "form": "nagaan",
-        "why": "the rollback reason lines use controleren (99 keys); only resolvingCoverage keeps nagaan, for different English"
-      }
+      { "form": "nagaan", "why": "the rollback reason lines use controleren (99 keys); only resolvingCoverage keeps nagaan, for different English" }
     ],
     "chosen": "controleren",
     "confidence": "high",
@@ -324,7 +335,9 @@
     "sources": "Double Commander (Controleer …), Nautilus (controleren op), Mail/SoftwareUpdate (Check Again → Controleer opnieuw)"
   },
   "checklist": {
-    "avoid": [{ "form": "controlelijst", "why": "MS's Planner sense, reads as an inspection" }],
+    "avoid": [
+      { "form": "controlelijst", "why": "MS's Planner sense, reads as an inspection" }
+    ],
     "chosen": "checklist",
     "confidence": "high",
     "decision": "De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels",
@@ -341,10 +354,7 @@
   "clean-up": {
     "accept": ["ruimt", "opgeruimd"],
     "avoid": [
-      {
-        "form": "verwijdert",
-        "why": "a second delete verb beside queue rows that say Bezig met verwijderen reads as more deleting"
-      }
+      { "form": "verwijdert", "why": "a second delete verb beside queue rows that say Bezig met verwijderen reads as more deleting" }
     ],
     "chosen": "opruimen",
     "confidence": "tentative",
@@ -411,7 +421,9 @@
   },
   "complete": {
     "accept": ["voltooi", "voltooien", "onvolledig", "niet voltooid"],
-    "avoid": [{ "form": "afgerond", "why": "belongs to scans and AI answers; file operations are voltooid" }],
+    "avoid": [
+      { "form": "afgerond", "why": "belongs to scans and AI answers; file operations are voltooid" }
+    ],
     "chosen": "voltooid",
     "confidence": "high",
     "decision": "Een half teruggedraaide bewerking afmaken (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)",
@@ -429,7 +441,9 @@
     "sources": "macOS Finder (Compress ${sources} → Comprimeer ${sources}); TC, 7-Zip (Compressieniveau)"
   },
   "compromised": {
-    "avoid": [{ "form": "ingetrokken", "why": "Apple's certificate word says no longer valid, not proven unsafe" }],
+    "avoid": [
+      { "form": "ingetrokken", "why": "Apple's certificate word says no longer valid, not proven unsafe" }
+    ],
     "chosen": "gecompromitteerd",
     "confidence": "tentative",
     "sources": "common Dutch security term; no Apple or MS source"
@@ -467,7 +481,9 @@
   },
   "context-menu": {
     "accept": ["rechtermuisknop"],
-    "avoid": [{ "form": "snelmenu", "why": "the Windows term" }],
+    "avoid": [
+      { "form": "snelmenu", "why": "the Windows term" }
+    ],
     "chosen": "contextmenu",
     "confidence": "high",
     "exceptions": {
@@ -565,7 +581,9 @@
   },
   "delete-permanently": {
     "accept": ["voorgoed"],
-    "avoid": [{ "form": "permanent", "why": "the drift round unified three keys on definitief" }],
+    "avoid": [
+      { "form": "permanent", "why": "the drift round unified three keys on definitief" }
+    ],
     "chosen": "definitief",
     "confidence": "high",
     "forms": "button and menu item Verwijder definitief; in prose definitief verwijderen",
@@ -591,7 +609,9 @@
   },
   "destination": {
     "accept": ["doelmap", "doel", "Naar"],
-    "avoid": [{ "form": "bestemmingsmap", "why": "the catalog says doelmap (five against one)" }],
+    "avoid": [
+      { "form": "bestemmingsmap", "why": "the catalog says doelmap (five against one)" }
+    ],
     "chosen": "bestemming",
     "confidence": "high",
     "forms": "the side written to → bestemming (op de bestemming); destination folder → doelmap; a symlink's target → doel; the dialog heading pair is Van / Naar",
@@ -600,7 +620,9 @@
   },
   "device": {
     "accept": ["apparaten"],
-    "avoid": [{ "form": "toestel", "why": "the drift round unified on macOS's apparaat" }],
+    "avoid": [
+      { "form": "toestel", "why": "the drift round unified on macOS's apparaat" }
+    ],
     "chosen": "apparaat",
     "confidence": "high",
     "forms": "an idle device → niet meer bezig (counterpart of Het apparaat is bezig)",
@@ -630,10 +652,7 @@
   "dismiss": {
     "accept": ["sluiten", "gesloten"],
     "avoid": [
-      {
-        "form": "Wis",
-        "why": "means erase; the @key says nothing is undone, retried, or deleted (same class of bug as zh-Hant's Negeren)"
-      },
+      { "form": "Wis", "why": "means erase; the @key says nothing is undone, retried, or deleted (same class of bug as zh-Hant's Negeren)" },
       { "form": "Verberg", "why": "implies the row can come back" }
     ],
     "chosen": "Sluit",
@@ -705,10 +724,7 @@
   "eject": {
     "accept": ["werp", "uitgeworpen"],
     "avoid": [
-      {
-        "form": "Verwijder",
-        "why": "macOS's own eject word, but in Cmdr it is delete; an eject would read as a delete"
-      },
+      { "form": "Verwijder", "why": "macOS's own eject word, but in Cmdr it is delete; an eject would read as a delete" },
       { "form": "verwijderbaar", "why": "macOS's removable; next to eject it reads as deletable" }
     ],
     "chosen": "uitwerpen",
@@ -719,7 +735,9 @@
   },
   "email": {
     "accept": ["e-mail", "mail"],
-    "avoid": [{ "form": "voorbeeld.com", "why": "a real, registrable domain; example.com is reserved for examples" }],
+    "avoid": [
+      { "form": "voorbeeld.com", "why": "a real, registrable domain; example.com is reserved for examples" }
+    ],
     "chosen": "e-mailadres",
     "confidence": "high",
     "decision": "Wat het Engels over zichzelf rechtzette, en wat dat voor `nl` betekende",
@@ -747,10 +765,7 @@
   "endpoint": {
     "accept": ["Eindpunt"],
     "avoid": [
-      {
-        "form": "Endpoint",
-        "why": "superseded: Apple is silent and MS terminology gives eindpunt for exactly this sense"
-      }
+      { "form": "Endpoint", "why": "superseded: Apple is silent and MS terminology gives eindpunt for exactly this sense" }
     ],
     "chosen": "eindpunt",
     "confidence": "high",
@@ -783,7 +798,9 @@
   },
   "estimate": {
     "accept": ["geschat"],
-    "avoid": [{ "form": "offerte", "why": "MS's first hit is the business-quote sense" }],
+    "avoid": [
+      { "form": "offerte", "why": "MS's first hit is the business-quote sense" }
+    ],
     "chosen": "schatting",
     "confidence": "high",
     "sources": "standard NL"
@@ -796,7 +813,9 @@
   },
   "extension": {
     "accept": ["extensies"],
-    "avoid": [{ "form": "achtervoegsel", "why": "Double Commander's word; macOS says extensie" }],
+    "avoid": [
+      { "form": "achtervoegsel", "why": "Double Commander's word; macOS says extensie" }
+    ],
     "chosen": "extensie",
     "confidence": "high",
     "forms": "Selecteer alles met extensie *.{extension}",
@@ -811,10 +830,7 @@
   "failed": {
     "accept": ["niet", "mis"],
     "avoid": [
-      {
-        "form": "mislukt",
-        "why": "reads as a bare failure label; allowed only as a descriptive word in flowing prose"
-      },
+      { "form": "mislukt", "why": "reads as a bare failure label; allowed only as a descriptive word in flowing prose" },
       { "form": "fout", "why": "same voice rule (compounds like foutrapport, typefout are fine)" },
       { "form": "Error: {message}", "why": "no error-prefix; word the problem as a whole calm sentence" }
     ],
@@ -887,10 +903,7 @@
   },
   "fingerprint": {
     "avoid": [
-      {
-        "form": "fingerprint",
-        "why": "only Apple's two weakest SSH strings keep it; the system-wide word is vingerafdruk"
-      }
+      { "form": "fingerprint", "why": "only Apple's two weakest SSH strings keep it; the system-wide word is vingerafdruk" }
     ],
     "chosen": "vingerafdruk",
     "confidence": "high",
@@ -1000,13 +1013,17 @@
     "sources": "macOS Finder Ga naar … pattern (MenuBar 261.title Ga naar map…)"
   },
   "go-to-trash": {
-    "avoid": [{ "form": "Naar prullenmand", "why": "already means MOVE to trash in fileOperations.json" }],
+    "avoid": [
+      { "form": "Naar prullenmand", "why": "already means MOVE to trash in fileOperations.json" }
+    ],
     "chosen": "Ga naar prullenmand",
     "confidence": "high",
     "sources": "macOS Finder TL_HELP_TCAN (Go to the Trash → Ga naar de prullenmand), article dropped like N83 (Go to Folder… → Ga naar map…)"
   },
   "got-it": {
-    "avoid": [{ "form": "Duidelijk", "why": "the one outlier the drift round removed" }],
+    "avoid": [
+      { "form": "Duidelijk", "why": "the one outlier the drift round removed" }
+    ],
     "chosen": "Begrepen",
     "confidence": "high",
     "sources": "macOS (Begrepen)"
@@ -1047,10 +1064,7 @@
   "host-key": {
     "accept": ["serversleutel", "SSH-sleutel"],
     "avoid": [
-      {
-        "form": "hostsleutel",
-        "why": "rejected; serversleutel matches Servers (SFTP, WebDAV) and Apple's possessive shape"
-      }
+      { "form": "hostsleutel", "why": "rejected; serversleutel matches Servers (SFTP, WebDAV) and Apple's possessive shape" }
     ],
     "chosen": "sleutel",
     "confidence": "tentative",
@@ -1065,7 +1079,9 @@
   },
   "hour": {
     "accept": ["minuut", "minuten", "seconde", "seconden"],
-    "avoid": [{ "form": "uren", "why": "not used after a cardinal for a duration" }],
+    "avoid": [
+      { "form": "uren", "why": "not used after a cardinal for a duration" }
+    ],
     "chosen": "uur",
     "confidence": "high",
     "forms": "uur stays invariant after a numeral for durations (2 uur, 20 uur); minuut/minuten; seconde/seconden; Over {secondsText} seconden",
@@ -1088,16 +1104,10 @@
     "sources": "macOS (Afbeelding / Afbeeldingen)"
   },
   "image-search": {
-    "accept": [
-      "doorzoeken van afbeeldingen",
-      "zoeken op beschrijving",
-      "op beschrijving zoeken",
-      "semantisch zoeken",
-      "zoeken op trefwoord",
-      "zoeken op tag",
-      "fotozoekfunctie"
+    "accept": ["doorzoeken van afbeeldingen", "zoeken op beschrijving", "op beschrijving zoeken", "semantisch zoeken", "zoeken op trefwoord", "zoeken op tag", "fotozoekfunctie"],
+    "avoid": [
+      { "form": "zoeken in afbeeldingen", "why": "a coinage; the catalog's verb phrase is the settled name" }
     ],
-    "avoid": [{ "form": "zoeken in afbeeldingen", "why": "a coinage; the catalog's verb phrase is the settled name" }],
     "chosen": "het doorzoeken van afbeeldingen",
     "confidence": "high",
     "forms": "the feature named in prose → het doorzoeken van afbeeldingen; semantic search → Semantisch zoeken; search photos by description → Foto's op beschrijving zoeken; keyword / tag search → zoeken op trefwoord / zoeken op tag; photo search (consent screen) → de fotozoekfunctie (tentative)",
@@ -1114,10 +1124,7 @@
   "index": {
     "accept": ["indexeren", "geïndexeerd", "indexering", "Schijfindex"],
     "avoid": [
-      {
-        "form": "Schijf indexeren staat uit",
-        "why": "the bare label as a sentence subject garden-paths as an imperative"
-      }
+      { "form": "Schijf indexeren staat uit", "why": "the bare label as a sentence subject garden-paths as an imperative" }
     ],
     "chosen": "index",
     "confidence": "high",
@@ -1135,6 +1142,17 @@
     "confidence": "high",
     "forms": "progress wordt geïnstalleerd",
     "sources": "macOS System Settings (… wordt samen met macOS geïnstalleerd)"
+  },
+  "invert-selection": {
+    "avoid": [
+      { "form": "Keer selectie om", "why": "follows the bare-stem button rule, but no source ships it; the @key asks for the file managers' own wording" },
+      { "form": "Draai selectie om", "why": "Double Commander only; Total Commander, Dolphin, and GNOME all say Selectie omkeren" }
+    ],
+    "chosen": "Selectie omkeren",
+    "confidence": "high",
+    "forms": "the menu item and the palette command stay byte-identical (one English string, held by i18n-terms)",
+    "note": "A deliberate exception to the bare-stem imperative for menu items: the @key description asks for Total Commander's localized wording.",
+    "sources": "Total Commander nl (WCMD.LNG 525, 3321–3323 Selectie omkeren), KDE Dolphin and GNOME shortcuts (Selectie omkeren), Thunar (Selectie omdraaien)"
   },
   "item": {
     "accept": ["onderdelen"],
@@ -1168,7 +1186,9 @@
   },
   "keychain": {
     "accept": ["Sleutelhangertoegang", "sleutelhanger"],
-    "avoid": [{ "form": "Keychain", "why": "Apple localizes it; not on the don't-translate list" }],
+    "avoid": [
+      { "form": "Keychain", "why": "Apple localizes it; not on the don't-translate list" }
+    ],
     "chosen": "Sleutelhanger",
     "confidence": "high",
     "forms": "the store → Sleutelhanger (Onthoud in Sleutelhanger); the app → Sleutelhangertoegang; another system's keyring → sleutelhanger, Passwords / Keyrings app → Wachtwoorden / Sleutelhangers",
@@ -1211,7 +1231,9 @@
     "sources": "NL compound"
   },
   "like": {
-    "avoid": [{ "form": "vind ik leuk", "why": "Facebook's Dutch button, not the one on screen" }],
+    "avoid": [
+      { "form": "vind ik leuk", "why": "Facebook's Dutch button, not the one on screen" }
+    ],
     "chosen": "like",
     "confidence": "high",
     "decision": "De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels",
@@ -1234,7 +1256,9 @@
   },
   "local-network": {
     "accept": ["lokale netwerk", "in de buurt", "detectie"],
-    "avoid": [{ "form": "Lokale netwerktoegang", "why": "a description the user can't find in System Settings" }],
+    "avoid": [
+      { "form": "Lokale netwerktoegang", "why": "a description the user can't find in System Settings" }
+    ],
     "chosen": "lokaal netwerk",
     "confidence": "high",
     "forms": "Apple's pane row ‘Lokaal netwerk’; discovery → detectie, local network discovery → lokale netwerkdetectie (tentative); Found nearby → Gevonden in de buurt",
@@ -1250,10 +1274,7 @@
   "locked": {
     "accept": ["Beveiligd", "beveiliging"],
     "avoid": [
-      {
-        "form": "vergrendeld",
-        "why": "AppKit reserves it for the document lock; the checkbox the user sees is Beveiligd"
-      }
+      { "form": "vergrendeld", "why": "AppKit reserves it for the document lock; the checkbox the user sees is Beveiligd" }
     ],
     "chosen": "beveiligd",
     "confidence": "high",
@@ -1264,10 +1285,7 @@
   "log": {
     "accept": ["logboek", "logbestanden", "log"],
     "avoid": [
-      {
-        "form": "het logboek (for the file)",
-        "why": "Bewerkingenlogboek is a feature name; Het logboek heeft de details would point at the wrong thing"
-      }
+      { "form": "het logboek (for the file)", "why": "Bewerkingenlogboek is a feature name; Het logboek heeft de details would point at the wrong thing" }
     ],
     "chosen": "logbestand",
     "confidence": "high",
@@ -1292,7 +1310,9 @@
   },
   "mailing-list": {
     "accept": ["inschrijf"],
-    "avoid": [{ "form": "adressenlijst", "why": "MS's admin-built distribution list, a different concept" }],
+    "avoid": [
+      { "form": "adressenlijst", "why": "MS's admin-built distribution list, a different concept" }
+    ],
     "chosen": "mailinglijst",
     "confidence": "tentative",
     "decision": "De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels",
@@ -1345,7 +1365,9 @@
   },
   "mount": {
     "accept": ["koppel", "gekoppeld"],
-    "avoid": [{ "form": "activeren", "why": "macOS's word, but absent from this catalog; a second term for one act" }],
+    "avoid": [
+      { "form": "activeren", "why": "macOS's word, but absent from this catalog; a second term for one act" }
+    ],
     "chosen": "aankoppelen",
     "confidence": "high",
     "decision": "Het favorietenmenu (`commands.favoritesOpen.label`/`.description`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)",
@@ -1354,7 +1376,9 @@
   },
   "move": {
     "accept": ["verplaatsen", "verplaatst"],
-    "avoid": [{ "form": "de verplaatsing", "why": "not a Dutch UI form; zero hits in nl/macOS" }],
+    "avoid": [
+      { "form": "de verplaatsing", "why": "not a Dutch UI form; zero hits in nl/macOS" }
+    ],
     "chosen": "Verplaats",
     "confidence": "high",
     "decision": "Files a drive brings back from a move that never finished (`fileOperations.leftovers.stagingFolderKept`)",
@@ -1404,7 +1428,9 @@
   },
   "network-drive": {
     "accept": ["netwerkschijven", "netwerkvolume"],
-    "avoid": [{ "form": "netwerkstation", "why": "Windows-flavored" }],
+    "avoid": [
+      { "form": "netwerkstation", "why": "Windows-flavored" }
+    ],
     "chosen": "netwerkschijf",
     "confidence": "high",
     "sources": "macOS Finder (Netwerkschijf koppelen…)"
@@ -1466,6 +1492,17 @@
     "forms": "closed compounds onboardingopties, onboardingwizard, Onboardingchecklist",
     "sources": "loanword kept (matches the untranslated app title Cmdr onboarding)"
   },
+  "online-only": {
+    "avoid": [
+      { "form": "online-only", "why": "English" },
+      { "form": "alleen-online (as an adjective)", "why": "not a Dutch compound; use the relative clause" }
+    ],
+    "chosen": "alleen online beschikbaar",
+    "confidence": "tentative",
+    "decision": "De waarschuwing voor alleen-online inhoud (`fileOperations.delete.cloudOnlineOnlyMixedWarning` / `fileOperations.delete.cloudOnlineOnlyAllWarning` / `fileOperations.delete.cloudOnlineOnlyHandedBack`)",
+    "forms": "predicate is alleen online beschikbaar; attributive through a relative clause (bestanden die alleen online beschikbaar zijn)",
+    "sources": "catalog (commands.cloudRemoveDownload.description: … zodat het alleen online beschikbaar blijft); Finder nl has no online-only label, MS terminology and the file managers have no hit"
+  },
   "open": {
     "accept": ["openen", "geopend", "opent", "openstaat", "open"],
     "chosen": "Open",
@@ -1505,14 +1542,8 @@
   "operation-queue": {
     "accept": ["bewerkingenwachtrij", "wachtrij", "Wachten"],
     "avoid": [
-      {
-        "form": "Overdrachtswachtrij",
-        "why": "superseded when the English widened from Transfer queue to Operation queue"
-      },
-      {
-        "form": "Bewerkingswachtrij",
-        "why": "defensible, but -en- pairs with the shipped Bewerkingenlogboek; the two must move together"
-      }
+      { "form": "Overdrachtswachtrij", "why": "superseded when the English widened from Transfer queue to Operation queue" },
+      { "form": "Bewerkingswachtrij", "why": "defensible, but -en- pairs with the shipped Bewerkingenlogboek; the two must move together" }
     ],
     "chosen": "Bewerkingenwachtrij",
     "confidence": "high",
@@ -1612,7 +1643,9 @@
   },
   "permission": {
     "accept": ["bevoegdheden", "rechten", "toestemming", "toegang"],
-    "avoid": [{ "form": "toestemming (for file rights)", "why": "Apple keeps toestemming for consent to share" }],
+    "avoid": [
+      { "form": "toestemming (for file rights)", "why": "Apple keeps toestemming for consent to share" }
+    ],
     "chosen": "bevoegdheid",
     "confidence": "high",
     "forms": "file-system permission → bevoegdheid / bevoegdheden (leesbevoegdheden)",
@@ -1636,10 +1669,7 @@
     "accept": ["vast", "los"],
     "avoid": [
       { "form": "vastmaken", "why": "MS's pin; the catalog cluster is on vast / los with Apple's Maak … vast" },
-      {
-        "form": "Maak server vast / maak hem los",
-        "why": "repeats maak in one label; vastzetten and vast maken are one verb pair"
-      },
+      { "form": "Maak server vast / maak hem los", "why": "repeats maak in one label; vastzetten and vast maken are one verb pair" },
       { "form": "Permanent in Dock", "why": "Apple's Dock menu label, not a verb pair" }
     ],
     "chosen": "vastzetten",
@@ -1663,7 +1693,9 @@
   },
   "preview": {
     "accept": ["voorvertoning", "bekijken"],
-    "avoid": [{ "form": "Voorbeeld", "why": "the drift round unified on Voorvertoning" }],
+    "avoid": [
+      { "form": "Voorbeeld", "why": "the drift round unified on Voorvertoning" }
+    ],
     "chosen": "Voorvertoning",
     "confidence": "high",
     "forms": "noun Voorvertoning; the verb preview → bekijken (om vanaf hier te bekijken); Apple's Preview app → Voorvertoning",
@@ -1726,7 +1758,9 @@
   },
   "quick-look": {
     "accept": ["Geef snel weer"],
-    "avoid": [{ "form": "Quick Look", "why": "Apple localizes this feature name in Dutch" }],
+    "avoid": [
+      { "form": "Quick Look", "why": "Apple localizes this feature name in Dutch" }
+    ],
     "chosen": "snelle weergave",
     "confidence": "high",
     "forms": "the feature noun snelle weergave; the menu action Geef snel weer",
@@ -1734,7 +1768,9 @@
   },
   "quit": {
     "accept": ["stoppen", "stopt", "gestopt"],
-    "avoid": [{ "form": "Afsluiten", "why": "macOS uses Stop for Quit" }],
+    "avoid": [
+      { "form": "Afsluiten", "why": "macOS uses Stop for Quit" }
+    ],
     "chosen": "Stop",
     "confidence": "high",
     "decision": "Het stoppoortje: afsluiten terwijl er nog werk loopt (`main.quit.*`)",
@@ -1860,7 +1896,9 @@
   },
   "respond": {
     "accept": ["reageert", "reageerde", "gereageerd"],
-    "avoid": [{ "form": "beantwoorden", "why": "MS's reply-to-a-message sense" }],
+    "avoid": [
+      { "form": "beantwoorden", "why": "MS's reply-to-a-message sense" }
+    ],
     "chosen": "reageren",
     "confidence": "high",
     "decision": "Vastgelopen overdracht: het stall-bericht",
@@ -1873,7 +1911,9 @@
   },
   "restart": {
     "accept": ["herstarten", "herstart", "opnieuw gestart", "opnieuw opstarten", "opnieuw"],
-    "avoid": [{ "form": "opnieuw opstarten (for the Mac menu)", "why": "the Windows form; macOS labels it Herstart" }],
+    "avoid": [
+      { "form": "opnieuw opstarten (for the Mac menu)", "why": "the Windows form; macOS labels it Herstart" }
+    ],
     "chosen": "Herstart",
     "confidence": "high",
     "forms": "button Herstart; Restart to update → Herstart om bij te werken; a restart (of the Mac) → herstarten",
@@ -1896,10 +1936,7 @@
   "review": {
     "accept": ["beoordeel", "beoordeling", "bekijk", "nakijken", "na te kijken", "kijkt"],
     "avoid": [
-      {
-        "form": "bekijken",
-        "why": "macOS's look-over sense (Bekijk wijzigingen…); an approval gate needs a decision word"
-      }
+      { "form": "bekijken", "why": "macOS's look-over sense (Bekijk wijzigingen…); an approval gate needs a decision word" }
     ],
     "chosen": "beoordelen",
     "confidence": "tentative",
@@ -1948,7 +1985,9 @@
   },
   "save": {
     "accept": ["bewaren", "bewaard", "opgeslagen", "opslaan", "op te slaan", "slaat"],
-    "avoid": [{ "form": "opslaan (as the button or verb)", "why": "macOS uses bewaren for save" }],
+    "avoid": [
+      { "form": "opslaan (as the button or verb)", "why": "macOS uses bewaren for save" }
+    ],
     "chosen": "Bewaar",
     "confidence": "high",
     "forms": "button Bewaar; verb bewaren (store files on a drive → bewaren); the adjectival participle for a stored thing stays opgeslagen (Opgeslagen wachtwoord, status Opgeslagen)",
@@ -2094,16 +2133,7 @@
     "sources": "no precedent in the catalog"
   },
   "sign-in": {
-    "accept": [
-      "inloggen",
-      "ingelogd",
-      "inlog",
-      "log je in",
-      "log in",
-      "log opnieuw in",
-      "log één keer in",
-      "in te loggen"
-    ],
+    "accept": ["inloggen", "ingelogd", "inlog", "log je in", "log in", "log opnieuw in", "log één keer in", "in te loggen"],
     "chosen": "Log in",
     "confidence": "high",
     "forms": "button Log in / Log in…; Sign in to X → Log in bij X; sign in with → Log in met …; sign-in method → inlogmethode (tentative); status Ingelogd",
@@ -2111,7 +2141,9 @@
   },
   "sign-out": {
     "accept": ["uitloggen", "Log uit", "uitgelogd"],
-    "avoid": [{ "form": "afmelden", "why": "the Windows form" }],
+    "avoid": [
+      { "form": "afmelden", "why": "the Windows form" }
+    ],
     "chosen": "Uitgelogd",
     "confidence": "high",
     "forms": "status Uitgelogd; Signed out of X → Uitgelogd bij X; log out of the Mac → uitloggen",
@@ -2220,7 +2252,9 @@
   },
   "system-settings-pane": {
     "accept": ["Inlogonderdelen en extensies", "Opslag"],
-    "avoid": [{ "form": "Inloggen", "why": "the older, shorter pane name" }],
+    "avoid": [
+      { "form": "Inloggen", "why": "the older, shorter pane name" }
+    ],
     "chosen": "Algemeen",
     "confidence": "high",
     "decision": "Wat het Engels over zichzelf rechtzette, en wat dat voor `nl` betekende",
@@ -2343,6 +2377,7 @@
     "chosen": "prullenmand",
     "confidence": "high",
     "forms": "naar de prullenmand; This volume has no Trash → Dit volume heeft geen prullenmand",
+    "note": "A cloud service's own deleted-files history is not a prullenmand: say bewaart verwijderde bestanden (fileOperations.delete.cloudOnlineOnlyMixedWarning, fileOperations.delete.cloudOnlineOnlyAllWarning).",
     "sources": "macOS Finder (Trash → Prullenmand, to the Trash → naar de prullenmand)"
   },
   "trust": {
@@ -2354,7 +2389,9 @@
   },
   "type": {
     "accept": ["type", "soort"],
-    "avoid": [{ "form": "Soort (for the protocol column)", "why": "that is Finder's Kind column for a file kind" }],
+    "avoid": [
+      { "form": "Soort (for the protocol column)", "why": "that is Finder's Kind column for a file kind" }
+    ],
     "chosen": "Type",
     "confidence": "high",
     "forms": "the server protocol column Type (same as English)",
@@ -2375,7 +2412,9 @@
   },
   "undo": {
     "accept": ["ongedaan", "Herstel", "Zet terug", "terugdraaien"],
-    "avoid": [{ "form": "Herstel (outside the Edit menu)", "why": "macOS also uses it for Revert and Repair" }],
+    "avoid": [
+      { "form": "Herstel (outside the Edit menu)", "why": "macOS also uses it for Revert and Repair" }
+    ],
     "chosen": "Ongedaan maken",
     "confidence": "high",
     "decision": "Eén ding, één naam: de interne driftronde",
@@ -2413,7 +2452,9 @@
   },
   "update": {
     "accept": ["updates", "bijwerken", "bijgewerkt", "bij te werken", "werkt"],
-    "avoid": [{ "form": "houdt … bij (for keeping the index current)", "why": "means record/track in this catalog" }],
+    "avoid": [
+      { "form": "houdt … bij (for keeping the index current)", "why": "means record/track in this catalog" }
+    ],
     "chosen": "update",
     "confidence": "high",
     "forms": "noun update; verb bijwerken (Herstart om bij te werken; werkt de index bij); Check for updates → Zoek naar updates; Software Update → Software-update; the Settings section Updates keeps the loanword capitalized (Updates en privacy)",
@@ -2479,10 +2520,7 @@
   "volume-switcher": {
     "accept": ["Volumekiezer"],
     "avoid": [
-      {
-        "form": "wisselaar",
-        "why": "the old compositional coinage stays unused; the catalog names this UI volumekiezer"
-      }
+      { "form": "wisselaar", "why": "the old compositional coinage stays unused; the catalog names this UI volumekiezer" }
     ],
     "chosen": "volumekiezer",
     "confidence": "high",

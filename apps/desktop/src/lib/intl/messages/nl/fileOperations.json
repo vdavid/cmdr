@@ -20,15 +20,15 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Een deel van je selectie is alleen online beschikbaar. Die naar de prullenmand verplaatsen zou ze <strong>eerst downloaden</strong>. Daarom biedt Cmdr hier alleen aan om de hele selectie te <strong>verwijderen</strong>. Er blijft geen kopie in de prullenmand achter, maar cloudservices bewaren verwijderde bestanden meestal zo''n 30 dagen in hun eigen prullenmand. Klik op ‘Verwijder’ als verwijderen goed is, of annuleer dit venster en maak eerst alle bestanden offline beschikbaar, of deselecteer alle bestanden die alleen online beschikbaar zijn.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Een deel van je selectie is alleen online beschikbaar. Als je die onderdelen naar de prullenmand verplaatst, worden ze <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak eerst alle bestanden offline beschikbaar, of deselecteer alle bestanden die alleen online beschikbaar zijn.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2a49037"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Alles wat je hebt geselecteerd is alleen online beschikbaar. Het naar de prullenmand verplaatsen zou het <strong>eerst downloaden</strong>. Daarom biedt Cmdr hier alleen aan om de hele selectie te <strong>verwijderen</strong>. Er blijft geen kopie in de prullenmand achter, maar cloudservices bewaren verwijderde bestanden meestal zo''n 30 dagen in hun eigen prullenmand. Klik op ‘Verwijder’ als verwijderen goed is, of annuleer dit venster en maak deze bestanden eerst offline beschikbaar.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Alles wat je hebt geselecteerd, is alleen online beschikbaar. Als je het naar de prullenmand verplaatst, wordt het <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak deze bestanden eerst offline beschikbaar.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "0e52a2b"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Je selectie blijkt toch inhoud te bevatten die alleen online beschikbaar is, dus de knop hieronder biedt nu ‘Verwijder’ aan. Lees de opmerking hierboven en druk daarna nog een keer als dat goed is.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Je selectie bleek inhoud te bevatten die alleen online beschikbaar is, dus de knop hieronder biedt nu ‘Verwijder’ aan. Lees de opmerking hierboven en druk er daarna nog een keer op als dat goed is.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "623e7e0"
   },
