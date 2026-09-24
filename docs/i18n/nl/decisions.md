@@ -9,9 +9,6 @@ from `../concepts.json`); open questions for a native reviewer live in `review-q
 
 Drift the parallel per-file passes left behind, found and fixed in a whole-locale reconciliation:
 
-- **Ellipsis style follows the EN source per key.** EN mixes `…` and `...` deliberately; match it. The
-  ai/licensing/settings/viewer passes had silently converted 32 EN `...` to `…`; reverted. Don't normalize ellipses to
-  one glyph.
 - **Quoted UI strings inside running text use single curly quotes `‘…’`**, never straight `"…"`. The
   commands/fileExplorer/settings passes left 15 values with EN's straight quotes; converted.
 - **Brand tokens stay verbatim, so avoid the Dutch genitive-s on them.** `errorReporter.dialog.description` had "Cmdrs

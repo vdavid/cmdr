@@ -16,6 +16,9 @@ Writing, code, and design styles.
     takes a destination; `Delete` only asks whether to go ahead. Use the U+2026 character, never three periods. The
     verdict per item, and why this beats Apple's own "requires further input" phrasing, live in
     `apps/desktop/src-tauri/src/menu/DETAILS.md`.
+- Ellipsis
+  - **Cmdr writes every ellipsis as `…` (U+2026), never three periods**: progress text ("Loading…"), placeholders
+    ("Example: sk-ant-abc123…"), and truncation (leading or trailing) all use the same character.
 - Specific terms
   - **US English spelling, everywhere**: "color", "canceled", "behavior", "gray", "favorites". The app's `en` message
     catalog is the base the British and Australian overlays fork from, so the register is load-bearing there; the

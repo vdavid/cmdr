@@ -59,12 +59,10 @@ template each translation re-expresses in its own categories (which may be more:
   ship as overlays on top of it, carrying the spelling forks (-our/-ise/-lled), `licence`, and terminology macOS renames
   by region (Trash -> Bin). What each forks and why: `../en-GB/style.md` and `../en-AU/style.md`. Roster:
   `../language-selection-decisions.md`.
-- **Ellipsis, and it is NOT one convention**: `menu.json` and `commands.json` use the single `…` character (U+2026) and
-  never three dots, because a trailing `…` on a command label is load-bearing there (it means the dialog can change what
-  the command acts on: the menu-label rules in `docs/style-guide.md`). Every other file writes three literal ASCII dots
-  for an in-flight status ("Sending...", "Loading..."). Measured on the `en` catalog: `menu.json` 16 `…` / 0 `...`,
-  `commands.json` 7 / 0; the progress strings elsewhere run the other way (verified 2026-08-29 by counting both shapes
-  per file). **Mirror whichever shape the source key uses** rather than normalizing a locale to one of them.
+- **Ellipsis: one convention, everywhere.** Every English value writes the single `…` character (U+2026), never three
+  ASCII dots, in progress text, placeholders, and truncation alike, same as `menu.json` and `commands.json`. A trailing
+  `…` on a command label is additionally load-bearing there (it means the dialog can change what the command acts on):
+  the menu-label rules in `docs/style-guide.md`.
 
 ## Termbase
 

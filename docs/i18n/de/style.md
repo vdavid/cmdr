@@ -193,8 +193,7 @@ Dateien".
 - **Ellipsis: always the single character `…`, never three ASCII dots (`...`).** Two placements, settled across the
   catalog: progress / gerund status lines take a SPACE before it ("Wird geladen …", "Laufwerk wird durchsucht …",
   "Verbindung wird hergestellt …"); menu-item and button labels that open a dialog attach it with NO space, the macOS
-  menu convention ("Einführung…", "Befehle suchen…", "Fehlerbericht senden…"). The English source mixes `...` and `…`
-  freely; normalize to `…` either way.
+  menu convention ("Einführung…", "Befehle suchen…", "Fehlerbericht senden…").
 - **A waiting line in BODY PROSE is a sentence, not a progress label.** macOS's own waiting strings are verbless
   fragments with an ellipsis ("Warten auf das Laufwerk …", "Auf Upload warten"), which is right for a title or a status
   chip. When the English is a full sentence ending in a period and sits next to other sentences, give it a subject

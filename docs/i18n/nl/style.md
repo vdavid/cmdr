@@ -31,9 +31,9 @@ The must-know rules; the rest of this file elaborates them.
   Terminal, Disk Utility, First Aid, Activity Monitor, Mission Control, Dock (with `het` in a sentence), Apple silicon,
   System Integrity Protection. On a phone, Android's own Dutch wins (`USB-foutopsporing`, `Toestaan`, `tik op`).
 - **Capitalization**: sentence case; only the first word and proper nouns.
-- **Punctuation**: quote UI strings in running text with single curly quotes `‘…’`, never straight `"…"`. Mirror the
-  English ellipsis per key (`…` or `...`). No space before `%`. Menu-path separators (`>`, `→`, `›`) mirror EN per key.
-  ICU values double a straight apostrophe (`foto''s`, `pagina''s`); RAW families (`errors.*`, `menu.*`) don't.
+- **Punctuation**: quote UI strings in running text with single curly quotes `‘…’`, never straight `"…"`. No space
+  before `%`. Menu-path separators (`>`, `→`, `›`) mirror EN per key. ICU values double a straight apostrophe
+  (`foto''s`, `pagina''s`); RAW families (`errors.*`, `menu.*`) don't.
 - **Compounds** concatenate (`crashrapport`, `bestandenlijst`); hyphenate before an acronym or English proper name
   (`SMB-share`, `macOS-versie`, `Klembord-PDF`, `het Help-menu`, `Ask Cmdr-model`); format tokens stay lowercase
   (`zip-archief`). A hyphenated first part closes up: `alleen-lezenvolume`.

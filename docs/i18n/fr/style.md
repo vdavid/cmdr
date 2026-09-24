@@ -26,8 +26,8 @@ The must-know rules; the rest of this file elaborates them.
     what the option does (`Affiche…`, `Détecte…`), `vous` imperative once they ask for an action
     (`Laissez ce champ vide…`);
   - prose, hints, toasts: `vous` imperative (`Ouvrez…`, `Réessayez dans un instant.`);
-  - progress: a verbal noun with the English key's ellipsis (`Analyse…`, `Envoi...`, `Connexion à {name}…`); a bare
-    verbal noun takes `en cours` to stand as a line (`Copie en cours`);
+  - progress: a verbal noun with a trailing `…` (`Analyse…`, `Envoi…`, `Connexion à {name}…`); a bare verbal noun takes
+    `en cours` to stand as a line (`Copie en cours`);
   - a toggle command names both verbs with `ou`, never a slash (`Afficher ou masquer les fichiers cachés`);
   - internal (hidden) settings: `Interne : …` labels and `Indique si … a été …` descriptions; seen-flags are a noun
     phrase plus an agreeing participle (`Astuce … affichée`).
@@ -43,8 +43,7 @@ The must-know rules; the rest of this file elaborates them.
 - **Capitalization**: sentence case. Accents on capitals are mandatory: `État`, `Éjecter`, `À propos`, `Écraser`.
 - **Punctuation**: a regular ASCII space before `:`, `;`, `!`, `?`, and `%` (never U+202F, never none). French
   guillemets with ASCII inner spaces for quoted UI strings and inserted names (`« {name} »`). No serial comma before
-  `et` / `ou` in a list. The ellipsis mirrors the English value key by key (`...` or `…`). Speed multipliers spell out
-  `fois` (`4 fois plus lente`); units are French (`2 Go`).
+  `et` / `ou` in a list. Speed multipliers spell out `fois` (`4 fois plus lente`); units are French (`2 Go`).
 - **Apostrophes**: always the ASCII U+0027, never the curly U+2019, even when the English uses it. ICU values double it
   (`d''incident`); the RAW families `errors.*`, `menu.*`, `licensing.windowTitle.*`, and `main.instanceLock.*` use a
   single one (a doubled one shows twice on a native menu). A curly apostrophe passes every check silently.
@@ -227,9 +226,6 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   apostrophe (U+0027), never the curly U+2019**, even when the English source string uses the curly one: the whole `fr`
   catalog is ASCII, and a curly apostrophe is not an ICU escape character, so it slips past every check as a silent
   consistency break. A periodic `rg '’' apps/desktop/src/lib/intl/messages/fr` sweep is the only defence.
-- **Ellipsis**: follow the English catalog value character for character, key by key. Where it writes three dots
-  ("Envoi..."), keep three dots; where it writes U+2026 ("Aller au dossier…", "Modifier le serveur…"), keep U+2026.
-  Never convert either way: the English catalog decides, key by key.
 - **Length**: French runs roughly 15–20% longer than English. Overflow-check the layout against the pseudolocale
   (`en-XA`); look for clipped buttons, labels, and toasts. Known tight spots: `review-queue.md` § Overflow.
 - **Numbers and dates come from the formatter layer** (French uses a comma decimal and a narrow space for thousands).

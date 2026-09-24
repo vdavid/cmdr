@@ -32,8 +32,7 @@ ordinary prose and reads `arbetsträd`. "Working directory" stays `arbetskatalog
 
 ## Cross-file consistency after the first fan-out (`commands.feedbackSend.label`, `commands.handler.favoriteAdded`)
 
-- **Ellipsis: mirror the English per key.** English is itself mixed (ASCII `...` for in-progress text, `…` for menu
-  items), so each value uses the same character its source uses. Don't blanket-convert to `…`, and no space before it.
+- **Ellipsis: `…`, no space before it.**
 - **Swedish quotes `”…”`**, never straight `"…"`, around a `{name}`; past tense of add is `Lade till` (like `Tog bort`).
 - **`Cmdrs` (no apostrophe) and hyphenated compounds (`Cmdr-loggar`).** `desktop-i18n-dont-translate` flags `Cmdrs` as a
   dropped brand (boundary matcher); that's a known false positive shared with `hu`/`fr`, not a defect. Don't "fix" it.

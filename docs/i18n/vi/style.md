@@ -34,10 +34,9 @@ The must-know rules; the rest of this file elaborates them.
   Control, TextEdit, Safari, `Ask Cmdr`. Localize whatever Apple localizes, whatever a `@key` description says; on a
   phone, Android's own vi wins (`Gỡ lỗi qua USB`, `Cho phép`, `nhấn vào`).
 - **Punctuation**: follow the quoting style of the file you're in (most of the catalog mirrors EN's straight `"`; the
-  curly `“…”` is for prose with no quoting neighbours, and a quoted Apple UI name keeps Apple's curly quotes). Keep the
-  EN ellipsis glyph per key (`…` or `...`); no space before `%`; a Settings path is `Cài đặt › <mục>` except where EN
-  writes `>`. No comma before `và` / `hoặc` in new lists. ICU values double a straight apostrophe; RAW families
-  (`errors.*`, `menu.*`) don't.
+  curly `“…”` is for prose with no quoting neighbours, and a quoted Apple UI name keeps Apple's curly quotes); no space
+  before `%`; a Settings path is `Cài đặt › <mục>` except where EN writes `>`. No comma before `và` / `hoặc` in new
+  lists. ICU values double a straight apostrophe; RAW families (`errors.*`, `menu.*`) don't.
 - **Plurals**: CLDR `other` only. One `other` arm, the noun uninflected (`{countText} tệp`); ❌ never an English-shaped
   `one` / `=1` arm. `=0 {…}` is fine where the zero case says something different. A counted noun takes no `các`.
 - **Placeholders**: `{name}`, `{path}`, `{volumeName}`, `{app}` stand bare, with no classifier before them (the value

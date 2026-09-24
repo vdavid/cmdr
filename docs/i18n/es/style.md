@@ -39,9 +39,9 @@ The must-know rules; the rest of this file elaborates them.
   `papelera` is lowercase inside a sentence; the view modes are `la vista breve` / `la vista completa`. License tiers
   follow the English capital (`licencia Comercial` vs `suscripción comercial`).
 - **Punctuation**: `¿…?` and `¡…!`. Quote a label Cmdr shows in curly `“…”` (`haz clic en “Eliminar”`), never `«…»`; a
-  literal token the English already quotes (a command, a value, a foreign page title) keeps its straight `"…"`. Copy the
-  English ellipsis per key (`…` or `...`). `{percentText}%` with no space. `4x` → `4 veces`. Menu paths mirror the
-  English separator (`>`, `›`). ICU families double a straight apostrophe; RAW families (`menu.*`, `errors.*`) don't.
+  literal token the English already quotes (a command, a value, a foreign page title) keeps its straight `"…"`.
+  `{percentText}%` with no space. `4x` → `4 veces`. Menu paths mirror the English separator (`>`, `›`). ICU families
+  double a straight apostrophe; RAW families (`menu.*`, `errors.*`) don't.
 - **Plurals**: CLDR `one` / `many` / `other`, all three written (`many` repeats `other`). When the sentence continues
   past the counted noun, pull the WHOLE sentence into the branches (the tail agrees). A definite "the {countText} items"
   drops the numeral in `one` (`el elemento`, never `el 1 elemento`).

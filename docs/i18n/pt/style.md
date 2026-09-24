@@ -35,9 +35,9 @@ The must-know rules; the rest of this file elaborates them.
   only the term comes from Finder. A name Apple gives a pane or window keeps Apple's capitals when a string NAMES it
   (`Obter Informações`, `Acesso Total ao Disco`, `Privacidade e Segurança`).
 - **Punctuation**: quote a UI label in running text with curly `“…”` (`Ative “Permitir IA na nuvem”`); keep straight
-  quotes where the family already quotes a `{name}` that way. Mirror the English ellipsis per key (`…` or `...`). No
-  space before `%`. Speed multipliers sit tight: `4x mais lenta do que …`. Sentence-final `por quê` takes the
-  circumflex. ICU values double a straight apostrophe; RAW families (`errors.*`, `menu.*`) don't.
+  quotes where the family already quotes a `{name}` that way. No space before `%`. Speed multipliers sit tight:
+  `4x mais lenta do que …`. Sentence-final `por quê` takes the circumflex. ICU values double a straight apostrophe; RAW
+  families (`errors.*`, `menu.*`) don't.
 - **Brand and Apple names**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, `Safari` stay verbatim; `Cmdr` as a subject takes
   the article (`O Cmdr`), and so does `Finder` (`no Finder`). `Dock`, `Finder`, `Mac`, `Spotlight` stay English;
   localize what Apple localizes, whatever a `@key` says: `Visualização rápida`, `pasta Aplicativos`, `Downloads` /

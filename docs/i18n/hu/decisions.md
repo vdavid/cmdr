@@ -81,8 +81,7 @@ Almost done = `Mindjárt kész`.
 
 Drift the per-file fan-out left behind, found in a whole-catalog pass:
 
-- **Ellipsis: the single character `…` everywhere.** English mixes `…` and `...`; Hungarian normalizes to the
-  typographic one, like its `„…”` quotes and native date order.
+- **Ellipsis: the single character `…` everywhere**, like its `„…”` quotes and native date order.
 - **Quotation marks: `„…”`**, never English `"…"` (`commands.handler.favoriteAdded` = `A(z) „{name}” …`).
 - **`Modified` (column/filter/chip) → `Módosítva`** uniformly; the `-va` participle is the column form.
 - **`Don't show again` → `Ne jelenjen meg többé`.**

@@ -28,10 +28,10 @@ The must-know rules; the rest of this file elaborates them.
   takes no article, inflection, or possessive (`i Dock`). On a phone, Android's own Swedish wins (`USB-felsökning`,
   `Tillåt`, `tryck på`).
 - **Capitalization**: sentence case; Swedish capitalizes no common nouns, days, or months.
-- **Punctuation**: quote in running text with `”…”` on both sides, never straight `"…"`. Mirror the English ellipsis per
-  key (`…` or `...`). A space before `%` (`100 %`, `{percent} %`). No comma before `och` / `eller` joining two short
-  clauses; keep it before a consequence `så` (`…, så läggs det till`). Use `samt` before a last item that itself
-  contains `och`. A command that toggles both ways keeps the slash (`Fäst / lossa server`).
+- **Punctuation**: quote in running text with `”…”` on both sides, never straight `"…"`. A space before `%` (`100 %`,
+  `{percent} %`). No comma before `och` / `eller` joining two short clauses; keep it before a consequence `så`
+  (`…, så läggs det till`). Use `samt` before a last item that itself contains `och`. A command that toggles both ways
+  keeps the slash (`Fäst / lossa server`).
 - **Apostrophes**: ICU values double them (`''`); the RAW families (`errors.*`, `menu.*`, `licensing.windowTitle.*`,
   `main.instanceLock.*`) keep them single.
 - **Compounds** close up (`fillista`, `åtgärdskö`) and hyphenate after an acronym, a code, or a proper name
