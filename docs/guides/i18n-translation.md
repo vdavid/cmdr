@@ -391,16 +391,18 @@ style guide and the rulings for the terms in play; every agent already knows eve
 the nearest shipped translations, and the past decisions about those keys. Flags, sections, and the blind-run mode:
 `docs/i18n/termbase.md` § Tooling.
 
-Pick the shape by batch size. Sizes are `--stats` on `nl`, 39 `servers.sheet.*` keys, 2026-09-24, before `nl`'s digest
-and `decisions.md` landed; those add up to ~2k and ~2.5k tokens.
+Pick the shape by batch size. Sizes are `--stats` on the migrated `nl` termbase, 2026-09-24, before its ~2k-token digest
+landed.
 
 - **A real batch** (a feature's strings, a review pass): one agent per language, each handed
-  `pnpm i18n:brief --lang <tag> --keys <…> --out <file>` (~11k tokens) and reading the full `style.md` beside it (~10k
-  for `nl`). About 25k tokens of context before the first string.
+  `pnpm i18n:brief --lang <tag> --keys <…> --out <file>` and reading the full `style.md` beside it (~10k tokens for
+  `nl`). 39 `servers.sheet.*` keys made a ~12.5k-token brief (terms ~4k, translation memory ~4k, keys ~2.5k, decisions
+  ~1.5k), so about 25k tokens of context before the first string.
 - **One to five keys, or a small batch every language needs**: one agent can take `--lang all`. Concept senses print
-  once and each language gets a line under them, so 50 keys ran ~30k tokens with one migrated locale; budget ~70k once
-  all ten have termbases. Ten full style guides don't fit beside it, so this agent works from the digests and opens a
-  language's full `style.md` only when its digest doesn't settle a question.
+  once and each language gets a line under them, so 50 `queue.*` keys ran ~30k tokens with one migrated locale (most of
+  it the ten current values per key); budget ~70k once all ten have termbases. Ten full style guides don't fit beside
+  it, so this agent works from the digests and opens a language's full `style.md` only when its digest doesn't settle a
+  question.
 
 The translator's loop, per batch:
 
