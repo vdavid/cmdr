@@ -71,7 +71,7 @@
     "description": "Primary button that sends the crash report. Keep it short (a tight button).",
     "screenshot": "crash-report-panic.png"
   },
-  "crashReporter.dialog.sending": "Sending...",
+  "crashReporter.dialog.sending": "Sending…",
   "@crashReporter.dialog.sending": {
     "description": "Label on the send button while the crash report is being sent (button is disabled meanwhile). Ends with three dots. Keep it short.",
     "screenshot": "error-report.png",

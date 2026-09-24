@@ -77,7 +77,7 @@
     "description": "Button on the toast that appears right after files are moved to the trash. Pressing it opens the trash folder in the file pane, with the cursor on the item that was just moved there. \"Trash\" is the macOS Trash, so use whatever your platform calls the recoverable wastebasket. Short control label; the toast is narrow, so keep it to one or two words."
   },
 
-  "fileOperations.trash.undoing": "Putting them back...",
+  "fileOperations.trash.undoing": "Putting them back…",
   "@fileOperations.trash.undoing": {
     "description": "Replaces the toast while an undo is running, after the user pressed Undo on the trash toast. Putting files back can take a while on a slow or busy drive, so this is a progress state, not a result. Sentence case; the character at the end is an ellipsis."
   },
@@ -118,9 +118,9 @@
     "screenshot": "delete-confirm.png"
   },
 
-  "fileOperations.delete.overflowMore": "... and {countText} more {count, plural, one {item} other {items}}",
+  "fileOperations.delete.overflowMore": "… and {countText} more {count, plural, one {item} other {items}}",
   "@fileOperations.delete.overflowMore": {
-    "description": "Trailing line of the delete dialog's file list when more items are selected than the list shows. Keep the leading ellipsis '...'.",
+    "description": "Trailing line of the delete dialog's file list when more items are selected than the list shows. Keep the leading ellipsis '…'.",
     "placeholders": {
       "countText": "how many extra items, formatted for display (e.g. 1,234)",
       "count": "the same number of extra items (drives the singular/plural form of the noun)"
@@ -510,7 +510,7 @@
     "description": "Shown in the transfer dialog when the check for existing files at the destination couldn't run (an unresponsive volume, say). Two parts: it doesn't know what's there, and the transfer will still ask about each clash it meets. It must never read as 'nothing is there'."
   },
 
-  "fileOperations.transferDialog.checkingConflicts": "Checking for conflicts...",
+  "fileOperations.transferDialog.checkingConflicts": "Checking for conflicts…",
   "@fileOperations.transferDialog.checkingConflicts": {
     "description": "Status shown while the transfer dialog scans the destination for name clashes before the copy/move. Keep the trailing ellipsis.",
     "screenshot": "conflict-dialog.png"
@@ -692,34 +692,34 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.scanTitleCopy": "Verifying before copy...",
+  "fileOperations.transferProgress.scanTitleCopy": "Verifying before copy…",
   "@fileOperations.transferProgress.scanTitleCopy": {
     "description": "Progress-dialog title while counting files before a copy, so the user knows why the app is walking the folder tree. Keep the trailing ellipsis.",
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.scanTitleMove": "Verifying before move...",
+  "fileOperations.transferProgress.scanTitleMove": "Verifying before move…",
   "@fileOperations.transferProgress.scanTitleMove": {
     "description": "Progress-dialog title while counting files before a move. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.scanTitleCompress": "Verifying before compressing...",
+  "fileOperations.transferProgress.scanTitleCompress": "Verifying before compressing…",
   "@fileOperations.transferProgress.scanTitleCompress": {
     "description": "Progress-dialog title while counting files before compressing them into a new zip. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.scanTitleDelete": "Counting items to delete...",
+  "fileOperations.transferProgress.scanTitleDelete": "Counting items to delete…",
   "@fileOperations.transferProgress.scanTitleDelete": {
     "description": "Progress-dialog title while counting items before a permanent delete. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.scanTitleTrash": "Counting items to trash...",
+  "fileOperations.transferProgress.scanTitleTrash": "Counting items to trash…",
   "@fileOperations.transferProgress.scanTitleTrash": {
     "description": "Progress-dialog title while counting items before moving them to trash. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
@@ -733,14 +733,14 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.titleRollingBack": "Rolling back...",
+  "fileOperations.transferProgress.titleRollingBack": "Rolling back…",
   "@fileOperations.transferProgress.titleRollingBack": {
     "description": "Progress-dialog title while Cmdr cleans up after a copy or move the user CANCELED mid-flight, deleting the partial files that copy or move had written. This is the in-flight case only. Undoing a FINISHED operation from the history log is a different thing, with its own titles (fileOperations.transferProgress.titleReversal*), because undoing a finished move deletes nothing: it carries the files back. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Putting files back} one {Putting the file back} other {Putting {countText} files back}}...",
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {Putting files back} one {Putting the file back} other {Putting {countText} files back}}…",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
     "description": "Progress-dialog title while UNDOING a finished move or move-to-trash the user asked to roll back from their operation history: the files are traveling back to where they came from, and nothing is being deleted. The bar under it fills forwards, like every other bar in the app. The =0 branch covers the first frames, before the count is known. Keep the trailing ellipsis. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack): nothing here may sound like a deletion.",
     "placeholders": {
@@ -751,7 +751,7 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
   },
 
-  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Deleting what it created} one {Deleting the file it created} other {Deleting the {countText} files it created}}...",
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {Deleting what it created} one {Deleting the file it created} other {Deleting the {countText} files it created}}…",
   "@fileOperations.transferProgress.titleReversalDeleting": {
     "description": "Progress-dialog title while UNDOING a finished copy, a new file or folder, or a compress that the user asked to roll back from their operation history: the reversal deletes what that operation created. \"it\" is the operation being undone. The bar under it fills forwards, like every other bar in the app. The =0 branch covers the first frames, before the count is known. Keep the trailing ellipsis. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByDeleting), so keep the deleting verb: this one really does take files away.",
     "placeholders": {
@@ -762,7 +762,7 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
   },
 
-  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Putting the old names back} one {Putting the old name back} other {Putting {countText} old names back}}...",
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Putting the old names back} one {Putting the old name back} other {Putting {countText} old names back}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "description": "Progress-dialog title while UNDOING a finished rename the user asked to roll back from their operation history: the files get their old names back, and nothing moves or is deleted. The bar under it fills forwards, like every other bar in the app. The =0 branch covers the first frames, before the count is known. Keep the trailing ellipsis. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByRenamingBack).",
     "placeholders": {
@@ -773,14 +773,14 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string is its title while the dialog is showing a rollback launched from the operation history, rather than a copy or a move."
   },
 
-  "fileOperations.transferProgress.titleCancelling": "Canceling...",
+  "fileOperations.transferProgress.titleCancelling": "Canceling…",
   "@fileOperations.transferProgress.titleCancelling": {
     "description": "Progress-dialog title right after the user cancels, while the operation stops. Keep the trailing ellipsis.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.titleCancellingSlow": "Canceling... (finishing USB transfers)",
+  "fileOperations.transferProgress.titleCancellingSlow": "Canceling… (finishing USB transfers)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "description": "Progress-dialog title shown when cancellation takes a moment because an in-flight USB transfer must finish first. Keep the trailing ellipsis on the first part. 'USB' is the connection type.",
     "screenshot": "transfer-dialog.png",
@@ -865,20 +865,20 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.titleFlushing": "Writing the last piece...",
+  "fileOperations.transferProgress.titleFlushing": "Writing the last piece…",
   "@fileOperations.transferProgress.titleFlushing": {
     "description": "Progress-dialog title during the final flush to disk after the bytes are copied (a real pause on slow media). Reassures the user it isn't stuck. Keep the trailing ellipsis.",
     "screenshot": "toast-transfer-complete.png"
   },
 
-  "fileOperations.transferProgress.titleRemovingOriginals": "Removing the originals...",
+  "fileOperations.transferProgress.titleRemovingOriginals": "Removing the originals…",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "description": "Progress-dialog title for the last stage of a move BETWEEN disks, which copies first and only then removes the source files. By this point every file is safely at the destination and what is left is clearing the old copies, which on a big folder takes real time. \"The originals\" are the source files the user asked to move; the word matters, because a title that only said \"Deleting\" over a move would read as the user''s files being destroyed. A move within one disk never shows this (it renames, so there is nothing to clear). Keep the trailing ellipsis, like its sibling titles.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string is the title it shows during the final stage of a move between disks."
   },
 
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to trash}}…",
   "@fileOperations.transferProgress.titleActive": {
     "description": "Progress-dialog title during the operation itself, in the -ing form of the verb. 'Moving to trash' is the trash variant. Keep the trailing ellipsis.",
     "placeholders": {
@@ -1351,7 +1351,7 @@
 
   "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr stopped while removing the originals, but everything it moved is already at the destination and stays there. {count, plural, one {One original is still where it was.} other {{countText} originals are still where they were.}}",
   "@fileOperations.cancelRollback.moveAlreadyLanded": {
-    "description": "Toast shown when the user stops a move between two different drives while Cmdr is on its last step: removing the originals, after every file has already arrived at the other drive. Two sentences with three jobs, and the order is the point, because it goes from what happened to why it is fine. (a) Cmdr was part-way through removing the originals when it stopped, so some of them are already gone: say this plainly, since the user needs to know it, but it must not read as a warning, because nothing went wrong. (b) The files themselves are whole at the other drive and are staying there: carrying them back would mean copying everything across the drives a second time, which Cmdr will not do, so this is a settled fact and never a promise to undo anything. (c) How many originals are still sitting in the folder the move started from. The ones already removed are not coming back, and no part of this may suggest otherwise. \"Original\" means the copy in the folder the move started from, as opposed to the one that has now arrived at the other drive; the app calls this phase \"Removing the originals...\" (fileOperations.transferProgress.titleRemovingOriginals), so use the same word for it as that key does. It covers both files and folders, and it counts the items the user picked, so one selected folder is one original however much is inside it. The second sentence sits inside the plural because the singular reads better without the number at all (\"One original\", not \"1 original\"); write each branch to read naturally in your language, and drop {countText} from any branch that doesn''t want it. Never use the words \"error\" or \"failed\". Sentence case.",
+    "description": "Toast shown when the user stops a move between two different drives while Cmdr is on its last step: removing the originals, after every file has already arrived at the other drive. Two sentences with three jobs, and the order is the point, because it goes from what happened to why it is fine. (a) Cmdr was part-way through removing the originals when it stopped, so some of them are already gone: say this plainly, since the user needs to know it, but it must not read as a warning, because nothing went wrong. (b) The files themselves are whole at the other drive and are staying there: carrying them back would mean copying everything across the drives a second time, which Cmdr will not do, so this is a settled fact and never a promise to undo anything. (c) How many originals are still sitting in the folder the move started from. The ones already removed are not coming back, and no part of this may suggest otherwise. \"Original\" means the copy in the folder the move started from, as opposed to the one that has now arrived at the other drive; the app calls this phase \"Removing the originals…\" (fileOperations.transferProgress.titleRemovingOriginals), so use the same word for it as that key does. It covers both files and folders, and it counts the items the user picked, so one selected folder is one original however much is inside it. The second sentence sits inside the plural because the singular reads better without the number at all (\"One original\", not \"1 original\"); write each branch to read naturally in your language, and drop {countText} from any branch that doesn''t want it. Never use the words \"error\" or \"failed\". Sentence case.",
     "placeholders": {
       "countText": "how many originals are still in the folder the move started from, already formatted for display (e.g. 1,234)",
       "count": "the same number of originals (drives the singular/plural form of the noun)"

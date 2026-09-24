@@ -258,18 +258,18 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.scanningWithCount": "Scanning in progress ({countText} entries)...",
+  "queryUi.results.scanningWithCount": "Scanning in progress ({countText} entries)…",
   "@queryUi.results.scanningWithCount": {
-    "description": "Status-bar text shown while the drive index is still being built, reporting roughly how many files have been scanned so far. Ends with '...' (three dots). Note: this count uses a compact short form, not the locale-grouped form.",
+    "description": "Status-bar text shown while the drive index is still being built, reporting roughly how many files have been scanned so far. Ends with '…'. Note: this count uses a compact short form, not the locale-grouped form.",
     "placeholders": {
       "countText": "the number of entries scanned so far, in a compact form (for example 12.3K or 1.2M)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.scanning": "Scan in progress...",
+  "queryUi.results.scanning": "Scan in progress…",
   "@queryUi.results.scanning": {
-    "description": "Status-bar text shown while the drive index is being built and no count is available yet. Ends with '...' (three dots).",
+    "description": "Status-bar text shown while the drive index is being built and no count is available yet. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
@@ -355,30 +355,30 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.scanProgressWithCount": "Scan in progress ({countText} entries)...",
+  "queryUi.results.scanProgressWithCount": "Scan in progress ({countText} entries)…",
   "@queryUi.results.scanProgressWithCount": {
-    "description": "Sub-line under the 'Drive index not ready' message, reporting roughly how many files have been scanned so far. Ends with '...' (three dots). Note: this count uses a compact short form, not the locale-grouped form.",
+    "description": "Sub-line under the 'Drive index not ready' message, reporting roughly how many files have been scanned so far. Ends with '…'. Note: this count uses a compact short form, not the locale-grouped form.",
     "placeholders": {
       "countText": "the number of entries scanned so far, in a compact form (for example 12.3K or 1.2M)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.scanProgress": "Scan in progress...",
+  "queryUi.results.scanProgress": "Scan in progress…",
   "@queryUi.results.scanProgress": {
-    "description": "Sub-line under the 'Drive index not ready' message when no scan count is available yet. Ends with '...' (three dots).",
+    "description": "Sub-line under the 'Drive index not ready' message when no scan count is available yet. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.loadingIndex": "Loading drive index...",
+  "queryUi.results.loadingIndex": "Loading drive index…",
   "@queryUi.results.loadingIndex": {
-    "description": "Label under a spinner shown while the drive index is being loaded into memory before a search. Ends with '...' (three dots).",
+    "description": "Label under a spinner shown while the drive index is being loaded into memory before a search. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.searching": "Searching...",
+  "queryUi.results.searching": "Searching…",
   "@queryUi.results.searching": {
-    "description": "Label under a spinner shown while a search is running. Ends with '...' (three dots).",
+    "description": "Label under a spinner shown while a search is running. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
@@ -388,15 +388,15 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.resolvingCoverage": "Working out what's already indexed...",
+  "queryUi.results.live.resolvingCoverage": "Working out what's already indexed…",
   "@queryUi.results.live.resolvingCoverage": {
-    "description": "Label under a spinner at the start of a search that may have to look through folders the app hasn't indexed. The app is checking which parts of the folder it already knows about, which can take a few seconds on a big drive. Ends with '...' (three dots).",
+    "description": "Label under a spinner at the start of a search that may have to look through folders the app hasn't indexed. The app is checking which parts of the folder it already knows about, which can take a few seconds on a big drive. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.waitingForAnotherWalk": "Waiting for another scan of these folders...",
+  "queryUi.results.live.waitingForAnotherWalk": "Waiting for another scan of these folders…",
   "@queryUi.results.live.waitingForAnotherWalk": {
-    "description": "Label under a spinner while a search waits for another scan that is already reading the folders it needs. Only one scan may read a folder at a time, so this search can do nothing but wait for that one and then read what it found. It is NOT reading any folder itself, so avoid wording that says it is looking through folders. Ends with '...' (three dots).",
+    "description": "Label under a spinner while a search waits for another scan that is already reading the folders it needs. Only one scan may read a folder at a time, so this search can do nothing but wait for that one and then read what it found. It is NOT reading any folder itself, so avoid wording that says it is looking through folders. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
@@ -409,15 +409,15 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.readingIndex": "Reading what's already indexed...",
+  "queryUi.results.live.readingIndex": "Reading what's already indexed…",
   "@queryUi.results.live.readingIndex": {
-    "description": "Label under a spinner while a search reads the part of the folder the app has already indexed, before it starts looking through the rest. Ends with '...' (three dots).",
+    "description": "Label under a spinner while a search reads the part of the folder the app has already indexed, before it starts looking through the rest. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.walking": "Looking through folders that aren't indexed yet...",
+  "queryUi.results.live.walking": "Looking through folders that aren't indexed yet…",
   "@queryUi.results.live.walking": {
-    "description": "Label under a spinner while a search reads folders the app has no index for, going through them one by one. This is the slow part and can run for minutes. Ends with '...' (three dots).",
+    "description": "Label under a spinner while a search reads folders the app has no index for, going through them one by one. This is the slow part and can run for minutes. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },

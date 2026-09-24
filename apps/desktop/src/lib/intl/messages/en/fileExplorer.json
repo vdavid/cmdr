@@ -424,7 +424,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.connecting": "Connecting...",
+  "fileExplorer.network.connecting": "Connecting…",
   "@fileExplorer.network.connecting": {
     "description": "In-progress label shown on the connect button (and in status text) while a network connection is being established.",
     "screenshot": "servers-hub.png",
@@ -478,7 +478,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.browser.searching": "Searching...",
+  "fileExplorer.network.browser.searching": "Searching…",
   "@fileExplorer.network.browser.searching": {
     "description": "Status shown while the app is still discovering network hosts (mDNS browsing in progress).",
     "screenshot": "servers-hub.png"
@@ -501,13 +501,13 @@
     },
     "screenshot": "servers-hub.png"
   },
-  "fileExplorer.network.browser.status.resolving": "Resolving...",
+  "fileExplorer.network.browser.status.resolving": "Resolving…",
   "@fileExplorer.network.browser.status.resolving": {
     "description": "Status cell in the network host list while the host''s name and IP are still being resolved.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network...",
+  "fileExplorer.network.browser.status.waitingForNetwork": "Waiting for network…",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
     "description": "Status cell shown when a host is known but the network name has not resolved yet.",
     "screenshot": "servers-hub.png",
@@ -573,7 +573,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address...",
+  "fileExplorer.network.browser.tooltip.resolving": "Resolving hostname and IP address…",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "description": "Hover tooltip on a host row explaining that its name and IP are still being resolved.",
     "screenshot": "servers-hub.png"
@@ -709,7 +709,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.share.connecting": "Connecting to {hostName}...",
+  "fileExplorer.network.share.connecting": "Connecting to {hostName}…",
   "@fileExplorer.network.share.connecting": {
     "description": "Loading status while opening a host''s share list.",
     "placeholders": {
@@ -844,7 +844,7 @@
     "screenshot": "mtp-browse.png",
     "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
-  "fileExplorer.mtp.connecting": "Connecting to device...",
+  "fileExplorer.mtp.connecting": "Connecting to device…",
   "@fileExplorer.mtp.connecting": {
     "description": "Loading text shown while Cmdr connects to a phone or camera (an MTP device).",
     "screenshot": "mtp-browse.png",
@@ -856,7 +856,7 @@
     "screenshot": "mtp-browse.png",
     "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
-  "fileExplorer.networkMount.mounting": "Mounting {target}...",
+  "fileExplorer.networkMount.mounting": "Mounting {target}…",
   "@fileExplorer.networkMount.mounting": {
     "description": "Loading text while a network share is being mounted. {target} is the host or share name, or the word \"share\" when the name is unknown.",
     "placeholders": {
@@ -867,7 +867,7 @@
   },
   "fileExplorer.networkMount.shareFallback": "share",
   "@fileExplorer.networkMount.shareFallback": {
-    "description": "Generic word used in the mounting text when the share''s name is not known yet (e.g. \"Mounting share...\").",
+    "description": "Generic word used in the mounting text when the share''s name is not known yet (e.g. \"Mounting share…\").",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
@@ -904,7 +904,7 @@
   "@fileExplorer.unreachable.detailTimeout": {
     "description": "Banner detail shown when a volume did not respond in time (for example a temporarily-unavailable network drive)."
   },
-  "fileExplorer.unreachable.retrying": "Retrying...",
+  "fileExplorer.unreachable.retrying": "Retrying…",
   "@fileExplorer.unreachable.retrying": {
     "description": "In-progress label on the retry button while a reachability retry is running."
   },
@@ -1962,11 +1962,11 @@
   "@fileExplorer.navigation.connectDirectlyNowTooltip": {
     "description": "Hover tooltip on the \"Connect directly now\" menu item in a network share's submenu in the volume switcher. Explains why the item is there: the share is still on the slower connection macOS made, and clicking it switches this share to Cmdr's faster direct connection once. \"System connection\" means the connection macOS made; keep it consistent with the connection indicator's tooltip."
   },
-  "fileExplorer.navigation.connectingDirectly": "Connecting directly...",
+  "fileExplorer.navigation.connectingDirectly": "Connecting directly…",
   "@fileExplorer.navigation.connectingDirectly": {
     "description": "Persistent progress toast shown while upgrading a network share to a direct connection."
   },
-  "fileExplorer.navigation.connectingWithSavedPassword": "Connecting with the saved password...",
+  "fileExplorer.navigation.connectingWithSavedPassword": "Connecting with the saved password…",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "description": "Persistent progress toast shown while connecting to a network share using the password macOS already saved."
   },

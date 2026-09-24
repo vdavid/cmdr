@@ -23,7 +23,7 @@
     "description": "Checkbox label that suppresses the device-connected toast for future connections.",
     "screenshot": "mtp-connected-toast.png"
   },
-  "mtp.connectedToast.disableMtp": "Disable MTP...",
+  "mtp.connectedToast.disableMtp": "Disable MTP…",
   "@mtp.connectedToast.disableMtp": {
     "description": "Button that turns off MTP device support entirely. The ellipsis hints further confirmation/settings. MTP is a protocol acronym; keep it. Tight mini button.",
     "screenshot": "mtp-connected-toast.png"

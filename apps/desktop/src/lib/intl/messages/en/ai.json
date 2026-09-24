@@ -1,11 +1,11 @@
 {
-  "ai.toast.downloadingTitle": "Downloading AI model...",
+  "ai.toast.downloadingTitle": "Downloading AI model…",
   "@ai.toast.downloadingTitle": {
     "description": "Title of the persistent toast shown while the local AI model is downloading.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.toast.startingDownload": "Starting download...",
+  "ai.toast.startingDownload": "Starting download…",
   "@ai.toast.startingDownload": {
     "description": "Progress line shown in the AI download toast before the total size is known, just after the download begins.",
     "screenshot": "settings-ai-provider.png",
@@ -30,7 +30,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.toast.installingTitle": "Setting up AI...",
+  "ai.toast.installingTitle": "Setting up AI…",
   "@ai.toast.installingTitle": {
     "description": "Title of the AI toast during the install/setup phase, after the model finished downloading.",
     "screenshot": "settings-ai-provider.png",
@@ -60,7 +60,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.toast.startingTitle": "AI starting...",
+  "ai.toast.startingTitle": "AI starting…",
   "@ai.toast.startingTitle": {
     "description": "Title of the AI toast shown at app startup when the local model is already installed and its server is starting up.",
     "screenshot": "settings-ai-provider.png",
@@ -354,7 +354,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloud.apiKeyPlaceholderAnthropic": "Example: sk-ant-abc123...",
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Example: sk-ant-abc123…",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "description": "Placeholder in the API key field for Anthropic, showing the typical key prefix. Keep the example token literal.",
     "screenshot": "settings-ai-provider.png",
@@ -375,7 +375,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloud.checking": "Checking...",
+  "ai.cloud.checking": "Checking…",
   "@ai.cloud.checking": {
     "description": "Status line shown next to a spinner while Cmdr tests the cloud AI connection.",
     "screenshot": "settings-ai-provider.png",
@@ -441,13 +441,13 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.statusRestarting": "Restarting...",
+  "ai.local.statusRestarting": "Restarting…",
   "@ai.local.statusRestarting": {
     "description": "Local AI server status value while the server is being restarted to apply a new context size.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.statusStarting": "Starting...",
+  "ai.local.statusStarting": "Starting…",
   "@ai.local.statusStarting": {
     "description": "Local AI server status value while the server is starting up.",
     "screenshot": "settings-ai-provider.png",
@@ -465,31 +465,31 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.installStepExtracting": "Step 1 of 4: Extracting runtime...",
+  "ai.local.installStepExtracting": "Step 1 of 4: Extracting runtime…",
   "@ai.local.installStepExtracting": {
     "description": "Local AI install progress label, step 1: unpacking the AI runtime. Keep the Step N of 4 counter shape.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.installStepDownloading": "Step 2 of 4: Downloading model...",
+  "ai.local.installStepDownloading": "Step 2 of 4: Downloading model…",
   "@ai.local.installStepDownloading": {
     "description": "Local AI install progress label, step 2: downloading the model file. Keep the Step N of 4 counter shape.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.installStepVerifying": "Step 3 of 4: Verifying download...",
+  "ai.local.installStepVerifying": "Step 3 of 4: Verifying download…",
   "@ai.local.installStepVerifying": {
     "description": "Local AI install progress label, step 3: verifying the downloaded model. Keep the Step N of 4 counter shape.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.installStepStarting": "Step 4 of 4: Starting server...",
+  "ai.local.installStepStarting": "Step 4 of 4: Starting server…",
   "@ai.local.installStepStarting": {
     "description": "Local AI install progress label, step 4: starting the AI server. Keep the Step N of 4 counter shape.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.startingDownload": "Starting download...",
+  "ai.local.startingDownload": "Starting download…",
   "@ai.local.startingDownload": {
     "description": "Local AI download progress text shown before the total size is known.",
     "screenshot": "settings-ai-provider.png",
@@ -646,7 +646,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.deleteDialogTitleDeleting": "Deleting model...",
+  "ai.local.deleteDialogTitleDeleting": "Deleting model…",
   "@ai.local.deleteDialogTitleDeleting": {
     "description": "Title of the delete-model confirmation dialog while the deletion is in progress.",
     "screenshot": "settings-ai-provider.png",
@@ -658,7 +658,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.deletingStatus": "Stopping server and removing files...",
+  "ai.local.deletingStatus": "Stopping server and removing files…",
   "@ai.local.deletingStatus": {
     "description": "Status line shown with a spinner in the delete-model dialog while the server stops and files are removed.",
     "screenshot": "settings-ai-provider.png",
@@ -673,7 +673,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.deleteButtonDeleting": "Deleting...",
+  "ai.local.deleteButtonDeleting": "Deleting…",
   "@ai.local.deleteButtonDeleting": {
     "description": "Label of the confirm-delete button while deletion is in progress.",
     "screenshot": "settings-ai-provider.png",

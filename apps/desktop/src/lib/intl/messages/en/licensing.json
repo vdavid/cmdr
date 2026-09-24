@@ -226,7 +226,7 @@
     "description": "Secondary button in the expiration modal that dismisses it and keeps the app in personal mode. Keep it short (a button).",
     "screenshot": "expiration-organization.png"
   },
-  "licensing.dialog.loading": "Loading...",
+  "licensing.dialog.loading": "Loading…",
   "@licensing.dialog.loading": {
     "description": "Title of the license dialog while it loads the current license info. A trailing-ellipsis loading state.",
     "screenshot": "license-key-dialog.png"
@@ -414,7 +414,7 @@
     "description": "Secondary button in the key-entry form that cancels and closes the dialog. Keep it short (a button).",
     "screenshot": "license-key-dialog.png"
   },
-  "licensing.dialog.checking": "Checking...",
+  "licensing.dialog.checking": "Checking…",
   "@licensing.dialog.checking": {
     "description": "Primary-button label while re-checking a previously server-rejected key. A transient progress state with a trailing ellipsis.",
     "screenshot": "license-key-dialog.png",
@@ -426,7 +426,7 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.dialog.activating": "Activating...",
+  "licensing.dialog.activating": "Activating…",
   "@licensing.dialog.activating": {
     "description": "Primary-button label while a license key is being activated. A transient progress state with a trailing ellipsis.",
     "screenshot": "license-key-dialog.png",
@@ -553,7 +553,7 @@
     "description": "Heading of the License section in the settings window.",
     "screenshot": "settings-license.png"
   },
-  "licensing.section.loading": "Loading...",
+  "licensing.section.loading": "Loading…",
   "@licensing.section.loading": {
     "description": "Placeholder shown in the settings License section while the license info loads. A trailing-ellipsis loading state."
   },

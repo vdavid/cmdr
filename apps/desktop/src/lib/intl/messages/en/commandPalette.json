@@ -1,7 +1,7 @@
 {
-  "commandPalette.searchPlaceholder": "Search commands...",
+  "commandPalette.searchPlaceholder": "Search commands…",
   "@commandPalette.searchPlaceholder": {
-    "description": "Placeholder text in the command palette's search input, shown when it's empty. The command palette is a Spotlight-style popup for finding and running commands. The trailing \"...\" suggests typing; keep it.",
+    "description": "Placeholder text in the command palette's search input, shown when it's empty. The command palette is a Spotlight-style popup for finding and running commands. The trailing \"…\" suggests typing; keep it.",
     "screenshot": "command-palette.png"
   },
 

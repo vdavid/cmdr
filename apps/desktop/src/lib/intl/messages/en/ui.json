@@ -22,7 +22,7 @@
     "description": "Default aria-label naming a popover region when the caller passes none. Generic fallback meaning a small floating panel of choices."
   },
 
-  "ui.select.placeholder": "Select...",
+  "ui.select.placeholder": "Select…",
   "@ui.select.placeholder": {
     "description": "Default placeholder shown in a dropdown (select) trigger before the user has picked an option.",
     "screenshot": "settings-appearance.png"
@@ -85,7 +85,7 @@
     }
   },
 
-  "ui.loadingIcon.finalizing": "All {countText} {count, plural, one {file} other {files}} loaded. Sorting your files, preparing view...",
+  "ui.loadingIcon.finalizing": "All {countText} {count, plural, one {file} other {files}} loaded. Sorting your files, preparing view…",
   "@ui.loadingIcon.finalizing": {
     "description": "Loading message shown after all entries arrive, while the list is being sorted and laid out. Appears centered in a pane during a slow directory open.",
     "placeholders": {
@@ -94,7 +94,7 @@
     },
     "screenshot": "conflict-dialog.png"
   },
-  "ui.loadingIcon.loaded": "Loaded {countText} {count, plural, one {file} other {files}}...",
+  "ui.loadingIcon.loaded": "Loaded {countText} {count, plural, one {file} other {files}}…",
   "@ui.loadingIcon.loaded": {
     "description": "Progress message shown while a directory is still loading, reporting how many entries have arrived so far. Appears centered in a pane.",
     "placeholders": {
@@ -102,12 +102,12 @@
       "count": "the same number of files (drives the singular/plural form of the noun)"
     }
   },
-  "ui.loadingIcon.openingFolder": "Opening folder...",
+  "ui.loadingIcon.openingFolder": "Opening folder…",
   "@ui.loadingIcon.openingFolder": {
     "description": "Loading message shown briefly while a folder is being opened, before its entries start arriving.",
     "screenshot": "conflict-dialog.png"
   },
-  "ui.loadingIcon.loading": "Loading...",
+  "ui.loadingIcon.loading": "Loading…",
   "@ui.loadingIcon.loading": {
     "description": "Generic loading message shown centered in a pane while content is being fetched.",
     "screenshot": "conflict-dialog.png"

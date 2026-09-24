@@ -157,7 +157,7 @@
     "screenshot": "settings-appearance.png",
     "screenshotNote": "Settings > Appearance, pictured here. Your string is one of the date and time format choices, or the example shown under one of them."
   },
-  "settings.appearance.dateTimeFormat.opt.custom": "Custom...",
+  "settings.appearance.dateTimeFormat.opt.custom": "Custom…",
   "@settings.appearance.dateTimeFormat.opt.custom": {
     "description": "Date/time format option: define your own format string (reveals the custom-format text field). The trailing ellipsis signals it opens further input; keep an ellipsis. Radio-button label.",
     "screenshot": "settings-appearance.png",
@@ -2538,7 +2538,7 @@
   "@settings.control.customValuePlaceholder": {
     "description": "Placeholder text in the input field where the user types a custom value (after choosing the Custom option in a picker)."
   },
-  "settings.control.customOption": "Custom...",
+  "settings.control.customOption": "Custom…",
   "@settings.control.customOption": {
     "description": "Dropdown option that lets the user enter a custom value. The trailing ellipsis signals further input follows; keep an ellipsis.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
@@ -2554,7 +2554,7 @@
   "@settings.control.backToPresetsAriaLabel": {
     "description": "Accessibility label and tooltip for the small icon-only button that leaves the custom-value text input and returns to the preset dropdown in a settings picker. Shown as a back-arrow (corner-down-left) icon; keep it short."
   },
-  "settings.sidebar.searchPlaceholder": "Search settings...",
+  "settings.sidebar.searchPlaceholder": "Search settings…",
   "@settings.sidebar.searchPlaceholder": {
     "description": "Placeholder text in the settings sidebar's search box. The trailing ellipsis is stylistic; keep it.",
     "screenshot": "settings-appearance.png"
@@ -2665,7 +2665,7 @@
     "description": "aria-label for the AI-provider radio group (screen-reader only). \"AI\" = artificial intelligence.",
     "screenshot": "settings-ai-provider.png"
   },
-  "settings.ai.loading": "Loading...",
+  "settings.ai.loading": "Loading…",
   "@settings.ai.loading": {
     "description": "Shown while the AI section's state is loading. The trailing ellipsis signals an in-progress action; keep it."
   },
@@ -2690,13 +2690,13 @@
     "description": "Label for how much disk every drive index takes up together, shown on the indexing card in Settings > Behavior > File system watching.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
-  "settings.fileSystemWatching.clearing": "Clearing...",
+  "settings.fileSystemWatching.clearing": "Clearing…",
   "@settings.fileSystemWatching.clearing": {
     "description": "Button text shown while the drive indexes are being deleted. The trailing ellipsis signals an in-progress action; keep it. Pairs with \"Clear index\"."
   },
   "settings.fileSystemWatching.clearIndex": "Clear index",
   "@settings.fileSystemWatching.clearIndex": {
-    "description": "Button text that deletes every drive index. Pairs with the in-progress \"Clearing...\" state.",
+    "description": "Button text that deletes every drive index. Pairs with the in-progress \"Clearing…\" state.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.fileSystemWatching.noIndex": "No index",
@@ -2930,7 +2930,7 @@
       "port": "the preferred port number the user requested that was unavailable, e.g. \"8080\""
     }
   },
-  "settings.mcp.checkingPort": "Checking port availability...",
+  "settings.mcp.checkingPort": "Checking port availability…",
   "@settings.mcp.checkingPort": {
     "description": "Status shown while testing whether the MCP port is free. The trailing ellipsis signals an in-progress action; keep it."
   },

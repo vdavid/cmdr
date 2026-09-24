@@ -43,20 +43,20 @@
   "@fileOperations.transferDialog.titleWithCounts": {
     "sourceHash": "d21c910"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "Counting items to bin...",
+  "fileOperations.transferProgress.scanTitleTrash": "Counting items to bin…",
   "@fileOperations.transferProgress.scanTitleTrash": {
-    "sourceHash": "d11467e"
+    "sourceHash": "6df6c7f"
   },
-  "fileOperations.transferProgress.titleCancelling": "Cancelling...",
+  "fileOperations.transferProgress.titleCancelling": "Cancelling…",
   "@fileOperations.transferProgress.titleCancelling": {
-    "sourceHash": "37b4fbc"
+    "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.titleCancellingSlow": "Cancelling... (finishing USB transfers)",
+  "fileOperations.transferProgress.titleCancellingSlow": "Cancelling… (finishing USB transfers)",
   "@fileOperations.transferProgress.titleCancellingSlow": {
-    "sourceHash": "ac2ee1a"
+    "sourceHash": "80d6761"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Bin}}...",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {Copying} move {Moving} compress {Compressing} delete {Deleting} other {Moving to the Bin}}…",
   "@fileOperations.transferProgress.titleActive": {
-    "sourceHash": "fe64f70"
+    "sourceHash": "0c636e5"
   }
 }

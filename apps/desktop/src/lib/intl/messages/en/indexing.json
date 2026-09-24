@@ -14,9 +14,9 @@
     "screenshot": "indexing-checklist.png"
   },
 
-  "indexing.scan.label": "Indexing your drive...",
+  "indexing.scan.label": "Indexing your drive…",
   "@indexing.scan.label": {
-    "description": "Generic fallback shown on the drive''s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says ''indexing'' rather than ''scanning'' because a first index no longer makes one pass over the drive. The trailing '...' signals ongoing work; keep it."
+    "description": "Generic fallback shown on the drive''s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says ''indexing'' rather than ''scanning'' because a first index no longer makes one pass over the drive. The trailing '…' signals ongoing work; keep it."
   },
 
   "indexing.scan.counters": "{entriesText} entries, {dirsText} dirs",
@@ -171,27 +171,27 @@
     "screenshot": "indexing-checklist.png"
   },
 
-  "indexing.aggregation.loading": "Loading folders...",
+  "indexing.aggregation.loading": "Loading folders…",
   "@indexing.aggregation.loading": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr loads folders from the index before sizing them. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it.",
+    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr loads folders from the index before sizing them. Use ''folders'' (not ''directories''). Trailing '…' signals ongoing work; keep it.",
     "screenshot": "indexing-checklist.png"
   },
 
-  "indexing.aggregation.sorting": "Sorting folders...",
+  "indexing.aggregation.sorting": "Sorting folders…",
   "@indexing.aggregation.sorting": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr sorts folders before sizing them. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it.",
+    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr sorts folders before sizing them. Use ''folders'' (not ''directories''). Trailing '…' signals ongoing work; keep it.",
     "screenshot": "indexing-checklist.png"
   },
 
-  "indexing.aggregation.computing": "Computing folder sizes...",
+  "indexing.aggregation.computing": "Computing folder sizes…",
   "@indexing.aggregation.computing": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr adds up each folder''s total size. Also the fallback for any unrecognized compute sub-phase. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it.",
+    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr adds up each folder''s total size. Also the fallback for any unrecognized compute sub-phase. Use ''folders'' (not ''directories''). Trailing '…' signals ongoing work; keep it.",
     "screenshot": "indexing-checklist.png"
   },
 
-  "indexing.aggregation.writing": "Saving folder sizes...",
+  "indexing.aggregation.writing": "Saving folder sizes…",
   "@indexing.aggregation.writing": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr writes the computed folder sizes back into its index. Use ''folders'' (not ''directories''). Trailing '...' signals ongoing work; keep it.",
+    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr writes the computed folder sizes back into its index. Use ''folders'' (not ''directories''). Trailing '…' signals ongoing work; keep it.",
     "screenshot": "indexing-checklist.png"
   },
 

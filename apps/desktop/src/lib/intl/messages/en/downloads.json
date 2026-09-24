@@ -193,9 +193,9 @@
     "description": "Accessibility label and tooltip for the button that resets a changed shortcut to its default binding. A short action phrase."
   },
 
-  "downloads.shortcutRow.pressKeys": "Press keys...",
+  "downloads.shortcutRow.pressKeys": "Press keys…",
   "@downloads.shortcutRow.pressKeys": {
-    "description": "Placeholder shown in the shortcut-editing pill while waiting for the user to press a key combination. Trailing '...' signals it's waiting; keep it."
+    "description": "Placeholder shown in the shortcut-editing pill while waiting for the user to press a key combination. Trailing '…' signals it's waiting; keep it."
   },
 
   "downloads.shortcutRow.registered": "Registered",

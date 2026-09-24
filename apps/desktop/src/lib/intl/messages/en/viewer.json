@@ -19,7 +19,7 @@
     "description": "Screen-reader-only heading (visually hidden) naming the whole viewer window. The name of this feature: a read-only viewer for a single file.",
     "screenshot": "viewer-search.png"
   },
-  "viewer.loading": "Loading...",
+  "viewer.loading": "Loading…",
   "@viewer.loading": {
     "description": "Placeholder shown in the content area while the file is being opened, before its text appears.",
     "screenshot": "viewer-search.png",
@@ -154,14 +154,14 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.search.placeholder": "Find in file...",
+  "viewer.search.placeholder": "Find in file…",
   "@viewer.search.placeholder": {
     "description": "Placeholder text in the viewer's search input box. \"Find\" as in search within the open file.",
     "screenshot": "viewer-search.png"
   },
   "viewer.search.ariaLabel": "Search text",
   "@viewer.search.ariaLabel": {
-    "description": "Accessibility label for the viewer's search input box (the same box whose placeholder is \"Find in file...\").",
+    "description": "Accessibility label for the viewer's search input box (the same box whose placeholder is \"Find in file…\").",
     "screenshot": "viewer-search.png"
   },
   "viewer.search.caseSensitive": "Case sensitive",
@@ -185,7 +185,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.search.searching": "Searching...",
+  "viewer.search.searching": "Searching…",
   "@viewer.search.searching": {
     "description": "Search status while a search runs and no matches have been found yet. A percent-scanned figure is shown right after it (separate, not part of this string). Ends with three dots.",
     "screenshot": "viewer-search.png",
@@ -360,15 +360,15 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.statusBar.badge.streamingIndexing": "streaming, indexing...",
+  "viewer.statusBar.badge.streamingIndexing": "streaming, indexing…",
   "@viewer.statusBar.badge.streamingIndexing": {
     "description": "Small status-bar badge for a large file shown in streaming mode while a background index is being built; until it finishes, line numbers are approximate. Lowercase, terse badge; its tooltip is a separate string.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.statusBar.badge.streamingIndexingTooltip": "This is a large file in streaming mode. We''re building an index in background (max {seconds} sec)... Line numbers are currently approximate.",
+  "viewer.statusBar.badge.streamingIndexingTooltip": "This is a large file in streaming mode. We''re building an index in background (max {seconds} sec)… Line numbers are currently approximate.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "description": "Tooltip for the \"streaming, indexing...\" badge, explaining that a background index is being built (with a time cap) and line numbers are approximate until it's done. \"sec\" abbreviates seconds.",
+    "description": "Tooltip for the \"streaming, indexing…\" badge, explaining that a background index is being built (with a time cap) and line numbers are approximate until it's done. \"sec\" abbreviates seconds.",
     "placeholders": {
       "seconds": "the maximum number of seconds spent building the index (e.g. 5)"
     },
