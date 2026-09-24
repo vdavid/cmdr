@@ -49,7 +49,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.resourceBusy.suggestion": {
-    "description": "Recovery suggestion for a busy resource. Markdown. \"Terminal\" is a macOS app name; the backtick-quoted command and `<folder-path>` are literal and must NOT be translated.",
+    "description": "Recovery suggestion for a busy resource. Markdown. The backtick-quoted command and `<folder-path>` are literal and must NOT be translated. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -67,7 +67,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.temporarilyUnavailable.suggestion": {
-    "description": "Recovery suggestion for a temporarily-unavailable system. Markdown. \"Activity Monitor\" is a macOS app name; do NOT translate.",
+    "description": "Recovery suggestion for a temporarily-unavailable system. Markdown. \"Activity Monitor\" is Apple's app, and macOS localizes its name: use the one your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -85,7 +85,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.networkDown.suggestion": {
-    "description": "Recovery suggestion for a down network. Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the OS-localized \"System Settings\" pane name. \"Network\", \"Terminal\", and the backtick command are literal and must NOT be translated.",
+    "description": "Recovery suggestion for a down network. Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the OS-localized \"System Settings\" pane name. \"Network\" is a System Settings pane: use the wording macOS shows for it in your language. The backtick command is literal and must NOT be translated. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -139,7 +139,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.connectionReset.suggestion": {
-    "description": "Recovery suggestion for a reset connection. Markdown bullet list. \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate.",
+    "description": "Recovery suggestion for a reset connection. Markdown bullet list. The backtick command and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -157,7 +157,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "description": "Recovery suggestion for a timed-out connection (errno path). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate.",
+    "description": "Recovery suggestion for a timed-out connection (errno path). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -175,7 +175,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.hostDown.suggestion": {
-    "description": "Recovery suggestion for a down host. Markdown bullet list. \"Terminal\", the backtick command, `<hostname>`, and \"NAS\" are literal; do NOT translate.",
+    "description": "Recovery suggestion for a down host. Markdown bullet list. The backtick command, `<hostname>`, and \"NAS\" are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -193,7 +193,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.staleConnection.suggestion": {
-    "description": "Recovery suggestion for a stale connection. Markdown bullet list. \"Finder\", \"Terminal\", and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for a stale connection. Markdown bullet list. \"Finder\" (Apple keeps it English everywhere) and the backtick command are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -211,7 +211,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.lockUnavailable.suggestion": {
-    "description": "Recovery suggestion for exhausted file locks. Markdown bullet list. \"Terminal\", \"IDEs\", and the backtick commands are literal; do NOT translate.",
+    "description": "Recovery suggestion for exhausted file locks. Markdown bullet list. \"IDEs\" and the backtick commands are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -247,7 +247,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.notPermitted.suggestion": {
-    "description": "Recovery suggestion for a not-permitted access. Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}`, and `{full_disk_access}` are do-not-translate placeholders replaced at runtime with the OS-localized System Settings pane names. \"Cmdr\", \"Terminal\", and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for a not-permitted access. Markdown bullet list. `{system_settings}`, `{privacy_and_security}`, `{files_and_folders}`, and `{full_disk_access}` are do-not-translate placeholders replaced at runtime with the OS-localized System Settings pane names. \"Cmdr\" and the backtick command are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -265,7 +265,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "description": "Recovery suggestion for a not-found path (errno path). Markdown bullet list. \"Terminal\" and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for a not-found path (errno path). Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -370,7 +370,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.diskFullErrno.suggestion": {
-    "description": "Recovery suggestion for a full disk (errno path). Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the System Settings app name as the USER'S MAC shows it, whatever language Cmdr itself runs in. Keep it verbatim, and never attach a case suffix or article directly to it (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. The pane names the snapshot doesn't resolve (\"General\", \"Storage\") are ordinary copy: use the wording macOS shows for them in your language. \"Trash\", \"Dock\", \"Terminal\", and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for a full disk (errno path). Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the System Settings app name as the USER'S MAC shows it, whatever language Cmdr itself runs in. Keep it verbatim, and never attach a case suffix or article directly to it (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. The pane names the snapshot doesn't resolve (\"General\", \"Storage\") are ordinary copy: use the wording macOS shows for them in your language. \"Dock\" and the backtick command are literal; do NOT translate. \"Trash\" is the macOS Trash: use your language's settled term for it. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -424,7 +424,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.networkUnreachable.suggestion": {
-    "description": "Recovery suggestion for an unreachable network. Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"VPN\", \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate.",
+    "description": "Recovery suggestion for an unreachable network. Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"VPN\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -442,7 +442,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.connectionRefused.suggestion": {
-    "description": "Recovery suggestion for a refused connection. Markdown bullet list. \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate.",
+    "description": "Recovery suggestion for a refused connection. Markdown bullet list. The backtick command and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -460,7 +460,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "description": "Recovery suggestion for a symlink loop (errno path). Markdown bullet list. \"Terminal\", the backtick commands, and `<path>` are literal; do NOT translate.",
+    "description": "Recovery suggestion for a symlink loop (errno path). Markdown bullet list. The backtick commands and `<path>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -496,7 +496,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.hostUnreachable.suggestion": {
-    "description": "Recovery suggestion for an unreachable host. Markdown bullet list. \"VPN\", \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate.",
+    "description": "Recovery suggestion for an unreachable host. Markdown bullet list. \"VPN\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -532,7 +532,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.quotaExceeded.suggestion": {
-    "description": "Recovery suggestion for an exceeded quota. Markdown bullet list. \"Terminal\" and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for an exceeded quota. Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -622,7 +622,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.diskReadProblem.suggestion": {
-    "description": "Recovery suggestion for a disk read problem. Markdown bullet list. \"Disk Utility\", \"Spotlight\", \"First Aid\" are macOS feature names; do NOT translate.",
+    "description": "Recovery suggestion for a disk read problem. Markdown bullet list. \"Spotlight\" is a macOS feature name Apple keeps English everywhere; do NOT translate it. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -640,7 +640,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "description": "Recovery suggestion for an unexpected system response. Markdown bullet list. \"Disk Utility\", \"Spotlight\", \"First Aid\" are macOS feature names; do NOT translate.",
+    "description": "Recovery suggestion for an unexpected system response. Markdown bullet list. \"Spotlight\" is a macOS feature name Apple keeps English everywhere; do NOT translate it. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -676,7 +676,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "description": "Recovery suggestion for an unknown read problem. Markdown bullet list. \"Disk Utility\", \"First Aid\" are macOS feature names; do NOT translate.",
+    "description": "Recovery suggestion for an unknown read problem. Markdown bullet list. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -694,7 +694,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.notFound.suggestion": {
-    "description": "Recovery suggestion for a not-found path (typed variant). Markdown bullet list. \"Terminal\" and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for a not-found path (typed variant). Markdown bullet list. The backtick command is literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -879,7 +879,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.storageFull.suggestion": {
-    "description": "Recovery suggestion for a full disk (typed variant). Markdown bullet list. \"Trash\", \"Dock\", \"Terminal\", and the backtick command are literal; do NOT translate.",
+    "description": "Recovery suggestion for a full disk (typed variant). Markdown bullet list. \"Dock\" and the backtick command are literal; do NOT translate. \"Trash\" is the macOS Trash: use your language's settled term for it. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -897,7 +897,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.connectionTimedOut.suggestion": {
-    "description": "Recovery suggestion for a timed-out connection (typed variant). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", \"Terminal\", the backtick command, and `<hostname>` are literal; do NOT translate.",
+    "description": "Recovery suggestion for a timed-out connection (typed variant). Markdown bullet list. \"Wi-Fi\", \"Ethernet\", the backtick command, and `<hostname>` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -987,7 +987,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.listing.ioSerious.suggestion": {
-    "description": "Recovery suggestion for a serious I/O problem. Markdown bullet list. \"Disk Utility\", \"First Aid\" are macOS feature names; do NOT translate.",
+    "description": "Recovery suggestion for a serious I/O problem. Markdown bullet list. \"Disk Utility\" and its \"First Aid\" button are names macOS localizes: use the ones your language's macOS shows (check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1239,7 +1239,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.git.gitDirPermissionDenied.suggestion": {
-    "description": "Recovery suggestion for a .git-folder permission denial. Markdown. `{system_settings}`, `{privacy_and_security}`, and `{files_and_folders}` are do-not-translate placeholders replaced at runtime with the pane names as the USER'S MAC shows them, whatever language Cmdr itself runs in. Keep them verbatim, and never attach a case suffix or article directly to one (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. \"Cmdr\", \"Terminal\", the backtick command, and `.git` are literal; do NOT translate.",
+    "description": "Recovery suggestion for a .git-folder permission denial. Markdown. `{system_settings}`, `{privacy_and_security}`, and `{files_and_folders}` are do-not-translate placeholders replaced at runtime with the pane names as the USER'S MAC shows them, whatever language Cmdr itself runs in. Keep them verbatim, and never attach a case suffix or article directly to one (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. \"Cmdr\", the backtick command, and `.git` are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1485,7 +1485,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.provider.macFuse.serious": {
-    "description": "macFUSE mount provider suggestion for a serious problem. Markdown bullet list. \"macFUSE\", \"FUSE\", \"Terminal\", and the backtick command (including `/Volumes/<name>`) are literal; do NOT translate.",
+    "description": "macFUSE mount provider suggestion for a serious problem. Markdown bullet list. \"macFUSE\", \"FUSE\", and the backtick command (including `/Volumes/<name>`) are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
@@ -1503,7 +1503,7 @@
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },
   "@errors.provider.pCloudFuse.serious": {
-    "description": "pCloud virtual-drive provider suggestion for a serious problem. Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the System Settings app name as the USER'S MAC shows it, whatever language Cmdr itself runs in. Keep it verbatim, and never attach a case suffix or article directly to it (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. The pane names the snapshot doesn't resolve (\"General\", \"Login Items & Extensions\") are ordinary copy: use the wording macOS shows for them in your language. \"pCloud\", \"FUSE\", \"macOS\", \"Terminal\", and the backtick command (including `/Volumes/pCloudDrive`) are literal; do NOT translate.",
+    "description": "pCloud virtual-drive provider suggestion for a serious problem. Markdown bullet list. `{system_settings}` is a do-not-translate placeholder replaced at runtime with the System Settings app name as the USER'S MAC shows it, whatever language Cmdr itself runs in. Keep it verbatim, and never attach a case suffix or article directly to it (Hungarian \"{system_settings}ben\"): the runtime value is unknown, so restructure the sentence instead. The pane names the snapshot doesn't resolve (\"General\", \"Login Items & Extensions\") are ordinary copy: use the wording macOS shows for them in your language. \"pCloud\", \"FUSE\", \"macOS\", and the backtick command (including `/Volumes/pCloudDrive`) are literal; do NOT translate. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "error-message-example.png",
     "screenshotNote": "Cmdr renders every friendly error with one shared layout: a bold title, an explanation paragraph, and a suggestion below it (plus an optional action button and a collapsed \"Technical details\"). This screenshot shows a DIFFERENT error, but your string appears as the title, explanation, or suggestion text in this same panel, in the same position. errors.provider.* names (Dropbox, Google Drive, OneDrive, and so on) are brand names, so keep them as-is."
   },

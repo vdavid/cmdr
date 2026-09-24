@@ -150,7 +150,7 @@
 
   "downloads.fda.openSystemSettings": "Open System Settings",
   "@downloads.fda.openSystemSettings": {
-    "description": "Primary button on the Full-Disk-Access download toast that opens macOS System Settings to the Full Disk Access pane. 'System Settings' is the macOS app name; keep it as-is."
+    "description": "Primary button on the Full-Disk-Access download toast that opens macOS System Settings to the Full Disk Access pane. \"System Settings\" is Apple's app, and macOS localizes its name: use the one your language's macOS shows (check the reference pile or the app bundle)."
   },
 
   "downloads.warnToast.message": "The {binding} shortcut jumps to your latest download from anywhere. Keep it on?",

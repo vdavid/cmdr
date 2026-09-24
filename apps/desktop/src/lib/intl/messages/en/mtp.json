@@ -85,12 +85,12 @@
   },
   "mtp.ptpcameradDialog.explanation": "On macOS, the system daemon <code>ptpcamerad</code> automatically claims Android devices. To work around this, run the following command in Terminal (keep it running while using Cmdr):",
   "@mtp.ptpcameradDialog.explanation": {
-    "description": "Explanation in the macOS MTP-conflict dialog: the system camera daemon grabs Android devices, so a workaround command must run. <code> wraps the process name in monospace styling. ptpcamerad is a macOS process name and Terminal the macOS app; keep both literal.",
+    "description": "Explanation in the macOS MTP-conflict dialog: the system camera daemon grabs Android devices, so a workaround command must run. <code> wraps the process name in monospace styling. ptpcamerad is a macOS process name; keep it literal. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "screenshot": "ptpcamerad-known-process.png"
   },
   "mtp.ptpcameradDialog.helpText": "This command continuously stops ptpcamerad while running. Press <key>Ctrl+C</key> in Terminal to stop it when done.",
   "@mtp.ptpcameradDialog.helpText": {
-    "description": "Help text under the workaround command in the macOS MTP-conflict dialog, explaining how to stop it. <key> wraps the keyboard-key pill for Ctrl+C (a styled chip). ptpcamerad is a process name and Terminal the macOS app; keep both literal.",
+    "description": "Help text under the workaround command in the macOS MTP-conflict dialog, explaining how to stop it. <key> wraps the keyboard-key pill for Ctrl+C (a styled chip). ptpcamerad is a process name; keep it literal. \"Terminal\" is Apple's app: use the name your language's macOS shows for it (most keep the English name, Chinese doesn't; check the reference pile or the app bundle).",
     "placeholders": {
       "key": "wraps the inline Ctrl+C key pill; keep the wrapper, the key glyph is filled in by the app"
     },

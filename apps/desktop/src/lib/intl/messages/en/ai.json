@@ -546,9 +546,9 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.notInstalled": "Not installed. The local model ({modelName}, {modelSize}) runs entirely on your device for maximum privacy. Requires Apple Silicon.",
+  "ai.local.notInstalled": "Not installed. The local model ({modelName}, {modelSize}) runs entirely on your device for maximum privacy. Requires Apple silicon.",
   "@ai.local.notInstalled": {
-    "description": "Explainer in the local AI card when no model is installed yet, naming the default model and its size and noting it runs on-device. Apple Silicon is a hardware term; keep it as shown.",
+    "description": "Explainer in the local AI card when no model is installed yet, naming the default model and its size and noting it runs on-device. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages.",
     "placeholders": {
       "modelName": "the default local model name (for example Ministral 3B; a literal identifier)",
       "modelSize": "the default model's download size, already formatted (for example 2.0 GB)"

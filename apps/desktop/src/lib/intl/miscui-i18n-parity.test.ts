@@ -120,7 +120,7 @@ describe('ai area parity (en)', () => {
     expect(t('ai.local.etaMinutes', { value: '3' })).toBe('~3 min left')
     expect(t('ai.local.etaHours', { value: '1' })).toBe('~1 hr left')
     expect(t('ai.local.notInstalled', { modelName: 'Ministral 3B', modelSize: '2.0 GB' })).toBe(
-      'Not installed. The local model (Ministral 3B, 2.0 GB) runs entirely on your device for maximum privacy. Requires Apple Silicon.',
+      'Not installed. The local model (Ministral 3B, 2.0 GB) runs entirely on your device for maximum privacy. Requires Apple silicon.',
     )
     expect(t('ai.local.ramLegendSystem', { size: '4.0 GB' })).toBe('System 4.0 GB')
     expect(t('ai.local.deleteConfirmMessage', { modelSize: '2.0 GB' })).toBe(

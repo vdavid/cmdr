@@ -585,7 +585,7 @@
   },
   "settings.mediaIndex.clip.notSupported": "Search by description needs a Mac with Apple silicon.",
   "@settings.mediaIndex.clip.notSupported": {
-    "description": "Shown when the semantic-search toggle is disabled because the Mac isn''t Apple silicon (the on-device model only runs on Apple''s own chips). \"Apple silicon\" is Apple''s term for its M-series chips; keep it."
+    "description": "Shown when the semantic-search toggle is disabled because the Mac isn''t Apple silicon (the on-device model only runs on Apple''s own chips). \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages."
   },
   "settings.mediaIndex.clip.offButInstalled": "The model is downloaded, but search by description is off.",
   "@settings.mediaIndex.clip.offButInstalled": {
@@ -766,9 +766,9 @@
   "@settings.mediaIndex.parallelism.label": {
     "description": "Label for a slider that sets how many workers run image indexing at once. In the \"Enable indexing\" card, Settings > Indexing > Image indexing. Range is 1 to the Mac's CPU count."
   },
-  "settings.mediaIndex.parallelism.description": "How many workers image indexing runs at once. More can be faster, but on Apple Silicon the gain flattens out past two, and higher settings back off on their own when your Mac heats up.",
+  "settings.mediaIndex.parallelism.description": "How many workers image indexing runs at once. More can be faster, but on Apple silicon the gain flattens out past two, and higher settings back off on their own when your Mac heats up.",
   "@settings.mediaIndex.parallelism.description": {
-    "description": "Help text under the \"Parallel workers\" slider. Sets expectations honestly: parallelism helps only modestly on Apple Silicon (the Neural Engine serializes the work), and the app reduces workers automatically under thermal pressure. Keep \"Apple Silicon\" and \"Mac\" as-is."
+    "description": "Help text under the \"Parallel workers\" slider. Sets expectations honestly: parallelism helps only modestly on Apple silicon (the Neural Engine serializes the work), and the app reduces workers automatically under thermal pressure. Keep \"Mac\" as-is. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages."
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Only my most-used folders",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -1677,7 +1677,7 @@
   },
   "settings.advanced.showSafeSaveFiles.description": "When apps like TextEdit and Preview save a file, macOS writes the new version alongside it under a temporary name (ending in \".sb-\") and swaps it in. Turn this off to keep those out of the file list.",
   "@settings.advanced.showSafeSaveFiles.description": {
-    "description": "Help text for the show-safe-save-files toggle (advanced). \"macOS\" is a brand name and \"TextEdit\"/\"Preview\" are macOS app names (keep all three); \".sb-\" is a literal filename fragment (keep it exactly).",
+    "description": "Help text for the show-safe-save-files toggle (advanced). \"macOS\" is a brand name (keep it), and \".sb-\" is a literal filename fragment (keep it exactly). \"TextEdit\" and \"Preview\" are Apple''s apps, and macOS localizes their names (for example fr \"Aperçu\", zh \"文本编辑\" and \"预览\"): use the names your language''s macOS shows (check the reference pile or the app bundle).",
     "screenshot": "settings-advanced.png"
   },
   "settings.advanced.showStagingTempFiles.label": "Show Cmdr's temporary files",
@@ -2677,13 +2677,13 @@
   "@settings.ai.tooltipCloud": {
     "description": "Tooltip for the AI \"Cloud AI\" provider option. \"API\" = application programming interface (keep it). All the bracketed and listed names (OpenAI, Anthropic, Claude, Google, Gemini, xAI, Grok, Groq, DeepSeek, OpenRouter, Ollama, LM Studio) are brand/product names; do NOT translate them. \"Cmdr\" is the product name; keep it. \"Bring your own ...\" means the user supplies their own key."
   },
-  "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy: nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple Silicon (M1+).",
+  "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy: nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
-    "description": "Tooltip for the AI \"Local LLM\" provider option. \"~2 GB\" and \"~400 MB\" are approximate literal sizes (keep the unit symbols and tilde). \"Apple Silicon\" and \"M1\" are Apple product names; keep them. \"M1+\" means M1 or later. \"context size\" ties to the local context-window setting."
+    "description": "Tooltip for the AI \"Local LLM\" provider option. \"~2 GB\" and \"~400 MB\" are approximate literal sizes (keep the unit symbols and tilde). \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages. \"M1+\" means M1 or later. \"context size\" ties to the local context-window setting."
   },
-  "settings.ai.tooltipLocalDisabled": "Local AI requires Apple Silicon (M1 or later). Use Cloud AI instead.",
+  "settings.ai.tooltipLocalDisabled": "Local AI requires Apple silicon (M1 or later). Use Cloud AI instead.",
   "@settings.ai.tooltipLocalDisabled": {
-    "description": "Tooltip shown when the Local LLM option is disabled because the hardware is unsupported. \"Apple Silicon\" and \"M1\" are Apple product names; keep them. \"Cloud AI\" is this section's own option name; translate consistently with settings.ai.provider.opt.cloud."
+    "description": "Tooltip shown when the Local LLM option is disabled because the hardware is unsupported. \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages. \"Cloud AI\" is this section's own option name; translate consistently with settings.ai.provider.opt.cloud."
   },
   "settings.fileSystemWatching.indexSize": "Index size",
   "@settings.fileSystemWatching.indexSize": {

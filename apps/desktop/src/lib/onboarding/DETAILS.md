@@ -259,7 +259,7 @@ Three pieces stacked top to bottom:
    info, even if they already picked Local again by the time the rejection lands) and `failed` for everything else
    (logged at warn). Nothing in the wizard says a genuine failure yet, and nothing else listens (`initAiState` skipped
    its listeners at launch because the provider wasn't local); whether it should is an open product call. Intel Macs get
-   the local option disabled, with the reason ("Local LLM requires Apple Silicon. Cloud works on Intel.",
+   the local option disabled, with the reason ("Local LLM requires Apple silicon. Cloud works on Intel.",
    `getAiRuntimeStatus().localAiSupported`) in VISIBLE text beside it: why an option is greyed out is the one thing the
    user most needs to read, and a tooltip on a control they can't reach is the worst place to put it.
 

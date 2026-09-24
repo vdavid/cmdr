@@ -404,9 +404,9 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.localTooltip": "Local LLM requires Apple Silicon. Cloud works on Intel.",
+  "onboarding.stepAi.localTooltip": "Local LLM requires Apple silicon. Cloud works on Intel.",
   "@onboarding.stepAi.localTooltip": {
-    "description": "Tooltip on the disabled local-AI option, explaining it needs an Apple Silicon Mac while cloud AI works on Intel Macs too. \"LLM\" is the AI model type (large language model); \"Apple Silicon\" and \"Intel\" are Mac processor families; all stay untranslated.",
+    "description": "Tooltip on the disabled local-AI option, explaining it needs a Mac with Apple silicon while cloud AI works on Intel Macs too. \"LLM\" is the AI model type (large language model) and \"Intel\" is a Mac processor family; both stay untranslated. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages.",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },

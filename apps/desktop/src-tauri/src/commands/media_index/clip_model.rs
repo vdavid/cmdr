@@ -56,7 +56,7 @@ pub async fn media_index_clip_model_status(app: AppHandle) -> Result<ClipModelSt
 #[specta::specta]
 pub async fn media_index_download_clip_model(app: AppHandle) -> Result<(), String> {
     if !crate::ai::is_local_ai_supported() {
-        return Err("CLIP semantic search needs Apple Silicon".to_string());
+        return Err("CLIP semantic search needs Apple silicon".to_string());
     }
     let data_dir = crate::config::resolved_app_data_dir(&app)?;
     // The index decides which artifacts exist and where they land; the app only carries

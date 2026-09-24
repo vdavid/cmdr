@@ -248,7 +248,7 @@ describe('onboarding step 2 (AI) parity (en)', () => {
     expect(tString('onboarding.stepAi.local.note')).toBe(
       'Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.',
     )
-    expect(tString('onboarding.stepAi.localTooltip')).toBe('Local LLM requires Apple Silicon. Cloud works on Intel.')
+    expect(tString('onboarding.stepAi.localTooltip')).toBe('Local LLM requires Apple silicon. Cloud works on Intel.')
     expect(tString('onboarding.stepAi.off.label')).toBe('Thanks but no thanks, no AI for me')
     expect(tString('onboarding.stepAi.off.help')).toBe(
       'Cmdr works fully without AI. You can turn it on later in Settings.',
