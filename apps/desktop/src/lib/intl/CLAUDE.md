@@ -9,11 +9,11 @@ for numbers, sizes, dates.
   arriving). `_setLocaleForTests` pins both, `_setFormatLocaleForTests` splits them; `setLocale()` is the switch.
 - `os-locales.ts`: the OS's two answers. `loadSystemLocales()` fetches the Rust pair per window, `pickUiLocale(setting)`
   maps the language half (`null` = no override), `watchSystemLocales()` follows a live change.
-- `language-analytics.ts`: the language events, shipped catalog tags only; they hang off the PICK, never a subscription
+- `language-analytics.ts`: language events (shipped tags only), fired off the PICK, never a subscription
   (`src-tauri/src/analytics/DETAILS.md`).
 - `number-format.ts`: memoized `Intl.NumberFormat` factory (`getNumberFormatter`), `formatInteger`, and
   `getGroupSeparator` (the byte-triad separator). `list-format.ts`: the same over `Intl.ListFormat`
-  (`formatConjunctionList`), on the UI locale, adding the Han–Latin space CLDR's Chinese patterns omit (`Warp 和`).
+  (`formatConjunctionList`), on the UI locale.
 - `locale-inheritance.ts`: which catalog a locale may inherit from (same language AND same script), shared with the i18n
   checks and Rust.
 - `messages.svelte.ts`: the runtime: `t()` (catalog + ICU), `getMessage()` (raw), `setLocale()`, `availableLocales()`,
@@ -28,8 +28,8 @@ for numbers, sizes, dates.
   suppressed: `messages.svelte.test.ts`'s reactivity test is the only guard.
 
 - **The resolver loads ALL locale dirs (`messages/*/*.json`) by dir tag, then falls back per key** to `en`.
-  `screenshots/` isn't a locale: exclude it IN THE GLOB, never only at the runtime gate, which ships and parses 280 kB
-  before rejecting it. A misclassified dir also becomes a fake language.
+  `screenshots/` isn't a locale: exclude it IN THE GLOB, not only at the runtime gate (which still ships and parses
+  280 kB), or it becomes a fake language.
 - **❌ A fallback never crosses a SCRIPT boundary**, so `zh-Hant` skips Simplified `zh` and lands on English. Go through
   `inheritableAncestors()`; the checks and Rust obey the same rule. Regional fallback (`pt-PT` → `pt`) must keep
   working: `DETAILS.md`.
@@ -57,5 +57,4 @@ for numbers, sizes, dates.
   by (locale, options)**: they run per visible entry in render AND the column fold, so per-call construction regresses
   scroll.
 
-Depth (runtime design, the error-pipeline boundary, the ICU split, `'system'`, language vs region, the composed
-formatting tag, byte-triad vs human-size grouping): `DETAILS.md`.
+Depth (runtime design, the ICU split, `'system'`, language vs region, grouping, Chinese list spacing): `DETAILS.md`.

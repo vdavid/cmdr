@@ -184,6 +184,14 @@ Human-friendly sizes compose as `` `${value} ${unitLabel}` `` with an explicit A
 `style: 'unit'`, which injects a narrow no-break space. `colorizeSizeString`/`tierClassForUnit` recover the unit via
 `lastIndexOf(' ')`, so a non-ASCII space there would break tier coloring.
 
+## Chinese list joins get Han–Latin spacing
+
+CLDR's zh and zh-Hant conjunction patterns join tight (`Warp和其他 App`), but both Chinese style guides space Han
+against Latin words and digits. For a `zh*` UI locale, `formatConjunctionList` formats to parts and pads a Han
+connective (`和`) wherever it meets a Latin or digit edge. The full-width `、` stays tight (punctuation takes no space),
+and Japanese is excluded (it runs tight), so the rule keys off the language, not the script. The per-locale memo
+carries the flag, so the common path stays one cached `format()`.
+
 ## Column measurement
 
 `views/measure-column-widths.ts` shrink-wraps the Size/Modified columns and calls `formatSizeForDisplay` per visible
