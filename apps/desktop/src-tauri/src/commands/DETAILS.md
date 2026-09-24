@@ -194,6 +194,9 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
   to update the listing cache (both local and volume-aware paths). ❗ `check_rename_validity` and
   `check_rename_permission` stay UNMANAGED: they answer while someone is typing, so they take the snappy read-only path
   instead of `manager::run_instant`, which busy-marks the volume for a mutation that isn't happening yet.
+  Both `check_rename_validity` and `rename_file` size their wait with `deadline::io_budget_for_volume`: on a live
+  session a stalled `stat` or rename once failed the user's rename with `TimedOut` (validity) or reported a rename that
+  landed as failed.
 - **`volume_id` on the write commands.** `create_directory` / `create_file` / `rename_file` only expand tilde (root),
   resolve the `volume_id`, and apply the 5 s write timeout, shipping the typed `MutationError` unchanged; the logic and the managed instant op live
   in `file_system::write_operations::{create,rename}`. For a non-root `volume_id`, `delete_files` uses the volume-aware

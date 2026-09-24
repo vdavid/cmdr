@@ -3,7 +3,7 @@
 //! Thin pass-throughs: the rename validation + the managed rename mutation live
 //! in `file_system::write_operations::rename`. These commands expand tilde,
 //! resolve the `volume_id`, apply the IPC timeout tiers (2 s validity/permission,
-//! 5 s rename), and ship the typed `MutationError` the frontend words itself.
+//! 5 s rename, both stretched on a live session by `deadline::io_budget`), and ship the typed `MutationError` the frontend words itself.
 //! Every command in the family speaks that one vocabulary, `check_rename_validity`
 //! included: its answer is a typed `RenameValidityResult`, so the only `Err` it
 //! can produce is the deadline or a panicked task.
@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use tokio::time::Duration;
 
 use super::file_system::expand_tilde;
-use crate::deadline::timeout_detached_typed;
+use crate::deadline::{io_budget_for_volume, timeout_detached_typed};
 use crate::file_system::write_operations::trash::{trash_dir_for_path, trash_single_journaled};
 use crate::file_system::write_operations::{
     MutationError, RenameValidityResult, check_rename_permission_for_volume, check_rename_validity_impl, rename_managed,
@@ -121,9 +121,11 @@ pub async fn check_rename_validity(
     let volume_id_str = volume_id.unwrap_or_else(|| "root".to_string());
 
     // Detached: conflict detection on a non-local volume LISTS the directory, so
-    // on MTP a bare timeout would drop a listing mid-`GetObjectInfo`.
+    // on MTP a bare timeout would drop a listing mid-`GetObjectInfo`. A live
+    // session gets the longer session budget: a busy NAS holds a single stat for
+    // seconds, and the read tier turned that into a failed rename.
     timeout_detached_typed(
-        Duration::from_secs(2),
+        io_budget_for_volume(&volume_id_str, Duration::from_secs(2)),
         || MutationError::TimedOut,
         |detail| MutationError::Unexpected { detail },
         async move { Ok(check_rename_validity_impl(expanded_dir, old_name, new_name, volume_id_str).await) },
@@ -157,9 +159,11 @@ pub async fn rename_file(
 
     // Detached: the 5 s deadline bounds the FE's wait, not the rename. On MTP the
     // rename is a PTP `SetObjectPropValue`, and dropping it mid-transaction
-    // wedges the phone; the op finishes behind the timeout instead.
+    // wedges the phone; the op finishes behind the timeout instead. A live
+    // session gets the session budget: its rename lands however long the server
+    // holds it, so a timeout there would report a rename that happened as failed.
     timeout_detached_typed(
-        Duration::from_secs(5),
+        io_budget_for_volume(&volume_id_str, Duration::from_secs(5)),
         || MutationError::TimedOut,
         |detail| MutationError::Unexpected { detail },
         rename_managed(
@@ -320,6 +324,100 @@ mod tests {
         let conflict = check.conflict.unwrap();
         assert_eq!(conflict.name, "existing.txt");
         assert_eq!(conflict.size, 16); // "existing content" = 16 bytes
+    }
+
+    /// A slow-volume fixture holding `/docs/old.txt` and `/docs/taken.txt`,
+    /// registered under `volume_id`, whose every read takes `delay`.
+    async fn register_slow_volume(
+        volume_id: &str,
+        state: Option<crate::file_system::volume::ConnectionState>,
+        delay: Duration,
+    ) {
+        use crate::file_system::volume::manager::get_volume_manager;
+        use crate::file_system::volume::{InMemoryVolume, Volume};
+        use crate::test_support::SlowVolume;
+        use std::path::Path;
+        use std::sync::Arc;
+
+        let mut inner = InMemoryVolume::new("Slow NAS");
+        if let Some(state) = state {
+            inner = inner.with_connection_state(state);
+        }
+        inner.create_directory(Path::new("/docs")).await.unwrap();
+        inner.create_file(Path::new("/docs/old.txt"), b"old").await.unwrap();
+        inner.create_file(Path::new("/docs/taken.txt"), b"taken").await.unwrap();
+        get_volume_manager().register_if_absent(volume_id, Arc::new(SlowVolume::new(inner, delay)));
+    }
+
+    /// A busy NAS holds a single `stat` for seconds while its session stays
+    /// healthy. The conflict check on a live session has to wait that out, or
+    /// the user's rename fails with a timeout that says nothing true.
+    #[tokio::test(start_paused = true)]
+    async fn a_slow_answer_from_a_live_session_still_finds_the_conflict() {
+        use crate::file_system::volume::ConnectionState;
+        let volume_id = "smb-slow-validity-live-test";
+        register_slow_volume(volume_id, Some(ConnectionState::Direct), Duration::from_secs(3)).await;
+
+        let result = check_rename_validity(
+            "/docs".to_string(),
+            "old.txt".to_string(),
+            "taken.txt".to_string(),
+            Some(volume_id.to_string()),
+        )
+        .await;
+
+        let check = result.expect("a 3 s answer from a live session is an answer, not a timeout");
+        assert!(check.has_conflict, "the slow stat found `taken.txt`: {check:?}");
+    }
+
+    /// The rename itself is one more request the server can hold. A 6 s rename on
+    /// a live session lands, so the user has to hear that it did, not that it
+    /// timed out.
+    #[tokio::test(start_paused = true)]
+    async fn a_slow_rename_on_a_live_session_reports_success() {
+        use crate::file_system::volume::manager::get_volume_manager;
+        use crate::file_system::volume::{ConnectionState, InMemoryVolume, Volume};
+        use crate::test_support::SlowVolume;
+        use std::path::Path;
+        use std::sync::Arc;
+
+        let volume_id = "smb-slow-rename-live-test";
+        let inner = InMemoryVolume::new("Slow NAS").with_connection_state(ConnectionState::Direct);
+        inner.create_directory(Path::new("/docs")).await.unwrap();
+        inner.create_file(Path::new("/docs/old.txt"), b"old").await.unwrap();
+        let volume = Arc::new(SlowVolume::renaming_slowly(inner, Duration::from_secs(6)));
+        get_volume_manager().register_if_absent(volume_id, volume.clone());
+
+        let result = rename_file(
+            "/docs/old.txt".to_string(),
+            "/docs/new.txt".to_string(),
+            false,
+            Some(volume_id.to_string()),
+            None,
+        )
+        .await;
+
+        assert!(result.is_ok(), "a 6 s rename on a live session landed: {result:?}");
+        assert!(volume.exists(Path::new("/docs/new.txt")).await);
+    }
+
+    /// The other side of the bound: a volume with no session of its own (a
+    /// phone, a kernel mount) keeps the read tier, because nothing under it can
+    /// tell a slow answer from one that's never coming.
+    #[tokio::test(start_paused = true)]
+    async fn a_slow_answer_without_a_session_still_times_out_on_the_read_tier() {
+        let volume_id = "mtp-slow-validity-test";
+        register_slow_volume(volume_id, None, Duration::from_secs(3)).await;
+
+        let result = check_rename_validity(
+            "/docs".to_string(),
+            "old.txt".to_string(),
+            "taken.txt".to_string(),
+            Some(volume_id.to_string()),
+        )
+        .await;
+
+        assert!(matches!(result, Err(MutationError::TimedOut)), "{result:?}");
     }
 
     #[cfg(unix)]

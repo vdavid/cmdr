@@ -14,6 +14,11 @@ must-knows.
   work rather than dropping it.
 - **`Deadline`** (`elapsed` / `remaining` / `total` / `fraction`) + **`timeout_detached_within`**: one wall-clock
   budget across a command's legs. A leg that starts with nothing left doesn't start.
+- **`io_budget`** / **`io_budget_for_volume`** + **`SESSION_IO_TIMEOUT`**: stretch a tier to at least 10 s on a volume
+  Cmdr holds a live session to (`ConnectionState::Direct`), and leave every other volume on its tier. The session's
+  transport tells slow from dead on its own (smb2 declares a silent server dead and the volume goes `Disconnected`), so a
+  short timer there only turns a busy NAS's 0.3–6 s stall into a wrong answer. ❌ Not for `OsMount` or MTP: nothing under
+  them can tell, and a wedged kernel mount blocks for minutes. Callers: `rename.rs`'s validity check and rename.
 - **`BlockingBudget`**: a semaphore capping one command family's share of the blocking pool. Callers past the cap wait
   as futures, not threads.
 - **`blocking_typed_result_until_stalled`** + **`StallWatch`**: no total deadline; it gives up once the watch reports

@@ -1,7 +1,7 @@
 //! Shared test-only helpers for the whole crate.
 //!
-//! A volume that never answers: [`WedgedVolume`]. A volume that answers capability flags and
-//! refuses every read: [`CapabilityStub`].
+//! A volume that never answers: [`WedgedVolume`]. One that answers, but slowly: [`SlowVolume`].
+//! A volume that answers capability flags and refuses every read: [`CapabilityStub`].
 //!
 //! A scratch directory to write into: [`TestDir`]. Waiting for background work to land:
 //! [`wait_until`] serves sync `#[test]`s, [`wait_until_async`] serves `#[tokio::test]`s. All three
@@ -164,6 +164,114 @@ impl Volume for WedgedVolume {
         _dest: &'a Path,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<ScanConflict>, VolumeError>> + Send + 'a>> {
         never_answers!()
+    }
+}
+
+/// A volume that answers correctly, but only after a delay: on every metadata read
+/// ([`new`](Self::new)), or on the rename alone ([`renaming_slowly`](Self::renaming_slowly)).
+///
+/// The slow-but-alive twin of [`WedgedVolume`]: a busy NAS holds one `stat` or listing for
+/// seconds while its session stays healthy. The fixture for a bound that has to survive that
+/// without mistaking it for a dead volume. Storage and the connection state come from the wrapped
+/// `InMemoryVolume`, so a test decides whether the volume carries a live session.
+pub(crate) struct SlowVolume {
+    inner: InMemoryVolume,
+    /// What every metadata read waits before answering.
+    read_delay: std::time::Duration,
+    /// What a `rename` waits before landing.
+    rename_delay: std::time::Duration,
+}
+
+impl SlowVolume {
+    /// Every metadata read takes `delay`; a rename lands at once.
+    pub(crate) fn new(inner: InMemoryVolume, delay: std::time::Duration) -> Self {
+        Self {
+            inner,
+            read_delay: delay,
+            rename_delay: std::time::Duration::ZERO,
+        }
+    }
+
+    /// Reads answer at once; the rename itself is the one request the server holds.
+    pub(crate) fn renaming_slowly(inner: InMemoryVolume, delay: std::time::Duration) -> Self {
+        Self {
+            inner,
+            read_delay: std::time::Duration::ZERO,
+            rename_delay: delay,
+        }
+    }
+}
+
+impl Volume for SlowVolume {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+
+    fn root(&self) -> &Path {
+        self.inner.root()
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn connection_state(&self) -> Option<crate::file_system::volume::ConnectionState> {
+        self.inner.connection_state()
+    }
+
+    fn list_directory<'a>(
+        &'a self,
+        path: &'a Path,
+        on_progress: Option<&'a (dyn Fn(ListingProgress) + Sync)>,
+    ) -> Pin<Box<dyn Future<Output = Result<Vec<FileEntry>, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // allowed-test-sleep: the fake latency IS the fixture
+            tokio::time::sleep(self.read_delay).await;
+            self.inner.list_directory(path, on_progress).await
+        })
+    }
+
+    fn get_metadata<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<FileEntry, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // allowed-test-sleep: the fake latency IS the fixture
+            tokio::time::sleep(self.read_delay).await;
+            self.inner.get_metadata(path).await
+        })
+    }
+
+    fn exists<'a>(&'a self, path: &'a Path) -> Pin<Box<dyn Future<Output = bool> + Send + 'a>> {
+        Box::pin(async move {
+            // allowed-test-sleep: the fake latency IS the fixture
+            tokio::time::sleep(self.read_delay).await;
+            self.inner.exists(path).await
+        })
+    }
+
+    fn is_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<bool, VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // allowed-test-sleep: the fake latency IS the fixture
+            tokio::time::sleep(self.read_delay).await;
+            self.inner.is_directory(path).await
+        })
+    }
+
+    fn rename<'a>(
+        &'a self,
+        from: &'a Path,
+        to: &'a Path,
+        force: bool,
+    ) -> Pin<Box<dyn Future<Output = Result<(), VolumeError>> + Send + 'a>> {
+        Box::pin(async move {
+            // allowed-test-sleep: the fake latency IS the fixture
+            tokio::time::sleep(self.rename_delay).await;
+            self.inner.rename(from, to, force).await
+        })
     }
 }
 

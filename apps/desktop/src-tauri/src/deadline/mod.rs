@@ -6,6 +6,7 @@ mod budget_tests;
 #[cfg(test)]
 mod stall_tests;
 
+use cmdr_fs::volume::ConnectionState;
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use tokio::time::Duration;
@@ -342,4 +343,42 @@ where
         Ok(Err(join_err)) => Err(on_join_failure(join_err.to_string())),
         Err(_) => Err(on_timeout()),
     }
+}
+
+/// The least a read may wait on a volume Cmdr holds a live session to
+/// (see [`io_budget`]).
+///
+/// Sized from a measured QNAP TS-464 under load: it holds 0.5–3% of single
+/// metadata requests (a `stat`, an open, a listing) for 0.3–6 s while the
+/// session stays healthy (smb2's `benchmarks/read-ahead/results/stat-stall-diagnosis.md`).
+pub const SESSION_IO_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// How long a command waits on a volume whose connection state is `state`,
+/// given the tier `local` it would use on a local disk.
+///
+/// A volume Cmdr holds a live session to ([`ConnectionState::Direct`]: smb2,
+/// SFTP, WebDAV, a dialed ADB phone) gets at least [`SESSION_IO_TIMEOUT`]. Its
+/// transport already tells slow from dead (smb2 declares a silent server dead on
+/// its own and flips the volume to `Disconnected`), so a short timer on top only
+/// turns a busy NAS's slow answer into a wrong one. Everything else keeps
+/// `local`: a disk, a phone over MTP, and a kernel mount (`OsMount` included)
+/// have nothing under them that can tell, and a wedged mount blocks for minutes.
+///
+/// ❗ It lengthens the FRONTEND's wait, so use it only where that wait is a
+/// person waiting on a result (a rename, a background path check), ❌ never on a
+/// path that blocks the UI.
+pub fn io_budget(state: Option<ConnectionState>, local: Duration) -> Duration {
+    match state {
+        Some(ConnectionState::Direct) => local.max(SESSION_IO_TIMEOUT),
+        _ => local,
+    }
+}
+
+/// [`io_budget`] for the volume registered as `volume_id`, read at call time.
+/// An id nothing serves keeps `local`.
+pub fn io_budget_for_volume(volume_id: &str, local: Duration) -> Duration {
+    let state = crate::file_system::volume::manager::get_volume_manager()
+        .get(volume_id)
+        .and_then(|volume| volume.connection_state());
+    io_budget(state, local)
 }
