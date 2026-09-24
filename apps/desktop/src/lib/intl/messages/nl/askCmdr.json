@@ -576,7 +576,7 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-  "askCmdr.renameUndo.applied": "{countText} {count, plural, one {bestand} other {bestanden}} hernoemd.",
+  "askCmdr.renameUndo.applied": "{count, plural, one {Naam van {countText} bestand gewijzigd} other {Namen van {countText} bestanden gewijzigd}}.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
@@ -584,7 +584,7 @@
   "@askCmdr.renameUndo.undo": {
     "sourceHash": "a8283ad"
   },
-  "askCmdr.renameUndo.undoLabel": "Hernoemen van {countText} {count, plural, one {bestand} other {bestanden}} ongedaan maken",
+  "askCmdr.renameUndo.undoLabel": "Naamwijziging van {countText} {count, plural, one {bestand} other {bestanden}} ongedaan maken",
   "@askCmdr.renameUndo.undoLabel": {
     "sourceHash": "fc1c08a"
   },
@@ -592,7 +592,7 @@
   "@askCmdr.renameUndo.undoJob": {
     "sourceHash": "f84acd2"
   },
-  "askCmdr.renameUndo.undoJobLabel": "Elke hernoeming in deze reeks ongedaan maken: {filesText} {files, plural, one {bestand} other {bestanden}} in {batches, plural, one {# groep} other {# groepen}}",
+  "askCmdr.renameUndo.undoJobLabel": "Elke naamwijziging in deze reeks ongedaan maken: {filesText} {files, plural, one {bestand} other {bestanden}} in {batches, plural, one {# groep} other {# groepen}}",
   "@askCmdr.renameUndo.undoJobLabel": {
     "sourceHash": "9d2e84e"
   },
@@ -608,15 +608,15 @@
   "@askCmdr.renameUndo.partial": {
     "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {bestand} other {bestanden}} ongemoeid gelaten: {count, plural, one {het is} other {ze zijn}} na het hernoemen gewijzigd, of de oude naam is weer in gebruik.",
+  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {bestand} other {bestanden}} ongemoeid gelaten: {count, plural, one {het is} other {ze zijn}} na de naamwijziging gewijzigd, of de oude naam is weer in gebruik.",
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
-  "askCmdr.renameUndo.skipReason.drift.named": "{name} ongemoeid gelaten: het bestand is na het hernoemen gewijzigd.",
+  "askCmdr.renameUndo.skipReason.drift.named": "{name} ongemoeid gelaten: het bestand is na de naamwijziging gewijzigd.",
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {bestand} other {bestanden}} ongemoeid gelaten: ze zijn na het hernoemen gewijzigd.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {bestand} other {bestanden}} ongemoeid gelaten: ze zijn na de naamwijziging gewijzigd.",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
     "sourceHash": "217d1e8"
   },
@@ -700,7 +700,7 @@
   "@askCmdr.wakeDigest.removed": {
     "sourceHash": "9711102"
   },
-  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {hernoemd onderdeel} other {hernoemde onderdelen}}",
+  "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {onderdeel met een nieuwe naam} other {onderdelen met een nieuwe naam}}",
   "@askCmdr.wakeDigest.renamed": {
     "sourceHash": "2cf9f0f"
   },
@@ -720,7 +720,7 @@
   "@askCmdr.wakeToast.title": {
     "sourceHash": "881baf8"
   },
-  "askCmdr.wakeToast.action": "Bekijken",
+  "askCmdr.wakeToast.action": "Bekijk",
   "@askCmdr.wakeToast.action": {
     "sourceHash": "aff0766"
   },
@@ -736,7 +736,7 @@
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} klaar, {skippedText} overgeslagen, {failedText} mislukt",
+  "askCmdr.decision.result": "{doneText} klaar, {skippedText} overgeslagen, {failedText} niet voltooid",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },
@@ -756,7 +756,7 @@
   "@askCmdr.decision.verbDelete": {
     "sourceHash": "8901f3f"
   },
-  "askCmdr.decision.verbRename": "hernoemen",
+  "askCmdr.decision.verbRename": "wijzigen van de naam",
   "@askCmdr.decision.verbRename": {
     "sourceHash": "c4b4eea"
   },

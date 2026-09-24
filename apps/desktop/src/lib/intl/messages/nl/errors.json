@@ -171,7 +171,7 @@
   "@errors.listing.pathNotFoundErrno.title": {
     "sourceHash": "cce25f6"
   },
-  "errors.listing.pathNotFoundErrno.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, hernoemd of verwijderd terwijl Cmdr het probeerde te benaderen.",
+  "errors.listing.pathNotFoundErrno.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd terwijl Cmdr het probeerde te benaderen.",
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "0c4bb13"
   },
@@ -219,7 +219,7 @@
   "@errors.listing.notAFolder.title": {
     "sourceHash": "78a92a5"
   },
-  "errors.listing.notAFolder.explanation": "Cmdr verwachtte dat `{path}` een map was, maar het is een bestand. Dit kan gebeuren als er onlangs iets is hernoemd of vervangen.",
+  "errors.listing.notAFolder.explanation": "Cmdr verwachtte dat `{path}` een map was, maar het is een bestand. Dit kan gebeuren als er onlangs iets van naam is veranderd of is vervangen.",
   "@errors.listing.notAFolder.explanation": {
     "sourceHash": "45d8f76"
   },
@@ -231,7 +231,7 @@
   "@errors.listing.isAFolderErrno.title": {
     "sourceHash": "6deee63"
   },
-  "errors.listing.isAFolderErrno.explanation": "Cmdr verwachtte dat `{path}` een bestand was, maar het is een map. Dit kan gebeuren als er onlangs iets is hernoemd of vervangen.",
+  "errors.listing.isAFolderErrno.explanation": "Cmdr verwachtte dat `{path}` een bestand was, maar het is een map. Dit kan gebeuren als er onlangs iets van naam is veranderd of is vervangen.",
   "@errors.listing.isAFolderErrno.explanation": {
     "sourceHash": "009d220"
   },
@@ -255,7 +255,7 @@
   "@errors.listing.readOnlyVolumeErrno.title": {
     "sourceHash": "e2d3bf1"
   },
-  "errors.listing.readOnlyVolumeErrno.explanation": "Dit volume is alleen-lezen gekoppeld, dus Cmdr kan er geen wijzigingen in aanbrengen. Dit kan zijn omdat het apparaat een fysieke schrijfbeveiliging heeft, het schijfkopie alleen-lezen is gekoppeld, of het bestandssysteem schrijven niet ondersteunt.",
+  "errors.listing.readOnlyVolumeErrno.explanation": "Dit volume is alleen-lezen gekoppeld, dus Cmdr kan er geen wijzigingen in aanbrengen. Dit kan zijn omdat het apparaat een fysieke schrijfbeveiliging heeft, de schijfkopie alleen-lezen is gekoppeld, of het bestandssysteem schrijven niet ondersteunt.",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
     "sourceHash": "cb19e8c"
   },
@@ -299,7 +299,7 @@
   "@errors.listing.connectionRefused.suggestion": {
     "sourceHash": "4afa12d"
   },
-  "errors.listing.symlinkLoopErrno.title": "Symboollus",
+  "errors.listing.symlinkLoopErrno.title": "Lus van symbolische koppelingen",
   "@errors.listing.symlinkLoopErrno.title": {
     "sourceHash": "3d41981"
   },
@@ -459,7 +459,7 @@
   "@errors.listing.notFound.title": {
     "sourceHash": "cce25f6"
   },
-  "errors.listing.notFound.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, hernoemd of verwijderd terwijl Cmdr het probeerde te benaderen.",
+  "errors.listing.notFound.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd terwijl Cmdr het probeerde te benaderen.",
   "@errors.listing.notFound.explanation": {
     "sourceHash": "0c4bb13"
   },
@@ -567,7 +567,7 @@
   "@errors.listing.readOnly.title": {
     "sourceHash": "72bb908"
   },
-  "errors.listing.readOnly.explanation": "Dit volume is alleen-lezen, dus Cmdr kan er geen wijzigingen in aanbrengen. Dit kan zijn omdat het apparaat een fysieke schrijfbeveiliging heeft, het schijfkopie alleen-lezen is gekoppeld, of het bestandssysteem schrijven niet ondersteunt.",
+  "errors.listing.readOnly.explanation": "Dit volume is alleen-lezen, dus Cmdr kan er geen wijzigingen in aanbrengen. Dit kan zijn omdat het apparaat een fysieke schrijfbeveiliging heeft, de schijfkopie alleen-lezen is gekoppeld, of het bestandssysteem schrijven niet ondersteunt.",
   "@errors.listing.readOnly.explanation": {
     "sourceHash": "99924c3"
   },
@@ -1093,7 +1093,7 @@
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
-  "errors.write.sourceNotFound.suggestion": "Het is misschien verplaatst, hernoemd of verwijderd. Probeer de bestandslijst te vernieuwen.",
+  "errors.write.sourceNotFound.suggestion": "Het is misschien verplaatst, van naam veranderd of verwijderd. Probeer de bestandenlijst te verversen.",
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
@@ -1109,7 +1109,7 @@
   "@errors.write.destinationNotFound.message.move": {
     "sourceHash": "1726290"
   },
-  "errors.write.destinationNotFound.suggestion": "Hij is misschien hernoemd of verwijderd, of de schijf is losgekoppeld. Kies een andere bestemming, of open de map opnieuw en probeer het nog eens.",
+  "errors.write.destinationNotFound.suggestion": "Hij is misschien van naam veranderd of verwijderd, of de schijf is losgekoppeld. Kies een andere bestemming, of open de map opnieuw en probeer het nog eens.",
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
@@ -1453,7 +1453,7 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "b68bafc"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien vergrendeld. Ontgrendel het in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.",
+  "errors.write.permissionDenied.suggestion.deleteMac": "Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beveiligd. Hef de beveiliging op in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
     "sourceHash": "1e6e123"
   },
@@ -1541,7 +1541,7 @@
   "@errors.write.readOnlyDevice.destination.suggestion": {
     "sourceHash": "caced4a"
   },
-  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Alleen-lezen map",
+  "errors.write.destinationNotWritable.readOnlyFilesystem.title": "Alleen-lezenmap",
   "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
     "sourceHash": "24c9063"
   },
@@ -1581,11 +1581,11 @@
   "@errors.write.readOnlyDevice.destination.fallbackName": {
     "sourceHash": "ef2429e"
   },
-  "errors.write.fileLocked.title": "Bestand is vergrendeld",
+  "errors.write.fileLocked.title": "Bestand is beveiligd",
   "@errors.write.fileLocked.title": {
     "sourceHash": "5a38c61"
   },
-  "errors.write.fileLocked.message": "Het bestand is vergrendeld en kan niet worden verwijderd.",
+  "errors.write.fileLocked.message": "Het bestand is beveiligd en kan niet worden verwijderd.",
   "@errors.write.fileLocked.message": {
     "sourceHash": "62b1038"
   },
@@ -1617,7 +1617,7 @@
   "@errors.write.newDataKeptAt.message": {
     "sourceHash": "d1dc96b"
   },
-  "errors.write.newDataKeptAt.suggestion": "Open {keptAt} om het te bekijken en geef het daarna de juiste naam. Is de bestemming een netwerkshare of een telefoon, verbind die dan eerst opnieuw, dan lukt het hernoemen.",
+  "errors.write.newDataKeptAt.suggestion": "Open {keptAt} om het te bekijken en geef het daarna de juiste naam. Is de bestemming een netwerkshare of een telefoon, verbind die dan eerst opnieuw, dan lukt de naamwijziging.",
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
@@ -1981,7 +1981,7 @@
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },
-  "errors.write.readOnlyDevice.source.title": "Alleen-lezen bron",
+  "errors.write.readOnlyDevice.source.title": "Alleen-lezenbron",
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"
   },
@@ -2005,11 +2005,11 @@
   "@errors.write.duplicateSourceNames.message": {
     "sourceHash": "4146d5f"
   },
-  "errors.write.duplicateSourceNames.suggestion.copy": "Kopieer ze een voor een, of hernoem er eerst een.",
+  "errors.write.duplicateSourceNames.suggestion.copy": "Kopieer ze een voor een, of wijzig eerst de naam van een ervan.",
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.duplicateSourceNames.suggestion.move": "Verplaats ze een voor een, of hernoem er eerst een.",
+  "errors.write.duplicateSourceNames.suggestion.move": "Verplaats ze een voor een, of wijzig eerst de naam van een ervan.",
   "@errors.write.duplicateSourceNames.suggestion.move": {
     "sourceHash": "8af755e"
   }

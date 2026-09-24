@@ -283,11 +283,11 @@
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
-  "queryUi.results.live.incomplete": "{shownText} van {totalText} resultaten. Cmdr is niet klaargekomen.",
+  "queryUi.results.live.incomplete": "{shownText} van {totalText} resultaten. Cmdr heeft niet alles doorzocht.",
   "@queryUi.results.live.incomplete": {
     "sourceHash": "7dccf6e"
   },
-  "queryUi.results.live.incompleteEmpty": "Niets gevonden voordat de zoekopdracht stopte. Cmdr is niet klaargekomen.",
+  "queryUi.results.live.incompleteEmpty": "Niets gevonden voordat de zoekopdracht stopte. Cmdr heeft niet alles doorzocht.",
   "@queryUi.results.live.incompleteEmpty": {
     "sourceHash": "bfa15df"
   },
@@ -418,7 +418,7 @@
   "@queryUi.recent.sizeMax": {
     "sourceHash": "7850b6e"
   },
-  "queryUi.recent.modifiedRange": "bewerkt {after}…{before}",
+  "queryUi.recent.modifiedRange": "gewijzigd {after}…{before}",
   "@queryUi.recent.modifiedRange": {
     "sourceHash": "e99ce85"
   },

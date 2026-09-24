@@ -15,7 +15,7 @@
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },
-  "queue.row.label": "{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} trash {Naar prullenmand verplaatsen} rename {Bezig met hernoemen} create_folder {Bezig met map aanmaken} create_file {Bezig met bestand aanmaken} archive_edit {Bezig met archief bewerken} other {Bezig}}",
+  "queue.row.label": "{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} trash {Naar prullenmand verplaatsen} rename {Bezig met naam wijzigen} create_folder {Bezig met map aanmaken} create_file {Bezig met bestand aanmaken} archive_edit {Bezig met archief bewerken} other {Bezig}}",
   "@queue.row.label": {
     "sourceHash": "9f18acf"
   },
@@ -116,7 +116,7 @@
   "@queue.toolbar.selectedCount": {
     "sourceHash": "5f13640"
   },
-  "queue.failureToast.title": "{type, select, copy {Kopiëren niet voltooid} move {Verplaatsen niet voltooid} delete {Verwijderen niet voltooid} trash {Naar prullenmand verplaatsen niet voltooid} rename {Hernoemen niet voltooid} create_folder {Map aanmaken niet voltooid} create_file {Bestand aanmaken niet voltooid} archive_edit {Archief bewerken niet voltooid} other {Niet voltooid}}",
+  "queue.failureToast.title": "{type, select, copy {Kopiëren niet voltooid} move {Verplaatsen niet voltooid} delete {Verwijderen niet voltooid} trash {Naar prullenmand verplaatsen niet voltooid} rename {Naam wijzigen niet voltooid} create_folder {Map aanmaken niet voltooid} create_file {Bestand aanmaken niet voltooid} archive_edit {Archief bewerken niet voltooid} other {Niet voltooid}}",
   "@queue.failureToast.title": {
     "sourceHash": "a55f5df"
   },

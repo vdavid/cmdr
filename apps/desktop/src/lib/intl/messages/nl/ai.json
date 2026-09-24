@@ -119,7 +119,7 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr verstuurt nooit hele bestanden, foto''s of miniaturen. Als je iets over een bestand vraagt, kan het een beperkt deel ervan lezen: wat regels tekst, een paar pagina''s van een PDF met de titel en auteur erbij, de lijst met bestanden in een archief, of de cameragegevens van een foto, inclusief waar die gemaakt is. De fotozoekfunctie werkt net zo: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden. Cmdr kan hernoemen, verplaatsen en opruimen voorstellen, en er gebeurt niets met een bestand tot jij het goedkeurt.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr verstuurt nooit hele bestanden, foto''s of miniaturen. Als je iets over een bestand vraagt, kan het een beperkt deel ervan lezen: wat regels tekst, een paar pagina''s van een PDF met de titel en auteur erbij, de lijst met bestanden in een archief, of de cameragegevens van een foto, inclusief waar die gemaakt is. De fotozoekfunctie werkt net zo: de tekst die Cmdr in de gevonden foto''s heeft herkend en hun tags gaan naar je aanbieder zodat die ze kan vinden. Cmdr kan voorstellen om namen te wijzigen, bestanden te verplaatsen en op te ruimen, en er gebeurt niets met een bestand tot jij het goedkeurt.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "5a378c1"
   },
@@ -199,7 +199,7 @@
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Je model heeft hier mogelijk een groter budget voor nodig. Probeer een sneller model zoals gpt-4.1-mini bij Instellingen > AI.",
+  "ai.translateError.emptyResponse.body": "Je model heeft hier mogelijk een hogere limiet voor nodig. Probeer een sneller model zoals gpt-4.1-mini bij Instellingen > AI.",
   "@ai.translateError.emptyResponse.body": {
     "sourceHash": "f1704cc"
   },

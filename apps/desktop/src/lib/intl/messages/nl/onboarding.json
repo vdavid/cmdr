@@ -189,7 +189,7 @@
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Je gaf aan volledige schijftoegang in te willen schakelen, maar Cmdr lijkt die niet te hebben gekregen. Misschien moet je de app opnieuw starten (doe het nu, we gaan hier verder!), of ga naar je <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> en zoek Cmdr, of voeg het handmatig toe met de kleine knop ‘+’ onderaan.",
+  "onboarding.stepAi.bannerBody.stuck": "Je gaf aan volledige schijftoegang in te willen schakelen, maar Cmdr lijkt die niet te hebben gekregen. Misschien moet je de app opnieuw starten (doe het nu, we gaan hier verder!), of ga naar je <settingsLink>{systemSettings} > Privacy en beveiliging > Volledige schijftoegang</settingsLink> en zoek Cmdr, of voeg het handmatig toe met de kleine knop ‘+’ onderaan.",
   "@onboarding.stepAi.bannerBody.stuck": {
     "sourceHash": "79d5765"
   },
@@ -237,15 +237,15 @@
   "@onboarding.stepAi.table.searchWith": {
     "sourceHash": "b69cd82"
   },
-  "onboarding.stepAi.table.rowRename": "Massaal hernoemen",
+  "onboarding.stepAi.table.rowRename": "Massaal namen wijzigen",
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "9246b56"
   },
-  "onboarding.stepAi.table.renameWithout": "Je gebruikt de UI voor batchgewijs hernoemen om het hernoempatroon handmatig in te stellen, na te kijken en toe te passen.",
+  "onboarding.stepAi.table.renameWithout": "Je gebruikt de UI voor het massaal wijzigen van namen om het naampatroon handmatig in te stellen, na te kijken en toe te passen.",
   "@onboarding.stepAi.table.renameWithout": {
     "sourceHash": "b12d997"
   },
-  "onboarding.stepAi.table.renameWith": "Je zegt ‘zet er een ISO-datum voor’, de agent stelt je hernoempatroon in, en je kijkt het na en past het naar eigen inzicht toe.",
+  "onboarding.stepAi.table.renameWith": "Je zegt ‘zet er een ISO-datum voor’, de agent stelt je naampatroon in, en je kijkt het na en past het naar eigen inzicht toe.",
   "@onboarding.stepAi.table.renameWith": {
     "sourceHash": "7fba3f5"
   },
@@ -509,7 +509,7 @@
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Als je dit inschakelt, kan Cmdr <strong>verbinding maken met Android-telefoons, Kindles, camera''s</strong>, sommige muziekspelers en elk ander apparaat dat de protocollen MTP of PTP ondersteunt.\nDe kostenpost is dat macOS hier <em>ook</em> verbinding mee wil maken (en dat mislukt meestal, daarom kun je niet zomaar Finder gebruiken om foto''s van Android-telefoons te kopiëren), dus moet Cmdr dat macOS-proces onderdrukken zolang het draait.\nWanneer je Cmdr afsluit, wordt dit netjes hersteld.",
+  "onboarding.stepOptional.mtp.desc": "Als je dit inschakelt, kan Cmdr <strong>verbinding maken met Android-telefoons, Kindles, camera''s</strong>, sommige muziekspelers en elk ander apparaat dat de protocollen MTP of PTP ondersteunt.\nDe kostenpost is dat macOS hier <em>ook</em> verbinding mee wil maken (en dat mislukt meestal, daarom kun je niet zomaar Finder gebruiken om foto''s van Android-telefoons te kopiëren), dus moet Cmdr dat macOS-proces onderdrukken zolang het draait.\nWanneer je Cmdr stopt, wordt dit netjes hersteld.",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },

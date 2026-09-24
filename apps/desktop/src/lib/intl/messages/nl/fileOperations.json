@@ -453,7 +453,7 @@
   "@fileOperations.transferProgress.close": {
     "sourceHash": "7d9eb7a"
   },
-  "fileOperations.transferProgress.openingSource": "Wachten tot de bron begint met verzenden ({duration})",
+  "fileOperations.transferProgress.openingSource": "Wachten tot de bron begint met versturen ({duration})",
   "@fileOperations.transferProgress.openingSource": {
     "sourceHash": "d0ad98c"
   },

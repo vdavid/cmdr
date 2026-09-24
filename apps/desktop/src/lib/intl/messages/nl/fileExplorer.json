@@ -322,7 +322,7 @@
   "@fileExplorer.network.osMountFallback.message": {
     "sourceHash": "368f523"
   },
-  "fileExplorer.network.osMountFallback.shareNotOnServer": "Direct verbinden met <shareName>{share}</shareName> lukte niet, want de server zegt dat hij geen gedeelde map met die naam heeft. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is. Dit lost zichzelf niet op: de gedeelde map is misschien hernoemd of verwijderd op de server, dus daar kun je het beste even kijken.",
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "Direct verbinden met <shareName>{share}</shareName> lukte niet, want de server zegt dat hij geen gedeelde map met die naam heeft. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is. Dit lost zichzelf niet op: de gedeelde map is misschien van naam veranderd of verwijderd op de server, dus daar kun je het beste even kijken.",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
     "sourceHash": "e26082d"
   },
@@ -526,7 +526,7 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "De verbinding overschreed de tijdslimiet. Het apparaat is mogelijk traag of reageert niet.",
+  "fileExplorer.mtp.connectTimedOut": "Verbinding maken duurde te lang. Het apparaat is mogelijk traag of reageert niet.",
   "@fileExplorer.mtp.connectTimedOut": {
     "sourceHash": "cc01ae7"
   },
@@ -714,23 +714,23 @@
   "@fileExplorer.readOnly.volumeTitle": {
     "sourceHash": "e2d3bf1"
   },
-  "fileExplorer.readOnly.renameMessage": "Dit is een alleen-lezen volume. Hier kun je geen naam wijzigen.",
+  "fileExplorer.readOnly.renameMessage": "Dit is een alleen-lezenvolume. Hier kun je geen naam wijzigen.",
   "@fileExplorer.readOnly.renameMessage": {
     "sourceHash": "2f68994"
   },
-  "fileExplorer.readOnly.mkdirMessage": "Dit is een alleen-lezen volume. Hier kun je geen mappen aanmaken.",
+  "fileExplorer.readOnly.mkdirMessage": "Dit is een alleen-lezenvolume. Hier kun je geen mappen aanmaken.",
   "@fileExplorer.readOnly.mkdirMessage": {
     "sourceHash": "01957f0"
   },
-  "fileExplorer.readOnly.mkfileMessage": "Dit is een alleen-lezen volume. Hier kun je geen bestanden aanmaken.",
+  "fileExplorer.readOnly.mkfileMessage": "Dit is een alleen-lezenvolume. Hier kun je geen bestanden aanmaken.",
   "@fileExplorer.readOnly.mkfileMessage": {
     "sourceHash": "c5c28e2"
   },
-  "fileExplorer.readOnly.deleteMessage": "Dit is een alleen-lezen volume. Hier kun je geen bestanden verwijderen.",
+  "fileExplorer.readOnly.deleteMessage": "Dit is een alleen-lezenvolume. Hier kun je geen bestanden verwijderen.",
   "@fileExplorer.readOnly.deleteMessage": {
     "sourceHash": "965a635"
   },
-  "fileExplorer.readOnly.archiveTitle": "Alleen-lezen archief",
+  "fileExplorer.readOnly.archiveTitle": "Alleen-lezenarchief",
   "@fileExplorer.readOnly.archiveTitle": {
     "sourceHash": "56ff9e9"
   },
@@ -989,7 +989,7 @@
   "@fileExplorer.selectionTooltip.onDiskHeader": {
     "sourceHash": "9795f99"
   },
-  "fileExplorer.entry.brokenSymlink": "(gebroken symlink)",
+  "fileExplorer.entry.brokenSymlink": "(verbroken symbolische koppeling)",
   "@fileExplorer.entry.brokenSymlink": {
     "sourceHash": "a7ffd43"
   },
@@ -1077,7 +1077,7 @@
   "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
     "sourceHash": "2f69a1b"
   },
-  "fileExplorer.selectionInfo.symlinkHint": "Deze map bevat symlinks. Inhoud waarnaar een symlink wijst telt niet mee in het totaal om dubbel tellen te voorkomen.",
+  "fileExplorer.selectionInfo.symlinkHint": "Deze map bevat symbolische koppelingen. Inhoud waarnaar een symbolische koppeling wijst, telt niet mee in het totaal, zodat niets dubbel wordt geteld.",
   "@fileExplorer.selectionInfo.symlinkHint": {
     "sourceHash": "414ed75"
   },
@@ -1317,7 +1317,7 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
-  "fileExplorer.navigation.locationUnreachableToast": "Het station van die locatie was niet bereikbaar. Misschien is het niet verbonden.",
+  "fileExplorer.navigation.locationUnreachableToast": "De schijf van die locatie was niet bereikbaar. Misschien is hij losgekoppeld.",
   "@fileExplorer.navigation.locationUnreachableToast": {
     "sourceHash": "20126a6"
   },

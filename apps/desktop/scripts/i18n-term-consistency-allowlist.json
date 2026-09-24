@@ -8,6 +8,76 @@
     ],
     "en-AU": [],
     "en-GB": [],
+    "nl": [
+      {
+        "source": "Back",
+        "reason": "`Terug` is the standalone back button in a list you drill into (network browser, share list, mount sheet). `Vorige` is the paired previous/next of the Go menu and the onboarding wizard, where macOS Dutch pairs `Vorige` with `Volgende`. See `docs/i18n/nl/terms.json` `back`."
+      },
+      {
+        "source": "Created",
+        "reason": "`Aanmaakdatum` is Finder's column header (Date Created); the date balloon lists participles (`Aangemaakt`, `Laatst gewijzigd`, `Laatst geopend`), so it takes the participle."
+      },
+      {
+        "source": "Done",
+        "reason": "`Gereed` is an operation's lifecycle status (macOS AppKit Done → Gereed). `Klaar` is the word a screen reader appends to a finished checklist step, where a plain adjective reads right."
+      },
+      {
+        "source": "Edit",
+        "reason": "The menu bar's Edit menu is Apple's own title `Wijzig`; F4 and the context-menu item open a file in an editor, which this catalog names `Bewerk`. Never replace a menu-bar title with the ordinary word."
+      },
+      {
+        "source": "File",
+        "reason": "The menu bar's File menu is Apple's own Dutch title `Archief`; the suggested-ops column names an ordinary file, `Bestand`."
+      },
+      {
+        "source": "From",
+        "reason": "`Van` / `Naar` are a paired heading set in the transfer dialog (Total Commander and Double Commander nl). `Vanuit:` is the inline label in front of a source path during the scan phase."
+      },
+      {
+        "source": "Modified",
+        "reason": "`Bewerkingsdatum` is Finder's Date Modified column and the date filters. The keyboard-shortcuts filter means shortcuts the user changed, with no date involved, so it takes `Gewijzigd`."
+      },
+      {
+        "source": "Running",
+        "reason": "`Bezig` is an operation or task in progress (the queue's state word). `Actief` is a local AI server process that is up, which Dutch doesn't call `bezig`."
+      },
+      {
+        "source": "Search",
+        "reason": "`Zoek` is the button that starts a search (bare-stem imperative, macOS Search → Zoek). `Zoeken` names the feature: the window title, the Settings section, the onboarding feature row."
+      },
+      {
+        "source": "Select",
+        "reason": "`Selecteer` is the menu-bar menu for file selection (imperative). `Selecteren` is the onboarding feature-row name, parallel to `Zoeken`. `Kies` is the dropdown placeholder, where the user picks an option rather than selecting files."
+      },
+      {
+        "source": "Send error report",
+        "reason": "Buttons and menu items take the bare-stem imperative `Verstuur foutrapport`; the dialog title takes the infinitive `Foutrapport versturen`, the house form for window titles."
+      },
+      {
+        "source": "Send feedback",
+        "reason": "Buttons and menu items take the imperative `Verstuur feedback`; the dialog title takes the infinitive `Feedback versturen`."
+      },
+      {
+        "source": "Send report",
+        "reason": "The button takes the imperative `Verstuur rapport`; the crash dialog's title takes the infinitive `Rapport versturen`."
+      },
+      {
+        "source": "Show hidden files",
+        "reason": "The View-menu item is the imperative `Toon verborgen bestanden`; the Settings checkbox label is infinitive-last, `Verborgen bestanden tonen`, the house form of every settings label."
+      },
+      {
+        "source": "Undo",
+        "reason": "Three different actions: `Herstel` is Apple's Edit > Undo (text undo, must match macOS); `Zet terug` is Finder's Put Back, which the trash toast literally performs; `Ongedaan maken` reverts an Ask Cmdr rename run."
+      },
+      {
+        "source": "View",
+        "reason": "The menu bar's View menu is Apple's own title `Weergave`; F3 and the File-menu item show a file, which is `Toon`."
+      },
+      {
+        "source": "Zoom",
+        "reason": "`Zoom` is Cmdr's text zoom submenu; the Window menu's Zoom item (fill the screen) is Apple's own Dutch title `Vergroot/verklein`."
+      }
+    ],
     "pt": [
       {
         "source": "Browse",
@@ -74,7 +144,6 @@
     "es": 6,
     "fr": 12,
     "hu": 10,
-    "nl": 17,
     "pt": 6,
     "sv": 7,
     "vi": 2,

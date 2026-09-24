@@ -3,7 +3,7 @@
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "Hiermee stuur je de recente logbestanden van Cmdr naar het team, zodat we kunnen oplossen wat er misging. De logbestanden worden lokaal geschoond: bestandspaden, hostnamen, IP-adressen en e-mailadressen worden allemaal verwijderd voordat ze worden verstuurd.",
+  "errorReporter.dialog.description": "Hiermee verstuur je de recente logbestanden van Cmdr naar het team, zodat we kunnen oplossen wat er misging. De logbestanden worden lokaal geschoond: bestandspaden, hostnamen, IP-adressen en e-mailadressen worden allemaal verwijderd voordat ze worden verstuurd.",
   "@errorReporter.dialog.description": {
     "sourceHash": "dd11284"
   },

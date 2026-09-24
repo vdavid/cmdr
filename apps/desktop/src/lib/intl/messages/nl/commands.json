@@ -238,11 +238,11 @@
   "@commands.paneSwap.label": {
     "sourceHash": "cc29396"
   },
-  "commands.paneLeftVolumeChooser.label": "Open linkse volumekiezer",
+  "commands.paneLeftVolumeChooser.label": "Open linker volumekiezer",
   "@commands.paneLeftVolumeChooser.label": {
     "sourceHash": "6210f8e"
   },
-  "commands.paneRightVolumeChooser.label": "Open rechtse volumekiezer",
+  "commands.paneRightVolumeChooser.label": "Open rechter volumekiezer",
   "@commands.paneRightVolumeChooser.label": {
     "sourceHash": "6103296"
   },

@@ -57,7 +57,7 @@
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
     "sourceHash": "94edc89"
   },
-  "updates.moveToApplicationsDialog.howTo": "Sluit Cmdr af, sleep het naar de map ‘Apps’ en open het daarvandaan. Elke update daarna komt vanzelf binnen.",
+  "updates.moveToApplicationsDialog.howTo": "Stop Cmdr, sleep het naar de map ‘Apps’ en open het daarvandaan. Elke update daarna komt vanzelf binnen.",
   "@updates.moveToApplicationsDialog.howTo": {
     "sourceHash": "76a136d"
   },

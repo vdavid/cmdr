@@ -7,7 +7,7 @@
   "@viewer.window.titleSuffix": {
     "sourceHash": "5ebd7f4"
   },
-  "viewer.srHeading": "Bestandsweergave",
+  "viewer.srHeading": "Weergavevenster",
   "@viewer.srHeading": {
     "sourceHash": "b32f632"
   },
@@ -23,7 +23,7 @@
   "@viewer.error.readFailed": {
     "sourceHash": "ea7d976"
   },
-  "viewer.error.notFound": "Kon dit bestand niet vinden. Het is misschien verplaatst, hernoemd of verwijderd.",
+  "viewer.error.notFound": "Kon dit bestand niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd.",
   "@viewer.error.notFound": {
     "sourceHash": "580b83c"
   },
