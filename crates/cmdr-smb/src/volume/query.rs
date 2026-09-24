@@ -6,8 +6,8 @@
 //! [`SmbVolume::handle_smb_result`]. The `Volume` methods in `volume_impl.rs`
 //! are thin wrappers over these.
 
-use super::SmbVolume;
 use super::mapping::{directory_entry_to_file_entry, filetime_to_unix_secs, fs_info_to_space_info};
+use super::{SmbVolume, slow_calls};
 use cmdr_fs::entry::FileEntry;
 use cmdr_fs::volume::{ListingProgress, SpaceInfo, VolumeError};
 use log::{debug, trace};
@@ -40,6 +40,7 @@ impl SmbVolume {
         let result = {
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.list_directory(&mut conn, &smb_path).await;
+            slow_calls::note(&self.inner.share_name, "list_directory", start.elapsed());
             self.handle_smb_result("list_directory", &smb_path, r)?
         };
 
@@ -106,8 +107,10 @@ impl SmbVolume {
         }
 
         let info = {
+            let start = std::time::Instant::now();
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.stat(&mut conn, &smb_path).await;
+            slow_calls::note(&self.inner.share_name, "get_metadata", start.elapsed());
             self.handle_smb_result("get_metadata", &smb_path, r)?
         };
 
@@ -136,8 +139,13 @@ impl SmbVolume {
             return true; // Root always exists if we're connected
         }
 
+        let start = std::time::Instant::now();
         match self.clone_session().await {
-            Ok((tree, mut conn)) => tree.stat(&mut conn, &smb_path).await.is_ok(),
+            Ok((tree, mut conn)) => {
+                let found = tree.stat(&mut conn, &smb_path).await.is_ok();
+                slow_calls::note(&self.inner.share_name, "exists", start.elapsed());
+                found
+            }
             Err(_) => false,
         }
     }
@@ -150,8 +158,10 @@ impl SmbVolume {
         }
 
         let info = {
+            let start = std::time::Instant::now();
             let (tree, mut conn) = self.clone_session().await?;
             let r = tree.stat(&mut conn, &smb_path).await;
+            slow_calls::note(&self.inner.share_name, "is_directory", start.elapsed());
             self.handle_smb_result("is_directory", &smb_path, r)?
         };
 

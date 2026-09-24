@@ -728,10 +728,12 @@ pub(crate) async fn read_directory_with_progress(
     let to_complete_emit_ms = emit_t.elapsed().as_millis();
     let total_ms = total_start.elapsed().as_millis();
 
-    // Consolidated INFO log for the listing pipeline.
-    // Grepable single-line structured record. See stall_probe::listing target.
-    log::info!(
+    // Consolidated log for the listing pipeline: INFO, or WARN when the read was
+    // slow (`listing_done_level`). Grepable single-line structured record. See
+    // stall_probe::listing target.
+    log::log!(
         target: "stall_probe::listing",
+        listing_done_level(read_dir_time),
         "listing_done listing_id={} path={} entries={} read_dir_ms={} sort_ms={} cache_write_ms={} enrich_ms={} watcher_start_ms={} to_complete_emit_ms={} total_ms={}",
         listing_id,
         path.display(),
@@ -750,6 +752,21 @@ pub(crate) async fn read_directory_with_progress(
         read_dir_time.as_millis(),
     );
     Ok(())
+}
+
+/// The level `listing_done` logs at, from how long the read itself took.
+///
+/// `warn` once the volume held the read for a second: that's a busy NAS (a QNAP
+/// under load holds single requests for 0.3–6 s) or a slow disk, and a reader
+/// scanning a bundle for why a folder took long to open should find it without
+/// grepping every `read_dir_ms`. `entries=` on the same line tells a huge folder
+/// from a held request. The line and its fields stay the same either way.
+pub(crate) fn listing_done_level(read_dir_time: std::time::Duration) -> log::Level {
+    if read_dir_time >= std::time::Duration::from_secs(1) {
+        log::Level::Warn
+    } else {
+        log::Level::Info
+    }
 }
 
 /// Cancels an in-progress streaming listing.

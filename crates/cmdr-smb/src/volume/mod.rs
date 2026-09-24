@@ -32,6 +32,7 @@ mod reconnect;
 mod scan;
 mod scan_pool;
 mod session;
+mod slow_calls;
 mod spelling;
 mod state;
 mod streams;

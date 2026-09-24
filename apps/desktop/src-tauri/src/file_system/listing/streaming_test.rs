@@ -754,3 +754,16 @@ async fn dropping_the_listing_task_mid_flight_gives_the_lease_back() {
 
     cleanup(volume_id);
 }
+
+/// A read the volume held past a second is what a busy NAS looks like from here,
+/// so its `listing_done` line stands out at `warn`; an ordinary one stays `info`.
+#[test]
+fn a_listing_whose_read_took_over_a_second_logs_at_warn() {
+    use crate::file_system::listing::streaming::listing_done_level;
+    use std::time::Duration;
+
+    assert_eq!(listing_done_level(Duration::from_millis(40)), log::Level::Info);
+    assert_eq!(listing_done_level(Duration::from_millis(999)), log::Level::Info);
+    assert_eq!(listing_done_level(Duration::from_millis(1_000)), log::Level::Warn);
+    assert_eq!(listing_done_level(Duration::from_millis(6_000)), log::Level::Warn);
+}

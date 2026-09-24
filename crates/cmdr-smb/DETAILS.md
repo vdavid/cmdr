@@ -131,7 +131,8 @@ on", not by watching a number.
 - **The concerns are named modules, and each one answers a single sentence.** `paths` translates between the app's
   volume-relative paths and the share-relative ones smb2 speaks; `query` reads the share without changing it (listings,
   metadata, existence, space); `mutation` changes it and patches the listings that showed it; then `session`,
-  `reconnect`, `state`, `streams`, `scan`, `scan_pool`, `watcher`, `foreground_yield`, and the stateless `mapping`.
+  `reconnect`, `state`, `streams`, `scan`, `scan_pool`, `watcher`, `foreground_yield`, `slow_calls` (the rolled-up
+  `warn` for a metadata call the server held over a second), and the stateless `mapping`.
   Splitting further needs a responsibility you can name the same way; a line count is not one. `e5ea10d02` reverted four
   splits invented to satisfy the counter, and every one of them had widened a visibility or torn a struct from its trait
   impl to do it. These carry the same `pub(super)` the crate already used and leave no module reaching into another's

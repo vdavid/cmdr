@@ -515,6 +515,11 @@ the losing interleaving is the only one under test.
 `watcher_start_ms` in the `stall_probe::listing` line now measures only the dispatch, so it should read ~0. A
 regression that puts arming back on the critical path shows up there first.
 
+The line is `info`, and `warn` when `read_dir_ms` reaches 1,000 (`streaming.rs::listing_done_level`): a busy NAS holds
+single requests for 0.3–6 s, and a bundle reader looking for why a folder took long to open finds it at a glance.
+`entries=` on the same line tells a huge folder from a held request. On SMB the held call also gets its own rolled-up
+line (`cmdr-smb`'s `slow_calls`).
+
 ## Watcher path rebasing
 
 On macOS, FSEvents reports canonical paths (`/private/tmp/…`) while `LISTING_CACHE` holds the user-navigated form
