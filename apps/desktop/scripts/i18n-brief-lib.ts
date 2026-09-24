@@ -499,7 +499,7 @@ function footerSection(ctx: BriefContext): BriefSection {
     `- A key whose English uses a concept but whose translation rightly doesn't use the ruling: record it in that term's \`exceptions\` with the reason.`,
     `- Rationale worth more than a line: a section in \`${docs}/${tag}/decisions.md\` whose heading cites the keys in backticks; point the term's \`decision\` at it.`,
     `- Anything only a native reviewer can settle: \`${docs}/${tag}/review-queue.md\`.`,
-    '- Then run `pnpm check i18n` from the repo root.',
+    '- Then run the i18n checks from the repo root (`docs/guides/i18n-translation.md` § Add a new language, step 5).',
   ]
   return { name: 'footer', text: lines.join('\n') }
 }
