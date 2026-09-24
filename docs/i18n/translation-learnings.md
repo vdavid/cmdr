@@ -2,18 +2,20 @@
 
 A running log of process learnings discovered WHILE translating, so each batch inherits what the last one learned
 instead of rediscovering it. The split (per `i18n-translation.md`): per-LANGUAGE findings (a term, a formality call) go
-in that language's `style.md` / `glossary.md`; CROSS-language learnings (an ICU mechanic, a tooling gotcha, a pile trap)
-go HERE or in the guide. When a learning becomes a hard rule, promote it into the guide or `how-to-mine.md`.
+in that language's `style.md` / `terms.json` / `decisions.md`; CROSS-language learnings (an ICU mechanic, a tooling
+gotcha, a pile trap) go HERE or in the guide. When a learning becomes a hard rule, promote it into the guide or
+`how-to-mine.md`.
 
 ## Pipeline (how a wave-1 locale gets made)
 
 1. **Scaffold the skeleton**: `node apps/desktop/scripts/gen-locale-skeleton.ts <tag>` writes `messages/<tag>/*.json`
    with the English values in place and each `@key.sourceHash` already stamped. Translators EDIT values in place and
    never touch the hash.
-2. **Build the glossary first**: mine the pile for the recurring core terms and record them in `<tag>/style.md` +
-   `glossary.md` (`chosen · sources · confidence`) BEFORE translating strings, so term choices stay consistent.
-3. **Translate values in place**, file by file, following the per-language style guide + each key's `@key.description`
-   (the per-string context) + the ICU rules in the guide's agent-prompt block.
+2. **Build the termbase first**: mine the pile for the recurring core terms and record them in `<tag>/terms.json`
+   against the shared `concepts.json` (`chosen`, `sources`, `confidence`; `termbase.md`) BEFORE translating strings, so
+   term choices stay consistent.
+3. **Translate values in place**, batch by batch, each from a `pnpm i18n:brief` brief (the style digest, each key's
+   `@key` context, the rulings in play) plus the full style guide and the ICU rules in the guide's agent-prompt block.
 4. **Check**:
    `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate`.
    Parity/ICU/plural/coverage are all ERROR (must pass). Coverage lists every key still missing or byte-identical to

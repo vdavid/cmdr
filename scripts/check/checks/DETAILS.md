@@ -628,10 +628,12 @@ manual check before the push caught it.
 ## The doc-citation check
 
 `desktop-i18n-doc-citations` (nickname `i18n-citations`, `desktop-i18n-doc-citations.go`) reads every `.md` under
-`docs/i18n/` and requires each message key those guides cite to exist in the English catalogs. The guides settle a term
-by pointing at shipped copy ("the sheet copies `servers.sheet.remember`"), so a citation is load-bearing evidence: an
-orphaned one either invents authority for a value that never shipped, or talks a translator out of a correct fix. ERROR
-class on David's call, since it's a doc asserting something false about the app rather than a maintenance signal.
+`docs/i18n/`, plus the termbase JSON (`concepts.json`, `<tag>/concepts-proposed.json`, `<tag>/terms.json`;
+`docs/i18n/termbase.md`), and requires each message key those guides cite to exist in the English catalogs. The guides
+settle a term by pointing at shipped copy ("the sheet copies `servers.sheet.remember`"), so a citation is load-bearing
+evidence: an orphaned one either invents authority for a value that never shipped, or talks a translator out of a
+correct fix. ERROR class on David's call, since it's a doc asserting something false about the app rather than a
+maintenance signal.
 
 **Default lane, and cheap enough to belong there** (60-77 ms over six uncached runs, measured 2026-09-09 on 28,263 lines
 of per-locale guides plus 3,426 keys). Its whole value is firing on the day somebody renames a key, while they still
@@ -675,6 +677,19 @@ BECAUSE it's gone (eight paragraphs record that their translation was carried ov
 when the sign-in sheet moved to `servers.sheet.*` and the image-index keys moved under `.file.*`; each entry names the
 live key to repoint at. Local runs drop an entry the moment its doc stops citing the key, so `pending` drains itself and
 can't quietly become a second permanent section.
+
+**The termbase JSON is scanned with the same line scan as the markdown.** Its string values cite keys in backticks
+exactly like prose does (a concept `note`, an `exceptions` reason), a JSON object key never holds a backtick, and the
+raw-line scan keeps `file:line` findings. `isTranslatorGuide` names the files; other JSON under `docs/i18n/`
+(reference-pile inventories) is mined evidence, not a guide. The `exceptions` KEYS themselves aren't backticked, so
+`desktop-i18n-termbase` validates those against the catalog instead.
+
+**An entry follows its citation to a successor doc.** When a locale moves to the termbase layout, its `glossary.md`
+journal becomes `decisions.md`, carrying the deliberate `retired` citations with it. Shrink-wrap therefore moves an
+entry keyed by `<tag>/glossary.md` to `<tag>/decisions.md` (reason intact) when the glossary stops citing the key and
+the decisions journal does, instead of dropping it and failing the moved citation. It happens in memory before judging,
+so CI passes a migration too. `docCitationSuccessors` holds the one rename; drop it once no locale has a `glossary.md`
+journal left (the overlays' `glossary.md` fork tables cite no dead keys).
 
 ❗ **The check ships green only because the allowlist excuses every finding it has.** Empty the allowlist and it reports
 **91 dead citations, 24 distinct keys, 12 files** (measured 2026-09-09 at `ce0d112ab`); with it, zero. That is the whole
@@ -1882,27 +1897,31 @@ doubles as production code.
   locale, judged on the EFFECTIVE value so a half-forked overlay term is caught, with a reasoned allowlist and a
   ratchet-down `notYetReviewed` baseline for locales that predate it), i18n-aria-label (ERROR, desktop-i18n-aria-label;
   a translated `fooAria` must still CONTAIN its visible `foo` label (WCAG 2.5.3), gated on English getting it right, so
-  it needs no allowlist and grandfathers nothing). Those eight locale checks share one classification of every locale as
-  a full translation or an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`; rule table in
-  `docs/guides/i18n.md` § Overlay catalogs). The Go side deliberately doesn't mirror it: `nonEnLocaleCount` counts
-  catalog dirs for the success lines and nothing more, because classifying needs CLDR script data (`zh-Hant` is NOT an
-  overlay of Simplified `zh`) that Node's `Intl` has and Go doesn't, and an approximate second copy would drift exactly
-  where it matters. i18n-terms goes one step further and echoes the script's own last line as its success message, so
-  the untriaged-divergence total is stated once, by the layer that computed it. Then i18n-citations (ERROR,
-  desktop-i18n-doc-citations; the only check pointed at the translator GUIDES rather than the catalogs:
-  `docs/i18n/<locale>/glossary.md` and `style.md` justify a term by citing a message key as evidence, and a citation
-  orphaned by a rename hands the next translator false authority, so every backticked dotted token whose first segment
-  is a real catalog namespace must name part of a real English key. § "The doc-citation check" for the namespace gate,
-  the matcher, and the two allowlist sections), bundle-size (warn-only; builds a production-shaped frontend into a
-  private dir and compares its total against a committed baseline, since the app embeds this output so every byte ships
-  in each silent update and is parsed before first paint), vite-build-target (ERROR; `apps/desktop/vite.config.js` must
-  pin `build.target` to a `safari<major>`, because Vite's default is a MOVING "widely available" baseline: leave it
-  unset and a routine Vite major bump raises the browser floor above the `minimumSystemVersion` the bundle claims,
-  silently, with a green build. It parses the config structurally (comments blanked, string literals masked, then
-  brace-matched) so the comment explaining the pin can neither fake one nor hide one, and so a `target` under `server`
-  or `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER bound against the plist: mapping a
-  macOS version to "the WebKit we must assume" is a product call, not a fact), knip, type-drift, tests,
-  e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+  it needs no allowlist and grandfathers nothing), i18n-termbase (desktop-i18n-termbase; ERROR on a schema problem in
+  `docs/i18n/concepts.json` / `<tag>/terms.json`, WARN on coverage drift past a per-locale ratchet-down count in
+  `apps/desktop/scripts/i18n-termbase-baseline.json`: a shipped key whose English uses a ruled concept while its
+  translation carries none of the ruling's forms. Script exit 3 is the ERROR, 1 the WARN; a locale with no `terms.json`
+  is skipped. Its CI step sits in `hygiene` beside i18n-citations, since `docs/i18n/` is outside the `svelte` filter;
+  `docs/i18n/termbase.md`). Those nine locale checks share one classification of every locale as a full translation or
+  an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`; rule table in `docs/guides/i18n.md` §
+  Overlay catalogs). The Go side deliberately doesn't mirror it: `nonEnLocaleCount` counts catalog dirs for the success
+  lines and nothing more, because classifying needs CLDR script data (`zh-Hant` is NOT an overlay of Simplified `zh`)
+  that Node's `Intl` has and Go doesn't, and an approximate second copy would drift exactly where it matters. i18n-terms
+  goes one step further and echoes the script's own last line as its success message, so the untriaged-divergence total
+  is stated once, by the layer that computed it. Then i18n-citations (ERROR, desktop-i18n-doc-citations; the only check
+  pointed at the translator GUIDES rather than the catalogs: the per-locale guides and termbase files justify a term by
+  citing a message key as evidence, and a citation orphaned by a rename hands the next translator false authority, so
+  every backticked dotted token whose first segment is a real catalog namespace must name part of a real English key. §
+  "The doc-citation check" for the namespace gate, the matcher, and the two allowlist sections), bundle-size (warn-only;
+  builds a production-shaped frontend into a private dir and compares its total against a committed baseline, since the
+  app embeds this output so every byte ships in each silent update and is parsed before first paint), vite-build-target
+  (ERROR; `apps/desktop/vite.config.js` must pin `build.target` to a `safari<major>`, because Vite's default is a MOVING
+  "widely available" baseline: leave it unset and a routine Vite major bump raises the browser floor above the
+  `minimumSystemVersion` the bundle claims, silently, with a green build. It parses the config structurally (comments
+  blanked, string literals masked, then brace-matched) so the comment explaining the pin can neither fake one nor hide
+  one, and so a `target` under `server` or `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER
+  bound against the plist: mapping a macOS version to "the WebKit we must assume" is a product call, not a fact), knip,
+  type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`, plus the hand-kept vendored credits of §
   "Vendored credits"; the accepted-license list is derived from `deny.toml` rather than duplicated, the output is pinned

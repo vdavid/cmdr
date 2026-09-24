@@ -25,7 +25,7 @@ Writing, code, and design styles.
     and "volume switcher", which sent readers and translators looking for two surfaces. The message keys and command ids
     keep `Chooser` (`shortcuts.scope.volumeChooser`, `pane.leftVolumeChooser`), because those are persisted in
     everyone's shortcut settings and can't be renamed; translate the value and ignore the key. Per-locale resolutions:
-    `docs/i18n/<locale>/glossary.md`.
+    each locale's `docs/i18n/<locale>/terms.json`.
   - **Folder vs directory**: We know these mean the same. We allow both. Use whichever feels better in each situation.
     Like, on the backend, listing "folders" with `readdir` feels wrong, but also, "folder" comes more natural on the
     front-end and end-user docs.

@@ -1,8 +1,10 @@
 # Per-language translation style guides
 
-Each shippable locale gets a folder at `docs/i18n/<tag>/` (its home: `style.md` plus `glossary.md`), where `<tag>` is
-the locale's BCP-47 tag (the same tag as its `apps/desktop/src/lib/intl/messages/<tag>/` catalog dir, e.g. `de`,
-`pt-BR`, `en-GB`).
+Each shippable locale gets a folder at `docs/i18n/<tag>/`, where `<tag>` is the locale's BCP-47 tag (the same tag as its
+`apps/desktop/src/lib/intl/messages/<tag>/` catalog dir, e.g. `de`, `pt-BR`, `en-GB`). A full translation's folder holds
+`style.md` (opening with a `## Digest`), `terms.json` (its term rulings), `decisions.md` (the rationale behind them),
+and `review-queue.md` (flags for a future native reviewer). The concepts those rulings are keyed by live once, for every
+language, in `concepts.json`. Schema and tools (`pnpm i18n:brief`, the termbase check): `termbase.md`.
 
 A style guide is the per-language half of the translation context. The other half is per-string and lives in the catalog
 (each key's `@key.description`, `placeholders`, and screenshot). The split matters:
@@ -12,9 +14,9 @@ A style guide is the per-language half of the translation context. The other hal
 - **Per-language style** (here): tone, formality, terminology, brand handling, plural notes. Written once per language,
   applied to every string. Never repeated per string.
 
-A translator (human or agent) reads the per-string `@key` context AND this language's style guide together. The full
-translation process and the agent prompt that consumes both live in
-[`../guides/i18n-translation.md`](../guides/i18n-translation.md).
+A translator (human or agent) reads the per-string `@key` context AND this language's style guide together, through a
+batch brief that also carries the term rulings in play. The full translation process and the agent prompt that consumes
+both live in [`../guides/i18n-translation.md`](../guides/i18n-translation.md).
 
 ## Selection roster
 
@@ -31,7 +33,8 @@ across batches: `translation-learnings.md`.
 
 One per language (BCP-47 base tag), plus one per SCRIPT variant that ships its own catalog: a different script is a full
 translation, never an overlay, so it needs its own terminology and its own guide (`zh-Hant` alongside `zh`). Each may
-carry a "Decisions to confirm with David" section, a "Decision points" section, and a sourced glossary.
+carry a "Decisions to confirm with David" section and a "Decision points" section; its sourced term rulings live in the
+sibling `terms.json`.
 
 A regional overlay (`en-GB`, `en-AU`, `pt-PT`) gets one too, but a different kind: it forks only a handful of keys, so
 its guide is about WHAT FORKS AND WHY, not tone or formality. It records the rulings behind each fork, the forks it
@@ -183,5 +186,6 @@ worked example; `en-AU/style.md` shows how a second overlay points at a sibling 
 
 ## Starting a new language
 
-Copy [`_template/style.md`](_template/style.md) to `<tag>/style.md` and fill it in before the first translation pass.
-These files are working notes, not catalog data: they are never loaded by the app and never affect the build.
+Copy the whole `_template/` folder to `<tag>/` (`style.md`, an empty `terms.json`, and the `decisions.md` and
+`review-queue.md` stubs) and fill in [`style.md`](_template/style.md), digest included, before the first translation
+pass. These files are working notes, not catalog data: they are never loaded by the app and never affect the build.

@@ -41,19 +41,23 @@ Set a translator (human or agent) up for excellence with three inputs, never mix
 1. **Per-string context**: the `@key.description` + `placeholders` (+ optional `screenshot`/`screenshotNote`). Authored
    for every key; surface, trigger, constraints, do-not-translate tokens, plain-language placeholder meanings. See
    `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` metadata schema.
-2. **Per-language style guide**: tone, voice, formality (T/V distinction if the language has one), terminology and
-   glossary, how brand words are handled in this language. NOT per-string; never repeat tone on every key. It lives at
-   `docs/i18n/<tag>/style.md` (start from `../i18n/_template/style.md`; see `../i18n/README.md`). These are working
-   notes, not catalog data: the app never loads them. **Treat it as a living doc, and capturing is part of the job**:
-   read it before translating AND extend it as you go, recording each glossary choice with its sources and a confidence
-   (see Researching terms below). This isn't only for terms: whenever you hit a convention, gotcha, decision point, or
-   rule that wasn't already written where you looked for it, write it down so the next translator inherits it instead of
-   rediscovering it. Per-language findings go in the style guide; a missing cross-language rule (like an ICU mechanic)
-   goes in this guide or the template. **Every message key you cite in a guide is verified**:
-   `pnpm check i18n-citations` (`desktop-i18n-doc-citations`) requires each backticked dotted token whose first segment
-   is a real catalog namespace to name a real English key, and it fails the build when one doesn't. So a rename that
-   orphans your evidence surfaces at once instead of talking the next translator out of a correct fix. Naming a key
-   that's genuinely gone (recording where a carried-over translation came from) needs a reasoned entry in
+2. **Per-language style guide and termbase**: tone, voice, formality (T/V distinction if the language has one), how
+   brand words are handled in this language, and the ruling for each recurring term. NOT per-string; never repeat tone
+   on every key. The style guide lives at `docs/i18n/<tag>/style.md` and opens with a `## Digest` of its must-know
+   rules; the terms live in `docs/i18n/<tag>/terms.json`, keyed by the shared concepts in `docs/i18n/concepts.json`,
+   with the rationale in `decisions.md` beside them. Schema and tools: `docs/i18n/termbase.md`. A translator reads none
+   of these whole up front except `style.md`: `pnpm i18n:brief` assembles the digest, the rulings in play, the nearest
+   shipped translations, and the relevant decisions for one batch (see § The translator-agent context). These are
+   working notes, not catalog data: the app never loads them. **Treat them as living docs, and capturing is part of the
+   job**: record each term you settle in `terms.json` with its sources and a confidence (see Researching terms below).
+   This isn't only for terms: whenever you hit a convention, gotcha, decision point, or rule that wasn't already written
+   where you looked for it, write it down so the next translator inherits it instead of rediscovering it. Per-language
+   findings go in the style guide; a missing cross-language rule (like an ICU mechanic) goes in this guide or the
+   template. **Every message key you cite is verified**: `pnpm check i18n-citations` (`desktop-i18n-doc-citations`)
+   requires each backticked dotted token in a guide or a termbase file whose first segment is a real catalog namespace
+   to name a real English key, and it fails the build when one doesn't. So a rename that orphans your evidence surfaces
+   at once instead of talking the next translator out of a correct fix. Naming a key that's genuinely gone (recording
+   where a carried-over translation came from) needs a reasoned entry in
    `scripts/check/checks/desktop-i18n-doc-citations-allowlist.json`.
 3. **One ICU instruction**: given once in the agent system prompt, not per string (see the block below).
 
@@ -88,12 +92,14 @@ it can, but the judgment is yours.
 
 ## Researching terms: the reference pile
 
-Checking the reference pile is MANDATORY for every term: mine it for the term and for similar sentences, reuse and cite,
-never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS, Microsoft, and
-five file managers — the explorer family (GNOME Nautilus, Xfce Thunar, KDE Dolphin) plus the orthodox two-pane pair
-(Total Commander, Double Commander) — one folder per language. Read `../i18n/reference-pile/README.md` for what's there
-and the authority tiers, and `../i18n/reference-pile/how-to-mine.md` for tested per-source recipes (greps, jq,
-`msggrep`, `pdftotext`, `.lng`).
+A term with a ruling in `terms.json` is settled: use it, and reopen it only with new evidence (then edit the ruling in
+place and move the old form to `avoid`). For every term WITHOUT a ruling (the brief marks it "no ruling", or it isn't a
+registered concept yet), checking the reference pile is MANDATORY: mine it for the term and for similar sentences, reuse
+and cite, never guess. The reference pile holds authoritative localizations keyed by language: the ~3 GB of macOS,
+Microsoft, and five file managers — the explorer family (GNOME Nautilus, Xfce Thunar, KDE Dolphin) plus the orthodox
+two-pane pair (Total Commander, Double Commander) — one folder per language. Read `../i18n/reference-pile/README.md` for
+what's there and the authority tiers, and `../i18n/reference-pile/how-to-mine.md` for tested per-source recipes (greps,
+jq, `msggrep`, `pdftotext`, `.lng`).
 
 > [!IMPORTANT] **Where the pile is — and why a worktree can't see it.** The pile is gitignored (`_ignored/` is
 > untracked), so it lives ONLY in the main clone, at **`~/projects-git/vdavid/cmdr/_ignored/i18n/<tag>/`**. It is NOT
@@ -105,11 +111,13 @@ and the authority tiers, and `../i18n/reference-pile/how-to-mine.md` for tested 
 > worktree trap, not a genuinely missing pile — re-check the main-clone absolute path before deciding it's gone.
 
 For each term or convention: triangulate across every source the language has, pick the most native-sounding fit for
-Cmdr's voice, then record it in the style guide's glossary as **chosen · sources · confidence**. Weight by authority:
-macOS first, then Microsoft, then the file-manager corpora (community-translated, so below the first-party vendors for
-general terms). Confidence is `confirmed` (a human signed off), `high` (authoritative sources agree), or `tentative`
-(sources conflict or none had it). Record open terms in the style guide's open-decisions section rather than burying
-them — but for Hungarian, resolve by evidence and don't park it for David (see § Treat every language the same).
+Cmdr's voice, then record it as a `terms.json` entry (`chosen`, `sources`, `confidence`, plus `accept` / `forms` /
+`avoid` as needed; a concept with no `concepts.json` entry gets one first). Weight by authority: macOS first, then
+Microsoft, then the file-manager corpora (community-translated, so below the first-party vendors for general terms).
+Confidence is `confirmed` (a human signed off), `high` (authoritative sources agree), or `tentative` (sources conflict
+or none had it). A choice only David can make goes in the style guide's decisions-to-confirm section, and a doubt only a
+native reviewer can settle goes in `review-queue.md`, rather than burying either — but for Hungarian, resolve by
+evidence and don't park it for David (see § Treat every language the same).
 
 ### Mining the file-manager sources: four gotchas
 
@@ -174,7 +182,7 @@ nine times:
 label out of that sentence** (ideally as its opening words, the shape that survives later rewording). Don't bend the
 aria around an awkward label. Two consequences worth knowing: the pair is ONE unit, so re-wording the label alone can
 break containment, and a later "make these consistent" pass over the aria can break it too, so record the constraint in
-the glossary next to both terms.
+the `note` of the term's `terms.json` entry, naming both keys.
 
 `desktop-i18n-aria-label` (`pnpm check i18n-aria`) enforces it. A pair counts only when English's own `fooAria` already
 contains `foo`, so there's nothing to allowlist: if it fires, the translation genuinely broke it. It's warn-only while
@@ -215,7 +223,7 @@ Rules:
 - It is tied to the source like `reviewed`: if the English value later changes, the stale check flags the key so you
   re-confirm the justification (or translate it). Don't write a justification that would be false if English changed
   trivially.
-- The bar is the SAME as a translation: only record a justification you can defend from the reference pile / glossary.
+- The bar is the SAME as a translation: only record a justification you can defend from the reference pile / termbase.
   "I couldn't be bothered" is not a justification. If a key actually needs translating, translate it — the field is for
   genuinely-identical strings only, and the goal is a clean coverage warn output WITHOUT lowering the quality bar.
 - It does NOT apply to an OVERLAY catalog (`en-GB`, `pt-PT`). There, a value identical to what it overrides is dead
@@ -234,13 +242,16 @@ Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` me
    exact English value it was translated from (computed by `sourceHash()` in `apps/desktop/scripts/i18n-catalog-lib.ts`;
    the pseudolocale generator does exactly this and is the reference). The hash is what `desktop-i18n-stale` uses to
    know a translation is still current.
-3. **Write the per-language style guide** (input 2 above).
-4. **Translate** with the agent-handoff block below, feeding each key its `@key` context + the style guide.
+3. **Write the per-language style guide and start the termbase** (input 2 above): copy `docs/i18n/_template/` to
+   `docs/i18n/<tag>/` (`style.md` with its `## Digest`, an empty `terms.json`, and the `decisions.md` and
+   `review-queue.md` stubs) and fill the style guide.
+4. **Translate** with the agent-handoff block below, in batches, each from a `pnpm i18n:brief --lang <tag>` brief. The
+   first batches will mostly say "no ruling": each term you settle becomes a `terms.json` entry the next batch inherits.
 5. **Run the checks**:
-   `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate`.
-   Parity (placeholder/tag/token sets), ICU validity, plural coverage, and translation coverage are ERROR class, so a
-   locale can't ship half-translated; stale and don't-translate are WARN class. What each catches: `i18n.md` §
-   Enforcement.
+   `pnpm check i18n-parity i18n-icu i18n-plural i18n-stale i18n-coverage i18n-dont-translate i18n-aria i18n-terms i18n-termbase i18n-citations`.
+   Parity (placeholder/tag/token sets), ICU validity, plural coverage, translation coverage, aria containment,
+   citations, and the termbase schema are ERROR class, so a locale can't ship half-translated; stale, don't-translate,
+   term consistency, and termbase drift are WARN class. What each catches: `i18n.md` § Enforcement.
 6. **Overflow-check the layout.** Drive the app and look for clipping; the pseudolocale (`en-XA`) is the deliberately
    long stand-in for this. See `i18n.md` § Pseudolocale.
 7. **Human review (optional, not a ship gate).** If a native reviewer is available, set `@key.reviewed: true` per key as
@@ -296,8 +307,9 @@ The routine maintenance loop, run for every change that adds or edits user-facin
 2. **Propagate the keys to every locale**: run `node apps/desktop/scripts/sync-locale-keys.ts` (all locales) — it adds
    each new `en` key as an English skeleton with the correct `@key.sourceHash`, drops keys you removed, and preserves
    existing translations. It moves KEYS only: a kept key's `@key` block, `sourceHash` included, is never rewritten, so
-   syncing can't clear a staleness warning that nobody has answered. Then, for each locale, read its style guide and
-   translate the new/changed keys in place (the coverage check lists exactly what's still English).
+   syncing can't clear a staleness warning that nobody has answered. Then hand each locale's new/changed keys to a
+   translator agent with a brief: `pnpm i18n:brief --lang <tag> --changed-since <ref>` (or `--keys` for the feature's
+   namespace). The coverage check lists exactly what's still English.
 3. **Run the checks** (same set as step 5 above). `desktop-i18n-stale` is the safety net here: editing an `en` value
    changes its hash, so EVERY locale's translation of that key reads as stale until re-translated and re-hashed. You
    can't silently leave a locale behind on a copy edit: the stale warning lists exactly which keys each locale owes.
@@ -347,10 +359,12 @@ judgment. Three passes, each a short script over `loadCatalog('en')` and `loadCa
    ≥3 such keys, collect the substrings of the translations that correlate with it, and flag any word where two
    different substrings each cover a distinct set of keys. This is what surfaced Traditional Chinese rendering "list" as
    both `清單` and `列表`, and "operation" as `操作` everywhere except `errors.json`, which said `作業`.
-2. **Probe in reverse.** For each term already in `glossary.md`, list every key whose translation contains the chosen
-   form, and every key whose English contains the headword but whose translation does NOT. The second list is either
-   drift or a glossary entry that has gone stale. This is how `theme → 佈景主題` was caught: the glossary claimed it,
-   the catalog used `主題` in all eight keys.
+2. **Probe in reverse: automated for every ruled term.** `pnpm check i18n-termbase` (`desktop-i18n-termbase`) lists
+   every key whose English matches a concept while its translation carries none of the ruling's forms and isn't in the
+   term's `exceptions` (`pnpm i18n:check-termbase --list` in `apps/desktop` prints them all, even under the baseline).
+   Each one is either drift or a ruling that has gone stale. This is the probe that caught `theme → 佈景主題`: the
+   ruling claimed it, the catalog used `主題` in all eight keys. For a term with no ruling yet, do the same probe by
+   hand, then write the ruling.
 3. **Probe the near-miss pairs.** For any two terms a translator could confuse, list both and read the English beside
    them. Traditional Chinese needed `複製` (copy) vs `製作副本` (duplicate), `還原` (undo) vs `復原` (roll back), `標籤`
    (tag) vs `分頁` (tab), and `金鑰` (an API key) vs `授權碼` (a licence key). Two of those had already gone wrong.
@@ -359,37 +373,62 @@ judgment. Three passes, each a short script over `loadCatalog('en')` and `loadCa
 session and sits next to the dialog it opens; one in `errors.json` may never be seen. A divergence spanning two
 high-traffic files is the worst case and the one to fix first.
 
-**Every fix earns a glossary entry.** A conflict you resolved without recording it will be re-litigated by the next
-pass, which is how these got here. Write the entry in the `chosen · sources · confidence` format, and when the two forms
-are BOTH right, say where the boundary runs. That sentence is the thing that stops the next translator "fixing" it back.
+**Every fix earns a termbase entry.** A conflict you resolved without recording it will be re-litigated by the next
+pass, which is how these got here. Write or update the `terms.json` ruling, and when the two forms are BOTH right, say
+where the boundary runs: split the concept (`browse-file-picker` vs `browse-archive`, linked by `distinct`), or list the
+keys that legitimately differ in the term's `exceptions` with the reason. That sentence is the thing that stops the next
+translator "fixing" it back.
 
 ## The translator-agent context (reusable system-prompt block)
 
-Hand an agent the block below as its system prompt, then feed it batches of keys with each key's `@key.description`,
-`placeholders`, and any `screenshot`/`screenshotNote`. Replace the bracketed parts; keep the rest verbatim.
+Hand an agent the block below as its system prompt, plus a brief for its batch. Replace the bracketed parts; keep the
+rest verbatim.
 
 **Who translates, and in what shape.** Never the coding agent that added the strings: it writes English and the `@key`
 metadata, then a separate translator agent takes over. The lever is that the translator actually reads the language's
-`style.md` and searches its `glossary.md`; every agent already knows every language. One style guide plus one glossary
-runs ~50–60k words, so all ten shipped languages can't share one context. Pick the shape by batch size:
+style guide and the rulings for the terms in play; every agent already knows every language. `pnpm i18n:brief` (run in
+`apps/desktop`) assembles exactly that for one batch: the keys with their `@key` context, the style digest, the rulings,
+the nearest shipped translations, and the past decisions about those keys. Flags, sections, and the blind-run mode:
+`docs/i18n/termbase.md` § Tooling.
 
-- **A real batch** (a feature's strings, a review pass): one agent per language, each loading only its own material.
-- **One to five keys**: one translator agent is fine if it goes language by language, reading that `style.md` and
-  grepping that `glossary.md` for the terms in play before writing.
+Pick the shape by batch size. Sizes are `--stats` on `nl`, 39 `servers.sheet.*` keys, 2026-09-24, before `nl`'s digest
+and `decisions.md` landed; those add up to ~2k and ~2.5k tokens.
 
-(Measured 2026-09-23: a coding agent translated four keys into ten languages inline, opened no style guide or glossary,
+- **A real batch** (a feature's strings, a review pass): one agent per language, each handed
+  `pnpm i18n:brief --lang <tag> --keys <…> --out <file>` (~11k tokens) and reading the full `style.md` beside it (~10k
+  for `nl`). About 25k tokens of context before the first string.
+- **One to five keys, or a small batch every language needs**: one agent can take `--lang all`. Concept senses print
+  once and each language gets a line under them, so 50 keys ran ~30k tokens with one migrated locale; budget ~70k once
+  all ten have termbases. Ten full style guides don't fit beside it, so this agent works from the digests and opens a
+  language's full `style.md` only when its digest doesn't settle a question.
+
+The translator's loop, per batch:
+
+1. Read the brief, then the full `docs/i18n/<tag>/style.md` (one-language shape).
+2. For every term the brief marks "no ruling", and any recurring term with no concept yet, mine the reference pile (§
+   Researching terms). A term with a ruling is settled; don't re-mine it.
+3. Translate.
+4. Write back what you settled, per `docs/i18n/termbase.md` § Writing back: rulings to `terms.json`, new concepts to
+   `concepts.json`, rationale worth keeping to `decisions.md` (heading citing the keys), native-reviewer doubts to
+   `review-queue.md`.
+5. Run the i18n checks (§ Add a new language, step 5): they cover the catalog plus the termbase schema and drift.
+
+(Measured 2026-09-23: a coding agent translated four keys into ten languages inline, opened no style guide or termbase,
 and passed every check anyway. The checks catch mechanics, not voice.)
 
 **Fanning out one agent per language: if you are yourself a subagent, spawn WITHOUT the `name` parameter.** The team
 roster is flat, so a named teammate can't spawn named teammates; passing `name` fails with "Teammates cannot spawn other
-teammates". Only the lead session can name them. Nine languages is also enough prompt text that it's worth writing each
-per-language brief to a file and pointing the agent at it, rather than inlining nine copies of the block below.
+teammates". Only the lead session can name them. Write each language's brief to a file (`--out`) and point its agent at
+the path, rather than inlining ten briefs into prompts.
 
 ```
 You are translating UI strings for Cmdr, a macOS file manager, from English into [TARGET LANGUAGE].
 
-STYLE: Follow this per-language style guide for all tone, voice, formality, and terminology decisions:
-[PASTE THE PER-LANGUAGE STYLE GUIDE]
+BRIEF AND STYLE: Your batch's brief is at [BRIEF PATH] (made by `pnpm i18n:brief`). It holds the keys with their
+context, the style digest, the ruling for every term in play, the nearest shipped translations, and the past decisions
+about these keys. Read it first, then read the full style guide at docs/i18n/[TAG]/style.md, and follow both for all
+tone, voice, formality, and terminology. A term the brief gives a ruling for is settled: use it. Reopen a ruling only
+with new evidence, and then edit it in place (the old form moves to "avoid" with its reason).
 
 ICU (do this for every string):
 - Preserve every {placeholder}, every <tag>…</tag>, and every ICU plural/select structure EXACTLY. Translate only
@@ -429,7 +468,8 @@ that label's words, verbatim and in order (WCAG 2.5.3, Label in Name) — case m
 Inflection breaks this silently (a case suffix, a definite form, a preposition the label omits), and a coincidental
 prefix match doesn't count. Fix it by picking the LABEL's form to be the one the natural aria sentence already uses,
 then cutting the label out of that sentence; never bend the aria around an awkward label. The two keys are one unit:
-say in your report which substring satisfies containment, and record the constraint in the glossary beside both terms.
+say in your report which substring satisfies containment, and record the constraint in the term's "note" in terms.json,
+naming both keys.
 Full rule: docs/guides/i18n-translation.md § An *Aria key must contain its visible label.
 
 GENDER: Achieve inclusivity by neutral RESTRUCTURING, never typographic glyphs (no German *innen/:innen, no French
@@ -439,7 +479,7 @@ nouns, status that agrees with the object ("Connection established", not "You ar
 result still reads naturally; if neutral phrasing would be stilted, flag the string for human review rather than ship an
 awkward rewrite or an exposed gendered default.
 
-REFERENCE PILE AND GLOSSARY (mandatory): before translating, mine the reference pile for how Apple/Microsoft, the explorer file managers (GNOME Nautilus, Xfce Thunar, KDE Dolphin), and the orthodox two-pane pair (Total Commander, Double Commander) render each term and for similar sentences to model phrasing on; reuse and cite, never guess. The pile is gitignored and lives ONLY in the MAIN clone at the ABSOLUTE path ~/projects-git/vdavid/cmdr/_ignored/i18n/[TARGET LANGUAGE TAG]/ — it is NOT in your worktree, so a worktree-relative _ignored/i18n/ will look empty and that "absent" reading is the worktree trap, not a missing pile. If unsure of the path, run `git worktree list | head -1` and mine <that main-clone path>/_ignored/i18n/[TAG]/. Match the source to Cmdr's UI: for two-pane concepts the OS/explorer managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Mind the four mining gotchas in the guide's "Researching terms" section (wrong-family terms, a source naming a different concept, brand names that yield no generic term, shared-root signal). Read and extend the language glossary at docs/i18n/[TAG]/glossary.md as you settle terms (chosen, sources, confidence). Recipes: docs/i18n/reference-pile/how-to-mine.md.
+REFERENCE PILE AND TERMBASE (mandatory): for every term the brief marks "no ruling", and any recurring term that has no concept yet, mine the reference pile for how Apple/Microsoft, the explorer file managers (GNOME Nautilus, Xfce Thunar, KDE Dolphin), and the orthodox two-pane pair (Total Commander, Double Commander) render it, and for similar sentences to model phrasing on; reuse and cite, never guess. The brief's header gives the pile's path: it is gitignored and lives ONLY in the MAIN clone (~/projects-git/vdavid/cmdr/_ignored/i18n/[TAG]/), NOT in your worktree, so a worktree-relative _ignored/i18n/ will look empty and that "absent" reading is the worktree trap, not a missing pile. Match the source to Cmdr's UI: for two-pane concepts the OS/explorer managers lack (pane, file list, command line), the orthodox pair is the closest lineage match. Mind the four mining gotchas in the guide's "Researching terms" section (wrong-family terms, a source naming a different concept, brand names that yield no generic term, shared-root signal). Recipes: docs/i18n/reference-pile/how-to-mine.md. Write back what you settle, per docs/i18n/termbase.md § Writing back: a ruling to docs/i18n/[TAG]/terms.json (chosen, sources, confidence, plus accept/forms/avoid as needed), a new concept to docs/i18n/concepts.json, a boundary (a key whose translation rightly doesn't use the ruling) to that term's "exceptions" with the reason, rationale worth more than a line to docs/i18n/[TAG]/decisions.md under a heading that cites the keys in backticks, and anything only a native reviewer can settle to docs/i18n/[TAG]/review-queue.md. Then run the i18n checks listed in docs/guides/i18n-translation.md § Add a new language, step 5.
 
 DON'T TRANSLATE: Keep brand and system tokens verbatim: Cmdr, macOS, GitHub, SMB, MTP, and the {system_settings}-style
 tokens. The full curated list is BRAND_WORDS + SYSTEM_TOKENS in apps/desktop/scripts/i18n-catalog-lib.ts, and the
@@ -449,7 +489,7 @@ DELIBERATELY-IDENTICAL: When a value is CORRECTLY identical to English in your l
 placeholder-only string, or a word your language genuinely shares with English), DON'T force a different value — instead
 record a @key.sameAsSourceJustification in YOUR locale catalog: a short, sourced, non-empty reason it's deliberately
 identical. This silences the desktop-i18n-coverage "possibly untranslated" warning for that key while keeping it honest.
-The bar is the same as a translation: only justify what you can defend from the reference pile / glossary. If a key
+The bar is the same as a translation: only justify what you can defend from the reference pile / termbase. If a key
 actually needs translating, translate it. It's per-locale (German keeps "Server"; Spanish writes "Servidor"), repeated
 per locale even for universal brands, and silences only the IDENTICAL signal (never a MISSING key). Full rules:
 docs/guides/i18n-translation.md § Deliberately-identical strings.
