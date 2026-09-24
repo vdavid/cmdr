@@ -1066,9 +1066,11 @@ unresolvable owner (dead mount, statfs timeout) lands in place, since the pane's
 **The `onListingError` branch asks about the load's OWN volume, and never walks onto the path that just failed.** Its
 `pathExistsChecked(loadPath, volumeId)` and the walk-up's `resolveValidPath(…, { volumeId })` pass the id captured when
 the load started: without one, `path_exists` defaults to `root` and asks the boot disk about an `adb://` or `sftp://`
-path, which always says "gone", and the walk lands on the server root instead of the nearest parent. And when
-`resolveValidPath` comes back with the failed path itself (a volume root, or a scheme path's floor) or with `null`, the
-branch shows the error pane rather than calling `navigateToFallback`, which would re-list the same failure. ❌ Don't
+path, which always says "gone", and the walk lands on the server root instead of the nearest parent. The walk also takes
+the volume's `connectionState` (`getConnectionState`), so a live session's rungs wait out a busy NAS's slow `stat`
+instead of skipping a parent that's still there (`../navigation/DETAILS.md` § "Non-blocking navigation pattern"). And
+when `resolveValidPath` comes back with the failed path itself (a volume root, or a scheme path's floor) or with `null`,
+the branch shows the error pane rather than calling `navigateToFallback`, which would re-list the same failure. ❌ Don't
 drop that guard: a phone's pane once re-listed `adb://<serial>` about 15 times a second through exactly that loop. A
 saved server nobody connected, or a phone nobody dialed, answers "couldn't tell", so the branch shows the error without
 walking at all.

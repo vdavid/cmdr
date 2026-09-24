@@ -95,10 +95,7 @@ export interface ListingLoaderDeps {
   // Reactive reads (props + deriveds).
   getVolumeId: () => string
   getVolumePath: () => string
-  /**
-   * The pane volume's session state. The deleted-path walk-up waits longer on a
-   * live session, where a busy server holds one `stat` for seconds (`probeTimeoutMs`).
-   */
+  /** The pane volume's session state: the deleted-path walk-up waits longer on a live one (`probeTimeoutMs`). */
   getConnectionState: () => ConnectionState | null | undefined
   getCurrentPath: () => string
   setCurrentPath: (path: string) => void

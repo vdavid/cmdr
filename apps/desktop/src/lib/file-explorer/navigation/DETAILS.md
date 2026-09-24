@@ -135,9 +135,9 @@ own 2s timeout, no frontend wrapper needed).
 
 `resolveValidPath(targetPath, options?)`: walks parent tree until an existing directory is found. Accepts optional
 `{ pathExistsFn, timeoutMs, volumeRoot, volumeId, connectionState }`: defaults to Tauri `pathExists` with 1s timeout per
-step, 11 s on the volume's own rungs when `connectionState` is `direct`. Used both
-at runtime (with timeouts) and at startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout,
-injected `pathExistsFn`). Fallback chain: parent dirs → `~` → `/` → `null` (volume unmounted).
+step, 11 s on the volume's own rungs when `connectionState` is `direct`. Used both at runtime (with timeouts) and at
+startup via `app-status-store.ts`'s `resolvePersistedPath` wrapper (no timeout, injected `pathExistsFn`). Fallback
+chain: parent dirs → `~` → `/` → `null` (volume unmounted).
 
 **Which volume the walk asks.** Every parent probe goes to `volumeId`; `~` and `/` always go to the boot disk. Without
 an id the backend asks `root`, which says "gone" for every path on a phone or server, and the walk lands on the server
@@ -188,14 +188,14 @@ All `pathExists` calls are guarded by two timeout layers:
   (`deadline::io_budget`). Prevents kernel syscalls on hung network mounts from blocking the Tauri async runtime.
 - **Frontend-side**: `withTimeout` races each `pathExists` IPC call (500ms for `determineNavigationPath`, 1s for
   `resolveValidPath`). The faster timeout wins.
-- **A live session (`direct`) gets 11 s on both sides** (`connection-state.ts::probeTimeoutMs`, just above the
-  backend's 10 s so its typed "couldn't tell" wins the race). A busy QNAP holds 0.5–3% of single `stat`s for 0.3–6 s
-  while its session stays healthy; under the short bounds a volume switch landed on the share root instead of the
-  remembered folder, and a walk-up skipped a live parent. The session's transport tells slow from dead on its own, so a
-  dead one answers at once. ❌ Don't widen it to `os_mount`, MTP, or a disk: nothing there can tell, and a wedged kernel
-  mount answers nothing for minutes. Who passes `connectionState`: `pane/navigate.ts`'s correction and
-  `listing-loader.ts`'s deleted-path walk-up. ❌ Not the cancel walk-up in `edge-flow-handlers.ts`: the user just
-  declined to wait on this volume.
+- **A live session (`direct`) gets 11 s on both sides** (`connection-state.ts::probeTimeoutMs`, just above the backend's
+  10 s so its typed "couldn't tell" wins the race). A busy QNAP holds 0.5–3% of single `stat`s for 0.3–6 s while its
+  session stays healthy; under the short bounds a volume switch landed on the share root instead of the remembered
+  folder, and a walk-up skipped a live parent. The session's transport tells slow from dead on its own, so a dead one
+  answers at once. ❌ Don't widen it to `os_mount`, MTP, or a disk: nothing there can tell, and a wedged kernel mount
+  answers nothing for minutes. Who passes `connectionState`: `pane/navigate.ts`'s correction and `listing-loader.ts`'s
+  deleted-path walk-up. ❌ Not the cancel walk-up in `edge-flow-handlers.ts`: the user just declined to wait on this
+  volume.
 
 `navigate()`'s volume-switch arm (in `pane/navigate.ts`) uses **optimistic navigation**: `commitVolumeSwitch` commits
 the new volumeId + path + history synchronously (showing the loading spinner), then `scheduleVolumePathCorrection`

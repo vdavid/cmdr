@@ -490,7 +490,11 @@ describe('resolveValidPath', () => {
 function answerLate(ms: number, answers: (probe: { path: string; volumeId?: string }) => boolean) {
   mockPathExists.mockImplementation(
     (path: string, volumeId?: string): Promise<boolean> =>
-      new Promise((resolve) => setTimeout(() => { resolve(answers({ path, volumeId })); }, ms)),
+      new Promise((resolve) =>
+        setTimeout(() => {
+          resolve(answers({ path, volumeId }))
+        }, ms),
+      ),
   )
 }
 
