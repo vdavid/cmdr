@@ -59,7 +59,7 @@
   "@onboarding.stepFda.granted.body": {
     "sourceHash": "32acf9d"
   },
-  "onboarding.stepFda.granted.hint": "Cmdr prend en compte la nouvelle autorisation au prochain démarrage. Votre place dans la configuration est enregistrée, vous reviendrez donc directement ici.",
+  "onboarding.stepFda.granted.hint": "Cmdr prend en compte la nouvelle autorisation au prochain démarrage. Votre place dans la prise en main est enregistrée, vous reviendrez donc directement ici.",
   "@onboarding.stepFda.granted.hint": {
     "sourceHash": "e0e33a3"
   },
@@ -295,7 +295,7 @@
   "@onboarding.stepAi.local.tooltip": {
     "sourceHash": "c3fa36a"
   },
-  "onboarding.stepAi.local.note": "Le téléchargement du modèle local a démarré en arrière-plan. Vous pouvez terminer la configuration maintenant ; la notification dans le coin vous tiendra informé.",
+  "onboarding.stepAi.local.note": "Le téléchargement du modèle local a démarré en arrière-plan. Vous pouvez terminer la prise en main maintenant ; la notification dans le coin vous tiendra au courant.",
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
@@ -459,7 +459,7 @@
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Avoir ceci <em>activé</em> vous permet de vous connecter à des serveurs SMB comme les partages réseau d''entreprise, un NAS domestique, et autres.\nLe seul coût est une fenêtre d''autorisation macOS qui apparaît et vous demande d''autoriser le « Réseau local », et une autre pour « accepter les connexions entrantes ».\nLes deux fenêtres sont inoffensives, mais si vous ne savez pas ce que c''est, elles peuvent faire peur ou être agaçantes.",
+  "onboarding.stepOptional.networking.desc": "Avoir ceci <em>activé</em> vous permet de vous connecter à des serveurs SMB comme les partages réseau d''entreprise, un NAS domestique et autres.\nLe seul coût est une fenêtre d''autorisation macOS qui apparaît et vous demande d''autoriser le « Réseau local », et une autre pour « accepter les connexions entrantes ».\nLes deux fenêtres sont inoffensives, mais si vous ne savez pas ce que c''est, elles peuvent faire peur ou être agaçantes.",
   "@onboarding.stepOptional.networking.desc": {
     "sourceHash": "089707f"
   },
@@ -507,11 +507,11 @@
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Si vous activez ceci, Cmdr peut <strong>se connecter aux téléphones Android, Kindles, appareils photo</strong>, à certains lecteurs de musique, et à tout autre appareil prenant en charge les protocoles appelés MTP ou PTP.\nLe coût, c''est que macOS veut <em>lui aussi</em> se connecter à ces appareils (et il échoue généralement, c''est pourquoi vous ne pouvez pas simplement utiliser Finder pour copier des photos depuis des téléphones Android), donc Cmdr doit suspendre ce processus macOS pendant son exécution.\nQuand vous quittez Cmdr, ce processus est poliment restauré.",
+  "onboarding.stepOptional.mtp.desc": "Si vous activez ceci, Cmdr peut <strong>se connecter aux téléphones Android, Kindles, appareils photo</strong>, à certains lecteurs de musique et à tout autre appareil prenant en charge les protocoles appelés MTP ou PTP.\nLe coût, c''est que macOS veut <em>lui aussi</em> se connecter à ces appareils (et il n''y arrive généralement pas, c''est pourquoi vous ne pouvez pas simplement utiliser le Finder pour copier des photos depuis des téléphones Android), donc Cmdr doit suspendre ce processus macOS pendant son exécution.\nQuand vous quittez Cmdr, ce processus est poliment rétabli.",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },
-  "onboarding.cloudPicker.listAria": "Fournisseurs d''IA cloud",
+  "onboarding.cloudPicker.listAria": "Fournisseurs d''IA dans le cloud",
   "@onboarding.cloudPicker.listAria": {
     "sourceHash": "9494a49"
   },
@@ -523,7 +523,7 @@
   "@onboarding.cloudSetup.step.signup": {
     "sourceHash": "d89f1e1"
   },
-  "onboarding.cloudSetup.step.createKey": "Créez une clé API <keyLink>ici</keyLink>",
+  "onboarding.cloudSetup.step.createKey": "Créez une clé d''API <keyLink>ici</keyLink>",
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
@@ -555,7 +555,7 @@
   "@onboarding.cloudSetup.step.endpointPlaceholder": {
     "sourceHash": "dbc7343"
   },
-  "onboarding.cloudSetup.step.pasteKey": "Collez votre clé API",
+  "onboarding.cloudSetup.step.pasteKey": "Collez votre clé d''API",
   "@onboarding.cloudSetup.step.pasteKey": {
     "sourceHash": "e35b296"
   },
@@ -591,7 +591,7 @@
   "@onboarding.cloudSetup.status.connectionError": {
     "sourceHash": "67cb2e5"
   },
-  "onboarding.cloudSetup.status.genericError": "Quelque chose s''est mal passé",
+  "onboarding.cloudSetup.status.genericError": "Un problème est survenu",
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },

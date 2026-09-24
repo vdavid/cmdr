@@ -369,7 +369,7 @@
   "@licensing.error.serverHint": {
     "sourceHash": "386b914"
   },
-  "licensing.error.generic": "Quelque chose s''est mal passé lors de l''activation de cette clé.",
+  "licensing.error.generic": "Un problème est survenu lors de l''activation de cette clé.",
   "@licensing.error.generic": {
     "sourceHash": "436e264"
   },

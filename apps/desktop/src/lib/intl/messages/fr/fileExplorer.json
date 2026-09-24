@@ -361,15 +361,15 @@
   "@fileExplorer.network.browser.status.notChecked": {
     "sourceHash": "d16948e"
   },
-  "fileExplorer.network.browser.status.loggedIn": "Connecté",
+  "fileExplorer.network.browser.status.loggedIn": "Identifié",
   "@fileExplorer.network.browser.status.loggedIn": {
     "sourceHash": "55a8cd8"
   },
-  "fileExplorer.network.browser.status.loginFailed": "Connexion refusée",
+  "fileExplorer.network.browser.status.loginFailed": "Identification refusée",
   "@fileExplorer.network.browser.status.loginFailed": {
     "sourceHash": "5a96e84"
   },
-  "fileExplorer.network.browser.status.loginNeeded": "Connexion requise",
+  "fileExplorer.network.browser.status.loginNeeded": "Identification requise",
   "@fileExplorer.network.browser.status.loginNeeded": {
     "sourceHash": "de0b59e"
   },
@@ -385,7 +385,7 @@
   "@fileExplorer.network.browser.status.error": {
     "sourceHash": "54a0e8c"
   },
-  "fileExplorer.network.browser.status.loggedInOk": "Connecté",
+  "fileExplorer.network.browser.status.loggedInOk": "Identifié",
   "@fileExplorer.network.browser.status.loggedInOk": {
     "sourceHash": "55a8cd8"
   },
@@ -417,7 +417,7 @@
   "@fileExplorer.network.browser.tooltip.credsRejected": {
     "sourceHash": "a3d55a2"
   },
-  "fileExplorer.network.browser.tooltip.requiresLogin": "Cet hôte demande une connexion. Double-cliquez pour saisir vos identifiants.",
+  "fileExplorer.network.browser.tooltip.requiresLogin": "Cet hôte demande une identification. Double-cliquez pour saisir vos identifiants.",
   "@fileExplorer.network.browser.tooltip.requiresLogin": {
     "sourceHash": "8e64ac0"
   },
@@ -517,7 +517,7 @@
   "@fileExplorer.network.reconnect.times": {
     "sourceHash": "bf5fc9c"
   },
-  "fileExplorer.network.reconnect.finalAttempt": "Réessayé {retried}, c''est la dernière tentative. La connexion sera abandonnée si elle échoue.",
+  "fileExplorer.network.reconnect.finalAttempt": "Réessayé {retried}, c''est la dernière tentative. La connexion sera abandonnée si elle n''aboutit pas.",
   "@fileExplorer.network.reconnect.finalAttempt": {
     "sourceHash": "7418a78"
   },
@@ -577,7 +577,7 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.unreachable.title": "Impossible d''atteindre {path}",
+  "fileExplorer.unreachable.title": "Impossible d''accéder à {path}",
   "@fileExplorer.unreachable.title": {
     "sourceHash": "586e44c"
   },
@@ -1294,11 +1294,11 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "sourceHash": "51f3d7d"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Raccourci pour {name}. Appuyez sur A–Z ou sur Suppr pour l’effacer.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Raccourci pour {name}. Appuyez sur A–Z ou sur Suppr pour l''effacer.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
     "sourceHash": "31515c1"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Impossible d’enregistrer ce raccourci. Réessayer ?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Impossible d''enregistrer ce raccourci. Réessayer ?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
     "sourceHash": "dc8e408"
   },
@@ -1314,7 +1314,7 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
-  "fileExplorer.navigation.locationUnreachableToast": "Le volume de cet emplacement était inaccessible. Il est peut-être déconnecté.",
+  "fileExplorer.navigation.locationUnreachableToast": "Impossible d''accéder au disque de cet emplacement. Il est peut-être déconnecté.",
   "@fileExplorer.navigation.locationUnreachableToast": {
     "sourceHash": "20126a6"
   },
@@ -1592,11 +1592,11 @@
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
-  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr est en train de parcourir {name}. La nouvelle analyse démarrera dès que ce sera terminé.",
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr effectue une recherche sur {name}. La nouvelle analyse démarrera dès la fin de cette recherche.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {
     "sourceHash": "4e0f748"
   },
-  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr est en train de parcourir {name}. L''indexation démarrera dès que ce sera terminé.",
+  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr effectue une recherche sur {name}. L''indexation démarrera dès la fin de cette recherche.",
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
     "sourceHash": "b27d24c"
   },

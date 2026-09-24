@@ -484,7 +484,7 @@
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
   },
-  "commands.fileCopyCurrentDirectoryPath.label": "Copier le chemin du répertoire actuel",
+  "commands.fileCopyCurrentDirectoryPath.label": "Copier le chemin du dossier actuel",
   "@commands.fileCopyCurrentDirectoryPath.label": {
     "sourceHash": "ae360d1"
   },

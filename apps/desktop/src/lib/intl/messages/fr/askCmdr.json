@@ -256,7 +256,7 @@
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
-  "askCmdr.event.chatMemoryChanged": "La mémoire du chat contient maintenant {tokens, number} jetons",
+  "askCmdr.event.chatMemoryChanged": "La mémoire de conversation contient maintenant {tokens, number} jetons",
   "@askCmdr.event.chatMemoryChanged": {
     "sourceHash": "7dea8f2"
   },
@@ -650,7 +650,7 @@
   "@askCmdr.renameUndo.skipReason.failed.counted": {
     "sourceHash": "f13c021"
   },
-  "askCmdr.renameUndo.refusedBatches": "Cmdr n''a pas pu annuler {countText} {count, plural, one {lot} many {lots} other {lots}}. Le journal des opérations donne les détails.",
+  "askCmdr.renameUndo.refusedBatches": "Cmdr n''a pas pu annuler {countText} {count, plural, one {lot} many {lots} other {lots}}. L''historique des opérations donne les détails.",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"
   },
@@ -734,7 +734,7 @@
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} effectués, {skippedText} ignorés, {failedText} en échec",
+  "askCmdr.decision.result": "{doneText} effectués, {skippedText} ignorés, {failedText} non terminés",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },
@@ -746,7 +746,7 @@
   "@askCmdr.decision.verbCopy": {
     "sourceHash": "20a184a"
   },
-  "askCmdr.decision.verbTrash": "mettre à la corbeille",
+  "askCmdr.decision.verbTrash": "placer dans la corbeille",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "ea05c85"
   },

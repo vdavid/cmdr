@@ -19,7 +19,7 @@
   "@settings.theme.mode.label": {
     "sourceHash": "0f79f19"
   },
-  "settings.theme.mode.description": "Choisissez entre un thème clair, sombre, ou suivant le système.",
+  "settings.theme.mode.description": "Choisissez entre un thème clair, sombre ou suivant le système.",
   "@settings.theme.mode.description": {
     "sourceHash": "42b18b9"
   },
@@ -55,7 +55,7 @@
   "@settings.appearance.sizeColors.label": {
     "sourceHash": "7598e9a"
   },
-  "settings.appearance.sizeColors.description": "Colore les tailles de fichiers dans la liste par palier. Arc-en-ciel utilise vert/jaune/orange/rouge/violet. App utilise des nuances de la couleur de l''app.",
+  "settings.appearance.sizeColors.description": "Colore les tailles de fichiers dans la liste des fichiers par palier. Arc-en-ciel utilise vert/jaune/orange/rouge/violet. App utilise des nuances de la couleur de l''app.",
   "@settings.appearance.sizeColors.description": {
     "sourceHash": "ecb064a"
   },
@@ -76,7 +76,7 @@
   "@settings.appearance.dateColors.label": {
     "sourceHash": "25e5672"
   },
-  "settings.appearance.dateColors.description": "Colore les dates de modification dans la liste par ancienneté. App estompe les dates anciennes vers la couleur de texte par défaut. Flétrissement va du vert pour les fichiers récents, au jaune pour ceux qui vieillissent, puis au brun pour les anciens.",
+  "settings.appearance.dateColors.description": "Colore les dates de modification dans la liste des fichiers par ancienneté. App estompe les dates anciennes vers la couleur de texte par défaut. Flétrissement va du vert pour les fichiers récents, au jaune pour ceux qui vieillissent, puis au brun pour les anciens.",
   "@settings.appearance.dateColors.description": {
     "sourceHash": "382ce25"
   },
@@ -154,7 +154,7 @@
   "@settings.appearance.tintSmb.label": {
     "sourceHash": "d801804"
   },
-  "settings.appearance.tintSmb.description": "Teinte de fond appliquée aux panneaux affichant un partage SMB, un serveur SFTP, ou un serveur WebDAV.",
+  "settings.appearance.tintSmb.description": "Teinte de fond appliquée aux panneaux affichant un partage SMB, un serveur SFTP ou un serveur WebDAV.",
   "@settings.appearance.tintSmb.description": {
     "sourceHash": "2e071d3"
   },
@@ -162,7 +162,7 @@
   "@settings.appearance.tintMtp.label": {
     "sourceHash": "2054351"
   },
-  "settings.appearance.tintMtp.description": "Teinte de fond appliquée aux panneaux affichant un appareil Android, Kindle, ou un appareil photo.",
+  "settings.appearance.tintMtp.description": "Teinte de fond appliquée aux panneaux affichant un appareil Android, Kindle ou un appareil photo.",
   "@settings.appearance.tintMtp.description": {
     "sourceHash": "a09d99a"
   },
@@ -250,7 +250,7 @@
   "@settings.appearance.fileSizeFormat.label": {
     "sourceHash": "355c89b"
   },
-  "settings.appearance.fileSizeFormat.description": "Comment afficher les tailles de fichiers dans la liste : binaire (KiB, MiB, où 1 KiB = 1024 octets) ou décimal SI (KB, MB, où 1 KB = 1000 octets).",
+  "settings.appearance.fileSizeFormat.description": "Comment afficher les tailles de fichiers dans la liste des fichiers : binaire (KiB, MiB, où 1 KiB = 1024 octets) ou décimal SI (KB, MB, où 1 KB = 1000 octets).",
   "@settings.appearance.fileSizeFormat.description": {
     "sourceHash": "8219704"
   },
@@ -370,7 +370,7 @@
   "@settings.fileOperations.pasteClipboardAsFile.label": {
     "sourceHash": "bf8c48d"
   },
-  "settings.fileOperations.pasteClipboardAsFile.description": "Ce que fait ⌘V dans un dossier quand le presse-papiers contient du texte, une image, ou un PDF au lieu de fichiers copiés.",
+  "settings.fileOperations.pasteClipboardAsFile.description": "Ce que fait ⌘V dans un dossier quand le presse-papiers contient du texte, une image ou un PDF au lieu de fichiers copiés.",
   "@settings.fileOperations.pasteClipboardAsFile.description": {
     "sourceHash": "7513ae5"
   },
@@ -415,7 +415,7 @@
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
   },
-  "settings.archives.bundle.description": "Ce que fait la touche Entrée sur un .app, un .bundle, ou un .framework.",
+  "settings.archives.bundle.description": "Ce que fait la touche Entrée sur un .app, un .bundle ou un .framework.",
   "@settings.archives.bundle.description": {
     "sourceHash": "9d30dcc"
   },
@@ -463,7 +463,7 @@
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "Trouvez des photos en décrivant ce qu''elles contiennent, comme ''coucher de soleil sur la plage'', grâce à un modèle d''IA sur l''appareil.",
+  "settings.mediaIndex.clip.description": "Trouvez des photos en décrivant ce qu''elles contiennent, comme ''coucher de soleil sur la plage'', grâce à un modèle d''IA qui fonctionne en local.",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
@@ -739,7 +739,7 @@
   "@settings.mediaIndex.reclaim.alreadyCleared": {
     "sourceHash": "742a715"
   },
-  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr n''a pas pu supprimer les entrées supplémentaires. Réessaie.",
+  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr n''a pas pu supprimer les entrées supplémentaires. Réessayez.",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
     "sourceHash": "3295df4"
   },
@@ -938,7 +938,7 @@
   "@settings.ai.cloudProviderConfigs.label": {
     "sourceHash": "7b73e56"
   },
-  "settings.ai.cloudProviderConfigs.description": "Clés API et réglages de modèle par fournisseur.",
+  "settings.ai.cloudProviderConfigs.description": "Clés d''API et réglages de modèle par fournisseur.",
   "@settings.ai.cloudProviderConfigs.description": {
     "sourceHash": "21132a2"
   },
@@ -1084,7 +1084,7 @@
   "@settings.fileExplorer.git.showRepoChip.label": {
     "sourceHash": "7504b23"
   },
-  "settings.fileExplorer.git.showRepoChip.description": "Affiche la branche actuelle, l''avance/le retard, et l''état modifié au-dessus de la liste des fichiers quand vous êtes dans un dépôt git.",
+  "settings.fileExplorer.git.showRepoChip.description": "Affiche la branche actuelle, l''avance/le retard et l''état modifié au-dessus de la liste des fichiers quand vous êtes dans un dépôt git.",
   "@settings.fileExplorer.git.showRepoChip.description": {
     "sourceHash": "7b8a9ba"
   },
@@ -1100,7 +1100,7 @@
   "@settings.fileExplorer.git.showVirtualGitPortal.label": {
     "sourceHash": "40d9fa1"
   },
-  "settings.fileExplorer.git.showVirtualGitPortal.description": "À l''entrée dans `.git`, affiche les branches, tags, commits, et worktrees comme des dossiers virtuels navigables. Désactivez pour voir plutôt le contenu brut de `.git`.",
+  "settings.fileExplorer.git.showVirtualGitPortal.description": "À l''entrée dans `.git`, affiche les branches, tags, commits et worktrees comme des dossiers virtuels navigables. Désactivez pour voir plutôt le contenu brut de `.git`.",
   "@settings.fileExplorer.git.showVirtualGitPortal.description": {
     "sourceHash": "70eae72"
   },
@@ -1253,7 +1253,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 ouvre la visionneuse de fichiers de Cmdr, qui affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive, ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que ⇧Espace (Coup d''œil) ou Entrée (ouvrir dans l''app associée) est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus jamais afficher cet avertissement » dans la bannière) pour masquer l''avertissement définitivement.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 ouvre la visionneuse de fichiers de Cmdr, qui affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que ⇧Espace (Coup d''œil) ou Entrée (ouvrir dans l''app associée) est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus jamais afficher cet avertissement » dans la bannière) pour masquer l''avertissement définitivement.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "b3711da"
   },
@@ -1341,7 +1341,7 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "Quand des applications comme TextEdit et Preview enregistrent un fichier, macOS écrit la nouvelle version à côté sous un nom temporaire (terminant par « .sb- ») puis l''échange. Désactivez ceci pour les garder hors de la liste des fichiers.",
+  "settings.advanced.showSafeSaveFiles.description": "Quand des apps comme TextEdit et Aperçu enregistrent un fichier, macOS écrit la nouvelle version à côté sous un nom temporaire (terminant par « .sb- ») puis l''échange. Désactivez ceci pour les garder hors de la liste des fichiers.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
@@ -1397,7 +1397,7 @@
   "@settings.onboarding.upgradeNudgeShown.label": {
     "sourceHash": "d34a727"
   },
-  "settings.onboarding.upgradeNudgeShown.description": "Interne : indique si la notification unique « l''élément de menu Accueil existe désormais » a été déclenchée pour un utilisateur existant après la refonte de l''assistant. Masqué dans l''interface.",
+  "settings.onboarding.upgradeNudgeShown.description": "Interne : indique si la notification unique « l''élément de menu Prise en main existe désormais » a été déclenchée pour un utilisateur existant après la refonte de l''assistant. Masqué dans l''interface.",
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
@@ -1671,11 +1671,11 @@
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "sourceHash": "2b9d5b4"
   },
-  "settings.behavior.revealActivationNoticeSeen.label": "Avis du premier affichage montré",
+  "settings.behavior.revealActivationNoticeSeen.label": "Avis du premier « Afficher dans le Finder » affiché",
   "@settings.behavior.revealActivationNoticeSeen.label": {
     "sourceHash": "a62b8f1"
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Indique si l''avis sur le premier « Afficher dans le Finder » ouvert dans Cmdr a été montré.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Indique si l''avis sur le premier « Afficher dans le Finder » ouvert dans Cmdr a été affiché.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "sourceHash": "f2107a5"
   },
@@ -1766,7 +1766,7 @@
   "@settings.askCmdr.interactiveModel.placeholder": {
     "sourceHash": "2631f3d"
   },
-  "settings.askCmdr.chatMemorySize.label": "Taille de la mémoire du chat",
+  "settings.askCmdr.chatMemorySize.label": "Taille de la mémoire de conversation",
   "@settings.askCmdr.chatMemorySize.label": {
     "sourceHash": "fad1ff1"
   },
@@ -1861,7 +1861,7 @@
   "settings.section.adb": "Android (ADB)",
   "@settings.section.adb": {
     "sourceHash": "bc9c1a1",
-    "sameAsSourceJustification": "Deliberately identical: both words are product/abbreviation names the fr glossary already settles as verbatim (\"Android SDK, Homebrew, ADB, adb -> verbatim\", docs/i18n/fr/glossary.md), and the shipped siblings keep them unchanged (`settings.section.mtp` -> \"MTP (Android/Kindle/appareils photo)\", `settings.fileOperations.adbEnabled.label` -> \"Accès aux fichiers Android via ADB\"). Apple offers no counterpart: a grep for \"Android\" over every `.loctable` under /System/Library/{Frameworks,PrivateFrameworks,CoreServices} and /System/Applications returns nothing on macOS 26.6.2 build 25G83 (2026-09-07), so there is nothing to localize toward."
+    "sameAsSourceJustification": "Deliberately identical: both words are product/abbreviation names the fr style guide already keeps verbatim (\"Android SDK, Homebrew, ADB, adb\", docs/i18n/fr/style.md § Brand and do-not-translate), and the shipped siblings keep them unchanged (`settings.section.mtp` -> \"MTP (Android/Kindle/appareils photo)\", `settings.fileOperations.adbEnabled.label` -> \"Accès aux fichiers Android via ADB\"). Apple offers no counterpart: a grep for \"Android\" over every `.loctable` under /System/Library/{Frameworks,PrivateFrameworks,CoreServices} and /System/Applications returns nothing on macOS 26.6.2 build 25G83 (2026-09-07), so there is nothing to localize toward."
   },
   "settings.section.mtp": "MTP (Android/Kindle/appareils photo)",
   "@settings.section.mtp": {
@@ -1912,7 +1912,7 @@
   "@settings.operationLog.maxSize.label": {
     "sourceHash": "5a9f1ff"
   },
-  "settings.operationLog.maxSize.description": "L''espace disque maximal que le journal des opérations peut utiliser. Une fois plein, Cmdr supprime d''abord les opérations les plus anciennes.",
+  "settings.operationLog.maxSize.description": "L''espace disque maximal que l''historique des opérations peut utiliser. Une fois plein, Cmdr supprime d''abord les opérations les plus anciennes.",
   "@settings.operationLog.maxSize.description": {
     "sourceHash": "ad5152a"
   },
@@ -1978,15 +1978,15 @@
   "@settings.summary.fileAndFolderSizes": {
     "sourceHash": "cdd8214"
   },
-  "settings.summary.listing": "Icônes de documents, tri des dossiers, et largeur de colonne en mode Bref.",
+  "settings.summary.listing": "Icônes de documents, tri des dossiers et largeur de colonne en mode Bref.",
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.navigationAndFileOps": "Navigation par double-clic vers le dossier parent, et comportement lors du renommage des fichiers.",
+  "settings.summary.navigationAndFileOps": "Navigation par double-clic vers le dossier parent et comportement lors du renommage des fichiers.",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
   },
-  "settings.summary.archives": "Ce que fait la touche Entrée sur les archives et les paquets d''application : parcourir le contenu, ouvrir, ou demander.",
+  "settings.summary.archives": "Ce que fait la touche Entrée sur les archives et les paquets d''application : parcourir le contenu, ouvrir ou demander.",
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
@@ -1998,7 +1998,7 @@
   "@settings.summary.search": {
     "sourceHash": "0e1d70f"
   },
-  "settings.summary.smbNetworkShares": "Activer le réseau, connexions SMB directes, cache des partages, et délais d''attente.",
+  "settings.summary.smbNetworkShares": "Activer le réseau, connexions SMB directes, cache des partages et délais d''attente.",
   "@settings.summary.smbNetworkShares": {
     "sourceHash": "10604ac"
   },
@@ -2010,11 +2010,11 @@
   "@settings.summary.adb": {
     "sourceHash": "fb69a13"
   },
-  "settings.summary.mtp": "Détecter les appareils Android, Kindle, et appareils photo via USB.",
+  "settings.summary.mtp": "Détecter les appareils Android, Kindle et les appareils photo via USB.",
   "@settings.summary.mtp": {
     "sourceHash": "f01960a"
   },
-  "settings.summary.git": "Pastille de dépôt, colonne d''état par fichier, et portail `.git` virtuel.",
+  "settings.summary.git": "Pastille de dépôt, colonne d''état par fichier et portail `.git` virtuel.",
   "@settings.summary.git": {
     "sourceHash": "fa23394"
   },
@@ -2167,7 +2167,7 @@
   "@settings.ai.tooltipOff": {
     "sourceHash": "2b31468"
   },
-  "settings.ai.tooltipCloud": "Apportez votre propre clé API pour une IA rapide et de haute qualité. Fonctionne avec OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, ou tout serveur local que vous exécutez (Ollama, LM Studio, etc.). Nécessite une connexion internet (sauf avec un serveur local). Aucun espace disque ni mémoire utilisés par Cmdr.",
+  "settings.ai.tooltipCloud": "Apportez votre propre clé d''API pour une IA rapide et de haute qualité. Fonctionne avec OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter ou tout serveur local que vous exécutez (Ollama, LM Studio, etc.). Nécessite une connexion internet (sauf avec un serveur local). Aucun espace disque ni mémoire utilisés par Cmdr.",
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
@@ -2296,7 +2296,7 @@
   "@settings.network.localNetworkAccessLabel": {
     "sourceHash": "61ce300"
   },
-  "settings.network.permissionIntroPrefix": "Cmdr a besoin de {localNetwork} pour trouver les serveurs SMB, lister les partages disponibles, et se connecter directement pour des transferts de fichiers plus rapides. La première fois que vous ouvrez Réseau ou utilisez ",
+  "settings.network.permissionIntroPrefix": "Cmdr a besoin de {localNetwork} pour trouver les serveurs SMB, lister les partages disponibles et se connecter directement pour des transferts de fichiers plus rapides. La première fois que vous ouvrez Réseau ou utilisez ",
   "@settings.network.permissionIntroPrefix": {
     "sourceHash": "4f7f54f"
   },

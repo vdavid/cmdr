@@ -118,7 +118,7 @@
   "@shortcuts.system.screenRecording": {
     "sourceHash": "fac7b60"
   },
-  "shortcuts.system.loggingOut": "la déconnexion",
+  "shortcuts.system.loggingOut": "la fermeture de session",
   "@shortcuts.system.loggingOut": {
     "sourceHash": "de70b14"
   },

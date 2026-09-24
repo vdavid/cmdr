@@ -3,7 +3,7 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr a mis en pause le daemon caméra de macOS (ptpcamerad) pour accéder à cet appareil. Pour l''utiliser dans une autre app, désactivez la prise en charge MTP dans les réglages.",
+  "mtp.connectedToast.bodyMac": "Cmdr a mis en pause le daemon d''appareil photo de macOS (ptpcamerad) pour accéder à cet appareil. Pour l''utiliser dans une autre app, désactivez la prise en charge MTP dans les réglages.",
   "@mtp.connectedToast.bodyMac": {
     "sourceHash": "3ace37b"
   },

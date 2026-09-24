@@ -1,0 +1,199 @@
+{
+  "ask-question": {
+    "en": "ask about",
+    "match": ["ask about", "you ask about", "when you ask"],
+    "sense": "Putting a question to the AI about files, a folder, or the selection.",
+    "distinct": ["ask", "ask-cmdr"]
+  },
+  "authentication": {
+    "en": "authentication",
+    "match": ["authentication", "authenticate", "authenticated"],
+    "sense": "A server or volume checking the user's identity (authentication required, rejected).",
+    "distinct": ["sign-in"]
+  },
+  "batch-rename": {
+    "en": "batch rename",
+    "match": ["batch rename", "bulk rename", "mass rename", "mass-rename"],
+    "sense": "Renaming many files at once from a pattern.",
+    "distinct": ["rename"]
+  },
+  "buffer": {
+    "en": "buffer",
+    "match": ["buffer", "buffers", "overflow", "overflowed"],
+    "sense": "A memory buffer or event channel that can fill up and overflow (the file-system watcher's).",
+    "distinct": ["watcher"]
+  },
+  "busy": {
+    "en": "busy",
+    "match": ["busy", "idle"],
+    "sense": "A volume, device, or server that is doing work, so an action on it has to wait (the greyed menu marker).",
+    "distinct": ["in-use"],
+    "notMatch": ["you're not busy", "not busy"]
+  },
+  "camera": {
+    "en": "camera",
+    "match": ["camera", "cameras"],
+    "notMatch": ["camera details"],
+    "sense": "A digital camera reached over MTP/PTP, or the camera that took a photo.",
+    "distinct": ["camera-details", "device"]
+  },
+  "command-line": {
+    "en": "command line",
+    "match": ["command line", "command-line"],
+    "sense": "A terminal's command line.",
+    "distinct": ["command", "terminal"]
+  },
+  "cursor": {
+    "en": "cursor",
+    "match": ["cursor", "under cursor", "under the cursor"],
+    "sense": "The file-list cursor: the highlighted row that keyboard actions apply to."
+  },
+  "date-wilting": {
+    "en": "Wilting",
+    "match": ["wilting"],
+    "sense": "The date-color scheme that fades file dates like a wilting plant (green, yellow, brown)."
+  },
+  "debugging": {
+    "en": "debugging",
+    "match": ["debugging", "debug"],
+    "notMatch": ["usb debugging"],
+    "sense": "Diagnosing problems (debug logging, files kept for debugging).",
+    "distinct": ["usb-debugging", "log"]
+  },
+  "deployment": {
+    "en": "deployment",
+    "match": ["deployment", "deployments"],
+    "sense": "The name an Azure AI resource gives a deployed model.",
+    "distinct": ["model"]
+  },
+  "entry": {
+    "en": "entry",
+    "match": ["entry", "entries"],
+    "sense": "A record in the drive or image index, or in a recent-searches history.",
+    "distinct": ["item"]
+  },
+  "field-placeholder": {
+    "en": "placeholder",
+    "match": ["placeholder"],
+    "sense": "The example text shown in an empty input field, or the part of an example address to replace."
+  },
+  "forget": {
+    "en": "forget",
+    "match": ["forget", "forgets", "forgotten", "forgot"],
+    "sense": "Dropping a saved server, password, or AI note so Cmdr no longer remembers it.",
+    "distinct": ["remove", "delete"]
+  },
+  "from-to": {
+    "en": "From / To",
+    "match": ["=from", "=to", "=from:"],
+    "sense": "The paired source and destination headings of the copy/move dialog, and the scan phase's source label.",
+    "distinct": ["source", "destination"]
+  },
+  "github-issue": {
+    "en": "issue (GitHub)",
+    "match": ["github issue", "github issues", "open an issue", "file an issue"],
+    "sense": "A GitHub issue someone opens to report a problem or request."
+  },
+  "home-folder": {
+    "en": "home folder",
+    "match": ["home folder", "home directory"],
+    "sense": "The user's home folder, and the Go menu's Home item.",
+    "distinct": ["folder"]
+  },
+  "keyword": {
+    "en": "keyword",
+    "match": ["keyword", "keywords"],
+    "sense": "A search term in keyword (not semantic) image search.",
+    "distinct": ["image-search", "tag"]
+  },
+  "not-found": {
+    "en": "not found",
+    "match": ["not found", "couldn't be found", "can't be found", "cannot be found"],
+    "sense": "A path, file, command, or share that doesn't exist where Cmdr looked.",
+    "distinct": ["unreachable"]
+  },
+  "on-device": {
+    "en": "on-device",
+    "match": ["on-device", "on device"],
+    "sense": "Running on the Mac itself, as the free local AI model does (a cost readout).",
+    "distinct": ["device", "model"]
+  },
+  "pattern": {
+    "en": "pattern",
+    "match": ["pattern", "patterns"],
+    "notMatch": ["rename pattern"],
+    "sense": "A match pattern (glob or regex) that selects files in search or selection.",
+    "distinct": ["glob", "regex", "wildcard"]
+  },
+  "rate-limit": {
+    "en": "rate limit",
+    "match": ["rate limit", "rate-limit", "rate limited", "rate-limited", "rate limiting", "too many requests"],
+    "sense": "An AI provider throttling requests that arrive too fast.",
+    "distinct": ["quota", "limit"]
+  },
+  "regex": {
+    "en": "regex",
+    "match": ["regex", "regular expression", "regular expressions"],
+    "sense": "A regular-expression search or selection mode.",
+    "distinct": ["pattern", "glob"]
+  },
+  "removable": {
+    "en": "removable",
+    "match": ["removable"],
+    "sense": "A drive that can be ejected and unplugged (USB stick, SD card).",
+    "distinct": ["eject"]
+  },
+  "reset": {
+    "en": "reset",
+    "match": ["reset", "resets", "resetting"],
+    "sense": "Returning a setting, control, or zoom level to its default value.",
+    "distinct": ["default", "clear"]
+  },
+  "runtime": {
+    "en": "runtime",
+    "match": ["runtime"],
+    "sense": "The software environment the local AI model runs in, which Cmdr downloads and extracts."
+  },
+  "sidebar": {
+    "en": "sidebar",
+    "match": ["sidebar"],
+    "sense": "Finder's sidebar, and the sidebar of Cmdr's Settings window.",
+    "distinct": ["side-panel"]
+  },
+  "source-available": {
+    "en": "source-available",
+    "match": ["source-available", "source available"],
+    "sense": "Cmdr's license model: the code is public to read but isn't open source.",
+    "distinct": ["license"]
+  },
+  "status": {
+    "en": "status",
+    "match": ["status", "statuses"],
+    "sense": "The state of a server, file, index, or operation, shown as a column, pill, or colored dot.",
+    "distinct": ["progress"]
+  },
+  "striped-rows": {
+    "en": "striped rows",
+    "match": ["striped rows", "striped", "stripes"],
+    "sense": "Alternate row shading in the file list.",
+    "distinct": ["row"]
+  },
+  "subscription": {
+    "en": "subscription",
+    "match": ["subscription", "subscriptions"],
+    "sense": "A time-limited commercial license paid by the year.",
+    "distinct": ["license"]
+  },
+  "tint": {
+    "en": "tint",
+    "match": ["tint", "tints", "tinted"],
+    "sense": "A faint background color applied to a pane by volume type.",
+    "distinct": ["background"]
+  },
+  "wildcard": {
+    "en": "wildcard",
+    "match": ["wildcard", "wildcards"],
+    "sense": "The * and ? characters in a filename pattern.",
+    "distinct": ["pattern", "glob"]
+  }
+}

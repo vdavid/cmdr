@@ -39,7 +39,7 @@
   "@viewer.error.tooLargeToPreview": {
     "sourceHash": "8696039"
   },
-  "viewer.error.archiveUnreadable": "Impossible d''ouvrir ce fichier depuis l''archive. Il est peut-être chiffré, endommagé, ou utilise un format que Cmdr ne sait pas lire.",
+  "viewer.error.archiveUnreadable": "Impossible d''ouvrir ce fichier depuis l''archive. Il est peut-être chiffré, endommagé ou utilise un format que Cmdr ne sait pas lire.",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "01490a6"
   },
@@ -262,7 +262,7 @@
   "@viewer.statusBar.badge.wrap": {
     "sourceHash": "f0a2899"
   },
-  "viewer.statusBar.badge.wrapTooltip": "Les lignes reviennent au bord de la fenêtre",
+  "viewer.statusBar.badge.wrapTooltip": "Retour à la ligne au bord de la fenêtre",
   "@viewer.statusBar.badge.wrapTooltip": {
     "sourceHash": "af2ca76"
   },

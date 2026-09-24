@@ -1,988 +1,369 @@
-# fr glossary
+# fr decisions
 
-The living term glossary for translating Cmdr into this language: one entry per recurring term, in the
-`chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
+The rationale journal behind `terms.json`: why a term won, which catalog keys a ruling shaped, and the incidents that
+encode a constraint. Not read by default; `pnpm i18n:brief` pulls the sections whose heading cites a batch's keys, so
+keep citing keys in backticks in every heading. The term rulings themselves live in `terms.json` (one entry per concept
+from `../concepts.json`, plus `concepts-proposed.json`); open questions for a native reviewer live in `review-queue.md`.
+Style and voice: `style.md`.
 
-- **Source every term from the reference pile, never guess.** Mine `_ignored/i18n/fr/` for how Apple, Microsoft, and
-  GNOME/Xfce render the term and for similar sentences (recipes: `docs/i18n/reference-pile/how-to-mine.md`). Cite the
-  source(s) and a confidence (`confirmed` / `high` / `tentative`).
-- **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
+ICU values double every apostrophe (`d''incident`); the RAW families (`errors.*`, `menu.*`, `licensing.windowTitle.*`,
+`main.instanceLock.*`) use a single one. Quoted values below usually write the single apostrophe for readability; some
+older sections quote the ICU value with its doubled one.
 
-Format, the confidence scale, and the full process: `docs/guides/i18n-translation.md`.
+## Sections des réglages et noms de présentation (`settings.section.*`, `settings.navigationAndFileOps.card.*`, `settings.summary.navigationAndFileOps`)
 
-## Terms
-
-Settled during the `fileExplorer` pass (2026-06-21):
-
-- host → hôte · macOS Finder ("Serveurs favoris", "Adresse du serveur"), MS terminology FRA ("ordinateur hôte") · high
-- hostname → nom d''hôte · MS terminology FRA; macOS uses "Adresse du serveur" for the address field · high
-- mount (verb) / mounting → monter / montage · macOS AppKit ("Le volume « %@ » n''a pas pu être monté.") · high
-- share (network, noun) → partage · macOS ("Partage et permissions"), Nautilus ("dossier partagé"), Dolphin ("dossier
-  partagé") · high
-- guest → invité · macOS AppKit ("NSUserGuest" → "invité", "Se connecter comme…") · high
-- sign in → s''identifier · macOS ("Saisissez le nom d''utilisateur"); calmer than "se connecter" which is reserved for
-  the network connect action · high
-- connect (to server) → se connecter · macOS Finder ("Connexion au serveur", "Se connecter comme…") · high
-- credentials → identifiants · standard FR UI term; macOS frames sign-in as "nom d''utilisateur"/"mot de passe"; MS
-  "infos de connexion" is the consumer-account sense, "identifiants" fits SMB sign-in better · high
-- username → nom d''utilisateur · macOS Finder ("Saisissez le nom d''utilisateur ou de groupe") · high
-- password → mot de passe · macOS, pervasive · high
-- read-only → en lecture seule · macOS Finder ("Cet emplacement est en lecture seule.") · high
-- refresh (rescan) → actualiser · macOS AppKit ("NSRefreshTemplate" → "actualiser") · high
-- pinned / pin → épinglé / épingler · macOS ("onglet épinglé", "Épingler l''onglet") · high
-- symbolic link (symlink) → lien symbolique · Nautilus ("liens symboliques") · high
-- broken symlink → lien symbolique rompu · "rompu" for a broken/dangling link (Nautilus/Dolphin family) · high
-- permission denied → autorisation refusée · macOS Finder ("vous ne disposez pas de l''autorisation…") · high
-- timeout → délai dépassé · macOS pattern ("délai… dépassé"); calmer than "expiré". Covers the timed-out STATUS sense
-  everywhere it surfaces, including a request that times out (`ai.translateError.timeout.body` → "Le délai de la requête
-  a été dépassé.", NOT "a expiré"). Distinct from the WAIT-DURATION setting sense "délai d''attente" (see the settings
-  pass) and from licence/subscription expiry, which legitimately uses "a expiré". · high
-- unreachable → inaccessible · standard FR; macOS uses "inaccessible" for unreachable resources · high
-- empty folder → dossier vide · Nautilus/Dolphin family · high
-- browse (servers/network) → parcourir · macOS Finder ("Parcourir les serveurs disponibles") · high
-- home folder → dossier personnel · macOS Finder convention · high
-- on disk → sur le disque · pairs with "Contenu" for the content-vs-physical size split · high
-- jump (type-to-jump) → aller à · neutral navigation phrasing · tentative
-- error (non-alarmist status) → problème · style guide steers away from "erreur"; "problème" is the calm fallback for
-  the generic ⚠️ Error status · tentative
-
-UI section names referenced (keep consistent in other files):
-
-- Settings → Réglages · macOS modern naming (per style guide) · high
-- Keyboard shortcuts (Settings section) → Raccourcis clavier · macOS convention · high
-- Quick Look → Coup d''œil · macOS French · high — Apple FEATURE name that Apple localizes per-OS, so use the term the
-  user sees in their French Finder, NOT the English "Quick Look". The lowercase generic action "quick view" → "aperçu
-  rapide".
-- Keychain (credential store) → trousseau; Keychain Access (app) → Trousseaux d''accès · macOS French · high — Apple
-  FEATURE name that Apple localizes per-OS (same principle as Quick Look), so use the term the user sees in their French
-  macOS, NOT the English "Keychain". "Keychain" is NOT on the don''t-translate brand list; any earlier "keep Keychain
-  verbatim" note is superseded by this. The store sense ("saved in/access to the Keychain") → "le trousseau"; the app
-  name ("open Keychain Access") → "Trousseaux d''accès". `ai.secretError.*` already uses "Trousseau macOS" / "Trousseaux
-  d''accès"; `fileExplorer` store-sense strings use "le trousseau".
-
-Settled during the `settings` pass (2026-06-21):
-
-- settings → réglages · macOS "Réglages Système" (SystemSettings `CFBundleName`) · high
-- tint → teinte (verb teinter) · descriptive FR; matches macOS color usage · high
-- timeout (a configurable WAIT-DURATION setting, e.g. "Network timeout mode") → délai d''attente · macOS / MS FRA list
-  "délai d''attente". NOTE the sense split: the fileExplorer pass uses "délai dépassé" for the _timed-out status_; this
-  "délai d''attente" is the _duration you wait_. Keep both senses distinct. · high
-- threshold → seuil · MS terminology FRA (`>threshold<`→"seuil") · high
-- buffer → tampon (mémoire tampon) · MS terminology FRA · high
-- word wrap → retour automatique à la ligne · MS terminology FRA (id 134158, geo FRA/BEL/CAN/CHE) · high
-- viewer (built-in file viewer) → visionneuse · MS terminology FRA ("Visionneuse"); avoid "lecteur" (drive/player sense)
-  · high
-- logging → journalisation; log file → fichier journal · MS terminology FRA · high
-- reset → réinitialiser · MS terminology FRA · high
-- provider (AI) → fournisseur · MS terminology FRA · high
-- toast / transient notification → notification · no separate FR UI term; rendered plainly, kept calm · high
-- chip / badge (status pill) → pastille · descriptive FR · tentative (no exact reference-pile hit)
-- Full Disk Access → Accès complet au disque · Apple's own pane name, confirmed against the live macOS bundle
-  (`/System/Library/ExtensionKit/Extensions/SecurityPrivacyExtension.appex/Contents/Resources/Localizable.loctable`, key
-  `ALL_FILES`, macOS 27.0 build 26A428, verified 2026-09-16); the bundled reference pile lacks the privacy-pane TCC
-  strings, which is why this used to read `tentative` · high
-- Local Network (permission) → Réseau local · standard Apple French TCC name; same caveat; injected via `{localNetwork}`
-  at runtime anyway · tentative
-- System Settings → Réglages Système (capital S) · the macOS app''s own `CFBundleName` is "Réglages Système", and the
-  reference pile maps both "System Settings" and "System Preferences" to it (capital S); lowercase "réglages système"
-  only appears mid-sentence as a common noun ("la sous-fenêtre des réglages système"). When NAMING the app or a Réglages
-  Système > … breadcrumb, use capital S. Settled catalog-wide on this form. · high
-- Appearance (macOS pane) → Apparence · macOS SystemSettings · high
-- startup disk → disque de démarrage · macOS Finder ("Startup Disk…"→"Disque de démarrage…") · high
-- striped rows → lignes alternées · descriptive FR · high
-- wilting (date-color metaphor) → Flétrissement · descriptive FR for the plant metaphor · tentative (Cmdr coinage)
-
-Settings section names (keep consistent across catalog files):
+Keep these consistent in every file that names them:
 
 - Appearance → Apparence; Colors and formats → Couleurs et formats; Zoom and density → Zoom et densité; File and folder
   sizes → Tailles de fichiers et de dossiers; Listing → Liste; Behavior → Comportement; File operations → Opérations sur
   les fichiers; File system watching → Surveillance du système de fichiers; Search → Recherche; AI → IA; File systems →
   Systèmes de fichiers; SMB/Network shares → Partages SMB/réseau; MTP → MTP; Git → Git; Viewer → Visionneuse; Developer
   → Développeur; MCP server → Serveur MCP; Logging → Journalisation; Updates & privacy → Mises à jour et
-  confidentialité; Advanced → Avancé; Keyboard shortcuts → Raccourcis clavier; License → Licence
-- View modes: Full → Complet; Brief → Bref (mode Bref). Columns: Name → Nom; Ext → Ext (kept short)
-
-Settled during the `errors` pass (2026-06-21, friendly-error catalog: listing, git, provider, write errors). RAW strings
-here, so single apostrophes in the actual values; doubled below only to match this doc's convention:
-
-- retry / try again → réessayer · macOS Finder ("Réessayer" / "réessayez", 18+ hits) · high
-- authentication required → authentification requise · macOS (verbatim) · high
-- not found / path not found → introuvable / chemin introuvable · macOS ("introuvable", 37+ hits) · high
-- disk is full → le disque est plein · macOS ("disque est plein") · high
-- locked (file) / unlock → verrouillé / déverrouiller · macOS ("L''élément est verrouillé") · high
-- Get Info (Finder menu) → Lire les informations · macOS Finder · high
-- Activity Monitor → Moniteur d''activité · macOS app name · high
-- Disk Utility → Utilitaire de disque · macOS app name · high
-- First Aid → S.O.S · macOS Disk Utility''s "First Aid" renders "S.O.S" in French · high
-- handle (open file handle) → handle · kept as-is, no concise FR equivalent in the pile (deletePending strings) ·
-  tentative
-- error-title pattern "Couldn''t/Can''t X" → noun-phrase "… impossible" · macOS ("Impossible d''ouvrir/de graver…");
-  used as "Lecture du dossier impossible", "Accès à cet emplacement impossible" to stay calm and avoid "erreur/échec" ·
-  high
-
-Phrasing notes for this catalog:
-
-- "Here''s what to try:" → "Voici ce que vous pouvez essayer :" (regular ASCII space before the colon, per the
-  catalog-wide settled spacing rule — see style.md § Punctuation spacing), leading every bullet-list suggestion.
-- `errors.write.*` carries `{verb}` / `{Verb}` / `{gerund}` placeholders that the current code fills with ENGLISH words
-  ("copy" / "Copy" / "copying" / "move to trash") — the verb map in `transfer-error-messages.ts` is not localized yet.
-  French wraps them as "l''action {verb}" / "{Verb} a échoué" so the sentence stays grammatical, but the placeholder
-  content renders in English at runtime. Flagged for review; matches how the `de` sibling handled it.
-- The OS-pane placeholders (`{system_settings}`, `{privacy_and_security}`, `{files_and_folders}`, `{full_disk_access}`)
-  are substituted with OS-localized names at runtime — left as tokens, not translated. The git `permissionDenied` and
-  `gitDirPermissionDenied` suggestions carry them too, since 2026-08-30 (see the dated section on pane names near the
-  end of this file).
-
-Settled during the `licensing` + `ai` + `viewer` pass (2026-06-21):
-
-- clipboard → presse-papiers · macOS Finder ("Afficher le presse-papiers", "presse-papiers") · high
-- copy / paste / select all → copier / coller / tout sélectionner · macOS Finder MenuBar ("Copier", "Coller", "Tout
-  sélectionner") · high
-- encoding (character) → encodage · MS terminology FRA ("Encodage", "codage de caractères"); macOS uses "encodage" ·
-  high
-- reload (file changed on disk) → recharger · standard FR; distinct from "actualiser" (rescan a listing) · high
-- match (search result) → correspondance · MS terminology FRA ("correspondance…") · high
-- regex (short UI label) → Regex · kept short per the @key note; long form is "expression régulière" (MS FRA) · high
-- detected (auto-detected encoding) → détecté · macOS/MS pattern ("détection automatique", "détecté") · high
-- viewer (built-in file viewer) → visionneuse · MS terminology FRA; matches the settings-pass choice · high
-- tail / follow (auto-follow a growing file) → suivre / suivi · descriptive FR ("Mode suivi : suivre les changements");
-  matches de "Folgen" · tentative
-- word wrap (viewer badge/hint) → retour ligne (badge, kept short) / retour à la ligne · MS FRA "retour automatique à la
-  ligne", trimmed for the tight badge/hint slots · high
-- streaming (large-file viewer mode) → streaming · kept verbatim, no concise FR equivalent in the pile; matches de ·
-  tentative
-- license → licence; license key → clé de licence · standard FR (licence is feminine, drives "Commerciale perpétuelle")
-  · high
-- Personal / Commercial (license tiers) → Personnelle / Commerciale · agree with feminine "licence" ("licence
-  personnelle", "licence commerciale perpétuelle") · high
-- subscription → abonnement · standard FR · high
-- perpetual (license) → perpétuelle · standard FR, agrees with "licence" · high
-- provider (AI service) → fournisseur · matches the settings-pass choice; MS terminology FRA · high
-- endpoint (API) → point de terminaison · MS terminology FRA · high
-- API key → clé d''API · standard FR · high
-- rate-limiting → limiter le débit (des requêtes) · MS terminology FRA · high
-- quota → quota · identical in FR · high
-- runtime (AI runtime to extract) → environnement d''exécution · MS terminology FRA · high
-- AI → IA · matches the settings-pass section name · high
-- Apple Silicon → Apple Silicon · brand/hardware name, kept verbatim · high
-
-Phrasing notes for this pass:
-
-- "Active" (license validity / status) stays "Active" in FR — identical spelling (feminine of "actif"), legitimately
-  unchanged; flagged by the coverage check as identical-to-English but correct.
-- The kind words "image" / "document" (binary-view warning) and "Image" / "PDF" / "Unicode" (view-mode labels) are
-  identical or near-identical in FR; left unchanged on purpose.
-- `viewer.saveAs.defaultName` → "selection" kept as a file-name-safe literal (the @key says lowercase, no spaces, safe
-  as a file name), so not translated.
-- License-tier labels: "Commercial perpetual" → "Commerciale perpétuelle", "Commercial subscription" → "Abonnement
-  commercial", "Personal (free)" → "Personnelle (gratuite)". The standalone "Commercial perpetual" type value drops the
-  noun, so the adjective agrees with the implied feminine "licence".
-
-Settled during the `queryUi` + `commands` pass (2026-06-21):
-
-- search (verb) → rechercher; (noun) recherche · macOS Finder ("Rechercher", "Rechercher dans le Finder") · high
-- pattern (match pattern) → motif · macOS pattern; "motif" is the FR UI term for a match pattern (avoid "modèle") · high
-- regular expression → expression régulière · MS terminology FRA (id 147617); "regex" kept verbatim as the short
-  chip/label form · high
-- wildcard → caractère générique · standard FR UI term; `*` / `?` glyphs stay literal · high
-- scan / scanning (index build) → analyse / analyse en cours · standard FR; pairs with "index" (indexation) · high
-- scope (search-in folders) → portée · standard FR UI term for a search/effect scope · tentative
-- view (the View MENU + view mode) → présentation · macOS Finder ("Présentation", "Par liste") — so "Switch to
-  Brief/Full view" → "présentation Bref/Complet", and the "View > Zoom" menu path renders "Présentation > Zoom" · high
-- zoom in / zoom out → zoom avant / zoom arrière · MS terminology FRA ("zoom avant" id 2131086, "zoom arrière"
-  id 135725) · high
-- sort ascending / descending → ordre croissant / décroissant · GNOME Nautilus (po: "croissant"/"décroissant"), Double
-  Commander · high
-- paste → coller; cut → couper; clipboard → presse-papiers · macOS (pervasive: "Coller", "Couper", "Presse-papiers") ·
-  high
-- new tab → nouvel onglet; next/previous tab → onglet suivant/précédent; close tab → fermer l''onglet · macOS Finder
-  ("Nouvel onglet", "Afficher l''onglet suivant/précédent", "Fermer l''onglet") · high
-- quit (app) → quitter; hide → masquer; show all → tout afficher; select all → tout sélectionner; deselect all → tout
-  désélectionner · macOS app menu (verbatim) · high
-- Get info (Finder) → Lire les informations; Show in Finder → Afficher dans le Finder; Quick Look (action) → Coup d''œil
-  · macOS Finder (verbatim) · high
-- about → à propos (de) · macOS ("À propos du Finder") · high
-- command palette → palette de commandes · descriptive FR; "palette de commandes" reads naturally and matches the VS
-  Code FR convention · high
-- onboarding → prise en main · MS/Apple FR convention for guided first-run setup (avoid the anglicism "onboarding") ·
-  high
-- feedback → retour · RESOLVED catalog-wide to "retour" (style-guide friendly register: "Envoyer un retour"), NOT
-  "commentaire". The whole `feedback.*` dialog, the "Aide > Envoyer un retour…" menu path, and the
-  `commands.feedbackSend.label` command all use "retour"; the earlier "commentaire(s)" rendering of the command label
-  was drift and is fixed. MS FRA "Commentaires" exists but loses the warmth. · high
-- what''s new → nouveautés · standard FR app-menu term (macOS/MS) · high
-- parent folder → dossier parent · macOS Finder ("Accéder au dossier parent") · high
-- page up / page down → page précédente / page suivante · descriptive FR (the keys map to scrolling a page) · tentative
-- offline (make available offline) → hors connexion · standard FR (iCloud Drive FR: "disponible hors connexion") · high
-- cursor (file-list cursor) → curseur · standard FR · high
-
-Phrasing notes for this catalog:
-
-- Zoom percentages: "Zoom à 100 %" and "Zoom augmenté à {size} %." use a regular ASCII space before "%" (catalog-wide
-  settled spacing, see style.md § Punctuation spacing). The literal "%" in the source string is kept; only the FR space
-  is added before it.
-- "{Verb}/{verb}" placeholders don''t occur in these two files; no English-verb-leak issue here (that''s
-  `errors.write.*`).
-
-Settled during the `fileOperations` + `onboarding` pass (2026-06-21). ICU values, so single apostrophes doubled below to
-match this doc's convention:
-
-- skip → ignorer · macOS Finder/AppKit ("Ignorer" pervasive), Nautilus ("\_Ignorer") · high
-- skip all → tout ignorer · composed from "ignorer"; matches the "Tout éjecter" all-variant pattern · high
-- overwrite → écraser · style guide (macOS "Écraser à la destination") · high
-- overwrite all → tout écraser · composed; same all-variant pattern · high
-- replace → remplacer · macOS Finder ("Souhaitez-vous le remplacer…"), Nautilus ("\_Remplacer") · high
-- merge (folders) → fusionner · Nautilus ("\_Merge"→"\_Fusionner", "Fusionner le dossier") · high
-- conflict → conflit · Nautilus ("créerait un conflit avec un fichier existant") · high
-- rollback (undo a transfer) → revenir en arrière (verb) / retour en arrière (noun) · not `restaurer` (that's Restore,
-  and rollback doesn't bring an overwritten file back) and not `annuler` (that's Cancel, and `Annulé` is already
-  `operationLog.status.canceled`) · tentative · full arbitration over the 14 keys: § « La famille `rollback` » at the
-  end of this file
-- destination → destination · macOS Finder ("${destinationFolder}" framing); same word · high
-- target (of a link / a clash) → cible · standard FR; macOS uses "cible" for link targets · high
-- free of (space) → libre sur · macOS Finder ("Disponible :"); "{free} libre sur {total}" reads natural · high
-- remaining (ETA) → restant · macOS Finder ("Estimation du temps restant…") · high
-- endpoint (API) → point de terminaison · MS terminology FRA standard · high
-- model (AI) → modèle · standard FR · high
-- provider (AI/cloud) → fournisseur · matches the `settings` pass · high
-- batch rename → renommage par lot; mass-rename → renommage en masse · descriptive FR · tentative
-- command palette → palette de commandes · descriptive FR; common app convention · high
-- issue (GitHub) → ticket · common FR rendering of a GitHub issue · tentative
-- feedback → retour · style guide friendly register; "Envoyer un retour" for "Send feedback" · high
-- under cursor → sous le curseur · descriptive FR · high
-- dir (abbrev. of directory in scan stats) → rép. (abbrev. of répertoire) · keeps the source''s short form. The
-  standalone status-bar marker `fileExplorer.selectionInfo.dir` (en "DIR", rendered in capitals) uses the capitalized
-  form "RÉP." to honor both this abbrev and the source''s all-caps marker style; it formerly read "DOSS" (a "dossier"
-  coinage), which was drift from this "rép." choice and is fixed. · high
-- scanning (transfer stage) → analyse · descriptive FR for the count-files phase · high
-- source-available → consultable publiquement · descriptive FR (no settled term); conveys "code can be viewed" without
-  implying open-source · tentative
-
-Onboarding-specific phrasing:
-
-- full disk access → accès complet au disque · Apple's own pane name; the bundled reference pile lacks the TCC pane
-  string, so this was confirmed against the live macOS bundle instead (see the `Full Disk Access` entry above) · high
-- "Quit & Reopen" (macOS relaunch button) → "Quitter et rouvrir" · macOS shows this button itself; standard French label
-  · tentative — verify exact macOS wording
-- onboarding (the flow, as a noun) → `prise en main`, partout · `high`. Le point de menu, la commande, la portée des
-  raccourcis, le titre de l'assistant (`onboarding.wizard.title` = « Prise en main de Cmdr »), sa barre de progression
-  (`onboarding.wizard.progressLabel` = « Progression de la prise en main ») et le réglage interne
-  `settings.onboarding.upgradeNudgeShown.label` disent tous le même mot. ❌ Ni « configuration », ni « accueil », ni un
-  titre indépendant comme « Bienvenue dans Cmdr » : le point de menu et la fenêtre qu'il ouvre doivent se reconnaître.
-- The `stuck`-banner breadcrumb keeps "Privacy &amp; Security &gt; Full Disk Access" as English literals (like the git
-  pane breadcrumb), since the `{systemSettings}` token is the only OS-localized part; matches the source.
-
-Settled during the `search` + `feedback` + `crashReporter` + `goToPath` + `transfer` + `updates` + `lowDiskSpace` +
-`commandPalette` + `whatsNew` + `common` + `notifications` + `main` pass (2026-06-21). ICU values, so single apostrophes
-doubled below to match this doc's convention:
-
-- show all → tout afficher · macOS AppKit ("Show All" → "Tout afficher") · high
-- restart (app) → redémarrer · macOS Menus ("Restart" → "Redémarrer") · high
-- later (dismiss-for-now button) → plus tard · standard FR (iOS/iCloud "Plus tard"); no clean Finder hit · high
-- go to path / path → aller au chemin / chemin · macOS uses "chemin" for a filesystem path · high
-- checking (update check in progress) → vérification · standard FR · high
-- changelog → journal des modifications · standard FR (VS Code/GitHub FR convention) · high
-- new version available → nouvelle version disponible · macOS pattern ("disponible") · high
-- send feedback → envoyer un retour · matches the `fileOperations` pass ("retour"); the dialog title and the submit
-  button both render "Envoyer un retour"/"Envoyer le retour" · high
-- crash report → rapport d''incident; "send crash report" → "envoyer le rapport d''incident" · style guide (Apple
-  "rapport d''incident", non-alarmist) · high
-- error report (the report-sending flow) → rapport d''incident · same flow as crash reports; kept consistent · high
-- "Error:" prefix → none left in the catalog: the update toast and Settings word a check that didn't land as whole
-  sentences (`updates.failure.check`, « Cmdr n'a pas pu rechercher les mises à jour. {reason} »), so neither « Problème
-  : » nor « Erreur : » survives there. The calm "problème" fallback from the `errors` pass still holds wherever a status
-  needs one · high
-- running low on space → l''espace libre devient faible / espace disque faible · descriptive FR, calm; pairs with
-  "disque de démarrage" · high
-- free (space, adj.) → libre(s) · macOS Finder ("Disponible"/"libre") · high
-- onboarding (menu item "Onboarding…") → "Prise en main…" · RESOLVED. The command/menu label is
-  `commands.cmdrOpenOnboarding.label` = "Prise en main…" and `shortcuts.scope.onboarding` = "Prise en main", so the
-  `main.upgradeNudge.*` menu path "Cmdr > Prise en main…" was aligned to match (it formerly read "Configuration…", a
-  forward-reference guess that diverged from the actual menu label). The generic phrase "onboarding options" still
-  renders descriptively as "options de configuration"; only the literal menu-item label is "Prise en main…". · high
-- Downloads folder → dossier Téléchargements · macOS Finder ("Téléchargements") · high
-
-Phrasing notes for this pass:
-
-- `transfer.*` plurals written with FR CLDR `one`/`many`/`other`; past participles agree masculine ("fichier
-  copié"/"fichiers copiés", "dossier déplacé"/"dossiers déplacés") since "fichier"/"dossier" are masculine. The
-  `movedPhrase` fragment is built so each `kind` branch stands alone grammatically.
-- `feedback.dialog.counter` ("{currentText} / {maxText}") is pure-placeholder, legitimately identical to English.
-- Regular ASCII space before `:` and `%` and `?` per the catalog-wide settled spacing rule ("Identifiant du rapport :",
-  "({percentText} %)", "Envoyer le rapport d''incident ?"). See style.md § Punctuation spacing.
-- `whatsNew.dialog.title` keeps the source's curly apostrophe context (none in FR rendering) — "Nouveautés de Cmdr".
-- Settings-section cross-refs kept consistent: "Réglages > Mises à jour" and "Réglages > Mises à jour et
-  confidentialité" per the settings-pass section names.
-
-Settled during the `indexing` + `downloads` + `errorReporter` + `shortcuts` + `mtp` + `ui` pass (2026-06-21). ICU
-values, so single apostrophes doubled below to match this doc's convention:
-
-- entry (file-or-folder scan unit) → élément · matches the `item → élément` choice; "{entriesText} éléments" in scan
-  counters · high
-- dirs (abbrev. of directories, compact status) → rép. (abbrev. of répertoires) · matches the `fileOperations` pass dir
-  abbrev · high
-- event (recorded filesystem change) → évènement · standard FR (modern spelling) · high
-- roughly (ETA qualifier) → environ · standard FR · high
-- almost done (ETA) → bientôt terminé · calm, reassuring FR · high
-- fresh scan / rescan → nouvelle analyse · pairs with "analyse" (scan); "Une nouvelle analyse est en cours…" for the
-  rescan toasts · high
-- watcher (file-change watcher) → surveillant (des modifications de fichiers) · descriptive FR; "surveillance" already
-  used for the FS-watching setting section · high
-- buffer / channel overflow → saturé (a saturé le tampon / le canal) · descriptive calm FR; avoids "débordement" alarm ·
-  high
-- index (drive index) → index; indexing → indexation; indexer (verb) → indexer · matches style-guide glossary · high
-- jump to (a download/file) → aller à · matches the `queryUi` "aller à" choice · high
-- download (noun) → téléchargement; latest/most recent download → dernier / le plus récent téléchargement · style-guide
-  glossary · high
-- global shortcut / globally → raccourci global / globalement · standard FR for a system-wide hotkey · high
-- in-app → dans l''app · concise FR; "app" kept (common FR usage, matches catalog) · high
-- modifier (key) → touche de modification · macOS FR convention; the ⌘⌃⌥⇧ glyphs stay literal · high
-- register (a global hotkey) → enregistrer; registered/not registered → enregistré / non enregistré · standard FR · high
-- combo (key combination) → combinaison · "combinaison" for a key combo in conflict warnings · high
-- error report (the report flow) → rapport d''incident · matches the `crashReporter` flow; "incident" stays non-alarmist
-  (Apple) · high
-- reference ID → identifiant de référence · standard FR · high
-- redact / scrub (logs) → expurger / effacer; redaction → expurgation · standard FR for privacy-stripping logs · high
-- manifest (report metadata) → manifeste · standard FR technical term · high
-- sample (of log lines) → échantillon · standard FR · high
-- bundle (report bundle to disk) → lot · descriptive FR; kept consistent across the saveToDisk/saveFailed strings ·
-  tentative
-- preview (report preview) → aperçu · macOS "Aperçu" convention · high
-- daemon (system daemon) → daemon · kept verbatim (no concise FR equivalent; macOS keeps it);
-  ptpcamerad/udev/Terminal/Ctrl+C also verbatim · high
-- exclusive access (to a device) → accès exclusif · standard FR · high
-- USB device → appareil USB; "Retry connection" → "Réessayer la connexion" · standard FR · high
-
-Keyboard-shortcut / macOS feature names (shortcuts.json — reuse macOS French wording; brand names verbatim):
-
-- Spotlight → Spotlight; Mission Control → Mission Control; Spaces → Spaces · macOS keeps these verbatim in French
-  (reference pile: NSTouchBar templates) · high
-- Force Quit → Forcer à quitter · macOS AppKit ("Force Quit…" → "Forcer à quitter…") · high
-- Character Viewer → Visualiseur de caractères · standard macOS FR name · high
-- Finder search window → fenêtre de recherche du Finder · descriptive FR; "Finder" verbatim · high
-- App windows → Fenêtres de l''application; the app switcher → le sélecteur d''applications · descriptive FR macOS
-  feature names · high
-- input source switching → le changement de source de saisie; screen recording → l''enregistrement de l''écran;
-  screenshots → les captures d''écran; logging out → la déconnexion; locking the screen → le verrouillage de l''écran ·
-  descriptive FR, lowercase mid-sentence per the source · high
-- scope group headings (shortcuts) → App → Application; Main window → Fenêtre principale; File list → Liste des
-  fichiers; Brief/Full mode → Mode Bref/Complet; Volume chooser → Sélecteur de volume; Share browser → Navigateur de
-  partages; Command palette → Palette de commandes; About window → Fenêtre À propos; Onboarding → Prise en main · high
-- Fixed (badge, hardcoded key) → Fixe · descriptive FR; "Modified" filter chip → "Modifiés" · high
-
-Phrasing notes for this pass:
-
-- ICU plurals use FR CLDR `one`/`many`/`other`; `many` written identical to `other` for the line-count and file-count
-  messages (plain integers never select `many`, but the parity check requires the branch). Past participles agree
-  masculine: "fichier chargé"/"fichiers chargés".
-- `errorReporter.dialog.counter` ("{currentText} / {maxText}") is pure-placeholder, legitimately identical to English
-  (same as the `feedback` counter).
-- `shortcuts.section.alreadyBound` quotes the command with French guillemets « {command} » (the source uses straight
-  quotes ''{command}''); `<b>` tag preserved.
-- Regular ASCII space (0x20) before `:` / `?` / `!` / `%`, the catalog-wide settled spacing (style.md § Punctuation
-  spacing); never U+202F.
-- Legitimately identical-to-English in fr: "Global" (downloads scopeTitle, valid FR), "OK" (mtp/ui), "macOS" (badge,
-  brand), "Options" (ui popover, identical FR), and the Spotlight/Mission Control/Spaces brand feature names.
-
-Settled during the `queue` + new `fileOperations`/`commands` pause-queue-background keys pass (2026-06-21). ICU values,
-so single apostrophes doubled below to match this doc's convention:
-
-- pause (verb) → mettre en pause; pause (noun / button label) → Pause; paused (status) → en pause / En pause · macOS
-  ("NSPauseTemplate" → "pause", "Pause" → "Pause", "Mettre en pause toutes les animations"), Double Commander ("&Pause
-  all" → "Mettre tout en pause", "Paused" → "En pause") · high — the standalone "Pause" button label is legitimately
-  identical to English (it's also valid FR; macOS keeps "Pause").
-- resume → reprendre · macOS Finder ("Resume" → "Reprendre", "Reprendre la copie"), Double Commander ("&Resume" →
-  "Reprendre") · high — calm, the Apple/file-manager term for continuing a paused transfer.
-- pause all → tout mettre en pause; resume all → tout reprendre · composed from the above; "tout mettre en pause"
-  matches Double Commander's "&Pause all" → "Mettre tout en pause" (reordered to the "Tout éjecter"/"Tout ignorer"
-  all-variant pattern used catalog-wide) · high
-- queue → file d''attente · Double Commander ("Queue" → "File d''attente", "Add To Queue" → "Ajouter à la file
-  d''attente", pervasive), MS terminology FRA ("file d''attente", 36+ hits) · high — the head noun "file d''attente"
-  still stands; the standalone Queue button on the progress dialog is still "File d''attente". **SUPERSEDED, the
-  QUALIFIER only**: "Transfer queue" → "File d''attente des transferts" is no longer the window''s name. English widened
-  the product noun to "Operation queue", so the qualifier is now "des opérations" — see the operation-queue-rename pass
-  at the end of this file.
-- background / send to background (keep a transfer running while the user works) → arrière-plan / en arrière-plan ·
-  Double Commander ("Work in background" → "Travailler en arrière-plan", "in the &background" → "en arrière-plan"),
-  Total Commander ("en arrière-plan"), MS terminology FRA ("arrière-plan", 79+ hits) · high — "Keep this running in the
-  background" → "Garder ce transfert en cours en arrière-plan".
-
-Phrasing notes for this pass:
-
-- `queue.row.status` "Couldn''t finish" (the gentle non-alarmist wording for a failed op) → "N''a pas pu se terminer",
-  staying away from "erreur"/"échec" per the style guide. "Waiting" (queued) → "En attente"; "Done" → "Terminé";
-  "Cancelled" → "Annulé"; participles masculine (agreeing with implied "transfert").
-- `queue.row.label` mirrors the `fileOperations.transferProgress.titleActive` gerund set, dropping "en cours" since
-  these are short row labels: copy → "Copie", move → "Déplacement", delete → "Suppression", trash → "Placement dans la
-  corbeille".
-- FR CLDR `one`/`many`/`other` on `selectedCount` and `queuedToastCount`; `many` written identical to `other` (plain
-  integers never select `many`, but the parity check requires the branch). `#` placeholders preserved.
-- The standalone "Pause" button (`queue.row.pause`, `fileOperations.transferProgress.pause`) is legitimately identical
-  to English (valid FR, macOS keeps it); the coverage check flags it but it's correct.
-
-Re-validated against the reference pile during the `easy-navi` navigation + double-click-to-parent pass (2026-06-26).
-The glossary-only first pass of these 14 keys held up: the pile CONFIRMS every term-based choice (and the orthodox
-two-pane family carries the exact feature). A later same-day copy reword (David, coordinator-relayed) shortened the two
-`doubleClickPaneNavigatesToParent` values; they reuse the terms below (see the reword note at the end). ICU values,
-single apostrophes doubled below to match this doc's convention:
-
-- double-click (noun) → double-clic; double-click (verb, imperative "Double-click …") → double-cliquez; (past participle
-  "you double-clicked") → double-cliqué · Double Commander ("lorsqu''on double-clique dans un espace vide d''un
-  panneau"), Total Commander ("Lors d''un double-clic sur la barre…"), KDE Dolphin ("double-clic", "Déclencheurs sur
-  double-clics"), Nautilus ("\_Double-clic pour activer les éléments") · high — hyphenated "double-clic" /
-  "double-cliquer" is unanimous across the orthodox + explorer families.
-- pane background → arrière-plan du panneau · `arrière-plan` from KDE Dolphin ("Action à déclencher lors d''un
-  double-clic sur l''arrière-plan de la vue") and the catalog-settled `background → arrière-plan`; `panneau` from the
-  glossary's settled `pane → panneau` (Double Commander / Total Commander "panneau de fichiers") · high
-- navigate to / go up to the parent folder → accéder au / remonter au dossier parent · macOS Finder Tier-1 for "accéder
-  à" (the Go-menu item "Accéder au dossier parent", help text "Accède au dossier parent dans la fenêtre du Finder au
-  premier plan"); "remonter au dossier parent" is the natural FR for the "go up" sense (Double Commander frames it
-  "changement vers le répertoire-parent", but we keep macOS-Tier-1 "dossier parent", not DC's "répertoire-parent") ·
-  high — the reworded `…label` uses "pour remonter au dossier parent" (the EN became "go up a folder"); the
-  `fileExplorer.doubleClickHint.body` also uses "remonte au dossier parent".
-- empty space (of a pane / file list) → espace vide · Double Commander ("un espace vide d''un panneau"), exact · high —
-  the `…description` keeps the source's "file list" word as "liste de fichiers", mirroring the English mix of "pane"
-  (label) vs "file list" (description).
-- hint (the one-time double-click-to-parent notification / tip) → astuce · macOS Finder Tier-1 ("Astuces pour votre
-  Mac"); Microsoft terminology FRA renders both "hint" and "tip" as "conseil", but macOS "astuce" wins (Cmdr is a macOS
-  app) · high — feminine, so the agreeing participle is "affichée" in
-  `settings.behavior.doubleClickOnPaneNotificationSeen.label` ("Astuce … affichée").
-- row / file row (a row representing a file in the file list) → ligne / ligne de fichier · Microsoft terminology FRA
-  (`row` → "ligne", feminine, FRA), matching the catalog's settled "striped rows → lignes alternées" · high — used in
-  the reworded `…description` to contrast the pane background with a file row.
-
-Conversational microcopy in the `doubleClickHint.*` notification (no direct pile source; idiomatic UI judgment, friendly
-`vous` register):
-
-- "What just happened?" → "Que s''est-il passé ?" · the punchy idiomatic surprise phrase; the English "just" is carried
-  by context, not a literal "juste" · tentative (idiomatic, no pile hit)
-- "Don''t like it?" → "Vous n''aimez pas ?" · friendly `vous`, the "it" dropped as natural FR · tentative
-- "Never do this again" → "Ne plus jamais faire ça" · casual register matching the warm hint voice; refers to the
-  navigation behavior, distinct from "ne plus afficher" (which would mean the hint) · tentative
-- "I like it" → "J''aime bien" · natural casual FR for liking a feature (not the over-strong "J''aime"/"Je l''aime") ·
-  tentative
-
-Phrasing notes for this pass:
-
-- Section/card consistency: `settings.section.navigationAndFileOps` → "Navigation et opérations" (concise rendering of
-  the casual "Navigation & file ops"; French has no clean casual abbrev for "ops", so spelled out); the card
-  `…card.fileOperations` keeps the settled "Opérations sur les fichiers"; `…card.navigation` is identical "Navigation"
-  (carries `sameAsSourceJustification`). The summary lists the Oxford comma as ", et".
-- Regular ASCII space before `?` throughout ("Que s''est-il passé ?", "Vous n''aimez pas ?"), per the catalog-wide
-  settled spacing (style.md § Punctuation spacing); never U+202F.
-- `fileExplorer.breadcrumb.navigateTooltip` → "Cliquez pour accéder à {path}" · macOS pattern ("cliquez", "accéder à");
-  `{path}` placeholder preserved · high.
-- Copy reword applied 2026-06-26 (David picked shorter wording; coordinator-relayed). The two
-  `doubleClickPaneNavigatesToParent` values were updated to the new EN, reusing the terms above:
-  - label, new EN "Double-click the pane background to go up a folder" → "Double-cliquez sur l''arrière-plan du panneau
-    pour remonter au dossier parent" (imperative `double-cliquez` + settled `arrière-plan du panneau` + the "go up" verb
-    `remonter au dossier parent`).
-  - description, new EN "That''s the empty space around the file list, not a file row." → "C''est l''espace vide autour
-    de la liste de fichiers, pas une ligne de fichier." ("That''s" → concise friendly "C''est", referring back to the
-    pane background named in the label; settled `espace vide` + `liste de fichiers`; "around" → "autour de";
-    `ligne de fichier` per the new row term).
-- preset (value in a settings-picker dropdown) → présélection; "back to presets" → "Retour aux présélections" ·
-  Microsoft terminology ("indexing preset" → "présélection d’indexation"), Double Commander fr ("Présélections"). macOS
-  print uses "Préréglages" but that bundle is not in the pile · high
-
-Settled during the `filesystem-size-guard` pass (FAT32-too-large write error + "and N more" overflow line, 2026-06-30).
-RAW `errors.*` strings use single apostrophes; the `fileOperations.*` ICU string doubles them (none occur here):
-
-- too large (a file exceeds a size/capacity limit) → trop volumineux · macOS Finder ("Cet élément est trop volumineux
-  pour ce système.", "Impossible de copier « ^0 » car cet élément est trop volumineux pour le format du volume.", "Le
-  contenu de « ^0 » est trop volumineux pour tenir sur le disque." — `LocalizableMerged.json` NE29/PE4.5/NE77), GNOME
-  Nautilus ("Fichier trop volumineux pour la destination") · high — the `.title.one` "File too large for this drive" →
-  "Fichier trop volumineux pour ce disque" tracks the Nautilus title almost verbatim (destination → "ce disque"); use
-  "trop volumineux" (NOT "trop grand", which the pile reserves for image dimensions).
-- formatted as <fs-format> → formaté en <fs-format> · standard FR construction ("formaté en FAT32", "formaté en exFAT");
-  macOS frames it as "le format du volume" (PE4.5) and the in-catalog `errors.listing.notSupportedErrno.suggestion`
-  already uses "formaté avec un système de fichiers", but when NAMING a concrete format "formaté en X" is the idiomatic
-  fit · high
-- can''t store files larger than X → ne peut pas stocker de fichiers de plus de X · reuses the exact in-catalog
-  precedent at `errors.listing.notSupportedErrno.suggestion` ("FAT32 ne peut pas stocker de fichiers de plus de 4 Go",
-  line 274) for consistency · high
-- FAT32 / exFAT (filesystem-format names) → kept verbatim · do-not-translate (format names); the EN `@key` marks both as
-  "keep as-is" · high
-- "and {countText} more {file/files}" (overflow trailing line) → "et {countText} {…fichier/fichiers} de plus" · macOS
-  Finder Tier-1 pattern "et ^0 de plus" (`LocalizableMerged.json` N141.3 "\n\tet ^0 de plus.") for the "and N more"
-  shape; the file/files plural reuses the catalog''s settled `one {fichier} many {fichiers} other {fichiers}` fragment
-  (FR CLDR `one`/`many`/`other`, `many` identical to `other` per the parity check) · high
-- preset (value in a settings-picker dropdown) → présélection; "back to presets" → "Retour aux présélections" ·
-  Microsoft terminology ("indexing preset" → "présélection d’indexation"), Double Commander fr ("Présélections"). macOS
-  print uses "Préréglages" but that bundle is not in the pile · high
-
-Settled during the `dialog-polish` copy/delete-dialog field-label pass (2026-06-30). ICU values, so single apostrophes
-doubled below to match this doc's convention:
-
-- Action (what a control chooses; screen-reader label `transferDialog.operationAria`) → "Action" · "Action" is a genuine
-  French word (identical spelling), pile-pervasive as a UI noun (macOS Finder/AppKit "Action", MS terminology FRA
-  "action"). With no colon on this key the FR value lands byte-identical to EN, so it carries a
-  `sameAsSourceJustification` in the catalog · high
-- "Scanning…" (spinner tooltip + SR label while the dialog counts selected items) → "Analyse…" · reuses the settled
-  `scanning (transfer stage) → analyse` term (`transferProgress.stageScanning` = "Analyse"); the single … char kept
-  verbatim (EN uses one … glyph, not three dots) · high
-- "This folder doesn''t exist yet. Cmdr will create it during the copy/move." (yellow inline warning under the
-  destination box when the typed target folder is missing) → "Ce dossier n''existe pas encore. Cmdr le créera lors de la
-  copie." / "… lors du déplacement." · "doesn''t exist (yet)" → "n''existe pas (encore)" (pile: Double Commander "Le
-  répertoire « %s » n''existe pas. Voulez-vous le créer ?"); "Cmdr will create it" rendered ACTIVE per the style guide
-  as "Cmdr le créera" ("le" = the masculine "dossier"; not the passive "sera créé" the pile shows in Thunar); "during
-  the copy/move" → "lors de la copie" / "lors du déplacement" (pile-attested "lors de la copie"; reuses the settled
-  `copy → copie` / `move → déplacement` nouns). Two literal sentences, operation-specific verb, no ICU select · high
-- **queue.row.label progress arms (rename / create folder / create file)** · `Renommage` / `Création du dossier` /
-  `Création du fichier` · verbal-noun style of the sibling arms (Copie, Déplacement); Nautilus ("Renommage de …",
-  "Création des …"), settled `dossier`/`fichier` · high
-
-Settled during the `archive-browsing` pass (2026-07-05, browse-into-zip/tar/7z + app bundles). ICU values double
-apostrophes; the RAW `errors.*` keys use single apostrophes:
-
-- archive (a zip/tar/7z browsed like a folder) → archive (feminine: "une archive", "l''archive") · macOS Finder
-  ("Archive ZIP", "Compresse des éléments dans une archive.", "Choisissez un mot de passe pour l’archive.", "Déplacer
-  l’archive vers…") · high — same word as EN but genuinely FR (feminine), so NOT flagged identical where it inflects;
-  the bare card title `settings.archives.card.archives` / section `settings.section.archives` ("Archives") IS
-  identical-to-English and carries `sameAsSourceJustification`. zip/tar/7z format tokens kept verbatim.
-- app bundle (.app/.bundle/.framework, a macOS package folder shown as one item) → paquet ("Paquets d''application") ·
-  macOS Finder ("Afficher le contenu du paquet" = Show Package Contents; "Archive de paquet iOS") · high — Finder calls
-  a bundle a "paquet"; "App bundles" card/row titles → "Paquets d''application" (keys 16 & 19 use the SAME word, per the
-  brief's consistency note).
-- extract (pull files out of an archive) → extraire ("Cmdr parcourt et extrait…") · GNOME Nautilus ("fichier extrait"),
-  Total Commander ("Extraire les fichiers"), MS terminology FRA ("extraire") · high — the browse verb is the settled
-  `browse → parcourir`; "browses and extracts" → "parcourt et extrait".
-- editable / can be edited (a zip whose entries can be added/removed/renamed) → modifiable ("seules les archives zip
-  sont modifiables") · standard FR; rendered with the adjective to stay active and dodge the passive "peuvent être
-  modifiées" · high
-- encrypted → chiffré(e) · macOS ("Chiffrement", "Chiffrer") · high — agrees with the subject: feminine "archive"
-  ("chiffrée") in the listing explanation, masculine "fichier" ("chiffré") in the viewer error.
-- damaged → endommagé(e) · macOS ("Impossible d’ouvrir cette application car elle est peut-être endommagée…") · high —
-  chosen over "corrompu" (macOS uses both; "endommagé" is the softer, more common Finder wording). Agrees with subject
-  gender.
-- open with default app → ouvrir avec l''application par défaut · macOS ("Ouvrir avec", "Aucune application par défaut…
-  pour ouvrir") · high — used the full "application" (Tier-1 macOS) rather than the catalog's casual "app" for these
-  default-app / another-app senses, since macOS attests "application par défaut" / "une autre application" directly.
-- Enter (the Return/Enter key, in "what pressing Enter does") → la touche Entrée · existing fr catalog precedent
-  ("Appuyez sur Entrée", "les recherches par IA attendent toujours la touche Entrée") · high — Enter renders "Entrée"
-  catalog-wide; kept, not the English "Enter".
-- Ask (segmented-control cell, "ask each time") → Demander · existing fr catalog ("Toujours demander", "Tout demander"),
-  macOS pattern · high. Browse cell → Parcourir; Open cell → Ouvrir (settled `browse`/`open`).
-- "Editing archive" (queue.row.label `archive_edit` arm) → "Modification de l''archive" · verbal-noun style of the
-  sibling arms (Copie, Déplacement, Renommage); edit → modification; settled `archive` · high
-- fresh copy (ask the sender for one) → une nouvelle copie · macOS ("Une nouvelle copie de « %@ » a été créée.") · high
-  — the sender phrased gender-neutrally as "la personne qui vous l''a envoyée" (name the person, past participle agrees
-  with the feminine "archive" via the preceding "l''").
-
-Settled during the `paste-clipboard-as-file` pass (2026-07-07, ⌘V pastes clipboard text/image/PDF as a new file + its
-setting). None of these 7 values contain an apostrophe, so no ICU doubling arose. The terms:
-
-- paste clipboard content as a file → coller le contenu du presse-papiers en tant que fichier · settled `paste → coller`
-  - `clipboard → presse-papiers`; "as X" → "en tant que X" from macOS Finder ("Copier en tant que lien" = Copy as Link,
-    `LocalizableMerged.json` N48.1_V1) · high — infinitive label form matching the sibling
-    `allowFileExtensionChanges.label` ("Autoriser…").
-- as / saved as (naming a created file) → en tant que / enregistré sous · macOS Finder "Copier en tant que lien" for the
-  bare "as"; macOS AppKit save panel "Enregistrer sous…" / "Enregistrer sous :" for the Save-As "as {name}" sense · high
-- do nothing (radio option: ⌘V does nothing on non-file clipboard) → Ne rien faire · standard FR; no direct pile hit
-  (Double Commander lists "Do nothing" untranslated, the file-manager pofiles carry no "ne rien faire") · tentative
-  (standard FR, unambiguous, no source)
-- create file / create and rename (paste-as-file radio options) → Créer un fichier / Créer et renommer · reuses
-  `fileExplorer.functionKeyBar.newFileAction` ("Créer un fichier") and settled `create → créer` + `rename → renommer` ·
-  high
-
-Phrasing note for this pass:
-
-- The paste-confirmation toast `fileExplorer.clipboard.pastedAsFile` is an ICU `select` on `{kind}` (image/pdf/other)
-  with an uncontrolled `{filename}` → "Contenu du presse-papiers collé dans {filename} ({kind, select, image {image} pdf
-  {PDF} other {texte}})". GENDER-SAFE by anchoring the past participle "collé" to the masculine head noun "Contenu"
-  (invariant across every `kind` branch), keeping the varying `kind` noun in a bare parenthetical (no agreement needed),
-  and leaving `{filename}` in a neutral slot after "dans" (safe for any generated name). `text → texte`; `image`/`PDF`
-  unchanged. Branch NAMES `image`/`pdf`/`other` kept verbatim. This dodges the trap where a participle placed after the
-  varying `kind` would have to agree (image → collée vs texte → collé).
-
-Settled during the `archive-password` pass (2026-07-08, encrypted-zip unlock modal `fileOperations.archivePassword.*`).
-ICU values, so every apostrophe is doubled in the catalog.
-
-- password-protected → `protégé par un mot de passe` (fem. `protégée` when agreeing with `archive`) · TC/DC fr phrasing
-  · high.
-- password (noun) → `mot de passe` · macOS/MS fr · high. Input aria-label "Mot de passe de l''archive".
-- unlock (button + verb) → `Déverrouiller` · macOS AppKit ("Déverrouiller") · high. Verb form "la déverrouiller".
-- archive (fem.) → `archive` · settled fr glossary · high.
-- GENDER PATTERN: the body names the archive explicitly, `L''archive <archive>{name}</archive> est protégée…`, so the
-  feminine antecedent `archive` (not the uncontrolled `{name}`) drives every agreement — `protégée`, and the pronoun
-  `la` in "la déverrouiller". Never let agreement hang off `{name}`, whose gender is unknown at runtime.
-
-Settled while translating the Compress feature:
-
-- compress (verb / control label) → `Compresser` · Finder `fr/macOS` ("Compresser", `Compress ${sources}` → "Compresser
-  ${sources}"), NOT "Comprimer" · high. Used for `commands.fileCompress.label`, `toggleCompress`, `confirmCompress`, and
-  both title-verb branches.
-- compression (progress form) → noun `Compression` in the select branch, assembled with the sibling "… en cours..." tail
-  · derived on `Copie`/`Déplacement` · high. `scanTitleCompress` = "Vérification avant la compression...".
-- compressed (result toast) → past participle `compressés` · mirrors `transfer.split.clean` ("{phrase} copiés") and the
-  `one`/`many`/`other` shape of `fileOnly.allDone` · high.
-- replace (overwrite warning) → `remplacera` · Finder `Replace` → "Remplacer" · high.
-- archive (name) → `l''archive` (ICU-doubled apostrophe) · Finder `Zip archive` → "Archive ZIP" · high. `.zip` in
-  straight double quotes.
-- compression level (slider label) → `Niveau de compression` · fr Finder/DC `compression` + `niveau`; standard 7-Zip
-  term `Niveau de compression` · high. TC `fr` LNG lacks the pack-dialog IDs.
-  `settings.archives.compressionLevel.label`.
-- faster (slider low end, level 1) → `Plus rapide` · fr comparative, MS/archiver usage · high. Marks quicker packing,
-  not app speed. `.faster`.
-- smaller (slider high end, level 9) → `Plus petit` · pairs with `Plus rapide`; marks the smaller output file · high.
-  `.smaller`.
-- No `sameAsSourceJustification` needed: all values differ from English.
-
-Settled while translating the Operation log feature (alpha history-of-operations dialog + its command). ICU values, so
-apostrophes are doubled in the catalog:
-
-- operation log → `Historique des opérations` · macOS "historique"
-  (`NSToolbarHistoryTemplate`/`NSTouchBarHistoryTemplate` → "historique", "historique des versions"), Double Commander
-  ("Historique des commandes", "Historique des dossiers") · high — the feature IS a history view and its English `@key`
-  descriptions call it "operation history" throughout, so the user-facing "historique" (Apple's word for history views)
-  fits better than the technical "journal" (reserved for `journalisation`/`fichier journal`, the log-file sense). Used
-  verbatim for `operationLog.dialog.title` AND `commands.logOperationLog.label` (same sourceHash 2c97965).
-- operation (a logged file operation) → `opération` (feminine) · reuses the settled
-  `File operations → Opérations sur les fichiers` section name · high.
-- roll back / rollback (reverse a COMPLETED operation, operation-log sense) → SUPERSEDED, see § « La famille `rollback`
-  » at the end of this file. The Canceled-vs-Rolled-back reasoning below still holds; only the word family changed, from
-  `restaur-` to `retour en arrière`. **DIVERGENCE from the live-transfer catalog, deliberate:** the transfer surface
-  renders the rolling-back action as `annulation` (`fileOperations.transferProgress.titleRollingBack` = "Annulation en
-  cours..."), but the operation log must keep `Canceled` and `Rolled back` as DISTINCT status pills. Anchoring rollback
-  to the `restaur-` family reserves `annuler`/`Annulé` exclusively for `Canceled`, preserving the
-  you-canceled-before-it-ran vs you-reversed-it-after semantic split. The five rollback pills read as one concept: The
-  live pill values are in that section, in the `retour en arrière` family; do not look for `Restauration …` anywhere, it
-  ships nowhere.
-- Status pills matched to the existing `queue.row.status` renderings (brief-mandated consistency): Queued →
-  `En attente`, Running → `En cours`, Done → `Terminé`, Canceled → `Annulé` · high. `Didn''t finish` (status + item
-  outcome, non-alarmist wording for a stopped op) → `Non terminé`, NOT "Échec" (brief-mandated; avoids "erreur"/"échec"
-  per the style guide).
-- Per-item outcomes: Done → `Terminé`; Skipped → `Ignoré` (settled `skip → ignorer`); Didn''t finish → `Non terminé`;
-  Rolled back → `Restauré` · high. `status.done`/`outcome.done` (same sourceHash) and `status.failed`/`outcome.failed`
-  render identically, as their shared hashes require. `outcome.rolledBack` has no `status.*` twin: the status set stops
-  at queued/running/done/failed/canceled.
-- summary lines (one-line op summaries) → count-led past participle agreeing masc. with `élément`/`fichier`/`dossier`:
-  Copied → "{countText} élément(s) copié(s)", Moved → "…déplacé(s)", Deleted → "…supprimé(s)", Moved to trash →
-  "…placé(s) dans la corbeille" (settled `move to trash → placer dans la corbeille`), Renamed → "…renommé(s)",
-  Compressed → "…compressé(s)", Created N folders/files → "{countText} dossier(s)/fichier(s) créé(s)" · high — mirrors
-  `transfer.fileOnly.allDone`''s participle-agreement discipline; FR CLDR `one`/`many`/`other` with `{countText}` in
-  every branch (`many` identical to `other`).
-- Edited an archive → `Archive modifiée`; Extracted an archive → `Archive extraite` · past participle agreeing with the
-  feminine `archive` (settled glossary term); `extract → extraire`, `edit archive → modification` · high.
-- provenance labels: You (op you started) → `Vous` (macOS uses "Vous"); AI client → `Client IA` (`AI → IA`); Agent →
-  `Agent` (identical, genuine FR word, carries `sameAsSourceJustification`) · high.
-- "and {countText} more item(s)" (overflow line) → "et {countText} élément(s) de plus" · reuses the macOS "et ^0 de
-  plus" overflow pattern settled in the `filesystem-size-guard` pass · high.
-- No other `sameAsSourceJustification` needed: every value except `Agent` differs from English.
-
-Settled during the `ask-cmdr` pass (2026-07-13, the read-only AI chat rail: `askCmdr.*`, `settings.askCmdr.*`,
-`settings.advanced.logLlmCalls.*`, `settings.section.askCmdr`, `commands.askCmdrToggle.*`, ~97 keys). ICU values, so
-every apostrophe is doubled in the catalog:
-
-- chat / a saved conversation with the assistant (noun) → `conversation` · MS terminology FRA (`chat` → "conversation
-  instantanée"/"clavardage"/"messagerie instantanée", all live-chat-feature senses that don''t fit; the plain
-  `conversation` entry, feminine, is the generic term); macOS has no Messages-app bundle in the pile, so MS is the
-  anchor here. Confirmed by the EN source ITSELF: the retired consent line askCmdr.consent.local said "what each
-  **conversation** costs" for the very same saved-chat entity that `askCmdr.sessions.*` calls a "chat" — so English
-  already treats the two words as synonyms, and FR settles on the one word, `conversation`, everywhere. "New chat" →
-  "Nouvelle conversation"; the "Chats" panel heading/tooltip → "Conversations"; "chat title" → "Titre de la
-  conversation" · high.
-- chat (verb, casually "to chat with the AI") → `discuter` · distinct from the noun above; matches the EN source's own
-  verb choice ("Ask Cmdr **chats** with", "start **chatting**") and macOS/MS''s general "discuter"/"conversation"
-  family; keeps `conversation` free for the noun sense (a saved thread) so the two senses don''t collide · high.
-- token (the LLM unit: usage cost, context size, token budgets) → `jeton` · MS terminology FRA (plain `token` → "jeton",
-  masc.; distinct from "jeton de sécurité"/"jeton d''authentification", the auth-token senses, wrong here) · high.
-  Applies to the AI sense across the board: `FRENCH.tbx` has no entry reserving the English for it, and its closest
-  sense — "A nonreducible textual element in data that is being parsed" — is `jeton` too; the `fr` macOS corpus
-  publishes neither word, so Tier 2 decides alone. All six keys carrying it now say `jeton` (`askCmdr.cost.tokens`,
-  `askCmdr.context.tooltip`, `askCmdr.error.localWindowTooSmall`, `settings.askCmdr.spend.empty`, plus
-  `settings.ai.localContextSize.description` and `askCmdr.event.chatMemoryChanged`, which held out on the loanword). The
-  last two mattered most: the error already told the reader to pick "32 768 jetons" in the very setting whose
-  description said "tokens". FR CLDR `one`/`many`/`other` written for `askCmdr.cost.tokens` (`many` identical to
-  `other`, matching the catalog-wide plain-integer convention); `chatMemoryChanged` needs no plural, its count is always
-  in the thousands.
-- archive (verb, put a chat away without deleting it) → `archiver`; unarchive → `désarchiver` · MS terminology FRA
-  (`archive` verb → "archiver", high); no pile hit for the un- form, but `désarchiver` is the standard, unambiguous FR
-  antonym (same des- + verb pattern as `désélectionner`/`désactiver` already in this catalog) · high for archiver,
-  tentative for désarchiver. NOTE: this is a DIFFERENT sense from the existing `archive (noun, a zip/tar/7z) → archive`
-  glossary entry (archive-browsing pass) — same English word, two unrelated senses (put-away-a-conversation vs.
-  compressed-file), exactly as in English; no collision because the chat sense is a VERB here and the zip sense stays a
-  noun.
-- archived (badge on a put-away conversation) → `Archivée` · agrees feminine with the implicit `conversation` (the
-  object, not a person), per the gender-restructuring rule · high.
-- on-device (a cost readout for the free local model) → `en local` · descriptive FR, no pile hit for this exact
-  compound; pairs with the already-brand-kept `Local LLM` provider option without reusing the brand name itself (the
-  cost readout is a plain-language footnote, not a provider label) · tentative.
-- "Ask about X" (a short invitation/placeholder to query files or a selection) → verb-first
-  `Poser une/des question(s) sur X`, EXCEPT the compact composer-attach button, which uses `Interroger X` (`interroger`
-  = query/ask a system) to stay short as a button label · tentative (idiomatic rendering, no exact pile phrase for
-  either).
-- thinking (assistant status while reasoning before it replies) → `Réflexion…` · descriptive FR noun-status, matching
-  the catalog''s existing noun+ellipsis progress-label convention (`Analyse…`, `Vérification…`); single `…` character
-  kept per the EN source (not three dots) · tentative.
-- tool-call status lines (present/past pairs shown while the assistant runs a read-only tool, e.g. "Checking your
-  drives" / "Checked your drives") → present tense as a deverbal-noun phrase (`Vérification de vos disques`), past tense
-  as `A [participe]é …` (`A vérifié vos disques`) · descriptive FR pattern, no direct pile precedent for this exact
-  present/past UI shape; chosen to read naturally as two tenses of the same action without needing a subject pronoun ·
-  tentative. Applied to all seven `askCmdr.tool.*` pairs (`appState`, `listDir`, `largestDirs`, `importantFolders`,
-  `folderImportance`, `listVolumes`, `operationsList`, `operationsGet`) plus the `unknown` fallback (`Travail en cours`
-  / `A utilisé un outil`).
-- "That request wasn''t available" (a read-only tool refusing an unsupported action) →
-  `Cette demande n''était pas disponible` · plain, calm FR; avoids "erreur"/"échec" per the style guide · high.
-- "This one hit its limit" (a single answer that used up its tool-step/time budget) → `Celle-ci a atteint sa limite` ·
-  `celle-ci` (fem.) refers back to the implicit `réponse` (the answer), agreeing with it rather than exposing an
-  ungendered pronoun · tentative.
-- "Not now" (consent-screen decline button) → `Plus tard` · reuses the catalog''s already-settled
-  `later (dismiss-for-now button) → plus tard` term (the `search`/`feedback`/… pass); same dismiss-without-committing
-  action · high.
-- log AI model calls (the LLM-call-logging Advanced setting, `settings.advanced.logLlmCalls.*`) →
-  `Journaliser les appels au modèle d''IA` (toggle label, infinitive verb form matching the catalog''s
-  `Activer le réseau`-style toggle labels); the consent-screen note (`ai.cloudConsent.logsNote`) refers back to the same
-  phrase as a noun (`la journalisation des appels au modèle d''IA`) for consistency between the two surfaces · high
-  (reuses the settled `logging → journalisation` term).
-- drop to attach (a drag-and-drop hint on the composer) → `Déposer pour joindre` · `déposer` from macOS''s "Boîte de
-  dépôt" (Drop box, the only pile hit for "drop"); `joindre` from the catalog''s existing attach-an-email-address
-  precedent (`common.attachEmailPrompt` → "Joindre mon adresse e-mail pour que vous puissiez me répondre") · tentative
-  (composed from two separately-sourced roots, no single pile phrase for the whole hint).
-- attachment (a file/folder staged onto a chat message) → `pièce jointe` (noun); remove attachment →
-  `Retirer la pièce jointe` · MS terminology FRA (`attachment` → "pièce jointe", fem.); `retirer` matches macOS''s
-  sidebar-removal register · high.
-- Provider/model settings-path breadcrumb `Settings › AI` → `Réglages › IA` · reuses the settled `AI → IA` section name
-  and the catalog''s in-app `Réglages >` breadcrumb convention (the `updates`/`whatsNew` pass) · high.
-- `Ask Cmdr` (the product/brand name) is `sameAsSourceJustification`''d everywhere it appears alone (`askCmdr.title`,
-  `settings.section.askCmdr`, `commands.askCmdrToggle.label`) per its own `@key` description ("keep it as-is"); every
-  other value in this pass differs from English.
-
-Settled during the `media-ml-index` network-drive image-indexing pass (2026-07-13, opting an SMB drive into background
-photo-content indexing + its status lines; `settings.mediaIndex.networkVolumes.*`, the internal
-`settings.mediaIndex.{networkVolumes,alwaysIndexVolumes,alwaysIndexFolders}.{label,description}`,
-`search.imageResults.{networkOff,paused}`). ICU values, so apostrophes are doubled in the catalog:
-
-- network drive → `disque réseau` · settled `drive → disque` (macOS Finder, Tier 1) + `réseau` (macOS "Réseau",
-  pervasive). DELIBERATELY NOT Microsoft''s Windows term "lecteur réseau" (MS terminology FRA id 84433) — Cmdr is a
-  macOS app, so `disque` wins over the Windows `lecteur` per the style-guide term-choice rule 2 · high.
-- photo → `photo` (feminine: "une photo", "les photos") · macOS/pile ("photo"/"photos") · high — same word as EN but
-  genuinely FR and gendered, so agreeing participles are feminine: "photo indexée" / "photos indexées"
-  (`networkVolumes.indexed` FR CLDR `one`/`many`/`other`, `many` identical to `other`; feminine agreement in every
-  branch), "photos … indexées" (`search.imageResults.paused`).
-- reconnect → `se reconnecter` · macOS pile ("reconnecter"); pairs with the settled `disconnect → se déconnecter`.
-  "resumes when this drive reconnects" → "reprend quand ce disque se reconnecte" (settled `resume → reprendre`,
-  `paused → en pause`) · high.
-- gently (reads photos over the network gently) → `en douceur` · natural calm FR, no exact pile phrase · tentative.
-- at a limited speed → `à vitesse limitée` · descriptive FR, no pile hit · tentative.
-- always index this drive (the rarely-browsed-archive override) → `Toujours indexer ce disque` /
-  `Toujours indexer les photos sur {name}` (aria) · composed from settled `index → indexer` + the catalog''s `Toujours`
-  (crash-reporter "Always → Toujours"); the internal list labels are `Disques à toujours indexer` /
-  `Dossiers à toujours indexer` · high.
-- "get indexed anyway" (always-index help) → `soient indexées malgré tout` · settled `browse → parcourir` in the same
-  string ("que vous parcourez rarement"); "photo archive" → "archive de photos" (settled feminine `archive`) · high.
-- Internal (hidden dev-setting) label/description strings translated like the `settings.indexing.silencedDrives.*`
-  sibling: `Interne : …` lead, third-person `l''utilisateur` · high.
-- No `sameAsSourceJustification` needed: every value differs from English (each carries the FR ASCII-space-before-`:`, a
-  translated term, or French agreement).
-
-Settled during the `quality-pass` review of the 54 keys added by the bulk-rename, image-index-scope, and Ask Cmdr tool
-features (`askCmdr.renameReview.*`, `askCmdr.tool.{searchPhotos,imageFacts,proposeRenamePlan}.*`, `askCmdr.stalled`,
-`errors.listing.deviceReconnecting.*`, `fileExplorer.imageIndex.*`,
-`fileExplorer.navigation.driveIndex.tooltipCoalesced*`, `settings.mediaIndex.*`). ICU values double their apostrophes;
-the three `errors.*` keys use single ones:
-
-- allow (per-row approval button) → `Autoriser`; allow all → `Tout autoriser` · macOS Finder ("Allow Anyway" →
-  "Autoriser quand même", "Allow me to be discovered by:" → "Autoriser la détection…") + the catalog-wide `Tout <verbe>`
-  all-variant pattern · high.
-- deny (per-row refusal button) → `Refuser`; deny all → `Tout refuser` · MS terminology FRA (`deny` verb → "refuser";
-  the button ProperNoun entry → "Refuser"); macOS has no Deny button string in the pile · high.
-- review (verb, the "check this list of proposed changes" action) → `vérifier`; the surface as a noun → `vérification` ·
-  macOS AppKit ("Review Changes…" → "Vérifier les modifications…") · high. So "Review file renames" → "Vérifier les
-  renommages" and "This review expired" → "Cette vérification a expiré". NOT "revoir" (macOS uses that for re-reading
-  documents) and NOT the MS noun "revue" (publishing sense).
-- rename cycle (A→B, B→A dependency loop) → `cycle de renommage`; the badge `(cycle)` is legitimately identical to
-  English · MS terminology FRA (`cycle` → "cycle", masc.) · high.
-- rotate (files through a name cycle) → `permuter` · MS terminology FRA (`swap` → "permuter"); deliberately NOT macOS's
-  "rotation"/"faire pivoter", which the pile reserves for the SPATIAL image-rotation sense ("rotation à gauche") and
-  would read as turning the photos · high.
-- filename extension → `extension` · macOS Finder ("Show all filename extensions" → "Afficher toutes les extensions de
-  fichiers", "Hide Extension" → "Masquer l'extension") · high — the `(extension)` badge is legitimately
-  identical-to-English and carries a `sameAsSourceJustification`.
-- overwrite (badge naming the clash) → `écrasement` (noun) · derived from the settled `overwrite → écraser` (macOS
-  "Écraser à la destination", "Écraser les extensions") · high. ASCII space before the `!` per the settled spacing rule:
-  `(écrasement !)`.
-- remove (take a folder off the indexing list) → `Retirer`, NOT `Supprimer` · DELIBERATE divergence from macOS Tier 1,
-  which renders "Remove" as "Supprimer" everywhere ("Remove from Sidebar" → "Supprimer de la barre latérale"). In this
-  catalog `supprimer` is the settled `delete` term, and the help text's whole job is to promise that removing a folder
-  is NOT a deletion, so `Supprimer` would say the opposite of the copy. `Retirer` matches the catalog's existing
-  `Retirer la pièce jointe` · high.
-- searchable (what stays findable after a folder leaves the list) → `reste disponible dans la recherche` · no pile term
-  for the adjective; rendered as a verb phrase anchored on the settled `search → recherche` so the promise stays about
-  SEARCH, not mere viewing ("consultable" loses that) · tentative.
-- indexing pass (one sweep of the indexer over a drive) → `passage` ("au prochain passage") · descriptive FR; pairs with
-  the settled `indexation` · tentative.
-
-Phrasing notes for this pass:
-
-- **Tool-line doing/done pairs keep the settled shape**: present = deverbal noun phrase, past = `A <participe> …`
-  (glossary, `ask-cmdr` pass). `proposeRenamePlan.done` had drifted to the participle-final "Plan de renommage préparé"
-  and is now `A préparé un plan de renommage`, parallel with its `Préparation d'un plan de renommage` twin and with all
-  nine sibling pairs.
-- `searchPhotos` keeps `Recherche dans vos photos` / `A cherché dans vos photos`: the `chercher` past participle looks
-  like a stem mismatch with `Recherche`, but it is EXACTLY what the sibling `operationsList` pair already ships, and
-  cross-pair consistency on the same rail outranks stem symmetry. Don't "fix" one without the other.
-- **Apostrophe form**: the whole `fr` catalog uses ASCII apostrophes (doubled `''` in ICU values, single `'` in
-  `errors.*`). Three of these keys had shipped the curly U+2019 (copied from the English source, which uses it) and were
-  normalized. A curly apostrophe is not an ICU escape, so it passes every check silently: it's a consistency break the
-  tooling can't catch. (Two pre-existing `fileExplorer.smbReauth.*` values still carry U+2019, outside this pass's
-  scope.)
-- `askCmdr.stalled` ends "…ou arrêter", mirroring the Stop button's own label `askCmdr.composer.stop` = "Arrêter". The
-  earlier "ou l'arrêter" left the pronoun `l'` with no antecedent (and an unknowable gender).
-- `askCmdr.renameReview.expired` says "Demandez à Cmdr…", not "Demandez à Ask Cmdr…": the English sentence uses the
-  brand as a verb phrase ("Ask Cmdr to prepare it again"), which in French collapses into the verb `demander`; keeping
-  the brand whole would read as "demandez à Ask". The brand still appears (`Cmdr`), so the don't-translate check holds.
-- `errors.listing.deviceReconnecting.suggestion` was the catalog's only `tu` address ("Patiente… réessaie…") and is now
-  `vous` ("Patientez quelques secondes, puis réessayez."), per the settled formality.
-- ASCII space before `%` in `fileExplorer.summary.percentSelectedIn` ("({percent} %) sélectionnés dans") and before `;`
-  in the `renameReview.status` screen-reader summary, per the catalog-wide settled spacing rule.
-- The two `driveIndex.tooltipCoalesced*` tooltips were confirmed unchanged: FR CLDR `one`/`many`/`other` on all three
-  counts, no "erreur"/"échec" wording, and the calm close ("remettra tout d'aplomb" / "rien de grave donc") matches the
-  reassuring register the `@key` description asks for.
-
-Settled for the per-file/folder/drive image-search index status badges in the file list (2026-07-22:
-`fileExplorer.imageIndex.{file,folder,drive}.*`, `settings.mediaIndex.showFileStatusIcons.*`, 13 keys). ICU values, so
-every apostrophe is doubled in the catalog:
-
-- image search (the OCR/photo-content search FEATURE) → `recherche d''images` · settled catalog-wide, NOT re-derived:
-  every surface that names the feature renders it (`fileExplorer.imageIndex.drive.off` = "La recherche d''images est
-  désactivée pour ce disque."), and `search.imageResults.*` uses "images". Reused verbatim for every "image search"
-  mention (`file.indexed`, `file.excluded`, `drive.ariaLabel`, `drive.off`) · high.
-- image (the file/noun, feminine: "une image", "les images") → `image` · macOS/pile pervasive; same word as EN but
-  genuinely FR and gendered, so agreeing participles are feminine: "image indexée" / "images indexées". The badge sits
-  on an image file, so every per-file status agrees feminine (indexée, incluse, modifiée, réindexée) · high.
-- indexed (an image is in the image-search index) → `indexée` (fem., agrees with the implicit `image`); indexing (the
-  noun) → `indexation`; re-indexed → `réindexée` · reuses the style-guide glossary
-  `index / indexing → index / indexation` term; the `driveIndex.*` (folder-size disk index) surface already uses
-  "indexation"/"indexé" · high.
-- badge / status badge (the small marker over a file icon; the small colored dot next to a drive) → `pastille` /
-  `pastille d''état` · reuses the settled (tentative) `chip / badge (status pill) → pastille` glossary term; "pastille"
-  (small disc/lozenge) fits both the file-icon badge and the literal drive "dot" · tentative (no exact reference-pile
-  hit; consistent with the prior badge choice).
-- "Couldn''t be indexed" (gentle, no "error"/"failed") → `Indexation impossible` · reuses the settled
-  `Couldn''t/Can''t X → "… impossible"` calm macOS pattern (the `errors` pass), staying away from "erreur"/"échec" per
-  the style guide · high.
-- off (image search turned off for a drive) → `désactivée` · mirrors the sibling `driveIndex.tooltipDisabled`
-  ("L''indexation est désactivée pour ce disque.") · high.
-- "X of Y" (progress count) → `{doneText} sur {totalText}` · macOS "sur" for counts (settled `free of → libre sur`);
-  used in `folder.someIndexed` and `drive.indexing` · high.
-
-Phrasing notes for this pass:
-
-- `folder.allIndexed` / `folder.someIndexed` are headline fragments (no trailing period, matching the EN per-file
-  tooltips): "{totalText} images indexées" and "{doneText} sur {totalText} images indexées". The English "All" is
-  carried by the ABSENCE of the "sur {doneText}" fraction (allIndexed shows only the total; someIndexed adds "done of"),
-  so no literal "toutes" is forced (which would break the FR `one` branch, "Toutes les 1 image"). FR CLDR
-  `one`/`many`/`other` with the past participle folded into each branch ("image indexée" / "images indexées"),
-  `{totalText}` kept in a single slot outside the plural so it appears in every rendering.
-- The two drive tooltips lead with "Sur ce disque," (locative) to keep the drive context and avoid burying "on this
-  drive" in a double-"sur" clash with the "X sur Y" count. `drive.indexing` closes "; indexation en cours." (calm "en
-  cours" progress convention, NOT "toujours en train de travailler"); `drive.done` uses present-tense "sont indexées"
-  (are indexed), which states completeness without a fragile "toutes les {n}".
-- Regular ASCII space before `;` in `file.stale` ("… ; sera réindexée") and `drive.indexing` ("… ; indexation en
-  cours."), per the catalog-wide settled spacing rule (style.md § Punctuation spacing); never U+202F.
-- `settings.mediaIndex.showFileStatusIcons.label/description` use infinitive-label "Afficher des pastilles d''état sur
-  les images" and third-person help "Ajoute une petite pastille sur chaque image de la liste des fichiers…" (settled
-  `file list → liste des fichiers`), matching the catalog's toggle-label + help-text register.
-- No `sameAsSourceJustification` needed: every value differs from English.
-
-Settled for the image-indexing settings restructure (2026-07-22: three card titles, the Semantic search card, one
-file-list badge; `settings.mediaIndex.{cards.enable,cards.folders, progressSummary.title,semanticSearch.label,clip.*}`,
-`fileExplorer.imageIndex.file.indexing`, 12 keys). ICU values, so every apostrophe is doubled in the catalog:
-
-- "Indexing now" (active status: an image being processed RIGHT NOW, contrasted with `pending` = queued) →
-  `Indexation en cours` · reuses the settled `indexing → indexation` term + the catalog''s calm "en cours" progress
-  convention (`drive.indexing` closes "; indexation en cours."). Deliberately distinct from `file.pending` ("En attente
-  d''indexation", the queued sense). Used for BOTH `fileExplorer.imageIndex.file.indexing` (the badge tooltip) and
-  `settings.mediaIndex.progressSummary.title` (the live-progress heading) · high.
-- "Enable indexing" (card title over the master toggle) → `Activer l''indexation` · settled `index → indexation` +
-  macOS-pattern `Activer` (catalog `Activer le réseau`, `driveIndex.menuEnable` "Activer l''indexation…") · high.
-- "Folders to index" (card title) → `Dossiers à indexer` · settled `folder → dossier` + `index → indexer`; mirrors the
-  existing `alwaysIndexFolders.label` "Dossiers à toujours indexer" shape · high.
-- search by description (the CLIP semantic-search feature, "find a photo by describing it") →
-  `la recherche par description` · anchored on the existing catalog phrasing `clip.ready` ("recherchez vos photos par
-  description") and `clip.description` ("en décrivant ce qu''elles contiennent"); distinct from the card title
-  `clip.title` = "Recherche sémantique" (kept for the model name in `deleteConfirmTitle` "modèle de recherche
-  sémantique") · high. The toggle label "Search photos by description" (`semanticSearch.label`) →
-  `Rechercher des photos par description` (infinitive-label form).
-- Apple silicon → `Apple Silicon` · kept verbatim per the settled glossary term (licensing/ai pass, line ~165); no
-  reference-pile hit for a French rendering. "a Mac with Apple silicon" phrased naturally as
-  `un Mac équipé d''une puce Apple Silicon` (`clip.notSupported`) · high (brand verbatim), the "équipé d''une puce"
-  framing tentative (idiomatic, no pile phrase).
-- "Delete model (reclaim {size})" → `Supprimer le modèle (libérer {size})` · settled `delete → supprimer`,
-  `model → modèle`; "reclaim" reuses `reclaim.button`''s `libérer` verb (dropping its "environ" since the source has no
-  "roughly" here). "Deleting…" → `Suppression…` (noun+ellipsis progress convention, sibling of `clip.downloading`
-  "Téléchargement…"; single `…` char per the source) · high.
-- keyword → `mot-clé`; tag (Finder tag) → `tag` · macOS Finder `fr` dit `tag` (« Attribuer les tags à ^0 éléments », «
-  Aucun tag », « Créer un tag « ^0 » ») et le catalogue le suit partout : `settings.listing.showTags.label` « Afficher
-  les tags » et les quatorze `commands.tagsToggle*` · high. ❌ Pas « étiquette » : c'est le mot qu'Apple réserve à la
-  description d'accessibilité d'un fichier, pas au tag lui-même. `deleteConfirmBody`: "Keyword and tag search keep
-  working" → "La recherche par mot-clé et par tag continue de fonctionner".
-- "The model couldn''t be removed just now. Try again in a moment." (non-alarmist delete-failure) →
-  `Le modèle n''a pas pu être supprimé pour le moment. Réessayez dans un instant.` · reuses the calm
-  `N''a pas pu se terminer`/`réessayez` register (queue + errors passes), avoiding "erreur"/"échec" per the style guide
-  · high.
-- No `sameAsSourceJustification` needed: every value differs from English.
-
-Settled during the dialog-polish pass (`fileOperations.json`, 2026-07-23): the delete dialog swapped its Trash/Delete
-picker for a "Move to trash" switch plus a matching confirm button, and the copy/move/compress dialog groups the source
-path and the destination volume+path under "From" and "To" headings.
-
-- "Move to trash" (`delete.trashSwitch`; switch in the delete dialog, on = trash, off = permanent delete) →
-  `Placer dans la corbeille` · macOS Finder AL13/N153 verbatim, and identical to this file's
-  `transferDialog.titleVerbOnly` `other {Placer dans la corbeille}` arm · high
-- "Delete" (`delete.confirmDelete`; destructive confirm button while the switch is off) → `Supprimer` · settled delete
-  verb, identical to `transferDialog.titleVerbOnly`'s `delete {Supprimer}` arm · high
-- "From" / "To" (`transferDialog.sourceGroupTitle` / `targetGroupTitle`; headings over the source path and over the
-  destination volume + path) → `De` / `À` · Total Commander fr (`662="De : "`, `663="À : "`) and Double Commander fr
-  ("De :"/"A :") both ship this label pair in the same copy/move dialog, and "De … à …" is the idiomatic French from/to
-  pair. macOS's `Déplacer vers :` ("Move To:") is verb-bound, so it settles the destination PREPOSITION inside a verb
-  phrase, not the standalone heading; bare "Vers" was weighed on that basis and set aside for the pile-attested,
-  symmetrical pair. No space before a colon applies here: the headings carry no colon · high
-
-Settled during the review of the five master-drive-indexing-off keys
-(`fileExplorer.navigation.driveIndex.{refusedIndexingOff,tooltipIndexingOff,menuIndexingOffNote}`,
-`settings.indexing.{masterOffNote,overriddenBadge}`). ICU values, so apostrophes are doubled in the catalog:
-
-- **"Drive indexing" (the master switch), in PROSE → `l''indexation` (bare), NOT `l''indexation du disque`.** The
-  catalog already renders the concept bare everywhere it speaks about it (`driveIndex.tooltipDisabled` "L''indexation
-  est désactivée pour ce disque.", `menuEnable`/`menuDisable`/`menuStop` "… l''indexation …"), and the scope marker
-  carries the global-vs-per-drive distinction the English marks with "Drive indexing" vs "Indexing": `… pour ce disque`
-  (this one drive) vs `… dans les Réglages` + `aucun disque` (the master switch) · high. Writing
-  `l''indexation du disque` in running prose reads as "the indexing of THE drive", which is exactly the per-drive
-  meaning these three strings exist to rule out; worse, `menuIndexingOffNote` then puts "du disque" and "ce disque" one
-  clause apart. `settings.indexing.enabled.label` stays "Indexation du disque" and is quoted VERBATIM in the navigation
-  path ("Activez-la dans Indexation > Indexation du disque"), so the pointer to the actual control survives.
-- "stays unindexed" (with the uncontrolled `{name}`) → `Cmdr n''indexe pas {name}` · rendered ACTIVE with Cmdr as the
-  subject so no participle agrees with `{name}`, whose gender is unknown at runtime (the archive-password pass's gender
-  rule). Mirrors the sibling `refusedGeneric` "Cmdr ne peut pas indexer {name} pour le moment." · high.
-- "picks up where it left off" → `reprendra là où il s''était arrêté` · settled `resume → reprendre`; French wants the
-  `là où` correlative, not a bare `où` · high.
-- "folder sizes stay hidden" → `les tailles des dossiers restent masquées` · reuses `driveIndex.tooltipDisabled`''s
-  "voir les tailles des dossiers"; the plural `des dossiers` is the catalog form (a bare "tailles de dossier" was drift)
-  · high.
-- "Off with drive indexing" (short override badge) → `Désactivé avec l''indexation` · a STATE label, masculine agreeing
-  with the implied `réglage`; kept to three words for the badge slot, dropping "du disque" since the badge already sits
-  inside the Indexation section · high.
-- "ready for when you turn this back on" → `prêt pour le moment où vous la réactiverez` · the pronoun `la` points back
-  to the feminine `l''indexation` that opens the note (the only feminine singular antecedent); the deictic "ceci" was
-  vaguer than French tolerates here · high.
-
-Phrasing notes for this pass:
-
-- All five values had shipped with LONE apostrophes (`L'indexation`, `n'est`, `s'était`) while every `driveIndex.*`
-  neighbour doubles them. Now doubled. None of them sat before `{`/`}`/`#`, so nothing rendered wrong and no check
-  fired: it is exactly the silent consistency break the ICU rule exists to prevent.
-- Same sweep fixed five PRE-EXISTING apostrophe defects elsewhere in `fr`:
-  `settings.operationLog.{intro,maxAge.label, maxSize.description}` carried lone apostrophes, and
-  `fileExplorer.smbReauth.{savedPasswordFailed,passwordFailed}` carried the curly U+2019 the earlier pass parked. The
-  whole `fr` set is now uniformly ASCII-and-doubled outside `errors.*` (the only remaining lone `'` are the deliberate
-  ICU escapes in `fileExplorer.dirSize.{noPerms, dirPlaceholder}`, `'<'`).
-- No `:` `?` `!` `%` `»` in any of the five values, so the settled ASCII-space-before-punctuation rule doesn''t apply
-  here. Register is `vous` throughout ("Activez-la", "vous la réactiverez"); no "erreur"/"échec".
-- No `sameAsSourceJustification` needed: every value differs from English.
-
-## Index de disque : l'analyse des changements (2026-07-28)
+  confidentialité; Advanced → Avancé; Keyboard shortcuts → Raccourcis clavier; License → Licence.
+- **Navigation & file ops (the short sidebar section) → `Navigation et opérations`**: French has no clean casual
+  abbreviation for "ops", so the word is spelled out; the card `settings.navigationAndFileOps.card.fileOperations` keeps
+  the full `Opérations sur les fichiers`, and `…card.navigation` is identical to English (`Navigation`, with its
+  `sameAsSourceJustification`).
+- View modes: Full → Complet, Brief → Bref (`mode Complet`, `mode Bref`; after the feminine `présentation`:
+  `Présentation complète`, `Présentation brève`). Columns: Name → Nom; Ext → Ext (kept short).
+- In-app cross-references quote the section title verbatim: `Réglages > Mises à jour`, `Réglages > Mises à jour et
+  confidentialité`, `Réglages › IA` (the separator mirrors the English key).
+
+## Licence, visionneuse : les valeurs identiques à l'anglais (`licensing.dialog.*`, `licensing.section.*`, `viewer.binaryWarning.kind.*`, `viewer.saveAs.defaultName`)
+
+- "Active" (a license's validity) stays `Active`: the same spelling, the feminine of `actif`, agreeing with `licence`.
+- The kind words `image` / `document` (binary-view warning) and `Image` / `PDF` / `Unicode` (view-mode labels) are
+  identical or near-identical in French; left as they are on purpose.
+- `viewer.saveAs.defaultName` stays `selection`: the `@key` asks for a lowercase, unaccented, file-name-safe literal.
+- License-tier labels: `Commerciale perpétuelle`, `Abonnement commercial`, `Personnelle (gratuite)`. The standalone
+  "Commercial perpetual" value drops the noun, so the adjective agrees with the implied feminine `licence`.
+
+## La prise en main porte un seul nom (`onboarding.wizard.title`, `onboarding.wizard.progressLabel`, `commands.cmdrOpenOnboarding.label`, `shortcuts.scope.onboarding`, `main.upgradeNudge.*`, `settings.onboarding.upgradeNudgeShown.*`, `onboarding.stepAi.bannerBody.stuck`)
+
+- **`prise en main`, everywhere**: the menu item and command (`Prise en main…`), the shortcut scope, the wizard title
+  (`Prise en main de Cmdr`), its progress bar (`Progression de la prise en main`), the internal flag, and any sentence
+  about the flow (`Vous pouvez terminer la prise en main maintenant`). ❌ Not `configuration`, not `accueil`, and not a
+  standalone title like `Bienvenue dans Cmdr`: the menu item and the window it opens must recognize each other. The
+  `main.upgradeNudge.*` menu path once read `Configuration…` (a forward guess) and now matches the real label; the
+  generic phrase "onboarding options" stays descriptive (`options de configuration`).
+- The stuck banner's breadcrumb keeps `Privacy & Security > Full Disk Access` as English literals, like the source: the
+  `{systemSettings}` token is the only OS-localized part.
+- "Quit & Reopen" (the button macOS shows itself) → `Quitter et rouvrir` (unverified against a live macOS; see
+  `review-queue.md`).
+
+## Transferts et compteurs (`transfer.*`, `feedback.dialog.counter`, `errorReporter.dialog.counter`, `whatsNew.dialog.title`)
+
+- Past participles agree masculine with `fichier` / `dossier` (`fichier copié` / `fichiers copiés`, `dossier déplacé` /
+  `dossiers déplacés`). `transfer.movedPhrase` is built so each `kind` branch stands alone grammatically.
+- The counters `{currentText} / {maxText}` are pure placeholders, legitimately identical to English.
+- `whatsNew.dialog.title` → `Nouveautés de Cmdr`.
+
+## Les raccourcis : portées, fonctions de macOS et valeurs identiques (`shortcuts.scope.*`, `shortcuts.system.*`, `shortcuts.section.*`, `downloads.shortcutRow.*`)
+
+- Scope group headings: App → Application; Main window → Fenêtre principale; File list → Liste des fichiers;
+  Brief/Full mode → Mode Bref/Complet; Volume chooser → Sélecteur de volume; Command palette → Palette de commandes;
+  About window → Fenêtre À propos; Onboarding → Prise en main; Favorites menu → Menu des favoris; Servers → Serveurs;
+  Share browser → Navigateur de partages.
+- Reserved-shortcut list (lowercase mid-sentence, as the source): `le changement de source de saisie`,
+  `l'enregistrement de l'écran`, `les captures d'écran`, `la fermeture de session` (logging out of the Mac, the Apple
+  menu's `Fermer la session`; `la déconnexion` would read as dropping an SMB share), `le verrouillage de l'écran`,
+  `le sélecteur d'applications`, `Fenêtres de l'application`, `la fenêtre de recherche du Finder`. Spotlight, Mission
+  Control, and Spaces stay English (macOS keeps them).
+- `shortcuts.section.alreadyBound` quotes the command in `« {command} »` (the source uses straight quotes); the `<b>`
+  tag stays.
+- Fixed (badge) → `Fixe`; the Modified filter chip → `Modifiés` (the shortcuts you changed, plural).
+- Legitimately identical to English: `Global` (downloads scope title), `OK`, `macOS`, `Options`, and the Spotlight /
+  Mission Control / Spaces names.
+
+## La file d'attente : statuts et libellés des lignes (`queue.row.status`, `queue.row.label`, `queue.row.pause`, `fileOperations.transferProgress.pause`)
+
+- `queue.row.status`: Waiting → `En attente`; Running → `En cours`; Paused → `En pause`; Done → `Terminé`; Canceled →
+  `Annulé`; Couldn't finish → `N'a pas pu se terminer` (the gentle wording for a stopped operation). Participles are
+  masculine, agreeing with the implied operation word of the row.
+- `queue.row.label` mirrors the `transferProgress.titleActive` verbal nouns without `en cours` (short row labels): Copie,
+  Déplacement, Suppression, Placement dans la corbeille, Renommage, Création du dossier, Création du fichier,
+  Modification de l'archive (Nautilus "Renommage de …", "Création des …").
+- The standalone `Pause` button is identical to English and valid French (macOS keeps it).
+
+## Double-clic sur l'arrière-plan du panneau (`fileExplorer.doubleClickHint.*`, `settings.behavior.doubleClickPaneNavigatesToParent.*`, `settings.behavior.doubleClickOnPaneNotificationSeen.*`, `settings.section.navigationAndFileOps`, `fileExplorer.breadcrumb.navigateTooltip`)
+
+- The label reads `Double-cliquez sur l'arrière-plan du panneau pour remonter au dossier parent`; the description
+  `C'est l'espace vide autour de la liste de fichiers, pas une ligne de fichier.` keeps the English mix of "pane"
+  (label) and "file list" (description), and `C'est` points back at the pane background named in the label.
+  `espace vide` is Double Commander's exact phrase ("un espace vide d'un panneau").
+- The hint's conversational lines (friendly `vous`, no pile source, tentative): What just happened? →
+  `Que s'est-il passé ?`; Don't like it? → `Vous n'aimez pas ?`; Never do this again → `Ne plus jamais faire ça` (the
+  navigation, as opposed to `ne plus afficher`, which would mean the hint); I like it → `J'aime bien` (not the
+  over-strong `J'aime`).
+- The internal flag's participle agrees with the feminine `astuce`: `Astuce … affichée`.
+- `fileExplorer.breadcrumb.navigateTooltip` → `Cliquez pour accéder à {path}` (macOS `cliquez`, `accéder à`).
+- The summary line uses no serial comma before `et`.
+
+## Fichier trop volumineux pour le système de fichiers (`errors.write.filesTooLargeForFilesystem.*`, `errors.listing.notSupportedErrno.suggestion`)
+
+- `.title.one` "File too large for this drive" → `Fichier trop volumineux pour ce disque`, tracking Nautilus's title
+  almost verbatim; `trop volumineux`, never `trop grand` (the pile keeps that for image dimensions).
+- Naming a concrete format: `formaté en FAT32` (macOS speaks of `le format du volume`, and
+  `errors.listing.notSupportedErrno.suggestion` says `formaté avec un système de fichiers` for the generic case).
+- "can't store files larger than X" reuses that suggestion's exact precedent: `ne peut pas stocker de fichiers de plus
+  de X`. FAT32 and exFAT stay verbatim.
+- The overflow line "and {countText} more file(s)" → `et {countText} fichier(s) de plus`, Finder's `et ^0 de plus`
+  (`LocalizableMerged.json` N141.3), with the catalog's `one` / `many` / `other` noun fragment.
+
+## Les libellés du dialogue de copie (`fileOperations.transferDialog.operationAria`, `.scanFile`, `.scanDir`, `.targetWillBeCreatedCopy`, `.targetWillBeCreatedMove`)
+
+- The screen-reader label for what the control chooses → `Action`: a genuine French word, byte-identical to English, so
+  it carries a `sameAsSourceJustification`.
+- "Scanning…" (spinner tooltip and label while the dialog counts) → `Analyse…`, the settled scan noun, single `…`.
+- "This folder doesn't exist yet. Cmdr will create it during the copy/move." → `Ce dossier n'existe pas encore. Cmdr le
+  créera lors de la copie.` / `… lors du déplacement.`: active (`Cmdr le créera`, not Thunar's passive `sera créé`),
+  `le` for the masculine `dossier`, two literal sentences with no ICU select.
+
+## Parcourir les archives et les paquets (`settings.archives.*`, `fileExplorer.archiveEnterMenu.*`, `errors.listing.archiveUnreadable.*`, `errors.mutation.archive*`, `queue.row.label`)
+
+- `archive` is feminine and genuinely French, so it inflects (`une archive`, `chiffrée`, `protégée`); the bare card and
+  section title `Archives` is identical to English and carries `sameAsSourceJustification`.
+- App bundles: Finder calls a bundle a `paquet` (`Afficher le contenu du paquet`); the card and the row both say
+  `Paquets d'application`, the same words, as the brief asked.
+- editable → `modifiable` (`seules les archives zip sont modifiables`): the adjective keeps it active and dodges the
+  passive `peuvent être modifiées`.
+- open with the default app → `ouvrir avec l'application par défaut`: the full `application` here, because macOS
+  attests `application par défaut` / `une autre application` directly; elsewhere the catalog says `app`.
+- The Enter key → `la touche Entrée` catalog-wide. Segmented cells: Ask → `Demander`, Browse → `Parcourir`, Open →
+  `Ouvrir`.
+- "Editing archive" (the `archive_edit` arm of `queue.row.label`) → `Modification de l'archive`.
+- A fresh copy (ask the sender for one) → `une nouvelle copie` (macOS). The sender stays gender-neutral:
+  `la personne qui vous l'a envoyée`, whose participle agrees with the feminine `archive` through `l'`.
+
+## Coller le presse-papiers comme fichier (`fileExplorer.clipboard.pastedAsFile*`, `settings.fileOperations.pasteClipboardAsFile.*`)
+
+- "as X" → `en tant que X` (Finder's `Copier en tant que lien`); "saved as {name}" → `enregistré sous` (the AppKit save
+  panel).
+- Radio options: Do nothing → `Ne rien faire` (standard French, no pile hit); Create file / Create and rename →
+  `Créer un fichier` / `Créer et renommer`, reusing `fileExplorer.functionKeyBar.newFileAction`.
+- **The paste toast is gender-safe by construction**: `Contenu du presse-papiers collé dans {filename} ({kind, select,
+  image {image} pdf {PDF} other {texte}})`. The participle `collé` hangs off the masculine head noun `Contenu`, the
+  varying kind sits in a bare parenthetical, and `{filename}` stays in a neutral slot after `dans`. A participle placed
+  after the kind would have to agree (image → `collée`, texte → `collé`). The branch names stay verbatim.
+
+## Le mot de passe d'une archive (`fileOperations.archivePassword.*`)
+
+- The body names the archive explicitly, `L'archive <archive>{name}</archive> est protégée…`, so the feminine antecedent
+  `archive` (never the uncontrolled `{name}`) drives every agreement: `protégée`, and the pronoun in
+  `la déverrouiller`. The input's accessible name is `Mot de passe de l'archive`.
+
+## Compresser (`commands.fileCompress.*`, `fileOperations.transferDialog.toggleCompress`, `.confirmCompress`, `fileOperations.transferProgress.scanTitleCompress`, `transfer.compress.*`, `settings.archives.compressionLevel.*`)
+
+- `Compresser` everywhere (Finder), never `Comprimer`. The progress select branch takes the noun `Compression` with the
+  sibling `… en cours...` tail; `scanTitleCompress` = `Vérification avant la compression...`.
+- The result toast's participle `compressés` mirrors `transfer.split.clean` (`{phrase} copiés`) and the
+  `one` / `many` / `other` shape of `fileOnly.allDone`.
+- The overwrite warning uses `remplacera`, and names `l'archive`; `.zip` goes in straight double quotes.
+- The level slider: `Niveau de compression`, with `Plus rapide` (level 1, quicker packing, not app speed) and
+  `Plus petit` (level 9, the smaller output file).
+
+## L'historique des opérations (`operationLog.*`, `commands.logOperationLog.*`)
+
+- **operation log → `Historique des opérations`**: the feature is a history view, and its English `@key` descriptions
+  call it "operation history" throughout, so Apple's history word (`historique`) fits better than the technical
+  `journal`, which stays the log-FILE sense (`journalisation`, `fichier journal`). The dialog title and the command
+  share one value, and the View menu pairs it with `File d'attente des opérations` on the same head noun.
+- **`Annulé` and the rollback pills must stay distinct at a glance**: `Canceled` (you stopped it before it ran) is
+  `Annulé`; the rollback family is `retour en arrière`. That is why rollback never takes `annul-` (see the
+  `rollback` section below).
+- Status pills match `queue.row.status`: Queued → `En attente`, Running → `En cours`, Done → `Terminé`, Canceled →
+  `Annulé`; Didn't finish (status and item outcome) → `Non terminé`, never `Échec`. Per-item outcomes: `Terminé`,
+  `Ignoré`, `Non terminé`, and the rollback outcome shares `Retour en arrière effectué` with its status twin.
+  `status.done` / `outcome.done` and `status.failed` / `outcome.failed` share their English, so they render
+  identically.
+- Summary lines are count-led past participles agreeing masculine with `élément` / `fichier` / `dossier`
+  (`{countText} éléments copiés`, `… placés dans la corbeille`, `{countText} dossiers créés`), with `{countText}` in
+  every `one` / `many` / `other` branch. Edited / extracted an archive → `Archive modifiée` / `Archive extraite`
+  (feminine).
+- Provenance: You → `Vous` (macOS), AI client → `Client IA`, Agent → `Agent` (identical, a genuine French word, with
+  `sameAsSourceJustification`).
+- The overflow line "and {countText} more item(s)" → `et {countText} élément(s) de plus`.
+
+## Ask Cmdr : la conversation, les jetons et les lignes d'outil (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)
+
+- **chat (a saved thread) → `conversation`, one word everywhere.** MS FRA's `chat` renderings (`conversation
+  instantanée`, `clavardage`) are live-chat features; the English source itself uses "chat" and "conversation" for the
+  same entity. The verb "to chat" → `discuter`, which keeps `conversation` free for the noun. Three keys that had drifted
+  to `discussion` were aligned, and "Chat memory" is `mémoire de conversation` (never `chat`, which is a cat in French).
+- **token → `jeton`** on every key: MS FRA renders `token` as `jeton` in every technical sense, including the parsing
+  one closest to ours, and French macOS publishes neither word, so Tier 2 decides. It mattered because
+  `askCmdr.error.localWindowTooSmall` told the reader to pick "32 768 jetons" in a setting whose description said
+  "tokens".
+- archive a chat → `archiver`; unarchive → `désarchiver` (standard, no pile hit, the `dés-` pattern of
+  `désélectionner`); the badge `Archivée` agrees with the implicit `conversation`.
+- on-device (the free local model's cost readout) → `en local`, a plain-language footnote rather than the provider
+  label.
+- "Ask about X": verb-first `Posez une / des question(s) sur X`, except the compact attach button,
+  `Interroger la sélection`, short enough for a button.
+- thinking → `Réflexion…`, the noun-plus-ellipsis progress convention (`Analyse…`, `Vérification…`), single `…`.
+- **Tool status lines** pair a deverbal noun phrase (`Vérification de vos disques`) with `A <participe> …` (`A vérifié
+  vos disques`), with no subject pronoun; the `unknown` fallback is `Travail en cours` / `A utilisé un outil`. Every pair
+  keeps this shape (`proposeRenamePlan.done` = `A préparé un plan de renommage`). `searchPhotos` keeps
+  `Recherche dans vos photos` / `A cherché dans vos photos`, exactly like the `operationsList` pair: cross-pair
+  consistency outranks stem symmetry, so don't "fix" one without the other.
+- "That request wasn't available" → `Cette demande n'était pas disponible`; "This one hit its limit" →
+  `Celle-ci a atteint sa limite` (`celle-ci` agrees with the implicit `réponse`); "Not now" on the consent screen →
+  `Plus tard`.
+- The logging setting → `Journaliser les appels au modèle d'IA`, and the consent note refers back to it as the noun
+  `la journalisation des appels au modèle d'IA`.
+- drop to attach → `Déposer pour joindre` (macOS `Boîte de dépôt` plus the catalog's `joindre`, tentative); attachment →
+  `pièce jointe`, remove → `Retirer la pièce jointe`.
+- `askCmdr.stalled` ends `…ou arrêter`, mirroring the Stop button `Arrêter`; an `l'` before it had no antecedent.
+- `askCmdr.renameReview.expired` says `Demandez à Cmdr…`: the English uses the brand as a verb phrase, which collapses
+  into `demander`; `Cmdr` stays, so the don't-translate check holds.
+- `Ask Cmdr` alone (the panel title, the Settings section, the command, the switch) carries `sameAsSourceJustification`.
+
+## L'indexation des images sur les disques réseau (`settings.mediaIndex.networkVolumes.*`, `settings.mediaIndex.alwaysIndexVolumes.*`, `settings.mediaIndex.alwaysIndexFolders.*`, `search.imageResults.networkOff`, `.paused`)
+
+- network drive → `disque réseau`, deliberately not Microsoft's Windows `lecteur réseau`.
+- `photo` is feminine: `photo indexée`, `photos indexées`, in every plural branch.
+- The resumption line: `reprend quand ce disque se reconnecte`.
+- gently → `en douceur`; at a limited speed → `à vitesse limitée` (natural French, no pile phrase, tentative).
+- always index → `Toujours indexer ce disque` / `Toujours indexer les photos sur {name}`; the internal lists
+  `Disques à toujours indexer` / `Dossiers à toujours indexer`; "get indexed anyway" → `soient indexées malgré tout`;
+  photo archive → `archive de photos`.
+- Internal (hidden) settings read like `settings.indexing.silencedDrives.*`: an `Interne : …` lead and the third-person
+  `l'utilisateur`.
+
+## Revue qualité : renommages proposés et lignes d'outil (`askCmdr.renameReview.*`, `askCmdr.tool.*`, `askCmdr.stalled`, `errors.listing.deviceReconnecting.*`, `fileExplorer.imageIndex.*`, `fileExplorer.navigation.driveIndex.tooltipCoalesced*`)
+
+- allow / deny per row → `Autoriser` / `Refuser`; all → `Tout autoriser` / `Tout refuser` (the catalog-wide
+  `Tout <verbe>` pattern: `Tout éjecter`, `Tout ignorer`, `Tout écraser`).
+- review (the approve-or-deny list) → `vérifier`, noun `vérification`: macOS AppKit's `Vérifier les modifications…`.
+  Not `revoir` (re-reading a document) and not MS's `revue` (publishing).
+- rename cycle → `cycle de renommage`; the badge `(cycle)` is identical to English. rotate (files through the cycle) →
+  `permuter` (MS `swap`); deliberately not macOS's `rotation` / `faire pivoter`, the spatial image sense.
+- The overwrite badge → `(écrasement !)`, with the ASCII space before `!`.
+- **remove a folder from the indexing list → `Retirer`, not macOS's `Supprimer`.** The help text exists to promise that
+  removing a folder deletes nothing, and `supprimer` is the catalog's delete, so it would say the opposite.
+- searchable (what stays findable after a folder leaves the list) → `reste disponible dans la recherche`, anchored on
+  `recherche` so the promise stays about search (`consultable` loses that; tentative).
+- one indexing pass → `passage` (`au prochain passage`, tentative).
+- `errors.listing.deviceReconnecting.suggestion` was the catalog's only `tu` address and is now `vous`
+  (`Patientez quelques secondes, puis réessayez.`).
+- The `driveIndex.tooltipCoalesced*` tooltips close calmly (`remettra tout d'aplomb`, `rien de grave donc`), the
+  reassuring register their `@key` asks for.
+
+## Les pastilles d'état de l'index d'images (`fileExplorer.imageIndex.*`, `settings.mediaIndex.showFileStatusIcons.*`)
+
+- `image` is feminine and the badge sits on an image file, so every per-file status agrees feminine: `indexée`,
+  `incluse`, `modifiée`, `réindexée`.
+- "Couldn't be indexed" → `Indexation impossible`; off (for a drive) → `désactivée`, mirroring
+  `driveIndex.tooltipDisabled`.
+- `folder.allIndexed` / `folder.someIndexed` are fragments with no final period: `{totalText} images indexées` and
+  `{doneText} sur {totalText} images indexées`. "All" is carried by the absence of the fraction, never a literal
+  `toutes`, which would break the `one` branch ("Toutes les 1 image"); `{totalText}` sits outside the plural so it shows
+  in every rendering.
+- The drive tooltips lead with `Sur ce disque,` to avoid a double `sur` next to "X sur Y"; `drive.indexing` closes
+  `; indexation en cours.` and `drive.done` says `sont indexées`, which states completeness without a fragile
+  `toutes les {n}`.
+- The settings pair: `Afficher des pastilles d'état sur les images` and a third-person help line
+  (`Ajoute une petite pastille sur chaque image de la liste des fichiers…`).
+
+## Les réglages de l'indexation des images (`settings.mediaIndex.cards.*`, `settings.mediaIndex.progressSummary.title`, `settings.mediaIndex.semanticSearch.label`, `settings.mediaIndex.clip.*`, `fileExplorer.imageIndex.file.indexing`)
+
+- "Indexing now" (the image being processed right now) → `Indexation en cours`, for both the badge tooltip and the
+  live-progress heading; deliberately distinct from `file.pending` (`En attente d'indexation`, queued).
+- Enable indexing → `Activer l'indexation`; Folders to index → `Dossiers à indexer`.
+- search by description → `la recherche par description`, anchored on `clip.ready` / `clip.description`; the card title
+  stays `Recherche sémantique` (and the model is the `modèle de recherche sémantique`). The toggle →
+  `Rechercher des photos par description`.
+- "a Mac with Apple silicon" → `un Mac équipé d'une puce Apple Silicon` (`clip.notSupported`).
+- Delete model (reclaim {size}) → `Supprimer le modèle (libérer {size})`; Deleting… → `Suppression…`.
+- The delete-failure line stays calm: `Le modèle n'a pas pu être supprimé pour le moment. Réessayez dans un instant.`
+
+## Le dialogue de suppression : l'interrupteur corbeille, De et À (`fileOperations.delete.trashSwitch`, `.confirmDelete`, `fileOperations.transferDialog.sourceGroupTitle`, `.targetGroupTitle`)
+
+- The switch → `Placer dans la corbeille` (Finder AL13 / N153), identical to the `titleVerbOnly` trash arm; the
+  destructive button → `Supprimer`, identical to its delete arm.
+- From / To headings → `De` / `À`: Total Commander (`662="De : "`, `663="À : "`) and Double Commander ship this pair in
+  the same copy/move dialog. macOS's `Déplacer vers :` settles a preposition inside a verb phrase, not a standalone
+  heading, so bare `Vers` was set aside. The headings carry no colon; the scan phase's and the delete dialog's path
+  labels do (`De :`).
+
+## L'indexation des disques désactivée (`fileExplorer.navigation.driveIndex.refusedIndexingOff`, `.tooltipIndexingOff`, `.menuIndexingOffNote`, `settings.indexing.masterOffNote`, `.overriddenBadge`)
+
+- **"Drive indexing" (the master switch), in prose → `l'indexation`, bare.** The catalog renders the concept bare
+  everywhere, and the scope marker carries the global-vs-per-drive distinction: `… pour ce disque` (one drive) vs
+  `… dans les Réglages` plus `aucun disque` (the master switch). `l'indexation du disque` reads as "the indexing of THE
+  drive", exactly the per-drive meaning these strings exist to rule out. The setting label stays
+  `Indexation du disque` and is quoted verbatim in the path (`Activez-la dans Indexation > Indexation du disque`).
+- "stays unindexed" with the uncontrolled `{name}` → `Cmdr n'indexe pas {name}`: active, so nothing agrees with a name
+  of unknown gender; it mirrors `refusedGeneric`.
+- "picks up where it left off" → `reprendra là où il s'était arrêté` (French wants `là où`).
+- "folder sizes stay hidden" → `les tailles des dossiers restent masquées`, the catalog's plural form.
+- The override badge → `Désactivé avec l'indexation`: a masculine state label agreeing with the implied `réglage`, three
+  words for the badge slot.
+- "ready for when you turn this back on" → `prêt pour le moment où vous la réactiverez`: `la` is the feminine
+  `l'indexation` that opens the note.
+
+## Le dialogue d'incident : `a quitté inopinément`, `a continué son exécution`, `la dernière fois` en fin de proposition (`crashReporter.dialog.*`, `settings.updates.crashReports.description`)
+
+The report dialog at the next start picks its opening sentence from three, by what the report recorded: `.ended` (Cmdr
+went down with the incident), `.keptRunning` (a background problem, the app carried on, and the user quit it later), and
+`.unknown` (a report from an older version that didn't record what followed). ❌ No closing word belongs in
+`.keptRunning`, and `.unknown` must stay true whether or not Cmdr quit, so it asserts neither.
+
+- **quit unexpectedly → `a quitté inopinément`** · `fr/macOS/AppKit/AppKitErrors.json` (« Lors de sa précédente
+  ouverture, %@ a quitté inopinément pendant la réouverture des fenêtres. ») · high. Apple coined the concept and the
+  French user reads this phrase in the system's own crash dialogs. The earlier `s'est fermé de façon inattendue` had no
+  attestation anywhere in the pile; it was a paraphrase.
+- **kept running (the APP, not an operation) → `a continué son exécution`** · `fr/macOS/AppKit/NSExceptionAlert.json`
+  `69.title` (« … pour continuer l'exécution de l'application dans un état instable … »), Apple's own exception dialog,
+  which is exactly this surface · high. ❌ Not `en cours d'exécution` (zero catalog hits), ❌ not `a continué de
+  fonctionner` (`fonctionner` means "work / be compatible" everywhere in the pile), ❌ not `est resté ouvert` (it
+  describes a window, not a process).
+- **ran into a problem, Cmdr as subject → `Cmdr a rencontré un problème`** · Finder `NE105` (« « ^0 » a rencontré une
+  erreur. ») for the app-as-subject shape, MS FRA style guide § 4.1.9 for the collocation (« Nous avons rencontré un
+  problème… »); `problème` replaces the banned `erreur` · high. Apple's impersonal « Un problème s'est produit lors
+  de… » was set aside: the three variants fill one sentence of one dialog, and `.ended` already has Cmdr as subject.
+- in the background → `en arrière-plan` (MS FRA `tâche en arrière-plan`, Double Commander, Dolphin); `en tâche de fond`
+  has no pile hit.
+- **`la dernière fois` goes at the END of the clause, never in front** · all three pile occurrences put it last
+  (`AppKit/Document.json`, Thunar, Dolphin), and so do the catalog's; when Apple wants it first it changes the
+  construction (`Lors de sa précédente ouverture, …`). So the three bodies share one frame,
+  `Cmdr <verbe> … la dernière fois.`
+- `continuer à` + infinitive, not `continuer de` (macOS PE79–PE81 « continuer à copier les autres », Thunar), a question
+  that comes back with every continuity sentence.
+- **"a report" without "crash" → `un rapport`, plain.** The second sentence of `.keptRunning` / `.unknown` repeats
+  `.ended`'s minus `d'incident`, the one word that carries "crash", exactly as the English does; `rapport d'incident`
+  stays the crash's. Title and confirmation follow the same cut: `Envoyer le rapport d'incident ?` /
+  `Envoyer le rapport ?`, `Rapport d'incident envoyé. …` / `Rapport envoyé. …`.
+- `crashReporter.dialog.privacyNote` was already neutral (`la partie du code concernée`), so it didn't move when the
+  English went from "crashed" to "ran into the problem".
+- **The setting's description covers both cases** (`settings.updates.crashReports.description`): `quand Cmdr quitte
+  inopinément ou rencontre un problème en arrière-plan`, `un rapport` plain, and the privacy sentence of
+  `privacyNote`. ❌ The LABEL keeps `Envoyer les rapports d'incident`: it is the setting's name.
+
+## Les états du navigateur réseau : connecté ou identifié (`fileExplorer.network.browser.status.*`, `fileExplorer.network.browser.tooltip.requiresLogin`, `errors.listing.authRequiredEauth.explanation`, `errors.listing.authRequiredEneedauth.explanation`)
+
+- **Connected → `Connecté`; Logged in → `Identifié`.** Both statuses show in the same column of the network browser, so
+  they can't share a word; `se connecter` is the network action and `s'identifier` the sign-in (`terms.json`
+  `sign-in`). Login failed → `Identification refusée`, Login needed → `Identification requise`, "This host requires
+  login" → `Cet hôte demande une identification`. The participle agrees with the host, never the person.
+- A server "rejecting the current login" → `refuse vos identifiants actuels`; "requires you to log in" →
+  `vous demande de vous identifier`.
+
+## Se connecter à une app ou à un compte (`errors.provider.*`)
+
+- Signing in to an app or an Apple account follows Apple's own `Se connecter à iCloud`, but ❌ never as a participle
+  that genders the reader (`Assurez-vous d'être connecté`). Phrase it as an action or name the session:
+  `Connectez-vous à {app} si ce n'est pas déjà fait`, `Vérifiez que vous utilisez le bon compte Apple`,
+  `Vérifiez que votre session iCloud est ouverte`, `… et que votre session est ouverte`.
+
+## Une recherche en cours sur un disque (`fileExplorer.navigation.driveIndex.deferredEnable`, `.deferredRescan`, `search.coverage.toast.deferredUntilSearchEnds`)
+
+- "Cmdr is searching {name} right now" → `Cmdr effectue une recherche sur {name}`: a search is running, and
+  `parcourir` would read as browsing. The follow-up names what it waits for, `dès la fin de cette recherche`, because
+  `dès qu'elle sera terminée` could bind to `l'indexation` / `la nouvelle analyse` (both feminine) as easily as to the
+  search.
+
+## Index de disque : l'analyse des changements (`indexing.run.changeCheck`, `indexing.step.updateFileList`, `fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning`)
 
 - **"Checking for changes" (run-kind header) → `Recherche des changements`** · nominal phrase matching the sibling
   headers (`Première analyse complète`, `Mise à jour rapide`); `Recherche de…` is the standard French UI shape for a
@@ -993,7 +374,7 @@ Phrasing notes for this pass:
   check (`tooltipCoalesced`: "la prochaine analyse complète de Cmdr") and that string's closing
   `remettre tout d''aplomb` · high.
 
-## Transferts à l'arrêt : les 7 clés du bandeau de blocage (2026-07-31)
+## Transferts à l'arrêt : le bandeau de blocage (`fileOperations.transferProgress.stall*`, `.close`)
 
 Settled during the stalled-transfer pass (`fileOperations.transferProgress.stall*` + `close`). ICU values, so single
 apostrophes doubled below to match this doc's convention:
@@ -1025,10 +406,10 @@ apostrophes doubled below to match this doc's convention:
   (`errors.git.missingObject.message`: "Le dépôt est peut-être partiellement récupéré"), macOS ("partiellement
   disponible") · high.
 - "the log has the details" → **Le fichier journal donne les détails.** · reuses the catalog''s existing near-twin
-  `askCmdr.renameUndo.refusedBatches` ("The operation log has the details." → "Le journal des opérations donne les
+  `askCmdr.renameUndo.refusedBatches` ("The operation log has the details." → "L'historique des opérations donne les
   détails.") and the settled `log file → fichier journal` (`settings.logging.openLogFile`: "Ouvrir le fichier journal",
   MS terminology FRA) · high — "fichier journal" (not bare "journal") because this string points at Cmdr''s log FILE,
-  while "journal des opérations" is the separate in-app operation history.
+  while `Historique des opérations` is the separate in-app operation history.
 
 Phrasing notes for this pass:
 
@@ -1050,23 +431,21 @@ Phrasing notes for this pass:
 - No `:` `;` `!` `?` `%` in any of the eight values, so the catalog''s ASCII-space-before-punctuation rule doesn''t come
   up. All apostrophes are ASCII and doubled (`d''une`, `n''avance`); rendering was verified with `intl-messageformat`
   under locale `fr` for counts 0/1/2/5/1 000 000.
-- No `sameAsSourceJustification` needed: all eight values differ from English.
 - `{duration}` arrives pre-formatted ("45s", "2m 30s") from `$lib/units`, so it is NOT localized by this catalog; the
   sentence is built so any length or shape reads correctly after "depuis".
 
-## Chemin copié : la confirmation du presse-papiers (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+## Chemin copié : la confirmation du presse-papiers (`fileExplorer.clipboard.copiedPath`)
 
 Une clé : la ligne de la notification d'information après ⌘⌥C. Le chemin s'affiche en dessous, sur sa propre ligne en
 police à chasse fixe : ce n'est donc PAS un paramètre dans la phrase, qui se termine par deux-points et doit tenir sans
 lui.
 
 - **"Copied the path, it's now on your clipboard:" → `Chemin copié, il est maintenant dans le presse-papiers :`** ·
-  reprend `path → chemin` et `clipboard → presse-papiers` du glossaire (macOS Finder) · high. Espace ASCII normale avant
+  reprend `path → chemin` et `clipboard → presse-papiers` de `terms.json` (macOS Finder) · high. Espace ASCII normale avant
   les deux-points, conformément à style.md § Punctuation spacing ; jamais U+202F. Pas de possessif ("votre
   presse-papiers") : macOS emploie l'article défini.
-- Pas de `sameAsSourceJustification` : la valeur diffère de l'anglais.
 
-## The operation-queue rename (2026-08-08, 14 keys in `queue` / `commands` / `fileOperations`)
+## Le renommage de la file d'attente des opérations (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.pauseAria`, `.resumeAria`, `.cancelAria`, `.selectAria`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`, `.backgroundedToast`)
 
 English renamed the product noun: the window that was the **"Transfer queue"** is now the **"Operation queue"**. This is
 a meaning change, not a copy tweak. The window lists deletes, trashes, renames, folder and file creations, and archive
@@ -1079,7 +458,7 @@ dialog, the transfer driver). French had to widen the same way; a hash restamp w
   same-concept sentence `LocalizableMerged.json` NE82 ("Impossible de terminer l''opération pour le moment car une autre
   opération, telle que le déplacement ou la copie d''un élément…"), plus "Une opération est toujours en cours",
   "Terminez les opérations et réessayer"; MS terminology FRA (`operation` → "opération", four entries, unanimous outside
-  the medical sense); already settled in this glossary as the Operation log''s head noun and in the
+  the medical sense); already settled in `terms.json` as the Operation log''s head noun and in the
   `File operations → Opérations sur les fichiers` settings section · high.
 - **operation queue (the window, the View menu item, the command palette entry) → `File d''attente des opérations`** ·
   composed from the settled `queue → file d''attente` (Double Commander "File d''attente" / "Ajouter à la file
@@ -1120,9 +499,8 @@ Phrasing notes for this pass:
 - **Length**: "File d''attente des opérations" is exactly as long as the "File d''attente des transferts" it replaces
   (29 characters), so the rename adds no new overflow risk to the window title or the menu item. It was already long for
   a macOS window title, and still is.
-- No `sameAsSourceJustification` needed: all 14 values differ from English.
 
-## The corner progress chip and the failure notice (2026-08-08, 9 keys in `queue`)
+## La pastille de progression et l'avis « N'a pas pu se terminer » (`queue.chip.*`, `queue.failureToast.*`, `queue.row.dismiss*`, `queue.toolbar.dismissAll`)
 
 Two new surfaces: a ~80 px progress chip in the main window's top-right corner (a button that opens the queue window,
 with a hover tooltip and a stopped-before-finishing state), and a persistent failure toast plus a Dismiss button on the
@@ -1171,7 +549,7 @@ re-derives them. ICU values, so single apostrophes are doubled below to match th
   the AirDrop panel's "Copie de « quelque chose » vers « un endroit »"; GNOME Nautilus "Copying %'d files to “%s”" →
   "Copie de %'d fichiers vers « %s »", "Moving %'d files to “%s”" → "Déplacement de %'d fichiers vers « %s »" · high.
   The verbal-noun label needs the linking `de` (a bare "Copie 3 éléments" would read as an imperative), and `vers` is
-  the settled destination preposition. `item → élément` per the glossary's contested block; macOS uses "éléments" in
+  the settled destination preposition. `item → élément` per `terms.json`; macOS uses "éléments" in
   this very string, so files-and-folders is covered.
   - The destination is left BARE, not in guillemets, even though both piles quote it: English doesn't quote, and the
     tooltip is one tight line.
@@ -1196,7 +574,6 @@ Phrasing notes for this pass:
   French counts 0 as `one`, and "0 opération n''a pas pu se terminer" is correct French.
 - Register is `vous` ("Ouvrez"); every apostrophe is ASCII (U+0027) and doubled; no U+2019 leaked in from the English
   source.
-- No `sameAsSourceJustification` needed: all nine values differ from English.
 - **Overflow watch** (French runs long, and both surfaces are tight):
   - `queue.failureToast.action` is 46 characters against English's 23, on a button in a ~360 px toast. It can't be
     shortened without breaking the `@key`'s "identical to the window title" requirement.
@@ -1206,7 +583,7 @@ Phrasing notes for this pass:
   - The chip itself only ever shows `queue.row.label` / `queue.row.status`, which this pass didn't touch, so the ~80 px
     chip carries no new risk.
 
-## The standalone conflict prompt (2026-08-09, `fileOperations.operationConflict.{context,pausedNote}`)
+## Le dialogue de conflit autonome (`fileOperations.operationConflict.context`, `.pausedNote`)
 
 The context line under the dialog title `Le fichier existe déjà`, naming which background operation is asking, plus the
 quiet note under the buttons. Both are ICU, so apostrophes are doubled. The verbal nouns come from `queue.row.label` and
@@ -1244,9 +621,8 @@ Phrasing notes for this pass:
 - All 10 branch combinations were rendered with `intl-messageformat` under locale `fr` (both `hasDestination` values ×
   the five `type` paths, with destinations "Backup", "photos.zip", "Archives 2026", "Été"). Every apostrophe is ASCII
   (U+0027) and doubled; no `:` `;` `!` `?` `%`, so the spacing rule doesn''t arise.
-- No `sameAsSourceJustification` needed: both values differ from English.
 
-## The progress dialog's empty-queue button label (2026-08-09, 2 keys in `fileOperations.transferProgress`)
+## Le bouton du dialogue de progression quand la file est vide (`fileOperations.transferProgress.background`, `.backgroundAria`)
 
 The progress dialog's primary action is ONE button with two wordings: `queue` ("File d''attente") when the operation
 queue already holds work, and `background` when it's empty. The `background` arm is a COMMAND (English uses "Background"
@@ -1299,9 +675,8 @@ Phrasing notes for this pass:
   English `@key` says it directly: "Short control label; must fit the same button as \"Queue\"".
 - No `: ; ! ? %` in either value, so the ASCII-space-before-punctuation rule doesn''t arise; no apostrophe, so no ICU
   doubling; no U+2019 or U+202F leaked in.
-- Neither value is identical to English, so no `sameAsSourceJustification` is needed.
 
-## The quit gate (2026-08-10, 7 keys in `main.quit`)
+## La barrière de sortie (`main.quit.*`)
 
 The modal Cmdr raises when the user quits (⌘Q, the menu, or closing the main window) while a copy, move, delete, trash,
 or archive edit is still running: a title asking whether to go ahead, a reassuring body, a short list of what's running,
@@ -1338,20 +713,16 @@ nothing here re-derives them.
   laisser un fichier à moitié écrit sous un vrai nom."), which describes the same temp-file mechanism · high. `tout` +
   singular is French''s number-neutral form, so the settled phrase survives where the definite `le fichier …` could not;
   it also avoids a second `il` (the first binds to `ce qui`) and an echo of `rester` from the opening sentence. "clears
-  away" → `supprime`, per the glossary''s `delete → supprimer` (and NOT `efface`, which style.md reserves for the
+  away" → `supprime`, per `terms.json`'s `delete → supprimer` (and NOT `efface`, which style.md reserves for the
   erase/wipe sense).
 - **logout (the OS session, in the countdown''s reason clause) → `une fermeture de session`** · macOS Tier-1
   (`AppKit/Menus.json` "Log Out" → "Fermer la session", the item the user sees in the Apple menu); Microsoft terminology
   FRA agrees (`log off` → "fermer une session", FRA) · high. restart → `un redémarrage` · `AppKit/Menus.json` "Restart"
   → "Redémarrer" · high.
-  - **Deliberate divergence from `shortcuts.system.loggingOut` ("la déconnexion")**, recorded so the next pass sees it
-    instead of "fixing" one side blind. That shortcuts entry was settled as "descriptive FR" with no Tier-1 citation,
-    and it sits in a list of system shortcuts where nothing competes with it. Here the neighbouring words are a file
-    manager''s own: this catalog uses `se déconnecter` for leaving a SERVER (macOS Finder "Disconnect" → "Se
-    déconnecter"), so "un redémarrage ou une déconnexion" inside Cmdr could read as dropping an SMB share.
-    `fermeture de session` is unambiguous and is what the user''s Apple menu says. **Open item for a future pass**:
-    re-settle `shortcuts.system.loggingOut` to "la fermeture de session" so the pair agrees; it is outside this pass''s
-    seven keys.
+  - **Why not `déconnexion`**: this catalog uses `se déconnecter` for leaving a SERVER (macOS Finder "Disconnect" →
+    "Se déconnecter"), so "un redémarrage ou une déconnexion" inside Cmdr could read as dropping an SMB share.
+    `fermeture de session` is unambiguous and is what the user''s Apple menu says. `shortcuts.system.loggingOut` says
+    `la fermeture de session` too, so the pair agrees.
 - **"Quitting in N seconds" (the live countdown) → `Cmdr quitte dans {secondsText} seconde(s)`** · intransitive
   `quitter` with the app as subject is AppKit Tier-1 ("%@ a quitté inopinément pendant la réouverture des fenêtres"),
   and it keeps the whole dialog on ONE verb root (title "Quitter alors que…", button "Quitter maintenant", aria "avant
@@ -1395,9 +766,8 @@ Phrasing notes for this pass:
 - The two title branches end in `?` with the settled ASCII space before it, never U+202F. No other `: ; ! %` occurs.
   Every apostrophe is ASCII (U+0027) and doubled: `qu''une`, `d''écriture`, `s''arrête`, `qu''il`.
 - Neither "erreur" nor "échec" appears, per style.md; the body stays matter-of-fact rather than warning-shaped.
-- No `sameAsSourceJustification` needed: all seven values differ from English.
 
-## Usage stats: "anonymes" dropped, "un identifiant aléatoire" named (2026-08-12, 5 keys in `settings.analytics.enabled`, `settings.updates`, `onboarding.stepBeta`)
+## Statistiques d'usage : pas « anonymes », mais « un identifiant aléatoire » (`settings.analytics.enabled.*`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`, `.analyticsTitle`)
 
 English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
 plainly what they're tied to. The English stays deliberately everyday, so ❌ never `pseudonyme` / `pseudonymisé` — that
@@ -1413,9 +783,8 @@ jargon is exactly what the copy avoids.
   statistiques d'usage") · high
 - The list "noms de fichiers, chemins, termes de recherche ou prompts" drops the Oxford comma the old value carried over
   from English: French doesn't use it.
-- No `sameAsSourceJustification` needed: every value differs from English.
 
-## Lignes de file en attente de réponse et la confirmation d'annulation-restauration (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, `transferProgress.foregroundBusyToast`/`.rollbackTooltip`, 2026-08-13)
+## Lignes de file en attente de réponse et la confirmation du retour en arrière (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, `fileOperations.transferProgress.foregroundBusyToast`/`.rollbackTooltip`)
 
 - **"Needs your answer" (pastille de statut dans la file) → `Réponse requise`** · macOS `fr` ("Authentification requise
   pour effectuer cette opération.", "Un mot de passe est requis pour désactiver le chiffrement.") · high. ❌ Jamais
@@ -1425,11 +794,9 @@ jargon is exactly what the copy avoids.
   `operationConflict.pausedNote` ("tant que vous n'avez pas répondu") · high.
 - **"this operation carries on" → `cette opération continuera`** · standard ; évite `reprendra`, réservé au sens
   `resume → reprendre` (sortir de pause) · high.
-- **rollback → `Annuler et restaurer`** · réaffirme l'entrée déjà posée (`transferProgress.conflictRollback`) ; le titre
-  est `Annuler et restaurer cette opération ?` et le bouton destructeur reprend le même libellé, pour coller au bouton
-  qui a ouvert le dialogue · high · **tentative, à revoir** : le nouveau corps dit explicitement que les fichiers
-  écrasés ne reviennent pas, donc le `restaurer` du terme promet plus que ce que l'action fait. À arbitrer sur toute la
-  famille `rollback` du catalogue, pas clé par clé.
+- **rollback → `Revenir en arrière`** : le titre est `Revenir en arrière sur cette opération ?` et le bouton destructeur
+  reprend le même verbe, pour coller au bouton qui a ouvert le dialogue. Le choix de la famille (et pourquoi pas
+  `restaurer`, que ce corps contredirait) : section suivante.
 - **"Keep them" (la réponse sûre) → `Conserver les fichiers`** · macOS `fr` ("Conserver", "Tout conserver", "Conserver
   la copie partielle") · high. Le nom est explicité plutôt que `Les conserver` : le corps vient de nommer les fichiers
   REMPLACÉS, un pronom serait ambigu.
@@ -1442,12 +809,10 @@ jargon is exactly what the copy avoids.
   l'explicite : « … puis affichez cette opération », en reprenant le bouton `Afficher` (`queue.row.foreground`) · high.
 - Espace ASCII normale devant `?` et `:` (règle catalogue, style.md § Punctuation spacing) ; apostrophes ASCII doublées
   dans les valeurs ICU.
-- Aucun `sameAsSourceJustification` nécessaire : toutes les valeurs diffèrent de l'anglais.
 
-## La famille `rollback` : `restaurer` abandonné pour `revenir en arrière` (2026-08-13, 14 clés dans `fileOperations`, `operationLog`, `commands`, `settings`)
+## La famille `rollback` : `revenir en arrière`, jamais `restaurer` (`fileOperations.transferProgress.rollback*`, `.conflictRollback`, `.titleRollingBack`, `operationLog.rollback.*`, `operationLog.outcome.rolledBack`, `operationLog.dialog.rollBack`, `commands.logOperationLog.description`, `settings.operationLog.intro`)
 
-Arbitrage sur TOUTE la famille, comme le demandait la note « à revoir » de la section précédente. Le corps de
-`rollbackConfirm` dit noir sur blanc que les fichiers écrasés ne reviennent pas : le rollback SUPPRIME ce que
+Arbitrage sur TOUTE la famille, pas clé par clé. Le corps de `rollbackConfirm` dit noir sur blanc que les fichiers écrasés ne reviennent pas : le rollback SUPPRIME ce que
 l'opération a écrit, il ne REND rien. `restaurer` promettait donc l'inverse de ce que l'action fait.
 
 - **rollback → `retour en arrière` (nom) / `revenir en arrière` (verbe)** · `tentative`. Les trois familles candidates
@@ -1476,7 +841,7 @@ l'opération a écrit, il ne REND rien. `restaurer` promettait donc l'inverse de
   pastilles du journal juste en dessous ne parlent pas de la même chose.
 - Inchangés parce que déjà exacts : `rollbackConfirm.body`, `rollbackConfirm.keep`, `transferProgress.rollbackTooltip`.
 
-## Renommage en chaîne : « et N autres » se rend par `ainsi que …` (2026-08-18, `fileExplorer.rename.chainKeptOriginalNameAndOthers`)
+## Renommage en chaîne : « et N autres » se rend par `ainsi que …` (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
 Le toast grandissant qui compte les renommages non appliqués. Il prolonge la phrase du frère `chainKeptOriginalName` («
 {reason}. « {name} » a gardé son nom. »), donc même voix, mêmes guillemets, même « a gardé son nom ».
@@ -1498,7 +863,7 @@ Le toast grandissant qui compte les renommages non appliqués. Il prolonge la ph
   dans le frère. `{name}` reste entre guillemets « » avec espaces ASCII, dans une position neutre (aucun accord ne
   dépend de lui).
 
-## Renommage non confirmé : le volume ne répond pas (2026-08-18, `fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
+## Renommage non confirmé : le volume ne répond pas (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
 
 Paire sœur du couple `chainKeptOriginalName*` juste au-dessus, mais de SENS OPPOSÉ : là où `chainKept*` affirme que le
 fichier a gardé son nom, `unconfirmed*` dit qu'on n'en sait rien et que le renommage est peut-être passé. La valeur ne
@@ -1542,9 +907,8 @@ doit jamais laisser entendre que le nom est resté inchangé.
   peut pas être utilisé. « rapport final.pdf » a gardé son nom. »
 - Guillemets « » à espaces ASCII autour de `{name}`, qui reste dans une position neutre (aucun accord n'en dépend).
   Seule apostrophe des trois valeurs : `d''un`, ASCII et doublée.
-- Aucun `sameAsSourceJustification` nécessaire : les trois valeurs diffèrent de l'anglais.
 
-## Opérations suggérées : la fenêtre de ce que propose Ask Cmdr (2026-08-19, `suggestedOps.*`, `commands.suggestedOpsShow.*`)
+## Opérations suggérées : la fenêtre de ce que propose Ask Cmdr (`suggestedOps.*`, `commands.suggestedOpsShow.*`)
 
 - ops (l'ensemble d'opérations proposé par l'agent) → `opérations` ; le titre devient `Opérations suggérées` · terme
   maison ("File operations" → "Opérations sur les fichiers") · high
@@ -1554,9 +918,9 @@ doit jamais laisser entendre que le nom est resté inchangé.
 - "This can't be undone" → `Cette opération est irréversible` · macOS Finder, mot pour mot (alerte de suppression
   immédiate) · high
 - "Ask Cmdr's reason" → `Raison donnée par Ask Cmdr` · composé ; `motif` est déjà pris par pattern, d'où `raison` · high
-- "Matched by a pattern" → `Correspond à un motif` · reprend `motif` du glossaire · high
+- "Matched by a pattern" → `Correspond à un motif` · reprend `motif` de `terms.json` · high
 
-## Dupliquer : la commande qui copie dans le même dossier (`commands.fileDuplicate.*`, 2026-08-19)
+## Dupliquer : la commande qui copie dans le même dossier (`commands.fileDuplicate.*`)
 
 - **duplicate (commande qui copie la sélection dans son propre dossier) → `Dupliquer`** · macOS Finder `fr`, menu «
   Fichier > Dupliquer » (`N154`), plus « Dupliquer des éléments » et « Duplique des éléments dans leurs emplacements
@@ -1566,7 +930,7 @@ doit jamais laisser entendre que le nom est resté inchangé.
   `Créer une copie des fichiers sélectionnés dans le même dossier`** · infinitif, comme les descriptions voisines («
   Copier les fichiers sélectionnés… ») ; « le même dossier » = celui où les fichiers se trouvent déjà · high.
 
-## Menus natifs : barre de menus, menus contextuels, titres de fenêtre (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+## Menus natifs : barre de menus, menus contextuels, titres de fenêtre (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)
 
 Sources de tout ce lot : macOS 26.5.2 Finder (`Finder.app/Contents/Resources/fr.lproj`, `MenuBar.strings` +
 `LocalizableMerged.strings`) est le Tier 1 et tranche presque tout ; le côté anglais se lit dans `en_GB.lproj`, car
@@ -1578,8 +942,9 @@ dans le menu.
   et Safari `fr` · high.
 - **Menu Select (sélection de fichiers) → `Sélectionner`** · Nautilus/Thunar/Dolphin `fr` · high. Le Finder n'a pas
   d'équivalent ; l'infinitif s'accorde avec `Tout sélectionner` du même menu.
-- **Quick Look → `Coup d'œil`** (avec l'apostrophe typographique U+2019, comme Apple) · macOS Finder (`TL14`) · high.
-  Apple localise ce nom de fonction, d'où son absence de la liste ne-pas-traduire.
+- **Quick Look → `Coup d'œil`** · macOS Finder (`TL14`) · high. Apple localise ce nom de fonction, d'où son absence de
+  la liste ne-pas-traduire. Apostrophe ASCII simple dans `menu.*` (famille native), comme partout dans le catalogue
+  (voir § Un mot anglais, un mot français).
 - **Get Info → `Lire les informations`, Enclosing Folder → `Dossier parent`, Go > Home → `Départ`, Sort By →
   `Trier par`, Default → `Par défaut`, Other… → `Autre…`** · macOS Finder Tier 1 · high.
 - **Window > Zoom → `Réduire/agrandir`** vs **sous-menu de zoom du texte → `Zoom`** · macOS Finder (`300667.title`) ·
@@ -1606,7 +971,7 @@ dans le menu.
 - **Identiques à l'anglais à dessein** (avec `sameAsSourceJustification`) : `menu.app.services`, `menu.sort.extension`,
   `menu.view.zoom`, `menu.tag.orange`, `menu.tag.rowLabel`, `menu.view.askCmdr`.
 
-## Notification de repli sur le montage macOS (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+## Notification de repli sur le montage macOS (`fileExplorer.network.osMountFallback.*`)
 
 Trois chaînes : le corps de la notification qui explique qu'un partage tourne sur la connexion SMB fournie par macOS,
 son bouton de reprise, et l'infobulle de sa croix de fermeture.
@@ -1641,7 +1006,7 @@ son bouton de reprise, et l'infobulle de sa croix de fermeture.
   fois dans la phrase, et `pour la plupart des connexions` en ajoutait une quatrième. `dans la plupart des cas` est la
   tournure française idiomatique et ne perd rien du sens.
 
-## Refus de renommage et de création : les 31 clés `errors.mutation.*` / `errors.volume.*` (2026-08-23)
+## Refus de renommage et de création (`errors.mutation.*`, `errors.volume.*`)
 
 Une phrase par clé, affichée sous le champ de nom du flux Renommer / Nouveau dossier / Nouveau fichier, ou dans une
 notification brève. Famille RAW (`errors.*`) : apostrophes ASCII simples, `{path}` littéral, aucun ICU. `{path}` est un
@@ -1666,7 +1031,7 @@ devant un participe ou un article qui devrait s'accorder.
 - **`Unlock it in Finder's Get Info panel` → `Déverrouillez-le dans Finder (Lire les informations)`** · calque de
   `errors.write.fileLocked.suggestion.mac` du même fichier, lui-même issu de macOS Finder NE18 (« Choisissez Fichier >
   Lire les informations, désélectionnez « Verrouillé », puis réessayez. ») · high. `Get Info` → `Lire les informations`
-  est déjà au glossaire.
+  est déjà dans `terms.json`.
 - **System Integrity Protection → `la protection de l'intégrité du système`** · macOS Finder `fr`, mot pour mot («
   Certains éléments de la corbeille ne peuvent pas être supprimés en raison de la protection de l'intégrité du système.
   ») · high. Apple LOCALISE ce nom, il ne fait donc pas partie des marques à garder en anglais. La clé reprend aussi le
@@ -1679,16 +1044,16 @@ devant un participe ou un article qui devrait s'accorder.
 - **Sortir / faire passer un élément d'une archive** · `renameOutOfArchive` → `sortir un élément d'une archive` ;
   `renameAcrossArchives` → `faire passer un élément d'une archive à une autre` · high (choix rédactionnel). Les deux
   verbes évitent `déplacer`, réservé à la commande nommée juste après : `Utilisez plutôt Déplacer.` (`move → déplacer`
-  au glossaire, et `Déplacer` est le libellé de la commande Cmdr). Le sujet est le nom `Le renommage`, comme
+  dans `terms.json`, et `Déplacer` est le libellé de la commande Cmdr). Le sujet est le nom `Le renommage`, comme
   `queue.row.label` (`Renommage`).
 - **`Something went wrong, and Cmdr couldn't tell what` →
   `Un problème est survenu, et Cmdr n'a pas pu identifier lequel.`** · `problème` est le repli calme déjà retenu pour
-  `error` (voir § Terms) ; ni « erreur » ni « échec » · high.
+  `error` (voir `terms.json`) ; ni « erreur » ni « échec » · high.
 - **`The volume couldn't finish that` → `Le volume n'a pas pu terminer cette opération.`** · reprend le repli
   `Couldn't finish → N'a pas pu se terminer` de la passe `queue` · high.
 - **`The connection didn't answer in time` → `La connexion n'a pas répondu à temps.`** · macOS AppKit atteste
   `n'a pas répondu` (« L'application « %@ » n'a pas répondu à la demande de service. ») · high. On garde le verbe plutôt
-  que le nom `délai dépassé`, qui reste le terme du STATUT (voir § Terms).
+  que le nom `délai dépassé`, qui reste le terme du STATUT (voir `terms.json`).
 - **`The destination can't hold that name` → `La destination ne peut pas stocker ce nom.`** · reprend
   `errors.listing.invalidName.explanation` (« … un nom que la destination ne peut pas stocker ») du même fichier · high.
   La suite `Choisissez-en un autre.` calque macOS Finder RN17 (« Veuillez choisir un autre nom. »), sans le « Veuillez »
@@ -1712,9 +1077,7 @@ Deux pièges de sens à ne jamais « corriger » :
   » Calque de `errors.listing.deviceReconnecting.explanation` (« La connexion à l'appareil … a redémarré … L'appareil
   est toujours branché »). Le voisin `errors.volume.deviceDisconnected`, lui, décrit un vrai débranchement.
 
-Aucun `sameAsSourceJustification` nécessaire : les 31 valeurs diffèrent de l'anglais.
-
-## Refus de mise à la corbeille : `errors.mutation.trashNotSupported` / `trashRefused` (2026-08-23)
+## Refus de placement dans la corbeille (`errors.mutation.trashNotSupported`, `.trashRefused`)
 
 Deux clés ajoutées après les 31 ci-dessus, même surface (une ligne sous le champ de nom, ou une notification brève),
 même famille RAW.
@@ -1735,114 +1098,7 @@ même famille RAW.
   `this` devient `cet élément`, le nom générique du catalogue, plutôt qu'un pronom sans antécédent. La phrase reste
   courte à dessein : la raison technique s'affiche à part sous « Détails techniques ».
 
-## Le rapport quand Cmdr n'a PAS quitté (2026-08-23, `crashReporter.dialog.body.keptRunning` / `.unknown`)
-
-Le dialogue de rapport au démarrage suivant choisit désormais sa phrase d'ouverture parmi trois, selon ce que le rapport
-a réellement enregistré. `.ended` (Cmdr est tombé avec l'incident qu'il rapporte) ne bouge pas. Les deux nouvelles clés
-décrivent des cas où Cmdr n'a PAS quitté : `.keptRunning` (le problème a touché une tâche en arrière-plan, l'app a
-poursuivi, et c'est l'utilisateur qui l'a quittée ensuite) et `.unknown` (rapport écrit par une version plus ancienne,
-qui n'enregistrait pas la suite). ❌ Aucun mot de fermeture n'a le droit d'y figurer, et `.unknown` doit rester vrai que
-Cmdr ait quitté ou non, donc il n'affirme ni l'un ni l'autre. Valeurs ICU ; aucune des deux ne contient d'apostrophe,
-donc aucun doublement n'a été nécessaire (les valeurs citées ci-dessous le sont selon la convention de ce document).
-
-- **"ran into a problem", Cmdr en sujet → `Cmdr a rencontré un problème`** · la structure app-en-sujet + `a rencontré`
-  est attestée Tier 1 (`fr/macOS/Finder/LocalizableMerged.json`, `NE105` : "« ^0 » encountered an error." → « « ^0 » a
-  rencontré une erreur. »), et le guide de style Microsoft FRA atteste la collocation verbe + nom (§ 4.1.9 : « Nous
-  avons rencontré un problème… », son rendu sanctionné de "We''ve hit a snag"). `problème` remplace `erreur`, que
-  style.md interdit, et reprend le repli calme déjà settled de ce glossaire (`error (non-alarmist status) → problème`) ·
-  high (vérifié sur la pile de référence, 2026-08-23).
-  - **Pourquoi pas la tournure impersonnelle d'Apple** (« Un problème s'est produit lors de… »,
-    `fr/macOS/AppKit/AppKitErrors.json` ; Nautilus `fr` « Il y a eu un problème lors de l'exécution de ce logiciel. ») :
-    les trois variantes remplissent la même phrase du même dialogue, et `.ended` est déjà livré avec Cmdr en sujet. Dans
-    `.keptRunning`, le sujet DOIT rester Cmdr, puisque c'est Cmdr qui est resté ouvert.
-- **"kept running", l'APP et non une opération → `est resté ouvert`** · le catalogue `fr` a déjà settled ce prédicat
-  exact : `main.instanceLock.alertTitle` rend "Cmdr is already running" par « Cmdr est déjà ouvert », et c'est aussi la
-  formule de macOS pour une app déjà lancée · high. Le participe s'accorde au masculin avec Cmdr, comme le
-  `s''est fermé` de `.ended`.
-  - ❌ **Pas `a continué de fonctionner`** : la famille `fonctionner` n'est attestée nulle part dans la pile `fr` pour
-    cet emploi (macOS, les quatre `.po`, Total Commander et la terminologie MS : zéro occurrence), et l'adopter
-    coûterait au catalogue son mot unique pour « Cmdr tourne ». La pile ne propose que des formes plus techniques ou
-    plus rares : « en cours d'exécution » (Nautilus, Thunar, Dolphin, Double Commander ; registre process) et « en
-    service » (macOS `N144`, « quand le Finder est en service »).
-  - **Bénéfice voulu : `est resté ouvert` est l'antonyme direct du `s''est fermé` de `.ended`.** Les deux clés occupent
-    le même emplacement et ne s'affichent jamais ensemble, donc le contraste rend la distinction immédiate pour qui voit
-    l'une ou l'autre. Ne pas « harmoniser » une clé sur l'autre.
-  - **Ne pas confondre avec `en cours`**, le mot du catalogue pour une OPÉRATION qui tourne
-    (`main.quit.operationsHeading` « Toujours en cours », `queue.row.status`). Ici le sujet est l'app, pas une
-    opération.
-- **"in the background" → `en arrière-plan`** · unanime dans la pile (terminologie MS FRA `background task` → « tâche en
-  arrière-plan » ; Double Commander "When application is in the &background" → « Quand l'application est en
-  &arrière-plan » ; Dolphin « une indexation de vos fichiers en arrière-plan ») et déjà settled dans ce glossaire pour
-  le bouton du dialogue de progression · high. « en tâche de fond » n'a aucune occurrence dans la pile `fr`.
-- **"a report" et non "a crash report" → `un rapport` tout court** · la 2e phrase reprend mot pour mot celle de `.ended`
-  en retirant le seul mot qui porte « crash » : « Voici un rapport d''incident avec des détails qui peuvent aider à
-  corriger ça. » → « Voici un rapport avec des détails qui peuvent aider à corriger ça. » C'est exactement ce que fait
-  l'anglais, et `incident` est justement le mot que ce glossaire réserve au plantage
-  (`crash report → rapport d''incident`). La terminologie MS FRA confirme le nom nu (`Diagnostic Report` → « Rapport de
-  diagnostic » ; `report` au sens « document généré par une application » → « rapport » dans cinq entrées sur sept, la
-  septième, « état », appartenant au registre ERP) · high.
-- **`.keptRunning` met `La dernière fois,` en tête**, là où `.ended` et `.unknown` le laissent en fin de proposition.
-  Raison : `.keptRunning` porte déjà `en arrière-plan`, et empiler « en arrière-plan la dernière fois » alourdit la
-  phrase sans rien gagner. Les trois valeurs ne se croisent jamais à l'écran, donc l'ordre peut différer ; la voix,
-  elle, reste identique. `.unknown` calque `.ended` mot pour mot, prédicat mis à part.
-- Valeurs :
-  - `.keptRunning` :
-    `La dernière fois, Cmdr a rencontré un problème en arrière-plan et est resté ouvert. Voici un rapport avec des détails qui peuvent aider à corriger ça.`
-  - `.unknown` :
-    `Cmdr a rencontré un problème la dernière fois. Voici un rapport avec des détails qui peuvent aider à corriger ça.`
-- Aucune des deux valeurs n'est identique à l'anglais : pas de `sameAsSourceJustification`. Aucun `: ; ! ? %`, donc la
-  règle d'espace avant ponctuation ne se pose pas ; aucune apostrophe, donc aucun doublement ICU ; aucun U+2019 ni
-  U+202F.
-
-## Le dialogue d'incident : `a quitté inopinément`, `a continué son exécution`, `la dernière fois` en fin de proposition
-
-Trois décisions prises sur preuves de la pile de référence, dont une correction d'une valeur déjà livrée.
-
-- **CORRECTION — « quit unexpectedly » → `a quitté inopinément`** · `fr/macOS/AppKit/AppKitErrors.json` : « Lors de sa
-  précédente ouverture, %@ a quitté inopinément pendant la réouverture des fenêtres. » · high. La valeur livrée
-  auparavant, `s''est fermé de façon inattendue`, n'a **aucune attestation** dans toute la pile ; c'est une paraphrase.
-  Apple a créé le concept et l'utilisateur francophone lit cette formule dans les dialogues de plantage du système, donc
-  c'est elle qui fait autorité. Seule la locution verbale change ; `la dernière fois` reste où elle était.
-- **« kept running » → `a continué son exécution`** · `fr/macOS/AppKit/NSExceptionAlert.json` `69.title` : « … pour
-  continuer l'exécution de l'application dans un état instable … » · high. C'est le dialogue d'exception d'Apple
-  lui-même, c'est-à-dire exactement notre surface. Le catalogue confirme le champ lexical avec `en cours` :
-  `Toujours en cours en arrière-plan.` et `Garder ce transfert en cours en arrière-plan`
-  (`fileOperations.transferProgress.*`). ❌ Pas `en cours d''exécution` : zéro occurrence dans le catalogue, ne pas
-  l'introduire. ❌ Pas `a continué de fonctionner` : `fonctionner` veut dire « marcher / être compatible » partout dans
-  la pile (macOS `LA20`/`LA35`, Thunar, Double Commander), jamais « rester en marche ». ❌ Pas `est resté ouvert` :
-  décrit une fenêtre, pas un processus.
-- **`la dernière fois` se place EN FIN de proposition, jamais en tête** · les trois seules occurrences de la pile la
-  placent en fin (`AppKit/Document.json` « … ouvert ou enregistré pour la dernière fois. », Thunar `:2659`, Dolphin
-  `:4744`), et les cinq occurrences du catalogue livré font pareil · high. Quand Apple veut l'antéposer, elle change de
-  construction (`Lors de sa précédente ouverture, …`), elle ne déplace pas `la dernière fois`. Les trois variantes du
-  corps partagent donc la même charpente, `Cmdr <verbe> … la dernière fois.`
-- **`continuer à` + infinitif, pas `continuer de`** · macOS `PE79`/`PE80`/`PE81` (« continuer à copier les autres »),
-  Thunar `:3174`. `continuer de` n'apparaît qu'une fois dans toute la pile (Thunar `:3161`), sur la même chaîne anglaise
-  qu'une variante en `à`. Noté ici parce que la question revient à chaque phrase de continuité, même si la valeur
-  retenue ci-dessus emploie `continuer` + complément de nom.
-- **« a report » sans « crash » → `un rapport`** · la seconde phrase reprend celle de `.ended` sans `d''incident`, et
-  `rapport d''incident` reste réservé au vrai plantage. Titre et confirmation suivent la même coupe :
-  `Envoyer le rapport d''incident ?` / `Envoyer le rapport ?`, `Rapport d''incident envoyé. …` / `Rapport envoyé. …` ·
-  high.
-- **`crashReporter.dialog.privacyNote` était déjà neutre** (« la partie du code concernée »), donc la valeur ne bouge
-  pas alors que l'anglais est passé de « crashed » à « ran into the problem ». Seule l'empreinte a été rafraîchie.
-
-## Le texte du réglage des rapports couvre désormais les deux cas (`settings.updates.crashReports.description`)
-
-Le réglage envoie aussi un rapport quand un problème en arrière-plan n'a PAS fait quitter l'app, donc l'aide ne peut
-plus parler seulement d'une fermeture. Tout est repris de la section du dialogue d'incident ci-dessus, au présent :
-
-- **`quand Cmdr quitte inopinément`** applique enfin la CORRECTION attestée (`fr/macOS/AppKit/AppKitErrors.json`) à
-  cette clé, à la place de `se ferme de façon inattendue`, la paraphrase non attestée qu'elle traînait encore · high.
-- **`rencontre un problème en arrière-plan`** vient de `crashReporter.dialog.body.keptRunning` · high.
-- **`un rapport` tout court**, pas `un rapport d''incident` : la phrase couvre les deux cas, même opération que
-  `.title.report` · high. ❌ Le LIBELLÉ `settings.updates.crashReports.label` garde `Envoyer les rapports d''incident` :
-  c'est le nom du réglage.
-- **Deuxième phrase reprise de `crashReporter.dialog.privacyNote`** (`la partie du code concernée`), à la place de
-  `l''emplacement de l''incident`, vrai seulement en cas de plantage · high. La virgule de série que l'ancienne valeur
-  avait héritée de l'anglais disparaît au passage : le français ne l'utilise pas (règle déjà notée plus haut).
-
-## Éjection et déconnexion refusées : les neuf clés `errors.eject.*` (2026-08-23)
+## Éjection et déconnexion refusées : les neuf clés `errors.eject.*`
 
 Une phrase par clé, affichée dans une notification brève en haut à droite. Chaque valeur est la phrase qui suit le
 deux-points d'un des deux moules du catalogue `fr` : `fileExplorer.pane.ejectFailedToast` (« Impossible d'éjecter
@@ -1900,11 +1156,10 @@ terminée. » (`l'opération` est le nom générique du catalogue, cf. `errors.v
 couvre la copie, le déplacement et la suppression que l'anglais résume par « that »). `notEjectable` → « Ce disque n'est
 pas amovible, il reste donc connecté. »
 
-Aucun `sameAsSourceJustification` nécessaire : les neuf valeurs diffèrent de l'anglais. Aucun `: ; ! ? %` dans les
 valeurs, donc la règle d'espace avant ponctuation ne se pose pas ; aucune apostrophe doublée (famille RAW), aucun U+2019
 ni U+202F.
 
-## Le refus d'éjection nommé : qui tient le disque (`errors.eject.unmountRefusedBy*`, `otherApps`)
+## Le refus d'éjection nommé : qui tient le disque (`errors.eject.unmountRefusedBy*`, `.otherApps`)
 
 Six clés qui affinent `errors.eject.unmountRefused` : au lieu de « Quelque chose utilise encore ce disque. », macOS a pu
 dire QUI tient le disque. Mêmes contraintes que le lot précédent (valeur après le deux-points du moule, majuscule
@@ -1965,10 +1220,9 @@ même verbe, même seconde phrase, même chute « puis éjectez-le à nouveau »
 - **`if it keeps happening` → `si cela continue`** · déjà livré dans ce fichier
   (`errors.listing.unexpectedSystemResponse.suggestion` « Si cela continue, ouvrez **Utilitaire de disque** … ») · high.
 
-Aucun `sameAsSourceJustification` : les six valeurs diffèrent de l'anglais. Aucun `: ; ! ? %`, aucune apostrophe doublée
 (famille RAW), aucun U+2019 ni U+202F.
 
-## La notification de corbeille : annuler et remettre en place (`fileOperations.trash.*`, `commands.fileGoToTrash.*`, 2026-08-27)
+## La notification de corbeille : annuler et remettre en place (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)
 
 Nouvelle surface : après un déplacement vers la corbeille, une notification propose deux boutons (« Annuler », « Aller à
 la corbeille ») ; la même commande existe dans la palette.
@@ -2000,7 +1254,7 @@ la corbeille ») ; la même commande existe dans la palette.
 - Espace ASCII avant le `;` de `undonePartial`, apostrophes ASCII doublées dans `undoUnavailable` et `noTrashHere`,
   aucun U+2019 ni U+202F. Aucun `sameAsSourceJustification` nécessaire : les neuf valeurs diffèrent de l'anglais.
 
-## Compléter un rapport déjà envoyé : les 11 clés `errorReporter.amend*` (2026-08-28)
+## Compléter un rapport déjà envoyé : les 11 clés `errorReporter.amend*`
 
 Nouvelle surface : quand Cmdr a envoyé un rapport d'incident tout seul (envoi automatique), la notification « Rapport
 d'incident envoyé » porte un bouton qui ouvre une fenêtre montrant ce qui est parti et où l'utilisateur peut écrire une
@@ -2052,7 +1306,7 @@ Les 11 valeurs sont ICU (apostrophes doublées), espace ASCII avant `:`, aucun U
   `Afficher` coûterait aussi trois caractères de plus. Le `View` de la barre des touches F est un troisième verbe,
   `Visualiser`, propre à la visionneuse (`fileExplorer.functionKeyBar.viewLabel` / `.viewAction`).
 
-## La fenêtre sélectionner / désélectionner des fichiers (`selection.*`, 2026-08-29)
+## La fenêtre sélectionner / désélectionner des fichiers (`selection.*`)
 
 Sources du lot : macOS 26 Finder `fr` (`MenuBar.json`, ids `172.title` / `300488.title`), Total Commander `fr`
 (`WCMD.INC.utf8` 542/544/3304-3316) et Double Commander `fr` (`doublecmd.po`, `&Unselect All`). La zone passe par ICU,
@@ -2100,7 +1354,7 @@ donc les apostrophes se doubleraient ; aucune valeur du lot n'en contient (les t
   (`errors.listing.nameTooLongErrno.*`) · high. Sujet sous-entendu (le motif), et `la liste affiche` plutôt que
   `ce qui s'affiche dans la liste` : actif, plus court, et aucune apostrophe à doubler.
 
-## Un mot anglais, un mot français : la revue de dérive (2026-08-30)
+## Un mot anglais, un mot français : la revue de dérive
 
 Le catalogue portait 38 endroits où `fr` donnait deux noms différents au même texte anglais, le plus souvent parce
 qu'une passe tardive avait touché `menu.json` en laissant `commands.json` sur l'ancienne formulation. Treize étaient de
@@ -2136,7 +1390,7 @@ Termes.
   disaient `Réinitialiser par défaut`, qui ne veut pas dire la même chose (« par défaut » y devient un adverbe) ·
   `high`.
 - **`API key` → `Clé d'API`** aussi dans l'assistant (`onboarding.cloudSetup.apiKeyAria`, `.apiKeyPlaceholder.generic`
-  disaient `Clé API`), conformément à l'entrée de glossaire déjà en place · `high`.
+  disaient `Clé API`), conformément à l'entrée de `terms.json` · `high`.
 - **`Got it` → `D'accord`** dans les deux · macOS `fr` traduit « Got It » par `D'accord` (vérifié sur macOS 26.6.2,
   2026-08-30) ; le catalogue disait `Compris` d'un côté et `J'ai compris` de l'autre · `high`.
 - **`Press Enter to search` → `Appuyez sur Entrée pour rechercher`** dans les deux (`search.runHint` disait
@@ -2201,7 +1455,7 @@ Termes.
   `: ! ?`, si bien que `Copié !` se réduit à `Copié ` (avec l'espace) et ne coïncide plus avec `Copié`. Ne touchez pas à
   ces quatorze valeurs : le défaut est dans le normalisateur, pas dans la traduction.
 
-## Mots qui ont divergé sans qu'aucun check puisse le voir (2026-08-30)
+## Mots qui ont divergé sans qu'aucun check puisse le voir
 
 `i18n-terms` ne regroupe que des clés dont l'anglais est IDENTIQUE. Celles-ci ont un anglais légèrement différent, donc
 seule la passe manuelle les trouve. Toutes sont corrigées.
@@ -2220,7 +1474,7 @@ seule la passe manuelle les trouve. Toutes sont corrigées.
 - **`error report` → `rapport d'incident` jusque dans les réglages** · `settings.updates.errorReports.label`,
   `settings.developer.verboseLogging.description` et `settings.advanced.maxLogStorageMb.description` disaient
   `rapport d'erreur` · `high`. Le français fond `crash report` et `error report` dans un seul terme (c'est la décision
-  du glossaire, et le ton non alarmiste la motive), donc `settings.updates.attachEmailToReports.description` n'énumère
+  de `terms.json`, et le ton non alarmiste la motive), donc `settings.updates.attachEmailToReports.description` n'énumère
   plus « un rapport d'incident ou d'erreur » : les deux sont le même mot. `onboarding.stepBeta.crashReportsNote` disait
   encore `rapports de plantage`, une cinquième forme.
 - **`Finder tag` → `tag`, pas `étiquette`** · les quatorze `commands.tagsToggle*` disaient `étiquette` contre
@@ -2247,7 +1501,7 @@ seule la passe manuelle les trouve. Toutes sont corrigées.
   confirmation prennent le verbe (`fileOperations.rollbackConfirm.rollBack`/`.title`), les pastilles de statut et le
   titre de progression prennent le nom · `high`. Détail du choix de famille : § « La famille `rollback` ».
 
-## Les noms de sous-fenêtres viennent du Mac de la personne (`errors.git.*`, `errors.provider.*`, 2026-08-30)
+## Les noms de sous-fenêtres viennent du Mac de la personne (`errors.git.*`, `errors.provider.*`)
 
 Huit valeurs écrivaient les noms de sous-fenêtres à la main, et les deux valeurs `errors.git.*` les gardaient même en
 anglais (« System Settings > Privacy & Security > Files and Folders »). Elles portent désormais les jetons
@@ -2263,7 +1517,7 @@ tels que le Mac de la personne les affiche. Ces valeurs sont RAW (pas d'ICU), do
   build 25G83, 2026-08-30) · `high`. Cohérent avec `errors.listing.diskFullErrno.suggestion`
   (`**{system_settings} > Général > Stockage**`).
 
-## `Restaurer` nomme maintenant l'objet : l'ancien nom (`askCmdr.renameUndo.undone` / `.partial`, 2026-08-30)
+## `Restaurer` nomme l'objet : l'ancien nom (`askCmdr.renameUndo.undone`, `.partial`)
 
 L'anglais partageait une phrase avec l'annulation de la corbeille (« Put back {countText} {files}. ») et dit maintenant
 CE QUI revient : l'ancien nom.
@@ -2278,7 +1532,7 @@ CE QUI revient : l'ancien nom.
   `300729.title`, vérifié sur macOS 26.6.2, build 25G83, 2026-08-30), et ils correspondent à `commands.appShowAll.label`
   / `commands.appHideOthers.label` · `high`.
 
-## Une opération à moitié revenue en arrière : terminer le retour (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+## Une opération à moitié revenue en arrière : terminer le retour (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)
 
 - **`Finish rolling back` → `Terminer le retour en arrière`** · reste dans le champ lexical que le catalogue tient déjà
   pour cette fonction (`operationLog.dialog.rollBack` = « Revenir en arrière »,
@@ -2308,10 +1562,8 @@ CE QUI revient : l'ancien nom.
   dossier passe sans retouche. Avec `queue.row.reversalDeleting` la ligne se lit « Suppression de ce qui a été créé dans
   Backup » : c'est la préposition qui dit que la suppression a lieu à l'INTÉRIEUR du dossier. Sans elle, le nom seul
   laisse croire que le dossier lui-même va disparaître, et c'est le bug que cette clé corrige.
-- Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais. Seul l'avis contient des apostrophes,
-  doublées comme le veut l'ICU ; le `{folder}` est inchangé.
 
-## La notification après un retour en arrière interrompu (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`, 2026-08-31)
+## La notification après un retour en arrière interrompu (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`)
 
 Nouvelle surface : l'utilisateur a lancé une copie ou un déplacement, a demandé le retour en arrière, et cette
 notification dit ce que le retour a pu défaire. Elle empile jusqu'à trois parties : un titre (une seule des six clés),
@@ -2327,7 +1579,7 @@ une alerte.
   courbe côté `renameUndo`, doublée côté `cancelRollback`), donc `i18n-terms` ne la contraint pas : le `fr` reste
   identique quand même, parce que c'est la même phrase.
 - **`item` → `élément`, pas `fichier`.** Les sœurs `renameUndo` disent `fichier` parce que leur anglais dit « file » ;
-  ici l'anglais dit « item » et couvre les dossiers créés par l'opération · `élément` du glossaire (macOS Tier 1) ·
+  ici l'anglais dit « item » et couvre les dossiers créés par l'opération · `élément` de `terms.json` (macOS Tier 1) ·
   high. Ne pas uniformiser les deux familles sur un seul nom.
 - **`laissé` reste au masculin singulier devant un `{name}` inconnu**, comme dans `renameUndo.skipReason.drift.named`.
   Ce n'est pas un accord au petit bonheur : `fichier`, `dossier` et `élément` sont tous masculins, donc le nom implicite
@@ -2349,7 +1601,7 @@ une alerte.
   quitté », ce qu'une notification calme ne peut pas se permettre. Nommer le retour en arrière coûte quelques caractères
   et lève l'ambiguïté.
 - **« The rest are still there. » → `Les autres sont toujours là.` ; « The rest stayed where the move put them. » →
-  `Les autres sont restés là où le déplacement les avait mis.`** · `déplacement` du glossaire · high. `Les autres`
+  `Les autres sont restés là où le déplacement les avait mis.`** · `déplacement` de `terms.json` · high. `Les autres`
   plutôt que `Le reste` : le décompte qui précède fournit l'antécédent pluriel et le participe s'accorde normalement.
 - **`leftBehind` recycle mot pour mot la promesse des confirmations** : « Cmdr laisse de côté tout ce dont il n'est pas
   sûr » (`rollbackConfirm.bodyUndoByDeleting` et sœurs) · high. La notification répète ainsi la phrase que l'utilisateur
@@ -2389,7 +1641,7 @@ une alerte.
 
 ### `cancelRollback.stagedLeftover.*` (les restes de Cmdr lui-même à destination)
 
-Nouvelles le 2026-09-02. Deux lignes sur un fichier de travail créé par Cmdr et qu'il n'a pas réussi à retirer de la
+Deux lignes sur un fichier de travail créé par Cmdr et qu'il n'a pas réussi à retirer de la
 destination. Elles ne font PAS partie de la liste `reason.*` : là, Cmdr protège les fichiers de la personne ; ici, il
 s'agit de son propre reste.
 
@@ -2404,20 +1656,21 @@ s'agit de son propre reste.
   moins d'une heure : une nouvelle tentative immédiate ne retire donc rien. Promettre le contraire serait exactement le
   défaut que cette ligne corrige.
 
-## L’écran de blocage quand le WebKit est trop ancien (`main.oldWebkit.*`, 2026-09-02)
+## L'écran de blocage quand le WebKit est trop ancien (`main.oldWebkit.*`)
 
 Trois chaînes que Cmdr affiche à la place de son interface quand le Safari du Mac est trop ancien. Elles vivent dans la
-coquille HTML, pas dans l’app : c’est tout ce que cette personne verra de Cmdr.
+coquille HTML, pas dans l'app : c'est tout ce que cette personne verra de Cmdr.
 
 - **`Software Update` → `Mise à jour de logiciels`** · nom du volet dans les Réglages Système ; la trace Tier 1 de
-  Finder confirme le terme (`Apple Device Software Update File` → `Fichier de mise à jour logicielle d’appareil Apple`)
+  Finder confirme le terme (`Apple Device Software Update File` → `Fichier de mise à jour logicielle d'appareil Apple`)
   · `high`.
-- **`Quit` → `Quitter`** · déjà au glossaire (§ menus), confirmé par la clé `Quit` d’AppKit · `high`.
-- **Apostrophe typographique `’` partout** (`d’une`, `L’interface`), comme Apple. Bonus mécanique : ICU n’échappe que
-  l’apostrophe ASCII, donc rien à doubler ici.
-- **`Safari`, `Mac` et `15.4` restent tels quels.** `Safari` est désormais dans `BRAND_WORDS`.
+- **`Quit` → `Quitter`** · déjà dans `terms.json`, confirmé par la clé `Quit` d'AppKit · `high`.
+- **Apostrophe ASCII doublée, comme tout le catalogue** (`d''une`, `L''interface`) : ces clés sont ICU (l'anglais écrit
+  `Cmdr''s`). Une apostrophe courbe n'est pas un échappement ICU et passe tous les contrôles sans bruit ; la seule parade
+  est un balayage périodique `rg '’' apps/desktop/src/lib/intl/messages/fr`.
+- **`Safari`, `Mac` et `15.4` restent tels quels.** `Safari` est dans `BRAND_WORDS`.
 
-## L''avis « ancien macOS » (`main.oldMacos.*`, 2026-09-02)
+## L'avis « ancien macOS » (`main.oldMacos.*`)
 
 Une boîte de dialogue affichée une seule fois sur un Mac sous macOS 12 : Cmdr démarre, mais on est hors de la plage
 testée. Ton honnête et détendu, ni excuse ni avertissement, puisque l''app fonctionne.
@@ -2432,7 +1685,7 @@ testée. Ton honnête et détendu, ni excuse ni avertissement, puisque l''app fo
 - **La dernière phrase, c''est David à la première personne**, au `vous` comme le reste du catalogue.
 - Apostrophes ICU doublées : `j''aimerais`.
 
-## Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.tool.inspectFile.*`, 2026-09-02)
+## Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.tool.inspectFile.*`)
 
 Cinq clés ICU (apostrophes ASCII doublées, espace ASCII avant `:`). `contentsRule` remplace l'ancienne
 `askCmdr.consent.noContents` : ses deux dernières phrases (la recherche de photos ; les suggestions qui attendent votre
@@ -2486,11 +1739,8 @@ Notes de rédaction :
 - **« never sends whole files, photos, or thumbnails » →
   `n'envoie jamais de fichiers entiers, de photos ni de vignettes`** : `de` répété après la négation, `ni` devant le
   dernier terme.
-- Aucun `sameAsSourceJustification` : les cinq valeurs diffèrent de l'anglais.
-- À signaler : `askCmdr.empty.hint` (anglais inchangé, « never file contents » / « jamais le contenu des fichiers »)
-  contredit désormais cette promesse-ci ; c'est une question de copie source, pas de traduction.
-- **Suite (2026-09-02) : `askCmdr.empty.hint` et `settings.askCmdr.intro` réécrits sur le nouvel anglais.** Première
-  phrase conservée dans les deux ; la seconde reprend les termes ci-dessus : « looks inside a file only when you ask
+- **`askCmdr.empty.hint` et `settings.askCmdr.intro` tiennent la même promesse.** La seconde phrase des deux reprend les
+  termes ci-dessus : « looks inside a file only when you ask
   about it » → `ne regarde à l'intérieur d'un fichier que lorsque vous lui posez une question à son sujet`
   (`regarder à l'intérieur` = ancien texte des nouveautés (retiré), `poser une question sur` = le moule du catalogue) ;
   « never changes a file without your approval » → `ne modifie jamais un fichier sans votre approbation` (racine
@@ -2498,7 +1748,7 @@ Notes de rédaction :
   `ne change jamais rien` : Ask Cmdr écrit ses notes et propose des renommages, la promesse porte sur l'accord de la
   personne, pas sur l'absence d'écriture.
 
-## Les deux info-bulles du bouton Rollback (2026-09-04 ; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+## Les deux info-bulles du bouton de retour en arrière (`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
 
 Nouvelle surface : l'info-bulle dit maintenant ce que CE retour en arrière fait aux fichiers, et le bouton est désactivé
 dès qu'un déplacement entre deux systèmes de fichiers atteint sa dernière étape (la suppression des originaux, alors que
@@ -2512,8 +1762,6 @@ tout est déjà arrivé à destination).
   est déjà arrivé à destination »), `retour en arrière` est le terme retenu pour le rollback
   (`rollbackUnavailableTooltip`), et `Annuler` est l'étiquette du bouton voisin (`fileOperations.button.cancel`), donc
   elle passe telle quelle · `high`.
-- Pas de `sameAsSourceJustification`. Les apostrophes des valeurs sont doublées pour ICU (`jusqu''à`, `n''est`,
-  `qu''il`).
 
 ## « Ouvrir un terminal ici » et son sélecteur d’app (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
 
@@ -2543,7 +1791,7 @@ into the search engine's own best-match-first order.
 - **Sentence frame → `Trier par pertinence`** · exactly the pattern of its sibling keys in `commands.json`
   (`Trier par nom`, `Trier par taille`) · `high`. No `sameAsSourceJustification`, and the value carries no apostrophe.
 
-## `Documents and packages`: the new OOXML row (`settings.archives.ooxml.*`)
+## `Documents and packages` : la ligne OOXML (`settings.archives.ooxml.*`)
 
 New surface: a row in the same card as `Archives zip`, above the `Paquets d''application` card. It deliberately covers
 BOTH Office documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even the English avoids naming
@@ -2552,16 +1800,15 @@ Office.
 - **documents (the file kind) → `Documents`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documents`; kinds
   `Document RTF`, `Document format texte`) · `high`. The whole value differs from English, so no
   `sameAsSourceJustification` is needed.
-- **packages (generic, not only apps) → `paquets`** · macOS Finder (`Afficher le contenu du paquet`) and the glossary's
+- **packages (generic, not only apps) → `paquets`** · macOS Finder (`Afficher le contenu du paquet`) and `terms.json`'s
   `app bundle → paquet` · `high`. Bare `paquets` keeps the row broader than the `Paquets d''application` card below it,
   the same split English makes with `packages` vs `app bundles`.
 - **Sentence frame → `Ce que fait la touche Entrée sur un fichier …, …, … ou ….`** · takes `un fichier` from the sibling
   `settings.archives.zip.description` (`sur un fichier zip`) instead of repeating `un` five times, and drops the comma
-  before `ou` (French has no serial comma; see the calqued `virgule avant ou` note above) · `high`. ❗
-  `settings.archives.bundle.description` still carries that calqued comma (`un .bundle, ou un .framework`). It was out
-  of scope for this pass, so the two rows differ in punctuation until someone fixes it.
+  before `ou` (French has no serial comma) · `high`. `settings.archives.bundle.description` follows the same rule
+  (`un .app, un .bundle ou un .framework`).
 
-## Le hub des serveurs : panneau de connexion, refus, et oubli (2026-09-06, 15 clés `servers.*` + 13 clés `fileExplorer.navigation.*`)
+## Le hub des serveurs : panneau de connexion, refus et oubli (`servers.refusal.*`, `servers.paneState.*`, `fileExplorer.navigation.forget*`, `fileExplorer.navigation.disconnect*`, `menu.network.forgetServer`, `.forgetSavedPassword`)
 
 Nouvelle surface : un panneau qui affiche l'état d'une connexion à un serveur (SMB, SFTP, WebDAV), la raison d'un refus,
 et les confirmations pour oublier un serveur ou son mot de passe. Le tas de références (`_ignored/i18n/fr/`) est absent
@@ -2583,7 +1830,7 @@ de cette machine ; les termes ci-dessous viennent donc des paquets macOS install
   anglais `{host}''s key` passe par `la clé de {host}`, ce qui garde le remplacement dans un emplacement neutre.
 - **signed out (l'état, pas la personne) → `Session fermée`** · restructuration exigée par la règle de genre : un
   participe accordé au sujet donnerait `Déconnecté(e)`. `session` est féminin et porte l'accord, la personne n'apparaît
-  pas · `high`. L'action reste `s''identifier` (glossaire, § Terms).
+  pas · `high`. L'action reste `s''identifier` (`terms.json`).
 - **to forget (un serveur, un mot de passe) → `oublier`** · déjà livré par `menu.network.forgetServer`
   (`Oublier le serveur`), `menu.network.forgetSavedPassword` et `fileExplorer.network.share.forgetPassword`
   (`Oublier le mot de passe enregistré`) · `high`. Les deux titres de confirmation reprennent le libellé de menu MOT
@@ -2613,10 +1860,8 @@ Notes de formulation :
   sinon `desktop-i18n-dont-translate` signale la marque `Cmdr` perdue.
 - **`Forget {name} ?` prend l'espace ASCII avant le `?`**, comme tout le set `fr` (style guide § Notes).
   `ne l''affiche plus` évite l'accord : l'élision de `le` rend le pronom neutre quel que soit le nom inséré.
-- Aucune valeur n'est identique à l'anglais, donc aucune `sameAsSourceJustification` dans ce lot. Toutes les apostrophes
-  sont ASCII et doublées (`n''a`, `d''accès`, `d''identification`, `s''y`, `l''affiche`).
 
-## Le hub des serveurs : la table, ses colonnes et ses états (2026-09-06, 28 clés `servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.*`, `shortcuts.scope.*`)
+## Le hub des serveurs : la table, ses colonnes et ses états (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.groupNetwork`, `shortcuts.scope.servers`, `shortcuts.scope.places`)
 
 La rangée « Network » du sélecteur de volume devient **« Servers »** et ouvre un hub : une table de tous les serveurs
 enregistrés (SFTP, WebDAV, SMB) plus ceux détectés sur le réseau local, avec les colonnes Nom / Type / Adresse / État /
@@ -2698,7 +1943,7 @@ Notes de formulation :
 - Une seule valeur est identique à l'anglais (`servers.hub.colType`), et elle porte sa `sameAsSourceJustification`.
   Toutes les apostrophes sont ASCII et doublées (`n''a`, `l''endroit`, `s''affiche`).
 
-## Le hub des serveurs : la feuille de connexion et la clé d'hôte SSH (2026-09-07, 46 clés `servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.*`, `goToPath.dialog.*Server`, `commands.serversConnect.label`)
+## Le hub des serveurs : la feuille de connexion et la clé d'hôte SSH (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.*`, `goToPath.dialog.opensServer`, `.addsServer`, `commands.serversConnect.label`)
 
 La feuille modale qui ajoute, modifie, ou ré-identifie un serveur (SMB, SFTP, WebDAV), l'étape d'approbation de la clé
 d'hôte SSH qui s'y insère, et deux lignes d'aperçu sous « Aller au chemin ». Le tas de références (`_ignored/i18n/fr/`)
@@ -2752,7 +1997,7 @@ Notes de formulation :
 
 - **Les titres de la feuille sont des infinitifs**, comme tous les libellés d'action du set `fr` (style guide §
   Formality) : `Ajouter un serveur`, `Modifier {name}`, `S''identifier sur {name}`. Le verbe `s''identifier` vient du
-  glossaire (§ Terms) et de la clé livrée `fileExplorer.network.signIn` (`S''identifier`) ; `se connecter` reste réservé
+  `terms.json` et de la clé livrée `fileExplorer.network.signIn` (`S''identifier`) ; `se connecter` reste réservé
   à l'action réseau (`fileExplorer.network.connect` → `Se connecter`).
 - **Trois libellés reprennent MOT POUR MOT une clé livrée AILLEURS**, sinon `desktop-i18n-term-consistency` compte une
   divergence : `Se connecter` (`fileExplorer.network.connect`), `S''identifier` (`fileExplorer.network.signIn`),
@@ -2789,7 +2034,7 @@ Notes de formulation :
   `addressPlaceholder`) et portent chacune leur `sameAsSourceJustification`. Toutes les apostrophes sont ASCII et
   doublées (`S''identifier`, `d''hôte`, `qu''invité`, `l''empreinte`, `s''est`, `d''approuver`).
 
-## Le panneau de reconnexion et la session fermée sans mot de passe à saisir (2026-09-07, `servers.paneState.reconnecting`, `.signedOutNothingToAsk`)
+## Le panneau de reconnexion et la session fermée sans mot de passe à saisir (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)
 
 Le tas de références (`_ignored/i18n/fr/`) est absent de cette machine ; tout ce qui suit est miné directement dans les
 paquets macOS installés (macOS 26.6.2 build 25G83, `plutil -convert json` sur les `.loctable` / `.strings`, 2026-09-07),
@@ -2838,11 +2083,11 @@ Notes de formulation :
   constat, pas une faute.
 - **`Open it again to retry.` → `Ouvrez-le à nouveau pour réessayer.`**, mot pour mot la fin du voisin
   `servers.paneState.hostKeyChangedHint` (« … ouvrez-le à nouveau pour vérifier l''empreinte. »). `le` reprend
-  `Ce serveur` (masculin), sûr côté accord. `réessayer` est le terme du glossaire (§ Terms).
+  `Ce serveur` (masculin), sûr côté accord. `réessayer` est le terme du `terms.json`.
 - Le `…` de `reconnecting` est U+2026, comme la source anglaise et comme `Connexion à {name}…`. Toutes les apostrophes
   sont ASCII et doublées (`n''y`).
 
-## Épingler un serveur au sélecteur, les clés d'hôte approuvées, et la ligne ADB des réglages (2026-09-07, `menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.appearance.tintSmb.*`)
+## Épingler un serveur au sélecteur, les clés d'hôte approuvées et la ligne ADB des réglages (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.appearance.tintSmb.*`)
 
 Trois surfaces : les deux éléments de menu contextuel qui épinglent ou retirent un serveur du sélecteur de volume plus
 la notification ponctuelle qui les explique ; la page Réglages > Systèmes de fichiers > Serveurs, qui liste les clés
@@ -2922,17 +2167,17 @@ Notes de formulation :
   et Apple écrit la même phrase nue (AMPDevices, clé `rr4pkgnu56` :
   `Cliquez sur Rechercher les mises à jour pour vérifier…`). Espace ASCII avant le deux-points.
 - **`Android platform tools` garde sa capitale de produit** : `les Android Platform Tools`, comme
-  `settings.fileOperations.adbEnabled.description` déjà livrée (§ Terms, style guide).
+  `settings.fileOperations.adbEnabled.description` déjà livrée (`terms.json`, style guide).
 - **La teinte des panneaux couvre maintenant trois protocoles.** `settings.appearance.tintSmb.*` ne dit plus
   `panneaux SMB/réseau` : le libellé devient `Teinter les panneaux de serveur (SMB, SFTP, WebDAV)` et la description
   calque la structure de sa sœur `tintMtp.description` (`Teinte de fond appliquée aux panneaux affichant …`).
 - **Une seule valeur est identique à l'anglais** (`settings.section.adb`, « Android (ADB) ») et porte sa
   `sameAsSourceJustification` : Apple n'a aucun équivalent (un grep de `Android` sur tous les `.loctable` du système ne
-  renvoie rien sur macOS 26.6.2 build 25G83), et le glossaire fixe déjà les deux mots comme verbatim.
+  renvoie rien sur macOS 26.6.2 build 25G83), et `terms.json` fixe déjà les deux mots comme verbatim.
 - Toutes les apostrophes des valeurs ICU sont ASCII et doublées (`s''allonge`, `D''accord`, `l''astuce`, `d''hôte`,
   `l''empreinte`, `l''approuvez`, `qu''il`, `l''instant`). Les deux clés `menu.*` sont RAW et n'en contiennent aucune.
 
-## Le téléphone Android : le panneau de connexion, les info-bulles et l'astuce ADB (2026-09-07, 19 clés `adb.*` + `settings.behavior.adbHintDismissed.*`)
+## Le téléphone Android : le panneau de connexion, les info-bulles et l'astuce ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`)
 
 Trois surfaces : le panneau plein qui remplace la liste des fichiers quand l'ouverture d'un téléphone Android s'arrête
 (`adb.connect.*`, même voix que `servers.refusal.*` / `servers.paneState.*`), les info-bulles de la rangée du téléphone
@@ -2999,7 +2244,7 @@ Notes de formulation :
 
 - **`Disconnect {name}` reprend MOT POUR MOT la clé serveur déjà livrée** : `Se déconnecter de {name}`, comme
   `fileExplorer.navigation.disconnectPlaceAriaLabel`. Le bouton dit `Disconnect` et non `Eject` parce que rien n'est
-  rendu sûr à débrancher ; le français fait la même distinction (`se déconnecter` / `éjecter`, § Terms), donc les deux
+  rendu sûr à débrancher ; le français fait la même distinction (`se déconnecter` / `éjecter`, `terms.json`), donc les deux
   surfaces s'accordent sans effort.
 - **L'info-bulle grisée croise ses deux sœurs déjà livrées** : `fileExplorer.navigation.disconnectBusyTooltip` donne
   `Impossible de se déconnecter tant que des opérations sont en cours sur ce serveur`, `ejectBusyTooltip` donne
@@ -3025,7 +2270,7 @@ Notes de formulation :
   inspection ; `Consultez` sonne administratif. `Regardez` est plus court et plus juste. `tentative` sur le seul choix
   du verbe d'ouverture ; `appuyez sur Autoriser` est, lui, sourcé.
 - **`Want the whole filesystem?` → `Besoin de tout le système de fichiers ?`** : tournure elliptique, comme l'anglais.
-  `système de fichiers` est le terme fixé (§ Terms) et `tout le` reprend `l'ensemble du système de fichiers` de
+  `système de fichiers` est le terme fixé (`terms.json`) et `tout le` reprend `l'ensemble du système de fichiers` de
   `settings.fileOperations.adbEnabled.description`. Espace ASCII avant le `?`, comme tout le set `fr`.
 - **Le drapeau interne calque sa sœur `serversPinHintSeen`** : `Astuce sur le débogage USB ignorée` /
   `Indique si la ligne unique proposant le débogage USB a été ignorée.` — même structure `Indique si … a été …`, et
@@ -3041,13 +2286,6 @@ Notes de formulation :
   (`fileOperations.button.cancel`), et le français rend déjà `Undo` par le même mot, donc la phrase deviendrait ambiguë.
   Le nom déverbal `l''ouverture` porte le gérondif anglais ; `ouvrir` est le verbe fixé pour ouvrir un téléphone
   (`adb.connect.waitingHint`, `Cmdr ouvre votre téléphone…`). Apostrophe ASCII doublée, le fichier est ICU.
-
-## Apostrophe sweep over `main.oldWebkit.*`
-
-`main.oldWebkit.title` and `main.oldWebkit.body` were the last two `fr` values carrying the curly U+2019 copied from the
-English source. Both are ICU (the English body spells `Cmdr''s`), so they now read `d''une` and `L''interface`, matching
-the catalog-wide rule in § Apostrophe form. Confidence: high. A curly apostrophe is not an ICU escape, so it passes
-every check silently; the only defence is a periodic `rg '’' apps/desktop/src/lib/intl/messages/fr` sweep.
 
 ## L'identité verrouillée du serveur (`servers.sheet.identityLocked`)
 
@@ -3076,9 +2314,9 @@ enregistré.
   position neutre derrière `pour`.
 - **Apostrophe doublée** (`n''était`) : `fileExplorer.json` passe par ICU, contrairement aux familles brutes.
 - La pile de référence était absente de cette machine (`_ignored/i18n/` n'existe pas non plus dans le clone principal) ;
-  la décision s'appuie donc sur le catalogue déjà livré et sur ce glossaire.
+  la décision s'appuie donc sur le catalogue déjà livré et sur `terms.json`.
 
-## La durée des tentatives, le titre de clé d'hôte et le bouton Autoriser d'Android
+## La durée des tentatives, le titre de clé d'hôte et le bouton Autoriser d'Android (`servers.paneState.retryTotalSeconds`, `.retryTotalMinutes`, `servers.paneState.hostKeyChanged`, `adb.readiness.waitingForAuthorization`)
 
 - **`{seconds}`/`{minutes}` portent désormais un pluriel ICU à DEUX paramètres** (`servers.paneState.retryTotalSeconds`,
   `.retryTotalMinutes`) : `{seconds}` ne sert qu'à choisir la branche, ce qui s'affiche est `{secondsText}`, le nombre
@@ -3101,9 +2339,9 @@ enregistré.
   Dans `adb.readiness.waitingForAuthorization` le téléphone passe en tête (« En attente : sur votre téléphone, appuyez
   sur Autoriser ») afin d'éviter « appuyez sur Autoriser sur votre téléphone », deux `sur` collés · `high`.
 - La pile de référence était absente de cette machine (`_ignored/i18n/` n'existe pas non plus dans le clone principal) ;
-  la décision s'appuie donc sur le catalogue déjà livré et sur ce glossaire.
+  la décision s'appuie donc sur le catalogue déjà livré et sur `terms.json`.
 
-## Le menu contextuel de la ligne serveur : `Ouvrir` et `Modifier le serveur…`
+## Le menu contextuel de la ligne serveur : `Ouvrir` et `Modifier le serveur…` (`menu.network.open`, `menu.network.edit`)
 
 - **`Open` (sur une ligne de serveur) → `Ouvrir`** (`menu.network.open`) · identique à `menu.file.open`, car c'est le
   même sens : entrer dans quelque chose, et non confier un fichier à une app. Le français ne sépare pas les deux
@@ -3119,12 +2357,6 @@ enregistré.
   un `''` doublé fait échouer `i18n-icu`. Aucune des deux valeurs n'en contient.
 - La pile de référence est absente de cette machine, mais `Finder.app` fournit la même preuve de niveau 1 directement
   depuis le système (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
-
-## Function key bar context menu (2026-09-07)
-
-- function key bar (la rangée de boutons de commande des touches de fonction en bas de la fenêtre) → barre des touches
-  de fonction · déjà fixé dans le catalogue (`settings.appearance.showFunctionKeyBar.label`) ; réutilisé pour l'élément
-  du menu contextuel et son toast · high
 
 ## La proposition d'ajout au Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 
@@ -3185,7 +2417,7 @@ Décisions de formulation :
   (`/Users/veszelovszki/projects-git/vdavid/cmdr/_ignored/i18n/fr/`), complétée par les paquets système pour `Dock.app`
   et `LoginItems.appex`, que la pile ne contient pas.
 
-## Le menu du Dock : les cinq clés `menu.dock.*` (2026-09-09)
+## Le menu du Dock : les cinq clés `menu.dock.*`
 
 Famille RAW (`menu.*`, tirée par Rust, jamais par ICU) : apostrophes simples, `{name}` et `{parent}` sont des cibles de
 remplacement littérales. Aucune capture ne peut photographier un menu natif, donc tout vient de la pile
@@ -3202,7 +2434,7 @@ remplacement littérales. Aucune capture ne peut photographier un menu natif, do
 - Connect to Server… → **Se connecter au serveur…** · Finder `MenuBar.json` `266.title` (élément Aller > Se connecter au
   serveur…) et `LocalizableMerged` `N84` · high. ❌ Pas « Connexion au serveur », qui est chez Apple le TITRE de la
   fenêtre qui s'ouvre (`ConnectToWindow.json` `1.title`, `LocalizableMerged` `PW28` / `FR15`), pas la commande. Le
-  libellé de commande prend le verbe pronominal, cohérent avec `disconnect → se déconnecter` déjà au glossaire.
+  libellé de commande prend le verbe pronominal, cohérent avec `disconnect → se déconnecter` déjà dans `terms.json`.
 - Search files… → **Rechercher des fichiers…** · repris mot pour mot de `menu.edit.searchFiles`, déjà livré : c'est la
   même commande, atteinte depuis la barre de menus au lieu du Dock, et la description anglaise demande explicitement la
   même formulation · high
@@ -3219,7 +2451,7 @@ Décisions de formulation :
 - **Aucune apostrophe dans les cinq valeurs**, donc le piège du doublage ICU ne se pose pas ici ; il se poserait si un
   jour un libellé du menu du Dock prenait une élision, et la réponse serait alors l'apostrophe SIMPLE (famille RAW).
 
-## La proposition « Afficher dans le Finder » et l'avis de première fois (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+## La proposition « Afficher dans le Finder » et l'avis de première fois (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)
 
 Deux moments de la même fonction : la proposition unique d'ouvrir dans Cmdr le « Afficher dans le Finder » des autres
 apps, et l'avis unique la première fois qu'une de ces demandes arrive ici. Les deux surfaces désignent des commandes
@@ -3235,12 +2467,12 @@ propres à macOS, donc la terminologie macOS l'emporte (style.md § surfaces sys
 - **L'avis de première fois ❌ n'est pas une excuse** · Il dit ce qui vient de se passer, pourquoi, et où se trouve
   l'option. D'où `Cmdr est configuré pour les récupérer`, ❌ jamais « désolé » · `high`.
 
-## La réécriture de la prise en main : 23 clés `onboarding.*` (2026-09-09)
+## La prise en main : l'assistant, l'étape IA et la liste de contrôle (`onboarding.*`, `settings.revealHandler.notProductionBuild`)
 
-Famille ICU : apostrophes DOUBLÉES partout. Dix-neuf clés neuves (étape 1 et le cadre de l'assistant, l'étape IA, la
-liste de contrôle de l'étape 3, les quatre résumés de l'étape 4) et quatre reformulées côté anglais.
+Famille ICU : apostrophes DOUBLÉES partout. Couvre l'étape 1 et le cadre de l'assistant, l'étape IA, la liste de
+contrôle de l'étape 3 et les résumés de l'étape 4.
 
-Termes établis pendant cette passe :
+Termes :
 
 - More about <X> (nom accessible de la pastille d'info) → **En savoir plus sur {topic}** · macOS Finder
   `ICloudNoDocumentsView.json` (`URC-Za-pdT.title` → « En savoir plus sur iCloud ») et `ICloudUpgradeView.json`
@@ -3249,7 +2481,7 @@ Termes établis pendant cette passe :
   exactement la restructuration que la règle des insertions non contrôlées attend.
 - checklist → **liste de contrôle** · MS terminology FRA (`FRENCH.tbx`, entrée 30962 → 30965), relevé 2026-09-09 · high.
   Le titre complet devient « Liste de contrôle de la prise en main » : `onboarding` reste `prise en main` partout
-  (entrée déjà au glossaire), et le compte « each takes 30 seconds » se rend par « 30 secondes par point », parce que «
+  (entrée de `terms.json`), et le compte « each takes 30 seconds » se rend par « 30 secondes par point », parce que «
   chacune » n'aurait pas d'antécédent féminin en français.
 - Save (le bouton à côté du champ e-mail) → **Enregistrer** · macOS AppKit, pervasif (`SavePanel.json`,
   `NSLocalSavePanel.json`, `NSRemoteSavePanel.json`, `Document.json`, `Printing.json`, `Preferences.json` → «
@@ -3267,7 +2499,7 @@ Termes établis pendant cette passe :
 - mailing list → **liste de diffusion** · MS terminology FRA (`FRENCH.tbx`, entrées 210512 → 724756 et 2791 → 724755),
   relevé 2026-09-09 · high.
 - `API key` → **clé d'API** aussi dans les deux clés neuves de l'assistant (`stepAi.cloud.help`,
-  `stepAi.missingKeyWarning`), conformément à l'entrée de glossaire · high.
+  `stepAi.missingKeyWarning`), conformément à l'entrée de `terms.json` · high.
 
 Décisions de formulation :
 
@@ -3300,7 +2532,7 @@ Décisions de formulation :
   pour les dossiers). La seconde phrase reprend le moule de `settings.revealHandler.notInApplications`
   (`laisserait chaque clic sur « Afficher dans le Finder » sans destination`) · `high`.
 
-## La visionneuse récupère d'abord le fichier (`viewer.pull.*`, `viewer.error.stoppedResponding`, 2026-09-10)
+## La visionneuse récupère d'abord le fichier (`viewer.pull.*`, `viewer.error.stoppedResponding`)
 
 Famille ICU : apostrophes doublées. Le panneau s'affiche au milieu de la visionneuse quand la copie d'un fichier distant
 (téléphone, serveur, archive) vers un fichier temporaire dure plus d'une seconde.
@@ -3330,7 +2562,7 @@ Décision de formulation :
   que le disque ou l'appareil est toujours connecté ») et finit sur `puis réessayez`. `connecté` s'accorde avec
   `le téléphone ou le serveur`, deux masculins fixés par la phrase, jamais avec la personne · `high`.
 
-## L'index d'un téléphone ADB paraît obsolète (`driveIndex.tooltipStalePhone`, `staleDialog.titlePhone` / `bodyPhone`, 2026-09-11)
+## L'index d'un téléphone ADB paraît obsolète (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`, `.bodyPhone`)
 
 Famille ICU : apostrophes doublées. Versions « téléphone » des trois clés de l'index obsolète : un téléphone Android en
 débogage USB ne signale jamais ses changements, donc son index reste jaune alors qu'il est toujours branché. ❌ Aucune
@@ -3403,7 +2635,7 @@ Décisions de formulation :
   `Réessayez dans un instant.` recopie cinq clés livrées (`ai.translateError.timeout.body`,
   `operationLog.rollback.refusalUnexpected`, …).
 
-## Pourquoi un partage ne se monte pas ou sa liste ne se charge pas (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+## Pourquoi un partage ne se monte pas ou sa liste ne se charge pas (`errors.mount.*`, `errors.shareList.*`)
 
 Les phrases sous « Impossible de monter le partage » (`fileExplorer.networkMount.mountFailedTitle`) et « Impossible de
 se connecter à {hostName} » (`fileExplorer.network.share.connectFailedTitle`), plus les notifications
@@ -3569,9 +2801,7 @@ jamais suggérer de supprimer le dossier, et ❌ jamais « erreur » / « échec
   - Raison décisive pour cette clé : son seul contenu actionnable est d'aller activer l'affichage, et l'interrupteur
     s'appelle « Afficher les fichiers cachés ». Le mot de la notification doit être celui de l'interrupteur, comme le
     veut `style.md` (« Un renvoi à un réglage … réutilise le libellé du bouton qui l'ouvre, mot pour mot »).
-  - ⚠️ `fileExplorer.rename.hiddenAfterRename` dit « les fichiers masqués ne sont pas affichés » là où il parle de
-    l'attribut : c'est la seule valeur du catalogue du mauvais côté de la frontière. À aligner sur `cachés` lors d'une
-    passe qui touche ce fichier.
+  - `fileExplorer.rename.hiddenAfterRename` parle de l'attribut, donc « les fichiers cachés ne sont pas affichés ».
 - **unfinished (move) → `incomplet`** · la sœur d'à côté dans le même fichier fixe déjà `unfinished copy` →
   `copie incomplète` (`fileOperations.cancelRollback.stagedLeftover.named`), et les deux notifications peuvent se suivre
   chez la même personne · `high`. Le tas de références ne contient ni `unfinished` ni `inachevé` (vérifié 2026-09-16),
@@ -3605,14 +2835,14 @@ jamais suggérer de supprimer le dossier, et ❌ jamais « erreur » / « échec
 - Famille ICU : `d''un` avec l'apostrophe ASCII doublée, aucun U+2019, pas de deux-points donc pas d'espace avant. Pas
   de `sameAsSourceJustification` : la valeur diffère de l'anglais.
 
-## Le menu des favoris : les 10 clés du jalon M3 (2026-09-16)
+## Le menu des favoris (`fileExplorer.navigation.favorites*`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `commands.favorites*`, `shortcuts.scope.favoritesMenu`)
 
 ⌃D ouvre la liste des dossiers mis en favori sous forme de menu par-dessus le panneau actif. Les neuf premières lignes
 portent une touche chiffrée (1–9) qui y mène directement ; la dernière porte le `0` et ajoute le dossier courant du
 panneau à la liste. Le sélecteur de volume n'a plus de SECTION Favoris : il n'en garde qu'une ligne de tête qui bascule
 vers ce menu.
 
-- **favorite (le dossier mis en signet) → `favori` / `favoris`** · déjà posé plus haut dans ce fichier
+- **favorite (le dossier mis en signet) → `favori` / `favoris`** · déjà dans `terms.json`
   (`bookmark / favorite → favori`) et tenu par tout le catalogue : `fileExplorer.navigation.groupFavorites` « Favoris »,
   `fileExplorer.navigation.favoritesEmpty` « (Vos favoris s''afficheront ici) », `commands.favoritesAdd.label` « Ajouter
   aux favoris », `menu.go.addToFavorites` « Ajouter aux favoris ». Source Tier 1 : macOS Finder (« Favoris », « Ajouter
@@ -3679,8 +2909,8 @@ vers ce menu.
   favori, et le français le nomme aussi. `correspondant` reprend l'idée de la colonne de touches, comme
   `commands.favoritesOpenByNumber.label` (« le favori portant ce numéro »). ❌ Pas « ouvrir … pour ouvrir » : `aller à`
   évite la répétition du verbe de tête.
-- **`commands.favoritesAdd.description` ne nomme plus la section du sélecteur**, supprimée par M3, mais la vraie
-  destination :
+- **`commands.favoritesAdd.description` nomme la vraie destination**, le menu des favoris (le sélecteur de volume n'a
+  plus de section Favoris) :
   `Ajouter le dossier actuel du panneau actif aux favoris, pour y revenir ensuite depuis le menu des favoris.` · `high`.
 
 ## Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)
@@ -3702,7 +2932,7 @@ vers ce menu.
   so `i18n-terms` holds each pair identical. Reword neither alone. The only legitimate difference is the apostrophe:
   `menu.*` is a RAW family (single `'`), `commands.*` is ICU (doubled `''`), and the check normalizes that away.
 
-## The title-bar full-disk-access badge
+## La pastille « accès complet au disque » de la barre de titre (`onboarding.fdaBadge.*`)
 
 La pastille d'avertissement de la barre de titre et son infobulle, affichées tant que Cmdr n'a pas l'accès complet au
 disque ; un clic rouvre la prise en main à l'étape 1.
@@ -3723,15 +2953,17 @@ disque ; un clic rouvre la prise en main à l'étape 1.
   "Click to …" → `Cliquez pour …` (as in `fileExplorer.breadcrumb.navigateTooltip`), onboarding → `prise en main`
   (settled). Keep the space before the colon.
 
-## The trash refusal dialog (`errors.write.trashRefused.title` + its `message.*` / `suggestion.*` siblings)
+## The trash refusal dialog (`errors.write.trashRefused.*`, `errors.write.fallback.title.trash`, `errors.write.ioError.title.trash`, `errors.write.readError.title.trash`, `errors.write.writeError.title.trash`)
 
-macOS turned down a move to the trash, and Cmdr now words the refusal three ways (permission-shaped, no trash at that
-location, unclassified) instead of one sentence. RAW family, so single apostrophes and `{count}` is a literal
-replacement target. Four rules bind this whole group:
+macOS turned down a move to the trash, and Cmdr words the refusal three ways (permission-shaped, no trash at that
+location, unclassified). RAW family, so single apostrophes and `{count}` is a literal replacement target. Four rules
+bind this whole group:
 
 - **The title is NOT a free choice.** `errors.write.fallback.title.trash`, `errors.write.ioError.title.trash`,
   `errors.write.readError.title.trash`, and `errors.write.writeError.title.trash` carry the same English, so
-  `i18n-terms` holds all five identical. ❌ Reword one and you have to reword all five.
+  `i18n-terms` holds all five identical: `Placement dans la corbeille impossible`, the queue row's noun plus the
+  `<nom verbal> impossible` moule (never Nautilus's `Mise à la corbeille`, which the whole `errors.write.*` trash family
+  had drifted to). ❌ Reword one and you have to reword all five.
 - **No plural machinery**, so every `message.*` has to read correctly at `{count}` = 1 as well as 7. French solves it
   with `{count} des éléments que vous avez choisis`, which takes any numeral without agreement.
 - **❌ Never "try again" in a suggestion.** Retrying a permission refusal reproduces it exactly; that advice is what the
@@ -3759,23 +2991,22 @@ par la première phrase et par les issues qu'elles peuvent proposer. La troisiè
 rend la main après un appui.
 
 - **`.cloudOnlineOnlyMixedWarning`** · `en ligne uniquement` est la formule du Finder pour un fichier évincé ;
-  `corbeille` et `service cloud` viennent de § Terms · medium.
+  `corbeille` et `service cloud` viennent de `terms.json` · tentative.
 - **`.cloudOnlineOnlyAllWarning`** · même texte, avec « Tout ce que vous avez sélectionné » au lieu de « Une partie de
   votre sélection », et sans l'issue « désélectionner » : si tout est évincé, il ne resterait rien de sélectionné ·
-  medium.
+  tentative.
 - **`.cloudOnlineOnlyHandedBack`** · la ligne au-dessus du bouton après un appui que Cmdr n'a délibérément pas exécuté.
-  Ton factuel, sans excuses · medium.
+  Ton factuel, sans excuses · tentative.
 - **Les quatre faits sont obligatoires** : (1) la corbeille téléchargerait les fichiers, (2) Cmdr ne propose donc que de
   supprimer TOUTE la sélection, (3) ensuite il n'y a AUCUNE copie dans la corbeille, même si le service garde la sienne
   (❌ ne pas adoucir), (4) les issues que le bandeau nomme.
 - **Les deux zones `<strong>` restent**, sur « téléchargerait d'abord » et sur le verbe « supprimer ». Et « Supprimer »
   entre guillemets est le libellé du bouton : toujours le même mot que `fileOperations.delete.confirmDelete`.
 - ⚠️ L'apostrophe ICU se double (`d''abord`).
-- Pas de `sameAsSourceJustification` : toutes les valeurs diffèrent de l'anglais.
-- À vérifier au passage overflow : le bandeau est long et tient dans une bande étroite au-dessus de la liste.
-- ⚠️ Brouillon, pas encore relu par un humain.
+- « make these files available offline » → `rendez d''abord ces fichiers disponibles hors connexion`, les mots de la
+  commande `Rendre disponible hors connexion` vers laquelle le bandeau renvoie (jamais `hors ligne`).
 
-## Quand le serveur répond qu'il n'a pas ce partage (`fileExplorer.network.osMountFallback.shareNotOnServer`, `fileExplorer.pane.directConnectionShareNotOnServerToast`, 2026-09-17)
+## Quand le serveur répond qu'il n'a pas ce partage (`fileExplorer.network.osMountFallback.shareNotOnServer`, `fileExplorer.pane.directConnectionShareNotOnServerToast`)
 
 Le seul cas de la famille où réessayer ne sert à rien : le serveur répond clairement qu'aucun partage ne porte ce nom.
 La notification n'a donc pas de bouton, et le ton ne doit rien suggérer de temporaire (ni « pour le moment », ni «
@@ -3800,9 +3031,8 @@ réessayez »), contrairement à ses sœurs.
 - **Dans la notification courte, `qui` rattache la relative à `ce partage`** · `il` serait ambigu, `{server}` étant
   masculin lui aussi · high. La fin `reste donc sur la connexion système` est celle des trois sœurs
   (`fileExplorer.pane.directConnectionUnreachableToast`…).
-- Aucun `sameAsSourceJustification` : les deux valeurs diffèrent de l'anglais.
 
-## Les noms « sosies » sur un serveur (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.*`, `errors.volume.ambiguousName`, 2026-09-23)
+## Les noms « sosies » sur un serveur (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.*`, `errors.volume.ambiguousName`)
 
 Deux noms identiques à l'écran que le serveur enregistre avec des caractères différents (é composé ou décomposé, ou une
 casse différente sur un serveur sensible à la casse). Les quatre clés doivent parler de la même chose avec les mêmes
@@ -3826,11 +3056,11 @@ mots.
   moule dans l'explication du panneau et dans la notification courte ; la virgule d'avant faisait une phrase soudée ·
   high.
 
-## L'interrupteur « Autoriser l'IA dans le cloud » et les états où l'IA dans le cloud est désactivée (`ai.cloudConsent.label`, `ai.cloudConsent.description`, `askCmdr.gate.cloudOff.body`, `settings.ai.cloudConsent.lockedHint`, `settings.askCmdr.enabled.label`, 2026-09-23)
+## L'interrupteur « Autoriser l'IA dans le cloud » et les états où l'IA dans le cloud est désactivée (`ai.cloudConsent.label`, `ai.cloudConsent.description`, `askCmdr.gate.cloudOff.body`, `settings.ai.cloudConsent.lockedHint`, `settings.askCmdr.enabled.label`)
 
 Un interrupteur de confidentialité : tant qu'il est désactivé, Cmdr n'envoie rien à un service d'IA dans le cloud. Ton
 calme, sans jamais promettre plus que ce que fait Cmdr. La pile de référence n'était pas sur la machine de traduction ;
-chaque choix s'appuie sur des termes déjà documentés dans ce glossaire et sur le catalogue.
+chaque choix s'appuie sur des termes déjà documentés dans `terms.json` et sur le catalogue.
 
 - **Allow cloud AI (nom de l'interrupteur) → `Autoriser l'IA dans le cloud`** · `IA dans le cloud` est l'option
   `settings.ai.provider.opt.cloud` ; `autoriser` vient de macOS Finder (allow → `Autoriser`, fixé plus haut) et le moule
@@ -3852,7 +3082,7 @@ chaque choix s'appuie sur des termes déjà documentés dans ce glossaire et sur
 - `settings.askCmdr.enabled.label` n'est plus que « Ask Cmdr » (le nom du produit sur l'interrupteur) et porte une
   `sameAsSourceJustification`.
 
-## Échap et le plein écran (`main.escapeFullScreenHint.*`, `settings.advanced.exitFullScreenOnEscape*`, 2026-09-23)
+## Échap et le plein écran (`main.escapeFullScreenHint.*`, `settings.advanced.exitFullScreenOnEscape*`)
 
 La notification unique qui suit la sortie du plein écran par Échap, et l'interrupteur correspondant dans Réglages >
 Avancé > Saisie.
@@ -3883,6 +3113,8 @@ Avancé > Saisie.
   `transfer.appearedDuringMove`, affiché dans la même notification · `high`.
 
 ## Lignes d'attente de « Ouvrir avec » et « Partager » (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+## Lignes d'attente de « Ouvrir avec » et « Partager » (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)
 
 - **Finding apps… → `Recherche d'apps…`** · nom verbal comme macOS (« Searching… » = « Recherche… »), `apps` comme
   `settings.behavior.textEditorApp.checking` ; apostrophe ASCII simple (clé native) · `high`.

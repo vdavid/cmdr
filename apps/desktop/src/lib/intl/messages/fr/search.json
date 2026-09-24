@@ -203,7 +203,7 @@
   "@search.coverage.toast.indexingOff": {
     "sourceHash": "abfe24b"
   },
-  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr parcourt déjà {drive}. L''indexation démarrera dès que ce sera terminé.",
+  "search.coverage.toast.deferredUntilSearchEnds": "Cmdr effectue déjà une recherche sur {drive}. L''indexation démarrera dès la fin de cette recherche.",
   "@search.coverage.toast.deferredUntilSearchEnds": {
     "sourceHash": "d62392a"
   },

@@ -1,0 +1,3217 @@
+{
+  "about": {
+    "chosen": "À propos de",
+    "confidence": "high",
+    "forms": "À propos de Cmdr (app menu, command, window title)",
+    "sources": "macOS Finder (\"À propos du Finder\")"
+  },
+  "absolute-path": {
+    "accept": ["absolu"],
+    "chosen": "chemin absolu",
+    "confidence": "high",
+    "forms": "predicate: \"Le chemin d'accès doit être absolu (commencer par /)\"",
+    "sources": "MS terminology FRA"
+  },
+  "access": {
+    "accept": ["accéder", "accessible"],
+    "chosen": "accès",
+    "confidence": "high",
+    "forms": "exclusive access (to a device) → accès exclusif; access a place → accéder à",
+    "sources": "macOS; MS terminology FRA"
+  },
+  "account": {
+    "chosen": "compte",
+    "confidence": "high",
+    "forms": "the account you sign in with → le compte / votre compte",
+    "sources": "catalog (errors.json six times, servers.sheet.identityLocked)"
+  },
+  "activate": {
+    "accept": ["activation", "activée", "activé"],
+    "chosen": "Activer",
+    "confidence": "high",
+    "forms": "button Activer; noun activation (de la licence)",
+    "sources": "macOS pattern; catalog licensing.*"
+  },
+  "add": {
+    "accept": ["ajout", "ajoute", "ajouté"],
+    "chosen": "Ajouter",
+    "confidence": "high",
+    "decision": "Compléter un rapport déjà envoyé : les 11 clés `errorReporter.amend*`",
+    "forms": "bare `Ajouter à X` with no explicit object, like Apple (Ajouter au Dock, Ajouter aux favoris, Ajouter à votre rapport d'incident); progress `Ajout…`; participle agrees with its noun (Note ajoutée)",
+    "sources": "macOS Finder/AppKit (\"Ajouter à la barre latérale\", \"Ajouter au Dock\", \"Ajouter aux favoris\")"
+  },
+  "ai-feature": {
+    "accept": ["l'IA", "d'IA", "une IA"],
+    "chosen": "fonctionnalités d'IA",
+    "confidence": "high",
+    "exceptions": {
+      "queryUi.ai.refineAria": "English-sense: the AI search is the search mode, rendered recherche IA like its mode label.",
+      "queryUi.dialog.aiTranslateFailedToast": "English-sense: the AI search is the search mode, rendered recherche IA like its mode label."
+    },
+    "forms": "AI → IA (section name); the AI acting as subject → l'IA; AI features → fonctionnalités d'IA",
+    "sources": "catalog (settings.ai.tooltipOff, settings.ai.provider.description, onboarding.stepAi.intro)"
+  },
+  "ai-provider": {
+    "chosen": "fournisseur",
+    "confidence": "high",
+    "exceptions": {
+      "licensing.dialog.serverInvalidError": "English-sense: a payment provider (prestataire de paiement), not an AI provider."
+    },
+    "forms": "AI provider → fournisseur d'IA; votre fournisseur",
+    "sources": "MS terminology FRA; catalog (ai.translateError.unavailable.title)"
+  },
+  "ai-tool": {
+    "accept": ["Platform Tools"],
+    "chosen": "outil",
+    "confidence": "high",
+    "decision": "Ask Cmdr : la conversation, les jetons et les lignes d'outil (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
+    "forms": "tool status lines: present = deverbal noun phrase (Vérification de vos disques), past = `A <participe> …` (A vérifié vos disques), same shape on every pair; unknown tool → Travail en cours / A utilisé un outil; Android platform tools → Android Platform Tools (kept English, product name)",
+    "sources": "MS terminology FRA (tool → outil); Google's French Android docs for Platform Tools"
+  },
+  "allow": {
+    "accept": ["autorise", "autorisé", "autorisation"],
+    "avoid": [
+      {
+        "form": "Accepter",
+        "why": "not the word Android's dialog shows; Approuver is kept for SSH host keys"
+      }
+    ],
+    "chosen": "Autoriser",
+    "confidence": "high",
+    "forms": "button Autoriser; allow all → Tout autoriser; settings label `Autoriser <objet>` (Autoriser l'IA dans le cloud); conjugated in prose (Autorisez-la dans Réglages > IA); Android's own dialog button is Autoriser, quoted bare",
+    "sources": "macOS Finder (\"Autoriser quand même\"); AOSP SystemUI usb_debugging_allow = Autoriser"
+  },
+  "already-exists": {
+    "accept": ["existent déjà"],
+    "chosen": "existe déjà",
+    "confidence": "high",
+    "forms": "conflict title Le fichier existe déjà",
+    "sources": "macOS Finder; catalog"
+  },
+  "answer": {
+    "accept": ["réponse", "répondu"],
+    "avoid": [
+      {
+        "form": "Réponse attendue",
+        "why": "anything with `attente` reads as the queued status En attente in the same narrow column"
+      }
+    ],
+    "chosen": "répondre",
+    "confidence": "high",
+    "decision": "Le dialogue de conflit autonome (`fileOperations.operationConflict.context`, `.pausedNote`)",
+    "forms": "until you answer → tant que vous n'avez pas répondu; queue status Needs your answer → Réponse requise",
+    "sources": "macOS fr (\"Authentification requise\", the `tant que … ne … pas` shape)"
+  },
+  "api-key": {
+    "accept": ["clés d'API"],
+    "avoid": [
+      {
+        "form": "clé API",
+        "why": "drift; the catalog settled on the elided d'API everywhere"
+      }
+    ],
+    "chosen": "clé d'API",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "app-bundle": {
+    "chosen": "paquet",
+    "confidence": "high",
+    "decision": "Parcourir les archives et les paquets (`settings.archives.*`, `fileExplorer.archiveEnterMenu.*`, `errors.listing.archiveUnreadable.*`, `errors.mutation.archive*`, `queue.row.label`)",
+    "forms": "card and row title Paquets d'application; bare paquets (Documents and packages row) is broader",
+    "sources": "macOS Finder (\"Afficher le contenu du paquet\")"
+  },
+  "app-switcher": {
+    "chosen": "sélecteur d'applications",
+    "confidence": "high",
+    "forms": "le sélecteur d'applications (reserved-shortcut list)",
+    "sources": "descriptive FR, macOS feature naming"
+  },
+  "apple-account": {
+    "chosen": "Compte Apple",
+    "confidence": "high",
+    "sources": "macOS 26.6.2 (25G83) AppleIDSettings.appex InfoPlist.loctable CFBundleDisplayName, 2026-08-30"
+  },
+  "apple-silicon": {
+    "chosen": "Apple Silicon",
+    "confidence": "high",
+    "forms": "a Mac with Apple silicon → un Mac équipé d'une puce Apple Silicon (the framing is tentative)",
+    "sources": "brand/hardware name kept verbatim; no French rendering in the pile"
+  },
+  "applications-folder": {
+    "chosen": "Applications",
+    "confidence": "high",
+    "forms": "le dossier Applications (the folder name stays as Apple shows it)",
+    "sources": "AppKit AppKitErrors.json (\"votre dossier Applications\"); Finder TL5 GROUP_APPLICATIONS"
+  },
+  "apply": {
+    "accept": ["appliquez", "appliqué", "applique"],
+    "chosen": "Appliquer",
+    "confidence": "high",
+    "forms": "Apply recent {mode} selection → Appliquer la sélection {mode} récente",
+    "sources": "macOS; catalog"
+  },
+  "approve": {
+    "accept": ["approuve", "approuvé", "approbation"],
+    "avoid": [
+      {
+        "form": "Accepter",
+        "why": "macOS's word accepts an object; the counted button authorizes an action"
+      }
+    ],
+    "chosen": "Approuver",
+    "confidence": "high",
+    "decision": "Opérations suggérées : la fenêtre de ce que propose Ask Cmdr (`suggestedOps.*`, `commands.suggestedOpsShow.*`)",
+    "exceptions": {
+      "askCmdr.decision.approved": "approuver takes a noun object; before the infinitive {verbName} French needs accepter de."
+    },
+    "forms": "counted variant Approuver 3 fichiers; noun approbation (sans votre approbation)",
+    "sources": "MS terminology FRA"
+  },
+  "archive": {
+    "chosen": "archive",
+    "confidence": "high",
+    "decision": "Parcourir les archives et les paquets (`settings.archives.*`, `fileExplorer.archiveEnterMenu.*`, `errors.listing.archiveUnreadable.*`, `errors.mutation.archive*`, `queue.row.label`)",
+    "forms": "feminine (une archive, l'archive, chiffrée, protégée); Zip archive → Archive ZIP; the bare Archives card/section title is identical to English and carries sameAsSourceJustification; zip/tar/7z verbatim",
+    "sources": "macOS Finder (\"Archive ZIP\", \"Compresse des éléments dans une archive.\")"
+  },
+  "archive-chat": {
+    "accept": ["archivé"],
+    "chosen": "Archiver",
+    "confidence": "high",
+    "decision": "Ask Cmdr : la conversation, les jetons et les lignes d'outil (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
+    "forms": "badge Archivée (agrees with the implicit conversation); unarchive → Désarchiver (tentative, no pile hit)",
+    "sources": "MS terminology FRA (archive verb → archiver)"
+  },
+  "ask": {
+    "accept": ["demande"],
+    "chosen": "Demander",
+    "confidence": "high",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.contentsRule": "English-sense: ask about a file means pose a question (poser une question).",
+      "askCmdr.composer.attach": "English-sense: ask about the selection; the compact button says Interroger.",
+      "askCmdr.composer.placeholder": "English-sense: ask about your files means pose a question.",
+      "askCmdr.empty.hint": "English-sense: ask about a file means pose a question.",
+      "askCmdr.empty.title": "English-sense: ask about your files means pose questions.",
+      "settings.askCmdr.intro": "English-sense: ask about a file means pose a question."
+    },
+    "forms": "segmented cell Demander; Toujours demander; Tout demander",
+    "sources": "catalog; macOS pattern"
+  },
+  "ask-cmdr": {
+    "chosen": "Ask Cmdr",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.renameReview.expired": "English-sense: Ask Cmdr to … uses the brand as a verb phrase, which collapses into Demandez à Cmdr."
+    },
+    "forms": "names only the chat panel (its title, menu item, command, Settings section, the switch); a sentence about what the product does says Cmdr or l'IA. `Ask Cmdr to prepare it again` → Demandez à Cmdr de …",
+    "sources": "brand, @key descriptions"
+  },
+  "ask-question": {
+    "accept": ["posez", "question", "interroger"],
+    "chosen": "poser une question",
+    "confidence": "tentative",
+    "decision": "Ask Cmdr : la conversation, les jetons et les lignes d'outil (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
+    "forms": "Ask about your files: the empty chat invites several (Posez des questions sur vos fichiers), the field expects one (Posez une question sur vos fichiers…); the compact attach button → Interroger la sélection; when you ask about a file → quand vous lui posez une question sur un fichier",
+    "sources": "catalog (askCmdr.empty.title, askCmdr.composer.placeholder)"
+  },
+  "attachment": {
+    "accept": ["pièces jointes", "joindre", "joignez", "joint"],
+    "chosen": "pièce jointe",
+    "confidence": "high",
+    "forms": "remove attachment → Retirer la pièce jointe; drop to attach → Déposer pour joindre (tentative); attach your email → joignez votre e-mail",
+    "sources": "MS terminology FRA (attachment → pièce jointe); catalog common.attachEmailPrompt"
+  },
+  "authentication": {
+    "accept": ["authentifi"],
+    "chosen": "authentification",
+    "confidence": "high",
+    "forms": "authentication required → authentification requise; failed → Authentification refusée",
+    "sources": "macOS (verbatim)"
+  },
+  "available-offline": {
+    "avoid": [
+      {
+        "form": "hors ligne",
+        "why": "drifted in the delete warnings away from the command they point at"
+      }
+    ],
+    "chosen": "hors connexion",
+    "confidence": "high",
+    "decision": "L'avertissement « contenu en ligne uniquement » (`fileOperations.delete.cloudOnlineOnlyMixedWarning` / `fileOperations.delete.cloudOnlineOnlyAllWarning` / `fileOperations.delete.cloudOnlineOnlyHandedBack`)",
+    "forms": "Make available offline → Rendre disponible hors connexion; the delete warnings point at that command with the same words",
+    "sources": "iCloud Drive FR (disponible hors connexion)"
+  },
+  "back": {
+    "accept": ["Précédent", "revenir", "revenez"],
+    "chosen": "Retour",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "English-sense: comes back to them means returns later (y revient).",
+      "queryUi.ai.refineTooltip": "English-sense: chat back means reply (dialoguer).",
+      "search.coverage.walk.abandonedCount": "English-sense: comes back to it later means returns (y revient)."
+    },
+    "forms": "app buttons Retour, Back to X → Retour à X; the Go menu's Back is Finder's Précédent",
+    "sources": "macOS fr (Précédent, six hits, no bare Retour); catalog"
+  },
+  "background": {
+    "avoid": [
+      {
+        "form": "en tâche de fond",
+        "why": "zero hits in the fr pile"
+      }
+    ],
+    "chosen": "arrière-plan",
+    "confidence": "high",
+    "decision": "Le bouton du dialogue de progression quand la file est vide (`fileOperations.transferProgress.background`, `.backgroundAria`)",
+    "exceptions": {
+      "settings.appearance.tintGroupDescription": "English-sense: a background tint is the backdrop colour (teinte de fond).",
+      "settings.appearance.tintLocal.description": "English-sense: a background tint is the backdrop colour (teinte de fond).",
+      "settings.appearance.tintMtp.description": "English-sense: a background tint is the backdrop colour (teinte de fond).",
+      "settings.appearance.tintSmb.description": "English-sense: a background tint is the backdrop colour (teinte de fond)."
+    },
+    "forms": "in the background → en arrière-plan; the progress dialog's empty-queue button → En arrière-plan (elliptical, must fit the Queue button's width); its aria → Garder ce transfert en cours en arrière-plan; the bare noun Arrière-plan is the backdrop sense; pane background → arrière-plan du panneau",
+    "sources": "MS terminology FRA id 18761 (background → en arrière-plan); Double Commander; Total Commander"
+  },
+  "badge": {
+    "chosen": "pastille",
+    "confidence": "tentative",
+    "decision": "Les pastilles d'état de l'index d'images (`fileExplorer.imageIndex.*`, `settings.mediaIndex.showFileStatusIcons.*`)",
+    "forms": "status badge → pastille d'état; the title-bar badge → la pastille",
+    "sources": "descriptive FR (no pile hit)"
+  },
+  "batch-rename": {
+    "accept": ["renommage en masse"],
+    "chosen": "renommage par lot",
+    "confidence": "tentative",
+    "forms": "batch rename → renommage par lot; mass-rename → renommage en masse",
+    "sources": "descriptive FR"
+  },
+  "brief-view": {
+    "accept": ["brève"],
+    "chosen": "Bref",
+    "confidence": "high",
+    "decision": "Sections des réglages et noms de présentation (`settings.section.*`, `settings.navigationAndFileOps.card.*`, `settings.summary.navigationAndFileOps`)",
+    "forms": "after mode (masculine): mode Bref; after présentation (feminine): Présentation brève, Passer en présentation brève",
+    "sources": "macOS Finder \"présentation\" family; catalog"
+  },
+  "browse": {
+    "accept": ["parcourez", "parcourt", "parcouru"],
+    "chosen": "parcourir",
+    "confidence": "high",
+    "forms": "browses and extracts → parcourt et extrait; segmented cell Parcourir",
+    "sources": "macOS Finder (\"Parcourir les serveurs disponibles\")"
+  },
+  "browse-file-picker": {
+    "chosen": "Parcourir…",
+    "confidence": "high",
+    "note": "Same word as the browse cell of the archives setting; French doesn't split the two senses.",
+    "sources": "macOS Finder ConnectToWindow.strings 48.title (macOS 26.6.2 build 25G83, 2026-09-07)"
+  },
+  "buffer": {
+    "accept": ["saturé"],
+    "avoid": [
+      {
+        "form": "débordement",
+        "why": "sounds like an alarm; saturé states it calmly"
+      }
+    ],
+    "chosen": "tampon",
+    "confidence": "high",
+    "decision": "Index de disque : l'analyse des changements (`indexing.run.changeCheck`, `indexing.step.updateFileList`, `fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning`)",
+    "forms": "mémoire tampon; buffer / channel overflow → a saturé le tampon / le canal",
+    "sources": "MS terminology FRA"
+  },
+  "busy": {
+    "avoid": [
+      {
+        "form": "en cours d'utilisation",
+        "why": "a second marker; the active and greyed items must read as one item in two states"
+      },
+      {
+        "form": "indisponible",
+        "why": "a second marker"
+      }
+    ],
+    "chosen": "occupé",
+    "confidence": "high",
+    "decision": "Menus natifs : barre de menus, menus contextuels, titres de fenêtre (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)",
+    "exceptions": {
+      "indexing.enrich.pausedIdle": "English-sense: the user being idle (votre inactivité), not a busy device.",
+      "settings.askCmdr.wakeDelay.summary": "English-sense: busy folders are ones with a lot of activity (actifs)."
+    },
+    "forms": "the greyed menu marker: the base label word for word, then (occupé), invariable (Oublier le mot de passe enregistré (occupé)); idle → quand il n'est plus occupé",
+    "sources": "MS terminology FRA (busy → occupé)"
+  },
+  "cache": {
+    "chosen": "cache",
+    "confidence": "high",
+    "sources": "MS terminology FRA"
+  },
+  "camera": {
+    "accept": ["appareils photo"],
+    "avoid": [
+      {
+        "form": "caméra",
+        "why": "the video and webcam sense"
+      }
+    ],
+    "chosen": "appareil photo",
+    "confidence": "high",
+    "sources": "macOS AppKit (NSStillCameraTemplate → appareil photo); MS terminology FRA"
+  },
+  "camera-details": {
+    "chosen": "détails de l'appareil photo",
+    "confidence": "high",
+    "decision": "Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.tool.inspectFile.*`)",
+    "forms": "a photo's camera details and location → pour une photo, les détails de l'appareil photo et la localisation (the incise avoids two `photo` three words apart)",
+    "sources": "macOS AppKit (NSStillCameraTemplate → appareil photo); MS terminology FRA"
+  },
+  "cancel": {
+    "accept": ["annulé", "annulation", "annulez"],
+    "chosen": "Annuler",
+    "confidence": "high",
+    "forms": "status Annulé; a panel title names the subject: Opération annulée",
+    "note": "French renders both Cancel and Undo as Annuler; rollback therefore takes `revenir en arrière`, never `annuler`.",
+    "sources": "macOS AppKit/Finder, pervasive"
+  },
+  "case-sensitive": {
+    "accept": ["majuscules", "minuscules"],
+    "chosen": "casse",
+    "confidence": "high",
+    "forms": "setting labels follow macOS (Sensible à la casse, Respecter la casse); an explanatory sentence says majuscules et minuscules, since casse is typographic jargon",
+    "sources": "macOS (\"Sensible à la casse\")"
+  },
+  "certificate": {
+    "chosen": "certificat",
+    "confidence": "high",
+    "forms": "not trusted → n'approuve pas le certificat",
+    "sources": "macOS Security.framework SecErrorMessages.loctable"
+  },
+  "changelog": {
+    "chosen": "journal des modifications",
+    "confidence": "high",
+    "forms": "names the document; distinct from Aide > Nouveautés (the news window)",
+    "sources": "MS terminology FRA"
+  },
+  "character": {
+    "chosen": "caractère",
+    "confidence": "high",
+    "sources": "MS terminology FRA"
+  },
+  "character-viewer": {
+    "chosen": "Visualiseur de caractères",
+    "confidence": "high",
+    "sources": "macOS French name"
+  },
+  "chat": {
+    "accept": ["discuter", "discutez"],
+    "avoid": [
+      {
+        "form": "discussion",
+        "why": "three keys drifted to it; the list the user sees says conversation"
+      },
+      {
+        "form": "conversation instantanée",
+        "why": "MS's live-chat-feature sense"
+      }
+    ],
+    "chosen": "conversation",
+    "confidence": "high",
+    "decision": "Ask Cmdr : la conversation, les jetons et les lignes d'outil (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
+    "forms": "noun (a saved thread, the Chats list) → conversation, everywhere: New chat → Nouvelle conversation, No chats yet → Pas encore de conversation, chat title → Titre de la conversation, chat memory → mémoire de conversation; verb (to chat with the AI) → discuter",
+    "sources": "MS terminology FRA (conversation); the EN source uses chat and conversation for the same entity"
+  },
+  "check": {
+    "accept": ["vérifiez", "vérification", "vérifié", "vérifie", "vérifiant", "recherche", "compar"],
+    "chosen": "vérifier",
+    "confidence": "high",
+    "exceptions": {
+      "adb.connect.unauthorized": "The person looks up at a phone that already shows the question; Regardez, not an inspection verb.",
+      "errors.listing.couldntReadUnknown.explanation": "English-sense: check the details means read them (consultez).",
+      "errors.listing.diskFullErrno.suggestion": "English-sense: check how much space is left means look it up (consultez).",
+      "errors.listing.temporarilyUnavailable.suggestion": "English-sense: check Activity Monitor means look at it (consultez).",
+      "errors.provider.appBased.serious": "English-sense: check a status page means look at it (consultez).",
+      "errors.provider.iCloud.serious": "English-sense: check a status page means look at it (consultez).",
+      "errors.write.fallback.suggestion": "English-sense: check the technical details means read them (consultez).",
+      "errors.write.ioError.suggestion": "English-sense: check the technical details means read them (consultez).",
+      "errors.write.originalsKeptAside.suggestion.many": "English-sense: check the details means read them; the French names what they show.",
+      "errors.write.readError.suggestion": "English-sense: check the technical details means read them (consultez).",
+      "errors.write.trashRefused.suggestion.other": "English-sense: check the technical details means read them (consultez).",
+      "errors.write.writeError.suggestion": "English-sense: check the technical details means read them (consultez).",
+      "fileExplorer.navigation.driveIndex.tooltipCoalesced": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family.",
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family.",
+      "fileExplorer.network.osMountFallback.shareNotOnServer": "English-sense: worth checking there means have a look (jeter un œil).",
+      "onboarding.stepBeta.signup.success": "English-sense: check your inbox means look at it (consultez).",
+      "settings.askCmdr.spend.disclaimer": "English-sense: check a dashboard means look at it (consultez).",
+      "settings.updates.emailConfirmHint": "English-sense: check your inbox means look at it (consultez)."
+    },
+    "forms": "Check that … → Vérifiez que …; Check for updates → Rechercher les mises à jour; Re-check (adb) → Rechercher à nouveau; checking (update check) → Recherche / vérification",
+    "sources": "macOS AppKit (Review Changes… → Vérifier les modifications…); macOS Software Update (Check for Updates → Rechercher les mises à jour, macOS 26.6.2 build 25G83, 2026-08-30)"
+  },
+  "checklist": {
+    "chosen": "liste de contrôle",
+    "confidence": "high",
+    "decision": "La prise en main : l'assistant, l'étape IA et la liste de contrôle (`onboarding.*`, `settings.revealHandler.notProductionBuild`)",
+    "forms": "Liste de contrôle de la prise en main; each takes 30 seconds → 30 secondes par point",
+    "sources": "MS terminology FRA (FRENCH.tbx 30962 → 30965)"
+  },
+  "choose": {
+    "accept": ["choisi", "choix"],
+    "chosen": "Choisir",
+    "confidence": "high",
+    "forms": "Choose an app… → Choisir une app… (app, as everywhere in the catalog); prose Choisissez …",
+    "sources": "macOS Finder N137 (Choose Application… → Choisir une application…)"
+  },
+  "clean-up": {
+    "accept": ["s'en chargera", "retirer", "supprime"],
+    "avoid": [
+      {
+        "form": "effacer",
+        "why": "the erase/wipe sense"
+      }
+    ],
+    "chosen": "supprimer",
+    "confidence": "high",
+    "forms": "clears away what it leaves half-written → supprime tout fichier à moitié écrit; clears it on a later transfer → s'en chargera lors d'un transfert ultérieur",
+    "sources": "catalog (main.quit.body, fileOperations.cancelRollback.stagedLeftover.*)"
+  },
+  "clear": {
+    "accept": ["effacé", "effacez"],
+    "chosen": "Effacer",
+    "confidence": "high",
+    "exceptions": {
+      "settings.mediaIndex.reclaim.alreadyCleared": "Index entries cleared are deleted from the index; supprimer, as in the sibling reclaim.couldNotDelete."
+    },
+    "sources": "macOS; catalog"
+  },
+  "clipboard": {
+    "chosen": "presse-papiers",
+    "confidence": "high",
+    "forms": "definite article, never a possessive: dans le presse-papiers",
+    "sources": "macOS Finder (\"Afficher le presse-papiers\")"
+  },
+  "close": {
+    "accept": ["ferme", "fermé"],
+    "chosen": "Fermer",
+    "confidence": "high",
+    "forms": "closes a window or tab (Fermer l'onglet); a notice or toast is dismissed with Ignorer instead",
+    "sources": "macOS AppKit (Document.json, WindowTabs.json); MS terminology FRA"
+  },
+  "cloud-ai": {
+    "chosen": "IA dans le cloud",
+    "confidence": "high",
+    "decision": "L'interrupteur « Autoriser l'IA dans le cloud » et les états où l'IA dans le cloud est désactivée (`ai.cloudConsent.label`, `ai.cloudConsent.description`, `askCmdr.gate.cloudOff.body`, `settings.ai.cloudConsent.lockedHint`, `settings.askCmdr.enabled.label`)",
+    "forms": "switch Autoriser l'IA dans le cloud (quoted in « » where cited); pronoun la (Autorisez-la dans Réglages > IA)",
+    "sources": "catalog (settings.ai.provider.opt.cloud)"
+  },
+  "cloud-provider": {
+    "accept": ["cloud"],
+    "chosen": "service cloud",
+    "confidence": "high",
+    "forms": "cloud folders → dossiers cloud",
+    "sources": "catalog"
+  },
+  "command": {
+    "chosen": "commande",
+    "confidence": "high",
+    "sources": "macOS; MS terminology FRA"
+  },
+  "command-line": {
+    "chosen": "ligne de commande",
+    "confidence": "high",
+    "sources": "Double Commander (Ajouter le nom du fichier dans la ligne de commande)"
+  },
+  "command-palette": {
+    "chosen": "palette de commandes",
+    "confidence": "high",
+    "sources": "descriptive FR, the common app convention"
+  },
+  "comparator": {
+    "chosen": "comparateur",
+    "confidence": "high",
+    "sources": "MS terminology FRA"
+  },
+  "complete": {
+    "accept": ["terminé", "incomplet", "incomplète", "complet", "complète"],
+    "avoid": [
+      {
+        "form": "inachevé",
+        "why": "keeps one word for the notion; incomplet is Apple's (macOS LA33)"
+      },
+      {
+        "form": "interrompu",
+        "why": "renders `interrupted` elsewhere"
+      }
+    ],
+    "chosen": "terminer",
+    "confidence": "high",
+    "decision": "Une opération à moitié revenue en arrière : terminer le retour (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)",
+    "forms": "Finish rolling back → Terminer le retour en arrière (Apple's `Terminer + <nom>`); unfinished copy/move → copie incomplète / déplacement incomplet",
+    "sources": "macOS Finder (Finish Copying → Terminer la copie; LA33 « endommagée ou incomplète »)"
+  },
+  "compress": {
+    "accept": ["compression", "compressé"],
+    "avoid": [
+      {
+        "form": "Comprimer",
+        "why": "Finder says Compresser"
+      }
+    ],
+    "chosen": "Compresser",
+    "confidence": "high",
+    "decision": "Compresser (`commands.fileCompress.*`, `fileOperations.transferDialog.toggleCompress`, `.confirmCompress`, `fileOperations.transferProgress.scanTitleCompress`, `transfer.compress.*`, `settings.archives.compressionLevel.*`)",
+    "forms": "progress noun Compression (… en cours...); result participle compressés; Niveau de compression; slider ends Plus rapide / Plus petit",
+    "sources": "macOS Finder (Compresser ${sources}); 7-Zip (Niveau de compression)"
+  },
+  "compromised": {
+    "chosen": "compromis",
+    "confidence": "tentative",
+    "forms": "a key marked compromised → une clé marquée comme compromise",
+    "sources": "catalog"
+  },
+  "configure": {
+    "accept": ["configuration", "configuré", "configurez"],
+    "chosen": "configurer",
+    "confidence": "high",
+    "decision": "La proposition d'ajout au Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)",
+    "forms": "configuration profile → profil de configuration; onboarding options (generic phrase) → options de configuration",
+    "sources": "macOS Réglages Système InfoPlist (Profil de configuration); MS terminology FRA"
+  },
+  "confirm": {
+    "accept": ["confirmation", "confirmé", "confirmez"],
+    "chosen": "confirmer",
+    "confidence": "high",
+    "forms": "Couldn't confirm X → Impossible de confirmer X (the fixed family of mkdir.timeoutMessage, rename.unconfirmed, trashUnconfirmedToast)",
+    "sources": "MS terminology FRA (ids 1475887, 37786)"
+  },
+  "conflict": {
+    "chosen": "conflit",
+    "confidence": "high",
+    "sources": "GNOME Nautilus (\"créerait un conflit avec un fichier existant\")"
+  },
+  "connect": {
+    "accept": ["connexion", "connect"],
+    "avoid": [
+      {
+        "form": "Connexion au serveur",
+        "why": "Apple's WINDOW title, never a command label"
+      }
+    ],
+    "chosen": "se connecter",
+    "confidence": "high",
+    "exceptions": {
+      "errors.provider.egnyte.appName": "English-sense: Egnyte Connect is a product name.",
+      "fileExplorer.pane.directConnectionNotNetworkShareToast": "The catalog's moule il n'y a donc rien à <verbe> names the speed-up, not the connection."
+    },
+    "forms": "action (to a server) Se connecter, Connect to server… → Se connecter au serveur… on every surface; progress Connexion à {name}…; state Connecté (agrees with the server); network connection → connexion réseau; You are connected → Vous y avez bien accès (names the access, not the person)",
+    "note": "`se connecter` is the network action; signing in is `s'identifier`.",
+    "sources": "macOS Finder (\"Se connecter comme…\", MenuBar 266.title, MN1 « Connexion à « ^0 »… »)"
+  },
+  "context-menu": {
+    "accept": ["clic droit", "bouton droit"],
+    "chosen": "menu contextuel",
+    "confidence": "high",
+    "forms": "right-click → faites un clic droit",
+    "sources": "macOS; MS terminology FRA"
+  },
+  "context-window": {
+    "chosen": "fenêtre de contexte",
+    "confidence": "high",
+    "sources": "catalog"
+  },
+  "continue": {
+    "accept": ["continue"],
+    "chosen": "Continuer",
+    "confidence": "high",
+    "decision": "La barrière de sortie (`main.quit.*`)",
+    "forms": "continuer à + infinitive (never continuer de); Keep working (quit gate) → Continuer à travailler; a bare Continuer reads as macOS's go-ahead button",
+    "sources": "macOS PE79/PE80/PE81 (« continuer à copier les autres »); Thunar"
+  },
+  "convert": {
+    "accept": ["convertit", "conversion"],
+    "chosen": "convertir",
+    "confidence": "high",
+    "sources": "MS terminology FRA"
+  },
+  "copy": {
+    "accept": ["copie", "copié"],
+    "chosen": "Copier",
+    "confidence": "high",
+    "forms": "progress noun Copie (Copie en cours..., Copie vers {destination}); participles copié/copiés; Copied → Copié",
+    "sources": "macOS Finder MenuBar (Copier, Copier en tant que lien)"
+  },
+  "crash-report": {
+    "accept": ["incident", "rapport"],
+    "avoid": [
+      {
+        "form": "rapport de plantage",
+        "why": "colloquial, only a glossary gloss in the pile; drifted in onboarding.stepBeta.crashReportsNote"
+      },
+      {
+        "form": "rapport d'erreur",
+        "why": "French folds crash and error reports into one word"
+      },
+      {
+        "form": "s'est fermé de façon inattendue",
+        "why": "unattested paraphrase; Apple's crash dialogs say a quitté inopinément"
+      }
+    ],
+    "chosen": "rapport d'incident",
+    "confidence": "high",
+    "decision": "Le dialogue d'incident : `a quitté inopinément`, `a continué son exécution`, `la dernière fois` en fin de proposition (`crashReporter.dialog.*`, `settings.updates.crashReports.description`)",
+    "exceptions": {
+      "errors.provider.macFuse.serious": "English-sense: a process that crashed (a planté), not a crash report.",
+      "errors.provider.pCloudFuse.serious": "English-sense: a process that crashed (a planté), not a crash report.",
+      "settings.advanced.showStagingTempFiles.description": "English-sense: a crash is the event (un plantage), not a crash report."
+    },
+    "forms": "send crash report → envoyer le rapport d'incident; Always send crash reports → Toujours envoyer les rapports d'incident; the non-crash dialog variants say rapport alone; quit unexpectedly → a quitté inopinément (Cmdr masculine); kept running (the app) → a continué son exécution",
+    "sources": "MS terminology FRA (crash → incident); macOS AppKit AppKitErrors.json (a quitté inopinément)"
+  },
+  "create": {
+    "accept": ["crée", "créé", "création"],
+    "chosen": "Créer",
+    "confidence": "high",
+    "forms": "progress Création du dossier / Création du fichier; active voice Cmdr le créera, never the passive sera créé",
+    "sources": "macOS Finder; Nautilus (Création des …)"
+  },
+  "credentials": {
+    "accept": ["identifiant"],
+    "chosen": "identifiants",
+    "confidence": "high",
+    "forms": "when the source names both fields, name both: S'identifier avec un nom d'utilisateur et un mot de passe",
+    "sources": "standard FR UI term; MS \"infos de connexion\" is the consumer-account sense"
+  },
+  "current-folder": {
+    "avoid": [
+      {
+        "form": "dossier courant",
+        "why": "anglicism"
+      },
+      {
+        "form": "répertoire",
+        "why": "technical sense only"
+      }
+    ],
+    "chosen": "dossier actuel",
+    "confidence": "high",
+    "decision": "Le menu des favoris (`fileExplorer.navigation.favorites*`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `commands.favorites*`, `shortcuts.scope.favoritesMenu`)",
+    "forms": "the folder the pane SHOWS: le dossier actuel du panneau actif",
+    "sources": "catalog (commands.favoritesAdd.description)"
+  },
+  "cursor": {
+    "chosen": "curseur",
+    "confidence": "high",
+    "forms": "under cursor → sous le curseur",
+    "sources": "standard FR"
+  },
+  "custom": {
+    "chosen": "personnalisé",
+    "confidence": "high",
+    "forms": "agrees with its noun (valeur personnalisée, points de terminaison personnalisés)",
+    "sources": "MS terminology FRA"
+  },
+  "cut": {
+    "chosen": "Couper",
+    "confidence": "high",
+    "sources": "macOS (Couper)"
+  },
+  "damaged": {
+    "avoid": [
+      {
+        "form": "corrompu",
+        "why": "macOS uses both; endommagé is the softer, more common Finder wording"
+      }
+    ],
+    "chosen": "endommagé",
+    "confidence": "high",
+    "forms": "agrees with its subject (archive endommagée, fichier endommagé)",
+    "sources": "macOS (\"… car elle est peut-être endommagée\")"
+  },
+  "dashboard": {
+    "chosen": "tableau de bord",
+    "confidence": "high",
+    "sources": "MS terminology FRA"
+  },
+  "date-wilting": {
+    "chosen": "Flétrissement",
+    "confidence": "tentative",
+    "sources": "descriptive FR for the plant metaphor (Cmdr coinage)"
+  },
+  "debugging": {
+    "accept": ["debug"],
+    "chosen": "débogage",
+    "confidence": "high",
+    "forms": "for debugging → à des fins de débogage; the log level and dev-only labels keep debug",
+    "sources": "macOS Security.framework (pour poursuivre le débogage), PrintCore (journalisation de débogage), macOS 26.6.2 build 25G83, 2026-09-06"
+  },
+  "default": {
+    "avoid": [
+      {
+        "form": "Réinitialiser par défaut",
+        "why": "makes par défaut an adverb; means something else"
+      }
+    ],
+    "chosen": "par défaut",
+    "confidence": "high",
+    "forms": "System default → Par défaut du système (never Réglages Système, the app's name); Reset to default → Réinitialiser au réglage par défaut; open with default app → ouvrir avec l'application par défaut (full application, as macOS attests)",
+    "sources": "macOS (\"Aucune application par défaut… pour ouvrir\"); catalog"
+  },
+  "delete": {
+    "accept": ["supprim", "suppression"],
+    "chosen": "Supprimer",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.navigation.favoriteShortcutAriaLabel": "English-sense: Delete is the key, which French keyboards label Suppr.",
+      "fileExplorer.navigation.favoriteShortcutPrompt": "English-sense: Delete is the key, which French keyboards label Suppr."
+    },
+    "forms": "progress noun Suppression (Suppression…); Erase → Effacer is the reformat/wipe sense",
+    "sources": "macOS AppKit (Delete → Supprimer, Supprimer des favoris)"
+  },
+  "delete-permanently": {
+    "accept": ["définitivement"],
+    "chosen": "supprimer définitivement",
+    "confidence": "high",
+    "decision": "Refus de placement dans la corbeille (`errors.mutation.trashNotSupported`, `.trashRefused`)",
+    "forms": "keep the verb over the noun la suppression définitive",
+    "sources": "macOS Finder (« Voulez-vous vraiment supprimer définitivement … »)"
+  },
+  "deny": {
+    "accept": ["refus"],
+    "chosen": "Refuser",
+    "confidence": "high",
+    "forms": "deny all → Tout refuser",
+    "sources": "MS terminology FRA (deny → refuser; button → Refuser)"
+  },
+  "deployment": {
+    "chosen": "déploiement",
+    "confidence": "high",
+    "sources": "MS terminology FRA (ids 44577, 1579561, 1759289)"
+  },
+  "deselect": {
+    "accept": ["désélection"],
+    "chosen": "Désélectionner",
+    "confidence": "high",
+    "decision": "La fenêtre sélectionner / désélectionner des fichiers (`selection.*`)",
+    "forms": "Tout désélectionner; Désélectionner des fichiers… (menu, command, window title read identically)",
+    "sources": "macOS Finder MenuBar 300488.title (Tout désélectionner); Total Commander; Double Commander"
+  },
+  "destination": {
+    "accept": ["cible"],
+    "chosen": "destination",
+    "confidence": "high",
+    "forms": "feminine (de la destination); at the destination → à destination; the preposition toward it is vers; target of a link or a clash → cible",
+    "sources": "macOS Finder; Double Commander"
+  },
+  "device": {
+    "chosen": "appareil",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.crossDeviceOperation.title": "English-sense: cross-device means across volumes (entre volumes)."
+    },
+    "forms": "USB device → appareil USB; transitive disconnect → déconnecter l'appareil",
+    "note": "A phone the source calls a phone is téléphone; appareil stays the generic MTP word (Kindle, camera).",
+    "sources": "macOS; catalog"
+  },
+  "disable": {
+    "accept": ["désactive", "désactivé"],
+    "chosen": "désactiver",
+    "confidence": "high",
+    "forms": "X is off → X est désactivé(e), agreeing with the feature; the badge Off with drive indexing → Désactivé avec l'indexation",
+    "sources": "macOS; catalog"
+  },
+  "disconnect": {
+    "accept": ["déconnecte", "déconnecté", "déconnexion"],
+    "chosen": "se déconnecter",
+    "confidence": "high",
+    "decision": "Éjection et déconnexion refusées : les neuf clés `errors.eject.*`",
+    "exceptions": {
+      "errors.listing.deviceProblem.suggestion": "The advice is physical (Débranchez puis rebranchez), which French says with brancher."
+    },
+    "forms": "leaving a SERVER is pronominal (Se déconnecter, Se déconnecter de {name}); Cmdr disconnecting a DEVICE is transitive (déconnecter l'appareil); a drive being ejected → est en cours de déconnexion; already gone → a été déconnecté",
+    "sources": "macOS Finder (Disconnect → Se déconnecter; « Ne déconnectez pas l'appareil … »)"
+  },
+  "disk-image": {
+    "accept": ["images disque"],
+    "chosen": "image disque",
+    "confidence": "high",
+    "decision": "Le refus d'éjection nommé : qui tient le disque (`errors.eject.unmountRefusedBy*`, `.otherApps`)",
+    "forms": "feminine (une image disque … ouverte)",
+    "sources": "macOS Finder InfoWindowGeneralView.json (« Image disque : »)"
+  },
+  "dismiss": {
+    "accept": ["ignoré"],
+    "avoid": [
+      {
+        "form": "Fermer",
+        "why": "reserved for closing a window"
+      }
+    ],
+    "chosen": "Ignorer",
+    "confidence": "confirmed",
+    "decision": "La pastille de progression et l'avis « N'a pas pu se terminer » (`queue.chip.*`, `queue.failureToast.*`, `queue.row.dismiss*`, `queue.toolbar.dismissAll`)",
+    "forms": "Dismiss all → Tout ignorer; per-row aria → Ignorer cette opération; the internal seen-flag of a dismissed hint → … ignorée",
+    "note": "Tout ignorer is also Skip all in the conflict dialog; the two never share a surface, so don't rename either.",
+    "sources": "MS terminology FRA (dismiss a notification → ignorer / masquer); catalog on six surfaces"
+  },
+  "dock": {
+    "chosen": "Dock",
+    "confidence": "high",
+    "decision": "La proposition d'ajout au Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)",
+    "forms": "le Dock (masculine, capital); add to the Dock → ajouter au Dock; keep in / pin to the Dock → garder dans le Dock; unpin → supprimer du Dock",
+    "sources": "macOS Finder MenuBar 300772.title; Dock.app DockMenus.strings (KEEP_IN_DOCK, REMOVE_FROM_DOCK), macOS 26.6.2 build 25G83, 2026-09-09"
+  },
+  "documents": {
+    "chosen": "document",
+    "confidence": "high",
+    "decision": "`Documents and packages` : la ligne OOXML (`settings.archives.ooxml.*`)",
+    "sources": "macOS Finder (TL6 GROUP_DOCUMENTS; Document RTF)"
+  },
+  "done": {
+    "chosen": "Terminé",
+    "confidence": "high",
+    "forms": "status Terminé (masculine, agreeing with the implied operation); almost done → bientôt terminé",
+    "sources": "catalog (queue.row.status, operationLog.status.done)"
+  },
+  "double-click": {
+    "accept": ["double-cliqu"],
+    "chosen": "double-clic",
+    "confidence": "high",
+    "decision": "Double-clic sur l'arrière-plan du panneau (`fileExplorer.doubleClickHint.*`, `settings.behavior.doubleClickPaneNavigatesToParent.*`, `settings.behavior.doubleClickOnPaneNotificationSeen.*`, `settings.section.navigationAndFileOps`, `fileExplorer.breadcrumb.navigateTooltip`)",
+    "forms": "noun double-clic; imperative Double-cliquez; participle double-cliqué",
+    "sources": "Double Commander; Total Commander; KDE Dolphin; Nautilus (unanimous hyphenated form)"
+  },
+  "download": {
+    "accept": ["télécharge", "téléchargé"],
+    "chosen": "téléchargement",
+    "confidence": "high",
+    "exceptions": {
+      "commands.downloadsGoToLatest.description": "English-sense: ~/Downloads is a literal path, kept verbatim."
+    },
+    "forms": "verb télécharger; Downloads folder → dossier Téléchargements; latest download → dernier téléchargement; téléchargement is Internet-only (fetching a file from a phone or server is récupération)",
+    "sources": "macOS (Téléchargements)"
+  },
+  "drive": {
+    "avoid": [
+      {
+        "form": "lecteur",
+        "why": "the Windows term; also the media-player sense"
+      }
+    ],
+    "chosen": "disque",
+    "confidence": "high",
+    "exceptions": {
+      "commands.cloudAskGemini.description": "English-sense: Google Drive is a product name.",
+      "commands.cloudCopyGoogleDriveLink.label": "English-sense: Google Drive is a product name.",
+      "commands.cloudOpenInGoogleDrive.description": "English-sense: Google Drive is a product name.",
+      "commands.cloudOpenInGoogleDrive.label": "English-sense: Google Drive is a product name.",
+      "commands.handler.googleDriveCopyFailed": "English-sense: Google Drive is a product name.",
+      "commands.handler.googleDriveLinkCopied": "English-sense: Google Drive is a product name.",
+      "commands.handler.googleDriveLinkMissing": "English-sense: Google Drive is a product name.",
+      "commands.handler.googleDriveOpenFailed": "English-sense: Google Drive is a product name.",
+      "errors.listing.emptyRootICloud.explanation": "English-sense: iCloud Drive is a product name.",
+      "errors.listing.emptyRootICloud.title": "English-sense: iCloud Drive is a product name.",
+      "errors.provider.box.appName": "English-sense: Box Drive is a product name.",
+      "errors.provider.googleDrive.appName": "English-sense: Google Drive is a product name.",
+      "errors.provider.googleDrive.displayName": "English-sense: Google Drive is a product name.",
+      "errors.provider.iCloud.displayName": "English-sense: iCloud Drive is a product name.",
+      "errors.provider.iCloud.needsAction": "English-sense: iCloud Drive is a product name.",
+      "errors.provider.pCloud.appName": "English-sense: pCloud Drive is a product name.",
+      "errors.provider.pCloudFuse.appName": "English-sense: pCloud Drive is a product name.",
+      "errors.provider.protonDrive.appName": "English-sense: Proton Drive is a product name.",
+      "errors.provider.protonDrive.displayName": "English-sense: Proton Drive is a product name.",
+      "errors.provider.synologyDrive.appName": "English-sense: Synology Drive is a product name.",
+      "errors.provider.synologyDrive.displayName": "English-sense: Synology Drive is a product name.",
+      "menu.context.copyGoogleDriveLink": "English-sense: Google Drive is a product name.",
+      "menu.context.openInGoogleDrive": "English-sense: Google Drive is a product name.",
+      "settings.indexing.overriddenBadge": "The badge sits inside the Indexation section, so it drops du disque to stay three words: Désactivé avec l'indexation.",
+      "settings.indexing.silencedDrives.label": "The prompts ask whether to index a drive; Demandes d'indexation names them without stacking disque."
+    },
+    "forms": "masculine (le disque, ce disque); network drive → disque réseau",
+    "sources": "macOS Finder (Disque de démarrage, Disques externes)"
+  },
+  "duplicate": {
+    "chosen": "Dupliquer",
+    "confidence": "high",
+    "decision": "Dupliquer : la commande qui copie dans le même dossier (`commands.fileDuplicate.*`)",
+    "sources": "macOS Finder fr (Fichier > Dupliquer, N154; verified on macOS 26.6.1, 2026-08-19)"
+  },
+  "edit": {
+    "accept": ["modification", "modifié", "modifiable", "Édition"],
+    "chosen": "Modifier",
+    "confidence": "high",
+    "exceptions": {
+      "errors.mutation.archiveNotEditable": "Opening an archive for editing is opening it for writing (en écriture), the precise French."
+    },
+    "forms": "verb Modifier (Modifier le serveur…, Modifier dans l'éditeur par défaut); archive edit → Modification de l'archive; editable → modifiable; the Edit MENU is Édition",
+    "sources": "macOS Finder (Édition); catalog"
+  },
+  "eject": {
+    "accept": ["éjectez", "éjection", "éjecté"],
+    "chosen": "Éjecter",
+    "confidence": "high",
+    "decision": "Éjection et déconnexion refusées : les neuf clés `errors.eject.*`",
+    "forms": "Eject all → Tout éjecter; eject it again → éjectez-le à nouveau",
+    "sources": "macOS AppKit (NSNavEjectButton), Finder (Éjecter, Tout éjecter)"
+  },
+  "email": {
+    "accept": ["écrivez-nous"],
+    "chosen": "e-mail",
+    "confidence": "high",
+    "forms": "adresse e-mail; email us (verb) → écrivez-nous; placeholder vous@example.com (never exemple.com, a real domain)",
+    "sources": "catalog"
+  },
+  "enable": {
+    "accept": ["active", "activé"],
+    "chosen": "Activer",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.devicePoweredOff.suggestion": "English-sense: turning on a device is powering it on (allumer).",
+      "errors.mount.hostUnreachable": "English-sense: a server that is turned on is powered on (allumé).",
+      "errors.mount.timeout": "English-sense: a server that is turned on is powered on (allumé).",
+      "errors.shareList.hostUnreachable": "English-sense: a server that is turned on is powered on (allumé).",
+      "servers.hub.emptyMessage": "English-sense: turning on a Mac or NAS is powering it on (allumer)."
+    },
+    "forms": "turn it on in Settings → Activez-la dans les Réglages; button Activer Ask Cmdr",
+    "sources": "macOS; catalog"
+  },
+  "encoding": {
+    "chosen": "encodage",
+    "confidence": "high",
+    "forms": "auto-detected → détecté",
+    "sources": "MS terminology FRA; macOS"
+  },
+  "encrypted": {
+    "accept": ["chiffrement"],
+    "chosen": "chiffré",
+    "confidence": "high",
+    "forms": "agrees with its subject (archive chiffrée, fichier chiffré)",
+    "sources": "macOS (Chiffrement, Chiffrer)"
+  },
+  "endpoint": {
+    "accept": ["points de terminaison"],
+    "chosen": "point de terminaison",
+    "confidence": "high",
+    "sources": "MS terminology FRA id 535789"
+  },
+  "enter-key": {
+    "chosen": "Entrée",
+    "confidence": "high",
+    "forms": "la touche Entrée; Appuyez sur Entrée pour …",
+    "sources": "catalog precedent"
+  },
+  "entry": {
+    "avoid": [
+      {
+        "form": "élément",
+        "why": "for index entries; indexing.scan.counters drifted to it while the index-ready line said entrées"
+      }
+    ],
+    "chosen": "entrée",
+    "confidence": "high",
+    "exceptions": {
+      "commands.selectionSelectSameKind.description": "English-sense: an entry of the file list is an item (élément)."
+    },
+    "forms": "index and history entries → entrées; stash entries → entrées de stash",
+    "sources": "catalog (queryUi.results.indexReadyStatus)"
+  },
+  "error-report": {
+    "accept": ["rapport"],
+    "avoid": [
+      {
+        "form": "rapport d'erreur",
+        "why": "drift; the catalog uses one word for both report kinds"
+      }
+    ],
+    "chosen": "rapport d'incident",
+    "confidence": "high",
+    "forms": "French folds crash and error reports into one term; a manual report with no crash → envoyez un rapport; a sample of log lines → échantillon; the report bundle saved to disk → lot (tentative)",
+    "sources": "MS terminology FRA (crash → incident)"
+  },
+  "escape-key": {
+    "chosen": "Échap",
+    "confidence": "high",
+    "decision": "Échap et le plein écran (`main.escapeFullScreenHint.*`, `settings.advanced.exitFullScreenOnEscape*`)",
+    "forms": "first mention la touche Échap; the shortcut key cap writes ÉCHAP",
+    "sources": "MS terminology FRA (ESC key → touche Échap, ids 51841/51844); Total Commander"
+  },
+  "estimate": {
+    "accept": ["estimé"],
+    "chosen": "estimation",
+    "confidence": "high",
+    "sources": "catalog"
+  },
+  "expired": {
+    "accept": ["expire", "expiration"],
+    "chosen": "expiré",
+    "confidence": "high",
+    "forms": "license or review expiry → a expiré; a timed-out request is délai dépassé, not expiré",
+    "sources": "standard FR"
+  },
+  "extension": {
+    "chosen": "extension",
+    "confidence": "high",
+    "decision": "Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)",
+    "forms": "the (extension) badge is identical to English and carries sameAsSourceJustification; Select all with extension *.x → Sélectionner tous les fichiers d'extension *.x",
+    "sources": "macOS Finder (Afficher toutes les extensions de fichiers)"
+  },
+  "extract": {
+    "accept": ["extraction", "extrait"],
+    "chosen": "extraire",
+    "confidence": "high",
+    "sources": "Nautilus; Total Commander; MS terminology FRA"
+  },
+  "failed": {
+    "accept": ["n'ont pas pu", "impossible", "non terminé", "refusé", "abouti"],
+    "avoid": [
+      {
+        "form": "échec",
+        "why": "style ban, alarmist"
+      },
+      {
+        "form": "a échoué",
+        "why": "style ban, alarmist"
+      },
+      {
+        "form": "erreur",
+        "why": "style ban; only a diagnostic label (Erreur :) keeps it"
+      }
+    ],
+    "chosen": "n'a pas pu",
+    "confidence": "high",
+    "exceptions": {
+      "licensing.error.badSignature": "The key didn't pass the check (n'a pas passé), the natural idiom; no failure label.",
+      "onboarding.stepOptional.mtp.desc": "macOS usually fails to connect → il n'y arrive généralement pas, the same fact with no failure word."
+    },
+    "forms": "Couldn't X → `<Nom verbal> impossible` (Lecture du dossier impossible) or `Cmdr n'a pas pu <verbe>` when the English names Cmdr; a failed operation → N'a pas pu se terminer; a login or authentication that failed → Identification refusée / Authentification refusée; generic error status → Problème; no Erreur : or Problème : prefix before a reason, the sentence says what didn't happen (updates.failure.check)",
+    "sources": "macOS (Impossible d'ouvrir/de graver…); style.md"
+  },
+  "favorites": {
+    "avoid": [
+      {
+        "form": "signet",
+        "why": "GNOME's word, not the Mac's"
+      }
+    ],
+    "chosen": "favori",
+    "confidence": "high",
+    "decision": "Le menu des favoris (`fileExplorer.navigation.favorites*`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `commands.favorites*`, `shortcuts.scope.favoritesMenu`)",
+    "forms": "plural favoris; the Ctrl-D menu → le menu des favoris; Show favorites → Afficher les favoris; See favorites → Voir les favoris",
+    "sources": "macOS Finder (Favoris, Ajouter aux favoris, Serveurs favoris :)"
+  },
+  "feedback": {
+    "avoid": [
+      {
+        "form": "commentaire",
+        "why": "MS's Commentaires loses the warmth; drift fixed in commands.feedbackSend.label"
+      }
+    ],
+    "chosen": "retour",
+    "confidence": "high",
+    "forms": "title and command Envoyer un retour; the send button Envoyer le retour; Aide > Envoyer un retour…",
+    "sources": "style guide friendly register"
+  },
+  "fetch": {
+    "accept": ["récupération", "récupérez"],
+    "chosen": "récupérer",
+    "confidence": "high",
+    "decision": "La visionneuse récupère d'abord le fichier (`viewer.pull.*`, `viewer.error.stoppedResponding`)",
+    "exceptions": {
+      "fileExplorer.navigation.spaceFetchFailed": "English-sense: fetching disk space is getting a value (obtenir), not a file."
+    },
+    "forms": "status noun Récupération…; title follows Finder's progress moule (Préparation de la copie de « ^1 »), with the file name in « »",
+    "sources": "macOS Réglages Système Localizable.json (Fetching… → Récupération…)"
+  },
+  "field-placeholder": {
+    "chosen": "espace réservé",
+    "confidence": "high",
+    "forms": "format placeholders (YYYY, MM) → marqueurs",
+    "sources": "MS terminology FRA (ids 146440, 2129624)"
+  },
+  "file": {
+    "chosen": "fichier",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.renameReview.title": "Vérifier les renommages: renommage already says the object is files.",
+      "errors.write.readOnlyDevice.source.suggestion": "The pronoun les points back at the files named in the dialog.",
+      "settings.mediaIndex.showFileStatusIcons.label": "Image files are images in French (sur les images)."
+    },
+    "sources": "macOS Finder; MS terminology FRA"
+  },
+  "file-list": {
+    "accept": ["liste de fichiers"],
+    "chosen": "liste des fichiers",
+    "confidence": "high",
+    "forms": "short label fallback: liste; macOS's view-mode sense is présentation par liste",
+    "sources": "Double Commander (la liste des fichiers)"
+  },
+  "file-operations": {
+    "accept": ["opérations"],
+    "chosen": "opérations sur les fichiers",
+    "confidence": "high",
+    "forms": "Settings card Opérations sur les fichiers; the short sidebar section Navigation & file ops → Navigation et opérations",
+    "sources": "catalog"
+  },
+  "file-system": {
+    "accept": ["systèmes de fichiers"],
+    "chosen": "système de fichiers",
+    "confidence": "high",
+    "forms": "File system watching → Surveillance du système de fichiers",
+    "sources": "macOS AppKit DocumentDragging (macOS 26.6.2 build 25G83, 2026-09-06)"
+  },
+  "finder": {
+    "chosen": "Finder",
+    "confidence": "high",
+    "forms": "le Finder in running text (Afficher dans le Finder, du Finder); errors.json alone says dans Finder / utilisez Finder without the article, for internal consistency",
+    "sources": "macOS Finder LocalizableMerged"
+  },
+  "fingerprint": {
+    "chosen": "empreinte",
+    "confidence": "high",
+    "decision": "Le hub des serveurs : la feuille de connexion et la clé d'hôte SSH (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.*`, `goToPath.dialog.opensServer`, `.addsServer`, `commands.serversConnect.label`)",
+    "forms": "feminine (Je l'ai vérifiée); Key fingerprint → Empreinte de la clé",
+    "sources": "macOS Security Certificate.loctable (Fingerprints → Empreintes); Safari (empreinte numérique)"
+  },
+  "folder": {
+    "accept": ["répertoire", "rép."],
+    "chosen": "dossier",
+    "confidence": "high",
+    "forms": "empty folder → dossier vide; the dir/dirs abbreviation in scan stats and the status bar → rép. (RÉP. for the all-caps marker); directory in a technical sense → répertoire",
+    "sources": "macOS Finder (Nouveau dossier); MS terminology FRA"
+  },
+  "force-quit": {
+    "chosen": "Forcer à quitter",
+    "confidence": "high",
+    "sources": "macOS AppKit (Force Quit… → Forcer à quitter…)"
+  },
+  "forget": {
+    "accept": ["oubli"],
+    "chosen": "oublier",
+    "confidence": "high",
+    "forms": "Oublier le serveur; Oublier le mot de passe enregistré; confirmation titles repeat the menu label word for word",
+    "sources": "catalog (menu.network.forgetServer, menu.network.forgetSavedPassword)"
+  },
+  "format": {
+    "chosen": "format",
+    "confidence": "high",
+    "forms": "formatted as FAT32 → formaté en FAT32; FAT32 / exFAT verbatim",
+    "sources": "standard FR construction; macOS (le format du volume)"
+  },
+  "free-space": {
+    "accept": ["espace", "libre", "plein"],
+    "chosen": "espace libre",
+    "confidence": "high",
+    "forms": "{free} free of {total} → {free} libre sur {total}; disk is full → le disque est plein; running low on space → espace disque faible / l'espace libre devient faible",
+    "sources": "macOS Finder (Disponible, disque est plein)"
+  },
+  "from-to": {
+    "accept": ["À"],
+    "avoid": [
+      {
+        "form": "Depuis :",
+        "why": "drift from the De / À pair; De : is also the mail-header form"
+      }
+    ],
+    "chosen": "De",
+    "confidence": "high",
+    "decision": "Le dialogue de suppression : l'interrupteur corbeille, De et À (`fileOperations.delete.trashSwitch`, `.confirmDelete`, `fileOperations.transferDialog.sourceGroupTitle`, `.targetGroupTitle`)",
+    "forms": "the dialog headings De / À; a label in front of a path → De :",
+    "sources": "Total Commander fr (662 De :, 663 À :); Double Commander fr"
+  },
+  "full-disk-access": {
+    "chosen": "Accès complet au disque",
+    "confidence": "high",
+    "forms": "lowercase in prose (l'accès complet au disque); badge Pas d'accès complet au disque",
+    "sources": "macOS 27.0 build 26A428 SecurityPrivacyExtension.appex Localizable.loctable key ALL_FILES, verified 2026-09-16"
+  },
+  "full-screen": {
+    "chosen": "plein écran",
+    "confidence": "high",
+    "decision": "Échap et le plein écran (`main.escapeFullScreenHint.*`, `settings.advanced.exitFullScreenOnEscape*`)",
+    "forms": "mode plein écran; Exit full screen → Quitter le mode plein écran",
+    "sources": "macOS Finder (FV20, FV21, MenuBar 300944.title)"
+  },
+  "full-view": {
+    "accept": ["complète"],
+    "chosen": "Complet",
+    "confidence": "high",
+    "decision": "Sections des réglages et noms de présentation (`settings.section.*`, `settings.navigationAndFileOps.card.*`, `settings.summary.navigationAndFileOps`)",
+    "forms": "after mode: mode Complet; after présentation (feminine): Présentation complète",
+    "sources": "macOS Finder présentation family; catalog"
+  },
+  "function-key-bar": {
+    "accept": ["touches de fonction"],
+    "chosen": "barre des touches de fonction",
+    "confidence": "high",
+    "sources": "catalog (settings.appearance.showFunctionKeyBar.label)"
+  },
+  "get-info": {
+    "chosen": "Lire les informations",
+    "confidence": "high",
+    "forms": "errors.json points at it as Finder (Lire les informations)",
+    "sources": "macOS Finder"
+  },
+  "github-issue": {
+    "chosen": "ticket",
+    "confidence": "tentative",
+    "sources": "common FR rendering of a GitHub issue"
+  },
+  "github-star": {
+    "chosen": "étoile",
+    "confidence": "high",
+    "decision": "La prise en main : l'assistant, l'étape IA et la liste de contrôle (`onboarding.*`, `settings.revealHandler.notProductionBuild`)",
+    "forms": "the button → Ajouter une étoile; starred → Marqué d'une étoile; repo → dépôt",
+    "sources": "GitHub's French UI (docs.github.com/fr, 2026-09-09)"
+  },
+  "glob": {
+    "chosen": "Glob",
+    "confidence": "high",
+    "sources": "technical term kept"
+  },
+  "global": {
+    "accept": ["dans l'app", "à l'échelle du système"],
+    "chosen": "global",
+    "confidence": "high",
+    "forms": "global shortcut → raccourci global; globally → globalement; in-app → dans l'app",
+    "sources": "standard FR"
+  },
+  "go-back": {
+    "accept": ["Avancer", "Suivant", "revenez"],
+    "chosen": "Revenir",
+    "confidence": "high",
+    "exceptions": {
+      "indexing.rescan.journalGap": "English-sense: the log doesn't go back far enough in time (ne remonte pas assez loin)."
+    },
+    "forms": "commands Revenir / Avancer; the Go menu's Forward is Finder's Suivant",
+    "sources": "macOS Finder; catalog"
+  },
+  "go-to-path": {
+    "accept": ["Aller au dossier"],
+    "chosen": "Aller au chemin",
+    "confidence": "high",
+    "forms": "Go to path… → Aller au chemin… (a path you type); Go to Folder… (Dock menu) → Aller au dossier… (Finder's command); keep the two distinct",
+    "sources": "macOS Finder MenuBar 261.title (Aller au dossier…); catalog"
+  },
+  "go-to-trash": {
+    "chosen": "Aller à la corbeille",
+    "confidence": "high",
+    "forms": "the toast button and the command read identically",
+    "sources": "catalog siblings (Aller au dossier parent, Aller au dernier téléchargement)"
+  },
+  "got-it": {
+    "avoid": [
+      {
+        "form": "Compris",
+        "why": "drift"
+      },
+      {
+        "form": "J'ai compris",
+        "why": "drift"
+      }
+    ],
+    "chosen": "D'accord",
+    "confidence": "high",
+    "decision": "Un mot anglais, un mot français : la revue de dérive",
+    "sources": "macOS fr (Got It → D'accord, verified on macOS 26.6.2, 2026-08-30)"
+  },
+  "guest": {
+    "chosen": "invité",
+    "confidence": "high",
+    "forms": "Se connecter en tant qu'invité",
+    "sources": "macOS AppKit (NSUserGuest → invité); NetAuthAgent (« Ce serveur n'accepte pas les invités. »)"
+  },
+  "hidden": {
+    "accept": ["masqué"],
+    "chosen": "caché",
+    "confidence": "high",
+    "decision": "Les fichiers d'un déplacement incomplet retrouvés sur un disque (`fileOperations.leftovers.stagingFolderKept`)",
+    "forms": "caché qualifies what the FILE is (its attribute: fichiers cachés); masqué is what the UI doesn't show right now (La barre … est maintenant masquée); masquer stays the verb (Afficher ou masquer les fichiers cachés)",
+    "sources": "catalog; Nautilus, Dolphin, Thunar, Total Commander, Double Commander (fichiers cachés)"
+  },
+  "hide": {
+    "accept": ["masque"],
+    "chosen": "Masquer",
+    "confidence": "high",
+    "exceptions": {
+      "settings.search.recentSearches.maxCount.description": "Intransitive hide (the footer and popover hide) reads as disparaître in French.",
+      "settings.selection.recentSelections.maxCount.description": "Intransitive hide (the footer and popover hide) reads as disparaître in French."
+    },
+    "forms": "Hide Others → Masquer les autres",
+    "sources": "macOS app menu (Finder MenuBar 300729.title)"
+  },
+  "hint": {
+    "avoid": [
+      {
+        "form": "conseil",
+        "why": "MS's word; macOS says astuce"
+      }
+    ],
+    "chosen": "astuce",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.emptyRootICloud.explanation": "English-sense: this hint is the suggestion on screen (cette indication), not a one-time tip."
+    },
+    "forms": "feminine (Astuce … affichée)",
+    "sources": "macOS Finder (Astuces pour votre Mac)"
+  },
+  "home-folder": {
+    "accept": ["Départ"],
+    "chosen": "dossier personnel",
+    "confidence": "high",
+    "forms": "the Go > Home menu item → Départ (Finder)",
+    "sources": "macOS Finder"
+  },
+  "host": {
+    "chosen": "hôte",
+    "confidence": "high",
+    "sources": "macOS Finder; MS terminology FRA (ordinateur hôte)"
+  },
+  "host-key": {
+    "accept": ["clé"],
+    "chosen": "clé d'hôte",
+    "confidence": "tentative",
+    "forms": "{host}'s key → la clé de {host}; SSH key → clé SSH; public / private key → clé publique / clé privée",
+    "sources": "built on clé (no macOS bundle exposes host key); ActionKitUI (Clé SSH)"
+  },
+  "hostname": {
+    "chosen": "nom d'hôte",
+    "confidence": "high",
+    "forms": "macOS names the address field Adresse du serveur",
+    "sources": "MS terminology FRA"
+  },
+  "hour": {
+    "accept": ["minute", "seconde"],
+    "chosen": "heure",
+    "confidence": "high",
+    "forms": "retry durations are ICU plurals with one / many / other (seconde / secondes)",
+    "sources": "standard FR"
+  },
+  "icon": {
+    "chosen": "icône",
+    "confidence": "high",
+    "sources": "macOS"
+  },
+  "image": {
+    "chosen": "image",
+    "confidence": "high",
+    "decision": "Les pastilles d'état de l'index d'images (`fileExplorer.imageIndex.*`, `settings.mediaIndex.showFileStatusIcons.*`)",
+    "forms": "feminine (image indexée, images indexées)",
+    "sources": "macOS"
+  },
+  "image-search": {
+    "accept": ["recherche"],
+    "chosen": "recherche d'images",
+    "confidence": "high",
+    "decision": "Les réglages de l'indexation des images (`settings.mediaIndex.cards.*`, `settings.mediaIndex.progressSummary.title`, `settings.mediaIndex.semanticSearch.label`, `settings.mediaIndex.clip.*`, `fileExplorer.imageIndex.file.indexing`)",
+    "forms": "search by description → la recherche par description; the CLIP card → Recherche sémantique; keyword and tag search → la recherche par mot-clé et par tag",
+    "sources": "catalog"
+  },
+  "in-use": {
+    "accept": ["utilise", "occupé"],
+    "chosen": "utilisé",
+    "confidence": "high",
+    "decision": "Le refus d'éjection nommé : qui tient le disque (`errors.eject.unmountRefusedBy*`, `.otherApps`)",
+    "forms": "X is still using this drive → X utilise encore ce disque (active voice); a greyed menu item → (occupé); an open file handle → handle (kept, no concise French)",
+    "sources": "macOS Finder (« … car il est utilisé par « %@ ». »)"
+  },
+  "index": {
+    "chosen": "index",
+    "confidence": "high",
+    "decision": "L'indexation des disques désactivée (`fileExplorer.navigation.driveIndex.refusedIndexingOff`, `.tooltipIndexingOff`, `.menuIndexingOffNote`, `settings.indexing.masterOffNote`, `.overriddenBadge`)",
+    "forms": "noun index; the act indexation; verb indexer; drive indexing in prose → l'indexation (bare); the setting label Indexation du disque",
+    "sources": "MS terminology FRA; macOS Finder (Mise à jour de l'index des tags)"
+  },
+  "input-source": {
+    "chosen": "source de saisie",
+    "confidence": "high",
+    "forms": "le changement de source de saisie",
+    "sources": "macOS FR"
+  },
+  "install": {
+    "accept": ["installé", "installez", "installation"],
+    "chosen": "installer",
+    "confidence": "high",
+    "sources": "macOS"
+  },
+  "invert-selection": {
+    "chosen": "Inverser la sélection",
+    "confidence": "high",
+    "decision": "Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)",
+    "sources": "Double Commander, Total Commander, Nautilus, Thunar, Dolphin fr (unanimous)"
+  },
+  "item": {
+    "avoid": [
+      {
+        "form": "article",
+        "why": "MS's first hit, the wrong sense for a UI row"
+      }
+    ],
+    "chosen": "élément",
+    "confidence": "high",
+    "exceptions": {
+      "errors.provider.macFuse.needsAction": "English-sense: Login Items is a System Settings pane name.",
+      "errors.provider.pCloudFuse.needsAction": "English-sense: Login Items is a System Settings pane name.",
+      "errors.provider.pCloudFuse.serious": "English-sense: Login Items is a System Settings pane name."
+    },
+    "forms": "masculine; the generic file-or-folder entity; a string whose English says file keeps fichier",
+    "sources": "macOS Finder, pervasive (Compresser des éléments, Déplacer les éléments ici)"
+  },
+  "keep": {
+    "accept": ["garder", "gardé"],
+    "chosen": "conserver",
+    "confidence": "high",
+    "decision": "Mots qui ont divergé sans qu'aucun check puisse le voir",
+    "forms": "conserver = preserve a thing or a duration (Conserver les fichiers, Conserver l'ancienne); garder = leave as is or keep running (Garder les deux, a gardé son nom)",
+    "sources": "macOS fr (Garder les deux / Conserver la copie partielle)"
+  },
+  "key-file": {
+    "accept": ["phrase secrète"],
+    "chosen": "fichier de clé",
+    "confidence": "high",
+    "decision": "Le hub des serveurs : la feuille de connexion et la clé d'hôte SSH (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.*`, `goToPath.dialog.opensServer`, `.addsServer`, `commands.serversConnect.label`)",
+    "forms": "Key passphrase → Phrase secrète de la clé; mot de passe stays the account's",
+    "sources": "AuthenticationServices Localizable.strings (Passphrase → Phrase secrète, macOS 26.6.2 build 25G83, 2026-09-07)"
+  },
+  "keychain": {
+    "avoid": [
+      {
+        "form": "Keychain",
+        "why": "Apple localizes the feature name, so the user's French macOS says trousseau"
+      }
+    ],
+    "chosen": "trousseau",
+    "confidence": "high",
+    "decision": "Le hub des serveurs : panneau de connexion, refus et oubli (`servers.refusal.*`, `servers.paneState.*`, `fileExplorer.navigation.forget*`, `fileExplorer.navigation.disconnect*`, `menu.network.forgetServer`, `.forgetSavedPassword`)",
+    "forms": "the store → le trousseau (Mémoriser dans le trousseau); the app Keychain Access → Trousseaux d'accès (Apple's plural); ai.secretError says Trousseau macOS",
+    "sources": "Keychain Access.app InfoPlist.loctable CFBundleDisplayName (macOS 26.6.2 build 25G83, 2026-09-06)"
+  },
+  "keyword": {
+    "accept": ["mots-clés"],
+    "chosen": "mot-clé",
+    "confidence": "high",
+    "forms": "keyword and tag search → la recherche par mot-clé et par tag",
+    "sources": "standard FR"
+  },
+  "kind": {
+    "chosen": "type",
+    "confidence": "high",
+    "decision": "Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)",
+    "exceptions": {
+      "errors.listing.interrupted.suggestion": "English-sense: this kind of means this sort of (ce genre de)."
+    },
+    "forms": "Select all of the same kind → Sélectionner tous les éléments de même type; the Kind sort criterion → Type",
+    "sources": "macOS Finder ArrangeByMenu 119.title/338.title"
+  },
+  "later": {
+    "chosen": "Plus tard",
+    "confidence": "high",
+    "exceptions": {
+      "errors.mount.unsupportedProtocol": "English-sense: SMB 2 or later is a version floor (ou ultérieur).",
+      "fileOperations.cancelRollback.stagedLeftover.counted": "English-sense: a later transfer is a future one (ultérieur).",
+      "fileOperations.cancelRollback.stagedLeftover.named": "English-sense: a later transfer is a future one (ultérieur).",
+      "settings.ai.tooltipLocalDisabled": "English-sense: M1 or later is a chip floor (ou ultérieur)."
+    },
+    "forms": "also Not now on a consent screen; a definitive refusal is Non, merci",
+    "sources": "iOS/iCloud FR (Plus tard)"
+  },
+  "leave-alone": {
+    "accept": ["tel quel", "tels quels", "laisse de côté", "laissé"],
+    "chosen": "laisser tel quel",
+    "confidence": "high",
+    "decision": "La notification après un retour en arrière interrompu (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`)",
+    "forms": "the rule (confirm and leftBehind) → Cmdr laisse de côté tout ce dont il n'est pas sûr; the per-item line → {name} laissé tel quel : <raison>",
+    "sources": "catalog (askCmdr.renameUndo.skipReason.*, rollbackConfirm)"
+  },
+  "license": {
+    "accept": ["perpétuelle", "commercial", "abonnement"],
+    "chosen": "licence",
+    "confidence": "high",
+    "forms": "feminine; tiers Personnelle (gratuite), Commerciale perpétuelle, Abonnement commercial; perpetual → perpétuelle",
+    "sources": "standard FR"
+  },
+  "license-key": {
+    "accept": ["clés de licence"],
+    "chosen": "clé de licence",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "like": {
+    "avoid": [
+      {
+        "form": "Liker",
+        "why": "familiar anglicism"
+      }
+    ],
+    "chosen": "Aimer",
+    "confidence": "tentative",
+    "decision": "La prise en main : l'assistant, l'étape IA et la liste de contrôle (`onboarding.*`, `settings.revealHandler.notProductionBuild`)",
+    "forms": "AlternativeTo has no French UI, so this is the standard French social verb in the infinitive",
+    "sources": "Facebook FR (J'aime); alternativeto.net checked 2026-09-09"
+  },
+  "limit": {
+    "accept": ["budget", "plafond"],
+    "chosen": "limite",
+    "confidence": "high",
+    "forms": "This one hit its limit → Celle-ci a atteint sa limite (celle-ci = the answer)",
+    "sources": "standard FR"
+  },
+  "line": {
+    "chosen": "ligne",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "local-network": {
+    "accept": ["découverte", "à proximité"],
+    "avoid": [
+      {
+        "form": "accès au réseau local",
+        "why": "not a name Réglages shows"
+      }
+    ],
+    "chosen": "réseau local",
+    "confidence": "high",
+    "forms": "the privacy permission is quoted verbatim « Réseau local »; local network discovery → la découverte du réseau local; Found nearby → Découvert à proximité",
+    "sources": "macOS SecurityPrivacyExtension LOCAL_NETWORK (macOS 26.6.2 build 25G83, 2026-09-09); IOBluetoothUI (découvert à proximité)"
+  },
+  "location": {
+    "accept": ["localisation", "endroit"],
+    "chosen": "emplacement",
+    "confidence": "high",
+    "decision": "Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.tool.inspectFile.*`)",
+    "forms": "where a file lives → emplacement (its stored value is a chemin); where a photo was taken → localisation, in prose l'endroit où elle a été prise; Places (under a server) → Emplacements",
+    "sources": "macOS Finder (SD5 Emplacements; PV5/PV56 Localisation)"
+  },
+  "locked": {
+    "chosen": "verrouillé",
+    "confidence": "high",
+    "forms": "unlock (Finder flag) → déverrouiller",
+    "sources": "macOS (« L'élément est verrouillé », AXNODE1 Verrouillé)"
+  },
+  "log": {
+    "accept": ["journalisation", "journaux"],
+    "chosen": "journal",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.renameUndo.refusedBatches": "English-sense: the operation log is Historique des opérations, a separate concept.",
+      "commands.logOperationLog.label": "English-sense: the operation log is Historique des opérations, a separate concept.",
+      "errors.listing.authRequiredEneedauth.explanation": "English-sense: log in means sign in (s'identifier).",
+      "fileExplorer.network.browser.tooltip.credsRejected": "English-sense: log in means sign in (s'identifier).",
+      "main.dockPinNudge.addedButDockDidNotRestart": "English-sense: log in to the Mac is l'ouverture de session.",
+      "menu.view.operationLog": "English-sense: the operation log is Historique des opérations, a separate concept.",
+      "operationLog.dialog.title": "English-sense: the operation log is Historique des opérations, a separate concept.",
+      "settings.advanced.logLlmCalls.description": "English-sense: llm-logs is a folder name, kept verbatim.",
+      "settings.navigationAndFileOps.card.operationLog": "English-sense: the operation log is Historique des opérations, a separate concept.",
+      "settings.operationLog.maxSize.description": "English-sense: the operation log is Historique des opérations, a separate concept.",
+      "shortcuts.system.loggingOut": "English-sense: logging out of the Mac is la fermeture de session."
+    },
+    "forms": "logging → journalisation; log file → fichier journal (Cmdr's log FILE, never bare journal when it points at the file)",
+    "sources": "MS terminology FRA"
+  },
+  "look-inside": {
+    "accept": ["regarde", "inspecter", "lit", "contenu"],
+    "chosen": "regarder à l'intérieur",
+    "confidence": "high",
+    "decision": "Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.tool.inspectFile.*`)",
+    "forms": "looks inside a file only when you ask → ne regarde à l'intérieur d'un fichier que lorsque vous lui posez une question à son sujet; the tool line → Lecture du contenu de fichiers / A lu le contenu de fichiers",
+    "sources": "catalog"
+  },
+  "macos-app-names": {
+    "accept": ["S.O.S", "Moniteur d'activité", "Spotlight", "Mission Control", "Spaces"],
+    "chosen": "Utilitaire de disque",
+    "confidence": "high",
+    "forms": "Disk Utility → Utilitaire de disque; First Aid → S.O.S; Activity Monitor → Moniteur d'activité; Spotlight, Mission Control, Spaces stay English",
+    "sources": "macOS app names"
+  },
+  "mailing-list": {
+    "accept": ["inscription"],
+    "chosen": "liste de diffusion",
+    "confidence": "high",
+    "decision": "La prise en main : l'assistant, l'étape IA et la liste de contrôle (`onboarding.*`, `settings.revealHandler.notProductionBuild`)",
+    "sources": "MS terminology FRA (FRENCH.tbx 210512 → 724756)"
+  },
+  "main-window": {
+    "chosen": "fenêtre principale",
+    "confidence": "high",
+    "sources": "descriptive FR"
+  },
+  "manifest": {
+    "chosen": "manifeste",
+    "confidence": "high",
+    "sources": "standard FR technical term"
+  },
+  "memory": {
+    "accept": ["RAM", "notes"],
+    "chosen": "mémoire",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "merge": {
+    "accept": ["fusion"],
+    "chosen": "Fusionner",
+    "confidence": "high",
+    "sources": "Nautilus (Fusionner le dossier)"
+  },
+  "model": {
+    "chosen": "modèle",
+    "confidence": "high",
+    "exceptions": {
+      "settings.developer.mcpEnabled.description": "English-sense: Model Context Protocol is a product name, kept verbatim.",
+      "settings.summary.mcpServer": "English-sense: Model Context Protocol is a product name, kept verbatim."
+    },
+    "sources": "standard FR"
+  },
+  "modified": {
+    "accept": ["modification"],
+    "chosen": "Modifié",
+    "confidence": "high",
+    "forms": "the date column → Modifié; date modified → date de modification; shortcuts you changed (filter chip) → Modifiés",
+    "sources": "catalog"
+  },
+  "modifier-key": {
+    "chosen": "touche de modification",
+    "confidence": "high",
+    "forms": "⌘⌃⌥⇧ glyphs stay literal",
+    "sources": "macOS FR convention"
+  },
+  "mount": {
+    "accept": ["montage", "monté"],
+    "chosen": "monter",
+    "confidence": "high",
+    "forms": "mounted share → un partage monté",
+    "sources": "macOS AppKit (« Le volume « %@ » n'a pas pu être monté. »)"
+  },
+  "move": {
+    "accept": ["déplace", "déplacé", "déplaçant"],
+    "chosen": "Déplacer",
+    "confidence": "high",
+    "exceptions": {
+      "errors.mutation.trashRefused": "English-sense: moving to the trash is placer dans la corbeille.",
+      "errors.write.fallback.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
+      "errors.write.ioError.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
+      "errors.write.permissionDenied.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
+      "errors.write.trashRefused.message.other": "English-sense: moving to the trash is placer dans la corbeille.",
+      "fileOperations.delete.cloudOnlineOnlyAllWarning": "English-sense: moving to the trash is placer dans la corbeille.",
+      "fileOperations.delete.cloudOnlineOnlyMixedWarning": "English-sense: moving to the trash is placer dans la corbeille.",
+      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "French names what the button no longer does (le retour en arrière n'est plus possible) instead of undoing the move.",
+      "operationLog.summary.trash": "English-sense: moving to the trash is placer dans la corbeille.",
+      "queryUi.recent.popoverHint": "English-sense: the arrow keys move the highlight, so naviguer.",
+      "transfer.trash": "English-sense: moving to the trash is placer dans la corbeille."
+    },
+    "forms": "progress noun Déplacement (Déplacement vers {destination}); participles déplacé/déplacés",
+    "sources": "macOS Finder (Déplacer les éléments ici)"
+  },
+  "move-to-trash": {
+    "accept": ["placer", "placé", "placement"],
+    "avoid": [
+      {
+        "form": "mettre à la corbeille",
+        "why": "Nautilus; Finder says placer dans la corbeille"
+      }
+    ],
+    "chosen": "placer dans la corbeille",
+    "confidence": "high",
+    "decision": "The trash refusal dialog (`errors.write.trashRefused.*`, `errors.write.fallback.title.trash`, `errors.write.ioError.title.trash`, `errors.write.readError.title.trash`, `errors.write.writeError.title.trash`)",
+    "forms": "the delete dialog's switch → Placer dans la corbeille; the queue row → Placement dans la corbeille",
+    "sources": "macOS Finder (Placer ${entities} dans la corbeille; AL13/N153)"
+  },
+  "name": {
+    "chosen": "nom",
+    "confidence": "high",
+    "decision": "Refus de renommage et de création (`errors.mutation.*`, `errors.volume.*`)",
+    "forms": "Name column → Nom; Ext → Ext",
+    "sources": "macOS; catalog"
+  },
+  "nas": {
+    "chosen": "NAS",
+    "confidence": "high",
+    "sources": "same acronym in French"
+  },
+  "native": {
+    "accept": ["système", "natif"],
+    "chosen": "native",
+    "confidence": "high",
+    "decision": "Notification de repli sur le montage macOS (`fileExplorer.network.osMountFallback.*`)",
+    "forms": "macOS's native SMB network connection → la connexion réseau SMB native de macOS; the system connection → la connexion système",
+    "sources": "MS terminology FRA (format natif, intégration native)"
+  },
+  "navigate": {
+    "accept": ["accédez", "revenez", "navigation", "aller", "allez", "remonte"],
+    "chosen": "accéder à",
+    "confidence": "high",
+    "exceptions": {
+      "downloads.warnToast.message": "The shortcut takes you there (vous amène), the natural French for a jump.",
+      "errors.listing.isADirectory.suggestion": "Navigating into a folder is opening it (Ouvrez le dossier), the Finder verb."
+    },
+    "forms": "Click to navigate to {path} → Cliquez pour accéder à {path}; jump to → aller à; go up a folder → remonter au dossier parent; Navigate here again → Revenez ici",
+    "sources": "macOS Finder (Accéder au dossier parent)"
+  },
+  "network-drive": {
+    "accept": ["disques réseau"],
+    "avoid": [
+      {
+        "form": "lecteur réseau",
+        "why": "the Windows term (MS id 84433)"
+      }
+    ],
+    "chosen": "disque réseau",
+    "confidence": "high",
+    "sources": "macOS Finder (disque, Réseau)"
+  },
+  "network-share": {
+    "chosen": "partage",
+    "confidence": "high",
+    "decision": "Pourquoi un partage ne se monte pas ou sa liste ne se charge pas (`errors.mount.*`, `errors.shareList.*`)",
+    "forms": "network share → partage réseau (masculine); SMB share → partage SMB",
+    "sources": "macOS (Partage et permissions); NetAuthAgent EINFO_NO_SHARE; MS terminology FRA"
+  },
+  "new-file": {
+    "accept": ["Créer un fichier", "Création du fichier", "Créer le fichier"],
+    "chosen": "Nouveau fichier",
+    "confidence": "high",
+    "sources": "catalog (fileExplorer.functionKeyBar.newFileAction)"
+  },
+  "new-folder": {
+    "accept": ["Créer un dossier", "Création du dossier", "Créer le dossier"],
+    "chosen": "Nouveau dossier",
+    "confidence": "high",
+    "sources": "macOS Finder (Nouveau dossier)"
+  },
+  "none": {
+    "chosen": "Aucun",
+    "confidence": "high",
+    "forms": "agrees with what it replaces (Aucune)",
+    "sources": "standard FR"
+  },
+  "not-finished": {
+    "accept": [
+      "n'ont pas pu se terminer",
+      "non terminé",
+      "pas terminé",
+      "pas fini",
+      "n'a pas pu terminer",
+      "n'a pas pu aboutir"
+    ],
+    "avoid": [
+      {
+        "form": "Échec",
+        "why": "style ban"
+      }
+    ],
+    "chosen": "n'a pas pu se terminer",
+    "confidence": "high",
+    "decision": "La pastille de progression et l'avis « N'a pas pu se terminer » (`queue.chip.*`, `queue.failureToast.*`, `queue.row.dismiss*`, `queue.toolbar.dismissAll`)",
+    "forms": "queue status N'a pas pu se terminer; failure toast <L'action> n'a pas pu se terminer; operation-log status and item outcome Non terminé",
+    "sources": "style.md"
+  },
+  "not-found": {
+    "chosen": "introuvable",
+    "confidence": "high",
+    "forms": "path not found → chemin introuvable; found (the adb status) → Trouvé : {path}, the pair sharing its root like Found / Not found",
+    "sources": "macOS (introuvable, 37+ hits); AppKit FindPanel.loctable"
+  },
+  "note": {
+    "accept": ["message"],
+    "chosen": "note",
+    "confidence": "high",
+    "forms": "Ajouter une note (facultatif); feminine (Note ajoutée)",
+    "sources": "catalog"
+  },
+  "notification": {
+    "accept": ["avis"],
+    "chosen": "notification",
+    "confidence": "high",
+    "forms": "toast / transient notification → notification; a one-time notice → avis",
+    "sources": "no separate FR UI term for toast"
+  },
+  "on-device": {
+    "chosen": "en local",
+    "confidence": "tentative",
+    "decision": "Ask Cmdr : la conversation, les jetons et les lignes d'outil (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
+    "sources": "descriptive FR (no pile hit)"
+  },
+  "onboarding": {
+    "avoid": [
+      {
+        "form": "onboarding",
+        "why": "anglicism"
+      },
+      {
+        "form": "Configuration…",
+        "why": "a forward-reference guess that diverged from the menu label"
+      },
+      {
+        "form": "Bienvenue dans Cmdr",
+        "why": "the menu item and the window it opens must recognize each other"
+      }
+    ],
+    "chosen": "prise en main",
+    "confidence": "high",
+    "decision": "La prise en main porte un seul nom (`onboarding.wizard.title`, `onboarding.wizard.progressLabel`, `commands.cmdrOpenOnboarding.label`, `shortcuts.scope.onboarding`, `main.upgradeNudge.*`, `settings.onboarding.upgradeNudgeShown.*`, `onboarding.stepAi.bannerBody.stuck`)",
+    "forms": "everywhere: menu item Prise en main…, command, shortcut scope, wizard title Prise en main de Cmdr, progress Progression de la prise en main; the generic phrase onboarding options → options de configuration",
+    "sources": "MS/Apple FR convention for guided first-run setup"
+  },
+  "online-only": {
+    "chosen": "en ligne uniquement",
+    "confidence": "high",
+    "decision": "L'avertissement « contenu en ligne uniquement » (`fileOperations.delete.cloudOnlineOnlyMixedWarning` / `fileOperations.delete.cloudOnlineOnlyAllWarning` / `fileOperations.delete.cloudOnlineOnlyHandedBack`)",
+    "forms": "disponible en ligne uniquement",
+    "sources": "macOS Finder's wording for an evicted cloud file"
+  },
+  "open": {
+    "accept": ["ouvre", "ouvrez", "ouvert", "ouverture"],
+    "chosen": "Ouvrir",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.searchResults.unavailableBody": "English-sense: open a new search means start one (Lancez)."
+    },
+    "forms": "one verb for opening a file and entering a folder or server, like Finder; Open with default app → ouvrir avec l'application par défaut; Dock menu Open Cmdr → Ouvrir Cmdr (app name bare, no guillemets)",
+    "sources": "macOS Finder (N151 Ouvrir, N152 Ouvrir avec, FV7); Dock.app DockMenus.strings"
+  },
+  "operation": {
+    "chosen": "opération",
+    "confidence": "high",
+    "decision": "Le renommage de la file d'attente des opérations (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.pauseAria`, `.resumeAria`, `.cancelAria`, `.selectAria`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`, `.backgroundedToast`)",
+    "exceptions": {
+      "errors.write.cancelled.message.copy": "French names the action noun directly (La copie a été annulée); l'opération de copie would only pad it.",
+      "errors.write.cancelled.message.delete": "French names the action noun directly (La suppression a été annulée).",
+      "errors.write.cancelled.message.move": "French names the action noun directly (Le déplacement a été annulé).",
+      "errors.write.cancelled.message.trash": "French names the action noun directly (Le placement dans la corbeille a été annulé)."
+    },
+    "forms": "feminine (cette opération, Retrouvez-la); per-row aria family: Mettre cette opération en pause / Reprendre / Annuler / Sélectionner / Ignorer cette opération",
+    "sources": "macOS Finder NE82 (« … une autre opération, telle que le déplacement ou la copie … »); MS terminology FRA"
+  },
+  "operation-log": {
+    "avoid": [
+      {
+        "form": "Journal des opérations",
+        "why": "journal is the log-FILE sense; drift fixed in settings.navigationAndFileOps.card.operationLog"
+      }
+    ],
+    "chosen": "Historique des opérations",
+    "confidence": "high",
+    "decision": "L'historique des opérations (`operationLog.*`, `commands.logOperationLog.*`)",
+    "forms": "window title, command, menu, and Settings card read identically",
+    "sources": "macOS (NSToolbarHistoryTemplate → historique); Double Commander (Historique des commandes)"
+  },
+  "operation-queue": {
+    "accept": ["file d'attente"],
+    "avoid": [
+      {
+        "form": "File d'attente des transferts",
+        "why": "the window lists deletes, renames, and creations too"
+      }
+    ],
+    "chosen": "File d'attente des opérations",
+    "confidence": "high",
+    "decision": "Le renommage de la file d'attente des opérations (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.pauseAria`, `.resumeAria`, `.cancelAria`, `.selectAria`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`, `.backgroundedToast`)",
+    "exceptions": {
+      "operationLog.status.queued": "The Queued status is the waiting word En attente, matching queue.row.status."
+    },
+    "forms": "the window, the View menu item, and the command read identically; the standalone Queue button stays File d'attente; pairs with Historique des opérations",
+    "sources": "Double Commander (File d'attente); MS terminology FRA (queue → file d'attente)"
+  },
+  "options": {
+    "accept": ["option"],
+    "chosen": "Options",
+    "confidence": "high",
+    "forms": "identical to English on the popover and carries sameAsSourceJustification",
+    "sources": "standard FR"
+  },
+  "outdated": {
+    "accept": ["obsolescence"],
+    "chosen": "obsolète",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.staleConnection.title": "English-sense: a stale connection is an expired reference (Connexion périmée), not an out-of-date index."
+    },
+    "sources": "catalog"
+  },
+  "overwrite": {
+    "accept": ["écrase", "écrasé"],
+    "chosen": "Écraser",
+    "confidence": "high",
+    "forms": "overwrite all → Tout écraser; the badge → (écrasement !)",
+    "sources": "macOS Finder (Écraser à la destination, Écraser les extensions)"
+  },
+  "package": {
+    "chosen": "paquet",
+    "confidence": "high",
+    "decision": "Pourquoi un partage ne se monte pas ou sa liste ne se charge pas (`errors.mount.*`, `errors.shareList.*`)",
+    "forms": "Linux package → paquet; distribution (Linux) → distribution (tentative)",
+    "sources": "KDE Dolphin (Impossible de trouver le paquet %1.); catalog"
+  },
+  "page": {
+    "chosen": "page",
+    "confidence": "high",
+    "forms": "page up / page down → page précédente / page suivante (tentative)",
+    "sources": "macOS Finder (Page ^0 sur ^1)"
+  },
+  "pane": {
+    "chosen": "panneau",
+    "confidence": "high",
+    "forms": "focused pane → panneau actif; pane background → arrière-plan du panneau",
+    "sources": "Double Commander; Total Commander; MS terminology FRA"
+  },
+  "parent-folder": {
+    "avoid": [
+      {
+        "form": "répertoire-parent",
+        "why": "Double Commander's word; macOS says dossier parent"
+      }
+    ],
+    "chosen": "dossier parent",
+    "confidence": "high",
+    "forms": "Go to enclosing folder → Accéder au dossier parent (menu Dossier parent); go up → remonter au dossier parent",
+    "sources": "macOS Finder (Accéder au dossier parent)"
+  },
+  "password": {
+    "accept": ["mots de passe"],
+    "chosen": "mot de passe",
+    "confidence": "high",
+    "decision": "Refus de renommage et de création (`errors.mutation.*`, `errors.volume.*`)",
+    "forms": "saved password → mot de passe enregistré; That password didn't work → Ce mot de passe n'est pas le bon (tentative)",
+    "sources": "macOS, pervasive"
+  },
+  "password-protected": {
+    "accept": ["protégée par un mot de passe"],
+    "chosen": "protégé par un mot de passe",
+    "confidence": "high",
+    "decision": "Le mot de passe d'une archive (`fileOperations.archivePassword.*`)",
+    "forms": "agrees with archive (L'archive … est protégée …); name the archive so agreement never hangs off {name}",
+    "sources": "GNOME Nautilus (« « %s » est protégé par un mot de passe. »); TC/DC"
+  },
+  "paste": {
+    "accept": ["colle", "collé", "collage"],
+    "chosen": "Coller",
+    "confidence": "high",
+    "decision": "Coller le presse-papiers comme fichier (`fileExplorer.clipboard.pastedAsFile*`, `settings.fileOperations.pasteClipboardAsFile.*`)",
+    "forms": "paste clipboard content as a file → coller le contenu du presse-papiers en tant que fichier",
+    "sources": "macOS (Coller)"
+  },
+  "path": {
+    "chosen": "chemin",
+    "confidence": "high",
+    "forms": "full path → chemin complet",
+    "sources": "macOS"
+  },
+  "pattern": {
+    "avoid": [
+      {
+        "form": "modèle",
+        "why": "the AI model; the rename template keeps modèle de renommage"
+      }
+    ],
+    "chosen": "motif",
+    "confidence": "high",
+    "sources": "macOS pattern usage"
+  },
+  "pause": {
+    "accept": ["pause"],
+    "chosen": "Pause",
+    "confidence": "high",
+    "forms": "verb mettre en pause; button Pause (identical to English, valid FR); status En pause; pause all → Tout mettre en pause",
+    "sources": "macOS (NSPauseTemplate); Double Commander (En pause, Mettre tout en pause)"
+  },
+  "percent": {
+    "accept": ["pourcentage", "%"],
+    "chosen": "pour cent",
+    "confidence": "high",
+    "forms": "spelled out for screen readers as two words; visible values write {percentText} % with an ASCII space",
+    "sources": "standard French reading of %"
+  },
+  "permission": {
+    "accept": ["permissions"],
+    "chosen": "autorisation",
+    "confidence": "high",
+    "forms": "permission denied → autorisation refusée; Finder's Get Info section keeps Apple's label Partage et permissions; Unix permissions (chmod) → permissions",
+    "sources": "macOS Finder (« vous ne disposez pas de l'autorisation… »)"
+  },
+  "phone": {
+    "accept": ["Android"],
+    "chosen": "téléphone",
+    "confidence": "high",
+    "decision": "Le téléphone Android : le panneau de connexion, les info-bulles et l'astuce ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`)",
+    "forms": "tap → appuyez sur; wake the screen → activez son écran; plugged in → branché",
+    "sources": "catalog (adb.*); AOSP Settings fr"
+  },
+  "photo": {
+    "chosen": "photo",
+    "confidence": "high",
+    "forms": "feminine (photo indexée, photos indexées); photo archive → archive de photos",
+    "sources": "macOS"
+  },
+  "pin": {
+    "accept": ["épinglé", "Garder dans le Dock", "Supprimer du Dock"],
+    "avoid": [
+      {
+        "form": "Ne plus épingler",
+        "why": "AppKit's form; three shipped keys say Désépingler"
+      },
+      {
+        "form": "Retirer",
+        "why": "reads as removing the server; it stays saved"
+      }
+    ],
+    "chosen": "épingler",
+    "confidence": "high",
+    "decision": "Épingler un serveur au sélecteur, les clés d'hôte approuvées et la ligne ADB des réglages (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.appearance.tintSmb.*`)",
+    "exceptions": {
+      "main.dockPinNudge.body": "Pinned next to Finder is carried by qu'il reste (the icon stays when the app is closed).",
+      "settings.developer.mcpPort.description": "English-sense: pinning a port means fixing a value (Fixez)."
+    },
+    "forms": "tabs and server rows: Épingler / Désépingler, toggle Épingler ou désépingler …; Pin to switcher → Épingler au sélecteur; Cmdr's Dock icon follows Apple's Dock menu (Garder dans le Dock / Supprimer du Dock)",
+    "sources": "Safari fr (Épingler l'onglet / Désépingler l'onglet)"
+  },
+  "port": {
+    "chosen": "port",
+    "confidence": "high",
+    "forms": "Try another cable or port → Essayez un autre câble ou un autre port",
+    "sources": "AirPort Utility (Port USB)"
+  },
+  "preset": {
+    "avoid": [
+      {
+        "form": "préréglage",
+        "why": "macOS print's word, not in the pile"
+      }
+    ],
+    "chosen": "présélection",
+    "confidence": "high",
+    "forms": "back to presets → Retour aux présélections",
+    "sources": "MS terminology (présélection d'indexation); Double Commander (Présélections)"
+  },
+  "preview": {
+    "accept": ["prévisualis", "Aperçu"],
+    "chosen": "aperçu",
+    "confidence": "high",
+    "forms": "the generic quick view action → aperçu rapide",
+    "sources": "macOS (Aperçu)"
+  },
+  "previous-next": {
+    "accept": ["suivant"],
+    "chosen": "Précédent",
+    "confidence": "high",
+    "forms": "agrees with its noun (correspondance précédente / suivante, étape suivante)",
+    "sources": "macOS"
+  },
+  "privacy-and-security": {
+    "chosen": "Confidentialité et sécurité",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepAi.bannerBody.stuck": "The breadcrumb keeps its English literals, like the source; only the systemSettings token is localized at runtime."
+    },
+    "forms": "normally a runtime placeholder ({privacy_and_security}); the stuck banner keeps its English breadcrumb literal",
+    "sources": "macOS pane name"
+  },
+  "process": {
+    "accept": ["daemon"],
+    "chosen": "processus",
+    "confidence": "high",
+    "exceptions": {
+      "settings.ai.localContextSize.description": "English-sense: process as a verb (traiter)."
+    },
+    "forms": "daemon stays daemon (macOS keeps it); ptpcamerad, udev verbatim",
+    "sources": "macOS; MS terminology FRA"
+  },
+  "progress": {
+    "accept": ["en cours"],
+    "chosen": "progression",
+    "confidence": "high",
+    "decision": "Transferts à l'arrêt : le bandeau de blocage (`fileOperations.transferProgress.stall*`, `.close`)",
+    "forms": "stalled → Aucune progression depuis {duration}",
+    "sources": "macOS (NSProgressPanel Progression)"
+  },
+  "properties": {
+    "chosen": "propriétés",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "protocol": {
+    "chosen": "protocole",
+    "confidence": "high",
+    "exceptions": {
+      "settings.developer.mcpEnabled.description": "English-sense: Model Context Protocol is a product name, kept verbatim.",
+      "settings.summary.mcpServer": "English-sense: Model Context Protocol is a product name, kept verbatim."
+    },
+    "forms": "SMB / SFTP / WebDAV stay verbatim",
+    "sources": "AddPrinter IP.loctable; System Profiler (Protocole)"
+  },
+  "put-back": {
+    "accept": ["remis en place", "remettre"],
+    "avoid": [
+      {
+        "form": "restaurer",
+        "why": "the catalog spends it on undoing a rename (names, not places)"
+      }
+    ],
+    "chosen": "remettre en place",
+    "confidence": "high",
+    "decision": "La notification de corbeille : annuler et remettre en place (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)",
+    "exceptions": {
+      "askCmdr.renameUndo.unavailable": "Undoing a rename puts old NAMES back, which the catalog says with restaurer."
+    },
+    "forms": "trash items back to where they were → remettre en place; old NAMES back (AI rename undo) → restaurer",
+    "sources": "macOS Finder N153.1 (Put Back → Remettre)"
+  },
+  "query": {
+    "accept": ["recherche"],
+    "chosen": "requête",
+    "confidence": "high",
+    "sources": "catalog"
+  },
+  "quick-look": {
+    "avoid": [
+      {
+        "form": "Quick Look",
+        "why": "Apple localizes this feature name"
+      }
+    ],
+    "chosen": "Coup d'œil",
+    "confidence": "high",
+    "decision": "Menus natifs : barre de menus, menus contextuels, titres de fenêtre (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)",
+    "forms": "RAW menu.* writes one apostrophe; the ICU command doubles it; always ASCII U+0027",
+    "sources": "macOS Finder (TL14)"
+  },
+  "quit": {
+    "accept": ["quitte", "quitté"],
+    "chosen": "Quitter",
+    "confidence": "high",
+    "decision": "La barrière de sortie (`main.quit.*`)",
+    "forms": "Quit Cmdr → Quitter Cmdr; intransitive with the app as subject: Cmdr quitte dans …; Quit & Reopen → Quitter et rouvrir (tentative); quit unexpectedly → a quitté inopinément",
+    "sources": "macOS AppKit (Document.json Quit, Quit Anyway → Quitter quand même)"
+  },
+  "quota": {
+    "chosen": "quota",
+    "confidence": "high",
+    "sources": "identical in FR"
+  },
+  "rate-limit": {
+    "accept": ["débit"],
+    "chosen": "limiter le débit",
+    "confidence": "high",
+    "sources": "MS terminology FRA"
+  },
+  "read-only": {
+    "accept": ["lecture seule"],
+    "chosen": "en lecture seule",
+    "confidence": "high",
+    "sources": "macOS Finder (« Cet emplacement est en lecture seule. »)"
+  },
+  "reclaim": {
+    "accept": ["libérez", "libère", "libéré"],
+    "chosen": "libérer",
+    "confidence": "high",
+    "forms": "Delete model (reclaim {size}) → Supprimer le modèle (libérer {size})",
+    "sources": "catalog"
+  },
+  "recommended": {
+    "chosen": "recommandé",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "reconnect": {
+    "accept": ["reconnecte", "reconnexion"],
+    "chosen": "se reconnecter",
+    "confidence": "high",
+    "decision": "Le panneau de reconnexion et la session fermée sans mot de passe à saisir (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)",
+    "exceptions": {
+      "errors.listing.deviceProblem.suggestion": "The advice is physical (Débranchez puis rebranchez), which French says with brancher."
+    },
+    "forms": "status noun Reconnexion à {name}… (the Connexion à {name}… moule)",
+    "sources": "HomeDataModel (Reconnecting… → Reconnexion…); Finder NE111.1"
+  },
+  "redact": {
+    "accept": ["expurgé", "expurgation", "effacé"],
+    "chosen": "expurger",
+    "confidence": "high",
+    "forms": "scrub → effacer",
+    "sources": "standard FR for privacy-stripping logs"
+  },
+  "reference-id": {
+    "accept": ["identifiant"],
+    "chosen": "identifiant de référence",
+    "confidence": "high",
+    "forms": "Report ID → identifiant du rapport",
+    "sources": "standard FR"
+  },
+  "refresh": {
+    "accept": ["actualis"],
+    "chosen": "Actualiser",
+    "confidence": "high",
+    "forms": "rescans a listing; distinct from recharger (a file changed on disk)",
+    "sources": "macOS AppKit (NSRefreshTemplate)"
+  },
+  "regex": {
+    "accept": ["Regex", "expressions régulières"],
+    "chosen": "expression régulière",
+    "confidence": "high",
+    "forms": "the short chip and mode label stay Regex",
+    "sources": "MS terminology FRA (id 147617)"
+  },
+  "reject": {
+    "accept": ["rejeter", "refus"],
+    "chosen": "Refuser",
+    "confidence": "high",
+    "decision": "Opérations suggérées : la fenêtre de ce que propose Ask Cmdr (`suggestedOps.*`, `commands.suggestedOpsShow.*`)",
+    "sources": "macOS Finder (AirDrop Accepter/Refuser)"
+  },
+  "relevance": {
+    "chosen": "pertinence",
+    "confidence": "high",
+    "decision": "`Sort by relevance`: the search-results column tooltip (`fileExplorer.columns.sortByRelevance`)",
+    "forms": "Trier par pertinence (lowercase after par)",
+    "sources": "macOS WorkflowKit, AppStoreKit, Automator (verified on macOS 26.6.2 build 25G83, 2026-09-06)"
+  },
+  "reload": {
+    "accept": ["rechargé", "rechargez"],
+    "chosen": "recharger",
+    "confidence": "high",
+    "sources": "standard FR; distinct from actualiser"
+  },
+  "remote": {
+    "avoid": [
+      {
+        "form": "À distance",
+        "why": "the bare column value sense"
+      }
+    ],
+    "chosen": "distant",
+    "confidence": "high",
+    "decision": "Le hub des serveurs : la feuille de connexion et la clé d'hôte SSH (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.*`, `goToPath.dialog.opensServer`, `.addsServer`, `commands.serversConnect.label`)",
+    "forms": "postposed (serveur distant, dossier distant)",
+    "sources": "macOS Directory Utility, ScreenSharing, WorkflowKit"
+  },
+  "removable": {
+    "chosen": "amovible",
+    "confidence": "high",
+    "decision": "Éjection et déconnexion refusées : les neuf clés `errors.eject.*`",
+    "sources": "macOS (Volume amovible, Amovible); Nautilus, Thunar"
+  },
+  "remove": {
+    "accept": ["retire", "retiré"],
+    "avoid": [
+      {
+        "form": "Supprimer",
+        "why": "the delete term; the copy promises nothing is deleted (deliberate divergence from macOS)"
+      }
+    ],
+    "chosen": "Retirer",
+    "confidence": "high",
+    "decision": "Revue qualité : renommages proposés et lignes d'outil (`askCmdr.renameReview.*`, `askCmdr.tool.*`, `askCmdr.stalled`, `errors.listing.deviceReconnecting.*`, `fileExplorer.imageIndex.*`, `fileExplorer.navigation.driveIndex.tooltipCoalesced*`)",
+    "exceptions": {
+      "ai.local.deletingStatus": "English-sense: removing the model's files is deleting them, so supprimer.",
+      "askCmdr.wakeDigest.removed": "English-sense: items removed from disk, a deletion.",
+      "errors.git.orphanedWorktree.suggestion": "English-sense: removing a git worktree deletes it.",
+      "errors.listing.attributeNotFound.explanation": "English-sense: an attribute removed from the file is deleted.",
+      "errors.listing.crossDeviceOperation.explanation": "English-sense: removing the originals after a copy deletes them.",
+      "errors.listing.deletePending.title": "English-sense: a file being removed is being deleted.",
+      "errors.listing.folderNotEmpty.explanation": "English-sense: removing a folder deletes it.",
+      "errors.listing.folderNotEmpty.suggestion": "English-sense: removing a folder deletes it.",
+      "errors.listing.quotaExceeded.suggestion": "English-sense: removing files to free space deletes them.",
+      "errors.listing.tccRestricted.suggestion": "English-sense: removing a limit is lifting it (lever).",
+      "errors.write.deletePending.title": "English-sense: a file being removed is being deleted.",
+      "errors.write.destinationNotFound.suggestion": "English-sense: a removed folder was deleted.",
+      "errors.write.symlinkLoop.suggestion": "English-sense: removing symbolic links deletes them.",
+      "fileExplorer.network.osMountFallback.shareNotOnServer": "English-sense: a share removed from the server is deleted there.",
+      "fileExplorer.restrictedFolder.tooltip": "English-sense: removing a limit is lifting it (lever).",
+      "fileOperations.cancelRollback.doneDeleting": "English-sense: the rollback deletes what Cmdr wrote.",
+      "fileOperations.cancelRollback.moveAlreadyLanded": "English-sense: removing the originals deletes them.",
+      "fileOperations.cancelRollback.someDeleted": "English-sense: the rollback deletes what Cmdr wrote.",
+      "fileOperations.cancelRollback.stagedLeftover.counted": "English-sense: removing a leftover copy deletes it.",
+      "fileOperations.cancelRollback.stagedLeftover.named": "English-sense: removing a leftover copy deletes it.",
+      "fileOperations.cancelRollback.stoppedDeleting": "English-sense: the rollback deletes what Cmdr wrote.",
+      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "English-sense: removing the originals deletes them.",
+      "fileOperations.transferProgress.titleRemovingOriginals": "English-sense: removing the originals deletes them.",
+      "settings.mediaIndex.clip.deleteFailed": "English-sense: removing the model deletes its files.",
+      "settings.operationLog.maxAge.description": "English-sense: the oldest log entries are deleted.",
+      "settings.operationLog.maxSize.description": "English-sense: the oldest log entries are deleted."
+    },
+    "forms": "take off a list without deleting anything (a favorite, a folder from indexing, a tag, an attachment)",
+    "sources": "catalog (Retirer la pièce jointe)"
+  },
+  "rename": {
+    "accept": ["renomme", "renommé", "renommage"],
+    "chosen": "Renommer",
+    "confidence": "high",
+    "exceptions": {
+      "errors.write.originalsKeptAside.suggestion.many": "Rename back is redonner leurs noms, the French idiom for restoring a name.",
+      "errors.write.originalsKeptAside.suggestion.one": "Rename back is redonner son nom, the French idiom for restoring a name."
+    },
+    "forms": "noun renommage (queue row Renommage); batch rename → renommage par lot; mass-rename → renommage en masse (tentative); rename cycle → cycle de renommage; rotate through a cycle → permuter",
+    "sources": "macOS Finder; Nautilus"
+  },
+  "replace": {
+    "accept": ["remplacé", "remplace"],
+    "chosen": "Remplacer",
+    "confidence": "high",
+    "sources": "macOS Finder (« Souhaitez-vous le remplacer… »)"
+  },
+  "report": {
+    "chosen": "rapport",
+    "confidence": "high",
+    "forms": "a report with no crash → rapport plain; send a report → envoyez un rapport (never envoyez un retour, the feedback surface)",
+    "sources": "MS terminology FRA (report → rapport)"
+  },
+  "reserved": {
+    "chosen": "réservé",
+    "confidence": "high",
+    "sources": "macOS Finder (« … est réservée au système … »)"
+  },
+  "reset": {
+    "accept": ["réinitialis"],
+    "avoid": [
+      {
+        "form": "Réinitialiser par défaut",
+        "why": "makes par défaut an adverb"
+      }
+    ],
+    "chosen": "Réinitialiser",
+    "confidence": "high",
+    "forms": "Reset to default → Réinitialiser au réglage par défaut; Reset all to defaults → Tout réinitialiser aux réglages par défaut",
+    "sources": "MS terminology FRA"
+  },
+  "respond": {
+    "accept": ["répond", "réponse"],
+    "chosen": "répondre",
+    "confidence": "high",
+    "forms": "not responding → ne répond pas; didn't answer in time → n'a pas répondu à temps; waiting for X to respond → En attente d'une réponse de …",
+    "sources": "macOS loginwindow (ne répond pas); AppKit (n'a pas répondu)"
+  },
+  "restart": {
+    "accept": ["redémarre", "redémarrage", "redémarré"],
+    "chosen": "Redémarrer",
+    "confidence": "high",
+    "exceptions": {
+      "indexing.rescan.incompletePreviousScan": "English-sense: restarting a scan means it starts over (repart de zéro), not an app restart."
+    },
+    "sources": "macOS Menus (Restart → Redémarrer)"
+  },
+  "resume": {
+    "accept": ["reprend", "reprise"],
+    "chosen": "Reprendre",
+    "confidence": "high",
+    "forms": "resume all → Tout reprendre; picks up where it left off → reprendra là où il s'était arrêté; a paused op carrying on after a question → continuera (reprendre is out of pause)",
+    "sources": "macOS Finder (Reprendre la copie); Double Commander"
+  },
+  "retry": {
+    "accept": ["réessaye", "tentative"],
+    "chosen": "Réessayer",
+    "confidence": "high",
+    "decision": "Mots qui ont divergé sans qu'aucun check puisse le voir",
+    "forms": "button Réessayer; the running state → Nouvelle tentative; attempt counter → Tentative nº {count}; Retry connection → Réessayer la connexion; Try again in a moment → Réessayez dans un instant",
+    "sources": "macOS Finder (Réessayer, réessayez)"
+  },
+  "review": {
+    "accept": ["vérification", "examiner", "revoir", "découvrir", "vérifiez", "examin"],
+    "avoid": [
+      {
+        "form": "revue",
+        "why": "the publishing sense"
+      }
+    ],
+    "chosen": "vérifier",
+    "confidence": "high",
+    "decision": "Revue qualité : renommages proposés et lignes d'outil (`askCmdr.renameReview.*`, `askCmdr.tool.*`, `askCmdr.stalled`, `errors.listing.deviceReconnecting.*`, `fileExplorer.imageIndex.*`, `fileExplorer.navigation.driveIndex.tooltipCoalesced*`)",
+    "exceptions": {
+      "settings.operationLog.intro": "Reviewing your history is consulting it (consulter votre historique)."
+    },
+    "forms": "an approve/deny gate → vérifier (Vérifier les renommages), noun vérification; look over what the AI suggested → examiner",
+    "sources": "macOS AppKit (Review Changes… → Vérifier les modifications…)"
+  },
+  "rollback": {
+    "accept": ["en arrière"],
+    "avoid": [
+      {
+        "form": "restaurer",
+        "why": "promises the overwritten files come back; it's Restore, and the catalog spends it on rename undo"
+      },
+      {
+        "form": "Annuler et restaurer",
+        "why": "the superseded button; Annuler is Cancel and Annulé the canceled status"
+      },
+      {
+        "form": "retour arrière",
+        "why": "without en it names the backspace key and a media player's rewind"
+      }
+    ],
+    "chosen": "revenir en arrière",
+    "confidence": "tentative",
+    "decision": "La famille `rollback` : `revenir en arrière`, jamais `restaurer` (`fileOperations.transferProgress.rollback*`, `.conflictRollback`, `.titleRollingBack`, `operationLog.rollback.*`, `operationLog.outcome.rolledBack`, `operationLog.dialog.rollBack`, `commands.logOperationLog.description`, `settings.operationLog.intro`)",
+    "forms": "verb revenir en arrière (button and confirm title); noun retour en arrière (status pills, progress title Retour en arrière..., Terminer le retour en arrière); pills Retour en arrière possible / impossible / en cours / effectué / partiel",
+    "sources": "composed; MS roll back → restaurer is the database-transaction sense (trap 4 in how-to-mine.md)"
+  },
+  "root-folder": {
+    "accept": ["dossier initial", "racine"],
+    "avoid": [
+      {
+        "form": "dossier de départ",
+        "why": "Finder's name for the home folder (Départ)"
+      },
+      {
+        "form": "dossier de démarrage",
+        "why": "démarrage is the app's or the Mac's launch"
+      }
+    ],
+    "chosen": "dossier racine",
+    "confidence": "high",
+    "decision": "La feuille du serveur : dossier racine et dossier initial (`servers.sheet.rootFolder*`, `.startFolder*`, `.nameHelp`, `servers.refusal.startFolderOutsideRoot`, `.rootNotFound`, `.startFolderNotFound`, `.saveUnconfirmed`)",
+    "forms": "a saved server's ceiling, a volume's top folder → dossier racine; the folder a server opens in → dossier initial (tentative)",
+    "sources": "MS terminology FRA id 2130701; Double Commander; Xfce Thunar"
+  },
+  "row": {
+    "accept": ["rangée"],
+    "chosen": "ligne",
+    "confidence": "high",
+    "forms": "feminine; file row → ligne de fichier; striped rows → lignes alternées",
+    "sources": "MS terminology FRA (row → ligne)"
+  },
+  "running": {
+    "accept": ["en cours d'exécution", "en marche", "ouvert", "exécute", "exécution"],
+    "chosen": "en cours",
+    "confidence": "high",
+    "forms": "a task or operation → En cours (Toujours en cours); a server process → En cours d'exécution; the app already running → est déjà ouvert",
+    "sources": "macOS Finder A17 (« … sont toujours en cours »)"
+  },
+  "runtime": {
+    "chosen": "environnement d'exécution",
+    "confidence": "high",
+    "sources": "MS terminology FRA"
+  },
+  "save": {
+    "accept": ["enregistre", "enregistré"],
+    "chosen": "Enregistrer",
+    "confidence": "high",
+    "exceptions": {
+      "search.coverage.walk.cancelled": "What the search read is kept (conservé); enregistrer would suggest a file."
+    },
+    "forms": "saved as {name} → enregistré sous {name}; Saved (server state) → Enregistré",
+    "sources": "macOS AppKit, pervasive (SavePanel, Document.json)"
+  },
+  "scan": {
+    "accept": ["analysé", "parcouru", "parcours"],
+    "chosen": "analyse",
+    "confidence": "high",
+    "forms": "scanning (transfer stage) → Analyse / Analyse…; fresh scan, rescan → nouvelle analyse; a search's walk over folders → parcours, dossiers parcourus; an indexing pass → passage (tentative)",
+    "sources": "standard FR; pairs with indexation"
+  },
+  "scope": {
+    "chosen": "portée",
+    "confidence": "tentative",
+    "sources": "standard FR UI term"
+  },
+  "screenshot": {
+    "accept": ["enregistrement de l'écran", "captures d'écran"],
+    "chosen": "capture d'écran",
+    "confidence": "high",
+    "forms": "lowercase mid-sentence in the reserved-shortcut list: les captures d'écran, l'enregistrement de l'écran",
+    "sources": "macOS FR"
+  },
+  "scroll": {
+    "accept": ["défil"],
+    "chosen": "faire défiler",
+    "confidence": "high",
+    "exceptions": {
+      "viewer.statusBar.hint.image": "The hint names the mouse wheel (Molette), the French label for scroll-to-zoom."
+    },
+    "sources": "standard FR"
+  },
+  "search": {
+    "accept": ["cherché", "chercher", "cherchez", "recherché"],
+    "chosen": "recherche",
+    "confidence": "high",
+    "forms": "verb Rechercher (dialogs, buttons); noun recherche; the Settings sidebar section is a noun: Recherche; Press Enter to search → Appuyez sur Entrée pour rechercher",
+    "sources": "macOS Finder (Rechercher, Recherche prédéfinie)"
+  },
+  "search-match": {
+    "accept": ["résultat", "correspond"],
+    "chosen": "correspondance",
+    "confidence": "high",
+    "forms": "a hit inside the viewer → correspondance; search results → résultats",
+    "sources": "MS terminology FRA"
+  },
+  "see": {
+    "accept": ["Visualiser", "consult"],
+    "avoid": [
+      {
+        "form": "Afficher (for the F3 View action)",
+        "why": "Afficher is Show; the F3 action is Visualiser on every surface"
+      }
+    ],
+    "chosen": "Voir",
+    "confidence": "high",
+    "decision": "Un mot anglais, un mot français : la revue de dérive",
+    "exceptions": {
+      "menu.bar.view": "The View MENU is Finder's Présentation; Visualiser is the F3 action."
+    },
+    "forms": "See X → Voir X (consult information: Voir les détails de la licence, Voir pourquoi); the F3 View action → Visualiser; Show (make appear) is Afficher",
+    "note": "Double Commander says Voir for F3, but two of three keys already said Visualiser and Voir is vaguer in a palette.",
+    "sources": "catalog"
+  },
+  "select": {
+    "accept": ["sélection"],
+    "chosen": "Sélectionner",
+    "confidence": "high",
+    "decision": "La fenêtre sélectionner / désélectionner des fichiers (`selection.*`)",
+    "exceptions": {
+      "viewer.saveAs.defaultName": "A file-name-safe literal the @key asks to keep lowercase and unaccented."
+    },
+    "forms": "Select all → Tout sélectionner; the right-click submenu title (a noun) → Sélection; the menu bar Select → Sélectionner",
+    "sources": "macOS Finder MenuBar 172.title; Nautilus/Thunar/Dolphin"
+  },
+  "send": {
+    "accept": ["envoi", "envoie", "envoyé", "envoyez"],
+    "chosen": "Envoyer",
+    "confidence": "high",
+    "exceptions": {
+      "fileOperations.transferProgress.openingSource": "Waiting for the source to start sending → En attente des premières données, the observed state."
+    },
+    "forms": "progress Envoi…",
+    "sources": "standard FR"
+  },
+  "server": {
+    "chosen": "serveur",
+    "confidence": "high",
+    "decision": "Le hub des serveurs : la table, ses colonnes et ses états (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.groupNetwork`, `shortcuts.scope.servers`, `shortcuts.scope.places`)",
+    "forms": "the switcher row and shortcut scope → Serveurs (inside the Réseau group)",
+    "sources": "macOS Finder (Serveur :, Serveurs favoris :, serveurs récents)"
+  },
+  "server-address": {
+    "accept": ["adresse"],
+    "chosen": "adresse du serveur",
+    "confidence": "high",
+    "forms": "column header Adresse",
+    "sources": "macOS Finder ConnectToWindow.strings (Adresse du serveur)"
+  },
+  "service": {
+    "chosen": "service",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "settings": {
+    "accept": ["réglage"],
+    "chosen": "Réglages",
+    "confidence": "high",
+    "decision": "Sections des réglages et noms de présentation (`settings.section.*`, `settings.navigationAndFileOps.card.*`, `settings.summary.navigationAndFileOps`)",
+    "exceptions": {
+      "ai.toast.installingTitle": "English-sense: setting up means configuring (Configuration).",
+      "onboarding.stepAi.local.tooltip": "English-sense: setting it up means configuring it (le configurer)."
+    },
+    "forms": "Cmdr's own window → les Réglages (Ouvrir les réglages, Activez-la dans les Réglages); breadcrumbs Réglages > IA, Réglages › Mises à jour et confidentialité (mirror EN's separator); Apple's app is Réglages Système",
+    "sources": "macOS (Réglages Système CFBundleName)"
+  },
+  "share-menu": {
+    "accept": ["partage"],
+    "chosen": "Partager",
+    "confidence": "high",
+    "forms": "share options → options de partage; No share options → Aucune option de partage",
+    "sources": "macOS Finder (Partager…)"
+  },
+  "shortcut": {
+    "chosen": "raccourci",
+    "confidence": "high",
+    "forms": "keyboard shortcuts → raccourcis clavier; key combination → combinaison; register a hotkey → enregistrer",
+    "sources": "macOS convention"
+  },
+  "show": {
+    "accept": ["affiche", "affiché", "affichant", "affichage", "montre", "montrant"],
+    "chosen": "Afficher",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.navigation.driveIndex.tooltipStalePhone": "English-sense: changes show up means they are taken into account (pris en compte).",
+      "indexing.staleDialog.body": "The status always signals this (le signale toujours); show here means indicate.",
+      "operationLog.dialog.empty": "English-sense: show up means appear (apparaîtra).",
+      "queue.empty.body": "English-sense: show up means appear (apparaissent).",
+      "whatsNew.dialog.empty": "English-sense: show up means appear (apparaîtront)."
+    },
+    "forms": "Show all → Tout afficher; a toggle writes both verbs with ou (Afficher ou masquer …)",
+    "sources": "macOS AppKit (Show All → Tout afficher)"
+  },
+  "show-in-finder": {
+    "chosen": "Afficher dans le Finder",
+    "confidence": "high",
+    "decision": "La proposition « Afficher dans le Finder » et l'avis de première fois (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)",
+    "forms": "quoted in running text: « Afficher dans le Finder »",
+    "sources": "macOS Finder"
+  },
+  "side-panel": {
+    "chosen": "panneau latéral",
+    "confidence": "tentative",
+    "sources": "descriptive FR, no catalog precedent"
+  },
+  "sidebar": {
+    "avoid": [
+      {
+        "form": "encadré",
+        "why": "MS's publishing callout sense"
+      }
+    ],
+    "chosen": "barre latérale",
+    "confidence": "high",
+    "sources": "macOS Finder (barre latérale)"
+  },
+  "sign-in": {
+    "accept": [
+      "identifie",
+      "identifié",
+      "identification",
+      "identifiants",
+      "authentifi",
+      "ouverture de session",
+      "session",
+      "connectez-vous"
+    ],
+    "avoid": [
+      {
+        "form": "se connecter",
+        "why": "reserved for the network connect action"
+      }
+    ],
+    "chosen": "s'identifier",
+    "confidence": "high",
+    "decision": "Les états du navigateur réseau : connecté ou identifié (`fileExplorer.network.browser.status.*`, `fileExplorer.network.browser.tooltip.requiresLogin`, `errors.listing.authRequiredEauth.explanation`, `errors.listing.authRequiredEneedauth.explanation`)",
+    "exceptions": {
+      "errors.provider.iCloud.needsAction": "Signed in to the right Apple account → Vérifiez que vous utilisez le bon compte Apple, which avoids a participle that genders the user.",
+      "errors.provider.macFuse.needsAction": "English-sense: Login Items is a System Settings pane name (Ouverture et extensions).",
+      "errors.provider.pCloudFuse.serious": "English-sense: Login Items is a System Settings pane name (Ouverture et extensions)."
+    },
+    "forms": "sign in to a server → s'identifier (S'identifier sur {name}); authentication → authentification; logging in to the Mac → à l'ouverture de session; You're signed in → L'identification … a réussi (agrees with the act, not the person)",
+    "sources": "macOS (Saisissez le nom d'utilisateur); LoginItems.appex (à l'ouverture de session)"
+  },
+  "sign-out": {
+    "accept": ["fermeture de session", "déconnectez-vous", "session"],
+    "avoid": [
+      {
+        "form": "Déconnecté(e)",
+        "why": "genders the user; se déconnecter also reads as dropping an SMB share"
+      }
+    ],
+    "chosen": "Session fermée",
+    "confidence": "high",
+    "forms": "signed out (a server state) → Session fermée, Session fermée sur {name}; logging out of the Mac → la fermeture de session",
+    "sources": "macOS AppKit Menus.json (Log Out → Fermer la session); MS terminology FRA"
+  },
+  "size": {
+    "chosen": "taille",
+    "confidence": "high",
+    "forms": "folder sizes → les tailles des dossiers; on disk → sur le disque (pairs with Contenu)",
+    "sources": "macOS; catalog"
+  },
+  "skip": {
+    "accept": ["ignoré", "laisse de côté", "ignore"],
+    "chosen": "Ignorer",
+    "confidence": "high",
+    "forms": "skip all → Tout ignorer; outcome Ignoré",
+    "sources": "macOS Finder/AppKit (Ignorer); Nautilus"
+  },
+  "slow": {
+    "chosen": "lent",
+    "confidence": "high",
+    "decision": "Notification de repli sur le montage macOS (`fileExplorer.network.osMountFallback.*`)",
+    "forms": "agrees with the named object (la connexion … plus lente); speed multipliers spelled out (4 fois plus lente)",
+    "sources": "Nautilus (plus lente)"
+  },
+  "sort": {
+    "accept": ["trié", "tri ", "croissant", "ordre de tri"],
+    "chosen": "Trier",
+    "confidence": "high",
+    "forms": "Sort by → Trier par; ascending / descending → ordre croissant / décroissant (menu Croissant / Décroissant)",
+    "sources": "macOS Finder MenuBar (Trier par); Nautilus, Thunar, Dolphin, Double Commander"
+  },
+  "source": {
+    "chosen": "source",
+    "confidence": "high",
+    "forms": "feminine (de la source)",
+    "sources": "Double Commander; Total Commander"
+  },
+  "source-available": {
+    "chosen": "consultable publiquement",
+    "confidence": "tentative",
+    "forms": "says the code can be read without claiming open source",
+    "sources": "descriptive FR (no settled term)"
+  },
+  "start-up": {
+    "accept": ["démarre", "démarré"],
+    "chosen": "démarrage",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "startup-disk": {
+    "chosen": "disque de démarrage",
+    "confidence": "high",
+    "sources": "macOS Finder (Startup Disk… → Disque de démarrage…)"
+  },
+  "status": {
+    "accept": ["statut"],
+    "chosen": "état",
+    "confidence": "high",
+    "decision": "Le hub des serveurs : la table, ses colonnes et ses états (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.groupNetwork`, `shortcuts.scope.servers`, `shortcuts.scope.places`)",
+    "forms": "columns and labels → État (keep the accent on the capital), État Git; the drive's colored indicator → le statut jaune",
+    "sources": "Feedback Assistant CommonStrings.loctable (STATUS_SECTION_TITLE → État); Bluetooth settings (État : %@)"
+  },
+  "stop": {
+    "accept": ["arrêt", "cesse"],
+    "avoid": [
+      {
+        "form": "annuler",
+        "why": "Annuler is the Cancel button and Undo; a stop reads differently"
+      }
+    ],
+    "chosen": "Arrêter",
+    "confidence": "high",
+    "exceptions": {
+      "downloads.toast.stopShowing": "Stop showing these → Ne plus afficher, the French idiom for this button."
+    },
+    "forms": "the Stop button → Arrêter; Stop, and … (rollback tooltip) → Arrêter et …; You stopped X → Vous avez arrêté X",
+    "sources": "macOS fr (Arrêter la copie, Arrêter le déplacement)"
+  },
+  "streaming": {
+    "chosen": "streaming",
+    "confidence": "tentative",
+    "sources": "kept verbatim, no concise FR equivalent; matches de"
+  },
+  "striped-rows": {
+    "chosen": "lignes alternées",
+    "confidence": "high",
+    "sources": "descriptive FR"
+  },
+  "subscription": {
+    "chosen": "abonnement",
+    "confidence": "high",
+    "forms": "Commercial subscription → Abonnement commercial",
+    "sources": "standard FR"
+  },
+  "suggestion": {
+    "accept": ["suggéré", "suggère", "propose"],
+    "chosen": "suggestion",
+    "confidence": "high",
+    "forms": "Suggested operations → Opérations suggérées",
+    "sources": "catalog"
+  },
+  "supported": {
+    "accept": ["en charge"],
+    "avoid": [
+      {
+        "form": "supporter",
+        "why": "anglicism"
+      }
+    ],
+    "chosen": "prendre en charge",
+    "confidence": "high",
+    "forms": "not supported → n'est pas pris(e) en charge; doesn't support yet → ne prend pas encore en charge",
+    "sources": "macOS Finder; NetAuthAgent (… ne sont pas prises en charge.)"
+  },
+  "symlink": {
+    "accept": ["liens symboliques"],
+    "chosen": "lien symbolique",
+    "confidence": "high",
+    "forms": "broken symlink → lien symbolique rompu",
+    "sources": "Nautilus (liens symboliques)"
+  },
+  "system-integrity-protection": {
+    "chosen": "protection de l'intégrité du système",
+    "confidence": "high",
+    "decision": "Refus de renommage et de création (`errors.mutation.*`, `errors.volume.*`)",
+    "forms": "en raison de la protection de l'intégrité du système de macOS",
+    "sources": "macOS Finder, verbatim (Apple localizes this name)"
+  },
+  "system-settings": {
+    "chosen": "Réglages Système",
+    "confidence": "high",
+    "forms": "capital S when naming the app or a breadcrumb; lowercase réglages système only as a common noun mid-sentence; usually the {system_settings} token",
+    "sources": "macOS SystemSettings CFBundleName"
+  },
+  "system-settings-pane": {
+    "accept": ["Ouverture et extensions", "Stockage", "Apparence"],
+    "chosen": "Général",
+    "confidence": "high",
+    "decision": "Les noms de sous-fenêtres viennent du Mac de la personne (`errors.git.*`, `errors.provider.*`)",
+    "forms": "Login Items & Extensions → Ouverture et extensions; Storage → Stockage; Appearance → Apparence",
+    "sources": "macOS 26 fr LoginItems.appex Localizable.loctable (verified on macOS 26.6.2, build 25G83, 2026-08-30)"
+  },
+  "tab": {
+    "chosen": "onglet",
+    "confidence": "high",
+    "forms": "new tab → nouvel onglet; next/previous tab → onglet suivant/précédent; close tab → Fermer l'onglet",
+    "sources": "macOS Finder MenuBar; Safari"
+  },
+  "tag": {
+    "avoid": [
+      {
+        "form": "étiquette",
+        "why": "Apple's word for a file's accessibility description; drift in the commands.tagsToggle* keys"
+      }
+    ],
+    "chosen": "tag",
+    "confidence": "high",
+    "decision": "Menus natifs : barre de menus, menus contextuels, titres de fenêtre (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)",
+    "forms": "tag colors Rouge, Orange, Jaune, Vert, Bleu, Violet, Gris; row label Tags; Ajouter « {color} » / Retirer « {color} »",
+    "sources": "macOS Finder fr (Attribuer les tags …, Aucun tag, TG_COLOR_*)"
+  },
+  "tail": {
+    "accept": ["suivre"],
+    "chosen": "suivi",
+    "confidence": "tentative",
+    "forms": "Mode suivi : suivre les changements",
+    "sources": "descriptive FR; matches de Folgen"
+  },
+  "tap": {
+    "accept": ["appuyez"],
+    "chosen": "appuyer",
+    "confidence": "high",
+    "decision": "Le téléphone Android : le panneau de connexion, les info-bulles et l'astuce ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`)",
+    "forms": "tap <button> → appuyez sur <bouton>, no quotes around the button name",
+    "sources": "AOSP Settings fr (service_manage_description, tap_to_wake_summary)"
+  },
+  "temporary": {
+    "accept": ["momentanément"],
+    "chosen": "temporaire",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "terminal": {
+    "chosen": "terminal",
+    "confidence": "high",
+    "decision": "« Ouvrir un terminal ici » et son sélecteur d’app (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)",
+    "forms": "the category → terminal; Apple's app → Terminal (Ouvrir dans Terminal); Open terminal here → Ouvrir un terminal ici; the card title is identical to English",
+    "sources": "macOS Finder N67 (Ouvrir dans Terminal)"
+  },
+  "text-editor": {
+    "accept": ["éditeur"],
+    "chosen": "éditeur de texte",
+    "confidence": "high",
+    "decision": "F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)",
+    "forms": "default text editor → éditeur de texte par défaut; Edit files in [app] → Modifier les fichiers avec (tentative); Apple's TextEdit arrives in {app}",
+    "sources": "MS terminology FRA"
+  },
+  "thinking": {
+    "chosen": "Réflexion…",
+    "confidence": "tentative",
+    "decision": "Ask Cmdr : la conversation, les jetons et les lignes d'outil (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
+    "forms": "single … character, as the EN source",
+    "sources": "descriptive FR noun-status"
+  },
+  "threshold": {
+    "chosen": "seuil",
+    "confidence": "high",
+    "sources": "MS terminology FRA"
+  },
+  "thumbnail": {
+    "avoid": [
+      {
+        "form": "miniature",
+        "why": "MS's word; macOS and both orthodox file managers say vignette"
+      }
+    ],
+    "chosen": "vignette",
+    "confidence": "high",
+    "decision": "Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.tool.inspectFile.*`)",
+    "sources": "macOS AppKit (Taille de vignette :); Total Commander; Double Commander"
+  },
+  "time-left": {
+    "chosen": "restant",
+    "confidence": "high",
+    "forms": "{duration} restant; Estimation du temps restant; roughly (ETA qualifier) → environ",
+    "sources": "macOS Finder PW2; Thunar; Nautilus"
+  },
+  "timeout": {
+    "accept": ["délai"],
+    "avoid": [
+      {
+        "form": "a expiré",
+        "why": "expiry sense; calmer and correct is délai dépassé"
+      }
+    ],
+    "chosen": "délai dépassé",
+    "confidence": "high",
+    "forms": "the timed-out STATUS → délai dépassé (Le délai de la requête a été dépassé.); a WAIT-DURATION setting → délai d'attente; licence expiry is a expiré; a verb sentence prefers n'a pas répondu à temps",
+    "sources": "macOS pattern (délai… dépassé); MS terminology FRA (délai d'attente)"
+  },
+  "tint": {
+    "accept": ["teinter"],
+    "chosen": "teinte",
+    "confidence": "high",
+    "forms": "background tint → teinte de fond; verb teinter",
+    "sources": "descriptive FR; macOS color usage"
+  },
+  "title-bar": {
+    "chosen": "barre de titre",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "token": {
+    "avoid": [
+      {
+        "form": "token",
+        "why": "two keys held the loanword next to a setting that says jetons"
+      }
+    ],
+    "chosen": "jeton",
+    "confidence": "high",
+    "decision": "Ask Cmdr : la conversation, les jetons et les lignes d'outil (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
+    "forms": "FR CLDR one / many / other on counts",
+    "sources": "MS terminology FRA (token → jeton, every technical sense in FRENCH.tbx)"
+  },
+  "too-large": {
+    "accept": ["trop", "de plus de", "plus grand"],
+    "avoid": [
+      {
+        "form": "trop grand",
+        "why": "the pile reserves it for image dimensions"
+      }
+    ],
+    "chosen": "trop volumineux",
+    "confidence": "high",
+    "decision": "Fichier trop volumineux pour le système de fichiers (`errors.write.filesTooLargeForFilesystem.*`, `errors.listing.notSupportedErrno.suggestion`)",
+    "forms": "File too large for this drive → Fichier trop volumineux pour ce disque; can't store files larger than X → ne peut pas stocker de fichiers de plus de X",
+    "sources": "macOS Finder (NE29, PE4.5, NE77); Nautilus"
+  },
+  "transfer": {
+    "chosen": "transfert",
+    "confidence": "high",
+    "forms": "a copy or move in flight (the progress dialog keeps Garder ce transfert en cours en arrière-plan)",
+    "sources": "MS terminology FRA; macOS Touch Bar"
+  },
+  "trash": {
+    "chosen": "corbeille",
+    "confidence": "high",
+    "decision": "Refus de placement dans la corbeille (`errors.mutation.trashNotSupported`, `.trashRefused`)",
+    "forms": "This volume has no Trash → Ce volume n'a pas de corbeille",
+    "sources": "macOS Finder (Corbeille, Vider la corbeille)"
+  },
+  "trust": {
+    "accept": ["approuvé", "approuve", "confiance"],
+    "avoid": [
+      {
+        "form": "Se fier",
+        "why": "Apple's word for pairing a device; would diverge from the shipped key"
+      },
+      {
+        "form": "faire confiance à (a key)",
+        "why": "longer and unattested at Apple for keys"
+      }
+    ],
+    "chosen": "approuver",
+    "confidence": "high",
+    "decision": "Le hub des serveurs : panneau de connexion, refus et oubli (`servers.refusal.*`, `servers.paneState.*`, `fileExplorer.navigation.forget*`, `fileExplorer.navigation.disconnect*`, `menu.network.forgetServer`, `.forgetSavedPassword`)",
+    "forms": "a key or certificate → approuver (Approuver la nouvelle clé, Clés d'hôte approuvées, Approuvée le <date>); trusting Cmdr the app (a person's trust) → faire confiance",
+    "sources": "Security.framework authorization.prompts.loctable, SecErrorMessages.loctable (macOS 26.6.2 build 25G83, 2026-09-06)"
+  },
+  "type": {
+    "chosen": "Type",
+    "confidence": "high",
+    "forms": "identical to English (Finder renders the Kind column Type); carries sameAsSourceJustification",
+    "sources": "macOS Finder N224, N169.35"
+  },
+  "typo": {
+    "accept": ["fautes de frappe"],
+    "chosen": "faute de frappe",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "udev": {
+    "accept": ["udev"],
+    "chosen": "règles udev",
+    "confidence": "high",
+    "sources": "kept verbatim"
+  },
+  "undo": {
+    "accept": ["annulé", "restaur", "irréversible", "revenir en arrière"],
+    "chosen": "Annuler",
+    "confidence": "high",
+    "decision": "La notification de corbeille : annuler et remettre en place (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)",
+    "forms": "text undo and the trash toast → Annuler; AI rename undo → restaurer les anciens noms; This can't be undone → Cette opération est irréversible",
+    "note": "French renders Undo and Cancel both as Annuler; macOS lives with it. Remettre (Finder's Put Back) is the sourced fallback if a surface needs the two apart.",
+    "sources": "macOS AppKit MenuCommands (Undo Smart Dash → Annuler Tirets intelligents); Nautilus"
+  },
+  "unexpected": {
+    "accept": ["inopinément", "problème"],
+    "chosen": "inattendu",
+    "confidence": "high",
+    "decision": "Le dialogue d'incident : `a quitté inopinément`, `a continué son exécution`, `la dernière fois` en fin de proposition (`crashReporter.dialog.*`, `settings.updates.crashReports.description`)",
+    "forms": "Something went wrong → Un problème est survenu; ran into a problem → a rencontré un problème; quit unexpectedly → a quitté inopinément",
+    "sources": "macOS Finder NE105 (a rencontré une erreur, with problème per style); AppKitErrors.json"
+  },
+  "unlock": {
+    "accept": ["déverrouillez", "déverrouillé"],
+    "chosen": "Déverrouiller",
+    "confidence": "high",
+    "forms": "unlock an archive → la déverrouiller (the feminine archive, never {name})",
+    "sources": "macOS AppKit (Déverrouiller)"
+  },
+  "unplug": {
+    "accept": ["débranché", "branché", "déconnecté", "rebranch", "débranchez", "déconnexion"],
+    "chosen": "débrancher",
+    "confidence": "high",
+    "forms": "plugged in → branché; reseat the cable → rebranchez le câble; a drive that left → a été déconnecté",
+    "sources": "catalog (mtp.permissionDialog.helpText); Setup Assistant (branché); AMPDevices (rebrancher)"
+  },
+  "unreachable": {
+    "accept": ["joindre", "joignable", "inaccessible", "accéder", "accès"],
+    "avoid": [
+      {
+        "form": "atteindre",
+        "why": "the catalog's reach verb is joindre"
+      }
+    ],
+    "chosen": "injoignable",
+    "confidence": "high",
+    "exceptions": {
+      "adb.readiness.noPermissions": "Over a USB cable, atteindre; joindre would read as calling the phone.",
+      "errors.listing.symlinkLoopErrno.explanation": "English-sense: the link chain never arrives at the real file (atteindre)."
+    },
+    "forms": "reach → joindre; can't reach X → X est injoignable / Impossible de joindre X; an unreachable resource → inaccessible",
+    "sources": "catalog (directConnectionUnreachableToast, onboarding.cloudSetup.status.connectionError)"
+  },
+  "update": {
+    "accept": ["à jour"],
+    "chosen": "mise à jour",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepBeta.checklist.email": "English-sense: occasional updates by email are news (des nouvelles), not app updates."
+    },
+    "forms": "Check for updates → Rechercher les mises à jour; new version available → nouvelle version disponible; keep the index current → mettre l'index à jour; Software Update → Mise à jour de logiciels",
+    "sources": "macOS Software Update (verified on macOS 26.6.2 build 25G83, 2026-08-30)"
+  },
+  "upgrade": {
+    "accept": ["niveau"],
+    "chosen": "mise à niveau",
+    "confidence": "high",
+    "sources": "catalog"
+  },
+  "usage": {
+    "accept": ["usage", "dépenses"],
+    "avoid": [
+      {
+        "form": "anonymes",
+        "why": "the stats carry a stable per-install id, so they were never anonymous"
+      },
+      {
+        "form": "pseudonyme",
+        "why": "jargon the copy avoids"
+      }
+    ],
+    "chosen": "utilisation",
+    "confidence": "high",
+    "decision": "Statistiques d'usage : pas « anonymes », mais « un identifiant aléatoire » (`settings.analytics.enabled.*`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`, `.analyticsTitle`)",
+    "forms": "usage stats → statistiques d'usage; tied to → relié à; a random id → un identifiant aléatoire",
+    "sources": "catalog; MS terminology (aléatoire)"
+  },
+  "usb-debugging": {
+    "chosen": "débogage USB",
+    "confidence": "high",
+    "decision": "Le téléphone Android : le panneau de connexion, les info-bulles et l'astuce ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`)",
+    "forms": "capital D only at sentence start or as a switch label; USB always capitals; allow USB debugging (waiting) → votre autorisation de débogage USB",
+    "sources": "AOSP SettingsLib fr (enable_adb, clear_adb_keys); developer.android.com/…?hl=fr"
+  },
+  "username": {
+    "chosen": "nom d'utilisateur",
+    "confidence": "high",
+    "sources": "macOS Finder (Saisissez le nom d'utilisateur ou de groupe)"
+  },
+  "verbose": {
+    "chosen": "détaillé",
+    "confidence": "high",
+    "sources": "catalog"
+  },
+  "version": {
+    "chosen": "version",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepOptional.updates.summary": "Stay on the latest version → rester à jour, the French idiom."
+    },
+    "forms": "X and up → X et les versions plus récentes; SMB 2 or later → SMB 2 ou ultérieur; released copy → version publiée",
+    "sources": "macOS AppKit; SystemSettings (OS X %@ ou ultérieur)"
+  },
+  "viewer": {
+    "avoid": [
+      {
+        "form": "lecteur",
+        "why": "the drive/player sense"
+      }
+    ],
+    "chosen": "visionneuse",
+    "confidence": "high",
+    "sources": "MS terminology FRA (Visionneuse)"
+  },
+  "volume": {
+    "chosen": "volume",
+    "confidence": "high",
+    "sources": "macOS (Volume, Volumes serveur)"
+  },
+  "volume-switcher": {
+    "chosen": "sélecteur de volume",
+    "confidence": "high",
+    "forms": "singular volume; a tight menu item shortens to sélecteur, like English switcher (Épingler au sélecteur)",
+    "sources": "catalog (commands.paneLeftVolumeChooser.label, shortcuts.scope.volumeChooser)"
+  },
+  "waiting": {
+    "accept": ["attend", "patientez"],
+    "chosen": "En attente",
+    "confidence": "high",
+    "decision": "Transferts à l'arrêt : le bandeau de blocage (`fileOperations.transferProgress.stall*`, `.close`)",
+    "exceptions": {
+      "main.quit.countdown": "Never waits on Cmdr → ne jamais retarder, with Cmdr as the implied subject."
+    },
+    "forms": "queued → En attente; waiting for X → En attente de …; wait a moment → Patientez un instant; wait a minute → Patientez une minute",
+    "sources": "macOS (En attente…); Double Commander"
+  },
+  "warning": {
+    "accept": ["avertir"],
+    "chosen": "avertissement",
+    "confidence": "high",
+    "sources": "standard FR"
+  },
+  "watcher": {
+    "accept": ["surveillance", "évènement", "détecte"],
+    "chosen": "surveillant",
+    "confidence": "high",
+    "forms": "the setting section → Surveillance du système de fichiers; event → évènement (modern spelling); buffer overflow → a saturé le tampon",
+    "sources": "descriptive FR"
+  },
+  "whats-new": {
+    "chosen": "Nouveautés",
+    "confidence": "high",
+    "forms": "Nouveautés de Cmdr",
+    "sources": "standard FR app-menu term"
+  },
+  "wildcard": {
+    "accept": ["caractères génériques"],
+    "chosen": "caractère générique",
+    "confidence": "high",
+    "forms": "the * and ? glyphs stay literal",
+    "sources": "standard FR UI term"
+  },
+  "word-wrap": {
+    "accept": ["retour ligne", "renvoie"],
+    "avoid": [
+      {
+        "form": "Retour automatique à la ligne",
+        "why": "the word order drifted in one settings label; menu and settings say Retour à la ligne automatique"
+      }
+    ],
+    "chosen": "retour à la ligne",
+    "confidence": "high",
+    "forms": "the setting and menu → Retour à la ligne automatique; the tight badge → retour ligne",
+    "sources": "MS terminology FRA id 134158"
+  },
+  "write": {
+    "accept": ["écrit", "écriture", "écriv"],
+    "chosen": "écrire",
+    "confidence": "high",
+    "exceptions": {
+      "ai.cloudConsent.askCmdr.memory": "English-sense: writing notes to itself is composing them (se rédige).",
+      "suggestedOps.reversibleDeleteWritten": "What the operation writes is what it creates (ce qui est créé): new files."
+    },
+    "forms": "partly written → partiellement écrit; written so far → écrits jusqu'à présent; half-written → à moitié écrit",
+    "sources": "catalog; macOS (partiellement disponible)"
+  },
+  "zoom": {
+    "chosen": "Zoom",
+    "confidence": "high",
+    "exceptions": {
+      "menu.window.zoom": "Window > Zoom is Finder's Réduire/agrandir; the text-size submenu keeps Zoom."
+    },
+    "forms": "zoom in / out → zoom avant / zoom arrière; percentages Zoom à 100 %; the window's green button Window > Zoom → Réduire/agrandir",
+    "sources": "MS terminology FRA (ids 2131086, 135725); macOS Finder 300667.title"
+  }
+}

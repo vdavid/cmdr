@@ -51,7 +51,7 @@
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "La connexion réseau de votre Mac est hors service, Cmdr ne peut donc pas atteindre ce volume. Cela peut vouloir dire que le Wi-Fi est déconnecté, qu'un câble Ethernet est débranché, ou que l'interface réseau est désactivée.",
+  "errors.listing.networkDown.explanation": "La connexion réseau de votre Mac est hors service, Cmdr ne peut donc pas accéder à ce volume. Cela peut vouloir dire que le Wi-Fi est déconnecté, qu'un câble Ethernet est débranché ou que l'interface réseau est désactivée.",
   "@errors.listing.networkDown.explanation": {
     "sourceHash": "e2106be"
   },
@@ -63,7 +63,7 @@
   "@errors.listing.networkConnectionDropped.title": {
     "sourceHash": "5654be9"
   },
-  "errors.listing.networkConnectionDropped.explanation": "La connexion réseau a été réinitialisée de façon inattendue pendant que Cmdr lisait ce dossier. Cela peut arriver quand un routeur redémarre, qu'un VPN se reconnecte, ou que le réseau est momentanément instable.",
+  "errors.listing.networkConnectionDropped.explanation": "La connexion réseau a été réinitialisée de façon inattendue pendant que Cmdr lisait ce dossier. Cela peut arriver quand un routeur redémarre, qu'un VPN se reconnecte ou que le réseau est momentanément instable.",
   "@errors.listing.networkConnectionDropped.explanation": {
     "sourceHash": "b155930"
   },
@@ -87,7 +87,7 @@
   "@errors.listing.connectionReset.title": {
     "sourceHash": "6346f08"
   },
-  "errors.listing.connectionReset.explanation": "Le serveur distant a fermé la connexion de façon inattendue. Cela peut arriver quand le serveur redémarre, atteint un délai d'expiration, ou rencontre un problème interne.",
+  "errors.listing.connectionReset.explanation": "Le serveur distant a fermé la connexion de façon inattendue. Cela peut arriver quand le serveur redémarre, atteint un délai d'expiration ou rencontre un problème interne.",
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
@@ -99,7 +99,7 @@
   "@errors.listing.connectionTimedOutErrno.title": {
     "sourceHash": "2e0b4a7"
   },
-  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr a essayé de lire ce dossier mais la connexion n'a pas répondu à temps. Cela signifie généralement que le serveur ou l'appareil est lent, injoignable, ou que le réseau entre vous et lui est encombré.",
+  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr a essayé de lire ce dossier mais la connexion n'a pas répondu à temps. Cela signifie généralement que le serveur ou l'appareil est lent ou injoignable, ou que le réseau entre vous et lui est encombré.",
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "33612d4"
   },
@@ -111,7 +111,7 @@
   "@errors.listing.hostDown.title": {
     "sourceHash": "a99606a"
   },
-  "errors.listing.hostDown.explanation": "L'hôte distant (l'ordinateur ou le serveur qui héberge ce volume) ne répond pas. Il est peut-être éteint, en veille, ou momentanément injoignable.",
+  "errors.listing.hostDown.explanation": "L'hôte distant (l'ordinateur ou le serveur qui héberge ce volume) ne répond pas. Il est peut-être éteint, en veille ou momentanément injoignable.",
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "cf59cab"
   },
@@ -255,7 +255,7 @@
   "@errors.listing.readOnlyVolumeErrno.title": {
     "sourceHash": "e2d3bf1"
   },
-  "errors.listing.readOnlyVolumeErrno.explanation": "Ce volume est monté en lecture seule, Cmdr ne peut donc pas y apporter de modifications. Cela peut être dû à un commutateur physique de protection en écriture sur l'appareil, à une image disque montée en lecture seule, ou à un système de fichiers qui ne prend pas en charge l'écriture.",
+  "errors.listing.readOnlyVolumeErrno.explanation": "Ce volume est monté en lecture seule, Cmdr ne peut donc pas y apporter de modifications. Cela peut être dû à un commutateur physique de protection en écriture sur l'appareil, à une image disque montée en lecture seule ou à un système de fichiers qui ne prend pas en charge l'écriture.",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
     "sourceHash": "cb19e8c"
   },
@@ -279,7 +279,7 @@
   "@errors.listing.networkUnreachable.title": {
     "sourceHash": "7b83c7c"
   },
-  "errors.listing.networkUnreachable.explanation": "Cmdr ne peut pas atteindre le réseau sur lequel se trouve ce volume. Cela signifie souvent que vous n'êtes pas connecté au bon réseau, ou qu'un VPN n'est pas actif.",
+  "errors.listing.networkUnreachable.explanation": "Cmdr ne peut pas accéder au réseau sur lequel se trouve ce volume. Cela signifie souvent que votre Mac n'est pas connecté au bon réseau, ou qu'un VPN n'est pas actif.",
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "f92dedc"
   },
@@ -327,7 +327,7 @@
   "@errors.listing.hostUnreachable.title": {
     "sourceHash": "eae08c7"
   },
-  "errors.listing.hostUnreachable.explanation": "Cmdr ne trouve pas de route réseau vers l'hôte sur lequel se trouve ce volume. Cela signifie généralement que l'hôte est sur un autre réseau, derrière un pare-feu, ou que la configuration du routage doit être mise à jour.",
+  "errors.listing.hostUnreachable.explanation": "Cmdr ne trouve pas de route réseau vers l'hôte sur lequel se trouve ce volume. Cela signifie généralement que l'hôte est sur un autre réseau ou derrière un pare-feu, ou que la configuration du routage doit être mise à jour.",
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "3e5e6f9"
   },
@@ -363,7 +363,7 @@
   "@errors.listing.authRequiredEauth.title": {
     "sourceHash": "0fcfb12"
   },
-  "errors.listing.authRequiredEauth.explanation": "Cmdr n'a pas pu s'authentifier auprès de ce volume. Vos identifiants enregistrés ont peut-être expiré, ou le serveur rejette la connexion actuelle.",
+  "errors.listing.authRequiredEauth.explanation": "Cmdr n'a pas pu s'authentifier auprès de ce volume. Vos identifiants enregistrés ont peut-être expiré, ou le serveur refuse vos identifiants actuels.",
   "@errors.listing.authRequiredEauth.explanation": {
     "sourceHash": "7b51115"
   },
@@ -375,7 +375,7 @@
   "@errors.listing.authRequiredEneedauth.title": {
     "sourceHash": "0fcfb12"
   },
-  "errors.listing.authRequiredEneedauth.explanation": "Ce volume vous demande de vous connecter, mais aucun identifiant n'a encore été fourni.",
+  "errors.listing.authRequiredEneedauth.explanation": "Ce volume vous demande de vous identifier, mais aucun identifiant n'a encore été fourni.",
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
@@ -435,7 +435,7 @@
   "@errors.listing.deviceProblem.title": {
     "sourceHash": "3febba2"
   },
-  "errors.listing.deviceProblem.explanation": "L'appareil a signalé un problème matériel. Cela peut être une connexion mal enfichée, un câble usé, ou un souci avec l'appareil lui-même.",
+  "errors.listing.deviceProblem.explanation": "L'appareil a signalé un problème matériel. Cela peut être une connexion mal enfichée, un câble usé ou un souci avec l'appareil lui-même.",
   "@errors.listing.deviceProblem.explanation": {
     "sourceHash": "a809613"
   },
@@ -531,7 +531,7 @@
   "@errors.listing.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.listing.deviceDisconnected.explanation": "L'appareil qui contient `{path}` a été déconnecté pendant l'opération. Cela peut arriver si un câble USB se débranche, si un téléphone se met en veille, ou si un disque réseau perd sa connexion.",
+  "errors.listing.deviceDisconnected.explanation": "L'appareil qui contient `{path}` a été déconnecté pendant l'opération. Cela peut arriver si un câble USB se débranche, si un téléphone se met en veille ou si un disque réseau perd sa connexion.",
   "@errors.listing.deviceDisconnected.explanation": {
     "sourceHash": "c8b7b10"
   },
@@ -567,7 +567,7 @@
   "@errors.listing.readOnly.title": {
     "sourceHash": "72bb908"
   },
-  "errors.listing.readOnly.explanation": "Ce volume est en lecture seule, Cmdr ne peut donc pas y apporter de modifications. Cela peut être dû à un commutateur physique de protection en écriture sur l'appareil, à une image disque montée en lecture seule, ou à un système de fichiers qui ne prend pas en charge l'écriture.",
+  "errors.listing.readOnly.explanation": "Ce volume est en lecture seule, Cmdr ne peut donc pas y apporter de modifications. Cela peut être dû à un commutateur physique de protection en écriture sur l'appareil, à une image disque montée en lecture seule ou à un système de fichiers qui ne prend pas en charge l'écriture.",
   "@errors.listing.readOnly.explanation": {
     "sourceHash": "99924c3"
   },
@@ -675,7 +675,7 @@
   "@errors.listing.archiveUnreadable.title": {
     "sourceHash": "6b34ae6"
   },
-  "errors.listing.archiveUnreadable.explanation": "Ce fichier ressemble à une archive, mais Cmdr n'a pas pu lire son contenu. Elle est peut-être endommagée, chiffrée, ou dans un format d'archive que Cmdr ne sait pas encore ouvrir.",
+  "errors.listing.archiveUnreadable.explanation": "Ce fichier ressemble à une archive, mais Cmdr n'a pas pu lire son contenu. Elle est peut-être endommagée, chiffrée ou dans un format d'archive que Cmdr ne sait pas encore ouvrir.",
   "@errors.listing.archiveUnreadable.explanation": {
     "sourceHash": "e413580"
   },
@@ -997,11 +997,11 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez votre connexion internet\n- Assurez-vous d'être connecté à iCloud dans {system_settings}\n- Revenez ici pour réessayer",
+  "errors.provider.iCloud.transient": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez votre connexion internet\n- Vérifiez que votre session iCloud est ouverte dans {system_settings}\n- Revenez ici pour réessayer",
   "@errors.provider.iCloud.transient": {
     "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez qu'iCloud Drive est activé dans **{system_settings} > Compte Apple > iCloud**\n- Assurez-vous d'être connecté au bon compte Apple\n- Vérifiez que votre stockage iCloud n'est pas plein",
+  "errors.provider.iCloud.needsAction": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Vérifiez qu'iCloud Drive est activé dans **{system_settings} > Compte Apple > iCloud**\n- Vérifiez que vous utilisez le bon compte Apple\n- Vérifiez que votre stockage iCloud n'est pas plein",
   "@errors.provider.iCloud.needsAction": {
     "sourceHash": "1c6dab0"
   },
@@ -1025,7 +1025,7 @@
   "@errors.provider.pCloudFuse.transient": {
     "sourceHash": "1afbd51"
   },
-  "errors.provider.pCloudFuse.needsAction": "Ce dossier est sur le disque virtuel de **pCloud**. Voici ce que vous pouvez essayer :\n- Assurez-vous que l'app pCloud est en marche et que vous êtes connecté\n- Vérifiez votre connexion internet\n- Après une mise à jour de macOS, réapprouvez l'extension système de pCloud dans **{system_settings} > Général > Ouverture et extensions**",
+  "errors.provider.pCloudFuse.needsAction": "Ce dossier est sur le disque virtuel de **pCloud**. Voici ce que vous pouvez essayer :\n- Assurez-vous que l'app pCloud est en marche et que votre session est ouverte\n- Vérifiez votre connexion internet\n- Après une mise à jour de macOS, réapprouvez l'extension système de pCloud dans **{system_settings} > Général > Ouverture et extensions**",
   "@errors.provider.pCloudFuse.needsAction": {
     "sourceHash": "2753abb"
   },
@@ -1065,7 +1065,7 @@
   "@errors.provider.appBased.transient": {
     "sourceHash": "e3ef8b8"
   },
-  "errors.provider.appBased.needsAction": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Ouvrez {app} et vérifiez votre état de synchronisation\n- Assurez-vous d'être connecté à {app}\n- Vérifiez que vous avez accès à ce dossier dans {name}",
+  "errors.provider.appBased.needsAction": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Ouvrez {app} et vérifiez votre état de synchronisation\n- Connectez-vous à {app} si ce n'est pas déjà fait\n- Vérifiez que vous avez accès à ce dossier dans {name}",
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "88009fd"
   },
@@ -1093,7 +1093,7 @@
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
-  "errors.write.sourceNotFound.suggestion": "Il a peut-être été déplacé, renommé ou supprimé. Essayez de rafraîchir la liste des fichiers.",
+  "errors.write.sourceNotFound.suggestion": "Il a peut-être été déplacé, renommé ou supprimé. Essayez de actualiser la liste des fichiers.",
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
@@ -1189,7 +1189,7 @@
   "@errors.write.cancelled.title.delete": {
     "sourceHash": "546aac1"
   },
-  "errors.write.cancelled.title.trash": "Mise à la corbeille annulée",
+  "errors.write.cancelled.title.trash": "Placement dans la corbeille annulé",
   "@errors.write.cancelled.title.trash": {
     "sourceHash": "52a8954"
   },
@@ -1205,7 +1205,7 @@
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "La mise à la corbeille a été annulée.",
+  "errors.write.cancelled.message.trash": "Le placement dans la corbeille a été annulé.",
   "@errors.write.cancelled.message.trash": {
     "sourceHash": "9585f1b"
   },
@@ -1229,7 +1229,7 @@
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "L'appareil a été déconnecté pendant la mise à la corbeille.",
+  "errors.write.deviceDisconnected.message.trash": "L'appareil a été déconnecté pendant le placement dans la corbeille.",
   "@errors.write.deviceDisconnected.message.trash": {
     "sourceHash": "9d5a47a"
   },
@@ -1305,7 +1305,7 @@
   "@errors.write.readError.title.delete": {
     "sourceHash": "f73bc6b"
   },
-  "errors.write.readError.title.trash": "Mise à la corbeille impossible",
+  "errors.write.readError.title.trash": "Placement dans la corbeille impossible",
   "@errors.write.readError.title.trash": {
     "sourceHash": "c2d75cc"
   },
@@ -1329,7 +1329,7 @@
   "@errors.write.writeError.title.delete": {
     "sourceHash": "f73bc6b"
   },
-  "errors.write.writeError.title.trash": "Mise à la corbeille impossible",
+  "errors.write.writeError.title.trash": "Placement dans la corbeille impossible",
   "@errors.write.writeError.title.trash": {
     "sourceHash": "c2d75cc"
   },
@@ -1365,7 +1365,7 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "3721c3d"
   },
-  "errors.write.trashRefused.title": "Mise à la corbeille impossible",
+  "errors.write.trashRefused.title": "Placement dans la corbeille impossible",
   "@errors.write.trashRefused.title": {
     "sourceHash": "c2d75cc"
   },
@@ -1409,7 +1409,7 @@
   "@errors.write.ioError.title.delete": {
     "sourceHash": "f73bc6b"
   },
-  "errors.write.ioError.title.trash": "Mise à la corbeille impossible",
+  "errors.write.ioError.title.trash": "Placement dans la corbeille impossible",
   "@errors.write.ioError.title.trash": {
     "sourceHash": "c2d75cc"
   },
@@ -1653,7 +1653,7 @@
   "@errors.write.fallback.title.delete": {
     "sourceHash": "f73bc6b"
   },
-  "errors.write.fallback.title.trash": "Mise à la corbeille impossible",
+  "errors.write.fallback.title.trash": "Placement dans la corbeille impossible",
   "@errors.write.fallback.title.trash": {
     "sourceHash": "c2d75cc"
   },
@@ -1669,7 +1669,7 @@
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "Un problème inattendu s'est produit pendant la mise à la corbeille.",
+  "errors.write.fallback.message.trash": "Un problème inattendu s'est produit pendant le placement dans la corbeille.",
   "@errors.write.fallback.message.trash": {
     "sourceHash": "63f8393"
   },

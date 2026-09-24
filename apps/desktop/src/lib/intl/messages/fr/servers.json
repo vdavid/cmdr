@@ -136,7 +136,7 @@
   "@servers.refusal.timedOut": {
     "sourceHash": "7662825"
   },
-  "servers.refusal.unreachable": "Cmdr n''a pas pu atteindre {host}.",
+  "servers.refusal.unreachable": "Cmdr n''a pas pu joindre {host}.",
   "@servers.refusal.unreachable": {
     "sourceHash": "ae716c3"
   },
@@ -232,7 +232,7 @@
     "sourceHash": "5e0ec1d",
     "sameAsSourceJustification": "A literal example hostname, not prose: `nas` is the same abbreviation in French (the shipped `servers.hub.emptyMessage` writes \"un Mac ou un NAS\") and `.local` is the reserved mDNS suffix macOS itself shows (Finder `ConnectToWindow.strings` fr placeholder \"Adresse du serveur\" takes the same form). Translating it would print an address that does not resolve."
   },
-  "servers.sheet.addressHelp": "Un nom d''hôte, une adresse que vous avez copiée, ou toute une ligne ssh. Cmdr choisit le protocole.",
+  "servers.sheet.addressHelp": "Un nom d''hôte, une adresse que vous avez copiée ou toute une ligne ssh. Cmdr choisit le protocole.",
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },

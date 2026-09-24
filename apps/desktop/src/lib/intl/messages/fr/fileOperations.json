@@ -8,7 +8,7 @@
     "sourceHash": "565339b",
     "sameAsSourceJustification": "'OK' is the standard confirm-button label in French macOS (kept verbatim, as in the rest of the catalog)."
   },
-  "fileOperations.delete.fromPath": "Depuis : {path}",
+  "fileOperations.delete.fromPath": "De : {path}",
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
@@ -20,11 +20,11 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Une partie de votre sélection est disponible en ligne uniquement. Les placer dans la corbeille les <strong>téléchargerait d''abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d''abord tous les fichiers disponibles hors ligne, ou désélectionnez tous les fichiers disponibles en ligne uniquement.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Une partie de votre sélection est disponible en ligne uniquement. Les placer dans la corbeille les <strong>téléchargerait d''abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d''abord tous les fichiers disponibles hors connexion, ou désélectionnez tous les fichiers disponibles en ligne uniquement.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2a49037"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Tout ce que vous avez sélectionné est disponible en ligne uniquement. Le placer dans la corbeille le <strong>téléchargerait d''abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d''abord ces fichiers disponibles hors ligne.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Tout ce que vous avez sélectionné est disponible en ligne uniquement. Le placer dans la corbeille le <strong>téléchargerait d''abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d''abord ces fichiers disponibles hors connexion.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "0e52a2b"
   },
@@ -294,11 +294,11 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
-  "fileOperations.transferDialog.scanUnresponsive": "La source ne répond pas, c''est tout ce que nous avons pu compter.",
+  "fileOperations.transferDialog.scanUnresponsive": "La source ne répond pas, cette taille est donc tout ce que nous avons pu compter.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "03d95e0"
   },
-  "fileOperations.transferDialog.scanStopped": "Nous n''avons pas pu finir de mesurer la source, c''est tout ce que nous avons pu compter.",
+  "fileOperations.transferDialog.scanStopped": "Nous n''avons pas pu finir de mesurer la source, cette taille est donc tout ce que nous avons pu compter.",
   "@fileOperations.transferDialog.scanStopped": {
     "sourceHash": "aac156c"
   },

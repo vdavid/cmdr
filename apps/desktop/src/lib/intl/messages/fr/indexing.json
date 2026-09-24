@@ -213,7 +213,7 @@
   "@indexing.staleDialog.title": {
     "sourceHash": "21a78ee"
   },
-  "indexing.staleDialog.body": "Pendant que {name} était déconnecté, des fichiers qui s''y trouvent ont pu changer. La taille des dossiers et les résultats de recherche peuvent être un peu décalés jusqu''à une nouvelle analyse. Le statut jaune à côté du disque le signale toujours, et une nouvelle analyse le rafraîchit.",
+  "indexing.staleDialog.body": "Pendant que {name} était déconnecté, des fichiers qui s''y trouvent ont pu changer. La taille des dossiers et les résultats de recherche peuvent être un peu décalés jusqu''à une nouvelle analyse. Le statut jaune à côté du disque le signale toujours, et une nouvelle analyse l''actualise.",
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
