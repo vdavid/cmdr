@@ -364,11 +364,11 @@
   "@commands.navRight.label": {
     "sourceHash": "21b59f0"
   },
-  "commands.navFirstInFull.label": "Saltar para o primeiro arquivo",
+  "commands.navFirstInFull.label": "Pular para o primeiro arquivo",
   "@commands.navFirstInFull.label": {
     "sourceHash": "f0ea135"
   },
-  "commands.navLastInFull.label": "Saltar para o último arquivo",
+  "commands.navLastInFull.label": "Pular para o último arquivo",
   "@commands.navLastInFull.label": {
     "sourceHash": "e6d6a52"
   },
@@ -484,7 +484,7 @@
   "@commands.fileCopyPath.label": {
     "sourceHash": "333608a"
   },
-  "commands.fileCopyCurrentDirectoryPath.label": "Copiar caminho do diretório atual",
+  "commands.fileCopyCurrentDirectoryPath.label": "Copiar caminho da pasta atual",
   "@commands.fileCopyCurrentDirectoryPath.label": {
     "sourceHash": "ae360d1"
   },
@@ -528,7 +528,7 @@
   "@commands.cloudRemoveDownload.label": {
     "sourceHash": "5dfc369"
   },
-  "commands.cloudRemoveDownload.description": "Remove a cópia local de um arquivo da nuvem, deixando-o disponível somente on-line",
+  "commands.cloudRemoveDownload.description": "Remove a cópia local de um arquivo da nuvem, deixando-o disponível somente online",
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },

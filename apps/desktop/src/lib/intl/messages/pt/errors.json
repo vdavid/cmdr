@@ -171,11 +171,11 @@
   "@errors.listing.pathNotFoundErrno.title": {
     "sourceHash": "cce25f6"
   },
-  "errors.listing.pathNotFoundErrno.explanation": "O Cmdr não encontrou `{path}`. Ele pode ter sido movido, renomeado, ou excluído enquanto o Cmdr tentava acessá-lo.",
+  "errors.listing.pathNotFoundErrno.explanation": "O Cmdr não encontrou `{path}`. Ele pode ter sido movido, renomeado, ou apagado enquanto o Cmdr tentava acessá-lo.",
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num disco de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta principal e procure o item por lá\n- No Terminal, execute `ls -la` na pasta principal para ver o que há nela",
+  "errors.listing.pathNotFoundErrno.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num disco de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta superior e procure o item por lá\n- No Terminal, execute `ls -la` na pasta superior para ver o que há nela",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.diskFullErrno.suggestion": "Veja o que tentar:\n- Libere espaço movendo ou excluindo arquivos de que você não precisa mais\n- Esvazie o Lixo (clique no ícone do Lixo no Dock com o botão direito)\n- No Terminal, execute `df -h` para ver quanto espaço resta em cada volume\n- Veja **{system_settings} > Geral > Armazenamento** para um detalhamento do que está usando espaço",
+  "errors.listing.diskFullErrno.suggestion": "Veja o que tentar:\n- Libere espaço movendo ou apagando arquivos de que você não precisa mais\n- Esvazie o Lixo (clique no ícone do Lixo no Dock com o botão direito)\n- No Terminal, execute `df -h` para ver quanto espaço resta em cada volume\n- Veja **{system_settings} > Geral > Armazenamento** para um detalhamento do que está usando espaço",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "bf54d66"
   },
@@ -343,7 +343,7 @@
   "@errors.listing.folderNotEmpty.explanation": {
     "sourceHash": "c16ac41"
   },
-  "errors.listing.folderNotEmpty.suggestion": "Exclua o conteúdo da pasta primeiro e depois tente remover a pasta de novo.",
+  "errors.listing.folderNotEmpty.suggestion": "Apague o conteúdo da pasta primeiro e depois tente remover a pasta de novo.",
   "@errors.listing.folderNotEmpty.suggestion": {
     "sourceHash": "a440845"
   },
@@ -375,7 +375,7 @@
   "@errors.listing.authRequiredEneedauth.title": {
     "sourceHash": "0fcfb12"
   },
-  "errors.listing.authRequiredEneedauth.explanation": "Este volume exige que você faça login, mas nenhuma credencial foi fornecida ainda.",
+  "errors.listing.authRequiredEneedauth.explanation": "Este volume exige que você inicie a sessão, mas nenhuma credencial foi fornecida ainda.",
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
@@ -459,11 +459,11 @@
   "@errors.listing.notFound.title": {
     "sourceHash": "cce25f6"
   },
-  "errors.listing.notFound.explanation": "O Cmdr não encontrou `{path}`. Ele pode ter sido movido, renomeado, ou excluído enquanto o Cmdr tentava acessá-lo.",
+  "errors.listing.notFound.explanation": "O Cmdr não encontrou `{path}`. Ele pode ter sido movido, renomeado, ou apagado enquanto o Cmdr tentava acessá-lo.",
   "@errors.listing.notFound.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.notFound.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num disco de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta principal e procure o item por lá\n- No Terminal, execute `ls -la` na pasta principal para ver o que há nela",
+  "errors.listing.notFound.suggestion": "Veja o que tentar:\n- Verifique se o caminho está escrito corretamente\n- Se estiver num disco de rede, confirme que ele está conectado e que o compartilhamento está acessível\n- Vá até a pasta superior e procure o item por lá\n- No Terminal, execute `ls -la` na pasta superior para ver o que há nela",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -583,7 +583,7 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.storageFull.suggestion": "Veja o que tentar:\n- Libere espaço movendo ou excluindo arquivos de que você não precisa mais\n- Esvazie o Lixo (clique no ícone do Lixo no Dock com o botão direito)\n- No Terminal, execute `df -h` para ver quanto espaço resta em cada volume",
+  "errors.listing.storageFull.suggestion": "Veja o que tentar:\n- Libere espaço movendo ou apagando arquivos de que você não precisa mais\n- Esvazie o Lixo (clique no ícone do Lixo no Dock com o botão direito)\n- No Terminal, execute `df -h` para ver quanto espaço resta em cada volume",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "fcdd42d"
   },
@@ -615,7 +615,7 @@
   "@errors.listing.deletePending.title": {
     "sourceHash": "1e5741a"
   },
-  "errors.listing.deletePending.explanation": "`{path}` está a caminho da saída. O servidor o marcou para exclusão, mas outro identificador aberto o mantém por aqui até que esse identificador feche.",
+  "errors.listing.deletePending.explanation": "`{path}` está a caminho da saída. O servidor o marcou para ser apagado, mas outro identificador aberto o mantém por aqui até que esse identificador feche.",
   "@errors.listing.deletePending.explanation": {
     "sourceHash": "047ad2f"
   },
@@ -703,7 +703,7 @@
   "@errors.listing.emptyRootICloud.explanation": {
     "sourceHash": "d095f83"
   },
-  "errors.listing.emptyRootICloud.suggestion": "Veja o que tentar:\n- Abra [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) e escolha **{full_disk_access}**\n- Adicione o Cmdr (use o botão **+**) e ative-o\n- Saia e reabra o Cmdr\n- Volte aqui para tentar outra vez",
+  "errors.listing.emptyRootICloud.suggestion": "Veja o que tentar:\n- Abra [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) e escolha **{full_disk_access}**\n- Adicione o Cmdr (use o botão **+**) e ative-o\n- Encerre e reabra o Cmdr\n- Volte aqui para tentar outra vez",
   "@errors.listing.emptyRootICloud.suggestion": {
     "sourceHash": "25cac98"
   },
@@ -715,7 +715,7 @@
   "@errors.git.notARepo.message": {
     "sourceHash": "f5b0d17"
   },
-  "errors.git.notARepo.suggestion": "Abra uma pasta dentro de um clone git para ver o chip do repo.",
+  "errors.git.notARepo.suggestion": "Abra uma pasta dentro de um clone git para ver o selo do repo.",
   "@errors.git.notARepo.suggestion": {
     "sourceHash": "f50fd0b"
   },
@@ -997,11 +997,11 @@
   "@errors.provider.macDroid.serious": {
     "sourceHash": "a4ab4fe"
   },
-  "errors.provider.iCloud.transient": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Confirme que você está conectado ao iCloud em {system_settings}\n- Navegue até aqui de novo para tentar outra vez",
+  "errors.provider.iCloud.transient": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Verifique sua conexão com a internet\n- Confirme que você iniciou a sessão no iCloud em {system_settings}\n- Navegue até aqui de novo para tentar outra vez",
   "@errors.provider.iCloud.transient": {
     "sourceHash": "7c0600f"
   },
-  "errors.provider.iCloud.needsAction": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Verifique se o iCloud Drive está ativado em **{system_settings} > Conta Apple > iCloud**\n- Confirme que você está conectado à conta Apple certa\n- Verifique se o seu armazenamento do iCloud não está cheio",
+  "errors.provider.iCloud.needsAction": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Verifique se o iCloud Drive está ativado em **{system_settings} > Conta Apple > iCloud**\n- Confirme que você iniciou a sessão na conta Apple certa\n- Verifique se o seu armazenamento do iCloud não está cheio",
   "@errors.provider.iCloud.needsAction": {
     "sourceHash": "1c6dab0"
   },
@@ -1029,7 +1029,7 @@
   "@errors.provider.pCloudFuse.needsAction": {
     "sourceHash": "2753abb"
   },
-  "errors.provider.pCloudFuse.serious": "Esta pasta está no disco virtual do **pCloud**. O processo FUSE do pCloud pode ter travado. Veja o que tentar:\n- Saia e reabra o app do pCloud\n- Se o disco não reaparecer, force a desmontagem dele: execute `umount -f /Volumes/pCloudDrive` no Terminal\n- Após uma atualização do macOS, reaprove a extensão de sistema do pCloud em **{system_settings} > Geral > Itens de Início de Sessão e Extensões**",
+  "errors.provider.pCloudFuse.serious": "Esta pasta está no disco virtual do **pCloud**. O processo FUSE do pCloud pode ter travado. Veja o que tentar:\n- Encerre e reabra o app do pCloud\n- Se o disco não reaparecer, force a desmontagem dele: execute `umount -f /Volumes/pCloudDrive` no Terminal\n- Após uma atualização do macOS, reaprove a extensão de sistema do pCloud em **{system_settings} > Geral > Itens de Início de Sessão e Extensões**",
   "@errors.provider.pCloudFuse.serious": {
     "sourceHash": "cba0026"
   },
@@ -1065,11 +1065,11 @@
   "@errors.provider.appBased.transient": {
     "sourceHash": "e3ef8b8"
   },
-  "errors.provider.appBased.needsAction": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Abra o {app} e verifique seu status de sincronização\n- Confirme que você está conectado ao {app}\n- Verifique se você tem acesso a esta pasta no {name}",
+  "errors.provider.appBased.needsAction": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Abra o {app} e verifique seu status de sincronização\n- Confirme que você iniciou a sessão no {app}\n- Verifique se você tem acesso a esta pasta no {name}",
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "88009fd"
   },
-  "errors.provider.appBased.serious": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Saia e reabra o {app}\n- Saia e entre de novo no {app}\n- Veja a página de status do {name} para conferir interrupções",
+  "errors.provider.appBased.serious": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Encerre e reabra o {app}\n- Saia e entre de novo no {app}\n- Veja a página de status do {name} para conferir interrupções",
   "@errors.provider.appBased.serious": {
     "sourceHash": "64baea5"
   },
@@ -1093,7 +1093,7 @@
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
-  "errors.write.sourceNotFound.suggestion": "Ele pode ter sido movido, renomeado, ou excluído. Tente atualizar a lista de arquivos.",
+  "errors.write.sourceNotFound.suggestion": "Ele pode ter sido movido, renomeado, ou apagado. Tente atualizar a lista de arquivos.",
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
@@ -1109,7 +1109,7 @@
   "@errors.write.destinationNotFound.message.move": {
     "sourceHash": "1726290"
   },
-  "errors.write.destinationNotFound.suggestion": "Ela pode ter sido renomeada ou removida, ou a unidade foi desconectada. Escolha outro destino, ou abra a pasta de novo e tente outra vez.",
+  "errors.write.destinationNotFound.suggestion": "Ela pode ter sido renomeada ou removida, ou o disco foi desconectado. Escolha outro destino, ou abra a pasta de novo e tente outra vez.",
   "@errors.write.destinationNotFound.suggestion": {
     "sourceHash": "2e99059"
   },
@@ -1137,7 +1137,7 @@
   "@errors.write.destinationExists.message": {
     "sourceHash": "50d9094"
   },
-  "errors.write.destinationExists.suggestion": "Escolha um nome ou local diferente, ou exclua o arquivo existente primeiro.",
+  "errors.write.destinationExists.suggestion": "Escolha um nome ou local diferente, ou apague o arquivo existente primeiro.",
   "@errors.write.destinationExists.suggestion": {
     "sourceHash": "37d7702"
   },
@@ -1453,11 +1453,11 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "b68bafc"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Verifique se você tem acesso de gravação à pasta principal. O arquivo pode estar bloqueado. Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.",
+  "errors.write.permissionDenied.suggestion.deleteMac": "Verifique se você tem acesso de gravação à pasta superior. O arquivo pode estar bloqueado. Desbloqueie-o no Finder (Obter Informações > desmarque Bloqueado) e tente de novo.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
     "sourceHash": "1e6e123"
   },
-  "errors.write.permissionDenied.suggestion.deleteOther": "Verifique se você tem acesso de gravação à pasta principal. O arquivo pode estar protegido. Verifique as permissões dele (por exemplo, via chmod ou seu gerenciador de arquivos) e tente de novo.",
+  "errors.write.permissionDenied.suggestion.deleteOther": "Verifique se você tem acesso de gravação à pasta superior. O arquivo pode estar protegido. Verifique as permissões dele (por exemplo, via chmod ou seu gerenciador de arquivos) e tente de novo.",
   "@errors.write.permissionDenied.suggestion.deleteOther": {
     "sourceHash": "650bb53"
   },
@@ -1493,7 +1493,7 @@
   "@errors.write.insufficientSpace.message": {
     "sourceHash": "582f30a"
   },
-  "errors.write.insufficientSpace.suggestion": "Libere algum espaço no destino excluindo arquivos desnecessários, ou escolha um local diferente.",
+  "errors.write.insufficientSpace.suggestion": "Libere algum espaço no destino apagando arquivos desnecessários, ou escolha um local diferente.",
   "@errors.write.insufficientSpace.suggestion": {
     "sourceHash": "257f1d9"
   },
@@ -1585,7 +1585,7 @@
   "@errors.write.fileLocked.title": {
     "sourceHash": "5a38c61"
   },
-  "errors.write.fileLocked.message": "O arquivo está bloqueado e não pode ser excluído.",
+  "errors.write.fileLocked.message": "O arquivo está bloqueado e não pode ser apagado.",
   "@errors.write.fileLocked.message": {
     "sourceHash": "62b1038"
   },
@@ -1601,7 +1601,7 @@
   "@errors.write.deletePending.title": {
     "sourceHash": "1e5741a"
   },
-  "errors.write.deletePending.message": "Este arquivo está a caminho da saída. O servidor o marcou para exclusão, mas outro identificador aberto o mantém por aqui até que esse identificador feche.",
+  "errors.write.deletePending.message": "Este arquivo está a caminho da saída. O servidor o marcou para ser apagado, mas outro identificador aberto o mantém por aqui até que esse identificador feche.",
   "@errors.write.deletePending.message": {
     "sourceHash": "e580e20"
   },
@@ -1613,11 +1613,11 @@
   "@errors.write.newDataKeptAt.title": {
     "sourceHash": "06bc297"
   },
-  "errors.write.newDataKeptAt.message": "O novo {path} está escrito e completo, mas o destino não deixou ele ficar com esse nome, e o arquivo que ele ia substituir já não está lá. O novo está em {keptAt}.",
+  "errors.write.newDataKeptAt.message": "O novo {path} está gravado e completo, mas o destino não deixou ele ficar com esse nome, e o arquivo que ele ia substituir já não está lá. O novo está em {keptAt}.",
   "@errors.write.newDataKeptAt.message": {
     "sourceHash": "d1dc96b"
   },
-  "errors.write.newDataKeptAt.suggestion": "Abra {keptAt} para conferir e depois renomeie. Se o destino for um compartilhamento de rede ou um telefone, reconecte primeiro e a renomeação vai passar.",
+  "errors.write.newDataKeptAt.suggestion": "Abra {keptAt} para conferir e depois renomeie. Se o destino for um compartilhamento de rede ou um celular, reconecte primeiro e a renomeação vai passar.",
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
@@ -1817,7 +1817,7 @@
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
   },
-  "errors.serverRequest.unreachable": "O Cmdr não conseguiu se conectar ao servidor. Verifique sua conexão com a internet e tente novamente.",
+  "errors.serverRequest.unreachable": "O Cmdr não conseguiu alcançar o próprio servidor. Verifique sua conexão com a internet e tente novamente.",
   "@errors.serverRequest.unreachable": {
     "sourceHash": "7f2a23e"
   },
@@ -1861,7 +1861,7 @@
   "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "d49861f"
   },
-  "errors.eject.unmountRefused": "Algo ainda está usando este disco. Feche os arquivos e aplicativos abertos, depois ejete-o de novo.",
+  "errors.eject.unmountRefused": "Algo ainda está usando este disco. Feche os arquivos e apps abertos, depois ejete-o de novo.",
   "@errors.eject.unmountRefused": {
     "sourceHash": "1ff7d31"
   },

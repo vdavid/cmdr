@@ -11,7 +11,7 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "As cópias, movimentações e exclusões aparecem aqui enquanto rodam, para você pausar, retomar ou cancelar.",
+  "queue.empty.body": "As cópias, movimentações e apagamentos aparecem aqui enquanto rodam, para você pausar, retomar ou cancelar.",
   "@queue.empty.body": {
     "sourceHash": "c24a288"
   },

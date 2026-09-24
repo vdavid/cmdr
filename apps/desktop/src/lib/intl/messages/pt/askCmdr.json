@@ -655,7 +655,7 @@
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"
   },
-  "askCmdr.renameUndo.unavailable": "Nada a restaurar. Este lote talvez já tenha sido desfeito, ou a unidade dele não está conectada.",
+  "askCmdr.renameUndo.unavailable": "Nada a restaurar. Este lote talvez já tenha sido desfeito, ou o disco dele não está conectado.",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
   },
@@ -719,7 +719,7 @@
   "@askCmdr.wakeToast.title": {
     "sourceHash": "881baf8"
   },
-  "askCmdr.wakeToast.action": "Ver",
+  "askCmdr.wakeToast.action": "Revisar",
   "@askCmdr.wakeToast.action": {
     "sourceHash": "aff0766"
   },
@@ -735,7 +735,7 @@
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} concluídos, {skippedText} ignorados, {failedText} com falha",
+  "askCmdr.decision.result": "{doneText} concluídos, {skippedText} ignorados, {failedText} não concluídos",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },
@@ -747,11 +747,11 @@
   "@askCmdr.decision.verbCopy": {
     "sourceHash": "20a184a"
   },
-  "askCmdr.decision.verbTrash": "mover para o lixo",
+  "askCmdr.decision.verbTrash": "mover para o Lixo",
   "@askCmdr.decision.verbTrash": {
     "sourceHash": "ea05c85"
   },
-  "askCmdr.decision.verbDelete": "excluir",
+  "askCmdr.decision.verbDelete": "apagar",
   "@askCmdr.decision.verbDelete": {
     "sourceHash": "8901f3f"
   },
@@ -759,7 +759,7 @@
   "@askCmdr.decision.verbRename": {
     "sourceHash": "c4b4eea"
   },
-  "askCmdr.decision.verbCompress": "compactar",
+  "askCmdr.decision.verbCompress": "comprimir",
   "@askCmdr.decision.verbCompress": {
     "sourceHash": "45391ae"
   },

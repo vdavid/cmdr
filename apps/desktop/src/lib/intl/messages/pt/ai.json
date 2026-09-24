@@ -400,7 +400,7 @@
   "@ai.local.startServer": {
     "sourceHash": "7b7da6f"
   },
-  "ai.local.deleteModel": "Excluir modelo",
+  "ai.local.deleteModel": "Apagar modelo",
   "@ai.local.deleteModel": {
     "sourceHash": "b7828ba"
   },
@@ -408,11 +408,11 @@
   "@ai.local.downloadModel": {
     "sourceHash": "9979bea"
   },
-  "ai.local.deleteDialogTitleDeleting": "Excluindo modelo...",
+  "ai.local.deleteDialogTitleDeleting": "Apagando modelo...",
   "@ai.local.deleteDialogTitleDeleting": {
     "sourceHash": "413e1b9"
   },
-  "ai.local.deleteDialogTitle": "Excluir modelo de IA?",
+  "ai.local.deleteDialogTitle": "Apagar modelo de IA?",
   "@ai.local.deleteDialogTitle": {
     "sourceHash": "c486f0c"
   },
@@ -424,7 +424,7 @@
   "@ai.local.deleteConfirmMessage": {
     "sourceHash": "1a6ca0d"
   },
-  "ai.local.deleteButtonDeleting": "Excluindo...",
+  "ai.local.deleteButtonDeleting": "Apagando...",
   "@ai.local.deleteButtonDeleting": {
     "sourceHash": "685ecb9"
   },

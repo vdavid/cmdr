@@ -3,7 +3,7 @@
   "@onboarding.fdaBadge.label": {
     "sourceHash": "0aa10cf"
   },
-  "onboarding.fdaBadge.tooltip": "Você não precisa conceder isso, mas o Cmdr funciona bem melhor com ele: buscar em todo o seu disco, ler pastas na nuvem e alterar arquivos que o macOS guarda para si. Clique para rever a escolha.",
+  "onboarding.fdaBadge.tooltip": "Você não precisa conceder isso, mas o Cmdr funciona bem melhor com ele: buscar em todo o seu disco, ler pastas na nuvem e alterar arquivos que o macOS guarda para si. Clique para revisar a escolha.",
   "@onboarding.fdaBadge.tooltip": {
     "sourceHash": "00f408a"
   },
@@ -111,7 +111,7 @@
   "@onboarding.stepFda.pro.label": {
     "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.pro.body": "O app vai acessar todo o seu disco sem ficar pedindo permissão para cada pasta, como Transferências, Documentos e Mesa.",
+  "onboarding.stepFda.pro.body": "O app vai acessar todo o seu disco sem ficar pedindo permissão para cada pasta, como Downloads, Documentos e Mesa.",
   "@onboarding.stepFda.pro.body": {
     "sourceHash": "c624227"
   },
@@ -179,7 +179,7 @@
   "@onboarding.stepAi.bannerTitle.denied": {
     "sourceHash": "0aa10cf"
   },
-  "onboarding.stepAi.bannerBody.denied": "Você escolheu não ativar o acesso total ao disco. Respeitamos isso. Em seguida, você vai receber alguns pedidos de permissão do macOS para o Cmdr acessar sua Mesa, Transferências e pastas parecidas. Aceite ou recuse à vontade. Você pode mudar tudo isso depois em {systemSettings}.",
+  "onboarding.stepAi.bannerBody.denied": "Você escolheu não ativar o acesso total ao disco. Respeitamos isso. Em seguida, você vai receber alguns pedidos de permissão do macOS para o Cmdr acessar sua Mesa, Downloads e pastas parecidas. Aceite ou recuse à vontade. Você pode mudar tudo isso depois em {systemSettings}.",
   "@onboarding.stepAi.bannerBody.denied": {
     "sourceHash": "ccb4ae5"
   },
@@ -239,11 +239,11 @@
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "9246b56"
   },
-  "onboarding.stepAi.table.renameWithout": "Você usa a interface de renomeação em lote para definir manualmente o padrão de nomes, revisa e aplica.",
+  "onboarding.stepAi.table.renameWithout": "Você usa a interface de renomeação em lote para definir manualmente o padrão de renomeação, revisa e aplica.",
   "@onboarding.stepAi.table.renameWithout": {
     "sourceHash": "b12d997"
   },
-  "onboarding.stepAi.table.renameWith": "Você diz \"adicionar prefixo de data ISO\", o agente ajusta seu padrão de nomes, você revisa e aplica à vontade.",
+  "onboarding.stepAi.table.renameWith": "Você diz \"adicionar prefixo de data ISO\", o agente ajusta seu padrão de renomeação, você revisa e aplica à vontade.",
   "@onboarding.stepAi.table.renameWith": {
     "sourceHash": "7fba3f5"
   },
@@ -411,7 +411,7 @@
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "8036aad"
   },
-  "onboarding.stepBeta.emailNote": "Deixe seu e-mail e eu entro em contato com alguma pergunta ou novidade de vez em quando.\nO endereço de e-mail que você digita aqui fica guardado só no seu Mac e nunca é ligado às suas estatísticas de uso; os dois são, de propósito, dois subsistemas separados.",
+  "onboarding.stepBeta.emailNote": "Deixe seu e-mail e eu entro em contato com alguma pergunta ou novidade de vez em quando.\nO endereço de e-mail que você digita aqui fica salvo só no seu Mac e nunca é ligado às suas estatísticas de uso; os dois são, de propósito, dois subsistemas separados.",
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "f256066"
   },
@@ -499,15 +499,15 @@
   "@onboarding.stepOptional.updates.desc": {
     "sourceHash": "12b7f08"
   },
-  "onboarding.stepOptional.mtp.title": "MTP (telefones Android, Kindles, câmeras)",
+  "onboarding.stepOptional.mtp.title": "MTP (celulares Android, Kindles, câmeras)",
   "@onboarding.stepOptional.mtp.title": {
     "sourceHash": "473e8e9"
   },
-  "onboarding.stepOptional.mtp.summary": "Permite conectar telefones Android e afins, suprime o processo nativo do macOS",
+  "onboarding.stepOptional.mtp.summary": "Permite conectar celulares Android e afins, suprime o processo nativo do macOS",
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Se você ativar isto, o Cmdr pode <strong>se conectar a telefones Android, Kindles, câmeras</strong>, alguns tocadores de música e qualquer outro dispositivo com suporte aos protocolos chamados MTP ou PTP.\nO custo é que o macOS <em>também</em> quer se conectar a eles (e geralmente falha, que é por que você não consegue simplesmente usar o Finder para copiar fotos de telefones Android), então o Cmdr precisa suprimir esse processo do macOS enquanto está em execução.\nQuando você encerra o Cmdr, isso é restaurado com cuidado.",
+  "onboarding.stepOptional.mtp.desc": "Se você ativar isto, o Cmdr pode <strong>se conectar a celulares Android, Kindles, câmeras</strong>, alguns tocadores de música e qualquer outro dispositivo com suporte aos protocolos chamados MTP ou PTP.\nO custo é que o macOS <em>também</em> quer se conectar a eles (e geralmente falha, que é por que você não consegue simplesmente usar o Finder para copiar fotos de celulares Android), então o Cmdr precisa suprimir esse processo do macOS enquanto está em execução.\nQuando você encerra o Cmdr, isso é restaurado com cuidado.",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },

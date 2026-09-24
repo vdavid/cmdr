@@ -95,7 +95,7 @@
   "@viewer.search.placeholder": {
     "sourceHash": "c1dc89b"
   },
-  "viewer.search.ariaLabel": "Pesquisar texto",
+  "viewer.search.ariaLabel": "Buscar texto",
   "@viewer.search.ariaLabel": {
     "sourceHash": "38d268a"
   },
@@ -140,7 +140,7 @@
   "@viewer.search.next": {
     "sourceHash": "825e5ab"
   },
-  "viewer.search.close": "Fechar pesquisa",
+  "viewer.search.close": "Fechar busca",
   "@viewer.search.close": {
     "sourceHash": "55656b5"
   },
@@ -266,7 +266,7 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.text": "W quebra · F acompanhar · ⌘F pesquisar",
+  "viewer.statusBar.hint.text": "W quebra · F acompanhar · ⌘F buscar",
   "@viewer.statusBar.hint.text": {
     "sourceHash": "3ecf215"
   },
@@ -307,7 +307,7 @@
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
-  "viewer.copyDialog.confirmBody": "Colagens grandes podem deixar outros apps lentos. Tente a pesquisa (⌘F) para reduzir a seleção.",
+  "viewer.copyDialog.confirmBody": "Colagens grandes podem deixar outros apps lentos. Tente a busca (⌘F) para reduzir a seleção.",
   "@viewer.copyDialog.confirmBody": {
     "sourceHash": "c1f2927"
   },
@@ -323,7 +323,7 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseBody": "Isso é maior que o limite de 100 MB da área de transferência. Tente a pesquisa (⌘F) para encontrar o que você precisa, ou salve a seleção como arquivo.",
+  "viewer.copyDialog.refuseBody": "Isso é maior que o limite de 100 MB da área de transferência. Tente a busca (⌘F) para encontrar o que você precisa, ou salve a seleção como arquivo.",
   "@viewer.copyDialog.refuseBody": {
     "sourceHash": "75f3043"
   },

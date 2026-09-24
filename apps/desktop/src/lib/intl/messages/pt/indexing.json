@@ -174,7 +174,7 @@
   "@indexing.rescan.reconcilerBufferOverflow": {
     "sourceHash": "d6000e4"
   },
-  "indexing.rescan.incompletePreviousScan": "A análise anterior não terminou (o app pode ter sido fechado). Reiniciando a análise do zero.",
+  "indexing.rescan.incompletePreviousScan": "A varredura anterior não terminou (o app pode ter sido fechado). Reiniciando a varredura do zero.",
   "@indexing.rescan.incompletePreviousScan": {
     "sourceHash": "3ca5217"
   },

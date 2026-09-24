@@ -111,7 +111,7 @@
   "@search.walkHandoff.stop": {
     "sourceHash": "cae7d57"
   },
-  "search.walkHandoff.hideTooltip": "Esconder isto. A busca continua.",
+  "search.walkHandoff.hideTooltip": "Ocultar isto. A busca continua.",
   "@search.walkHandoff.hideTooltip": {
     "sourceHash": "7ee94f1"
   },
@@ -147,7 +147,7 @@
   "@search.coverage.unresolved": {
     "sourceHash": "8d9517e"
   },
-  "search.coverage.walk.cancelled": "Você parou esta busca, então vê o que o Cmdr tinha encontrado até ali. Tudo o que ele leu pelo caminho fica guardado, e uma nova busca continua dali.",
+  "search.coverage.walk.cancelled": "Você parou esta busca, então vê o que o Cmdr tinha encontrado até ali. Tudo o que ele leu pelo caminho fica salvo, e uma nova busca continua dali.",
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
   },

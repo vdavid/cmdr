@@ -16,7 +16,7 @@
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "ef122e2"
   },
-  "fileOperations.delete.noTrashWarningRest": "Os arquivos serão excluídos permanentemente.",
+  "fileOperations.delete.noTrashWarningRest": "Os arquivos serão apagados permanentemente.",
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
@@ -116,11 +116,11 @@
   "@fileOperations.delete.foldersPart": {
     "sourceHash": "9bd56b2"
   },
-  "fileOperations.delete.symlinkNoticeSingle": "Este item é um link simbólico. Apenas o link será excluído, não o destino dele.",
+  "fileOperations.delete.symlinkNoticeSingle": "Este item é um link simbólico. Apenas o link será apagado, não o destino dele.",
   "@fileOperations.delete.symlinkNoticeSingle": {
     "sourceHash": "c5a4259"
   },
-  "fileOperations.delete.symlinkNoticeMany": "Sua seleção inclui {countText} {count, plural, one {link simbólico} many {links simbólicos} other {links simbólicos}}. Apenas os próprios links serão excluídos, não os destinos deles.",
+  "fileOperations.delete.symlinkNoticeMany": "Sua seleção inclui {countText} {count, plural, one {link simbólico} many {links simbólicos} other {links simbólicos}}. Apenas os próprios links serão apagados, não os destinos deles.",
   "@fileOperations.delete.symlinkNoticeMany": {
     "sourceHash": "56b3f52"
   },
@@ -293,11 +293,11 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
-  "fileOperations.transferDialog.scanUnresponsive": "A origem não está respondendo, então isso é tudo o que conseguimos contar.",
+  "fileOperations.transferDialog.scanUnresponsive": "A origem não está respondendo, então este tamanho é tudo o que conseguimos contar.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "03d95e0"
   },
-  "fileOperations.transferDialog.scanStopped": "Não conseguimos terminar de medir a origem, então isso é tudo o que conseguimos contar.",
+  "fileOperations.transferDialog.scanStopped": "Não conseguimos terminar de medir a origem, então este tamanho é tudo o que conseguimos contar.",
   "@fileOperations.transferDialog.scanStopped": {
     "sourceHash": "aac156c"
   },
@@ -505,7 +505,7 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "O destino já existe e é uma <strong>pasta</strong>. Você está prestes a substituí-la por um <strong>arquivo</strong> com o mesmo nome. Todo o conteúdo da pasta de destino seria excluído e substituído pelo arquivo. O que deseja fazer?",
+  "fileOperations.transferProgress.warningFileOverFolder": "O destino já existe e é uma <strong>pasta</strong>. Você está prestes a substituí-la por um <strong>arquivo</strong> com o mesmo nome. Todo o conteúdo da pasta de destino seria apagado e substituído pelo arquivo. O que deseja fazer?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
   },

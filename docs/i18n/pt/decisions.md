@@ -1,251 +1,35 @@
-# pt glossary
+# pt decisions
 
-The living term glossary for translating Cmdr into this language: one entry per recurring term, in the
-`chosen · sources · confidence` format. Build and extend it DURING translation, and read it before every pass.
+The rationale journal behind `terms.json`: why a term won, which catalog keys a ruling shaped, and the incidents that
+encode a constraint. Not read by default; `pnpm i18n:brief` pulls the sections whose heading cites a batch key, so keep
+citing keys in backticks in every heading. The term rulings themselves live in `terms.json` (one entry per concept from
+`../concepts.json`, plus this locale's `concepts-proposed.json`); open questions for a native reviewer live in
+`review-queue.md`. Style and voice: `style.md`. Sources are the Brazilian reference pile (`_ignored/i18n/pt-BR/`) or,
+where noted, the installed macOS.
 
-- **Source every term from the reference pile, never guess.** Cmdr's `pt` ships Brazilian, so mine
-  `_ignored/i18n/pt-BR/` (the complete Brazilian set); the bare `_ignored/i18n/pt/` is European Portuguese, a variant
-  trap. For how Apple, Microsoft, and GNOME/Xfce render the term and for similar sentences (recipes:
-  `docs/i18n/reference-pile/how-to-mine.md`). Cite the source(s) and a confidence (`confirmed` / `high` / `tentative`).
-- **This folder is this language home.** Capture new term decisions here, and other findings as sibling files.
+## Colar a área de transferência como arquivo (`settings.fileOperations.pasteClipboardAsFile.*`, `fileExplorer.clipboard.pastedAsFile`/`pastedAsFileSettings`)
 
-Format, the confidence scale, and the full process: `docs/guides/i18n-translation.md`.
+Cmdr can paste non-file clipboard content (text, an image, a PDF) into the current folder as a new file.
 
-## Terms
-
-Sourced from `_ignored/i18n/pt-BR/` (macOS Finder Tier 1, then Microsoft terminology). pt-BR throughout.
-
-- file · **arquivo** · macOS Finder, MS terminology (402 hits) · confirmed
-- folder · **pasta** · macOS Finder, MS terminology · confirmed
-- trash · **Lixo** · macOS Finder ("Move to Trash"→"Mover para o Lixo", "Empty Trash"→"Esvaziar Lixo", "Trash"→"Lixo",
-  verified 2026-06-21 key-based EN→pt-BR in `LocalizableMerged.json`) · confirmed. Cmdr is a macOS app, so the Tier-1
-  Finder value "Lixo" wins over the generic-pt-BR "Lixeira" the style.md table suggested. Used in
-  `errors.write.trashNotSupported.*` and the diskFull/storageFull "empty the Trash" bullets.
-- pane · **painel** · standard pt-BR UI · high
-- tab · **aba** · pt-BR convention · high
-- name · **Nome** · macOS Finder · confirmed
-- size · **Tamanho** · macOS Finder · confirmed
-- modified · **Modificado** · macOS Finder · confirmed
-- created · **Criado** · macOS Finder · confirmed
-- read-only · **Somente leitura** · macOS Finder · confirmed
-- empty (folder) · **Pasta vazia** (empty: **Vazio/Vazia**) · macOS Finder · confirmed
-- eject · **Ejetar** · macOS Finder · confirmed
-- Cancel · **Cancelar** · macOS Finder (21 hits) · confirmed
-- Try again / Retry · **Tentar novamente** · macOS Finder · confirmed
-- Refresh · **Atualizar** · macOS Finder, MS · confirmed
-- Back · **Voltar** · macOS Finder · confirmed
-- Connect · **Conectar** · macOS Finder ConnectToWindow · confirmed
-- Connect to server · **Conectar ao servidor** · macOS Finder ("Conectar ao Servidor", title case there; sentence case
-  here per Cmdr style) · confirmed
-- Server address · **Endereço do servidor** · macOS Finder · confirmed
-- Sign in · **Iniciar sessão** · macOS Finder AFPUserGroupSheet · confirmed
-- Username · **Nome de usuário** · pt-BR standard · high
-- Password · **Senha** · macOS Finder · confirmed
-- Guest · **Convidado** · macOS Finder · confirmed
-- share (network) · **compartilhamento** · macOS Finder, MS terminology · confirmed
-- mount · **montar** · macOS Finder, MS · confirmed
-- hostname · **nome do host** · MS terminology · high
-- IP address · **Endereço IP** · standard · high
-- Keychain · **Acesso às Chaves** · macOS Portuguese (Brazilian) · high · localized Apple feature name (the Keychain
-  Access app / credential store); not on the don't-translate brand list. The local Finder/SystemSettings pile doesn't
-  capture the Keychain Access bundle, so this is from Apple's macOS pt-BR localization, not the mined pile.
-- Favorites · **Favoritos** · macOS Finder · confirmed
-- Network · **Rede** · macOS Finder · confirmed
-- Volumes · **Volumes** · macOS Finder · high
-- Cloud · **Nuvem** · standard pt-BR · high
-- Mobile · **Dispositivos móveis** · standard pt-BR · high
-- Disconnect · **Desconectar** · standard pt-BR · high
-- Indexing · **Indexação** / index: **índice**; to index: **indexar** · standard tech pt-BR · high
-- drive / disk · **disco** · macOS Finder (file-manager context; MS "unidade" not used) · high
-- column · **coluna** · macOS Finder · confirmed
-- sort / sort by · **ordenar** / **ordenar por** · macOS Finder MenuBar ("Ordenar por") · confirmed
-- search (Settings context) · **busca** / to search: **buscar** · macOS Finder · confirmed
-- Settings (the app's section) · **Ajustes** · macOS pt-BR ("Ajustes do Sistema") · high
-- System Settings (macOS) · **Ajustes do Sistema** · macOS SystemSettings CFBundleName · confirmed
-- Appearance (macOS pane) · **Aparência** · macOS SystemSettings · confirmed
-- Privacy &amp; Security (macOS pane) · **Privacidade e Segurança** · macOS SystemSettings PRIVACY_SECTION · confirmed
-- Local Network (macOS permission) · **Rede Local** · macOS-localized permission name (Network→Rede) · high
-- Full Disk Access (macOS permission) · **Acesso Total ao Disco** · macOS-localized permission name · high
-- default (value) · **padrão** · macOS/MS standard · high
-- threshold · **limite** · MS terminology · high
-- buffer · **buffer** · MS terminology (kept verbatim) · high
-- word wrap · **quebra automática de linha** · MS terminology pt-BR · high. ❌ NOT the shortened "quebra de linha": an
-  earlier pass clipped it for the Settings toggle only, so the viewer's View menu and Settings named the same setting
-  differently. Both keys carry the full term now.
-- toast (transient notification) · **notificação** (running text) · rendered descriptively · tentative
-- shortcut (keyboard) · **atalho** · macOS standard · high
-- timeout · **tempo limite** · standard pt-BR tech · high
-- connection · **conexão** · macOS Finder ("Stop connecting"→"Parar conexão") · confirmed
-- permission · **permissão** · macOS Finder ("You don't have permission to…"→"Você não tem permissão para…") · confirmed
-- Get Info · **Obter Informações** · macOS Finder · confirmed (errors.write permissionDenied/fileLocked suggestions)
-- Activity Monitor · **Monitor de Atividade** · standard macOS app name · high
-- Disk Utility / First Aid · **Utilitário de Disco / Primeiros Socorros** · standard macOS app/feature names · high
-- Login Items &amp; Extensions (pane) · **Itens de Início e Extensões** · inferred from macOS conventions (not directly
-  value-mined); review · tentative
-- search / to search · **busca** / **buscar** · macOS Finder MenuBar ("Buscar", "Buscar por Nome…"); for queryUi search
-  dialog and `commands.searchOpen` · confirmed
-- copy / paste / cut · **Copiar** / **Colar** / **Recortar** · macOS Finder MenuBar (157/300847; Finder uses "Cortar" in
-  some menus but **Recortar** is the standard clipboard verb, MS) · high. clipboard = **área de transferência** (macOS
-  "Área de Transferência")
-- rename · **Renomear** · macOS Finder MenuBar (OPI-Bm-bCw) · confirmed
-- select all / deselect all · **Selecionar tudo** / **Desmarcar tudo** · macOS Finder MenuBar (172/300488) · confirmed
-- delete (to trash) / delete permanently · **Apagar** / **Apagar permanentemente** · macOS Finder term (replaces the
-  earlier Windows-influenced "Excluir"; macOS pt-BR Finder uses "Apagar", 0 "Excluir") · high
-- Show in Finder · **Mostrar no Finder** · macOS Finder (A34, N207) · confirmed
-- Quick Look (mac) / Preview (other) · **Visualização rápida** / **Pré-visualizar** · macOS Finder MenuBar
-  ("Visualização Rápida", 300780) · confirmed. Localized Apple feature name: use the term the user sees in their pt-BR
-  Finder, never the English "Quick Look".
-- New folder / New tab / New window · **Nova pasta** / **Nova aba** / **Nova janela** · macOS Finder MenuBar
-  (300797/300913/kZ0-FG-6vN) · confirmed
-- hidden files · **arquivos ocultos** · macOS Finder ("oculto"), Nautilus ("arquivos ocultos") · confirmed
-- Quit (app) · **Encerrar Cmdr** · macOS Finder "Encerrar Finder" pattern · high
-- About (app) · **Sobre o Cmdr** · macOS Finder "Sobre o Finder" pattern · confirmed
-- zoom in / out · **Ampliar** / **Reduzir** · Safari pt-BR `MainMenu.strings` `438.title`/`439.title`, read off the
-  installed macOS 26.x (2026-08-30) · high. ❌ NOT `Aumentar zoom` / `Reduzir zoom`: that was this line's earlier
-  ruling, the menu-bar pass superseded it, and only `menu.json` followed. Zoom reset stays **redefinir o zoom**, and
-  "Zoom to N%" stays **Zoom em N%** · standard pt-BR; macOS Finder uses "Aumentar/Diminuir Tamanho do Ícone" but
-  **zoom** is kept for the UI-scale feature · high
-- command palette · **paleta de comandos** · standard pt-BR app term · high
-- onboarding · **introdução** (wizard: **assistente de introdução**) · standard pt-BR · high
-- What's new · **Novidades** · standard pt-BR app term · high
-- offline / online · **offline** (kept) / **on-line** · MS terminology keeps "offline"; "on-line" hyphenated per pt-BR ·
-  high
-- host (network) · **host** · MS terminology (kept verbatim) · high
-- glob · **Glob** (kept verbatim) · technical term, no common pt equivalent · high
-- regex · **Regex** (kept verbatim) · technical term · confirmed
-- view mode: Brief / Full · **visualização resumida** / **visualização completa** · descriptive (Cmdr's own view names;
-  no direct macOS source) · tentative
-- View (menu name) · **Visualizar** · used in `commands.handler.zoomResetHintMenu` menu path · tentative
-- verify / check (in progress) · **Verificar** / **Verificando** · macOS Finder ("Verifying"); used for
-  license/conflict/key checks (`licensing.dialog.checking`, `fileOperations.transferDialog.checkingConflicts`,
-  `onboarding.cloudSetup.status.checking`) · high
-- symlink · **link simbólico** · standard tech pt-BR; distinct from Finder's "atalho" (which is an alias).
-  `fileOperations.delete.symlinkNotice*` · high
-- Replace (conflict policy) · **Substituir** · macOS Finder conflict sheet ("Substituir") · confirmed
-- Skip (conflict policy) · **Ignorar** · macOS Finder ("Ignorar") · high
-- Rollback (transfer) · **Reverter** · standard pt-BR · high
-- Empty (trash) · **Esvaziar** · macOS Finder ("Esvaziar Lixo") · confirmed
-- Move · **Mover** · macOS Finder · confirmed
-- download (verb) · **Baixar** / **Baixando** · MS, standard pt-BR. The Downloads folder name stays **Downloads** (macOS
-  pt-BR keeps it; `settings.fileSystemWatching.cardDownloads`) · high
-- upgrade (page/CTA) · **upgrade** (kept verbatim) · naturalized pt-BR tech usage; `commands.aboutOpenUpgrade.label`
-  "Abrir página de upgrade" · high
-- server · **Servidor** · macOS Finder ("Conectar ao Servidor") · confirmed
-- provider (AI / cloud) · **provedor** · standard pt-BR · high
-- endpoint · **ponto de extremidade** · Microsoft pt-BR terminology; a Apple não publica a palavra em pt-BR · high ·
-  detalhes e as chaves afetadas: § Os passos de configuração de provedor de IA
-- remaining · **restante** · standard pt-BR (AI download progress) · high
-- memory (RAM) · **memória** · standard · confirmed
-- path · **caminho** · macOS Finder; `goToPath.*` · high
-- changelog · **registro de alterações** · standard pt-BR; `whatsNew.dialog.seeFullChangelog` · high
-- crash report · **relatório de falha** · macOS pt-BR convention; `crashReporter.*` · high
-- error report · **relatório de problema** · avoids the banned bare "erro"; calm and consistent; `errorReporter.*` ·
-  high
-- Force Quit · **Forçar Encerramento** · macOS pt-BR · high
-- status · **Status** (kept verbatim) · naturalized in pt-BR tech UI; used consistently across pt
-  (`licensing.section.labelStatus`, `servers.hub.colStatus`, `ai.local.status*`) · high
-- Ext / DIR (column tags) · **Ext** / **DIR** (kept verbatim) · short column-header abbreviations; pt-BR keeps these
-  terse tags (matches es); `fileExplorer.columns.ext`, `fileExplorer.selectionInfo.dir` · high
-- pause (transfer) · **Pausar** (verb) / **Pausado** (status) · MS terminology (Pause→"Pausar"), Total Commander pt-BR
-  (`2094="Pausar"`), Double Commander pt-BR ("Paused"→"Pausado", "Pausing"→"Pausando") · confirmed. `queue.json` +
-  `fileOperations.transferProgress.pause/titlePaused`
-- resume (transfer) · **Retomar** · MS terminology (resume→"retomar", ids 639983/1262427) · high. Pairs with Pausar;
-  Double Commander uses generic "&Continuar" for a continue button, but MS's transfer-sense "retomar" fits the
-  pause/resume toggle better. `queue.json` + `fileOperations.transferProgress.resume`
-- queue (the noun) · **Fila** · macOS-adjacent file managers: Total Commander pt-BR (`4005="&Fila"`, "Download em
-  fila"), Double Commander pt-BR ("Queue"→"Fila", "Add to queue"→"Adicionar à fila"), MS terminology (Queue→"Fila", id
-  96569 BRA, feminine) · confirmed. `queue.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue`
-- operation (the category word for one queued job: a copy, move, delete, trash, rename, folder/file creation, or archive
-  edit) · **operação** (plural **operações**, feminine) · macOS Finder pt-BR is unanimous (40+ `LocalizableMerged.json`
-  values render "operation" as "operação": `NE1` "A operação não pode ser completada.", `NE82` "…outra operação está em
-  andamento…", `A17` "…algumas operações ainda estão em andamento."), MS terminology pt-BR (operation→"operação", ids
-  333922/87969/1381673, all BRA), Double Commander pt-BR ("Current operation:"→"Operação atual:", "File
-  operations"→"Operações de arquivos"), Total Commander pt-BR (`5391="Registro de Operações com Arquivos"`), GNOME
-  Nautilus pt-BR ("All file operations have been completed"→"Todas as operações com arquivos foram concluídas") ·
-  confirmed. Already the catalog's word via `operationLog.*` ("Registro de operações").
-- operation queue (the standalone window listing running and waiting operations) · **Fila de operações** · composed from
-  the two confirmed rows above; the pt-BR model for this shape is MS's own "fila de impressão" / "fila de trabalho" ·
-  confirmed. **Supersedes "Fila de transferências"**, which was correct only while the window was called the "Transfer
-  queue": the English widened from "transfer" to the category word because the window lists deletes, trashes, renames,
-  and folder/file creations too, and "transfer" already means copy-or-move one level down (the progress dialog, the
-  transfer driver). `queue.windowTitle`, `commands.queueShow.label`, and the three `fileOperations.transferProgress.*`
-  toasts all carry the same string, so the window, the View menu item, and the command palette entry read identically.
-- ⚠️ **The pair "Fila de operações" (present) / "Registro de operações" (past) sits in one View menu block** and shares
-  the head noun on purpose. Never rename one without the other.
-- **transferência stays the narrow word.** It's still correct for the copy/move job itself
-  (`fileOperations.transferProgress.pauseAria` "Pausar esta transferência", `stallUnknown` "A transferência parou de
-  avançar", `transferDialog.smbNativeNote`), and it must NOT come back as the queue's name. The rule: the progress
-  dialog talks about one transferência; the queue window talks about operações.
-- waiting / queued (status) · **Aguardando** · Double Commander pt-BR ("Aguardando acesso à origem do arquivo",
-  "Aguardando resposta do usuário") · high. The queued/waiting row status and the "waiting its turn" toast
-- background / send to background (running transfer) · **segundo plano** / **em segundo plano** · Total Commander pt-BR
-  (`1185="Download em segundo plano (fila separada)"`, "Work in background"→"em segundo plano") · confirmed. Process
-  sense, NOT MS's wallpaper-sense "tela de fundo". `fileOperations.transferProgress.queueTooltip/backgroundedToast`
-- double-click · noun **clique duplo**, verb **clicar duas vezes** / imperative **Clique duas vezes** · shipped pt-BR
-  catalog: network-browser tooltips use the verb ("Double-click to connect…"→"Clique duas vezes para conectar…",
-  `fileExplorer.network.browser.tooltip.doubleClickToConnect/credsStored/requiresLogin`); the viewer body uses the noun
-  ("double-click the file"→"dê um duplo clique no arquivo", `viewer.binaryWarning.body`) · confirmed. Use the noun
-  "clique duplo" in labels/titles, the verb form in running text.
-- parent folder (navigation sense) · **pasta superior** · `commands.navParent.label` "Go to parent folder"→"Ir para a
-  pasta superior" (the navigate-up action) · confirmed. Use **pasta superior** for the go-up navigation concept;
-  `errors.json` uses "pasta principal" in error suggestions, but the navigation action is consistently "pasta superior".
-  Note: external pile evidence actually favors **pasta pai** (MS terminology BRA-tagged; GNOME Nautilus "Parent
-  folder"→"Pasta pai"; Xfce Thunar alt; macOS Finder's nearest is the context-bound "Ir para a Pasta Original"). We keep
-  **pasta superior** anyway for catalog consistency — switching would fork terminology (menu "pasta superior" vs new
-  settings/toast "pasta pai") and needs a full-catalog migration, not a piecemeal change. Used in the
-  doubleClickPaneNavigatesToParent settings + `doubleClickHint` body.
-- navigate (verb) · **navegar** · MS terminology (BRA); rendered "navegar até {path}" in
-  `fileExplorer.breadcrumb.navigateTooltip` · high
-- pane background (empty backing area of a pane) · **fundo do painel** (the empty space: **espaço vazio**) ·
-  descriptive; no direct pile source (Double Commander's "empty part of file view" is untranslated in pt-BR). MS's "tela
-  de fundo" (wallpaper) and "segundo plano" (process) are wrong senses; "fundo do painel" reads naturally · tentative
-- hint (one-time tip) · **dica** · Total Commander pt-BR ("DICA:"); `doubleClickHint.*` and the seen-flag settings ·
-  high
-- row / file row · **linha** ("file row" → **linha de arquivo**) · MS terminology (BRA "row"→"linha"), Xfce Thunar ("by
-  one row"→"uma linha") · high. Used in `doubleClickPaneNavigatesToParent.description` ("not a file row"→"não uma linha
-  de arquivo") to contrast the pane background with a clickable file row.
-- too large (for destination) · **muito grande** ("File too large for this drive"→"Arquivo muito grande para este
-  disco"; plural "muito grandes") · GNOME Nautilus pt-BR ("File too Large for Destination"→"Arquivo muito grande para
-  destino"), and "muito grande" outnumbers "grande demais" 10:1 in the pile · high. Used in
-  `errors.write.filesTooLargeForFilesystem.*`.
-- larger than (size comparison) · **maior(es) que** · GNOME Nautilus pt-BR ("Files bigger than 4.3 GB cannot be copied
-  onto a FAT filesystem."→"Arquivos maiores que 4,3 GB não podem ser copiados num sistema de arquivos FAT.") · high
-- formatted as (filesystem) · **formatado como** · standard pt-BR; macOS Disk Utility uses the noun "Formato"/"Formato:"
-  for the format field; the verb phrase "formatado como FAT32" is the natural rendering · high.
-  `errors.write.filesTooLargeForFilesystem.message.*`
-- store (files) · **armazenar** · macOS Finder ("Store your Desktop & Documents folders…"→"Armazene as pastas…") · high.
-  Used for "can't store files larger than" → "não pode armazenar arquivos maiores que".
-- FAT32 / exFAT (filesystem formats) · **FAT32** / **exFAT** (kept verbatim) · macOS Finder + MS terminology both keep
-  them verbatim (MS tbx term ids 153889/153903 = "FAT32"; Finder "ExFAT") · confirmed. Don't translate; source EN
-  capitalization ("FAT32", "exFAT") is preserved.
-
-### Paste-clipboard-as-file terms (paste-as-file feature)
-
-Cmdr can paste non-file clipboard content (text, an image, a PDF) into the current folder as a new file; this batch
-added the setting and the confirmation toast.
-
-- paste (verb) · **Colar** · macOS Finder (`N49_V1`/`ME3` "Paste" → "Colar", key-based EN→pt-BR) · confirmed. Reuses the
-  glossary copy/paste/cut row; clipboard = **área de transferência**.
 - Do nothing (behavior option) · **Não fazer nada** · standard pt-BR option label; no direct pile source (file managers
-  don't carry it) · high. Radio-button label in `settings...pasteClipboardAsFile.opt.doNothing`.
+  don't carry it) · high. Radio-button label in `settings.fileOperations.pasteClipboardAsFile.opt.doNothing`.
 - Create file / Create and rename (behavior options) · **Criar arquivo** / **Criar e renomear** · shipped pt catalog
-  ("Criar arquivo em…", "Criar novo arquivo") + rename→**Renomear** (glossary) · high.
-  `settings...pasteClipboardAsFile.opt.createFile/createFileAndRename`.
+  ("Criar arquivo em…", "Criar novo arquivo") + rename→**Renomear** · high.
+  `settings.fileOperations.pasteClipboardAsFile.opt.createFile`/`createFileAndRename`.
 - "Pasted clipboard {image/PDF/text} as {filename}" (toast) · **{kind, select, image {Imagem colada} pdf {PDF colado}
   other {Texto colado}} da área de transferência como {filename}** · the participle (colada/colado) is placed inside
   each select branch so it agrees with the noun's gender, keeping `{filename}` a gender-agnostic uncontrolled insert ·
-  high. `fileExplorer.clipboard.pastedAsFile`. The toast's Settings button (`pastedAsFileSettings`) → **Ajustes**
-  (glossary Settings-section term).
+  high. `fileExplorer.clipboard.pastedAsFile`. The toast's Settings button (`pastedAsFileSettings`) → **Ajustes**.
 
-### Archive-browsing terms (archive-browsing feature)
+## Navegar em arquivos compactados (`settings.archives.*`, `fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.archiveTitle`/`archiveMessage`, `queue.row.label`)
 
-Cmdr browses zip/tar/7z archives like folders; this batch added the settings, menu, error, and warning strings for it.
+Cmdr browses zip/tar/7z archives like folders.
 
 - archive (a zip/tar/7z browsed like a folder) · **arquivo compactado** · Total Commander pt-BR (Cmdr's two-pane
   lineage; keys 98-190 render the archive as "arquivo compactado", e.g. 160 "Esta função não pode ser usada com arquivos
-  compactados!", 165 "Erro no arquivo compactado"), macOS Finder ("Arquivo comprimido"/"Arquivo compactado"), AND
-  already used in the shipped pt catalog (`settings...zoomResetHint`-adjacent viewer setting: "imagem, PDF, arquivo
-  compactado ou outro arquivo binário") · high. Covers zip/tar/7z generically. Note the unavoidable double-"arquivo"
+  compactados!", 165 "Erro no arquivo compactado"), macOS Finder ("Arquivo comprimido"/"Arquivo compactado"), and the
+  shipped viewer setting ("imagem, PDF, arquivo compactado ou outro arquivo binário") · high. Covers zip/tar/7z
+  generically. Note the unavoidable double-"arquivo"
   when "file" (arquivo) and "archive" (arquivo compactado) co-occur in one sentence — reads naturally, kept. Used across
   `settings.archives.*`, `fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.archive*`,
   `fileExplorer.archive.useTransferToCopyOut`, `fileOperations.delete.archiveWarning*`,
@@ -272,28 +56,44 @@ Cmdr browses zip/tar/7z archives like folders; this batch added the settings, me
 - Editing archive (queue.row.label arm, changing a zip's entries) · **Editando arquivo compactado** · gerund matching
   the sibling arms (Copiando/Movendo/…) · high
 
-### Reconciliation notes
+## Apagar, nunca Excluir (`fileOperations.delete.*`, `commands.fileDelete*`, `ai.local.delete*`, `settings.mediaIndex.clip.delete*`, `settings.mediaIndex.reclaim.*`, `transfer.delete`)
 
-- **delete = Apagar (macOS Finder term).** The file-delete action/command is **Apagar** / **Apagar permanentemente**
-  across `fileOperations.json`, `commands.json`, `fileExplorer.json`, and the `transferDialog` `select`
-  `delete {Apagar}` branch, matching macOS pt-BR Finder. "Mover para o Lixo" stays for the trash variant. Don't
-  reintroduce the Windows-influenced "Excluir" for the delete action. Two non-action senses correctly keep "excluir":
-  query-scope **exclude** (`queryUi.scope.hint`, filter-out, not delete) and the AI-model deletion in `ai.json`
-  (separate domain). "apagar a senha" (clearing a credential, `fileExplorer.network.deletePasswordFailed`) is a
-  different sense, already correct.
+- **delete = Apagar (macOS Finder term; Finder pt-BR has zero "Excluir").** The delete action and command is **Apagar**
+  / **Apagar permanentemente** across `fileOperations.json`, `commands.json`, `fileExplorer.json`, and the
+  `transferDialog` `select` `delete {Apagar}` branch. "Mover para o Lixo" stays for the trash variant. The noun is
+  **apagamento** (`transfer.delete` "Apagamento concluído", the failure toast's "o apagamento", `queue.empty.body`).
+- **One verb for every delete, files or stored data.** Deleting the local AI model (`ai.local.delete*`), the
+  semantic-search model (`settings.mediaIndex.clip.delete*`), and leftover index entries
+  (`settings.mediaIndex.reclaim.*`) also say **Apagar**. An earlier split kept "Excluir" for the model as a "separate
+  domain", which left one dialog saying "Excluir modelo de IA?" over an "Apagar" button; don't reintroduce it.
+- **excluir survives only for exclude**: the query-scope exclude (`queryUi.scope.hint`) and excluded folders
+  (`settings.mediaIndex.excludedFolders.label`, `menu.mediaIndex.addFolderExcluded`). "apagar a senha" (clearing a
+  credential, `fileExplorer.network.deletePasswordFailed`) is a different sense, already correct.
 
-### Error-copy phrasings (errors.json, for cross-file consistency)
+## Frases de erro (`errors.*`)
 
 - "Here's what to try:" · **"Veja o que tentar:"**
 - "Navigate here again to retry." · **"Navegue até aqui de novo para tentar outra vez."**
 - "couldn't / failed" titles · never a bare "Erro/Falhou"; use **"Não foi possível …"** or **"A operação de {Verb} não
   foi possível"** (no-bare-error voice rule)
 
-### UI section names (for cross-file consistency)
+## A pasta superior (`commands.navParent.label`, `settings.behavior.doubleClickPaneNavigatesToParent.*`, `fileExplorer.doubleClickHint.body`, `errors.listing.notFound.suggestion`)
+
+- **parent folder → `pasta superior`** · `commands.navParent.label` "Go to parent folder" → "Ir para a pasta superior"
+  (the navigate-up action) · high. The external pile actually favors **pasta pai** (MS terminology BRA; GNOME Nautilus
+  "Parent folder" → "Pasta pai"; macOS Finder's nearest is the context-bound "Ir para a Pasta Original"). The catalog
+  keeps **pasta superior** anyway: switching would fork the menu, the settings, and the toasts, and needs a
+  full-catalog migration, not a piecemeal change.
+- The error suggestions that once said **pasta principal** ("main folder", the wrong meaning) say **pasta superior**
+  too (`errors.listing.notFound.suggestion`, `.pathNotFoundErrno.suggestion`,
+  `errors.write.permissionDenied.suggestion.deleteMac`/`.deleteOther`).
+- Not the top of a volume: that is **a pasta raiz de um volume** (§ Recusas de renomear e criar).
+
+## Nomes de seções da interface (`settings.section.*`, `fileOperations.transferDialog.*`, `fileOperations.shared.scanningTooltip`)
 
 - Function keys (bottom bar) · **Teclas de função**
 - File list · **Lista de arquivos**
-- Volume switcher · **alternador de volumes** (running text)
+- Volume switcher · **seletor de volumes** (the visible label, `shortcuts.scope.volumeChooser`)
 - Settings sections (settings.json): Appearance→**Aparência**, Behavior→**Comportamento**, File operations→**Operações
   de arquivo**, File systems→**Sistemas de arquivos**, Search→**Busca**, Viewer→**Visualizador**,
   Developer→**Desenvolvedor**, Advanced→**Avançado**, License→**Licença**, Keyboard shortcuts→**Atalhos de teclado**,
@@ -309,8 +109,6 @@ Cmdr browses zip/tar/7z archives like folders; this batch added the settings, me
   concluída", "Download concluído") when a completion phrase is needed.
 - Action (what a control chooses; screen-reader label `fileOperations.transferDialog.operationAria`) · **Ação** · macOS
   Finder (6 hits), MS terminology (BRA) · confirmed.
-- preset (value in a settings-picker dropdown) → predefinição; "back to presets" → "Voltar às predefinições" · Microsoft
-  terminology pt-BR ("indexing preset" → "predefinição da indexação"), macOS pt-BR print dialog "Predefinições" · high
 - "doesn't exist yet" (destination not-yet-created warning) · **ainda não existe** · standard pt-BR; pile has "A pasta
   de destino não existe!" (file-manager) and "não existe. Deseja criá-lo?" · high.
   `fileOperations.transferDialog.targetWillBeCreated{Copy,Move}`
@@ -322,12 +120,12 @@ Cmdr browses zip/tar/7z archives like folders; this batch added the settings, me
   `Criando arquivo` · pt-BR gerund style of the sibling arms (NOT the pt-PT "A criar"/"A mudar o nome" Nautilus shows);
   settled `Renomear`→gerund, `pasta`/`arquivo` · high
 
-### Archive-password dialog terms (encrypted-zip unlock modal, `fileOperations.archivePassword.*`, 2026-07-08)
+## Archive-password dialog terms (encrypted-zip unlock modal, `fileOperations.archivePassword.*`)
 
 - password-protected → `protegido por senha` · TC/DC pt-BR phrasing · high. Body: "… está protegido por senha."
 - password (noun) → `Senha` · macOS/MS pt-BR · high.
 - unlock (button + verb) → `Desbloquear` · macOS AppKit ("Desbloquear") · high. Verb form "desbloqueá-lo".
-- archive (the `{name}` head / input label) → `arquivo compactado` · settled pt glossary · high. Input aria-label "Senha
+- archive (the `{name}` head / input label) → `arquivo compactado` · settled in `terms.json` · high. Input aria-label "Senha
   do arquivo compactado".
 
 Settled while translating the Compress feature:
@@ -347,22 +145,21 @@ Settled while translating the Compress feature:
   `.faster`.
 - smaller (slider high end, level 9) → `Menor` · pairs with `Mais rápido`; marks the smaller output file · high.
   `.smaller`.
-- No `sameAsSourceJustification` needed: all values differ from English.
 
-### Operation-log terms (Operation log dialog, `operationLog.*` + `commands.logOperationLog.*`, 2026-07-09)
+## Operation-log terms (Operation log dialog, `operationLog.*` + `commands.logOperationLog.*`)
 
 - operation log → `Registro de operações` · "log" → **registro** across the pt catalog (changelog → "registro de
   alterações", `errorReporter.*` "arquivos de registro"); "operation" → operação · high. Used for
   `operationLog.dialog.title` and `commands.logOperationLog.label`.
 - roll back / rollback (undo a logged operation) → `Reverter` (verb) / `Revertida` (operation, fem participle) /
-  `Revertido` (per-item outcome, masc participle) / `Revertendo` (in progress) · glossary "Rollback (transfer) →
+  `Revertido` (per-item outcome, masc participle) / `Revertendo` (in progress) · termbase "Rollback (transfer) →
   Reverter", extended to the past participle agreeing with its subject (operação fem vs item masc) · high. "Can(’t) roll
   back" → "Pode / Não pode ser revertida" (the operation is the subject); "Partly rolled back" → "Parcialmente
   revertida"; `commands.logOperationLog.description` "roll them back" → "reverta-as".
 - operation-summary verbs (past-tense log lines) → `Copiou` / `Moveu` / `Apagou` / `Renomeou` / `Criou` / `Comprimiu` /
   `Editou` / `Extraiu` · 3rd-person preterite (implied subject supplied by the initiator chip Você/Cliente de IA/Agente,
-  all taking the same 3rd-person form) · high. delete = **Apagou** (matching the glossary `Apagar` delete term, not
-  "Excluir"); trash arm keeps "para o Lixo"; folder/file/archive nouns per glossary (pasta / arquivo / arquivo
+  all taking the same 3rd-person form) · high. delete = **Apagou** (matching the termbase `Apagar` delete term, not
+  "Excluir"); trash arm keeps "para o Lixo"; folder/file/archive nouns per the termbase (pasta / arquivo / arquivo
   compactado). `operationLog.summary.*`.
 - initiator provenance chips → `Você` (You) / `Cliente de IA` (AI client) / `Agente` (Agent) · pt-BR user address (você)
   - AI → **IA** (`ai.json` throughout) · high. `operationLog.initiator.*`.
@@ -370,10 +167,10 @@ Settled while translating the Compress feature:
   (didn’t finish) / `Cancelado` (canceled) · matched exactly to `queue.row.status` (queued/running/done/cancelled/failed
   arms) for cross-file consistency; "didn’t finish" avoids the banned bare "Falhou" · confirmed.
   `operationLog.status.*`.
-- per-item outcome → `Concluído` (done) / `Ignorado` (skipped, glossary Skip → Ignorar) / `Não foi possível concluir`
+- per-item outcome → `Concluído` (done) / `Ignorado` (skipped, termbase Skip → Ignorar) / `Não foi possível concluir`
   (didn’t finish) / `Revertido` (rolled back) · high. `operationLog.outcome.*`.
 
-### Ask Cmdr terms (read-only AI chat rail, `askCmdr.*` + `settings.askCmdr.*` + `commands.askCmdrToggle.*`, 2026-07-13)
+## Ask Cmdr terms (read-only AI chat rail, `askCmdr.*` + `settings.askCmdr.*` + `commands.askCmdrToggle.*`)
 
 - chat (a conversation thread with the assistant) · **chat** (kept verbatim, masculine noun, plural **chats**) ·
   Microsoft terminology pt-BR (`instant messaging` → id 2046699 "chat", and a direct `chat`→`chat` entry, both
@@ -389,7 +186,7 @@ Settled while translating the Compress feature:
 - archive a chat / archived (hide a chat from the active list, not the zip-archive sense) · **arquivar** (verb) /
   **Arquivado** (status) / **Desarquivar** (restore) · Microsoft terminology pt-BR (`archive`→`arquivar` verb, id 14250
   BRA; `Archived`→`Arquivado` status, id 2265623 BRA) · confirmed for arquivar/Arquivado; Desarquivar is the standard
-  morphological antonym (des- prefix), not directly in the pile · high. Distinct sense from the glossary's "archive (a
+  morphological antonym (des- prefix), not directly in the pile · high. Distinct sense from the termbase's "archive (a
   zip/tar/7z browsed like a folder) → arquivo compactado" entry above; no clash because this is a verb applied to a chat
   session, never co-occurring with the noun sense in the same string.
   `askCmdr.sessions.archive/unarchive/archivedBadge`.
@@ -417,7 +214,7 @@ Settled while translating the Compress feature:
   shipped in `ai.local.notInstalled` ("runs entirely on your device"→"roda inteiramente no seu dispositivo"); "grátis"
   is standard pt-BR for zero-cost · high. `askCmdr.cost.free`.
 - Log AI model calls (Advanced-settings toggle, `settings.advanced.logLlmCalls.*`) · **Registrar chamadas do modelo de
-  IA** · "log"→**registro/registrar** (glossary "changelog"/"crash report" rows), "AI model" = the LLM the user's AI
+  IA** · "log"→**registro/registrar** (termbase "changelog"/"crash report" rows), "AI model" = the LLM the user's AI
   features talk to → **modelo de IA** · high. Referenced loosely (not as an exact string match) from
   `ai.cloudConsent.logsNote` as "o registro de chamadas de IA".
 - "Checking X" tool-status verb (used identically across three distinct Ask Cmdr tool calls: reading the current view,
@@ -426,36 +223,33 @@ Settled while translating the Compress feature:
   doing/gerund + done/preterite pattern already established in `queue.row.label` and `operationLog.summary.*` · high.
   `askCmdr.tool.appState.*`, `askCmdr.tool.listVolumes.*`, `askCmdr.tool.folderImportance.*`.
 
-### Network image-indexing terms (opt a network drive into image-content indexing, `settings.mediaIndex.networkVolumes.*` + `search.imageResults.networkOff/paused`, 2026-07-13)
+## Network image-indexing terms (opt a network drive into image-content indexing, `settings.mediaIndex.networkVolumes.*` + `search.imageResults.networkOff/paused`)
 
-- network drive · **disco de rede** · glossary drive/disk = **disco** (macOS Finder) + "de rede" modifier (the standard
+- network drive · **disco de rede** · termbase drive/disk = **disco** (macOS Finder) + "de rede" modifier (the standard
   pt-BR network qualifier: 137 "de rede" hits in the pile, incl. "discos de rede", "servidor de rede"; MS's "unidade de
   rede" not used, since Cmdr follows macOS "disco") · high. Used across the `networkVolumes.*` list and the two
   `search.imageResults` network strings.
 - photo (vs "image") · **foto** / plural **fotos** · macOS pile (Fotos/foto/fotos, 90+ hits) · confirmed. The English
   deliberately says "photos" in the network strings (vs "images"/**imagens** in the on-toggle `enabled.*` row); pt keeps
   the same split (fotos vs imagens). Participles agree with fem **foto**: "foto indexada" / "fotos indexadas".
-- background (image indexing runs in the background) · **em segundo plano** · glossary "background (running transfer)"
+- background (image indexing runs in the background) · **em segundo plano** · termbase "background (running transfer)"
   row, reused for the indexing-pass sense (20 pile hits) · confirmed. `networkVolumes.description`.
 - always index (mark a rarely-browsed drive/folder to index regardless) · "Always index this drive" → **Sempre indexar
   este disco**; "Always-index drives/folders" (internal labels) → **Discos/Pastas para sempre indexar** · standard
-  pt-BR; **indexar** per the glossary Indexing row · high. `networkVolumes.alwaysLabel/alwaysAria`,
+  pt-BR; **indexar** per the termbase Indexing row · high. `networkVolumes.alwaysLabel/alwaysAria`,
   `alwaysIndexVolumes/Folders.label`.
 - photo archive (a rarely-browsed photo collection, NAS-archive case) · **acervo de fotos** · standard pt-BR for a
   collection/library; chosen over "arquivo de fotos" to avoid the file/archive ("arquivo") ambiguity · high.
   `networkVolumes.alwaysHelp`.
-- reconnect / disconnect (a network drive) · **reconectar** / **desconectar** · pile (reconectar 2 hits; glossary
+- reconnect / disconnect (a network drive) · **reconectar** / **desconectar** · pile (reconectar 2 hits; termbase
   Disconnect → Desconectar) · high. Status "Paused, resumes when this drive reconnects" → "Pausado, retoma quando este
-  disco se reconecta" (pause status **Pausado** + resume **retoma** per the glossary pause/resume rows).
+  disco se reconecta" (pause status **Pausado** + resume **retoma** per the termbase pause/resume rows).
   `networkVolumes.paused`, `search.imageResults.paused`.
 - "while you''re not busy" (gentle-reading reassurance) · **quando o Mac está ocioso** · restructured to agree with the
   object (o Mac), not the user, per the gender/inclusive-language rule (sidesteps the gendered "ocupado") · high.
   `networkVolumes.intro`.
-- No `sameAsSourceJustification` needed: all 19 values differ from English.
 
-### Image-indexing depth and similar-image search terms (`settings.mediaIndex.importanceThreshold.*` +
-
-`settings.mediaIndex.progress.*` + `search.imageResults.findSimilar/similarTo/backToResults/similarEmpty`, 2026-07-13)
+## Image-indexing depth and similar-image search terms (`settings.mediaIndex.importanceThreshold.*` + `settings.mediaIndex.progress.*` + `search.imageResults.findSimilar/similarTo/backToResults/similarEmpty`)
 
 - similar (image-similarity search feature) · **semelhante** · standard pt-BR term for visual/content similarity
   (GNOME/Nautilus-style file-manager usage); distinct from "similar" used loosely in running text elsewhere in the
@@ -465,31 +259,30 @@ Settled while translating the Compress feature:
 - covers (a slider level covers N images/folders) · **cobre** · reuses the exact verb already shipped in
   `settings.mediaIndex.enabled.description` ("Por enquanto cobre discos locais") · confirmed. `previewCounting` "Working
   out how much this covers…" → "Calculando quanto isso cobre…".
-- skipped (junk folders never indexed) · **ignorados** · reuses the glossary Skip → Ignorar row · high. `floor` "Junk
+- skipped (junk folders never indexed) · **ignorados** · reuses the termbase Skip → Ignorar row · high. `floor` "Junk
   like node_modules and system caches is always skipped." → "Itens descartáveis como node_modules e caches do sistema
-  são sempre ignorados." ("Junk" avoids **Lixo**, since that word is reserved for the Trash noun in this glossary;
+  são sempre ignorados." ("Junk" avoids **Lixo**, since that word is reserved for the Trash noun in this termbase;
   "descartável" sidesteps the collision.)
 - This Mac (local-disk label in the per-drive indexing progress list) · **Este Mac** · matches Apple Finder sidebar
   convention · high. `progress.local`.
-- No `sameAsSourceJustification` needed: all 22 values differ from English.
 
-### Drive-scan run-kind headers and drive-scan noun (`indexing.run.*` + `indexing.enrich.queued` + `settings.mediaIndex.importanceThreshold.waitingForDriveIndex`, 2026-07-18)
+## Drive-scan run-kind headers and drive-scan noun (`indexing.run.*` + `indexing.enrich.queued` + `settings.mediaIndex.importanceThreshold.waitingForDriveIndex`)
 
 - drive scan (the noun, a full walk of the drive) · **varredura (do disco)** · aligns with the shipped
   `indexing.step.findFilesFirstScan` "Primeira varredura"; **varredura** is the drive-indexing scan noun (distinct from
-  the file-operation "Analisar/Análise" sense in the glossary Terms, which is transfer/delete pre-counting) · high.
+  the file-operation "Analisar/Análise" sense in the termbase Terms, which is transfer/delete pre-counting) · high.
 - First full scan · **Primeira varredura completa** · run-kind header; extends the "Primeira varredura" precedent with
   **completa** for "full" · high. `indexing.run.firstScan`.
 - Full rescan · **Nova varredura completa** · a fresh full re-walk; "nova ... completa" reads better than a literal
   "re-" prefix · high. `indexing.run.rescan`.
-- Quick update (replay recorded changes, the light path) · **Atualização rápida** · noun form of the glossary Refresh →
+- Quick update (replay recorded changes, the light path) · **Atualização rápida** · noun form of the termbase Refresh →
   **Atualizar** row; matches `indexing.step.updateIndex` "Atualizar o índice" · high. `indexing.run.update`.
 
-### Bulk-rename review terms (`askCmdr.renameReview.*` + `askCmdr.tool.proposeRenamePlan.*`, 2026-07-20)
+## Bulk-rename review terms (`askCmdr.renameReview.*` + `askCmdr.tool.proposeRenamePlan.*`)
 
 The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows or denies row by row.
 
-- rename (the noun: one proposed rename, a rename plan) · **renomeação** · noun of the glossary `rename → Renomear` row;
+- rename (the noun: one proposed rename, a rename plan) · **renomeação** · noun of the termbase `rename → Renomear` row;
   already shipped in `askCmdr.renameReview.overwriteTooltip` ("plano de renomeação") · high. Feminine, so counts and
   participles agree: "# renomeação permitida" / "# renomeações permitidas". ❌ Never "alteração de nome" (a pt-PT-shaped
   circumlocution that also breaks the parallel with the `Renomear` verb).
@@ -503,7 +296,7 @@ The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows 
   terminology pt-BR (Allow → "Permitir", Deny → "Negar", both BRA) · confirmed for Permitir, high for Negar (macOS has
   no Deny label; its permission dialogs say "Não Permitir", which is Don't-Allow, not Deny). Chosen over "Recusar" (=
   decline) because the pair is an approval gate, not an invitation.
-- Allow all / Deny all · **Permitir tudo** / **Negar tudo** · the shipped "tudo" pattern for a bare all-object (glossary
+- Allow all / Deny all · **Permitir tudo** / **Negar tudo** · the shipped "tudo" pattern for a bare all-object (termbase
   `Selecionar tudo` / `Desmarcar tudo`; macOS "Remover Tudo"; Total Commander "Substituir tudo") · high. "tudo" also
   sidesteps gender agreement with the implied feminine "renomeações".
 - New name / Current name (table column headings) · **Novo nome** / **Nome atual** · **Novo nome** is unanimous across
@@ -524,13 +317,12 @@ The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows 
 - rename plan (the proposal the tool prepares) · **plano de renomeação** · compositional on the renomeação row · high.
   `askCmdr.tool.proposeRenamePlan.*` keeps the doing/gerund + done/preterite tool-status pattern ("Preparando" /
   "Preparou"), same as the `Conferindo`/`Conferiu` row above.
-- No `sameAsSourceJustification` needed: all 28 values differ from English.
 
-### Image-index status and scope terms (`fileExplorer.imageIndex.*` + `settings.mediaIndex.scope/chosenFolders.*` + `askCmdr.tool.imageFacts/searchPhotos.*`, 2026-07-20)
+## Image-index status and scope terms (`fileExplorer.imageIndex.*` + `settings.mediaIndex.scope/chosenFolders.*` + `askCmdr.tool.imageFacts/searchPhotos.*`)
 
 - image search (the feature, when named in running text) · **busca de imagens** · the catalog's term wherever the
   feature is named (`fileExplorer.imageIndex.drive.off` = "A busca de imagens está desativada para este disco.") and the
-  glossary search → **busca** row · confirmed. ❌ Not "pesquisa de imagens" when naming the feature. The adjective
+  termbase search → **busca** row · confirmed. ❌ Not "pesquisa de imagens" when naming the feature. The adjective
   **pesquisável** stays where it already ships (`settings.mediaIndex.reclaim.line`, `progress.kept`,
   `chosenFolders.help`): it's a property of the indexed item, not the feature name.
 - indexing (in progress) · **Indexando** · pt-BR gerund, matching every sibling progress label (Copiando/Movendo/
@@ -551,14 +343,13 @@ The Ask Cmdr rename-proposal modal: a table of proposed renames the user allows 
 - covered (a folder is / isn't inside the indexed scope) · **coberta** ("may or may not be covered" → "pode ou não estar
   coberta") · reuses the shipped `settings.mediaIndex.enabled.description` verb "cobre" · confirmed.
 - "Reading what's in your photos" (the image-facts transparency tool line) · **Lendo / Leu o conteúdo das suas fotos** ·
-  photo → **foto** (glossary row) + the doing/gerund + done/preterite tool-status pattern · high. "o conteúdo das suas
+  photo → **foto** (termbase row) + the doing/gerund + done/preterite tool-status pattern · high. "o conteúdo das suas
   fotos" is deliberately explicit that image CONTENT is read; don't soften it to "suas fotos".
 - "you choose yourself" (gender-neutral restructure) · **por conta própria** · the gender rule bans a masculine-default
   user adjective, and "você mesmo" is exactly that; "por conta própria" is invariable · high.
   `settings.mediaIndex.scope.description`.
-- No `sameAsSourceJustification` needed: all 26 values differ from English.
 
-### Image-index status badge terms (`fileExplorer.imageIndex.*` + `settings.mediaIndex.showFileStatusIcons.*`, 2026-07-22)
+## Image-index status badge terms (`fileExplorer.imageIndex.*` + `settings.mediaIndex.showFileStatusIcons.*`)
 
 The small per-file/folder/drive overlay indicators showing image-search indexing state, plus the Settings toggle for the
 per-file badge.
@@ -567,69 +358,63 @@ per-file badge.
   1354385; reinforced by "Selo digital", "Selo do OneNote", "Selos em destaque") · high. Chosen over "distintivo" (reads
   as a police/ID badge) and "emblema" (heraldic). macOS localizes its own overlay badges only by their status meaning
   (AXBADGE keys carry no noun), so MS's "selo" is the authority. `settings.mediaIndex.showFileStatusIcons.*` ("status
-  badges" → "selos de status", status kept verbatim per the glossary `status` row).
+  badges" → "selos de status", status kept verbatim per the termbase `status` row).
 - indexed-state file tooltips agree with feminine **imagem** · the five `file.*` tooltips are subject-less in English
   ("Indexed", "Changed", "Not included"); pt picks feminine to agree with **imagem** and stay consistent with the
   folder/drive strings' "imagens indexadas" and the network row's "foto indexada". So: **Indexada**, **Modificada**,
   **incluída**, "indexada de novo" · high. `fileExplorer.imageIndex.file.indexed/pending/stale/failed/excluded`.
-- "Waiting to be indexed" · **Aguardando indexação** · glossary waiting/queued → **Aguardando** + indexing noun →
+- "Waiting to be indexed" · **Aguardando indexação** · termbase waiting/queued → **Aguardando** + indexing noun →
   **indexação** · high. `file.pending`.
 - "Changed since indexing; will be re-indexed" · **Modificada desde a indexação; será indexada de novo** · "changed"
-  reuses the glossary `modified` → **Modificado(a)**; "re-indexed" → "indexada de novo" (the glossary `Full rescan`
+  reuses the termbase `modified` → **Modificado(a)**; "re-indexed" → "indexada de novo" (the termbase `Full rescan`
   row's preference for "nova"/"de novo" over a literal "re-" prefix, e.g. "Navegue até aqui de novo") · high.
   `file.stale`.
 - "Couldn''t be indexed" (gentle, no error/failed words) · **Não foi possível indexar** · the no-bare-error voice ("Não
-  foi possível …", glossary error-copy phrasings) · high. `file.failed`.
+  foi possível …", termbase error-copy phrasings) · high. `file.failed`.
 - "Not included in image search" · **Não incluída na busca de imagens** · direct; busca de imagens per the image-search
   row above · high. `file.excluded`.
 - "still working" (drive indexing in progress) · **ainda em andamento** · matches the operation-log running status **Em
   andamento**; avoids a gerund clash with the sibling **Indexando** · high. `drive.indexing`.
-- "is off for this drive" (feature-off status) · **está desativada para este disco** · glossary Turn on/off → status
+- "is off for this drive" (feature-off status) · **está desativada para este disco** · termbase Turn on/off → status
   **está desativado/desativada** (fem here, agreeing with "a busca de imagens"); drive → **disco** · high. `drive.off`.
   `drive.ariaLabel` "Image search status for this drive" → "Status da busca de imagens deste disco".
 - ICU plurals (`folder.allIndexed/someIndexed`, `drive.indexing/done`) select on `{total}` and write pt's `one`/`many`/
   `other` branches. The **noun + participle** (imagem indexada / imagens indexadas) and any "Todas as" agreement go
   INSIDE the branches so total=1 reads "1 imagem indexada", not "Todas as 1 imagem"; `{doneText}`/"deste disco"/"; ainda
   em andamento." stay outside · high.
-- No `sameAsSourceJustification` needed: all 13 values differ from English.
 
-### Image-indexing settings restructure + Semantic-search card terms (`settings.mediaIndex.cards.*` + `settings.mediaIndex.progressSummary.title` + `settings.mediaIndex.semanticSearch.label` + `settings.mediaIndex.clip.notSupported/offButInstalled/deleteButton/deleting/deleteConfirmTitle/deleteConfirmBody/deleteFailed` + `fileExplorer.imageIndex.file.indexing`, 2026-07-22)
+## Image-indexing settings restructure + Semantic-search card terms (`settings.mediaIndex.cards.*` + `settings.mediaIndex.progressSummary.title` + `settings.mediaIndex.semanticSearch.label` + `settings.mediaIndex.clip.notSupported/offButInstalled/deleteButton/deleting/deleteConfirmTitle/deleteConfirmBody/deleteFailed` + `fileExplorer.imageIndex.file.indexing`)
 
 - search by description (the semantic-search feature, plainer name; card title stays "Busca semântica") · **busca por
-  descrição** (noun) / **Buscar fotos por descrição** (the toggle label) · glossary `search → busca/buscar` (macOS
+  descrição** (noun) / **Buscar fotos por descrição** (the toggle label) · termbase `search → busca/buscar` (macOS
   Finder, confirmed) + the feature-name rule ("❌ Not 'pesquisa …' when naming the feature") + the shipped card "Busca
   de imagens" · high. Keeps the whole card in the **busca** family (busca semântica / busca por descrição / busca por
-  palavra-chave / busca por etiqueta). ⚠️ The already-shipped `settings.mediaIndex.clip.ready` uses "pesquise … por
-  descrição" (a pre-existing minor divergence, unchanged sourceHash, left as-is); new strings follow the glossary
-  **buscar**.
-- delete the on-device semantic-search (CLIP) model · **Excluir** (button/title) / **Excluindo…** (in progress) · reuses
-  the model-deletion domain settled in `ai.local.deleteModel` = "Excluir modelo" / `deleteDialogTitle` = "Excluir modelo
-  de IA?" · confirmed. ❌ NOT the file-delete **Apagar**: the glossary reconciliation note reserves "Excluir" for the
-  on-device-model deletion sense (ai.json), and this CLIP model is the same domain. `deleteButton` "Delete model" →
-  "Excluir modelo"; `deleteConfirmTitle` → "Excluir o modelo de busca semântica?".
+  palavra-chave / busca por etiqueta), `settings.mediaIndex.clip.ready` included ("busque suas fotos por descrição").
+- delete the on-device semantic-search (CLIP) model · **Apagar** (button/title) / **Apagando…** (in progress) · the
+  one delete verb (§ Apagar, nunca Excluir), the same as `ai.local.deleteModel` = "Apagar modelo" · high.
+  `deleteButton` "Delete model" → "Apagar modelo"; `deleteConfirmTitle` → "Apagar o modelo de busca semântica?".
 - reclaim / frees (disk space when deleting the model) · **liberar** ("reclaim {size}" → "liberar {size}"; "This frees
   {size}" → "Isso libera {size}") · reuses the `settings.mediaIndex.reclaim.*` family already shipped with **liberar**
   ("liberar cerca de {size}") · confirmed.
 - "couldn''t be removed just now" (delete-model failure, no error/failed words) · **Não foi possível remover o modelo
-  agora.** · no-bare-error voice (glossary error-copy phrasings); "removed" → **remover** (mirrors the English variation
-  from "delete") · high. "Try again in a moment." → "Tente novamente em instantes." (Try again → glossary **Tentar
+  agora.** · no-bare-error voice (termbase error-copy phrasings); "removed" → **remover** (mirrors the English variation
+  from "delete") · high. "Try again in a moment." → "Tente novamente em instantes." (Try again → termbase **Tentar
   novamente**).
-- Enable indexing (card title, master on/off) · **Ativar indexação** · glossary Turn on → **Ativar** + Indexing noun →
+- Enable indexing (card title, master on/off) · **Ativar indexação** · termbase Turn on → **Ativar** + Indexing noun →
   **indexação**; matches the shipped `fileExplorer.navigation.driveIndex.menuEnable` "Turn on indexing…" → "Ativar
   indexação…" · confirmed. `cards.enable`.
 - Folders to index (card title) · **Pastas para indexar** · matches the shipped always-index label pattern "Pastas para
   sempre indexar" · high. `cards.folders`.
 - Indexing now (live-progress heading + the file badge tooltip; same sourceHash, same value) · **Indexando agora** ·
-  glossary indexing-in-progress → **Indexando** (pt-BR gerund) + **agora** for the "now" emphasis; avoids the pt-PT "A
+  termbase indexing-in-progress → **Indexando** (pt-BR gerund) + **agora** for the "now" emphasis; avoids the pt-PT "A
   indexar" · high. `progressSummary.title`, `fileExplorer.imageIndex.file.indexing`.
 - Apple silicon · kept verbatim · English `@key.description` says keep it; no pt-BR pile hit for a localized form.
   `clip.notSupported`.
 - keyword · **palavra-chave** · standard pt-BR · high. tag (Finder-tag search sense) · **etiqueta** · shipped pt catalog
   (`settings.listing.showTags` "etiquetas do Finder do macOS", `commands.tagsToggle*` "etiqueta") · confirmed.
   `deleteConfirmBody` "Keyword and tag search" → "A busca por palavra-chave e por etiqueta".
-- No `sameAsSourceJustification` needed: all 12 values differ from English.
 
-### Delete-dialog trash switch + transfer From/To group headings (`fileOperations.delete.trashSwitch`/`confirmDelete` + `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle`, 2026-07-23)
+## Delete-dialog trash switch + transfer From/To group headings (`fileOperations.delete.trashSwitch`/`confirmDelete` + `fileOperations.transferDialog.sourceGroupTitle`/`targetGroupTitle`)
 
 - "Move to trash" (switch in the delete dialog, on = Lixo, off = permanent delete) · **Mover para o Lixo** · macOS
   Finder pt-BR AL13/N153 verbatim; identical to this file's `transferDialog.titleVerbOnly` `other {Mover para o Lixo}`
@@ -642,7 +427,7 @@ per-file badge.
   destination CONTROLS ("Volume de destino", "Caminho de destino"); the headings take the light prepositional pair the
   English uses · high
 
-### Master drive-indexing switch terms (`fileExplorer.navigation.driveIndex.refusedIndexingOff`/`tooltipIndexingOff`/`menuIndexingOffNote` + `settings.indexing.masterOffNote`/`overriddenBadge`, 2026-07-25)
+## Master drive-indexing switch terms (`fileExplorer.navigation.driveIndex.refusedIndexingOff`/`tooltipIndexingOff`/`menuIndexingOffNote` + `settings.indexing.masterOffNote`/`overriddenBadge`)
 
 - drive (the storage device, ALL senses) · **disco** · macOS pt-BR Finder is unambiguous: "Discos rígidos", "Discos
   externos", and ~40 more `disco` values; the bare English "drive" appears there only inside brand names (iCloud Drive),
@@ -650,10 +435,8 @@ per-file badge.
   term-choice principle 2 puts Finder first · confirmed. Catalog frequency backs it: **disco 158 hits vs drive 38**, and
   every one of those 38 is a brand name (Google/Proton/iCloud Drive), an `errors.json` "drive de rede / externo /
   interno" collocation, or the `driveIndex.*` family. ❌ Never "unidade" for a disk in Cmdr.
-- **The `errors.json` pocket is closed** (2026-08-24): the ten "drive de rede / externo / interno / virtual" strings now
-  say `disco`, and so does `fileExplorer.unreachable.detailTimeout`. See § O bolsão de `drive` fechado at the end of
-  this file. The remaining `drive` hits in the catalog are brand names, the `{drive}` placeholder, and the
-  `driveIndex.*` key names.
+- The `errors.json` "drive de rede / externo / interno / virtual" strings say `disco` too (§ `drive` é sempre `disco`).
+  The remaining `drive` hits in the catalog are brand names, the `{drive}` placeholder, and the `driveIndex.*` key names.
 - Feature on/off, the ADJECTIVE · **ativado** / **desativado** · the whole catalog's settled pair
   (`settings.askCmdr. status.on/off`, `ai.translateError.off.title`, `settings.ai.provider.opt.off` = "Desativado",
   `fileExplorer.imageIndex.drive.off`, `shortcuts.list.disabledTooltip`) · confirmed. **ligado / desligado is reserved
@@ -665,22 +448,21 @@ per-file badge.
   renders inside the "Indexação de disco" page, directly under that toggle, so the full "de disco" is redundant · high.
 - Settings-path fragments quote the catalog verbatim: "Indexing > Drive indexing" → **Indexação > Indexação de disco**
   (`settings.section.indexing` + `settings.indexing.enabled.label`, both unchanged). "in Settings" → **nos Ajustes**
-  (glossary Settings row); the imperative takes the enclitic object, **Ative-a em …**, agreeing with the feminine "a
+  (termbase Settings row); the imperative takes the enclitic object, **Ative-a em …**, agreeing with the feminine "a
   indexação de disco" (matches the sibling `tooltipDisabled` "Ative-a para ver…").
 - "picks up where it left off" · **continua de onde parou** · standard pt-BR idiom; the reassurance that per-drive
   progress survives the master switch · high.
-- No `sameAsSourceJustification` needed: all five values differ from English.
 
-### pt-PT leak found and fixed (2026-07-25)
+## The bare `pt` pile is European (`settings.archives.compressionLevel.description`, `fileOperations.transferDialog.compressLevelCaption`)
 
-`settings.archives.compressionLevel.description` shipped European Portuguese ("ficheiro"/"ficheiros", plus the pt-PT
-"demoram mais tempo **a** comprimir"). Root cause is recorded above in the Compress row: it cites "pt Double Commander /
-Thunar / Nautilus" and notes "pt pile has no Total Commander" — that is the **bare `_ignored/i18n/pt/` folder, which is
-EUROPEAN**. The Brazilian set is `_ignored/i18n/pt-BR/`, and it _does_ have `total-commander/`. Now reads "geram um
-arquivo menor, mas demoram mais para comprimir. Vale para o comando Comprimir e para a cópia ou movimentação de arquivos
-para um zip." Re-check any other row whose sources name the bare `pt` pile.
+`settings.archives.compressionLevel.description` once shipped European Portuguese ("ficheiro"/"ficheiros", plus the
+pt-PT "demoram mais tempo **a** comprimir"), and `compressLevelCaption` carried the same progressive. The Compress rows
+above had cited "pt Double Commander / Thunar / Nautilus" and "pt pile has no Total Commander": that is the **bare
+`_ignored/i18n/pt/` folder, which is EUROPEAN**. The Brazilian set is `_ignored/i18n/pt-BR/`, and it _does_ have
+`total-commander/`. Both keys now read "demoram mais para comprimir". Re-check any row whose sources name the bare `pt`
+pile.
 
-## Índice do disco: a verificação de mudanças (2026-07-28)
+## Índice do disco: a verificação de mudanças (`indexing.run.*`, `indexing.step.*`)
 
 - **"Checking for changes" (run-kind header) → `Verificação de mudanças`** · nominal phrase matching the sibling headers
   (`Primeira varredura completa`, `Atualização rápida`); `Verificando` is macOS pt-BR's checking verb (Finder BN9
@@ -691,7 +473,7 @@ para um zip." Re-check any other row whose sources name the bare `pt` pile.
   settled word for a full check (`tooltipCoalesced`: "a próxima varredura completa do Cmdr") and that string's closing
   `vai corrigir isso` · high.
 
-### Stalled-transfer notice terms (`fileOperations.transferProgress.close`/`stall*`, 2026-07-31)
+## Stalled-transfer notice terms (`fileOperations.transferProgress.close`/`stall*`)
 
 The copy/move dialog stops showing an ETA it no longer believes and explains the stall instead. Whole batch avoids
 "erro"/"falhou" (and any bare "Erro"), per the no-bare-error voice rule.
@@ -735,30 +517,43 @@ The copy/move dialog stops showing an ETA it no longer believes and explains the
   de operações tem os detalhes."); **arquivo de registro** is catalog-settled (`settings.json` "Abrir arquivo de
   registro", `errorReporter` "arquivos de registro") · confirmed. Keeping the head noun `arquivo de` is what separates
   the log file from the `registro de operações` feature; MS terminology's "arquivo de log" loses to catalog consistency.
-- No `sameAsSourceJustification` needed: all seven values differ from English.
 
-## Caminho copiado: a confirmação da área de transferência (`fileExplorer.clipboard.copiedPath`, 2026-08-05)
+## Caminho copiado: a confirmação da área de transferência (`fileExplorer.clipboard.copiedPath`)
 
 Uma chave: a linha do aviso informativo depois de ⌘⌥C. O caminho aparece abaixo, em linha própria e monoespaçada, então
 NÃO é um marcador dentro da frase: a frase termina em dois-pontos e precisa funcionar sem ele.
 
 - **"Copied the path, it's now on your clipboard:" → `Caminho copiado, agora está na área de transferência:`** ·
-  reutiliza `path → caminho` e `clipboard → área de transferência` do glossário (macOS "Área de Transferência") · high.
+  reutiliza `path → caminho` e `clipboard → área de transferência` do termbase (macOS "Área de Transferência") · high.
   O particípio inicial segue os avisos irmãos (`{countText} itens copiados`). Sem possessivo ("sua área de
   transferência"): só existe uma, e o macOS usa o artigo.
-- Sem `sameAsSourceJustification`: o valor difere do inglês.
 
-### Operation-queue rename (`queue.*` + `commands.queueShow.*` + `fileOperations.transferProgress.queue*`/`backgroundedToast`, 2026-08-08)
+## Operation-queue rename (`queue.*` + `commands.queueShow.*` + `fileOperations.transferProgress.queue*`/`backgroundedToast`)
 
-The queue window was renamed from "Transfer queue" to "Operation queue" in English, a meaning change: it lists deletes,
-trashes, renames, and folder/file creations too, not only transfers. Fourteen pt values widened with it. The head noun
-and the window name are in the main Terms list above (**operação** / **Fila de operações**, superseding "Fila de
-transferências"); the rest of the batch is below.
+The queue window is the "Operation queue", not a "Transfer queue": it lists deletes, trashes, renames, and folder/file
+creations too, and "transfer" already means copy-or-move one level down (the progress dialog, the transfer driver).
+
+- **operation → `operação`** (feminine, plural `operações`) · macOS Finder pt-BR is unanimous (40+
+  `LocalizableMerged.json` values: `NE1` "A operação não pode ser completada.", `NE82` "…outra operação está em
+  andamento…", `A17` "…algumas operações ainda estão em andamento."), MS terminology (ids 333922/87969/1381673, BRA),
+  Double Commander ("Operações de arquivos"), Total Commander (`5391` "Registro de Operações com Arquivos"), Nautilus
+  ("Todas as operações com arquivos foram concluídas") · confirmed.
+- **operation queue → `Fila de operações`**, composed from `fila` (Total Commander `4005` "&Fila", Double Commander
+  "Adicionar à fila", MS id 96569) and `operação`; MS's own "fila de impressão" is the model · confirmed. It replaced
+  "Fila de transferências". `queue.windowTitle`, `commands.queueShow.label`, and the three
+  `fileOperations.transferProgress.*` toasts carry the same string, so the window, the View menu item, and the palette
+  entry read identically.
+- ⚠️ **"Fila de operações" (present) and "Registro de operações" (past) sit in one View menu block** and share the head
+  noun on purpose. Never rename one without the other.
+- **transferência stays the narrow word** for the copy/move job itself (`fileOperations.transferProgress.pauseAria`
+  "Pausar esta transferência", `stallUnknown` "A transferência parou de avançar", `transferDialog.smbNativeNote`), and
+  never comes back as the queue's name. The progress dialog talks about one transferência; the queue window talks about
+  operações.
 
 - "Operations" (window heading + the list's screen-reader label) · **Operações** · the bare plural, matching the
   English's category-naming plural noun · confirmed. `queue.heading`, `queue.list.aria`.
 - The four per-row aria labels keep their settled verbs and only swap the object noun: **Pausar / Retomar / Cancelar /
-  Selecionar esta operação** · glossary pause→**Pausar**, resume→**Retomar**, Cancel→**Cancelar**, select→
+  Selecionar esta operação** · termbase pause→**Pausar**, resume→**Retomar**, Cancel→**Cancelar**, select→
   **Selecionar** · confirmed. `queue.row.pauseAria/resumeAria/cancelAria/selectAria`.
 - `commands.queueShow.label` dropped its "Mostrar" prefix, because the English label is now the bare window name and its
   `@key.description` requires the command palette entry, the View menu item, and the window title to be one string. So
@@ -772,16 +567,12 @@ transferências"); the rest of the batch is below.
   every downstream agreement in the surrounding strings survived the rename untouched: `queuedToast`'s "na frente desta
   … ela … Encontre-a", `backgroundedToast`'s "Encontre-a", and the toolbar's "Cancelar selecionadas" / "#
   selecionada(s)".
-- Regional-variant check run value by value against the style guide's pt-PT tell list (ficheiro, `estar a` + infinitive,
-  consoante, proclisis before an infinitive, Rever, alterar o nome, a dropped você): zero hits. The batch's Brazilian
-  markers are "gerencie" (not pt-PT "gira"), "rodando em segundo plano", and the retained "você".
-- No `sameAsSourceJustification` needed: all 14 values differ from English.
 
-### Progress-chip and failure-notice terms (`queue.row.dismiss*` + `queue.toolbar.dismissAll` + `queue.failureToast.*` + `queue.chip.*`, 2026-08-08)
+## Progress-chip and failure-notice terms (`queue.row.dismiss*` + `queue.toolbar.dismissAll` + `queue.failureToast.*` + `queue.chip.*`)
 
 Two new surfaces on top of the queue window: a corner progress chip (~80 px) previewing the background operation, and a
 failure notice (a ~360 px toast) plus a dismissible failed row. The head noun and the window name are settled in the
-main Terms list (**operação** / **Fila de operações**); this section only adds what those two surfaces needed.
+section above (**operação** / **Fila de operações**); this section only adds what those two surfaces needed.
 
 - dismiss (stop showing a notice or a finished-badly row; nothing is undone, retried, or deleted) · **Dispensar** · the
   pt catalog's own settled verb, five hits for the same concept before this batch (`ui.toast.dismissAria` "Dispensar
@@ -790,9 +581,8 @@ main Terms list (**operação** / **Fila de operações**); this section only ad
   `reloadToast.dismissTooltip` "Dispensar sem recarregar") · high. ❌ **Never MS terminology's `dismiss` → "ignorar"**
   (id 780443/1044462, BRA): **Ignorar is this catalog's Skip** (`transferProgress.conflictSkip`,
   `transferDialog.policySkip` "Ignorar todos"), so a Dismiss button labelled "Ignorar" would sit two rows from a Skip
-  button meaning something else. KDE Dolphin pt-BR's "Descartar lembrete" is the runner-up, and the two stragglers that
-  still said "Descartar" (`crashReporter.dialog.dismiss`, `lowDiskSpace.toast.closeTooltip`) now say `Dispensar` too.
-  `queue.row.dismiss`; the aria takes the sibling row shape, **Dispensar esta operação** (matching "Pausar / Retomar /
+  button meaning something else. KDE Dolphin pt-BR's "Descartar lembrete" is the runner-up, reconciled away everywhere
+  (`crashReporter.dialog.dismiss`, `lowDiskSpace.toast.closeTooltip` say `Dispensar` too). `queue.row.dismiss`; the aria takes the sibling row shape, **Dispensar esta operação** (matching "Pausar / Retomar /
   Cancelar / Selecionar esta operação").
 - Dismiss all (toolbar) · **Dispensar tudo** · parallel to the shipped `Pausar tudo` / `Retomar tudo`, and "tudo" is the
   catalog's settled bare-all-object pattern (`Selecionar tudo`, `Permitir tudo`), which also sidesteps agreement with
@@ -805,11 +595,11 @@ main Terms list (**operação** / **Fila de operações**); this section only ad
 - The eight action NOUNS behind those arms, each Tier-1 or catalog-settled: cópia (Finder `NE111` "concluir a cópia"),
   **movimentação** (Finder `MV2_V1` "Desfazer Movimentação de ^1", `LA17` "a movimentação ou cópia de um item"),
   **apagamento** (Finder `PW33` "Apagamento do Volume" and Localizable "até a conclusão do apagamento"), movimentação
-  para o Lixo, **renomeação** (glossary row; Nautilus pt-BR "Desfazer renomeação", TC `6601` "Renomeação em Lote"),
-  criação da pasta, criação do arquivo, edição do arquivo compactado · high. ⚠️ **apagamento is the delete NOUN**,
-  nominalizing the settled `Apagar`: it is what keeps the banned "exclusão" out of this family. The shipped
-  `queue.empty.body` still says "exclusões" (see the flag below).
-- "Show in operation queue" (the toast's button) · **Mostrar na fila de operações** · glossary `Show in Finder` →
+  para o Lixo, **renomeação** (termbase row; Nautilus pt-BR "Desfazer renomeação", TC `6601` "Renomeação em Lote"),
+  criação da pasta, criação do arquivo, edição do arquivo compactado · high. **apagamento is the delete NOUN**,
+  nominalizing the settled `Apagar`: it is what keeps the banned "exclusão" out of this family (`queue.empty.body` says
+  "apagamentos" too).
+- "Show in operation queue" (the toast's button) · **Mostrar na fila de operações** · termbase `Show in Finder` →
   "Mostrar no Finder" + the window name inflected the way the catalog already inflects it in running text
   (`transferProgress.queueTooltip` "gerencie na fila de operações", `backgroundedToast` "Encontre-a na fila de
   operações") · confirmed.
@@ -836,18 +626,8 @@ main Terms list (**operação** / **Fila de operações**); this section only ad
   reuses `fileOperations.transferProgress.etaRemaining` verbatim (and `queue.row.status` `paused` → **Pausado** when
   there's no honest countdown), so the chip and the progress dialog can't drift. Don't re-derive a second time-left
   phrasing for the chip.
-- Regional-variant check run value by value against the style guide's pt-PT tell list (ficheiro, `estar a` + infinitive,
-  consoante, proclisis before an infinitive, Rever, alterar o nome, a dropped você), plus U+2019 and double-space scans:
-  zero hits across all nine. Brazilian markers in the batch: **arquivo** (never ficheiro) in two toast arms, **Lixo**
-  (never Reciclagem), **renomeação** (never "alteração de nome"), and the pt-BR gerund labels the chip borrows from
-  `queue.row.label`.
-- No `sameAsSourceJustification` needed: all nine values differ from English.
-- ⚠️ Two nearby inconsistencies found while settling **Dispensar**, both out of this batch's scope:
-  `crashReporter.dialog.dismiss` and `lowDiskSpace.toast.closeTooltip` still render "Dismiss" as **Descartar**, against
-  the catalog's five "Dispensar"; and `queue.empty.body` still lists deletes as **exclusões**, against the settled
-  delete family (Apagar / Apagando / Apagou / apagamento). Worth one reconciliation pass each.
 
-### Standalone conflict-prompt terms (`fileOperations.operationConflict.context`/`pausedNote`, 2026-08-09)
+## Standalone conflict-prompt terms (`fileOperations.operationConflict.context`/`pausedNote`)
 
 The main window now hosts the name-clash prompt for a backgrounded operation, so a context line under the title
 `O arquivo já existe` names which operation is asking, and a quiet note explains why the rest of the queue stopped.
@@ -867,15 +647,11 @@ The main window now hosts the name-clash prompt for a backgrounded operation, so
   "Editando fotos.zip"), the no-destination arm stays generic with an article (**Editando um arquivo compactado**),
   where the queue row's bare label is article-less. Same settled verb/noun (`Editando` + `arquivo compactado`).
 - "Everything else is paused until you answer." · **Todo o resto está pausado até você responder.** · reuses the settled
-  status adjective **Pausado** (`queue.row.status` `paused`, glossary pause row); "até você responder" is the pt-BR
+  status adjective **Pausado** (`queue.row.status` `paused`, termbase pause row); "até você responder" is the pt-BR
   personal infinitive and keeps the explicit **você** (dropping it is a pt-PT tell) · high. Reassuring, no error/failed
   words.
-- Regional-variant check against the style guide's pt-PT tell list (ficheiro, `estar a` + infinitive, consoante,
-  proclisis before an infinitive, Rever, alterar o nome, a dropped você), plus U+2019 and double-space scans: zero hits.
-  Brazilian markers: the gerunds **Copiando / Movendo / Editando** (never "a copiar"), **arquivo compactado** (never
-  "ficheiro"), and the retained **você**.
 
-### Empty-queue button label (`fileOperations.transferProgress.background/backgroundAria`, 2026-08-09)
+## Empty-queue button label (`fileOperations.transferProgress.background/backgroundAria`)
 
 The progress dialog's one button in its second state: with an empty operation queue there's nothing to queue behind, so
 it names the action instead of the destination ("Background" / "Queue"; same click, same F2).
@@ -895,11 +671,8 @@ it names the action instead of the destination ("Background" / "Queue"; same cli
 - **WCAG 2.5.3 containment**: the aria contains the visible label as the substring "em segundo plano" (case-insensitive
   on the initial E, exactly the bar English sets with "Background" ⊂ "…in the background"). Never reword one of the two
   without re-checking the other.
-- Regional-variant check against the style guide's pt-PT tell list: zero hits; **rodando** (not pt-PT "a correr" / "está
-  a correr") is the Brazilian marker, matching the shipped `queueTooltip` and `backgroundedToast`.
-- No `sameAsSourceJustification` needed: both values differ from English.
 
-### Quit-gate dialog terms (`main.quit.*`, 2026-08-10)
+## Quit-gate dialog terms (`main.quit.*`)
 
 The modal Cmdr raises when the user quits while a copy, move, delete, trash, or archive edit is still going: title,
 reassurance body, a list of running operations, a live countdown, and two buttons. Terminology is anchored to the
@@ -911,7 +684,7 @@ already-shipped `queue.*` strings, since the dialog reuses `queue.row.label` ver
 - "operations are running" (the state the dialog gates on) · **operações em andamento** · macOS Finder pt-BR carries
   this exact sentence: "O Finder não pode ser encerrado porque algumas operações ainda estão em andamento." (plus
   "…outra operação está em andamento…") · confirmed. Matches the shipped `queue.row.status` `running` arm ("Em
-  andamento") and the glossary's operation → **operação** row, so the dialog, the queue window, and the row statuses all
+  andamento") and the termbase's operation → **operação** row, so the dialog, the queue window, and the row statuses all
   use one word. ❌ Not Dolphin/Double Commander's "em execução": the Tier-1 Finder wording wins, and the catalog already
   settled "Em andamento".
 - "Still running" (heading above the operation rows) · **Ainda em andamento** · the Finder sentence's own "ainda … em
@@ -952,12 +725,8 @@ already-shipped `queue.*` strings, since the dialog reuses `queue.row.label` ver
   `one`/`many`/`other`. `one` covers 0..1 and renders "uma operação" / "{secondsText} segundo"; the whole sentence is
   duplicated into each branch (mirroring the English), so nothing that agrees with the count sits outside. The visible
   numbers are the preformatted `{countText}` / `{secondsText}`; the raw `count`/`seconds` only select the branch.
-- Regional-variant check against the style guide's pt-PT tell list: zero hits across all seven values (**arquivo**, not
-  "ficheiro"; the gerunds **Encerrando** / **sendo gravado**, never "a encerrar" / "está a gravar"; no "consoante", no
-  "Rever", no proclitic pronoun before an infinitive).
-- No `sameAsSourceJustification` needed: all seven values differ from English.
 
-### Usage stats: "anônimas" dropped, "um identificador aleatório" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`, 2026-08-12)
+## Usage stats: "anônimas" dropped, "um identificador aleatório" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)
 
 English dropped "anonymous" (the stats carry a stable per-install random id, so they were never anonymous) and now says
 plainly what they're tied to. The English stays deliberately everyday, so ❌ never `pseudônimo` / `pseudonimizado` —
@@ -971,9 +740,8 @@ that jargon is exactly what the copy avoids.
   estatísticas de uso") · high
 - `emailPrivacyNote` now writes `e-mails` (hyphenated), matching the rest of the pt catalog; the old value had a bare
   `emails`.
-- No `sameAsSourceJustification` needed: every value differs from English.
 
-### Confirmação de reversão e a linha que espera resposta (`fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `transferProgress.foregroundBusyToast`/`rollbackTooltip`, 2026-08-13)
+## Confirmação de reversão e a linha que espera resposta (`fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `transferProgress.foregroundBusyToast`/`rollbackTooltip`)
 
 O botão `Reverter` de uma cópia ou movimentação em andamento agora pede confirmação, e uma linha da `Fila de operações`
 ganha um status próprio quando para porque há uma pergunta esperando na janela principal.
@@ -993,7 +761,7 @@ ganha um status próprio quando para porque há uma pergunta esperando na janela
 - `rollbackConfirm.body` · **Isso apaga todos os arquivos que a operação gravou até agora. O que foi substituído não
   volta.** · **gravar** é a palavra do catálogo para escrever um arquivo de destino (`stallInFlight` "parcialmente
   gravado", `main.quit.body`), **até agora** é a forma fixa de "so far" (`search.imageResults.paused`), **substituir** é
-  macOS Tier 1 para `Replace`, e **apagar** é o `delete` fixado no glossário · high. A segunda frase usa a relativa
+  macOS Tier 1 para `Replace`, e **apagar** é o `delete` fixado no termbase · high. A segunda frase usa a relativa
   livre **O que foi substituído** para ficar neutra em número (o inglês "any file" também não fala de um arquivo
   específico) e para não precisar do pronome de **a operação**. **Isso** (33 ocorrências no catálogo) e não "Isto" (3).
 - `rollbackConfirm.keep` ("Keep them", a resposta segura) · **Manter os arquivos** · macOS Finder pt-BR usa a forma
@@ -1011,12 +779,8 @@ ganha um status próprio quando para porque há uma pergunta esperando na janela
   afirmar que o bloqueio é outra OPERAÇÃO (pode ser um diálogo de nova pasta ou uma confirmação de exclusão), então a
   abertura antiga "Outra operação …" tinha virado falsa · high. Ênclise em **Feche-a** (marca pt-BR, como "Encontre-a na
   fila de operações"); **esta** concorda com **operação**.
-- Verificação regional contra a lista de indícios pt-PT do style guide (ficheiro, `estar a` + infinitivo, consoante,
-  próclise antes de infinitivo, Rever, alterar o nome, **você** omitido): zero ocorrências. Marcas brasileiras:
-  **arquivos**, **gravou**, a ênclise **Feche-a**.
-- Nenhum `sameAsSourceJustification` necessário: os oito valores diferem do inglês.
 
-### Cadeia de renomeação: o aviso que cresce (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, 2026-08-18)
+## Cadeia de renomeação: o aviso que cresce (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
 O mesmo toast de `fileExplorer.rename.chainKeptOriginalName`, reescrito a cada arquivo que mantém o nome: nomeia o mais
 recente e conta os anteriores.
@@ -1039,10 +803,8 @@ recente e conta os anteriores.
 - Plural: ramos `one` / `many` / `other` (o `many` do CLDR pt pega números grandes: 1.000.000 seleciona `many`,
   verificado com `intl-messageformat` em `pt`). Tudo o que concorda com o substantivo contado (**outro** / **outros**,
   **arquivo** / **arquivos**) fica DENTRO dos ramos; fora do plural sobra só o ponto final.
-- Verificação regional contra a lista de indícios pt-PT do style guide: zero ocorrências. Marca brasileira: **arquivo**.
-- Nenhum `sameAsSourceJustification` necessário: o valor difere do inglês.
 
-### Renomeação sem confirmação e nome recusado (`fileExplorer.rename.unconfirmed*` + `fileOperations.validation.nameNotUsable`, 2026-08-18)
+## Renomeação sem confirmação e nome recusado (`fileExplorer.rename.unconfirmed*` + `fileOperations.validation.nameNotUsable`)
 
 O par irmão de `chainKeptOriginalName*`: mesma forma de toast, situação oposta. `chainKept*` afirma que o arquivo
 manteve o nome; `unconfirmed*` diz que o Cmdr NÃO sabe, e que a renomeação pode muito bem ter acontecido. Nunca
@@ -1052,7 +814,7 @@ embaralhe os dois sentidos.
   Error-copy-phrasings, e o valor já publicado em `fileExplorer.pane.trashUnconfirmedToast` ("Não foi possível confirmar
   que o arquivo foi movido para a Lixeira.") · confirmed. As duas chaves de renomeação reusam essa abertura, então os
   três toasts de "não deu para confirmar" soam iguais.
-- "the rename of X" · **a renomeação de X** · linha `renomeação` do glossário (substantivo de `Renomear`) · high. ❌
+- "the rename of X" · **a renomeação de X** · linha `renomeação` do termbase (substantivo de `Renomear`) · high. ❌
   Nunca "a alteração de nome" (forma pt-PT).
 - "The volume may be slow" · **O volume pode estar lento** · o valor já publicado em `trashUnconfirmedToast` é
   literalmente essa oração; **volume** = volume no macOS Finder pt-BR (`LocalizableMerged.json`: "O volume de destino
@@ -1080,11 +842,8 @@ embaralhe os dois sentidos.
   "That" do inglês (aponta para o nome que a pessoa acabou de digitar), e os substantivos **arquivo**/**pasta** seguem
   os irmãos `validation.empty` / `.disallowedChars` / `.nameTooLong`. Sem ponto final: o valor também entra composto em
   `{reason}` de `chainKeptOriginalName*` ("Esse nome de arquivo não pode ser usado. "notas.txt" manteve o nome.").
-- Verificação regional contra a lista de indícios pt-PT do style guide: zero ocorrências (arquivo, não ficheiro; sem
-  `estar a` + infinitivo; sem próclise em infinitivo).
-- Nenhum `sameAsSourceJustification` necessário: os três valores diferem do inglês.
 
-## Operações sugeridas: a janela do que o Ask Cmdr propõe (`suggestedOps.*`, `commands.suggestedOpsShow.*`, 2026-08-19)
+## Operações sugeridas: a janela do que o Ask Cmdr propõe (`suggestedOps.*`, `commands.suggestedOpsShow.*`)
 
 - ops (as operações de arquivo propostas pelo agente) → `operações`; título `Operações sugeridas` · segue o termo da
   casa ("File operations" → "Operações de arquivo") · high
@@ -1093,7 +852,7 @@ embaralhe os dois sentidos.
 - "This can't be undone" → `Esta ação não pode ser desfeita` · macOS, palavra por palavra · high
 - suggestion → `sugestão` · já no catálogo (`askCmdr`) · high
 
-## Duplicar: o comando que copia na mesma pasta (`commands.fileDuplicate.*`, 2026-08-19)
+## Duplicar: o comando que copia na mesma pasta (`commands.fileDuplicate.*`)
 
 - **duplicate (comando que copia a seleção dentro da própria pasta) → `Duplicar`** · macOS Finder pt-BR, menu "Arquivo >
   Duplicar" (`N154`), além de "Duplicar Itens" e "Duplica itens nas suas localizações atuais" (verificado no macOS
@@ -1102,7 +861,7 @@ embaralhe os dois sentidos.
   · imperativo, como as descrições vizinhas ("Copie os arquivos selecionados…"); "mesma pasta" é a pasta onde os
   arquivos já estão · high.
 
-## Menus nativos: barra de menus, menus de contexto, títulos de janela (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`, 2026-08-19)
+## Menus nativos: barra de menus, menus de contexto, títulos de janela (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)
 
 Fontes de todo este grupo: macOS 26.5.2 Finder (`Finder.app/Contents/Resources/pt_BR.lproj`, `MenuBar.strings` +
 `LocalizableMerged.strings`) é Tier 1 e decide quase tudo; o lado inglês está em `en_GB.lproj`, porque `Base.lproj` só
@@ -1123,8 +882,13 @@ menu.
   `Outro…`** · macOS Finder Tier 1 · high.
 - **zoom in / out → `Ampliar` / `Reduzir`** · Safari `pt-BR` (menu Visualizar) · high.
 - **ascending / descending → `Crescente` / `Decrescente`** · Thunar + Dolphin `pt-BR` · high.
-- **changelog → `Log de alterações`** · terminologia da Microsoft · high. Distinto de Ajuda > `Novidades`: um nomeia o
+- **changelog → `Registro de alterações`** (`menu.app.changelog`) · a família `log → registro` do catálogo inteiro
+  (`Registro de operações`, `whatsNew.dialog.seeFullChangelog` "Ver registro completo de alterações") · high. O
+  `Log de alterações` da Microsoft abria uma costura com essa família. Distinto de Ajuda > `Novidades`: um nomeia o
   documento, o outro a notícia.
+- **Cut → `Cortar`** (`menu.edit.cut`) · macOS Finder pt-BR `MenuBar.json` `160.title` e `ME1` (`Cortar`) · high. Só a
+  barra de menus copia o Finder aqui; o comando da paleta e a descrição dizem `Recortar` / `Recorte`, o verbo padrão
+  da área de transferência (terminologia da Microsoft; o próprio Finder usa `Recortar` em `QK5`).
 - **word wrap → `Quebra automática de linha`** · terminologia da Microsoft · high.
 - **pin / unpin tab → `Fixar aba` / `Desafixar aba`** · Safari `pt-BR` („Fixar Aba”) · high.
 - **Cores de etiqueta do Finder → `Vermelho, Laranja, Amarelo, Verde, Azul, Roxo, Cinza`** · macOS Finder (`TG_COLOR_*`)
@@ -1139,7 +903,7 @@ menu.
 - **Idênticos ao inglês de propósito** (com `sameAsSourceJustification`): `menu.view.zoom`, `menu.window.zoom`,
   `menu.zoom.percent*`, `menu.view.askCmdr`.
 
-### Aviso de conexão pelo sistema (`fileExplorer.network.osMountFallback.*`, 2026-08-21)
+## Aviso de conexão pelo sistema (`fileExplorer.network.osMountFallback.*`)
 
 A notificação que aparece quando o Cmdr não conseguiu abrir a própria conexão direta e o compartilhamento ficou na
 conexão que o macOS oferece. É tranquilizadora, não alarmante: o compartilhamento funciona, só está lento.
@@ -1163,18 +927,14 @@ conexão que o macOS oferece. É tranquilizadora, não alarmante: o compartilham
   `fileExplorer.navigation.connectDirectly` ("Conectar diretamente para acesso mais rápido") e com
   `fileExplorer.network.retry` ("Tentar novamente") · high. O botão é curto de propósito: o "para acesso mais rápido" do
   item de menu já está explicado no corpo do aviso.
-- "Dismiss" (fechar o aviso) · **Dispensar** · a linha `dismiss` do glossário (seção do chip de progresso), com seis
-  ocorrências no catálogo · confirmed. ❌ Não reusar o **Descartar** de `lowDiskSpace.toast.closeTooltip`: aquele é a
-  inconsistência já sinalizada naquela seção, não o termo fixado.
+- "Dismiss" (fechar o aviso) · **Dispensar** · a linha `dismiss` do termbase (seção do chip de progresso), com seis
+  ocorrências no catálogo · confirmed. ❌ Nunca **Descartar**.
 - **A ordem da oração muda**: o inglês diz "4x slower for most connections (sometimes 100x) than …"; em português o
   adjunto vem antes do comparativo
   (`que, na maioria das conexões, é 4x mais lenta do que a conexão direta do Cmdr (às vezes 100x)`), porque separar
   "mais lenta" do seu "do que" trava a leitura.
-- Marcadores brasileiros do lote: **compartilhamento** (nunca "partilha"), **conectado/conectar** (nunca "ligado"),
-  gerúndio nenhum a conferir aqui. Varredura pt-PT (ficheiro, `estar a` + infinitivo, consoante, próclise, Rever,
-  alterar o nome, você omitido): zero ocorrências. Nenhum valor precisa de `sameAsSourceJustification`.
 
-### Recusas de renomear e criar: as 31 mensagens de uma linha (`errors.mutation.*` + `errors.volume.*`, 2026-08-23)
+## Recusas de renomear e criar: as 31 mensagens de uma linha (`errors.mutation.*` + `errors.volume.*`)
 
 A mensagem única que aparece sob o campo de nome (ou num aviso rápido) quando um Renomear, Nova pasta ou Novo arquivo é
 recusado. Família RAW: apóstrofos simples, `{path}` é um marcador literal e um insert não controlado (caminho completo,
@@ -1199,12 +959,12 @@ qualquer script), então nenhuma frase depende do gênero, do número ou da inic
 - **"Only zip archives can be changed" → `Só arquivos zip podem ser alterados`** ·
   `fileExplorer.readOnly.archiveMessage` já publica exatamente essa oposição ("O Cmdr navega e extrai arquivos tar e 7z,
   mas somente arquivos zip podem ser editados") · confirmed. Aqui **zip** qualifica o formato, então o núcleo é o
-  simples **arquivo zip**; o **arquivo compactado** do glossário fica para quando o formato não é nomeado
+  simples **arquivo zip**; o **arquivo compactado** do termbase fica para quando o formato não é nomeado
   (`archiveNotEditable`, `needsPassword`, `archiveEditCouldntStart`).
 - **"Renaming can't take an item out of / from one archive to another" →
   `A renomeação não pode tirar um item de um arquivo compactado` /
   `… não pode levar um item de um arquivo compactado para outro`** · o substantivo **renomeação** é a linha do
-  glossário; **Use Mover para isso** nomeia o comando (macOS Finder `Mover`) em vez de mandar mover o item, que soaria
+  termbase; **Use Mover para isso** nomeia o comando (macOS Finder `Mover`) em vez de mandar mover o item, que soaria
   como uma instrução ambígua dentro de um campo de nome · high.
 - **`timedOut` NÃO é uma falha** · `O volume ainda não respondeu, então a alteração ainda pode ser concluída.` A
   operação não foi cancelada e ainda pode dar certo, então o **ainda pode ser concluída** é obrigatório; ❌ nunca "não
@@ -1237,28 +997,19 @@ qualquer script), então nenhuma frase depende do gênero, do número ou da inic
   outro nome, nunca repetir: **Escolha outro.**
 - **"That password didn't work." → `Essa senha não funcionou.`** · do irmão já publicado
   `servers.refusal.authenticationRejected` ("Essa senha não funcionou para {username}.") · confirmed. Culpa a senha, não
-  a pessoa. **password-protected → `protegido por senha`** (linha do glossário, diálogo de senha de zip).
+  a pessoa. **password-protected → `protegido por senha`** (linha do termbase, diálogo de senha de zip).
 - **"the change" (a renomeação/criação pedida) → `a alteração`** · usado em `timedOut` e em `deviceDisconnected` ("antes
   de a alteração ser concluída") · high. Distinto de **as mudanças** do sistema de arquivos (`fileExplorer.imageIndex`),
   que é o outro sentido de "changes" no catálogo.
-- Verificação regional contra a lista de indícios pt-PT do style guide (ficheiro, `estar a` + infinitivo, consoante,
-  próclise antes de infinitivo, Rever, alterar o nome, **você** omitido), mais varredura de U+2019, apóstrofo duplo e
-  espaço duplo: zero ocorrências nos 31 valores. Marcas brasileiras: **arquivo** (nunca "ficheiro"), a ênclise
-  **Desbloqueie-o**, **tente de novo**.
-- Nenhum `sameAsSourceJustification` necessário: os 31 valores diferem do inglês.
-- Duas inconsistências vizinhas, sinalizadas aqui e **corrigidas em 2026-08-24**:
-  `fileOperations.transferDialog.compressLevelCaption` e o bolsão de **"drive"** em `errors.json`. Ver § O bolsão de
-  `drive` fechado, no fim deste arquivo.
-
-### Recusas de mover para o Lixo: as duas mensagens de uma linha (`errors.mutation.trash*`, 2026-08-23)
+## Recusas de mover para o Lixo: as duas mensagens de uma linha (`errors.mutation.trash*`)
 
 Mesma superfície das 31 recusas acima (linha única sob o campo de nome ou num aviso rápido), família RAW, sem ICU.
 
 - **"This volume has no Trash." → `Este volume não tem Lixo`** · **Lixo** é o valor Tier-1 do Finder pt-BR e já está
-  fixado neste glossário; o irmão publicado `errors.write.trashNotSupported.message` diz "Este volume não oferece
+  fixado no termbase; o irmão publicado `errors.write.trashNotSupported.message` diz "Este volume não oferece
   suporte ao Lixo", mas o inglês novo trocou "doesn't support" pelo **has no**, mais simples, e o **não tem** acompanha
   esse registro · high. **"the only way is to delete permanently" → `então a única opção é apagar permanentemente`** ·
-  **apagar permanentemente** é a linha do glossário (verbo do Finder), idêntico ao fecho já publicado em
+  **apagar permanentemente** é a linha do termbase (verbo do Finder), idêntico ao fecho já publicado em
   `errors.write.trashNotSupported.suggestion` ("para apagar permanentemente") · confirmed. O **então** liga as duas
   orações como no resto da família `errors.mutation.*`.
 - **"macOS wouldn't move this to the Trash." → `O macOS se recusou a mover este item para o Lixo.`** · **recusar** é o
@@ -1269,11 +1020,8 @@ Mesma superfície das 31 recusas acima (linha única sob o campo de nome ou num 
   ("O item '^1' não pode ser movido para o Lixo porque…"), em vez do pronome solto. ❌ Não "não permitiu": isso soa a
   falta de permissão, que é outra família de mensagens. A frase fica curta de propósito, porque o motivo técnico aparece
   em "Detalhes técnicos".
-- Varredura pt-PT (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o nome),
-  mais U+2019, apóstrofo duplo e espaço duplo: zero ocorrências nos dois valores. Nenhum `sameAsSourceJustification`
-  necessário.
 
-### Diálogo de falha: as três aberturas (`crashReporter.dialog.body.ended`/`keptRunning`/`unknown`)
+## Diálogo de falha: as três aberturas (`crashReporter.dialog.body.ended`/`keptRunning`/`unknown`)
 
 O diálogo do próximo lançamento agora escolhe uma de três frases conforme o que o relatório registrou. As três abrem com
 **O Cmdr** e carregam **da última vez**, e só a segunda oração muda; isso é o paralelismo que faz a diferença entre elas
@@ -1293,7 +1041,7 @@ ficar visível.
   (`transferProgress.backgroundedToast`) e faria parecer que o app seguiu _em segundo plano_. ❌ Não **travou** nem
   **parou** (linha do aviso de transferência parada): ambos leem como falha.
 - "in the background" (a tarefa que teve o problema) · **em segundo plano** · a linha "background / send to background"
-  do glossário, mais terminologia da Microsoft pt-BR (`background` adjetivo → "em segundo plano"; `background task` →
+  do termbase, mais terminologia da Microsoft pt-BR (`background` adjetivo → "em segundo plano"; `background task` →
   "tarefa em segundo plano") e Total Commander pt-BR (`1237` "operações ativas em segundo plano") · confirmed.
 - "Here''s a report with details that can help fix this" · **Aqui está um relatório com detalhes que ajudam a corrigir
   isso** · é a segunda frase já publicada em `crashReporter.dialog.body.ended`, menos o **de falha** · confirmed. O
@@ -1302,9 +1050,6 @@ ficar visível.
 - **A chave `unknown` não pode dizer nem uma coisa nem outra**: ela sai para relatórios escritos por versões antigas do
   Cmdr, que não registravam se o app seguiu rodando. Por isso ela fica só com "O Cmdr teve um problema da última vez." —
   sem `encerrou`, sem `continuou`, verdadeira nos dois casos.
-- Marcadores brasileiros do lote: o gerúndio **funcionando** (nunca "a funcionar"). Varredura pt-PT (ficheiro, `estar a`
-  - infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o nome, você omitido): zero ocorrências. Nenhum
-    valor precisa de `sameAsSourceJustification`.
 
 ## O texto do ajuste de relatórios agora vale para os dois casos (`settings.updates.crashReports.description`)
 
@@ -1321,7 +1066,7 @@ falar só de fechamento. Tudo vem da seção do diálogo de falha acima, no pres
 - **Segunda frase tirada de `crashReporter.dialog.privacyNote`** (`qual parte do código teve o problema`), no lugar de
   `o local da falha`, verdadeiro só quando algo falhou · high.
 
-### Recusas de ejetar e desconectar: as nove mensagens do aviso rápido (`errors.eject.*`, 2026-08-23)
+## Recusas de ejetar e desconectar: as nove mensagens do aviso rápido (`errors.eject.*`)
 
 Cada valor entra num aviso rápido DEPOIS de dois pontos: `fileExplorer.pane.ejectFailedToast` ("Não foi possível ejetar
 {volumeName}: …") ou `fileExplorer.pane.disconnectFailedToast` ("Não foi possível desconectar: …"). Família RAW, sem
@@ -1334,7 +1079,7 @@ frases curtas.
   para toda essa família: "O volume não pode ser ejetado porque está sendo usado atualmente.", "Você não pode ejetar
   “^0” porque ele está sendo usado.", "Há um disco em “^0” que está em uso e não pode ser ejetado."
   (`LocalizableMerged.json`) · confirmed. Em `unmountRefused` o sujeito é o **algo** do inglês (linha já fixada em
-  `errors.mutation`), então a voz fica ativa: `Algo ainda está usando este disco.` ❌ O `(ocupado)` do glossário é o
+  `errors.mutation`), então a voz fica ativa: `Algo ainda está usando este disco.` ❌ O `(ocupado)` do termbase é o
   rótulo curto do alternador de volumes, não entra em frase corrida.
 - **"Close any open files and apps" → `Feche os arquivos e aplicativos abertos`** · o Finder pt-BR fecha a mesma receita
   com "Encerre todos os aplicativos abertos e tente novamente." e "Talvez alguns arquivos desses discos estejam sendo
@@ -1346,7 +1091,7 @@ frases curtas.
   `errors.listing.deviceReconnecting.explanation`.
 - **"isn't connected any more" → `não está mais conectado`** · macOS Finder pt-BR "Não foi possível concluir a operação
   porque o disco “^0” não está mais disponível." dá o **não está mais**; **conectado** é a linha Connect/Disconnect do
-  glossário · high. `Esse disco` (não "este"): o disco já sumiu, então o demonstrativo se afasta.
+  termbase · high. `Esse disco` (não "este"): o disco já sumiu, então o demonstrativo se afasta.
 - **"network share" → `compartilhamento de rede`** · terminologia da Microsoft (`network share` → "compartilhamento de
   rede") e o valor já publicado em `errors.listing.remotePermissionDenied.explanation` ("está em um compartilhamento de
   rede") · confirmed. O "This" vira **Este item**, o substantivo que o Finder usa nessa posição (mesma decisão
@@ -1360,7 +1105,7 @@ frases curtas.
 - **"Unplug it" → `Desconecte-o`** · o catálogo já equipara unplug e desconectar em
   `errors.listing.deviceReconnecting.suggestion` ("There's nothing to unplug." → "Não é preciso desconectar nada.") ·
   confirmed. **idle → `ocioso`** · terminologia da Microsoft (`idle` → ocioso, `idle timeout` → "tempo limite ocioso"),
-  Thunar pt-BR ("dispositivos ociosos") e a linha `quando o Mac está ocioso` deste glossário · high.
+  Thunar pt-BR ("dispositivos ociosos") e a linha `quando o Mac está ocioso` do termbase · high.
 - **`timedOut` NÃO é uma falha** · `O disco ainda não respondeu, então a ejeção ainda pode ser concluída sozinha.` Mesma
   regra do irmão `errors.mutation.timedOut` ("O volume ainda não respondeu, então a alteração ainda pode ser
   concluída"), com o mesmo **ainda pode ser concluída**. O substantivo **a ejeção** é do Finder pt-BR ("mantenha a tecla
@@ -1373,53 +1118,24 @@ frases curtas.
 - **`busy`: o gerúndio brasileiro** · `O Cmdr ainda está movendo arquivos neste disco. Ejete-o assim que isso terminar.`
   **está movendo** (nunca "está a mover"), **assim que** para o "once" (Total Commander pt-BR "assim que eles forem
   salvos"), e a ênclise **Ejete-o**.
-- Varredura pt-PT (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o nome,
-  você omitido), mais U+2019, apóstrofo duplo e espaço duplo: zero ocorrências nos nove valores. Nenhum
-  `sameAsSourceJustification` necessário: os nove diferem do inglês.
 
-### "drive de rede" reconciliado para "disco de rede" (`errors.listing.*`, 2026-08-23)
+## `drive` é sempre `disco` (`errors.listing.*`, `errors.provider.pCloudFuse.*`, `fileExplorer.unreachable.detailTimeout`)
 
-O bolsão sinalizado nas seções do interruptor mestre de indexação e das 31 recusas: quatro valores de `errors.json`
-ainda diziam **drive de rede**, contra o **disco de rede** fixado na seção do índice de imagens em rede.
-
-- **network drive → `disco de rede`** · confirmado de novo contra o pile: o macOS pt-BR Finder usa **disco** em toda a
-  família ("Discos rígidos", "Discos externos", "Ejetar discos e desmontar servidores"), e "de rede" é o qualificador
-  corrente (Total Commander pt-BR `5164` "Exibir os nomes e caminhos de &discos de rede"). A terminologia da Microsoft
-  diz `network drive` → "unidade de rede", mas o princípio 2 de escolha de termos põe o Finder na frente · high. ❌
-  Nunca "drive de rede" nem "unidade de rede".
-- Chaves alinhadas: `errors.listing.staleConnection.suggestion`, `errors.listing.pathNotFoundErrno.suggestion`,
-  `errors.listing.notFound.suggestion`, `errors.listing.deviceDisconnected.explanation`. O inglês não mudou, então o
-  `@key.sourceHash` das quatro fica intacto.
-- **O bolsão foi fechado em 2026-08-24**; as chaves estão listadas na seção seguinte.
-
-## O bolsão de `drive` fechado, e o último progressivo pt-PT (2026-08-24)
-
-Nenhum termo novo: só a aplicação do `drive → disco` já assentado (§ Master drive-indexing switch terms) às chaves que
-tinham ficado de fora dos lotes anteriores. `disco` é masculino como o `drive` que substitui, então nenhuma concordância
-muda.
-
-- `errors.listing.staleConnection.explanation` · "drives de rede (NFS, SMB)" → **discos de rede (NFS, SMB)**
-- `errors.listing.quotaExceeded.explanation` · "e drives de rede" → **e discos de rede**
-- `errors.listing.notSupported.explanation` · "certos drives de rede" → **certos discos de rede**
-- `errors.listing.notSupportedErrno.suggestion` · "um drive externo" → **um disco externo**
-- `errors.listing.deviceProblem.suggestion` · "Se for um drive externo" → **Se for um disco externo**
-- `errors.listing.crossDeviceOperation.explanation` · "um drive interno" → **um disco interno**
-- `errors.listing.attributeNotFound.suggestion` · "o drive interno do seu Mac" → **o disco interno do seu Mac**
-- `errors.provider.pCloudFuse.transient` / `.needsAction` / `.serious` · "no drive virtual do **pCloud**" → **no disco
-  virtual do pCloud**, e em `.serious` "Se o drive não reaparecer" → **Se o disco não reaparecer**. O inglês diz
+- **network drive → `disco de rede`** · o macOS pt-BR Finder usa **disco** em toda a família ("Discos rígidos", "Discos
+  externos", "Ejetar discos e desmontar servidores"), e "de rede" é o qualificador corrente (Total Commander pt-BR
+  `5164` "Exibir os nomes e caminhos de &discos de rede"). A terminologia da Microsoft diz `network drive` → "unidade
+  de rede", mas o princípio 2 de escolha de termos põe o Finder na frente · high. ❌ Nunca "drive de rede" nem "unidade
+  de rede".
+- O `errors.json` inteiro segue: "discos de rede (NFS, SMB)", "um disco externo", "um disco interno", "o disco interno
+  do seu Mac" (`errors.listing.staleConnection.*`, `.quotaExceeded.explanation`, `.notSupported*`,
+  `.deviceProblem.suggestion`, `.crossDeviceOperation.explanation`, `.attributeNotFound.suggestion`), e
+  `fileExplorer.unreachable.detailTimeout` também. `disco` é masculino como o `drive` que substituiu, então nenhuma
+  concordância muda.
+- `errors.provider.pCloudFuse.*` diz **no disco virtual do pCloud** ("Se o disco não reaparecer"): o inglês diz
   "pCloud's virtual drive", substantivo comum depois da marca, não o nome do produto; a marca `pCloud` e o caminho
   `/Volumes/pCloudDrive` ficam intactos.
-- `fileExplorer.unreachable.detailTimeout` · "um drive de rede" → **um disco de rede** (fora do `errors.json`, mesmo
-  bolsão)
-- `fileOperations.transferDialog.compressLevelCaption` · "demoram mais tempo **a** comprimir" (progressivo pt-PT) →
-  **"demoram mais para comprimir"**, idêntico ao fecho do irmão já corrigido
-  `settings.archives.compressionLevel.description`. Mesma causa-raiz registrada em § pt-PT leak found and fixed
-  (2026-07-25): o pile `_ignored/i18n/pt/` é EUROPEU; o brasileiro é `_ignored/i18n/pt-BR/`.
-- Varredura pt-PT completa depois da correção (ficheiro, `estar a` + infinitivo, `tempo a` + infinitivo): zero
-  ocorrências no catálogo `pt`.
-- Nenhum `@key.sourceHash` muda: só os valores foram editados.
 
-## Os dois botões do aviso do Lixo e a família "colocar de volta" (`fileOperations.trash.*`, `commands.fileGoToTrash.*`, 2026-08-27)
+## Os dois botões do aviso do Lixo e a família "colocar de volta" (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)
 
 Nove chaves novas: os dois botões do aviso que aparece logo depois de mover arquivos para o Lixo, os textos de progresso
 e de resultado do desfazer, e o comando "Go to trash" na paleta de comandos.
@@ -1448,16 +1164,14 @@ e de resultado do desfazer, e o comando "Go to trash" na paleta de comandos.
 - **"Nothing to put back. …" →
   `Nada a colocar de volta. Estes itens talvez já estejam de volta, ou o disco deles não está conectado.`** · segue a
   estrutura da irmã `askCmdr.renameUndo.unavailable` · high. `item`/`itens` é o termo assentado, e **`disco`** é o termo
-  de drive (§ O bolsão de `drive` fechado).
-  - ⚠️ REVIEW FLAG: a irmã `askCmdr.renameUndo.unavailable` ainda diz **`a unidade dele`**, que é o termo da Microsoft e
-    contraria o `disco` assentado. A chave está fora deste lote; corrigir numa varredura.
+  de drive (§ `drive` é sempre `disco`); a irmã `askCmdr.renameUndo.unavailable` diz `o disco dele` também.
 - **"This drive doesn't keep a trash." → `Este disco não tem Lixo.`** · constatação de fato, então não entra no registro
   de `errors.write.trashNotSupported.message` ("não oferece suporte ao Lixo"), que é uma tela de erro · high.
 - **A descrição do comando → `Abra o Lixo do disco em que você está navegando`** · imperativo, como as outras descrições
   de `commands.json` ("Faça uma cópia dos arquivos selecionados na mesma pasta"), com `você` explícito porque o verbo
   sozinho seria ambíguo · high.
 
-### Notas anexadas a um relatório já enviado (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`, 2026-08-28)
+## Notas anexadas a um relatório já enviado (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)
 
 O Cmdr envia um relatório sozinho quando a pessoa optou por isso, e agora o aviso rápido abre um diálogo que mostra o
 que já foi enviado e aceita uma nota que entra NO MESMO relatório. Nada sobe uma segunda vez, e o texto precisa deixar
@@ -1494,21 +1208,18 @@ isso claro.
   fica reservado ao menu Visualizar · high. As duas metades (olhar e acrescentar) ficam de pé, e o botão cabe ao lado de
   `Alterar ajustes` no aviso rápido.
 - **Close → `Fechar`** · KDE Dolphin e Double Commander pt-BR · confirmed.
-- Varredura pt-PT do lote (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever, alterar o
-  nome, `você` omitido): zero ocorrências. Nenhum valor é idêntico ao inglês, então nenhum precisa de
-  `sameAsSourceJustification`; nenhum leva apóstrofo, então não há `''` no lote.
 - "See why" (o botão do aviso rápido do Ask Cmdr) · **Ver por quê** · a forma separada e acentuada, porque a pergunta
   fecha a frase; é a mesma escolha já feita em `queue.chip.failed` ("para ver por quê") · confirmed. `porquê` avulso não
   é forma correta em pt-BR: o substantivo pediria artigo (`Ver o porquê`). `askCmdr.wakeToast.openThread`.
 
-## A caixa de diálogo de selecionar / desmarcar arquivos (`selection.*`, 2026-08-29)
+## A caixa de diálogo de selecionar / desmarcar arquivos (`selection.*`)
 
 Fontes do lote: macOS 26 Finder `pt-BR` (`MenuBar.json`, ids `172.title` / `300488.title`), Double Commander `pt-BR`
 (`doublecmd.po`, `&Unselect All`) e Total Commander `pt-BR` (`WCMD.LNG.utf8` 7603/7604/7613/7614). A área é ICU, então
 apóstrofos seriam duplos; nenhum valor do lote tem apóstrofo.
 
 - **select → `Selecionar`; deselect → `Desmarcar`** · macOS Finder `pt-BR` diz `Selecionar Tudo` (`172.title`) e
-  **`Desmarcar Tudo`** (`300488.title`) · confirmed (Tier 1, já registrado neste glossário). ❌ Não `Desselecionar`:
+  **`Desmarcar Tudo`** (`300488.title`) · confirmed (Tier 1, já registrado no termbase). ❌ Não `Desselecionar`:
   essa é a forma do Finder `pt-PT`, e o `pt` do Cmdr é brasileiro. As fontes Tier 3 divergem e não pesam aqui: Double
   Commander `pt-BR` usa a perífrase `Remover seleção`, e o Total Commander `pt-BR` está meio traduzido nessa tela
   (`&Remove selection by name/extensão:` ainda em inglês), então nenhum dos dois derruba o Finder.
@@ -1542,40 +1253,46 @@ apóstrofos seriam duplos; nenhum valor do lote tem apóstrofo.
   (`commands.selectionSelectFiles.description` "os arquivos correspondentes") e `caminho completo` já está fixado
   (`fileOperations.validation.pathTooLong`) · high. Sujeito oculto (o padrão), que mantém o aviso curto e tranquilo em
   vez de soar como alerta.
-- Varredura pt-PT do lote (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
-  `alterar o nome`): zero ocorrências.
 
-## Uma coisa, um nome: a rodada de deriva interna (2026-08-30)
+## Uma coisa, um nome (`queryUi.scope.toggle.caseSensitive`, `viewer.search.*`, `queryUi.results.scan*`, `transfer.delete`, `fileOperations.transferDialog.pathErrorNotZip`)
 
-O `desktop-i18n-term-consistency` encontrou 26 divergências em `pt` (um valor em inglês, duas ou mais formas em
-português). Dezoito eram deriva de verdade; oito são fronteiras legítimas, quase todas de concordância — e é justamente
-por isso que uma varredura automática nunca poderá decidir sozinha em português.
+O `desktop-i18n-term-consistency` compara chaves com o MESMO inglês, e o `i18n:check-termbase` compara cada chave com a
+regra do seu conceito. Os dois acharam deriva de verdade e fronteiras legítimas, quase todas de concordância: é
+justamente por isso que uma varredura automática nunca decide sozinha em português.
 
-### As derivas corrigidas
+### As formas que valem em todo o catálogo
 
 - **case-sensitive → `diferenciar maiúsculas de minúsculas`** · terminologia da Microsoft pt-BR (id 28521 → 28529, BRA)
-  · high. Havia QUATRO formas em duas telas de busca. A forma do rótulo agora entra inteira no nome acessível
-  (`… na correspondência`), o que resolve a violação de WCAG 2.5.3 que o `desktop-i18n-aria` apontava. ❗ Ao mexer em
-  `queryUi.scope.toggle.caseSensitive`, mexa junto no `…Aria`: o nome acessível TEM de conter o rótulo visível, senão
-  quem usa controle por voz não consegue acionar a caixa.
-- **trash → `Lixo`, nunca `Lixeira`** (a regra já estava no topo deste arquivo; duas chaves ainda diziam `Lixeira`,
-  incluindo o aviso de que o Cmdr não conseguiu confirmar a ida do arquivo para o Lixo).
+  · high. A forma do rótulo entra inteira no nome acessível (`… na correspondência`). ❗ Ao mexer em
+  `queryUi.scope.toggle.caseSensitive`, mexa junto no `…Aria`: o nome acessível TEM de conter o rótulo visível (WCAG
+  2.5.3), senão quem usa controle por voz não consegue acionar a caixa.
+- **trash → `Lixo`, nunca `Lixeira`**, inclusive no aviso de que o Cmdr não conseguiu confirmar a ida para o Lixo.
 - **zoom in / out → `Ampliar` / `Reduzir`** na paleta de comandos também, não só no menu.
-- **Dismiss → `Dispensar`** nas duas chaves que ainda diziam `Descartar`.
-- **Send feedback → `Enviar feedback`** · toda a família `feedback.*` já dizia `feedback`; só a paleta e o menu Ajuda
-  diziam `Enviar comentário` · high.
+- **Send feedback → `Enviar feedback`** · toda a família `feedback.*` diz `feedback`, nunca `Enviar comentário` · high.
 - **Reset → `Restaurar`** · macOS Finder pt-BR (`Restaurar aos Padrões`) · high. `Restaurar tudo para os padrões` /
-  `Restaurar para o padrão`; `Redefinir` saiu (menos em `redefinir o zoom`, que é outra coisa).
-- **error report → `relatório de problema`** · o `style-guide.md` do app pede que mensagens ao usuário evitem "erro", e
-  `errorReporter.dialog.title` já seguia isso · high.
-- **`dir`/`dirs` nunca deveria ter ficado em inglês**: as três chaves de contagem da varredura agora dizem
-  `pasta`/`pastas`, como a barra de status. ❗ Elas passaram pelo `i18n-coverage` porque o ramo plural `many` deixa o
-  valor estruturalmente diferente do inglês — a checagem não flagra isso, então confira contadores plurais à mão.
-- **delete → `Apagar`** também no botão de apagar modelo de IA; **Searching → `Buscando`** também no visualizador;
-  **`Ir para o último download`**, **`Não mostrar novamente`**, **`Quebra automática de linha`** nas duas telas, e a
-  grafia `e-mail` (três chaves diziam `email`).
-- **`fileOperations.transferDialog.pathErrorNotZip`**: `nome do arquivo` virou `nome do arquivo compactado`. Em
-  português, `arquivo` sozinho quer dizer "file", então a frase pedia o nome errado.
+  `Restaurar para o padrão`; `redefinir` fica só para o zoom (`redefinir o zoom`).
+- **error report → `relatório de problema`** · o `style-guide.md` do app pede que mensagens ao usuário evitem "erro" ·
+  high. Também em "relatório de falha ou de problema" (`settings.updates.attachEmailToReports.description`).
+- **`dir`/`dirs` nunca fica em inglês**: as chaves de contagem da varredura dizem `pasta`/`pastas`, como a barra de
+  status. ❗ Elas passaram pelo `i18n-coverage` porque o ramo plural `many` deixa o valor estruturalmente diferente do
+  inglês; confira contadores plurais à mão.
+- **Search → a família `busca`/`buscar` em todo lugar**, o visualizador incluído (`Buscar texto`, `Fechar busca`,
+  `⌘F buscar`, `Tente a busca (⌘F)`, `Buscando`). `pesquisável` continua como adjetivo de item indexado.
+- **A varredura do disco é `varredura` em todo lugar**: `queryUi.results.scan*` (`Varredura em andamento`),
+  `fileExplorer.dirSize.staleLine`, `indexing.rescan.incompletePreviousScan`. A família `indexing.rescan.*` diz o verbo
+  (`Examinando o disco de novo …`), e `análise` fica para a pré-contagem de transferência.
+- **`Ir para o último download`**, **`Não mostrar novamente`**, **`Quebra automática de linha`** nas duas telas, e a
+  grafia `e-mail`.
+- **`fileOperations.transferDialog.pathErrorNotZip`** diz `nome do arquivo compactado`: em português, `arquivo` sozinho
+  quer dizer "file", então a frase pediria o nome errado.
+- **Os nomes de pasta do macOS pt-BR**: `Downloads` (o Finder pt-BR não traduz; `Transferências` é o pt-PT), `Documentos`,
+  `Mesa` (`onboarding.stepFda.pro.body`, `onboarding.stepAi.bannerBody.denied`).
+- **Os apps da Apple com nome traduzido**: `Editor de Texto` (TextEdit) e `Pré-Visualização` (Preview), como o
+  `InfoPlist.loctable` pt_BR de cada app diz (macOS 27.0 26A428, lido 2026-09-24), com artigo em texto corrido
+  (`settings.advanced.showSafeSaveFiles.description`). O `@key` pede para manter o inglês; a regra de localizar o que a
+  Apple localiza vence.
+- **`chip` (o selo do repositório) → `selo`**, o mesmo `badge → selo` do catálogo; `etiqueta` é só a etiqueta do Finder
+  (`settings.fileExplorer.git.showRepoChip.label`, `settings.summary.git`, `errors.git.notARepo.suggestion`).
 
 ### As fronteiras que NÃO se devem achatar
 
@@ -1602,10 +1319,7 @@ por isso que uma varredura automática nunca poderá decidir sozinha em portugu�
 - **`viewer.saveAs.defaultName` fica `selecao`, sem cedilha**, de propósito: é um nome de arquivo padrão, e o `@key`
   pede algo seguro para usar como nome de arquivo.
 
-O guarda contra o português europeu continua valendo: esta rodada não empurrou nenhuma forma brasileira na direção de
-pt-PT. Varredura pt-PT dos valores alterados (`ficheiro`, `estar a` + infinitivo, `ecrã`, `Rever`): zero ocorrências.
-
-## O que o inglês corrigiu em si mesmo, e o que isso decidiu em `pt` (2026-08-30)
+## O que o inglês corrigiu em si mesmo, e o que isso decidiu em `pt` (`settings.updates.emailPlaceholder`, `askCmdr.renameUndo.undone`/`.partial`, `menu.app.showAll`/`hideOthers`)
 
 O catálogo `en` tirou cinco incoerências de si mesmo. Aqui fica o que isso assentou em português.
 
@@ -1661,7 +1375,7 @@ palavras da Apple (`Mostrar Tudo` / `Ocultar Outros`), com a capitalização do 
 case, então só a primeira letra fica maiúscula. A família `menu.*` é nativa e não passa pelo ICU: um apóstrofo ali se
 escreve uma vez só.
 
-## Uma operação revertida pela metade: concluir a reversão (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`, 2026-08-30)
+## Uma operação revertida pela metade: concluir a reversão (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)
 
 - **`Finish rolling back` → `Concluir a reversão`** · o verbo vem do macOS Finder pt-BR `NE108` ("Finish Copying" →
   "Concluir Cópia", Tier 1, `pt-BR/macOS/Finder/LocalizableMerged.json`, conferido em 2026-08-30), em sentence case como
@@ -1687,11 +1401,8 @@ escreve uma vez só.
 - **`in {folder}` → `em {folder}`** · preposição pura, sem artigo e sem aspas: o nome que chega é próprio ("Apagando o
   que foi criado em Backup") · high. Diferente do `de` e do `es`, que puseram aspas; aqui os vizinhos do catálogo também
   deixam o placeholder solto, e o inglês igualmente. Sem artigo e sem concordância, qualquer nome cabe.
-- Não faz falta `sameAsSourceJustification`: os cinco valores se diferenciam do inglês.
-- Varredura pt-PT do lote (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
-  `alterar o nome`): zero ocorrências.
 
-## O aviso do que a reversão conseguiu, e o que ela deixou (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`, 2026-08-31)
+## O aviso do que a reversão conseguiu, e o que ela deixou (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`)
 
 Depois que a pessoa aperta `Reverter` numa cópia ou movimentação em andamento, um aviso conta o que o desfazer
 conseguiu. Ele tem até três partes: uma manchete, a linha `leftBehind`, e uma lista de motivos (`reason.*`), cada um em
@@ -1740,7 +1451,7 @@ cuidadoso", nunca desculpa nem alarme.
   aqui é de propósito coloquial ("where it came from"), então fica `o lugar de onde veio`.
 - **`reason.failed.*` fica FORA do molde**, como no inglês (`Couldn''t undo {name}.` em vez de `Left … alone`): esse
   motivo não é uma escolha do Cmdr, é o disco recusando, e a linha convida a tentar de novo. `Couldn''t undo` →
-  **`Não foi possível reverter`** (a voz de "couldn't" da seção Error-copy-phrasings + o `reverter` do glossário; o
+  **`Não foi possível reverter`** (a voz de "couldn't" da seção Error-copy-phrasings + o `reverter` do termbase; o
   desfazer de UM item é `Revertido` em `operationLog.outcome.rolledBack`, então o verbo é `reverter`, não `desfazer`) ·
   high. `Its drive` vira **`O disco`** sem possessivo: `dele`/`dela` concordaria com o gênero de `{name}`, que é
   desconhecido.
@@ -1753,7 +1464,7 @@ cuidadoso", nunca desculpa nem alarme.
 - **O sujeito das manchetes é explícito (`O Cmdr` / `A reversão`).** Sem sujeito, `Apagou {countText} itens…` também se
   lê como `você apagou`, que é justamente o indício pt-PT listado no `style.md` § Variant. As linhas de motivo não
   precisam disso porque o sujeito delas é o próprio item.
-- **`removed` e `deleted` viram os dois `apagar`** · `apagar` é o `delete` fixado no glossário e o verbo que a família
+- **`removed` e `deleted` viram os dois `apagar`** · `apagar` é o `delete` fixado no termbase e o verbo que a família
   da reversão já publica (`queue.row.reversalDeleting` "Apagando o que foi criado", `transferProgress.rollbackTooltip`)
   · high. A terminologia da Microsoft dá `remove` → `remover`, mas no catálogo `Remover` já é tirar uma entrada de uma
   lista (`Remover {hostName} da lista de servidores?`): usá-lo para arquivos abriria uma costura. O inglês varia
@@ -1789,13 +1500,10 @@ cuidadoso", nunca desculpa nem alarme.
   `O Cmdr pula tudo aquilo de que não tem certeza, então algo pode ficar para trás.`, idêntica a
   `rollbackConfirm.bodyUndoByDeleting`, porque o inglês das duas é idêntico nessa frase. As duas primeiras frases não
   mudaram.
-- Varredura pt-PT do lote (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
-  `alterar o nome`, `você` omitido onde o verbo é ambíguo): zero ocorrências. Marcas brasileiras: `arquivos`, `gravou`,
-  `tem certeza`.
 - Nenhum valor leva apóstrofo, então não há `''` no lote. Nenhum `sameAsSourceJustification` é necessário: os 18 valores
   diferem do inglês.
 
-### `cancelRollback.stagedLeftover.*` (as sobras do próprio Cmdr no destino)
+## `cancelRollback.stagedLeftover.*` (as sobras do próprio Cmdr no destino)
 
 Novas em 2026-09-02. Duas linhas sobre um arquivo de trabalho que o próprio Cmdr criou e não conseguiu tirar do destino.
 NÃO pertencem à lista `reason.*`: lá o Cmdr protege os arquivos da pessoa, aqui é uma sobra dele mesmo.
@@ -1811,7 +1519,7 @@ NÃO pertencem à lista `reason.*`: lá o Cmdr protege os arquivos da pessoa, aq
   então uma nova tentativa imediata não apaga nada. Prometer o contrário seria exatamente a falha que esta linha
   conserta.
 
-## A tela de bloqueio quando o WebKit é antigo demais (`main.oldWebkit.*`, 2026-09-02)
+## A tela de bloqueio quando o WebKit é antigo demais (`main.oldWebkit.*`)
 
 Três strings que o Cmdr mostra no lugar da interface quando o Safari do Mac é antigo demais. Elas ficam no invólucro
 HTML, não no app, então são a única coisa que essa pessoa vai ver do Cmdr.
@@ -1819,10 +1527,10 @@ HTML, não no app, então são a única coisa que essa pessoa vai ver do Cmdr.
 - **`Software Update` → `Atualização de Software`** · nome do painel nos Ajustes do Sistema; o rastro Tier 1 do Finder
   confirma o termo (`Apple Device Software Update File` → `Arquivo de Atualização de Software do Dispositivo Apple`) ·
   `high`. Mantém as maiúsculas do nome do painel, ao contrário do uso corrido.
-- **`Quit` → `Encerrar`** · já no glossário, confirmado por `Encerrar Finder` na barra de menus do Finder · `high`.
+- **`Quit` → `Encerrar`** · já no termbase, confirmado por `Encerrar Finder` na barra de menus do Finder · `high`.
 - **`Safari`, `Mac` e `15.4` ficam como estão.** `Safari` entrou para `BRAND_WORDS`.
 
-## O aviso de macOS antigo (`main.oldMacos.*`, 2026-09-02)
+## O aviso de macOS antigo (`main.oldMacos.*`)
 
 Um diálogo que aparece uma única vez num Mac abaixo do macOS 12: o Cmdr abre, mas está fora da faixa testada. Tom
 honesto e tranquilo, sem pedido de desculpas e sem alarme, porque o app funciona.
@@ -1836,7 +1544,7 @@ honesto e tranquilo, sem pedido de desculpas e sem alarme, porque o app funciona
 - **`layout` fica `layout`** · empréstimo corrente no pt-BR de tecnologia; `disposição` soaria acadêmico aqui.
 - **A última frase é o David em primeira pessoa**, com `você`, como em `onboarding.stepBeta.greeting`.
 
-## O que o Ask Cmdr lê dentro de um arquivo (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, 2026-09-02)
+## O que o Ask Cmdr lê dentro de um arquivo (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)
 
 A ferramenta `inspect_file` lê uma parte limitada de um arquivo a pedido, e a tela de consentimento passou a dizer isso.
 Fontes: `_ignored/i18n/pt-BR/` (macOS Finder + SystemSettings, terminologia da Microsoft, Thunar).
@@ -1874,21 +1582,19 @@ Fontes: `_ignored/i18n/pt-BR/` (macOS Finder + SystemSettings, terminologia da M
   (`o texto que o Cmdr reconheceu dentro das fotos correspondentes e as etiquetas delas vão para o seu provedor para que ele possa encontrá-las`)
   e a frase das sugestões
   (`O Ask Cmdr pode sugerir renomeações, movimentações e faxinas, e nada acontece com nenhum arquivo até você aprovar.`).
-  `etiquetas` = tags (o catálogo já usa em `errors.listing.attributeNotFound`), `provedor` = provider (§ Terms),
+  `etiquetas` = tags (o catálogo já usa em `errors.listing.attributeNotFound`), `provedor` = provider (`terms.json`),
   `faxinas` = cleanups.
 - **Texto de novidades (askCmdr.consent.whatsNew.body, removido)**: a segunda frase
   (`É mais do que você aceitou na época, então aqui está tudo de novo.`) ficou como estava; só a primeira foi
   retraduzida. `um arquivo quando você pergunta sobre ele` no lugar do relativo `sobre o qual`, que soa formal demais
   para a tela.
-- Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `estar a` + infinitivo, `consoante`, `Rever`. Nenhum valor
-  leva apóstrofo ASCII, então não há `''`. Nenhum `sameAsSourceJustification`: os cinco valores diferem do inglês.
 - **`askCmdr.empty.hint` e `settings.askCmdr.intro` seguem a mesma regra**:
   `Ele lê nomes, caminhos e tamanhos, e só olha dentro de um arquivo quando você pergunta sobre ele` /
   `… só olha dentro de um arquivo quando você pergunta sobre ele e nunca muda um arquivo sem a sua aprovação`. O antigo
   `é somente leitura` e o `nunca muda nada` saíram: o Ask Cmdr propõe renomeações e escreve as próprias anotações, então
   só a aprovação pode ser prometida · high.
 
-## As duas dicas do botão Rollback (2026-09-04; `fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
+## As duas dicas do botão Rollback (`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`, `.rollbackAlreadyLandedTooltip`)
 
 Superfície nova: a dica do botão agora diz o que ESTA reversão faz com os arquivos, e o botão é desligado quando uma
 movimentação entre dois sistemas de arquivos chega ao último passo (apagar os originais, com tudo já no destino).
@@ -1900,7 +1606,6 @@ movimentação entre dois sistemas de arquivos chega ao último passo (apagar os
 - **`rollbackAlreadyLandedTooltip`** · a primeira oração retoma `cancelRollback.moveAlreadyLanded` («já está no
   destino»), `reversão` é o termo assentado para o rollback (`rollbackUnavailableTooltip`), e `Cancelar` é o rótulo do
   botão ao lado (`fileOperations.button.cancel`), então entra sem mudança · `high`.
-- Sem `sameAsSourceJustification`; nenhum valor tem apóstrofo.
 
 ## “Abrir terminal aqui” e o seletor de app (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
 
@@ -1939,7 +1644,7 @@ o inglês cita o Office.
 - **documents (o tipo de arquivo) → `Documentos`** · macOS Finder (`TL6`/`GROUP_DOCUMENTS` → `Documentos`; tipos
   `Documento RTF`, `Documento de Texto Simples`) · `high`.
 - **packages (genérico, não só apps) → `pacotes`** · macOS Finder (`Mostrar Conteúdo do Pacote`) e a entrada de
-  glossário `app bundle → pacote` · `high`. Fica o `pacotes` puro, para a linha continuar mais ampla que o cartão
+  termbase `app bundle → pacote` · `high`. Fica o `pacotes` puro, para a linha continuar mais ampla que o cartão
   `Pacotes de aplicativo` abaixo dela — a mesma separação que o inglês faz entre `packages` e `app bundles`.
 - **Moldura da frase → `O que pressionar Enter faz em um …, … ou ….`** · exatamente a moldura das chaves irmãs
   `settings.archives.zip.description` e `settings.archives.bundle.description` · `high`. Sem apóstrofo no valor.
@@ -1982,7 +1687,7 @@ o caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this mach
 - **That doesn't look like … → `Isso não parece …`** · molde já publicado em `common.attachEmailInvalid`
   (`That doesn't look like an email address` → `Isso não parece um e-mail`), e `endereço de servidor` compõe o
   `endereço` já assentado (`servers.sheet.address` e `servers.hub.colAddress` = `Endereço`) com a linha `server` →
-  **servidor** do glossário · confirmed
+  **servidor** do termbase · confirmed
 - **Cmdr couldn't X → `O Cmdr não conseguiu X`** · o molde do catálogo inteiro
   (`settings.mediaIndex.reclaim.couldNotDelete`, `errors.listing.notFound.explanation`), e o `O Cmdr` por extenso é a
   regra do style.md § "Uma frase de resultado nunca fica sem sujeito" · confirmed
@@ -2006,12 +1711,6 @@ das chaves irmãs já publicadas): `Forget server` → `Esquecer servidor` (`men
 2.5.3 é **`Desconectar`**, exatamente o rótulo visível de `servers.paneState.disconnect` e
 `fileExplorer.unreachable.disconnect`.
 
-Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `estar a` + infinitivo (o progressivo saiu como gerúndio,
-`está trabalhando`), `consoante`, `Rever`, ou `você` omitido onde a forma verbal fica ambígua
-(`na próxima vez que você se conectar`). Ênclise em pt-BR nos infinitivos e imperativos (`restabelecê-la`, `Abra-o`,
-`Adicione-o`), nunca próclise antes do infinitivo. Nenhum valor leva apóstrofo ASCII, então não há `''` a dobrar, e
-nenhum `sameAsSourceJustification`: os 28 valores diferem do inglês.
-
 ## A tabela do hub de servidores: colunas, estados e o estado vazio (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.serverPinnedToast` / `serverUnpinnedToast` / `pinRefusedToast` / `networkVolume`, `shortcuts.scope.servers` / `places`)
 
 Superfície nova: a linha `Servidores` do seletor de volumes agora abre um HUB, uma tabela com todo servidor salvo (SFTP,
@@ -2034,7 +1733,7 @@ caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machin
   `Sound.appex` (`Type` → `Tipo`), `Bluetooth.appex` (`Address` → `Endereço`) · confirmed. São cópias byte a byte das
   irmãs já publicadas (`fileExplorer.columns.name`, `menu.sort.name`, `queryUi.ai.filter.type`), que o
   `desktop-i18n-term-consistency` pareia pelo inglês.
-- **Status → `Status`, verbatim** · linha já fixada acima (§ Terms) e byte a byte igual a
+- **Status → `Status`, verbatim** · linha fixada em `terms.json` (`status`) e byte a byte igual a
   `licensing.section.labelStatus`, a irmã com o mesmo inglês · confirmed. O macOS pt-BR diz `Estado` (`Network.appex`
   `BRIDGE_STATUS_TABLE_COLUMN_STATUS`), mas o catálogo inteiro já publica o empréstimo naturalizado, e uma coluna que
   diverge da tela de licença seria a costura visível. Leva `sameAsSourceJustification`.
@@ -2077,8 +1776,8 @@ caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machin
   `commands.tabTogglePin.label` = `Fixar/desafixar aba` · confirmed. A barra fica sem espaços porque é a forma que a
   paleta de comandos já mostra; duas entradas vizinhas com espaçamento diferente leem como dois padrões.
 - **volume switcher → `seletor de volumes`** · o rótulo visível já publicado em `shortcuts.scope.volumeChooser`
-  (`Volume chooser` → `Seletor de volumes`) · confirmed. ⚠️ `commands.favoritesAdd.description` diz `alternador` para a
-  mesma coisa; a forma dos avisos segue o rótulo visível, e o `alternador` solto fica anotado abaixo.
+  (`Volume chooser` → `Seletor de volumes`) · confirmed. Nunca `alternador` (esse é o `app switcher` do macOS,
+  `alternador de apps`).
 - **NAS fica `NAS`** · o catálogo já publica o acrônimo sem glosa em `settings.network.smbConcurrency.description`
   (`a maioria dos NAS domésticos`) · confirmed.
 - **Nada concorda com `{name}`, de novo.** Os três avisos de fixar põem um VERBO logo depois do inserto
@@ -2086,18 +1785,7 @@ caminho que `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machin
   escreve o substantivo: `O servidor continua salvo`, nunca `Continua salvo`. O `pinRefusedToast` usa o molde
   `O Cmdr não conseguiu X` que a § anterior fixou.
 
-Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `ecrã`, `estar a` + infinitivo, `consoante`, `Rever`, ou `você`
-omitido onde a forma verbal fica ambígua (`Aguardando você conferir a chave` escreve o pronome de propósito). Ênclise
-pt-BR no infinitivo (`encontrá-lo`), nunca próclise. Nenhum valor leva apóstrofo ASCII, então não há `''` a dobrar. Um
-único `sameAsSourceJustification`, em `servers.hub.colStatus`.
-
-⚠️ Duas heranças pt-PT achadas na varredura, fora das 28 chaves:
-
-- `shortcuts.scope.errorScreen` dizia `Ecrã de erro`. Corrigida para **`Tela de erro`** na mesma rodada: `ecrã` é o
-  marcador pt-PT mais visível do style.md, e a chave fica no `shortcuts.json` desta rodada.
-- `errors.write.readOnlyDevice.source.message` ainda diz `Podes copiar ficheiros de lá` — `ficheiros` mais a conjugação
-  de `tu`, os dois marcadores pt-PT ao mesmo tempo. Está no `errors.json`, fora dos arquivos desta rodada, então segue
-  aberta.
+- **screen → `tela`**, nunca `ecrã` (o marcador pt-PT mais visível): `shortcuts.scope.errorScreen` = `Tela de erro`.
 
 ## O painel de adicionar servidor, a chave de host e as duas linhas do "Ir para o caminho" (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`signIn`/`hostKeyChanged*`, `goToPath.dialog.opensServer`/`addsServer`, `commands.serversConnect.label`)
 
@@ -2189,11 +1877,7 @@ apoiaria no `{name}` do título; mesma regra do style.md § final. E nenhuma das
 falha do usuário: `O Cmdr parou de conectar a {name}` põe o Cmdr como sujeito, no molde `O Cmdr parou de …` que
 `search.walkHandoff.superseded` já publica.
 
-Varredura pt-PT do lote: zero ocorrências de `ficheiro`, `ecrã`, `estar a` + infinitivo, `consoante`, `Rever`,
-`alterar o nome`, ou `você` omitido onde a forma verbal fica ambígua (`um endereço que você copiou`,
-`a que você recebeu`). Nenhum valor leva apóstrofo ASCII, então não há `''` a dobrar.
-
-## Duas linhas novas no painel: a reconexão automática e o login por chave (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`, 2026-09-07)
+## Duas linhas novas no painel: a reconexão automática e o login por chave (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)
 
 Duas chaves do mesmo painel de servidor. A primeira é a manchete enquanto o Cmdr, sozinho e num laço de backoff, traz de
 volta uma conexão que caiu (embaixo dela: um indicador de atividade, a contagem regressiva até a próxima tentativa e os
@@ -2242,14 +1926,7 @@ tradução). O `{name}` fica intacto e nada concorda com ele; a reticência é o
 `sameAsSourceJustification`: os dois valores diferem do inglês. Varredura pt-PT: zero `ficheiro`, `ecrã`, `estar a` +
 infinitivo, `consoante`, `Rever`, `alterar o nome` ou próclise.
 
-### Bandeira de revisão desta rodada
-
-- **`uma chave` sozinha, no mesmo painel onde `chave` é a chave DO HOST** (`paneState.signedOutNothingToAsk`): duas
-  chaves acima, `hostKeyChangedHint` diz `A chave do servidor mudou`, e ali `chave` é a do host; nesta linha é a do
-  cliente. O inglês tem exatamente a mesma ambiguidade e os dois estados nunca aparecem juntos na tela, então o valor
-  fica literal. Confirmar isso, ou escrever `uma chave SSH` e divergir do inglês.
-
-## Fixar no seletor, chaves de host confiáveis e o painel do ADB (`menu.network.pinToSwitcher`/`unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`adb`, `settings.summary.servers`/`adb`, `settings.appearance.tintSmb.*`, 2026-09-07)
+## Fixar no seletor, chaves de host confiáveis e o painel do ADB (`menu.network.pinToSwitcher`/`unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`adb`, `settings.summary.servers`/`adb`, `settings.appearance.tintSmb.*`)
 
 Três superfícies numa rodada: os dois itens de menu que põem e tiram um servidor do seletor de volumes (mais a
 notificação única que aparece quando o grupo `Rede` fica cheio), a tela `Ajustes > Sistemas de arquivos > Servidores`
@@ -2305,7 +1982,7 @@ lidos em 2026-09-07), o caminho que `docs/i18n/reference-pile/how-to-mine.md` §
   frase, então o pronome fecha sozinho; a mesma forma fecha o estado vazio (`e pergunta se você confia nela`), onde o
   inglês para em `and asks` e o português precisa do complemento para a frase não ficar pendurada · high
 - **`Android platform tools` → `ferramentas de plataforma do Android`, `USB debugging` → `depuração USB`,
-  `Location of adb` → `Localização do adb`** · termos já fixados na § Terminology and glossary do `style.md`, na rodada
+  `Location of adb` → `Localização do adb`** · termos já fixados em `terms.json`, na rodada
   do ADB; a linha do campo vazio copia o `procura o adb nos lugares de sempre` que
   `settings.fileOperations.adbBinaryPath.description` publica.
 - **`Tint server panes (SMB, SFTP, WebDAV)` → `Matizar painéis de servidor (SMB, SFTP, WebDAV)`** · o inglês deixou de
@@ -2316,18 +1993,31 @@ Dois `sameAsSourceJustification`: `settings.section.adb` (`Android (ADB)`, nome 
 depuração, as duas na lista de não-traduzir) e `settings.adb.status.label` (`Status`, o empréstimo naturalizado que a §
 Terms já fixou e que as irmãs `licensing.section.labelStatus` e `servers.hub.colStatus` publicam).
 
-Varredura pt-PT do lote: zero `ficheiro`, `ecrã`, `estar a` + infinitivo, `consoante`, `Rever`, `alterar o nome`,
-próclise, ou `você` omitido onde a forma verbal fica ambígua. Nenhum valor leva apóstrofo ASCII, então não há `''` a
-dobrar; os dois valores de `menu.*` (família RAW) também não levam. `{command}`, `{path}` e `{host}` ficam intactos, e
-nada concorda com eles.
+## O acesso por ADB nos Ajustes (`settings.fileOperations.adbEnabled.*`, `settings.fileOperations.adbBinaryPath.*`)
 
-### Bandeira de revisão desta rodada
+As duas linhas que ligam o acesso aos arquivos do Android por ADB e apontam onde fica o `adb`. A pilha de referência não
+existia na máquina onde esta rodada correu, então as fontes vêm do macOS instalado (26.6.2 build 25G83, 2026-09-06), o
+caminho de `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
 
-- **`Fixar no seletor`, com `seletor` sozinho** (`menu.network.pinToSwitcher`): o termo cheio publicado é
-  `seletor de volumes`, e aqui ele aparece cortado, seguindo o `switcher` do inglês. Confirmar, ou escrever
-  `Fixar no seletor de volumes` e aceitar um item de menu de cinco palavras.
+- file system / filesystem · **sistema de arquivos** · macOS pt-BR `Utilitário de Disco` (`Localizable.loctable`:
+  `File system` → `Sistema de arquivos`); o catálogo já usava a forma em
+  `settings.advanced.fileWatcherDebounce.description` · confirmed
+- location (de um arquivo ou comando) · **localização** · macOS pt-BR Finder (`FI12` `This location is read-only` →
+  `Esta localização é somente leitura`; `BU39` `Choose Location…` → `Escolher Localização…`). Rótulo em caixa de frase:
+  `Localização do adb` · confirmed
+- debugging / debug mode · **depuração** · Apple pt-BR, Safari `pt.lproj/DeveloperPreferences.strings`
+  (`Enable … debug mode` → `Ativar modo de depuração de …`). Daí `USB debugging` → **depuração USB**, que também é o
+  rótulo do próprio Android em pt-BR · high
+- (Android) platform tools · **ferramentas de plataforma (do Android)** · sem fonte no macOS nem na Microsoft (é termo do
+  Google); forma descritiva, com o comando `adb` como âncora concreta na mesma frase · tentative
+- over ADB / via ADB · **por ADB** · segue o `por USB` / `pelo USB` que o catálogo já publica
+  (`settings.fileOperations.mtpConnectionWarning.description`, `fileExplorer.navigation.spaceMtpHint`) · high. O
+  interruptor se chama `Acesso aos arquivos do Android por ADB`.
+- Leave this empty · **Deixe em branco** · molde já publicado em `settings.askCmdr.interactiveModel.description` · high
+- `adb`, `ADB`, `Android`, `Android SDK`, `Homebrew`, `Mac`, `USB`, `MTP` ficam verbatim; `adb` em minúsculas, que é o
+  nome do comando.
 
-## O painel do celular Android e a dica de depuração USB (`adb.*`, `settings.behavior.adbHintDismissed.*`, 2026-09-07)
+## O painel do celular Android e a dica de depuração USB (`adb.*`, `settings.behavior.adbHintDismissed.*`)
 
 As 19 chaves novas do ADB: o painel cheio que substitui a listagem quando um celular não abre (`adb.connect.*`), as
 dicas de passar o mouse na linha do celular dentro do seletor de volumes (`adb.readiness.*`), a linha discreta no topo
@@ -2341,7 +2031,7 @@ termos do Android vêm do AOSP, que é a fonte autoritativa da tradução do pr�
 - **`USB debugging` → `depuração USB`** · AOSP, `frameworks/base/packages/SystemUI/res/values-pt-rBR/strings.xml`
   (`usb_debugging_title` = `Permitir a depuração USB?`, `usb_debugging_secondary_user_title` =
   `Depuração USB não permitida`, `main`, lido em 2026-09-07) · confirmed. Casa com o `depuração` da Apple (Safari
-  `DeveloperPreferences.strings`) já registrado na § Terminology and glossary do `style.md`, e é palavra por palavra o
+  `DeveloperPreferences.strings`) já registrado em `terms.json`, e é palavra por palavra o
   que a pessoa lê no próprio celular. Fica em minúscula no meio da frase, como no Android.
 - **`Allow` (o botão do próprio Android) → `Permitir`** · AOSP, mesmo arquivo, `usb_debugging_allow` = `Permitir` (e
   `allow` = `Permitir` em `packages/apps/Settings/res/values-pt-rBR/strings.xml`) · confirmed. É o botão que a pessoa vê
@@ -2350,7 +2040,7 @@ termos do Android vêm do AOSP, que é a fonte autoritativa da tradução do pr�
   o objeto (`as soon as you do`), que em português deixa a frase pendurada; `permitir` fecha a frase E ecoa o botão
   `Permitir` da linha de cima, que é a mesma palavra na tela do celular · high
 - **`Android platform tools` → `ferramentas de plataforma do Android`** · reúso da rodada de
-  `settings.fileOperations.adb*` (§ Terminology and glossary do `style.md`), onde ficou `tentative` por ser termo do
+  `settings.fileOperations.adb*` (`terms.json`), onde ficou `tentative` por ser termo do
   Google sem fonte no macOS nem na Microsoft; `settings.adb.install.intro` já publica a mesma forma · tentative
 - **`phone` → `celular`** · pt-BR, já publicado em `settings.summary.adb`,
   `settings.fileOperations.mtpEnabled.description` e `errors.listing.deviceDisconnected.explanation` · confirmed.
@@ -2386,8 +2076,8 @@ termos do Android vêm do AOSP, que é a fonte autoritativa da tradução do pr�
   (`settings.fileOperations.mtpConnectionWarning.description`, `fileExplorer.navigation.spaceMtpHint`) · high
 - **`the whole filesystem` → `o sistema de arquivos inteiro`** · byte a byte com
   `settings.fileOperations.adbEnabled.description`, que já publica
-  `o sistema de arquivos inteiro de um celular Android`; `sistema de arquivos` é o termo do Utilitário de Disco (§
-  Terminology and glossary do `style.md`) · confirmed
+  `o sistema de arquivos inteiro de um celular Android`; `sistema de arquivos` é o termo do Utilitário de Disco
+  (`terms.json` `file-system`) · confirmed
 - **`Wake its screen` → `Ative a tela dele`** · `ativar` é o verbo da Apple para tirar do repouso, e o `dele` aponta
   para `celular` (masculino, único candidato na frase) · high. Sem vírgula antes do `ou`: o português não a usa numa
   lista de dois, mesmo onde o inglês põe.
@@ -2435,9 +2125,9 @@ As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, qu
   nada de desculpa nem de `erro`. `salva` concorda com `senha`, nunca com `{name}` (§ style.md, «Nada concorda com um
   `{name}`»).
 - A pilha de referência não estava nesta máquina (`_ignored/i18n/` também não existe no clone principal), então a
-  decisão se apoia no catálogo já publicado e neste glossário.
+  decisão se apoia no catálogo já publicado e no termbase.
 
-## A duração das tentativas, o título da chave do servidor e o botão Permitir do Android
+## A duração das tentativas, o título da chave do servidor e o botão Permitir do Android (`servers.paneState.retryTotalSeconds`/`retryTotalMinutes`, `servers.refusal.hostKeyRevoked`, `servers.hostKey.*`, `adb.connect.unauthorized`)
 
 - **`{seconds}`/`{minutes}` agora têm um plural ICU com DOIS marcadores** (`servers.paneState.retryTotalSeconds`,
   `.retryTotalMinutes`): `{seconds}` só escolhe o ramo, e o que se lê é `{secondsText}`, o número já formatado. O
@@ -2453,7 +2143,7 @@ As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, qu
   (`Confira seu celular e toque em Permitir.`), sem aspas como lá, para o usuário ler a mesma palavra que vê na tela. O
   verbo `tocar em` vem da mesma chave, e `celular` é a palavra pt-BR já usada no catálogo · `high`.
 - A pilha de referência não estava nesta máquina (`_ignored/i18n/` também não existe no clone principal), então a
-  decisão se apoia no catálogo já publicado e neste glossário.
+  decisão se apoia no catálogo já publicado e no termbase.
 
 ## O menu de contexto da linha do servidor: `Abrir` e `Editar servidor…`
 
@@ -2471,13 +2161,13 @@ As duas linhas abaixo dos campos esmaecidos `Endereço` e `Nome de usuário`, qu
 - A pilha de referência não está nesta máquina, mas o `Finder.app` dá a mesma evidência de nível 1 direto do sistema
   (`docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?").
 
-## Function key bar context menu (2026-09-07)
+## O menu de contexto da barra de teclas de função (`menu.context.hideFunctionKeyBar`, `settings.appearance.showFunctionKeyBar.*`)
 
 - function key bar (a linha de botões de comando das teclas de função na parte inferior da janela) → barra de teclas de
   função · já definido no catálogo (`settings.appearance.showFunctionKeyBar.label`); reutilizado para o item do menu de
-  contexto e o respetivo toast · high
+  contexto e o respectivo aviso · high
 
-## A IA deixou de se chamar Ask Cmdr fora do painel de chat (2026-09-09)
+## A IA deixou de se chamar Ask Cmdr fora do painel de chat (`askCmdr.wake*`, `settings.askCmdr.proactive.description`, `ai.cloudConsent.askCmdr.*`)
 
 O inglês passou a guardar `Ask Cmdr` só onde o nome aponta para o PAINEL de chat em si (o título dele, o item do menu
 Visualizar, o comando da paleta, a seção de ajustes, o interruptor que liga e desliga). Toda frase que apenas descrevia
@@ -2506,7 +2196,7 @@ memória de como a chave era antes.
 - **`para ti` era resíduo pt-PT** em `askCmdr.wakeToast.title`; virou `para você`, o pronome pt-BR que a § Variant do
   `style.md` já lista como marcador de variante.
 
-## Os passos de configuração de provedor de IA (2026-09-09)
+## Os passos de configuração de provedor de IA (`onboarding.cloudSetup.*`)
 
 Chaves `onboarding.cloudSetup.*`, revistas contra a pilha de referência (`pt-BR/microsoft-terminology/`).
 
@@ -2528,9 +2218,8 @@ Chaves `onboarding.cloudSetup.*`, revistas contra a pilha de referência (`pt-BR
 - **`then` de um passo em duas etapas vira `e depois`**, não some: `onboarding.cloudSetup.step.lmStudioServer` diz
   `Carregue um modelo no LM Studio e depois inicie o servidor local`, porque a ordem é a informação do passo.
 - `Ollama`, `LM Studio`, `Azure OpenAI`, `Azure`, `api-version` e o comando `ollama pull llama3.2` ficam verbatim.
-  contexto e o respectivo toast · high
 
-## O convite para fixar o Cmdr no Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`, 2026-09-09)
+## O convite para fixar o Cmdr no Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 
 Pilha de referência lida em `_ignored/i18n/pt-BR/` (o conjunto brasileiro; o `pt/` nu é europeu, § style.md).
 
@@ -2552,7 +2241,7 @@ Pilha de referência lida em `_ignored/i18n/pt-BR/` (o conjunto brasileiro; o `p
 - **`managed` → `gerenciado`** · macOS pt-BR (`Managed iCloud Drive` → `iCloud Drive Gerenciado`) e o próprio catálogo
   (`errors.provider.*`: `Esta pasta é gerenciada pelo …`). O agente que administra vira `Quem gerencia este Mac`, o
   mesmo verbo, para a frase não trocar de família no meio · confirmed
-- **`log in` (na conta do Mac) → `iniciar a sessão`** · o termo Apple já travado neste glossário para `Sign in`
+- **`log in` (na conta do Mac) → `iniciar a sessão`** · o termo Apple já travado no termbase para `Sign in`
   (`Iniciar Sessão…`, Finder `NE104`) e já publicado em `fileExplorer.navigation.connectionTooltipNeedsSignIn` e
   `servers.paneState.signedOutNothingToAsk` · confirmed
 
@@ -2618,12 +2307,7 @@ pt-BR; `está a usar` seria marcador pt-PT (§ style.md).
 (`Oferta do Dock feita`) e descrição no formato `Se a … única … já foi …`
 (`Se a oferta única de adicionar o Cmdr ao Dock já foi feita.`) · high
 
-### Bandeira de revisão desta rodada
-
-- `Não precisa` para `No, thanks`: neutro e natural, mas é a escolha menos literal das onze. Se David preferir o
-  literal, a alternativa é `Não, obrigado`, com o custo de gênero descrito acima.
-
-## O menu do ícone do Cmdr no Dock (`menu.dock.*`, 2026-09-09)
+## O menu do ícone do Cmdr no Dock (`menu.dock.*`)
 
 Cinco itens do menu que aparece ao clicar com o botão direito no ícone do Cmdr no Dock. Família RAW (`menu.*`):
 apóstrofo SIMPLES, `{name}` e `{parent}` são alvos literais de substituição, nunca argumentos ICU. Nenhum valor leva
@@ -2651,7 +2335,7 @@ do Sistema, mas **não** o Dock, então esse arquivo é a fonte que decide a for
   (`Ir para o caminho…`), que é outro comando e outro inglês.
 - **`Connect to server…` → `Conectar ao servidor…`** · macOS Finder pt-BR, `MenuBar.json` `266.title`
   (`Conectar ao Servidor…`), mais o título da janela em `ConnectToWindow.json` `1.title` · confirmed. É a linha
-  `Connect to server` que este glossário já trava.
+  `Connect to server` que este termbase já trava.
 - **`Search files…` → `Buscar arquivos…`, byte a byte igual a `menu.edit.searchFiles`** · o inglês das duas chaves é o
   mesmo (`sourceHash` `149a9d1`), o `desktop-i18n-term-consistency` compara pelo inglês, e os dois itens disparam o
   MESMO comando: qualquer diferença de palavra leria como dois comandos · confirmed.
@@ -2669,13 +2353,7 @@ Nada pode concordar com `{name}` nem com `{parent}`: são nomes de pasta vindos 
 particípio nem adjetivo (a mesma regra do § "Nada concorda com um `{name}`" do `style.md`). Registrado com
 `sameAsSourceJustification` na própria chave.
 
-### Varredura pt-PT deste lote
-
-`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`, `alterar o nome`, `você`
-omitido: zero ocorrências. `Ir para pasta…` e `Conectar ao servidor…` vêm do `pt_BR.lproj` e do `pt-BR/` da pilha, nunca
-do europeu.
-
-## A oferta de “Mostrar no Finder” e o aviso da primeira vez (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`, 2026-09-09)
+## A oferta de “Mostrar no Finder” e o aviso da primeira vez (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)
 
 Dois momentos da mesma função: a oferta única de abrir no Cmdr o “Mostrar no Finder” de outros apps, e o aviso único na
 primeira vez que um desses pedidos cai aqui. As duas superfícies apontam para comandos do próprio macOS, então a
@@ -2691,7 +2369,7 @@ terminologia da Apple vence (style.md § superfícies do sistema).
 - **O aviso da primeira vez ❌ não é um pedido de desculpas** · Ele diz o que acabou de acontecer, por quê, e onde fica
   o botão. Daí `O Cmdr está configurado para receber esses pedidos`, ❌ nunca “desculpe” · `high`.
 
-### Termos da reescrita da introdução (`onboarding.moreAbout`, `onboarding.wizard.stepTooltip`, `onboarding.stepFda.why`/`.ifAllow`, `onboarding.stepAi.*`, `onboarding.stepBeta.checklist.*`/`.signup.*`/`.openBeta`, `onboarding.stepOptional.*.summary`)
+## Termos da reescrita da introdução (`onboarding.moreAbout`, `onboarding.wizard.stepTooltip`, `onboarding.stepFda.why`/`.ifAllow`, `onboarding.stepAi.*`, `onboarding.stepBeta.checklist.*`/`.signup.*`/`.openBeta`, `onboarding.stepOptional.*.summary`)
 
 - star (o BOTÃO do GitHub) · **Adicionar aos favoritos** · o próprio GitHub em português chama assim
   (`docs.github.com/pt/…/saving-repositories-with-stars`: "clicar em **Adicionar aos favoritos**", e "Adicionado aos
@@ -2760,10 +2438,6 @@ forma para lerem como uma coluna só. Elas também **não podem quebrar linha**,
 que o inglês (a de indexação diz `Ocupa 1 GB` e deixa `de espaço` implícito; a de atualizações fecha em
 `para ficar na última versão`, um infinitivo sem sujeito, em vez de um `para você ficar atualizado` que imporia gênero).
 
-Varredura pt-PT deste lote: `ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
-`alterar o nome`, `você` omitido em frase de resultado: zero ocorrências. `configurá-lo` é ênclise no infinitivo, a
-forma brasileira.
-
 - released copy / Dev and test builds · **versão lançada** / **builds de desenvolvimento e de teste**
   (`settings.revealHandler.notProductionBuild`) · Microsoft terminology (`PORTUGUESE (BRAZIL).tbx`: `build` → `build` /
   `compilação`, `release` → `versão`), e o catálogo já escreve `pastas … de build` em `search.systemDirExclude.default`.
@@ -2772,7 +2446,7 @@ forma brasileira.
   frase copia o molde de `settings.revealHandler.notInApplications`
   (`deixaria cada clique em “Mostrar no Finder” apontando para o nada`) · high
 
-## O painel do visualizador enquanto o arquivo chega (`viewer.pull.*`, `viewer.error.stoppedResponding`, 2026-09-10)
+## O painel do visualizador enquanto o arquivo chega (`viewer.pull.*`, `viewer.error.stoppedResponding`)
 
 Quatro chaves: o painel no meio do visualizador enquanto o Cmdr copia um arquivo de um celular, de um servidor ou de
 dentro de um arquivo compactado para um arquivo temporário, e a mensagem de quando os dados param de chegar por uns 45
@@ -2793,7 +2467,7 @@ segundos.
   copia `errors.listing.couldntReadUnknown.suggestion`, e `tente novamente` ecoa o botão `Tentar novamente`
   (`viewer.error.retry`) logo abaixo · high
 
-## O índice do celular que fica amarelo com o cabo ligado (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`bodyPhone`, 2026-09-11)
+## O índice do celular que fica amarelo com o cabo ligado (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`bodyPhone`)
 
 As versões de celular (ADB) das três strings de disco desatualizado. O celular nunca avisa quando os arquivos mudam,
 então o índice fica amarelo mesmo conectado; nenhuma das três pode falar em desconectar.
@@ -2803,9 +2477,8 @@ então o índice fica amarelo mesmo conectado; nenhuma das três pode falar em d
   Finder pt-BR (`LocalizableMerged.json` `NE103`/`NE105`: `Os itens podem estar desatualizados.`) · high. ❌ Não
   `em dia`: aparece só no sentido de pôr em dia (`indexing.step.catchUp`), e quebraria o par com o título.
 - **`rescan` → `nova varredura`** · o molde de `tooltipStale` (`Faça uma nova varredura`) e o substantivo travado acima
-  (§ drive scan, § full check) · confirmed. ⚠️ A irmã `indexing.staleDialog.body` ainda diz `examinar o disco de novo` e
-  `uma nova análise`; `análise` é o termo reservado da pré-contagem de transferência, então o corpo de disco é que está
-  fora do molde. Ficou intocado nesta rodada (fora do escopo).
+  (`terms.json` `scan`) · confirmed. A irmã `indexing.staleDialog.body` diz `nova varredura` também; `análise` é o
+  termo reservado da pré-contagem de transferência.
 - **`{name} doesn''t tell Cmdr when its files change` → `{name} não avisa o Cmdr quando os arquivos do celular mudam`**
   · `its files` viraria `dele` ou `nele`, que concordam com `{name}`; a frase escreve o substantivo, como manda o §
   «Nada concorda com um `{name}`» do `style.md` · high
@@ -2817,7 +2490,7 @@ então o índice fica amarelo mesmo conectado; nenhuma das três pode falar em d
 
 Nenhum valor leva apóstrofo. Varredura pt-PT: zero `ficheiro`, `telemóvel`, `estar a` + infinitivo, próclise.
 
-## Pasta raiz e pasta inicial de um servidor salvo (`servers.sheet.rootFolder*` / `startFolder*` / `nameHelp`, `servers.refusal.startFolderOutsideRoot` / `rootNotFound` / `startFolderNotFound` / `saveUnconfirmed`, 2026-09-11)
+## Pasta raiz e pasta inicial de um servidor salvo (`servers.sheet.rootFolder*` / `startFolder*` / `nameHelp`, `servers.refusal.startFolderOutsideRoot` / `rootNotFound` / `startFolderNotFound` / `saveUnconfirmed`)
 
 A folha de adicionar ou editar um servidor SFTP ou WebDAV ganhou dois campos: o TETO no servidor (o Cmdr nunca navega
 acima dele) e a pasta onde o painel abre (a própria raiz ou uma pasta dentro dela; em branco = a raiz). Os dois termos
@@ -2859,7 +2532,7 @@ se repetem nas nove chaves (rótulos, legendas e recusas), então cada um é uma
 Nenhum valor leva apóstrofo, então não há `''` a dobrar, e nenhum precisa de `sameAsSourceJustification`. Varredura
 pt-PT: zero `ficheiro`, `estar a` + infinitivo, `guardar`, próclise antes de infinitivo, `tu`.
 
-## Por que um compartilhamento não monta ou a lista não carrega (`errors.mount.*`, `errors.shareList.*`, 2026-09-11)
+## Por que um compartilhamento não monta ou a lista não carrega (`errors.mount.*`, `errors.shareList.*`)
 
 As frases sob «Não foi possível montar o compartilhamento» (`fileExplorer.networkMount.mountFailedTitle`) e «Não foi
 possível conectar a {hostName}» (`fileExplorer.network.share.connectFailedTitle`), mais os avisos
@@ -2919,11 +2592,11 @@ que redige esses mesmos casos para «Conectar ao Servidor» e não está na pilh
   `disconnect → Desconectar`, como `indexing.staleDialog.body` · `high`. O substantivo “disco” vem na frente para o
   particípio concordar com ele, e o gênero de `{name}` não pesa — mesma solução da irmã
   `fileExplorer.navigation.driveIndex.driveLeaving`, mas no passado, porque lá a ejeção ainda está em andamento. “Starts
-  from scratch” → “começa do zero”. A varredura é `varredura`, o substantivo do glossário para a varredura de disco, e
-  não “análise”, reservado à pré-contagem de transferência (`indexing.rescan.incompletePreviousScan` ainda diz
-  “análise”: deriva antiga, a corrigir numa varredura).
+  from scratch” → “começa do zero”. A varredura é `varredura`, o substantivo do termbase para a varredura de disco, e
+  não “análise”, reservado à pré-contagem de transferência (`indexing.rescan.incompletePreviousScan` diz “A varredura
+  anterior” também).
 
-## A drive pulled mid-transfer (errors.write.deviceDisconnected.sided.destination.copy)
+## A drive pulled mid-transfer (`errors.write.deviceDisconnected.sided.*`)
 
 As quatro linhas com lado (`errors.write.deviceDisconnected.sided.destination.copy`,
 `errors.write.deviceDisconnected.sided.destination.move`, `errors.write.deviceDisconnected.sided.source.copy` e
@@ -2971,11 +2644,8 @@ não o gerúndio de `fileExplorer.navigation.driveIndex.driveLeaving`.
   `fileOperations.cancelRollback.reason.drift.named` (“depois que o Cmdr colocou lá”) · high. O sintagma
   `{done} de {total} arquivos` fica na ordem do inglês; os dois números chegam já formatados, então nada de ICU em volta
   deles.
-- Varredura pt-PT dos quatro valores (ficheiro, `estar a` + infinitivo, consoante, próclise antes de infinitivo, Rever,
-  alterar o nome, guardar, você omitido em frase de resultado), mais U+2019, apóstrofo duplo e espaço duplo: zero
-  ocorrências. Nenhum `sameAsSourceJustification`: os quatro diferem do inglês.
 
-## A move that could not be confirmed (errors.write.moveNotConfirmed.title)
+## A move that could not be confirmed (`errors.write.moveNotConfirmed.*`)
 
 Nem falha nem perda: o Cmdr copiou, não conseguiu PROVAR que o destino gravou, e por isso guardou os originais. As
 quatro linhas (`errors.write.moveNotConfirmed.title`, `errors.write.moveNotConfirmed.message.named`,
@@ -2988,7 +2658,7 @@ movimentação deu errado”, pela mesma regra das linhas de desfecho da § O co
 - **Cmdr couldn''t confirm · `O Cmdr não conseguiu confirmar`** · no CORPO o inglês nomeia o sujeito, então o português
   também: `O Cmdr não conseguiu {infinitivo}` é o molde já publicado em `errors.eject.unexpected` (“o Cmdr não conseguiu
   identificar o quê”) · high. O impessoal fica só para o TÍTULO, onde não há espaço para sujeito.
-- **the moved files were saved · `os arquivos movidos foram salvos`** · **salvar** é o verbo travado do glossário (❌
+- **the moved files were saved · `os arquivos movidos foram salvos`** · **salvar** é o verbo travado do termbase (❌
   nunca `guardar`, indício pt-PT); a passiva é do inglês e o sujeito é `os arquivos`, então a frase não fica sem sujeito
   · high. `servers.refusal.saveUnconfirmed` usa a mesma passiva pelo mesmo motivo (“nada foi salvo”).
 - **so it kept your originals · `então ele manteve seus originais onde estavam`** · o pronome **ele** retoma `O Cmdr`
@@ -3008,8 +2678,6 @@ movimentação deu errado”, pela mesma regra das linhas de desfecho da § O co
   de “sair do lugar” no macOS pt-BR) · tentative. A alternativa atestada é `continuam onde estavam`
   (`fileOperations.cancelRollback.moveAlreadyLanded`), recusada aqui só porque repetiria palavra por palavra a frase do
   corpo, que aparece logo acima no MESMO painel; o inglês também varia a formulação entre as duas.
-- Varredura pt-PT dos quatro valores e checagem de apóstrofo/aspas: zero ocorrências. Nenhum
-  `sameAsSourceJustification`: os quatro diferem do inglês.
 
 ## An unfinished move's staging folder left in place (`fileOperations.leftovers.stagingFolderKept`)
 
@@ -3053,10 +2721,6 @@ pasta, e ❌ nunca as palavras `erro` ou `falha`. Atenção à distinção com a
   prejulga que nada foi tocado, e `intacto` já está reservado a "untouched" em
   `errors.write.deviceDisconnected.sided.*`). Compensação: `no disco {volumeName}` + `em uma pasta oculta chamada …`
   mantêm a frase concreta e endereçável, que é a função do toast.
-- Varredura pt-PT do valor (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
-  `alterar o nome`, `guardar`, `você` omitido em frase de resultado): zero ocorrências; marca brasileira: `arquivos`. O
-  valor não leva apóstrofo nem aspas, então não há `''` a dobrar mesmo sendo família ICU. Nenhum
-  `sameAsSourceJustification`: o valor difere do inglês.
 
 ## O menu de favoritos (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent` / `favoritesAlreadyAdded` / `favoritesCantAddHere` / `seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
@@ -3155,15 +2819,7 @@ longa que o inglês; `funcionar em` é um locativo simples. Sem ponto final (é 
 anterior mandava a pasta para "os Favoritos do alternador", uma seção que o M3 removeu, então descrevia uma superfície
 que já não existe. Imperativo de 2ª pessoa, como toda `commands.*.description`.
 
-### Varredura final
-
-pt-PT (`ficheiro`, `partilha`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo, `Rever`,
-`alterar o nome`, `guardar`, `só de leitura`, formas de `tu`): zero ocorrências nos dez valores. Marcas brasileiras:
-`compartilhamento`, `pressione`, `em foco`. Nenhum valor leva apóstrofo, então não há `''` a dobrar nas famílias ICU, e
-`menu.go.showFavorites` (família RAW) também fica sem apóstrofo. Nenhum `sameAsSourceJustification`: os dez valores
-diferem do inglês. Glifos de modificador e os dígitos 0–9 não aparecem em nenhum valor.
-
-## Quem está segurando o disco: a recusa que NOMEIA (`errors.eject.unmountRefusedByApp`/`ByApps`/`otherApps`/`ByDiskImage`/`BySystem`/`ByCmdr`, 2026-09-16)
+## Quem está segurando o disco: a recusa que NOMEIA (`errors.eject.unmountRefusedByApp`/`ByApps`/`otherApps`/`ByDiskImage`/`BySystem`/`ByCmdr`)
 
 Seis chaves novas da mesma família das nove da § Recusas de ejetar e desconectar: o macOS recusou a ejeção e agora o
 Cmdr sabe DIZER o que segura o disco. Entram no mesmo aviso rápido depois de dois pontos
@@ -3224,9 +2880,6 @@ mesmo molde `<sujeito> ainda está usando este disco. <ação>, depois ejete-o d
 - **`if it keeps happening` → `se isso continuar acontecendo`** · forma já publicada em sete chaves de `errors.json` ·
   confirmed. O `isso` explícito (e não o `se continuar acontecendo` de `errors.serverRequest.unexpected`) porque a
   oração vem logo depois de `ejete-o de novo`, e sem sujeito ela se leria como "se a ejeção continuar acontecendo".
-- Varredura pt-PT dos seis valores (`ficheiro`, `estar a` + infinitivo, `consoante`, próclise antes de infinitivo,
-  `Rever`, `alterar o nome`, `guardar`, `você` omitido em frase de resultado), mais U+2019, apóstrofo duplo e espaço
-  duplo: zero ocorrências. Nenhum `sameAsSourceJustification`: os seis diferem do inglês.
 
 ## Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)
 
@@ -3248,7 +2901,7 @@ mesmo molde `<sujeito> ainda está usando este disco. <ação>, depois ejete-o d
   so `i18n-terms` holds each pair identical. Reword neither alone. The only legitimate difference is the apostrophe:
   `menu.*` is a RAW family (single `'`), `commands.*` is ICU (doubled `''`), and the check normalizes that away.
 
-## The title-bar full-disk-access badge
+## The title-bar full-disk-access badge (`onboarding.fdaBadge.*`)
 
 A pílula de aviso na barra de título e o seu tooltip, exibidos enquanto o Cmdr não tem acesso total ao disco; um clique
 reabre a introdução no passo 1.
@@ -3303,7 +2956,7 @@ para quando tudo está somente online. Elas só diferem na primeira frase e nas 
 chave é a linha que aparece quando o Cmdr devolve um clique.
 
 - **`.cloudOnlineOnlyMixedWarning`** · `somente online` é a fórmula do Finder para um arquivo despejado; `Lixo` e
-  `serviço de nuvem` vêm de § Terms · medium.
+  `serviço de nuvem` vêm de `terms.json` · medium.
 - **`.cloudOnlineOnlyAllWarning`** · mesmo texto, com “Tudo o que você selecionou” no lugar de “Parte da sua seleção”, e
   sem a saída de desmarcar: se tudo está somente online, não sobraria nada selecionado · medium.
 - **`.cloudOnlineOnlyHandedBack`** · a linha acima do botão depois de um clique que o Cmdr não executou de propósito.
@@ -3313,11 +2966,8 @@ chave é a linha que aparece quando o Cmdr devolve um clique.
   nomeia.
 - **Os dois trechos `<strong>` ficam**, em “download deles primeiro” e no verbo “apagar”. E “Apagar” entre aspas é o
   rótulo do botão: sempre igual a `fileOperations.delete.confirmDelete`.
-- Não precisa de `sameAsSourceJustification`: todos os valores diferem do inglês.
-- Conferir na passagem de overflow: o aviso é longo e fica numa faixa estreita acima da lista de arquivos.
-- ⚠️ Rascunho, ainda sem revisão humana.
 
-## Quando o servidor diz que aquele compartilhamento não existe (`fileExplorer.network.osMountFallback.shareNotOnServer`, `fileExplorer.pane.directConnectionShareNotOnServerToast`, 2026-09-17)
+## Quando o servidor diz que aquele compartilhamento não existe (`fileExplorer.network.osMountFallback.shareNotOnServer`, `fileExplorer.pane.directConnectionShareNotOnServerToast`)
 
 O único caso desta família em que tentar de novo não adianta: o servidor responde com clareza que não tem nenhum
 compartilhamento com aquele nome. Por isso este aviso não traz botão, e o tom não pode sugerir nada temporário (nada de
@@ -3339,9 +2989,6 @@ compartilhamento com aquele nome. Por isso este aviso não traz botão, e o tom 
 - **"a lot slower" → `bem mais lenta`** · aqui o inglês não dá multiplicador, diferente do irmão com `4x` · `high`.
 - O aviso curto fecha com `então ele continua na conexão do sistema`, o mesmo fecho dos três irmãos
   (`fileExplorer.pane.directConnectionUnreachableToast`…).
-- Marcadores brasileiros conferidos: `compartilhamento` (nunca "partilha"), `conectado`, `renomeado`. Varredura pt-PT
-  (ficheiro, `estar a` + infinitivo, próclise): zero ocorrências.
-- Nenhum valor precisa de `sameAsSourceJustification`: os dois diferem do inglês.
 
 ## Nomes que parecem iguais no servidor (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.explanation`, `errors.volume.ambiguousName`)
 
@@ -3366,7 +3013,7 @@ caixa das letras).
   `fileOperations.delete.cloudOnlineOnlyHandedBack` (`oferece “Apagar”`). O rótulo copia
   `fileOperations.transferProgress.conflictOverwrite` byte a byte · `high`.
 
-## O interruptor “Permitir IA na nuvem” e os estados de nuvem desligada (`ai.cloudConsent.*`, `askCmdr.gate.*`, 2026-09-23)
+## O interruptor “Permitir IA na nuvem” e os estados de nuvem desligada (`ai.cloudConsent.*`, `askCmdr.gate.*`)
 
 Um interruptor de consentimento de privacidade: desligado por padrão, e nada sai do Mac até ele ser ligado. O texto tem
 de ser calmo e nunca prometer mais do que o Cmdr faz. Fontes vêm do macOS instalado (a pilha não está no M1), o caminho
@@ -3395,7 +3042,7 @@ de `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
 - `settings.askCmdr.enabled.label` = `Ask Cmdr`, idêntico ao inglês com `sameAsSourceJustification` (nome do produto,
   como `settings.section.askCmdr`).
 
-### Esc e tela cheia (`main.escapeFullScreenHint.*` + `settings.advanced.exitFullScreenOnEscape*`, 2026-09-23)
+## Esc e tela cheia (`main.escapeFullScreenHint.*` + `settings.advanced.exitFullScreenOnEscape*`)
 
 - Escape (a tecla) · **Esc** · macOS pt-BR, AppKit `FunctionKeyNames.loctable` (`Escape` → `Esc`, lido no macOS 27.0
   build 26A428, 2026-09-23); o catálogo já tinha `ESC` em `shortcuts.section.pressEscToClear`, mas o nome da Apple em
@@ -3419,8 +3066,10 @@ de `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
 
 ## Linhas de espera em "Abrir com" e "Compartilhar" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
 
+## Linhas de espera em "Abrir com" e "Compartilhar" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)
+
 - Finding apps… · **Buscando apps…** · gerúndio pt-BR, como `settings.behavior.textEditorApp.checking`
-  (`Verificando seus apps…`); `buscar` = search no glossário · high
+  (`Verificando seus apps…`); `buscar` = search no termbase · high
 - share options · **opções de compartilhamento** · substantivo do verbo do submenu `Compartilhar`; o mesmo
-  `compartilhamento` do glossário · high
+  `compartilhamento` do termbase · high
 - No share options · **Nenhuma opção de compartilhamento** · afirmação calma, sem "erro" · high

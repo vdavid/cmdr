@@ -891,7 +891,7 @@
   "@fileExplorer.dirSize.unknownTooltip": {
     "sourceHash": "0207a3d"
   },
-  "fileExplorer.dirSize.staleLine": "Estes tamanhos são de uma análise anterior e podem estar desatualizados.",
+  "fileExplorer.dirSize.staleLine": "Estes tamanhos são de uma varredura anterior e podem estar desatualizados.",
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
@@ -987,7 +987,7 @@
   "@fileExplorer.selectionTooltip.onDiskHeader": {
     "sourceHash": "9795f99"
   },
-  "fileExplorer.entry.brokenSymlink": "(symlink quebrado)",
+  "fileExplorer.entry.brokenSymlink": "(link simbólico quebrado)",
   "@fileExplorer.entry.brokenSymlink": {
     "sourceHash": "a7ffd43"
   },
@@ -1076,7 +1076,7 @@
   "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
     "sourceHash": "2f69a1b"
   },
-  "fileExplorer.selectionInfo.symlinkHint": "Esta pasta contém symlinks. O conteúdo dos symlinks não é contado no total para evitar contagem dupla.",
+  "fileExplorer.selectionInfo.symlinkHint": "Esta pasta contém links simbólicos. O conteúdo dos links simbólicos não é contado no total para evitar contagem dupla.",
   "@fileExplorer.selectionInfo.symlinkHint": {
     "sourceHash": "414ed75"
   },
@@ -1294,7 +1294,7 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "sourceHash": "51f3d7d"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Atalho para {name}. Pressione A–Z ou Delete para remover.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Atalho para {name}. Pressione A–Z ou Delete para limpar.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
     "sourceHash": "31515c1"
   },
@@ -1314,7 +1314,7 @@
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
-  "fileExplorer.navigation.locationUnreachableToast": "Não foi possível acessar a unidade desse local. Talvez esteja desconectada.",
+  "fileExplorer.navigation.locationUnreachableToast": "Não foi possível acessar o disco desse local. Talvez esteja desconectado.",
   "@fileExplorer.navigation.locationUnreachableToast": {
     "sourceHash": "20126a6"
   },

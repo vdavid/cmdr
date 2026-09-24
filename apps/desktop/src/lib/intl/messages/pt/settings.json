@@ -282,7 +282,7 @@
   "@settings.appearance.showFunctionKeyBar.label": {
     "sourceHash": "e80f18d"
   },
-  "settings.appearance.showFunctionKeyBar.description": "Mostra a fileira de botões de comando das teclas F (Renomear, Visualizar, Copiar e assim por diante) na parte de baixo da janela.",
+  "settings.appearance.showFunctionKeyBar.description": "Mostra a linha de botões de comando das teclas F (Renomear, Visualizar, Copiar e assim por diante) na parte de baixo da janela.",
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
@@ -466,7 +466,7 @@
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
-  "settings.mediaIndex.clip.ready": "Pronto: pesquise suas fotos por descrição.",
+  "settings.mediaIndex.clip.ready": "Pronto: busque suas fotos por descrição.",
   "@settings.mediaIndex.clip.ready": {
     "sourceHash": "c17e03d"
   },
@@ -494,15 +494,15 @@
   "@settings.mediaIndex.clip.offButInstalled": {
     "sourceHash": "d70c2fe"
   },
-  "settings.mediaIndex.clip.deleteButton": "Excluir modelo (liberar {size})",
+  "settings.mediaIndex.clip.deleteButton": "Apagar modelo (liberar {size})",
   "@settings.mediaIndex.clip.deleteButton": {
     "sourceHash": "1957b82"
   },
-  "settings.mediaIndex.clip.deleting": "Excluindo…",
+  "settings.mediaIndex.clip.deleting": "Apagando…",
   "@settings.mediaIndex.clip.deleting": {
     "sourceHash": "43b5894"
   },
-  "settings.mediaIndex.clip.deleteConfirmTitle": "Excluir o modelo de busca semântica?",
+  "settings.mediaIndex.clip.deleteConfirmTitle": "Apagar o modelo de busca semântica?",
   "@settings.mediaIndex.clip.deleteConfirmTitle": {
     "sourceHash": "f55b160"
   },
@@ -714,19 +714,19 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Você tem {totalText} imagens indexadas; sua configuração cobre {coveredText}. {doomed, plural, one {A entrada extra continua pesquisável até você excluí-la} other {As {doomedText} entradas extras continuam pesquisáveis até você excluí-las} many {As {doomedText} entradas extras continuam pesquisáveis até você excluí-las}}.",
+  "settings.mediaIndex.reclaim.line": "Você tem {totalText} imagens indexadas; seu ajuste cobre {coveredText}. {doomed, plural, one {A entrada extra continua pesquisável até você apagá-la} other {As {doomedText} entradas extras continuam pesquisáveis até você apagá-las} many {As {doomedText} entradas extras continuam pesquisáveis até você apagá-las}}.",
   "@settings.mediaIndex.reclaim.line": {
     "sourceHash": "aaef941"
   },
-  "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Excluir a entrada extra e liberar cerca de {size}} other {Excluir as entradas extras e liberar cerca de {size}} many {Excluir as entradas extras e liberar cerca de {size}}}",
+  "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Apagar a entrada extra e liberar cerca de {size}} other {Apagar as entradas extras e liberar cerca de {size}} many {Apagar as entradas extras e liberar cerca de {size}}}",
   "@settings.mediaIndex.reclaim.button": {
     "sourceHash": "21c3b4b"
   },
-  "settings.mediaIndex.reclaim.confirmTitle": "Excluir entradas indexadas extras",
+  "settings.mediaIndex.reclaim.confirmTitle": "Apagar entradas indexadas extras",
   "@settings.mediaIndex.reclaim.confirmTitle": {
     "sourceHash": "778e9c6"
   },
-  "settings.mediaIndex.reclaim.confirmBody": "Excluir {doomed, plural, one {{doomedText} entrada indexada} other {{doomedText} entradas indexadas} many {{doomedText} entradas indexadas}} para liberar cerca de {size}? Você pode indexar essas imagens novamente depois, mas relê-las leva tempo.",
+  "settings.mediaIndex.reclaim.confirmBody": "Apagar {doomed, plural, one {{doomedText} entrada indexada} other {{doomedText} entradas indexadas} many {{doomedText} entradas indexadas}} para liberar cerca de {size}? Você pode indexar essas imagens novamente depois, mas relê-las leva tempo.",
   "@settings.mediaIndex.reclaim.confirmBody": {
     "sourceHash": "1491b12"
   },
@@ -734,15 +734,15 @@
   "@settings.mediaIndex.reclaim.freed": {
     "sourceHash": "8606f6b"
   },
-  "settings.mediaIndex.reclaim.alreadyCleared": "Essas entradas já foram excluídas",
+  "settings.mediaIndex.reclaim.alreadyCleared": "Essas entradas já foram apagadas",
   "@settings.mediaIndex.reclaim.alreadyCleared": {
     "sourceHash": "742a715"
   },
-  "settings.mediaIndex.reclaim.couldNotDelete": "O Cmdr não conseguiu excluir as entradas extras. Tente novamente.",
+  "settings.mediaIndex.reclaim.couldNotDelete": "O Cmdr não conseguiu apagar as entradas extras. Tente novamente.",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
     "sourceHash": "3295df4"
   },
-  "settings.mediaIndex.reclaim.deletedSpaceLater": "As entradas extras foram excluídas. O Cmdr libera o espaço em disco mais tarde.",
+  "settings.mediaIndex.reclaim.deletedSpaceLater": "As entradas extras foram apagadas. O Cmdr libera o espaço em disco mais tarde.",
   "@settings.mediaIndex.reclaim.deletedSpaceLater": {
     "sourceHash": "fe08c54"
   },
@@ -952,7 +952,7 @@
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
-  "settings.network.enabled.description": "Descobre servidores SMB na sua rede local e conecta a eles. Quando desativado, o Cmdr ainda consegue ler e escrever arquivos em compartilhamentos já montados, mas não pedirá ao macOS o acesso à Rede Local.",
+  "settings.network.enabled.description": "Descobre servidores SMB na sua rede local e conecta a eles. Quando desativado, o Cmdr ainda consegue ler e gravar arquivos em compartilhamentos já montados, mas não pedirá ao macOS o acesso à Rede Local.",
   "@settings.network.enabled.description": {
     "sourceHash": "3500345"
   },
@@ -1077,7 +1077,7 @@
   "@settings.fileOperations.mtpConnectionWarning.description": {
     "sourceHash": "9c7a648"
   },
-  "settings.fileExplorer.git.showRepoChip.label": "Mostrar etiqueta do repositório",
+  "settings.fileExplorer.git.showRepoChip.label": "Mostrar selo do repositório",
   "@settings.fileExplorer.git.showRepoChip.label": {
     "sourceHash": "7504b23"
   },
@@ -1201,7 +1201,7 @@
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
-  "settings.updates.attachEmailToReports.description": "Quando você envia um relatório de falha ou erro, inclui seu email de contato do beta para podermos responder. Você pode mudar isso por relatório.",
+  "settings.updates.attachEmailToReports.description": "Quando você envia um relatório de falha ou de problema, inclui seu e-mail de contato do beta para podermos responder. Você pode mudar isso por relatório.",
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
@@ -1249,7 +1249,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "O F3 abre o visualizador de arquivos do Cmdr, que mostra os bytes brutos (com UTF-8 com perdas para conteúdo não textual). Ao abrir uma imagem, PDF, arquivo compactado ou outro arquivo binário, o visualizador mostra um banner vermelho explicando que ⇧Espaço (Visualização rápida) ou Enter (abrir no app associado) provavelmente é o que você queria. Ative isto (ou clique em ''Nunca mostrar este aviso novamente'' no banner) para ocultar o aviso de vez.",
+  "settings.fileViewer.suppressBinaryWarning.description": "O F3 abre o visualizador de arquivos do Cmdr, que mostra os bytes brutos (com UTF-8 com perdas para conteúdo não textual). Ao abrir uma imagem, PDF, arquivo compactado ou outro arquivo binário, o visualizador mostra um banner vermelho explicando que ⇧Espaço (Visualização rápida) ou Enter (abrir no app associado) provavelmente é o que você queria. Ative isto (ou clique em “Nunca mostrar este aviso novamente” no banner) para ocultar o aviso de vez.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "b3711da"
   },
@@ -1257,7 +1257,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "O Cmdr usa Espaço para alternar a seleção de arquivos e ⇧Espaço para a Visualização rápida (o Finder usa só Espaço para a Visualização rápida). Cada vez que você pressiona Espaço na lista de arquivos, o Cmdr mostra um lembrete de um parágrafo sobre essa diferença. Ative isto (ou clique em ''Não mostrar novamente'' na notificação) para ocultar o lembrete de vez.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "O Cmdr usa Espaço para alternar a seleção de arquivos e ⇧Espaço para a Visualização rápida (o Finder usa só Espaço para a Visualização rápida). Cada vez que você pressiona Espaço na lista de arquivos, o Cmdr mostra um lembrete de um parágrafo sobre essa diferença. Ative isto (ou clique em “Não mostrar novamente” na notificação) para ocultar o lembrete de vez.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },
@@ -1285,7 +1285,7 @@
   "@settings.advanced.exitFullScreenOnEscape.description": {
     "sourceHash": "a862b71"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Aviso de Esc na tela cheia exibido",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Dica de Esc na tela cheia exibida",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
     "sourceHash": "583b08f"
   },
@@ -1337,7 +1337,7 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "Quando apps como TextEdit e Preview salvam um arquivo, o macOS grava a nova versão ao lado com um nome temporário (terminado em \".sb-\") e depois faz a troca. Desative isto para mantê-los fora da lista de arquivos.",
+  "settings.advanced.showSafeSaveFiles.description": "Quando apps como o Editor de Texto e a Pré-Visualização salvam um arquivo, o macOS grava a nova versão ao lado com um nome temporário (terminado em \".sb-\") e depois faz a troca. Desative isto para mantê-los fora da lista de arquivos.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
@@ -1542,7 +1542,7 @@
   "@settings.revealHandler.heldByOtherApp": {
     "sourceHash": "d0aa283"
   },
-  "settings.revealHandler.uninstallWarning": "<lead>Antes de desinstalar o Cmdr, desative isto.</lead> O macOS continua mandando o “Mostrar no Finder” para cá, e sem o Cmdr esses cliques simplesmente não fazem nada.",
+  "settings.revealHandler.uninstallWarning": "<lead>Antes de desinstalar o Cmdr, desative isto.</lead> O macOS continua enviando o “Mostrar no Finder” para cá, e sem o Cmdr esses cliques simplesmente não fazem nada.",
   "@settings.revealHandler.uninstallWarning": {
     "sourceHash": "3c10fd3"
   },
@@ -2004,7 +2004,7 @@
   "@settings.summary.mtp": {
     "sourceHash": "f01960a"
   },
-  "settings.summary.git": "Etiqueta do repositório, coluna de status por arquivo e o portal `.git` virtual.",
+  "settings.summary.git": "Selo do repositório, coluna de status por arquivo e o portal `.git` virtual.",
   "@settings.summary.git": {
     "sourceHash": "fa23394"
   },
@@ -2307,7 +2307,7 @@
     "sourceHash": "b87dc1e",
     "sameAsSourceJustification": "Placeholder-only value '{systemSettings} > {privacyAndSecurity} > {localNetwork}': three OS-localized macOS labels injected at runtime, joined by '> ' path arrows; no translatable text of our own."
   },
-  "settings.network.permissionWithout": "Sem isso, o Cmdr ainda consegue ler e escrever arquivos em compartilhamentos já montados, mas você não pode descobrir novos servidores nem usar nossa conexão direta mais rápida.",
+  "settings.network.permissionWithout": "Sem isso, o Cmdr ainda consegue ler e gravar arquivos em compartilhamentos já montados, mas você não pode descobrir novos servidores nem usar nossa conexão direta mais rápida.",
   "@settings.network.permissionWithout": {
     "sourceHash": "4beca45"
   },
@@ -2335,7 +2335,7 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Guardado só no seu Mac. Nunca o enviamos junto com suas estatísticas de uso, então elas não podem ser ligadas a você. Usado só para entrar em contato e, opcionalmente, anexar a um relatório que você enviar. Para parar de receber e-mails, use o link de cancelamento em qualquer mensagem que enviarmos.",
+  "settings.updates.emailPrivacyNote": "Salvo só no seu Mac. Nunca o enviamos junto com suas estatísticas de uso, então elas não podem ser ligadas a você. Usado só para entrar em contato e, opcionalmente, anexar a um relatório que você enviar. Para parar de receber e-mails, use o link de cancelamento em qualquer mensagem que enviarmos.",
   "@settings.updates.emailPrivacyNote": {
     "sourceHash": "f22c213"
   },
@@ -2419,7 +2419,7 @@
   "@settings.mediaIndex.progress.coveredDone": {
     "sourceHash": "98e10c0"
   },
-  "settings.mediaIndex.progress.kept": "{kept, plural, one {mais {keptText} imagem indexada de uma configuração mais ampla, ainda pesquisável} other {mais {keptText} imagens indexadas de uma configuração mais ampla, ainda pesquisáveis} many {mais {keptText} imagens indexadas de uma configuração mais ampla, ainda pesquisáveis}}",
+  "settings.mediaIndex.progress.kept": "{kept, plural, one {mais {keptText} imagem indexada de um ajuste mais amplo, ainda pesquisável} other {mais {keptText} imagens indexadas de um ajuste mais amplo, ainda pesquisáveis} many {mais {keptText} imagens indexadas de um ajuste mais amplo, ainda pesquisáveis}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
   },

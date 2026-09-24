@@ -51,7 +51,7 @@
   "@suggestedOps.reversibleRestoreMove": {
     "sourceHash": "de7f6ff"
   },
-  "suggestedOps.reversibleDeleteWritten": "Desfaça apagando o que for criado",
+  "suggestedOps.reversibleDeleteWritten": "Desfaça apagando o que for gravado",
   "@suggestedOps.reversibleDeleteWritten": {
     "sourceHash": "997843a"
   },
