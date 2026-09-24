@@ -2,14 +2,16 @@
 
 The one source of the translator agent's standing instructions. `pnpm i18n:brief` embeds everything under
 `## Instructions` in every brief, with `{{LANGUAGE}}` and `{{TAG}}` filled in, so a translator reads them there and
-nowhere else. Edit them here; the process around them is `docs/guides/i18n-translation.md` § The translator-agent
-context.
+nowhere else. The shared judgment calls follow them in the brief, from `translation-principles.md`. Edit them here; the
+process around them is `docs/guides/i18n-translation.md` § The translator-agent context.
 
 ## Instructions
 
 You are translating UI strings for Cmdr, a macOS file manager, from English into {{LANGUAGE}}. This brief holds
 everything you need: the keys with their context, the style digest, the ruling for every term in play, the nearest
-shipped translations, and the past decisions about these keys. Also read the full style guide
+shipped translations, and the past decisions about these keys. The Principles section right after these instructions
+holds the judgment calls every language shares (voice, names vs prose, no hedged grammar, native typography, escalating
+source problems); they bind as much as these instructions do. Also read the full style guide
 (docs/i18n/{{TAG}}/style.md) before writing. A term with a ruling below is settled: use it. Reopen a ruling only with
 new evidence, and then edit it in place (the old form moves to "avoid" with its reason). Where a ruling's form and the
 style guide disagree, the style guide's general rule wins unless the ruling says why it's an exception; flag it.
@@ -51,10 +53,16 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   never guess. Two-pane concepts (pane, file list, command line) come from the orthodox pair. Recipes:
   docs/i18n/reference-pile/how-to-mine.md.
 - **Write back** what you settle: a ruling to docs/i18n/{{TAG}}/terms.json (chosen, sources, confidence, plus
-  accept/forms/avoid), a new concept to docs/i18n/concepts.json, an English-sense exclusion to that concept's
-  "notMatch", a language-specific boundary to the term's "exceptions" with the reason, rationale worth more than a line
-  to docs/i18n/{{TAG}}/decisions.md under a heading citing the keys in backticks, and anything only a native reviewer
-  can settle to docs/i18n/{{TAG}}/review-queue.md.
+  accept/proseAccept/forms/avoid), a new concept to docs/i18n/concepts.json, an English-sense exclusion to that
+  concept's "notMatch", a language-specific boundary to the term's "exceptions" with the reason, and anything only a
+  native reviewer can settle to docs/i18n/{{TAG}}/review-queue.md.
+- **decisions.md holds distilled rulings only**: "X over Y because Z", citing the keys in backticks in its heading, at
+  most ~3 lines. When a ruling changes, edit or replace its entry and delete what it supersedes; never append a
+  narrative, a dated story, or a second entry beside the old one. The file has a byte budget that only shrinks
+  (`i18n-termbase` warns when it grows), so distilling is the job. Anything that applies beyond one language goes to
+  docs/i18n/source-queue.md as a proposal to promote, never into this language's files.
 - **Check**: run the i18n checks in docs/guides/i18n-translation.md § Add a new language, step 5.
 - **Report**: your output may ship without human review, so translate only what you're confident in and flag every
-  string where the context was insufficient.
+  string where the context was insufficient. End with a **Source feedback** section: `@key` descriptions that were
+  insufficient, screenshots that were missing or unhelpful, English that was ambiguous or inconsistent, and proposed
+  cross-language rules (log each in docs/i18n/source-queue.md too), or "none".
