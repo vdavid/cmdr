@@ -2965,5 +2965,17 @@
     "chosen": "空间",
     "confidence": "high",
     "sources": "macOS"
+  },
+  "source-available": {
+    "chosen": "公开可查",
+    "forms": "is source-available → 它的源代码是公开可查的",
+    "avoid": [
+      {
+        "form": "开源",
+        "why": "means open source, which Cmdr (BSL) isn't"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
   }
 }

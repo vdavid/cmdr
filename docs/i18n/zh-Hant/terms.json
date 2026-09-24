@@ -3271,5 +3271,21 @@
     "chosen": "空間",
     "confidence": "high",
     "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
+  },
+  "source-available": {
+    "chosen": "原始碼是公開的",
+    "accept": ["公開"],
+    "avoid": [
+      {
+        "form": "開源",
+        "why": "means open source, which Cmdr (BSL) isn't"
+      },
+      {
+        "form": "開放原始碼",
+        "why": "same"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
   }
 }

@@ -119,7 +119,7 @@
   "@onboarding.stepFda.con.label": {
     "sourceHash": "ebfc77d"
   },
-  "onboarding.stepFda.con.body": "A teljes lemezhozzáférés elég erős jogosultság. Lehetővé teszi, hogy az app bármelyik fájlt elolvassa a Mac-eden. Csak akkor add meg, ha megbízol a Cmdrben. A Cmdr tisztelettel él ezzel a joggal, és <sourceLink>nyílt forráskódú</sourceLink>, ha bizonytalan lennél.",
+  "onboarding.stepFda.con.body": "A teljes lemezhozzáférés elég erős jogosultság. Lehetővé teszi, hogy az app bármelyik fájlt elolvassa a Mac-eden. Csak akkor add meg, ha megbízol a Cmdrben. A Cmdr tisztelettel él ezzel a joggal, és ha bizonytalan lennél, a <sourceLink>forráskódja nyilvánosan megtekinthető</sourceLink>.",
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },

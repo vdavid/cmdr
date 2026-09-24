@@ -3116,5 +3116,20 @@
     "chosen": "Spaces",
     "confidence": "high",
     "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21"
+  },
+  "source-available": {
+    "chosen": "im Quelltext einsehbar",
+    "avoid": [
+      {
+        "form": "Open Source",
+        "why": "Cmdr is BSL-licensed, not open source"
+      },
+      {
+        "form": "quelloffen",
+        "why": "reads as open source"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
   }
 }

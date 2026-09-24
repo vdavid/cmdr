@@ -3380,5 +3380,18 @@
     "chosen": "Spaces",
     "confidence": "tentative",
     "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
+  },
+  "source-available": {
+    "chosen": "forráskódja nyilvánosan megtekinthető",
+    "accept": ["nyilvános forráskód"],
+    "forms": "is source-available → a forráskódja nyilvánosan megtekinthető",
+    "avoid": [
+      {
+        "form": "nyílt forráskódú",
+        "why": "means open source, which Cmdr (BSL) isn't"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
   }
 }

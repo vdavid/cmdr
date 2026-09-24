@@ -2703,5 +2703,16 @@
     "chosen": "Spaces",
     "confidence": "high",
     "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24"
+  },
+  "source-available": {
+    "chosen": "mã nguồn có thể xem được",
+    "avoid": [
+      {
+        "form": "mã nguồn mở",
+        "why": "means open source, which Cmdr (BSL) isn't"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
   }
 }

@@ -119,7 +119,7 @@
   "@onboarding.stepFda.con.label": {
     "sourceHash": "ebfc77d"
   },
-  "onboarding.stepFda.con.body": "O acesso total ao disco é bem poderoso. Ele permite que o app leia qualquer arquivo no seu Mac. Só conceda isto se você confia no Cmdr. O Cmdr usa esse direito com respeito e tem o <sourceLink>código aberto para consulta</sourceLink> caso você fique em dúvida.",
+  "onboarding.stepFda.con.body": "O acesso total ao disco é bem poderoso. Ele permite que o app leia qualquer arquivo no seu Mac. Só conceda isto se você confia no Cmdr. O Cmdr usa esse direito com respeito e tem o <sourceLink>código-fonte disponível para consulta</sourceLink> caso você fique em dúvida.",
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },

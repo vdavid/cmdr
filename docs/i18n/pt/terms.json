@@ -2720,5 +2720,17 @@
     "chosen": "Spaces",
     "confidence": "high",
     "sources": "standard macOS pt-BR app and feature names"
+  },
+  "source-available": {
+    "chosen": "código-fonte disponível para consulta",
+    "forms": "is source-available → tem o código-fonte disponível para consulta",
+    "avoid": [
+      {
+        "form": "código aberto",
+        "why": "means open source, which Cmdr (BSL) isn't"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
   }
 }

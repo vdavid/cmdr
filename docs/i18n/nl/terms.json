@@ -2893,5 +2893,17 @@
     "chosen": "Spaces",
     "confidence": "high",
     "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
+  },
+  "source-available": {
+    "chosen": "source-available",
+    "forms": "kept English",
+    "avoid": [
+      {
+        "form": "open source",
+        "why": "Cmdr is BSL-licensed, not open source"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
   }
 }
