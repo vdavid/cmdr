@@ -11,6 +11,10 @@
 //! for the house reason: a title is macOS copy in the system language, and two
 //! extensions may well share one.
 //!
+//! macOS answers off the main thread (`context_menu_facts.rs`). A menu that goes up first
+//! opens the submenu with a disabled "Finding share options…" line, which
+//! [`fill_share_submenu`] replaces while the menu is open.
+//!
 //! The submenu closes with `Edit extensions`, which opens System Settings' Extensions
 //! pane. Since the list only ever holds what macOS currently offers, that item is the
 //! one route from Cmdr to the place a missing service is actually turned back on.
@@ -18,6 +22,7 @@
 use tauri::menu::{MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Runtime};
 
+use super::context_menu_live::Placeheld;
 use crate::file_system::share::ShareService;
 use crate::intl::menu_t;
 
@@ -61,22 +66,71 @@ pub fn share_service_index(id: &str) -> Option<usize> {
 /// replaced, and the caller (`file_context_menu.rs`) leaves the whole item out instead.
 pub fn build_share_submenu<R: Runtime>(app: &AppHandle<R>, services: &[ShareService]) -> tauri::Result<Submenu<R>> {
     let submenu = Submenu::with_id(app, SHARE_SUBMENU_ID, share_label(), true)?;
-    for (index, service) in services.iter().enumerate() {
-        // A plain item: the service's own icon lands when the menu starts tracking, through
-        // `context_menu_icons.rs`, straight from the live offer's `NSSharingService`.
-        let item = MenuItem::with_id(app, share_service_id(index), &service.title, true, None::<&str>)?;
+    for item in service_items(app, services)? {
         submenu.append(&item)?;
     }
     submenu.append(&PredefinedMenuItem::separator(app)?)?;
-    let edit_extensions = MenuItem::with_id(
+    submenu.append(&edit_extensions_item(app)?)?;
+    Ok(submenu)
+}
+
+/// The `Share` submenu for a menu that went up before macOS said what it offers: a disabled
+/// "Finding share options…" line where the services go, then `Edit extensions` as always.
+pub fn build_pending_share_submenu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Placeheld<R>> {
+    let submenu = Submenu::with_id(app, SHARE_SUBMENU_ID, share_label(), true)?;
+    let placeholder = MenuItem::new(app, menu_t("menu.context.shareLoading"), false, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+    submenu.append(&placeholder)?;
+    submenu.append(&separator)?;
+    submenu.append(&edit_extensions_item(app)?)?;
+    Ok(Placeheld {
+        submenu,
+        placeholder,
+        separator,
+    })
+}
+
+/// Swaps the late offer into a pending submenu, which may be open on screen.
+///
+/// An empty offer can't take the item away any more, the way [`build_share_submenu`]'s
+/// caller does: the item sits in the context menu itself, which muda holds borrowed while
+/// it's up, and hiding it would move every row below it under the pointer. So the submenu
+/// says so instead, with a disabled "No share options" line, and still offers
+/// `Edit extensions`, the one place a missing service is turned back on.
+pub fn fill_share_submenu<R: Runtime>(
+    app: &AppHandle<R>,
+    pending: &Placeheld<R>,
+    services: &[ShareService],
+) -> tauri::Result<()> {
+    pending.submenu.remove(&pending.placeholder)?;
+    if services.is_empty() {
+        let none = MenuItem::new(app, menu_t("menu.context.shareNone"), false, None::<&str>)?;
+        return pending.submenu.insert(&none, 0);
+    }
+    for (position, item) in service_items(app, services)?.iter().enumerate() {
+        pending.submenu.insert(item, position)?;
+    }
+    Ok(())
+}
+
+/// One plain item per service. Each service's own icon lands through
+/// `context_menu_icons.rs`, straight from the live offer's `NSSharingService`.
+fn service_items<R: Runtime>(app: &AppHandle<R>, services: &[ShareService]) -> tauri::Result<Vec<MenuItem<R>>> {
+    services
+        .iter()
+        .enumerate()
+        .map(|(index, service)| MenuItem::with_id(app, share_service_id(index), &service.title, true, None::<&str>))
+        .collect()
+}
+
+fn edit_extensions_item<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<MenuItem<R>> {
+    MenuItem::with_id(
         app,
         SHARE_EDIT_EXTENSIONS_ID,
         menu_t("menu.context.editExtensions"),
         true,
         None::<&str>,
-    )?;
-    submenu.append(&edit_extensions)?;
-    Ok(submenu)
+    )
 }
 
 #[cfg(test)]

@@ -32,12 +32,27 @@ use super::model::{
 pub(super) struct SwatchContent {
     /// The color's translated name: what VoiceOver reads for the circle.
     pub name: String,
-    /// What the label line says while this circle is hovered (`Add "Green"`).
-    pub hover_label: String,
+    /// What the label line says while this circle is hovered and the color isn't applied
+    /// (`Add "Green"`).
+    pub add_label: String,
+    /// The same while it is (`Remove "Green"`). Both are resolved up front, since the
+    /// applied flags can land after the row is up ([`TagRowView::set_applied`]).
+    pub remove_label: String,
     /// Whether every right-clicked row already carries this color.
     pub applied: bool,
     pub light: Rgb,
     pub dark: Rgb,
+}
+
+impl SwatchContent {
+    /// What the label line says while this circle is hovered.
+    fn hover_label(&self) -> &str {
+        if self.applied {
+            &self.remove_label
+        } else {
+            &self.add_label
+        }
+    }
 }
 
 /// Everything the row draws, in row order.
@@ -49,7 +64,8 @@ pub(super) struct RowContent {
 }
 
 pub(super) struct RowIvars {
-    content: RowContent,
+    /// A cell because the applied flags can arrive after the row is up.
+    content: RefCell<RowContent>,
     hovered: Cell<Option<usize>>,
     /// The seven menu items in row order, WEAK: each item retains its view, so a strong
     /// reference back would be a cycle. Emptied by [`TagRowView::disarm`], after which a
@@ -122,10 +138,12 @@ impl TagRowView {
     pub(super) fn new(mtm: MainThreadMarker, content: RowContent, items: &[Retained<NSMenuItem>]) -> Retained<Self> {
         let font = NSFont::menuFontOfSize(0.0);
         let attributes = label_attributes(&font);
+        // Both wordings of every circle: the applied flags may flip after the row is up,
+        // and a row that then grew would need the menu laid out again.
         let widest_label = content
             .swatches
             .iter()
-            .map(|swatch| swatch.hover_label.as_str())
+            .flat_map(|swatch| [swatch.add_label.as_str(), swatch.remove_label.as_str()])
             .chain([content.idle_label.as_str()])
             .map(|label| label_size(label, &attributes).width)
             .fold(0.0, f64::max);
@@ -136,7 +154,7 @@ impl TagRowView {
             NSSize::new(row_width(title_column_x(true), widest_label), ROW_HEIGHT),
         );
         let this = Self::alloc(mtm).set_ivars(RowIvars {
-            content,
+            content: RefCell::new(content),
             hovered: Cell::new(None),
             items: RefCell::new(items.iter().map(Weak::from_retained).collect()),
             elements: RefCell::new(Vec::new()),
@@ -186,6 +204,19 @@ impl TagRowView {
     /// Lets go of the menu items, so a stale click or accessibility press does nothing.
     pub(super) fn disarm(&self) {
         self.ivars().items.borrow_mut().clear();
+    }
+
+    /// Checks the circles whose colors every row carries, `applied` in row order, when the
+    /// tag reads answer after the row is up. Redraws, and tells VoiceOver.
+    pub(super) fn set_applied(&self, applied: &[bool]) {
+        let ivars = self.ivars();
+        for (swatch, &now) in ivars.content.borrow_mut().swatches.iter_mut().zip(applied) {
+            swatch.applied = now;
+        }
+        for (element, &now) in ivars.elements.borrow().iter().zip(applied) {
+            element.set_checked(now);
+        }
+        self.setNeedsDisplay(true);
     }
 
     /// Marks circle `index` as the one under the pointer, or none, and redraws on a change.
@@ -254,8 +285,8 @@ impl TagRowView {
     fn expose_to_accessibility(&self, mtm: MainThreadMarker) {
         let ivars = self.ivars();
         let row = Weak::from(self);
-        let elements: Vec<Retained<TagSwatchElement>> = ivars
-            .content
+        let content = ivars.content.borrow();
+        let elements: Vec<Retained<TagSwatchElement>> = content
             .swatches
             .iter()
             .enumerate()
@@ -265,7 +296,8 @@ impl TagRowView {
         let group_role = unsafe { NSAccessibilityGroupRole };
         self.setAccessibilityElement(true);
         self.setAccessibilityRole(Some(group_role));
-        self.setAccessibilityLabel(Some(&NSString::from_str(&ivars.content.idle_label)));
+        self.setAccessibilityLabel(Some(&NSString::from_str(&content.idle_label)));
+        drop(content);
         let children: Vec<&AnyObject> = elements.iter().map(|element| element.as_ref()).collect();
         // SAFETY: every child is an `NSAccessibilityElement` whose parent is this view, which
         // is what the children array must hold.
@@ -293,7 +325,8 @@ impl TagRowView {
         let hovered = ivars.hovered.get();
         let title_x = self.title_x();
         self.place_accessibility_elements(title_x);
-        for (index, swatch) in ivars.content.swatches.iter().enumerate() {
+        let content = ivars.content.borrow();
+        for (index, swatch) in content.swatches.iter().enumerate() {
             let is_hovered = hovered == Some(index);
             let center = swatch_center(index, title_x);
             let diameter = swatch_diameter(is_hovered);
@@ -303,8 +336,8 @@ impl TagRowView {
             stroke_glyph(&glyph_strokes(glyph_for(swatch.applied, is_hovered), center, diameter));
         }
         let label = hovered
-            .and_then(|index| ivars.content.swatches.get(index))
-            .map_or(ivars.content.idle_label.as_str(), |swatch| swatch.hover_label.as_str());
+            .and_then(|index| content.swatches.get(index))
+            .map_or(content.idle_label.as_str(), SwatchContent::hover_label);
         draw_label(label, title_x);
     }
 }
@@ -357,12 +390,16 @@ impl TagSwatchElement {
         let checkbox_role = unsafe { NSAccessibilityCheckBoxRole };
         element.setAccessibilityRole(Some(checkbox_role));
         element.setAccessibilityLabel(Some(&NSString::from_str(&swatch.name)));
-        let checked = NSNumber::new_i32(i32::from(swatch.applied));
-        // SAFETY: a checkbox's value is an `NSNumber`, 1 when checked and 0 when not.
-        unsafe { element.setAccessibilityValue(Some(checked.as_ref())) };
+        element.set_checked(swatch.applied);
         // SAFETY: the parent is the view that owns this element and lists it as a child.
         unsafe { element.setAccessibilityParent(Some(parent.as_ref())) };
         element
+    }
+
+    fn set_checked(&self, checked: bool) {
+        let value = NSNumber::new_i32(i32::from(checked));
+        // SAFETY: a checkbox's value is an `NSNumber`, 1 when checked and 0 when not.
+        unsafe { self.setAccessibilityValue(Some(value.as_ref())) };
     }
 }
 

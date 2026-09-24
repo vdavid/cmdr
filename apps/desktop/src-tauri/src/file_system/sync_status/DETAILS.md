@@ -7,7 +7,7 @@
   answers "is this a stub?" off the inode; then an `NSURL` ubiquitous-item resource value answers "is it moving right
   now?", the expensive, unbounded part.
 - **`../framework_pool.rs`** — a long-lived, hard-capped set of 8 MB-stack OS threads, generic over boxed jobs. Sync
-  status runs its own instance; the file context menu's slow facts run another (`menu/context_menu_facts.rs`).
+  status runs its own instance; the file context menu's slow facts run another (`../../menu/context_menu_facts.rs`).
 - **`cache.rs`** — answers keyed by directory then file name, with a four-tier TTL, LRU-by-directory eviction, and an
   injected clock so TTL behaviour is testable without sleeping.
 - **`service.rs`** — cache lookup, batch join-or-supersede, cancellation, and the deadline. The public functions in

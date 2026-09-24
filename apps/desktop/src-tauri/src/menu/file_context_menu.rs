@@ -36,6 +36,8 @@ use crate::intl::{menu_t, menu_t_with};
 #[cfg(target_os = "macos")]
 use super::OPEN_TERMINAL_HERE_ID;
 use super::context_menu_header::{ContextMenuTargetFacts, append_context_menu_header};
+#[cfg(target_os = "macos")]
+use super::context_menu_live::{LateTargets, SlotGroup};
 use super::menu_bar::SHOW_IN_FILE_MANAGER_KEY;
 use super::menu_items::{COPY_FILENAME_MAX_CHARS, SameKindTarget, truncate_for_menu_label};
 use super::menu_structure::{ContextMenuShortcuts, context_item};
@@ -51,41 +53,75 @@ use super::{
     SHOW_IN_FINDER_ID, image_index_menu_items,
 };
 
+/// A fact the menu asked off the main thread (`context_menu_facts.rs`): answered in time,
+/// or still out when the menu went up, in which case its part of the menu is built to be
+/// filled in while open (`context_menu_live.rs`).
+#[cfg(target_os = "macos")]
+#[derive(Debug, Clone)]
+pub enum Slow<T> {
+    Ready(T),
+    Pending,
+}
+
+#[cfg(target_os = "macos")]
+impl<T> Slow<T> {
+    /// The answer, when there is one yet.
+    pub fn ready(&self) -> Option<&T> {
+        match self {
+            Slow::Ready(value) => Some(value),
+            Slow::Pending => None,
+        }
+    }
+
+    pub fn is_pending(&self) -> bool {
+        matches!(self, Slow::Pending)
+    }
+}
+
+/// Answered, with the empty answer, which is what a fact the menu never asked about is.
+#[cfg(target_os = "macos")]
+impl<T: Default> Default for Slow<T> {
+    fn default() -> Self {
+        Slow::Ready(T::default())
+    }
+}
+
 /// Per-file information needed to build a fully-populated context menu.
 ///
-/// On non-macOS this is empty; on macOS it carries the cloud sync status (used to
-/// decide between "Make available offline" and "Remove download"), whether the file
-/// lives in any File Provider domain (gates cloud actions), and the precomputed
-/// "Open with" candidate apps.
+/// On non-macOS this is empty. On macOS every field but `is_icloud_drive` is a slow fact
+/// ([`Slow`]), asked off the main thread and possibly still out when the menu goes up.
 #[cfg(target_os = "macos")]
 #[derive(Default)]
 pub struct FileContextInfo {
-    pub sync_status: SyncStatus,
+    /// The primary row's iCloud sync status, which picks between "Make available offline"
+    /// and "Remove download". Asked only in iCloud Drive.
+    pub sync_status: Slow<SyncStatus>,
     /// Whether this path is in iCloud Drive specifically. Gates the cloud action menu
     /// items. Eviction / download work via `FileManager` ubiquity APIs, which only
     /// support iCloud (not third-party File Providers). See `cloud_actions.rs` for why.
+    /// A path check, so never pending.
     pub is_icloud_drive: bool,
     /// The Google Drive web URLs for this item, when it resolves to one. `Some`
     /// gates the Drive menu group, which is self-validating: no ID, no item; its
     /// `gemini_url` gates `Ask Gemini` alone, since folders have none. See
     /// `file_system/google_drive/` for why this isn't a path-prefix check (Drive's
     /// mirror mode puts real files outside `~/Library/CloudStorage`).
-    pub google_drive_links: Option<DriveItemLinks>,
+    pub google_drive_links: Slow<Option<DriveItemLinks>>,
     /// The right-clicked rows' File Provider actions, when their provider offers any. Drawn
     /// as one flat group below the cloud items, and kept in `MenuContext` so a click can run
     /// one. `file_system/file_provider_actions/`.
-    pub file_provider_offer: Option<ProviderOffer>,
-    pub open_with: OpenWithChoices,
+    pub file_provider_offer: Slow<Option<ProviderOffer>>,
+    pub open_with: Slow<OpenWithChoices>,
     /// The services macOS offers for this selection, in its own order, one `Share`
     /// submenu item each. EMPTY means macOS offers none and the whole item is left
     /// out: an empty share sheet holding only `Edit Extensions…` is the symptom the
-    /// submenu replaced. Filled by `file_system::share::services_for`.
-    pub share_services: Vec<ShareService>,
+    /// submenu replaced. From `file_system::share::enumerate_offer`.
+    pub share_services: Slow<Vec<ShareService>>,
     /// Which of the seven Finder color tags (index 1..=7) the selection already carries.
     /// "Applied" = EVERY selected path has a tag of that color, so the menu shows a
     /// checked (checkmark-composited) circle and the click toggles it off. Index 0 is
-    /// unused (colorless). Computed by reading each path's tags once at menu-build time.
-    pub applied_tag_colors: [bool; 8],
+    /// unused (colorless). Pending shows no checks until the reads answer.
+    pub applied_tag_colors: Slow<[bool; 8]>,
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -99,6 +135,10 @@ pub struct ContextMenuResult<R: Runtime> {
     pub menu: Menu<R>,
     #[cfg(target_os = "macos")]
     pub open_with_apps: HashMap<String, PathBuf>,
+    /// The parts built for facts still pending, which the live menu fills in
+    /// (`context_menu_live.rs`). Empty when every fact answered in time.
+    #[cfg(target_os = "macos")]
+    pub late: LateTargets<R>,
 }
 
 /// What the PANE the right-click landed in contributes, as opposed to the file
@@ -177,6 +217,8 @@ pub fn build_context_menu<R: Runtime>(
     #[cfg(not(target_os = "macos"))]
     let _ = (can_open_terminal_here, can_share);
     let menu = Menu::new(app)?;
+    #[cfg(target_os = "macos")]
+    let mut late = LateTargets::new(app);
 
     // What this menu will act on, first line, above everything. Cmdr acts on the whole
     // selection or on the one right-clicked row depending on whether the click landed
@@ -194,9 +236,18 @@ pub fn build_context_menu<R: Runtime>(
         #[cfg(target_os = "macos")]
         {
             // Open with submenu: Finder convention, shown for files, not directories.
-            let (submenu, map) = super::open_with::build_open_with_submenu(app, &info.open_with.candidates)?;
-            menu.append(&submenu)?;
-            open_with_apps = map;
+            match &info.open_with {
+                Slow::Ready(choices) => {
+                    let (submenu, map) = super::open_with::build_open_with_submenu(app, &choices.candidates)?;
+                    menu.append(&submenu)?;
+                    open_with_apps = map;
+                }
+                Slow::Pending => {
+                    let pending = super::open_with::build_pending_open_with_submenu(app)?;
+                    menu.append(&pending.submenu)?;
+                    late.open_with = Some(pending);
+                }
+            }
         }
         menu.append(&view_item)?;
         menu.append(&edit_item)?;
@@ -213,7 +264,12 @@ pub fn build_context_menu<R: Runtime>(
     // Finder tag colors (macOS): seven circles that toggle the system color tags on the
     // selection. Shown for files and folders (Finder tags both).
     #[cfg(target_os = "macos")]
-    append_tag_color_group(app, &menu)?;
+    {
+        let tag_items = append_tag_color_group(app, &menu)?;
+        if info.applied_tag_colors.is_pending() {
+            late.tag_items = tag_items;
+        }
+    }
 
     // Copy / Move / Duplicate / Rename group. Rename and Duplicate are omitted on the
     // search-results virtual pane: the underlying file CAN be renamed, but doing it from
@@ -290,8 +346,20 @@ pub fn build_context_menu<R: Runtime>(
         //   symlink), which only an enumeration can answer. The system popover can't:
         //   it comes up empty but for `Edit Extensions…`, which is the bug that put the
         //   list in a submenu.
-        if can_share && !info.share_services.is_empty() {
-            menu.append(&super::share_submenu::build_share_submenu(app, &info.share_services)?)?;
+        // Still enumerating when the menu went up, it's there with a placeholder, and an
+        // empty answer says so inside it (`share_submenu::fill_share_submenu`).
+        if can_share {
+            match &info.share_services {
+                Slow::Ready(services) if !services.is_empty() => {
+                    menu.append(&super::share_submenu::build_share_submenu(app, services)?)?;
+                }
+                Slow::Ready(_) => {}
+                Slow::Pending => {
+                    let pending = super::share_submenu::build_pending_share_submenu(app)?;
+                    menu.append(&pending.submenu)?;
+                    late.share = Some(pending);
+                }
+            }
         }
     }
     menu.append(&copy_filename_item)?;
@@ -336,37 +404,25 @@ pub fn build_context_menu<R: Runtime>(
     // web URLs, so they work in mirror mode too; Drive's own File Provider actions (Share
     // among them) come in the provider group below, minus these three.
     // `file_system/google_drive/` has the full story.
+    //
+    // A group whose fact is still out is built whole and hidden as the menu starts
+    // tracking, then revealed when the fact lands (`context_menu_live.rs`): these sit near
+    // the bottom, and revealing rows moves only what's below them.
     #[cfg(target_os = "macos")]
-    if let Some(links) = &info.google_drive_links {
-        let open_item = MenuItem::with_id(
-            app,
-            DRIVE_OPEN_ID,
-            menu_t("menu.context.openInGoogleDrive"),
-            true,
-            None::<&str>,
-        )?;
-        let copy_link_item = MenuItem::with_id(
-            app,
-            DRIVE_COPY_LINK_ID,
-            menu_t("menu.context.copyGoogleDriveLink"),
-            true,
-            None::<&str>,
-        )?;
-        menu.append(&PredefinedMenuItem::separator(app)?)?;
-        menu.append(&open_item)?;
-        menu.append(&copy_link_item)?;
-        // Files only: Gemini's `?di=` names a document, and a folder resolves no
-        // Gemini URL at all.
-        if links.gemini_url.is_some() {
-            let ask_gemini_item = MenuItem::with_id(
-                app,
-                DRIVE_ASK_GEMINI_ID,
-                menu_t("menu.context.askGemini"),
-                true,
-                None::<&str>,
-            )?;
-            menu.append(&ask_gemini_item)?;
+    match &info.google_drive_links {
+        Slow::Ready(Some(links)) => {
+            let [open_item, copy_link_item, ask_gemini_item] = drive_items(app)?;
+            menu.append(&PredefinedMenuItem::separator(app)?)?;
+            menu.append(&open_item)?;
+            menu.append(&copy_link_item)?;
+            // Files only: Gemini's `?di=` names a document, and a folder resolves no
+            // Gemini URL at all.
+            if links.gemini_url.is_some() {
+                menu.append(&ask_gemini_item)?;
+            }
         }
+        Slow::Ready(None) => {}
+        Slow::Pending => late.drive = Some(append_slots(app, &menu, drive_items(app)?.into())?),
     }
 
     // Eviction pair: iCloud Drive ONLY, and gated by sync status. The
@@ -376,36 +432,36 @@ pub fn build_context_menu<R: Runtime>(
     // other providers — see `file_system/cloud_actions.rs`.
     #[cfg(target_os = "macos")]
     if info.is_icloud_drive {
-        let cloud_item = match info.sync_status {
-            SyncStatus::OnlineOnly => Some(MenuItem::with_id(
-                app,
-                CLOUD_MAKE_OFFLINE_ID,
-                menu_t("menu.context.makeAvailableOffline"),
-                true,
-                None::<&str>,
-            )?),
-            SyncStatus::Synced => Some(MenuItem::with_id(
-                app,
-                CLOUD_REMOVE_DOWNLOAD_ID,
-                menu_t("menu.context.removeDownload"),
-                true,
-                None::<&str>,
-            )?),
+        let [make_offline_item, remove_download_item] = eviction_items(app)?;
+        match info.sync_status {
+            Slow::Ready(SyncStatus::OnlineOnly) => {
+                menu.append(&PredefinedMenuItem::separator(app)?)?;
+                menu.append(&make_offline_item)?;
+            }
+            Slow::Ready(SyncStatus::Synced) => {
+                menu.append(&PredefinedMenuItem::separator(app)?)?;
+                menu.append(&remove_download_item)?;
+            }
             // Uploading/Downloading: action already in flight, don't offer either.
             // Unknown: status query failed, hide to avoid confusion.
-            _ => None,
-        };
-        if let Some(item) = cloud_item {
-            menu.append(&PredefinedMenuItem::separator(app)?)?;
-            menu.append(&item)?;
+            Slow::Ready(_) => {}
+            Slow::Pending => {
+                late.icloud = Some(append_slots(app, &menu, vec![make_offline_item, remove_download_item])?);
+            }
         }
     }
 
     // The provider's own actions (Dropbox, Google Drive, MacDroid, …), evaluated the way
     // Finder does and in the provider's order and words, below Cmdr's own cloud items.
     #[cfg(target_os = "macos")]
-    if let Some(offer) = &info.file_provider_offer {
-        super::file_provider_items::append_file_provider_group(app, &menu, offer)?;
+    match &info.file_provider_offer {
+        Slow::Ready(Some(offer)) => super::file_provider_items::append_file_provider_group(app, &menu, offer)?,
+        Slow::Ready(None) => {}
+        Slow::Pending => {
+            late.provider = Some(super::file_provider_items::append_pending_file_provider_group(
+                app, &menu,
+            )?);
+        }
     }
 
     // Quick Look and Get Info are macOS-only
@@ -429,7 +485,73 @@ pub fn build_context_menu<R: Runtime>(
         menu,
         #[cfg(target_os = "macos")]
         open_with_apps,
+        #[cfg(target_os = "macos")]
+        late,
     })
+}
+
+/// Open in Google Drive, Copy Google Drive link, and Ask Gemini, in menu order.
+#[cfg(target_os = "macos")]
+fn drive_items<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<[MenuItem<R>; 3]> {
+    Ok([
+        MenuItem::with_id(
+            app,
+            DRIVE_OPEN_ID,
+            menu_t("menu.context.openInGoogleDrive"),
+            true,
+            None::<&str>,
+        )?,
+        MenuItem::with_id(
+            app,
+            DRIVE_COPY_LINK_ID,
+            menu_t("menu.context.copyGoogleDriveLink"),
+            true,
+            None::<&str>,
+        )?,
+        MenuItem::with_id(
+            app,
+            DRIVE_ASK_GEMINI_ID,
+            menu_t("menu.context.askGemini"),
+            true,
+            None::<&str>,
+        )?,
+    ])
+}
+
+/// Make available offline, then Remove download.
+#[cfg(target_os = "macos")]
+fn eviction_items<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<[MenuItem<R>; 2]> {
+    Ok([
+        MenuItem::with_id(
+            app,
+            CLOUD_MAKE_OFFLINE_ID,
+            menu_t("menu.context.makeAvailableOffline"),
+            true,
+            None::<&str>,
+        )?,
+        MenuItem::with_id(
+            app,
+            CLOUD_REMOVE_DOWNLOAD_ID,
+            menu_t("menu.context.removeDownload"),
+            true,
+            None::<&str>,
+        )?,
+    ])
+}
+
+/// Appends a separator and every item of a group whose fact is still out, for the live menu
+/// to hide and reveal.
+#[cfg(target_os = "macos")]
+fn append_slots<R: Runtime>(
+    app: &AppHandle<R>,
+    menu: &Menu<R>,
+    items: Vec<MenuItem<R>>,
+) -> tauri::Result<SlotGroup<R>> {
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    for item in &items {
+        menu.append(item)?;
+    }
+    Ok(SlotGroup::new(items))
 }
 
 /// Appends the seven Finder-tag color items (macOS) plus a trailing separator.
@@ -441,14 +563,17 @@ pub fn build_context_menu<R: Runtime>(
 /// FALLBACK look: once the menu tracks, `tag_row` folds them into Finder's single row of
 /// circles and fires these same items on a click. The label carries the color's NAME,
 /// which the row matches on and VoiceOver reads, which is why the names are translated
-/// alongside everything else. macOS-only — Linux menus carry no icons.
+/// alongside everything else. macOS-only — Linux menus carry no icons. Answers the seven
+/// items, in row order, for the live menu to check once the tag reads answer.
 #[cfg(target_os = "macos")]
-fn append_tag_color_group<R: Runtime>(app: &AppHandle<R>, menu: &Menu<R>) -> tauri::Result<()> {
+fn append_tag_color_group<R: Runtime>(app: &AppHandle<R>, menu: &Menu<R>) -> tauri::Result<Vec<MenuItem<R>>> {
+    let mut items = Vec::with_capacity(super::tag_row::SWATCHES.len());
     for swatch in &super::tag_row::SWATCHES {
         let id = format!("{}{}", super::TAG_COLOR_ID_PREFIX, swatch.color);
         let item = MenuItem::with_id(app, &id, menu_t(swatch.name_key), true, None::<&str>)?;
         menu.append(&item)?;
+        items.push(item);
     }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
-    Ok(())
+    Ok(items)
 }

@@ -8,6 +8,7 @@
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::{AppHandle, Runtime};
 
+use super::context_menu_live::SlotGroup;
 use crate::file_system::file_provider_actions::ProviderOffer;
 
 /// Menu item ID prefix for one offered action. Followed by its index in the offer,
@@ -52,6 +53,34 @@ pub fn append_file_provider_group<R: Runtime>(
         menu.append(&MenuItem::with_id(app, id, label, true, None::<&str>)?)?;
     }
     Ok(())
+}
+
+/// How many actions a provider's group can show when its offer arrives after the menu went
+/// up. The slots are built before anyone knows the count, since the context menu can't grow
+/// while it's open. A provider offers a handful; an offer past this shows its first
+/// [`PENDING_SLOTS`] and logs the rest.
+pub const PENDING_SLOTS: usize = 12;
+
+/// Appends a separator and [`PENDING_SLOTS`] action slots for an offer that hasn't answered
+/// yet. `context_menu_live.rs` hides them all as the menu starts tracking, and retitles and
+/// reveals as many as the offer holds when it lands.
+///
+/// Each slot already carries its final `fp-action:<index>` ID, so a click routes as usual.
+/// Its title is only a key to find the run by and never shows: an invisible U+2063 and the
+/// slot's ID, which no real label starts with.
+pub fn append_pending_file_provider_group<R: Runtime>(
+    app: &AppHandle<R>,
+    menu: &Menu<R>,
+) -> tauri::Result<SlotGroup<R>> {
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    let mut items = Vec::with_capacity(PENDING_SLOTS);
+    for index in 0..PENDING_SLOTS {
+        let id = file_provider_action_id(index);
+        let item = MenuItem::with_id(app, &id, format!("\u{2063}{id}"), true, None::<&str>)?;
+        menu.append(&item)?;
+        items.push(item);
+    }
+    Ok(SlotGroup::new(items))
 }
 
 #[cfg(test)]

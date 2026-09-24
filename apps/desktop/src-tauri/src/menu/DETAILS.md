@@ -33,7 +33,7 @@ window focus context.
 - `file_context_menu.rs`: the file context menu (`build_context_menu`) and the facts it is built from
   (`FileContextInfo`, `ContextMenuPaneFacts`, `ContextMenuResult`), plus `append_tag_color_group`. Its own file because
   it is by far the biggest menu here, and the only one whose shape depends on the row, the pane, the cloud provider,
-  and the OS at once. ❗ `context_menu_icons.rs`'s guard test `include_str!`s THIS file to check every icon names an
+  and the OS at once. ❗ `context_menu_icons_test.rs`'s guard test `include_str!`s THIS file to check every icon names an
   item the menu actually builds; a builder moving out of it has to take that `include_str!` along.
 - `menu_structure.rs`: the smaller context menus — breadcrumb (with the `detach_label` item) / parent-row / tab /
   network-host / function-key-bar — the viewer-window menu (`build_viewer_menu`), and the `ContextMenuShortcuts` /
@@ -63,17 +63,23 @@ window focus context.
 - `services_context.rs` (macOS): `Services` in the file context menu. `append_services_submenu` puts
   the (empty) item there; `lend_services_menu` borrows AppKit's own Services menu onto it for as long
   as the menu is up, and points it at the right-clicked rows. See "Services in the right-click menu".
+- `context_menu_facts.rs` (macOS): the file context menu's slow facts, asked off the main thread on the menu's own
+  `framework_pool` and collected under the 100 ms `GRACE`; `file_context_info` turns what answered into the
+  `FileContextInfo` the builder reads, `Slow::Pending` for the rest. See "Slow facts and the live menu".
+- `context_menu_live.rs` (macOS): `lend_live_menu`, which lands every fact that missed the grace period on the menu
+  while it's open (`LateTargets`, `Placeheld` submenus, `SlotGroup` rows). Same section.
 - `open_with.rs` (macOS): `build_open_with_submenu` for the file context menu's "Open with"
   submenu (`OPEN_WITH_SUBMENU_ID`). Returns the submenu plus a `bundle_id → app_path` map that callers stash in
   `MenuState.context.open_with_apps` so `on_menu_event` can resolve dynamic `open-with:<bundle-id>`
-  click targets.
+  click targets. `build_pending_open_with_submenu` / `fill_open_with_submenu` are the late pair.
 - `share_submenu.rs` (macOS): `build_share_submenu` for the file context menu's `Share` (`SHARE_SUBMENU_ID`), one
   plain item per service in `FileContextInfo::share_services`, plus the `share-service:<index>` id
-  pair (`share_service_id` / `share_service_index`). The services themselves and the click side live in
-  `file_system/share.rs`.
+  pair (`share_service_id` / `share_service_index`). `build_pending_share_submenu` / `fill_share_submenu` are the late
+  pair. The services themselves and the click side live in `file_system/share.rs`.
 - `file_provider_items.rs` (macOS): the file context menu's File Provider group, `append_file_provider_group` over a
-  `ProviderOffer`, plus the `fp-action:<index>` id pair (`file_provider_action_id` / `file_provider_action_index`).
-  The offer itself and the click side live in `file_system/file_provider_actions/`.
+  `ProviderOffer`, plus the `fp-action:<index>` id pair (`file_provider_action_id` / `file_provider_action_index`),
+  and `append_pending_file_provider_group`, its `PENDING_SLOTS` hidden slots for a late offer. The offer itself and the
+  click side live in `file_system/file_provider_actions/`.
 - `context_menu_icons.rs` (macOS): every image the file context menu carries, through `lend_context_menu_icons` and the
   pure `image_runs`: the `FILE_CONTEXT_ICONS` SF Symbols, the provider logo on each provider action, the app icons in
   "Open with", each service's icon in `Share`, and the tag circles. See "Images on a CONTEXT menu".
@@ -663,6 +669,61 @@ for the loan's lifetime; the reasoning and what it costs are in `../services_men
 
 The item shows whenever the pane's rows are real OS paths (`ContextMenuPaneFacts::can_share`, the
 same fact `Share` rides on: both hand file URLs to something outside Cmdr).
+
+### Slow facts and the live menu
+
+The file context menu opens within the grace period, whatever the disk does. Six things it shows depend on asking the
+rows' storage: the tag checks (`getxattr` per row), the Google Drive items (a Drive xattr and two `stat`s), the File
+Provider actions, "Open with" (LaunchServices), `Share` (ShareKit reads each file's attributes), and the iCloud eviction
+pair (sync status). On a network share each is a round trip. A sample of the running app on an SMB share over Tailscale
+(2026-09-23, five right-clicks, 1 ms interval) spent 3.4 s of main-thread time in the Drive read, 2.1 s in `Share`,
+1.0 s in the tag reads, and 0.2 s in "Open with": about 1.3 s per menu, once 10 s, with the whole app frozen meanwhile,
+since `show_file_context_menu` is a sync command and runs on the main thread.
+
+- **Gather** (`context_menu_facts.rs`): `start` submits one job per fact the menu can use (`FactsRequest::kinds`) to its
+  own `framework_pool` instance, so a wedged provider can't starve sync status or the reverse. The command does its
+  cheap work meanwhile, then `collect` waits until every fact answered or `GRACE` (100 ms from the command's start)
+  passed, whichever is first. The job-side routing flips under one lock, so each answer lands in exactly one place:
+  the build, or the late route.
+- **Build**: `file_context_info` marks each fact still out `Slow::Pending`, and the builder gives it a part that can be
+  filled in while the menu is open (`LateTargets`, the next bullet). A fact nobody asked about is `Ready` with its empty
+  answer, so the builder needs no third state.
+- **Late** (`context_menu_live.rs`): each late answer goes to the main queue (`late_sink`), tagged with its menu's
+  generation. The tracking observer hands the live menu its `NSMenu`, hides the pending row groups, and applies what
+  answered in between; after that each answer applies on arrival. The loan's `Drop` forgets the menu and cancels the
+  gathering, so a late answer for a closed menu goes nowhere and a job still queued behind a stuck mount skips its work.
+
+What a late answer may change is set by three limits, all verified with a standalone muda 0.19.3 probe on macOS 27.0
+(2026-09-24, screenshots while the menu was open):
+
+- **❗ muda holds the context menu itself borrowed for the whole popup** (`Menu::show_context_menu_for_nsview` takes
+  `borrow_mut()` around the blocking `popUpMenuPositioningItem`). `Menu::append`, `insert`, and even `ns_menu()` panic
+  with "RefCell already borrowed" while it's up. Submenus and single items have their own cells and change freely, and
+  AppKit redraws both live, the open submenu included. So ❌ no late code touches the top-level `Menu`.
+- **AppKit keeps the highlight at the same row index**, so a row inserted above the highlighted one moves the highlight
+  onto a different command (the probe highlighted `Share`, inserted a row above, and `Copy` came out highlighted). So a
+  late answer never inserts into the context menu: "Open with" and `Share` are `Placeheld` submenus whose disabled line
+  ("Finding apps…", "Finding share options…") the answer replaces; the tag row checks its circles in place
+  (`tag_row::set_applied`, pre-sized for both caption wordings so it never grows); and the Drive, iCloud, and File
+  Provider groups are `SlotGroup`s, built whole with their final IDs, hidden as the menu starts tracking, and revealed
+  when their answer lands. They sit near the bottom, so revealing moves only the rows below them.
+- **The late route is the main dispatch queue**, which AppKit drains while a menu tracks. Tauri's `run_on_main_thread`
+  from another thread goes through tao's event-loop proxy instead, and every Tauri menu call blocks its caller on the
+  answer. From the main thread Tauri runs a menu call inline (`send_user_message` compares thread IDs), which is what
+  makes the late calls safe.
+
+Smaller rules:
+
+- **A late empty `Share` says "No share options"** inside the submenu instead of removing it: the item is in the context
+  menu, which can't change while it's up, and hiding it would move every row below it.
+- **The File Provider group has `PENDING_SLOTS` (12) slots**, titled with an invisible U+2063 plus their ID so the run
+  can be found; an offer past that shows its first 12 and logs the rest. Its budget is 1 s
+  (`FILE_PROVIDER_ACTIONS_BUDGET` in the facts module), since the menu doesn't wait on it.
+- **Images for late items** come from the `land_*` functions in `context_menu_icons.rs`, which read titles off the item
+  and submenu handles the live menu holds, never off the context `Menu`.
+- **The `Share` offer is armed where the click reads it**, on the main thread (`share::arm_offer`): at build time for an
+  offer that answered, `None` otherwise, and again when the late one lands. `ShareOffer` crosses from the worker to the
+  main thread once; its `Send` impl carries the evidence (Main Thread Checker clean off the main thread).
 
 ### SF Symbol icons (macOS only)
 

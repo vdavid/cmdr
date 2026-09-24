@@ -26,6 +26,6 @@ mod model;
 mod view;
 
 #[cfg(target_os = "macos")]
-pub use loan::lend_tag_row;
+pub use loan::{lend_tag_row, set_applied};
 #[cfg(target_os = "macos")]
 pub(super) use model::{SWATCHES, ring_rgb};

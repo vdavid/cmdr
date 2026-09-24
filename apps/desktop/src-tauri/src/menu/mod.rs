@@ -30,6 +30,9 @@
 //!   `set_macos_menu_icons`), plus the `MENU_BAR_ICONS` table.
 //! - `display_accelerators.rs` (macOS): the third such pass, drawing the shortcuts a menu item can
 //!   only SHOW as a right-aligned, dimmed run on its attributed title.
+//! - `context_menu_facts.rs` (macOS): the file context menu's slow facts (tags, Drive, File
+//!   Provider, "Open with", Share, iCloud status), gathered off the main thread under a grace
+//!   period. `context_menu_live.rs` fills in the ones that answered after the menu went up.
 //! - `open_with.rs` (macOS): "Open with" submenu builder.
 //! - `context_menu_icons.rs` (macOS): every image on right-click items (SF Symbols, provider
 //!   logos, app icons, share icons, tag circles), which needs the tracking notification because
@@ -43,9 +46,13 @@
 
 mod accelerators;
 mod command_map;
+#[cfg(target_os = "macos")]
+pub mod context_menu_facts;
 mod context_menu_header;
 #[cfg(target_os = "macos")]
 mod context_menu_icons;
+#[cfg(target_os = "macos")]
+mod context_menu_live;
 #[cfg(target_os = "macos")]
 mod display_accelerators;
 mod file_context_menu;
@@ -106,7 +113,12 @@ pub use context_menu_header::lend_context_menu_header;
 pub use context_menu_header::{ContextMenuTarget, ContextMenuTargetFacts};
 #[cfg(target_os = "macos")]
 pub use context_menu_icons::lend_context_menu_icons;
-pub use file_context_menu::{ContextMenuPaneFacts, FileContextInfo, build_context_menu};
+#[cfg(target_os = "macos")]
+pub use context_menu_live::{late_sink, lend_live_menu, next_generation};
+// On macOS the command builds its `FileContextInfo` through `context_menu_facts`, never by name.
+#[cfg(not(target_os = "macos"))]
+pub use file_context_menu::FileContextInfo;
+pub use file_context_menu::{ContextMenuPaneFacts, build_context_menu};
 pub(crate) use item_states::{apply_menu_item_states, set_menu_context};
 #[cfg(target_os = "macos")]
 pub(crate) use item_states::{note_viewer_search_focus, swap_to_main_menu, swap_to_viewer_menu};

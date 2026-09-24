@@ -1,14 +1,15 @@
 //! The macOS `Share` submenu: what macOS offers for a selection, and how to run one.
 //!
-//! Two entry points, both reached from the file context menu. [`services_for`]
-//! enumerates the services macOS would offer for the right-clicked rows, so
-//! `menu/share_submenu.rs` can draw one item each; [`perform_offered`] runs the one
-//! the user picked. AirDrop, Mail, Messages, Notes, and every installed share
-//! extension come from the system; Cmdr only hands over the file URLs.
+//! Three steps, all reached from the file context menu. [`enumerate_offer`] asks macOS
+//! which services it would offer for the right-clicked rows, on ANY thread: it reads each
+//! file's attributes, over the network on a share, so it runs on the menu's fact pool
+//! rather than the main thread (`menu/context_menu_facts.rs`). [`arm_offer`] then hands the
+//! answer to the main thread for the menu that's up, and [`perform_offered`] runs the one
+//! the user picked. AirDrop, Mail, Messages, Notes, and every installed share extension
+//! come from the system; Cmdr only hands over the file URLs.
 //!
-//! ⚠️ The two are paired by INDEX through a thread-local, so both have to run on the
-//! same thread: `services_for` while the menu is being built, `perform_offered` from
-//! the click. Both take a `MainThreadMarker` to say so, and because
+//! ⚠️ Arming and performing are paired by INDEX through a main-thread thread-local, so
+//! both take a `MainThreadMarker`: the offer is armed where the click will read it, and
 //! `performWithItems:` puts UI on screen.
 //!
 //! Why hand-build rather than let AppKit draw it: `NSSharingServicePicker`'s
@@ -37,6 +38,7 @@ pub enum ShareError {
 
 /// One service, as a menu item needs it: no AppKit types, so it crosses into the
 /// menu builder freely. Its icon stays with the live offer ([`offered_image`]).
+#[derive(Clone)]
 pub struct ShareService {
     /// What the item says. `menuItemTitle` is the service's own answer for exactly
     /// this use, and it's macOS copy in the system language, ❌ never ours to
@@ -44,35 +46,68 @@ pub struct ShareService {
     pub title: String,
 }
 
-/// The services macOS offers for `paths`, in its own order, and the arming of
-/// [`perform_offered`] for the menu about to open.
+/// What macOS offers for one selection: the exact items it was asked about, the services it
+/// answered with, and each one's title. Enumerated on a worker, armed on the main thread.
+pub struct ShareOffer {
+    items: Retained<NSArray>,
+    services: Vec<Retained<NSSharingService>>,
+    titles: Vec<ShareService>,
+}
+
+// SAFETY: a `ShareOffer` crosses threads exactly once, from the framework-pool worker that
+// enumerated it to the main thread that arms it, and nothing touches it on the worker after
+// the hand-off. What it holds is an `NSArray` of immutable `NSURL`s and `NSSharingService`s,
+// whose retain and release are atomic; `sharingServicesForItems:` itself runs clean under
+// Apple's Main Thread Checker off the main thread (Xcode's `libMainThreadChecker.dylib` over a
+// Swift probe, macOS 27.0, 2026-09-24, with an `NSView` control run proving the checker live),
+// and its answer matches the main thread's service for service.
+unsafe impl Send for ShareOffer {}
+
+impl ShareOffer {
+    /// The services, one menu item each, in macOS's order. EMPTY means macOS offers nothing
+    /// for this selection (a path that vanished, a broken symlink).
+    pub fn services(&self) -> &[ShareService] {
+        &self.titles
+    }
+}
+
+/// Asks macOS which services it offers for `paths`, in its own order. `None` when no path
+/// makes a file URL, so there is nothing to offer and nothing a click may find.
 ///
-/// An EMPTY answer means macOS offers nothing for this selection (a path that
-/// vanished, a broken symlink), and the caller's job is then to leave the `Share`
-/// item out altogether rather than offer an empty submenu — which is the whole
-/// symptom the submenu replaced.
-///
-/// Costs about 11 ms warm, and ~190 ms on the first call of the process while
-/// LaunchServices wakes up (measured on macOS 26.6.2, 2026-09-09). That's the same
-/// one-time bill "Open with" already pays on this path.
-pub fn services_for(_mtm: MainThreadMarker, paths: &[PathBuf]) -> Vec<ShareService> {
+/// Runs on any thread, and belongs off the main one: the enumeration reads every file's
+/// attributes (`getattrlist`), which is a network round trip on a share, and it waits on
+/// ShareKit's own attribute store besides. A sample of the running app on an SMB share
+/// (2026-09-23, five right-clicks) spent 2.1 s of main-thread time here. About 11 ms warm
+/// and ~190 ms on the first call of the process on a local disk (macOS 26.6.2, 2026-09-09).
+pub fn enumerate_offer(paths: &[PathBuf]) -> Option<ShareOffer> {
     let urls = file_urls(paths);
     if urls.is_empty() {
-        // Nothing to enumerate, and nothing a later click may find: a stale offer
-        // would aim `Share` at a file the user has moved on from.
-        OFFERED.with(|slot| slot.replace(None));
-        return Vec::new();
+        return None;
     }
     let items = build_items(&urls);
     let services = enumerate(&items);
-    let offer = services
+    let titles = services
         .iter()
         .map(|service| ShareService {
             title: service.menuItemTitle().to_string(),
         })
         .collect();
-    OFFERED.with(|slot| slot.replace(Some(Offered { items, services })));
-    offer
+    Some(ShareOffer {
+        items,
+        services,
+        titles,
+    })
+}
+
+/// Makes `offer` the one a `Share` click performs from, replacing the last menu's. `None`
+/// clears it, so a stale offer can't aim `Share` at a file the user has moved on from.
+pub fn arm_offer(_mtm: MainThreadMarker, offer: Option<ShareOffer>) {
+    OFFERED.with(|slot| {
+        slot.replace(offer.map(|offer| Offered {
+            items: offer.items,
+            services: offer.services,
+        }))
+    });
 }
 
 /// The icon of the service at `index` in the live offer: macOS's own `NSImage`, which the

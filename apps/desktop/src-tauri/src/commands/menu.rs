@@ -7,10 +7,14 @@
 //! `crate::menu` builders and `MenuState`.
 
 use crate::ignore_poison::IgnorePoison;
+#[cfg(not(target_os = "macos"))]
+use crate::menu::FileContextInfo;
+#[cfg(target_os = "macos")]
+use crate::menu::context_menu_facts;
 use crate::menu::{
-    ContextMenuPaneFacts, ContextMenuShortcuts, DetachWord, FileContextInfo, MenuState, SameKindTarget,
-    build_breadcrumb_context_menu, build_context_menu, build_function_key_bar_context_menu,
-    build_network_host_context_menu, build_parent_row_context_menu, build_tab_context_menu,
+    ContextMenuPaneFacts, ContextMenuShortcuts, DetachWord, MenuState, SameKindTarget, build_breadcrumb_context_menu,
+    build_context_menu, build_function_key_bar_context_menu, build_network_host_context_menu,
+    build_parent_row_context_menu, build_tab_context_menu,
 };
 use tauri::menu::ContextMenu;
 use tauri::{AppHandle, Manager, Runtime, Window};
@@ -142,35 +146,27 @@ pub fn show_file_context_menu<R: Runtime>(
     // How many rows the header names, taken before `context_paths` moves into `MenuState`.
     let target_count = context_paths.len();
 
-    // Compute per-file context (sync status, FP-domain membership, candidate "Open with"
-    // apps). The LaunchServices query for candidates can take 50-200 ms on a cold cache,
-    // which delays the popup; the cache (in `file_system::open_with`) keeps later
-    // right-clicks fast.
-    #[cfg(target_os = "macos")]
-    let mut info = build_file_context_info(&path, &context_paths, is_directory);
-    #[cfg(not(target_os = "macos"))]
-    let info = FileContextInfo;
-
     // What a macOS service, or a share service, would act on: the same rows, as paths,
     // taken before `context_paths` moves into `MenuState`.
     #[cfg(target_os = "macos")]
     let services_paths: Vec<std::path::PathBuf> = context_paths.iter().map(std::path::PathBuf::from).collect();
 
-    // The services macOS offers for those rows, one `Share` submenu item each. Left
-    // empty when the pane's rows aren't OS paths, and empty is also macOS's own answer
-    // for a row it can't share — either way the item is left out entirely.
-    //
-    // ⚠️ The marker has to come from THIS thread, not a hop: `services_for` arms the
-    // click side by index, and `on_menu_event` reads it back on the main thread. A sync
-    // `#[tauri::command]` runs there, which is also why `popup()` works below; without a
-    // marker the submenu is simply absent, like a pane that can't share.
+    // ❗ Nothing on this thread asks the disk, a provider, or LaunchServices: this is a sync
+    // command, so it runs on the MAIN thread, and on a network share every such question is
+    // a round trip the whole app waits behind. The slow facts start first, on their own pool,
+    // and the cheap work below runs while they answer. `menu/context_menu_facts.rs`.
     #[cfg(target_os = "macos")]
-    if pane.can_share {
-        match objc2::MainThreadMarker::new() {
-            Some(mtm) => info.share_services = crate::file_system::share::services_for(mtm, &services_paths),
-            None => log::warn!(target: "menu", "Not on the main thread; the context menu offers no Share submenu"),
-        }
-    }
+    let started = std::time::Instant::now();
+    #[cfg(target_os = "macos")]
+    let is_icloud_drive = crate::file_system::cloud_actions::is_in_icloud_drive(std::path::Path::new(&path));
+    #[cfg(target_os = "macos")]
+    let gathering = context_menu_facts::start(context_menu_facts::FactsRequest {
+        primary: std::path::PathBuf::from(&path),
+        paths: services_paths.clone(),
+        is_directory,
+        is_icloud_drive,
+        can_share: pane.can_share,
+    });
 
     // Update menu context so on_menu_event has paths + bundle map for the new items.
     {
@@ -182,10 +178,11 @@ pub fn show_file_context_menu<R: Runtime>(
         context.tags_listing_id = pane.listing_id;
         #[cfg(target_os = "macos")]
         {
-            // Filled in from build_context_menu's return value below.
+            // Both filled in below, from the facts that answered in time, and later by the
+            // live menu from the ones that didn't. Cleared first, so a click can never reach
+            // the last menu's apps or provider actions.
             context.open_with_apps.clear();
-            // What an `fp-action:<index>` click indexes into, replacing the last menu's.
-            context.file_provider_offer = info.file_provider_offer.clone();
+            context.file_provider_offer = None;
         }
     }
 
@@ -199,6 +196,40 @@ pub fn show_file_context_menu<R: Runtime>(
         covered_by_parent: image_index_enabled
             && cmdr_index::media_index::network::config::is_covered_by_parent_folder(&path),
     };
+
+    // Waits out the grace period at most, then builds with what answered. Every later
+    // answer goes to the live menu, tagged with this menu's generation.
+    #[cfg(target_os = "macos")]
+    let generation = crate::menu::next_generation();
+    #[cfg(target_os = "macos")]
+    let collected = gathering.collect(started + context_menu_facts::GRACE, crate::menu::late_sink(generation));
+    #[cfg(target_os = "macos")]
+    log::debug!(
+        target: "menu",
+        "Right-click menu built after {} ms, {} facts ready, still out: {:?}",
+        started.elapsed().as_millis(),
+        collected.ready.len(),
+        collected.pending
+    );
+    #[cfg(target_os = "macos")]
+    let info = {
+        let (info, share_offer) =
+            context_menu_facts::file_context_info(is_icloud_drive, collected.ready, &collected.pending);
+        // What a `Share` click performs from: this menu's offer, or nothing until the late
+        // one lands, so a click can never reach the last menu's. On the main thread, which a
+        // sync command always is.
+        match objc2::MainThreadMarker::new() {
+            Some(mtm) => crate::file_system::share::arm_offer(mtm, share_offer),
+            None => log::warn!(target: "menu", "Not on the main thread; the context menu's Share items do nothing"),
+        }
+        app.state::<MenuState<R>>()
+            .context
+            .lock_ignore_poison()
+            .file_provider_offer = info.file_provider_offer.ready().cloned().flatten();
+        info
+    };
+    #[cfg(not(target_os = "macos"))]
+    let info = FileContextInfo;
 
     let result = build_context_menu(
         app,
@@ -257,88 +288,20 @@ pub fn show_file_context_menu<R: Runtime>(
     // in at the same moment and for the same reason. ❌ Never `let _ =`: its `Drop` also lets
     // the row go of the items, which must not happen before `popup()` returns.
     #[cfg(target_os = "macos")]
-    let _tag_row_loan = crate::menu::lend_tag_row(&result.menu, &info.applied_tag_colors);
+    let _tag_row_loan = crate::menu::lend_tag_row(&result.menu, info.applied_tag_colors.ready().unwrap_or(&[false; 8]));
+
+    // The facts that missed the grace period, landing on this menu while it's up. ❌ Never
+    // `let _ =`: its `Drop` is what makes a late answer for a closed menu go nowhere.
+    #[cfg(target_os = "macos")]
+    let _live_loan = if collected.pending.is_empty() {
+        None
+    } else {
+        crate::menu::lend_live_menu(result.late, generation, collected.cancel)
+    };
 
     popup_context_menu(&result.menu, window, anchor)?;
 
     Ok(())
-}
-
-/// A context menu has to appear now. Half a second is already more than the user
-/// should wait for one label.
-#[cfg(target_os = "macos")]
-const MENU_SYNC_STATUS_TIMEOUT: std::time::Duration = std::time::Duration::from_millis(500);
-
-/// How long a context menu waits on File Provider for its rows' provider actions. Past it,
-/// the provider's group is left out rather than the menu held back.
-#[cfg(target_os = "macos")]
-const FILE_PROVIDER_ACTIONS_BUDGET: std::time::Duration = std::time::Duration::from_millis(250);
-
-#[cfg(target_os = "macos")]
-fn build_file_context_info(primary_path: &str, all_paths: &[String], is_directory: bool) -> FileContextInfo {
-    use crate::file_system::cloud_actions::is_in_icloud_drive;
-    use crate::file_system::open_with::compute_open_with_choices;
-    use crate::file_system::sync_status::status_within_blocking;
-    use std::path::PathBuf;
-
-    let path_buf = PathBuf::from(primary_path);
-    let is_icloud_drive = is_in_icloud_drive(&path_buf);
-
-    // Sync status of the primary path only (drives the eviction pair's label).
-    // Bounded, because this runs before a context menu pops: a provider that stops
-    // answering must cost the menu a plain label, not a delay the user can feel.
-    //
-    // The probe itself is provider-agnostic and answers correctly for third-party
-    // providers (a streamed Google Drive file carries `SF_DATALESS` like any other
-    // stub, verified 2026-09-07 with `stat -f %Sf`). We skip it off iCloud anyway,
-    // because the only thing this value picks between is the eviction pair, and
-    // that pair is iCloud-only. Widening the menu, not this call, is what a
-    // third-party provider would need.
-    let sync_status = if is_icloud_drive {
-        status_within_blocking(primary_path, MENU_SYNC_STATUS_TIMEOUT)
-    } else {
-        Default::default()
-    };
-
-    // Google Drive links for the primary path: ONE resolution, every URL shape
-    // built from it. Cheap enough to stay on the menu-build
-    // path without a timeout of its own: a `getxattr`, or a couple of hundred bytes of
-    // JSON for a native-doc stub, or — for a MIRRORED file, where neither exists — two
-    // indexed reads of Drive's own local databases. Measured 2026-09-09 on a real
-    // 3,268-item mirror: 12 µs for a path outside Drive, 0.5 ms for one inside it, and
-    // 9.8 ms on the first call of a 30-second window (`google_drive/mirror_db.rs`
-    // caches the account scan for exactly that reason).
-    let google_drive_links = crate::file_system::google_drive::item_links(&path_buf, is_directory);
-
-    // The rows' File Provider actions, the ones Finder would show. Bounded, because this
-    // runs before a context menu pops: a row outside every domain costs no File Provider
-    // call at all, and one inside waits at most the budget.
-    let path_bufs: Vec<PathBuf> = all_paths.iter().map(PathBuf::from).collect();
-    let file_provider_offer =
-        crate::file_system::file_provider_actions::offer_for(&path_bufs, FILE_PROVIDER_ACTIONS_BUDGET);
-
-    let open_with = compute_open_with_choices(path_bufs);
-
-    // Which color tags the WHOLE selection already carries (drives the checked circle).
-    // Read each path's tags once; `applied_colors` marks a color only when every path
-    // has it.
-    let per_path_tags: Vec<Vec<crate::file_system::listing::metadata::TagRef>> = all_paths
-        .iter()
-        .map(|p| crate::file_system::tags::read_tags(&PathBuf::from(p)))
-        .collect();
-    let applied_tag_colors = crate::file_system::tags::applied_colors(&per_path_tags);
-
-    FileContextInfo {
-        sync_status,
-        is_icloud_drive,
-        google_drive_links,
-        file_provider_offer,
-        open_with,
-        // Filled in by the caller, which holds the main-thread marker the enumeration
-        // has to share with the click handler.
-        share_services: Vec::new(),
-        applied_tag_colors,
-    }
 }
 
 /// Shows a native context menu for the breadcrumb path bar.

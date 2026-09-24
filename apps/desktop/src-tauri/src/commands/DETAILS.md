@@ -231,11 +231,12 @@ Per-file function inventory and decision rationale. `CLAUDE.md` holds the must-k
     viewport CSS pixels pass straight through, and ❌ a `Physical` position would halve every coordinate on a Retina
     display. Why viewport and window coordinates coincide for Cmdr's window, with the measurement:
     `apps/desktop/src/lib/file-explorer/pane/DETAILS.md` § Keyboard context menu.
-  - ❗ **`build_file_context_info` enumerates the share services on THIS thread** (macOS), taking its own
-    `MainThreadMarker` rather than hopping: `file_system::share` pairs the offer with the click by index through a
-    thread-local, and `on_menu_event` reads it back on the main thread. A sync `#[tauri::command]` runs there, which is
-    also what lets `popup()` work; with no marker the `Share` submenu is simply absent. `file_system/DETAILS.md` § "The
-    Share submenu".
+  - ❗ **`show_file_context_menu` asks nothing slow on its own thread** (macOS). It's a sync command, so it runs on the
+    MAIN thread (which is also what lets `popup()` work), and a disk or provider question there freezes the app for a
+    network round trip. The slow facts start first on `../menu/context_menu_facts.rs`'s pool and get 100 ms; the rest land
+    on the open menu. It arms the `Share` offer itself, with this thread's `MainThreadMarker`, because
+    `file_system::share` pairs the offer with the click by index through a main-thread thread-local.
+    `menu/DETAILS.md` § "Slow facts and the live menu".
   - No popup here for a volume switcher row, a favorite, or a servers-hub place: their actions are the in-app `Menu`'s
     (`apps/desktop/src/lib/file-explorer/navigation/row-menu.ts`), which read Rust's busy set from the pushed
     `volumes-busy-changed` store rather than calling in here.

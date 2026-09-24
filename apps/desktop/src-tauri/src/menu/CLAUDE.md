@@ -12,7 +12,10 @@ Native menu bars for macOS and Linux, built from scratch in the user's language.
 
 - **Build from scratch; ❌ never `Menu::default()`**: it inherits OS-injected Edit items nothing can remove before
   display.
-- **❗ A macOS loan must outlive `popup()`; ❌ never `let _ =`** (Services, context icons, header, tag row).
+- **❗ A macOS loan must outlive `popup()`; ❌ never `let _ =`** (Services, context icons, header, tag row, live menu).
+- **The file context menu asks nothing slow on the main thread**: disk, provider, and LaunchServices facts go through
+  `context_menu_facts.rs` (100 ms grace), and late ones land via `context_menu_live.rs`. While it's up, ❌ never touch
+  the top-level `Menu` (muda has it borrowed: panic) or insert above rows (the highlight moves). DETAILS § Slow facts.
 - **Every menu image goes through ONE door, `set_menu_item_image`**, because macOS 27 hides an item's image unless the
   item opts in, silently (it reads back non-nil, nothing draws). Clippy refuses `NSMenuItem::setImage` and
   `IconMenuItem` elsewhere. A context-menu image is an `ItemImage` in `context_menu_icons::image_runs`.

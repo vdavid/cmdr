@@ -594,9 +594,24 @@
     "description": "VERB (imperative). Right-click menu on a file or folder, next to \"Show in Finder\": the title of a SUBMENU listing the ways macOS can send the file onward (AirDrop, Mail, Messages, Notes, and any share extension the user has installed). Use the exact word your macOS Finder uses for its own \"Share\" item, so the two menus read the same. ❌ No trailing …: it opens a submenu, not a dialog."
   },
 
+  "menu.context.shareLoading": "Finding share options…",
+  "@menu.context.shareLoading": {
+    "description": "A greyed-out, unclickable line inside the \"Share\" submenu, shown for a moment while the app is still asking macOS which sharing services (AirDrop, Mail, Messages, and so on) it offers for the right-clicked file (on a slow network drive this can take a second or two). The real list of services replaces it as soon as it arrives. Present progressive, short, and friendly: it describes what is happening right now. \"Share options\" means the ways to share the file; reuse the noun your language uses for the \"Share\" submenu's title if it reads naturally. KEEP the trailing … (U+2026, one character, never three dots): it signals ongoing work."
+  },
+
+  "menu.context.shareNone": "No share options",
+  "@menu.context.shareNone": {
+    "description": "A greyed-out, unclickable line inside the \"Share\" submenu, shown when macOS turns out to offer no sharing service at all for the right-clicked file (for example a broken shortcut). It replaces \"Finding share options…\" once the answer arrives. A calm statement of fact, not an error: never use a word for \"error\" or \"failed\". Keep \"share options\" worded the same as in \"Finding share options…\". No trailing punctuation."
+  },
+
   "menu.context.editExtensions": "Edit extensions…",
   "@menu.context.editExtensions": {
     "description": "VERB phrase (imperative). Last entry of the \"Share\" submenu, below a separator: opens the macOS System Settings page where share extensions are switched on and off, so a service that's missing from the list above can be turned back on. \"Extensions\" here means macOS app extensions, NOT filename extensions: take the noun from the System Settings page your own Mac calls \"Login Items & Extensions\" (de \"Erweiterungen\", fr \"extensions\", hu \"bővítmények\", sv \"tillägg\", zh-Hans \"扩展\", zh-Hant \"延伸功能\"). Finder has no item of its own to copy here, so pair that noun with your language's ordinary imperative for editing a list of settings. KEEP the trailing … (U+2026, one character, never three dots): this item hands the user to System Settings, and macOS marks both of its own neighbours that way, so dropping it reads as a typo."
+  },
+
+  "menu.context.openWithLoading": "Finding apps…",
+  "@menu.context.openWithLoading": {
+    "description": "A greyed-out, unclickable line inside the \"Open with\" submenu, shown for a moment while the app is still asking macOS which applications can open the right-clicked file (on a slow network drive this can take a second or two). The real list of apps replaces it as soon as it arrives. Present progressive, short, and friendly: it describes what is happening right now. \"Apps\" means applications. KEEP the trailing … (U+2026, one character, never three dots): it signals ongoing work."
   },
 
   "menu.context.openWith": "Open with",

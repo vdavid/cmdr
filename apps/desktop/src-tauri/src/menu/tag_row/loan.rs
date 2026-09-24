@@ -75,6 +75,20 @@ pub fn lend_tag_row<R: Runtime>(menu: &Menu<R>, applied_tag_colors: &[bool; 8]) 
     Some(TagRowLoan(mtm))
 }
 
+/// Checks the installed row's circles once the tag reads answer after the menu went up
+/// (`context_menu_live.rs`). `applied_tag_colors` is indexed by Finder color, like
+/// [`lend_tag_row`]'s. Nothing when no row is installed.
+pub fn set_applied(applied_tag_colors: &[bool; 8]) {
+    let Some(row) = INSTALLED.with(|slot| slot.borrow().as_ref().and_then(Weak::load)) else {
+        return;
+    };
+    let in_row_order: Vec<bool> = SWATCHES
+        .iter()
+        .map(|swatch| applied_tag_colors[usize::from(swatch.color)])
+        .collect();
+    row.set_applied(&in_row_order);
+}
+
 /// Reads each tag item's live title and resolves the row's words for it.
 ///
 /// The title is the translated color name, and it's also what the observer matches on,
@@ -88,7 +102,8 @@ fn arm<R: Runtime>(menu: &Menu<R>, applied_tag_colors: &[bool; 8]) -> Option<Arm
         let applied = applied_tag_colors[usize::from(swatch.color)];
         swatches.push(SwatchContent {
             name: title.clone(),
-            hover_label: menu_t_with(hover_label_key(applied), &[("color", &title)]),
+            add_label: menu_t_with(hover_label_key(false), &[("color", &title)]),
+            remove_label: menu_t_with(hover_label_key(true), &[("color", &title)]),
             applied,
             light: swatch.light,
             dark: swatch.dark,

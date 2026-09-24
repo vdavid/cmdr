@@ -138,7 +138,8 @@ private mechanism and its evidence, `mod.rs`'s header the gate, and `declaration
   or a provider installed later needs no path table. A symlink in the top two levels of home (`~/Dropbox`) is followed
   once; nothing past a link that points elsewhere is read.
 - **Then a bounded fetch.** Every row resolves concurrently (`fetchItemForURL:`), then the domain's user info
-  (`fetchProviderDomainWithID:`), all inside the menu's 250 ms budget (`commands/menu.rs`). Measured 12–23 ms for one
+  (`fetchProviderDomainWithID:`), all inside a 1 s budget on the menu's fact pool (`../menu/context_menu_facts.rs`; the
+  menu doesn't wait on it, and a late offer fills in while it's open). Measured 12–23 ms for one
   row and 51 ms for 20 (same probe). All rows in one domain, or no group; past 100 rows, no group.
 - **Identifiers repeat** (Drive declares `ACTION_SHARE` three times, each with its own rule and label), so menu IDs are
   `fp-action:<index>` into the offer `MenuContext` keeps, and a click runs exactly the evaluated action on exactly the
@@ -280,8 +281,9 @@ already provider-agnostic: a streamed Drive file carries `SF_DATALESS` like any 
 ## The Share submenu (`share.rs`)
 
 The file context menu's `Share` is an inline submenu, one item per service macOS offers for the right-clicked rows, the
-way Finder and Nimble Commander draw it. `services_for` enumerates; `../menu/share_submenu.rs` draws; `perform_offered`
-runs the pick. AirDrop, Mail, Messages, Notes, and every installed share extension come from the system; Cmdr
+way Finder and Nimble Commander draw it. `enumerate_offer` enumerates, off the main thread on the menu's fact pool (it
+reads each file's attributes, a round trip on a share); `arm_offer` hands the answer to the main thread, where the click
+reads it; `../menu/share_submenu.rs` draws; `perform_offered` runs the pick. AirDrop, Mail, Messages, Notes, and every installed share extension come from the system; Cmdr
 contributes the file URLs and the item order macOS gave it.
 
 **Decision: hand-build it, and take the deprecation.** `NSSharingService.sharingServicesForItems:` is deprecated (macOS
