@@ -3371,3 +3371,12 @@ Schalter unter Einstellungen > Erweitert > Eingabe.
   beide Sätze im selben Toast stehen · `high`.
 - **„stays in {folderName}“ → `bleibt/bleiben in {folderName}`** · Verb in eigenem Plural-Block wie beim Geschwister ·
   `high`.
+
+## Platzhalterzeilen in „Öffnen mit“ und „Teilen“ (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+- **„Finding apps…“ → `Apps werden gesucht …`** · Fortschrittszeile, also Leerzeichen vor `…` (style.md § Ellipsis);
+  macOS setzt es auch im Menü so (SystemSettings `Fetching Menu Item` = „Laden …“) · `high`.
+- **„share options“ → `Optionen zum Teilen`** · das Untermenü heißt `Teilen` (Finder), und `Freigabe` ist hier falsch:
+  die gehört zur Netzwerkfreigabe (style.md § share). Ein Kompositum `Teilen-Optionen` liest sich holprig · `tentative`.
+- **„No share options“ → `Keine Optionen zum Teilen`** · Muster wie macOS' leeres Dienste-Menü („No Services Apply“ =
+  „Keine Dienste verfügbar“) · `high`.

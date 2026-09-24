@@ -3825,3 +3825,12 @@ képernyős módjából, és a hozzá tartozó kapcsoló a Speciális beállít�
   `it changed → módosult` sor · `high`. A számnévi alany mellett egyes számú állítmány (style.md § Plurals). Az
   `áthelyezés közben` és a `forrásmappákban` betű szerint a testvér `transfer.appearedDuringMove` alakja, mert a két
   mondat ugyanabban az értesítésben áll.
+
+## A „Megnyitás ezzel” és a „Megosztás” almenü helyőrző sorai (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+- **„Finding apps…” → `Appok keresése…`** · névszói alak, mint a macOS („Searching…” = „Keresés…”); `app`, mint a
+  `settings.behavior.textEditorApp.checking` (`Appok ellenőrzése…`) · high.
+- **„share options” → `megosztási lehetőségek`** · `lehetőség`, nem `beállítás`: az a settings jelentés, itt a megosztás
+  MÓDJAIRÓL van szó (AirDrop, Mail) · tentative.
+- **„No share options” → `Nincs megosztási lehetőség`** · a macOS üres menüjének mintája („No Services Apply” = „Nincs
+  alkalmazható szolgáltatás”) · high.

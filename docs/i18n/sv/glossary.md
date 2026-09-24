@@ -3382,3 +3382,12 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 - **”changed during the move” → `ändrades under flytten`** · Finder `PE56` ”ett eller flera objekt ändrades under
   bränningen” (Finder `LocalizableMerged` `PE56`, macOS 26.6.2, live bundle, 2026-09-25) · `high`. `under flytten`,
   `blir kvar` och `källmappar` tas ordagrant från syskonet `transfer.appearedDuringMove`, som står i samma meddelande.
+
+## Väntraderna i ”Öppna med” och ”Dela” (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+- **Finding apps…: `Söker efter appar…`** · presens som macOS (”Searching…” = ”Söker…”), `appar` som
+  `settings.behavior.textEditorApp.checking`. `high`.
+- **share options: `delningsalternativ`** · `delning` från undermenyn `Dela` + glossarets `options: Alternativ`; inte
+  `delad mapp`, som är nätverksbetydelsen. `tentative` (sammansatt, inget belägg i högen).
+- **No share options: `Inga delningsalternativ`** · macOS mönster för tom meny (”No Services Apply” = ”Inga tjänster
+  tillgängliga”). `high`.

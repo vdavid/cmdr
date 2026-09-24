@@ -485,9 +485,21 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
+  "menu.context.shareLoading": "Deelopties zoeken…",
+  "@menu.context.shareLoading": {
+    "sourceHash": "1db46ae"
+  },
+  "menu.context.shareNone": "Geen deelopties",
+  "@menu.context.shareNone": {
+    "sourceHash": "cd12a10"
+  },
   "menu.context.editExtensions": "Bewerk extensies…",
   "@menu.context.editExtensions": {
     "sourceHash": "c1d99c8"
+  },
+  "menu.context.openWithLoading": "Apps zoeken…",
+  "@menu.context.openWithLoading": {
+    "sourceHash": "5bcff61"
   },
   "menu.context.openWith": "Open met",
   "@menu.context.openWith": {

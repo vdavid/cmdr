@@ -482,9 +482,21 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
+  "menu.context.shareLoading": "Buscando opciones para compartir…",
+  "@menu.context.shareLoading": {
+    "sourceHash": "1db46ae"
+  },
+  "menu.context.shareNone": "No hay opciones para compartir",
+  "@menu.context.shareNone": {
+    "sourceHash": "cd12a10"
+  },
   "menu.context.editExtensions": "Editar extensiones…",
   "@menu.context.editExtensions": {
     "sourceHash": "c1d99c8"
+  },
+  "menu.context.openWithLoading": "Buscando apps…",
+  "@menu.context.openWithLoading": {
+    "sourceHash": "5bcff61"
   },
   "menu.context.openWith": "Abrir con",
   "@menu.context.openWith": {

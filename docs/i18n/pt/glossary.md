@@ -3416,3 +3416,11 @@ de `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
   para essa ideia · `high`. `durante a movimentação`, `continua/continuam` e `pastas de origem` vêm do irmão
   `transfer.appearedDuringMove`, que aparece no mesmo aviso. A oração inteira fica dentro dos ramos (style.md §
   Plurals).
+
+## Linhas de espera em "Abrir com" e "Compartilhar" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+- Finding apps… · **Buscando apps…** · gerúndio pt-BR, como `settings.behavior.textEditorApp.checking`
+  (`Verificando seus apps…`); `buscar` = search no glossário · high
+- share options · **opções de compartilhamento** · substantivo do verbo do submenu `Compartilhar`; o mesmo
+  `compartilhamento` do glossário · high
+- No share options · **Nenhuma opção de compartilhamento** · afirmação calma, sem "erro" · high

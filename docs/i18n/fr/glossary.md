@@ -3881,3 +3881,11 @@ Avancé > Saisie.
   modifiés au cours de la gravure » (Finder `LocalizableMerged` `PE56`, macOS 26.6.2, live bundle, 2026-09-25), mais le
   catalogue préfère l'actif. `pendant le déplacement` et `dossiers source` repris mot pour mot du voisin
   `transfer.appearedDuringMove`, affiché dans la même notification · `high`.
+
+## Lignes d'attente de « Ouvrir avec » et « Partager » (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+- **Finding apps… → `Recherche d'apps…`** · nom verbal comme macOS (« Searching… » = « Recherche… »), `apps` comme
+  `settings.behavior.textEditorApp.checking` ; apostrophe ASCII simple (clé native) · `high`.
+- **share options → `options de partage`** · `partage`, le nom du verbe du sous-menu `Partager` · `high`.
+- **No share options → `Aucune option de partage`** · moule de macOS pour un menu vide (« No Services Apply » = « Aucun
+  service adéquat ») · `high`.

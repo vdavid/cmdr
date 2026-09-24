@@ -477,9 +477,21 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
+  "menu.context.shareLoading": "Söker efter delningsalternativ…",
+  "@menu.context.shareLoading": {
+    "sourceHash": "1db46ae"
+  },
+  "menu.context.shareNone": "Inga delningsalternativ",
+  "@menu.context.shareNone": {
+    "sourceHash": "cd12a10"
+  },
   "menu.context.editExtensions": "Redigera tillägg…",
   "@menu.context.editExtensions": {
     "sourceHash": "c1d99c8"
+  },
+  "menu.context.openWithLoading": "Söker efter appar…",
+  "@menu.context.openWithLoading": {
+    "sourceHash": "5bcff61"
   },
   "menu.context.openWith": "Öppna med",
   "@menu.context.openWith": {

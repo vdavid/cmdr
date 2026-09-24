@@ -3848,3 +3848,12 @@ schakelaar bij Instellingen > Geavanceerd. Gemijnd in `_ignored/i18n/nl/macOS/`,
   `high`. `tijdens het verplaatsen`, `bronmappen` en de losse `is`/`zijn`- en `blijft`/`blijven`-blokken volgen de
   buurman `transfer.appearedDuringMove`, die in dezelfde melding staat. `blijft in {folderName} staan`: het partikel
   achteraan, zoals `blijft daar staan`.
+
+## Wachtregels in "Open met" en "Deel" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+- **Finding apps… → `Apps zoeken…`** · infinitief als voortgangsregel, zoals macOS ("Searching…"→"Zoeken…") en
+  `settings.behavior.textEditorApp.checking` (`Je apps controleren…`) · `high`.
+- **share options → `deelopties`** · samenstelling met de stam van het submenu `Deel`; geen precedent in de stapel ·
+  `tentative`.
+- **No share options → `Geen deelopties`** · macOS-patroon voor een leeg menu ("No Services Apply"→"Geen voorzieningen
+  van toepassing") · `high`.

@@ -3002,3 +3002,10 @@ replacement target. Four rules bind this whole group:
   `等源文件夹` 照搬同一条提示里的 `transfer.appearedDuringMove`。
 - **占位符两侧加空格**：`留在 {scope…} 中`（style.md § Numerals, punctuation, and spacing）。顺手把
   `transfer.appearedDuringMove` 原来的 `出现在{scope…}中` 也改成加空格的写法，两句同框时才一致。
+
+## “打开方式”和“共享”子菜单里的等待行（`menu.context.openWithLoading`、`.shareLoading`、`.shareNone`，2026-09-24）
+
+- **Finding apps…** · `正在查找 App…` · `正在…` 模式（macOS `Searching…` → `正在搜索…`）；`App` 同
+  `settings.behavior.textEditorApp.checking`，中英之间加空格 · `high`
+- **share options** · `共享选项` · `共享` 即子菜单名 · `high`
+- **No share options** · `没有共享选项` · macOS 空菜单的说法（`No Services Apply` → `没有服务可应用`） · `high`

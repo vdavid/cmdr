@@ -480,9 +480,21 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
+  "menu.context.shareLoading": "正在查找共享选项…",
+  "@menu.context.shareLoading": {
+    "sourceHash": "1db46ae"
+  },
+  "menu.context.shareNone": "没有共享选项",
+  "@menu.context.shareNone": {
+    "sourceHash": "cd12a10"
+  },
   "menu.context.editExtensions": "编辑扩展…",
   "@menu.context.editExtensions": {
     "sourceHash": "c1d99c8"
+  },
+  "menu.context.openWithLoading": "正在查找 App…",
+  "@menu.context.openWithLoading": {
+    "sourceHash": "5bcff61"
   },
   "menu.context.openWith": "打开方式",
   "@menu.context.openWith": {

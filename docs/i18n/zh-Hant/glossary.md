@@ -2150,3 +2150,10 @@ SMB 共享上兩個名稱在畫面上一模一樣，但伺服器存成不同的�
   照搬同一則通知裡的 `transfer.appearedDuringMove`。
 - **佔位符兩側加空格**：`留在 {scope…} 中`（style.md § Spacing）。順手把 `transfer.appearedDuringMove` 原本的
   `出現在{scope…}中` 也改成加空格的寫法，兩句同框才一致。
+
+## 「開啟檔案的應用程式」和「分享」子選單裡的等待行（`menu.context.openWithLoading`、`.shareLoading`、`.shareNone`，2026-09-24）
+
+- **Finding apps…** · `正在尋找 App…` · 沿用 `正在…` 進度模式（見 loading 列）；`App` 同 `選擇 App…` 和
+  `settings.behavior.textEditorApp.checking`，中英之間加空格 · `high`
+- **share options** · `分享選項` · `分享` 即子選單名（share (verb) 列） · `high`
+- **No share options** · `沒有分享選項` · macOS 空選單的說法（`No Services Apply` → `沒有可套用的服務`） · `high`

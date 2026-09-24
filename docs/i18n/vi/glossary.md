@@ -3475,3 +3475,11 @@ theo `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
   trong khi đang ghi" (Finder `LocalizableMerged` `PE56`, macOS 26.6.2, live bundle, 2026-09-25) · `high`.
   `trong khi di chuyển`, `vẫn ở lại` và `thư mục nguồn` lấy nguyên từ chuỗi chị em `transfer.appearedDuringMove`, hiện
   cùng một toast.
+
+## Dòng chờ trong "Mở bằng" và "Chia sẻ" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+- **Finding apps…: `Đang tìm ứng dụng…`** · mẫu `Đang …` của macOS ("Searching…" = `Đang tìm kiếm…`); `ứng dụng` như
+  `settings.behavior.textEditorApp.checking`. `high`.
+- **share options: `tùy chọn chia sẻ`** · `chia sẻ` = tên submenu. `high`.
+- **No share options: `Không có tùy chọn chia sẻ`** · mẫu menu trống của macOS ("No Services Apply" =
+  `Không có Dịch vụ Áp dụng`), viết thường theo sentence case. `high`.

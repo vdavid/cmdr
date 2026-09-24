@@ -3559,3 +3559,12 @@ términos ya documentados en este glosario y en el catálogo.
   `carpetas de origen` salen tal cual del hermano `transfer.appearedDuringMove`, porque las dos frases aparecen en el
   mismo aviso · `high`.
 - La oración entera va dentro de las ramas (`cambió … y se queda`), como pide `style.md` § Plurals.
+
+### Líneas provisionales de “Abrir con” y “Compartir” (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
+
+- **“Finding apps…” → `Buscando apps…`** · gerundio como macOS (“Searching…” = “Buscando…”); `app` según el glosario ·
+  `high`.
+- **“share options” → `opciones para compartir`** · reutiliza el verbo del submenú `Compartir`; `recurso compartido` es
+  el sentido de red y no aplica aquí · `high`.
+- **“No share options” → `No hay opciones para compartir`** · afirmación tranquila; más natural que el molde de macOS
+  “Ningún servicio aplicable” · `high`.
