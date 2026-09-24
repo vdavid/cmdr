@@ -695,7 +695,7 @@
   "@askCmdr.wakeDigest.modified": {
     "sourceHash": "6aa21c5"
   },
-  "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {elemento eliminado} many {elementos eliminados} other {elementos eliminados}}",
+  "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {elemento que ya no está} many {elementos que ya no están} other {elementos que ya no están}}",
   "@askCmdr.wakeDigest.removed": {
     "sourceHash": "9711102"
   },
@@ -735,7 +735,7 @@
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} hechos, {skippedText} omitidos, {failedText} con errores",
+  "askCmdr.decision.result": "{doneText} hechos, {skippedText} omitidos, {failedText} sin completar",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },

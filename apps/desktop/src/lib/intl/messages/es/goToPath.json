@@ -15,7 +15,7 @@
   "@goToPath.dialog.recentsAriaLabel": {
     "sourceHash": "b698143"
   },
-  "goToPath.dialog.removeFromList": "Eliminar de la lista",
+  "goToPath.dialog.removeFromList": "Quitar de la lista",
   "@goToPath.dialog.removeFromList": {
     "sourceHash": "82963c7"
   },

@@ -171,7 +171,7 @@
   "@operationLog.rollback.refusalJournalIncomplete": {
     "sourceHash": "4176739"
   },
-  "operationLog.rollback.refusalDirectoryMerge": "Al mover, la carpeta se combinó con otra que ya estaba ahí. Cmdr no puede distinguir qué archivos llegaron y cuáles ya estaban dentro, así que no hay una forma segura de volver atrás.",
+  "operationLog.rollback.refusalDirectoryMerge": "Al mover, la carpeta se fusionó con otra que ya estaba ahí. Cmdr no puede distinguir qué archivos llegaron y cuáles ya estaban dentro, así que no hay una forma segura de volver atrás.",
   "@operationLog.rollback.refusalDirectoryMerge": {
     "sourceHash": "2dad38d"
   },

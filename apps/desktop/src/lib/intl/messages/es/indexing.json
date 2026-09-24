@@ -154,23 +154,23 @@
   "@indexing.eta.hoursLeft": {
     "sourceHash": "1d50900"
   },
-  "indexing.rescan.staleIndex": "El índice de tu unidad está desactualizado. Parece que la app no se ha ejecutado en un tiempo. Estamos haciendo un análisis nuevo para ponerlo al día.",
+  "indexing.rescan.staleIndex": "El índice de tu unidad está desactualizado. Parece que la app no se ha ejecutado en un tiempo. Haciendo un análisis nuevo para ponerlo al día.",
   "@indexing.rescan.staleIndex": {
     "sourceHash": "ddac60e"
   },
-  "indexing.rescan.journalGap": "El registro de cambios de archivos del sistema no llega lo bastante atrás. Estamos haciendo un análisis nuevo para reconstruir el índice.",
+  "indexing.rescan.journalGap": "El registro de cambios de archivos del sistema no llega lo bastante atrás. Haciendo un análisis nuevo para reconstruir el índice.",
   "@indexing.rescan.journalGap": {
     "sourceHash": "5f1075b"
   },
-  "indexing.rescan.replayOverflow": "Han ocurrido muchos cambios de archivos desde la última ejecución. Estamos haciendo un análisis nuevo en lugar de reproducirlos uno a uno.",
+  "indexing.rescan.replayOverflow": "Han ocurrido muchos cambios de archivos desde la última ejecución. Haciendo un análisis nuevo en lugar de reproducirlos uno a uno.",
   "@indexing.rescan.replayOverflow": {
     "sourceHash": "70c7481"
   },
-  "indexing.rescan.watcherStartFailed": "No se pudo iniciar el monitor de cambios de archivos. Estamos haciendo un análisis nuevo para poner el índice al día.",
+  "indexing.rescan.watcherStartFailed": "No se pudo iniciar la vigilancia de cambios de archivos. Haciendo un análisis nuevo para poner el índice al día.",
   "@indexing.rescan.watcherStartFailed": {
     "sourceHash": "831e44d"
   },
-  "indexing.rescan.reconcilerBufferOverflow": "Una actividad intensa del sistema de archivos desbordó el búfer de eventos. Estamos haciendo un análisis nuevo para mantener la precisión.",
+  "indexing.rescan.reconcilerBufferOverflow": "Una actividad intensa del sistema de archivos desbordó el búfer de eventos. Haciendo un análisis nuevo para mantener la precisión.",
   "@indexing.rescan.reconcilerBufferOverflow": {
     "sourceHash": "d6000e4"
   },
@@ -178,11 +178,11 @@
   "@indexing.rescan.incompletePreviousScan": {
     "sourceHash": "3ca5217"
   },
-  "indexing.rescan.watcherChannelOverflow": "Una ráfaga de actividad del sistema de archivos desbordó el canal del monitor. Estamos haciendo un análisis nuevo para mantener la precisión.",
+  "indexing.rescan.watcherChannelOverflow": "Una ráfaga de actividad del sistema de archivos desbordó el canal de vigilancia. Haciendo un análisis nuevo para mantener la precisión.",
   "@indexing.rescan.watcherChannelOverflow": {
     "sourceHash": "b7ce086"
   },
-  "indexing.rescan.fallback": "Estamos haciendo un análisis nuevo de la unidad para mantener el índice preciso.",
+  "indexing.rescan.fallback": "Haciendo un análisis nuevo de la unidad para mantener el índice preciso.",
   "@indexing.rescan.fallback": {
     "sourceHash": "cd99826"
   },
@@ -214,7 +214,7 @@
   "@indexing.staleDialog.title": {
     "sourceHash": "21a78ee"
   },
-  "indexing.staleDialog.body": "Mientras {name} estuvo desconectada, los archivos que contiene pueden haber cambiado. Los tamaños de carpetas y los resultados de búsqueda podrían no coincidir del todo hasta que vuelvas a analizarla. El estado amarillo junto a la unidad siempre lo indica cuando ocurre, y un nuevo análisis lo actualiza.",
+  "indexing.staleDialog.body": "Mientras {name} estuvo sin conectar, los archivos que contiene pueden haber cambiado. Los tamaños de carpetas y los resultados de búsqueda podrían no coincidir del todo hasta que vuelvas a analizar la unidad. El estado amarillo junto a la unidad siempre aparece cuando pasa esto, y un nuevo análisis lo actualiza.",
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },

@@ -119,7 +119,7 @@
   "@onboarding.stepFda.con.label": {
     "sourceHash": "ebfc77d"
   },
-  "onboarding.stepFda.con.body": "El acceso a todo el disco es bastante potente. Permite que la app lea cualquier archivo de tu Mac. Concédelo solo si confías en Cmdr. Cmdr usa este derecho con respeto, y es de <sourceLink>código abierto</sourceLink> si tienes dudas.",
+  "onboarding.stepFda.con.body": "El acceso a todo el disco es bastante potente. Permite que la app lea cualquier archivo de tu Mac. Concédelo solo si confías en Cmdr. Cmdr usa este derecho con respeto, y su <sourceLink>código fuente es público</sourceLink> si tienes dudas.",
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
@@ -299,7 +299,7 @@
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
-  "onboarding.stepAi.localTooltip": "El LLM local necesita Apple Silicon. La nube funciona en Intel.",
+  "onboarding.stepAi.localTooltip": "El LLM local necesita Apple silicon. La nube funciona en Intel.",
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
   },
@@ -383,7 +383,7 @@
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "cfd1e86"
   },
-  "onboarding.stepBeta.crashReportsNote": "Los informes de fallo también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Ajustes cuando quieras.",
+  "onboarding.stepBeta.crashReportsNote": "Los informes de fallos también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Ajustes cuando quieras.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
   },
@@ -507,7 +507,7 @@
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP.\nEl coste es que macOS <em>también</em> quiere conectarse a estos (y suele fallar, por eso no puedes usar simplemente el Finder para copiar fotos de teléfonos Android), así que Cmdr tiene que suprimir ese proceso de macOS mientras se ejecuta.\nCuando cierras Cmdr, se restaura con cuidado.",
+  "onboarding.stepOptional.mtp.desc": "Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP.\nEl coste es que macOS <em>también</em> quiere conectarse a estos (y no suele conseguirlo, por eso no puedes usar simplemente el Finder para copiar fotos de teléfonos Android), así que Cmdr tiene que suprimir ese proceso de macOS mientras se ejecuta.\nCuando sales de Cmdr, se restaura con cuidado.",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },
@@ -583,7 +583,7 @@
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"
   },
-  "onboarding.cloudSetup.status.authError": "Esa clave no ha funcionado",
+  "onboarding.cloudSetup.status.authError": "Esa clave no funcionó",
   "@onboarding.cloudSetup.status.authError": {
     "sourceHash": "2f23f3b"
   },
@@ -591,7 +591,7 @@
   "@onboarding.cloudSetup.status.connectionError": {
     "sourceHash": "67cb2e5"
   },
-  "onboarding.cloudSetup.status.genericError": "Algo ha ido mal",
+  "onboarding.cloudSetup.status.genericError": "Algo salió mal",
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },

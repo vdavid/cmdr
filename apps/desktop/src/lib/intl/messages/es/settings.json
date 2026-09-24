@@ -76,7 +76,7 @@
   "@settings.appearance.dateColors.label": {
     "sourceHash": "25e5672"
   },
-  "settings.appearance.dateColors.description": "Colorea las fechas de modificación en la lista por antigüedad. App atenúa las fechas más antiguas hacia el color de texto normal. Marchitamiento va de verde para archivos recientes a amarillo para los que envejecen y marrón para los antiguos.",
+  "settings.appearance.dateColors.description": "Colorea las fechas de modificación en la lista por antigüedad. App atenúa las fechas más antiguas hacia el color de texto por omisión. Marchitamiento va de verde para archivos recientes a amarillo para los que envejecen y marrón para los antiguos.",
   "@settings.appearance.dateColors.description": {
     "sourceHash": "382ce25"
   },
@@ -138,7 +138,7 @@
   "@settings.listing.stripedRows.label": {
     "sourceHash": "c1537df"
   },
-  "settings.listing.stripedRows.description": "Alterna el sombreado de las filas para seguir mejor cada línea. Se aplica a los modos de vista Completa y Breve.",
+  "settings.listing.stripedRows.description": "Alterna el sombreado de las filas para seguir mejor cada línea. Se aplica a las vistas completa y breve.",
   "@settings.listing.stripedRows.description": {
     "sourceHash": "e95776a"
   },
@@ -294,11 +294,11 @@
   "@settings.listing.showHiddenFiles.description": {
     "sourceHash": "8e77c67"
   },
-  "settings.listing.showExtensionInName.label": "Mostrar las extensiones en la columna del nombre",
+  "settings.listing.showExtensionInName.label": "Mostrar las extensiones de archivo en la columna Nombre",
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"
   },
-  "settings.listing.showExtensionInName.description": "Muestra el nombre de archivo completo (como launch.json) en la columna Nombre y oculta la columna Ext aparte. Solo afecta a la vista Completa.",
+  "settings.listing.showExtensionInName.description": "Muestra el nombre de archivo completo (como launch.json) en la columna Nombre y oculta la columna Ext aparte. Solo afecta a la vista completa.",
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
@@ -326,11 +326,11 @@
   "@settings.listing.directorySortMode.opt.alwaysByName": {
     "sourceHash": "7687e38"
   },
-  "settings.listing.briefColumnWidthMode.label": "Ancho máximo de columna en modo Breve",
+  "settings.listing.briefColumnWidthMode.label": "Ancho máximo de columna en la vista breve",
   "@settings.listing.briefColumnWidthMode.label": {
     "sourceHash": "bbcab33"
   },
-  "settings.listing.briefColumnWidthMode.description": "Limita cuánto pueden ensancharse las columnas del modo Breve para mostrar nombres de archivo largos. Las columnas siempre se topan con el ancho del panel; el límite elegido solo entra en juego cuando sería menor que el panel.",
+  "settings.listing.briefColumnWidthMode.description": "Limita cuánto pueden ensancharse las columnas de la vista breve para mostrar nombres de archivo largos. Las columnas siempre se topan con el ancho del panel; el límite elegido solo entra en juego cuando sería menor que el panel.",
   "@settings.listing.briefColumnWidthMode.description": {
     "sourceHash": "d4a47b0"
   },
@@ -342,7 +342,7 @@
   "@settings.listing.briefColumnWidthMode.opt.limited": {
     "sourceHash": "01a089f"
   },
-  "settings.listing.briefColumnWidthMaxPx.label": "Límite de ancho de columna en Breve",
+  "settings.listing.briefColumnWidthMaxPx.label": "Límite de ancho de columna en la vista breve",
   "@settings.listing.briefColumnWidthMaxPx.label": {
     "sourceHash": "9d045cd"
   },
@@ -606,7 +606,7 @@
   "@settings.mediaIndex.networkVolumes.alwaysLabel": {
     "sourceHash": "123af5e"
   },
-  "settings.mediaIndex.networkVolumes.alwaysHelp": "Actívalo para una colección de fotos que casi nunca abres, así sus fotos se indexan igualmente.",
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "Actívalo para una colección de fotos que casi nunca exploras, así sus fotos se indexan igualmente.",
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
@@ -734,7 +734,7 @@
   "@settings.mediaIndex.reclaim.freed": {
     "sourceHash": "8606f6b"
   },
-  "settings.mediaIndex.reclaim.alreadyCleared": "Esas entradas ya se eliminaron",
+  "settings.mediaIndex.reclaim.alreadyCleared": "Esas entradas ya se borraron",
   "@settings.mediaIndex.reclaim.alreadyCleared": {
     "sourceHash": "742a715"
   },
@@ -831,7 +831,7 @@
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.label": {
     "sourceHash": "492d0b6"
   },
-  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Pulsa ⌃⌥⌘J desde cualquier app para ir a tu descarga más reciente. Requiere Acceso a todo el disco.",
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Pulsa ⌃⌥⌘J desde cualquier app para ir a tu descarga más reciente. Requiere acceso total al disco.",
   "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
     "sourceHash": "ed2f65d"
   },
@@ -892,7 +892,7 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "Ejecuta las búsquedas por nombre de archivo y por regex automáticamente mientras escribes (1 segundo después de que pares). Las búsquedas con IA siempre esperan a que pulses Intro, ya que cuestan dinero. Cuando está desactivado, pulsa Intro o el botón de ejecutar para buscar.",
+  "settings.search.autoApply.description": "Ejecuta las búsquedas por nombre de archivo y por regex automáticamente mientras escribes (1 segundo después de que dejes de escribir). Las búsquedas con IA siempre esperan a que pulses Intro, ya que cuestan dinero. Cuando está desactivado, pulsa Intro o haz clic en el botón de ejecutar para buscar.",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
@@ -956,11 +956,11 @@
   "@settings.network.enabled.description": {
     "sourceHash": "3500345"
   },
-  "settings.network.firstTriggerDone.label": "Descubrimiento de red iniciado",
+  "settings.network.firstTriggerDone.label": "Detección de red iniciada",
   "@settings.network.firstTriggerDone.label": {
     "sourceHash": "06aa851"
   },
-  "settings.network.firstTriggerDone.description": "Interno: registra si el descubrimiento se ha activado al menos una vez. Oculto en la interfaz.",
+  "settings.network.firstTriggerDone.description": "Interno: registra si la detección se ha activado al menos una vez. Oculto en la interfaz.",
   "@settings.network.firstTriggerDone.description": {
     "sourceHash": "7982e11"
   },
@@ -968,7 +968,7 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "Cuando está activado, Cmdr establece una conexión directa a los recursos compartidos SMB para acelerar las operaciones de archivos. El montaje del sistema se mantiene para Finder y otras apps.",
+  "settings.network.directSmbConnection.description": "Cuando está activado, Cmdr establece una conexión directa a los recursos compartidos SMB para acelerar las operaciones de archivos. El montaje del sistema se mantiene para el Finder y otras apps.",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
@@ -1089,7 +1089,7 @@
   "@settings.fileExplorer.git.showStatusColumn.label": {
     "sourceHash": "0f6a836"
   },
-  "settings.fileExplorer.git.showStatusColumn.description": "Añade una columna que muestra el estado de git por archivo (modificado, sin seguimiento, etc.) en el modo Completa.",
+  "settings.fileExplorer.git.showStatusColumn.description": "Añade una columna que muestra el estado de git por archivo (modificado, sin seguimiento, etc.) en la vista completa.",
   "@settings.fileExplorer.git.showStatusColumn.description": {
     "sourceHash": "7ff07e4"
   },
@@ -1229,7 +1229,7 @@
   "@settings.advanced.virtualizationBufferColumns.description": {
     "sourceHash": "a1cbd98"
   },
-  "settings.advanced.fileWatcherDebounce.label": "Antirrebote del vigilante de archivos",
+  "settings.advanced.fileWatcherDebounce.label": "Antirrebote de la vigilancia de archivos",
   "@settings.advanced.fileWatcherDebounce.label": {
     "sourceHash": "6a3842d"
   },
@@ -1249,15 +1249,15 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 abre el visor de archivos de Cmdr, que muestra los bytes en bruto (con UTF-8 con pérdida para el contenido no textual). Cuando abres una imagen, un PDF, un archivo comprimido u otro archivo binario, el visor muestra un banner rojo que explica que probablemente querías ⇧Espacio (Vista rápida) o Intro (abrir en la app asociada). Activa esto (o pulsa ''No volver a mostrar este aviso'' en el banner) para ocultar el aviso definitivamente.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 abre el visor de archivos de Cmdr, que muestra los bytes en bruto (con UTF-8 con pérdida para el contenido no textual). Cuando abres una imagen, un PDF, un archivo comprimido u otro archivo binario, el visor muestra un banner rojo que explica que probablemente querías ⇧Espacio (Vista rápida) o Intro (abrir en la app asociada). Activa esto (o haz clic en “No volver a mostrar este aviso” en el banner) para ocultar el aviso definitivamente.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "b3711da"
   },
-  "settings.fileExplorer.suppressQuickLookHint.label": "Ocultar la pista de Vista rápida con la tecla Espacio",
+  "settings.fileExplorer.suppressQuickLookHint.label": "Ocultar el aviso de Vista rápida con la tecla Espacio",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr usa Espacio para activar o desactivar la selección de archivos y ⇧Espacio para Vista rápida (Finder usa Espacio a secas para Vista rápida). Cada vez que pulsas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o pulsa ''No volver a mostrar'' en el aviso) para ocultar el recordatorio definitivamente.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr usa Espacio para activar o desactivar la selección de archivos y ⇧Espacio para Vista rápida (el Finder usa Espacio a secas para Vista rápida). Cada vez que pulsas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o haz clic en “No volver a mostrar” en el aviso) para ocultar el recordatorio definitivamente.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },
@@ -1337,7 +1337,7 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "Cuando apps como TextEdit y Preview guardan un archivo, macOS escribe la versión nueva al lado con un nombre temporal (que termina en \".sb-\") y luego la intercambia. Desactiva esto para mantenerlos fuera de la lista de archivos.",
+  "settings.advanced.showSafeSaveFiles.description": "Cuando apps como TextEdit y Vista Previa guardan un archivo, macOS escribe la versión nueva al lado con un nombre temporal (que termina en \".sb-\") y luego la intercambia. Desactiva esto para mantenerlos fuera de la lista de archivos.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
@@ -1397,11 +1397,11 @@
   "@settings.onboarding.upgradeNudgeShown.description": {
     "sourceHash": "5cfb2b5"
   },
-  "settings.askCmdr.consentRevokePending.label": "Ask Cmdr desactivado, pendiente de guardar",
+  "settings.askCmdr.consentRevokePending.label": "Ask Cmdr desactivado, esperando a que se guarde",
   "@settings.askCmdr.consentRevokePending.label": {
     "sourceHash": "1ecd887"
   },
-  "settings.ai.cloudConsentRevokePending.label": "IA en la nube desactivada, pendiente de guardar",
+  "settings.ai.cloudConsentRevokePending.label": "IA en la nube desactivada, esperando a que se guarde",
   "@settings.ai.cloudConsentRevokePending.label": {
     "sourceHash": "16456dc"
   },
@@ -1409,7 +1409,7 @@
   "@settings.onboarding.completed.label": {
     "sourceHash": "4730c4f"
   },
-  "settings.onboarding.fullDiskAccessChoice.label": "Elección de Acceso a disco completo",
+  "settings.onboarding.fullDiskAccessChoice.label": "Elección de acceso total al disco",
   "@settings.onboarding.fullDiskAccessChoice.label": {
     "sourceHash": "4d73a2b"
   },
@@ -1546,11 +1546,11 @@
   "@settings.revealHandler.uninstallWarning": {
     "sourceHash": "3c10fd3"
   },
-  "settings.revealHandler.notInApplications": "Mueve Cmdr a tu carpeta Aplicaciones para poder activar esto. Desde donde se ejecuta ahora, mover o borrar Cmdr dejaría cada clic en “Mostrar en el Finder” apuntando a la nada.",
+  "settings.revealHandler.notInApplications": "Mueve Cmdr a tu carpeta Aplicaciones para poder activar esto. Desde donde se ejecuta ahora, mover o eliminar Cmdr dejaría cada clic en “Mostrar en el Finder” apuntando a la nada.",
   "@settings.revealHandler.notInApplications": {
     "sourceHash": "dc15ebf"
   },
-  "settings.revealHandler.notProductionBuild": "Esto solo se puede activar en una versión publicada de Cmdr. Las compilaciones de desarrollo y de prueba van y vienen, y borrar una dejaría cada clic en “Mostrar en el Finder” apuntando a la nada.",
+  "settings.revealHandler.notProductionBuild": "Esto solo se puede activar en una versión publicada de Cmdr. Las compilaciones de desarrollo y de prueba van y vienen, y eliminar una dejaría cada clic en “Mostrar en el Finder” apuntando a la nada.",
   "@settings.revealHandler.notProductionBuild": {
     "sourceHash": "20648ba"
   },
@@ -1820,7 +1820,7 @@
   "@settings.askCmdr.memory.forgotten": {
     "sourceHash": "f3d9022"
   },
-  "settings.askCmdr.memory.notAllForgotten": "Cmdr no pudo borrar todas las notas. Abre la carpeta de notas para quitar el resto.",
+  "settings.askCmdr.memory.notAllForgotten": "Cmdr no pudo eliminar todas las notas. Abre la carpeta de notas para eliminar el resto.",
   "@settings.askCmdr.memory.notAllForgotten": {
     "sourceHash": "3ae9870"
   },
@@ -1968,7 +1968,7 @@
   "@settings.summary.fileAndFolderSizes": {
     "sourceHash": "cdd8214"
   },
-  "settings.summary.listing": "Iconos de documentos, ordenación de carpetas y ancho de columna en el modo Breve.",
+  "settings.summary.listing": "Iconos de documentos, ordenación de carpetas y ancho de columna en la vista breve.",
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
@@ -2161,11 +2161,11 @@
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
-  "settings.ai.tooltipLocal": "Ejecuta un modelo de lenguaje pequeño completamente en tu dispositivo. Privacidad máxima: nada sale de tu ordenador. Funciona sin conexión. Usa ~2 GB de espacio en disco y ~400 MB de memoria (varía según el tamaño del contexto). Requiere Apple Silicon (M1 o posterior).",
+  "settings.ai.tooltipLocal": "Ejecuta un modelo de lenguaje pequeño completamente en tu dispositivo. Privacidad máxima: nada sale de tu ordenador. Funciona sin conexión. Usa ~2 GB de espacio en disco y ~400 MB de memoria (varía según el tamaño del contexto). Requiere Apple silicon (M1 o posterior).",
   "@settings.ai.tooltipLocal": {
     "sourceHash": "bf83043"
   },
-  "settings.ai.tooltipLocalDisabled": "La IA local requiere Apple Silicon (M1 o posterior). Usa IA en la nube en su lugar.",
+  "settings.ai.tooltipLocalDisabled": "La IA local requiere Apple silicon (M1 o posterior). Usa IA en la nube en su lugar.",
   "@settings.ai.tooltipLocalDisabled": {
     "sourceHash": "147cb2e"
   },
@@ -2418,7 +2418,7 @@
   "@settings.mediaIndex.progress.coveredDone": {
     "sourceHash": "98e10c0"
   },
-  "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} imagen más indexada de una configuración más amplia, todavía se puede buscar} other {{keptText} imágenes más indexadas de una configuración más amplia, todavía se pueden buscar} many {{keptText} imágenes más indexadas de una configuración más amplia, todavía se pueden buscar}}",
+  "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} imagen más indexada por un ajuste más amplio, todavía se puede buscar} other {{keptText} imágenes más indexadas por un ajuste más amplio, todavía se pueden buscar} many {{keptText} imágenes más indexadas por un ajuste más amplio, todavía se pueden buscar}}",
   "@settings.mediaIndex.progress.kept": {
     "sourceHash": "24bf4ee"
   },

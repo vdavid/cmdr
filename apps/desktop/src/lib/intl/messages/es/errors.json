@@ -51,7 +51,7 @@
   "@errors.listing.networkDown.title": {
     "sourceHash": "399ab40"
   },
-  "errors.listing.networkDown.explanation": "La conexión de red de tu Mac está caída, así que Cmdr no puede alcanzar este volumen. Puede que el Wi-Fi esté desconectado, que un cable Ethernet esté desenchufado o que la interfaz de red esté desactivada.",
+  "errors.listing.networkDown.explanation": "La conexión de red de tu Mac está caída, así que Cmdr no puede acceder a este volumen. Puede que el Wi-Fi esté desconectado, que un cable Ethernet esté desenchufado o que la interfaz de red esté desactivada.",
   "@errors.listing.networkDown.explanation": {
     "sourceHash": "e2106be"
   },
@@ -123,11 +123,11 @@
   "@errors.listing.staleConnection.title": {
     "sourceHash": "f03c43c"
   },
-  "errors.listing.staleConnection.explanation": "Cmdr intenta acceder a esta carpeta usando una referencia antigua que el servidor ya no reconoce. Esto suele pasar con discos de red (NFS, SMB) después de que el servidor se reinicie, se vuelva a montar el recurso compartido o se interrumpa la conexión.",
+  "errors.listing.staleConnection.explanation": "Cmdr intenta acceder a esta carpeta usando una referencia antigua que el servidor ya no reconoce. Esto suele pasar con unidades de red (NFS, SMB) después de que el servidor se reinicie, se vuelva a montar el recurso compartido o se interrumpa la conexión.",
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "Esto es lo que puedes probar:\n- Sal de esta carpeta y vuelve a entrar\n- Si es un disco de red, prueba a desmontarlo y volver a montarlo en Finder\n- Comprueba que el servidor que aloja esta carpeta esté en marcha\n- En la Terminal, ejecuta `mount` para ver los volúmenes montados actualmente",
+  "errors.listing.staleConnection.suggestion": "Esto es lo que puedes probar:\n- Sal de esta carpeta y vuelve a entrar\n- Si es una unidad de red, prueba a desmontarla y volver a montarla en el Finder\n- Comprueba que el servidor que aloja esta carpeta esté en marcha\n- En la Terminal, ejecuta `mount` para ver los volúmenes montados actualmente",
   "@errors.listing.staleConnection.suggestion": {
     "sourceHash": "05960c8"
   },
@@ -175,7 +175,7 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "Esto es lo que puedes probar:\n- Comprueba que la ruta esté bien escrita\n- Si está en un disco de red, asegúrate de que esté conectado y el recurso compartido sea accesible\n- Ve a la carpeta superior y busca el elemento ahí\n- En la Terminal, ejecuta `ls -la` en la carpeta superior para ver qué hay",
+  "errors.listing.pathNotFoundErrno.suggestion": "Esto es lo que puedes probar:\n- Comprueba que la ruta esté bien escrita\n- Si está en una unidad de red, asegúrate de que esté conectada y el recurso compartido sea accesible\n- Ve a la carpeta superior y busca el elemento ahí\n- En la Terminal, ejecuta `ls -la` en la carpeta superior para ver qué hay",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -187,7 +187,7 @@
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.noPermissionErrno.suggestion": "Esto es lo que puedes probar:\n- Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede acceso a Cmdr\n- Revisa los permisos de la carpeta en Finder: haz clic derecho, elige Obtener información y mira en Compartir y permisos\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En la Terminal, ejecuta `ls -la` en esta ruta para ver los permisos actuales",
+  "errors.listing.noPermissionErrno.suggestion": "Esto es lo que puedes probar:\n- Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede acceso a Cmdr\n- Revisa los permisos de la carpeta en el Finder: haz clic derecho, elige Obtener información y mira en Compartir y permisos\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En la Terminal, ejecuta `ls -la` en esta ruta para ver los permisos actuales",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "ea316e7"
   },
@@ -271,7 +271,7 @@
   "@errors.listing.notSupportedErrno.explanation": {
     "sourceHash": "198aa15"
   },
-  "errors.listing.notSupportedErrno.suggestion": "Prueba otro enfoque, o usa Finder para esta operación. Si trabajas con un disco externo, puede que esté formateado con un sistema de archivos con limitaciones (por ejemplo, FAT32 no puede guardar archivos mayores de 4 GB).",
+  "errors.listing.notSupportedErrno.suggestion": "Prueba otro enfoque, o usa el Finder para esta operación. Si trabajas con un disco externo, puede que tenga un formato de sistema de archivos con limitaciones (por ejemplo, FAT32 no puede almacenar archivos de más de 4 GB).",
   "@errors.listing.notSupportedErrno.suggestion": {
     "sourceHash": "169d5cf"
   },
@@ -279,11 +279,11 @@
   "@errors.listing.networkUnreachable.title": {
     "sourceHash": "7b83c7c"
   },
-  "errors.listing.networkUnreachable.explanation": "Cmdr no puede alcanzar la red en la que está este volumen. A menudo significa que no estás conectado a la red correcta, o que una VPN no está activa.",
+  "errors.listing.networkUnreachable.explanation": "Cmdr no puede acceder a la red en la que está este volumen. A menudo significa que no tienes conexión con la red correcta, o que una VPN no está activa.",
   "@errors.listing.networkUnreachable.explanation": {
     "sourceHash": "f92dedc"
   },
-  "errors.listing.networkUnreachable.suggestion": "Esto es lo que puedes probar:\n- Comprueba tu conexión Wi-Fi o Ethernet\n- Asegúrate de estar en la red correcta (por ejemplo, el Wi-Fi de tu oficina o la VPN)\n- En la Terminal, prueba `ping <hostname>` para comprobar si el servidor es accesible\n- Vuelve a abrir esta carpeta cuando estés conectado",
+  "errors.listing.networkUnreachable.suggestion": "Esto es lo que puedes probar:\n- Comprueba tu conexión Wi-Fi o Ethernet\n- Asegúrate de estar en la red correcta (por ejemplo, el Wi-Fi de tu oficina o la VPN)\n- En la Terminal, prueba `ping <hostname>` para comprobar si el servidor es accesible\n- Vuelve a abrir esta carpeta cuando tengas conexión",
   "@errors.listing.networkUnreachable.suggestion": {
     "sourceHash": "b1754b4"
   },
@@ -351,7 +351,7 @@
   "@errors.listing.quotaExceeded.title": {
     "sourceHash": "a940827"
   },
-  "errors.listing.quotaExceeded.explanation": "Has alcanzado tu cuota de disco (la cantidad máxima de espacio asignada a tu cuenta de usuario) en este volumen. Es habitual en servidores compartidos y discos de red donde un administrador define límites por usuario.",
+  "errors.listing.quotaExceeded.explanation": "Has alcanzado tu cuota de disco (la cantidad máxima de espacio asignada a tu cuenta de usuario) en este volumen. Es habitual en servidores compartidos y unidades de red donde un administrador define límites por usuario.",
   "@errors.listing.quotaExceeded.explanation": {
     "sourceHash": "6fa75c0"
   },
@@ -379,7 +379,7 @@
   "@errors.listing.authRequiredEneedauth.explanation": {
     "sourceHash": "b4e86e5"
   },
-  "errors.listing.authRequiredEneedauth.suggestion": "Esto es lo que puedes probar:\n- Desconecta y vuelve a conectar el volumen en Finder\n- Introduce tu usuario y contraseña cuando se te pidan\n- Si no tienes claras las credenciales, consúltalo con el administrador del servidor",
+  "errors.listing.authRequiredEneedauth.suggestion": "Esto es lo que puedes probar:\n- Desconecta y vuelve a conectar el volumen en el Finder\n- Introduce tu usuario y contraseña cuando se te pidan\n- Si no tienes claras las credenciales, consúltalo con quien administre el servidor",
   "@errors.listing.authRequiredEneedauth.suggestion": {
     "sourceHash": "0b61f53"
   },
@@ -411,7 +411,7 @@
   "@errors.listing.diskReadProblem.title": {
     "sourceHash": "b953ef4"
   },
-  "errors.listing.diskReadProblem.explanation": "Cmdr se topó con un problema de lectura a nivel de hardware en `{path}`. Significa que el disco o el dispositivo tuvieron problemas para leer los datos, lo que puede ser un fallo puntual o una señal de un disco que está empezando a fallar.",
+  "errors.listing.diskReadProblem.explanation": "Cmdr se topó con un problema de lectura a nivel de hardware en `{path}`. Significa que el disco o el dispositivo tuvieron problemas para leer los datos, lo que puede ser un problema pasajero o una señal de un disco que está empezando a fallar.",
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
@@ -463,7 +463,7 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.notFound.suggestion": "Esto es lo que puedes probar:\n- Comprueba que la ruta esté bien escrita\n- Si está en un disco de red, asegúrate de que esté conectado y el recurso compartido sea accesible\n- Ve a la carpeta superior y busca el elemento ahí\n- En la Terminal, ejecuta `ls -la` en la carpeta superior para ver qué hay",
+  "errors.listing.notFound.suggestion": "Esto es lo que puedes probar:\n- Comprueba que la ruta esté bien escrita\n- Si está en una unidad de red, asegúrate de que esté conectada y el recurso compartido sea accesible\n- Ve a la carpeta superior y busca el elemento ahí\n- En la Terminal, ejecuta `ls -la` en la carpeta superior para ver qué hay",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -487,7 +487,7 @@
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.permissionDenied.suggestion": "Esto es lo que puedes probar:\n- Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede acceso a Cmdr\n- Revisa los permisos de la carpeta en Finder: haz clic derecho en la carpeta, elige Obtener información y mira en Compartir y permisos\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En la Terminal, ejecuta `ls -la` en la ruta para ver los permisos actuales",
+  "errors.listing.permissionDenied.suggestion": "Esto es lo que puedes probar:\n- Abre **{system_settings} > {privacy_and_security} > {files_and_folders}** y concede acceso a Cmdr\n- Revisa los permisos de la carpeta en el Finder: haz clic derecho en la carpeta, elige Obtener información y mira en Compartir y permisos\n- Si es una carpeta compartida, pide a quien la posee que actualice los permisos\n- En la Terminal, ejecuta `ls -la` en la ruta para ver los permisos actuales",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
@@ -531,7 +531,7 @@
   "@errors.listing.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.listing.deviceDisconnected.explanation": "El dispositivo que contiene `{path}` se desconectó durante la operación. Esto puede pasar si un cable USB se afloja, un teléfono entra en reposo o un disco de red pierde la conexión.",
+  "errors.listing.deviceDisconnected.explanation": "El dispositivo que contiene `{path}` se desconectó durante la operación. Esto puede pasar si un cable USB se afloja, un teléfono entra en reposo o una unidad de red pierde la conexión.",
   "@errors.listing.deviceDisconnected.explanation": {
     "sourceHash": "c8b7b10"
   },
@@ -603,11 +603,11 @@
   "@errors.listing.notSupported.title": {
     "sourceHash": "74e8477"
   },
-  "errors.listing.notSupported.explanation": "Esta operación no se admite en este tipo de volumen. Algunos volúmenes (como el almacenamiento de un teléfono o ciertos discos de red) no admiten todas las operaciones.",
+  "errors.listing.notSupported.explanation": "Esta operación no se admite en este tipo de volumen. Algunos volúmenes (como el almacenamiento de un teléfono o ciertas unidades de red) no admiten todas las operaciones.",
   "@errors.listing.notSupported.explanation": {
     "sourceHash": "9ecb575"
   },
-  "errors.listing.notSupported.suggestion": "Prueba otro enfoque, o usa Finder para esta operación.",
+  "errors.listing.notSupported.suggestion": "Prueba otro enfoque, o usa el Finder para esta operación.",
   "@errors.listing.notSupported.suggestion": {
     "sourceHash": "d4e3965"
   },
@@ -643,7 +643,7 @@
   "@errors.listing.ambiguousName.explanation": {
     "sourceHash": "0d964db"
   },
-  "errors.listing.ambiguousName.suggestion": "Esto es lo que puedes probar:\n- Abre la carpeta superior y elige el elemento que quieres de la lista\n- Para evitarlo la próxima vez, renombra uno de ellos para que los dos se distingan claramente",
+  "errors.listing.ambiguousName.suggestion": "Esto es lo que puedes probar:\n- Abre la carpeta superior y elige el elemento que quieres de la lista\n- Para evitarlo la próxima vez, renombra uno de ellos para que los dos nombres se distingan claramente",
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "8334ece"
   },
@@ -651,7 +651,7 @@
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
   },
-  "errors.listing.ioSerious.explanation": "Cmdr se topó con un problema con `{path}`: {osMessage}. Puede ser un fallo puntual o una señal de que el disco o el dispositivo necesitan atención.",
+  "errors.listing.ioSerious.explanation": "Cmdr se topó con un problema con `{path}`: {osMessage}. Puede ser un problema pasajero o una señal de que el disco o el dispositivo necesitan atención.",
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
@@ -699,7 +699,7 @@
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"
   },
-  "errors.listing.emptyRootICloud.explanation": "Cmdr abrió iCloud Drive pero no devolvió ningún archivo. macOS oculta el contenido de iCloud Drive a las apps que no tienen **{full_disk_access}**, así que conceder ese permiso a Cmdr es la solución más probable.\n\nSi tu iCloud Drive de verdad está vacío, puedes ignorar esta sugerencia.",
+  "errors.listing.emptyRootICloud.explanation": "Cmdr abrió iCloud Drive pero no devolvió ningún archivo. macOS oculta el contenido de iCloud Drive a las apps que no tienen **{full_disk_access}**, así que conceder ese permiso a Cmdr es la solución más probable.\n\nSi tu iCloud Drive de verdad está vacío, puedes ignorar este aviso.",
   "@errors.listing.emptyRootICloud.explanation": {
     "sourceHash": "d095f83"
   },
@@ -1453,7 +1453,7 @@
   "@errors.write.permissionDenied.message.trash": {
     "sourceHash": "b68bafc"
   },
-  "errors.write.permissionDenied.suggestion.deleteMac": "Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté bloqueado. Desbloquéalo en Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.",
+  "errors.write.permissionDenied.suggestion.deleteMac": "Comprueba que tengas acceso de escritura a la carpeta superior. Puede que el archivo esté bloqueado. Desbloquéalo en el Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
     "sourceHash": "1e6e123"
   },
@@ -1469,7 +1469,7 @@
   "@errors.write.permissionDenied.message.named": {
     "sourceHash": "74994f9"
   },
-  "errors.write.permissionDenied.suggestion.needsAdminMac": "Para cambiarlo hacen falta permisos de administrador. Para dar acceso a tu propia cuenta, selecciona la carpeta en Finder, elige Obtener información y consulta la sección “Compartir y permisos”.",
+  "errors.write.permissionDenied.suggestion.needsAdminMac": "Para cambiarlo hacen falta permisos de administrador. Para dar acceso a tu propia cuenta, selecciona la carpeta en el Finder, elige Obtener información y consulta la sección “Compartir y permisos”.",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
     "sourceHash": "674192a"
   },
@@ -1477,11 +1477,11 @@
   "@errors.write.permissionDenied.suggestion.needsAdminOther": {
     "sourceHash": "804027d"
   },
-  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS protege este ítem por sí mismo, así que los permisos de administrador no cambiarán nada. Puede que esté bloqueado: selecciónalo en Finder, elige Obtener información y desmarca Bloqueado.",
+  "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS protege este elemento por sí mismo, así que los permisos de administrador no cambiarán nada. Puede que esté bloqueado: selecciónalo en el Finder, elige Obtener información y desmarca Bloqueado.",
   "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
     "sourceHash": "ad5e0de"
   },
-  "errors.write.permissionDenied.suggestion.systemProtectedOther": "El sistema protege este ítem por sí mismo, así que los permisos de administrador no cambiarán nada. Puede que tenga una marca de protección que haya que quitar primero.",
+  "errors.write.permissionDenied.suggestion.systemProtectedOther": "El sistema protege este elemento por sí mismo, así que los permisos de administrador no cambiarán nada. Puede que tenga una marca de protección que haya que quitar primero.",
   "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
     "sourceHash": "bbf6bdb"
   },
@@ -1589,7 +1589,7 @@
   "@errors.write.fileLocked.message": {
     "sourceHash": "62b1038"
   },
-  "errors.write.fileLocked.suggestion.mac": "Desbloquéalo en Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.",
+  "errors.write.fileLocked.suggestion.mac": "Desbloquéalo en el Finder (Obtener información > desmarca Bloqueado) y vuelve a intentarlo.",
   "@errors.write.fileLocked.suggestion.mac": {
     "sourceHash": "8f84de5"
   },
@@ -1617,7 +1617,7 @@
   "@errors.write.newDataKeptAt.message": {
     "sourceHash": "d1dc96b"
   },
-  "errors.write.newDataKeptAt.suggestion": "Abre {keptAt} para revisarlo y luego renómbralo. Si el destino es un recurso de red o un teléfono, vuelve a conectarlo primero y el cambio de nombre saldrá bien.",
+  "errors.write.newDataKeptAt.suggestion": "Abre {keptAt} para revisarlo y luego renómbralo. Si el destino es un recurso compartido de red o un teléfono, vuelve a conectarlo primero y el cambio de nombre saldrá bien.",
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
@@ -1657,19 +1657,19 @@
   "@errors.write.fallback.title.trash": {
     "sourceHash": "c2d75cc"
   },
-  "errors.write.fallback.message.copy": "Ocurrió un error inesperado al copiar.",
+  "errors.write.fallback.message.copy": "Algo salió mal al copiar.",
   "@errors.write.fallback.message.copy": {
     "sourceHash": "271fa92"
   },
-  "errors.write.fallback.message.move": "Ocurrió un error inesperado al mover.",
+  "errors.write.fallback.message.move": "Algo salió mal al mover.",
   "@errors.write.fallback.message.move": {
     "sourceHash": "a2cf93f"
   },
-  "errors.write.fallback.message.delete": "Ocurrió un error inesperado al eliminar.",
+  "errors.write.fallback.message.delete": "Algo salió mal al eliminar.",
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "Ocurrió un error inesperado al mover a la papelera.",
+  "errors.write.fallback.message.trash": "Algo salió mal al mover a la papelera.",
   "@errors.write.fallback.message.trash": {
     "sourceHash": "63f8393"
   },
@@ -1685,15 +1685,15 @@
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "baf4d16"
   },
-  "errors.mutation.parentNotWritable": "Cmdr no puede escribir en “{path}”. Revisa los permisos de la carpeta en Finder.",
+  "errors.mutation.parentNotWritable": "Cmdr no puede escribir en “{path}”. Revisa los permisos de la carpeta en el Finder.",
   "@errors.mutation.parentNotWritable": {
     "sourceHash": "902f3a5"
   },
-  "errors.mutation.fileLocked": "Este elemento está bloqueado. Desbloquéalo en el panel Obtener información de Finder y vuelve a intentarlo.",
+  "errors.mutation.fileLocked": "Este elemento está bloqueado. Desbloquéalo en el panel Obtener información del Finder y vuelve a intentarlo.",
   "@errors.mutation.fileLocked": {
     "sourceHash": "d1d127c"
   },
-  "errors.mutation.sipProtected": "No se puede cambiar el nombre de este elemento debido a la protección de la integridad del sistema de macOS.",
+  "errors.mutation.sipProtected": "No se puede renombrar este elemento debido a la protección de la integridad del sistema de macOS.",
   "@errors.mutation.sipProtected": {
     "sourceHash": "1865724"
   },
@@ -1709,11 +1709,11 @@
   "@errors.mutation.archiveReadOnly": {
     "sourceHash": "a636f2a"
   },
-  "errors.mutation.renameOutOfArchive": "Cambiar el nombre no puede sacar un elemento de un archivo comprimido. Usa Mover.",
+  "errors.mutation.renameOutOfArchive": "Renombrar no puede sacar un elemento de un archivo comprimido. Usa Mover.",
   "@errors.mutation.renameOutOfArchive": {
     "sourceHash": "1f852c5"
   },
-  "errors.mutation.renameAcrossArchives": "Cambiar el nombre no puede llevar un elemento de un archivo comprimido a otro. Usa Mover.",
+  "errors.mutation.renameAcrossArchives": "Renombrar no puede llevar un elemento de un archivo comprimido a otro. Usa Mover.",
   "@errors.mutation.renameAcrossArchives": {
     "sourceHash": "5b8f1df"
   },
@@ -2005,11 +2005,11 @@
   "@errors.write.duplicateSourceNames.message": {
     "sourceHash": "4146d5f"
   },
-  "errors.write.duplicateSourceNames.suggestion.copy": "Cópialos de uno en uno, o cambia el nombre de uno antes.",
+  "errors.write.duplicateSourceNames.suggestion.copy": "Cópialos de uno en uno, o renombra uno antes.",
   "@errors.write.duplicateSourceNames.suggestion.copy": {
     "sourceHash": "8bc2d76"
   },
-  "errors.write.duplicateSourceNames.suggestion.move": "Muévelos de uno en uno, o cambia el nombre de uno antes.",
+  "errors.write.duplicateSourceNames.suggestion.move": "Muévelos de uno en uno, o renombra uno antes.",
   "@errors.write.duplicateSourceNames.suggestion.move": {
     "sourceHash": "8af755e"
   }

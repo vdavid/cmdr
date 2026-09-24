@@ -63,7 +63,7 @@
   "@suggestedOps.folderWillBeCreated": {
     "sourceHash": "26243e5"
   },
-  "suggestedOps.folderWillBeCreatedTooltip": "La carpeta de destino aún no existe. Al aprobarlo, Cmdr la crea, igual que si iniciaras tú el traslado.",
+  "suggestedOps.folderWillBeCreatedTooltip": "La carpeta de destino aún no existe. Al aprobarlo, Cmdr la crea, igual que si iniciaras tú el movimiento.",
   "@suggestedOps.folderWillBeCreatedTooltip": {
     "sourceHash": "2d28b7c"
   },

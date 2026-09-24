@@ -517,11 +517,11 @@
   "@fileExplorer.network.reconnect.times": {
     "sourceHash": "bf5fc9c"
   },
-  "fileExplorer.network.reconnect.finalAttempt": "Se ha reintentado {retried}; este es el último intento. Si falla, se perderá la conexión.",
+  "fileExplorer.network.reconnect.finalAttempt": "Se reintentó {retried}; este es el último intento. Si tampoco funciona, se perderá la conexión.",
   "@fileExplorer.network.reconnect.finalAttempt": {
     "sourceHash": "7418a78"
   },
-  "fileExplorer.network.reconnect.willTryMore": "Se ha reintentado {retried}; se intentará {remaining} más después de esto.",
+  "fileExplorer.network.reconnect.willTryMore": "Se reintentó {retried}; se intentará {remaining} más después de esto.",
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
@@ -605,11 +605,11 @@
   "@fileExplorer.unreachable.openHome": {
     "sourceHash": "a178b4d"
   },
-  "fileExplorer.clipboard.copied": "{count, plural, one {{countText} ítem copiado} many {{countText} ítems copiados} other {{countText} ítems copiados}}",
+  "fileExplorer.clipboard.copied": "{count, plural, one {{countText} elemento copiado} many {{countText} elementos copiados} other {{countText} elementos copiados}}",
   "@fileExplorer.clipboard.copied": {
     "sourceHash": "1c25075"
   },
-  "fileExplorer.clipboard.cutReady": "{count, plural, one {{countText} ítem listo para mover} many {{countText} ítems listos para mover} other {{countText} ítems listos para mover}}. Pega para completar.",
+  "fileExplorer.clipboard.cutReady": "{count, plural, one {{countText} elemento listo para mover} many {{countText} elementos listos para mover} other {{countText} elementos listos para mover}}. Pega para completar.",
   "@fileExplorer.clipboard.cutReady": {
     "sourceHash": "846d8af"
   },
@@ -1166,7 +1166,7 @@
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "Sobrescribir y enviar el antiguo a la papelera",
+  "fileExplorer.renameConflict.overwriteTrash": "Sobrescribir y mover el antiguo a la papelera",
   "@fileExplorer.renameConflict.overwriteTrash": {
     "sourceHash": "e0192f6"
   },
@@ -1206,11 +1206,11 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Si vienes de Finder, esto puede resultarte raro, porque Finder activa una \"Vista rápida\" al pulsar <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Si vienes del Finder, esto puede resultarte raro, porque el Finder activa una \"Vista rápida\" al pulsar <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
     "sourceHash": "2089192"
   },
-  "fileExplorer.quickLookHint.quickView": "En Cmdr, puedes activar la vista rápida con <key></key>. (¡<key></key> también funciona en Finder, por cierto!)",
+  "fileExplorer.quickLookHint.quickView": "En Cmdr, puedes activar la vista rápida con <key></key>. (¡<key></key> también funciona en el Finder, por cierto!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "7e4cf33"
   },

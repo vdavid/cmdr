@@ -267,7 +267,7 @@
   "@ai.cloud.connectionError": {
     "sourceHash": "3f378c3"
   },
-  "ai.cloud.genericError": "Algo ha ido mal",
+  "ai.cloud.genericError": "Algo salió mal",
   "@ai.cloud.genericError": {
     "sourceHash": "ab827e3"
   },
@@ -352,7 +352,7 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "Placeholder-only value: a single literal '?' fallback glyph for an unreported model size. No translatable text."
   },
-  "ai.local.notInstalled": "No instalado. El modelo local ({modelName}, {modelSize}) se ejecuta por completo en tu dispositivo para una privacidad máxima. Requiere Apple Silicon.",
+  "ai.local.notInstalled": "No instalado. El modelo local ({modelName}, {modelSize}) se ejecuta por completo en tu dispositivo para una privacidad máxima. Requiere Apple silicon.",
   "@ai.local.notInstalled": {
     "sourceHash": "163bf42"
   },

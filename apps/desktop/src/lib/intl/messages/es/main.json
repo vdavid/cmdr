@@ -3,7 +3,7 @@
   "@main.instanceLock.alertTitle": {
     "sourceHash": "7c8f09d"
   },
-  "main.instanceLock.alertBody": "Otra copia de Cmdr está usando esta carpeta de datos. Cambia a la app que ya se está ejecutando, o ciérrala e inténtalo de nuevo.",
+  "main.instanceLock.alertBody": "Otra copia de Cmdr está usando esta carpeta de datos. Cambia a la app que ya se está ejecutando, o sal de ella e inténtalo de nuevo.",
   "@main.instanceLock.alertBody": {
     "sourceHash": "140c57d"
   },

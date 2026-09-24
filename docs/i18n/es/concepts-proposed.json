@@ -1,0 +1,90 @@
+{
+  "click": {
+    "en": "click",
+    "match": ["click", "clicks", "clicked", "clicking"],
+    "notMatch": ["right-click*", "right click*", "double-click*", "double click*"],
+    "sense": "Pressing the mouse or trackpad button on a control (a button, a link, a badge), as opposed to pressing a key.",
+    "distinct": ["double-click", "context-menu"],
+    "note": "Many languages split this from pressing a key (es: hacer clic vs pulsar); a locale that uses one verb for both still records the choice."
+  },
+  "coming-soon": {
+    "en": "coming soon",
+    "match": ["coming soon"],
+    "sense": "A marker on a feature or control that isn't available yet."
+  },
+  "cost": {
+    "en": "cost",
+    "match": ["cost", "costs"],
+    "sense": "What something takes in money (AI usage) or in resources (disk space, a macOS process to suppress).",
+    "distinct": ["usage", "estimate"],
+    "note": "Regional spelling splits (es coste / costo) are recorded per locale."
+  },
+  "debug": {
+    "en": "debug",
+    "match": ["debug", "debugging", "debug level"],
+    "notMatch": ["usb debugging"],
+    "sense": "Troubleshooting detail for developers: a debug log level, saving logs for debugging.",
+    "distinct": ["usb-debugging", "verbose", "log"]
+  },
+  "direct-connection": {
+    "en": "direct connection",
+    "match": [
+      "direct connection",
+      "direct connections",
+      "connect directly",
+      "connected directly",
+      "connecting directly"
+    ],
+    "sense": "Cmdr's own fast SMB connection to a share, as opposed to the slower connection macOS mounts.",
+    "distinct": ["native", "connect", "network-share"]
+  },
+  "forget": {
+    "en": "forget",
+    "match": ["forget", "forgets", "forgotten", "forgetting", "forgot"],
+    "sense": "Removing a saved server, a saved password, or Ask Cmdr's saved notes, so Cmdr no longer remembers them.",
+    "distinct": ["remove", "delete"]
+  },
+  "history": {
+    "en": "history",
+    "match": ["history", "histories"],
+    "sense": "A record of past actions: the file-operation history, the Ask Cmdr chat history, a folder's navigation history.",
+    "distinct": ["operation-log", "log"]
+  },
+  "originals": {
+    "en": "originals",
+    "match": ["originals", "your original", "the original", "original files"],
+    "sense": "The source files of a copy or move, kept or left where they were.",
+    "distinct": ["source"]
+  },
+  "regex": {
+    "en": "regex",
+    "match": ["regex", "regular expression", "regular expressions"],
+    "sense": "The regular-expression search and selection mode.",
+    "distinct": ["glob"]
+  },
+  "source-available": {
+    "en": "source-available",
+    "match": ["source-available", "source available"],
+    "sense": "Cmdr's code is public to read, under a non-open-source license (BSL).",
+    "note": "Not open source: a translation must not claim an open-source license."
+  },
+  "status": {
+    "en": "status",
+    "match": ["status", "statuses"],
+    "notMatch": ["status bar"],
+    "sense": "The current state of something (a connection, a queue row, a sync app, a service page).",
+    "distinct": ["progress"]
+  },
+  "this-computer": {
+    "en": "this computer",
+    "match": ["this computer", "your computer", "your machine", "this machine"],
+    "sense": "The user's own computer, named generically (not Mac) because the sentence also runs on Linux or means any machine.",
+    "note": "Regional vocabulary splits here (es ordenador / computadora / equipo); a locale records its pan-regional choice."
+  },
+  "tint": {
+    "en": "tint",
+    "match": ["tint", "tints", "tinted"],
+    "sense": "The faint background color that tells pane volume types apart (local, SMB/SFTP/WebDAV, MTP).",
+    "distinct": ["background"]
+  }
+}

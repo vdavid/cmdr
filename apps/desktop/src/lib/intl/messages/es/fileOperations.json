@@ -19,15 +19,15 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Parte de tu selección está solo en línea. Moverlos a la papelera los <strong>descargaría primero</strong>. Por eso aquí Cmdr solo ofrece <strong>eliminar</strong> la selección entera. No quedará ninguna copia en la papelera, pero los servicios en la nube suelen guardar su propia papelera durante unos 30 días. Haz clic en «Eliminar» si te parece bien eliminarlos; si no, cancela este diálogo y haz que todos los archivos estén disponibles sin conexión, o deselecciona todos los archivos que están solo en línea.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Parte de tu selección está solo en línea. Moverlos a la papelera los <strong>descargaría primero</strong>. Por eso aquí Cmdr solo ofrece <strong>eliminar</strong> la selección entera. No quedará ninguna copia en la papelera, pero los servicios en la nube suelen guardar su propia papelera durante unos 30 días. Haz clic en “Eliminar” si te parece bien eliminarlos; si no, cancela este diálogo y haz que todos los archivos estén disponibles sin conexión, o deselecciona todos los archivos que están solo en línea.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2a49037"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Todo lo que seleccionaste está solo en línea. Moverlo a la papelera lo <strong>descargaría primero</strong>. Por eso aquí Cmdr solo ofrece <strong>eliminar</strong> la selección entera. No quedará ninguna copia en la papelera, pero los servicios en la nube suelen guardar su propia papelera durante unos 30 días. Haz clic en «Eliminar» si te parece bien eliminarlos; si no, cancela este diálogo y haz que estos archivos estén disponibles sin conexión.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Todo lo que seleccionaste está solo en línea. Moverlo a la papelera lo <strong>descargaría primero</strong>. Por eso aquí Cmdr solo ofrece <strong>eliminar</strong> la selección entera. No quedará ninguna copia en la papelera, pero los servicios en la nube suelen guardar su propia papelera durante unos 30 días. Haz clic en “Eliminar” si te parece bien eliminarlos; si no, cancela este diálogo y haz que estos archivos estén disponibles sin conexión.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "0e52a2b"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Tu selección resultó tener contenido solo en línea, así que el botón de abajo ahora ofrece «Eliminar». Lee la nota de arriba y vuelve a pulsarlo si te parece bien.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Tu selección resultó tener contenido solo en línea, así que el botón de abajo ahora ofrece “Eliminar”. Lee la nota de arriba y vuelve a hacer clic en él si te parece bien.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "623e7e0"
   },
@@ -292,11 +292,11 @@
   "@fileOperations.transferDialog.estimatedSizeTooltip": {
     "sourceHash": "2e8ba70"
   },
-  "fileOperations.transferDialog.scanUnresponsive": "El origen no responde, así que esto es todo lo que pudimos contar.",
+  "fileOperations.transferDialog.scanUnresponsive": "El origen no responde, así que este tamaño es todo lo que pudimos contar.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "03d95e0"
   },
-  "fileOperations.transferDialog.scanStopped": "No pudimos terminar de medir el origen, así que esto es todo lo que pudimos contar.",
+  "fileOperations.transferDialog.scanStopped": "No pudimos terminar de medir el origen, así que este tamaño es todo lo que pudimos contar.",
   "@fileOperations.transferDialog.scanStopped": {
     "sourceHash": "aac156c"
   },
@@ -340,7 +340,7 @@
   "@fileOperations.transferDialog.policyOverwriteOlder": {
     "sourceHash": "97128f3"
   },
-  "fileOperations.transferDialog.policyStop": "{count, plural, one {Preguntar luego} many {Preguntar en cada caso} other {Preguntar en cada caso}}",
+  "fileOperations.transferDialog.policyStop": "{count, plural, one {Preguntar más tarde} many {Preguntar en cada caso} other {Preguntar en cada caso}}",
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
@@ -861,7 +861,7 @@
   "@fileOperations.archivePassword.title": {
     "sourceHash": "54fd670"
   },
-  "fileOperations.archivePassword.retryTitle": "No ha funcionado",
+  "fileOperations.archivePassword.retryTitle": "No funcionó",
   "@fileOperations.archivePassword.retryTitle": {
     "sourceHash": "dd30abb"
   },
@@ -869,7 +869,7 @@
   "@fileOperations.archivePassword.message": {
     "sourceHash": "ba28841"
   },
-  "fileOperations.archivePassword.retryMessage": "Esa contraseña no ha desbloqueado <archive>{name}</archive>. Inténtalo de nuevo.",
+  "fileOperations.archivePassword.retryMessage": "Esa contraseña no desbloqueó <archive>{name}</archive>. Inténtalo de nuevo.",
   "@fileOperations.archivePassword.retryMessage": {
     "sourceHash": "88ef11a"
   },

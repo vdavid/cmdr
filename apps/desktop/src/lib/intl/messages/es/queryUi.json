@@ -338,7 +338,7 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> para moverte · <selectKey>Enter</selectKey> rellena el campo · clic derecho para quitar",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> para moverte · <selectKey>Enter</selectKey> para rellenar el campo · clic derecho para quitar",
   "@queryUi.recent.popoverHint": {
     "sourceHash": "a7ccaef"
   },
