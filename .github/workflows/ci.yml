@@ -909,6 +909,10 @@ jobs:
       - name: Check translator guides cite real message keys
         run: ./scripts/check/check --check desktop-i18n-doc-citations --ci
 
+      # Same reason: the termbase (`concepts.json`, `<tag>/terms.json`) lives under `docs/i18n/`.
+      - name: Check the translation termbase schema and coverage drift
+        run: ./scripts/check/check --check desktop-i18n-termbase --ci
+
       - name: Check PostHog events match their catalog
         run: ./scripts/check/check --check analytics-event-catalog --ci
 

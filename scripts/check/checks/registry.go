@@ -547,6 +547,27 @@ var AllChecks = []CheckDefinition{
 		Run: RunDesktopI18nDocCitations,
 	},
 	{
+		ID:          "desktop-i18n-termbase",
+		Nickname:    "i18n-termbase",
+		DisplayName: "i18n-termbase",
+		App:         AppDesktop,
+		Tech:        "\U0001F3A8 Svelte",
+		// ERROR on a schema problem in `docs/i18n/concepts.json` / `<tag>/terms.json`
+		// (the translation brief prints the termbase as settled, so a dangling ID or
+		// decision pointer is a false fact); WARN on coverage drift past the locale's
+		// ratchet-down baseline. Its CI step sits in `hygiene` next to i18n-citations,
+		// since the termbase lives under `docs/i18n/`, which the `svelte` filter can't see.
+		DependsOn: nil,
+		IsFast:    true,
+		Inputs: inputs([]string{
+			"docs/i18n/**",
+			"apps/desktop/src/lib/intl/messages/**",
+			"apps/desktop/scripts/i18n-*.ts",
+			"apps/desktop/scripts/i18n-termbase-baseline.json",
+		}),
+		Run: RunDesktopI18nTermbase,
+	},
+	{
 		ID:          "desktop-i18n-icu",
 		Nickname:    "i18n-icu",
 		DisplayName: "i18n-icu",

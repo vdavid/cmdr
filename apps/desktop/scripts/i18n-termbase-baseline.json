@@ -1,0 +1,4 @@
+{
+  "$comment": "Per-locale count of shipped keys that drift from their termbase ruling (docs/i18n/<tag>/terms.json), read by i18n-check-termbase.ts. A locale may carry up to its number without a warning; local runs ratchet it down and drop a locale that lost its terms.json. A locale not listed is strict. Raising a number needs David's OK (.claude/rules/file-length-allowlist.md).",
+  "drift": {}
+}
