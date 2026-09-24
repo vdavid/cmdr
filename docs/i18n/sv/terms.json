@@ -15,9 +15,6 @@
     "accept": ["komma åt", "kommer åt", "kom åt", "tillgång", "kom inte åt", "kommer inte åt"],
     "chosen": "åtkomst",
     "confidence": "high",
-    "exceptions": {
-      "servers.refusal.certificateUntrusted": "English-sense mismatch: Keychain Access is the app name, which Apple calls Nyckelhanterare."
-    },
     "forms": "exclusive access → exklusiv åtkomst; skrivåtkomst; the macOS permission name uses Apple's tillgång (Full skivtillgång)",
     "sources": "MS terminology (access → åtkomst); catalog (errors.listing.*, fileExplorer.pane.connectedDirectlyToast)"
   },
@@ -206,9 +203,6 @@
     "chosen": "Ask Cmdr",
     "confidence": "high",
     "decision": "Ask Cmdr namnger bara chattpanelen (`askCmdr.wake.needsFullDiskAccess`, `settings.ai.tooltipOff`, `settings.ai.provider.description`, `settings.askCmdr.proactive.description`, `ai.cloudConsent.askCmdr.proactive`)",
-    "exceptions": {
-      "askCmdr.renameReview.expired": "English-sense mismatch: Ask is the sentence-initial imperative verb (Be Cmdr att …), not the product name."
-    },
     "forms": "verbatim; genitive Ask Cmdrs; names only the chat panel, prose about the AI says Cmdr or AI:n",
     "sources": "product name"
   },
@@ -238,10 +232,6 @@
   "back": {
     "chosen": "tillbaka",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "English-sense mismatch: comes back to them means returns to retry (återkommer till), not the Back button.",
-      "search.coverage.walk.abandonedCount": "English-sense mismatch: comes back to it means returns to retry (återkommer till), not the Back button."
-    },
     "forms": "button Tillbaka; Tillbaka till chatten, Tillbaka till värdlistan",
     "sources": "macOS"
   },
@@ -391,9 +381,6 @@
     "chosen": "kontrollera",
     "confidence": "high",
     "decision": "Gränser: båda formerna är rätt, platta inte ut dem (`updates.status.checking`, `ai.local.statusRunning`, `operationLog.status.running`, `shortcuts.section.filterModified`, `menu.bar.file`, `menu.bar.view`, `menu.bar.select`, `menu.view.zoom`, `menu.window.zoom`)",
-    "exceptions": {
-      "errors.write.originalsKeptAside.suggestion.many": "Rephrased with the details as subject (Detaljerna nedan visar var …), which reads more naturally than an imperative."
-    },
     "forms": "verifying → Kontrollerar / kontrollera; a casual look → kolla / titta (Kolla de tekniska detaljerna nedan, Titta på din telefon); looking for something → Söker efter (Checking for X → Söker efter X); a license or download → verifiera; Re-check → Leta igen; the drive index's full check → genomsökning; run-kind header Kontroll av ändringar",
     "sources": "macOS Finder (Kontrollerar); catalog (Sök efter uppdateringar)"
   },
@@ -536,10 +523,6 @@
     "accept": ["anslöt"],
     "chosen": "anslut",
     "confidence": "high",
-    "exceptions": {
-      "errors.provider.egnyte.appName": "English-sense mismatch: Egnyte Connect is a product name.",
-      "fileExplorer.pane.directConnectionNotNetworkShareToast": "Uses the settled frame så det finns inget att snabba upp (errors.eject.notAnSmbVolume)."
-    },
     "forms": "ansluta, Anslut, Ansluter till {name}…, anslutning, ansluten; Connect as guest → Anslut som gäst",
     "sources": "macOS Finder (Anslut till server, Ansluter till ^0…)"
   },
@@ -657,8 +640,6 @@
     "confidence": "high",
     "decision": "Termdriftsgranskning: en sak, ett namn",
     "exceptions": {
-      "fileExplorer.navigation.favoriteShortcutAriaLabel": "Delete is the key's name here, kept as Delete.",
-      "fileExplorer.navigation.favoriteShortcutPrompt": "Delete is the key's name here, kept as Delete.",
       "settings.mediaIndex.reclaim.button": "Reclaim takes rows out of the image index, not files off the disk, so it keeps ta bort.",
       "settings.mediaIndex.reclaim.confirmBody": "Reclaim takes rows out of the image index, not files off the disk, so it keeps ta bort.",
       "settings.mediaIndex.reclaim.confirmTitle": "Reclaim takes rows out of the image index, not files off the disk, so it keeps ta bort.",
@@ -673,10 +654,6 @@
   "delete-permanently": {
     "chosen": "permanent",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileExplorer.suppressQuickLookHint.description": "English-sense mismatch: for good means forever for a hint (för gott), not deleting without the trash.",
-      "settings.fileViewer.suppressBinaryWarning.description": "English-sense mismatch: for good means forever for a warning (för gott), not deleting without the trash."
-    },
     "forms": "Radera permanent; objekten tas bort permanent ur zip-arkivet",
     "sources": "macOS (permanent, 14 hits)"
   },
@@ -769,9 +746,6 @@
     "chosen": "dokument",
     "confidence": "high",
     "decision": "`Documents and packages`: the new OOXML row (`settings.archives.ooxml.*`)",
-    "exceptions": {
-      "goToPath.dialog.inputPlaceholder": "~/Documents is a literal path, which stays English."
-    },
     "sources": "macOS Finder (GROUP_DOCUMENTS → Dokument)"
   },
   "done": {
@@ -797,9 +771,6 @@
     "chosen": "hämta",
     "confidence": "high",
     "decision": "Stegen för att sätta upp en AI-leverantör (`onboarding.cloudSetup.*`)",
-    "exceptions": {
-      "commands.downloadsGoToLatest.description": "~/Downloads is a literal path, which stays English."
-    },
     "forms": "verb hämta, noun hämtning; the Downloads folder is Hämtade filer",
     "sources": "macOS Finder (Hämtade filer, Hämtningar)"
   },
@@ -808,31 +779,6 @@
     "chosen": "enhet",
     "confidence": "high",
     "decision": "Enhetsindexeringens huvudreglage (`fileExplorer.navigation.driveIndex.refusedIndexingOff`/`.tooltipIndexingOff`/`.menuIndexingOffNote`, `settings.indexing.masterOffNote`/`.overriddenBadge`, `settings.indexing.enabled.label`, `settings.section.driveIndexing`, `settings.summary.driveIndexing`)",
-    "exceptions": {
-      "commands.cloudAskGemini.description": "English-sense mismatch: Google Drive is a product name.",
-      "commands.cloudCopyGoogleDriveLink.label": "English-sense mismatch: Google Drive is a product name.",
-      "commands.cloudOpenInGoogleDrive.description": "English-sense mismatch: Google Drive is a product name.",
-      "commands.cloudOpenInGoogleDrive.label": "English-sense mismatch: Google Drive is a product name.",
-      "commands.handler.googleDriveCopyFailed": "English-sense mismatch: Google Drive is a product name.",
-      "commands.handler.googleDriveLinkCopied": "English-sense mismatch: Google Drive is a product name.",
-      "commands.handler.googleDriveLinkMissing": "English-sense mismatch: Google Drive is a product name.",
-      "commands.handler.googleDriveOpenFailed": "English-sense mismatch: Google Drive is a product name.",
-      "errors.listing.emptyRootICloud.explanation": "English-sense mismatch: iCloud Drive is a product name.",
-      "errors.listing.emptyRootICloud.title": "English-sense mismatch: iCloud Drive is a product name.",
-      "errors.provider.box.appName": "English-sense mismatch: Box Drive is a product name.",
-      "errors.provider.googleDrive.appName": "English-sense mismatch: Google Drive is a product name.",
-      "errors.provider.googleDrive.displayName": "English-sense mismatch: Google Drive is a product name.",
-      "errors.provider.iCloud.displayName": "English-sense mismatch: iCloud Drive is a product name.",
-      "errors.provider.iCloud.needsAction": "English-sense mismatch: iCloud Drive is a product name.",
-      "errors.provider.pCloud.appName": "English-sense mismatch: pCloud Drive is a product name.",
-      "errors.provider.pCloudFuse.appName": "English-sense mismatch: pCloud Drive is a product name.",
-      "errors.provider.protonDrive.appName": "English-sense mismatch: Proton Drive is a product name.",
-      "errors.provider.protonDrive.displayName": "English-sense mismatch: Proton Drive is a product name.",
-      "errors.provider.synologyDrive.appName": "English-sense mismatch: Synology Drive is a product name.",
-      "errors.provider.synologyDrive.displayName": "English-sense mismatch: Synology Drive is a product name.",
-      "menu.context.copyGoogleDriveLink": "English-sense mismatch: Google Drive is a product name.",
-      "menu.context.openInGoogleDrive": "English-sense mismatch: Google Drive is a product name."
-    },
     "forms": "English disk → disk (en intern disk); skiva only when mirroring Finder's own disk wording; drive indexing → enhetsindexering",
     "sources": "macOS (anslut en enhet), MS (enhet)"
   },
@@ -985,9 +931,6 @@
     "chosen": "gick inte",
     "confidence": "high",
     "decision": "Progress chip + failure notice (`queue.row.dismiss*`, `queue.toolbar.dismissAll`, `queue.failureToast.*`, `queue.chip.*`)",
-    "exceptions": {
-      "onboarding.stepOptional.mtp.desc": "It usually fails folds into det går oftast inte, which carries the calm-failure voice."
-    },
     "forms": "headline Gick inte att slutföra …; body Det gick inte att …; Inloggningen gick inte",
     "sources": "macOS Finder (Det gick inte att slutföra …)"
   },
@@ -1229,7 +1172,8 @@
     "confidence": "high",
     "decision": "Samma begrepp med olika engelska (`commands.viewShowHidden.label`, `settings.fileViewer.suppressBinaryWarning.label`, `settings.fileExplorer.suppressQuickLookHint.label`)",
     "forms": "Göm Cmdr; Göm övriga (never Göm andra)",
-    "sources": "macOS Finder (Göm sidofältet, Göm verktygsfältet), AppKit"
+    "sources": "macOS Finder (Göm sidofältet, Göm verktygsfältet), AppKit",
+    "accept": ["dold"]
   },
   "hint": {
     "chosen": "tips",
@@ -1266,9 +1210,6 @@
     "accept": ["timmar", "minut", "sekund", "min", "sek"],
     "chosen": "timme",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.signup.unreachable": "In a minute is the idiom for shortly here (om en stund); Wait a minute elsewhere stays Vänta en minut."
-    },
     "forms": "sekund / sekunder, minut / minuter; readout s, min",
     "sources": "Nautilus (%d sekund / %d sekunder)"
   },
@@ -1492,9 +1433,6 @@
     "accept": ["loggning"],
     "chosen": "logg",
     "confidence": "high",
-    "exceptions": {
-      "settings.advanced.logLlmCalls.description": "llm-logs is a literal folder name; the Swedish needs no separate log word."
-    },
     "forms": "the disk log loggfil (Detaljerna finns i loggfilen); the undo history is åtgärdsloggen",
     "sources": "catalog (settings.logging.openLogFile)"
   },
@@ -1504,25 +1442,10 @@
     "confidence": "tentative",
     "decision": "Ask Cmdr tittar in i filer: samtyckestexten och verktygsraden (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)",
     "exceptions": {
-      "errors.git.corruptRepo.suggestion": "English-sense mismatch: inspect the repo with git fsck is examining (granska), not the AI reading a file.",
-      "errors.git.missingObject.suggestion": "English-sense mismatch: inspect the damage with git fsck is examining (granska), not the AI reading a file.",
       "search.coverage.declined": "The negation splits the verb: tittar med flit inte in i."
     },
     "forms": "Tittar in i filer / Tittade in i filer; tittar in i en fil bara när du frågar om den",
     "sources": "sibling tool lines (Tittar på ett förslag); no direct source"
-  },
-  "macos-app-names": {
-    "accept": ["Skivkontroll", "Aktivitetskontroll", "Spotlight", "Mission Control", "Spaces"],
-    "avoid": [
-      {
-        "form": "Skivhjälpen",
-        "why": "names no menu item Apple ships; First Aid is Skivkontroll"
-      }
-    ],
-    "chosen": "Skivverktyg",
-    "confidence": "high",
-    "forms": "Disk Utility > First Aid → Skivverktyg > Skivkontroll; Activity Monitor → Aktivitetskontroll; Spotlight, Mission Control, Spaces stay verbatim",
-    "sources": "macOS Disk Utility.app sv (2026-08-30)"
   },
   "mailing-list": {
     "accept": ["registreringsserver"],
@@ -1565,10 +1488,6 @@
   "model": {
     "chosen": "modell",
     "confidence": "high",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English-sense mismatch: Model Context Protocol is a proper name.",
-      "settings.summary.mcpServer": "English-sense mismatch: Model Context Protocol is a proper name."
-    },
     "sources": "MS terminology"
   },
   "modified": {
@@ -1884,20 +1803,6 @@
     "chosen": "telefon",
     "confidence": "high",
     "decision": "Inaktuellt index på en telefon över ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`)",
-    "exceptions": {
-      "adb.connect.adbNotInstalled": "English-sense mismatch: Android names the platform tools, not the phone.",
-      "adb.connect.serverUnreachable": "English-sense mismatch: Android names the tools on the Mac, not the phone.",
-      "mtp.ptpcameradDialog.explanation": "English-sense mismatch: Android devices is the MTP device class (Android-enheter).",
-      "settings.adb.install.intro": "English-sense mismatch: Android names the platform tools, not the phone.",
-      "settings.appearance.tintMtp.description": "English-sense mismatch: Android device is the MTP device class (Android-enhet).",
-      "settings.fileOperations.adbBinaryPath.description": "English-sense mismatch: Android SDK is a product name.",
-      "settings.fileOperations.adbEnabled.label": "English-sense mismatch: Android file access names the platform, not the phone.",
-      "settings.fileOperations.mtpConnectionWarning.description": "English-sense mismatch: Android device is the MTP device class (Android-enhet).",
-      "settings.fileOperations.mtpEnabled.label": "English-sense mismatch: Android here names the platform in a support label.",
-      "settings.section.adb": "English-sense mismatch: Android (ADB) is a section name, kept verbatim.",
-      "settings.section.mtp": "English-sense mismatch: Android here names the platform in a section name.",
-      "settings.summary.mtp": "English-sense mismatch: Android devices is the MTP device class (Android-enheter)."
-    },
     "sources": "MS terminology; catalog adb.*"
   },
   "photo": {
@@ -1927,9 +1832,7 @@
     "confidence": "high",
     "decision": "Serverhubben: tabellen, statusarna och tomläget (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.serverPinnedToast`/`.serverUnpinnedToast`/`.pinRefusedToast`/`.networkVolume`, `shortcuts.scope.servers`/`.places`)",
     "exceptions": {
-      "fileExplorer.git.tooltip.pinnedCommit": "English-sense mismatch: a git ref pinned at a commit is låst till, not the pin action.",
-      "main.dockPinNudge.body": "The Dock takes Apple's own verbs, not fäst; Vill du ha den kvar … bredvid Finder reads naturally in the question.",
-      "settings.developer.mcpPort.description": "English-sense mismatch: pinning a port number means fixing it (lås), not the pin action."
+      "main.dockPinNudge.body": "The Dock takes Apple's own verbs, not fäst; Vill du ha den kvar … bredvid Finder reads naturally in the question."
     },
     "forms": "Fäst flik / Lossa flik; Fäst / lossa server; in the Dock Apple's own Behåll i Dock / Ta bort från Dock",
     "sources": "MS terminology (fästa); catalog; macOS Dock.app"
@@ -1971,9 +1874,6 @@
     "accept": ["daemon"],
     "chosen": "process",
     "confidence": "high",
-    "exceptions": {
-      "settings.ai.localContextSize.description": "English-sense mismatch: process as a verb (bearbeta), not a running program."
-    },
     "forms": "kameradaemon, systemdaemon",
     "sources": "standard Swedish IT"
   },
@@ -1981,9 +1881,6 @@
     "accept": ["pågår", "pågående", "har hänt", "fortskrider"],
     "chosen": "förlopp",
     "confidence": "tentative",
-    "exceptions": {
-      "onboarding.stepBeta.openBeta": "Work in progress is the idiom under arbete."
-    },
     "forms": "in progress → pågår; No progress for {duration} → Inget har hänt på {duration}",
     "sources": "macOS (Visa kopieringsförlopp); the stall line is composed"
   },
@@ -1995,10 +1892,6 @@
   "protocol": {
     "chosen": "protokoll",
     "confidence": "high",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English-sense mismatch: Model Context Protocol is a proper name, kept verbatim.",
-      "settings.summary.mcpServer": "English-sense mismatch: Model Context Protocol is a proper name, kept verbatim."
-    },
     "sources": "macOS AddPrinter IP.loctable (Protokoll)"
   },
   "put-back": {
@@ -2156,15 +2049,6 @@
     "accept": ["tar bort", "tog bort", "borttag", "tas bort", "tagits bort", "togs bort"],
     "chosen": "ta bort",
     "confidence": "high",
-    "exceptions": {
-      "fileOperations.cancelRollback.doneDeleting": "Removing files from disk is radera; ta bort is for taking something out of a list.",
-      "fileOperations.cancelRollback.someDeleted": "Removing files from disk is radera; ta bort is for taking something out of a list.",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "Removing files from disk is radera; ta bort is for taking something out of a list.",
-      "fileOperations.cancelRollback.stagedLeftover.named": "Removing files from disk is radera; ta bort is for taking something out of a list.",
-      "fileOperations.cancelRollback.stoppedDeleting": "Removing files from disk is radera; ta bort is for taking something out of a list.",
-      "settings.mediaIndex.clip.deleteFailed": "Deleting the downloaded model is radera, like ai.local.deleteModel.",
-      "settings.operationLog.maxSize.description": "V2 word order splits the particle verb: tar Cmdr bort."
-    },
     "forms": "out of a list or collection; never deleting files from disk (that is radera)",
     "sources": "macOS Finder (Ta bort), GNOME"
   },
@@ -2411,10 +2295,6 @@
     "accept": ["inställning"],
     "chosen": "inställningar",
     "confidence": "high",
-    "exceptions": {
-      "ai.toast.installingTitle": "English-sense mismatch: setting up is ställa in, not the Settings window.",
-      "onboarding.stepAi.local.tooltip": "English-sense mismatch: setting it up is ställa in, not the Settings window."
-    },
     "forms": "window Inställningar; paths Inställningar > AI",
     "sources": "macOS Finder (Inställningar…)"
   },
@@ -2455,8 +2335,6 @@
     "chosen": "logga in",
     "confidence": "high",
     "exceptions": {
-      "errors.provider.macFuse.needsAction": "English-sense mismatch: Login Items is the System Settings pane, Startobjekt och tillägg.",
-      "errors.provider.pCloudFuse.serious": "English-sense mismatch: Login Items is the System Settings pane, Startobjekt och tillägg.",
       "servers.paneState.signedOutNothingToAsk": "The server doesn't sign in anywhere in Swedish; it uses a key (Den här servern använder en nyckel)."
     },
     "forms": "Logga in på {name}; sign-in method → inloggningsmetod",
@@ -2876,10 +2754,6 @@
     "accept": ["bevaka", "händelse"],
     "chosen": "bevakning",
     "confidence": "high",
-    "exceptions": {
-      "settings.adb.status.notWatching": "English-sense mismatch: watching for phones is keeping a lookout (hålla utkik), not the file-system watcher.",
-      "settings.adb.status.watching": "English-sense mismatch: watching for phones is keeping a lookout (hålla utkik), not the file-system watcher."
-    },
     "forms": "events → händelser",
     "sources": "catalog; macOS (händelse)"
   },
@@ -2938,5 +2812,48 @@
     "decision": "Inbyggda menyer: menyrad, snabbmenyer, fönstertitlar (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)",
     "forms": "the text-zoom submenu Zoom (noun); Window > Zoom → Zooma (verb); Zooma till 100 %",
     "sources": "macOS Finder 300667.title"
+  },
+  "search-walk": {
+    "chosen": "genomsökning",
+    "accept": ["genomsök", "igenom"],
+    "confidence": "high",
+    "sources": "catalog; macOS (Söker)",
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word."
+  },
+  "disk-utility": {
+    "chosen": "Skivverktyg",
+    "confidence": "high",
+    "sources": "macOS Disk Utility.app sv (2026-08-30)"
+  },
+  "first-aid": {
+    "chosen": "Skivkontroll",
+    "confidence": "high",
+    "sources": "macOS Disk Utility.app sv (2026-08-30)",
+    "avoid": [
+      {
+        "form": "Skivhjälpen",
+        "why": "names no menu item Apple ships; First Aid is Skivkontroll"
+      }
+    ]
+  },
+  "activity-monitor": {
+    "chosen": "Aktivitetskontroll",
+    "confidence": "high",
+    "sources": "macOS Disk Utility.app sv (2026-08-30)"
+  },
+  "spotlight": {
+    "chosen": "Spotlight",
+    "confidence": "high",
+    "sources": "macOS Disk Utility.app sv (2026-08-30)"
+  },
+  "mission-control": {
+    "chosen": "Mission Control",
+    "confidence": "high",
+    "sources": "macOS Disk Utility.app sv (2026-08-30)"
+  },
+  "spaces": {
+    "chosen": "Spaces",
+    "confidence": "high",
+    "sources": "macOS Disk Utility.app sv (2026-08-30)"
   }
 }

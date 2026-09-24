@@ -159,9 +159,6 @@
     "chosen": "tệp nén",
     "confidence": "high",
     "decision": "Duyệt và chỉnh sửa tệp nén (`fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.*`, `settings.archives.*`, `fileOperations.archivePassword.*`, `errors.listing.archiveUnreadable.*`)",
-    "exceptions": {
-      "settings.mediaIndex.networkVolumes.alwaysHelp": "English-sense: a photo archive is a rarely browsed collection (`kho ảnh`), not a zip."
-    },
     "forms": "zip archives → tệp nén zip; archive format → định dạng nén; the new archive the Compress dialog names → tệp lưu trữ (Finder Zip archive → Tệp lưu trữ Zip)",
     "sources": "catalog (settings.listing.sizeDisplay.description, settings.fileViewer.suppressBinaryWarning); GNOME/MS nén; Finder đã nén"
   },
@@ -188,9 +185,6 @@
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.renameReview.expired": "The English is a double reading (the imperative \"ask Cmdr\" and the panel name); vi keeps the imperative, `Hãy nhờ Cmdr`."
-    },
     "forms": "names the chat panel only; sentences about what the assistant does say Cmdr, sentences about the model say AI",
     "sources": "product name, kept verbatim"
   },
@@ -211,10 +205,6 @@
     "chosen": "Quay lại",
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
-    "exceptions": {
-      "queryUi.ai.refineTooltip": "English-sense: \"chat back\" is replying to the agent, not a Back control (`trò chuyện lại`).",
-      "servers.paneState.cancelCycleTooltip": "English-sense: \"switch back\" means turning retrying on again (`Chuyển lại`), not a Back control."
-    },
     "forms": "returning to the previous SCREEN or step in a flow → Quay lại (Quay lại danh sách máy chủ, Quay lại trò chuyện); back in the folder HISTORY → Trở lại (Go menu, commands.navBack.label, fileExplorer.errorPane.goBack)",
     "sources": "macOS Finder MenuBar 211 (Go > Back → Trở lại); Setup Assistant / Apple ID sheets (Back → Quay lại)"
   },
@@ -250,9 +240,6 @@
   "browse": {
     "chosen": "duyệt",
     "confidence": "high",
-    "exceptions": {
-      "feedback.dialog.moreWays": "English-sense: browsing issues on a website, not moving through folders; `xem` reads right there."
-    },
     "forms": "the drive you're browsing → ổ đĩa bạn đang duyệt",
     "sources": "macOS Finder (Duyệt các máy chủ khả dụng)"
   },
@@ -337,9 +324,6 @@
     "accept": ["xác minh", "đối chiếu", "xem"],
     "chosen": "kiểm tra",
     "confidence": "high",
-    "exceptions": {
-      "errors.write.originalsKeptAside.suggestion.many": "The suggestion is recast with the details as subject (`Phần chi tiết bên dưới cho biết …`), so no imperative check verb is needed."
-    },
     "forms": "check X against Y → đối chiếu X với Y; verify before copy → xác minh; check (look at) the details → xem; Check Again → Kiểm tra lại",
     "sources": "macOS Finder BN9 (Kiểm tra nội dung của…), Mail ConnectionDoctor (Check Again → Kiểm tra lại), TouchID (đối chiếu)"
   },
@@ -509,10 +493,6 @@
     "accept": ["bản sao", "chép"],
     "chosen": "sao chép",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.archiveUnreadable.suggestion": "English-sense: a fresh copy is a new version of a file (`một bản mới`), not the Copy operation.",
-      "main.instanceLock.alertBody": "English-sense: another copy of Cmdr is a second running instance (`Một bản Cmdr khác`)."
-    },
     "forms": "the noun (a copy) → bản sao; a fresh copy of a file → một bản mới; Duplicate → Nhân bản (separate command)",
     "sources": "macOS AppKit (Sao chép)"
   },
@@ -618,9 +598,6 @@
   "device": {
     "chosen": "thiết bị",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.crossDeviceOperation.title": "EXDEV means across volumes; vi names it `liên ổ đĩa`, matching its explanation's `các ổ đĩa khác nhau`."
-    },
     "sources": "GNOME (thiết bị này), Xfce Thunar (Ngắt kết nối thiết bị)"
   },
   "disable": {
@@ -678,9 +655,6 @@
   "documents": {
     "chosen": "tài liệu",
     "confidence": "high",
-    "exceptions": {
-      "goToPath.dialog.inputPlaceholder": "`~/Documents` is a literal path the user could type, so it stays English."
-    },
     "forms": "the Documents folder → Tài liệu",
     "sources": "macOS Finder (TL6 / GROUP_DOCUMENTS → Tài liệu), GNOME/Dolphin"
   },
@@ -713,9 +687,6 @@
     "chosen": "tải về",
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
-    "exceptions": {
-      "commands.downloadsGoToLatest.description": "`~/Downloads` is a literal path, so it stays English."
-    },
     "forms": "noun and verb alike: Đang tải về; a downloaded item → bản tải về; the Downloads folder → Tải về; re-download → tải lại; separable tải … về is fine in prose",
     "sources": "macOS vi (Đang tải về, Xóa bản tải về)"
   },
@@ -838,12 +809,6 @@
     ],
     "chosen": "đuôi tệp",
     "confidence": "high",
-    "exceptions": {
-      "errors.provider.macFuse.needsAction": "English-sense: Apple's Login Items & Extensions pane (`Mục đăng nhập & Phần mở rộng`), not a filename extension.",
-      "errors.provider.pCloudFuse.needsAction": "English-sense: a macOS system extension and Apple's pane name (`Phần mở rộng`), not a filename extension.",
-      "errors.provider.pCloudFuse.serious": "English-sense: a macOS system extension and Apple's pane name (`Phần mở rộng`), not a filename extension.",
-      "menu.context.editExtensions": "English-sense: macOS share extensions, named as System Settings names them (`Phần mở rộng`)."
-    },
     "forms": "the Ext column → Đuôi; a badge (đuôi tệp)",
     "sources": "catalog (Cho phép đổi đuôi tệp, Đổi đuôi tệp?, the Đuôi column)"
   },
@@ -867,9 +832,6 @@
     "chosen": "không thể",
     "confidence": "high",
     "decision": "Giọng lỗi: các cụm đã chốt (`errors.*`, `updates.failure.*`, `fileExplorer.network.browser.status.error`)",
-    "exceptions": {
-      "licensing.error.badSignature": "English-sense: a key failing a signature check is `không vượt qua bước xác minh` (didn't pass), not a failed action."
-    },
     "forms": "Couldn't X → Không thể X / không X được; a gentle failed status → Chưa hoàn tất được; the operation hasn't been proven → Chưa … được",
     "sources": "GNOME (Không thể), Xfce Thunar (Không thể gắn kết); style.md voice"
   },
@@ -916,8 +878,6 @@
     "chosen": "tệp",
     "confidence": "high",
     "exceptions": {
-      "askCmdr.tool.operationsList.doing": "Ask Cmdr's file history tool reads the operation log, so it says `lịch sử thao tác`.",
-      "askCmdr.tool.operationsList.done": "Ask Cmdr's file history tool reads the operation log, so it says `lịch sử thao tác`.",
       "errors.git.missingObject.message": "English-sense: git's pack files are git jargon, kept English (`pack file`)."
     },
     "sources": "macOS/MS convention (tệp)"
@@ -1069,9 +1029,6 @@
     "chosen": "Trở lại",
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
-    "exceptions": {
-      "indexing.rescan.journalGap": "English-sense: \"doesn't go back far enough\" is about how much history a log keeps, not navigation."
-    },
     "forms": "Go menu Back / Forward → Trở lại / Tiếp theo; returning to a screen → quay lại",
     "sources": "macOS Finder MenuBar 211 / 249"
   },
@@ -1102,9 +1059,6 @@
     ],
     "chosen": "Đã hiểu",
     "confidence": "high",
-    "exceptions": {
-      "whatsNew.optOutToast": "\"Got it\" opens a sentence here, not a button: `Đã rõ, …`."
-    },
     "sources": "catalog (ai.toast.gotIt, main.oldMacos.gotIt, updates.moveToApplicationsDialog.gotIt)"
   },
   "guest": {
@@ -1163,9 +1117,6 @@
     "accept": ["phút", "giây"],
     "chosen": "giờ",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.signup.unreachable": "\"in a minute\" is a vague soon, rendered `lát nữa`, not a counted minute."
-    },
     "forms": "sau N giây; a few seconds → vài giây; a minute → một phút",
     "sources": "macOS (sau 15 giây, About a minute → Khoảng một phút)"
   },
@@ -1199,9 +1150,6 @@
   "index": {
     "chosen": "chỉ mục",
     "confidence": "high",
-    "exceptions": {
-      "errors.git.indexLocked.message": "English-sense: git's index (the staging area), kept as `Index của Git`, not Cmdr's drive index."
-    },
     "forms": "indexing → lập chỉ mục; indexed → đã lập chỉ mục; re-index → lập chỉ mục lại; indexing pass → lượt quét",
     "sources": "macOS (chỉ mục, Đang cập nhật chỉ mục, Đã lập chỉ mục), MS terminology"
   },
@@ -1269,9 +1217,6 @@
   "kind": {
     "chosen": "Loại",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.interrupted.suggestion": "English-sense: \"this kind of\" is \"this sort of\" (`Kiểu`), not the file Kind."
-    },
     "forms": "the Kind column and Select all of the same kind",
     "sources": "macOS Finder ArrangeByMenu 119 / 338, N224 (Kind → Loại)"
   },
@@ -1279,10 +1224,6 @@
     "accept": ["sau"],
     "chosen": "Để sau",
     "confidence": "high",
-    "exceptions": {
-      "errors.mount.unsupportedProtocol": "English-sense: \"SMB 2 or later\" is a version range (`trở lên`), not a defer button.",
-      "settings.ai.tooltipLocalDisabled": "English-sense: \"M1 or later\" is a version range (`trở lên`), not a defer button."
-    },
     "forms": "the defer button Để sau; try again later → thử lại sau",
     "sources": "macOS AppKit (Not Now → Để sau)"
   },
@@ -1363,13 +1304,6 @@
   "log": {
     "chosen": "nhật ký",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.authRequiredEneedauth.explanation": "English-sense: \"log in\" is signing in (`đăng nhập`), not a log file.",
-      "fileExplorer.network.browser.tooltip.credsRejected": "English-sense: \"log in\" is signing in (`đăng nhập`), not a log file.",
-      "main.dockPinNudge.addedButDockDidNotRestart": "English-sense: \"log in\" is signing in to the Mac (`đăng nhập`), not a log file.",
-      "settings.advanced.logLlmCalls.description": "The only log word is the folder name `llm-logs`, kept literal.",
-      "shortcuts.system.loggingOut": "English-sense: \"logging out\" is signing out (`đăng xuất`), not logging."
-    },
     "forms": "log file → tệp nhật ký; log lines → dòng nhật ký; file change log → nhật ký thay đổi tệp",
     "sources": "standard vi for logs"
   },
@@ -1377,10 +1311,6 @@
     "chosen": "xem bên trong",
     "confidence": "high",
     "decision": "Ask Cmdr xem bên trong tệp: hai nhãn công cụ + hai khóa đồng ý (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.empty.hint`, `settings.askCmdr.intro`)",
-    "exceptions": {
-      "errors.git.corruptRepo.suggestion": "English-sense: `git fsck` inspecting a repo is a check (`kiểm tra`), not the AI reading a file.",
-      "errors.git.missingObject.suggestion": "English-sense: `git fsck` inspecting damage is a check (`kiểm tra`), not the AI reading a file."
-    },
     "forms": "tool labels Đang xem bên trong tệp / Đã xem bên trong tệp",
     "sources": "catalog (bên trong), sibling tool labels"
   },
@@ -1389,28 +1319,6 @@
     "confidence": "high",
     "forms": "trên máy Mac này, Máy Mac này; ❌ a bare Mac as the noun phrase",
     "sources": "macOS IOBluetoothUI / FileProvider (on this Mac → trên máy Mac này)"
-  },
-  "macos-app-names": {
-    "accept": ["Tiện ích ổ đĩa", "Sửa nhanh", "Giám sát hoạt động", "Mission Control", "Spaces"],
-    "avoid": [
-      {
-        "form": "Disk Utility",
-        "why": "Apple localizes it; the English name isn't on a vi Mac"
-      },
-      {
-        "form": "Activity Monitor",
-        "why": "Apple localizes it"
-      },
-      {
-        "form": "First Aid",
-        "why": "Apple localizes it (Sửa nhanh)"
-      }
-    ],
-    "chosen": "Spotlight",
-    "confidence": "high",
-    "decision": "Tên tiện ích macOS, mục chia sẻ, liên kết mềm, beta công khai (`errors.listing.*`, `settings.network.*`, `settings.behavior.*Seen.*`, `queryUi.results.live.*`, `settings.mediaIndex.*`)",
-    "forms": "Disk Utility → Tiện ích ổ đĩa, First Aid → Sửa nhanh, Activity Monitor → Giám sát hoạt động; Spotlight, Mission Control, Spaces stay English",
-    "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24"
   },
   "mailing-list": {
     "accept": ["danh sách"],
@@ -1684,9 +1592,6 @@
   "outdated": {
     "chosen": "lỗi thời",
     "confidence": "tentative",
-    "exceptions": {
-      "errors.listing.staleConnection.title": "English-sense: a stale network handle (`Kết nối đã cũ`), not an out-of-date index."
-    },
     "sources": "natural phrasing for an out-of-date index"
   },
   "overwrite": {
@@ -1793,9 +1698,6 @@
     ],
     "chosen": "ghim",
     "confidence": "high",
-    "exceptions": {
-      "settings.developer.mcpPort.description": "English-sense: pinning a port number is fixing it (`Cố định`), not pinning a row."
-    },
     "forms": "Ghim / Bỏ ghim; Pin to volume switcher → Ghim vào bộ chọn ổ đĩa; Trusted/Pinned prefix → Đã ghim",
     "sources": "macOS AppKit MenuCommands (Pin Tab → Ghim tab, Unpin Tab → Bỏ ghim tab)"
   },
@@ -2004,28 +1906,11 @@
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
     "exceptions": {
-      "askCmdr.wakeDigest.removed": "The items are gone from disk, so vi says `xóa` (destroys bytes), not `gỡ bỏ` (un-lists).",
       "commands.cloudRemoveDownload.description": "The local copy really is deleted, so `xóa` (Finder: Remove Download → Xóa bản tải về).",
       "commands.cloudRemoveDownload.label": "Finder's own item: Remove Download → `Xóa bản tải về` (N153.4_V1); the local bytes really go.",
       "commands.handler.cloudRemoveDownloadFailed": "Same deletion as `commands.cloudRemoveDownload.label`, so `xóa`.",
-      "errors.write.destinationNotFound.suggestion": "\"renamed or removed\" means the folder is gone from disk, so `xóa`.",
-      "errors.write.symlinkLoop.suggestion": "Removing a symlink deletes the link file, so `xóa`.",
-      "fileExplorer.network.osMountFallback.shareNotOnServer": "\"renamed or removed\" on the server means deleted, so `xóa` (verbatim from `errors.write.destinationNotFound.suggestion`).",
       "fileExplorer.network.share.forgetPasswordTooltip": "The saved password is deleted from the keychain, so `xóa` (like `fileExplorer.network.deletePasswordFailed`).",
-      "fileOperations.cancelRollback.doneDeleting": "The rollback deletes what Cmdr wrote, so `xóa`.",
-      "fileOperations.cancelRollback.moveAlreadyLanded": "Removing the originals deletes them, so `xóa`.",
-      "fileOperations.cancelRollback.someDeleted": "The rollback deletes what Cmdr wrote, so `xóa`.",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "The leftover copies would be deleted, so `xóa`.",
-      "fileOperations.cancelRollback.stagedLeftover.named": "The leftover copy would be deleted, so `xóa`.",
-      "fileOperations.cancelRollback.stoppedDeleting": "The rollback deletes what Cmdr wrote, so `xóa`.",
-      "fileOperations.delete.archiveWarningRest": "Entries removed from a zip are gone for good, so `xóa`.",
-      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Removing the originals deletes them, so `xóa`.",
-      "fileOperations.transferProgress.titleRemovingOriginals": "Removing the originals deletes them, so `xóa`.",
-      "menu.context.removeDownload": "Finder's own item: Remove Download → `Xóa bản tải về`; identical to `commands.cloudRemoveDownload.label`.",
-      "settings.askCmdr.memory.notAllForgotten": "The notes are deleted files, so `xóa`.",
-      "settings.mediaIndex.clip.deleteFailed": "The model's files are deleted, so `xóa`.",
-      "settings.operationLog.maxAge.description": "Old log entries are deleted from disk, so `xóa`.",
-      "settings.operationLog.maxSize.description": "Old log entries are deleted from disk, so `xóa`."
+      "menu.context.removeDownload": "Finder's own item: Remove Download → `Xóa bản tải về`; identical to `commands.cloudRemoveDownload.label`."
     },
     "forms": "taking an item off a list while it lives on → gỡ bỏ (one form, even with an object); the tag row → Gỡ bỏ “{color}”; forget a saved item → Quên",
     "sources": "Xfce Thunar (_Remove → Gỡ bỏ), GNOME Nautilus (Gỡ bỏ ổ đĩa một cách an toàn)"
@@ -2110,10 +1995,6 @@
     "chosen": "xem lại",
     "confidence": "high",
     "decision": "Xem lại việc đổi tên hàng loạt (`askCmdr.renameReview.*`)",
-    "exceptions": {
-      "main.upgradeNudge.mac": "English-sense: \"to review them\" is looking the new options over (`xem qua`), not an approval gate.",
-      "main.upgradeNudge.other": "English-sense: \"to review them\" is looking the new options over (`xem qua`), not an approval gate."
-    },
     "sources": "macOS AppKit (Review Changes… → Xem lại Thay đổi…)"
   },
   "rollback": {
@@ -2560,13 +2441,6 @@
     "accept": ["lớn hơn", "quá dài"],
     "chosen": "quá lớn",
     "confidence": "high",
-    "exceptions": {
-      "ai.translateError.timeout.title": "English-sense: \"took too long\" is a timeout, not a size.",
-      "askCmdr.error.timeout": "English-sense: \"took too long\" is a timeout, not a size.",
-      "fileExplorer.pane.directConnectionTooSlowToast": "English-sense: \"took too long to answer\" is slowness (`phản hồi quá chậm`), not a size.",
-      "viewer.copy.readTooLong": "English-sense: \"took too long\" is a timeout (`mất quá lâu`), not a size.",
-      "viewer.saveAs.tooLong": "English-sense: \"took too long\" is a timeout (`mất quá lâu`), not a size."
-    },
     "forms": "too large for X → quá lớn đối với X",
     "sources": "GNOME Nautilus (Tập tin quá lớn đối với vị trí dán)"
   },
@@ -2644,9 +2518,6 @@
   "update": {
     "chosen": "cập nhật",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.network.browser.tooltip.credsRejected": "English-sense: \"updated credentials\" are new ones (`thông tin mới`), not an app update."
-    },
     "sources": "macOS (Cập nhật), MS"
   },
   "upgrade": {
@@ -2777,5 +2648,60 @@
     "confidence": "high",
     "forms": "zoom in / out → phóng to / thu nhỏ; zoom level → mức phóng; Window > Zoom → Thu phóng",
     "sources": "macOS AppKit (thu phóng), GNOME (Phóng to / Thu nhỏ)"
+  },
+  "search-walk": {
+    "chosen": "quét",
+    "confidence": "high",
+    "sources": "MS (quét)",
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word."
+  },
+  "disk-utility": {
+    "chosen": "Tiện ích ổ đĩa",
+    "confidence": "high",
+    "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24",
+    "avoid": [
+      {
+        "form": "Disk Utility",
+        "why": "Apple localizes it; the English name isn't on a vi Mac"
+      }
+    ],
+    "decision": "Tên tiện ích macOS, mục chia sẻ, liên kết mềm, beta công khai (`errors.listing.*`, `settings.network.*`, `settings.behavior.*Seen.*`, `queryUi.results.live.*`, `settings.mediaIndex.*`)"
+  },
+  "first-aid": {
+    "chosen": "Sửa nhanh",
+    "confidence": "high",
+    "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24",
+    "avoid": [
+      {
+        "form": "First Aid",
+        "why": "Apple localizes it (Sửa nhanh)"
+      }
+    ]
+  },
+  "activity-monitor": {
+    "chosen": "Giám sát hoạt động",
+    "confidence": "high",
+    "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24",
+    "avoid": [
+      {
+        "form": "Activity Monitor",
+        "why": "Apple localizes it"
+      }
+    ]
+  },
+  "spotlight": {
+    "chosen": "Spotlight",
+    "confidence": "high",
+    "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24"
+  },
+  "mission-control": {
+    "chosen": "Mission Control",
+    "confidence": "high",
+    "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24"
+  },
+  "spaces": {
+    "chosen": "Spaces",
+    "confidence": "high",
+    "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24"
   }
 }

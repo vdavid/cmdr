@@ -161,9 +161,6 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS ArchiveUtility/Finder (Archivo comprimido Zip), Total Commander (Propiedades del archivo comprimido)",
-    "exceptions": {
-      "settings.mediaIndex.networkVolumes.alwaysHelp": "A photo archive is a collection (colección de fotos), not a zip."
-    },
     "decision": "Archivos comprimidos: explorar, extraer, eliminar (`settings.archives.*`, `fileOperations.delete.archiveWarningStrong`/`.archiveWarningRest`, `queue.row.label`)"
   },
   "archive-chat": {
@@ -179,12 +176,6 @@
     "confidence": "high",
     "sources": "standard option label",
     "exceptions": {
-      "errors.listing.archiveUnreadable.suggestion": "Asking a person or the AI for something (pedir), not the ask-each-time option (proposed: tighten the concept's match).",
-      "errors.listing.noPermissionErrno.suggestion": "Asking a person or the AI for something (pedir), not the ask-each-time option (proposed: tighten the concept's match).",
-      "errors.listing.permissionDenied.suggestion": "Asking a person or the AI for something (pedir), not the ask-each-time option (proposed: tighten the concept's match).",
-      "errors.listing.quotaExceeded.suggestion": "Asking a person or the AI for something (pedir), not the ask-each-time option (proposed: tighten the concept's match).",
-      "search.coverage.uncovered.network": "Asking a person or the AI for something (pedir), not the ask-each-time option (proposed: tighten the concept's match).",
-      "settings.network.enabled.description": "Asking a person or the AI for something (pedir), not the ask-each-time option (proposed: tighten the concept's match).",
       "settings.network.permissionIntroSuffix": "Asking a person or the AI for something (pedir), not the ask-each-time option (proposed: tighten the concept's match)."
     }
   },
@@ -227,14 +218,6 @@
     ],
     "confidence": "high",
     "sources": "MS terminology (background adj. → segundo plano), Double Commander, Dolphin, Total Commander; absent from macOS es",
-    "exceptions": {
-      "fileExplorer.doubleClickHint.body": "The visual backdrop (fondo), not running in the background (proposed notMatch `pane background`, `background tint`).",
-      "settings.appearance.tintGroupDescription": "The visual backdrop (fondo), not running in the background (proposed notMatch `pane background`, `background tint`).",
-      "settings.appearance.tintLocal.description": "The visual backdrop (fondo), not running in the background (proposed notMatch `pane background`, `background tint`).",
-      "settings.appearance.tintMtp.description": "The visual backdrop (fondo), not running in the background (proposed notMatch `pane background`, `background tint`).",
-      "settings.appearance.tintSmb.description": "The visual backdrop (fondo), not running in the background (proposed notMatch `pane background`, `background tint`).",
-      "settings.behavior.doubleClickPaneNavigatesToParent.label": "The visual backdrop (fondo), not running in the background (proposed notMatch `pane background`, `background tint`)."
-    },
     "decision": "El botón con la cola vacía: \"Background\" (`fileOperations.transferProgress.background`/`.backgroundAria`)"
   },
   "badge": {
@@ -511,10 +494,6 @@
     "forms": "button Conectar; Connecting… (no target) → Conectando…; Connecting to X… → Conectándose a X…; Connect to a server → Conectarse a un servidor…; Connected → Conectado; You're connected → Tienes acceso",
     "confidence": "high",
     "sources": "macOS Finder (Conectar, MN1 Conectándose a ^0…, Conectarse a un servidor), NetAuthAgent (Conectando…)",
-    "exceptions": {
-      "errors.provider.egnyte.appName": "Egnyte Connect is a product name.",
-      "fileExplorer.pane.directConnectionNotNetworkShareToast": "\"No connection to speed up\" uses the catalog's no hay nada que + infinitive pattern (no hay nada que acelerar)."
-    },
     "decision": "El hub de servidores: conectar, desconectar y olvidar (`servers.*`, `fileExplorer.navigation.connectionTooltip*`, `fileExplorer.navigation.disconnect*`, `fileExplorer.navigation.forget*`)"
   },
   "context-menu": {
@@ -646,8 +625,6 @@
     "confidence": "high",
     "sources": "macOS Finder (Eliminar)",
     "exceptions": {
-      "fileExplorer.navigation.favoriteShortcutAriaLabel": "The Delete KEY, named by its Spanish keyboard label Supr.",
-      "fileExplorer.navigation.favoriteShortcutPrompt": "The Delete KEY, named by its Spanish keyboard label Supr.",
       "settings.fileSystemWatching.clearIndexDescription": "Describes the Clear index button (Borrar el índice), so it keeps the button's verb."
     }
   },
@@ -662,11 +639,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "composed from macOS Eliminar (macOS bypass-trash says Eliminar inmediatamente)",
-    "exceptions": {
-      "settings.fileExplorer.suppressQuickLookHint.description": "\"For good\" here means hiding a reminder forever (definitivamente), not a permanent delete.",
-      "settings.fileViewer.suppressBinaryWarning.description": "\"For good\" here means hiding a warning forever (definitivamente), not a permanent delete."
-    }
+    "sources": "composed from macOS Eliminar (macOS bypass-trash says Eliminar inmediatamente)"
   },
   "deny": {
     "chosen": "Denegar",
@@ -753,9 +726,6 @@
     "chosen": "documento",
     "confidence": "high",
     "sources": "macOS Finder (Documentos, Documento RTF)",
-    "exceptions": {
-      "goToPath.dialog.inputPlaceholder": "~/Documents is a literal example path, kept as typed."
-    },
     "decision": "`Documents and packages`: la fila OOXML (`settings.archives.ooxml.*`)"
   },
   "done": {
@@ -777,10 +747,7 @@
     "accept": ["descarg"],
     "forms": "Descargando…; the folder Descargas",
     "confidence": "high",
-    "sources": "macOS (Descargas, Descargando)",
-    "exceptions": {
-      "commands.downloadsGoToLatest.description": "~/Downloads is a literal path, kept as typed."
-    }
+    "sources": "macOS (Descargas, Descargando)"
   },
   "drive": {
     "chosen": "unidad",
@@ -789,29 +756,6 @@
     "confidence": "high",
     "sources": "catalog; macOS Finder eject corpus (disco)",
     "exceptions": {
-      "commands.cloudAskGemini.description": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "commands.cloudCopyGoogleDriveLink.label": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "commands.cloudOpenInGoogleDrive.description": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "commands.cloudOpenInGoogleDrive.label": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "commands.handler.googleDriveCopyFailed": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "commands.handler.googleDriveLinkCopied": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "commands.handler.googleDriveLinkMissing": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "commands.handler.googleDriveOpenFailed": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.listing.emptyRootICloud.explanation": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.listing.emptyRootICloud.title": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.box.appName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.googleDrive.appName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.googleDrive.displayName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.iCloud.displayName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.iCloud.needsAction": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.pCloud.appName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.pCloudFuse.appName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.protonDrive.appName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.protonDrive.displayName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.synologyDrive.appName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "errors.provider.synologyDrive.displayName": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "menu.context.copyGoogleDriveLink": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
-      "menu.context.openInGoogleDrive": "A product name (Google Drive, iCloud Drive, Box Drive, …), not a storage drive (proposed notMatch).",
       "settings.indexing.overriddenBadge": "The badge renders only inside the Indexación de unidades page, so la indexación drops de unidades for length."
     },
     "decision": "Expulsar y desconectar: los nueve avisos del selector de volúmenes (`errors.eject.*`)"
@@ -967,8 +911,7 @@
     "confidence": "high",
     "sources": "Cmdr voice rule (stricter than macOS, which says Error interno)",
     "exceptions": {
-      "fileExplorer.network.reconnect.finalAttempt": "Voice rule: \"if it fails\" → si tampoco funciona.",
-      "onboarding.stepOptional.mtp.desc": "Voice rule: macOS's own attempts \"usually fail\" → no suele conseguirlo."
+      "fileExplorer.network.reconnect.finalAttempt": "Voice rule: \"if it fails\" → si tampoco funciona."
     },
     "decision": "La migración al termbase: arreglos de coherencia (`goToPath.dialog.removeFromList`, `askCmdr.wakeDigest.removed`, `errors.write.fallback.message.*`, `onboarding.stepFda.con.body`, `indexing.staleDialog.body`, `indexing.rescan.*`)"
   },
@@ -1003,9 +946,6 @@
     ],
     "confidence": "high",
     "sources": "macOS Finder (IN_MD1 Fetching… → Obteniendo…)",
-    "exceptions": {
-      "onboarding.cloudSetup.step.ollamaModel": "ollama pull downloads a model: Descarga un modelo."
-    },
     "decision": "El panel del visor mientras llega el archivo (`viewer.pull.*`, `viewer.error.stoppedResponding`)"
   },
   "file": {
@@ -1074,10 +1014,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS Finder (Carpeta)",
-    "exceptions": {
-      "errors.git.bareRepo.suggestion": "Git's working directory stays directorio de trabajo."
-    }
+    "sources": "macOS Finder (Carpeta)"
   },
   "force-quit": {
     "chosen": "Forzar salida",
@@ -1330,11 +1267,6 @@
     "forms": "one other file → otro archivo; N other items → otros N elementos",
     "confidence": "high",
     "sources": "catalog (44 to 8 over macOS ítem)",
-    "exceptions": {
-      "errors.provider.macFuse.needsAction": "Login Items is a System Settings pane name (Ítems de inicio y extensiones), not a file-or-folder item.",
-      "errors.provider.pCloudFuse.needsAction": "Login Items is a System Settings pane name (Ítems de inicio y extensiones), not a file-or-folder item.",
-      "errors.provider.pCloudFuse.serious": "Login Items is a System Settings pane name (Ítems de inicio y extensiones), not a file-or-folder item."
-    },
     "decision": "La migración al termbase: arreglos de coherencia (`goToPath.dialog.removeFromList`, `askCmdr.wakeDigest.removed`, `errors.write.fallback.message.*`, `onboarding.stepFda.con.body`, `indexing.staleDialog.body`, `indexing.rescan.*`)"
   },
   "keep": {
@@ -1365,21 +1297,12 @@
     "accept": ["clase"],
     "confidence": "high",
     "sources": "macOS Finder ArrangeByMenu (Clase)",
-    "exceptions": {
-      "errors.listing.interrupted.suggestion": "\"This kind of\" means this sort of (este tipo de), not the file Kind."
-    },
     "decision": "Seleccionar todo lo de la misma clase (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)"
   },
   "later": {
     "chosen": "Más tarde",
     "confidence": "high",
-    "sources": "macOS standard defer button",
-    "exceptions": {
-      "errors.mount.unsupportedProtocol": "Version sense: X or later → X o posterior (proposed notMatch `or later`).",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "Adjective sense: a later transfer → una transferencia posterior.",
-      "fileOperations.cancelRollback.stagedLeftover.named": "Adjective sense: a later transfer → una transferencia posterior.",
-      "settings.ai.tooltipLocalDisabled": "Version sense: X or later → X o posterior (proposed notMatch `or later`)."
-    }
+    "sources": "macOS standard defer button"
   },
   "leave-alone": {
     "chosen": "se quedó como está",
@@ -1419,10 +1342,7 @@
     "chosen": "línea",
     "accept": ["líneas"],
     "confidence": "high",
-    "sources": "standard",
-    "exceptions": {
-      "settings.behavior.adbHintDismissed.description": "The one-time line is the hint (aviso único)."
-    }
+    "sources": "standard"
   },
   "local-network": {
     "chosen": "red local",
@@ -1438,9 +1358,6 @@
     "forms": "Places / Locations heading → Ubicaciones; where a photo was taken → el lugar donde se tomó",
     "confidence": "high",
     "sources": "macOS Finder (Ubicación:, SD5 Ubicaciones)",
-    "exceptions": {
-      "errors.write.trashRefused.suggestion.noTrashForVolume": "Generic places (algunos sitios), not a location heading."
-    },
     "decision": "La tabla del hub de servidores y sus comandos (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.serverPinnedToast`/`serverUnpinnedToast`/`pinRefusedToast`/`networkVolume`, `shortcuts.scope.servers`/`places`)"
   },
   "locked": {
@@ -1454,14 +1371,7 @@
     "accept": ["registros", "registr"],
     "forms": "Logging (Settings) → Registro",
     "confidence": "high",
-    "sources": "MS terminology (Event log → registro de eventos)",
-    "exceptions": {
-      "errors.listing.authRequiredEneedauth.explanation": "log in / log out is the sign-in sense (iniciar / cerrar sesión) (proposed notMatch `log in`, `logging out`).",
-      "fileExplorer.network.browser.tooltip.credsRejected": "log in / log out is the sign-in sense (iniciar / cerrar sesión) (proposed notMatch `log in`, `logging out`).",
-      "main.dockPinNudge.addedButDockDidNotRestart": "log in / log out is the sign-in sense (iniciar / cerrar sesión) (proposed notMatch `log in`, `logging out`).",
-      "settings.advanced.logLlmCalls.description": "llm-logs is a folder name.",
-      "shortcuts.system.loggingOut": "log in / log out is the sign-in sense (iniciar / cerrar sesión) (proposed notMatch `log in`, `logging out`)."
-    }
+    "sources": "MS terminology (Event log → registro de eventos)"
   },
   "look-inside": {
     "chosen": "mirar dentro de",
@@ -1469,18 +1379,7 @@
     "forms": "tool labels Mirando dentro de los archivos / Se miró dentro de los archivos",
     "confidence": "tentative",
     "sources": "composed; macOS es dentro de for inside",
-    "exceptions": {
-      "errors.git.corruptRepo.suggestion": "Inspecting a repo with git fsck, not the AI reading a file (proposed notMatch `to inspect`).",
-      "errors.git.missingObject.suggestion": "Inspecting a repo with git fsck, not the AI reading a file (proposed notMatch `to inspect`)."
-    },
     "decision": "Mirar dentro de un archivo: la herramienta `inspect_file` y la pantalla de consentimiento (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.empty.hint`, `settings.askCmdr.intro`)"
-  },
-  "macos-app-names": {
-    "chosen": "Utilidad de Discos",
-    "accept": ["Primera ayuda", "Monitor de Actividad", "Spotlight", "Mission Control", "Spaces"],
-    "forms": "Disk Utility → Utilidad de Discos; First Aid → Primera ayuda; Activity Monitor → Monitor de Actividad; Spotlight, Mission Control, Spaces verbatim",
-    "confidence": "high",
-    "sources": "macOS es"
   },
   "mailing-list": {
     "chosen": "lista de correo",
@@ -1516,11 +1415,7 @@
   "model": {
     "chosen": "modelo",
     "confidence": "high",
-    "sources": "standard",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "Model Context Protocol is a product name, kept in English.",
-      "settings.summary.mcpServer": "Model Context Protocol is a product name, kept in English."
-    }
+    "sources": "standard"
   },
   "modified": {
     "chosen": "Modificación",
@@ -1733,9 +1628,6 @@
     "accept": ["desactualizad", "al día", "desactualiz"],
     "confidence": "high",
     "sources": "macOS Finder (NE103/NE105 no estén actualizados)",
-    "exceptions": {
-      "errors.listing.staleConnection.title": "A stale NFS/SMB handle, not an outdated index: Conexión obsoleta."
-    },
     "decision": "El índice desactualizado de un teléfono por ADB (`fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`bodyPhone`)"
   },
   "overwrite": {
@@ -1929,9 +1821,6 @@
     "forms": "operations in progress → operaciones en curso; No progress for X → Sin progreso desde hace X",
     "confidence": "high",
     "sources": "MS terminology (progress → progreso); macOS Finder (NE82 en curso)",
-    "exceptions": {
-      "onboarding.stepBeta.openBeta": "The work-in-progress idiom: en desarrollo."
-    },
     "decision": "Transferencia atascada: el aviso de \"sin progreso\" (`fileOperations.transferProgress.stall*`, `fileOperations.transferProgress.close`)"
   },
   "properties": {
@@ -1942,11 +1831,7 @@
   "protocol": {
     "chosen": "protocolo",
     "confidence": "high",
-    "sources": "AirPortSettings (Protocolo); Directory Utility (Protocolo SSH 2)",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "Model Context Protocol is a product name, kept in English.",
-      "settings.summary.mcpServer": "Model Context Protocol is a product name, kept in English."
-    }
+    "sources": "AirPortSettings (Protocolo); Directory Utility (Protocolo SSH 2)"
   },
   "put-back": {
     "chosen": "devolver … a su sitio",
@@ -2090,32 +1975,6 @@
     ],
     "confidence": "high",
     "sources": "catalog (consistency-settled; deliberate departure from macOS/MS eliminar)",
-    "exceptions": {
-      "ai.local.deletingStatus": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "askCmdr.wakeDigest.removed": "Counts items gone any way (trashed, deleted, moved out): que ya no está(n); eliminado would claim a delete.",
-      "errors.listing.attributeNotFound.explanation": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "errors.listing.crossDeviceOperation.explanation": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "errors.listing.deletePending.title": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "errors.listing.folderNotEmpty.explanation": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "errors.listing.folderNotEmpty.suggestion": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "errors.listing.quotaExceeded.suggestion": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "errors.write.deletePending.title": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "errors.write.destinationNotFound.suggestion": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileExplorer.network.osMountFallback.shareNotOnServer": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.cancelRollback.doneDeleting": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.cancelRollback.moveAlreadyLanded": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.cancelRollback.someDeleted": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.cancelRollback.stagedLeftover.named": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.cancelRollback.stoppedDeleting": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.delete.archiveWarningRest": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "fileOperations.transferProgress.titleRemovingOriginals": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "settings.askCmdr.memory.notAllForgotten": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "settings.mediaIndex.clip.deleteFailed": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "settings.operationLog.maxAge.description": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list).",
-      "settings.operationLog.maxSize.description": "English says remove for deleting files or data; es names that act eliminar (Quitar only takes an entry off a list)."
-    },
     "decision": "Menús nativos: barra de menús, menús contextuales, títulos de ventana (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)"
   },
   "rename": {
@@ -2318,12 +2177,7 @@
     "chosen": "Dirección",
     "accept": ["dirección"],
     "confidence": "high",
-    "sources": "Network.appex (SERVER_ADDRESS Dirección del servidor:)",
-    "exceptions": {
-      "common.attachEmail": "An email address, not a server address (proposed notMatch `email address`).",
-      "common.attachEmailPrompt": "An email address, not a server address (proposed notMatch `email address`).",
-      "onboarding.stepBeta.checklist.email": "An email address, not a server address (proposed notMatch `email address`)."
-    }
+    "sources": "Network.appex (SERVER_ADDRESS Dirección del servidor:)"
   },
   "service": {
     "chosen": "servicio",
@@ -2343,10 +2197,6 @@
     ],
     "confidence": "high",
     "sources": "macOS SystemSettings (Ajustes, Ajustes del Sistema)",
-    "exceptions": {
-      "ai.toast.installingTitle": "Setting up = the configure sense (configurar), not the Settings window (proposed notMatch `setting up`).",
-      "onboarding.stepAi.local.tooltip": "Setting up = the configure sense (configurar), not the Settings window (proposed notMatch `setting up`)."
-    },
     "decision": "Ask Cmdr: el panel del chat (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)"
   },
   "share-menu": {
@@ -2397,11 +2247,7 @@
     ],
     "forms": "Sign in to X → Iniciar sesión en X; You're signed in → Tienes la sesión iniciada en …",
     "confidence": "high",
-    "sources": "macOS Finder (NE104 Iniciar sesión…), CloudKit (Inicia sesión en %1$@)",
-    "exceptions": {
-      "errors.provider.macFuse.needsAction": "Login Items is a System Settings pane name (Ítems de inicio y extensiones), not signing in (proposed notMatch `login items`).",
-      "errors.provider.pCloudFuse.serious": "Login Items is a System Settings pane name (Ítems de inicio y extensiones), not signing in (proposed notMatch `login items`)."
-    }
+    "sources": "macOS Finder (NE104 Iniciar sesión…), CloudKit (Inicia sesión en %1$@)"
   },
   "sign-out": {
     "chosen": "Sesión cerrada",
@@ -2442,9 +2288,6 @@
     "forms": "el origen / el destino; heading pair Desde / Hacia",
     "confidence": "high",
     "sources": "MS terminology (source → origen), Total Commander",
-    "exceptions": {
-      "shortcuts.system.inputSourceSwitching": "Input source is its own concept (fuente de entrada)."
-    },
     "decision": "El interruptor de papelera y los encabezados Desde / Hacia (`fileOperations.delete.trashSwitch`/`.confirmDelete`, `fileOperations.transferDialog.sourceGroupTitle`/`.targetGroupTitle`)"
   },
   "source-available": {
@@ -2657,13 +2500,6 @@
     "accept": ["demasiado larg", "más de", "tan grandes", "supera"],
     "confidence": "high",
     "sources": "macOS Finder (PE4.5 es demasiado grande para el formato del volumen)",
-    "exceptions": {
-      "ai.translateError.timeout.title": "Took too long is the timeout sense (tardó demasiado) (proposed notMatch `took too long`).",
-      "askCmdr.error.timeout": "Took too long is the timeout sense (tardó demasiado) (proposed notMatch `took too long`).",
-      "fileExplorer.pane.directConnectionTooSlowToast": "Took too long is the timeout sense (tardó demasiado) (proposed notMatch `took too long`).",
-      "viewer.copy.readTooLong": "Took too long is the timeout sense (tardó demasiado) (proposed notMatch `took too long`).",
-      "viewer.saveAs.tooLong": "Took too long is the timeout sense (tardó demasiado) (proposed notMatch `took too long`)."
-    },
     "decision": "FAT32: el archivo que no cabe (`errors.write.*`, `errors.listing.notSupportedErrno.suggestion`)"
   },
   "transfer": {
@@ -2719,8 +2555,7 @@
     "sources": "macOS AppKit MenuCommands, Nautilus (Deshacer)",
     "exceptions": {
       "fileOperations.cancelRollback.reason.failed.counted": "Undoing a transfer is Cmdr's rollback: revertir / la reversión.",
-      "fileOperations.cancelRollback.reason.failed.named": "Undoing a transfer is Cmdr's rollback: revertir / la reversión.",
-      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing a transfer is Cmdr's rollback: revertir / la reversión."
+      "fileOperations.cancelRollback.reason.failed.named": "Undoing a transfer is Cmdr's rollback: revertir / la reversión."
     },
     "decision": "El aviso de la papelera: deshacer y devolver a su sitio (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)"
   },
@@ -2756,10 +2591,7 @@
     "chosen": "No se puede acceder",
     "accept": ["acced", "accesible", "sin acceso", "conectar con"],
     "confidence": "high",
-    "sources": "catalog (reach → acceder a)",
-    "exceptions": {
-      "errors.listing.symlinkLoopErrno.explanation": "Following links arrives somewhere: no puede llegar al archivo."
-    }
+    "sources": "catalog (reach → acceder a)"
   },
   "update": {
     "chosen": "actualización",
@@ -2767,10 +2599,6 @@
     "forms": "the Settings section Actualizaciones; keep an index current → mantener … al día; Software Update → Actualización de software; Check for updates → Buscar actualizaciones (macOS)",
     "confidence": "high",
     "sources": "macOS/MS standard",
-    "exceptions": {
-      "onboarding.stepBeta.checklist.email": "Updates from the developer are news (novedades), not a software update.",
-      "onboarding.stepBeta.emailNote": "Updates from the developer are news (novedades), not a software update."
-    },
     "decision": "La pantalla de bloqueo por WebKit antiguo (`main.oldWebkit.*`)"
   },
   "upgrade": {
@@ -2866,10 +2694,6 @@
     "accept": ["vigil", "evento"],
     "confidence": "tentative",
     "sources": "catalog (File system watching → Vigilancia del sistema de archivos)",
-    "exceptions": {
-      "settings.adb.status.notWatching": "Watching for phones, worded as what Cmdr does (detecta los teléfonos), not the file-system watcher.",
-      "settings.adb.status.watching": "Watching for phones, worded as what Cmdr does (detecta los teléfonos), not the file-system watcher."
-    },
     "decision": "La migración al termbase: arreglos de coherencia (`goToPath.dialog.removeFromList`, `askCmdr.wakeDigest.removed`, `errors.write.fallback.message.*`, `onboarding.stepFda.con.body`, `indexing.staleDialog.body`, `indexing.rescan.*`)"
   },
   "whats-new": {
@@ -2904,5 +2728,42 @@
     "confidence": "high",
     "sources": "catalog; Safari es (Ampliar/Reducir)",
     "decision": "Menús nativos: barra de menús, menús contextuales, títulos de ventana (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)"
+  },
+  "search-walk": {
+    "chosen": "análisis",
+    "accept": ["analiz", "recorr"],
+    "confidence": "high",
+    "sources": "standard",
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word."
+  },
+  "disk-utility": {
+    "chosen": "Utilidad de Discos",
+    "confidence": "high",
+    "sources": "macOS es"
+  },
+  "first-aid": {
+    "chosen": "Primera ayuda",
+    "confidence": "high",
+    "sources": "macOS es"
+  },
+  "activity-monitor": {
+    "chosen": "Monitor de Actividad",
+    "confidence": "high",
+    "sources": "macOS es"
+  },
+  "spotlight": {
+    "chosen": "Spotlight",
+    "confidence": "high",
+    "sources": "macOS es"
+  },
+  "mission-control": {
+    "chosen": "Mission Control",
+    "confidence": "high",
+    "sources": "macOS es"
+  },
+  "spaces": {
+    "chosen": "Spaces",
+    "confidence": "high",
+    "sources": "macOS es"
   }
 }

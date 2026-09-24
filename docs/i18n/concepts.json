@@ -19,6 +19,7 @@
     "distinct": ["permission", "full-disk-access"],
     "en": "access",
     "match": ["access", "exclusive access"],
+    "notMatch": ["keychain access"],
     "sense": "Being able to reach or open something (macOS privacy access, a server granting access, a device held with exclusive access)."
   },
   "accessibility": {
@@ -31,6 +32,7 @@
     "distinct": ["apple-account"],
     "en": "account",
     "match": ["account", "accounts"],
+    "notMatch": ["apple account"],
     "sense": "The user account on a server or service that Cmdr signs in with."
   },
   "action": {
@@ -44,11 +46,17 @@
     "match": ["activate", "activating", "activated", "activation"],
     "sense": "Entering a license key to turn on a paid license."
   },
+  "activity-monitor": {
+    "en": "Activity Monitor",
+    "match": ["activity monitor"],
+    "note": "Apple localizes some of these names per language; quote the name the user's Mac shows.",
+    "sense": "The macOS Activity Monitor app, named in help text."
+  },
   "add": {
     "distinct": ["create"],
     "en": "add",
     "match": ["add", "adds", "adding", "added"],
-    "notMatch": ["add up", "adds a row"],
+    "notMatch": ["add up", "adds a row", "add iso date prefix"],
     "sense": "Putting something into an existing list or report (a folder, a server, a favorite, a note)."
   },
   "advanced": {
@@ -76,13 +84,14 @@
     "en": "AI features",
     "match": ["ai feature", "ai features", "the ai"],
     "note": "Where the English says \"the AI\" rather than \"Cmdr\", keep the distinction: Cmdr is the product acting, the AI is the outside model.",
+    "notMatch": ["the ai search"],
     "sense": "The app's AI-powered functions in general, or the outside model acting as the subject of a sentence."
   },
   "ai-provider": {
     "distinct": ["cloud-provider", "service"],
     "en": "provider",
     "match": ["provider", "providers", "ai provider"],
-    "notMatch": ["=your cloud provider", "managed by a cloud provider"],
+    "notMatch": ["=your cloud provider", "managed by a cloud provider", "payment provider"],
     "sense": "The company or service that runs the AI model Cmdr talks to (OpenAI, Anthropic, a local server)."
   },
   "ai-reply": {
@@ -96,6 +105,7 @@
     "en": "tool (AI)",
     "match": ["tool", "tools"],
     "note": "Developer tooling (Android platform tools) is not this concept.",
+    "notMatch": ["platform tools", "android tools", "backup tools"],
     "sense": "A function the AI can call (list a folder, search), and its status lines."
   },
   "alias": {
@@ -213,7 +223,7 @@
     "distinct": ["archive-chat", "app-bundle"],
     "en": "archive",
     "match": ["archive", "archives", "zip archive", "zip archives"],
-    "notMatch": ["=archive"],
+    "notMatch": ["=archive", "photo archive"],
     "sense": "A zip, tar, or 7z file that Cmdr can browse like a folder, create, or edit."
   },
   "archive-chat": {
@@ -226,14 +236,25 @@
     "en": "Ask",
     "match": ["ask each time", "ask"],
     "note": "Also the verb in running prose (Cmdr asks you something); the option label is the short imperative.",
-    "sense": "A setting option meaning \"ask me every time\".",
-    "notMatch": ["ask cmdr"]
+    "notMatch": [
+      "ask cmdr",
+      "ask about",
+      "you ask",
+      "ask gemini",
+      "ask whoever",
+      "ask the owner",
+      "ask your",
+      "ask anything",
+      "ask macos for"
+    ],
+    "sense": "A setting option meaning \"ask me every time\"."
   },
   "ask-cmdr": {
     "distinct": ["ai-feature"],
     "en": "Ask Cmdr",
     "match": ["ask cmdr"],
     "note": "Only the chat panel itself carries this name; a sentence that merely describes what the AI does says Cmdr or the AI.",
+    "notMatch": ["ask cmdr to"],
     "sense": "The product name of the AI chat panel; stays verbatim in every language."
   },
   "ask-question": {
@@ -274,14 +295,15 @@
     "distinct": ["previous-next", "go-back"],
     "en": "Back",
     "match": ["=back", "back to"],
-    "notMatch": ["tied back"],
     "note": "A standalone back button in a list you drill into differs from the paired previous/next of a wizard or the Go menu in many locales.",
+    "notMatch": ["tied back", "comes back", "come back", "chat back", "take you back", "switch back"],
     "sense": "Returning to the previous step, screen, or location."
   },
   "background": {
     "en": "in the background",
     "match": ["background", "in the background"],
     "note": "The English button \"Background\" is a verb; most languages have no verb for it, so use the in-the-background phrase, never the bare noun (which reads as a picture or color).",
+    "notMatch": ["pane background", "background tint"],
     "sense": "Letting a running operation or task continue out of sight."
   },
   "badge": {
@@ -320,6 +342,7 @@
     "en": "browse",
     "match": ["browse", "browsing", "browses"],
     "note": "\"What you're browsing\" (whatever the pane shows) is the plain looking-at sense and may take a view verb.",
+    "notMatch": ["browse and vote", "browse the library"],
     "sense": "Moving through folders to look at what is there, including stepping into an archive, bundle, phone, or git ref and listing it like a folder."
   },
   "browse-file-picker": {
@@ -442,8 +465,16 @@
     "distinct": ["scan"],
     "en": "check",
     "match": ["check", "checks", "checking", "checked", "verify", "verifying", "re-check", "check again"],
-    "notMatch": ["check out", "check with", "checked out"],
     "note": "\"Check for updates\" is the update concept's phrase, not this one.",
+    "notMatch": [
+      "check out",
+      "check with",
+      "checked out",
+      "check the details",
+      "worth checking",
+      "check your provider",
+      "check your inbox"
+    ],
     "sense": "Verifying something (conflicts before a copy, whether a file changed, the drive index for changes, a key's fingerprint)."
   },
   "checklist": {
@@ -510,7 +541,7 @@
     "distinct": ["dismiss", "cancel", "quit"],
     "en": "Close",
     "match": ["close", "closes", "closed", "closing"],
-    "notMatch": ["close its connection", "closed the connection"],
+    "notMatch": ["close its connection", "closed the connection", "stay closed"],
     "sense": "Closing a window, dialog, tab, or file."
   },
   "cloud-ai": {
@@ -616,8 +647,8 @@
     "distinct": ["reconnect", "disconnect", "mount", "unplug"],
     "en": "connect",
     "match": ["connect", "connects", "connecting", "connected", "connection", "connections", "connect as"],
-    "notMatch": ["connected to your usage stats"],
     "note": "A drive physically attached by cable is a different state from a logical connection in some locales.",
+    "notMatch": ["connected to your usage stats", "egnyte connect", "no connection to speed up"],
     "sense": "Establishing or holding a network or device connection (a server, a share, a phone)."
   },
   "context-menu": {
@@ -651,8 +682,8 @@
     "distinct": ["duplicate", "move", "transfer"],
     "en": "copy",
     "match": ["copy", "copies", "copying", "copied"],
-    "notMatch": ["released copy"],
     "note": "\"A copy\" as a noun (the duplicate object) may take a different word than the verb.",
+    "notMatch": ["released copy", "another copy of cmdr", "fresh copy"],
     "sense": "Duplicating files to another location (F5), or copying text or a path to the clipboard."
   },
   "cost": {
@@ -666,6 +697,7 @@
     "distinct": ["error-report", "report"],
     "en": "crash report",
     "match": ["crash report", "crash reports", "crash reporting", "crashed", "crash"],
+    "notMatch": ["may have crashed", "has likely crashed", "a crash can't"],
     "sense": "The diagnostic report Cmdr sends after it stopped unexpectedly or hit a background problem."
   },
   "create": {
@@ -754,12 +786,14 @@
     "distinct": ["delete-permanently", "move-to-trash", "remove", "clean-up"],
     "en": "delete",
     "match": ["delete", "deletes", "deleting", "deleted", "deletion"],
+    "notMatch": ["or delete to clear", "=a–z or delete"],
     "sense": "Removing files, either to the trash or permanently; also removing a model or other stored data."
   },
   "delete-permanently": {
     "distinct": ["delete", "move-to-trash"],
     "en": "delete permanently",
     "match": ["permanently", "for good", "delete permanently"],
+    "notMatch": ["warning for good", "reminder for good"],
     "sense": "Deleting without the trash, so the files can't be restored."
   },
   "deny": {
@@ -809,7 +843,7 @@
     "distinct": ["drive", "phone"],
     "en": "device",
     "match": ["device", "devices"],
-    "notMatch": ["on-device"],
+    "notMatch": ["on-device", "cross-device"],
     "sense": "An MTP/PTP or USB device such as a phone, Kindle, or camera."
   },
   "diagnostics": {
@@ -871,6 +905,13 @@
     "match": ["disk usage"],
     "sense": "How much of a drive is used, shown as a bar or a figure."
   },
+  "disk-utility": {
+    "distinct": ["first-aid"],
+    "en": "Disk Utility",
+    "match": ["disk utility"],
+    "note": "Apple localizes some of these names per language; quote the name the user's Mac shows.",
+    "sense": "The macOS Disk Utility app, named in help text."
+  },
   "dismiss": {
     "distinct": ["close", "clear", "cancel"],
     "en": "Dismiss",
@@ -887,6 +928,7 @@
   "documents": {
     "en": "documents",
     "match": ["documents", "document"],
+    "notMatch": ["~/documents"],
     "sense": "Office and text documents as a file kind."
   },
   "done": {
@@ -905,6 +947,7 @@
     "distinct": ["fetch"],
     "en": "download",
     "match": ["download", "downloads", "downloading", "downloaded"],
+    "notMatch": ["~/downloads"],
     "sense": "Fetching an update, a model, or a file from the internet; also the Downloads folder jump."
   },
   "drag": {
@@ -918,6 +961,22 @@
     "distinct": ["volume", "device", "network-drive", "startup-disk"],
     "en": "drive",
     "match": ["drive", "drives", "disk", "disks"],
+    "notMatch": [
+      "google drive",
+      "icloud drive",
+      "box drive",
+      "pcloud drive",
+      "proton drive",
+      "synology drive",
+      "disk space",
+      "full disk access",
+      "disk image*",
+      "disk usage",
+      "startup disk",
+      "disk utility",
+      "on disk",
+      "on-disk"
+    ],
     "sense": "A storage device or its volume (internal disk, USB drive, SD card)."
   },
   "duplicate": {
@@ -956,8 +1015,8 @@
     "distinct": ["disable"],
     "en": "enable",
     "match": ["enable", "enables", "enabled", "turn on", "turned on", "turns on", "turn it on", "turn them on"],
-    "notMatch": ["stars to enable"],
     "note": "A Settings label, a hint that tells the user to switch something on, and a reference to a feature that's off may take different shapes.",
+    "notMatch": ["stars to enable", "turn on the device", "it's turned on", "turned on and", "turn on a mac"],
     "sense": "Switching a setting or feature on."
   },
   "encoding": {
@@ -1032,6 +1091,7 @@
     "en": "extension",
     "match": ["extension", "extensions", "file extension", "file extensions"],
     "note": "Not a browser or system extension (\"Login Items & Extensions\" is a pane name).",
+    "notMatch": ["login items & extensions", "system extension", "edit extensions"],
     "sense": "The part of a filename after the last dot."
   },
   "extract": {
@@ -1044,6 +1104,7 @@
     "distinct": ["not-finished"],
     "en": "failed",
     "match": ["failed", "failure", "fails"],
+    "notMatch": ["failed our signature", "usually fails"],
     "sense": "Something didn't work. Cmdr's voice never labels it with a bare failure or error word."
   },
   "favorites": {
@@ -1060,15 +1121,15 @@
     "distinct": ["download"],
     "en": "fetch",
     "match": ["fetch", "fetches", "fetching", "pull", "pulling"],
-    "notMatch": ["git fetch"],
+    "notMatch": ["git fetch", "fetch disk space", "ollama pull", "pull a model"],
     "sense": "Getting a file from a phone, server, or archive into a temporary copy before viewing it."
   },
   "file": {
     "distinct": ["folder", "item"],
     "en": "file",
     "match": ["file", "files"],
-    "notMatch": ["file change log", "file ops", "file viewer"],
     "note": "The macOS menu bar's File menu is Apple's own localized title and may differ from the ordinary word.",
+    "notMatch": ["file change log", "file ops", "file viewer", "file history"],
     "sense": "A file on disk."
   },
   "file-handle": {
@@ -1125,10 +1186,18 @@
     "match": ["fingerprint", "fingerprints"],
     "sense": "The hash that identifies a server's SSH key (SHA256:…)."
   },
+  "first-aid": {
+    "distinct": ["disk-utility"],
+    "en": "First Aid",
+    "match": ["first aid"],
+    "note": "Apple localizes some of these names per language; quote the name the user's Mac shows.",
+    "sense": "Disk Utility's First Aid command, named in help text."
+  },
   "folder": {
     "distinct": ["file", "network-share"],
     "en": "folder",
     "match": ["folder", "folders", "directory", "directories"],
+    "notMatch": ["working directory"],
     "sense": "A folder on disk."
   },
   "font": {
@@ -1257,6 +1326,7 @@
     "distinct": ["back", "previous-next"],
     "en": "Go back",
     "match": ["go back", "go forward", "forward"],
+    "notMatch": ["go back far"],
     "sense": "Navigating backward or forward in a pane's history."
   },
   "go-to-path": {
@@ -1274,6 +1344,7 @@
   "got-it": {
     "en": "Got it",
     "match": ["got it"],
+    "notMatch": ["got it, no more"],
     "sense": "The acknowledgement button on a notice."
   },
   "grant": {
@@ -1312,24 +1383,44 @@
     "distinct": ["hide"],
     "en": "hidden",
     "match": ["hidden"],
+    "note": "A UI element or setting that is hidden from view (Hidden from the UI, the function key bar is now hidden) is the hide concept.",
+    "notMatch": [
+      "is now hidden",
+      "stay hidden",
+      "hidden from the ui",
+      "simply hidden",
+      "these folders are hidden",
+      "hidden path segments"
+    ],
     "sense": "A file or folder macOS doesn't show by default (dotfiles, the hidden flag)."
   },
   "hide": {
     "distinct": ["hidden", "show"],
     "en": "Hide",
-    "match": ["hide", "hides", "hide others"],
-    "sense": "The app menu's Hide Cmdr and Hide Others commands, and hiding a UI element."
+    "match": [
+      "hide",
+      "hides",
+      "hide others",
+      "is now hidden",
+      "stay hidden",
+      "hidden from the ui",
+      "simply hidden",
+      "these folders are hidden",
+      "hidden path segments"
+    ],
+    "sense": "The app menu's Hide Cmdr and Hide Others commands, and a UI element, setting, or value kept out of view (Hidden from the UI, sizes stay hidden)."
   },
   "hint": {
     "en": "hint",
     "match": ["hint", "hints"],
+    "notMatch": ["ignore this hint"],
     "sense": "A one-time tip Cmdr shows, and the internal flags that record it was shown."
   },
   "history": {
     "distinct": ["operation-log", "recent", "log"],
     "en": "history",
     "match": ["history", "histories"],
-    "notMatch": ["operation history"],
+    "notMatch": ["operation history", "back in history"],
     "sense": "A record of past things: file operations Cmdr ran, a chat's earlier messages, recent searches, closed tabs, git history."
   },
   "home-folder": {
@@ -1362,8 +1453,8 @@
     "en": "hour",
     "match": ["hour", "hours", "minute", "minutes", "second", "seconds"],
     "note": "Some languages keep the unit singular after a numeral for durations.",
-    "sense": "Spelled-out durations in a time-remaining line or a countdown.",
-    "notMatch": ["wait a minute"]
+    "notMatch": ["wait a minute", "in a minute"],
+    "sense": "Spelled-out durations in a time-remaining line or a countdown."
   },
   "icloud-drive": {
     "distinct": ["cloud-provider", "drive"],
@@ -1435,6 +1526,7 @@
       "drive indexing",
       "image indexing"
     ],
+    "notMatch": ["scroll pane to index", "git's index"],
     "sense": "Cmdr's database of a drive's files and folder sizes, and the image index; also the act of building them."
   },
   "info": {
@@ -1489,8 +1581,8 @@
     "distinct": ["file", "folder"],
     "en": "item",
     "match": ["item", "items"],
-    "notMatch": ["menu item"],
     "note": "A menu item or a list entry that isn't a file keeps the ordinary word.",
+    "notMatch": ["menu item", "login items"],
     "sense": "A file or folder when the string covers both, or an entry in a scan."
   },
   "just-now": {
@@ -1532,6 +1624,7 @@
     "distinct": ["type"],
     "en": "kind",
     "match": ["kind", "same kind"],
+    "notMatch": ["kind of"],
     "sense": "A file's type as Finder names it (the Kind column and \"select all of the same kind\")."
   },
   "language": {
@@ -1548,7 +1641,7 @@
   "later": {
     "en": "Later",
     "match": ["later"],
-    "notMatch": ["any time later"],
+    "notMatch": ["any time later", "or later", "a later"],
     "sense": "A button that defers a prompt."
   },
   "layout": {
@@ -1609,6 +1702,7 @@
     "distinct": ["character", "row"],
     "en": "line",
     "match": ["line", "lines"],
+    "notMatch": ["one-time line"],
     "sense": "A line of text in the viewer, or a line in a config file."
   },
   "linux-distribution": {
@@ -1646,32 +1740,29 @@
   "location": {
     "en": "location",
     "match": ["location", "locations", "places"],
+    "notMatch": ["some places"],
     "sense": "Where a file or command lives on disk, the places listed under a server, or where a photo was taken."
   },
   "locked": {
     "distinct": ["unlock", "read-only"],
     "en": "locked",
     "match": ["locked", "unlock the file"],
-    "notMatch": ["index is locked"],
     "note": "Apple localizes the checkbox label; quote it the way the user's Finder shows it.",
+    "notMatch": ["index is locked", "stay locked until"],
     "sense": "The macOS Locked flag on a file (the Get Info checkbox) and removing it."
   },
   "log": {
     "distinct": ["operation-log"],
     "en": "log",
     "match": ["log", "logs", "log file", "logging"],
+    "notMatch": ["log in", "logging out", "llm-logs", "operation log"],
     "sense": "Cmdr's on-disk diagnostic log file, and the Logging settings."
   },
   "look-inside": {
     "en": "look inside",
     "match": ["look inside", "looks inside", "inspect"],
+    "notMatch": ["to inspect the", "inspect the repo", "inspect the damage"],
     "sense": "The AI reading part of a file's contents (text, metadata, thumbnails) to answer a question."
-  },
-  "macos-app-names": {
-    "en": "Disk Utility / First Aid / Activity Monitor / Spotlight",
-    "match": ["disk utility", "first aid", "activity monitor", "spotlight", "mission control", "spaces"],
-    "note": "Check per locale whether Apple localizes each name; many locales translate some of them.",
-    "sense": "macOS app and feature names that Cmdr names in help text."
   },
   "mailing-list": {
     "en": "mailing list",
@@ -1740,9 +1831,16 @@
     "match": ["minimize"],
     "sense": "The Window menu's Minimize command."
   },
+  "mission-control": {
+    "en": "Mission Control",
+    "match": ["mission control"],
+    "note": "Apple localizes some of these names per language; quote the name the user's Mac shows.",
+    "sense": "The macOS Mission Control feature, in the system shortcut list."
+  },
   "model": {
     "en": "model",
     "match": ["model", "models"],
+    "notMatch": ["model context protocol"],
     "sense": "An AI model (local or cloud)."
   },
   "model-library": {
@@ -1756,6 +1854,7 @@
     "en": "modified",
     "match": ["modified", "date modified", "last modified"],
     "note": "The column header and date filters use Finder's date label; the keyboard-shortcuts filter means shortcuts the user changed, with no date involved.",
+    "notMatch": ["modified from default"],
     "sense": "A file's last-changed date (column header, date filter) and the participle for a changed file."
   },
   "modifier-key": {
@@ -1773,6 +1872,7 @@
     "distinct": ["copy", "transfer", "move-to-trash"],
     "en": "move",
     "match": ["move", "moves", "moving", "moved"],
+    "note": "\"Move to left column\" and \"moves down\" (cursor movement) are not this concept.",
     "notMatch": [
       "move down",
       "move to left column",
@@ -1782,9 +1882,10 @@
       "moves down",
       "moves the files back",
       "out of the way",
-      "stopped moving"
+      "stopped moving",
+      "moving it to the trash",
+      "moving those to the trash"
     ],
-    "note": "\"Move to left column\" and \"moves down\" (cursor movement) are not this concept.",
     "sense": "Relocating files to another folder (F6)."
   },
   "move-to-trash": {
@@ -1804,7 +1905,7 @@
     "distinct": ["rename"],
     "en": "Name",
     "match": ["name", "names", "filename", "filenames"],
-    "notMatch": ["what name this server"],
+    "notMatch": ["what name this server", "your name or email"],
     "sense": "A file's name; also the Name column header and a saved server's name field."
   },
   "nas": {
@@ -1887,7 +1988,7 @@
     "distinct": ["feedback"],
     "en": "note",
     "match": ["note", "notes"],
-    "notMatch": ["note that", "read the note"],
+    "notMatch": ["note that", "read the note", "notes.txt", "update notes"],
     "sense": "Free text the user writes (a note on an error report, the feedback message), or Ask Cmdr's saved notes."
   },
   "notification": {
@@ -1938,7 +2039,7 @@
     "distinct": ["browse", "show"],
     "en": "Open",
     "match": ["open", "opens", "opening", "opened"],
-    "notMatch": ["open this file in an editor"],
+    "notMatch": ["open this file in an editor", "open beta", "open a new search"],
     "sense": "Opening a file with its app, entering a folder or server, or showing a window."
   },
   "open-beta": {
@@ -1958,6 +2059,7 @@
     "en": "operation",
     "match": ["operation", "operations"],
     "note": "Wider than transfer (copy or move only). A running operation is also where the queue and the log get their names.",
+    "notMatch": ["operation history"],
     "sense": "The category of file work Cmdr performs: copy, move, delete, trash, rename, folder or file creation, archive edit."
   },
   "operation-log": {
@@ -1969,7 +2071,7 @@
   "operation-queue": {
     "distinct": ["operation-log", "transfer"],
     "en": "operation queue",
-    "match": ["operation queue", "queue", "queued", "queues"],
+    "match": ["operation queue", "queue", "queues"],
     "sense": "The window and list of file operations running or waiting their turn."
   },
   "options": {
@@ -1995,6 +2097,7 @@
     "distinct": ["index"],
     "en": "out of date",
     "match": ["out of date", "outdated", "stale"],
+    "notMatch": ["stale connection"],
     "sense": "An index that may no longer match what's on the drive."
   },
   "overwrite": {
@@ -2091,7 +2194,7 @@
   "phone": {
     "distinct": ["device"],
     "en": "phone",
-    "match": ["phone", "phones", "android"],
+    "match": ["phone", "phones"],
     "sense": "An Android phone reached over ADB or MTP."
   },
   "photo": {
@@ -2104,6 +2207,7 @@
     "distinct": ["favorites"],
     "en": "pin",
     "match": ["pin", "pins", "pinned", "pinning", "unpin", "unpinned"],
+    "notMatch": ["pinned at commit", "pin a specific port"],
     "sense": "Keeping a tab, a server row, or Cmdr's Dock icon in place, and releasing it."
   },
   "placeholder": {
@@ -2159,16 +2263,19 @@
     "en": "problem",
     "match": ["problem", "problems", "glitch", "trouble"],
     "note": "Cmdr's voice avoids a bare error word; this is the neutral noun for what went wrong.",
+    "notMatch": ["sorry for the trouble"],
     "sense": "A non-fatal issue named in explanatory prose, in Cmdr's calm voice."
   },
   "process": {
     "en": "process",
     "match": ["process", "processes", "daemon", "daemons"],
+    "notMatch": ["can process"],
     "sense": "A running program or system daemon."
   },
   "progress": {
     "en": "progress",
     "match": ["progress"],
+    "notMatch": ["in progress", "work-in-progress"],
     "sense": "How far a running operation has got."
   },
   "prompt": {
@@ -2186,6 +2293,7 @@
   "protocol": {
     "en": "protocol",
     "match": ["protocol", "protocols"],
+    "notMatch": ["model context protocol"],
     "sense": "A network protocol (SMB, SFTP, WebDAV, MTP)."
   },
   "put-back": {
@@ -2343,9 +2451,31 @@
     "sense": "A drive built to be ejected and unplugged (USB stick, SD card), as opposed to an internal disk."
   },
   "remove": {
-    "distinct": ["delete", "dismiss"],
+    "distinct": ["delete", "dismiss", "forget", "exclude"],
     "en": "remove",
     "match": ["remove", "removes", "removed", "removing", "remove from list"],
+    "note": "English also says \"remove\" when files are deleted (removing the originals, a rollback's removed items, a folder that can't be removed) or when limits are lifted; those keys are excluded here, and a locale may use its delete verb there.",
+    "notMatch": [
+      "removing files",
+      "removed item*",
+      "removing item*",
+      "removed the item*",
+      "removing the original*",
+      "removing the rest of the originals",
+      "can't remove because",
+      "try removing the folder",
+      "remove all such limits",
+      "being removed",
+      "renamed or removed",
+      "remove some symbolic links",
+      "removed from the zip",
+      "unfinished copy",
+      "couldn't be removed",
+      "remove the rest",
+      "removing the oldest",
+      "removes the oldest",
+      "attribute was removed"
+    ],
     "sense": "Taking something out of a list or setting (a favorite, a host, a folder from indexing) without deleting files."
   },
   "rename": {
@@ -2382,6 +2512,7 @@
     "distinct": ["crash-report", "error-report"],
     "en": "report",
     "match": ["report", "reports"],
+    "notMatch": ["read every report"],
     "sense": "A diagnostic report sent to the developer (crash or error)."
   },
   "report-bundle": {
@@ -2448,6 +2579,7 @@
     "distinct": ["quit", "start-up"],
     "en": "restart",
     "match": ["restart", "restarts", "restarted", "restarting"],
+    "notMatch": ["restarting the scan", "restarted its connection"],
     "sense": "Restarting the app or the Mac."
   },
   "restore": {
@@ -2474,6 +2606,7 @@
     "en": "review",
     "match": ["review", "reviews", "reviewing"],
     "note": "A plain look-over with no decision (\"see a history\") is the see concept.",
+    "notMatch": ["onboarding… to review them", "review your history"],
     "sense": "Going through proposed changes to approve or deny each (an approval gate)."
   },
   "revoke": {
@@ -2512,15 +2645,15 @@
     "distinct": ["line"],
     "en": "row",
     "match": ["row", "rows"],
-    "notMatch": ["in a row"],
+    "notMatch": ["in a row", "the row of", "a row of"],
     "sense": "A row in the file list, a queue, or a table."
   },
   "running": {
     "distinct": ["waiting", "done"],
     "en": "Running",
     "match": ["=running", "still running", "in progress", "is running", "are running"],
-    "notMatch": ["running low"],
     "note": "An operation in progress and a local AI server that is up can legitimately take different words.",
+    "notMatch": ["running low", "is running cmdr from"],
     "sense": "A task or operation currently in progress; also a server process that is up."
   },
   "runtime": {
@@ -2541,9 +2674,10 @@
     "sense": "The macOS Save dialog Cmdr opens to save content as a file."
   },
   "scan": {
-    "distinct": ["check", "index", "search"],
+    "distinct": ["check", "index", "search", "search-walk"],
     "en": "scan",
     "match": ["scan", "scans", "scanning", "scanned", "rescan", "rescanning"],
+    "notMatch": ["folders scanned", "another scan", "stop scanning"],
     "sense": "Walking a drive or folder to find and count its files (drive indexing, the pre-copy count)."
   },
   "scope": {
@@ -2582,6 +2716,13 @@
     "note": "\"Matches the pattern\" (a verb) is not this concept.",
     "sense": "A search result, or a hit inside the viewer's text search."
   },
+  "search-walk": {
+    "distinct": ["scan", "search"],
+    "en": "scan (search)",
+    "match": ["folders scanned", "another scan", "stop scanning"],
+    "note": "Several languages name it apart from the drive index's scan (a walk or pass vs an analysis).",
+    "sense": "A search reading folders live, one by one, where the drive index can't answer (folders scanned so far, another scan of these folders), and the viewer's text search running through a file."
+  },
   "see": {
     "distinct": ["show", "review", "viewer", "preview"],
     "en": "See",
@@ -2600,6 +2741,7 @@
     "en": "Send",
     "match": ["send", "sends", "sending", "sent"],
     "note": "A button, a dialog title, and a verb in prose can take different forms.",
+    "notMatch": ["whoever sent it", "start sending"],
     "sense": "Sending a report, feedback, or data to the developer or an AI provider."
   },
   "server": {
@@ -2612,7 +2754,7 @@
     "distinct": ["hostname"],
     "en": "server address",
     "match": ["server address", "address"],
-    "notMatch": ["web address"],
+    "notMatch": ["web address", "email address", "that address", "your address"],
     "sense": "The URL or hostname the user types to reach a server."
   },
   "service": {
@@ -2625,7 +2767,7 @@
     "distinct": ["system-settings"],
     "en": "Settings",
     "match": ["settings", "setting"],
-    "notMatch": ["higher settings"],
+    "notMatch": ["higher settings", "setting up", "setting it up"],
     "sense": "Cmdr's Settings window and its sections."
   },
   "share-menu": {
@@ -2651,7 +2793,7 @@
     "distinct": ["see", "open", "hide"],
     "en": "Show",
     "match": ["show", "shows", "showing", "shown", "show all", "show details"],
-    "notMatch": ["is shown in the list", "it shows what", "showing whether"],
+    "notMatch": ["is shown in the list", "it shows what", "showing whether", "show up"],
     "sense": "Making something visible (Show hidden files, Show favorites, Show all)."
   },
   "show-in-finder": {
@@ -2675,6 +2817,7 @@
     "distinct": ["sign-out", "connect"],
     "en": "sign in",
     "match": ["sign in", "signs in", "signing in", "signed in", "log in", "logs in", "logged in", "sign-in", "login"],
+    "notMatch": ["login items"],
     "sense": "Authenticating to a server or service."
   },
   "sign-out": {
@@ -2740,8 +2883,8 @@
     "distinct": ["destination"],
     "en": "source",
     "match": ["source", "sources"],
-    "notMatch": ["source-available"],
     "note": "Open-source and a reference source are not this concept.",
+    "notMatch": ["source-available", "input source"],
     "sense": "Where a copy or move reads from."
   },
   "source-available": {
@@ -2751,10 +2894,22 @@
     "note": "Never translate as \"open source\": that claim is false for Cmdr.",
     "sense": "Cmdr's license model: the code is public to read under the BSL, which isn't an open-source license."
   },
+  "spaces": {
+    "en": "Spaces",
+    "match": ["=spaces"],
+    "note": "Apple localizes some of these names per language; quote the name the user's Mac shows.",
+    "sense": "The macOS Spaces feature (desktops), in the system shortcut list."
+  },
   "speed": {
     "en": "speed",
     "match": ["speed", "speeds", "faster", "speed up", "speeds up"],
     "sense": "How fast a transfer or a connection goes, and making it faster."
+  },
+  "spotlight": {
+    "en": "Spotlight",
+    "match": ["spotlight"],
+    "note": "Apple localizes some of these names per language; quote the name the user's Mac shows.",
+    "sense": "macOS Spotlight search, named in help text and the system shortcut list."
   },
   "stack-trace": {
     "distinct": ["crash-report"],
@@ -2808,7 +2963,9 @@
       "stopped answering",
       "stopped arriving",
       "stopped moving",
-      "stops listing"
+      "stops listing",
+      "after you stop",
+      "stop showing"
     ],
     "sense": "Halting something that runs (a search, a local AI server, an operation during rollback)."
   },
@@ -3028,6 +3185,7 @@
     "distinct": ["size", "limit"],
     "en": "too large",
     "match": ["too large", "too big", "larger than", "too long"],
+    "notMatch": ["took too long", "too long to answer"],
     "sense": "A file too big for the destination's file system or for the viewer, or a name too long."
   },
   "toolbar": {
@@ -3076,6 +3234,7 @@
     "en": "Undo",
     "match": ["undo", "undone", "undoing", "can't be undone"],
     "note": "Three different actions share the English word; many locales need three words.",
+    "notMatch": ["undo the move"],
     "sense": "Reversing the last action (text undo, putting trashed files back, reverting an AI rename run)."
   },
   "unexpected": {
@@ -3092,6 +3251,7 @@
     "distinct": ["locked", "password-protected"],
     "en": "unlock",
     "match": ["unlock", "unlocks", "unlocking", "unlocked"],
+    "notMatch": ["unlock it in finder"],
     "sense": "Opening a password-protected archive with its password."
   },
   "unplug": {
@@ -3103,6 +3263,7 @@
   "unreachable": {
     "en": "unreachable",
     "match": ["unreachable", "can't reach", "couldn't reach"],
+    "notMatch": ["reach the actual"],
     "sense": "A host or share Cmdr can't get to over the network."
   },
   "untouched": {
@@ -3120,16 +3281,20 @@
     "distinct": ["refresh"],
     "en": "update",
     "match": ["update", "updates", "updating", "updated", "check for updates", "software update"],
+    "notMatch": ["occasional updates", "question or update", "updated credentials"],
     "sense": "A new Cmdr version, checking for and installing it; also keeping an index current."
   },
   "upgrade": {
     "en": "upgrade",
     "match": ["upgrade", "upgrades", "upgrade page"],
-    "sense": "Moving to a paid license (the upgrade page), or a new onboarding option after an app upgrade."
+    "note": "An app upgrade (the onboarding upgrade nudge) is an update, not this.",
+    "notMatch": ["upgrade nudge"],
+    "sense": "Moving to a paid license (the upgrade page)."
   },
   "usage": {
     "en": "usage",
     "match": ["usage", "usage stats", "usage statistics", "spending"],
+    "notMatch": ["memory usage", "disk usage"],
     "sense": "How much of something was used (AI tokens and spending, anonymous app usage stats)."
   },
   "usb-debugging": {
@@ -3164,7 +3329,7 @@
   "version": {
     "en": "version",
     "match": ["version", "versions"],
-    "notMatch": ["api-version"],
+    "notMatch": ["api-version", "show the new version"],
     "sense": "An app or OS version."
   },
   "video": {
@@ -3202,7 +3367,7 @@
   "waiting": {
     "distinct": ["running", "pause"],
     "en": "Waiting",
-    "match": ["waiting", "waits", "wait"],
+    "match": ["waiting", "waits", "wait", "=queued"],
     "notMatch": ["suggestions are waiting", "wait a minute", "wait a moment"],
     "sense": "Queued and not yet running, or waiting on the user or a device."
   },
@@ -3219,6 +3384,7 @@
   "watcher": {
     "en": "watcher",
     "match": ["watcher", "watching", "events"],
+    "notMatch": ["watching for phones"],
     "sense": "The file-system change watcher and the change events it reports."
   },
   "whats-new": {
@@ -3267,7 +3433,7 @@
     "distinct": ["save"],
     "en": "write",
     "match": ["write", "writes", "writing", "written", "half-written", "partly written"],
-    "notMatch": ["write a note"],
+    "notMatch": ["write a note", "writes itself notes"],
     "sense": "Data landing on a drive (what a copy has written so far)."
   },
   "zoom": {

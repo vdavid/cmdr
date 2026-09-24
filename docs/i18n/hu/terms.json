@@ -55,7 +55,6 @@
     "sources": "macOS (Hozzáadás a Kedvencekhez, Hozzáadás a Dockhoz, Hozzáadás az oldalsávhoz); ms (add → Hozzáadás)",
     "exceptions": {
       "commands.selectionSelectFiles.description": "add to the selection → kijelöl: Hungarian names the act of selecting, not adding.",
-      "onboarding.stepAi.table.renameWith": "A quoted example prompt, rendered as natural speech (adj ISO dátum-előtagot).",
       "settings.appearance.tintGroupDescription": "adds a tint → háttérszínezést ad: the natural verb for giving a visual effect."
     }
   },
@@ -95,12 +94,7 @@
     ],
     "confidence": "tentative",
     "sources": "descriptive; the construction reuses the catalog's progress-noun and done-participle conventions",
-    "note": "eszköz is also the device word; context separates them, but never coin platformeszközök for Android tools.",
-    "exceptions": {
-      "adb.connect.adbNotInstalled": "English-sense: Android platform tools is a product name (az Android platform tools csomag), not an AI tool.",
-      "settings.adb.install.intro": "English-sense: Android platform tools is a product name (az Android platform tools csomag), not an AI tool.",
-      "settings.fileOperations.adbBinaryPath.description": "English-sense: platform tools is a product name (a platform tools csomag), not an AI tool."
-    }
+    "note": "eszköz is also the device word; context separates them, but never coin platformeszközök for Android tools."
   },
   "allow": {
     "chosen": "Engedélyezés",
@@ -281,10 +275,7 @@
     "accept": ["vissza"],
     "forms": "Back to X → Vissza a(z) X-hoz/-hez (Vissza a csevegéshez, Vissza a géplistához, Vissza az előbeállításokhoz)",
     "confidence": "high",
-    "sources": "macOS (Vissza); catalog",
-    "exceptions": {
-      "queryUi.ai.refineTooltip": "English-sense: chat back to the agent is replying (válaszolhatsz), not the Back button."
-    }
+    "sources": "macOS (Vissza); catalog"
   },
   "background": {
     "chosen": "háttér",
@@ -655,10 +646,6 @@
     "confidence": "high",
     "sources": "macOS Finder (N84 Kapcsolódás szerverre…, MN1 Kapcsolódás ide: ^0…); AppKit SavePanel (Connected = Kapcsolódva); Home (Csatlakozás…)",
     "note": "The two stems are a deliberate split: the pane title keeps Apple's kapcsolód-, the sheet's button and its siblings keep csatlakoz- because Connect is shared with fileExplorer.network.connect.",
-    "exceptions": {
-      "errors.provider.egnyte.appName": "English-sense: Egnyte Connect is a product name, kept verbatim.",
-      "fileExplorer.pane.directConnectionNotNetworkShareToast": "no connection to speed up → nincs mit felgyorsítani: the eject family's frame (see decisions)."
-    },
     "decision": "A szerverlap, az SSH-kulcs jóváhagyása és a Go-to-path előnézete (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`, `goToPath.dialog.opensServer`/`.addsServer`, `commands.serversConnect.label`)"
   },
   "context-menu": {
@@ -705,10 +692,7 @@
     "accept": ["másol"],
     "forms": "label Másolás; result másolva ({countText} elem másolva, Útvonal másolva); possessive … másolása; a copy (noun) → másolat",
     "confidence": "high",
-    "sources": "macOS (Másolás); ms; GNOME; Xfce",
-    "exceptions": {
-      "main.instanceLock.alertBody": "English-sense: another copy of Cmdr is a running instance (példány), not a file copy."
-    }
+    "sources": "macOS (Másolás); ms; GNOME; Xfce"
   },
   "crash-report": {
     "chosen": "összeomlási jelentés",
@@ -788,10 +772,7 @@
     "accept": ["törl", "töröl"],
     "forms": "label Törlés; possessive … törlése; question Törlöd …?; progress Törlés…",
     "confidence": "high",
-    "sources": "macOS; ms; GNOME; Xfce",
-    "exceptions": {
-      "fileExplorer.navigation.favoriteShortcutPrompt": "English-sense: Delete is the key cap, kept verbatim."
-    }
+    "sources": "macOS; ms; GNOME; Xfce"
   },
   "delete-permanently": {
     "chosen": "végleges törlés",
@@ -857,10 +838,7 @@
     "forms": "USB device → USB-eszköz; the device disappeared → az eszköz eltűnt",
     "confidence": "high",
     "sources": "macOS Finder (PE5.1 mert az eszköz eltűnt); Double Commander (külső eszközök (például okostelefonok))",
-    "note": "A phone specifically is telefon; eszköz covers cameras and Kindles too.",
-    "exceptions": {
-      "errors.listing.crossDeviceOperation.title": "Cross-device operation → Kötetek közötti művelet: the explanation below speaks of volumes, and so does the title."
-    }
+    "note": "A phone specifically is telefon; eszköz covers cameras and Kindles too."
   },
   "disable": {
     "chosen": "kikapcsolás",
@@ -926,10 +904,7 @@
     "chosen": "dokumentum",
     "forms": "the file-kind row → Dokumentumok; the folder Documents → Dokumentumok",
     "confidence": "high",
-    "sources": "macOS Finder (TL6/GROUP_DOCUMENTS Dokumentumok, RTF-dokumentum)",
-    "exceptions": {
-      "goToPath.dialog.inputPlaceholder": "English-sense: ~/Documents is a literal example path, kept verbatim."
-    }
+    "sources": "macOS Finder (TL6/GROUP_DOCUMENTS Dokumentumok, RTF-dokumentum)"
   },
   "done": {
     "chosen": "Kész",
@@ -950,10 +925,7 @@
     "accept": ["letölt", "le kell tölt", "töltsd le", "le van töltve", "le kellene tölt"],
     "forms": "the folder → Letöltések; Remove download → Letöltés eltávolítása",
     "confidence": "high",
-    "sources": "macOS; ms",
-    "exceptions": {
-      "commands.downloadsGoToLatest.description": "~/Downloads is a literal path the user types, kept verbatim."
-    }
+    "sources": "macOS; ms"
   },
   "drive": {
     "chosen": "meghajtó",
@@ -962,31 +934,7 @@
     "confidence": "high",
     "sources": "macOS; ms",
     "exceptions": {
-      "commands.cloudAskGemini.description": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "commands.cloudCopyGoogleDriveLink.label": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "commands.cloudOpenInGoogleDrive.description": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "commands.cloudOpenInGoogleDrive.label": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "commands.handler.googleDriveCopyFailed": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "commands.handler.googleDriveLinkCopied": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "commands.handler.googleDriveLinkMissing": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "commands.handler.googleDriveOpenFailed": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "errors.listing.emptyRootICloud.explanation": "English-sense: iCloud Drive is a brand name, kept verbatim.",
-      "errors.listing.emptyRootICloud.title": "English-sense: iCloud Drive is a brand name, kept verbatim.",
-      "errors.provider.box.appName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.googleDrive.appName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.googleDrive.displayName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.iCloud.displayName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.iCloud.needsAction": "English-sense: iCloud Drive is a brand name, kept verbatim.",
-      "errors.provider.pCloud.appName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.pCloudFuse.appName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.protonDrive.appName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.protonDrive.displayName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.synologyDrive.appName": "English-sense: a provider's brand name, kept verbatim.",
-      "errors.provider.synologyDrive.displayName": "English-sense: a provider's brand name, kept verbatim.",
-      "menu.context.copyGoogleDriveLink": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "menu.context.openInGoogleDrive": "English-sense: Google Drive is a brand name, kept verbatim.",
-      "settings.indexing.overriddenBadge": "A 25-character badge: the anaphoric short form indexelés names drive indexing (Az indexeléssel együtt ki).",
-      "settings.mediaIndex.reclaim.deletedSpaceLater": "English-sense: disk space is free space (tárhely), not a drive."
+      "settings.indexing.overriddenBadge": "A 25-character badge: the anaphoric short form indexelés names drive indexing (Az indexeléssel együtt ki)."
     }
   },
   "duplicate": {
@@ -1118,10 +1066,6 @@
     "sources": "ms; catalog",
     "exceptions": {
       "commands.selectionSelectSameKind.sameExtension": "The mask *.{extension} stands in front of fájl as an attribute and names the extension itself (see decisions).",
-      "errors.provider.macFuse.needsAction": "English-sense: a macOS system extension (bővítmény), not a file extension.",
-      "errors.provider.pCloudFuse.needsAction": "English-sense: a macOS system extension (bővítmény), not a file extension.",
-      "errors.provider.pCloudFuse.serious": "English-sense: a macOS system extension (bővítmény), not a file extension.",
-      "menu.context.editExtensions": "English-sense: macOS app extensions (bővítmények, from Login Items & Extensions), not file extensions.",
       "menu.select.sameExtension": "The mask *.{extension} stands in front of fájl as an attribute and names the extension itself (see decisions)."
     }
   },
@@ -1183,9 +1127,6 @@
     ],
     "confidence": "high",
     "sources": "catalog (viewer.loading = Betöltés…)",
-    "exceptions": {
-      "onboarding.cloudSetup.step.ollamaModel": "English-sense: ollama pull downloads a model (Tölts le), not Cmdr fetching a file for the viewer."
-    },
     "decision": "A megjelenítő betölti a telefonon, szerveren vagy archívumban lévő fájlt (`viewer.pull.*`, `viewer.error.stoppedResponding`)"
   },
   "file": {
@@ -1441,7 +1382,7 @@
   },
   "hide": {
     "chosen": "elrejtés",
-    "accept": ["elrejt", "rejtve"],
+    "accept": ["elrejt", "rejtve", "rejtett"],
     "forms": "Hide Cmdr → Cmdr elrejtése (bare name, no article); Hide Others → Többi elrejtése",
     "confidence": "high",
     "sources": "macOS 26.6.2 Finder MenuBar.strings (300728.title Finder elrejtése, 300729.title Többi elrejtése)"
@@ -1460,10 +1401,7 @@
     "accept": ["előzmény"],
     "forms": "your history → az előzményeid; file history (Ask Cmdr) → fájlműveleti előzmények",
     "confidence": "high",
-    "sources": "catalog (settings.operationLog: Előzmények megőrzése)",
-    "exceptions": {
-      "settings.fileExplorer.tabs.closedTabHistorySize.description": "English-sense: further back in history is time (messzebbre a múltban), not a list of past items."
-    }
+    "sources": "catalog (settings.operationLog: Előzmények megőrzése)"
   },
   "home-folder": {
     "chosen": "saját mappa",
@@ -1579,9 +1517,6 @@
     ],
     "confidence": "high",
     "sources": "ms (index → index); Total Commander (2050 nincs indexelve); catalog",
-    "exceptions": {
-      "commands.cursorScrollTo.label": "English-sense: scroll to index is a row position (egy sorhoz), not the drive index."
-    },
     "decision": "A meghajtó indexelésének kikapcsolása (`fileExplorer.navigation.driveIndex.*IndexingOff*`, `settings.indexing.masterOffNote`/`.overriddenBadge`)"
   },
   "input-source": {
@@ -1664,10 +1599,7 @@
     "accept": ["fajtájú"],
     "forms": "Select all of the same kind → (see decisions)",
     "confidence": "high",
-    "sources": "macOS Finder ArrangeByMenu (119.title / 338.title Fajta)",
-    "exceptions": {
-      "errors.listing.interrupted.suggestion": "English-sense: this kind of interruption is ordinary English (az ilyen), not Finder's Kind."
-    }
+    "sources": "macOS Finder ArrangeByMenu (119.title / 338.title Fajta)"
   },
   "last-used": {
     "chosen": "Utolsó használat",
@@ -1684,11 +1616,7 @@
   "later": {
     "chosen": "Később",
     "confidence": "high",
-    "sources": "descriptive; common Hungarian UI usage",
-    "exceptions": {
-      "errors.mount.unsupportedProtocol": "English-sense: SMB 2 or later is a version range (vagy újabb), not the Later button.",
-      "settings.ai.tooltipLocalDisabled": "English-sense: M1 or later is a chip range (vagy újabb), not the Later button."
-    }
+    "sources": "descriptive; common Hungarian UI usage"
   },
   "leave-alone": {
     "chosen": "változatlan maradt",
@@ -1795,14 +1723,7 @@
     "accept": ["naplóz"],
     "forms": "log file → naplófájl; log line → naplósor; Logging → Naplózás; The log has the details → A részleteket megtalálod a naplóban",
     "confidence": "high",
-    "sources": "ms (log file → naplófájl); Total Commander; Double Commander",
-    "exceptions": {
-      "errors.listing.authRequiredEneedauth.explanation": "English-sense: log in is sign-in (bejelentkezés), not the log file.",
-      "fileExplorer.network.browser.tooltip.credsRejected": "English-sense: log in is sign-in (jelentkezz be), not the log file.",
-      "main.dockPinNudge.addedButDockDidNotRestart": "English-sense: the next time you log in is sign-in (bejelentkezéskor), not the log file.",
-      "settings.advanced.logLlmCalls.description": "English-sense: llm-logs is a literal folder name, kept verbatim.",
-      "shortcuts.system.loggingOut": "English-sense: logging out of the Mac (kijelentkezés), not the log file."
-    }
+    "sources": "ms (log file → naplófájl); Total Commander; Double Commander"
   },
   "look-inside": {
     "chosen": "belenéz",
@@ -1810,18 +1731,7 @@
     "forms": "prose → belenéz (egy fájlba csak akkor néz bele, ha arról kérdezed); the tool pair → Fájlok átnézése / Fájlok átnézve",
     "confidence": "tentative",
     "sources": "catalog (search.coverage.denied)",
-    "exceptions": {
-      "errors.git.corruptRepo.suggestion": "English-sense: git fsck inspects the repo (megvizsgál), not the AI reading a file.",
-      "errors.git.missingObject.suggestion": "English-sense: git fsck inspects the damage (megvizsgál), not the AI reading a file."
-    },
     "decision": "Belenézés a fájlokba: az `inspect_file` eszköz és a hozzájárulási képernyő új ígérete (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)"
-  },
-  "macos-app-names": {
-    "chosen": "Lemezkezelő",
-    "accept": ["Elsősegély", "Tevékenységfigyelő", "Spotlight", "Mission Control", "Spaces"],
-    "forms": "Disk Utility → Lemezkezelő; First Aid → Elsősegély; Activity Monitor → Tevékenységfigyelő; kept English: Spotlight, Mission Control; Spaces kept (tentative)",
-    "confidence": "high",
-    "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
   },
   "mailing-list": {
     "chosen": "levelezőlista",
@@ -1866,11 +1776,7 @@
     "chosen": "modell",
     "forms": "model library → modellkönyvtár",
     "confidence": "high",
-    "sources": "ms",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English-sense: Model Context Protocol is a product name, kept verbatim.",
-      "settings.summary.mcpServer": "English-sense: Model Context Protocol is a product name, kept verbatim."
-    }
+    "sources": "ms"
   },
   "model-library": {
     "chosen": "modellkönyvtár",
@@ -1898,11 +1804,7 @@
       }
     ],
     "confidence": "high",
-    "sources": "macOS (A(z) „%@” fájl nem módosult a közelmúltban)",
-    "exceptions": {
-      "downloads.shortcutRow.modifiedTooltip": "English-sense: a shortcut changed from its default → Eltér az alapértelmezettől, no date involved.",
-      "shortcuts.section.modifiedTooltip": "English-sense: a shortcut changed from its default → Eltér az alapértelmezettől, no date involved."
-    }
+    "sources": "macOS (A(z) „%@” fájl nem módosult a közelmúltban)"
   },
   "modifier-key": {
     "chosen": "módosítóbillentyű",
@@ -1927,11 +1829,7 @@
     "accept": ["áthelyez", "helyezd át", "mozgat", "helyez", "mozg"],
     "forms": "label Áthelyezés; result áthelyezve; Move it instead → Helyezd át inkább; files being moved in prose → mozgat",
     "confidence": "high",
-    "sources": "macOS; ms",
-    "exceptions": {
-      "fileOperations.delete.cloudOnlineOnlyAllWarning": "English-sense: moving it to the Trash is trashing (a Kukába kerülne), not the Move command.",
-      "fileOperations.delete.cloudOnlineOnlyMixedWarning": "English-sense: moving those to the Trash is trashing (a Kukába kerülnének), not the Move command."
-    }
+    "sources": "macOS; ms"
   },
   "move-to-trash": {
     "chosen": "Áthelyezés a Kukába",
@@ -2087,7 +1985,6 @@
     "sources": "macOS (A művelet nem hajtható végre., Ez a művelet nem vonható vissza.); ms; Double Commander (Aktuális művelet:)",
     "exceptions": {
       "errors.write.cancelled.message.trash": "The move to trash operation was canceled → A Kukába helyezést megszakítottad: the action noun names the operation.",
-      "operationLog.dialog.loadError": "operation history → előzmények, the settled history word.",
       "queue.row.foregroundAria": "Show this operation in the main window → Megjelenítés a főablakban: the aria of a row button already scoped to that operation."
     },
     "decision": "A műveleti sor: a Transfer queue átnevezése (`queue.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`)"
@@ -2358,8 +2255,7 @@
     "sources": "macOS 26.5.2 CrashReporterSupport (A számítógépe újraindult egy probléma miatt.); ms (problem → probléma)",
     "exceptions": {
       "errors.listing.symlinkLoopErrno.suggestion": "which link is the problem → melyik link okozza a hurkot: names what the link does wrong.",
-      "fileExplorer.navigation.driveIndex.tooltipFailed": "a problem saving the index → nem sikerült elmenteni: the house couldn't form.",
-      "licensing.dialog.retryExhausted": "English-sense: sorry for the trouble is an apology idiom (Sajnáljuk a kellemetlenséget)."
+      "fileExplorer.navigation.driveIndex.tooltipFailed": "a problem saving the index → nem sikerült elmenteni: the house couldn't form."
     },
     "decision": "Ha a Cmdr nem állt le: az összeomlásjelentő két új nyitómondata (`crashReporter.dialog.body.keptRunning`/`.unknown`)"
   },
@@ -2375,10 +2271,7 @@
     "accept": ["folyamatban"],
     "forms": "No progress for {duration} → {duration} óta nincs előrehaladás; aria Méret-előrehaladás, Fájl-előrehaladás",
     "confidence": "high",
-    "sources": "macOS Finder (Előrehaladás paraméterei); Xfce Thunar (Fájlművelet előrehaladása)",
-    "exceptions": {
-      "onboarding.stepBeta.openBeta": "English-sense: work-in-progress areas (munka alatt álló), not an operation's progress."
-    }
+    "sources": "macOS Finder (Előrehaladás paraméterei); Xfce Thunar (Fájlművelet előrehaladása)"
   },
   "properties": {
     "chosen": "tulajdonságai",
@@ -2389,11 +2282,7 @@
   "protocol": {
     "chosen": "protokoll",
     "confidence": "high",
-    "sources": "macOS AirPort Utility (moMP)",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English-sense: Model Context Protocol is a product name, kept verbatim.",
-      "settings.summary.mcpServer": "English-sense: Model Context Protocol is a product name, kept verbatim."
-    }
+    "sources": "macOS AirPort Utility (moMP)"
   },
   "put-back": {
     "chosen": "visszahelyezés",
@@ -2576,13 +2465,7 @@
     "confidence": "high",
     "sources": "macOS Finder; ms (remove → eltávolítás)",
     "exceptions": {
-      "askCmdr.wakeDigest.removed": "English-sense: removed items are files the AI deleted, so törölt is right.",
-      "commands.selectionDeselectFiles.description": "remove from the selection → a kijelölés törlése, Finder's deselect word.",
-      "errors.listing.crossDeviceOperation.explanation": "English-sense: removing the original after a cross-volume copy is a delete (törölni az eredetit).",
-      "errors.listing.tccRestricted.suggestion": "English-sense: remove limits → feloldja a korlátokat.",
-      "fileExplorer.restrictedFolder.tooltip": "English-sense: remove limits → feloldja a korlátokat.",
-      "fileOperations.delete.archiveWarningRest": "English-sense: removed from the zip for good is a permanent delete (véglegesen törlődnek).",
-      "settings.askCmdr.memory.notAllForgotten": "English-sense: removing the remaining notes deletes them (töröld a maradékot)."
+      "commands.selectionDeselectFiles.description": "remove from the selection → a kijelölés törlése, Finder's deselect word."
     }
   },
   "rename": {
@@ -2624,8 +2507,7 @@
     "confidence": "high",
     "sources": "macOS CrashReporterSupport (Jelentés…); ms (report → jelentés)",
     "exceptions": {
-      "errorReporter.autoSentToast.viewOrAddNotes": "The toast's title already names the report; the button drops it for width (see decisions).",
-      "licensing.about.betaNote": "English-sense: a report is any message a user sends on GitHub (jelzés), not a diagnostic report."
+      "errorReporter.autoSentToast.viewOrAddNotes": "The toast's title already names the report; the button drops it for width (see decisions)."
     }
   },
   "repository": {
@@ -2849,8 +2731,6 @@
     "confidence": "high",
     "sources": "ms; catalog",
     "exceptions": {
-      "errors.listing.archiveUnreadable.suggestion": "English-sense: whoever sent it → akitől kaptad (received), not Cmdr sending a report.",
-      "fileOperations.transferProgress.openingSource": "English-sense: the source starting to send data → a forrás első adataira (waiting for its first data).",
       "fileOperations.transferProgress.queueAria": "Send to the operation queue → Áthelyezés a műveleti sorba: the aria contains the visible label Sorba (see decisions)."
     }
   },
@@ -2928,11 +2808,7 @@
     "accept": ["bejelentkez", "jelentkez"],
     "forms": "Sign in to {name} → Bejelentkezés ide: {name}; at your next login → a következő bejelentkezéskor",
     "confidence": "high",
-    "sources": "macOS (Bejelentkezés…); iCloud.app CloudKit (Bejelentkezés: %1$@)",
-    "exceptions": {
-      "errors.provider.macFuse.needsAction": "English-sense: Login Items & Extensions is a System Settings pane (Indítóelemek és bővítmények), not signing in.",
-      "errors.provider.pCloudFuse.serious": "English-sense: Login Items & Extensions is a System Settings pane (Indítóelemek és bővítmények), not signing in."
-    }
+    "sources": "macOS (Bejelentkezés…); iCloud.app CloudKit (Bejelentkezés: %1$@)"
   },
   "sign-out": {
     "chosen": "kijelentkezés",
@@ -3046,7 +2922,6 @@
     "confidence": "high",
     "sources": "macOS (Másolás leállítása, Leállítás…); ms (stop → leállítás)",
     "exceptions": {
-      "downloads.toast.stopShowing": "Stop showing these → Ne jelenjenek meg ezek: Hungarian negates the showing instead of naming a stop.",
       "settings.mediaIndex.chosenFolders.help": "stops new indexing → új indexelés nem indul: the negated start is the idiomatic form."
     }
   },
@@ -3215,14 +3090,7 @@
     "accept": ["túl hosszú", "nagyobb"],
     "forms": "too large for this drive → túl nagy ehhez a meghajtóhoz; larger than {maxSize} → {maxSize}-nál nagyobb (safe: every size unit reads back-vowel)",
     "confidence": "high",
-    "sources": "macOS Finder (A fájl túl nagy a célhoz); Total Commander; Double Commander",
-    "exceptions": {
-      "ai.translateError.timeout.title": "English-sense: took too long is time (túl sokáig), not size.",
-      "askCmdr.error.timeout": "English-sense: took too long is time (túl sokáig), not size.",
-      "fileExplorer.pane.directConnectionTooSlowToast": "English-sense: took too long is time (túl sokáig), not size.",
-      "viewer.copy.readTooLong": "English-sense: took too long is time (túl sokáig), not size.",
-      "viewer.saveAs.tooLong": "English-sense: took too long is time (túl sokáig), not size."
-    }
+    "sources": "macOS Finder (A fájl túl nagy a célhoz); Total Commander; Double Commander"
   },
   "transfer": {
     "chosen": "átvitel",
@@ -3319,11 +3187,7 @@
     "accept": ["frissít", "frissül"],
     "forms": "Software Update → Szoftverfrissítés; Updates until: {date} → Frissítések eddig: {date}",
     "confidence": "high",
-    "sources": "macOS (Szoftverfrissítés); ms",
-    "exceptions": {
-      "onboarding.stepBeta.checklist.email": "English-sense: occasional updates by email are news (hír), not a software update.",
-      "onboarding.stepBeta.emailNote": "English-sense: the occasional update by email is news (hír), not a software update."
-    }
+    "sources": "macOS (Szoftverfrissítés); ms"
   },
   "usage": {
     "chosen": "felhasználás",
@@ -3479,5 +3343,42 @@
     "forms": "text zoom and the View submenu → Nagyítás (Zoom to 100% → Nagyítás 100%-ra); zoom in / out → Felnagyítás / Lekicsinyítés; Window > Zoom → Méretezés",
     "confidence": "high",
     "sources": "ms (zoom → nagyítás); Safari MainMenu (438/439 Felnagyítás, Lekicsinyítés); macOS AppKit (Zoom All = Összes méretezése)"
+  },
+  "search-walk": {
+    "chosen": "átvizsgálás",
+    "accept": ["átvizsgál", "vizsgáld át", "átnéz", "vizsgál"],
+    "confidence": "high",
+    "sources": "ms (scan → vizsgál); catalog (the driveIndex family)",
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word."
+  },
+  "disk-utility": {
+    "chosen": "Lemezkezelő",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
+  },
+  "first-aid": {
+    "chosen": "Elsősegély",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
+  },
+  "activity-monitor": {
+    "chosen": "Tevékenységfigyelő",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
+  },
+  "spotlight": {
+    "chosen": "Spotlight",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
+  },
+  "mission-control": {
+    "chosen": "Mission Control",
+    "confidence": "high",
+    "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
+  },
+  "spaces": {
+    "chosen": "Spaces",
+    "confidence": "tentative",
+    "sources": "macOS 27.0 (26A428) Disk Utility.app InfoPlist.loctable (Lemezkezelő) and Localizable.loctable (Elsősegély), Activity Monitor.app InfoPlist.loctable (Tevékenységfigyelő), Mission Control.app (Mission Control), 2026-09-24"
   }
 }

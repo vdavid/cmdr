@@ -229,19 +229,6 @@
     "chosen": "询问",
     "confidence": "tentative",
     "exceptions": {
-      "ai.cloudConsent.askCmdr.contentsRule": "The verb \"ask about a file\" (问到), not the \"Ask each time\" setting option.",
-      "askCmdr.composer.placeholder": "The verb \"Ask about your files\" (问问), not the \"Ask each time\" setting option.",
-      "askCmdr.empty.hint": "The verb \"ask about it\" (问到), not the \"Ask each time\" setting option.",
-      "askCmdr.empty.title": "The verb \"Ask about your files\" (问问), not the \"Ask each time\" setting option.",
-      "errors.listing.archiveUnreadable.suggestion": "\"ask whoever sent it\" (向…要) is the verb, not the \"Ask each time\" setting option.",
-      "errors.listing.noPermissionErrno.suggestion": "\"ask the owner\" (请…) is the verb, not the \"Ask each time\" setting option.",
-      "errors.listing.permissionDenied.suggestion": "\"ask the owner\" (请…) is the verb, not the \"Ask each time\" setting option.",
-      "errors.listing.quotaExceeded.suggestion": "\"Ask your system administrator\" (请…) is the verb, not the \"Ask each time\" setting option.",
-      "queryUi.mode.ai.aria": "\"ask anything\" (随便问) is the verb, not the \"Ask each time\" setting option.",
-      "queryUi.mode.ai.label": "\"Ask anything\" (随便问) is the verb, not the \"Ask each time\" setting option.",
-      "search.coverage.uncovered.network": "\"unless you ask\" (你要求) is the verb, not the \"Ask each time\" setting option.",
-      "settings.askCmdr.intro": "The verb \"ask about it\" (问到), not the \"Ask each time\" setting option.",
-      "settings.network.enabled.description": "\"ask macOS for access\" (请求) is the verb, not the \"Ask each time\" setting option.",
       "settings.servers.trustedHostKeys.confirm": "\"ask whether to trust it\" (问你) is the verb, not the \"Ask each time\" setting option."
     },
     "forms": "setting option 询问 / 每次询问; don't-ask-again 不再询问",
@@ -284,13 +271,6 @@
     "chosen": "返回",
     "confidence": "confirmed",
     "decision": "故意保留的分界（英文一词多义，中文必须分开）",
-    "exceptions": {
-      "commands.favoritesAdd.description": "\"take you back to it\" is returning to a folder, not the Back control.",
-      "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "\"comes back to them\" means retrying later, not the Back control.",
-      "queryUi.ai.refineTooltip": "\"chat back to the agent\" is replying, not the Back control.",
-      "search.coverage.walk.abandonedCount": "\"comes back to it later\" means retrying, not the Back control.",
-      "servers.paneState.cancelCycleTooltip": "\"switch back to retry\" is switching panes, not the Back control."
-    },
     "forms": "navigation back 返回 (menu, network browser, error pane); the onboarding wizard's previous step 上一步, paired with 下一步",
     "sources": "macOS (Back → 返回)"
   },
@@ -304,14 +284,6 @@
     "chosen": "后台",
     "confidence": "high",
     "decision": "Empty-queue state of the progress dialog's F2 button (`fileOperations.transferProgress.background`/`backgroundAria`)",
-    "exceptions": {
-      "fileExplorer.doubleClickHint.body": "The visual pane background (背景), not running in the background.",
-      "settings.appearance.tintGroupDescription": "A visual background tint (背景), not running in the background.",
-      "settings.appearance.tintLocal.description": "A visual background tint (背景), not running in the background.",
-      "settings.appearance.tintMtp.description": "A visual background tint (背景), not running in the background.",
-      "settings.appearance.tintSmb.description": "A visual background tint (背景), not running in the background.",
-      "settings.behavior.doubleClickPaneNavigatesToParent.label": "The visual pane background (背景), not running in the background."
-    },
     "forms": "在后台运行 / 在后台继续运行; the F2 button's empty-queue label 后台运行; its aria 让它继续在后台运行 (the label must stay a verbatim substring)",
     "sources": "Total Commander; MS terminology"
   },
@@ -412,9 +384,6 @@
     "accept": ["核对", "确认", "查看", "看看", "看一下", "校验", "比对", "验证"],
     "chosen": "检查",
     "confidence": "high",
-    "exceptions": {
-      "errors.write.originalsKeptAside.suggestion.many": "\"Check the details below for where each file is\" becomes the statement 下面的详情里写了每个文件在哪儿."
-    },
     "forms": "checking for updates / conflicts → 检查 (正在检查); \"check that …\" (make sure) → 确认; \"check X\" (look at it) → 查看 / 看看; a host key's fingerprint → 核对; a download → 校验; Re-check → 再次检查 (Apple's Check Again)",
     "note": "检查 is reserved for check, so it can't carry review (复查).",
     "sources": "macOS Finder"
@@ -564,8 +533,7 @@
     "decision": "服务器面板与卷切换器里的服务器行（`servers.*`、`fileExplorer.navigation.connectionTooltip*`/`disconnect*`/`forget*`）",
     "exceptions": {
       "errors.eject.volumeNotFound": "\"isn't connected any more\" reads as the plain 已经断开了 (already disconnected).",
-      "errors.listing.deviceDisconnected.explanation": "\"drops its connection\" is rendered with the spoken 掉线 (went offline).",
-      "errors.provider.egnyte.appName": "Egnyte Connect is a product name, kept verbatim."
+      "errors.listing.deviceDisconnected.explanation": "\"drops its connection\" is rendered with the spoken 掉线 (went offline)."
     },
     "forms": "Connecting to X… → 正在连接到 {name}…; Connect to server… → 连接服务器…; Connect as guest → 以来宾身份连接; internet connection → 联网 / 互联网连接",
     "sources": "macOS Finder, NetAuthAgent"
@@ -800,9 +768,6 @@
     ],
     "chosen": "文稿",
     "confidence": "high",
-    "exceptions": {
-      "goToPath.dialog.inputPlaceholder": "`~/Documents` is a path literal, not the Documents file kind."
-    },
     "sources": "macOS Finder"
   },
   "done": {
@@ -833,9 +798,6 @@
     ],
     "chosen": "下载",
     "confidence": "high",
-    "exceptions": {
-      "commands.downloadsGoToLatest.description": "`~/Downloads` is a path literal kept verbatim."
-    },
     "forms": "the thing downloaded 下载内容; the Downloads folder “下载”文件夹",
     "sources": "macOS"
   },
@@ -843,31 +805,6 @@
     "accept": ["磁盘"],
     "chosen": "驱动器",
     "confidence": "confirmed",
-    "exceptions": {
-      "commands.cloudAskGemini.description": "Google Drive is a product name, kept verbatim.",
-      "commands.cloudCopyGoogleDriveLink.label": "Google Drive is a product name, kept verbatim.",
-      "commands.cloudOpenInGoogleDrive.description": "Google Drive is a product name, kept verbatim.",
-      "commands.cloudOpenInGoogleDrive.label": "Google Drive is a product name, kept verbatim.",
-      "commands.handler.googleDriveCopyFailed": "Google Drive is a product name, kept verbatim.",
-      "commands.handler.googleDriveLinkCopied": "Google Drive is a product name, kept verbatim.",
-      "commands.handler.googleDriveLinkMissing": "Google Drive is a product name, kept verbatim.",
-      "commands.handler.googleDriveOpenFailed": "Google Drive is a product name, kept verbatim.",
-      "errors.listing.emptyRootICloud.explanation": "iCloud Drive is Apple's product, which zh-CN macOS names iCloud 云盘.",
-      "errors.listing.emptyRootICloud.title": "iCloud Drive is Apple's product, which zh-CN macOS names iCloud 云盘.",
-      "errors.provider.box.appName": "Box Drive is a product name, kept verbatim.",
-      "errors.provider.googleDrive.appName": "Google Drive is a product name, kept verbatim.",
-      "errors.provider.googleDrive.displayName": "Google Drive is a product name, kept verbatim.",
-      "errors.provider.iCloud.displayName": "iCloud Drive is Apple's product, which zh-CN macOS names iCloud 云盘.",
-      "errors.provider.iCloud.needsAction": "iCloud Drive is Apple's product, which zh-CN macOS names iCloud 云盘.",
-      "errors.provider.pCloud.appName": "pCloud Drive is a product name, kept verbatim.",
-      "errors.provider.pCloudFuse.appName": "pCloud Drive is a product name, kept verbatim.",
-      "errors.provider.protonDrive.appName": "Proton Drive is a product name, kept verbatim.",
-      "errors.provider.protonDrive.displayName": "Proton Drive is a product name, kept verbatim.",
-      "errors.provider.synologyDrive.appName": "Synology Drive is a product name, kept verbatim.",
-      "errors.provider.synologyDrive.displayName": "Synology Drive is a product name, kept verbatim.",
-      "menu.context.copyGoogleDriveLink": "Google Drive is a product name, kept verbatim.",
-      "menu.context.openInGoogleDrive": "Google Drive is a product name, kept verbatim."
-    },
     "forms": "驱动器 (even where Finder's eject copy says 磁盘, because the English says drive); the terse drive-index family keeps 此驱动器; physical disk senses 磁盘",
     "note": "Product names (Google Drive, iCloud Drive) are not this concept; Apple's own iCloud Drive is iCloud 云盘.",
     "sources": "MS/macOS"
@@ -908,12 +845,6 @@
     "chosen": "开启",
     "confidence": "high",
     "decision": "Drive-indexing master-switch strings (`driveIndex.*IndexingOff*`, `settings.indexing.masterOffNote`/`overriddenBadge`)",
-    "exceptions": {
-      "errors.mount.hostUnreachable": "\"turned on\" means powered on (开机), not a switched-on setting.",
-      "errors.mount.timeout": "\"turned on\" means powered on (开机), not a switched-on setting.",
-      "errors.shareList.hostUnreachable": "\"turned on\" means powered on (开机), not a switched-on setting.",
-      "servers.hub.emptyMessage": "\"turn on a Mac or NAS\" means powering it on (开机), not a switched-on setting."
-    },
     "forms": "turning a settings toggle on → 开启 (在“设置 > …”中开启); a card title or label 启用 (启用索引, 启用网络); the per-drive index menu keeps its own 打开索引",
     "sources": "macOS/MS"
   },
@@ -995,12 +926,6 @@
   "extension": {
     "chosen": "扩展名",
     "confidence": "high",
-    "exceptions": {
-      "errors.provider.macFuse.needsAction": "macOS \"Login Items & Extensions\" (app extensions, 扩展), not a filename extension.",
-      "errors.provider.pCloudFuse.needsAction": "A macOS system extension (扩展), not a filename extension.",
-      "errors.provider.pCloudFuse.serious": "A macOS system extension (扩展), not a filename extension.",
-      "menu.context.editExtensions": "macOS share extensions (扩展), not filename extensions."
-    },
     "forms": "badge （扩展名）with full-width parens",
     "sources": "macOS Finder"
   },
@@ -1030,9 +955,7 @@
     "chosen": "无法",
     "confidence": "high",
     "exceptions": {
-      "fileExplorer.network.reconnect.finalAttempt": "\"if it fails\" reads as the calm 若仍不成功.",
-      "licensing.error.badSignature": "\"failed our signature verification\" reads 未通过 (didn't pass).",
-      "onboarding.stepOptional.mtp.desc": "\"it usually fails\" (macOS connecting to the phone) reads 通常连不上 (usually can't connect)."
+      "fileExplorer.network.reconnect.finalAttempt": "\"if it fails\" reads as the calm 若仍不成功."
     },
     "forms": "Couldn't X → 无法 X; a one-off miss → 没能 X; a second clause after a wrapper that already spent 无法 → 没法",
     "sources": "style.md"
@@ -1235,9 +1158,6 @@
     "chosen": "返回",
     "confidence": "confirmed",
     "decision": "收敛掉的（脚本看不见，但用户看得见）",
-    "exceptions": {
-      "indexing.rescan.journalGap": "\"doesn't go back far enough\" is about history depth, not navigation."
-    },
     "forms": "Back / Forward → 返回 / 前进",
     "sources": "macOS Finder (Back/Forward → 返回/前进)"
   },
@@ -1258,9 +1178,6 @@
   "got-it": {
     "chosen": "知道了",
     "confidence": "confirmed",
-    "exceptions": {
-      "whatsNew.optOutToast": "Cmdr acknowledging a choice in running text (明白了), not the Got it button."
-    },
     "forms": "知道了",
     "sources": "catalog"
   },
@@ -1286,9 +1203,6 @@
   "hidden": {
     "chosen": "隐藏",
     "confidence": "high",
-    "exceptions": {
-      "settings.indexing.masterOffNote": "\"folder sizes stay hidden\" means they aren't shown (不会显示), not hidden files."
-    },
     "forms": "Show hidden files 显示隐藏文件; hidden folder 隐藏文件夹",
     "sources": "macOS"
   },
@@ -1296,7 +1210,10 @@
     "chosen": "隐藏",
     "confidence": "confirmed",
     "forms": "Hide Cmdr 隐藏 Cmdr; Hide others 隐藏其他; Show all 全部显示",
-    "sources": "macOS AppKit"
+    "sources": "macOS AppKit",
+    "exceptions": {
+      "settings.indexing.masterOffNote": "sizes that stay hidden read as not shown (不会显示)"
+    }
   },
   "hint": {
     "chosen": "提示",
@@ -1326,9 +1243,6 @@
     "accept": ["分钟", "秒"],
     "chosen": "小时",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.signup.unreachable": "\"in a minute\" is an idiom for a short wait (过一会儿), not a duration."
-    },
     "forms": "countdowns 秒 / 分钟 with spaced Latin digits (剩余 {secondsText} 秒); pre-formatted {duration} tokens stay Latin and get a space on both sides",
     "sources": "standard"
   },
@@ -1391,9 +1305,6 @@
     "chosen": "索引",
     "confidence": "high",
     "decision": "Drive-indexing master-switch strings (`driveIndex.*IndexingOff*`, `settings.indexing.masterOffNote`/`overriddenBadge`)",
-    "exceptions": {
-      "commands.cursorScrollTo.label": "\"index\" is a row position in the list (指定行), not the drive index."
-    },
     "forms": "noun 索引; verb 建立索引 (running prose); perfective 已索引; terse labels may compress to 尚未索引; re-index 重新索引",
     "sources": "MS terminology"
   },
@@ -1422,9 +1333,6 @@
     "chosen": "项目",
     "confidence": "high",
     "exceptions": {
-      "errors.provider.macFuse.needsAction": "\"Login Items & Extensions\" is a System Settings pane name, not an item.",
-      "errors.provider.pCloudFuse.needsAction": "\"Login Items & Extensions\" is a System Settings pane name, not an item.",
-      "errors.provider.pCloudFuse.serious": "\"Login Items & Extensions\" is a System Settings pane name, not an item.",
       "errors.write.permissionDenied.suggestion.systemProtectedMac": "\"The item\" refers back to \"this one\" and reads as the pronoun 它.",
       "errors.write.permissionDenied.suggestion.systemProtectedOther": "\"The item\" refers back to \"this one\" and reads as the pronoun 它."
     },
@@ -1461,9 +1369,6 @@
   "kind": {
     "chosen": "种类",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.interrupted.suggestion": "\"This kind of interruption\" is ordinary English, not the Kind column."
-    },
     "note": "Finder's Kind (a file type) is 种类; a server's protocol column is 类型 (type).",
     "sources": "macOS Finder ArrangeByMenu"
   },
@@ -1477,14 +1382,10 @@
     "chosen": "稍后",
     "confidence": "high",
     "exceptions": {
-      "errors.mount.unsupportedProtocol": "\"SMB 2 or later\" is a version floor (或更新版本), not the Later button.",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "\"on a later transfer\" is an adverb (之后), not the Later button.",
-      "fileOperations.cancelRollback.stagedLeftover.named": "\"on a later transfer\" is an adverb (之后), not the Later button.",
       "fileOperations.transferDialog.policyStop": "\"Ask later\" (a conflict policy) is rendered 逐个询问 (ask for each), not the Later button.",
       "onboarding.stepAi.bannerBody.denied": "\"change all of this later\" is an adverb (以后), not the Later button.",
       "onboarding.stepAi.cloudConsentOffNote": "\"do that later\" is an adverb (之后), not the Later button.",
       "onboarding.stepAi.off.help": "\"turn it on later\" is an adverb (以后), not the Later button.",
-      "settings.ai.tooltipLocalDisabled": "\"M1 or later\" is a version floor (或更新), not the Later button.",
       "settings.mediaIndex.reclaim.confirmBody": "\"index these images again later\" is an adverb (之后), not the Later button."
     },
     "note": "Only the button that defers a prompt; the adverb later is 之后 / 以后.",
@@ -1533,9 +1434,6 @@
   "line": {
     "chosen": "行",
     "confidence": "high",
-    "exceptions": {
-      "settings.behavior.adbHintDismissed.description": "\"the one-time line\" is the hint banner, which this catalog calls 提示."
-    },
     "forms": "\"some lines of text\" 几行文本; a one-time hint line is 提示",
     "sources": "standard"
   },
@@ -1566,9 +1464,6 @@
     "chosen": "已锁定",
     "confidence": "confirmed",
     "decision": "重命名/新建被拒绝时的一行提示（`errors.mutation.*`、`errors.volume.*`）",
-    "exceptions": {
-      "errors.listing.archiveNeedsPassword.explanation": "An encrypted archive whose contents \"stay locked\" (锁着), not the macOS Locked flag."
-    },
     "forms": "the Finder checkbox quoted “已锁定”; unlock it via 显示简介 > 取消勾选“已锁定”",
     "sources": "macOS Finder AXNODE1"
   },
@@ -1576,12 +1471,7 @@
     "chosen": "日志",
     "confidence": "high",
     "exceptions": {
-      "errors.listing.authRequiredEneedauth.explanation": "\"log in\" is signing in (登录), not the log file.",
-      "fileExplorer.network.browser.tooltip.credsRejected": "\"log in\" is signing in (登录), not the log file.",
-      "main.dockPinNudge.addedButDockDidNotRestart": "\"log in\" is signing in to the Mac (登录), not the log file.",
-      "settings.advanced.logLlmCalls.description": "Only the folder name `llm-logs` carries the word; kept verbatim.",
-      "settings.advanced.logLlmCalls.label": "\"Log\" is the verb, record (记录).",
-      "shortcuts.system.loggingOut": "\"logging out\" is signing out of the Mac (退出登录), not the log file."
+      "settings.advanced.logLlmCalls.label": "\"Log\" is the verb, record (记录)."
     },
     "forms": "Log AI model calls → 记录 AI 模型调用 (the verb); \"The log has the details\" → 日志里有详细信息",
     "sources": "MS terminology"
@@ -1590,19 +1480,8 @@
     "chosen": "查看",
     "confidence": "high",
     "decision": "Ask Cmdr inspect-file consent + tool labels (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)",
-    "exceptions": {
-      "errors.git.corruptRepo.suggestion": "`git fsck` inspecting a repo (检查), not the AI reading a file.",
-      "errors.git.missingObject.suggestion": "`git fsck` inspecting damage (检查), not the AI reading a file."
-    },
     "forms": "tool line 正在查看文件内容 / 已查看文件内容; prose 只有在你问到某个文件时才会查看它的内容",
     "sources": "macOS NE57"
-  },
-  "macos-app-names": {
-    "accept": ["急救", "活动监视器", "聚焦", "调度中心", "空间"],
-    "chosen": "磁盘工具",
-    "confidence": "high",
-    "forms": "Disk Utility 磁盘工具, First Aid 急救, Activity Monitor 活动监视器, Spotlight 聚焦, Mission Control 调度中心, Spaces 空间; bold in suggestions (**磁盘工具**)",
-    "sources": "macOS"
   },
   "mailing-list": {
     "avoid": [
@@ -1646,10 +1525,6 @@
   "model": {
     "chosen": "模型",
     "confidence": "confirmed",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "Model Context Protocol is a product name kept verbatim, not an AI model.",
-      "settings.summary.mcpServer": "Model Context Protocol is a product name kept verbatim, not an AI model."
-    },
     "sources": "MS terminology"
   },
   "modified": {
@@ -1707,9 +1582,6 @@
     "accept": ["文件名", "名字", "同名", "重名", "文件夹名"],
     "chosen": "名称",
     "confidence": "confirmed",
-    "exceptions": {
-      "onboarding.stepBeta.analyticsLede": "\"your name or email\" is the person's name (姓名), not a file name."
-    },
     "forms": "labels and the column 名称; spoken prose 名字 (换个名字, 同名, 重名); validation 文件名 / 文件夹名",
     "note": "A person's name is 姓名; \"the name was taken\" 已被占用.",
     "sources": "macOS Finder"
@@ -1807,10 +1679,6 @@
     "accept": ["笔记", "留言", "记下"],
     "chosen": "备注",
     "confidence": "high",
-    "exceptions": {
-      "fileOperations.mkfile.placeholder": "`notes.txt` is a sample file name kept verbatim.",
-      "whatsNew.optOutToast": "\"update notes\" are release notes (更新说明), not a user's note."
-    },
     "forms": "a note on an error report 备注 (添加备注（可选）); the feedback message 留言; Ask Cmdr's saved notes 笔记; saving one 记下",
     "sources": "macOS"
   },
@@ -1863,11 +1731,7 @@
     "exceptions": {
       "errors.volume.deletePending": "\"something still has it open\" is the busy-file idiom 还有东西占着它.",
       "errors.volume.staleDestinationHandle": "\"Open it again\" means entering the folder again (再次进入), the listing-error family's wording.",
-      "fileExplorer.searchResults.unavailableBody": "\"Open a new search\" reads 开始新的搜索 (start a new search).",
-      "licensing.about.version": "\"open beta\" is the beta phase (公开测试版), not opening something.",
-      "main.revealNudge.turnedOn": "\"opens Show in Finder from other apps\" means Cmdr takes over those requests (接手).",
-      "onboarding.stepBeta.analyticsLede": "\"open beta\" is the beta phase (公开测试), not opening something.",
-      "onboarding.stepBeta.openBeta": "\"open beta\" is the beta phase (公开测试), not opening something."
+      "main.revealNudge.turnedOn": "\"opens Show in Finder from other apps\" means Cmdr takes over those requests (接手)."
     },
     "note": "Opening a server row and opening a file share one verb, like Finder; stepping back into a folder in error copy is 进入.",
     "sources": "macOS"
@@ -1910,9 +1774,6 @@
     "chosen": "操作队列",
     "confidence": "high",
     "decision": "Operation queue catalog (`queue.*`)",
-    "exceptions": {
-      "operationLog.status.queued": "The status value \"Queued\" is 等待中, matching the queue row's status set; it needn't share a form with the noun 队列."
-    },
     "forms": "the window 操作队列; bare queue 队列 (加入队列, 队列中没有任务); Show in operation queue → 在操作队列中显示",
     "sources": "Total Commander; Double Commander"
   },
@@ -1925,9 +1786,6 @@
     "accept": ["过时"],
     "chosen": "过期",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.staleConnection.title": "\"Stale connection\" is a dead network handle (连接已失效), not an out-of-date index."
-    },
     "forms": "an index that may be stale 可能已过期 / 已过时",
     "sources": "catalog"
   },
@@ -2111,9 +1969,6 @@
   "process": {
     "chosen": "进程",
     "confidence": "confirmed",
-    "exceptions": {
-      "settings.ai.localContextSize.description": "\"can process at once\" is the verb (处理), not an OS process."
-    },
     "forms": "system daemon 守护进程",
     "sources": "standard"
   },
@@ -2126,17 +1981,6 @@
     ],
     "chosen": "进度",
     "confidence": "high",
-    "exceptions": {
-      "adb.disconnectBusyTooltip": "\"in progress\" is a running state (正在进行), not a progress readout.",
-      "fileExplorer.navigation.disconnectBusyTooltip": "\"in progress\" is a running state (正在进行), not a progress readout.",
-      "fileExplorer.navigation.ejectBusyTooltip": "\"in progress\" is a running state (正在进行), not a progress readout.",
-      "indexing.step.statusActive": "\"In progress\" is a running state (进行中), not a progress readout.",
-      "onboarding.stepBeta.openBeta": "\"work-in-progress\" means unfinished (开发中), not a progress readout.",
-      "queryUi.results.scanning": "\"Scan in progress\" is a running state (正在扫描), not a progress readout.",
-      "queryUi.results.scanningWithCount": "\"Scanning in progress\" is a running state (正在扫描), not a progress readout.",
-      "queryUi.results.scanProgress": "\"Scan in progress\" is a running state (正在扫描), not a progress readout.",
-      "queryUi.results.scanProgressWithCount": "\"Scan in progress\" is a running state (正在扫描), not a progress readout."
-    },
     "forms": "\"no progress for {duration}\" → 已有 {duration} 没有进度",
     "sources": "MS terminology"
   },
@@ -2148,10 +1992,6 @@
   "protocol": {
     "chosen": "协议",
     "confidence": "confirmed",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "Model Context Protocol is a product name kept verbatim.",
-      "settings.summary.mcpServer": "Model Context Protocol is a product name kept verbatim."
-    },
     "note": "SMB, SFTP, and WebDAV stay Latin.",
     "sources": "AddPrinter IP.plugin"
   },
@@ -2299,21 +2139,6 @@
   "remove": {
     "chosen": "移除",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.crossDeviceOperation.explanation": "\"removing the original\" is a delete (删除原件), not taking something off a list.",
-      "errors.listing.quotaExceeded.suggestion": "\"removing files you no longer need\" is a delete (删除), not taking something off a list.",
-      "errors.listing.tccRestricted.suggestion": "\"remove all such limits\" lifts restrictions (解除), not taking something off a list.",
-      "errors.write.destinationNotFound.suggestion": "\"renamed or removed\" means deleted (删除), not taken off a list.",
-      "fileExplorer.network.osMountFallback.shareNotOnServer": "\"renamed or removed on the server\" means deleted (删除), not taken off a list.",
-      "fileExplorer.restrictedFolder.tooltip": "\"remove all such limits\" lifts restrictions (解除), not taking something off a list.",
-      "fileOperations.cancelRollback.doneDeleting": "The rollback deletes what it wrote (删除), not taking something off a list.",
-      "fileOperations.cancelRollback.someDeleted": "The rollback deletes what it wrote (删除), not taking something off a list.",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "Removing leftover files is a delete (删除), not taking something off a list.",
-      "fileOperations.cancelRollback.stagedLeftover.named": "Removing a leftover file is a delete (删除), not taking something off a list.",
-      "fileOperations.cancelRollback.stoppedDeleting": "The rollback deletes what it wrote (删除), not taking something off a list.",
-      "settings.askCmdr.memory.notAllForgotten": "Removing the remaining notes deletes them (删除), not taking something off a list.",
-      "settings.mediaIndex.clip.deleteFailed": "Removing the model deletes it from disk (删除), not taking something off a list."
-    },
     "forms": "从列表中移除; tags 移除“{color}”",
     "note": "Deleting what a rollback wrote, a leftover, or a model is 删除; 移除 only takes something out of a list or an archive.",
     "sources": "macOS"
@@ -2345,9 +2170,6 @@
   "report": {
     "chosen": "报告",
     "confidence": "high",
-    "exceptions": {
-      "licensing.about.betaNote": "\"I read every report!\" means user reports in general, the feedback word 反馈."
-    },
     "forms": "a generic report 一份报告; the report bundle 报告包",
     "sources": "standard"
   },
@@ -2386,9 +2208,6 @@
     "accept": ["重启"],
     "chosen": "重新启动",
     "confidence": "high",
-    "exceptions": {
-      "indexing.rescan.incompletePreviousScan": "\"Restarting the scan\" is a fresh scan (重新扫描), not restarting the app."
-    },
     "forms": "buttons and status lines take Apple's 重新启动 (立即重新启动, 重新启动 Cmdr); running prose may say the spoken 重启",
     "note": "A device's connection restarting is 连接已重启, never the device itself.",
     "sources": "macOS"
@@ -2435,14 +2254,11 @@
     "decision": "状态角落的两条 AI 提示与“复查”这个动词 (`askCmdr.wake.*`, `askCmdr.wakeToast.*`)",
     "exceptions": {
       "commands.cmdrOpenOnboarding.description": "\"review or change setup options\" means looking them over (回顾), not the approval gate.",
-      "main.upgradeNudge.mac": "\"to review them\" means having a look at new options (查看), not the approval gate.",
-      "main.upgradeNudge.other": "\"to review them\" means having a look at new options (查看), not the approval gate.",
       "onboarding.stepAi.table.renameWith": "\"review and apply\" means checking a pattern before applying it (检查), not the approval gate.",
       "onboarding.stepAi.table.renameWithout": "\"review and apply\" means checking a pattern before applying it (检查), not the approval gate.",
       "onboarding.stepAi.table.selectWith": "\"review and apply\" means checking a suggestion before applying it (检查), not the approval gate.",
       "onboarding.stepAi.table.selectWithoutBound": "\"review and apply\" means checking a pattern before applying it (检查), not the approval gate.",
-      "onboarding.stepAi.table.selectWithoutUnbound": "\"review and apply\" means checking a pattern before applying it (检查), not the approval gate.",
-      "settings.operationLog.intro": "\"review your history\" means looking at it (查看), not the approval gate."
+      "onboarding.stepAi.table.selectWithoutUnbound": "\"review and apply\" means checking a pattern before applying it (检查), not the approval gate."
     },
     "forms": "Review (the suggestions toast button) 复查; rename review 复查文件重命名",
     "note": "Looking over options or history is 查看, not 复查.",
@@ -2473,10 +2289,6 @@
   "row": {
     "chosen": "行",
     "confidence": "high",
-    "exceptions": {
-      "settings.appearance.showFunctionKeyBar.description": "\"the row of F-key buttons\" is a line of controls (一排), not a list row.",
-      "settings.mediaIndex.showInSearch.description": "\"a row of matching images\" is a line of thumbnails (一排), not a list row."
-    },
     "forms": "\"not a file row\" 而不是某个文件所在的行",
     "sources": "MS terminology"
   },
@@ -2590,11 +2402,6 @@
   "server-address": {
     "chosen": "地址",
     "confidence": "confirmed",
-    "exceptions": {
-      "common.attachEmailInputLabel": "\"email address\" is the user's email (邮箱), not a server address.",
-      "onboarding.stepBeta.checklist.email": "\"email address\" is the user's email (邮箱), not a server address.",
-      "onboarding.stepBeta.emailNote": "\"email address\" is the user's email (邮箱), not a server address."
-    },
     "sources": "system-wide"
   },
   "service": {
@@ -2730,9 +2537,6 @@
     "chosen": "停止",
     "confidence": "confirmed",
     "decision": "等待回答的队列行 + 回滚确认框 (`queue.row.statusAwaitingAnswer`/`.awaitingAnswerTooltip`, `fileOperations.rollbackConfirm.*`, 改写的 `transferProgress.foregroundBusyToast`/`.rollbackTooltip`)",
-    "exceptions": {
-      "downloads.toast.stopShowing": "\"Stop showing these\" is the negation 不再显示."
-    },
     "forms": "the rollback tooltip's stop 停止 (never 取消); you stopped opening your phone 你停止了打开手机",
     "sources": "macOS AppKit"
   },
@@ -2878,11 +2682,6 @@
     "accept": ["过大", "过长", "太长", "大于", "超过"],
     "chosen": "太大",
     "confidence": "high",
-    "exceptions": {
-      "ai.translateError.timeout.title": "\"took too long\" is a timeout (用时太久), not a size or name limit.",
-      "askCmdr.error.timeout": "\"took too long\" is a timeout (耗时太久), not a size or name limit.",
-      "fileExplorer.pane.directConnectionTooSlowToast": "\"took too long to answer\" is slowness (响应太慢), not a size or name limit."
-    },
     "forms": "too large for the volume's format 太大, 无法拷贝; name too long 文件名过长",
     "sources": "macOS Finder PE4.5"
   },
@@ -2942,9 +2741,6 @@
   "undo": {
     "chosen": "撤销",
     "confidence": "high",
-    "exceptions": {
-      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "\"can't undo the move\" names the Rollback button beside it, so it says 回滚."
-    },
     "forms": "the toast button 撤销; undoing one file 撤销…的改动",
     "note": "撤销 is a real undo; rolling back a whole operation is 回滚.",
     "sources": "macOS AppKit"
@@ -2974,7 +2770,6 @@
     "confidence": "high",
     "decision": "故意保留的分界（英文一词多义，中文必须分开）",
     "exceptions": {
-      "errors.listing.symlinkLoopErrno.explanation": "\"can't reach the actual file\" follows a link loop (到不了), not a network host.",
       "licensing.error.network": "\"couldn't reach the license server this time\" reads 这次没能连接到 (didn't manage to connect)."
     },
     "forms": "a host 无法连接 / 连不上 (servers.refusal.unreachable: Cmdr 连不上 {host}); a path or volume 无法访问; error prose 无法连到",
@@ -3070,10 +2865,6 @@
     "accept": ["事件"],
     "chosen": "监视",
     "confidence": "tentative",
-    "exceptions": {
-      "settings.adb.status.notWatching": "\"Watching for phones\" is ADB device discovery (留意), not the file-system watcher.",
-      "settings.adb.status.watching": "\"Watching for phones\" is ADB device discovery (留意), not the file-system watcher."
-    },
     "forms": "file watching 文件监视; watcher debounce 文件监视防抖; events 事件",
     "sources": "standard"
   },
@@ -3115,7 +2906,6 @@
     "chosen": "写入",
     "confidence": "high",
     "exceptions": {
-      "ai.cloudConsent.askCmdr.memory": "\"writes itself notes\" is jotting notes (记下), not data landing on a drive.",
       "suggestedOps.reversibleDeleteWritten": "\"deleting what it writes\" names the new items (新建的内容), the rollback family's phrase."
     },
     "forms": "partly written 可能已经写入了一部分内容; half-written 写了一半的; read and write 读写",
@@ -3138,5 +2928,42 @@
     "chosen": "续订",
     "confidence": "high",
     "sources": "standard"
+  },
+  "search-walk": {
+    "chosen": "扫描",
+    "confidence": "high",
+    "sources": "macOS Finder",
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word."
+  },
+  "disk-utility": {
+    "chosen": "磁盘工具",
+    "confidence": "high",
+    "sources": "macOS",
+    "forms": "bold in suggestions (**磁盘工具**)"
+  },
+  "first-aid": {
+    "chosen": "急救",
+    "confidence": "high",
+    "sources": "macOS"
+  },
+  "activity-monitor": {
+    "chosen": "活动监视器",
+    "confidence": "high",
+    "sources": "macOS"
+  },
+  "spotlight": {
+    "chosen": "聚焦",
+    "confidence": "high",
+    "sources": "macOS"
+  },
+  "mission-control": {
+    "chosen": "调度中心",
+    "confidence": "high",
+    "sources": "macOS"
+  },
+  "spaces": {
+    "chosen": "空间",
+    "confidence": "high",
+    "sources": "macOS"
   }
 }

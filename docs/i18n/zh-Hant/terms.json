@@ -117,9 +117,6 @@
   "ai-provider": {
     "chosen": "提供者",
     "confidence": "high",
-    "exceptions": {
-      "licensing.dialog.serverInvalidError": "English sense: a payment provider → 付款服務商. Proposed as a notMatch."
-    },
     "forms": "AI provider → AI 提供者; the cloud-storage company is 雲端服務供應商 (see cloud-provider)",
     "sources": "MS; catalog settings.askCmdr.provider.title"
   },
@@ -451,9 +448,6 @@
     "accept": ["確認", "核對", "查看", "看看", "看一下", "看過", "正在看", "驗證", "比對", "查"],
     "chosen": "檢查",
     "confidence": "high",
-    "exceptions": {
-      "errors.write.originalsKeptAside.suggestion.many": "Restructured: the details below say where each file is (下面的詳情裡寫了…)."
-    },
     "forms": "Re-check (button) → 重新檢查 (quoted exactly in settings.adb.install.intro); verify a fingerprint → 核對; check the details, a folder, a status page → 看看 / 查看; an AI tool line → 正在查看… / 已查看… (or 正在看… / 已看過…); verify a download or license → 驗證; check every folder against the index → 比對",
     "note": "Chinese spreads English check over several verbs by what is checked, so the drift check accepts all of them; don't force 檢查 into a line that says 看看.",
     "sources": "AP-TW = AP-HK fsck (Rechecking volume. → 重新檢查卷宗。)"
@@ -628,7 +622,6 @@
       "errors.eject.volumeNotFound": "A drive that isn't connected any more is simply gone: 已經不在了.",
       "errors.listing.deviceDisconnected.explanation": "A network drive dropping its connection → 掉線, the everyday word for a dropped link.",
       "errors.listing.deviceProblem.explanation": "A loose connection is physical contact: 接觸鬆脫.",
-      "errors.provider.egnyte.appName": "English sense: Egnyte Connect is a kept-English product name. Proposed as a notMatch.",
       "errors.write.deviceDisconnected.suggestion": "Properly connected (a cable) → 正確接上."
     },
     "forms": "a button or status → 連線 (已連線, 正在連線…); the verb in a sentence or command name → 連接 (連接伺服器…); casual → 連上 / 連著 / 連不上; a network connection → 網路連線",
@@ -669,9 +662,6 @@
     ],
     "chosen": "複製",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.archiveUnreadable.suggestion": "A fresh copy of a file someone sent you: 一份新的檔案 names it plainly."
-    },
     "forms": "the noun (one more instance) → 副本; in progress → 正在複製…",
     "sources": "AP-HK, MS, all five file managers"
   },
@@ -905,9 +895,6 @@
   "documents": {
     "chosen": "文件",
     "confidence": "high",
-    "exceptions": {
-      "goToPath.dialog.inputPlaceholder": "A literal path ~/Documents, kept verbatim."
-    },
     "forms": "the Documents folder → 文件",
     "note": "Traditional 文件 means document, never file.",
     "sources": "AP Finder (TL6 / GROUP_DOCUMENTS → 文件), MS"
@@ -921,9 +908,6 @@
   "download": {
     "chosen": "下載",
     "confidence": "high",
-    "exceptions": {
-      "commands.downloadsGoToLatest.description": "A literal path ~/Downloads, kept verbatim."
-    },
     "forms": "the Downloads folder → 下載項目",
     "sources": "AP-TW (12), AP-HK (11)"
   },
@@ -937,31 +921,6 @@
     ],
     "chosen": "磁碟機",
     "confidence": "high",
-    "exceptions": {
-      "commands.cloudAskGemini.description": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "commands.cloudCopyGoogleDriveLink.label": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "commands.cloudOpenInGoogleDrive.description": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "commands.cloudOpenInGoogleDrive.label": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "commands.handler.googleDriveCopyFailed": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "commands.handler.googleDriveLinkCopied": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "commands.handler.googleDriveLinkMissing": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "commands.handler.googleDriveOpenFailed": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.listing.emptyRootICloud.explanation": "English sense: iCloud Drive is Apple's product, rendered iCloud 雲碟 (see icloud-drive). Proposed as a notMatch.",
-      "errors.listing.emptyRootICloud.title": "English sense: iCloud Drive is Apple's product, rendered iCloud 雲碟 (see icloud-drive). Proposed as a notMatch.",
-      "errors.provider.box.appName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.provider.googleDrive.appName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.provider.googleDrive.displayName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.provider.iCloud.displayName": "English sense: iCloud Drive is Apple's product, rendered iCloud 雲碟 (see icloud-drive). Proposed as a notMatch.",
-      "errors.provider.iCloud.needsAction": "English sense: iCloud Drive is Apple's product, rendered iCloud 雲碟 (see icloud-drive). Proposed as a notMatch.",
-      "errors.provider.pCloud.appName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.provider.pCloudFuse.appName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.provider.protonDrive.appName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.provider.protonDrive.displayName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.provider.synologyDrive.appName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "errors.provider.synologyDrive.displayName": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "menu.context.copyGoogleDriveLink": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch.",
-      "menu.context.openInGoogleDrive": "English sense: Drive is part of a kept-English product name (Google Drive, Box Drive, pCloud Drive, Proton Drive, Synology Drive). Proposed as a notMatch."
-    },
     "forms": "the device → 磁碟機; the disk itself → 磁碟 (啟動磁碟); hard disk → 硬碟",
     "note": "Cmdr tells drive (drive indexing) from disk (startup disk), so it takes MS's distinct device word; Apple reuses 磁碟 for both.",
     "sources": "MS (磁碟機); AP-TW (69) / AP-HK (70) for 磁碟"
@@ -1012,13 +971,6 @@
     "accept": ["開啟", "打開", "開著", "開起"],
     "chosen": "啟用",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.devicePoweredOff.suggestion": "English sense: turn on a device or computer = power it on → 開機. Proposed as a notMatch.",
-      "errors.mount.hostUnreachable": "English sense: turn on a device or computer = power it on → 開機. Proposed as a notMatch.",
-      "errors.mount.timeout": "English sense: turn on a device or computer = power it on → 開機. Proposed as a notMatch.",
-      "errors.shareList.hostUnreachable": "English sense: turn on a device or computer = power it on → 開機. Proposed as a notMatch.",
-      "servers.hub.emptyMessage": "English sense: turn on a device or computer = power it on → 開機. Proposed as a notMatch."
-    },
     "forms": "enable (a setting) → 啟用; turn on (a feature) → 開啟 (在「設定」中開啟)",
     "sources": "MS, standard; AP live Turn On → 開啟 (TW = HK, 299 of ~314)"
   },
@@ -1077,12 +1029,6 @@
     ],
     "chosen": "副檔名",
     "confidence": "high",
-    "exceptions": {
-      "errors.provider.macFuse.needsAction": "English sense: a macOS system extension (Login Items & Extensions, Edit Extensions…) → Apple's 延伸功能. Proposed as a notMatch.",
-      "errors.provider.pCloudFuse.needsAction": "English sense: a macOS system extension (Login Items & Extensions, Edit Extensions…) → Apple's 延伸功能. Proposed as a notMatch.",
-      "errors.provider.pCloudFuse.serious": "English sense: a macOS system extension (Login Items & Extensions, Edit Extensions…) → Apple's 延伸功能. Proposed as a notMatch.",
-      "menu.context.editExtensions": "English sense: a macOS system extension (Login Items & Extensions, Edit Extensions…) → Apple's 延伸功能. Proposed as a notMatch."
-    },
     "sources": "AP-TW (38), AP-HK (40), MS (file name extension)"
   },
   "extract": {
@@ -1317,9 +1263,6 @@
     "chosen": "返回",
     "confidence": "high",
     "decision": "Go forward: `往前` (`menu.go.forward`, `commands.navForward.label`)",
-    "exceptions": {
-      "indexing.rescan.journalGap": "English sense: a log that doesn't go back far enough in time → 回溯. Proposed as a notMatch."
-    },
     "forms": "back / forward → 返回 / 往前 (Finder's Go menu 211.title / 249.title, TW = HK)",
     "sources": "AP-TW = AP-HK Finder MenuBar 211.title 返回, 249.title 往前"
   },
@@ -1344,9 +1287,6 @@
     ],
     "chosen": "知道了",
     "confidence": "high",
-    "exceptions": {
-      "whatsNew.optOutToast": "An acknowledgement inside a sentence, not the button: 好的."
-    },
     "sources": "catalog ai.toast.gotIt, main.oldMacos.gotIt, updates.moveToApplicationsDialog.gotIt"
   },
   "group": {
@@ -1396,7 +1336,11 @@
     "chosen": "隱藏",
     "confidence": "high",
     "forms": "Hide others → 隱藏其他; Hide Cmdr → 隱藏 Cmdr",
-    "sources": "AP Finder MenuBar 300729.title, TextEdit, Preview"
+    "sources": "AP Finder MenuBar 300729.title, TextEdit, Preview",
+    "exceptions": {
+      "settings.indexing.masterOffNote": "sizes that stay hidden read as not shown (不顯示)",
+      "settings.ai.tooltipOff": "features that are simply hidden read as not shown (不顯示)"
+    }
   },
   "history": {
     "accept": ["記錄", "歷史"],
@@ -1495,9 +1439,6 @@
   "index": {
     "chosen": "索引",
     "confidence": "high",
-    "exceptions": {
-      "commands.cursorScrollTo.label": "English sense: a list position → 指定的列. Proposed as a notMatch."
-    },
     "forms": "noun → 索引; verb → 建立索引",
     "sources": "AP (Updating tag index → 更新標籤索引), MS"
   },
@@ -1584,9 +1525,6 @@
     "chosen": "種類",
     "confidence": "high",
     "decision": "Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)",
-    "exceptions": {
-      "errors.listing.interrupted.suggestion": "English sense: this kind of → 這類. Proposed as a notMatch."
-    },
     "sources": "AP Finder ArrangeByMenu 119.title / 338.title"
   },
   "language": {
@@ -1675,7 +1613,6 @@
     "chosen": "行",
     "confidence": "high",
     "exceptions": {
-      "settings.behavior.adbHintDismissed.description": "The one-time line is a hint (提示), not a line of text.",
       "settings.listing.stripedRows.description": "Line tracking across the file list follows rows: 逐列查看."
     },
     "forms": "line number → 行號; line count → 行數 / 總行數; on line N → 第 N 行",
@@ -1767,13 +1704,6 @@
     ],
     "chosen": "記錄",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.authRequiredEneedauth.explanation": "English sense: log in / log out → 登入 / 登出 (see sign-in). Proposed as a notMatch.",
-      "fileExplorer.network.browser.tooltip.credsRejected": "English sense: log in / log out → 登入 / 登出 (see sign-in). Proposed as a notMatch.",
-      "main.dockPinNudge.addedButDockDidNotRestart": "English sense: log in / log out → 登入 / 登出 (see sign-in). Proposed as a notMatch.",
-      "settings.advanced.logLlmCalls.description": "Only hits the literal folder name llm-logs, kept verbatim.",
-      "shortcuts.system.loggingOut": "English sense: log in / log out → 登入 / 登出 (see sign-in). Proposed as a notMatch."
-    },
     "forms": "log file → 記錄檔",
     "sources": "AP-TW = AP-HK Console (Log File → 記錄檔), MS, TC"
   },
@@ -1782,19 +1712,8 @@
     "chosen": "查看",
     "confidence": "high",
     "decision": "Ask Cmdr looks inside files (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.empty.hint`, `settings.askCmdr.intro`)",
-    "exceptions": {
-      "errors.git.corruptRepo.suggestion": "English sense: git fsck inspects a repository → 檢查. Proposed as a notMatch.",
-      "errors.git.missingObject.suggestion": "English sense: inspect the damage → 檢查. Proposed as a notMatch."
-    },
     "forms": "查看…裡的內容 (正在查看檔案裡的內容 / 已查看檔案裡的內容); where English says read → 讀取",
     "sources": "catalog askCmdr.tool.listVolumes.*, askCmdr.tool.imageFacts.*"
-  },
-  "macos-app-names": {
-    "accept": ["磁碟工具程式", "修理工具", "活動監視器", "指揮中心", "空間"],
-    "chosen": "Spotlight",
-    "confidence": "high",
-    "forms": "Spotlight stays English (verified; Apple localizes it in some languages); Disk Utility → 磁碟工具程式; First Aid → 修理工具; Activity Monitor → 活動監視器; Mission Control → 指揮中心",
-    "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
   },
   "mailing-list": {
     "accept": ["註冊"],
@@ -1888,10 +1807,6 @@
   "model": {
     "chosen": "模型",
     "confidence": "confirmed",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English sense: Model Context Protocol is a kept-English product name. Proposed as a notMatch.",
-      "settings.summary.mcpServer": "English sense: Model Context Protocol is a kept-English product name. Proposed as a notMatch."
-    },
     "sources": "MS"
   },
   "modified": {
@@ -1948,9 +1863,6 @@
     "accept": ["檔名", "名字", "同名", "原名", "重名"],
     "chosen": "名稱",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.analyticsLede": "English sense: a person's name (not your name or email) → 姓名. Proposed as a notMatch."
-    },
     "forms": "filename → 檔名 (41/41) or 檔案名稱",
     "sources": "AP-TW = AP-HK Finder N220"
   },
@@ -2036,11 +1948,7 @@
     "confidence": "high",
     "exceptions": {
       "errors.volume.staleDestinationHandle": "Open it again means step back into the folder: 再進去一次.",
-      "fileExplorer.searchResults.unavailableBody": "Open a new search means start one: 開始一次新的搜尋.",
-      "licensing.about.version": "English sense: open beta → 公開測試版. Proposed as a notMatch.",
-      "main.revealNudge.turnedOn": "Cmdr opens Show in Finder requests means it takes them over: 接手.",
-      "onboarding.stepBeta.analyticsLede": "English sense: open beta → 公開測試. Proposed as a notMatch.",
-      "onboarding.stepBeta.openBeta": "English sense: open beta → 公開測試. Proposed as a notMatch."
+      "main.revealNudge.turnedOn": "Cmdr opens Show in Finder requests means it takes them over: 接手."
     },
     "forms": "one verb for opening a file with its app and stepping into a folder or server; held open by an app → 開著 (還開著, 開著的檔案); how many files are open → 開了多少檔案",
     "sources": "AP-HK, MS, all five file managers"
@@ -2196,10 +2104,8 @@
     "confidence": "confirmed",
     "decision": "❗ Dock 上的 pin / unpin 不用 `釘選`／`取消釘選`",
     "exceptions": {
-      "fileExplorer.git.tooltip.pinnedCommit": "English sense: a ref pinned at a commit → 固定在提交. Proposed as a notMatch.",
       "main.dockPinNudge.body": "The macOS Dock takes Apple's own Dock-menu words: 保留在 Dock 上.",
-      "main.dockPinNudge.unpinNote": "The macOS Dock takes Apple's own Dock-menu words: 從 Dock 中移除.",
-      "settings.developer.mcpPort.description": "English sense: pin a port number → 固定. Proposed as a notMatch."
+      "main.dockPinNudge.unpinNote": "The macOS Dock takes Apple's own Dock-menu words: 從 Dock 中移除."
     },
     "forms": "Pin / Unpin → 釘選 / 取消釘選; Pin to X → 釘選到 X; the macOS Dock takes Apple's Dock-menu words: 保留在 Dock 上 / 從 Dock 中移除",
     "sources": "AP-TW = AP-HK Music (Pin → 釘選, Unpin → 取消釘選); Dock.app DockMenus (Keep in Dock, Remove from Dock)"
@@ -2239,9 +2145,6 @@
     "accept": ["常駐程式"],
     "chosen": "程序",
     "confidence": "high",
-    "exceptions": {
-      "settings.ai.localContextSize.description": "English sense: the verb process (handle) → 處理. Proposed as a notMatch."
-    },
     "forms": "a system daemon → 常駐程式",
     "note": "No collision with program, which is 程式.",
     "sources": "AP-TW (2), AP-HK (2), MS (109)"
@@ -2250,9 +2153,6 @@
     "accept": ["進行", "正在"],
     "chosen": "進度",
     "confidence": "confirmed",
-    "exceptions": {
-      "onboarding.stepBeta.openBeta": "Work in progress → 還在開發中."
-    },
     "sources": "AP-TW = AP-HK (Show Progress Window → 顯示進度視窗), MS, THU"
   },
   "prompt": {
@@ -2268,10 +2168,6 @@
   "protocol": {
     "chosen": "通訊協定",
     "confidence": "confirmed",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English sense: Model Context Protocol is a kept-English product name. Proposed as a notMatch.",
-      "settings.summary.mcpServer": "English sense: Model Context Protocol is a kept-English product name. Proposed as a notMatch."
-    },
     "sources": "AP-TW = AP-HK (IP.loctable 100268.title; SSH通訊協定2)"
   },
   "put-back": {
@@ -2431,9 +2327,6 @@
     "accept": ["移出", "刪除", "刪掉", "清掉", "解除"],
     "chosen": "移除",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.wakeDigest.removed": "The digest counts items that disappeared from disk while Cmdr was asleep: 項目不見了."
-    },
     "forms": "take out of a list or setting → 移除; out of the selection → 移出選取範圍; a rollback that destroys what it wrote → 刪除 (never 移除); remove limits → 解除; clean up an orphan → 清掉",
     "note": "Take out of a list or container; destroying files is 刪除.",
     "sources": "AP split (移除 vs 刪除)"
@@ -2522,10 +2415,6 @@
     ],
     "chosen": "重新啟動",
     "confidence": "high",
-    "exceptions": {
-      "errors.volume.deviceSessionReset": "English sense: a device restarting its connection → 重新建立了連線. Proposed as a notMatch.",
-      "indexing.rescan.incompletePreviousScan": "English sense: restarting a scan → 重新開始掃描. Proposed as a notMatch."
-    },
     "forms": "relaunching the app → 重新啟動; the Mac restarting → 重新開機 (AP-TW's machine sense)",
     "sources": "AP-HK (both senses), AP-TW app sense"
   },
@@ -2722,17 +2611,6 @@
     ],
     "chosen": "位址",
     "confidence": "high",
-    "exceptions": {
-      "common.attachEmail": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch.",
-      "common.attachEmailInputLabel": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch.",
-      "common.attachEmailInvalid": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch.",
-      "common.attachEmailPrompt": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch.",
-      "onboarding.stepBeta.checklist.email": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch.",
-      "onboarding.stepBeta.checklist.emailMark": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch.",
-      "onboarding.stepBeta.emailNote": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch.",
-      "onboarding.stepBeta.signup.rejected": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch.",
-      "onboarding.stepBeta.signup.unreachable": "English sense: an email address (電子郵件地址 / 地址), not a server address. Proposed as a notMatch."
-    },
     "forms": "server address → 伺服器位址; the AI endpoint URL field → 網址",
     "sources": "catalog servers.refusal.invalidUrl; AP-TW address → 位址"
   },
@@ -2888,9 +2766,6 @@
   "source": {
     "chosen": "來源",
     "confidence": "high",
-    "exceptions": {
-      "shortcuts.system.inputSourceSwitching": "English sense: a keyboard input source (see input-source). Proposed as a notMatch."
-    },
     "sources": "TC (來源視窗), DC (來源面板)"
   },
   "speed": {
@@ -2925,9 +2800,6 @@
     "accept": ["停"],
     "chosen": "停止",
     "confidence": "high",
-    "exceptions": {
-      "downloads.toast.stopShowing": "Stop showing these → 不要再顯示這些."
-    },
     "forms": "You stopped X → 你停止了…; it stopped (on its own) → 停下 / 停下來; a deliberate refusal → 停止 / 不會 (never 失敗)",
     "sources": "catalog search.coverage.walk.cancelled, errors.volume.cancelled"
   },
@@ -3158,7 +3030,6 @@
     "exceptions": {
       "fileOperations.cancelRollback.reason.failed.counted": "English says undo, but the act is a rollback, which Chinese names 復原; 還原 is spent on Undo.",
       "fileOperations.cancelRollback.reason.failed.named": "English says undo, but the act is a rollback, which Chinese names 復原; 還原 is spent on Undo.",
-      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "English says undo, but the act is a rollback, which Chinese names 復原; 還原 is spent on Undo.",
       "operationLog.rollback.refusalZipEditUnsupported": "English says undo, but the act is a rollback, which Chinese names 復原; 還原 is spent on Undo."
     },
     "sources": "AP-TW = AP-HK, NAU"
@@ -3204,10 +3075,6 @@
   "update": {
     "chosen": "更新",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.checklist.email": "English sense: occasional news updates by email → 近況. Proposed as a notMatch.",
-      "onboarding.stepBeta.emailNote": "English sense: an occasional news update → 近況. Proposed as a notMatch."
-    },
     "forms": "an available update (noun) → 更新項目 (檢查更新項目); up to date → 已是最新狀態; Software Update → 軟體更新",
     "sources": "AP-TW (Check for Updates → 檢查更新項目; App Store Updates → 更新項目)"
   },
@@ -3370,5 +3237,42 @@
     "chosen": "Android 工具",
     "confidence": "high",
     "sources": "Google zh-TW docs (developer.android.com/studio/intro/update?hl=zh-tw)"
+  },
+  "search-walk": {
+    "chosen": "掃描",
+    "accept": ["掃"],
+    "confidence": "high",
+    "sources": "AP-TW = AP-HK (Preview Scan; 161/160 live), MS",
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word."
+  },
+  "disk-utility": {
+    "chosen": "磁碟工具程式",
+    "confidence": "high",
+    "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
+  },
+  "first-aid": {
+    "chosen": "修理工具",
+    "confidence": "high",
+    "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
+  },
+  "activity-monitor": {
+    "chosen": "活動監視器",
+    "confidence": "high",
+    "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
+  },
+  "spotlight": {
+    "chosen": "Spotlight",
+    "confidence": "high",
+    "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
+  },
+  "mission-control": {
+    "chosen": "指揮中心",
+    "confidence": "high",
+    "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
+  },
+  "spaces": {
+    "chosen": "空間",
+    "confidence": "high",
+    "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
   }
 }

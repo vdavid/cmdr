@@ -44,19 +44,12 @@
     "accept": ["l'IA", "d'IA", "une IA"],
     "chosen": "fonctionnalités d'IA",
     "confidence": "high",
-    "exceptions": {
-      "queryUi.ai.refineAria": "English-sense: the AI search is the search mode, rendered recherche IA like its mode label.",
-      "queryUi.dialog.aiTranslateFailedToast": "English-sense: the AI search is the search mode, rendered recherche IA like its mode label."
-    },
     "forms": "AI → IA (section name); the AI acting as subject → l'IA; AI features → fonctionnalités d'IA",
     "sources": "catalog (settings.ai.tooltipOff, settings.ai.provider.description, onboarding.stepAi.intro)"
   },
   "ai-provider": {
     "chosen": "fournisseur",
     "confidence": "high",
-    "exceptions": {
-      "licensing.dialog.serverInvalidError": "English-sense: a payment provider (prestataire de paiement), not an AI provider."
-    },
     "forms": "AI provider → fournisseur d'IA; votre fournisseur",
     "sources": "MS terminology FRA; catalog (ai.translateError.unavailable.title)"
   },
@@ -187,23 +180,12 @@
     "accept": ["demande"],
     "chosen": "Demander",
     "confidence": "high",
-    "exceptions": {
-      "ai.cloudConsent.askCmdr.contentsRule": "English-sense: ask about a file means pose a question (poser une question).",
-      "askCmdr.composer.attach": "English-sense: ask about the selection; the compact button says Interroger.",
-      "askCmdr.composer.placeholder": "English-sense: ask about your files means pose a question.",
-      "askCmdr.empty.hint": "English-sense: ask about a file means pose a question.",
-      "askCmdr.empty.title": "English-sense: ask about your files means pose questions.",
-      "settings.askCmdr.intro": "English-sense: ask about a file means pose a question."
-    },
     "forms": "segmented cell Demander; Toujours demander; Tout demander",
     "sources": "catalog; macOS pattern"
   },
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.renameReview.expired": "English-sense: Ask Cmdr to … uses the brand as a verb phrase, which collapses into Demandez à Cmdr."
-    },
     "forms": "names only the chat panel (its title, menu item, command, Settings section, the switch); a sentence about what the product does says Cmdr or l'IA. `Ask Cmdr to prepare it again` → Demandez à Cmdr de …",
     "sources": "brand, @key descriptions"
   },
@@ -246,11 +228,6 @@
     "accept": ["Précédent", "revenir", "revenez"],
     "chosen": "Retour",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "English-sense: comes back to them means returns later (y revient).",
-      "queryUi.ai.refineTooltip": "English-sense: chat back means reply (dialoguer).",
-      "search.coverage.walk.abandonedCount": "English-sense: comes back to it later means returns (y revient)."
-    },
     "forms": "app buttons Retour, Back to X → Retour à X; the Go menu's Back is Finder's Précédent",
     "sources": "macOS fr (Précédent, six hits, no bare Retour); catalog"
   },
@@ -264,12 +241,6 @@
     "chosen": "arrière-plan",
     "confidence": "high",
     "decision": "Le bouton du dialogue de progression quand la file est vide (`fileOperations.transferProgress.background`, `.backgroundAria`)",
-    "exceptions": {
-      "settings.appearance.tintGroupDescription": "English-sense: a background tint is the backdrop colour (teinte de fond).",
-      "settings.appearance.tintLocal.description": "English-sense: a background tint is the backdrop colour (teinte de fond).",
-      "settings.appearance.tintMtp.description": "English-sense: a background tint is the backdrop colour (teinte de fond).",
-      "settings.appearance.tintSmb.description": "English-sense: a background tint is the backdrop colour (teinte de fond)."
-    },
     "forms": "in the background → en arrière-plan; the progress dialog's empty-queue button → En arrière-plan (elliptical, must fit the Queue button's width); its aria → Garder ce transfert en cours en arrière-plan; the bare noun Arrière-plan is the backdrop sense; pane background → arrière-plan du panneau",
     "sources": "MS terminology FRA id 18761 (background → en arrière-plan); Double Commander; Total Commander"
   },
@@ -431,16 +402,11 @@
       "errors.provider.iCloud.serious": "English-sense: check a status page means look at it (consultez).",
       "errors.write.fallback.suggestion": "English-sense: check the technical details means read them (consultez).",
       "errors.write.ioError.suggestion": "English-sense: check the technical details means read them (consultez).",
-      "errors.write.originalsKeptAside.suggestion.many": "English-sense: check the details means read them; the French names what they show.",
       "errors.write.readError.suggestion": "English-sense: check the technical details means read them (consultez).",
       "errors.write.trashRefused.suggestion.other": "English-sense: check the technical details means read them (consultez).",
       "errors.write.writeError.suggestion": "English-sense: check the technical details means read them (consultez).",
       "fileExplorer.navigation.driveIndex.tooltipCoalesced": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family.",
-      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family.",
-      "fileExplorer.network.osMountFallback.shareNotOnServer": "English-sense: worth checking there means have a look (jeter un œil).",
-      "onboarding.stepBeta.signup.success": "English-sense: check your inbox means look at it (consultez).",
-      "settings.askCmdr.spend.disclaimer": "English-sense: check a dashboard means look at it (consultez).",
-      "settings.updates.emailConfirmHint": "English-sense: check your inbox means look at it (consultez)."
+      "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "The drive-index check is the catalog's analyse (a full pass), as in the rest of the driveIndex family."
     },
     "forms": "Check that … → Vérifiez que …; Check for updates → Rechercher les mises à jour; Re-check (adb) → Rechercher à nouveau; checking (update check) → Recherche / vérification",
     "sources": "macOS AppKit (Review Changes… → Vérifier les modifications…); macOS Software Update (Check for Updates → Rechercher les mises à jour, macOS 26.6.2 build 25G83, 2026-08-30)"
@@ -596,10 +562,6 @@
     ],
     "chosen": "se connecter",
     "confidence": "high",
-    "exceptions": {
-      "errors.provider.egnyte.appName": "English-sense: Egnyte Connect is a product name.",
-      "fileExplorer.pane.directConnectionNotNetworkShareToast": "The catalog's moule il n'y a donc rien à <verbe> names the speed-up, not the connection."
-    },
     "forms": "action (to a server) Se connecter, Connect to server… → Se connecter au serveur… on every surface; progress Connexion à {name}…; state Connecté (agrees with the server); network connection → connexion réseau; You are connected → Vous y avez bien accès (names the access, not the person)",
     "note": "`se connecter` is the network action; signing in is `s'identifier`.",
     "sources": "macOS Finder (\"Se connecter comme…\", MenuBar 266.title, MN1 « Connexion à « ^0 »… »)"
@@ -656,11 +618,6 @@
     "chosen": "rapport d'incident",
     "confidence": "high",
     "decision": "Le dialogue d'incident : `a quitté inopinément`, `a continué son exécution`, `la dernière fois` en fin de proposition (`crashReporter.dialog.*`, `settings.updates.crashReports.description`)",
-    "exceptions": {
-      "errors.provider.macFuse.serious": "English-sense: a process that crashed (a planté), not a crash report.",
-      "errors.provider.pCloudFuse.serious": "English-sense: a process that crashed (a planté), not a crash report.",
-      "settings.advanced.showStagingTempFiles.description": "English-sense: a crash is the event (un plantage), not a crash report."
-    },
     "forms": "send crash report → envoyer le rapport d'incident; Always send crash reports → Toujours envoyer les rapports d'incident; the non-crash dialog variants say rapport alone; quit unexpectedly → a quitté inopinément (Cmdr masculine); kept running (the app) → a continué son exécution",
     "sources": "MS terminology FRA (crash → incident); macOS AppKit AppKitErrors.json (a quitté inopinément)"
   },
@@ -757,10 +714,6 @@
     "accept": ["supprim", "suppression"],
     "chosen": "Supprimer",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.navigation.favoriteShortcutAriaLabel": "English-sense: Delete is the key, which French keyboards label Suppr.",
-      "fileExplorer.navigation.favoriteShortcutPrompt": "English-sense: Delete is the key, which French keyboards label Suppr."
-    },
     "forms": "progress noun Suppression (Suppression…); Erase → Effacer is the reformat/wipe sense",
     "sources": "macOS AppKit (Delete → Supprimer, Supprimer des favoris)"
   },
@@ -802,9 +755,6 @@
   "device": {
     "chosen": "appareil",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.crossDeviceOperation.title": "English-sense: cross-device means across volumes (entre volumes)."
-    },
     "forms": "USB device → appareil USB; transitive disconnect → déconnecter l'appareil",
     "note": "A phone the source calls a phone is téléphone; appareil stays the generic MTP word (Kindle, camera).",
     "sources": "macOS; catalog"
@@ -881,9 +831,6 @@
     "accept": ["télécharge", "téléchargé"],
     "chosen": "téléchargement",
     "confidence": "high",
-    "exceptions": {
-      "commands.downloadsGoToLatest.description": "English-sense: ~/Downloads is a literal path, kept verbatim."
-    },
     "forms": "verb télécharger; Downloads folder → dossier Téléchargements; latest download → dernier téléchargement; téléchargement is Internet-only (fetching a file from a phone or server is récupération)",
     "sources": "macOS (Téléchargements)"
   },
@@ -897,29 +844,6 @@
     "chosen": "disque",
     "confidence": "high",
     "exceptions": {
-      "commands.cloudAskGemini.description": "English-sense: Google Drive is a product name.",
-      "commands.cloudCopyGoogleDriveLink.label": "English-sense: Google Drive is a product name.",
-      "commands.cloudOpenInGoogleDrive.description": "English-sense: Google Drive is a product name.",
-      "commands.cloudOpenInGoogleDrive.label": "English-sense: Google Drive is a product name.",
-      "commands.handler.googleDriveCopyFailed": "English-sense: Google Drive is a product name.",
-      "commands.handler.googleDriveLinkCopied": "English-sense: Google Drive is a product name.",
-      "commands.handler.googleDriveLinkMissing": "English-sense: Google Drive is a product name.",
-      "commands.handler.googleDriveOpenFailed": "English-sense: Google Drive is a product name.",
-      "errors.listing.emptyRootICloud.explanation": "English-sense: iCloud Drive is a product name.",
-      "errors.listing.emptyRootICloud.title": "English-sense: iCloud Drive is a product name.",
-      "errors.provider.box.appName": "English-sense: Box Drive is a product name.",
-      "errors.provider.googleDrive.appName": "English-sense: Google Drive is a product name.",
-      "errors.provider.googleDrive.displayName": "English-sense: Google Drive is a product name.",
-      "errors.provider.iCloud.displayName": "English-sense: iCloud Drive is a product name.",
-      "errors.provider.iCloud.needsAction": "English-sense: iCloud Drive is a product name.",
-      "errors.provider.pCloud.appName": "English-sense: pCloud Drive is a product name.",
-      "errors.provider.pCloudFuse.appName": "English-sense: pCloud Drive is a product name.",
-      "errors.provider.protonDrive.appName": "English-sense: Proton Drive is a product name.",
-      "errors.provider.protonDrive.displayName": "English-sense: Proton Drive is a product name.",
-      "errors.provider.synologyDrive.appName": "English-sense: Synology Drive is a product name.",
-      "errors.provider.synologyDrive.displayName": "English-sense: Synology Drive is a product name.",
-      "menu.context.copyGoogleDriveLink": "English-sense: Google Drive is a product name.",
-      "menu.context.openInGoogleDrive": "English-sense: Google Drive is a product name.",
       "settings.indexing.overriddenBadge": "The badge sits inside the Indexation section, so it drops du disque to stay three words: Désactivé avec l'indexation.",
       "settings.indexing.silencedDrives.label": "The prompts ask whether to index a drive; Demandes d'indexation names them without stacking disque."
     },
@@ -961,13 +885,6 @@
     "accept": ["active", "activé"],
     "chosen": "Activer",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.devicePoweredOff.suggestion": "English-sense: turning on a device is powering it on (allumer).",
-      "errors.mount.hostUnreachable": "English-sense: a server that is turned on is powered on (allumé).",
-      "errors.mount.timeout": "English-sense: a server that is turned on is powered on (allumé).",
-      "errors.shareList.hostUnreachable": "English-sense: a server that is turned on is powered on (allumé).",
-      "servers.hub.emptyMessage": "English-sense: turning on a Mac or NAS is powering it on (allumer)."
-    },
     "forms": "turn it on in Settings → Activez-la dans les Réglages; button Activer Ask Cmdr",
     "sources": "macOS; catalog"
   },
@@ -1075,10 +992,6 @@
     ],
     "chosen": "n'a pas pu",
     "confidence": "high",
-    "exceptions": {
-      "licensing.error.badSignature": "The key didn't pass the check (n'a pas passé), the natural idiom; no failure label.",
-      "onboarding.stepOptional.mtp.desc": "macOS usually fails to connect → il n'y arrive généralement pas, the same fact with no failure word."
-    },
     "forms": "Couldn't X → `<Nom verbal> impossible` (Lecture du dossier impossible) or `Cmdr n'a pas pu <verbe>` when the English names Cmdr; a failed operation → N'a pas pu se terminer; a login or authentication that failed → Identification refusée / Authentification refusée; generic error status → Problème; no Erreur : or Problème : prefix before a reason, the sentence says what didn't happen (updates.failure.check)",
     "sources": "macOS (Impossible d'ouvrir/de graver…); style.md"
   },
@@ -1112,9 +1025,6 @@
     "chosen": "récupérer",
     "confidence": "high",
     "decision": "La visionneuse récupère d'abord le fichier (`viewer.pull.*`, `viewer.error.stoppedResponding`)",
-    "exceptions": {
-      "fileExplorer.navigation.spaceFetchFailed": "English-sense: fetching disk space is getting a value (obtenir), not a file."
-    },
     "forms": "status noun Récupération…; title follows Finder's progress moule (Préparation de la copie de « ^1 »), with the file name in « »",
     "sources": "macOS Réglages Système Localizable.json (Fetching… → Récupération…)"
   },
@@ -1276,9 +1186,6 @@
     "accept": ["Avancer", "Suivant", "revenez"],
     "chosen": "Revenir",
     "confidence": "high",
-    "exceptions": {
-      "indexing.rescan.journalGap": "English-sense: the log doesn't go back far enough in time (ne remonte pas assez loin)."
-    },
     "forms": "commands Revenir / Avancer; the Go menu's Forward is Finder's Suivant",
     "sources": "macOS Finder; catalog"
   },
@@ -1326,7 +1233,7 @@
     "sources": "catalog; Nautilus, Dolphin, Thunar, Total Commander, Double Commander (fichiers cachés)"
   },
   "hide": {
-    "accept": ["masque"],
+    "accept": ["masque", "masqu"],
     "chosen": "Masquer",
     "confidence": "high",
     "exceptions": {
@@ -1345,9 +1252,6 @@
     ],
     "chosen": "astuce",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.emptyRootICloud.explanation": "English-sense: this hint is the suggestion on screen (cette indication), not a one-time tip."
-    },
     "forms": "feminine (Astuce … affichée)",
     "sources": "macOS Finder (Astuces pour votre Mac)"
   },
@@ -1445,11 +1349,6 @@
     ],
     "chosen": "élément",
     "confidence": "high",
-    "exceptions": {
-      "errors.provider.macFuse.needsAction": "English-sense: Login Items is a System Settings pane name.",
-      "errors.provider.pCloudFuse.needsAction": "English-sense: Login Items is a System Settings pane name.",
-      "errors.provider.pCloudFuse.serious": "English-sense: Login Items is a System Settings pane name."
-    },
     "forms": "masculine; the generic file-or-folder entity; a string whose English says file keeps fichier",
     "sources": "macOS Finder, pervasive (Compresser des éléments, Déplacer les éléments ici)"
   },
@@ -1493,21 +1392,12 @@
     "chosen": "type",
     "confidence": "high",
     "decision": "Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)",
-    "exceptions": {
-      "errors.listing.interrupted.suggestion": "English-sense: this kind of means this sort of (ce genre de)."
-    },
     "forms": "Select all of the same kind → Sélectionner tous les éléments de même type; the Kind sort criterion → Type",
     "sources": "macOS Finder ArrangeByMenu 119.title/338.title"
   },
   "later": {
     "chosen": "Plus tard",
     "confidence": "high",
-    "exceptions": {
-      "errors.mount.unsupportedProtocol": "English-sense: SMB 2 or later is a version floor (ou ultérieur).",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "English-sense: a later transfer is a future one (ultérieur).",
-      "fileOperations.cancelRollback.stagedLeftover.named": "English-sense: a later transfer is a future one (ultérieur).",
-      "settings.ai.tooltipLocalDisabled": "English-sense: M1 or later is a chip floor (ou ultérieur)."
-    },
     "forms": "also Not now on a consent screen; a definitive refusal is Non, merci",
     "sources": "iOS/iCloud FR (Plus tard)"
   },
@@ -1588,19 +1478,6 @@
     "accept": ["journalisation", "journaux"],
     "chosen": "journal",
     "confidence": "high",
-    "exceptions": {
-      "askCmdr.renameUndo.refusedBatches": "English-sense: the operation log is Historique des opérations, a separate concept.",
-      "commands.logOperationLog.label": "English-sense: the operation log is Historique des opérations, a separate concept.",
-      "errors.listing.authRequiredEneedauth.explanation": "English-sense: log in means sign in (s'identifier).",
-      "fileExplorer.network.browser.tooltip.credsRejected": "English-sense: log in means sign in (s'identifier).",
-      "main.dockPinNudge.addedButDockDidNotRestart": "English-sense: log in to the Mac is l'ouverture de session.",
-      "menu.view.operationLog": "English-sense: the operation log is Historique des opérations, a separate concept.",
-      "operationLog.dialog.title": "English-sense: the operation log is Historique des opérations, a separate concept.",
-      "settings.advanced.logLlmCalls.description": "English-sense: llm-logs is a folder name, kept verbatim.",
-      "settings.navigationAndFileOps.card.operationLog": "English-sense: the operation log is Historique des opérations, a separate concept.",
-      "settings.operationLog.maxSize.description": "English-sense: the operation log is Historique des opérations, a separate concept.",
-      "shortcuts.system.loggingOut": "English-sense: logging out of the Mac is la fermeture de session."
-    },
     "forms": "logging → journalisation; log file → fichier journal (Cmdr's log FILE, never bare journal when it points at the file)",
     "sources": "MS terminology FRA"
   },
@@ -1611,13 +1488,6 @@
     "decision": "Ce qu'Ask Cmdr lit à l'intérieur d'un fichier : consentement et rail (`ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`, `askCmdr.tool.inspectFile.*`)",
     "forms": "looks inside a file only when you ask → ne regarde à l'intérieur d'un fichier que lorsque vous lui posez une question à son sujet; the tool line → Lecture du contenu de fichiers / A lu le contenu de fichiers",
     "sources": "catalog"
-  },
-  "macos-app-names": {
-    "accept": ["S.O.S", "Moniteur d'activité", "Spotlight", "Mission Control", "Spaces"],
-    "chosen": "Utilitaire de disque",
-    "confidence": "high",
-    "forms": "Disk Utility → Utilitaire de disque; First Aid → S.O.S; Activity Monitor → Moniteur d'activité; Spotlight, Mission Control, Spaces stay English",
-    "sources": "macOS app names"
   },
   "mailing-list": {
     "accept": ["inscription"],
@@ -1651,10 +1521,6 @@
   "model": {
     "chosen": "modèle",
     "confidence": "high",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English-sense: Model Context Protocol is a product name, kept verbatim.",
-      "settings.summary.mcpServer": "English-sense: Model Context Protocol is a product name, kept verbatim."
-    },
     "sources": "standard FR"
   },
   "modified": {
@@ -1687,8 +1553,6 @@
       "errors.write.ioError.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.permissionDenied.message.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "errors.write.trashRefused.message.other": "English-sense: moving to the trash is placer dans la corbeille.",
-      "fileOperations.delete.cloudOnlineOnlyAllWarning": "English-sense: moving to the trash is placer dans la corbeille.",
-      "fileOperations.delete.cloudOnlineOnlyMixedWarning": "English-sense: moving to the trash is placer dans la corbeille.",
       "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "French names what the button no longer does (le retour en arrière n'est plus possible) instead of undoing the move.",
       "operationLog.summary.trash": "English-sense: moving to the trash is placer dans la corbeille.",
       "queryUi.recent.popoverHint": "English-sense: the arrow keys move the highlight, so naviguer.",
@@ -1858,9 +1722,6 @@
     "accept": ["ouvre", "ouvrez", "ouvert", "ouverture"],
     "chosen": "Ouvrir",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.searchResults.unavailableBody": "English-sense: open a new search means start one (Lancez)."
-    },
     "forms": "one verb for opening a file and entering a folder or server, like Finder; Open with default app → ouvrir avec l'application par défaut; Dock menu Open Cmdr → Ouvrir Cmdr (app name bare, no guillemets)",
     "sources": "macOS Finder (N151 Ouvrir, N152 Ouvrir avec, FV7); Dock.app DockMenus.strings"
   },
@@ -1901,9 +1762,6 @@
     "chosen": "File d'attente des opérations",
     "confidence": "high",
     "decision": "Le renommage de la file d'attente des opérations (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.pauseAria`, `.resumeAria`, `.cancelAria`, `.selectAria`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`, `.backgroundedToast`)",
-    "exceptions": {
-      "operationLog.status.queued": "The Queued status is the waiting word En attente, matching queue.row.status."
-    },
     "forms": "the window, the View menu item, and the command read identically; the standalone Queue button stays File d'attente; pairs with Historique des opérations",
     "sources": "Double Commander (File d'attente); MS terminology FRA (queue → file d'attente)"
   },
@@ -1918,9 +1776,6 @@
     "accept": ["obsolescence"],
     "chosen": "obsolète",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.staleConnection.title": "English-sense: a stale connection is an expired reference (Connexion périmée), not an out-of-date index."
-    },
     "sources": "catalog"
   },
   "overwrite": {
@@ -2054,8 +1909,7 @@
     "confidence": "high",
     "decision": "Épingler un serveur au sélecteur, les clés d'hôte approuvées et la ligne ADB des réglages (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.appearance.tintSmb.*`)",
     "exceptions": {
-      "main.dockPinNudge.body": "Pinned next to Finder is carried by qu'il reste (the icon stays when the app is closed).",
-      "settings.developer.mcpPort.description": "English-sense: pinning a port means fixing a value (Fixez)."
+      "main.dockPinNudge.body": "Pinned next to Finder is carried by qu'il reste (the icon stays when the app is closed)."
     },
     "forms": "tabs and server rows: Épingler / Désépingler, toggle Épingler ou désépingler …; Pin to switcher → Épingler au sélecteur; Cmdr's Dock icon follows Apple's Dock menu (Garder dans le Dock / Supprimer du Dock)",
     "sources": "Safari fr (Épingler l'onglet / Désépingler l'onglet)"
@@ -2105,9 +1959,6 @@
     "accept": ["daemon"],
     "chosen": "processus",
     "confidence": "high",
-    "exceptions": {
-      "settings.ai.localContextSize.description": "English-sense: process as a verb (traiter)."
-    },
     "forms": "daemon stays daemon (macOS keeps it); ptpcamerad, udev verbatim",
     "sources": "macOS; MS terminology FRA"
   },
@@ -2127,10 +1978,6 @@
   "protocol": {
     "chosen": "protocole",
     "confidence": "high",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English-sense: Model Context Protocol is a product name, kept verbatim.",
-      "settings.summary.mcpServer": "English-sense: Model Context Protocol is a product name, kept verbatim."
-    },
     "forms": "SMB / SFTP / WebDAV stay verbatim",
     "sources": "AddPrinter IP.loctable; System Profiler (Protocole)"
   },
@@ -2297,32 +2144,7 @@
     "confidence": "high",
     "decision": "Revue qualité : renommages proposés et lignes d'outil (`askCmdr.renameReview.*`, `askCmdr.tool.*`, `askCmdr.stalled`, `errors.listing.deviceReconnecting.*`, `fileExplorer.imageIndex.*`, `fileExplorer.navigation.driveIndex.tooltipCoalesced*`)",
     "exceptions": {
-      "ai.local.deletingStatus": "English-sense: removing the model's files is deleting them, so supprimer.",
-      "askCmdr.wakeDigest.removed": "English-sense: items removed from disk, a deletion.",
-      "errors.git.orphanedWorktree.suggestion": "English-sense: removing a git worktree deletes it.",
-      "errors.listing.attributeNotFound.explanation": "English-sense: an attribute removed from the file is deleted.",
-      "errors.listing.crossDeviceOperation.explanation": "English-sense: removing the originals after a copy deletes them.",
-      "errors.listing.deletePending.title": "English-sense: a file being removed is being deleted.",
-      "errors.listing.folderNotEmpty.explanation": "English-sense: removing a folder deletes it.",
-      "errors.listing.folderNotEmpty.suggestion": "English-sense: removing a folder deletes it.",
-      "errors.listing.quotaExceeded.suggestion": "English-sense: removing files to free space deletes them.",
-      "errors.listing.tccRestricted.suggestion": "English-sense: removing a limit is lifting it (lever).",
-      "errors.write.deletePending.title": "English-sense: a file being removed is being deleted.",
-      "errors.write.destinationNotFound.suggestion": "English-sense: a removed folder was deleted.",
-      "errors.write.symlinkLoop.suggestion": "English-sense: removing symbolic links deletes them.",
-      "fileExplorer.network.osMountFallback.shareNotOnServer": "English-sense: a share removed from the server is deleted there.",
-      "fileExplorer.restrictedFolder.tooltip": "English-sense: removing a limit is lifting it (lever).",
-      "fileOperations.cancelRollback.doneDeleting": "English-sense: the rollback deletes what Cmdr wrote.",
-      "fileOperations.cancelRollback.moveAlreadyLanded": "English-sense: removing the originals deletes them.",
-      "fileOperations.cancelRollback.someDeleted": "English-sense: the rollback deletes what Cmdr wrote.",
-      "fileOperations.cancelRollback.stagedLeftover.counted": "English-sense: removing a leftover copy deletes it.",
-      "fileOperations.cancelRollback.stagedLeftover.named": "English-sense: removing a leftover copy deletes it.",
-      "fileOperations.cancelRollback.stoppedDeleting": "English-sense: the rollback deletes what Cmdr wrote.",
-      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "English-sense: removing the originals deletes them.",
-      "fileOperations.transferProgress.titleRemovingOriginals": "English-sense: removing the originals deletes them.",
-      "settings.mediaIndex.clip.deleteFailed": "English-sense: removing the model deletes its files.",
-      "settings.operationLog.maxAge.description": "English-sense: the oldest log entries are deleted.",
-      "settings.operationLog.maxSize.description": "English-sense: the oldest log entries are deleted."
+      "errors.git.orphanedWorktree.suggestion": "English-sense: removing a git worktree deletes it."
     },
     "forms": "take off a list without deleting anything (a favorite, a folder from indexing, a tag, an attachment)",
     "sources": "catalog (Retirer la pièce jointe)"
@@ -2379,9 +2201,6 @@
     "accept": ["redémarre", "redémarrage", "redémarré"],
     "chosen": "Redémarrer",
     "confidence": "high",
-    "exceptions": {
-      "indexing.rescan.incompletePreviousScan": "English-sense: restarting a scan means it starts over (repart de zéro), not an app restart."
-    },
     "sources": "macOS Menus (Restart → Redémarrer)"
   },
   "resume": {
@@ -2410,9 +2229,6 @@
     "chosen": "vérifier",
     "confidence": "high",
     "decision": "Revue qualité : renommages proposés et lignes d'outil (`askCmdr.renameReview.*`, `askCmdr.tool.*`, `askCmdr.stalled`, `errors.listing.deviceReconnecting.*`, `fileExplorer.imageIndex.*`, `fileExplorer.navigation.driveIndex.tooltipCoalesced*`)",
-    "exceptions": {
-      "settings.operationLog.intro": "Reviewing your history is consulting it (consulter votre historique)."
-    },
     "forms": "an approve/deny gate → vérifier (Vérifier les renommages), noun vérification; look over what the AI suggested → examiner",
     "sources": "macOS AppKit (Review Changes… → Vérifier les modifications…)"
   },
@@ -2486,10 +2302,10 @@
     "sources": "macOS AppKit, pervasive (SavePanel, Document.json)"
   },
   "scan": {
-    "accept": ["analysé", "parcouru", "parcours"],
+    "accept": ["analysé"],
     "chosen": "analyse",
     "confidence": "high",
-    "forms": "scanning (transfer stage) → Analyse / Analyse…; fresh scan, rescan → nouvelle analyse; a search's walk over folders → parcours, dossiers parcourus; an indexing pass → passage (tentative)",
+    "forms": "scanning (transfer stage) → Analyse / Analyse…; fresh scan, rescan → nouvelle analyse; an indexing pass → passage (tentative); a search's walk is search-walk (parcours)",
     "sources": "standard FR; pairs with indexation"
   },
   "scope": {
@@ -2560,9 +2376,6 @@
     "accept": ["envoi", "envoie", "envoyé", "envoyez"],
     "chosen": "Envoyer",
     "confidence": "high",
-    "exceptions": {
-      "fileOperations.transferProgress.openingSource": "Waiting for the source to start sending → En attente des premières données, the observed state."
-    },
     "forms": "progress Envoi…",
     "sources": "standard FR"
   },
@@ -2590,10 +2403,6 @@
     "chosen": "Réglages",
     "confidence": "high",
     "decision": "Sections des réglages et noms de présentation (`settings.section.*`, `settings.navigationAndFileOps.card.*`, `settings.summary.navigationAndFileOps`)",
-    "exceptions": {
-      "ai.toast.installingTitle": "English-sense: setting up means configuring (Configuration).",
-      "onboarding.stepAi.local.tooltip": "English-sense: setting it up means configuring it (le configurer)."
-    },
     "forms": "Cmdr's own window → les Réglages (Ouvrir les réglages, Activez-la dans les Réglages); breadcrumbs Réglages > IA, Réglages › Mises à jour et confidentialité (mirror EN's separator); Apple's app is Réglages Système",
     "sources": "macOS (Réglages Système CFBundleName)"
   },
@@ -2615,11 +2424,7 @@
     "chosen": "Afficher",
     "confidence": "high",
     "exceptions": {
-      "fileExplorer.navigation.driveIndex.tooltipStalePhone": "English-sense: changes show up means they are taken into account (pris en compte).",
-      "indexing.staleDialog.body": "The status always signals this (le signale toujours); show here means indicate.",
-      "operationLog.dialog.empty": "English-sense: show up means appear (apparaîtra).",
-      "queue.empty.body": "English-sense: show up means appear (apparaissent).",
-      "whatsNew.dialog.empty": "English-sense: show up means appear (apparaîtront)."
+      "indexing.staleDialog.body": "The status always signals this (le signale toujours); show here means indicate."
     },
     "forms": "Show all → Tout afficher; a toggle writes both verbs with ou (Afficher ou masquer …)",
     "sources": "macOS AppKit (Show All → Tout afficher)"
@@ -2668,9 +2473,7 @@
     "confidence": "high",
     "decision": "Les états du navigateur réseau : connecté ou identifié (`fileExplorer.network.browser.status.*`, `fileExplorer.network.browser.tooltip.requiresLogin`, `errors.listing.authRequiredEauth.explanation`, `errors.listing.authRequiredEneedauth.explanation`)",
     "exceptions": {
-      "errors.provider.iCloud.needsAction": "Signed in to the right Apple account → Vérifiez que vous utilisez le bon compte Apple, which avoids a participle that genders the user.",
-      "errors.provider.macFuse.needsAction": "English-sense: Login Items is a System Settings pane name (Ouverture et extensions).",
-      "errors.provider.pCloudFuse.serious": "English-sense: Login Items is a System Settings pane name (Ouverture et extensions)."
+      "errors.provider.iCloud.needsAction": "Signed in to the right Apple account → Vérifiez que vous utilisez le bon compte Apple, which avoids a participle that genders the user."
     },
     "forms": "sign in to a server → s'identifier (S'identifier sur {name}); authentication → authentification; logging in to the Mac → à l'ouverture de session; You're signed in → L'identification … a réussi (agrees with the act, not the person)",
     "sources": "macOS (Saisissez le nom d'utilisateur); LoginItems.appex (à l'ouverture de session)"
@@ -2756,9 +2559,6 @@
     ],
     "chosen": "Arrêter",
     "confidence": "high",
-    "exceptions": {
-      "downloads.toast.stopShowing": "Stop showing these → Ne plus afficher, the French idiom for this button."
-    },
     "forms": "the Stop button → Arrêter; Stop, and … (rollback tooltip) → Arrêter et …; You stopped X → Vous avez arrêté X",
     "sources": "macOS fr (Arrêter la copie, Arrêter le déplacement)"
   },
@@ -3054,8 +2854,7 @@
     "chosen": "injoignable",
     "confidence": "high",
     "exceptions": {
-      "adb.readiness.noPermissions": "Over a USB cable, atteindre; joindre would read as calling the phone.",
-      "errors.listing.symlinkLoopErrno.explanation": "English-sense: the link chain never arrives at the real file (atteindre)."
+      "adb.readiness.noPermissions": "Over a USB cable, atteindre; joindre would read as calling the phone."
     },
     "forms": "reach → joindre; can't reach X → X est injoignable / Impossible de joindre X; an unreachable resource → inaccessible",
     "sources": "catalog (directConnectionUnreachableToast, onboarding.cloudSetup.status.connectionError)"
@@ -3064,9 +2863,6 @@
     "accept": ["à jour"],
     "chosen": "mise à jour",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepBeta.checklist.email": "English-sense: occasional updates by email are news (des nouvelles), not app updates."
-    },
     "forms": "Check for updates → Rechercher les mises à jour; new version available → nouvelle version disponible; keep the index current → mettre l'index à jour; Software Update → Mise à jour de logiciels",
     "sources": "macOS Software Update (verified on macOS 26.6.2 build 25G83, 2026-08-30)"
   },
@@ -3197,7 +2993,6 @@
     "chosen": "écrire",
     "confidence": "high",
     "exceptions": {
-      "ai.cloudConsent.askCmdr.memory": "English-sense: writing notes to itself is composing them (se rédige).",
       "suggestedOps.reversibleDeleteWritten": "What the operation writes is what it creates (ce qui est créé): new files."
     },
     "forms": "partly written → partiellement écrit; written so far → écrits jusqu'à présent; half-written → à moitié écrit",
@@ -3211,5 +3006,45 @@
     },
     "forms": "zoom in / out → zoom avant / zoom arrière; percentages Zoom à 100 %; the window's green button Window > Zoom → Réduire/agrandir",
     "sources": "MS terminology FRA (ids 2131086, 135725); macOS Finder 300667.title"
+  },
+  "search-walk": {
+    "chosen": "parcours",
+    "accept": ["parcouru", "parcour"],
+    "confidence": "high",
+    "forms": "a search's walk over folders → parcours, dossiers parcourus",
+    "sources": "standard FR; pairs with indexation",
+    "exceptions": {
+      "viewer.search.stopTooltip": "the viewer's text search running through a file reads as analyse"
+    }
+  },
+  "disk-utility": {
+    "chosen": "Utilitaire de disque",
+    "confidence": "high",
+    "sources": "macOS app names"
+  },
+  "first-aid": {
+    "chosen": "S.O.S",
+    "confidence": "high",
+    "sources": "macOS app names"
+  },
+  "activity-monitor": {
+    "chosen": "Moniteur d'activité",
+    "confidence": "high",
+    "sources": "macOS app names"
+  },
+  "spotlight": {
+    "chosen": "Spotlight",
+    "confidence": "high",
+    "sources": "macOS app names"
+  },
+  "mission-control": {
+    "chosen": "Mission Control",
+    "confidence": "high",
+    "sources": "macOS app names"
+  },
+  "spaces": {
+    "chosen": "Spaces",
+    "confidence": "high",
+    "sources": "macOS app names"
   }
 }

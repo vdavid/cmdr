@@ -48,9 +48,6 @@
     "chosen": "toevoegen",
     "confidence": "high",
     "decision": "Aanvullen wat al verstuurd is: het notitievenster bij een automatisch foutrapport (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)",
-    "exceptions": {
-      "onboarding.stepAi.table.renameWith": "Quoted example prompt \"add ISO date prefix\", rendered as natural speech (zet er … voor)."
-    },
     "forms": "button Voeg … toe with the particle LAST (Voeg aan rapport toe, Voeg server toe…, Voeg huidige map aan favorieten toe); window title Toevoegen aan je foutrapport; participle toegevoegd",
     "sources": "macOS Finder (Add Password → Voeg wachtwoord toe, Add Tags → Voeg tags toe), AppKit (Voeg aan begin van knoppenbalk toe)"
   },
@@ -373,9 +370,6 @@
     "chosen": "controleren",
     "confidence": "high",
     "decision": "Schijfindex: de wijzigingscontrole",
-    "exceptions": {
-      "errors.write.originalsKeptAside.suggestion.many": "Restructured: the details below say where each file is."
-    },
     "forms": "progress Controleren; Checking for changes → Controleren op wijzigingen; Re-check → Controleer opnieuw; noun controle (de volgende volledige controle)",
     "sources": "Double Commander (Controleer …), Nautilus (controleren op), Mail/SoftwareUpdate (Check Again → Controleer opnieuw)"
   },
@@ -527,9 +521,6 @@
     "accept": ["verbind", "verbinding", "verbonden", "aangesloten", "aansluit", "sluit", "Connect"],
     "chosen": "verbinden",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.pane.directConnectionNotNetworkShareToast": "Rephrased: er valt niets te versnellen (no connection to speed up)."
-    },
     "forms": "button Verbind; Connect to server → Verbind met server; Connect as guest → Verbind als gast; progress Verbinden met {name}…; status Verbonden; in a sentence verbinding maken; a phone plugged in by cable is aangesloten, not verbonden",
     "sources": "macOS Finder (Connect to server → Verbind met server, Connect As… → Verbind als…), AppKit (Connecting… → Verbinden…, Connected → Verbonden)"
   },
@@ -778,9 +769,6 @@
     "accept": ["schijven", "netwerkschijf", "Drive"],
     "chosen": "schijf",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.unexpectedSystemResponse.suggestion": "Matches only through Apple's app name Disk Utility, kept verbatim."
-    },
     "forms": "de-woord (hij/hem); compounds schijfindex, schijfruimte, schijfkopie",
     "sources": "macOS Finder (schijf throughout)"
   },
@@ -1166,7 +1154,7 @@
     "sources": "macOS, Nautilus; catalog (menu.view.showHiddenFiles)"
   },
   "hide": {
-    "accept": ["verbergen"],
+    "accept": ["verbergen", "verborgen"],
     "chosen": "Verberg",
     "confidence": "high",
     "forms": "Hide Cmdr → Verberg Cmdr; Hide Others → Verberg andere",
@@ -1480,13 +1468,6 @@
     "forms": "tool line Kijkt in bestanden / In bestanden gekeken; kijkt alleen in een bestand als je ernaar vraagt",
     "sources": "coined in the shape of the sibling tool lines"
   },
-  "macos-app-names": {
-    "accept": ["First Aid", "Activity Monitor", "Spotlight", "Mission Control", "Spaces"],
-    "chosen": "Disk Utility",
-    "confidence": "high",
-    "forms": "all kept verbatim in nl copy",
-    "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
-  },
   "mailing-list": {
     "accept": ["inschrijf"],
     "avoid": [
@@ -1705,9 +1686,6 @@
     "accept": ["openen", "geopend", "opent", "openstaat", "open"],
     "chosen": "Open",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.searchResults.unavailableBody": "Open a new search: Start een nieuwe zoekopdracht."
-    },
     "forms": "button, menu item, and segmented option Open (same as English, justified); Open with default app → Open met standaardapp; loading line Map openen...",
     "sources": "macOS Finder (Open, Open met N152, Open in nieuw venster FV7)"
   },
@@ -2878,5 +2856,42 @@
     "confidence": "high",
     "forms": "Zoom in / Zoom uit; Zoom naar N%; the Window menu's Zoom → Vergroot/verklein (Apple's title)",
     "sources": "macOS (in- of uitzoomen; Window > Zoom → Vergroot/verklein)"
+  },
+  "search-walk": {
+    "chosen": "doorzoeken",
+    "accept": ["doorzoek", "doorzocht", "scan", "scannen", "herscan", "doorloop", "doorlopen"],
+    "confidence": "high",
+    "sources": "Double Commander (Scanning → Doorzoeken), MS (rescan → opnieuw scannen)",
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word."
+  },
+  "disk-utility": {
+    "chosen": "Disk Utility",
+    "confidence": "high",
+    "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
+  },
+  "first-aid": {
+    "chosen": "First Aid",
+    "confidence": "high",
+    "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
+  },
+  "activity-monitor": {
+    "chosen": "Activity Monitor",
+    "confidence": "high",
+    "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
+  },
+  "spotlight": {
+    "chosen": "Spotlight",
+    "confidence": "high",
+    "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
+  },
+  "mission-control": {
+    "chosen": "Mission Control",
+    "confidence": "high",
+    "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
+  },
+  "spaces": {
+    "chosen": "Spaces",
+    "confidence": "high",
+    "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
   }
 }

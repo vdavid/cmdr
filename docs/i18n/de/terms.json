@@ -15,8 +15,7 @@
     "chosen": "Zugriff",
     "confidence": "high",
     "exceptions": {
-      "errors.write.permissionDenied.title": "Couldn’t access this location → Dieser Ort ließ sich nicht öffnen, the settled title pattern",
-      "servers.refusal.certificateUntrusted": "English sense: Keychain Access is an app name (proposed notMatch: keychain access)"
+      "errors.write.permissionDenied.title": "Couldn’t access this location → Dieser Ort ließ sich nicht öffnen, the settled title pattern"
     },
     "forms": "exclusive access → exklusiver Zugriff; file access in prose → Zugriff auf Dateien, as a switch label → Dateizugriff (settings.fileOperations.adbEnabled.label)",
     "sources": "macOS TCC (… möchte Zugriff auf Dateien auf einem Wechselmedium); MS terminology"
@@ -32,9 +31,6 @@
     "chosen": "Konto",
     "confidence": "high",
     "decision": "Die gesperrte Server-Identität (`servers.sheet.identityLocked`)",
-    "exceptions": {
-      "errors.provider.iCloud.needsAction": "English sense: Apple Account is the apple-account concept (proposed notMatch: apple account)"
-    },
     "sources": "catalog (errors.listing.remotePermissionDenied.explanation: das Konto, mit dem du verbunden bist)"
   },
   "activate": {
@@ -47,9 +43,6 @@
     "accept": ["hinzu"],
     "chosen": "hinzufügen",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepAi.table.renameWith": "add a date prefix → voranstellen"
-    },
     "forms": "\"Add to X\" → Zu X hinzufügen / Zum X hinzufügen, keeping Apple's article, never a possessive (Zum Dock hinzufügen, Zur Seitenleiste hinzufügen); separable in prose: fügt … hinzu, hinzugefügt, kommt … hinzu",
     "sources": "macOS Finder (Zum Dock hinzufügen 300772.title, Zur Seitenleiste hinzufügen 300790.title, Tags hinzufügen TL34)"
   },
@@ -91,14 +84,6 @@
     "chosen": "Werkzeug",
     "confidence": "tentative",
     "decision": "Ask Cmdr (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
-    "exceptions": {
-      "adb.connect.adbNotInstalled": "English sense: developer or backup tooling is generic Tools, not an AI tool (proposed notMatch: platform tools, android tools, backup tools)",
-      "adb.connect.serverUnreachable": "English sense: developer or backup tooling is generic Tools, not an AI tool (proposed notMatch: platform tools, android tools, backup tools)",
-      "errors.listing.lockUnavailable.suggestion": "English sense: developer or backup tooling is generic Tools, not an AI tool (proposed notMatch: platform tools, android tools, backup tools)",
-      "settings.adb.install.intro": "English sense: developer or backup tooling is generic Tools, not an AI tool (proposed notMatch: platform tools, android tools, backup tools)",
-      "settings.fileOperations.adbBinaryPath.description": "English sense: developer or backup tooling is generic Tools, not an AI tool (proposed notMatch: platform tools, android tools, backup tools)",
-      "settings.fileOperations.adbEnabled.description": "English sense: developer or backup tooling is generic Tools, not an AI tool (proposed notMatch: platform tools, android tools, backup tools)"
-    },
     "forms": "tool-call status lines: doing → passive present ({Objekt} wird/werden {Partizip}), done → the same minus wird/werden; the subject stays nominative so the pair stays parallel (Ein Ordner wird aufgelistet / Ein Ordner aufgelistet)",
     "sources": "no direct source; picked for approachability"
   },
@@ -224,13 +209,6 @@
     "accept": ["fragen", "frag"],
     "chosen": "Fragen",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.archiveUnreadable.suggestion": "ask someone for something → bitte … um",
-      "errors.listing.noPermissionErrno.suggestion": "ask the owner → Bitte … den Eigentümer",
-      "errors.listing.permissionDenied.suggestion": "ask the owner → Bitte … den Eigentümer",
-      "errors.listing.quotaExceeded.suggestion": "ask your administrator → Bitte deine Systemadministration",
-      "search.coverage.uncovered.network": "unless you ask → nur auf Wunsch"
-    },
     "forms": "segmented cell Fragen; prose ask each time → jedes Mal fragen",
     "sources": "MS terminology (Ask → Fragen); macOS nachfragen is the confirm-prompt sense"
   },
@@ -265,10 +243,6 @@
   "back": {
     "chosen": "Zurück",
     "confidence": "high",
-    "exceptions": {
-      "commands.favoritesAdd.description": "take you back to it → wieder dorthin führt",
-      "queryUi.ai.refineTooltip": "English sense: chat back is answering (proposed notMatch: chat back)"
-    },
     "forms": "Back to presets → Zurück zu den Voreinstellungen",
     "sources": "macOS (Zurück)"
   },
@@ -329,8 +303,6 @@
     "exceptions": {
       "commands.fileGoToTrash.description": "the drive you’re browsing → das Laufwerk, auf dem du gerade bist",
       "errors.listing.archiveNeedsPassword.suggestion": "to browse it → um hineinzuschauen",
-      "feedback.dialog.moreWays": "English sense: browsing a web page is stöbern (proposed notMatch: browse and vote)",
-      "onboarding.cloudSetup.step.ollamaModel": "English sense: browsing a web page is stöbern (proposed notMatch: browse the library)",
       "servers.sheet.browse": "English sense: the file-picker button is the browse-file-picker concept (proposed notMatch: =browse…, =browse...)",
       "settings.adb.browse": "English sense: the file-picker button is the browse-file-picker concept (proposed notMatch: =browse…, =browse...)",
       "settings.mediaIndex.networkVolumes.alwaysHelp": "a photo archive you rarely browse → das du selten öffnest"
@@ -437,13 +409,10 @@
     "confidence": "high",
     "decision": "Ein englisches Wort, ein deutsches Wort: die Drift-Prüfung (`commands.fileView.label`, `menu.file.view`, `fileExplorer.functionKeyBar.viewLabel`, `menu.bar.file`, `menu.bar.view`, `menu.window.zoom`, `menu.view.zoom`, `menu.tag.purple`, `settings.tint.purple`, `queue.row.dismiss`, `queryUi.bar.runLabel`, `ai.cloud.checking`, `licensing.dialog.checking`, `updates.status.checking`)",
     "exceptions": {
-      "errors.write.originalsKeptAside.suggestion.many": "check the details → In den Details unten steht, wo …",
       "fileExplorer.navigation.driveIndex.tooltipCoalesced": "the check running now is der gerade laufende Durchlauf, the catalog word for a full check",
       "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "the check running now is der gerade laufende Durchlauf, the catalog word for a full check",
-      "fileExplorer.network.osMountFallback.shareNotOnServer": "English sense: Check the server… phrasing folded into the reason clause (weil der Server sagt …)",
       "indexing.step.findFilesChangeCheck": "check against the index → mit dem Index verglichen, deliberately plain vergleichen over database-register abgleichen",
       "onboarding.stepOptional.updates.summary": "a tiny check → eine winzige Anfrage; the one-line summary has no room for a verb",
-      "settings.askCmdr.spend.disclaimer": "check your provider’s dashboard → Den genauen Betrag findest du im Dashboard, the natural German for pointing at a place",
       "updates.status.checking": "Checking for updates → Wird gesucht …, the macOS Software Update idiom (Nach Updates suchen)"
     },
     "forms": "Checking… (a connection, a key) → Wird geprüft …; Checking for updates → Nach Updates suchen (macOS Software Update idiom); Checking for changes → Prüfung auf Änderungen; Re-check → Erneut prüfen; Verifying before copy → Prüfung vor dem Kopieren",
@@ -494,9 +463,6 @@
     "accept": ["schließ", "geschlossen"],
     "chosen": "Schließen",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.remotePermissionDenied.suggestion": "English sense: closed to everyone means inaccessible (proposed notMatch: stay closed)"
-    },
     "sources": "macOS Finder + AppKit (FR26, NSTouchBarCloseTemplate)"
   },
   "cloud-ai": {
@@ -608,9 +574,7 @@
     "chosen": "verbinden",
     "confidence": "high",
     "exceptions": {
-      "errors.listing.remotePermissionDenied.suggestion": "connect as someone else → dich als jemand anderes anmelden",
-      "errors.provider.egnyte.appName": "English sense: a product name (proposed notMatch: egnyte connect)",
-      "fileExplorer.pane.directConnectionNotNetworkShareToast": "no connection to speed up → es gibt also nichts zu beschleunigen, the family’s frame"
+      "errors.listing.remotePermissionDenied.suggestion": "connect as someone else → dich als jemand anderes anmelden"
     },
     "forms": "button Verbinden; Connect to server → Mit Server verbinden(…); Connecting… → Verbindung wird hergestellt …; Connecting to {name}… → Verbindung zu {name} wird hergestellt …; Connected → Verbunden; Connect as guest → Als Gast verbinden; reflexive with du: wenn du dich … verbindest",
     "sources": "macOS Finder (Mit Server verbinden, Verbinden, Serveradresse); NetAuthAgent (CONNECT)"
@@ -706,10 +670,6 @@
     "accept": ["gelöscht", "Lösch"],
     "chosen": "löschen",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.navigation.favoriteShortcutAriaLabel": "English sense: the Delete key (proposed notMatch: or delete to clear, =a–z or delete)",
-      "fileExplorer.navigation.favoriteShortcutPrompt": "English sense: the Delete key (proposed notMatch: or delete to clear, =a–z or delete)"
-    },
     "sources": "macOS (Delete → Löschen, Erase → Löschen)"
   },
   "delete-permanently": {
@@ -833,9 +793,6 @@
     "accept": ["Dokumente"],
     "chosen": "Dokument",
     "confidence": "high",
-    "exceptions": {
-      "goToPath.dialog.inputPlaceholder": "English sense: ~/Documents is a literal example path"
-    },
     "forms": "the macOS folder Documents → Dokumente",
     "sources": "macOS Finder (TL6/GROUP_DOCUMENTS Dokumente; RTF-Dokument)"
   },
@@ -871,54 +828,7 @@
     "chosen": "Laufwerk",
     "confidence": "high",
     "exceptions": {
-      "ai.local.deleteConfirmMessage": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "commands.cloudAskGemini.description": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "commands.cloudCopyGoogleDriveLink.label": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "commands.cloudOpenInGoogleDrive.description": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "commands.cloudOpenInGoogleDrive.label": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "commands.handler.googleDriveCopyFailed": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "commands.handler.googleDriveLinkCopied": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "commands.handler.googleDriveLinkMissing": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "commands.handler.googleDriveOpenFailed": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.listing.emptyRootICloud.explanation": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.listing.emptyRootICloud.title": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.listing.readOnly.explanation": "English sense: the disk-image concept (proposed notMatch: disk image)",
-      "errors.listing.readOnly.suggestion": "English sense: the disk-image concept (proposed notMatch: disk image)",
-      "errors.listing.readOnlyVolumeErrno.explanation": "English sense: the disk-image concept (proposed notMatch: disk image)",
-      "errors.listing.readOnlyVolumeErrno.suggestion": "English sense: the disk-image concept (proposed notMatch: disk image)",
-      "errors.provider.box.appName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.googleDrive.appName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.googleDrive.displayName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.iCloud.displayName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.iCloud.needsAction": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.pCloud.appName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.pCloudFuse.appName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.protonDrive.appName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.protonDrive.displayName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.synologyDrive.appName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "errors.provider.synologyDrive.displayName": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "fileExplorer.navigation.spaceFetchFailed": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "fileExplorer.pane.diskUsageAriaLabel": "English sense: the disk-usage concept (proposed notMatch: disk usage)",
-      "lowDiskSpace.notification.body": "English sense: the startup-disk concept (proposed notMatch: startup disk)",
-      "lowDiskSpace.notification.title": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "lowDiskSpace.toast.message": "English sense: the startup-disk concept (proposed notMatch: startup disk)",
-      "menu.context.copyGoogleDriveLink": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "menu.context.openInGoogleDrive": "English sense: a cloud product name (proposed notMatch: google drive, icloud drive, and the other product names)",
-      "settings.advanced.diskSpaceChangeThreshold.description": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.advanced.diskSpaceChangeThreshold.label": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.advanced.maxLogStorageMb.description": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.advanced.maxLogStorageMb.label": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.ai.tooltipCloud": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.ai.tooltipLocal": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.description": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.behavior.fileSystemWatching.lowDiskSpaceNotifications.label": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.fileSystemWatching.cardLowDiskSpace": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.mediaIndex.reclaim.deletedSpaceLater": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.operationLog.intro": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.operationLog.maxSize.description": "English sense: disk space is the free-space concept (proposed notMatch: disk space)",
-      "settings.summary.notifications": "English sense: the free-space concept (proposed notMatch: low disk space)",
-      "updates.moveToApplicationsDialog.readOnlyVolume": "English sense: the disk-image concept (proposed notMatch: disk image)"
+      "settings.summary.notifications": "English sense: the free-space concept (proposed notMatch: low disk space)"
     },
     "forms": "Laufwerksindizierung, Laufwerksdurchlauf; the thing a user plugged in (eject lines, drive pulled) → Laufwerk; Volume stays the technical sense",
     "sources": "MS terminology (drive → Laufwerk)"
@@ -1031,12 +941,6 @@
     "accept": ["Erw."],
     "chosen": "Endung",
     "confidence": "high",
-    "exceptions": {
-      "errors.provider.macFuse.needsAction": "English sense: a macOS system extension, Erweiterung (proposed notMatch: system extension, login items & extensions, edit extensions)",
-      "errors.provider.pCloudFuse.needsAction": "English sense: a macOS system extension, Erweiterung (proposed notMatch: system extension, login items & extensions, edit extensions)",
-      "errors.provider.pCloudFuse.serious": "English sense: a macOS system extension, Erweiterung (proposed notMatch: system extension, login items & extensions, edit extensions)",
-      "menu.context.editExtensions": "English sense: a macOS system extension, Erweiterung (proposed notMatch: system extension, login items & extensions, edit extensions)"
-    },
     "forms": "prose and tooltips → Dateiendung; tight Ext column → Erw.; the rename badge → (Endung)",
     "sources": "standard German; catalog (Das Ändern der Dateiendung ist nicht erlaubt)"
   },
@@ -1081,9 +985,6 @@
     ],
     "chosen": "nicht abgeschlossen",
     "confidence": "high",
-    "exceptions": {
-      "onboarding.stepOptional.mtp.desc": "it usually fails → meist scheitert"
-    },
     "forms": "Couldn't X → X ließ sich nicht … / X nicht möglich; a per-item failed outcome → Nicht abgeschlossen; Something went wrong → Etwas ist schiefgelaufen",
     "sources": "style guide voice rule; catalog"
   },
@@ -1117,9 +1018,6 @@
     "chosen": "laden",
     "confidence": "high",
     "decision": "Die Vorschau holt eine Datei erst herüber (`viewer.pull.*`, `viewer.error.stoppedResponding`)",
-    "exceptions": {
-      "onboarding.cloudSetup.step.ollamaModel": "English sense: ollama pull is a CLI command (proposed notMatch: ollama pull)"
-    },
     "forms": "{fileName} wird für die Vorschau geladen; so far → {doneText} bisher geladen",
     "sources": "macOS Finder IN_MD1 (Fetching… → Laden …); System Settings (Fetching Menu Item)"
   },
@@ -1128,8 +1026,6 @@
     "chosen": "Datei",
     "confidence": "high",
     "exceptions": {
-      "askCmdr.tool.operationsList.doing": "English sense: file history is Cmdr’s operation history, Verlauf (proposed notMatch: file history)",
-      "askCmdr.tool.operationsList.done": "English sense: file history is Cmdr’s operation history, Verlauf (proposed notMatch: file history)",
       "errors.eject.busy": "the message also covers copying and deleting, so it names the Vorgang instead of the files",
       "menu.bar.file": "the native File menu is Apple’s Ablage"
     },
@@ -1327,17 +1223,6 @@
     ],
     "chosen": "verborgen",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.functionKeyBar.hiddenToast": "English sense: a hidden bar is the hide concept (proposed notMatch: is now hidden)",
-      "search.systemDirExclude.heading": "English sense: folders taken out of the results, the hide concept (proposed notMatch: these folders are hidden)",
-      "settings.advanced.exitFullScreenOnEscapeHintShown.description": "English sense: hidden from the UI is the hide concept (proposed notMatch: hidden from the ui)",
-      "settings.advanced.oldMacosNoticeShown.description": "English sense: hidden from the UI is the hide concept (proposed notMatch: hidden from the ui)",
-      "settings.ai.tooltipOff": "English sense: features taken out of view, the hide concept (proposed notMatch: simply hidden)",
-      "settings.indexing.masterOffNote": "English sense: sizes taken out of view, the hide concept (proposed notMatch: stay hidden)",
-      "settings.network.firstTriggerDone.description": "English sense: hidden from the UI is the hide concept (proposed notMatch: hidden from the ui)",
-      "settings.onboarding.upgradeNudgeShown.description": "English sense: hidden from the UI is the hide concept (proposed notMatch: hidden from the ui)",
-      "settings.whatsNew.lastSeenVersion.description": "English sense: hidden from the UI is the hide concept (proposed notMatch: hidden from the ui)"
-    },
     "forms": "hidden files → verborgene Dateien; Show hidden files → Verborgene Dateien einblenden",
     "sources": "standard German; catalog (settings.listing.showHiddenFiles.description)"
   },
@@ -1352,7 +1237,8 @@
     "chosen": "ausblenden",
     "confidence": "high",
     "exceptions": {
-      "errors.listing.emptyRootICloud.explanation": "macOS hides contents FROM apps → verbirgt … vor Apps, not taken out of view"
+      "errors.listing.emptyRootICloud.explanation": "macOS hides contents FROM apps → verbirgt … vor Apps, not taken out of view",
+      "queryUi.pathPills.hiddenAria": "collapsed path segments read as Verborgene; review whether Ausgeblendete fits the hide ruling better"
     },
     "forms": "Hide Others → Andere ausblenden; stay hidden → bleiben ausgeblendet; show/hide a panel → einblenden/ausblenden",
     "sources": "macOS Finder MenuBar (300729.title Andere ausblenden); MS terminology (hidden → ausgeblendet)"
@@ -1366,9 +1252,6 @@
     "accept": ["Historie"],
     "chosen": "Verlauf",
     "confidence": "high",
-    "exceptions": {
-      "settings.fileExplorer.tabs.closedTabHistorySize.description": "further back in history → auch länger geschlossene Tabs; the sentence names what comes back"
-    },
     "sources": "macOS (Verlauf); catalog (settings.operationLog.intro)"
   },
   "home-folder": {
@@ -1535,18 +1418,11 @@
     "chosen": "Art",
     "confidence": "high",
     "decision": "Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)",
-    "exceptions": {
-      "errors.listing.interrupted.suggestion": "English sense: this kind of … (proposed notMatch: this kind of)"
-    },
     "sources": "macOS Finder ArrangeByMenu (119.title/338.title, the Kind sort criterion)"
   },
   "later": {
     "chosen": "Später",
     "confidence": "high",
-    "exceptions": {
-      "errors.mount.unsupportedProtocol": "English sense: M1 or later / SMB 2 or later is a version floor, oder neuer (proposed notMatch: or later)",
-      "settings.ai.tooltipLocalDisabled": "English sense: M1 or later / SMB 2 or later is a version floor, oder neuer (proposed notMatch: or later)"
-    },
     "note": "A deferral word only where Cmdr really asks again; a one-time offer's no is Nein, danke.",
     "sources": "macOS (Not Now → Später)"
   },
@@ -1595,9 +1471,6 @@
     ],
     "chosen": "Zeile",
     "confidence": "high",
-    "exceptions": {
-      "settings.behavior.adbHintDismissed.description": "English sense: a line of UI copy, the hint (proposed notMatch: one-time line)"
-    },
     "forms": "line number → Zeilennummer",
     "sources": "MS terminology (Zeilennummer); macOS (Zeile)"
   },
@@ -1647,13 +1520,6 @@
     "accept": ["Protokolle", "protokolliert", "Protokollierung"],
     "chosen": "Protokoll",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.authRequiredEneedauth.explanation": "English sense: logging in or out is sign-in / sign-out (proposed notMatch: log in, logging out)",
-      "fileExplorer.network.browser.tooltip.credsRejected": "English sense: logging in or out is sign-in / sign-out (proposed notMatch: log in, logging out)",
-      "main.dockPinNudge.addedButDockDidNotRestart": "English sense: logging in or out is sign-in / sign-out (proposed notMatch: log in, logging out)",
-      "settings.advanced.logLlmCalls.description": "llm-logs is a folder name",
-      "shortcuts.system.loggingOut": "English sense: logging in or out is sign-in / sign-out (proposed notMatch: log in, logging out)"
-    },
     "forms": "log file → Protokolldatei; log lines → Protokollzeilen; logging → Protokollierung; The log has the details → Details stehen in der Protokolldatei.",
     "sources": "macOS/MS (Protokoll)"
   },
@@ -1668,28 +1534,8 @@
     "chosen": "hineinschauen",
     "confidence": "high",
     "decision": "Ask Cmdr schaut jetzt in Dateien hinein: Zustimmungstexte und Werkzeugzeilen (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)",
-    "exceptions": {
-      "errors.git.corruptRepo.suggestion": "English sense: git fsck inspects a repo (proposed notMatch: to inspect the)",
-      "errors.git.missingObject.suggestion": "English sense: git fsck inspects a repo (proposed notMatch: to inspect the)"
-    },
     "forms": "prose → hineinschauen (schaut nur dann in eine Datei hinein, wenn du nach ihr fragst); the tool line → Dateien werden durchgesehen / Dateien durchgesehen",
     "sources": "catalog precedent (the old noContents)"
-  },
-  "macos-app-names": {
-    "accept": [
-      "Erste Hilfe",
-      "Aktivitätsanzeige",
-      "Spotlight",
-      "Mission Control",
-      "Spaces",
-      "Disk Utility",
-      "First Aid"
-    ],
-    "chosen": "Festplattendienstprogramm",
-    "confidence": "high",
-    "forms": "Disk Utility → Festplattendienstprogramm; First Aid → Erste Hilfe; Activity Monitor → Aktivitätsanzeige; Spotlight, Mission Control, and Spaces stay English",
-    "note": "Disk Utility and First Aid stay English only where the en @key flags them do-not-translate; body prose localizes them.",
-    "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21"
   },
   "mailing-list": {
     "accept": ["Anmeldeserver"],
@@ -1721,10 +1567,6 @@
     "accept": ["Modelle"],
     "chosen": "Modell",
     "confidence": "high",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English sense: a product name (proposed notMatch: model context protocol)",
-      "settings.summary.mcpServer": "English sense: a product name (proposed notMatch: model context protocol)"
-    },
     "sources": "MS terminology"
   },
   "modifier-key": {
@@ -1873,8 +1715,7 @@
     "exceptions": {
       "feedback.dialog.description": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
       "feedback.dialog.invalid": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
-      "feedback.sentToast": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface",
-      "whatsNew.optOutToast": "English sense: update notes are release notes (proposed notMatch: update notes)"
+      "feedback.sentToast": "the feedback dialog calls the user’s text a Nachricht, consistently across its surface"
     },
     "sources": "MS terminology (note → Notiz); catalog (errorReporter.dialog.noteLabel)"
   },
@@ -1938,7 +1779,6 @@
       "errors.write.cancelled.message.delete": "The nominalized verb (Das Kopieren wurde abgebrochen.) is the natural German for the copy operation.",
       "errors.write.cancelled.message.move": "The nominalized verb (Das Kopieren wurde abgebrochen.) is the natural German for the copy operation.",
       "errors.write.cancelled.message.trash": "The nominalized verb (Das Kopieren wurde abgebrochen.) is the natural German for the copy operation.",
-      "operationLog.dialog.loadError": "your operation history → dein Verlauf, the operation-log concept",
       "settings.advanced.card.fileOperations": "a Settings card TITLE keeps the Dateioperationen heritage",
       "settings.navigationAndFileOps.card.fileOperations": "a Settings card TITLE keeps the Dateioperationen heritage",
       "settings.network.customTimeout.description": "the protocol-level request on the wire: Netzwerkoperationen",
@@ -2162,9 +2002,7 @@
     "confidence": "high",
     "decision": "Server fixieren und lösen, die vertrauten Hostschlüssel und die ADB-Seite (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.summary.servers`/`.adb`, `settings.appearance.tintSmb.*`)",
     "exceptions": {
-      "fileExplorer.git.tooltip.pinnedCommit": "English sense: a git ref pinned to a commit (proposed notMatch: pinned at commit)",
-      "main.dockPinNudge.body": "Dock sense: Soll das Symbol … bleiben, the body’s plain question before the title’s Im Dock behalten",
-      "settings.developer.mcpPort.description": "English sense: pinning a port number (proposed notMatch: pin a specific port)"
+      "main.dockPinNudge.body": "Dock sense: Soll das Symbol … bleiben, the body’s plain question before the title’s Im Dock behalten"
     },
     "forms": "tabs and servers → fixieren / lösen (Tab fixieren, Server fixieren/lösen, In der Volume-Auswahl fixieren, standalone Lösen); the Dock → im Dock behalten / aus dem Dock entfernen",
     "sources": "Safari MainMenu.strings (PrR-Dj-zwG.title Tab fixieren); Notes (Unpin Note → Notiz lösen); Dock DockMenus"
@@ -2202,26 +2040,12 @@
     "accept": ["Prozesse", "Vorgang", "dienst"],
     "chosen": "Prozess",
     "confidence": "high",
-    "exceptions": {
-      "settings.ai.localContextSize.description": "English sense: process as a verb, verarbeiten (proposed notMatch: can process)"
-    },
     "sources": "MS terminology; catalog"
   },
   "progress": {
     "chosen": "Fortschritt",
     "confidence": "high",
     "decision": "Stalled transfer: the honest-stall notice (`fileOperations.transferProgress.close`/`.stallNotice`/`.stallWaitingDestination`/`.stallWaitingSource`/`.stallUnknown`/`.stallInFlight`/`.stallLogHint`)",
-    "exceptions": {
-      "adb.disconnectBusyTooltip": "English sense: in progress is the running concept (proposed notMatch: in progress, work-in-progress)",
-      "fileExplorer.navigation.disconnectBusyTooltip": "English sense: in progress is the running concept (proposed notMatch: in progress, work-in-progress)",
-      "fileExplorer.navigation.ejectBusyTooltip": "English sense: in progress is the running concept (proposed notMatch: in progress, work-in-progress)",
-      "indexing.step.statusActive": "English sense: in progress is the running concept (proposed notMatch: in progress, work-in-progress)",
-      "onboarding.stepBeta.openBeta": "English sense: work-in-progress areas → die noch unfertigsten Bereiche (proposed notMatch: work-in-progress)",
-      "queryUi.results.scanProgress": "English sense: in progress is the running concept (proposed notMatch: in progress, work-in-progress)",
-      "queryUi.results.scanProgressWithCount": "English sense: in progress is the running concept (proposed notMatch: in progress, work-in-progress)",
-      "queryUi.results.scanning": "English sense: in progress is the running concept (proposed notMatch: in progress, work-in-progress)",
-      "queryUi.results.scanningWithCount": "English sense: in progress is the running concept (proposed notMatch: in progress, work-in-progress)"
-    },
     "forms": "stalled → Kein Fortschritt seit {duration}",
     "sources": "macOS de (Kopierfortschritt anzeigen, Fortschrittsfenster einblenden); Double Commander (Gesamtfortschritt)"
   },
@@ -2229,10 +2053,6 @@
     "accept": ["Protokolle"],
     "chosen": "Protokoll",
     "confidence": "high",
-    "exceptions": {
-      "settings.developer.mcpEnabled.description": "English sense: a product name (proposed notMatch: model context protocol)",
-      "settings.summary.mcpServer": "English sense: a product name (proposed notMatch: model context protocol)"
-    },
     "sources": "AddPrinter.app (Protocol: → Protokoll:)"
   },
   "put-back": {
@@ -2520,8 +2340,7 @@
       "queryUi.results.scanProgressWithCount": "Scan in progress → Laufwerk wird durchsucht, the progress passive",
       "queryUi.results.scanning": "Scan in progress → Laufwerk wird durchsucht, the progress passive",
       "queryUi.results.scanningWithCount": "Scan in progress → Laufwerk wird durchsucht, the progress passive",
-      "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "The drive scan is still running → Das Laufwerk wird noch durchsucht (matches indexing.scan.label)",
-      "updates.moveToApplicationsDialog.translocated": "English sense: macOS runs the app from a copy (proposed notMatch: is running cmdr from)"
+      "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "The drive scan is still running → Das Laufwerk wird noch durchsucht (matches indexing.scan.label)"
     },
     "forms": "status chip Läuft; Still running (heading two lines under a läuft title) → Noch aktiv; Indexing now (heading) → Indizierung läuft",
     "sources": "catalog (queue.row.status); macOS Finder (A17 … da noch Vorgänge aktiv sind.)"
@@ -2555,11 +2374,6 @@
     "chosen": "durchsuchen",
     "confidence": "high",
     "decision": "Indexing run-kind headers + hour-scale ETA (`indexing.run.*`, `indexing.eta.*`, `indexing.enrich.queued`, `settings.mediaIndex.importanceThreshold.waitingForDriveIndex`)",
-    "exceptions": {
-      "queryUi.results.live.waitingForAnotherWalk": "a search walk is a Suchlauf",
-      "queryUi.results.live.waitingOnPathAria": "a search walk is a Suchlauf",
-      "viewer.search.stopTooltip": "English sense: the viewer’s text search, Suche (proposed notMatch: stop scanning)"
-    },
     "forms": "Laufwerk wird durchsucht …; Scanning… → Wird durchsucht …; fresh scan → neuer Durchlauf; rescan → erneuter Durchlauf; the drive scan as an event → Laufwerksdurchlauf; run-kind headers Erster/Erneuter vollständiger Durchlauf",
     "note": "Indexing this drive… (the drive-node tooltip) is the index sense: Indizierung.",
     "sources": "macOS (durchsuchen); Double Commander uses Suche"
@@ -2655,10 +2469,6 @@
     "chosen": "Einstellungen",
     "confidence": "high",
     "decision": "Einstellungsabschnitte (`settings.section.*`)",
-    "exceptions": {
-      "ai.toast.installingTitle": "English sense: setting up is configure (proposed notMatch: setting up)",
-      "onboarding.stepAi.local.tooltip": "English sense: setting it up is configure, einrichten (proposed notMatch: setting it up)"
-    },
     "forms": "a Settings path → Einstellungen › Updates & Datenschutz (separator mirrors the English)",
     "sources": "macOS Systemeinstellungen, MS"
   },
@@ -2797,11 +2607,9 @@
     "confidence": "high",
     "decision": "Wörter, die auseinandergelaufen sind, ohne dass ein Check es sehen konnte (`settings.fileOperations.allowFileExtensionChanges.*`, `askCmdr.wake.stop`, `settings.mediaIndex.clip.comingSoon`, `settings.whatsNew.lastSeenVersion.label`)",
     "exceptions": {
-      "downloads.toast.stopShowing": "Stop showing these → Nicht mehr anzeigen (macOS’s own wording)",
       "errors.mount.cancelled": "stopped before it finished → endete, bevor er abgeschlossen war",
       "errors.volume.cancelled": "a stop at the user’s request is the cancel status: auf deinen Wunsch abgebrochen",
-      "settings.mediaIndex.chosenFolders.help": "Removing a folder stops new indexing → wird nichts Neues mehr indiziert",
-      "settings.search.autoApply.description": "English sense: after you stop typing, not the Stop action (proposed notMatch: after you stop)"
+      "settings.mediaIndex.chosenFolders.help": "Removing a folder stops new indexing → wird nichts Neues mehr indiziert"
     },
     "forms": "Stop, and … (rollback tooltip) → Stoppen und …; You stopped this search → Du hast diese Suche gestoppt",
     "sources": "macOS Finder (CP5 Kopieren stoppen, NE111.1 den Vorgang stoppen)"
@@ -3084,11 +2892,6 @@
     "accept": ["entsperr"],
     "chosen": "Entsperren",
     "confidence": "high",
-    "exceptions": {
-      "errors.mutation.fileLocked": "English sense: unlocking a locked FILE is the locked concept, Schutz aufheben (proposed notMatch: unlock it in finder)",
-      "errors.write.fileLocked.suggestion.mac": "English sense: unlocking a locked FILE is the locked concept, Schutz aufheben (proposed notMatch: unlock it in finder)",
-      "errors.write.permissionDenied.suggestion.deleteMac": "English sense: unlocking a locked FILE is the locked concept, Schutz aufheben (proposed notMatch: unlock it in finder)"
-    },
     "sources": "macOS AppKit (locked-item button Entsperren)"
   },
   "unplug": {
@@ -3123,11 +2926,6 @@
     "chosen": "Nutzung",
     "confidence": "high",
     "decision": "Usage stats: \"anonymous\" dropped, \"a random id\" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)",
-    "exceptions": {
-      "ai.local.ramGaugeAria": "English sense: memory usage is RAM load (proposed notMatch: memory usage)",
-      "errors.listing.notEnoughMemory.suggestion": "English sense: memory usage is RAM load (proposed notMatch: memory usage)",
-      "fileExplorer.pane.diskUsageAriaLabel": "English sense: the disk-usage concept (proposed notMatch: disk usage)"
-    },
     "forms": "usage stats → Nutzungsstatistiken (tied to → verknüpft mit, a random id → eine zufällige ID)",
     "sources": "catalog (onboarding.stepBeta.emailNote)"
   },
@@ -3149,8 +2947,7 @@
     "chosen": "Version",
     "confidence": "high",
     "exceptions": {
-      "onboarding.stepOptional.updates.summary": "stay on the latest version → damit du aktuell bleibst",
-      "suggestedOps.showNewVersion": "English sense: a new version of a suggestion, eine neue Fassung (proposed notMatch: show the new version)"
+      "onboarding.stepOptional.updates.summary": "stay on the latest version → damit du aktuell bleibst"
     },
     "forms": "SMB version → SMB-Version; a release → veröffentlichte Version",
     "sources": "macOS"
@@ -3207,10 +3004,6 @@
     "accept": ["überwach", "Ereignis"],
     "chosen": "Überwachung",
     "confidence": "high",
-    "exceptions": {
-      "settings.adb.status.notWatching": "English sense: watching for phones is ADB’s device tracking (proposed notMatch: watching for phones)",
-      "settings.adb.status.watching": "English sense: watching for phones is ADB’s device tracking (proposed notMatch: watching for phones)"
-    },
     "forms": "file system watching → Dateisystemüberwachung",
     "sources": "catalog"
   },
@@ -3279,5 +3072,49 @@
     "confidence": "high",
     "forms": "the server table's Last used column",
     "sources": "macOS Finder (Zuletzt benutzt); ConnectToWindow (Zuletzt benutzte Server löschen)"
+  },
+  "search-walk": {
+    "chosen": "durchsuchen",
+    "accept": ["durchsucht", "Durchlauf", "Durchläufe", "Suchlauf"],
+    "confidence": "high",
+    "sources": "macOS (durchsuchen); Double Commander uses Suche",
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word.",
+    "exceptions": {
+      "viewer.search.stopTooltip": "the viewer's text search reads as Suche"
+    }
+  },
+  "disk-utility": {
+    "chosen": "Festplattendienstprogramm",
+    "confidence": "high",
+    "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21",
+    "accept": ["Disk Utility"],
+    "note": "Stays English only where the en @key flags it do-not-translate; body prose localizes it."
+  },
+  "first-aid": {
+    "chosen": "Erste Hilfe",
+    "confidence": "high",
+    "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21",
+    "accept": ["First Aid"],
+    "note": "Stays English only where the en @key flags it do-not-translate; body prose localizes it."
+  },
+  "activity-monitor": {
+    "chosen": "Aktivitätsanzeige",
+    "confidence": "high",
+    "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21"
+  },
+  "spotlight": {
+    "chosen": "Spotlight",
+    "confidence": "high",
+    "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21"
+  },
+  "mission-control": {
+    "chosen": "Mission Control",
+    "confidence": "high",
+    "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21"
+  },
+  "spaces": {
+    "chosen": "Spaces",
+    "confidence": "high",
+    "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21"
   }
 }
