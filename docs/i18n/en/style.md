@@ -66,8 +66,10 @@ template each translation re-expresses in its own categories (which may be more:
   `commands.json` 7 / 0; the progress strings elsewhere run the other way (verified 2026-08-29 by counting both shapes
   per file). **Mirror whichever shape the source key uses** rather than normalizing a locale to one of them.
 
-## Glossary
+## Termbase
 
-The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/en/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+This language has no termbase yet. On its first translation pass, copy `terms.json`, `decisions.md`, and
+`review-queue.md` from `docs/i18n/_template/` into this folder, and add a `## Digest` to this guide (the template
+`style.md` shows it). Each term ruling goes in `terms.json`, keyed by a concept from `docs/i18n/concepts.json` and
+sourced from the reference pile (`_ignored/i18n/en/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`); never guess
+a term. Any terminology notes above are seeds to verify and move there. Schema: `docs/i18n/termbase.md`.

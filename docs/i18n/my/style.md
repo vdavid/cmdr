@@ -134,8 +134,10 @@ These are the calls that actually matter for Burmese; settle them before a trans
   macOS-native reference and a moderate addressable base. Recommendation: viable but not high priority; ship with a
   native reviewer and the Unicode validation guard in place. David-only call. Confidence: high.
 
-## Glossary
+## Termbase
 
-The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/my/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+This language has no termbase yet. On its first translation pass, copy `terms.json`, `decisions.md`, and
+`review-queue.md` from `docs/i18n/_template/` into this folder, and add a `## Digest` to this guide (the template
+`style.md` shows it). Each term ruling goes in `terms.json`, keyed by a concept from `docs/i18n/concepts.json` and
+sourced from the reference pile (`_ignored/i18n/my/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`); never guess
+a term. Any terminology notes above are seeds to verify and move there. Schema: `docs/i18n/termbase.md`.

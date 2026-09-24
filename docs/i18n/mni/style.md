@@ -91,8 +91,10 @@ These are the calls that actually matter for Manipuri; settle them before a tran
   choice for David rather than silently following either. No gender-specific words, so no count/gender agreement to
   manage. Confidence: high on the script conventions, open on the date format.
 
-## Glossary
+## Termbase
 
-The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/mni/`; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.
+This language has no termbase yet. On its first translation pass, copy `terms.json`, `decisions.md`, and
+`review-queue.md` from `docs/i18n/_template/` into this folder, and add a `## Digest` to this guide (the template
+`style.md` shows it). Each term ruling goes in `terms.json`, keyed by a concept from `docs/i18n/concepts.json` and
+sourced from the reference pile (`_ignored/i18n/mni/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`); never
+guess a term. Any terminology notes above are seeds to verify and move there. Schema: `docs/i18n/termbase.md`.
