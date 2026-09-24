@@ -29,7 +29,7 @@ Rust draws.
   catalog dirs). ❌ Never hand-edit it, and never hand-write a script or parent table beside it: both drift with CLDR.
 - **Rust's own user-facing strings go through `menu_t("menu.…")`**, reading `native_strings.gen.rs`
   (`pnpm intl:native-strings`, guarded by `native-strings-fresh`). A RAW lookup, so `menu.*` is a raw family in
-  `isRawKey` and apostrophes stay single. ❌ Never `t()` one. Missing → English; unknown → the key, never a panic.
+  `isRawKey` and apostrophes stay single. ❌ Never `t()` one. Missing → overlay base → English; unknown → the key.
 - **`set_language_preference` stores the SETTING, not the resolved tag**, so `'system'` keeps tracking the OS. It and
   `refresh_active_locale` report whether the answer MOVED: the cue to rebuild the menu bar.
 - **The `en-XA` pseudolocale is excluded by the GENERATORS, not filtered here.** Auto-selection draws only from the

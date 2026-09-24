@@ -123,6 +123,8 @@ have to agree, or one of them puts text on screen that another has already ruled
    an OVERLAY of another (carrying only its forks) or a full translation. A different-script variant is a full
    translation, precisely because it can't inherit. See `docs/guides/i18n.md` § Overlay catalogs (regional variants).
 
+The native strings Rust draws obey layer 2's rule through `inheritance_chain` (§ Why `menu_t` is deliberately dumb).
+
 Layers 2 and 3 share one implementation, `inheritableAncestors` in `apps/desktop/src/lib/intl/locale-inheritance.ts`
 ("the ancestors that exist AND read the same script"). Layer 1 can't call `Intl`, so it reads the same CLDR answers off
 the generated table below, which the codegen builds with that module's `likelyScript`. So the script facts have one
@@ -175,7 +177,12 @@ way to learn that `en-NZ`'s parent is `en-001`. What the resolver does with them
 
 Filtered to the base languages we ship a catalog for. That's safe because the resolver rejects another language's
 catalog before it ever consults this table, and it keeps the entries that go live later on their own: `es-MX` →
-`es-419` and `pt-AO` → `pt-PT` are inert while only the base catalogs ship.
+`es-419` and `pt-AO` → `pt-PT` are inert while only the base catalogs ship. Shipping `messages/es-419/` and
+regenerating is the whole change: every Latin American and US Spanish tag CLDR parents to `es-419` (`es-MX`, `es-AR`,
+`es-CO`, `es-CL`, `es-US`, ...) opens it, while `es`, `es-ES`, `es-GQ`, `es-EA`, `es-IC`, and `es-PH` stay on `es`. No
+`covers` entry is needed, because `es-419` is itself the CLDR node. Pinned on fixtures by
+`a_latin_american_overlay_catches_every_region_cldr_parents_to_it` and
+`a_european_portuguese_overlay_catches_the_lusophone_world_and_leaves_brazil_alone`.
 
 ### Guards
 
@@ -318,8 +325,9 @@ list. `pnpm intl:native-strings` regenerates, and `native-strings-fresh` diffs i
 
 ### Why `menu_t` is deliberately dumb
 
-`menu_t(key)` finds the locale's row, binary-searches its sorted `(key, value)` pairs, and falls back to English, then
-to the key itself. That's the whole thing. No ICU, no plurals, no formatting:
+`menu_t(key)` finds the locale's row, binary-searches its sorted `(key, value)` pairs, then walks the catalogs that
+locale inherits from (`inheritance_chain`: an overlay's base, so `es-419` → `es`), then English, then the key itself.
+That's the whole thing. No ICU, no plurals, no formatting:
 
 - **No panic, ever.** The menu is built inside AppKit callbacks that abort the process on a panic, so a typo has to cost
   a visibly wrong label rather than a crash. The typo is caught at test time instead, by
@@ -334,12 +342,13 @@ to the key itself. That's the whole thing. No ICU, no plurals, no formatting:
   an `NSUserDefaults` read each time. `refresh_active_locale()` is the only thing that moves it, and it reports whether
   it moved, which is exactly the signal a rebuild needs.
 
-**Gotcha: `menu_t`'s fallback is two steps, `<locale>` then `en`, while the frontend walks the full inheritance chain**
-(`inheritableAncestors`, `apps/desktop/src/lib/intl/locale-inheritance.ts`). The two agree for every catalog shipped
-today, because `en-GB` and `en-AU` are overlays of `en` and their chain IS `en`. They will DISAGREE for the first
-overlay whose base is not English: a `pt-PT` reader would get Portuguese everywhere except the native menu bar, which
-would drop straight past `pt` to English for every key `pt-PT` doesn't fork. Teach `menu_t` the intermediate hop before
-shipping `pt-PT` (the script and region facts it needs are already in `SHIPPED_LOCALES`).
+**`menu_t` walks the same inheritance chain as the frontend** (`inheritance_chain` in `mod.rs` mirrors
+`inheritableAncestors` in `apps/desktop/src/lib/intl/locale-inheritance.ts`: shipped truncation ancestors in the same
+script). For `en-GB` and `en-AU` that chain IS `en`, so a shortcut straight to English would look fine; the first
+overlay with a non-English base (`es-419`, `pt-PT`) would then get an English menu bar for every key it doesn't fork.
+❌ Don't shortcut it. `an_overlay_inherits_the_labels_it_does_not_fork_from_its_base_not_english` pins it, and
+`every_shipped_locale_speaks_its_own_menu_bar` holds each overlay's native table against its BASE's table, not
+English's.
 
 ### Which locale, and who decides
 

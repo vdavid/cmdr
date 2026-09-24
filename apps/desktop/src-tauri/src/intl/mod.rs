@@ -356,34 +356,50 @@ fn is_region_subtag(part: &str) -> bool {
         || (part.len() == 3 && part.chars().all(|c| c.is_ascii_digit()))
 }
 
-/// The shipped catalog `tag` is an OVERLAY of, if any: the nearest catalog it
-/// can inherit from, meaning a shipped ancestor written in the same script.
-/// `None` for a full translation, which owes every key itself.
+/// The shipped catalogs `tag` inherits the keys it lacks from, nearest first:
+/// its shipped ancestors written in the same script. Empty for a full
+/// translation (which owes every key itself) and for a tag we don't ship.
+/// Callers append `en` as the final fallback, as the frontend does.
 ///
 /// The same rule as the frontend's `inheritableAncestors`
 /// (`apps/desktop/src/lib/intl/locale-inheritance.ts`), so the two layers can't
-/// disagree about what a catalog owes: `en-GB` inherits `en` and forks a
-/// handful of keys, while `zh-Hant` inherits NOTHING (Simplified is a wall) and
-/// is therefore a full translation despite reading like a variant of `zh`.
+/// disagree about what a catalog owes or where its missing keys come from:
+/// `es-419` inherits `es`, `en-GB` inherits `en`, while `zh-Hant` inherits
+/// NOTHING (Simplified is a wall) and is therefore a full translation despite
+/// reading like a variant of `zh`.
+///
+/// [`crate::intl::menu_t`] walks it at runtime, so an overlay's native menu
+/// reads its base language for every label it doesn't fork. ❌ Don't shortcut
+/// that walk to `en`: it's invisible for `en-GB`, and an `es-419` menu bar in
+/// English.
+pub(crate) fn inheritance_chain(tag: &str, shipped: &[ShippedLocale]) -> Vec<&'static str> {
+    let Some(entry) = shipped.iter().find(|entry| entry.tag.eq_ignore_ascii_case(tag)) else {
+        return Vec::new();
+    };
+    let mut chain: Vec<&'static str> = shipped
+        .iter()
+        .filter(|candidate| !candidate.tag.eq_ignore_ascii_case(entry.tag))
+        .filter(|candidate| is_ancestor_tag(candidate.tag, entry.tag))
+        .filter(|candidate| candidate.script.eq_ignore_ascii_case(entry.script))
+        .map(|candidate| candidate.tag)
+        .collect();
+    chain.sort_by_key(|ancestor| std::cmp::Reverse(ancestor.len()));
+    chain
+}
+
+/// The shipped catalog `tag` is an OVERLAY of, if any: the nearest entry of
+/// its [`inheritance_chain`]. `None` for a full translation.
 ///
 /// ❌ Don't classify a catalog by how many keys it carries. A full translation
 /// that lost one key would reclassify itself as an overlay and start being
 /// held to the weaker contract.
 ///
-/// Test-only: nothing at RUNTIME needs the answer, because Rust resolves a
-/// catalog and the per-key inheritance happens in the frontend. It lives here,
-/// beside the table it reads, so the guard in `native_strings.rs` derives the
-/// classification from the shipped facts instead of guessing at one.
+/// Test-only: it lives here, beside the table it reads, so the guard in
+/// `native_strings.rs` derives the classification from the shipped facts
+/// instead of guessing at one.
 #[cfg(test)]
 pub(crate) fn overlay_base(tag: &str, shipped: &[ShippedLocale]) -> Option<&'static str> {
-    let entry = shipped.iter().find(|entry| entry.tag.eq_ignore_ascii_case(tag))?;
-    shipped
-        .iter()
-        .filter(|candidate| !candidate.tag.eq_ignore_ascii_case(entry.tag))
-        .filter(|candidate| is_ancestor_tag(candidate.tag, entry.tag))
-        .filter(|candidate| candidate.script.eq_ignore_ascii_case(entry.script))
-        .max_by_key(|candidate| candidate.tag.len())
-        .map(|candidate| candidate.tag)
+    inheritance_chain(tag, shipped).first().copied()
 }
 
 /// Whether `ancestor` is a subtag-aligned prefix of `tag`: `pt` is one of
@@ -391,9 +407,9 @@ pub(crate) fn overlay_base(tag: &str, shipped: &[ShippedLocale]) -> Option<&'sta
 ///
 /// This is plain truncation, matching the frontend's `ancestorTags`. It is NOT
 /// how a PREFERENCE finds its catalog ([`ancestor_chain`] follows CLDR's parent
-/// overrides for that); it answers the different question [`overlay_base`] asks,
-/// which is what one shipped catalog inherits its missing keys from.
-#[cfg(test)]
+/// overrides for that); it answers the different question
+/// [`inheritance_chain`] asks, which is what one shipped catalog inherits its
+/// missing keys from.
 fn is_ancestor_tag(ancestor: &str, tag: &str) -> bool {
     let mut theirs = ancestor.split('-');
     let mut ours = tag.split('-');
@@ -712,6 +728,107 @@ mod tests {
         assert_eq!(resolve_ui_locale(&prefs(&["pt-BR"]), PT), Some("pt-BR".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["pt-PT"]), PT), Some("pt".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["pt"]), PT), Some("pt".to_string()));
+    }
+
+    /// A Latin, region-free entry, for fixtures that add a regional catalog the
+    /// real table doesn't ship yet.
+    const fn latin(tag: &'static str) -> ShippedLocale {
+        ShippedLocale {
+            tag,
+            script: "latn",
+            default_script: "latn",
+            region_scripts: &[],
+            covers: &[],
+        }
+    }
+
+    /// Every region CLDR's `parentLocales` sends to `es-419`, spelled the way a
+    /// Mac reports it. Read off the generated [`PARENT_LOCALES`] rather than
+    /// listed, so a CLDR bump that grows the group grows this test with it.
+    fn latin_american_spanish_tags() -> Vec<String> {
+        let tags: Vec<String> = PARENT_LOCALES
+            .iter()
+            .filter(|(_, parent)| *parent == "es-419")
+            .map(|(child, _)| format!("es-{}", child[3..].to_ascii_uppercase()))
+            .collect();
+        // The set the Spanish split is for; a table missing them is a broken
+        // generator, not a smaller Latin America.
+        for expected in ["es-MX", "es-AR", "es-CO", "es-CL", "es-US"] {
+            assert!(
+                tags.iter().any(|tag| tag == expected),
+                "{expected} lost its CLDR parent"
+            );
+        }
+        tags
+    }
+
+    #[test]
+    fn every_spanish_reader_opens_the_one_spanish_catalog_we_ship_today() {
+        for tag in latin_american_spanish_tags()
+            .iter()
+            .map(String::as_str)
+            .chain(["es-419", "es-ES", "es", "es-GQ"])
+        {
+            assert_eq!(
+                resolve_ui_locale(&prefs(&[tag]), SHIPPED),
+                Some("es".to_string()),
+                "{tag} should read the Spanish catalog"
+            );
+        }
+    }
+
+    #[test]
+    fn a_latin_american_overlay_catches_every_region_cldr_parents_to_it() {
+        // The day `es-419` ships as an overlay, CLDR's parent data routes every
+        // Latin American and US Spanish to it with no region table of ours,
+        // while Spain and the rest of the Spanish-speaking world keep `es`.
+        const SPANISH: &[ShippedLocale] = &[latin("en"), latin("es"), latin("es-419")];
+        for tag in latin_american_spanish_tags()
+            .iter()
+            .map(String::as_str)
+            .chain(["es-419"])
+        {
+            assert_eq!(
+                resolve_ui_locale(&prefs(&[tag]), SPANISH),
+                Some("es-419".to_string()),
+                "{tag} should reach the Latin American overlay"
+            );
+        }
+        for tag in ["es", "es-ES", "es-GQ", "es-EA", "es-IC", "es-PH"] {
+            assert_eq!(
+                resolve_ui_locale(&prefs(&[tag]), SPANISH),
+                Some("es".to_string()),
+                "{tag} should stay on Spain's Spanish"
+            );
+        }
+    }
+
+    #[test]
+    fn a_european_portuguese_overlay_catches_the_lusophone_world_and_leaves_brazil_alone() {
+        // Our `pt` is Brazilian, which is also CLDR's reading of bare `pt`.
+        // A `pt-PT` overlay picks up the regions CLDR parents to it.
+        const PORTUGUESE: &[ShippedLocale] = &[latin("en"), latin("pt"), latin("pt-PT")];
+        for tag in ["pt-PT", "pt-AO", "pt-MZ", "pt-CV", "pt-MO", "pt-CH"] {
+            assert_eq!(
+                resolve_ui_locale(&prefs(&[tag]), PORTUGUESE),
+                Some("pt-PT".to_string()),
+                "{tag} should reach the European overlay"
+            );
+        }
+        for tag in ["pt", "pt-BR"] {
+            assert_eq!(resolve_ui_locale(&prefs(&[tag]), PORTUGUESE), Some("pt".to_string()));
+        }
+    }
+
+    #[test]
+    fn an_overlay_inherits_from_the_catalog_it_is_written_against() {
+        // What `menu_t` walks for a key the active catalog lacks.
+        const SPANISH: &[ShippedLocale] = &[latin("en"), latin("es"), latin("es-419")];
+        assert_eq!(inheritance_chain("es-419", SPANISH), vec!["es"]);
+        assert_eq!(inheritance_chain("es", SPANISH), Vec::<&str>::new());
+        assert_eq!(inheritance_chain("en-GB", SHIPPED), vec!["en"]);
+        assert_eq!(inheritance_chain("zh-Hant", SHIPPED), Vec::<&str>::new());
+        assert_eq!(inheritance_chain("kl", SHIPPED), Vec::<&str>::new());
     }
 
     /// Catalog directories that exist but are never a language anyone reads.
