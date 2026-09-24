@@ -13,20 +13,22 @@ Commander, Nautilus, Thunar, Dolphin), then the catalog's own precedent. Evidenc
 ## Apple feature names Apple itself translates: Överblick and Nyckelring (`commands.fileQuickLook.mac.label`, `menu.file.quickLook`, `ai.secretError.keychainTitle`/`.keychainBody`, `servers.sheet.remember`)
 
 - **Quick Look → `Överblick`**, not the brand kept verbatim · pile `sv/macOS/Finder/LocalizableMerged.json` `TL14` =
-  "Överblick", verb form "Överblicka" (`N169.17`). The generic "quick preview" descriptors in `fileExplorer.quickLookHint.*`
-  stay generic (`snabbtitt`), mirroring the English, which deliberately avoids the feature name there.
+  "Överblick", verb form "Överblicka" (`N169.17`). The generic "quick preview" descriptors in
+  `fileExplorer.quickLookHint.*` stay generic (`snabbtitt`), mirroring the English, which deliberately avoids the
+  feature name there.
 - **Keychain → `nyckelring` (the store), Keychain Access → `Nyckelhanterare` (the app)** · `Keychain Access.app`
-  `InfoPlist.loctable` `CFBundleDisplayName` = "Nyckelhanterare"; `Localizable.loctable` uses "nyckelring(en)" throughout.
-  Per sense: "macOS Keychain denied access" → `macOS Nyckelring`, "Remember in Keychain" → `Kom ihåg i nyckelringen`,
-  "Open Keychain Access" → `Öppna Nyckelhanterare`. Neither is on the enforced don't-translate list.
+  `InfoPlist.loctable` `CFBundleDisplayName` = "Nyckelhanterare"; `Localizable.loctable` uses "nyckelring(en)"
+  throughout. Per sense: "macOS Keychain denied access" → `macOS Nyckelring`, "Remember in Keychain" →
+  `Kom ihåg i nyckelringen`, "Open Keychain Access" → `Öppna Nyckelhanterare`. Neither is on the enforced
+  don't-translate list.
 
 ## Git terms: worktree kept, working tree translated (`errors.git.*`, `settings.fileExplorer.git.showVirtualGitPortal.description`, `fileExplorer.git.size.linkedWorktrees`)
 
 English draws the two apart and so does Swedish. A "worktree" is git's own name for a linked checkout, and the `@key`
 descriptions say not to translate it, so `errors.git.orphanedWorktree.*`, the virtual-portal description, and
-`fileExplorer.git.size.linkedWorktrees` carry `worktree` (an en-word: `den här worktree:n`, `en länkad worktree`,
-plural `worktrees`). The generic "working tree" in `errors.git.bareRepo`, `blobTooLarge`, and `gitDirPermissionDenied`
-is ordinary prose and reads `arbetsträd`. "Working directory" stays `arbetskatalog`.
+`fileExplorer.git.size.linkedWorktrees` carry `worktree` (an en-word: `den här worktree:n`, `en länkad worktree`, plural
+`worktrees`). The generic "working tree" in `errors.git.bareRepo`, `blobTooLarge`, and `gitDirPermissionDenied` is
+ordinary prose and reads `arbetsträd`. "Working directory" stays `arbetskatalog`.
 
 ## Cross-file consistency after the first fan-out (`commands.feedbackSend.label`, `commands.handler.favoriteAdded`)
 
@@ -39,8 +41,8 @@ is ordinary prose and reads `arbetsträd`. "Working directory" stays `arbetskata
 ## The parent folder and the double-click gesture (`settings.behavior.doubleClickPaneNavigatesToParent.*`, `fileExplorer.doubleClickHint.*`, `fileExplorer.breadcrumb.navigateTooltip`)
 
 - Finder uses `överordnad mapp` uniformly: "Öppna överordnad mapp" (the command), "Navigerar … till den överordnade
-  mappen", "Visa i överordnad mapp" (`N162`, `FV10`, `FV9`, `300753.title`). For the gesture, "go up a folder" → `gå upp
-  till den överordnade mappen`; the breadcrumb tooltip keeps the warmer `Klicka för att gå till {path}`.
+  mappen", "Visa i överordnad mapp" (`N162`, `FV10`, `FV9`, `300753.title`). For the gesture, "go up a folder" →
+  `gå upp till den överordnade mappen`; the breadcrumb tooltip keeps the warmer `Klicka för att gå till {path}`.
 - A row in the file list is a `filrad` (KDE Dolphin "Markera hela raden" + `fil`): "Det är den tomma ytan runt
   fillistan, inte en filrad." The one-time hint title "What just happened?" → `Vad hände nyss?`.
 
@@ -55,9 +57,9 @@ is ordinary prose and reads `arbetsträd`. "Working directory" stays `arbetskata
 
 - The field that names what a control chooses (screen-reader label `transferDialog.operationAria`) is `Åtgärd` (Finder,
   MS). The counting spinner's tooltip is `Söker igenom…`, like `transferProgress.stageScanning`.
-- "doesn't exist yet … will create it during the copy/move" → `finns inte än` + `Cmdr skapar den under
-  kopieringen|flytten`: `finns inte` from Total Commander, active voice over the pile's passive `skapas`, and the definite
-  operation noun (`flytten`, not `flyttningen`).
+- "doesn't exist yet … will create it during the copy/move" → `finns inte än` +
+  `Cmdr skapar den under kopieringen|flytten`: `finns inte` from Total Commander, active voice over the pile's passive
+  `skapas`, and the definite operation noun (`flytten`, not `flyttningen`).
 - The queue row's progress arms are finite present-tense verbs: `Kopierar`, `Flyttar`, `Byter namn`, `Skapar mapp`,
   `Skapar fil`, `Redigerar arkiv`, fallback `Arbetar` (Nautilus "Byter namn", "Skapar").
 
@@ -68,9 +70,9 @@ is ordinary prose and reads `arbetsträd`. "Working directory" stays `arbetskata
 - A generic bundle is `paket` (Finder "Visa paketets innehåll"); "App bundles" → `Appaket`, which mirrors English's own
   split between bundles and app bundles.
 - Open with the default app → `öppna i standardappen`: the catalog says `app` (76 hits) over `program`.
-- Deleting inside an archive: "There's no trash inside an archive." → `Det finns ingen papperskorg i ett arkiv.`; "…removed
-  from the zip for good" → `Objekten tas bort permanent ur zip-arkivet` (`ta bort … ur`, the out-of-a-container sense,
-  as Total Commander's "ta bort … ur arkivfilen").
+- Deleting inside an archive: "There's no trash inside an archive." → `Det finns ingen papperskorg i ett arkiv.`;
+  "…removed from the zip for good" → `Objekten tas bort permanent ur zip-arkivet` (`ta bort … ur`, the
+  out-of-a-container sense, as Total Commander's "ta bort … ur arkivfilen").
 - The settings rows read `Vad Retur gör med en …`: the Enter key is `Retur` everywhere else in the catalog, and a list
   of three takes no comma before `eller`.
 
@@ -84,23 +86,23 @@ is ordinary prose and reads `arbetsträd`. "Working directory" stays `arbetskata
 
 ## The archive password and compression (`fileOperations.archivePassword.*`, `commands.fileCompress.*`, `settings.archives.compressionLevel.*`)
 
-- `fileOperations.archivePassword.message` agrees with `{name}` (the file), so `… är lösenordsskyddad` and `låsa upp
-  den`; where the sentence says `arkivet` itself, the neuter wins (`Det här arkivet är lösenordsskyddat`).
+- `fileOperations.archivePassword.message` agrees with `{name}` (the file), so `… är lösenordsskyddad` and
+  `låsa upp den`; where the sentence says `arkivet` itself, the neuter wins (`Det här arkivet är lösenordsskyddat`).
 - The compression slider's ends: `Snabbare` (quicker packing, not app speed) and `Mindre` (the smaller output file),
   from Total Commander's "Snabbast komprimering (1)" / "Maximal komprimering".
 
 ## The operation log's status and provenance labels (`operationLog.*`, `commands.logOperationLog.*`)
 
-- The status chips reuse `queue.row.status` word for word: `Väntar`, `Pågår`, `Klar`, `Avbruten`, `Gick inte att
-  slutföra`; the rollback chips are in § Rollback-familjen.
+- The status chips reuse `queue.row.status` word for word: `Väntar`, `Pågår`, `Klar`, `Avbruten`,
+  `Gick inte att slutföra`; the rollback chips are in § Rollback-familjen.
 - Initiator labels: You → `Du`, AI client → `AI-klient`, Agent → `Agent` (the same word in Swedish, so it carries a
   `sameAsSourceJustification`).
 - Load more → `Läs in 50 till`; recorded items → `registrerade objekt`; the skipped outcome chip → `Överhoppad`.
 
 ## Shortcut conflicts and the macOS features they name (`shortcuts.system.*`, `shortcuts.conflict.*`, `downloads.shortcutRow.*`)
 
-- Spotlight, Mission Control, and Spaces stay verbatim. Character Viewer → `Teckenvisare`, Force Quit → `Avsluta
-  tvingat`, input source switching → `byte av inmatningskälla`: Apple-style Swedish, not in the pile.
+- Spotlight, Mission Control, and Spaces stay verbatim. Character Viewer → `Teckenvisare`, Force Quit →
+  `Avsluta tvingat`, input source switching → `byte av inmatningskälla`: Apple-style Swedish, not in the pile.
 - A modifier key is a `modifierare`: MS's `låstangent` is the lock-key sense. A shortcut's keys are a `kombination`
   (`Välj en annan kombination`); a system-wide one is `global` (`global genväg`, adverb `globalt`).
 
@@ -134,8 +136,8 @@ one-time consent screen, the per-chat cost footer, and the settings section + LL
   reply" in `askCmdr.error.budgetExhausted` and `unfinishedReply` ("Svaret nådde sin gräns…", "Svaret blev inte klart…")
   rather than a bare pronoun, since English's "this one"/"it" has no single Swedish gender-neutral equivalent standing
   alone. `high`.
-- **request (a tool call the assistant asked to make): `förfrågan`** · reused from the termbase entry (API
-  request). `askCmdr.tool.refused` "That request wasn't available" → "Den förfrågan var inte tillgänglig". `high`.
+- **request (a tool call the assistant asked to make): `förfrågan`** · reused from the termbase entry (API request).
+  `askCmdr.tool.refused` "That request wasn't available" → "Den förfrågan var inte tillgänglig". `high`.
 - **token (LLM usage unit): `token` / `tokens`** · kept identical to English in both CLDR branches (`sourceHash`
   `askCmdr.cost.tokens` carries `sameAsSourceJustification`). No native Swedish plural is attested in the reference pile
   for this (recent, AI-specific) sense of "token" (the pile's only hit is the older `säkerhetstoken` = security token, a
@@ -313,9 +315,9 @@ Reuses the settled indexing family (`indexera`/`indexering`, passive `indexeras`
   avstängd", "…stänger av sökning med beskrivning". Photos → `bilder` per the settled photo→bild decision. `high`.
 - **Apple silicon: kept verbatim `Apple silicon`** · the macOS reference-pile bundle has NO occurrence (pile gap), and
   the English `@key.description` explicitly says "keep it". "en Mac med Apple silicon" mirrors Apple's own "Mac med
-  Apple-kisel" structure; the bare English term reads as a recognizable tech proper noun in Swedish. Lowercase
-  `silicon` everywhere, as Apple writes it, even where the English source capitalizes it. `tentative` (pile gap; kept
-  per the source instruction).
+  Apple-kisel" structure; the bare English term reads as a recognizable tech proper noun in Swedish. Lowercase `silicon`
+  everywhere, as Apple writes it, even where the English source capitalizes it. `tentative` (pile gap; kept per the
+  source instruction).
 - **enable indexing / folders to index (card titles): `Aktivera indexering` / `Mappar att indexera`** · `aktivera`
   (enable) + `indexering`; `att`+infinitive for "to index". Sentence case. `high`.
 - **delete model (reclaim disk): `Radera modell (frigör {size})` / `Radera modellen för semantisk sökning?`** · the same
@@ -578,13 +580,15 @@ of sight"), not the backdrop noun.
 - **"Keep this running in the background" (the aria): `Håll igång den här i bakgrunden`** · byte-identical to the
   opening of the shared `queueTooltip` ("Håll igång den här i bakgrunden och hantera den i åtgärdskön (F2)"), so the
   tooltip a sighted user reads and the name a screen reader speaks are the same sentence. Reuses the settled
-  `i bakgrunden` (`terms.json` `background`) and matches `queueAria`'s imperative shape ("Skicka till åtgärdskön"). `high`.
+  `i bakgrunden` (`terms.json` `background`) and matches `queueAria`'s imperative shape ("Skicka till åtgärdskön").
+  `high`.
 - **WCAG 2.5.3 containment: the label `I bakgrunden` sits inside the aria as `i bakgrunden`**, matching
   case-insensitively (identical letters, only the sentence-case initial differs) — the same bar English keeps
   ("Background" ⊂ "…in the background"). Exact-case containment isn't reachable in natural Swedish here: the aria is a
-  clause that starts with its verb (`Håll`), and Swedish capitalizes nothing mid-sentence. See style.md § Notes and decisions
-  (the definite-form note) for the trap this avoids: the bare noun `Bakgrund` is NOT a substring of `i bakgrunden` (indefinite vs definite), so
-  the noun choice would have broken containment as well as the part of speech.
+  clause that starts with its verb (`Håll`), and Swedish capitalizes nothing mid-sentence. See style.md § Notes and
+  decisions (the definite-form note) for the trap this avoids: the bare noun `Bakgrund` is NOT a substring of
+  `i bakgrunden` (indefinite vs definite), so the noun choice would have broken containment as well as the part of
+  speech.
 
 ## Quit gate: dialogen som stoppar ⌘Q medan något pågår (`main.quit.*`)
 
@@ -625,8 +629,8 @@ buttons. Reuses the settled `åtgärd` head noun (§ Operation queue), `Pågår`
   the opening `Allt som redan är klart`; `skrivas` is macOS's write verb (`PW18` "Writing track" → "Skriver spår").
   `high`.
 - **"what it leaves half-written" → `det som blivit delvis skrivet`** · identical concept to the already-settled "partly
-  written" (§ Överföringen som står stilla, `transferProgress.stallInFlight` "kan redan vara delvis skriven/skrivna"), so it
-  reuses that wording rather than coining `halvskriven`; neuter agreement with `det`, since the definite
+  written" (§ Överföringen som står stilla, `transferProgress.stallInFlight` "kan redan vara delvis skriven/skrivna"),
+  so it reuses that wording rather than coining `halvskriven`; neuter agreement with `det`, since the definite
   `den delvis skrivna filen` can't stay number-neutral. `high`.
 - **"clears away" (the cleanup, softer than deleting) → `rensar bort`** · the catalog's own soft-removal verb
   (`errorReporter.dialog.description` "…rensas bort innan de skickas"); deliberately NOT `raderar`, which is the settled
@@ -887,8 +891,8 @@ inte gick igenom. Familjen är RAW, inte ICU, så `{path}` står som en bokstavl
   är kortare och namnger vem som teg.
 - **lösenordsskyddad om ett arkiv: neutrum `lösenordsskyddat`** · `arkiv` är ett neutrumord (ett arkiv, arkivet), så
   `errors.volume.needsPassword` blir "Det här arkivet är lösenordsskyddat" · `high`. Den tidigare noteringen om
-  utrumform i § The archive password and compression gäller `fileOperations.archivePassword.message`, där adjektivet kongruerar med
-  `{name}` (filen), inte med ordet `arkiv`.
+  utrumform i § The archive password and compression gäller `fileOperations.archivePassword.message`, där adjektivet
+  kongruerar med `{name}` (filen), inte med ordet `arkiv`.
 - **stöder inte / kunde inte slutföra: `den åtgärden`** · `errors.volume.notSupported` och `.ioError` säger bara "that"
   på engelska; svenskan behöver ett huvudord, och beskrivningen namnger den begärda åtgärden. `åtgärd` enligt termbasens
   operation-post och macOS ("Åtgärden kan inte slutföras eftersom den inte stöds") · `high`.
@@ -1102,10 +1106,11 @@ en notering som fästs på **samma** rapport (inget skickas en andra gång). Åt
   skillnad från tyskan och nederländskan, så hela familjen (`menu.select.*`,
   `commands.selectionSelectFiles`/`…DeselectFiles`, `selection.dialog.title.*`, `selection.action.*`) använder samma
   ordpar rakt igenom.
-- **`Markera` är att markera objekt, `Välj` är att välja ett alternativ.** Redan satt i § Inbyggda menyer; det är
-  därför dialogtiteln heter `Markera filer` och inte `Välj filer`.
+- **`Markera` är att markera objekt, `Välj` är att välja ett alternativ.** Redan satt i § Inbyggda menyer; det är därför
+  dialogtiteln heter `Markera filer` och inte `Välj filer`.
 - **recent selections → `senaste markeringar`** · speglat på syskonen i `queryUi.recent.*` (”senaste sökningar”), samma
-  grammatik, bara `sökningar` → `markeringar`. `markering` är den satta termen för selection (`terms.json` `select`) · `high`.
+  grammatik, bara `sökningar` → `markeringar`. `markering` är den satta termen för selection (`terms.json` `select`) ·
+  `high`.
 - **`selection.recent.applyAria` följer `search.recent.runAria`** · där står ”Kör senaste {mode}-sökning: {query}”, här
   ”Använd senaste {mode}-markering: {query}”. `apply` → `Använd` från macOS AppKit (`NSFontOptionsPanel` `100411.title`
   och `NSPreferences` `7TY-1Z-cs2.title` = ”Använd”) · `high`. `{query}` ligger sist efter kolon, så vilken användartext
@@ -1150,9 +1155,9 @@ körande systemet (macOS 26.6.2, build 25G83, 2026-08-30) via `Finder.app`/`Safa
 - **Close other tabs → `Stäng övriga flikar`** · Safari 26 `sv` `MainMenu.strings` `686.title` · `high`. Samma `övriga`
   som Finders `Göm övriga`; `andra` är inte Apples ord här.
 - **word wrap → `Automatiskt radbyte`** · Microsofts terminologi, term-id `134172` (SWE, substantiv) · `high`. Ersätter
-  den tidigare `radbrytning`. macOS har ingen egen "word wrap": TextEdit `sv` säger
-  `Anpassa texten till fönstret` om en annan funktion (Wrap to Window) och `Radbrytning` bara inne i utskriftspanelens
-  `Radbrytning efter sidans storlek`. Tier 1 saknar termen, alltså avgör Tier 2.
+  den tidigare `radbrytning`. macOS har ingen egen "word wrap": TextEdit `sv` säger `Anpassa texten till fönstret` om en
+  annan funktion (Wrap to Window) och `Radbrytning` bara inne i utskriftspanelens `Radbrytning efter sidans storlek`.
+  Tier 1 saknar termen, alltså avgör Tier 2.
 - **Dismiss → `Avfärda`** · macOS `sv` `"Dismiss Popover": "Avfärda popover"` · `high`. Microsoft säger `stäng` (term-id
   `1633537`), men Tier 1 vinner, och `Stäng` är dessutom upptaget av Close.
 - **Copied → `Kopierat`** · `high` (grammatik; ingen källa har en naken "Copied"-knapp). Supinformen fungerar oavsett
@@ -1234,15 +1239,15 @@ Varje rad som har en engelsk källsträng i parentes motsvarar en post i `i18n-t
   (`fileOperations.trash.undone` respektive `askCmdr.renameUndo.undone`/`.partial`) · `high`. Redan satt i §
   Papperskorgs-toasten: `lägga tillbaka` är Finders `Put Back` (`N153.1`), och `återställa` är reserverat för
   `askCmdr.renameUndo.*`, där de gamla NAMNEN kommer tillbaka och ingenting flyttas. Engelskan delade en gång en enda
-  sträng mellan de två handlingarna och har nu skilt dem åt; svenskan höll dem isär hela tiden. Exakt lydelse: § Samma engelska i menyn och paletten, och Systeminställningarnas paneler
-  `en` fixes (2026-08-30) sist i filen.
+  sträng mellan de två handlingarna och har nu skilt dem åt; svenskan höll dem isär hela tiden. Exakt lydelse: § Samma
+  engelska i menyn och paletten, och Systeminställningarnas paneler `en` fixes (2026-08-30) sist i filen.
 - **`File` → `Arkiv` som menyradsrubrik, `Fil` överallt annars** (`"File"`) · `high`. Redan satt i § Inbyggda menyer
   (Finder `300764.title`/`83.title`, AppKit `MenuCommands`). `suggestedOps.columnFile` är en kolumnrubrik, inte en meny.
 - **`View` → `Innehåll` som menyradsrubrik, `Visa` som åtgärd** (`"View"`) · `high`. Redan satt i § Inbyggda menyer
   (Finder `206.title`/`207.title` OCH Safari `200.title`). `menu.file.view`, `commands.fileView.label` och
   funktionstangentraden är F3-åtgärden.
-- **`Select` → `Markera` för objekt, `Välj` för ett alternativ** (`"Select"`) · `high`. Redan satt i § Inbyggda menyer och
-  § Markeringsdialogen; `ui.select.placeholder` är en rullgardins platshållare.
+- **`Select` → `Markera` för objekt, `Välj` för ett alternativ** (`"Select"`) · `high`. Redan satt i § Inbyggda menyer
+  och § Markeringsdialogen; `ui.select.placeholder` är en rullgardins platshållare.
 - **`Zoom` → `Zoom` (substantiv, textzoom-undermenyn) mot `Zooma` (verb, Fönster-menyn)** (`"Zoom"`) · `high`. Redan
   satt i § Inbyggda menyer (Finder `300667.title`).
 - **`share` → `delad mapp` fritt stående, `-resurs` bara inne i en sammansättning, `delning` bara i räknaren** · `high`.
@@ -1269,9 +1274,9 @@ användaren att leta efter ett menyalternativ som inte finns. Tre rättade, alla
 
 - **`Full Disk Access` → `Full skivtillgång`** i 19 nycklar (`onboarding.stepFda.*`, `onboarding.stepAi.banner*`,
   `search.coverage.*`, `downloads.fda.message`, `common.downloadsFdaHint`, `askCmdr.wake.needsFullDiskAccess`,
-  `settings.behavior.…globalGoToLatestShortcut.enabled.description`). Se `terms.json` `full-disk-access` för belägget och kongruensen. Det som
-  gjorde felet osynligt: `{full_disk_access}` i `errors.*` hämtas från OS:et i körningen, så appen visade Apples namn på
-  ett ställe och en egen omskrivning på nitton andra.
+  `settings.behavior.…globalGoToLatestShortcut.enabled.description`). Se `terms.json` `full-disk-access` för belägget
+  och kongruensen. Det som gjorde felet osynligt: `{full_disk_access}` i `errors.*` hämtas från OS:et i körningen, så
+  appen visade Apples namn på ett ställe och en egen omskrivning på nitton andra.
 - **`View > Zoom > 100%` → `Innehåll > Zoom > 100 %`** (`commands.handler.zoomResetHintMenu`). Tipset pekade på
   `Visa > Zooma`, alltså två menyer som inte finns: menyradsrubriken heter `Innehåll` och textzoom-undermenyn `Zoom`
   (`Zooma` är verbet i Fönster-menyn). Båda gränserna stod redan i § Inbyggda menyer; det var bara den här strängen som
@@ -1592,8 +1597,8 @@ documents (.docx, .xlsx, .pptx) and app packages (.jar, .apk), which is why even
   `bundle → paket` · `high`. Bare `paket` keeps the row broader than the `Appaket` card below it, mirroring English's
   own `packages` vs `app bundles` split.
 - **Sentence frame → `Vad Retur gör med en …, … eller ….`** · the frame of the sibling keys
-  `settings.archives.zip.description` and `settings.archives.bundle.description`, with no comma before `eller`
-  (style.md § Notes and decisions) · `high`. The Enter key is `Retur`, as everywhere else in the catalog.
+  `settings.archives.zip.description` and `settings.archives.bundle.description`, with no comma before `eller` (style.md
+  § Notes and decisions) · `high`. The Enter key is `Retur`, as everywhere else in the catalog.
 
 ## Serverhubben: anslutningsläget, avvisningarna och glöm-dialogerna (`servers.paneState.*`, `servers.refusal.*`, `fileExplorer.navigation.connectionTooltip*`, `fileExplorer.navigation.disconnect*`, `fileExplorer.navigation.forget*`)
 
@@ -1939,8 +1944,7 @@ LEVANDE macOS-paketen (macOS 26.6.2, build 25G83, läst 2026-09-07; `.loctable` 
   `frameworks/base/packages/SettingsLib/res/values-sv/strings.xml`, `enable_adb` = ”USB-felsökning” (och
   `clear_adb_keys` = ”Återkalla åtkomst till USB-felsökning”, `enable_adb_wireless` = ”Trådlös felsökning”) · `high`.
   Det är ordagrant etiketten användaren ser i Utvecklaralternativ på sin telefon, vilket är hela poängen med nyckeln.
-  Därför `high`, inte `tentative`; `en`-genus står kvar (”USB-felsökning
-  aktiverad”).
+  Därför `high`, inte `tentative`; `en`-genus står kvar (”USB-felsökning aktiverad”).
 - **Allow (knappen på Androids egen ”Allow USB debugging?”-ruta) → `Tillåt`** · AOSP
   `frameworks/base/packages/SystemUI/res/values-sv/strings.xml`, `usb_debugging_allow` = ”Tillåt” (rutans rubrik är ”Ska
   USB-felsökning tillåtas?”, `usb_debugging_title`) · `high`. Ordet citeras som egennamn, aldrig böjt till ett verb,
@@ -2109,8 +2113,8 @@ De två raderna under de gråade fälten `Adress` och `Användarnamn`, när anv�
 
 - **`{seconds}`/`{minutes}` har nu ett ICU-plural med TVÅ platshållare** (`servers.paneState.retryTotalSeconds`,
   `.retryTotalMinutes`): `{seconds}` väljer bara grenen, det som läses är `{secondsText}`, det redan formaterade talet.
-  Svenskan har `one` och `other` (CLDR, style.md § Plurals): `1 sekund` / `60 sekunder`, `1 minut` / `2 minuter`, ordagrant från
-  `main.quit.countdown` och `indexing.eta.hoursMinutesLeft` · `high`.
+  Svenskan har `one` och `other` (CLDR, style.md § Plurals): `1 sekund` / `60 sekunder`, `1 minut` / `2 minuter`,
+  ordagrant från `main.quit.countdown` och `indexing.eta.hoursMinutesLeft` · `high`.
 - **Båda värdena är byggstenar i `servers.paneState.retryKeepsTrying`** (`Fortsätter försöka i totalt {duration}.`), så
   de står nakna, utan preposition och utan punkt.
 - **`Cmdr won't connect to {name}` → `Cmdr ansluter inte till {name}`** · presens, precis som systernyckeln
@@ -2286,7 +2290,8 @@ långa förklaringar och enradssammanfattningarna bredvid strömbrytarna i valfr
   mildring till ”mindre kapabel”. `high`.
 - **`custom` (egen LLM) · `anpassad`** · katalogens settlade form i nio `settings.*`-nycklar (`Custom…` → `Anpassat…`,
   `Custom timeout` → `Anpassad tidsgräns`). `LLM` är en-genus (`en modell`), alltså `din egen anpassade LLM`. `high`.
-- **`Configure it below` · `Konfigurera det nedan`** · `konfigurera` per arkivets `Konfigurera…` (`fileExplorer.archiveEnterMenu.configure`). `high`.
+- **`Configure it below` · `Konfigurera det nedan`** · `konfigurera` per arkivets `Konfigurera…`
+  (`fileExplorer.archiveEnterMenu.configure`). `high`.
 - **`<strong>`-blocket i `stepAi.local.tooltip` MÅSTE vara ordagrant `onboarding.stepAi.cloud.label`** · texten pekar
   användaren på alternativknappen längre ner, så de två är en enhet på samma sätt som ett `*Aria`-par: båda säger
   `Ja, jag vill ha AI`. Skrivs den ena om måste den andra skrivas om samtidigt.
@@ -2355,8 +2360,8 @@ till en temporär fil och det tar mer än en sekund.
   katalogens `fileExplorer.imageIndex.folder.someIndexed`. `high`.
 - **so far (efter en storlek): `hittills`** · termbasens `so far`-post och `queryUi.results.live.matchesSoFar`. `high`.
 - **”This file stopped arriving” · `Hämtningen av den här filen står stilla.`** · `står stilla` är katalogens satta ord
-  för en överföring som inte rör sig (§ Överföringen som står stilla, valt framför `har stannat`), och `Hämtningen` knyter an
-  till rubrikens `Hämtar`. Andra meningen följer `settings.mediaIndex.clip.failed`
+  för en överföring som inte rör sig (§ Överföringen som står stilla, valt framför `har stannat`), och `Hämtningen`
+  knyter an till rubrikens `Hämtar`. Andra meningen följer `settings.mediaIndex.clip.failed`
   (`Kontrollera din anslutning och försök igen.`) och `errors.listing.couldntReadUnknown.suggestion`
   (`fortfarande är ansluten`), utan komma före `och` mellan två korta satser (`style.md`). `ansluten` stämmer med
   `telefonen` och `servern`, båda en-genus. `high`.
@@ -2565,8 +2570,8 @@ arbetsfil, här är det användarens filer som Cmdr medvetet skyddar.
   hela poängen · `high`. ❌ Inte `blev kvar` (som `cancelRollback.stagedLeftover.*`): det läses som en rest ingen tog
   hand om, och tar bort försäkran engelskan lägger i ”left them in place”.
 - **a hidden folder named {folderName} → `en dold mapp som heter {folderName}`** · `dold` är termbasens satta adjektiv
-  för `hidden` (se § Samma begrepp med olika engelska), `mapp` är en-genus så obestämd form blir `en dold mapp` · `high`.
-  `som heter` är katalogens egen formel för `named {x}` (`errors.mount.shareNotFound`,
+  för `hidden` (se § Samma begrepp med olika engelska), `mapp` är en-genus så obestämd form blir `en dold mapp` ·
+  `high`. `som heter` är katalogens egen formel för `named {x}` (`errors.mount.shareNotFound`,
   `errors.write.duplicateSourceNames.message`); macOS `sv` säger `med namnet` om samma sak (”Skapa en mapp med namnet
   ${fileName} inuti ${target}”) och hade fungerat lika bra, men katalogformen är talspråkligare och står redan på två
   ställen. Båda lämnar platshållaren oböjd, vilket är det som avgör.
@@ -2619,8 +2624,8 @@ favoritavdelning är borta och ersatt av en enda topprad som byter ut växlaren 
   (`Lägg till i favoriter`), vilket engelskan avser.
 - **mounted share: `monterad delad mapp`** · `fileExplorer.network.browser.noMountedShares` är redan
   `Inga monterade delade mappar från {hostName}`, och `settings.network.permissionWithout` säger
-  `delade mappar som redan är monterade`. `delad mapp` är den satta termen för share (`terms.json` `network-share`). `high`.
-  Inga protokollnamn i `fileExplorer.navigation.favoritesCantAddHere`, precis som engelskan undviker dem.
+  `delade mappar som redan är monterade`. `delad mapp` är den satta termen för share (`terms.json` `network-share`).
+  `high`. Inga protokollnamn i `fileExplorer.navigation.favoritesCantAddHere`, precis som engelskan undviker dem.
 - **a disk: `en disk`** · katalogen skiljer redan på `disk` (engelskans `disk`: ”en intern disk”, ”en extern disk”, ”På
   disk”) och `enhet` (engelskans `drive`). `skiva` är reserverat för när Finders egen ordalydelse speglas (`style.md` §
   Terminology). `high`.
@@ -2765,18 +2770,18 @@ replacement target. Four rules bind this whole group:
 
 Om ett markerat objekt i en molnmapp bara finns online skulle papperskorgen hämta hem det först. Därför öppnar Cmdr
 dialogen för att radera permanent och förklarar det i varningsrutan. Två varianter av rutan: en för en blandad
-markering, en för en markering som helt och hållet bara finns online. De skiljer sig bara i första meningen och i vilka utvägar de kan
-erbjuda. Den tredje nyckeln är raden som visas när Cmdr lämnar tillbaka en tryckning.
+markering, en för en markering som helt och hållet bara finns online. De skiljer sig bara i första meningen och i vilka
+utvägar de kan erbjuda. Den tredje nyckeln är raden som visas när Cmdr lämnar tillbaka en tryckning.
 
 - **`.cloudOnlineOnlyMixedWarning`** · `finns endast online` är Finders formulering för en utrensad fil; `papperskorgen`
   och `molntjänst` kommer från `terms.json` · medium.
-- **`.cloudOnlineOnlyAllWarning`** · samma text, med ”Allt du har markerat” i stället för ”En del av det du har markerat”, och
-  utan utvägen att avmarkera: om allt bara finns online skulle ingenting bli kvar markerat · medium.
+- **`.cloudOnlineOnlyAllWarning`** · samma text, med ”Allt du har markerat” i stället för ”En del av det du har
+  markerat”, och utan utvägen att avmarkera: om allt bara finns online skulle ingenting bli kvar markerat · medium.
 - **`.cloudOnlineOnlyHandedBack`** · raden ovanför knappen efter en tryckning som Cmdr medvetet inte utförde. Saklig,
   utan ursäkter · medium.
 - **Alla fyra fakta måste stå kvar**: (1) papperskorgen skulle hämta filerna, (2) därför erbjuder Cmdr bara att radera
-  HELA markeringen, (3) efteråt finns INGEN kopia i papperskorgen, men tjänsten har en egen (❌ tona inte ner det), (4) de
-  utvägar rutan nämner.
+  HELA markeringen, (3) efteråt finns INGEN kopia i papperskorgen, men tjänsten har en egen (❌ tona inte ner det), (4)
+  de utvägar rutan nämner.
 - **De två `<strong>`-partierna står kvar**, på ”hämta dem först” och på verbet ”radera”. Och ”Radera” inom citattecken
   är knappens etikett: alltid samma ord som `fileOperations.delete.confirmDelete`.
 - **`markering`, inte `urval`**: selection är katalogens `markering` (`terms.json` `select`), och

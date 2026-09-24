@@ -9,19 +9,19 @@ app-wide `docs/style-guide.md` for the English voice these notes carry into Germ
 The must-know rules; the rest of this file elaborates them.
 
 - **Address**: informal lowercase `du` / `dich` / `dir` / `dein` everywhere, like macOS German (zero `Sie` in Finder or
-  AppKit). Never Microsoft's or Google's `Sie`. Keep direct address light where German phrases neutrally
-  („Wird geladen …“). Onboarding and About may speak as David in the first person, still with `du`.
-- **Voice**: friendly, concise, active, calm. Prefer a verb to a verbal noun („Suchen“, not „Durchführen einer
-  Suche“). Error copy states the problem and a next step and never uses `Fehler`, `fehlgeschlagen`, or `Fehlschlag` as a
-  label: „Couldn't X“ → `X ließ sich nicht …` / `X nicht möglich`, a stopped operation → `Nicht abgeschlossen`,
-  „Something went wrong“ → `Etwas ist schiefgelaufen`, „ran into a problem“ → `ist auf ein Problem gestoßen` (never
-  `ist ein Problem aufgetreten`). Compounds like `Fehlerbericht` and `Tippfehler` are fine. No apologies where Cmdr
-  made a deliberate choice; native regret (`Tut mir leid`) over the loanword `Sorry` where one is due.
+  AppKit). Never Microsoft's or Google's `Sie`. Keep direct address light where German phrases neutrally („Wird geladen
+  …“). Onboarding and About may speak as David in the first person, still with `du`.
+- **Voice**: friendly, concise, active, calm. Prefer a verb to a verbal noun („Suchen“, not „Durchführen einer Suche“).
+  Error copy states the problem and a next step and never uses `Fehler`, `fehlgeschlagen`, or `Fehlschlag` as a label:
+  „Couldn't X“ → `X ließ sich nicht …` / `X nicht möglich`, a stopped operation → `Nicht abgeschlossen`, „Something went
+  wrong“ → `Etwas ist schiefgelaufen`, „ran into a problem“ → `ist auf ein Problem gestoßen` (never
+  `ist ein Problem aufgetreten`). Compounds like `Fehlerbericht` and `Tippfehler` are fine. No apologies where Cmdr made
+  a deliberate choice; native regret (`Tut mir leid`) over the loanword `Sorry` where one is due.
 - **Register by UI slot**:
   - buttons and menu items: infinitive, like Finder (`Umbenennen`, `Auswerfen`, `Abbrechen`), with the object first
     (`Server bearbeiten…`, `Zu Favoriten hinzufügen`);
-  - progress lines: passive present with a space before the ellipsis (`Wird kopiert`, `Laufwerk wird durchsucht …`);
-    a menu item or button that opens a dialog attaches the ellipsis with no space (`Einführung…`);
+  - progress lines: passive present with a space before the ellipsis (`Wird kopiert`, `Laufwerk wird durchsucht …`); a
+    menu item or button that opens a dialog attaches the ellipsis with no space (`Einführung…`);
   - status chips: terse (`Wartet`, `Läuft`, `Angehalten`, `Fertig`, `Nicht abgeschlossen`);
   - a waiting line in body prose is a full sentence with a subject (`Cmdr wartet auf eine Antwort vom Ziel.`);
   - „Click to X“: short `Zum X klicken`, long `Klicken, um … zu …`.
@@ -43,27 +43,27 @@ The must-know rules; the rest of this file elaborates them.
   never `Cmdrs` (the don't-translate check reads it as a dropped brand). In a subordinate clause Cmdr is `es`.
   `Ask Cmdr` names only the chat panel; compounds couple through (`Ask-Cmdr-Einstellungen`). Prose about what the AI
   does says `Cmdr` or `die KI`.
-- **Plurals**: CLDR `one` / `other`. Get case right inside each branch: a bare count phrase is nominative
-  (`12 Ordner`), the dative `-n` needs a preposition (`in 3 Ordnern`, `von 12 Bildern`). Text after a plural block must
-  work with both `ist` and `sind`.
+- **Plurals**: CLDR `one` / `other`. Get case right inside each branch: a bare count phrase is nominative (`12 Ordner`),
+  the dative `-n` needs a preposition (`in 3 Ordnern`, `von 12 Bildern`). Text after a plural block must work with both
+  `ist` and `sind`.
 - **Placeholders**: a `{name}`, `{path}`, `{app}`, `{server}` has no known gender, so never refer back with a pronoun or
   a possessive: repeat the noun (`das Objekt`, `der Server`), use a pronominal adverb (`darauf`, `darin`), or take the
   article (`am alten Ort`). Keep a placeholder out of case slots: nominative subject, or behind its own preposition
-  (`Unter „{path}“ gibt es …`, `auf {volumeName}`, `namens {folderName}`). Two nouns of different gender take a
-  generic noun, not a shared pronoun (`das Gerät` for „a Mac or NAS“).
+  (`Unter „{path}“ gibt es …`, `auf {volumeName}`, `namens {folderName}`). Two nouns of different gender take a generic
+  noun, not a shared pronoun (`das Gerät` for „a Mac or NAS“).
 - **Aria labels**: an `*Aria` value must contain its visible label verbatim; give the label the form the natural aria
-  sentence needs (`Im Hintergrund` inside `Im Hintergrund weiterlaufen lassen`, `Anhalten` inside `Diesen Vorgang
-  anhalten`).
+  sentence needs (`Im Hintergrund` inside `Im Hintergrund weiterlaufen lassen`, `Anhalten` inside
+  `Diesen Vorgang anhalten`).
 - **One word per thing**: two keys with the same English get the same German (the term-consistency check enforces it),
   one control has one German name even where English has two (`Volume-Auswahl`), and one dialog keeps one word family
   (`hinzufügen` → `Wird hinzugefügt …` → `hinzugefügt`). Name a feature in full once (`Fehlerbericht`), then the short
   word (`Bericht`).
 - **Top traps** (details in `terms.json`):
-  - operation → `Vorgang` (m.: `diesen Vorgang`, `ihn`): `Vorgangswarteschlange`, `Vorgangsprotokoll`; `Operation`
-    only for the protocol-level request and the Settings titles (`Dateioperationen`); transfer → `Übertragung` only
-    where the English says transfer.
-  - move → `bewegen`, never `verschieben`; but a message that also covers copy and delete says `Vorgang`. Putting
-    files back where they were → `zurücklegen`; old names back → `zurücksetzen`.
+  - operation → `Vorgang` (m.: `diesen Vorgang`, `ihn`): `Vorgangswarteschlange`, `Vorgangsprotokoll`; `Operation` only
+    for the protocol-level request and the Settings titles (`Dateioperationen`); transfer → `Übertragung` only where the
+    English says transfer.
+  - move → `bewegen`, never `verschieben`; but a message that also covers copy and delete says `Vorgang`. Putting files
+    back where they were → `zurücklegen`; old names back → `zurücksetzen`.
   - item → `Objekt`, never `Element`; paste → `einsetzen`, never `einfügen`; save button → `Sichern` (its participle
     `gesichert`), storing data → `gespeichert`.
   - delete permanently → `endgültig`; `dauerhaft` only for a setting kept for good.
@@ -71,8 +71,8 @@ The must-know rules; the rest of this file elaborates them.
     cancel → `abbrechen`, reserved for the Cancel action.
   - dismiss → `Schließen` for a dialog or toast, `Ausblenden` for a row or hint line hidden for good.
   - see/view → `ansehen` (the F3 action `Ansehen`); show → `anzeigen` / `einblenden`.
-  - index → `indizieren`, never `indexieren`; scan → `durchsuchen` / `Durchlauf`, never `Scan`; browse into an archive or
-    phone → `durchsehen`, the file-picker button → `Durchsuchen…`.
+  - index → `indizieren`, never `indexieren`; scan → `durchsuchen` / `Durchlauf`, never `Scan`; browse into an archive
+    or phone → `durchsehen`, the file-picker button → `Durchsuchen…`.
   - hidden files → `verborgen`; taken out of view → `ausgeblendet`.
   - drive → `Laufwerk` (what the user plugged in), volume → `Volume` (technical); disk image → `Image`.
   - pin → `fixieren` / `lösen` for tabs and servers, `im Dock behalten` / `aus dem Dock entfernen` for the Dock.
@@ -146,10 +146,10 @@ reference pile first (`../reference-pile/how-to-mine.md`).
 
 ## Brand and do-not-translate
 
-Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, plus the `{system_settings}`-style tokens.
-Enforced by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). macOS UI names Cmdr
-opens into (System Settings panes, "Papierkorb") should match a German macOS. Quick Look is NOT verbatim: Apple's German
-macOS calls it `Übersicht`, so Cmdr does too.
+Keep verbatim: Cmdr, macOS, GitHub, SMB, MTP, Tauri, Rust, Svelte, plus the `{system_settings}`-style tokens. Enforced
+by `desktop-i18n-dont-translate` (list in `apps/desktop/scripts/i18n-catalog-lib.ts`). macOS UI names Cmdr opens into
+(System Settings panes, "Papierkorb") should match a German macOS. Quick Look is NOT verbatim: Apple's German macOS
+calls it `Übersicht`, so Cmdr does too.
 
 ## Plurals
 
@@ -184,8 +184,8 @@ Dateien".
   (`Ablage`, `Darstellung`, `Im Dock ablegen`, `Widerrufen`, `Einsetzen`), weil der Nutzer Cmdrs Menüleiste direkt neben
   der des Finders sieht. Belege und die Ausnahmen: `decisions.md` § Native Menüs.
 - **Nouns are always capitalized.** This is grammar, not title case. The app's sentence-case rule still holds (only the
-  first word and nouns are capitalized), so "Datei umbenennen" but "Save"→"Sichern" at sentence start. Don't
-  title-case adjectives/verbs.
+  first word and nouns are capitalized), so "Datei umbenennen" but "Save"→"Sichern" at sentence start. Don't title-case
+  adjectives/verbs.
 - **Compound nouns concatenate** ("Dateiübertragung", "Netzwerkfreigabe"). This is correct German, but it lengthens
   strings: see Length below.
 - **Quotation marks: `„…“`** (low opening, high closing) is the standard German form, and macOS uses it consistently
@@ -265,8 +265,8 @@ Dateien".
   Marker ist über alle `*Busy`-Schlüssel in `menu.json` derselbe und der Grundwortlaut bleibt zeichengleich, damit beide
   Zustände als ein Eintrag lesbar bleiben: `Auswerfen ({name}) (in Benutzung)`, `Trennen (in Benutzung)`,
   `Server vergessen (in Benutzung)`, `Gespeichertes Passwort vergessen (in Benutzung)`. Keinen zweiten Marker erfinden.
-  Abgrenzung zur Termbase-Regel `in use → in Verwendung`: die gilt für den Fließtext im Finder-Ton („Das Volume ist gerade
-  in Verwendung …“), der Menü-Marker bleibt `in Benutzung`, weil `menu.volume.ejectBusy` ihn gesetzt hat.
+  Abgrenzung zur Termbase-Regel `in use → in Verwendung`: die gilt für den Fließtext im Finder-Ton („Das Volume ist
+  gerade in Verwendung …“), der Menü-Marker bleibt `in Benutzung`, weil `menu.volume.ejectBusy` ihn gesetzt hat.
 - **Zwei Nomen mit verschiedenem Genus vertragen kein gemeinsames Pronomen.** Wo das Englische mit „it“ auf eine
   Aufzählung zurückzeigt („turn on a Mac or NAS … and Cmdr will find it“), braucht das Deutsche ein Oberbegriff-Nomen,
   weil `ein Mac` maskulin und `ein NAS` neutrum ist: „… und Cmdr findet **das Gerät**.“ (`servers.hub.emptyMessage`).

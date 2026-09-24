@@ -10,18 +10,19 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **app bundle → `Appaket`**: the compound drops one p (app + paket); confirm it reads cleanly against `Programpaket`.
 - **command palette → `kommandopalett`**, **onboarding → `introduktion`** (menu `Introduktion…`, wizard
   `introduktionsguiden`, title `Kom igång med Cmdr`): no macOS source for either.
-- **Character Viewer → `Teckenvisare`**, **Force Quit → `Avsluta tvingat`**, **input source switching → `byte av
-  inmatningskälla`**: Apple-style Swedish that isn't in the pile; check against a live Swedish Mac.
+- **Character Viewer → `Teckenvisare`**, **Force Quit → `Avsluta tvingat`**, **input source switching →
+  `byte av inmatningskälla`**: Apple-style Swedish that isn't in the pile; check against a live Swedish Mac.
 - **modifier key → `modifierare`**: MS's `låstangent` is the lock-key sense, so the word is composed.
-- **Apple silicon** kept English: Apple's Swedish marketing says `Apple-kisel`; confirm which a Swedish Mac user expects.
+- **Apple silicon** kept English: Apple's Swedish marketing says `Apple-kisel`; confirm which a Swedish Mac user
+  expects.
 - **token plural `tokens`** (`askCmdr.cost.tokens`): identical to English, from Swedish tech press, no pile source.
 - **unarchive → `avarkivera`**: composed by the av- reversal pattern (`avmontera`); no direct hit.
 - **source-available → `källtillgänglig`**, **rate-limit → `hastighetsbegränsa`**, **importance → `vikt`**: composed.
 - **the rename-cycle badge `(cykel)`**: correct term for a cyclic dependency; confirm a user doesn't read "bicycle".
 - **the skipped outcome chip `Överhoppad`** vs `Hoppade över`.
-- **`Kräver enhetsindexering`** for the "Off with drive indexing" badge (`settings.indexing.overriddenBadge`): reframes a
-  state as a requirement to avoid the imperative `Av med …`. The literal alternative is `Av tillsammans med
-  indexeringen`.
+- **`Kräver enhetsindexering`** for the "Off with drive indexing" badge (`settings.indexing.overriddenBadge`): reframes
+  a state as a requirement to avoid the imperative `Av med …`. The literal alternative is
+  `Av tillsammans med indexeringen`.
 - **start folder → `startmapp`**, **key file → `Nyckelfil`**, **(SSH) host key → `värdnyckel`**, **compromised →
   `komprometterad`**: composed, no first-party source.
 - **text editor → `textredigerare`**: shares the catalog's `redigerare` stem; MS says `textredigeringsprogram`.

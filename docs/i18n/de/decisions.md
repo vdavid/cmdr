@@ -30,8 +30,8 @@ zeichengleich sein. Hergeleitet aus den Termbase-Regeln und dem Wortlaut der mac
 - **empty space around the file list → `leere Fläche rund um die Dateiliste`** · Double Commander sagt „Teil“, `Fläche`
   liest sich für den leeren Hintergrund natürlicher · high.
 - **„go up a folder“ → `in den übergeordneten Ordner wechseln`**, Double Commanders Wortlaut für genau diese Einstellung
-  („Wechsel in das übergeordnete Verzeichnis durch Doppelklick auf den leeren Teil der Dateiansicht aktivieren“), nur mit
-  macOS' `Ordner` statt `Verzeichnis`. Der Hinweistext und der Brotkrumen-Tooltip sagen dagegen `navigieren` (macOS
+  („Wechsel in das übergeordnete Verzeichnis durch Doppelklick auf den leeren Teil der Dateiansicht aktivieren“), nur
+  mit macOS' `Ordner` statt `Verzeichnis`. Der Hinweistext und der Brotkrumen-Tooltip sagen dagegen `navigieren` (macOS
   Finder: „Navigiert zu einem Ort …“), weil das Englische dort „navigates“ sagt.
 - **„What just happened?“ → `Was ist gerade passiert?`**, **„I like it“ / „Don't like it?“ → `Gefällt mir` /
   `Gefällt dir das nicht?`** · `Gefällt mir` ist Apples und der sozialen Netzwerke Standard für „like“ · high.
@@ -50,10 +50,10 @@ zeichengleich sein. Hergeleitet aus den Termbase-Regeln und dem Wortlaut der mac
 
 ## Kopieren und Bewegen: Zielordner, Fortschrittszeilen und zu große Dateien (`fileOperations.transferDialog.targetWillBeCreatedCopy`/`.targetWillBeCreatedMove`, `queue.row.label`, `fileOperations.shared.scanningTooltip`, `fileOperations.errorDialog.tooLargeAndMore`, `errors.write.filesTooLargeForFilesystem.*`)
 
-- **„This folder doesn't exist yet. Cmdr will create it during the copy/move.“ → `Diesen Ordner gibt es noch nicht.
-  Cmdr erstellt ihn beim Kopieren.` / `… beim Bewegen.`** · `Ordner` ist maskulin (also `diesen Ordner`, `ihn`), das
-  Existenz-Idiom ist das gesetzte `gibt es`, das aktive `Cmdr erstellt ihn` schlägt macOS' passives „wird erstellt“ nach
-  der Aktiv-Regel, und „during the X“ wird zum Verb (`beim Kopieren`) · high.
+- **„This folder doesn't exist yet. Cmdr will create it during the copy/move.“ →
+  `Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Kopieren.` / `… beim Bewegen.`** · `Ordner` ist maskulin
+  (also `diesen Ordner`, `ihn`), das Existenz-Idiom ist das gesetzte `gibt es`, das aktive `Cmdr erstellt ihn` schlägt
+  macOS' passives „wird erstellt“ nach der Aktiv-Regel, und „during the X“ wird zum Verb (`beim Kopieren`) · high.
 - **Die Fortschritts-Arme von `queue.row.label` bleiben im Passiv Präsens**: `Wird kopiert`, `Wird bewegt`,
   `Wird umbenannt`, `Ordner wird erstellt`, `Datei wird erstellt`, `Archiv wird bearbeitet`. Das gilt auch dort, wo der
   beruhigende Satz im Dialog aktiv ist („Cmdr erstellt ihn“) · Nautilus („wird … umbenannt“) · high.
@@ -79,8 +79,8 @@ zeichengleich sein. Hergeleitet aus den Termbase-Regeln und dem Wortlaut der mac
 
 ## Zeitangaben und Beispiel-Platzhalter (`queryUi.age.*`, `fileOperations.mkdir.placeholder`, `fileOperations.mkfile.placeholder`, `feedback.dialog.placeholder`, `settings.analytics.email.description`)
 
-- **„{count}m/h/d/w/mo/y ago“ → `vor {count} Min./Std./T./Wo./Mon./J.`** · im Deutschen steht `vor` vorn, abgekürzt, damit
-  der Tooltip knapp bleibt · high.
+- **„{count}m/h/d/w/mo/y ago“ → `vor {count} Min./Std./T./Wo./Mon./J.`** · im Deutschen steht `vor` vorn, abgekürzt,
+  damit der Tooltip knapp bleibt · high.
 - **„Example:“ → `Beispiel:`** · high.
 - **„you@example.com“ → `du@example.com`**, in allen Feldern gleich: der lokale Teil wird übersetzt, die Domain bleibt,
   weil `example.com` per RFC 2606 für Beispiele reserviert ist und `beispiel.de` eine echte Domain ist.
@@ -91,9 +91,9 @@ Die Drift-Prüfung gegen `terms.json` hat Stellen gefunden, an denen der Katalog
 sind behoben; die ersetzte Form steht jeweils als `avoid` in `terms.json`.
 
 - **move → `bewegen`, nie `verschieben`**: elf Werte sagten noch `verschieben`/`zurückverschieben`, darunter der
-  Programme-Dialog (`updates.moveToApplicationsDialog.title`, `settings.revealHandler.notInApplications`). Die
-  Rücknahme einer Bewegung heißt `zurücklegen` (Finders „Put Back“): `Das legt alles zurück, was der Vorgang bisher
-  bewegt hat`, `Dateien werden zurückgelegt`.
+  Programme-Dialog (`updates.moveToApplicationsDialog.title`, `settings.revealHandler.notInApplications`). Die Rücknahme
+  einer Bewegung heißt `zurücklegen` (Finders „Put Back“): `Das legt alles zurück, was der Vorgang bisher bewegt hat`,
+  `Dateien werden zurückgelegt`.
 - **`Rollback` ist Neutrum**: der Katalog sagte `das Rollback` und `es`, aber `Teilweiser Rollback`; jetzt
   `Teilweises Rollback`.
 - **item → `Objekt`, nie Microsofts `Element`**: die Ask-Cmdr-Zusammenfassungen (`askCmdr.wakeDigest.*`) und
@@ -206,8 +206,9 @@ confirms `Vorgang`).
   renderings: `Rollback möglich` / `Kein Rollback möglich` (calm "X nicht möglich" pattern, avoids "kann nicht") /
   `Rollback läuft` (termbase's illustrative "Rollback läuft …" ellipsis dropped here to match the sibling no-ellipsis
   status chips `Läuft`/`Wartet`) / `Rollback abgeschlossen` (complete→abgeschlossen, the "Löschen abgeschlossen"
-  pattern; reused for both `rollback.rolledBack` and `outcome.rolledBack`) / `Teilweises Rollback` (partly→teilweise; `Rollback` is neuter).
-  The short technical noun keeps the chips inside their width; the verb "rückgängig machen" stays for running prose.
+  pattern; reused for both `rollback.rolledBack` and `outcome.rolledBack`) / `Teilweises Rollback` (partly→teilweise;
+  `Rollback` is neuter). The short technical noun keeps the chips inside their width; the verb "rückgängig machen" stays
+  for running prose.
 - lifecycle status chips → reused verbatim from `queue.row.status` (`queue.json`): queued → `Wartet`, running → `Läuft`,
   done → `Fertig`, "Didn''t finish" (failed) → `Nicht abgeschlossen` (avoids "Fehler"/"fehlgeschlagen" per the voice
   rule, matching the en source's deliberate "Didn''t finish"), canceled → `Abgebrochen` · high.
@@ -881,8 +882,8 @@ erscheinen.
   NICHT auf der Don't-translate-Liste.
 - **Get Info → `Informationen`**, **Enclosing Folder → `Übergeordneter Ordner`**, **Go > Home → `Benutzerordner`**,
   **Sort By → `Sortieren nach`** · macOS Finder Tier 1 · high. **Show in Finder** heißt auch im Menü
-  `Im Finder anzeigen`, wie der Paletten-Befehl: `Im Finder zeigen` ist macOS' Wort für die Quelle „Reveal in Finder“
-  (§ Ein englisches Wort, ein deutsches Wort).
+  `Im Finder anzeigen`, wie der Paletten-Befehl: `Im Finder zeigen` ist macOS' Wort für die Quelle „Reveal in Finder“ (§
+  Ein englisches Wort, ein deutsches Wort).
 - **Undo → `Widerrufen`, Redo → `Wiederholen`, Paste → `Einsetzen`** · macOS Finder `de` · high. Nicht „Rückgängig“ /
   „Einfügen“ (Windows-Konvention).
 - **ascending / descending → `Aufsteigend` / `Absteigend`** · Thunar + Dolphin `de` · high. Der Finder sortiert über
@@ -1015,8 +1016,8 @@ Einschub, steht deshalb überall in der eigenen deutschen Anführung „…“ u
   `fileExplorer.functionKeyBar.deletePermanentlyAction`, und `errors.write.trashNotSupported.suggestion` zeigt mit „… um
   stattdessen endgültig zu löschen“ auf genau ihn) · high. Das gilt auch für die adverbiale Prosa
   (`fileOperations.delete.noTrashWarningRest` „Dateien werden endgültig gelöscht.“): der Löschdialog sagte als Einziger
-  „dauerhaft gelöscht“ direkt neben der Taste „Endgültig löschen“. `dauerhaft` bleibt dem ANDEREN Sinn von
-  „permanently“ vorbehalten, einer Einstellung „für immer“ („die Warnung dauerhaft unterdrücken“,
+  „dauerhaft gelöscht“ direkt neben der Taste „Endgültig löschen“. `dauerhaft` bleibt dem ANDEREN Sinn von „permanently“
+  vorbehalten, einer Einstellung „für immer“ („die Warnung dauerhaft unterdrücken“,
   `settings.fileViewer.suppressBinaryWarning.description`).
 - **`trashRefused` → `macOS wollte das nicht in den Papierkorb bewegen.`** · `in den Papierkorb bewegen` ist der
   gesetzte Baustein (macOS Finder „Trash ${entities}“ → „${entities} in den Papierkorb bewegen“, AppKit „could not be
@@ -1111,8 +1112,8 @@ Neun kurze Zeilen in einem Toast oben rechts, jede als Satz HINTER einem Doppelp
 also für sich als vollständiger Satz lesbar sein und darf den Rahmen nicht wiederholen.
 
 - **`drive` bleibt `Laufwerk`** · der ganze Katalog sagt so (`settings.indexing.*`,
-  `onboarding.stepOptional.indexing.*`) · high. `Volume` bleibt dem technischen Sinn vorbehalten (`terms.json`);
-  die Eject-Zeilen sprechen von dem Ding, das der Nutzer angesteckt hat, deshalb `Laufwerk`.
+  `onboarding.stepOptional.indexing.*`) · high. `Volume` bleibt dem technischen Sinn vorbehalten (`terms.json`); die
+  Eject-Zeilen sprechen von dem Ding, das der Nutzer angesteckt hat, deshalb `Laufwerk`.
 - **„removable“ → `Wechselmedium`** · macOS Finder `de` (`NE31` „Das Wechselmedium „^0“ wird gerade verwendet …“,
   `NE80`, `TL_HELP_EJCT` „Wechselmedien auswerfen und von Servern trennen“) und MS-Terminologie (`removable media` →
   `Wechselmedien`, Term-ID 177320, AUT/DEU/CHE/LUX) · high. `notEjectable` wird damit zur Aussage über die Bauart des
@@ -1286,9 +1287,9 @@ nächste Durchgang sie nicht „vereinheitlicht“.
   `menu.file.view`, `fileExplorer.functionKeyBar.viewLabel` · der Katalog hatte sich längst festgelegt, ohne dass die
   Tasten es mitbekamen: `settings.appearance.showFunctionKeyBar.description` zählt die Tasten der F-Tasten-Reihe als
   „(Umbenennen, **Ansehen**, Kopieren usw.)“ auf, während die Taste selbst „Anzeigen“ hieß. Dazu
-  `askCmdr.wakeToast.action` und `suggestedOps.review` (= „Ansehen“ / „Dateien ansehen“) und der Termbase-Eintrag view/see
-  → ansehen · `high`. ❌ Nicht `Anzeigen`: das ist im Katalog der SHOW-Sinn (etwas sichtbar machen), und die beiden
-  auseinanderzuhalten ist der ganze Zweck des Eintrags. ❌ Nicht `Vorschau`: das ist das Substantiv für das
+  `askCmdr.wakeToast.action` und `suggestedOps.review` (= „Ansehen“ / „Dateien ansehen“) und der Termbase-Eintrag
+  view/see → ansehen · `high`. ❌ Nicht `Anzeigen`: das ist im Katalog der SHOW-Sinn (etwas sichtbar machen), und die
+  beiden auseinanderzuhalten ist der ganze Zweck des Eintrags. ❌ Nicht `Vorschau`: das ist das Substantiv für das
   Betrachter-Fenster, kein Imperativ, und `menu.file.view` verlangt laut `@key` ausdrücklich ein Verb. Double Commander
   `de` sagt für dieselbe Aktion `Betrachten` (`tfrmmain.actview.caption`) — richtig, aber Tier 3, und der Katalog hat
   schon ein Wort.
@@ -1431,8 +1432,8 @@ zurückkommt: der alte Name.
 - **`Finish rolling this back?` → `Rollback abschließen?`** · gleiche Frageform wie das Geschwister
   `fileOperations.rollbackConfirm.title` („Diesen Vorgang rückgängig machen?“), also blanker Infinitiv plus Fragezeichen
   · `high`. Ohne Artikel, damit die Frage so knapp bleibt wie das Geschwister.
-- **`Rollback` ist Neutrum** (`das Rollback`, `es`, `Teilweises Rollback`) · Duden führt beide Genera; der Katalog
-  sagte schon „das Rollback nicht starten“ (`refusalUnexpected`) und „Du siehst es in der Warteschlange“, also folgt
+- **`Rollback` ist Neutrum** (`das Rollback`, `es`, `Teilweises Rollback`) · Duden führt beide Genera; der Katalog sagte
+  schon „das Rollback nicht starten“ (`refusalUnexpected`) und „Du siehst es in der Warteschlange“, also folgt
   `partiallyRolledBack` dem Neutrum · `high`.
 - **Der Hinweis unter der Zeile echot `fileOperations.rollbackConfirm.bodyUndoByDeleting`** · „Cmdr hat rückgängig
   gemacht, was möglich war, und den Rest so gelassen, wie er war. Beim Abschließen geht Cmdr alles noch einmal durch und
@@ -1681,8 +1682,8 @@ Passwort vergessen). Belege aus den installierten macOS-Bundles (macOS 26.6.2, B
 der Referenz-Stapel auf der M1-Kiste fehlt.
 
 - **„Connecting to {name}…“ → `Verbindung zu {name} wird hergestellt …`** · zeichengleich zum schon ausgelieferten
-  `fileExplorer.network.share.connecting` und zur Termbase-Regel `connect → verbinden` · `high`. Leerzeichen vor dem `…`,
-  weil es eine Fortschrittszeile ist (`style.md` § Ellipsis).
+  `fileExplorer.network.share.connecting` und zur Termbase-Regel `connect → verbinden` · `high`. Leerzeichen vor dem
+  `…`, weil es eine Fortschrittszeile ist (`style.md` § Ellipsis).
 - **„couldn''t disconnect from {name}“ → `Cmdr konnte die Verbindung zu {name} nicht trennen.`** · Apples eigener
   Satzrahmen: `FileProvider.framework/Errors.loctable` `UnsafeDisconnect` („“%@” couldn’t be disconnected.“ →
   „Verbindung zu „%@“ konnte nicht getrennt werden.“) · `high`. Cmdr füllt den Subjekt-Slot, statt passiv zu bleiben,
@@ -1854,8 +1855,8 @@ Begriffe:
   nicht: DiskManagement übersetzt jedes `passphrase` mit `Passwort` („A passphrase is required …“ → „… wird ein Passwort
   benötigt.“). Das geht hier nicht, weil direkt darüber das Feld `Passwort` steht und der englische `@key` genau diese
   Verwechslung ausschließen will. Die Kompositform folgt Apples eigenem Muster für „X password“ (`FTP-Passwort`,
-  `Netzwerkpasswort`, `Drucker-Passwort`, NetAuthAgent), und `Passphrase` ist der eingeführte Begriff der SSH-Welt. Offen in
-  `review-queue.md`.
+  `Netzwerkpasswort`, `Drucker-Passwort`, NetAuthAgent), und `Passphrase` ist der eingeführte Begriff der SSH-Welt.
+  Offen in `review-queue.md`.
 - **`fingerprint` → `Fingerabdruck`, `host key` → `Hostschlüssel`** · ActionKit `Localizable.loctable`, Apples eigene
   SSH-Aktion: „The host key's fingerprint is %@.“ → „Der Fingerabdruck des Hostschlüssels ist %@.“ · `high`. Im Blatt
   steht der Server schon fest, also reicht `der Schlüssel` (wie in der schon ausgelieferten Zeile
@@ -2076,9 +2077,9 @@ Begriffe:
   2026-09-07) · `high`. ❌ Nicht `Zulassen`: das ist die WLAN-Variante derselben Datei (`wifi_debugging_allow`), und der
   Nutzer steckt am Kabel. Deckt sich mit der Katalogregel `allow → erlauben` (§ Wörter, die auseinandergelaufen sind).
 - **`tap` → `tippen auf`, mit dem Tastennamen in `„…“`** · AOSP `de` schreibt genau so („Tippe auf „Übersicht““,
-  Settings; „Tippe zum Fortfahren auf das Symbol „Entsperren““, SystemUI) · `high`. Kein Widerspruch zur Termbase-Regel ❌
-  `tippen` in § Der Wiederverbindungs-Zyklus: die verbietet `tippen` fürs AUSFÜLLEN eines Felds (dort `eingeben`), hier
-  ist es die Fingergeste auf einem Touchscreen, für die Android selbst `tippen` sagt.
+  Settings; „Tippe zum Fortfahren auf das Symbol „Entsperren““, SystemUI) · `high`. Kein Widerspruch zur Termbase-Regel
+  ❌ `tippen` in § Der Wiederverbindungs-Zyklus: die verbietet `tippen` fürs AUSFÜLLEN eines Felds (dort `eingeben`),
+  hier ist es die Fingergeste auf einem Touchscreen, für die Android selbst `tippen` sagt.
 - **`Android platform tools` → `Android Platform Tools`** · unverändert aus `terms.json`
   (developer.android.com/tools/adb?hl=de); `adb.connect.adbNotInstalled` übernimmt den Namen zeichengleich von
   `settings.fileOperations.adbEnabled.description`.
@@ -2710,9 +2711,10 @@ weggefallen und durch eine einzelne Zeile ersetzt, die das Menü öffnet.
   „schreibgeschützt eingebunden“), und `Freigabe` ist die Termbase-Regel für „share“ · `high`. ❌ Nicht `gemountet` und
   nicht `Netzwerkfreigabe`: das Englische vermeidet hier bewusst Protokolljargon und sagt nur, dass der Mac die Freigabe
   selbst eingebunden hat.
-- **„a folder on a disk“ → `Ordner auf einem Laufwerk`** · `Laufwerk` ist die Termbase-Regel für „drive“ (MS-Terminologie
-  DEU/AUT/CHE) und das schlichteste Wort für „disk“ im Fließtext · `high`. ❌ Nicht `Volume`: das reserviert der Katalog
-  für den technischen Volume-Begriff (Volume-Auswahl, `Zielvolume`), und der Tooltip spricht bewusst Alltagssprache.
+- **„a folder on a disk“ → `Ordner auf einem Laufwerk`** · `Laufwerk` ist die Termbase-Regel für „drive“
+  (MS-Terminologie DEU/AUT/CHE) und das schlichteste Wort für „disk“ im Fließtext · `high`. ❌ Nicht `Volume`: das
+  reserviert der Katalog für den technischen Volume-Begriff (Volume-Auswahl, `Zielvolume`), und der Tooltip spricht
+  bewusst Alltagssprache.
 - **„point at“ → `verweisen auf`** · trägt die Zeiger-Idee, die `zeigen` im Deutschen nur schwach hat, und hält die
   Aussage im Aktiv · `high`.
 - **„Favorites menu“ (Abschnittsüberschrift der Tastaturkurzbefehle) → `Favoritenmenü`** · Kompositum wie das

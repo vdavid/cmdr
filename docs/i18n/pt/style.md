@@ -12,8 +12,8 @@ The base `pt` tag is a decision in itself: Portuguese splits hard between Brazil
 
 The must-know rules; the rest of this file elaborates them.
 
-- **Variant: Brazilian (pt-BR), always.** Mine `_ignored/i18n/pt-BR/`; the bare `_ignored/i18n/pt/` pile is EUROPEAN
-  and has leaked pt-PT into shipped strings before. Before shipping a batch, grep for the pt-PT tells: `ficheiro`,
+- **Variant: Brazilian (pt-BR), always.** Mine `_ignored/i18n/pt-BR/`; the bare `_ignored/i18n/pt/` pile is EUROPEAN and
+  has leaked pt-PT into shipped strings before. Before shipping a batch, grep for the pt-PT tells: `ficheiro`,
   `estar a` + infinitive (`A indexar`), a proclitic pronoun before an infinitive (`para a preparar`), `consoante`,
   `Rever`, `alterar o nome`, `guardar` (for save or store), `só de leitura`, `ecrã`, `telemóvel`, `partilha`,
   `Transferências` (the pt-PT Downloads folder), and any `tu` form (`Podes`, `para ti`).
@@ -54,8 +54,8 @@ The must-know rules; the rest of this file elaborates them.
 - **Clitics**: enclisis (`Ative-a`, `Abra-o`, `desafixá-lo`), never proclisis, and only when the gender closes on its
   own; otherwise repeat the noun (`abra o servidor de novo`).
 - **Top traps** (details in `terms.json`):
-  - delete → `Apagar` / `apagamento`, for files AND for a model or index entries; never `Excluir` / `exclusão`.
-    trash → `Lixo`, never `Lixeira`; Move to trash → `Mover para o Lixo`.
+  - delete → `Apagar` / `apagamento`, for files AND for a model or index entries; never `Excluir` / `exclusão`. trash →
+    `Lixo`, never `Lixeira`; Move to trash → `Mover para o Lixo`.
   - drive → `disco` in every sense (network drive → `disco de rede`); never `unidade` or `drive`. file → `arquivo`;
     archive → `arquivo compactado`.
   - operation → `operação`; the queue → `Fila de operações`, beside `Registro de operações`; `transferência` only for
@@ -83,8 +83,8 @@ imperatives in UI almost never name the subject:
 
 - "Copiar", "Mover", "Renomear", "Apagar" for buttons and menu items (infinitive-as-imperative, the macOS and Microsoft
   convention for both variants).
-- When the UI must address the user in running text (onboarding, confirmations), use **você**, never **tu**. Both
-  Apple and Microsoft use the você/implied register, never the tu-conjugated familiar form, in product UI.
+- When the UI must address the user in running text (onboarding, confirmations), use **você**, never **tu**. Both Apple
+  and Microsoft use the você/implied register, never the tu-conjugated familiar form, in product UI.
 - Avoid the explicit second-person pronoun where the verb alone carries the meaning ("Seus arquivos foram movidos" reads
   fine; prefer active "Movemos seus arquivos" where Cmdr's English uses active voice).
 
@@ -129,8 +129,8 @@ variant trap (`decisions.md` § The bare `pt` pile is European). Mine `_ignored/
 - `Rever` → **Revisar**. `alterar o nome` → **renomear**.
 - A dropped `você` where the verb form alone is ambiguous (`Apagou esta pasta…` → `Você apagou esta pasta…`).
 - A `tu` verb form (`Escolhes…?`, `Podes…`), `para ti`, `guardar`, or `só de leitura` → pt-BR **você**, **salvar** /
-  **armazenar**, and **somente leitura**, and for a question toast the catalog's infinitive (`Escolher outra pasta para
-  salvar?`, like `Tentar de novo?`), which needs no pronoun at all.
+  **armazenar**, and **somente leitura**, and for a question toast the catalog's infinitive
+  (`Escolher outra pasta para salvar?`, like `Tentar de novo?`), which needs no pronoun at all.
 - `ecrã` → **tela**; `telemóvel` → **celular**; `partilha` → **compartilhamento**; the folder `Transferências` →
   **Downloads**.
 
@@ -162,11 +162,11 @@ principle 2), for files and for a local AI model or index entries alike. "exclui
 
 Every term ruling lives in `terms.json`, keyed by the concept IDs in `../concepts.json` and this locale's
 `concepts-proposed.json`: `chosen`, accepted forms, usage notes, forms to avoid with the reason, a confidence
-(`confirmed` / `high` / `tentative`), and sources. Tier order is macOS pt-BR (Tier 1) → Microsoft pt-BR terminology (Tier
-2) → the file-manager catalogs (Tier 3); a vendor's own pt-BR UI (Apple, Android) beats a `@key` description. Rationale
-worth more than a line sits in `decisions.md` under a heading that cites its keys, and the term's `decision` field names
-that heading. Never guess a term: mine `_ignored/i18n/pt-BR/` first (`../reference-pile/how-to-mine.md`), or the
-installed macOS bundles when the pile isn't on the machine.
+(`confirmed` / `high` / `tentative`), and sources. Tier order is macOS pt-BR (Tier 1) → Microsoft pt-BR terminology
+(Tier 2) → the file-manager catalogs (Tier 3); a vendor's own pt-BR UI (Apple, Android) beats a `@key` description.
+Rationale worth more than a line sits in `decisions.md` under a heading that cites its keys, and the term's `decision`
+field names that heading. Never guess a term: mine `_ignored/i18n/pt-BR/` first (`../reference-pile/how-to-mine.md`), or
+the installed macOS bundles when the pile isn't on the machine.
 
 ## Brand and do-not-translate
 
@@ -236,8 +236,8 @@ Two mechanics that bite in Portuguese specifically:
 - **Uma frase de resultado nunca fica sem sujeito.** `Apagou {countText} itens…` também se lê como `você apagou`, e a §
   Variant acima já lista o `você` omitido como indício pt-PT. As manchetes de aviso escrevem `O Cmdr` ou `A reversão`
   por extenso, ainda que o inglês elida o sujeito; as linhas de motivo escapam disso pondo o ITEM como sujeito
-  (`{name} ficou como está: …`), o molde que `askCmdr.renameUndo.skipReason.*` já publica. Evidência: `decisions.md` §
-  O aviso do que a reversão conseguiu.
+  (`{name} ficou como está: …`), o molde que `askCmdr.renameUndo.skipReason.*` já publica. Evidência: `decisions.md` § O
+  aviso do que a reversão conseguiu.
 - **Duas chaves com o MESMO inglês precisam do mesmo português, mesmo em telas diferentes.** O
   `desktop-i18n-term-consistency` pareia por valor inglês, então `fileOperations.cancelRollback.reason.folderNotEmpty.*`
   copia byte a byte as gêmeas do `askCmdr.renameUndo.skipReason.*` (o inglês é idêntico), inclusive uma concordância que
@@ -246,8 +246,7 @@ Two mechanics that bite in Portuguese specifically:
   telas ninguém vê lado a lado.
 - **Nada concorda com um `{name}`**: ele pode ser arquivo ou pasta, então nenhum particípio, adjetivo ou possessivo pode
   se apoiar nele; só verbos e preposições sem artigo. Quando a linha precisa do gênero, ela escreve o substantivo
-  (`a pasta {name}`). Mesma lógica dos tokens de painel do macOS (`decisions.md` § O que o inglês corrigiu em si
-  mesmo).
+  (`a pasta {name}`). Mesma lógica dos tokens de painel do macOS (`decisions.md` § O que o inglês corrigiu em si mesmo).
 - **`obrigado` num botão impõe um gênero ao usuário**, porque concorda com quem fala. `No, thanks` sai como
   **`Não precisa`**, uma recusa educada corriqueira e sem gênero; `Agora não` fica reservado ao `Not now`, que promete
   uma próxima vez. É o caso típico do "reestruture para o neutro" da § Gender acima: a saída neutra existe e soa

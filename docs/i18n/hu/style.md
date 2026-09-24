@@ -17,15 +17,14 @@ The must-know rules; the rest of this file elaborates them.
 - **Address**: informal `te` (tegezés) in every sentence that speaks to the user (`Megpróbálod újra?`, `Próbáld újra.`);
   never önözés, even where Apple's sentence önöz. Labels don't address anyone.
 - **Register by UI slot**:
-    - buttons, menu items, window titles, Settings labels, commands, aria labels: nominal (`Másolás`, `Lap bezárása`,
-      `Rejtett fájlok megjelenítése`, `X megjelenítése` for Show X, `X keresése…` for a search placeholder);
-    - a dialog title that asks: a `te` question with definite conjugation (`Törlöd az AI-modellt?`,
-      `Elküldöd a jelentést?`);
-    - a status cell: one word or a `-va/-ve` participle (`Fut`, `Várakozik`, `Kész`, `Szüneteltetve`, `Kijelentkezve`);
-      running prose says `folyamatban van`;
-    - a to-do checklist row is a `te` imperative (`Csillagozd meg a repót a GitHubon`), since one row must be a
-      sentence.
-    - command descriptions: 3rd-person present (`Megnyitja…`) or a nominal phrase, per family.
+  - buttons, menu items, window titles, Settings labels, commands, aria labels: nominal (`Másolás`, `Lap bezárása`,
+    `Rejtett fájlok megjelenítése`, `X megjelenítése` for Show X, `X keresése…` for a search placeholder);
+  - a dialog title that asks: a `te` question with definite conjugation (`Törlöd az AI-modellt?`,
+    `Elküldöd a jelentést?`);
+  - a status cell: one word or a `-va/-ve` participle (`Fut`, `Várakozik`, `Kész`, `Szüneteltetve`, `Kijelentkezve`);
+    running prose says `folyamatban van`;
+  - a to-do checklist row is a `te` imperative (`Csillagozd meg a repót a GitHubon`), since one row must be a sentence.
+  - command descriptions: 3rd-person present (`Megnyitja…`) or a nominal phrase, per family.
 - **Voice**: friendly, concise, calm. Never a bare `hiba` or `sikertelen` label: "Couldn't X" → `Nem sikerült X-ni`,
   "Cmdr couldn't X" → `A Cmdr nem tudta X-ni`, "Something went wrong" → `Valami nem sikerült`. The prose word for a
   problem is `probléma`, never `gond`. No apology in a notice that reports a deliberate choice.
@@ -55,19 +54,19 @@ The must-know rules; the rest of this file elaborates them.
 - **Numbers**: multipliers spelled out (`négyszer lassabb`, never `4x`); numbers, sizes, and dates come from the
   formatter; `{duration}` is never localized, so it only stands before a postposition.
 - **Top traps** (details in `terms.json`):
-    - cancel: `Mégsem` (dialog button) vs `Megszakítás` (a running operation) vs `Leállítás` (a service or search).
-    - operation → `művelet`; the queue → `Műveleti sor` (never `Műveletsor`); the log → `Műveletnapló`; transfer →
-      `átvitel` only for a copy or move in flight.
-    - dismiss → `Elvetés` (never `Bezárás`, that's Close); undo → `Visszavonás`; put back → `visszahelyezés` for trashed
-      items, `visszaállítás` for an old name; rollback → `visszagörgetés`.
-    - pane → `panel`; tab → `lap` (a PDF page is `oldal`); drive → `meghajtó`; volume → `kötet`; device → `eszköz`,
-      phone → `telefon`; item → `elem`; server → `szerver` (never `kiszolgáló`); host → `gép` / `gazdagép`.
-    - deselect → `kijelölés törlése` (never `megszüntetése`); read-only → `csak olvasható` (never `írásvédett`); scan →
-      `átvizsgálás`, a live folder walk → `átnézés`, the Search feature → `keresés`.
-    - connect: the pane line `Kapcsolódás ide: {name}…`, Connected `Kapcsolódva`, the Connect button `Csatlakozás`,
-      reconnect `újracsatlakozás`, disconnect `leválasztás`, the connection dropping on its own `megszakad a kapcsolat`.
-    - Retrying → `Újrapróbálás`, Try again → `Próbáld újra`; `Example:` → `Példa:`, never `Például:`.
-    - excluded → `kizárva`, skipped → `kihagyva`; busy menu items → base label + ` (foglalt)`.
+  - cancel: `Mégsem` (dialog button) vs `Megszakítás` (a running operation) vs `Leállítás` (a service or search).
+  - operation → `művelet`; the queue → `Műveleti sor` (never `Műveletsor`); the log → `Műveletnapló`; transfer →
+    `átvitel` only for a copy or move in flight.
+  - dismiss → `Elvetés` (never `Bezárás`, that's Close); undo → `Visszavonás`; put back → `visszahelyezés` for trashed
+    items, `visszaállítás` for an old name; rollback → `visszagörgetés`.
+  - pane → `panel`; tab → `lap` (a PDF page is `oldal`); drive → `meghajtó`; volume → `kötet`; device → `eszköz`, phone
+    → `telefon`; item → `elem`; server → `szerver` (never `kiszolgáló`); host → `gép` / `gazdagép`.
+  - deselect → `kijelölés törlése` (never `megszüntetése`); read-only → `csak olvasható` (never `írásvédett`); scan →
+    `átvizsgálás`, a live folder walk → `átnézés`, the Search feature → `keresés`.
+  - connect: the pane line `Kapcsolódás ide: {name}…`, Connected `Kapcsolódva`, the Connect button `Csatlakozás`,
+    reconnect `újracsatlakozás`, disconnect `leválasztás`, the connection dropping on its own `megszakad a kapcsolat`.
+  - Retrying → `Újrapróbálás`, Try again → `Próbáld újra`; `Example:` → `Példa:`, never `Például:`.
+  - excluded → `kizárva`, skipped → `kihagyva`; busy menu items → base label + ` (foglalt)`.
 
 ## Voice and tone
 
@@ -139,23 +138,23 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   macOS Tier 1 (`A(z) „^0” elemet…`) and the catalog's majority. ❌ Never a bare `A {name}`: it renders "A alma.txt" on
   every vowel-initial name. Nothing is needed after a colon or in a possessive (`Letöltve: {fileName}`). Evidence and
   the families that were corrected to it: `decisions.md` § A megszakított visszagörgetés eredményértesítése.
-    - **Quotes only around a NAME the user typed or owns.** A brand or provider placeholder takes bare `a(z) {name}`
-      (`a(z) **{name}** kezeli`): the bold or the sentence already delimits it, and `„Dropbox”` reads as scare quotes.
-    - **A placeholder with ONE possible value gets the real article, never the hedge.** `errors.provider.iCloud.*`'s
-      `{name}` is always `iCloud Drive`, so it's `az **{name}**`. The `a(z)` form answers an UNKNOWN first sound; where
-      nothing is unknown it's just noise.
-    - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
-      carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on
-      leaves a half-corrected family, which is worse than either end state.
-    - **In front of a NUMBER the article varies too, so ❌ never a bare `a {countText}`.** It follows the numeral's
-      pronunciation: `a három`, `a négy`, but `az öt`, `a száz` but `az ezer`. In running prose the hedge is the answer
-      and two shipped keys use it (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`); don't
-      sweep those.
-    - **For the phrase "all N X" specifically, prefer `Az összes X ({N})` over `Mind a(z) N X`.** macOS Hungarian words
-      it that way (`Az összes lemez (^0) kiadásához…`), and it's strictly better: the article now agrees with `összes`,
-      a word we choose, so nothing hinges on the runtime value at all. Worth the swap wherever the count can move to a
-      parenthetical or behind a colon, and near-mandatory in a short button, where the hedge is most visible. Worked
-      case: `decisions.md` § A megszakított visszagörgetés eredményértesítése.
+  - **Quotes only around a NAME the user typed or owns.** A brand or provider placeholder takes bare `a(z) {name}`
+    (`a(z) **{name}** kezeli`): the bold or the sentence already delimits it, and `„Dropbox”` reads as scare quotes.
+  - **A placeholder with ONE possible value gets the real article, never the hedge.** `errors.provider.iCloud.*`'s
+    `{name}` is always `iCloud Drive`, so it's `az **{name}**`. The `a(z)` form answers an UNKNOWN first sound; where
+    nothing is unknown it's just noise.
+  - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
+    carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on leaves
+    a half-corrected family, which is worse than either end state.
+  - **In front of a NUMBER the article varies too, so ❌ never a bare `a {countText}`.** It follows the numeral's
+    pronunciation: `a három`, `a négy`, but `az öt`, `a száz` but `az ezer`. In running prose the hedge is the answer
+    and two shipped keys use it (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`); don't sweep
+    those.
+  - **For the phrase "all N X" specifically, prefer `Az összes X ({N})` over `Mind a(z) N X`.** macOS Hungarian words it
+    that way (`Az összes lemez (^0) kiadásához…`), and it's strictly better: the article now agrees with `összes`, a
+    word we choose, so nothing hinges on the runtime value at all. Worth the swap wherever the count can move to a
+    parenthetical or behind a colon, and near-mandatory in a short button, where the hedge is most visible. Worked case:
+    `decisions.md` § A megszakított visszagörgetés eredményértesítése.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
 - **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`, `Cmdrtől`, `Cmdrre`.** `Cmdr` is
@@ -199,9 +198,9 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   `gond` (arra a `hu` pile nulla találatot ad). Forrás és teljes érvelés: `decisions.md` § Ha a Cmdr nem állt le.
 - **A macOS panelneveit magyarul írjuk, mert az Apple is lefordítja őket.** `Get Info` → `Infó megjelenítése`, `Locked`
   → `Zárolt`, `Sharing & Permissions` → `Megosztás és jogok`. Egyik sincs a `BRAND_WORDS` listán, tehát az
-    1. terminológiai alapelv (fordítsd, amit az Apple fordít) érvényes rájuk. A CÍMKÉK az Apple-éi, a MONDAT a miénk:
-       tegezünk és köznyelvi maradunk (`vedd ki a „Zárolt” pipát`), nem másoljuk az Apple önöző hivatalnyelvét
-       (`szüntesse meg a … kijelöltségét`). Bizonyítékok: `decisions.md` § A macOS-panelnevek magyarul.
+  1. terminológiai alapelv (fordítsd, amit az Apple fordít) érvényes rájuk. A CÍMKÉK az Apple-éi, a MONDAT a miénk:
+     tegezünk és köznyelvi maradunk (`vedd ki a „Zárolt” pipát`), nem másoljuk az Apple önöző hivatalnyelvét
+     (`szüntesse meg a … kijelöltségét`). Bizonyítékok: `decisions.md` § A macOS-panelnevek magyarul.
 - **Ugyanaz az angol mondat KÉT különböző magyar alakot kaphat, ha a burkoló szöveg eltér.** A `errors.eject.unexpected`
   és a `errors.mutation.unexpected` angolul betű szerint azonos, magyarul mégsem az: az előbbi a
   `Nem sikerült kiadni: …` burkoló után áll, ahol a settled `Valami nem sikerült` közvetlen szóismétlés lenne. Ilyenkor

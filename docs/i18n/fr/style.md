@@ -12,18 +12,19 @@ added.
 
 The must-know rules; the rest of this file elaborates them.
 
-- **Address**: `vous` / `votre` / `vos` everywhere, like macOS French (not a single `tu` in Finder or AppKit). Never `tu`.
+- **Address**: `vous` / `votre` / `vos` everywhere, like macOS French (not a single `tu` in Finder or AppKit). Never
+  `tu`.
 - **Voice**: friendly, concise, active, calm. Never `erreur`, `échec`, `a échoué`, or `bloqué`: state the observation
   and the way out. Fallbacks: a generic error status → `Problème`; a stopped operation → `N'a pas pu se terminer`;
   "Couldn't X" → `<Nom verbal> impossible` (`Lecture du dossier impossible`), or `Cmdr n'a pas pu <verbe>` when the
   English names Cmdr; "Something went wrong" → `Un problème est survenu`. No apologies in a notice that reports a
   deliberate choice. Prefer a verb to a noun phrase (`Rechercher`, not `Effectuer une recherche`).
 - **Register by UI slot**:
-  - buttons, menu items, labels, dialog titles: the infinitive (`Envoyer`, `Annuler`, `Copier`, `Ajouter un serveur`);
-    a title that asks is an elliptical infinitive question (`Supprimer le modèle d'IA ?`), never `Voulez-vous vraiment…`;
+  - buttons, menu items, labels, dialog titles: the infinitive (`Envoyer`, `Annuler`, `Copier`, `Ajouter un serveur`); a
+    title that asks is an elliptical infinitive question (`Supprimer le modèle d'IA ?`), never `Voulez-vous vraiment…`;
   - Settings toggle labels: infinitive (`Afficher les fichiers cachés`); their descriptions: third-person present for
-    what the option does (`Affiche…`, `Détecte…`), `vous` imperative once they ask for an action (`Laissez ce champ
-    vide…`);
+    what the option does (`Affiche…`, `Détecte…`), `vous` imperative once they ask for an action
+    (`Laissez ce champ vide…`);
   - prose, hints, toasts: `vous` imperative (`Ouvrez…`, `Réessayez dans un instant.`);
   - progress: a verbal noun with the English key's ellipsis (`Analyse…`, `Envoi...`, `Connexion à {name}…`); a bare
     verbal noun takes `en cours` to stand as a line (`Copie en cours`);
@@ -34,10 +35,11 @@ The must-know rules; the rest of this file elaborates them.
   `Précédent` / `Suivant` in the Go menu; `Réduire/agrandir` (Window > Zoom); `Lire les informations`; `Coup d'œil`;
   `Trousseaux d'accès` (the app) vs `le trousseau` (the store); `Réglages Système`; `Accès complet au disque`;
   `Utilitaire de disque`, `S.O.S`, `Moniteur d'activité`; `Aperçu` (the Preview app); `Mise à jour de logiciels`.
-  Localize what Apple localizes, whatever a `@key` says. Kept English: `le Finder`, `le Dock`, `le dossier
-  Applications`, Spotlight, Mission Control, Spaces, Terminal, TextEdit, Apple Silicon. On a phone, Android's own French
-  wins (`Autoriser`, `débogage USB`, `appuyez sur`); a third-party button takes that vendor's French UI when it has one
-  (GitHub's `Ajouter une étoile`). Cmdr's own window is `les Réglages`; Apple's app is `Réglages Système`.
+  Localize what Apple localizes, whatever a `@key` says. Kept English: `le Finder`, `le Dock`,
+  `le dossier Applications`, Spotlight, Mission Control, Spaces, Terminal, TextEdit, Apple Silicon. On a phone,
+  Android's own French wins (`Autoriser`, `débogage USB`, `appuyez sur`); a third-party button takes that vendor's
+  French UI when it has one (GitHub's `Ajouter une étoile`). Cmdr's own window is `les Réglages`; Apple's app is
+  `Réglages Système`.
 - **Capitalization**: sentence case. Accents on capitals are mandatory: `État`, `Éjecter`, `À propos`, `Écraser`.
 - **Punctuation**: a regular ASCII space before `:`, `;`, `!`, `?`, and `%` (never U+202F, never none). French
   guillemets with ASCII inner spaces for quoted UI strings and inserted names (`« {name} »`). No serial comma before
@@ -52,8 +54,8 @@ The must-know rules; the rest of this file elaborates them.
 - **Placeholders**: an inserted `{name}`, `{path}`, `{app}`, or `{host}` sits in a neutral slot, after a preposition
   that neither elides nor agrees (`dans`, `sur`, `pour`, `vers`, `à`) or as a bare subject; never after an elidable
   article or contraction, never before an agreeing participle. Don't refer back with `il` / `elle` when the nearest
-  masculine noun is something else (`le volume`, `le disque`): repeat the object (`donc le fichier a peut-être quand
-  même été renommé`).
+  masculine noun is something else (`le volume`, `le disque`): repeat the object
+  (`donc le fichier a peut-être quand même été renommé`).
 - **Plurals**: CLDR `one` / `many` / `other`; write `many` identical to `other`; French counts 0 as `one`. Pull a
   trailing clause that agrees INSIDE the branches. Never a definite article before `{countText}` (`les 1 élément`).
 - **Brand**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, `Safari`, `Ask Cmdr` stay verbatim. `Ask Cmdr` names only the chat
@@ -69,8 +71,8 @@ The must-know rules; the rest of this file elaborates them.
     Mac → `à l'ouverture de session`.
   - move to trash → `placer dans la corbeille`, noun `Placement dans la corbeille`, never `Mise à la corbeille`.
   - chat → `conversation`, never `discussion` or `chat`; token → `jeton`; API key → `clé d'API`.
-  - onboarding → `prise en main` everywhere; feedback → `retour`; crash and error reports → `rapport d'incident`
-    (plain `rapport` when nothing crashed); quit unexpectedly → `a quitté inopinément`.
+  - onboarding → `prise en main` everywhere; feedback → `retour`; crash and error reports → `rapport d'incident` (plain
+    `rapport` when nothing crashed); quit unexpectedly → `a quitté inopinément`.
   - drive → `disque` (never `lecteur`); item → `élément`; device → `appareil`, a phone → `téléphone`.
   - F3 View → `Visualiser`; Show → `Afficher`; See → `Voir`; the View menu → `Présentation`.
   - a hidden file (its attribute) → `caché`; something the UI hides → `masqué`.
@@ -214,9 +216,9 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   Use a regular space here; do NOT reintroduce U+202F (it would re-split the catalog).
 - **Quotation marks**: use French guillemets « … » with inner spacing when quoting, not English "…". macOS follows this
   ("Nom du nouveau dossier à l'intérieur de « ^0 » :").
-- **No serial comma.** French lists join the last item without a comma before `et` / `ou` (`clair, sombre ou suivant le
-  système`); a comma before `et` / `ou` only separates two independent clauses (`…, et Cmdr …`). The English Oxford comma
-  is the most common calque in this catalog; check every list.
+- **No serial comma.** French lists join the last item without a comma before `et` / `ou`
+  (`clair, sombre ou suivant le système`); a comma before `et` / `ou` only separates two independent clauses
+  (`…, et Cmdr …`). The English Oxford comma is the most common calque in this catalog; check every list.
 - **Apostrophes**: in ICU strings, double every apostrophe (`d''incident`). In the RAW families, use normal apostrophes:
   `errors.*` plus the NATIVE ones Rust draws (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`), which never
   meet ICU, so a doubled `''` would show as two apostrophes on a real menu (`i18n-icu` fails the build over it). The
@@ -226,8 +228,8 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   catalog is ASCII, and a curly apostrophe is not an ICU escape character, so it slips past every check as a silent
   consistency break. A periodic `rg '’' apps/desktop/src/lib/intl/messages/fr` sweep is the only defence.
 - **Ellipsis**: follow the English catalog value character for character, key by key. Where it writes three dots
-  ("Envoi..."), keep three dots; where it writes U+2026 ("Aller au dossier…", "Modifier le serveur…"), keep U+2026. Never
-  convert either way: the English catalog decides, key by key.
+  ("Envoi..."), keep three dots; where it writes U+2026 ("Aller au dossier…", "Modifier le serveur…"), keep U+2026.
+  Never convert either way: the English catalog decides, key by key.
 - **Length**: French runs roughly 15–20% longer than English. Overflow-check the layout against the pseudolocale
   (`en-XA`); look for clipped buttons, labels, and toasts. Known tight spots: `review-queue.md` § Overflow.
 - **Numbers and dates come from the formatter layer** (French uses a comma decimal and a narrow space for thousands).
@@ -301,8 +303,8 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
 - **Un renvoi à un réglage macOS réutilise le libellé du bouton qui l'ouvre, mot pour mot.** « Click to set up full disk
   access. » se termine par « Cliquez pour configurer l'accès complet au disque. », où « configurer l'accès complet au
   disque » est exactement `search.coverage.setUpFullDiskAccess` : les deux surfaces mènent au même panneau des Réglages
-  Système et doivent le nommer pareil. Même règle pour un renvoi vers une commande de Cmdr (`Rendre disponible hors
-  connexion`) ou un réglage (`Afficher les fichiers cachés`).
+  Système et doivent le nommer pareil. Même règle pour un renvoi vers une commande de Cmdr
+  (`Rendre disponible hors connexion`) ou un réglage (`Afficher les fichiers cachés`).
 - **Un `{placeholder}` qui porte un libellé déjà traduit se met dans un créneau sans article ni accord.** Son genre est
   inconnu à l'écriture : « En savoir plus sur {topic} » marche pour « Réseau » comme pour « Indexation du disque », là
   où « Plus d'infos sur le {topic} » casserait un mot sur deux. Même discipline que la règle de genre : nommez l'action

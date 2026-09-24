@@ -21,8 +21,8 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   the provider is correct but bald at the end of a tooltip; the alternative repeats `einen Anbieter`.
 - **`Gib Cmdr auf AlternativeTo ein Like`** (`onboarding.stepBeta.checklist.alternativeTo`): Duden has `das Like`, and
   it keeps the parallel with `Vergib dem Repo auf GitHub einen Stern`, but it reads young.
-- **Full disk access in running prose**: the badge and every place that NAMES the pane say `Festplattenvollzugriff`;
-  the FDA step's prose (`onboarding.stepFda.*`, `onboarding.stepAi.bannerBody.*`) still says
+- **Full disk access in running prose**: the badge and every place that NAMES the pane say `Festplattenvollzugriff`; the
+  FDA step's prose (`onboarding.stepFda.*`, `onboarding.stepAi.bannerBody.*`) still says
   `vollständiger Festplattenzugriff`. Confirm the split, or sweep the prose onto the pane name.
 
 ## Terms
@@ -37,12 +37,11 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **`Statussymbol`** for a file row's status badge (`fileExplorer.imageIndex.*`): runner-up `Statuskennzeichen`.
 - **`Schlüssel-Passphrase`** (`servers.sheet.passphrase`): macOS de has no `Passphrase` (it says `Passwort` everywhere),
   which would clash with the Passwort field right above.
-- **`Werkzeug`** for an AI tool (`askCmdr.tool.*`), **`Archivierung aufheben`** (unarchive a chat),
-  **`Kameraangaben`** and **`Aufnahmeort`** (`ai.cloudConsent.askCmdr.*`), **`Relevanz`**
-  (`fileExplorer.columns.sortByRelevance`), **`Seitenbereich`** (side panel), **`Optionen zum Teilen`**
-  (`menu.context.shareLoading`/`.shareNone`), **`Mailingliste`**, **`Folgen`** / **`Folgemodus`** (viewer tail),
-  **`Kompakt`** / **`Voll`** (view modes), **`ORD`** (the tight DIR status-bar slot), **`Handle`**: all tentative, each
-  with its reasoning in `terms.json`.
+- **`Werkzeug`** for an AI tool (`askCmdr.tool.*`), **`Archivierung aufheben`** (unarchive a chat), **`Kameraangaben`**
+  and **`Aufnahmeort`** (`ai.cloudConsent.askCmdr.*`), **`Relevanz`** (`fileExplorer.columns.sortByRelevance`),
+  **`Seitenbereich`** (side panel), **`Optionen zum Teilen`** (`menu.context.shareLoading`/`.shareNone`),
+  **`Mailingliste`**, **`Folgen`** / **`Folgemodus`** (viewer tail), **`Kompakt`** / **`Voll`** (view modes), **`ORD`**
+  (the tight DIR status-bar slot), **`Handle`**: all tentative, each with its reasoning in `terms.json`.
 - **`Vertrauenswürdig seit <Datum>`**, **`Gefunden unter {path}`**, **`Cmdr achtet auf Telefone.`**
   (`settings.servers.*`, `settings.adb.*`): constructions with no Apple precedent.
 - **`Weiterarbeiten`** (`main.quit.keepWorking`) and **`In {destination} wird gearbeitet`**
@@ -50,9 +49,9 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **`auf deinen Wunsch abgebrochen`** (`errors.volume.cancelled`) and **`aus den Augen verloren`**
   (`errors.mutation.*`): standard German, unattested in the pile.
 - **`mit einer Zifferntaste`** (`commands.favoritesOpen.description`): neither macOS nor Microsoft has the word.
-- **`Entf` for the Delete key** (`fileExplorer.navigation.favoriteShortcutAriaLabel`, `.favoriteShortcutPrompt`):
-  `Entf` is the Windows forward-delete label; a Mac keyboard shows ⌫ and Apple's German docs say `Rückschritttaste`.
-  Confirm, or switch to the Mac key name.
+- **`Entf` for the Delete key** (`fileExplorer.navigation.favoriteShortcutAriaLabel`, `.favoriteShortcutPrompt`): `Entf`
+  is the Windows forward-delete label; a Mac keyboard shows ⌫ and Apple's German docs say `Rückschritttaste`. Confirm,
+  or switch to the Mac key name.
 - **`Distribution`** (Linux, `errors.mount.gvfsMissing`): no source in the Linux sense.
 
 ## Overflow checks

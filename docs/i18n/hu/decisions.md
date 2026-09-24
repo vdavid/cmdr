@@ -336,15 +336,15 @@ head noun is the wide one:
   `Új sor`, `Put first in queue` = `Első helyre tétele a sorban`). The `<activity>-i sor` shape is Tier-2 attested
   (Microsoft `print queue` = `nyomtatási sor`), and the adjectival `műveleti` + head-noun formation is
   Double-Commander-attested (`operations panel` = `műveleti panel`).
-    - **NOT the solid compound `Műveletsor`**, even though it would look more parallel to `Műveletnapló`: Microsoft
-      terminology already assigns `műveletsor` to `task flow` (id 2335491) and `visszaállítási műveletsor` to
-      `restore sequence` (id 2225865) — that is, a SEQUENCE of steps, not a waiting line. The compound would name the
-      wrong concept.
-    - NOT Microsoft's generic `queue` = `várakozási sor` either: the catalog settled the file-manager-native `sor` in
-      June and `várakozási sor` is long for a window title.
-    - Inflects regularly (back-vowel `sor`): illative `a műveleti sorba` (`transferProgress.queueAria`), inessive
-      `a műveleti sorban` (`queueTooltip`, `queuedToast`, `backgroundedToast`). **Watch the article**: `műveleti` starts
-      with a consonant, so every one of those sites takes `a`, never `az`.
+  - **NOT the solid compound `Műveletsor`**, even though it would look more parallel to `Műveletnapló`: Microsoft
+    terminology already assigns `műveletsor` to `task flow` (id 2335491) and `visszaállítási műveletsor` to
+    `restore sequence` (id 2225865) — that is, a SEQUENCE of steps, not a waiting line. The compound would name the
+    wrong concept.
+  - NOT Microsoft's generic `queue` = `várakozási sor` either: the catalog settled the file-manager-native `sor` in June
+    and `várakozási sor` is long for a window title.
+  - Inflects regularly (back-vowel `sor`): illative `a műveleti sorba` (`transferProgress.queueAria`), inessive
+    `a műveleti sorban` (`queueTooltip`, `queuedToast`, `backgroundedToast`). **Watch the article**: `műveleti` starts
+    with a consonant, so every one of those sites takes `a`, never `az`.
 - **operation (the category word: a copy, move, delete, trash, rename, folder/file creation, or archive edit) →
   `művelet`** · macOS Tier 1 throughout (`Művelet` as a bare label; "A művelet nem hajtható végre.", "Ez a művelet nem
   vonható vissza.", `Gyorsműveletek`), Microsoft terminology (`operation` = `művelet`, two entries), Double Commander
@@ -381,11 +381,11 @@ and their inflection come from the section above.
   and Microsoft terminology gives `bezárás` / `leállítás` for the notification sense, but `Bezárás` is the catalog's
   settled `Close` (`ui.modalDialog.close` and 10 more), so adopting it would make the queue row's Dismiss
   indistinguishable from a window's Close.
-    - `Mindet elveti` takes the finite-verb shape its two neighbours settled (`Mindet szünetelteti`,
-      `Mindet folytatja`), not the nominal shape of `Kijelöltek megszakítása`; English's "Dismiss all" is parallel to
-      "Pause all"/"Resume all", so the Hungarian is too.
-    - The row aria joins the `Ennek a műveletnek a …` family (`… a szüneteltetése` / `… a folytatása` /
-      `… a megszakítása` / `… a kijelölése`) and is the only member taking `az`: `elvetése` is vowel-initial.
+  - `Mindet elveti` takes the finite-verb shape its two neighbours settled (`Mindet szünetelteti`, `Mindet folytatja`),
+    not the nominal shape of `Kijelöltek megszakítása`; English's "Dismiss all" is parallel to "Pause all"/"Resume all",
+    so the Hungarian is too.
+  - The row aria joins the `Ennek a műveletnek a …` family (`… a szüneteltetése` / `… a folytatása` / `… a megszakítása`
+    / `… a kijelölése`) and is the only member taking `az`: `elvetése` is vowel-initial.
 - **"couldn't finish <action>" (the failure toast's nine `select` arms) → `Nem sikerült befejezni` + the action in the
   accusative** · built from the `queue.row.status` `failed` arm (`Nem sikerült befejezni`) so the toast and the queue
   row can't word the same event differently, with each action's noun taken verbatim from `queue.row.label` /
@@ -493,12 +493,12 @@ pressing it does instead.
   background", `Ha az alkalmazás a háttérben fut`), as does Microsoft (`background task` = `háttérben futó feladat`) ·
   high. No macOS tier for this sense: Finder has no such control and `hu/macOS/` holds `háttér` only in the backdrop
   sense (`Háttérkép`, `háttérszín`), so the Tier-1 tiebreak is absent (mining gotcha 2), not missing.
-    - **NOT the illative `Háttérbe`**, even though it would look more parallel to `Sorba`: Hungarian puts work INTO a
-      queue (`sorba állít`) but runs it IN the background (`háttérben futtat`), the illative has ZERO attestation across
-      the whole `hu` pile (only the unrelated adjective `háttérbeli`), and `háttérbe helyez`/`szorít` idiomatically
-      means "sideline, deprioritize" — the opposite of the promise that the transfer keeps running.
-    - NOT the bare noun `Háttér`: that's the backdrop (`Háttérszín`, `Háttérkép`). The inessive is the case-inflected,
-      non-noun short form the sibling `Sorba` establishes for this button.
+  - **NOT the illative `Háttérbe`**, even though it would look more parallel to `Sorba`: Hungarian puts work INTO a
+    queue (`sorba állít`) but runs it IN the background (`háttérben futtat`), the illative has ZERO attestation across
+    the whole `hu` pile (only the unrelated adjective `háttérbeli`), and `háttérbe helyez`/`szorít` idiomatically means
+    "sideline, deprioritize" — the opposite of the promise that the transfer keeps running.
+  - NOT the bare noun `Háttér`: that's the backdrop (`Háttérszín`, `Háttérkép`). The inessive is the case-inflected,
+    non-noun short form the sibling `Sorba` establishes for this button.
 - **"Keep this running in the background" (`.backgroundAria`) → `Hagyd futni a háttérben`** · REUSED verbatim: this
   exact English sentence is already the first clause of the tooltip on the SAME button (`queueTooltip` =
   `Hagyd futni a háttérben, és kezeld a műveleti sorban (F2)`) and closes `transferProgress.stallUnknown`. One sentence,
@@ -529,13 +529,13 @@ whether to go ahead, lists the running operations, and counts 15 seconds down to
   `… mert egy másik művelet van folyamatban, mint például egy elem mozgatása vagy másolása`), and the verbless heading
   form is macOS-attested too (`Első biztonsági mentés folyamatban`); Microsoft terminology agrees (`in progress` =
   `folyamatban`) · high.
-    - **NOTE the register split with `queue.row.status` running = `Fut`**, which stays as it is: `Fut` is a one-word
-      status cell in a table column, `folyamatban van` is the running-prose form, and macOS uses exactly this pair of
-      registers itself. Same shape as the settled `host` split (`gép`/`Gépnév` in the browser column vs `gazdagép` in
-      error prose). Don't "unify" them.
-    - The heading is deliberately verbless: `Még fut` would be singular while the list holds 1..N rows, `Még futnak`
-      breaks at one row, and `Futó műveletek` would repeat the noun the title just used (English avoids that with the
-      terse "Still running").
+  - **NOTE the register split with `queue.row.status` running = `Fut`**, which stays as it is: `Fut` is a one-word
+    status cell in a table column, `folyamatban van` is the running-prose form, and macOS uses exactly this pair of
+    registers itself. Same shape as the settled `host` split (`gép`/`Gépnév` in the browser column vs `gazdagép` in
+    error prose). Don't "unify" them.
+  - The heading is deliberately verbless: `Még fut` would be singular while the list holds 1..N rows, `Még futnak`
+    breaks at one row, and `Futó műveletek` would repeat the noun the title just used (English avoids that with the
+    terse "Still running").
 - **The title is a second-person question: `Kilépsz, amíg egy művelet folyamatban van?`** · every question-shaped title
   in the shipped `hu` catalog uses informal `te` per `style.md` § Formality (`Törlöd az AI-modellt?`,
   `Elküldöd az összeomlási jelentést?`, `Megváltoztatod a fájlkiterjesztést?`, `Mindenképp bezárod?`) · high. Counted
@@ -545,13 +545,13 @@ whether to go ahead, lists the running operations, and counts 15 seconds down to
   gotcha 3: the concept is absent from macOS, Microsoft, and all five file managers, none of which offers a
   stay-in-the-app button on a quit countdown), so it is composed from macOS's own Tier-1 `<Noun> folytatása` shape
   (`Biztonsági mentés folytatása`, `Másolás folytatása`) plus the nominal-label rule · tentative (`review-queue.md`).
-    - Deliberately NOT `Mégsem`, the catalog's settled dialog Cancel: next to a list of running operations it would read
-      as "cancel the operations", the exact opposite of what the button does.
-    - Deliberately NOT `Később` (the settled dismiss-for-now word) or any "remind me" wording: the countdown is deleted,
-      not deferred.
-    - Residual risk a reviewer should judge: `Folytatás` alone is the queue's Resume, so `Munka folytatása` could be
-      read for a moment as resuming an operation. The object `munka` (the user's work, not an operation) is what
-      separates them, and English carries the same overlap ("Keep working" vs "Resume").
+  - Deliberately NOT `Mégsem`, the catalog's settled dialog Cancel: next to a list of running operations it would read
+    as "cancel the operations", the exact opposite of what the button does.
+  - Deliberately NOT `Később` (the settled dismiss-for-now word) or any "remind me" wording: the countdown is deleted,
+    not deferred.
+  - Residual risk a reviewer should judge: `Folytatás` alone is the queue's Resume, so `Munka folytatása` could be read
+    for a moment as resuming an operation. The object `munka` (the user's work, not an operation) is what separates
+    them, and English carries the same overlap ("Keep working" vs "Resume").
 - **"in {n} seconds" → `{secondsText} másodperc múlva`** · the postposition `múlva` is the only correct Hungarian for
   this and needs no suffix on the placeholder (per `style.md` § Notes and decisions); zero pile attestation, since no
   corpus counts a quit down · high on the grammar, and `másodperc` itself is macOS Tier 1 (`Kb. ^0 másodperc`). Singular
@@ -610,8 +610,8 @@ egy sor azért állt meg, mert a főablakban kérdés vár a felhasználóra.
   állapot NE legyen összetéveszthető a `queued` ággal (`Várakozik`), és a DC alakja pont a `vár-` tővel kezdődik · high
   a `válasz` tőre, `tentative` a formára. A `Válaszolnod kell` a `te`-regisztert használja (style.md § Formality), ahogy
   az angol is közvetlenül szólítja meg a felhasználót ("your"), és két szó a szűk oszlopban.
-    - ❌ NEM `Válaszra vár`: idiomatikus, de a `vár` miatt egy pillantásra a `Várakozik` ággal mosódik össze.
-    - ❌ NEM `Választ kér`: a `választ` egyben a `választ` ige alakja is, tehát homográf-félreolvasás kockázata.
+  - ❌ NEM `Válaszra vár`: idiomatikus, de a `vár` miatt egy pillantásra a `Várakozik` ággal mosódik össze.
+  - ❌ NEM `Választ kér`: a `választ` egyben a `választ` ige alakja is, tehát homográf-félreolvasás kockázata.
 - **`awaitingAnswerTooltip` → `Válaszolj a kérdésre a főablakban, és ez a művelet folytatódik.`** · a `válaszol` ige a
   testvér `operationConflict.pausedNote`-ból jön (`amíg nem válaszolsz`), a `főablak` a szótár szava
   (`queue.row.foregroundAria` = `Megjelenítés a főablakban`); a "prompt" itt `kérdés`, mert a megerősítő szövegek is
@@ -654,12 +654,12 @@ A soron belüli átnevezőben a fel/le nyíllal végigfutó átnevezésekből t�
   is.”) pont az angol "and so did" megfelelője, ezért nem kell megismételni az igét · a NYELVTANRA high, a FORMÁRA
   tentative: a pile rövid címkékből és hibaüzenetekből áll, egyetlen ` is.`-re végződő mondat sincs benne, tehát erre a
   záró alakra nincs korpuszfedezet.
-    - ❌ NEM összevont alany (`A(z) „{name}” és még {N} másik fájl megtartotta a nevét.`): rövidebb ugyan, de az en
-      `@key` kiköti, hogy a `{reason}` CSAK a megnevezett fájlra vonatkozik, az egy alannyá olvasztás pedig az egész
-      csoportra vinné át az indoklást.
-    - ❌ NEM `és ugyanez történt még {N} másik fájllal`: nyelvtanilag rendben van, de a pile-ban a `történt` szinte
-      kizárólag a `Hiba történt …` / `… hiba történt` fordulatban él (macOS AppKit 8 találatból 6, Nautilus, Thunar,
-      Double Commander), és a buborék hangja szándékosan kerüli a hiba-regisztert (style.md § Voice and tone).
+  - ❌ NEM összevont alany (`A(z) „{name}” és még {N} másik fájl megtartotta a nevét.`): rövidebb ugyan, de az en `@key`
+    kiköti, hogy a `{reason}` CSAK a megnevezett fájlra vonatkozik, az egy alannyá olvasztás pedig az egész csoportra
+    vinné át az indoklást.
+  - ❌ NEM `és ugyanez történt még {N} másik fájllal`: nyelvtanilag rendben van, de a pile-ban a `történt` szinte
+    kizárólag a `Hiba történt …` / `… hiba történt` fordulatban él (macOS AppKit 8 találatból 6, Nautilus, Thunar,
+    Double Commander), és a buborék hangja szándékosan kerüli a hiba-regisztert (style.md § Voice and tone).
 - **Az `one` ág kiírja a számnevet: `egy másik fájl`**, ahogy az angol is ("one other file") és a
   `settings.mediaIndex.reclaim.line` mintája; az `other` ág a `{othersText}` formázott értéket használja. A főnév
   MINDKÉT ágban egyes számú (`másik fájl`, soha `másik fájlok`) a szám utáni nem-többesítés szabálya szerint · high.
@@ -674,17 +674,17 @@ JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
   a meg-nem-erősített-művelet helyzetre: `fileExplorer.pane.trashUnconfirmedToast`
   (`Nem sikerült megerősíteni, hogy a fájl a Kukába került.`) és `fileOperations.mkdir.timeoutMessage`
   (`Nem sikerült megerősíteni, hogy a mappa létrejött.`) · high.
-    - ❌ NEM tárgyas `Nem sikerült megerősíteni a(z) „X” átnevezését`: a pile-ban a `megerősítés` tárgyas alakja
-      kizárólag a jóváhagyás-értelmet viszi (Double Commander `Felülírások megerősítése`, `megerősítés kérése nélkül`;
-      Nautilus `Jelszó megerősítése`; macOS AppKit `Confirm` = `Megerősítés`), a `hogy`-os mellékmondat viszont
-      egyértelműen az ellenőrzés-értelem.
+  - ❌ NEM tárgyas `Nem sikerült megerősíteni a(z) „X” átnevezését`: a pile-ban a `megerősítés` tárgyas alakja kizárólag
+    a jóváhagyás-értelmet viszi (Double Commander `Felülírások megerősítése`, `megerősítés kérése nélkül`; Nautilus
+    `Jelszó megerősítése`; macOS AppKit `Confirm` = `Megerősítés`), a `hogy`-os mellékmondat viszont egyértelműen az
+    ellenőrzés-értelem.
 - **"the rename of X" → `a(z) „X” átneveződött` (mediopasszív)** · a testvér buborék pontosan ezt az alakot használja a
   meg nem erősített műveletre (`trashUnconfirmedToast`: `a fájl így is áthelyeződhetett`), és az `-ódik/-ődik`
   mediopasszív a pile-ban is a gépi ágens nélküli állítás alakja (Nautilus, Thunar, Dolphin: `törlődnek`, `másolódnak`,
   `mentődnek`) · high a szerkezetre, `tentative` a szótőre: konkrétan `átneveződ*` alak sem a pile-ban, sem a
   katalógusban nincs.
-    - ❌ NEM `átnevezték` (a katalógus 3. sz. többes határozatlan alakja, pl. `errors.write.sourceNotFound.suggestion`):
-      az KÜLSŐ ágenst jelöl (valaki a Cmdren kívül nevezte át), itt viszont maga a Cmdr nevezett át.
+  - ❌ NEM `átnevezték` (a katalógus 3. sz. többes határozatlan alakja, pl. `errors.write.sourceNotFound.suggestion`):
+    az KÜLSŐ ágenst jelöl (valaki a Cmdren kívül nevezte át), itt viszont maga a Cmdr nevezett át.
 - **"The volume may be slow" → `Lehet, hogy a kötet lassú`** · szó szerint a két testvér buborék második mondata
   (`trashUnconfirmedToast`, `mkdir.timeoutMessage`); `kötet` a szótár szava (macOS Tier 1), a `lassú` melléknévre
   Nautilus (`A keresés lassú lehet, …`) és Double Commander (`(lassú)`, `(lassabb)`) a fedezet · high.
@@ -693,13 +693,13 @@ JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
   `mkdir.timeoutMessage` mintája (`így a mappa attól még létrejöhetett`) · high a szerkezetre, `tentative` a
   `sikerülhetett` alakra: a `sikerül` ige a pile-ban 88-szor, a katalógusban 100-szor szerepel, de szinte kizárólag a
   tagadó `nem sikerült` fordulatban, erre az állító potenciális alakra nincs korpuszfedezet.
-    - **Az alanyt KI KELL mondani** (`az átnevezés`), pro-drop itt hibás: a második mondat élén `a kötet` az utolsó
-      alanyeset, így a `így attól még átneveződhetett` egy pillanatra „a kötet neveződhetett át” olvasatot ad. A két
-      testvér pontosan ezért ismétli meg a maga alanyát (`a mappa`, `a fájl`).
-    - Az alany `az átnevezés`, nem `a fájl`: az `unconfirmed` kulcs alatt MAPPA is állhat, tehát a testvérek főneve itt
-      hamis állítás lenne. Az angol is ezt a főnevet nevezi meg ("the rename(s)").
-    - ❌ NEM `megtörténhetett`: a pile-ban a `történt` szinte kizárólag a `Hiba történt …` fordulatban él (lásd a fenti
-      `chainKeptOriginalNameAndOthers` blokkot), a buborék hangja pedig kerüli a hiba-regisztert.
+  - **Az alanyt KI KELL mondani** (`az átnevezés`), pro-drop itt hibás: a második mondat élén `a kötet` az utolsó
+    alanyeset, így a `így attól még átneveződhetett` egy pillanatra „a kötet neveződhetett át” olvasatot ad. A két
+    testvér pontosan ezért ismétli meg a maga alanyát (`a mappa`, `a fájl`).
+  - Az alany `az átnevezés`, nem `a fájl`: az `unconfirmed` kulcs alatt MAPPA is állhat, tehát a testvérek főneve itt
+    hamis állítás lenne. Az angol is ezt a főnevet nevezi meg ("the rename(s)").
+  - ❌ NEM `megtörténhetett`: a pile-ban a `történt` szinte kizárólag a `Hiba történt …` fordulatban él (lásd a fenti
+    `chainKeptOriginalNameAndOthers` blokkot), a buborék hangja pedig kerüli a hiba-regisztert.
 - **Az `AndOthers` számnév-ágai szó szerint a `chainKeptOriginalNameAndOthers`-éi** (`egy másik fájl` /
   `{othersText} másik fájl`), hogy a két buborékpár egy hangon szóljon. Az összetett alany után az első tagmondat egyes
   számú állítmányt kap (`átneveződött`, a magyar alapeset számnévi tag után), a második viszont többeset
@@ -709,9 +709,9 @@ JELENTÉSE ellentétes, ezért a nyitó tagmondat szándékosan más.
   `… mert a rendszer számára van fenntartva.`; AppKit Document `A(z) „%@” név nem használható.`) · high. A főnév a
   testvérkulcsokéval azonos (`validation.empty`, `.disallowedChars`, `.nameTooLong`: `A fájlnév` / `A mappa neve`). Záró
   pont nincs: az érték hosszabb mondatba épül be (`{reason}. A(z) „{name}” megtartotta a nevét.`).
-    - Az angol `That` mutató névmása elmarad: a `mappanév` összetétel a pile EGYIK forrásában sem szerepel (a `fájlnév`
-      60+ találattal igen), az `Ez a mappa neve …` pedig félreolvasható „ennek a mappának a neve” értelemben. A magyar
-      határozott névelő amúgy is a beírt névre mutat.
+  - Az angol `That` mutató névmása elmarad: a `mappanév` összetétel a pile EGYIK forrásában sem szerepel (a `fájlnév`
+    60+ találattal igen), az `Ez a mappa neve …` pedig félreolvasható „ennek a mappának a neve” értelemben. A magyar
+    határozott névelő amúgy is a beírt névre mutat.
 
 ## Javasolt műveletek: az Ask Cmdr javaslatainak ablaka (`suggestedOps.*`, `commands.suggestedOpsShow.*`)
 
@@ -914,13 +914,12 @@ le, tehát egyikük sem állíthatja, hogy leállt.
   `A számítógépe újraindult egy probléma miatt.`, `Grafikai problémát észlelt a rendszer.`,
   `jelentést küldhet a problémáról`; ellenőrizve macOS 26.5.2 alatt, 2026-08-23), a Microsoft-terminológia is
   `probléma`, és a katalógus hangneme kerüli a puszta `hiba` szót (`error → Probléma`) · high.
-    - ❌ NEM `gondba ütközött`: a `gond`/`gondba` szóra a teljes `hu` pile NULLA találatot ad (macOS, Microsoft,
-      Nautilus, Thunar, Dolphin, Total Commander, Double Commander). A fenti `problem / glitch → gond · tentative` sor
-      ezzel megdől.
-    - ❌ NEM az Apple `egy probléma miatt` szerkezete: az mindig leállást jelentő főigét kíván (`újraindult`,
-      `nem nyitható meg`), tehát pont azt állítaná, amit ennek a két kulcsnak tagadnia kell.
-    - ❌ NEM `Probléma történt a Cmdrben`: a pile-ban a `történt` szinte kizárólag a `Hiba történt …` fordulatban él, és
-      a párbeszéd hangja kerüli a hiba-regisztert.
+  - ❌ NEM `gondba ütközött`: a `gond`/`gondba` szóra a teljes `hu` pile NULLA találatot ad (macOS, Microsoft, Nautilus,
+    Thunar, Dolphin, Total Commander, Double Commander). A fenti `problem / glitch → gond · tentative` sor ezzel megdől.
+  - ❌ NEM az Apple `egy probléma miatt` szerkezete: az mindig leállást jelentő főigét kíván (`újraindult`,
+    `nem nyitható meg`), tehát pont azt állítaná, amit ennek a két kulcsnak tagadnia kell.
+  - ❌ NEM `Probléma történt a Cmdrben`: a pile-ban a `történt` szinte kizárólag a `Hiba történt …` fordulatban él, és a
+    párbeszéd hangja kerüli a hiba-regisztert.
 - **„and kept running” → `és tovább futott`** · a katalógus saját, szállított alakja ugyanerre a fogalomra:
   `transferProgress.stallUnknown` „Still running in the background” = `Tovább fut a háttérben`, mellette
   `Hagyd futni a háttérben`. A pile-ban erre a jelentésre NINCS közvetlen találat (`tovább fut`, `továbbra is fut`,
@@ -999,12 +998,12 @@ egyetlen `''` párt sem tartalmaz, ez a fájl bevett alakja. Egy-két rövid mon
   `kiadódik`-féle kényszeredett visszaható alakot.
 - **`errors.eject.unexpected` SZÁNDÉKOSAN eltér a szó szerint azonos angolú `errors.mutation.unexpected`-tól.** Angol
   mindkettőnél: „Something went wrong, and Cmdr couldn't tell what.” (azonos `sourceHash`, `0c9d9f5`).
-    - `errors.mutation.unexpected` marad `Valami nem sikerült, és a Cmdr nem tudta megállapítani, hogy mi.`
-    - `errors.eject.unexpected` = `A Cmdr problémába ütközött, és nem tudta megállapítani, hogy mi.`
-    - **Miért**: a kiadás-buborék burkolója maga `Nem sikerült kiadni: …`-val kezdődik, tehát a settled alak közvetlen
-      szóismétlést adna („Nem sikerült kiadni: Naspolya: Valami nem sikerült, és…”). A `problémába ütközött` a fenti
-      összeomlásjelentő-blokkban már bizonyított Tier-1 szerkezet (`NE105` = „A(z) „^0” hibába ütközött.”), a mondat
-      második fele pedig szó szerint a settled alaké, így a két kulcs továbbra is egy hangon szól · high.
+  - `errors.mutation.unexpected` marad `Valami nem sikerült, és a Cmdr nem tudta megállapítani, hogy mi.`
+  - `errors.eject.unexpected` = `A Cmdr problémába ütközött, és nem tudta megállapítani, hogy mi.`
+  - **Miért**: a kiadás-buborék burkolója maga `Nem sikerült kiadni: …`-val kezdődik, tehát a settled alak közvetlen
+    szóismétlést adna („Nem sikerült kiadni: Naspolya: Valami nem sikerült, és…”). A `problémába ütközött` a fenti
+    összeomlásjelentő-blokkban már bizonyított Tier-1 szerkezet (`NE105` = „A(z) „^0” hibába ütközött.”), a mondat
+    második fele pedig szó szerint a settled alaké, így a két kulcs továbbra is egy hangon szól · high.
 - **`errors.eject.busy`**: `A Cmdr még fájlokat mozgat ezen a meghajtón. Add ki, amint ez befejeződik.` A `Cmdr` alanyos
   szerkezet a katalógus bevett alakja (22 `A Cmdr nem …` érték); az `ezen a meghajtón` helyhatározós forma kerüli a
   toldalékolt helyettesítőt, ahogy a `style.md` § Notes and decisions előírja.
@@ -1272,11 +1271,11 @@ Apple-szóhasználat.
   `{system_settings}ben`-t adna, ami a `Rendszerbeállítások` mellé rossz (a hangrend `-ban`-t kér). A katalógus máshol
   is használt `itt: {system_settings}` szerkezet a kiút (`style.md` § Agglutination).
 - A tokenek által NEM fedett panelnevek magyarul mennek, ahogy az Apple írja őket:
-    - **Apple Account → `Apple-fiók`** · macOS 26.6.2 (25G83),
-      `AppleIDSettings.appex/Contents/Resources/InfoPlist.loctable` `hu.CFBundleDisplayName`, 2026-08-30 · high.
-    - **General → `Általános`** · `hu/macOS/SystemSettings/Localizable.json` `GENERAL` · high.
-    - **Login Items & Extensions → `Indítóelemek és bővítmények`** · macOS 26.6.2 (25G83),
-      `LoginItems.appex/Contents/Resources/Localizable.loctable` `hu["Login Items & Extensions"]`, 2026-08-30 · high.
+  - **Apple Account → `Apple-fiók`** · macOS 26.6.2 (25G83),
+    `AppleIDSettings.appex/Contents/Resources/InfoPlist.loctable` `hu.CFBundleDisplayName`, 2026-08-30 · high.
+  - **General → `Általános`** · `hu/macOS/SystemSettings/Localizable.json` `GENERAL` · high.
+  - **Login Items & Extensions → `Indítóelemek és bővítmények`** · macOS 26.6.2 (25G83),
+    `LoginItems.appex/Contents/Resources/Localizable.loctable` `hu["Login Items & Extensions"]`, 2026-08-30 · high.
 
 ### A natív menüsor két Apple-tétele (`menu.app.showAll`/`.hideOthers`, `commands.appShowAll.label`, `commands.appHideOthers.label`)
 
@@ -1338,16 +1337,15 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
   felhasználó EGY pillantással lát; a két funkció eltérése viszont sosem kerül egymás mellé. Az értesítés belső
   egyöntetűsége erősebb szempont, ezért a `drift` / `unverifiable` / `spotTaken` / `folderNotEmpty` mind a nyolc sora
   ugyanazt a keretet viszi.
-    - **A `leftBehind` bevezető sora marad `kihagyja`**, szó szerint a testvér `rollbackConfirm.bodyUndoByDeleting`-ből
-      (`Amiben a Cmdr nem biztos, azt kihagyja`) · high. A munkamegosztás így is megvan: a bevezető mondja ki az
-      ÍGÉRETET és a következményt (`ezek a helyükön maradtak`), a sorok pedig elemenként az ÁLLAPOTOT
-      (`változatlan maradt`).
-    - **A `drift` sor látszólagos ellentmondása (`változatlan maradt: módosult…`) örökölt, és feloldható**: a
-      `változatlan` a VISSZAGÖRGETÉSRE vonatkozik (a Cmdr nem nyúlt hozzá), a `módosult` pedig arra, ami korábban
-      történt vele. Pontosan így él a szállított `askCmdr.renameUndo.skipReason.drift.named` is
-      (`A(z) „{name}” változatlan maradt: az átnevezés után módosult.`), tehát a keret ezt az olvasatot már elbírja.
-    - ❌ NEM `békén hagyja` / `érintetlenül hagyja`: mindkettő értelmes magyar, de a `hu` pile egyikre sem ad egyetlen
-      találatot sem.
+  - **A `leftBehind` bevezető sora marad `kihagyja`**, szó szerint a testvér `rollbackConfirm.bodyUndoByDeleting`-ből
+    (`Amiben a Cmdr nem biztos, azt kihagyja`) · high. A munkamegosztás így is megvan: a bevezető mondja ki az ÍGÉRETET
+    és a következményt (`ezek a helyükön maradtak`), a sorok pedig elemenként az ÁLLAPOTOT (`változatlan maradt`).
+  - **A `drift` sor látszólagos ellentmondása (`változatlan maradt: módosult…`) örökölt, és feloldható**: a
+    `változatlan` a VISSZAGÖRGETÉSRE vonatkozik (a Cmdr nem nyúlt hozzá), a `módosult` pedig arra, ami korábban történt
+    vele. Pontosan így él a szállított `askCmdr.renameUndo.skipReason.drift.named` is
+    (`A(z) „{name}” változatlan maradt: az átnevezés után módosult.`), tehát a keret ezt az olvasatot már elbírja.
+  - ❌ NEM `békén hagyja` / `érintetlenül hagyja`: mindkettő értelmes magyar, de a `hu` pile egyikre sem ad egyetlen
+    találatot sem.
 - **A visszatétel igéje az EREDMÉNY-sorokban `visszahelyez`, a FOLYAMAT-sorokban marad `visszavitel`** · macOS Finder
   `PE130` Tier 1 (`^0 elem visszahelyezése nem sikerült.`), a testvér `fileOperations.trash.undone`
   (`{countText} fájl visszahelyezve.`), és az en `@key` kifejezetten ezt a testvért kéri · high. A katalógus
@@ -1357,10 +1355,10 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
   MEGMARAD: a `visz` a mozgásra utal (miközben tart), a `helyez` a végállapotra (amikor megérkezett), és a magyar ezt a
   két aspektust külön szóval mondja. Gyakorlati bizonyíték is van rá: a `visszavisz` `-va/-ve` igeneve (`visszavíve`)
   egy értesítésben olvashatatlan, a `visszahelyezve` viszont pont a katalógus bevett eredményalakja.
-    - Ezzel a „Put back” családnak három tagja van, mindegyik más művelet: `visszaállítva` = a RÉGI NÉV visszaadása
-      (`askCmdr.renameUndo.*`), `visszahelyezve` = a Kukából és a visszagörgetésből való visszatétel
-      (`fileOperations.trash.undone`, `cancelRollback.*`), `visszavitel` = a visszagörgetés futó folyamata. Lásd
-      fentebb: § A Kuka-értesítés két gombja.
+  - Ezzel a „Put back” családnak három tagja van, mindegyik más művelet: `visszaállítva` = a RÉGI NÉV visszaadása
+    (`askCmdr.renameUndo.*`), `visszahelyezve` = a Kukából és a visszagörgetésből való visszatétel
+    (`fileOperations.trash.undone`, `cancelRollback.*`), `visszavitel` = a visszagörgetés futó folyamata. Lásd fentebb:
+    § A Kuka-értesítés két gombja.
 - **"Removed" → `eltávolítva`, sosem `törölve`** · a szótár `remove → eltávolítás` sora, és ugyanaz az érv, ami a
   kilépés-visszaszámláló "clears away" → `eltávolít` döntésénél: az értesítés megnyugtatás, nem szabad, hogy „a Cmdr
   fájlt töröl” villanjon fel benne · high. Az angol is szándékosan `Removed`-et mond, miközben a megerősítő párbeszéd
@@ -1370,11 +1368,10 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
   `A Cmdr mindent visszahelyezett: {countText} elem.` alakot kap (kimondott `mindent` = véglegesség, plusz a cselekvő
   megnevezése), a `some*` pár puszta igeneves számlálás: `{countText} elem eltávolítva.` /
   `{countText} elem visszahelyezve.`
-    - ❌ NEM `Mind a(z) {countText} elem eltávolítva`: `count = 1` esetén `Mind az 1 elem …` lesz belőle, ami nem
-      magyar. A `mind a(z)` + `{countText}` szerkezet minden ilyen kulcsban ez a csapda; a `mindent` + kettőspontos szám
-      elkerüli.
-    - A `done*` sorok megtartják a minősítést (`amit létrehozott`): a puszta `A Cmdr mindent eltávolított.` ijesztő,
-      mert nem mondja meg, MIT.
+  - ❌ NEM `Mind a(z) {countText} elem eltávolítva`: `count = 1` esetén `Mind az 1 elem …` lesz belőle, ami nem magyar.
+    A `mind a(z)` + `{countText}` szerkezet minden ilyen kulcsban ez a csapda; a `mindent` + kettőspontos szám elkerüli.
+  - A `done*` sorok megtartják a minősítést (`amit létrehozott`): a puszta `A Cmdr mindent eltávolított.` ijesztő, mert
+    nem mondja meg, MIT.
 - **"Stopped after …ing" → `{countText} elem <művelet>e után leállítva.`** · a `leállítás` a szótár stop-szava
   (`transferProgress.rollbackTooltip` = `Leállítás, és minden eddig kiírt fájl törlése`), a birtokos igenévi szerkezet
   pedig a macOS `^0 elem visszahelyezése` mintája · high. `The rest are still there.` → `A többi ott maradt.`;
@@ -1411,50 +1408,47 @@ Az egész hang: a Cmdr a gondos dolgot tette. Se bocsánatkérés, se riasztás.
   A névelő `a`/`az` alakja a név ELSŐ HANGJÁN múlik, amit írás közben senki nem tud (`alma.txt` → `az`, `beszámoló.pdf`
   → `a`), tehát a puszta `A {name}` minden magánhangzóval kezdődő fájlnévnél hibás magyar. Az idézőjel ugyanabból a
   forrásból jön, és a hosszú vagy szóközös neveket is elhatárolja.
-    - **A névelő NÉLKÜLI helyeket nem érinti**: kettőspont vagy birtokos szerkezet után a placeholder csupaszon marad
-      (`Letöltve: {fileName}`, `{name} megnyitása`), mert ott nincs mit egyeztetni.
-    - **A `{name}` továbbra sem kap RAGOT.** Ahol az angol köznevet is mond (`the folder {name}`), a köznév áll utána,
-      és az visel minden ragot: `A(z) „{name}” mappa változatlan maradt`. Ugyanaz az elv, mint a
-      `queue.row.reversalInFolder` `a(z) {folder} mappában` sorában.
-    - **Ehhez KÉT család mozdult együtt** (2026-08-31): a négy új `cancelRollback.reason.*.named` sor, és a szállított
-      `askCmdr.renameUndo.skipReason.*.named` mind az öt sora (`drift`, `nameTaken`, `unverifiable`, `folderNotEmpty`,
-      `failed`), ami addig `A {name}`-et írt. Együtt kellett menniük, mert a `folderNotEmpty` pár angolja betű szerint
-      azonos, tehát a `desktop-i18n-term-consistency` egyetlen magyar alakot vár rájuk; és mert egy félig javított
-      család rosszabb bármelyik végállapotnál (a rename-undo értesítésben is egyszerre látszanak a sorok). Az öt
-      szállított kulcs ANGOLJA nem változott, tehát a `sourceHash`-ük érintetlen: ez fordítási minőségjavítás, nem
-      újrafordítás.
-    - **A két nyitott család is lezárva** (2026-09-02). Az
-      `errors.provider.appBased.transient`/`.needsAction`/`.serious` mostantól `a(z) **{name}**` és `a(z) {app}` alakot
-      ír: a szolgáltatói névsor tényleg vegyes (`az iCloud`, `az OneDrive` szemben a `a Dropbox`, `a pCloud` alakkal),
-      és a sorokban KÉT független ismeretlen áll, mert a `{name}` a `displayName`, a `{app}` az `appName` kulcsból jön.
-      ⚠️ Kulcsonként KÉT névelőhely van, a `serious`-ban HÁROM (`a(z) {app} appból` és `a(z) {name} állapotoldalát` is),
-      tehát a sorokat végig kell olvasni: az elsőt javítani és továbbmenni pont olyan félkész állapot, mint amit a fenti
-      bekezdés tilt.
-    - **Az `errors.provider.iCloud.*` három sora ugyanezt hozta, de ott a névelő NEM ismeretlen**: a `{name}` mindig az
-      egyetlen `iCloud Drive` displayName, ezért a helyes alak a kiírt `az **{name}**`, nem az `a(z)`. Ahol a
-      placeholder értékkészlete egyelemű, ott a hedge fölösleges, és rosszabb magyar; a hedge az ISMERETLEN kezdőhangnak
-      szól, nem a placeholdernek magának.
+  - **A névelő NÉLKÜLI helyeket nem érinti**: kettőspont vagy birtokos szerkezet után a placeholder csupaszon marad
+    (`Letöltve: {fileName}`, `{name} megnyitása`), mert ott nincs mit egyeztetni.
+  - **A `{name}` továbbra sem kap RAGOT.** Ahol az angol köznevet is mond (`the folder {name}`), a köznév áll utána, és
+    az visel minden ragot: `A(z) „{name}” mappa változatlan maradt`. Ugyanaz az elv, mint a `queue.row.reversalInFolder`
+    `a(z) {folder} mappában` sorában.
+  - **Ehhez KÉT család mozdult együtt** (2026-08-31): a négy új `cancelRollback.reason.*.named` sor, és a szállított
+    `askCmdr.renameUndo.skipReason.*.named` mind az öt sora (`drift`, `nameTaken`, `unverifiable`, `folderNotEmpty`,
+    `failed`), ami addig `A {name}`-et írt. Együtt kellett menniük, mert a `folderNotEmpty` pár angolja betű szerint
+    azonos, tehát a `desktop-i18n-term-consistency` egyetlen magyar alakot vár rájuk; és mert egy félig javított család
+    rosszabb bármelyik végállapotnál (a rename-undo értesítésben is egyszerre látszanak a sorok). Az öt szállított kulcs
+    ANGOLJA nem változott, tehát a `sourceHash`-ük érintetlen: ez fordítási minőségjavítás, nem újrafordítás.
+  - **A két nyitott család is lezárva** (2026-09-02). Az `errors.provider.appBased.transient`/`.needsAction`/`.serious`
+    mostantól `a(z) **{name}**` és `a(z) {app}` alakot ír: a szolgáltatói névsor tényleg vegyes (`az iCloud`,
+    `az OneDrive` szemben a `a Dropbox`, `a pCloud` alakkal), és a sorokban KÉT független ismeretlen áll, mert a
+    `{name}` a `displayName`, a `{app}` az `appName` kulcsból jön. ⚠️ Kulcsonként KÉT névelőhely van, a `serious`-ban
+    HÁROM (`a(z) {app} appból` és `a(z) {name} állapotoldalát` is), tehát a sorokat végig kell olvasni: az elsőt
+    javítani és továbbmenni pont olyan félkész állapot, mint amit a fenti bekezdés tilt.
+  - **Az `errors.provider.iCloud.*` három sora ugyanezt hozta, de ott a névelő NEM ismeretlen**: a `{name}` mindig az
+    egyetlen `iCloud Drive` displayName, ezért a helyes alak a kiírt `az **{name}**`, nem az `a(z)`. Ahol a placeholder
+    értékkészlete egyelemű, ott a hedge fölösleges, és rosszabb magyar; a hedge az ISMERETLEN kezdőhangnak szól, nem a
+    placeholdernek magának.
 - **`askCmdr.renameUndo.undoJob` → `Az összes {csomag} visszavonása ({countText})`: ÁTFOGALMAZÁS, nem névelő** · macOS
   Tier 1 a szerkezetre (`Az összes lemez (^0) kiadásához kattintson az Összes kiadása gombra…`), és a pile-ban egyetlen
   `Mind a/az` + számnév alak sincs · high.
-    - A `Mind a {countText} csomag visszavonása` azért rossz, mert a névelő a SZÁMNÉV kiejtésén múlik: `a kettő`,
-      `a három`, `a négy`, de `az öt`, `a hat`, … `az ezer`. Az `a` minden ötödik-ezredik esetben hibás.
-    - **A fenti ❌ (`Mind a(z) {countText} elem`) indoklása viszont ITT nem áll**, és ezt érdemes pontosan tudni: az
-      `undoJob` gomb csak `jobOperationIds.length > 1` esetén jelenik meg (`AskCmdrMessage.svelte`), tehát a `count`
-      soha nem 1, és a `Mind az 1 csomag` eset elő sem fordul. A KÖVETKEZTETÉS mégis ugyanaz marad, csak más okból: az
-      `a(z)` írott nyelvi mankó, egy szűk oldalsávba szánt rövid GOMBFELIRATBAN pedig ez a mankó látszik a legjobban. A
-      `@key` kifejezetten rövidséget kér.
-    - A megoldás elve ugyanaz, mint az `*Aria`-párok egyeztetésénél: **a névelőt olyan szóhoz kötjük, amit mi
-      választunk**. Az `összes` kezdőhangja fix (`ö`), tehát `Az összes` mindig helyes, a szám pedig zárójeles
-      értelmezőbe kerül, ahol semmivel nem kell egyeztetnie. Ugyanaz a fogás, mint a `done*` soroknál a `mindent` +
-      kettőspontos szám.
-    - A `{count}` a parity miatt marad benne (`desktop-i18n-parity` pontos placeholder-halmazt vár), mindkét ága
-      `csomag`: az `összes` után a magyar amúgy is egyes számot mond.
-    - ❌ **Ez NEM felhatalmazás a `Mind a(z)` + számnév kiseprésére.** Két szállított kulcs viszi ezt az alakot
-      (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`), mindkettő folyó szövegben, ahol a
-      hedge helyénvaló. Az átfogalmazás ott nyer, ahol a szám zárójelbe vagy kettőspont mögé mozdítható, és gombon a
-      legerősebb az érv.
-    - Mind a hét érintett kulcs ANGOLJA változatlan, tehát a `sourceHash`-ük érintetlen: fordítási minőségjavítás.
+  - A `Mind a {countText} csomag visszavonása` azért rossz, mert a névelő a SZÁMNÉV kiejtésén múlik: `a kettő`,
+    `a három`, `a négy`, de `az öt`, `a hat`, … `az ezer`. Az `a` minden ötödik-ezredik esetben hibás.
+  - **A fenti ❌ (`Mind a(z) {countText} elem`) indoklása viszont ITT nem áll**, és ezt érdemes pontosan tudni: az
+    `undoJob` gomb csak `jobOperationIds.length > 1` esetén jelenik meg (`AskCmdrMessage.svelte`), tehát a `count` soha
+    nem 1, és a `Mind az 1 csomag` eset elő sem fordul. A KÖVETKEZTETÉS mégis ugyanaz marad, csak más okból: az `a(z)`
+    írott nyelvi mankó, egy szűk oldalsávba szánt rövid GOMBFELIRATBAN pedig ez a mankó látszik a legjobban. A `@key`
+    kifejezetten rövidséget kér.
+  - A megoldás elve ugyanaz, mint az `*Aria`-párok egyeztetésénél: **a névelőt olyan szóhoz kötjük, amit mi
+    választunk**. Az `összes` kezdőhangja fix (`ö`), tehát `Az összes` mindig helyes, a szám pedig zárójeles értelmezőbe
+    kerül, ahol semmivel nem kell egyeztetnie. Ugyanaz a fogás, mint a `done*` soroknál a `mindent` + kettőspontos szám.
+  - A `{count}` a parity miatt marad benne (`desktop-i18n-parity` pontos placeholder-halmazt vár), mindkét ága `csomag`:
+    az `összes` után a magyar amúgy is egyes számot mond.
+  - ❌ **Ez NEM felhatalmazás a `Mind a(z)` + számnév kiseprésére.** Két szállított kulcs viszi ezt az alakot
+    (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`), mindkettő folyó szövegben, ahol a hedge
+    helyénvaló. Az átfogalmazás ott nyer, ahol a szám zárójelbe vagy kettőspont mögé mozdítható, és gombon a legerősebb
+    az érv.
+  - Mind a hét érintett kulcs ANGOLJA változatlan, tehát a `sourceHash`-ük érintetlen: fordítási minőségjavítás.
 - **`rollbackConfirm.body`**: az angol egy harmadik mondattal bővült, ami betű szerint azonos a `bodyUndoByDeleting`
   záró mondatával (`Cmdr skips anything it isn't sure about, so a few may stay behind.`), ezért a magyar is szó szerint
   annak a farkát veszi át (`Amiben a Cmdr nem biztos, azt kihagyja, szóval maradhat belőlük egy-kettő.`). Az első két
@@ -2160,10 +2154,10 @@ Commander, Double Commander).
   `GROUP_APPLICATIONS`, `TL_HELP_APPS` = „Ugrás az Alkalmazások mappába”; AppKit: „Try dragging „%@” from the Trash to
   your Applications folder.” = „Próbálja a(z) „%@” alkalmazást a kukából az **Alkalmazások mappába** húzni.”) · `high`.
   A kupacban NULLA `Programok` találat van.
-    - ⚠️ **A `Programok` a régi Mac OS X-es név, ❌ ne kerüljön vissza.** Az 1. szintű, betű szerinti Apple-találat veri
-      a katalógus családi mintáját (§ „A szerverközpont táblázata” precedense). A `desktop-i18n-term-consistency` nem
-      fogja el a visszaesést, mert az érintett kulcsok angolja nem betű szerint azonos, tehát ez a bejegyzés az egyetlen
-      védelem.
+  - ⚠️ **A `Programok` a régi Mac OS X-es név, ❌ ne kerüljön vissza.** Az 1. szintű, betű szerinti Apple-találat veri a
+    katalógus családi mintáját (§ „A szerverközpont táblázata” precedense). A `desktop-i18n-term-consistency` nem fogja
+    el a visszaesést, mert az érintett kulcsok angolja nem betű szerint azonos, tehát ez a bejegyzés az egyetlen
+    védelem.
 
 ### A többi eldöntött szó
 
@@ -2624,14 +2618,14 @@ aposztróf kettőződne; ebben az értékben nincs egy sem.
   macOS Tier 1 az igés alakra ad mintát („did not finish in time” → `nem fejeződött be időben`), a Double Commander
   ugyanígy (`Néhány fájlművelet még nem fejeződött be.`) · a `félbe-` tő `high`, a konkrét `félbemaradt` alak
   `tentative` (a kupacban nincs rá találat; a negyedik bányászati gotcha „közös tő = bizonyíték” esete).
-    - ❌ **NEM `befejezetlen`**: a `hu` kupacban ez a szó KIZÁRÓLAG könyvelési terminus (`befejezetlen termelés`,
-      `befejezetlen beruházás`), tehát rossz jelentésbokor (a negyedik forráscsapda: az első találat gyakran nem a
-      felületi jelentés).
-    - ❌ **NEM `félbeszakadt`**, pedig az a szállított alak: azt a katalógus az „interrupted”-re foglalta le (lásd
-      fent), és okot is sugall (valami elvágta). Az angol „unfinished” ágensmentes, a `félbemaradt` pontosan az.
-    - ❌ **NEM `hiányos`**, pedig a legközelebbi rokon, a `fileOperations.cancelRollback.stagedLeftover.named` azt
-      mondja: ott az „unfinished copy” egy FÉLIG MEGÍRT FÁJL (hiányos tárgy), itt egy be nem fejezett MŰVELET. A két
-      kulcs regisztere is szemben áll: ott a Cmdr a saját maradékáról számol be, itt az illető fájljait védi.
+  - ❌ **NEM `befejezetlen`**: a `hu` kupacban ez a szó KIZÁRÓLAG könyvelési terminus (`befejezetlen termelés`,
+    `befejezetlen beruházás`), tehát rossz jelentésbokor (a negyedik forráscsapda: az első találat gyakran nem a
+    felületi jelentés).
+  - ❌ **NEM `félbeszakadt`**, pedig az a szállított alak: azt a katalógus az „interrupted”-re foglalta le (lásd fent),
+    és okot is sugall (valami elvágta). Az angol „unfinished” ágensmentes, a `félbemaradt` pontosan az.
+  - ❌ **NEM `hiányos`**, pedig a legközelebbi rokon, a `fileOperations.cancelRollback.stagedLeftover.named` azt mondja:
+    ott az „unfinished copy” egy FÉLIG MEGÍRT FÁJL (hiányos tárgy), itt egy be nem fejezett MŰVELET. A két kulcs
+    regisztere is szemben áll: ott a Cmdr a saját maradékáról számol be, itt az illető fájljait védi.
 - **„hidden” (a pont kezdetű, listából kimaradó értelemben) → `rejtett`** · a szállított katalógus egyöntetű
   (`menu.view.showHiddenFiles`, `settings.listing.showHiddenFiles.label`, `commands.viewShowHidden.label`,
   `fileExplorer.rename.hiddenAfterRename`), és a kupac is: KDE Dolphin hu („rejtett mappákat”, „A nevükben ponttal
@@ -2657,13 +2651,13 @@ Helyőrző-kerülések (mindkettő ragozatlanul marad):
   `PE62.2`, `PE68.1`: „Már létezik egy „^0” nevű elem ezen a helyen.”; AppKit: „Már létezik egy „%@” nevű elem ezen a
   helyen.”), a Nautilus hu szintén („„%s” nevű elem már létezik ezen a helyen.”) · `high`. Az `egy` határozatlan névelő
   semmivel nem egyeztet, tehát a név kezdőhangja közömbös.
-    - **Itt KELL az idézőjel**, a `style.md` „csak a felhasználó által írt névre” szabálya ellenére: a név 45
-      karakternyi átlátszatlan azonosító (`.cmdr-staging-` + egy UUID), amit az illetőnek a Finderben meg kell találnia,
-      tehát a mondattól el kell határolni. A legközelebbi rokon, a `fileOperations.cancelRollback.stagedLeftover.named`
-      szintén idézőjelezi a Cmdr saját gyártású munkanevét (`A(z) „{name}”`). A szabály tiltó fele a MÁRKA- és
-      szolgáltatónevekre vonatkozik, ahol az idézőjel gúnyosnak olvasódna.
-    - A `rejtett` szándékosan az idézőjeles név ELÉ került: ez az egyetlen tartalom, amivel az illető kezdeni tud
-      valamit, és így nem a hosszú azonosító után kell megkeresnie.
+  - **Itt KELL az idézőjel**, a `style.md` „csak a felhasználó által írt névre” szabálya ellenére: a név 45 karakternyi
+    átlátszatlan azonosító (`.cmdr-staging-` + egy UUID), amit az illetőnek a Finderben meg kell találnia, tehát a
+    mondattól el kell határolni. A legközelebbi rokon, a `fileOperations.cancelRollback.stagedLeftover.named` szintén
+    idézőjelezi a Cmdr saját gyártású munkanevét (`A(z) „{name}”`). A szabály tiltó fele a MÁRKA- és szolgáltatónevekre
+    vonatkozik, ahol az idézőjel gúnyosnak olvasódna.
+  - A `rejtett` szándékosan az idézőjeles név ELÉ került: ez az egyetlen tartalom, amivel az illető kezdeni tud valamit,
+    és így nem a hosszú azonosító után kell megkeresnie.
 
 ## A kedvencek menüje (`commands.favoritesOpen.*`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`, `fileExplorer.navigation.favoritesAlreadyAdded`, `fileExplorer.navigation.favoritesCantAddHere`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
@@ -2750,8 +2744,8 @@ mondatvázat viszik: **`X még használja ezt a meghajtót.` + egy tegező felsz
   `a(z) {app} appot`, `main.revealNudge.heldByOtherApp`: `a(z) {app} appnál`), és a macOS Tier 1 is hedge-el ugyanebben
   a mondatban (`a(z) „%@” által`) · `high`. Az `{app}` futásidejű folyamatnév (`Preview`, `Warp`, `mds_stores`), tehát a
   kezdőhangja ismeretlen: a hedge pont erre való (`style.md` § Notes and decisions).
-    - **Idézőjel NÉLKÜL**, pedig a macOS idézőjelezi: a `style.md` szabálya szerint az idézőjel a felhasználó által ÍRT
-      névre való, a márka- és appnév-helyőrző pedig puszta `a(z) {name}` (így írja mind a három szállított kulcs is).
+  - **Idézőjel NÉLKÜL**, pedig a macOS idézőjelezi: a `style.md` szabálya szerint az idézőjel a felhasználó által ÍRT
+    névre való, a márka- és appnév-helyőrző pedig puszta `a(z) {name}` (így írja mind a három szállított kulcs is).
 - **A TÖBBES kulcs (`unmountRefusedByApps`) nem kaphat névelőt** · a `{apps}` már kész, `Intl.ListFormat`-tal
   összefűzött felsorolás (`Preview, Warp, Photos és egyéb alkalmazások`, ellenőrizve `node`-dal, `hu` locale,
   2026-09-16), a magyar felsorolásban viszont minden tag SAJÁT névelőt kívánna, amit egy helyőrzőbe nem lehet belefűzni;
@@ -2774,13 +2768,13 @@ mondatvázat viszik: **`X még használja ezt a meghajtót.` + egy tegező felsz
   mert mondat közepén, felsorolás utolsó tagjaként áll, alanyesetben, ahogy a `használják` kívánja.
 - **disk image → `lemezkép`** · macOS Tier 1 (Finder `BN53`: „A(z) „^0” lemezkép lemezre írása…”,
   `InfoWindowGeneralView` „Lemezkép:”, „Lemezkép értéke”) · `high`.
-    - **„is still open” → `még nyitva van`** · Double Commander hu közvetlen msgid-egyezés („the file is open in another
-      program” = „a fájl más programban nyitva van”) · `high`. Nem `csatolva van`: az angol is a köznyelvi „open”-t
-      mondja, és a felhasználó a lemezképet a Finderben nyitva látja.
-    - A mondat egzisztenciális szórendű (`Ezen a meghajtón még nyitva van egy lemezkép.`), mert a magyarban a
-      határozatlan alany az ige MÖGÉ kerül; az angol jelzős szerkezete („A disk image stored on this drive”) magyarul
-      nehéz előtaggá válna (`Egy ezen a meghajtón tárolt lemezkép…`). A második mondat `azt`-ja igei fókuszban áll
-      (`Előbb azt add ki`), ami pont az angol „that image first” hangsúlyát adja.
+  - **„is still open” → `még nyitva van`** · Double Commander hu közvetlen msgid-egyezés („the file is open in another
+    program” = „a fájl más programban nyitva van”) · `high`. Nem `csatolva van`: az angol is a köznyelvi „open”-t
+    mondja, és a felhasználó a lemezképet a Finderben nyitva látja.
+  - A mondat egzisztenciális szórendű (`Ezen a meghajtón még nyitva van egy lemezkép.`), mert a magyarban a határozatlan
+    alany az ige MÖGÉ kerül; az angol jelzős szerkezete („A disk image stored on this drive”) magyarul nehéz előtaggá
+    válna (`Egy ezen a meghajtón tárolt lemezkép…`). A második mondat `azt`-ja igei fókuszban áll (`Előbb azt add ki`),
+    ami pont az angol „that image first” hangsúlyát adja.
 - **„macOS is still working with this drive” → `A macOS még dolgozik ezen a meghajtón`** · a `dolgozik` a katalógus
   igéje (`fileExplorer.navigation.connectionTooltipDisconnected`: „A Cmdr dolgozik a helyreállításán.”), az
   `ezen a meghajtón` helyhatározó pedig a testvér `errors.eject.busy` alakja („A Cmdr még fájlokat mozgat ezen a
@@ -2789,15 +2783,14 @@ mondatvázat viszik: **`X még használja ezt a meghajtót.` + egy tegező felsz
   (alany elöl), hogy a hat kulcs egy hangon szóljon · `high`. A `Ezt a meghajtót még maga a Cmdr használja.` fókuszos
   szórend is jó lett volna, de a családi váz megtartása többet ér: az olvasó a hat mondatot ugyanabban a buborékban
   látja, egymás után soha.
-    - **„send a report” → `küldj jelentést`** · a katalógus a puszta `jelentés`-t használja a beépített
-      visszajelzésküldésre (`errorReporter.amend.unavailable`: „küldj új jelentést a Súgó menüből”) · `high`. Nem
-      `hibajelentést`: a `hiba` szót a hang kerüli (`style.md` § Voice and tone), és az angol is csak „a report”-ot
-      mond.
-    - **„if it keeps happening” → `ha továbbra is előfordul`** · a szállított alak ugyanerre az angolra
-      (`errors.listing.resourceBusy.suggestion`: „Ha továbbra is előfordul, …”) · `high`. A katalógusban él a hosszabb
-      `Ha ez folyamatosan előfordul` is, de az a „If this keeps happening” párja; a rövidebb illik a buborékba.
-    - A `Várj egy percet` (rendszer) és a `Várj egy pillanatot` (Cmdr) különbsége szándékos, az angolt követi („a
-      minute” vs. „a moment”): a Spotlight-indexelés tovább tart, mint egy Cmdr-beli leíró elengedése.
+  - **„send a report” → `küldj jelentést`** · a katalógus a puszta `jelentés`-t használja a beépített
+    visszajelzésküldésre (`errorReporter.amend.unavailable`: „küldj új jelentést a Súgó menüből”) · `high`. Nem
+    `hibajelentést`: a `hiba` szót a hang kerüli (`style.md` § Voice and tone), és az angol is csak „a report”-ot mond.
+  - **„if it keeps happening” → `ha továbbra is előfordul`** · a szállított alak ugyanerre az angolra
+    (`errors.listing.resourceBusy.suggestion`: „Ha továbbra is előfordul, …”) · `high`. A katalógusban él a hosszabb
+    `Ha ez folyamatosan előfordul` is, de az a „If this keeps happening” párja; a rövidebb illik a buborékba.
+  - A `Várj egy percet` (rendszer) és a `Várj egy pillanatot` (Cmdr) különbsége szándékos, az angolt követi („a minute”
+    vs. „a moment”): a Spotlight-indexelés tovább tart, mint egy Cmdr-beli leíró elengedése.
 
 ## Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)
 

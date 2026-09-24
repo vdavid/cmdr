@@ -28,10 +28,10 @@ The must-know rules; the rest of this file elaborates them.
   takes no article, inflection, or possessive (`i Dock`). On a phone, Android's own Swedish wins (`USB-felsökning`,
   `Tillåt`, `tryck på`).
 - **Capitalization**: sentence case; Swedish capitalizes no common nouns, days, or months.
-- **Punctuation**: quote in running text with `”…”` on both sides, never straight `"…"`. Mirror the English ellipsis
-  per key (`…` or `...`). A space before `%` (`100 %`, `{percent} %`). No comma before `och` / `eller` joining two short
-  clauses; keep it before a consequence `så` (`…, så läggs det till`). Use `samt` before a last item that itself contains
-  `och`. A command that toggles both ways keeps the slash (`Fäst / lossa server`).
+- **Punctuation**: quote in running text with `”…”` on both sides, never straight `"…"`. Mirror the English ellipsis per
+  key (`…` or `...`). A space before `%` (`100 %`, `{percent} %`). No comma before `och` / `eller` joining two short
+  clauses; keep it before a consequence `så` (`…, så läggs det till`). Use `samt` before a last item that itself
+  contains `och`. A command that toggles both ways keeps the slash (`Fäst / lossa server`).
 - **Apostrophes**: ICU values double them (`''`); the RAW families (`errors.*`, `menu.*`, `licensing.windowTitle.*`,
   `main.instanceLock.*`) keep them single.
 - **Compounds** close up (`fillista`, `åtgärdskö`) and hyphenate after an acronym, a code, or a proper name
@@ -43,14 +43,13 @@ The must-know rules; the rest of this file elaborates them.
   preposition (`nyckeln från {host}`, `på {volumeName}`, `som heter {folderName}`) or a direction adverb (`dit`). Where
   `den` could point two ways, repeat the noun (`Öppna servern igen`). Cmdr's own behavior repeats `Cmdr` rather than a
   pronoun.
-- **Plurals**: CLDR `one` / `other`. Keep `en`/`ett` agreement inside each branch (`en markerad fil`, `ett markerat
-  objekt`); pull a tail that agrees with the counted noun into both branches; a counted `*Text` with no selector takes
-  the invariant `objekt`; "the {countText} items" becomes `allt …: {countText} objekt`.
+- **Plurals**: CLDR `one` / `other`. Keep `en`/`ett` agreement inside each branch (`en markerad fil`,
+  `ett markerat objekt`); pull a tail that agrees with the counted noun into both branches; a counted `*Text` with no
+  selector takes the invariant `objekt`; "the {countText} items" becomes `allt …: {countText} objekt`.
 - **Numbers**: one through nine as words, 10+ as digits, also in multipliers (`fyra gånger`, `100 gånger`, never `4x`).
   Separators and decimals come from the formatter layer.
 - **Top traps** (details in `terms.json`):
-  - operation → `åtgärd` (queue `Åtgärdskö`, log `Åtgärdslogg`); transfer → `överföring` only for a copy/move in
-    flight.
+  - operation → `åtgärd` (queue `Åtgärdskö`, log `Åtgärdslogg`); transfer → `överföring` only for a copy/move in flight.
   - delete files → `Radera`; `Ta bort` only takes something out of a list; move to trash → `Flytta till papperskorgen`.
   - rollback → `ångra` (`Ångra klart`), never `återställ` (that's restore; names come back with `återställa`); put back
     from the trash → `Lägg tillbaka`; stopping a rollback → `Stoppa`, never `Avbryt`.
@@ -86,8 +85,8 @@ The localization calls for Swedish beyond formality. Swedish has no script, gend
 the surface is small. Evidence verified against the reference pile (`_ignored/i18n/sv/`) on 2026-06-20.
 
 - **Regional variant: one `sv` catalog targeting Sweden-Swedish, no separate `sv-FI`.** Microsoft and Apple both ship a
-  single Swedish UI, as do Google, Spotify, and Netflix, and let the formatter handle regional number, date, and currency
-  differences. The Finland-Swedish differences that matter to Cmdr already come from `formatNumber()` /
+  single Swedish UI, as do Google, Spotify, and Netflix, and let the formatter handle regional number, date, and
+  currency differences. The Finland-Swedish differences that matter to Cmdr already come from `formatNumber()` /
   `formatByteSize()`, not from catalog strings. Revisit only if Cmdr wants a deliberately Finland-Swedish presence.
 - **Gender and inclusive language: a non-issue in Swedish UI.** Swedish UI strings don't gender the user. The one live
   point is `en`/`ett` noun gender driving article and adjective agreement inside plural and count branches (see
@@ -100,8 +99,8 @@ the surface is small. Evidence verified against the reference pile (`_ignored/i1
 Every term ruling lives in `terms.json`, keyed by the concept IDs in `../concepts.json` (and `concepts-proposed.json`
 until those are merged): `chosen`, accepted forms, usage notes, forms to avoid with the reason, a confidence
 (`confirmed` / `high` / `tentative`), and sources. Swedish IT terminology follows Svenska datatermgruppen and
-Apple/Microsoft Swedish; prefer the macOS term when macOS and Windows differ, since Cmdr is a macOS app. Sources are read
-but never copied verbatim (Apple/MS copyrighted, GNOME/Xfce GPL): they decide the term, Cmdr writes its own value.
+Apple/Microsoft Swedish; prefer the macOS term when macOS and Windows differ, since Cmdr is a macOS app. Sources are
+read but never copied verbatim (Apple/MS copyrighted, GNOME/Xfce GPL): they decide the term, Cmdr writes its own value.
 Rationale worth more than a line sits in `decisions.md` under a heading that cites its keys. Never guess a term: mine
 the reference pile first (`../reference-pile/how-to-mine.md`).
 
@@ -115,8 +114,8 @@ one, and don't reword the base item to fit it. `upptagen` stays uninflected here
 action, not an adjective agreeing with a noun in the label, and the thing that's busy (servern, volymen, enheten) is
 `en`-gender anyway. `high` (macOS Finder grays such items out without a marker, so the parenthetical is Cmdr's own; the
 word itself is the standard Swedish "busy"). A disabled BUTTON's tooltip doesn't carry it:
-`fileExplorer.navigation.disconnectBusyTooltip` says `Det går inte att koppla från medan åtgärder pågår på den här
-servern`.
+`fileExplorer.navigation.disconnectBusyTooltip` says
+`Det går inte att koppla från medan åtgärder pågår på den här servern`.
 
 ## Brand and do-not-translate
 

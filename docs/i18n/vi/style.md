@@ -17,11 +17,11 @@ The must-know rules; the rest of this file elaborates them.
   reads fine without it. Buttons and menu items are the bare verb with no pronoun (`Sao chép`, `Hủy`, `Mở`). David
   speaking in the first person is `mình` (onboarding step 3, `openBeta`); the USER speaking, as on a radio option, is
   `tôi` (`Có, tôi muốn AI`).
-- **Voice**: friendly, concise, calm. Error copy states the problem and the next step and never uses `lỗi` or
-  `thất bại` as a label: "Couldn't X" → `Không thể X` / `Không X được`; a gentle failed status → `Chưa hoàn tất được`;
-  an outcome not yet proven → `Chưa xác nhận được`; "Something went wrong" → `Có gì đó không ổn`; "Here's what to
-  try:" → `Bạn có thể thử:`. A flat present state takes `không`, "not yet" takes `chưa`; a thing that WILL happen (the
-  Dock redraws next login, a retry will save) takes `chưa`, never a verdict of failure.
+- **Voice**: friendly, concise, calm. Error copy states the problem and the next step and never uses `lỗi` or `thất bại`
+  as a label: "Couldn't X" → `Không thể X` / `Không X được`; a gentle failed status → `Chưa hoàn tất được`; an outcome
+  not yet proven → `Chưa xác nhận được`; "Something went wrong" → `Có gì đó không ổn`; "Here's what to try:" →
+  `Bạn có thể thử:`. A flat present state takes `không`, "not yet" takes `chưa`; a thing that WILL happen (the Dock
+  redraws next login, a retry will save) takes `chưa`, never a verdict of failure.
 - **Diacritics**: always full, NFC. Never strip marks to save space. Tone placement is modern: `hủy`, `xóa`, `khóa`,
   `hòa` (never `huỷ`, `xoá`, `khoá`).
 - **Capitalization**: sentence case in every title, label, and button; proper nouns keep theirs (`Thùng rác` when a
@@ -57,8 +57,8 @@ The must-know rules; the rest of this file elaborates them.
     (only when EN really says pull the cable).
   - operation → `thao tác` (queue `Hàng đợi thao tác`, log `Nhật ký thao tác`); transfer → `lần truyền`, narrow
     copy-or-move only; `di chuyển` is the Move operation alone, a loose "moving files" is `chuyển tệp`.
-  - rollback and undo → `hoàn tác`; Finish rolling back → `Tiếp tục hoàn tác`; put back from the trash →
-    `đưa trở lại`; old names back → `đặt lại tên cũ`.
+  - rollback and undo → `hoàn tác`; Finish rolling back → `Tiếp tục hoàn tác`; put back from the trash → `đưa trở lại`;
+    old names back → `đặt lại tên cũ`.
   - crash report → `báo cáo sự cố`, error report → `báo cáo trục trặc`, bare "report" → `báo cáo`; `sự cố` alone is
     "problem" and never claims Cmdr quit; quit unexpectedly → `thoát bất ngờ`.
   - Back in the folder history → `Trở lại`; back to a screen or step → `Quay lại`.
@@ -334,8 +334,8 @@ Vietnamese has no grammatical number, so one form covers all counts.
 
 ## Open questions
 
-Subjective calls, coined terms, and deferred migrations that a native reviewer should settle live in
-`review-queue.md`; each already ships a reasoned value.
+Subjective calls, coined terms, and deferred migrations that a native reviewer should settle live in `review-queue.md`;
+each already ships a reasoned value.
 
 ## Termbase files
 
