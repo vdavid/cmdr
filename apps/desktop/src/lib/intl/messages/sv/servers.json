@@ -164,7 +164,7 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "f7bb3a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr kunde inte spara det här lösenordet i nyckelringen. Försök igen eller slå av ”Kom ihåg i nyckelringen” för att logga in utan att spara det.",
+  "servers.refusal.secretNotStored": "Cmdr kunde inte spara det här lösenordet i nyckelringen. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara det.",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "080b475"
   },

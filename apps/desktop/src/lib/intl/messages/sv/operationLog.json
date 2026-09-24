@@ -172,7 +172,7 @@
   "@operationLog.rollback.refusalJournalIncomplete": {
     "sourceHash": "4176739"
   },
-  "operationLog.rollback.refusalDirectoryMerge": "Vid flytten slogs mappen ihop med en som redan fanns där. Cmdr kan inte se vilka filer som följde med och vilka som redan låg där, så det finns ingen säker väg tillbaka.",
+  "operationLog.rollback.refusalDirectoryMerge": "Vid flytten slogs mappen samman med en som redan fanns där. Cmdr kan inte se vilka filer som följde med och vilka som redan låg där, så det finns ingen säker väg tillbaka.",
   "@operationLog.rollback.refusalDirectoryMerge": {
     "sourceHash": "2dad38d"
   },
@@ -188,7 +188,7 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalUnexpected": "Cmdr kunde inte starta ångringen. Försök igen om en stund.",
+  "operationLog.rollback.refusalUnexpected": "Cmdr kunde inte börja ångra. Försök igen om en stund.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
   },

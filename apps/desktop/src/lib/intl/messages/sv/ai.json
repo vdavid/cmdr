@@ -123,7 +123,7 @@
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "5a378c1"
   },
-  "ai.cloudConsent.askCmdr.memory": "Cmdr skriver anteckningar om dig: hur du gillar att ha saker ordnade, vad du har tackat nej till förut, och allt du ber den komma ihåg. Anteckningarna följer med varje meddelande du skickar, så länge de finns, och de kan innehålla text som Cmdr känt igen inuti dina foton. Du kan läsa dem, eller radera dem, när som helst i inställningarna för Ask Cmdr.",
+  "ai.cloudConsent.askCmdr.memory": "Cmdr skriver anteckningar om dig: hur du gillar att ha saker ordnade, vad du har tackat nej till förut, och allt du ber den komma ihåg. Anteckningarna följer med varje meddelande du skickar, så länge de finns, och de kan innehålla text som Cmdr känt igen inuti dina bilder. Du kan läsa dem, eller radera dem, när som helst i inställningarna för Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
@@ -353,7 +353,7 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "Placeholder-only value: a literal '?' for an unknown model size. No translatable text."
   },
-  "ai.local.notInstalled": "Inte installerad. Den lokala modellen ({modelName}, {modelSize}) körs helt på din enhet för maximal integritet. Kräver Apple Silicon.",
+  "ai.local.notInstalled": "Inte installerad. Den lokala modellen ({modelName}, {modelSize}) körs helt på din enhet för maximal integritet. Kräver Apple silicon.",
   "@ai.local.notInstalled": {
     "sourceHash": "163bf42"
   },

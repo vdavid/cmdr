@@ -123,7 +123,7 @@
   "@errors.listing.staleConnection.title": {
     "sourceHash": "f03c43c"
   },
-  "errors.listing.staleConnection.explanation": "Cmdr försöker komma åt den här mappen med en gammal referens som servern inte längre känner igen. Det här händer ofta med nätverksenheter (NFS, SMB) efter att servern startat om, resursen monterats om, eller anslutningen avbrutits.",
+  "errors.listing.staleConnection.explanation": "Cmdr försöker komma åt den här mappen med en gammal referens som servern inte längre känner igen. Det här händer ofta med nätverksenheter (NFS, SMB) efter att servern startat om, den delade mappen monterats om, eller anslutningen avbrutits.",
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
@@ -175,7 +175,7 @@
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.pathNotFoundErrno.suggestion": "Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att resursen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där",
+  "errors.listing.pathNotFoundErrno.suggestion": "Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där",
   "@errors.listing.pathNotFoundErrno.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -187,7 +187,7 @@
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.noPermissionErrno.suggestion": "Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på den, välj Visa info, och titta under Delning och behörighet\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på den här sökvägen i Terminal för att se de aktuella behörigheterna",
+  "errors.listing.noPermissionErrno.suggestion": "Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på den, välj Visa info, och titta under Delning och behörigheter\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på den här sökvägen i Terminal för att se de aktuella behörigheterna",
   "@errors.listing.noPermissionErrno.suggestion": {
     "sourceHash": "ea316e7"
   },
@@ -247,7 +247,7 @@
   "@errors.listing.diskFullErrno.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.diskFullErrno.suggestion": "Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgsikonen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym\n- Kontrollera **{system_settings} > Allmänt > Lagring** för en översikt över vad som använder utrymme",
+  "errors.listing.diskFullErrno.suggestion": "Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgssymbolen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym\n- Kontrollera **{system_settings} > Allmänt > Lagring** för en översikt över vad som använder utrymme",
   "@errors.listing.diskFullErrno.suggestion": {
     "sourceHash": "bf54d66"
   },
@@ -415,7 +415,7 @@
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
-  "errors.listing.diskReadProblem.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ordentligt ansluten\n- Öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivhjälpen** på den här volymen\n- Om det här fortsätter, säkerhetskopiera dina data så snart som möjligt. Disken kan vara på väg att utveckla skadade sektorer eller börja slitas ut.",
+  "errors.listing.diskReadProblem.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ordentligt ansluten\n- Öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivkontroll** på den här volymen\n- Om det här fortsätter, säkerhetskopiera dina data så snart som möjligt. Disken kan vara på väg att utveckla skadade sektorer eller börja slitas ut.",
   "@errors.listing.diskReadProblem.suggestion": {
     "sourceHash": "792c921"
   },
@@ -427,7 +427,7 @@
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "eeddaa7"
   },
-  "errors.listing.unexpectedSystemResponse.suggestion": "Så här kan du prova:\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivhjälpen** på den här volymen för att kontrollera filsystemet",
+  "errors.listing.unexpectedSystemResponse.suggestion": "Så här kan du prova:\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivkontroll** på den här volymen för att kontrollera filsystemet",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
     "sourceHash": "4e5a9bb"
   },
@@ -451,7 +451,7 @@
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "80b9ff5"
   },
-  "errors.listing.couldntReadUnknown.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** och kör **Skivhjälpen** på den här volymen",
+  "errors.listing.couldntReadUnknown.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** och kör **Skivkontroll** på den här volymen",
   "@errors.listing.couldntReadUnknown.suggestion": {
     "sourceHash": "0073987"
   },
@@ -463,7 +463,7 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "0c4bb13"
   },
-  "errors.listing.notFound.suggestion": "Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att resursen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där",
+  "errors.listing.notFound.suggestion": "Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där",
   "@errors.listing.notFound.suggestion": {
     "sourceHash": "d25f62b"
   },
@@ -487,7 +487,7 @@
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "a2955dc"
   },
-  "errors.listing.permissionDenied.suggestion": "Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på mappen, välj Visa info, och titta under Delning och behörighet\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på sökvägen i Terminal för att se de aktuella behörigheterna",
+  "errors.listing.permissionDenied.suggestion": "Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på mappen, välj Visa info, och titta under Delning och behörigheter\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på sökvägen i Terminal för att se de aktuella behörigheterna",
   "@errors.listing.permissionDenied.suggestion": {
     "sourceHash": "0fa0829"
   },
@@ -499,7 +499,7 @@
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "4e6b9ef"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "Så här kan du prova:\n- Kontrollera mappens behörigheter på servern, och vilket konto du anslöt den delade mappen med\n- Vissa mappar tillhör serverns eget systemkonto (`lost+found` på en Linux-server, till exempel) och förblir stängda för alla andra\n- Vill du ansluta som någon annan, mata ut den delade mappen och anslut den igen med de uppgifterna",
+  "errors.listing.remotePermissionDenied.suggestion": "Så här kan du prova:\n- Kontrollera mappens behörigheter på servern, och vilket konto du monterade den delade mappen med\n- Vissa mappar tillhör serverns eget systemkonto (`lost+found` på en Linux-server, till exempel) och förblir stängda för alla andra\n- Vill du ansluta som någon annan, mata ut den delade mappen och montera den igen med de uppgifterna",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "506e57a"
   },
@@ -583,7 +583,7 @@
   "@errors.listing.storageFull.explanation": {
     "sourceHash": "30d0741"
   },
-  "errors.listing.storageFull.suggestion": "Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgsikonen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym",
+  "errors.listing.storageFull.suggestion": "Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgssymbolen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym",
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "fcdd42d"
   },
@@ -615,7 +615,7 @@
   "@errors.listing.deletePending.title": {
     "sourceHash": "1e5741a"
   },
-  "errors.listing.deletePending.explanation": "`{path}` är på väg bort. Servern markerade den för borttagning, men ett annat öppet handtag håller kvar den tills handtaget stängs.",
+  "errors.listing.deletePending.explanation": "`{path}` är på väg bort. Servern markerade den för radering, men ett annat öppet handtag håller kvar den tills handtaget stängs.",
   "@errors.listing.deletePending.explanation": {
     "sourceHash": "047ad2f"
   },
@@ -1601,7 +1601,7 @@
   "@errors.write.deletePending.title": {
     "sourceHash": "1e5741a"
   },
-  "errors.write.deletePending.message": "Den här filen är på väg bort. Servern markerade den för borttagning, men ett annat öppet handtag håller kvar den tills handtaget stängs.",
+  "errors.write.deletePending.message": "Den här filen är på väg bort. Servern markerade den för radering, men ett annat öppet handtag håller kvar den tills handtaget stängs.",
   "@errors.write.deletePending.message": {
     "sourceHash": "e580e20"
   },
@@ -1925,7 +1925,7 @@
   "@errors.mount.permissionDenied": {
     "sourceHash": "12e20d9"
   },
-  "errors.mount.cancelled": "Anslutningen till ”{share}” avbröts innan den var klar. Försök igen när du vill.",
+  "errors.mount.cancelled": "Anslutningen till ”{share}” stoppades innan den var klar. Försök igen när du vill.",
   "@errors.mount.cancelled": {
     "sourceHash": "0b0ec30"
   },
@@ -1989,7 +1989,7 @@
   "@errors.write.readOnlyDevice.source.message": {
     "sourceHash": "ec7d263"
   },
-  "errors.write.readOnlyDevice.source.suggestion": "Kopiera dem i stället. Originalen blir kvar där de är.",
+  "errors.write.readOnlyDevice.source.suggestion": "Kopiera filerna i stället. Originalen blir kvar där de är.",
   "@errors.write.readOnlyDevice.source.suggestion": {
     "sourceHash": "f6a307b"
   },

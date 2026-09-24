@@ -39,7 +39,7 @@
   "@transfer.fileOnly.allSkippedMany": {
     "sourceHash": "ae39c4b"
   },
-  "transfer.fileOnly.mixedCopy": "Kopiering klar: kopierade {transferredText}, hoppade över {skippedText}. Alla {processedText} {processed, plural, one {fil} other {filer}} du valde finns nu på målet.",
+  "transfer.fileOnly.mixedCopy": "Kopiering klar: kopierade {transferredText}, hoppade över {skippedText}. Alla {processedText} {processed, plural, one {fil} other {filer}} du markerade finns nu på målet.",
   "@transfer.fileOnly.mixedCopy": {
     "sourceHash": "b00606b"
   },

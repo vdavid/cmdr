@@ -208,7 +208,7 @@
   "@commands.sortBySize.label": {
     "sourceHash": "b5fa7af"
   },
-  "commands.sortByCreated.label": "Sortera efter skapandedatum",
+  "commands.sortByCreated.label": "Sortera efter skapelsedatum",
   "@commands.sortByCreated.label": {
     "sourceHash": "9bdaf4e"
   },
@@ -460,7 +460,7 @@
   "@commands.fileGoToTrash.description": {
     "sourceHash": "45df2c4"
   },
-  "commands.dialogConfirm.label": "Bekräfta öppningsdialog",
+  "commands.dialogConfirm.label": "Bekräfta den öppna dialogen",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"
   },

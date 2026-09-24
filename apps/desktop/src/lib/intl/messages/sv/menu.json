@@ -449,7 +449,7 @@
   "@menu.context.addToFavorites": {
     "sourceHash": "7f3c078"
   },
-  "menu.context.hideFunctionKeyBar": "Dölj funktionstangentsraden",
+  "menu.context.hideFunctionKeyBar": "Göm funktionstangentsraden",
   "@menu.context.hideFunctionKeyBar": {
     "sourceHash": "343a561"
   },

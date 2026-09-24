@@ -399,7 +399,7 @@
   "@settings.archives.zip.label": {
     "sourceHash": "ec0fd54"
   },
-  "settings.archives.zip.description": "Vad Enter gör med en zip-fil.",
+  "settings.archives.zip.description": "Vad Retur gör med en zip-fil.",
   "@settings.archives.zip.description": {
     "sourceHash": "70c3cb1"
   },
@@ -407,7 +407,7 @@
   "@settings.archives.ooxml.label": {
     "sourceHash": "76c4431"
   },
-  "settings.archives.ooxml.description": "Vad Enter gör med en .docx, .xlsx, .pptx, .jar eller .apk.",
+  "settings.archives.ooxml.description": "Vad Retur gör med en .docx, .xlsx, .pptx, .jar eller .apk.",
   "@settings.archives.ooxml.description": {
     "sourceHash": "af6bd7d"
   },
@@ -415,7 +415,7 @@
   "@settings.archives.bundle.label": {
     "sourceHash": "4a5e902"
   },
-  "settings.archives.bundle.description": "Vad Enter gör med en .app, .bundle, eller .framework.",
+  "settings.archives.bundle.description": "Vad Retur gör med en .app, .bundle eller .framework.",
   "@settings.archives.bundle.description": {
     "sourceHash": "9d30dcc"
   },
@@ -463,11 +463,11 @@
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "Hitta foton genom att beskriva vad de föreställer, som ''solnedgång på stranden'', med en AI-modell på enheten.",
+  "settings.mediaIndex.clip.description": "Hitta bilder genom att beskriva vad de föreställer, som ''solnedgång på stranden'', med en AI-modell på enheten.",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
-  "settings.mediaIndex.clip.ready": "Klart – sök bland dina foton med en beskrivning.",
+  "settings.mediaIndex.clip.ready": "Klart – sök bland dina bilder med en beskrivning.",
   "@settings.mediaIndex.clip.ready": {
     "sourceHash": "c17e03d"
   },
@@ -699,7 +699,7 @@
   "@settings.mediaIndex.importanceThreshold.floor": {
     "sourceHash": "8839d14"
   },
-  "settings.mediaIndex.progress.local": "Den här Mac",
+  "settings.mediaIndex.progress.local": "Den här Macen",
   "@settings.mediaIndex.progress.local": {
     "sourceHash": "79a4aef"
   },
@@ -953,7 +953,7 @@
   "@settings.network.enabled.label": {
     "sourceHash": "10f5de9"
   },
-  "settings.network.enabled.description": "Upptäck SMB-servrar i ditt lokala nätverk och anslut till dem. När det är av kan Cmdr fortfarande läsa och skriva filer på redan monterade resurser, men ber inte macOS om åtkomst till Lokalt nätverk.",
+  "settings.network.enabled.description": "Upptäck SMB-servrar i ditt lokala nätverk och anslut till dem. När det är av kan Cmdr fortfarande läsa och skriva filer i redan monterade delade mappar, men ber inte macOS om åtkomst till Lokalt nätverk.",
   "@settings.network.enabled.description": {
     "sourceHash": "3500345"
   },
@@ -1286,7 +1286,7 @@
   "@settings.advanced.exitFullScreenOnEscape.description": {
     "sourceHash": "a862b71"
   },
-  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Avisering om Escape och helskärmsläge visad",
+  "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Tips om Escape och helskärmsläge visat",
   "@settings.advanced.exitFullScreenOnEscapeHintShown.label": {
     "sourceHash": "583b08f"
   },
@@ -1338,7 +1338,7 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "När appar som TextEdit och Preview sparar en fil skriver macOS den nya versionen bredvid under ett tillfälligt namn (som slutar på ”.sb-”) och byter sedan ut den. Stäng av det här för att hålla dem borta från fillistan.",
+  "settings.advanced.showSafeSaveFiles.description": "När appar som TextEdit och Förhandsvisning sparar en fil skriver macOS den nya versionen bredvid under ett tillfälligt namn (som slutar på ”.sb-”) och byter sedan ut den. Stäng av det här för att hålla dem borta från fillistan.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "sourceHash": "1749ee6"
   },
@@ -1982,11 +1982,11 @@
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
   },
-  "settings.summary.archives": "Vad Enter gör med arkiv och appaket: bläddra i dem, öppna, eller fråga.",
+  "settings.summary.archives": "Vad Retur gör med arkiv och appaket: bläddra i dem, öppna eller fråga.",
   "@settings.summary.archives": {
     "sourceHash": "340a411"
   },
-  "settings.summary.notifications": "Aviseringar om hämtningar, det globala kortkommandot för att hoppa till den senaste hämtningen och varningar om lågt diskutrymme.",
+  "settings.summary.notifications": "Aviseringar om hämtningar, den globala genvägen för att hoppa till den senaste hämtningen och varningar om lågt diskutrymme.",
   "@settings.summary.notifications": {
     "sourceHash": "e681776"
   },
@@ -2159,7 +2159,7 @@
   "@settings.ai.loading": {
     "sourceHash": "47d2a51"
   },
-  "settings.ai.tooltipOff": "AI-funktioner är avstängda. Cmdr fungerar fullt ut utan AI: förslag och smarta funktioner göms helt enkelt.",
+  "settings.ai.tooltipOff": "AI-funktioner är avstängda. Cmdr fungerar fullt ut utan AI: förslag och smarta funktioner är helt enkelt dolda.",
   "@settings.ai.tooltipOff": {
     "sourceHash": "2b31468"
   },
@@ -2167,11 +2167,11 @@
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
-  "settings.ai.tooltipLocal": "Kör en liten språkmodell helt på din enhet. Maximal integritet: ingenting lämnar din dator. Fungerar offline. Använder ~2 GB diskutrymme och ~400 MB minne (varierar med kontextstorlek). Kräver Apple Silicon (M1+).",
+  "settings.ai.tooltipLocal": "Kör en liten språkmodell helt på din enhet. Maximal integritet: ingenting lämnar din dator. Fungerar offline. Använder ~2 GB diskutrymme och ~400 MB minne (varierar med kontextstorlek). Kräver Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
     "sourceHash": "bf83043"
   },
-  "settings.ai.tooltipLocalDisabled": "Lokal AI kräver Apple Silicon (M1 eller senare). Använd Moln-AI i stället.",
+  "settings.ai.tooltipLocalDisabled": "Lokal AI kräver Apple silicon (M1 eller senare). Använd Moln-AI i stället.",
   "@settings.ai.tooltipLocalDisabled": {
     "sourceHash": "147cb2e"
   },

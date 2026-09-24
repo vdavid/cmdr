@@ -295,11 +295,11 @@
   "@onboarding.stepAi.local.tooltip": {
     "sourceHash": "c3fa36a"
   },
-  "onboarding.stepAi.local.note": "Började hämta den lokala modellen i bakgrunden. Du kan slutföra guiden nu; avisering i hörnet håller dig uppdaterad.",
+  "onboarding.stepAi.local.note": "Började hämta den lokala modellen i bakgrunden. Du kan slutföra guiden nu; aviseringen i hörnet håller dig uppdaterad.",
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
-  "onboarding.stepAi.localTooltip": "Lokal LLM kräver Apple Silicon. Moln fungerar på Intel.",
+  "onboarding.stepAi.localTooltip": "Lokal LLM kräver Apple silicon. Moln fungerar på Intel.",
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "dc194e8"
   },
@@ -459,7 +459,7 @@
   "@onboarding.stepOptional.networking.summary": {
     "sourceHash": "5006f53"
   },
-  "onboarding.stepOptional.networking.desc": "Att ha det här <em>på</em> betyder att du kan ansluta till SMB-servrar som företagets nätverksmappar, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokalt nätverk”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.",
+  "onboarding.stepOptional.networking.desc": "Att ha det här <em>på</em> betyder att du kan ansluta till SMB-servrar som delade mappar på företagets nätverk, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokalt nätverk”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.",
   "@onboarding.stepOptional.networking.desc": {
     "sourceHash": "089707f"
   },
@@ -507,7 +507,7 @@
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Om du aktiverar det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.\nKostnaden är att macOS <em>också</em> vill ansluta till dessa (och det misslyckas oftast, vilket är därför du inte bara kan använda Finder för att kopiera foton från Android-telefoner), så Cmdr måste hålla tillbaka den macOS-processen medan den körs.\nNär du avslutar Cmdr återställs detta artigt.",
+  "onboarding.stepOptional.mtp.desc": "Om du aktiverar det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.\nKostnaden är att macOS <em>också</em> vill ansluta till dessa (och det går oftast inte, vilket är därför du inte bara kan använda Finder för att kopiera foton från Android-telefoner), så Cmdr måste hålla tillbaka den macOS-processen medan den körs.\nNär du avslutar Cmdr återställs detta artigt.",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },
@@ -535,7 +535,7 @@
   "@onboarding.cloudSetup.step.ollamaModel": {
     "sourceHash": "5999d6a"
   },
-  "onboarding.cloudSetup.step.lmStudioServer": "Ladda en modell i LM Studio och starta sedan dess <serverLink>lokala server</serverLink>",
+  "onboarding.cloudSetup.step.lmStudioServer": "Läs in en modell i LM Studio och starta sedan dess <serverLink>lokala server</serverLink>",
   "@onboarding.cloudSetup.step.lmStudioServer": {
     "sourceHash": "447957a"
   },

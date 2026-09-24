@@ -51,7 +51,7 @@
   "@suggestedOps.reversibleRestoreMove": {
     "sourceHash": "de7f6ff"
   },
-  "suggestedOps.reversibleDeleteWritten": "Ångra genom att radera det som skapas",
+  "suggestedOps.reversibleDeleteWritten": "Ångra genom att radera det som skrivs",
   "@suggestedOps.reversibleDeleteWritten": {
     "sourceHash": "997843a"
   },

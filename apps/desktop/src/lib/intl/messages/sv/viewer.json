@@ -257,7 +257,7 @@
   "@viewer.statusBar.badge.streamingTooltip": {
     "sourceHash": "1752e59"
   },
-  "viewer.statusBar.badge.wrap": "radbrytning",
+  "viewer.statusBar.badge.wrap": "radbyte",
   "@viewer.statusBar.badge.wrap": {
     "sourceHash": "f0a2899"
   },
@@ -269,7 +269,7 @@
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
-  "viewer.statusBar.hint.text": "W radbrytning · F tail · ⌘F sök",
+  "viewer.statusBar.hint.text": "W radbyte · F tail · ⌘F sök",
   "@viewer.statusBar.hint.text": {
     "sourceHash": "3ecf215"
   },

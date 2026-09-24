@@ -48,7 +48,7 @@
   "@updates.moveToApplicationsDialog.title": {
     "sourceHash": "97f87a0"
   },
-  "updates.moveToApplicationsDialog.translocated": "En ny version är klar, men macOS kör Cmdr från en tillfällig skrivskyddad kopia. Det händer när du öppnar en app direkt där du laddade ner den, och då har uppdateringar ingenstans att ta vägen.",
+  "updates.moveToApplicationsDialog.translocated": "En ny version är klar, men macOS kör Cmdr från en tillfällig skrivskyddad kopia. Det händer när du öppnar en app direkt där du hämtade den, och då har uppdateringar ingenstans att ta vägen.",
   "@updates.moveToApplicationsDialog.translocated": {
     "sourceHash": "510a3a6"
   },

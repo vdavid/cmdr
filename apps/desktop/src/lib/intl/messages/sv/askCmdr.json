@@ -733,7 +733,7 @@
   "@askCmdr.decision.approved": {
     "sourceHash": "aa911e6"
   },
-  "askCmdr.decision.result": "{doneText} klara, {skippedText} överhoppade, {failedText} misslyckades",
+  "askCmdr.decision.result": "{doneText} klara, {skippedText} överhoppade, {failedText} gick inte",
   "@askCmdr.decision.result": {
     "sourceHash": "13d97c7"
   },
@@ -761,7 +761,7 @@
   "@askCmdr.decision.verbCompress": {
     "sourceHash": "45391ae"
   },
-  "askCmdr.decision.verbExtract": "packa upp",
+  "askCmdr.decision.verbExtract": "extrahera",
   "@askCmdr.decision.verbExtract": {
     "sourceHash": "c924f71"
   }

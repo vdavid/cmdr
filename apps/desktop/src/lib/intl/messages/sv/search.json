@@ -39,7 +39,7 @@
   "@search.notAFolderToast": {
     "sourceHash": "c449358"
   },
-  "search.searchableFolder.disabledTooltip": "Nuvarande mapp är sökresultat, som inte går att söka i. Öppna en riktig mapp först.",
+  "search.searchableFolder.disabledTooltip": "Den aktuella mappen är sökresultat, som inte går att söka i. Öppna en riktig mapp först.",
   "@search.searchableFolder.disabledTooltip": {
     "sourceHash": "a90d24e"
   },
@@ -123,7 +123,7 @@
   "@search.walkHandoff.stoppedShort": {
     "sourceHash": "3a2a5dd"
   },
-  "search.walkHandoff.superseded": "Cmdr slutade fylla på resultaten för {label}, för din nya sökning tog över.",
+  "search.walkHandoff.superseded": "Cmdr slutade fylla på resultaten för {label}, eftersom din nya sökning tog över.",
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },
@@ -151,7 +151,7 @@
   "@search.coverage.walk.cancelled": {
     "sourceHash": "ea9caa1"
   },
-  "search.coverage.walk.interrupted": "Sökningen tog slut i förtid, så det kan finnas mer på {drive}. Söker du igen fortsätter den där den slutade.",
+  "search.coverage.walk.interrupted": "Sökningen stoppades i förtid, så det kan finnas mer på {drive}. Söker du igen fortsätter den där den slutade.",
   "@search.coverage.walk.interrupted": {
     "sourceHash": "4c6a0a4"
   },
@@ -223,7 +223,7 @@
   "@search.runTitle": {
     "sourceHash": "859abd4"
   },
-  "search.coverage.pressEnter": "Tryck på Enter så går Cmdr igenom dem nu.",
+  "search.coverage.pressEnter": "Tryck på Retur så går Cmdr igenom dem nu.",
   "@search.coverage.pressEnter": {
     "sourceHash": "f340335"
   }

@@ -88,7 +88,7 @@
   "@queryUi.empty.tip": {
     "sourceHash": "6d00976"
   },
-  "queryUi.empty.tipAi": "Tips: <newKey>⌘N</newKey> börjar om, <historyKey>⌘H</historyKey> visar senaste sökningarna, <aiKey>⌘Enter</aiKey> kör en AI-sökning.",
+  "queryUi.empty.tipAi": "Tips: <newKey>⌘N</newKey> börjar om, <historyKey>⌘H</historyKey> visar senaste sökningarna, <aiKey>⌘Retur</aiKey> kör en AI-sökning.",
   "@queryUi.empty.tipAi": {
     "sourceHash": "e83a0d6"
   },
@@ -258,11 +258,11 @@
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "07b501d"
   },
-  "queryUi.results.live.waitingForAnotherWalk": "Väntar på en annan genomgång av de här mapparna...",
+  "queryUi.results.live.waitingForAnotherWalk": "Väntar på en annan genomsökning av de här mapparna...",
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "21163fe"
   },
-  "queryUi.results.live.waitingOnPathAria": "En annan genomgång läser {path}",
+  "queryUi.results.live.waitingOnPathAria": "En annan genomsökning läser {path}",
   "@queryUi.results.live.waitingOnPathAria": {
     "sourceHash": "a54a689"
   },
@@ -278,7 +278,7 @@
   "@queryUi.results.live.matchesSoFar": {
     "sourceHash": "5c09eb4"
   },
-  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {mapp} other {mappar}} genomgångna",
+  "queryUi.results.live.foldersScanned": "{countText} {count, plural, one {mapp genomsökt} other {mappar genomsökta}}",
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
@@ -338,7 +338,7 @@
   "@queryUi.recent.listboxAria": {
     "sourceHash": "228c84b"
   },
-  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> för att flytta · <selectKey>Enter</selectKey> fyller i fältet · högerklicka för att ta bort",
+  "queryUi.recent.popoverHint": "<moveKey>↑↓</moveKey> för att flytta · <selectKey>Retur</selectKey> fyller i fältet · högerklicka för att ta bort",
   "@queryUi.recent.popoverHint": {
     "sourceHash": "a7ccaef"
   },
