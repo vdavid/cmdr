@@ -401,6 +401,11 @@ guard refuses, because the manifest already names this version.
 - **`attest` failed on the asset check**: an expected DMG or `.app.tar.gz` isn't on the release, which `publish` should
   have caught first. Compare `gh release view <tag> --json assets` against the names the job builds.
 - **`attest` failed in `actions/attest`**: usually Sigstore or the attestation API. Retry later.
+- **`attest` failed with "Unsupported SBOM format"**: the action accepts CycloneDX only with `bomFormat`, `specVersion`,
+  AND `serialNumber`, and the last is optional in the spec, so neither generator writes it. The `sbom` job stamps a
+  UUIDv5 serial and its validation requires one. ❗ A re-run can't repair a release that shipped without it: a re-run
+  uses the workflow as it was at the tag, so the SBOMs stay published and unattested until the next release (v0.47.0
+  shipped this way).
 
 ### `codesign` fails with `errSecInternalComponent` (and `gh` stops working after a release)
 

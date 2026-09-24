@@ -352,13 +352,24 @@ jobs:
           # other than what the build job compiled.
           git diff --exit-code -- Cargo.lock pnpm-lock.yaml
 
-          # Each SBOM must be CycloneDX, name this version as its root, and list a real tree.
-          # A silently empty or mislabelled SBOM is worse than none. The frontend's floor is
-          # lower because it lists only what ships (about 50 packages), not every tool.
+          # `actions/attest` takes a CycloneDX SBOM only if it has a `serialNumber` (optional in the
+          # spec, and neither generator writes one; v0.47.0's SBOM attestations failed on exactly
+          # this). Each gets a UUIDv5 of the release and file name, so a re-run writes identical files.
+          for f in sbom/*.json; do
+              serial="urn:uuid:$(python3 -c 'import sys, uuid; print(uuid.uuid5(uuid.NAMESPACE_URL, sys.argv[1]))' \
+                  "https://github.com/vdavid/cmdr/releases/tag/${TAG}/$(basename "$f")")"
+              jq --arg serial "$serial" '.serialNumber = $serial' "$f" > "$f.tmp"
+              mv "$f.tmp" "$f"
+          done
+
+          # Each SBOM must be CycloneDX, name this version as its root, list a real tree, and
+          # carry the serial number the attest job needs. A silently empty or mislabelled SBOM is
+          # worse than none. The frontend's floor is lower because it lists only what ships
+          # (about 50 packages), not every tool.
           for f in sbom/*.json; do
               case "$f" in *_frontend.cdx.json) floor=30 ;; *) floor=100 ;; esac
               jq -e --arg v "$VERSION" --argjson floor "$floor" \
-                  '.bomFormat == "CycloneDX" and .metadata.component.version == $v and (.components | length) > $floor' \
+                  '.bomFormat == "CycloneDX" and .metadata.component.version == $v and (.components | length) > $floor and (.serialNumber | test("^urn:uuid:"))' \
                   "$f" > /dev/null || { echo "::error::$f is not a CycloneDX SBOM of $VERSION with a full component list"; exit 1; }
               echo "$f: $(jq '.components | length' "$f") components, $(wc -c < "$f") bytes"
           done
