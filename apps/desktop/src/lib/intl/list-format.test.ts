@@ -20,6 +20,23 @@ describe('formatConjunctionList', () => {
     _setLocaleForTests('de-DE')
     expect(formatConjunctionList(['Preview', 'Warp'])).toBe('Preview und Warp')
   })
+
+  it('spaces a Chinese conjunction off the Latin names beside it, in both scripts', () => {
+    // CLDR joins tight (`Warp和其他 App`); both Chinese style guides space Han
+    // against Latin. The enumeration comma is full-width punctuation: no space.
+    _setLocaleForTests('zh-Hant')
+    expect(formatConjunctionList(['Preview', 'Warp', 'Photos', '其他 App'])).toBe('Preview、Warp、Photos 和其他 App')
+    _setLocaleForTests('zh')
+    expect(formatConjunctionList(['Preview', 'Warp'])).toBe('Preview 和 Warp')
+    expect(formatConjunctionList(['预览', 'Warp'])).toBe('预览和 Warp')
+  })
+
+  it('leaves Japanese tight, since it never spaces kana against Latin', () => {
+    _setLocaleForTests('ja')
+    expect(formatConjunctionList(['Preview', 'Warp'])).toBe(
+      new Intl.ListFormat('ja', { type: 'conjunction' }).format(['Preview', 'Warp']),
+    )
+  })
 })
 
 describe('formatConjunctionList (memoization)', () => {
