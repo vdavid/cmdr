@@ -1,0 +1,676 @@
+{
+  "accent": {
+    "en": "accent",
+    "match": ["accent", "accents", "accented", "accent mark"],
+    "sense": "A diacritic on a letter (é), in the look-alike-names explanation."
+  },
+  "accessibility": {
+    "en": "Accessibility",
+    "match": ["accessibility"],
+    "sense": "The macOS Accessibility settings pane and its features (text size).",
+    "distinct": ["system-settings-pane"]
+  },
+  "action": {
+    "en": "action",
+    "match": ["action", "actions"],
+    "sense": "A UI action a user or a command performs (a dialog's buttons, the viewer's context actions, a function key's action).",
+    "distinct": ["operation", "command"]
+  },
+  "advanced": {
+    "en": "Advanced",
+    "match": ["advanced"],
+    "sense": "The Advanced settings section and collapsed advanced areas in a form."
+  },
+  "agent": {
+    "en": "agent",
+    "match": ["agent", "agents"],
+    "notMatch": ["ssh-agent"],
+    "sense": "The AI acting on the user's behalf (it sets filters, proposes renames).",
+    "distinct": ["ai-feature"]
+  },
+  "alias": {
+    "en": "alias",
+    "match": ["alias", "aliases"],
+    "sense": "A macOS Finder alias file.",
+    "distinct": ["symlink", "hard-link"]
+  },
+  "always": {
+    "en": "always",
+    "match": ["always ask", "always allow", "always send", "always show", "always use", "always open"],
+    "notMatch": ["can always send"],
+    "sense": "A setting or button choice meaning every time (Always send, Always allow).",
+    "note": "Distinct from never; don't let a never sentence borrow the always word."
+  },
+  "android-platform-tools": {
+    "en": "Android platform tools",
+    "match": ["platform tools", "platform-tools", "android tools"],
+    "sense": "Google's Android SDK Platform Tools package that ships adb.",
+    "distinct": ["phone"]
+  },
+  "anonymous": {
+    "en": "anonymous",
+    "match": ["anonymous", "anonymously", "anonymized"],
+    "sense": "Data collected without identifying the user.",
+    "distinct": ["redact"]
+  },
+  "app": {
+    "en": "app",
+    "match": ["app", "apps"],
+    "notMatch": ["app bundle", "app bundles", "app switcher", "app store"],
+    "sense": "An application in general: Cmdr itself, another app, the app that opens a file.",
+    "distinct": ["applications-folder", "app-bundle"]
+  },
+  "appearance": {
+    "en": "Appearance",
+    "match": ["appearance"],
+    "sense": "The Appearance settings section in Cmdr and the macOS Appearance pane.",
+    "distinct": ["theme"]
+  },
+  "aspect-ratio": {
+    "en": "aspect ratio",
+    "match": ["aspect ratio", "aspect ratios"],
+    "sense": "An image's width-to-height ratio."
+  },
+  "attributes": {
+    "en": "attribute",
+    "match": ["attribute", "attributes"],
+    "sense": "A file-system attribute (an extended attribute, a flag).",
+    "distinct": ["metadata"]
+  },
+  "bookmark": {
+    "en": "bookmark",
+    "match": ["bookmark", "bookmarks"],
+    "sense": "A saved location in a file manager (not Cmdr's favorites).",
+    "distinct": ["favorites"]
+  },
+  "bug": {
+    "en": "bug",
+    "match": ["bug", "bugs"],
+    "sense": "A defect in Cmdr the user helps find and the developer fixes."
+  },
+  "button-bar": {
+    "en": "button bar",
+    "match": ["button bar"],
+    "sense": "A row of command buttons (Total Commander's drive-button bar).",
+    "distinct": ["function-key-bar", "toolbar"]
+  },
+  "byte": {
+    "en": "byte",
+    "match": ["byte", "bytes"],
+    "sense": "The byte as a unit (a byte count, bytes transferred)."
+  },
+  "cable": {
+    "en": "cable",
+    "match": ["cable", "cables"],
+    "sense": "A USB cable connecting a phone or drive.",
+    "distinct": ["unplug"]
+  },
+  "camera": {
+    "en": "camera",
+    "match": ["camera", "cameras"],
+    "notMatch": ["camera details", "camera daemon"],
+    "sense": "A digital camera connected over PTP/MTP.",
+    "distinct": ["device", "camera-details"]
+  },
+  "client": {
+    "en": "client",
+    "match": ["client", "clients"],
+    "sense": "A program that connects to a server (an AI client over MCP, a sync client)."
+  },
+  "column": {
+    "en": "column",
+    "match": ["column", "columns", "column width"],
+    "sense": "A column in the file list or a table.",
+    "distinct": ["row"]
+  },
+  "command-line": {
+    "en": "command line",
+    "match": ["command line", "command-line"],
+    "sense": "A shell command line (Total Commander's command-line bar).",
+    "distinct": ["terminal", "command"]
+  },
+  "compare-folders": {
+    "en": "compare folders",
+    "match": ["compare folders", "compare directories"],
+    "sense": "The two-pane command that compares two folders' contents."
+  },
+  "cursor": {
+    "en": "cursor",
+    "match": ["cursor"],
+    "sense": "The file-list cursor: the highlighted row the keyboard acts on.",
+    "distinct": ["select"]
+  },
+  "dark-mode": {
+    "en": "dark mode",
+    "match": ["dark mode", "light mode"],
+    "sense": "The macOS light or dark appearance.",
+    "distinct": ["theme", "appearance"]
+  },
+  "debug": {
+    "en": "debug",
+    "match": ["debug", "debugging"],
+    "notMatch": ["usb debugging"],
+    "sense": "Debugging Cmdr itself (debug logs, debug level).",
+    "distinct": ["usb-debugging"]
+  },
+  "deployment": {
+    "en": "deployment",
+    "match": ["deployment", "deployments"],
+    "sense": "An Azure OpenAI deployment name, which may differ from the model name.",
+    "distinct": ["model"]
+  },
+  "desktop": {
+    "en": "Desktop",
+    "match": ["desktop"],
+    "sense": "The macOS Desktop folder, and the Desktop & Dock settings pane."
+  },
+  "details": {
+    "en": "details",
+    "match": ["details", "detail", "technical details", "show details"],
+    "notMatch": ["camera details"],
+    "sense": "Further information behind a disclosure (technical details, license details, report details).",
+    "distinct": ["camera-details"]
+  },
+  "detect": {
+    "en": "detect",
+    "match": ["detect", "detects", "detected", "detecting"],
+    "sense": "Noticing a connected device or a condition (a phone plugged in, a symlink loop)."
+  },
+  "diagnostics": {
+    "en": "diagnostics",
+    "match": ["diagnostic", "diagnostics", "diagnose"],
+    "sense": "Diagnostic information collected to troubleshoot a problem.",
+    "distinct": ["log", "report"]
+  },
+  "dialog": {
+    "en": "dialog",
+    "match": ["dialog", "dialogs", "dialog box"],
+    "sense": "A dialog window in Cmdr or macOS.",
+    "distinct": ["window", "notification"]
+  },
+  "dimensions": {
+    "en": "dimensions",
+    "match": ["dimensions"],
+    "sense": "An image's pixel width and height.",
+    "distinct": ["size"]
+  },
+  "directory-hotlist": {
+    "en": "directory hotlist",
+    "match": ["hotlist", "directory hotlist"],
+    "sense": "Total Commander's list of frequently used folders (a feature Cmdr doesn't ship).",
+    "distinct": ["favorites", "bookmark"]
+  },
+  "exposure": {
+    "en": "exposure",
+    "match": ["exposure", "aperture", "iso speed"],
+    "sense": "A photo's exposure, aperture, and ISO metadata fields.",
+    "distinct": ["camera-details"]
+  },
+  "filter": {
+    "en": "filter",
+    "match": ["filter", "filters", "filtering", "filtered"],
+    "sense": "Narrowing a list or a search by conditions.",
+    "distinct": ["search", "query"]
+  },
+  "font": {
+    "en": "font",
+    "match": ["font", "fonts", "typeface"],
+    "sense": "A typeface used to draw text."
+  },
+  "forget": {
+    "en": "forget",
+    "match": ["forget", "forgets", "forgot", "forgotten", "forgetting"],
+    "sense": "Removing something remembered (a saved server, a saved password, a drive index, Ask Cmdr's notes).",
+    "distinct": ["remove", "delete"]
+  },
+  "frame": {
+    "en": "frame",
+    "match": ["frame", "frames", "frame rate"],
+    "sense": "A video frame, and the frame rate."
+  },
+  "generate": {
+    "en": "generate",
+    "match": ["generate", "generates", "generating", "generated", "regenerate"],
+    "sense": "An AI model producing text (stop generating, regenerate).",
+    "distinct": ["create"]
+  },
+  "group": {
+    "en": "group",
+    "match": ["group", "groups"],
+    "sense": "A labelled group of rows (the volume switcher's Network group), or a Unix file group."
+  },
+  "hard-link": {
+    "en": "hard link",
+    "match": ["hard link", "hard links", "hardlink", "hardlinks"],
+    "sense": "A second directory entry for the same file data.",
+    "distinct": ["symlink", "alias"]
+  },
+  "hex": {
+    "en": "hexadecimal",
+    "match": ["hexadecimal", "hex", "binary view"],
+    "sense": "Base-16 (and base-2) number display in the viewer."
+  },
+  "history": {
+    "en": "history",
+    "match": ["history"],
+    "sense": "A record of past things: file operations, closed tabs, recent searches, git history.",
+    "distinct": ["log", "operation-log", "recent"]
+  },
+  "home-folder": {
+    "en": "home folder",
+    "match": ["home folder", "home directory"],
+    "sense": "The user's home folder (~), and the Go home command.",
+    "distinct": ["folder"]
+  },
+  "icloud-drive": {
+    "en": "iCloud Drive",
+    "match": ["icloud drive"],
+    "sense": "Apple's iCloud Drive, which Apple localizes per language.",
+    "distinct": ["cloud-provider", "drive"]
+  },
+  "incoming-connections": {
+    "en": "incoming connections",
+    "match": ["incoming connections", "incoming connection"],
+    "sense": "The macOS prompt to accept incoming network connections.",
+    "distinct": ["local-network"]
+  },
+  "info": {
+    "en": "info",
+    "match": ["info", "information"],
+    "notMatch": ["get info"],
+    "sense": "Information shown or collected (license info, diagnostic info).",
+    "distinct": ["get-info", "details"]
+  },
+  "inspector": {
+    "en": "inspector",
+    "match": ["inspector"],
+    "sense": "An inspector panel (Preview's)."
+  },
+  "internet": {
+    "en": "internet",
+    "match": ["internet"],
+    "sense": "The internet, as opposed to a local network.",
+    "distinct": ["network"]
+  },
+  "language": {
+    "en": "language",
+    "match": ["language", "languages"],
+    "sense": "The UI language, or a natural language in search."
+  },
+  "layout": {
+    "en": "layout",
+    "match": ["layout", "layouts"],
+    "sense": "How UI elements are arranged on screen."
+  },
+  "learn-more": {
+    "en": "learn more",
+    "match": ["more about", "learn more"],
+    "sense": "An info link or button that explains a setting further."
+  },
+  "level": {
+    "en": "level",
+    "match": ["level", "levels"],
+    "notMatch": ["top level", "top-level", "hardware-level"],
+    "sense": "A step on a graded setting (compression level, zoom level, log level).",
+    "distinct": ["threshold"]
+  },
+  "license-agreement": {
+    "en": "license agreement",
+    "match": ["license agreement", "terms of use"],
+    "sense": "The legal license agreement document.",
+    "distinct": ["license"]
+  },
+  "list": {
+    "en": "list",
+    "match": ["list", "lists"],
+    "notMatch": ["mailing list", "mailing lists", "on the list", "checklist", "file list", "remove from list"],
+    "sense": "A generic UI list (a server list, the list of apps, a list of results).",
+    "distinct": ["file-list"]
+  },
+  "loading": {
+    "en": "loading",
+    "match": ["loading"],
+    "sense": "Reading data in before showing it (loading a folder, a model, a list)."
+  },
+  "local": {
+    "en": "local",
+    "match": ["local", "locally"],
+    "notMatch": ["local network", "local networks"],
+    "sense": "On this Mac, as opposed to a server or the cloud (a local model, stored locally).",
+    "distinct": ["remote", "local-network"]
+  },
+  "media-duration": {
+    "en": "duration",
+    "match": ["duration"],
+    "notMatch": ["cache duration"],
+    "sense": "How long a video or audio file plays."
+  },
+  "media-playback": {
+    "en": "play",
+    "match": ["play", "mute", "unmute", "playback"],
+    "sense": "Playing video or audio in a preview (play, pause, mute, volume).",
+    "distinct": ["pause", "volume"]
+  },
+  "menu": {
+    "en": "menu",
+    "match": ["menu", "menus", "menu bar"],
+    "sense": "A menu in the macOS menu bar, a context menu, or Cmdr's favorites menu.",
+    "distinct": ["context-menu", "command-palette"]
+  },
+  "message": {
+    "en": "message",
+    "match": ["message", "messages"],
+    "sense": "A chat message to or from the AI, or a message the user writes.",
+    "distinct": ["notification", "note"]
+  },
+  "metadata": {
+    "en": "metadata",
+    "match": ["metadata"],
+    "sense": "Data about a file (tags, permissions, EXIF) rather than its contents.",
+    "distinct": ["attributes", "camera-details"]
+  },
+  "multi-rename": {
+    "en": "multi-rename",
+    "match": ["multi-rename", "batch rename", "rename multiple"],
+    "sense": "Renaming many files at once by a pattern.",
+    "distinct": ["rename"]
+  },
+  "network": {
+    "en": "network",
+    "match": ["network", "networks"],
+    "notMatch": ["local network", "network share", "network shares"],
+    "sense": "A computer network (Wi-Fi, Ethernet, the network the server is on); also the switcher's Network group.",
+    "distinct": ["internet", "local-network"]
+  },
+  "not-found": {
+    "en": "not found",
+    "match": ["not found", "couldn't find", "can't find"],
+    "sense": "Something Cmdr looked for isn't there (a path, a tool, an attribute)."
+  },
+  "offline": {
+    "en": "offline",
+    "match": ["offline"],
+    "sense": "Without an internet connection, or a cloud file kept available offline.",
+    "distinct": ["online-only", "available-offline"]
+  },
+  "owner": {
+    "en": "owner",
+    "match": ["owner", "owners", "ownership"],
+    "sense": "The owner of a file, a shared folder, or the server whose key the user verifies.",
+    "distinct": ["permission"]
+  },
+  "personal-data": {
+    "en": "personal data",
+    "match": ["personal data", "personal information", "private info"],
+    "sense": "Information that identifies the user or their files."
+  },
+  "placeholder": {
+    "en": "placeholder",
+    "match": ["placeholder", "placeholders"],
+    "sense": "A stand-in value in a template or URL that the user replaces."
+  },
+  "plain-text": {
+    "en": "plain text",
+    "match": ["plain text", "plain-text"],
+    "sense": "Unformatted text."
+  },
+  "preferences": {
+    "en": "Preferences",
+    "match": ["preferences"],
+    "sense": "An OS or device Preferences label the user must find (Android's USB Preferences).",
+    "distinct": ["settings"]
+  },
+  "prompt": {
+    "en": "prompt",
+    "match": ["prompt", "prompts"],
+    "sense": "A dialog asking the user something (a system prompt), or the text sent to an AI model.",
+    "distinct": ["dialog", "query"]
+  },
+  "quit-and-reopen": {
+    "en": "Quit & Reopen",
+    "match": ["quit & reopen"],
+    "sense": "The macOS button that relaunches an app after a permission change.",
+    "distinct": ["quit", "restart"]
+  },
+  "rate-limit": {
+    "en": "rate limit",
+    "match": ["rate limit", "rate limits", "rate-limit", "rate-limiting", "rate limited", "rate-limited"],
+    "sense": "An AI provider refusing requests because too many came too fast.",
+    "distinct": ["quota", "limit"]
+  },
+  "ready": {
+    "en": "ready",
+    "match": ["=ready", "is ready", "are ready", "now ready", "ready to use"],
+    "sense": "Prepared and available (an index, a model, an update)."
+  },
+  "recent": {
+    "en": "recent",
+    "match": ["recent", "recently", "recents", "most recent"],
+    "sense": "Recently used items (recent searches, recent selections, the palette's Recent group, the latest download).",
+    "distinct": ["history"]
+  },
+  "redo": {
+    "en": "redo",
+    "match": ["redo"],
+    "sense": "Reapplying the last undone text edit.",
+    "distinct": ["undo"]
+  },
+  "regex": {
+    "en": "regular expression",
+    "match": ["regular expression", "regular expressions", "regex", "regexes"],
+    "sense": "A regular-expression search pattern and the regex search mode.",
+    "distinct": ["wildcard", "glob"]
+  },
+  "release-notes": {
+    "en": "release notes",
+    "match": ["release notes", "update notes"],
+    "sense": "Notes describing what changed in a release.",
+    "distinct": ["changelog", "whats-new"]
+  },
+  "renew": {
+    "en": "renew",
+    "match": ["renew", "renews", "renewal", "renewed"],
+    "sense": "Extending a subscription license.",
+    "distinct": ["update", "subscription"]
+  },
+  "repository": {
+    "en": "repository",
+    "match": ["repository", "repositories", "repo", "repos"],
+    "sense": "A git repository, including Cmdr's repo on GitHub."
+  },
+  "reset": {
+    "en": "reset",
+    "match": ["reset", "resets", "resetting"],
+    "notMatch": ["connection reset", "reset by peer"],
+    "sense": "Returning a setting, a zoom level, or a shortcut to its default.",
+    "distinct": ["default", "restart"]
+  },
+  "resolution": {
+    "en": "resolution",
+    "match": ["resolution"],
+    "notMatch": ["name resolution", "network resolution"],
+    "sense": "An image's pixel resolution.",
+    "distinct": ["dimensions"]
+  },
+  "restore": {
+    "en": "restore",
+    "match": ["restore", "restores", "restored", "restoring"],
+    "notMatch": ["politely restored"],
+    "sense": "Getting a deleted file back from somewhere that kept it (a cloud service's trash, a backup).",
+    "distinct": ["undo", "rollback", "put-back"]
+  },
+  "rotate": {
+    "en": "rotate",
+    "match": ["rotate", "rotates", "rotated", "rotation"],
+    "sense": "Turning an image left or right."
+  },
+  "screen": {
+    "en": "screen",
+    "match": ["screen", "screens"],
+    "notMatch": ["screen reader", "screen readers", "full screen"],
+    "sense": "A display, or a phone's screen.",
+    "distinct": ["full-screen"]
+  },
+  "sidebar": {
+    "en": "sidebar",
+    "match": ["sidebar", "sidebars"],
+    "sense": "A window's sidebar (Finder's).",
+    "distinct": ["side-panel"]
+  },
+  "sign-up": {
+    "en": "sign up",
+    "match": ["sign up", "signs up", "signing up", "signup"],
+    "notMatch": ["signup server"],
+    "sense": "Creating an account with a provider, or joining the mailing list.",
+    "distinct": ["sign-in", "mailing-list"]
+  },
+  "size-on-disk": {
+    "en": "on disk",
+    "match": ["on disk", "on-disk"],
+    "sense": "Space a file actually takes on the drive, beside its content size.",
+    "distinct": ["size"]
+  },
+  "slideshow": {
+    "en": "slideshow",
+    "match": ["slideshow", "slide show"],
+    "sense": "Showing images one after another full screen."
+  },
+  "software": {
+    "en": "software",
+    "match": ["software", "hardware"],
+    "notMatch": ["software update"],
+    "sense": "Programs, and the hardware they run on.",
+    "distinct": ["app"]
+  },
+  "speed": {
+    "en": "speed",
+    "match": ["speed", "speeds", "faster", "speed up", "speeds up"],
+    "sense": "How fast a transfer or a connection goes, and making it faster."
+  },
+  "stack-trace": {
+    "en": "stack trace",
+    "match": ["stack trace", "stack traces", "backtrace"],
+    "sense": "The list of code locations active when a crash happened.",
+    "distinct": ["crash-report"]
+  },
+  "status-bar": {
+    "en": "status bar",
+    "match": ["status bar"],
+    "sense": "The bar at the bottom of a pane or the viewer showing counts and state."
+  },
+  "storage": {
+    "en": "storage",
+    "match": ["storage"],
+    "sense": "Space to store data (a phone's storage, cloud storage, the Storage pane).",
+    "distinct": ["free-space"]
+  },
+  "subscription": {
+    "en": "subscription",
+    "match": ["subscription", "subscriptions"],
+    "sense": "A time-limited commercial license.",
+    "distinct": ["license"]
+  },
+  "swap-panes": {
+    "en": "swap panes",
+    "match": ["swap panes", "swap the panes", "swap sides"],
+    "sense": "Exchanging the left and right panes.",
+    "distinct": ["pane"]
+  },
+  "sync": {
+    "en": "sync",
+    "match": ["sync", "syncs", "synced", "syncing", "synchronize", "synchronized"],
+    "notMatch": ["sync.com", "sync app"],
+    "sense": "Keeping two copies in step (a cloud folder with its provider, live shortcut settings).",
+    "distinct": ["cloud-provider"]
+  },
+  "theme": {
+    "en": "theme",
+    "match": ["theme", "themes", "theme mode"],
+    "sense": "Cmdr's light, dark, or system theme setting.",
+    "distinct": ["appearance", "dark-mode"]
+  },
+  "this-mac": {
+    "en": "this Mac",
+    "match": ["this mac", "your mac"],
+    "sense": "The user's own Mac, named as a machine.",
+    "distinct": ["local"]
+  },
+  "throughput": {
+    "en": "throughput",
+    "match": ["throughput"],
+    "sense": "Data moved per unit of time.",
+    "distinct": ["speed"]
+  },
+  "timestamp": {
+    "en": "timestamp",
+    "match": ["timestamp", "timestamps"],
+    "sense": "A recorded date and time on an event."
+  },
+  "toggle": {
+    "en": "toggle",
+    "match": ["toggle", "toggles", "toggling"],
+    "notMatch": ["toggle it on", "toggle it off"],
+    "sense": "Switching something between two states (a command label, a settings switch).",
+    "distinct": ["enable", "disable"]
+  },
+  "toolbar": {
+    "en": "toolbar",
+    "match": ["toolbar", "toolbars"],
+    "sense": "A row of buttons at the top of a window or panel.",
+    "distinct": ["button-bar"]
+  },
+  "unknown": {
+    "en": "unknown",
+    "match": ["unknown"],
+    "sense": "A value Cmdr can't determine (an unknown size, cost, or model)."
+  },
+  "up-to-date": {
+    "en": "up to date",
+    "match": ["up to date", "up-to-date", "latest version"],
+    "sense": "At the newest version, or an index that is current.",
+    "distinct": ["update", "outdated"]
+  },
+  "user": {
+    "en": "user",
+    "match": ["user", "users"],
+    "notMatch": ["user name", "username"],
+    "sense": "A person using Cmdr, or a macOS or server user account.",
+    "distinct": ["account", "username"]
+  },
+  "video": {
+    "en": "video",
+    "match": ["video", "videos"],
+    "sense": "A video file.",
+    "distinct": ["image", "photo"]
+  },
+  "view-mode": {
+    "en": "view mode",
+    "match": ["view mode", "view modes", "view menu"],
+    "sense": "A pane's layout (Brief, Full) and the View menu that switches it.",
+    "distinct": ["see", "brief-view", "full-view"]
+  },
+  "wake": {
+    "en": "wake",
+    "match": ["wake", "wakes", "waking", "woke"],
+    "sense": "Waking a phone's screen or a sleeping Mac."
+  },
+  "wildcard": {
+    "en": "wildcard",
+    "match": ["wildcard", "wildcards"],
+    "sense": "A * or ? character standing for any text in a pattern.",
+    "distinct": ["glob", "regex"]
+  },
+  "window": {
+    "en": "window",
+    "match": ["window", "windows"],
+    "notMatch": ["context window", "main window"],
+    "sense": "A macOS window (a dialog window, the queue window, the window edge).",
+    "distinct": ["pane", "main-window", "dialog"]
+  },
+  "wizard": {
+    "en": "wizard",
+    "match": ["wizard", "wizards"],
+    "sense": "A step-by-step setup flow (onboarding, the AI provider setup).",
+    "distinct": ["onboarding"]
+  }
+}

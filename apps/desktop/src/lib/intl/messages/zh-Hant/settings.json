@@ -329,7 +329,7 @@
   "@settings.listing.briefColumnWidthMode.label": {
     "sourceHash": "bbcab33"
   },
-  "settings.listing.briefColumnWidthMode.description": "限制簡潔模式的欄位為了容納長檔名最多能加寬多少。無論如何欄寬都不會超過窗格寬度；所選的限制只在比窗格更窄時才生效。",
+  "settings.listing.briefColumnWidthMode.description": "限制簡潔模式的欄位為了容納長檔名最多能加寬多少。無論如何欄寬都不會超過窗格寬度。所選的限制只在比窗格更窄時才生效。",
   "@settings.listing.briefColumnWidthMode.description": {
     "sourceHash": "d4a47b0"
   },
@@ -685,7 +685,7 @@
   "@settings.mediaIndex.importanceThreshold.pending": {
     "sourceHash": "c144f80"
   },
-  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, other {新增約 {imagesText} 張影像}}",
+  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, other {多了約 {imagesText} 張影像}}",
   "@settings.mediaIndex.importanceThreshold.deltaAdd": {
     "sourceHash": "d5fcbb4"
   },
@@ -713,7 +713,7 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "你已為 {totalText} 張影像建立索引；目前的設定涵蓋 {coveredText} 張。{doomed, plural, other {其餘 {doomedText} 個項目在你刪除之前仍可搜尋}}。",
+  "settings.mediaIndex.reclaim.line": "你已為 {totalText} 張影像建立索引，目前的設定涵蓋 {coveredText} 張。{doomed, plural, other {其餘 {doomedText} 個項目在你刪除之前仍可搜尋}}。",
   "@settings.mediaIndex.reclaim.line": {
     "sourceHash": "aaef941"
   },
@@ -891,7 +891,7 @@
   "@settings.search.autoApply.label": {
     "sourceHash": "06b0f9f"
   },
-  "settings.search.autoApply.description": "在你輸入時自動執行檔名和正規表示式搜尋（停止輸入 1 秒後）。AI 搜尋因為會產生費用，所以總是等你按 Enter 鍵。關閉時，按 Enter 鍵或點按執行按鈕來搜尋。",
+  "settings.search.autoApply.description": "在你輸入時自動執行檔名和正規表示式搜尋（停止輸入 1 秒後）。AI 搜尋因為會產生費用，所以總是等你按 Enter 鍵。關閉時，按 Enter 鍵或按一下執行按鈕來搜尋。",
   "@settings.search.autoApply.description": {
     "sourceHash": "19fcaf7"
   },
@@ -1055,7 +1055,7 @@
   "@settings.fileOperations.adbEnabled.label": {
     "sourceHash": "3651356"
   },
-  "settings.fileOperations.adbEnabled.description": "只要 Android 手機開啟了「USB 偵錯」，你就能存取它的整個檔案系統，包括 MTP 無法顯示的部分。這需要在這台 Mac 上安裝 Android SDK 平台工具（也就是 adb 指令）。就算你沒安裝任何 Android 工具，開著這一項也不會有任何代價。",
+  "settings.fileOperations.adbEnabled.description": "只要 Android 手機開啟了「USB 偵錯」，你就能存取它的整個檔案系統，包括 MTP 無法顯示的部分。這需要在這部 Mac 上安裝 Android SDK 平台工具（也就是 adb 指令）。就算你沒安裝任何 Android 工具，開著這一項也不會有任何代價。",
   "@settings.fileOperations.adbEnabled.description": {
     "sourceHash": "8577083"
   },
@@ -1127,7 +1127,7 @@
   "@settings.developer.mcpPort.label": {
     "sourceHash": "72e9a59"
   },
-  "settings.developer.mcpPort.description": "MCP 伺服器偏好使用的連接埠。保持為 0 可以讓作業系統挑選一個臨時連接埠（建議；執行時實際的連接埠會顯示在下方）。如果外部工具需要，可以固定某個特定的連接埠。",
+  "settings.developer.mcpPort.description": "MCP 伺服器偏好使用的連接埠。保持為 0 可以讓作業系統挑選一個臨時連接埠（建議，執行時實際的連接埠會顯示在下方）。如果外部工具需要，可以固定某個特定的連接埠。",
   "@settings.developer.mcpPort.description": {
     "sourceHash": "174e807"
   },
@@ -1155,7 +1155,7 @@
   "@settings.whatsNew.showOnUpdate.description": {
     "sourceHash": "4d4d7e6"
   },
-  "settings.whatsNew.lastSeenVersion.label": "上次看到的更新日誌版本",
+  "settings.whatsNew.lastSeenVersion.label": "上次看到的變更記錄版本",
   "@settings.whatsNew.lastSeenVersion.label": {
     "sourceHash": "4790ce6"
   },
@@ -1191,7 +1191,7 @@
   "@settings.updates.errorReports.label": {
     "sourceHash": "471575d"
   },
-  "settings.updates.errorReports.description": "出問題時傳送一小段記錄摘錄給開發者。有助於更快修正 bug。預設為關閉。你隨時可以從「輔助說明」選單手動傳送報告。",
+  "settings.updates.errorReports.description": "出問題時傳送一小段記錄摘錄給開發者。有助於更快修正問題。預設為關閉。你隨時可以從「輔助說明」選單手動傳送報告。",
   "@settings.updates.errorReports.description": {
     "sourceHash": "f3e41eb"
   },
@@ -1239,7 +1239,7 @@
   "@settings.advanced.diskSpaceChangeThreshold.label": {
     "sourceHash": "1d95fc6"
   },
-  "settings.advanced.diskSpaceChangeThreshold.description": "更新狀態列之前，可用磁碟空間所需的最小變化量。狀態列每隔幾秒輪詢一次磁碟空間；低於這個閾值的細微變化會被忽略，以減少視覺干擾。",
+  "settings.advanced.diskSpaceChangeThreshold.description": "更新狀態列之前，可用磁碟空間所需的最小變化量。狀態列每隔幾秒輪詢一次磁碟空間，低於這個閾值的細微變化會被忽略，以減少視覺干擾。",
   "@settings.advanced.diskSpaceChangeThreshold.description": {
     "sourceHash": "f09c3cb"
   },
@@ -1247,7 +1247,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 會開啟 Cmdr 的檔案檢視器，它顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、壓縮檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明 ⇧Space（快速查看）或 Enter（在關聯的 App 中開啟）很可能才是你想要的。開啟這一項（或點按橫幅中的「不再顯示這個警告」）就能永久關閉這個警告。",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 會開啟 Cmdr 的檔案檢視器，它顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、壓縮檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明 ⇧Space（快速查看）或 Enter（在關聯的 App 中開啟）很可能才是你想要的。開啟這一項（或按一下橫幅中的「不再顯示這個警告」）就能永久關閉這個警告。",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "b3711da"
   },
@@ -1255,7 +1255,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切換檔案選取，用 ⇧Space 觸發快速查看（Finder 用單獨的 Space 觸發快速查看）。每次你在檔案列表中按 Space，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或點按提示中的「不再顯示」）就能永久關閉這個提醒。",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切換檔案選取，用 ⇧Space 觸發快速查看（Finder 用單獨的 Space 觸發快速查看）。每次你在檔案列表中按 Space，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或按一下提示中的「不再顯示」）就能永久關閉這個提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },
@@ -1263,7 +1263,7 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "為「重新開啟已關閉的分頁」（⌘⇧T）在每個窗格保留多少個最近關閉的分頁。數值越高，能往回重新開啟的歷史越多；數值越低，越早釋出記憶體。只適用於在目前工作階段中關閉的分頁。",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "為「重新開啟已關閉的分頁」（⌘⇧T）在每個窗格保留多少個最近關閉的分頁。數值越高，能往回重新開啟的歷史越多。數值越低，越早釋出記憶體。只適用於在目前工作階段中關閉的分頁。",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "fe01a43"
   },
@@ -1295,7 +1295,7 @@
   "@settings.fileExplorer.typeToJump.resetDelay.label": {
     "sourceHash": "16ac047"
   },
-  "settings.fileExplorer.typeToJump.resetDelay.description": "最後一次按鍵之後，輸入跳轉的緩衝區還會保留多久。數值越低，多次搜尋之間重設得越快；數值越高，對打字慢的人越寬容。",
+  "settings.fileExplorer.typeToJump.resetDelay.description": "最後一次按鍵之後，輸入跳轉的緩衝區還會保留多久。數值越低，多次搜尋之間重設得越快。數值越高，對打字慢的人越寬容。",
   "@settings.fileExplorer.typeToJump.resetDelay.description": {
     "sourceHash": "ff59a6a"
   },
@@ -1319,7 +1319,7 @@
   "@settings.advanced.maxLogStorageMb.label": {
     "sourceHash": "d6af6b4"
   },
-  "settings.advanced.maxLogStorageMb.description": "記錄檔的最大磁碟空間。設為 0 可以停用記錄檔儲存；沒有記錄就無法傳送錯誤報告。改成非零值後，會在下次啟動 App 時生效。",
+  "settings.advanced.maxLogStorageMb.description": "記錄檔的最大磁碟空間。設為 0 可以停用記錄檔儲存，但沒有記錄就無法傳送錯誤報告。改成非零值後，會在下次啟動 App 時生效。",
   "@settings.advanced.maxLogStorageMb.description": {
     "sourceHash": "725bb26"
   },
@@ -1555,7 +1555,7 @@
   "@settings.behavior.textEditorApp.label": {
     "sourceHash": "807338f"
   },
-  "settings.behavior.textEditorApp.description": "Cmdr 會列出 macOS 在這台 Mac 上認得的文字編輯器。想用別的 App，請選擇「選擇 App…」。",
+  "settings.behavior.textEditorApp.description": "Cmdr 會列出 macOS 在這部 Mac 上認得的文字編輯器。想用別的 App，請選擇「選擇 App…」。",
   "@settings.behavior.textEditorApp.description": {
     "sourceHash": "b062aed"
   },
@@ -1591,7 +1591,7 @@
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"
   },
-  "settings.behavior.openTerminalHereApp.description": "Cmdr 會列出在這台 Mac 上找到的終端機 App。想用它不認得的 App，請選擇「選擇 App…」。",
+  "settings.behavior.openTerminalHereApp.description": "Cmdr 會列出在這部 Mac 上找到的終端機 App。想用它不認得的 App，請選擇「選擇 App…」。",
   "@settings.behavior.openTerminalHereApp.description": {
     "sourceHash": "0df49fc"
   },
@@ -1857,7 +1857,7 @@
   "settings.section.git": "Git",
   "@settings.section.git": {
     "sourceHash": "b949c92",
-    "sameAsSourceJustification": "“Git” is the version-control tool’s proper name, kept verbatim. Microsoft’s zh-Hant terminology keeps tool names in Latin; glossary.md records the Git family (分支, 提交, 存放庫) as translated AROUND the kept name."
+    "sameAsSourceJustification": "“Git” is the version-control tool’s proper name, kept verbatim. Microsoft’s zh-Hant terminology keeps tool names in Latin; the catalog translates the Git family (分支, 提交, 存放庫) AROUND the kept name, and docs/i18n/zh-Hant/terms.json rules repository → 存放庫."
   },
   "settings.section.viewer": "檢視器",
   "@settings.section.viewer": {
@@ -2154,7 +2154,7 @@
   "@settings.ai.tooltipOff": {
     "sourceHash": "2b31468"
   },
-  "settings.ai.tooltipCloud": "自備 API 金鑰，取得快速、高品質的 AI。支援 OpenAI、Anthropic（Claude）、Google（Gemini）、xAI（Grok）、Groq、DeepSeek、OpenRouter，或你自己執行的任何本機伺服器（Ollama、LM Studio 等）。需要連上網路（除非使用本機伺服器）。不會佔用 Cmdr 的磁碟空間或記憶體。",
+  "settings.ai.tooltipCloud": "自備 API 金鑰，取得快速、高品質的 AI。支援 OpenAI、Anthropic（Claude）、Google（Gemini）、xAI（Grok）、Groq、DeepSeek、OpenRouter，或你自己執行的任何本機伺服器（Ollama、LM Studio 等）。需要網際網路連線（除非使用本機伺服器）。不會佔用 Cmdr 的磁碟空間或記憶體。",
   "@settings.ai.tooltipCloud": {
     "sourceHash": "1f63e66"
   },
@@ -2440,7 +2440,7 @@
   "@settings.mediaIndex.chosenFolders.title": {
     "sourceHash": "1aa33d2"
   },
-  "settings.mediaIndex.chosenFolders.help": "不管你上面選了哪一項，這些資料夾裡的照片都會建立索引。移除資料夾只會停止新的索引；已經建立索引的內容仍然可以搜尋。",
+  "settings.mediaIndex.chosenFolders.help": "不管你上面選了哪一項，這些資料夾裡的照片都會建立索引。移除資料夾只會停止新的索引，已經建立索引的內容仍然可以搜尋。",
   "@settings.mediaIndex.chosenFolders.help": {
     "sourceHash": "c48ff3f"
   },

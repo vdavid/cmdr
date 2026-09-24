@@ -291,7 +291,7 @@
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "伺服器主動拒絕了連線。這通常表示伺服器軟體（例如 SMB 或 NFS 服務）沒在執行，或它被設定成拒絕來自這台 Mac 的連線。",
+  "errors.listing.connectionRefused.explanation": "伺服器主動拒絕了連線。這通常表示伺服器軟體（例如 SMB 或 NFS 服務）沒在執行，或它被設定成拒絕來自這部 Mac 的連線。",
   "@errors.listing.connectionRefused.explanation": {
     "sourceHash": "537cf4e"
   },
@@ -303,7 +303,7 @@
   "@errors.listing.symlinkLoopErrno.title": {
     "sourceHash": "3d41981"
   },
-  "errors.listing.symlinkLoopErrno.explanation": "Cmdr 在 `{path}` 發現了一串首尾相連的符號連結（指向其他捷徑的捷徑）。順著這些連結走會繞回原點，所以 Cmdr 到不了真正的檔案或資料夾。",
+  "errors.listing.symlinkLoopErrno.explanation": "Cmdr 在 `{path}` 發現了一串首尾相連的符號連結（指向其他連結的連結）。順著這些連結走會繞回原點，所以 Cmdr 到不了真正的檔案或資料夾。",
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "cb728c1"
   },
@@ -547,7 +547,7 @@
   "@errors.listing.notConnected.explanation": {
     "sourceHash": "4c508d7"
   },
-  "errors.listing.notConnected.suggestion": "可以這樣試試：\n- 從卷宗切換器開啟這台手機或伺服器來連線\n- 如果是手機，把它解鎖並接受它跳出的任何提示\n- 連線好之後，再次進入這裡",
+  "errors.listing.notConnected.suggestion": "可以這樣試試：\n- 從卷宗切換器開啟這支手機或伺服器來連線\n- 如果是手機，把它解鎖並接受它跳出的任何提示\n- 連線好之後，再次進入這裡",
   "@errors.listing.notConnected.suggestion": {
     "sourceHash": "3c48bcd"
   },
@@ -643,7 +643,7 @@
   "@errors.listing.ambiguousName.explanation": {
     "sourceHash": "0d964db"
   },
-  "errors.listing.ambiguousName.suggestion": "可以這樣試試：\n- 開啟上層資料夾，從清單裡選出你想要的那一項\n- 想避免下次再遇到，就把其中一個重新命名，讓兩個名稱明顯不同",
+  "errors.listing.ambiguousName.suggestion": "可以這樣試試：\n- 開啟上層資料夾，從列表裡選出你想要的那一項\n- 想避免下次再遇到，就把其中一個重新命名，讓兩個名稱明顯不同",
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "8334ece"
   },
@@ -695,11 +695,11 @@
   "@errors.listing.archiveNeedsPassword.suggestion": {
     "sourceHash": "4043af6"
   },
-  "errors.listing.emptyRootICloud.title": "iCloud Drive 看起來是空的",
+  "errors.listing.emptyRootICloud.title": "iCloud 雲碟 看起來是空的",
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"
   },
-  "errors.listing.emptyRootICloud.explanation": "Cmdr 開啟了 iCloud Drive，卻沒有拿到任何檔案。macOS 會對沒有**{full_disk_access}**的 App 隱藏 iCloud Drive 的內容，所以授予 Cmdr 這個權限很可能就能解決。\n\n如果你的 iCloud Drive 真的是空的，可以不理這個提示。",
+  "errors.listing.emptyRootICloud.explanation": "Cmdr 開啟了 iCloud 雲碟，卻沒有拿到任何檔案。macOS 會對沒有**{full_disk_access}**的 App 隱藏 iCloud 雲碟 的內容，所以授予 Cmdr 這個權限很可能就能解決。\n\n如果你的 iCloud 雲碟 真的是空的，可以不理這個提示。",
   "@errors.listing.emptyRootICloud.explanation": {
     "sourceHash": "d095f83"
   },
@@ -1393,7 +1393,7 @@
   "@errors.write.trashRefused.suggestion.other": {
     "sourceHash": "b61b3c1"
   },
-  "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr 在這台 Mac 上也沒有「完全取用磁碟」權限，這是很常見的原因。標題列上的警告標記寫著：沒有「完全取用磁碟」權限。按一下就會帶你回到這個選擇。",
+  "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr 在這部 Mac 上也沒有「完全取用磁碟」權限，這是很常見的原因。標題列上的警告標記寫著：沒有「完全取用磁碟」權限。按一下就會帶你回到這個選擇。",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
     "sourceHash": "ab20ec5"
   },
@@ -1545,7 +1545,7 @@
   "@errors.write.destinationNotWritable.readOnlyFilesystem.title": {
     "sourceHash": "24c9063"
   },
-  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "這個資料夾是唯讀的，無法把任何東西複製或搬移到這裡。",
+  "errors.write.destinationNotWritable.readOnlyFilesystem.message": "這個資料夾是唯讀的，無法把任何東西複製或移動到這裡。",
   "@errors.write.destinationNotWritable.readOnlyFilesystem.message": {
     "sourceHash": "0c50a60"
   },
@@ -1569,7 +1569,7 @@
   "@errors.write.destinationNotWritable.unexplained.title": {
     "sourceHash": "628c3aa"
   },
-  "errors.write.destinationNotWritable.unexplained.message": "這個資料夾不接受新檔案，無法把任何東西複製或搬移到這裡。",
+  "errors.write.destinationNotWritable.unexplained.message": "這個資料夾不接受新檔案，無法把任何東西複製或移動到這裡。",
   "@errors.write.destinationNotWritable.unexplained.message": {
     "sourceHash": "22ce481"
   },
@@ -1629,7 +1629,7 @@
   "@errors.write.originalsKeptAside.message.one": {
     "sourceHash": "e3bc267"
   },
-  "errors.write.originalsKeptAside.message.many": "有幾個資料夾占了你 {count} 個檔案的名字，所以這些檔案現在都換了名字。什麼都沒被丟掉；下面的技術詳情裡每一個都列出來了。",
+  "errors.write.originalsKeptAside.message.many": "有幾個資料夾佔了你 {count} 個檔案的名字，所以這些檔案現在都換了名字。什麼都沒被丟掉，下面的技術詳細資訊裡每一個都列出來了。",
   "@errors.write.originalsKeptAside.message.many": {
     "sourceHash": "9430f63"
   },
@@ -1753,7 +1753,7 @@
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
   },
-  "errors.volume.notConnected": "Cmdr 還沒有連線到這台手機或伺服器，請先開啟它。",
+  "errors.volume.notConnected": "Cmdr 還沒有連線到這支手機或伺服器，請先開啟它。",
   "@errors.volume.notConnected": {
     "sourceHash": "094dc49"
   },
@@ -1817,7 +1817,7 @@
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
   },
-  "errors.serverRequest.unreachable": "Cmdr 無法連線到它的伺服器。請檢查網路連線，然後再試一次。",
+  "errors.serverRequest.unreachable": "Cmdr 無法連線到它的伺服器。請檢查網際網路連線，然後再試一次。",
   "@errors.serverRequest.unreachable": {
     "sourceHash": "7f2a23e"
   },
@@ -1833,11 +1833,11 @@
   "@errors.serverRequest.refused": {
     "sourceHash": "f36d8f8"
   },
-  "errors.serverRequest.unexpected": "Cmdr 本身出了點問題。請再試一次；如果持續發生，請重新啟動 Cmdr。",
+  "errors.serverRequest.unexpected": "Cmdr 本身出了點問題。請再試一次。如果持續發生，請重新啟動 Cmdr。",
   "@errors.serverRequest.unexpected": {
     "sourceHash": "5be7ebd"
   },
-  "errors.eject.busy": "Cmdr 還在這個磁碟機上搬動檔案。等它做完再退出。",
+  "errors.eject.busy": "Cmdr 還在這個磁碟機上移動檔案。等它做完再退出。",
   "@errors.eject.busy": {
     "sourceHash": "0600dd5"
   },
@@ -1909,7 +1909,7 @@
   "@errors.mount.timeout": {
     "sourceHash": "bfb786c"
   },
-  "errors.mount.shareNotFound": "「{server}」上沒有名為「{share}」的共享資料夾。請返回，從清單中挑一個。",
+  "errors.mount.shareNotFound": "「{server}」上沒有名為「{share}」的共享資料夾。請返回，從列表中挑一個。",
   "@errors.mount.shareNotFound": {
     "sourceHash": "4f930a5"
   },
@@ -1969,7 +1969,7 @@
   "@errors.shareList.authFailed": {
     "sourceHash": "bb03537"
   },
-  "errors.shareList.protocolError": "向「{server}」取得共享資料夾清單時出了點狀況。請稍後再試一次。",
+  "errors.shareList.protocolError": "向「{server}」取得共享資料夾列表時出了點狀況。請稍後再試一次。",
   "@errors.shareList.protocolError": {
     "sourceHash": "064a773"
   },

@@ -3,7 +3,7 @@
   "@shortcuts.list.noShortcut": {
     "sourceHash": "f22dbb1"
   },
-  "shortcuts.list.addedTooltip": "已新增",
+  "shortcuts.list.addedTooltip": "已加入",
   "@shortcuts.list.addedTooltip": {
     "sourceHash": "6b02e0d"
   },
@@ -213,7 +213,7 @@
   "@shortcuts.section.removeShortcutTooltip": {
     "sourceHash": "aea0ad8"
   },
-  "shortcuts.section.addShortcutTooltip": "新增快速鍵",
+  "shortcuts.section.addShortcutTooltip": "加入快速鍵",
   "@shortcuts.section.addShortcutTooltip": {
     "sourceHash": "239314a"
   },

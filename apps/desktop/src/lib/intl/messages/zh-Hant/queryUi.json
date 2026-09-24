@@ -276,7 +276,7 @@
   "@queryUi.results.live.matchesSoFar": {
     "sourceHash": "5c09eb4"
   },
-  "queryUi.results.live.foldersScanned": "已查看 {countText} 個{count, plural, other {資料夾}}",
+  "queryUi.results.live.foldersScanned": "已掃描 {countText} 個{count, plural, other {資料夾}}",
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },

@@ -67,7 +67,7 @@
   "@fileExplorer.diskSpace.used": {
     "sourceHash": "6285805"
   },
-  "fileExplorer.diskSpace.noLimitNote": "此儲存空間沒有容量上限，因此沒有可填滿的長條。",
+  "fileExplorer.diskSpace.noLimitNote": "這個儲存空間沒有容量上限，因此沒有可填滿的長條。",
   "@fileExplorer.diskSpace.noLimitNote": {
     "sourceHash": "0c363c5"
   },
@@ -443,7 +443,7 @@
   "@fileExplorer.network.browser.hostRemoveFailed": {
     "sourceHash": "9120dd2"
   },
-  "fileExplorer.network.forgotPassword": "已清除 {hostName} 儲存的密碼",
+  "fileExplorer.network.forgotPassword": "已忘記 {hostName} 儲存的密碼",
   "@fileExplorer.network.forgotPassword": {
     "sourceHash": "6b53741"
   },
@@ -1041,7 +1041,7 @@
   "@fileExplorer.imageIndex.drive.off": {
     "sourceHash": "a7f3c42"
   },
-  "fileExplorer.imageIndex.drive.indexing": "這個磁碟機上 {totalText} {total, plural, other {張影像}}中已建立索引 {doneText} 張；還在繼續。",
+  "fileExplorer.imageIndex.drive.indexing": "這個磁碟機上 {totalText} {total, plural, other {張影像}}中已建立索引 {doneText} 張，還在繼續。",
   "@fileExplorer.imageIndex.drive.indexing": {
     "sourceHash": "23d351d"
   },
@@ -1289,7 +1289,7 @@
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
     "sourceHash": "31515c1"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "無法儲存此快速鍵。請再試一次。",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "無法儲存這個快速鍵。請再試一次。",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
     "sourceHash": "dc8e408"
   },
@@ -1329,7 +1329,7 @@
   "@fileExplorer.navigation.connectDirectlyNow": {
     "sourceHash": "e81ea20"
   },
-  "fileExplorer.navigation.connectDirectlyNowTooltip": "此共享資料夾仍在使用較慢的系統連線。直接連線可以更快存取。",
+  "fileExplorer.navigation.connectDirectlyNowTooltip": "這個共享資料夾仍在使用較慢的系統連線。直接連線可以更快存取。",
   "@fileExplorer.navigation.connectDirectlyNowTooltip": {
     "sourceHash": "42b6bcc"
   },

@@ -28,7 +28,7 @@
   "@licensing.acknowledgements.npmHeading": {
     "sourceHash": "44bdf59"
   },
-  "licensing.acknowledgements.vendoredHeading": "圖示和其他檔案（{count, number}）",
+  "licensing.acknowledgements.vendoredHeading": "圖像和其他檔案（{count, number}）",
   "@licensing.acknowledgements.vendoredHeading": {
     "sourceHash": "f5bcd78"
   },

@@ -19,11 +19,11 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你選取的內容中有一部分僅存在雲端。把它們移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」；否則請取消此對話框，先將所有檔案設為可離線使用，或是取消選取所有僅存在雲端的檔案。",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你選取的內容中有一部分僅存在雲端。把它們移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把所有檔案設為離線可用，或是取消選取所有僅存在雲端的檔案。",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "sourceHash": "2a49037"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你選取的內容全都僅存在雲端。把它移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」；否則請取消此對話框，先將這些檔案設為可離線使用。",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你選取的內容全都僅存在雲端。把它移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把這些檔案設為離線可用。",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "sourceHash": "0e52a2b"
   },
@@ -239,7 +239,7 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "這個共享資料夾用的是系統連線，取消可能會有延遲。在卷宗選擇器裡選「直接連線」，傳輸更快，取消也更可靠。",
+  "fileOperations.transferDialog.smbNativeNote": "這個共享資料夾用的是系統連線，取消可能會有延遲。在卷宗切換器裡選「直接連線」，傳輸更快，取消也更可靠。",
   "@fileOperations.transferDialog.smbNativeNote": {
     "sourceHash": "cfec439"
   },
@@ -599,7 +599,7 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {正在複製到「{destination}」} move {正在移動到「{destination}」} archive_edit {正在編輯「{destination}」} other {正在「{destination}」中作業}}} other {{type, select, copy {正在複製} move {正在移動} archive_edit {正在編輯壓縮檔} other {正在作業}}}}",
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {正在複製到「{destination}」} move {正在移動到「{destination}」} archive_edit {正在編輯「{destination}」} other {正在「{destination}」中處理}}} other {{type, select, copy {正在複製} move {正在移動} archive_edit {正在編輯壓縮檔} other {正在作業}}}}",
   "@fileOperations.operationConflict.context": {
     "sourceHash": "ff68b4d"
   },

@@ -3,7 +3,7 @@
   "@updates.failure.check": {
     "sourceHash": "66f0ef1"
   },
-  "updates.failure.checkUntyped": "Cmdr 無法檢查更新。請檢查網路連線，然後稍後再試一次。",
+  "updates.failure.checkUntyped": "Cmdr 無法檢查更新。請檢查網際網路連線，然後稍後再試一次。",
   "@updates.failure.checkUntyped": {
     "sourceHash": "55dcdd7"
   },

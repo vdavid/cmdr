@@ -15,11 +15,11 @@
   "@whatsNew.dialog.showLess": {
     "sourceHash": "94ea9b1"
   },
-  "whatsNew.dialog.seeFullChangelog": "查看完整的更新日誌",
+  "whatsNew.dialog.seeFullChangelog": "查看完整的變更記錄",
   "@whatsNew.dialog.seeFullChangelog": {
     "sourceHash": "66a59ed"
   },
-  "whatsNew.dialog.optOut": "不想看更新日誌",
+  "whatsNew.dialog.optOut": "不想看變更記錄",
   "@whatsNew.dialog.optOut": {
     "sourceHash": "f1259e9"
   },

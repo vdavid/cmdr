@@ -136,7 +136,7 @@
   "@commands.favoritesOpen.label": {
     "sourceHash": "f4dfe9b"
   },
-  "commands.favoritesOpen.description": "在焦點窗格上開啟喜好項目選單，按數字鍵就能跳到對應的資料夾。",
+  "commands.favoritesOpen.description": "在焦點窗格上開啟喜好項目選單，按數字鍵就能跳至對應的資料夾。",
   "@commands.favoritesOpen.description": {
     "sourceHash": "d188872"
   },
@@ -292,7 +292,7 @@
   "@commands.tabCloseOthers.label": {
     "sourceHash": "0ddc2c5"
   },
-  "commands.tabMcpAction.label": "窗格分頁操作",
+  "commands.tabMcpAction.label": "窗格分頁動作",
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },

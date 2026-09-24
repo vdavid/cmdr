@@ -236,7 +236,7 @@
   "@askCmdr.error.authFailed": {
     "sourceHash": "a2302ca"
   },
-  "askCmdr.error.rateLimited": "提供者正忙，或是你的額度用完了。過一會兒再試試。",
+  "askCmdr.error.rateLimited": "提供者正忙，或是你的配額用完了。過一會兒再試試。",
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
@@ -652,7 +652,7 @@
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"
   },
-  "askCmdr.renameUndo.unavailable": "沒有東西可以還原。這一批可能已經還原過了，或是它需要的磁碟機沒有連接。",
+  "askCmdr.renameUndo.unavailable": "沒有名稱可以改回去。這一批可能已經還原過了，或是它需要的磁碟機沒有連接。",
   "@askCmdr.renameUndo.unavailable": {
     "sourceHash": "8a95b9e"
   },

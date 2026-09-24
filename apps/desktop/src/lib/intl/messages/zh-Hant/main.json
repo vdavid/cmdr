@@ -127,7 +127,7 @@
   "@main.oldWebkit.title": {
     "sourceHash": "03e502b"
   },
-  "main.oldWebkit.body": "Cmdr 的介面需要 Safari 15.4 或更新版本，而這台 Mac 上的版本較舊。請打開「軟體更新」，安裝所有待處理的更新，通常就能解決。",
+  "main.oldWebkit.body": "Cmdr 的介面需要 Safari 15.4 或更新版本，而這部 Mac 上的版本較舊。請打開「軟體更新」，安裝所有待處理的更新，通常就能解決。",
   "@main.oldWebkit.body": {
     "sourceHash": "bcadac5"
   },

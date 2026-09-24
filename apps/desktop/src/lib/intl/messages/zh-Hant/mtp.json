@@ -3,11 +3,11 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr 已暫停 macOS 的相機常駐程式（ptpcamerad）以便存取這個裝置。若要在其他應用程式中使用它，請在設定中關閉 MTP 支援。",
+  "mtp.connectedToast.bodyMac": "Cmdr 已暫停 macOS 的相機常駐程式（ptpcamerad）以便存取這個裝置。若要在其他 App中使用它，請在設定中關閉 MTP 支援。",
   "@mtp.connectedToast.bodyMac": {
     "sourceHash": "3ace37b"
   },
-  "mtp.connectedToast.bodyOther": "若要在其他應用程式中使用這個裝置，請在設定中關閉 MTP 支援。",
+  "mtp.connectedToast.bodyOther": "若要在其他 App中使用這個裝置，請在設定中關閉 MTP 支援。",
   "@mtp.connectedToast.bodyOther": {
     "sourceHash": "6f42620"
   },
@@ -43,7 +43,7 @@
   "@mtp.permissionDialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "mtp.permissionDialog.retry": "重新連接",
+  "mtp.permissionDialog.retry": "重試連線",
   "@mtp.permissionDialog.retry": {
     "sourceHash": "eccee4e"
   },
@@ -71,7 +71,7 @@
   "@mtp.ptpcameradDialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "mtp.ptpcameradDialog.retry": "重新連接",
+  "mtp.ptpcameradDialog.retry": "重試連線",
   "@mtp.ptpcameradDialog.retry": {
     "sourceHash": "eccee4e"
   },

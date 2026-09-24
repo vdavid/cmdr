@@ -63,7 +63,7 @@
   "@suggestedOps.folderWillBeCreated": {
     "sourceHash": "26243e5"
   },
-  "suggestedOps.folderWillBeCreatedTooltip": "目標資料夾還不存在。你同意之後就會新增它，就跟你自己開始搬移時一樣。",
+  "suggestedOps.folderWillBeCreatedTooltip": "目標資料夾還不存在。你同意之後就會建立它，就跟你自己開始移動時一樣。",
   "@suggestedOps.folderWillBeCreatedTooltip": {
     "sourceHash": "2d28b7c"
   },

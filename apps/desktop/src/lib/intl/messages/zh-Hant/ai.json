@@ -43,7 +43,7 @@
   "@ai.toast.startingDescription": {
     "sourceHash": "94ecf6d"
   },
-  "ai.toast.downloadCloseTooltip": "關閉這則通知；下載會在背景繼續",
+  "ai.toast.downloadCloseTooltip": "關閉這則通知，下載會在背景繼續",
   "@ai.toast.downloadCloseTooltip": {
     "sourceHash": "16db2bd"
   },
@@ -441,11 +441,11 @@
   "@ai.secretError.keychainBody": {
     "sourceHash": "2a0fe5e"
   },
-  "ai.secretError.keyringTitle": "{op, select, save {無法儲存你的 API 金鑰：系統金鑰環拒絕存取} other {無法讀取你已儲存的 API 金鑰：系統金鑰環拒絕存取}}",
+  "ai.secretError.keyringTitle": "{op, select, save {無法儲存你的 API 金鑰：系統鑰匙圈拒絕存取} other {無法讀取你已儲存的 API 金鑰：系統鑰匙圈拒絕存取}}",
   "@ai.secretError.keyringTitle": {
     "sourceHash": "8c9df45"
   },
-  "ai.secretError.keyringBody": "請解鎖你的金鑰環（「密碼」或「金鑰環」App），然後再試一次。",
+  "ai.secretError.keyringBody": "請解鎖你的鑰匙圈（「密碼」或「鑰匙圈」App），然後再試一次。",
   "@ai.secretError.keyringBody": {
     "sourceHash": "023bde3"
   },
@@ -453,7 +453,7 @@
   "@ai.secretError.genericTitle": {
     "sourceHash": "a93c4f0"
   },
-  "ai.secretError.genericBody": "請確認你的系統金鑰環可以使用，然後再試一次。如果還是這樣，請重新啟動 App。",
+  "ai.secretError.genericBody": "請確認你的系統鑰匙圈可以使用，然後再試一次。如果還是這樣，請重新啟動 App。",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
   }

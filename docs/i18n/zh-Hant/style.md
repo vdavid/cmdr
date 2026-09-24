@@ -16,8 +16,60 @@ terminology TBX and style guide, GNOME Nautilus / KDE Dolphin / Xfce Thunar in `
 Total Commander + Double Commander in `zh-TW`. Evidence verified against the reference pile on 2026-08-29; occurrence
 counts throughout are from that pass.
 
-This is a living doc, and capturing is your job. When you discover a convention, gotcha, or ruling that wasn't already
-written, add it here.
+Term rulings live in `terms.json` (keyed by the shared `../concepts.json`), their rationale in `decisions.md`, and open
+questions in `review-queue.md`. This is a living doc, and capturing is your job: a new convention or gotcha goes here, a
+new term ruling goes to `terms.json`.
+
+## Digest
+
+The must-know rules; the rest of this file elaborates them.
+
+- **Translate from the English, never convert `zh`.** A character-converted Simplified catalog reads as mainland
+  everywhere (文件 means _document_ here, not file). One catalog serves Taiwan, Hong Kong, and Macau; where TW and HK
+  genuinely split, Taiwan's norm wins (網路, 軟體, 資訊, 遠端, 可用空間, 再試一次).
+- **The Apple-zh-TW outlier rule**: where Apple zh-TW stands alone against Apple zh-HK, Microsoft, and the file
+  managers, take the consensus form: `資料夾` (not 檔案夾), `複製` (not 拷貝), `移動` (not 搬移), `開啟` (not 打開),
+  `分頁` (not 標籤頁), plus `縮圖` and `重設`. Everywhere Apple TW and HK agree, Apple beats Microsoft
+  (卷宗, 還原, 直欄, 喜好項目, 略過). ❌ Don't "fix" an override back by citing macOS-first.
+- **Address**: `你` everywhere, licensing included (Apple's Traditional UI has zero `您`). `您` only where the user
+  writes to someone else (`licensing.dialog.mailtoBody` opens `您好，`) or in contract prose, which the catalog doesn't
+  ship.
+- **Voice**: short, spoken Taiwanese Mandarin. Spoken `這個` / `這項` / `這次`, never the written `此` / `該` (fixed
+  compounds 在此, 此刻, 因此 are fine). Errors state the problem calmly as `無法` + verb (+ `因為…`), never `失敗` or
+  `錯誤` as the verb of what went wrong (`錯誤報告` as a noun is fine). A deliberate stop is `停止` / `不會`, not a
+  failure. No apologies in notices that report a choice. Dodge English "easy" / "simple" (no `簡單`).
+- **Register by slot**: buttons and menu items are a bare verb (`複製`, `刪除`, `取消`); progress is `正在…` (never a
+  `…中` suffix like 載入中); a status cell keeps its aspect marker (`已連線`, `已儲存`, `已登出`); a menu item naming
+  the app is verb + space + `Cmdr`, unquoted (`隱藏 Cmdr`). Click → `按一下` (never zh-CN's 點按); tap on a phone →
+  `輕觸`.
+- **Punctuation**: quote UI names, filenames, and menu names with `「…」`, never `“…”`; never nest `『…』`, restructure
+  instead. Full-width `，。：？！（）`. ❌ Never the full-width semicolon `；`: split the sentence or use `，`. `、` for
+  a tight in-sentence list. Ellipsis is one `…` (U+2026), never Apple's `⋯`, `……`, or `...`; keep it wherever English
+  has one. Arabic numerals. A settings path is `「設定 > AI」`, mirroring English's separator.
+- **Spacing**: a space between Han and any Latin word, number, or placeholder (`macOS 通知已關閉`, `剩餘約 {duration}`,
+  `iCloud 雲碟`, `USB 裝置`), including OS-filled `{system_settings}`-style tokens. No space inside a Latin run
+  (`64.0 MB/1.33 GB`) or against a full-width bracket. A Chinese date compound stays tight (`8月1日`).
+- **Brands**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, `Dock`, `Finder`, `Spotlight` stay verbatim and uninflected.
+  Apple translates `快速查看` (Quick Look), `終端機` (Terminal), `iCloud 雲碟`, `鑰匙圈` (Keychain), `指揮中心` (Mission
+  Control): localize what Apple localizes. An app in general is the Latin `App`; `應用程式` is only Apple's own labels
+  (the 「應用程式」 folder). `Ask Cmdr` names only the chat panel; a sentence about what the AI does takes `Cmdr` (or
+  `AI` in `suggestedOps.*`).
+- **Plurals**: CLDR `other` only; keep the `{count, plural, other {…}}` wrapper, never add a `one` branch (`=0` is
+  fine). Counted nouns take a classifier: `個` items and files, `張` images and photos, `部` a Mac, `支` a phone, `項`
+  operations. English's `the` alone can separate two keys; Chinese has no article, so rebuild the distinction
+  (`Cmdr 寫入的 {countText} 個項目`).
+- **ICU**: double every apostrophe (rarely needed in Chinese), except in the RAW families (`errors.*`, `menu.*`,
+  `licensing.windowTitle.*`, `main.instanceLock.*`). An `*Aria` value opens with its visible label verbatim.
+- **Top traps** (details in `terms.json`):
+  - file `檔案` / document `文件`; folder `資料夾` (`目錄` only for a technical directory); item `項目`.
+  - copy `複製` vs duplicate `製作副本`; undo `還原` vs rollback `復原` vs restore `回復` vs put back `放回原處`.
+  - tag `標籤` vs tab `分頁` vs page `頁`; pane `窗格` vs window `視窗` vs panel `面板`; list `列表`, never `清單`.
+  - drive `磁碟機` vs disk `磁碟` vs volume `卷宗`; eject `退出` vs quit `結束`; mount `裝載` / unmount `卸除`.
+  - operation `操作` (`作業` only as job/OS) vs action `動作`; view menu or mode `顯示方式` vs the verb `檢視`.
+  - `金鑰` a cryptographic or API key; `主機金鑰` a server's host key; `授權碼` a license key; `密語` a passphrase.
+  - approve `同意` vs allow `允許`; dismiss `關閉`, never `忽略` (that's Ignore); add `加入` (not `新增`).
+  - network `網路` vs internet `網際網路`; server address `位址` vs email address `地址`; this Mac `這部 Mac`.
+  - icon `圖像` (never `圖示`); image `影像`; photo `照片`; settings `設定`; save `儲存`; search `搜尋`; skip `略過`.
 
 ## ❗ This is NOT a character conversion of the `zh` catalog
 
@@ -41,7 +93,7 @@ The delta is large and systematic (Simplified → Traditional, all verified in t
 Translate each key from the **English** source. The `zh` catalog is useful as a structural precedent (it already solved
 the ICU shapes, the placeholder spacing, and the sentence order for the same key), and `translation-learnings.md` is
 right that a sibling catalog outranks the pile on _which_ rendering this app uses. But every noun and verb gets
-re-decided against this guide's glossary.
+re-decided against `terms.json`.
 
 ## Decisions to confirm with David
 
@@ -175,8 +227,12 @@ anyway: 程式 (176/177), 設定 (160/160), 儲存 (123/123), 搜尋 (82/82), �
   mode), 對話方塊 (dialog), 磁碟機 (drive as a device). ❗ Check Apple's LIVE bundles before concluding it is silent:
   `theme` was filled in from MS as `佈景主題` and is in fact `主題` in Apple's Appearance pane.
 - **For the two-pane concepts every OS vendor lacks, the orthodox pair is the lineage match**: 命令列 (command
-  line), 功能鍵列 (function-key bar), 常用資料夾 (directory hotlist), 比對資料夾, 同步資料夾, 多檔重新命名. Details and
-  the pane trap: `glossary.md` § Two-pane vocabulary.
+  line), 功能鍵列 (function-key bar), 常用資料夾清單 (directory hotlist), 比對資料夾, 同步資料夾, 多檔重新命名. Rulings:
+  `terms.json` (`command-line`, `function-key-bar`, `pane`, and neighbors). The pane is the one two-pane term where we
+  don't take the orthodox word: TC's `視窗` collides with window and DC's `面板` with a settings panel, so it's MS's
+  `窗格`. ❗ Weight TC over DC: DC's zh-TW file carries Simplified contamination (`重復分頁`, `刷新`, `在新分頁中打開`),
+  so never lift a DC string verbatim. TC's menu roots are a handy vocabulary for section names: `檔案操作`, `設定`,
+  `網路`, `剪貼簿`, `瀏覽`, `工具`, `檢視`, `排序`, `標記`, `說明`, `使用者`.
 
 ### Gender and inclusive language: inherently neutral
 
@@ -278,47 +334,20 @@ typography in one bundle, never a house rule, and it can't outrank the four spac
 Exception: don't add spaces _inside_ a Latin run (`64.0 MB/1.33 GB` stays as it is), and don't space a full-width
 bracket against the text it wraps.
 
-## Terminology and glossary
+## Terminology
 
-The full sourced term list is in `glossary.md`, in `chosen · sources · confidence` format. Read it before translating
-and extend it as you settle terms. The highest-traffic head terms, for orientation:
+Term rulings are in `terms.json`, keyed by `../concepts.json`; `pnpm i18n:brief` prints the ones a batch needs, and a
+ruling's `avoid` list says which synonyms were weighed and lost. Source every new term from the reference pile
+(`_ignored/i18n/zh-TW/`, `zh-HK/`, and `zh-Hant/` for the Microsoft sources; recipes in
+`../reference-pile/how-to-mine.md`), never from a guess.
 
-檔案 (file) · 資料夾 (folder) · 目錄 (directory) · 磁碟 (disk) · 磁碟機 (drive) · 卷宗 (volume) · 路徑 (path)
-·副檔名 (file extension) · 項目 (item) · 複製 (copy) · 移動 (move) · 刪除 (delete) · 重新命名 (rename)
-·製作副本 (duplicate) · 垃圾桶 (Trash) · 壓縮 (compress) · 解壓縮 (extract) · 開啟 (open) · 儲存 (save) ·搜尋 (search)
-· 設定 (settings) · 預設 (default) · 窗格 (pane) · 分頁 (tab) · 視窗 (window) · 選單 (menu) ·標籤 (tag)
-· 書籤 (bookmark) · 喜好項目 (favorite) · 索引 (index) · 佇列 (queue) · 略過 (skip) · 覆寫 (overwrite) ·取消 (cancel)
-· 再試一次 (retry) · 網路 (network) · 伺服器 (server) · 記憶體 (memory) · 可用空間 (free space).
-
-### Android and ADB terms
-
-Settled while translating `settings.fileOperations.adb*`. Google is the vendor here, so its own Traditional Chinese docs
-are the Tier-1 source, the way Apple is for macOS terms; the reference pile carries no Android corpus.
-
-- **USB debugging (the on-phone developer option)** · `「USB 偵錯」`, in corner brackets · AOSP's own zh-rTW strings
-  (`frameworks/base/packages/SettingsLib/res/values-zh-rTW/strings.xml`, key `enable_adb`, `refs/heads/main`,
-  2026-09-07), matching Google's zh-TW developer docs (`developer.android.com/tools/adb?hl=zh-tw`) · `confirmed`. It's a
-  label the reader has to find on their own phone, so it takes the phone's own wording, and it's quoted like the other
-  on-phone labels in `settings.fileOperations.mtpEnabled.description` (`「設定 > USB 偏好設定」`, `「檔案傳輸」`).
-- **debug / debugging (the generic verb)** · `除錯` · already shipped in `settings.advanced.logLlmCalls.description` and
-  `errorReporter.dialog.saveToDisk` · `tentative` (unsourced, inherited from an earlier pass). ❗ **The boundary**: the
-  Android option is `偵錯` because that is the string on the device; everything else in the catalog stays `除錯`. Don't
-  unify the two, and don't read `「USB 偵錯」` as a precedent for the generic verb.
-- **Android SDK Platform Tools** · `Android SDK 平台工具` · Google's zh-TW docs localize the descriptor
-  (`developer.android.com/studio/intro/update?hl=zh-tw`: `Android SDK 平台工具`), while keeping `adb` and `fastboot`
-  bare · `high`. A second mention in the same string shortens to `平台工具`, as the English does.
-- **adb / ADB** · kept verbatim, lowercase `adb` for the command and uppercase `ADB` for the protocol · Google keeps
-  both Latin in zh-TW · `high`. Spaced against Han like every Latin run: `adb 指令`, `透過 ADB 存取`.
-- **Allow (the button on Android's own "Allow USB debugging?" prompt)** · `「允許」` · AOSP
-  `frameworks/base/packages/SystemUI/res/values-zh-rTW/strings.xml`, key `usb_debugging_allow` (the title
-  `usb_debugging_title` is `允許 USB 偵錯嗎？`) · `confirmed`. Corner brackets, for the same reason `「USB 偵錯」` takes
-  them: it is a word the reader has to find on their own phone.
-- **tap (on the phone)** · `輕觸` · AOSP zh-rTW throughout · `high`. ❗ Not macOS's `點一下`: the action happens on the
-  Android device, so the verb follows the device.
-- **access (a filesystem, a device)** · `存取` · already the catalog's word throughout `mtp.json` (`無法存取 USB 裝置`,
-  `存取這個裝置的權限`) · `high`.
-- **"costs nothing" (leaving a toggle on)** · `不會有任何代價` · reuses the catalog's own `代價` from
-  `onboarding.stepOptional.mtp.desc` (`代價是 macOS 也想連這些裝置`) · `high`.
+For Android, Google is the vendor, so AOSP's own `values-zh-rTW` strings and Google's zh-TW developer docs are the
+Tier-1 source the way Apple is for macOS (the pile carries no Android corpus). A label the reader has to find on their
+own phone takes the phone's wording in corner brackets (`「USB 偵錯」`, `「允許」`, like `「設定 > USB 偏好設定」` and
+`「檔案傳輸」` in `settings.fileOperations.mtpEnabled.description`), and the verb follows the device (`輕觸`, never
+macOS's `點一下`). `adb` (the command, lowercase) and `ADB` (the protocol) stay Latin and spaced (`adb 指令`,
+`透過 ADB 存取`). "Costs nothing" (leaving a toggle on) is `不會有任何代價`, reusing the catalog's own `代價` from
+`onboarding.stepOptional.mtp.desc`.
 
 ## Brand and do-not-translate
 
@@ -369,34 +398,33 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   "Removed 12 items" = some of them) renders as one identical sentence, and the total/partial distinction the pair
   exists for disappears. Rebuild it with a modifier that names the SET on the total member (`Cmdr 寫入的`,
   `Cmdr 移動過的`) and leave the partial member as a bare count. Worked example and the four keys it decided:
-  `glossary.md` § What a cancelled rollback reports.
+  `decisions.md` § What a cancelled rollback reports.
 - **A vague English place word needs an explicit Chinese one.** "The rest are still there" has no Chinese rendering that
   couldn't be read as `原處` (_back where they came from_), which in a rollback toast is the opposite of what happened.
   Name the place (`目標位置`, `移動過去的地方`) rather than gesturing at it.
 - **Ask Cmdr tool-line labels are a `正在…` / `已…` pair sharing one object phrase verbatim.** `askCmdr.tool.*.doing` /
   `.done` differ only in the aspect marker (`正在查看檔案裡的內容` / `已查看檔案裡的內容`, `正在搜尋你的照片` /
   `已搜尋你的照片`), so a new tool label copies the sibling shape rather than restating the object two ways. "Look
-  inside" a file is `查看…裡的內容`; a photo's place is `拍攝地點`, a path's is `位置` (`glossary.md` § Ask Cmdr looks
+  inside" a file is `查看…裡的內容`; a photo's place is `拍攝地點`, a path's is `位置` (`decisions.md` § Ask Cmdr looks
   inside files).
 - **`Ask Cmdr` names the chat PANEL; everywhere else the subject is `Cmdr`, and in the Suggested ops dialog it's `AI`.**
   Follow the English exactly: keep `Ask Cmdr` where it's the panel's own name (its title, the View-menu item, the
   palette command, the settings section, the on/off copy) and where a sentence points at that settings section
   (`Ask Cmdr 設定`, `「Ask Cmdr」區段`); write bare `Cmdr` when the sentence describes what the AI does; write `AI` in
   the four `suggestedOps.*` strings, which have to stay distinguishable from the neighbouring `Cmdr 知道的事實`. ❗
-  Don't "restore" `Ask Cmdr` as a sentence subject: that's the exact regression the 2026-09-09 copy sweep undid. Per-key
-  evidence: `glossary.md` § "AI 文案改寫：主詞從「Ask Cmdr」換成 `Cmdr` / `AI`（2026-09-09）".
+  Don't "restore" `Ask Cmdr` as a sentence subject: the English deliberately moved every such subject to `Cmdr`. Per-key
+  evidence: `decisions.md` § "AI 文案的主詞：`Cmdr` / `AI`，`Ask Cmdr` 只指面板".
 - **Click is `按一下`, not macOS zh-CN's `點按`.** Apple zh-TW writes `按一下` 50 times against 4 `點一下` and zero
   `點按` (measured 2026-09-09). A "Click to …" instruction becomes `按一下就能…`.
-- **`context` is `上下文`** (`上下文視窗` for the window, `上下文大小` for the size). Three renderings had drifted into
-  the catalog; the ruling and why it's still `tentative` are in `glossary.md` § "狀態角落的兩條 AI 提示、`同意`
-  的統一，與 `上下文` 定案（2026-09-09）".
+- **`context` is `上下文`** (`上下文視窗` for the window, `上下文大小` for the size). The ruling and why it's still
+  `tentative`: `terms.json` `context-window` and `decisions.md` § "狀態角落的兩條 AI 提示、`同意` 的統一，與 `上下文`".
 - **A menu item that names the app is `動詞 + 空格 + Cmdr`, unquoted.** `隱藏 Cmdr`, `結束 Cmdr`, `關於 Cmdr`,
   `開啟 Cmdr`. Apple's Dock quotes the name (`隱藏「%@」`) only because that `%@` is an arbitrary app name filled in at
   runtime; ours is the literal brand, and corner brackets would make the Dock menu disagree with the app menu right next
   to it. The Dock's own menu is a Tier-1 source for these labels and is NOT in the reference pile: read
   `/System/Library/CoreServices/Dock.app/Contents/Resources/zh_{TW,HK}.lproj/DockMenus.strings`. ❗ Its zh-TW `OPEN` is
-  `打開`, which is the § Apple-zh-TW outlier rule again, so take zh-HK's `開啟`. Per-key evidence: `glossary.md` §
-  "右鍵按 Dock 圖像跳出來的那張選單（`menu.dock.*`，2026-09-09）".
+  `打開`, which is the § Apple-zh-TW outlier rule again, so take zh-HK's `開啟`. Per-key evidence: `decisions.md` §
+  "右鍵按 Dock 圖像跳出來的那張選單（`menu.dock.*`）".
 - **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.
@@ -408,7 +436,7 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `shortcuts.scope.volumeChooser` and the two `commands.pane*VolumeChooser.label` moved off `卷宗選擇器` to match the
   `fileExplorer.navigation.server*Toast` pair. ❗ The message KEYS still spell `Chooser`: they mirror the persisted
   command ids `pane.leftVolumeChooser` / `pane.rightVolumeChooser`, which can't be renamed. Translate the value, ignore
-  the key. Same shape recorded in `glossary.md` § "伺服器中心".
+  the key. Same shape recorded in `decisions.md` § "伺服器中心".
 - **A grayed-out "(busy)" menu item is its base label plus `（使用中）`, nothing else.** The `*Busy` keys are the
   disabled twin of an ordinary menu item, shown while a transfer still holds the volume or server, so they have to read
   as the same item in a second state. Copy the base key's value character for character and append the marker:
@@ -416,16 +444,16 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `menu.network.disconnect` → `menu.volume.disconnectBusy` (`中斷連線（使用中）`), `menu.network.forgetServer` →
   `menu.volume.forgetServerBusy` (`忘記伺服器（使用中）`), and `menu.network.forgetSavedPassword` →
   `menu.volume.forgetSavedPasswordBusy` (`忘記已儲存的密碼（使用中）`). `使用中` is the catalog's own word for a
-  resource someone else is working on, the same sense `glossary.md` gives it in the `…因此無法…` blocker shape, and
-  full-width parens follow § Punctuation. ❗ Don't invent a second marker (`忙碌中`, `處理中`) for a new pair, and don't
-  reword the base half to make the compound shorter.
+  resource someone else is working on, the same sense `decisions.md` § Failure-sentence shapes gives it in the
+  `…因此無法…` blocker shape, and full-width parens follow § Punctuation. ❗ Don't invent a second marker (`忙碌中`,
+  `處理中`) for a new pair, and don't reword the base half to make the compound shorter.
 
 - **A `正在…` progress heading with a target keeps ONE sentence shape across the family.** The pane's
   `servers.paneState.connecting` / `.reconnecting` pair differs only in the verb (`正在連線到 {name}…` /
   `正在重新連線到 {name}…`), and Apple's own Traditional progress strings are `正在重新連線⋯` in three separate bundles.
   A new state in the family copies the shape rather than inventing a second one. ❗ Apple's `重新連接` is its imperative
   form ("unplug it and reconnect the iPhone"); a STATE is always `重新連線`. Evidence and the rest of the pane family:
-  `glossary.md` § 自動重連的窗格與「沒東西可問」那一行.
+  `decisions.md` § 自動重連的窗格與「沒東西可問」那一行.
 
 - **English "easy" / "simple" is dodged, not rendered as `簡單`.** The house voice bans trivializing words, and the
   English onboarding copy uses them anyway ("a few easy choices", "Three easy steps"). This catalog resolves the clash
@@ -479,9 +507,3 @@ either sentence means re-checking all seven verbs against it.
   the native ones Rust draws (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`).
 - Keep every `{placeholder}` and `<tag>` verbatim and identical to English. Full rules: the agent-handoff block in
   `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
-
-## Glossary
-
-The living term glossary is in `glossary.md`. Read it before translating and add to it as you settle terms, each sourced
-from the reference pile (`_ignored/i18n/zh-TW/`, `zh-HK/`, and `zh-Hant/` for the Microsoft sources; recipes in
-`docs/i18n/reference-pile/how-to-mine.md`). Never guess a term.

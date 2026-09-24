@@ -343,7 +343,7 @@
   "@onboarding.stepBeta.checklist.title": {
     "sourceHash": "6c0fc62"
   },
-  "onboarding.stepBeta.checklist.star": "在 GitHub 上幫儲存庫按個 star",
+  "onboarding.stepBeta.checklist.star": "在 GitHub 上幫存放庫按個 star",
   "@onboarding.stepBeta.checklist.star": {
     "sourceHash": "c271317"
   },
@@ -508,7 +508,7 @@
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "開啟這一項，Cmdr 就能<strong>連到 Android 手機、Kindle、相機</strong>、一些音樂播放器，以及任何支援 MTP 或 PTP 協定的裝置。\n代價是 macOS <em>也</em>想連這些裝置（而且通常連不成，這就是為什麼你沒辦法直接用 Finder 從 Android 手機複製照片），所以 Cmdr 執行的時候得把 macOS 的那個程序壓下去。\n你結束 Cmdr 時，它會被好好地還原回去。",
+  "onboarding.stepOptional.mtp.desc": "開啟這一項，Cmdr 就能<strong>連到 Android 手機、Kindle、相機</strong>、一些音樂播放器，以及任何支援 MTP 或 PTP 通訊協定的裝置。\n代價是 macOS <em>也</em>想連這些裝置（而且通常連不成，這就是為什麼你沒辦法直接用 Finder 從 Android 手機複製照片），所以 Cmdr 執行的時候得把 macOS 的那個程序壓下去。\n你結束 Cmdr 時，它會被好好地還原回去。",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },
