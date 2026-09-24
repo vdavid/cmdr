@@ -35,6 +35,8 @@ type citationLane struct {
 	// ("translator guide").
 	docsRelDir string
 	docWhat    string
+	// scansFile decides which files in the tree are docs, by base name.
+	scansFile func(name string) bool
 	// allowlistRelPath is the lane's `<check>-allowlist.json`, named in findings
 	// and declared in the check's `Inputs` via `runnerDataInputs`.
 	allowlistRelPath string
@@ -56,12 +58,27 @@ var messageKeyCitationLane = citationLane{
 	what:             "message key",
 	docsRelDir:       "docs/i18n",
 	docWhat:          "translator guide",
+	scansFile:        isTranslatorGuide,
 	allowlistRelPath: "scripts/check/checks/desktop-i18n-doc-citations-allowlist.json",
 	keys: func(rootDir string) ([]string, error) {
 		return readEnglishCatalogKeys(filepath.Join(rootDir, enMessagesRelDir))
 	},
 	namespaces:   namespacesFromKeyRoots,
 	notACitation: namesCatalogFile,
+}
+
+// termbaseFiles are the JSON translator guides: the concept registry, a locale's
+// proposed concepts, and a locale's rulings (`docs/i18n/termbase.md`). Their string
+// values cite keys in backticks exactly like the markdown does (a concept note, an
+// `exceptions` reason), so the same line scan reads them; a JSON object key never
+// holds a backtick. Other JSON under `docs/i18n/` (reference-pile inventories) is
+// mined evidence, not a guide.
+var termbaseFiles = map[string]bool{"concepts.json": true, "concepts-proposed.json": true, "terms.json": true}
+
+// isTranslatorGuide reports whether a file under `docs/i18n/` is a guide the
+// message lane scans: every markdown doc, plus the termbase JSON.
+func isTranslatorGuide(name string) bool {
+	return strings.HasSuffix(name, ".md") || termbaseFiles[name]
 }
 
 // enMessagesRelDir is the English catalog directory, the message lane's source of
@@ -520,7 +537,7 @@ func scanDocsForCitations(rootDir string, lane citationLane, index *dottedKeyInd
 		if err != nil {
 			return err
 		}
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+		if entry.IsDir() || !lane.scansFile(entry.Name()) {
 			return nil
 		}
 		data, err := os.ReadFile(path)
@@ -606,9 +623,18 @@ func loadDocCitationAllowlist(rootDir string, lane citationLane) docCitationAllo
 	return list
 }
 
+// docCitationSuccessors maps a guide's base name to the sibling doc that inherits
+// its content when a locale moves to the termbase layout: a glossary's per-feature
+// journal becomes `decisions.md`, so a deliberate citation it carried now lives
+// there. Remove the entry once no locale has a `glossary.md` left.
+var docCitationSuccessors = map[string]string{"glossary.md": "decisions.md"}
+
 // shrinkwrapDocCitationAllowlist drops every entry whose doc no longer cites the
 // dead key, in both sections, and reports what it dropped. That's what keeps the
-// `pending` section a burn-down list rather than a second permanent one.
+// `pending` section a burn-down list rather than a second permanent one. An entry
+// whose doc has a successor (`docCitationSuccessors`) that now cites the key moves
+// there with its reason instead, so migrating a locale can't strand a deliberate
+// citation, in CI either (the move happens in memory before judging).
 func shrinkwrapDocCitationAllowlist(list *docCitationAllowlist, live map[string]map[string]bool) []string {
 	var changes []string
 	for _, section := range []struct {
@@ -620,7 +646,20 @@ func shrinkwrapDocCitationAllowlist(list *docCitationAllowlist, live map[string]
 				if live[relPath][token] {
 					continue
 				}
+				reason := section.entries[relPath][token]
 				delete(section.entries[relPath], token)
+				if successor, ok := docCitationSuccessors[filepath.Base(relPath)]; ok {
+					moved := filepath.ToSlash(filepath.Join(filepath.Dir(relPath), successor))
+					if live[moved][token] {
+						if section.entries[moved] == nil {
+							section.entries[moved] = map[string]string{}
+						}
+						section.entries[moved][token] = reason
+						changes = append(changes, fmt.Sprintf("moved %s / %s in %s to %s (the citation moved there)",
+							relPath, token, section.name, moved))
+						continue
+					}
+				}
 				changes = append(changes, fmt.Sprintf("removed %s / %s from %s (no longer cited)",
 					relPath, token, section.name))
 			}

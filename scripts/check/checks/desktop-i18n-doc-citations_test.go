@@ -1,6 +1,10 @@
 package checks
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -174,6 +178,79 @@ func TestShrinkwrapDocCitationAllowlistDropsFixedEntries(t *testing.T) {
 	}
 	if len(changes) != 2 {
 		t.Errorf("expected 2 shrink-wrap changes, got %d: %v", len(changes), changes)
+	}
+}
+
+// A locale's glossary split into `terms.json` + `decisions.md` carries its
+// deliberate citations along: an entry whose doc stopped citing the key follows it
+// to the successor doc when that one cites it, rather than being dropped and
+// leaving the moved citation unexcused.
+func TestShrinkwrapDocCitationAllowlistFollowsACitationToItsSuccessorDoc(t *testing.T) {
+	list := docCitationAllowlist{
+		Retired: map[string]map[string]string{
+			"docs/i18n/de/glossary.md": {"askCmdr.consent.noContents": "carried over verbatim"},
+			"docs/i18n/fr/glossary.md": {"askCmdr.consent.noContents": "carried over verbatim"},
+		},
+	}
+	live := map[string]map[string]bool{
+		"docs/i18n/de/decisions.md": {"askCmdr.consent.noContents": true},
+	}
+
+	changes := shrinkwrapDocCitationAllowlist(&list, live)
+
+	if got := list.Retired["docs/i18n/de/decisions.md"]["askCmdr.consent.noContents"]; got != "carried over verbatim" {
+		t.Errorf("the de entry should have moved to decisions.md with its reason, got %q", got)
+	}
+	if _, still := list.Retired["docs/i18n/de/glossary.md"]; still {
+		t.Error("the de glossary.md entry should be gone after the move")
+	}
+	if _, still := list.Retired["docs/i18n/fr/glossary.md"]; still {
+		t.Error("the fr entry, cited nowhere, should be dropped")
+	}
+	if dead := (docCitationAllowlist{Retired: list.Retired}).judge([]docCitation{
+		{relPath: "docs/i18n/de/decisions.md", line: 3, token: "askCmdr.consent.noContents"},
+	}); len(dead.reported) != 0 {
+		t.Errorf("the moved entry should excuse the decisions.md citation: %+v", dead)
+	}
+	if len(changes) != 2 {
+		t.Errorf("expected a move and a drop, got %d: %v", len(changes), changes)
+	}
+}
+
+// The termbase files are guides too: a concept note or a term's `exceptions`
+// reason cites keys in backticks exactly like the markdown does, so they're
+// scanned; other JSON under `docs/i18n/` isn't a translator guide.
+func TestScanDocsForCitationsReadsTheTermbaseJSON(t *testing.T) {
+	root := t.TempDir()
+	write := func(rel, content string) {
+		path := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("docs/i18n/concepts.json", "{\n  \"a\": { \"note\": \"see `servers.sheet.gone`\" }\n}\n")
+	write("docs/i18n/nl/terms.json", "{\n  \"a\": {\n    \"note\": \"like `servers.sheet.remember`\"\n  }\n}\n")
+	write("docs/i18n/nl/concepts-proposed.json", "{ \"b\": { \"sense\": \"`servers.sheet.password`\" } }\n")
+	write("docs/i18n/reference-pile/inventory.json", "{ \"x\": \"`servers.sheet.nope`\" }\n")
+
+	citations, docs, err := scanDocsForCitations(root, messageKeyCitationLane, testCitationIndex(testCitationKeys))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := map[string]string{}
+	for _, c := range citations {
+		got[c.token] = fmt.Sprintf("%s:%d", c.relPath, c.line)
+	}
+	want := map[string]string{
+		"servers.sheet.gone":     "docs/i18n/concepts.json:2",
+		"servers.sheet.remember": "docs/i18n/nl/terms.json:3",
+		"servers.sheet.password": "docs/i18n/nl/concepts-proposed.json:1",
+	}
+	if !reflect.DeepEqual(got, want) || docs != 3 {
+		t.Errorf("got %v across %d docs, want %v across 3", got, docs, want)
 	}
 }
 
