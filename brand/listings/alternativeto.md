@@ -3,9 +3,13 @@
 Live: https://alternativeto.net/software/cmdr/about/. Edit it while signed in; changes go through an admin approval
 queue, and the "Note about your changes" field at the bottom speeds that up.
 
-Status: submitted 2026-09-18 for v0.46.0, together with the note to the admins below (the same BSL wording request went
-in with the v0.45.0 refresh). The fields below are what was submitted. Edit them here first when refreshing, then paste.
-Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
+Status: the 2026-09-18 v0.46.0 edit is live (checked 2026-09-24: description, tags, and the single $59 price all match
+this file). The fields below are what's live. Edit them here first when refreshing, then paste. Refresh cadence and what
+to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
+
+v0.47.0 changed nothing here (checked 2026-09-24): AlternativeTo shows no version or changelog, and nothing in the
+description, tags, or features became false. Its new features (the viewer's long lines, favorite letter shortcuts, the
+"Allow cloud AI" switch) are too small to buy room under the 3,000-character cap.
 
 ## Main info
 
@@ -155,9 +159,10 @@ Also, my ask from last time (if it's not done already): Cmdr is source-available
 
 ## Still pending after this pass
 
-Nothing. The pricing mismatch that sat here through several passes is gone: `Purchase` was always the right model and
-only the range was wrong, and v0.46.0's move to a single $59 one-time price makes the page's "One time purchase
-(perpetual license)" wording true as written.
+- **The page still labels Cmdr "Open Source"** under Licensing (checked 2026-09-24), after the BSL wording request went
+  in with both the v0.45.0 and v0.46.0 edits. Admins approved everything else in those edits and ignored this, so a
+  third ask through the same note field is unlikely to land. If it's worth pursuing, their contact form is the next
+  step.
 
 ## Settled calls
 

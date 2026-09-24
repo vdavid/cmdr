@@ -1,24 +1,20 @@
 # MacUpdate listing
 
-Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form creates
-and modifies a listing (search the app name at the top to modify).
+Live: https://cmdr.macupdate.com/ (accepted from the 2026-09-18 v0.46.0 submission, the first of three that went
+through). Submission form: https://member.macupdate.com/content/submit (needs a MacUpdate member account). The same form
+creates and modifies a listing: type `Cmdr` into "Modify an existing listing?" at the top to load this one.
 
-Status: **submitted 2026-09-18 for v0.46.0** (the fields below are what went in). Their confirmation said they review
-and reply by email within 10 days, so silence past 2026-09-28 is itself a data point.
-
-Two earlier submissions (2026-07-29 for v0.36.2, and one before it) were **never accepted** and drew no reply, so
-MacUpdate has published no listing and every attempt is a fresh CREATE. ❌ Don't use the form's "Modify an existing
-listing?" search; it will find nothing until they accept one.
+Status: **v0.47.0 prepared 2026-09-24, not yet submitted** (the fields below are the update to paste). The live page
+still shows v0.46.0.
 
 ❗ **The Download URL must be a DIRECT link to the installer**, not a redirect. Their guidelines say "the direct URL to
 the installer package (e.g., .pkg .dmg, .zip)", and `getcmdr.com/download/latest/universal` takes 3 redirects to a
-signed `release-assets.githubusercontent.com` blob URL that doesn't end in `.dmg` (verified 2026-09-18). That is the
-best guess for why the first two submissions went nowhere, so this one used the version-pinned GitHub Releases URL
-instead, at the cost of the `?ref=macupdate.com` attribution and a bump per release.
+signed `release-assets.githubusercontent.com` blob URL that doesn't end in `.dmg` (verified 2026-09-18). The two
+submissions that used the redirect were never accepted and the one with the version-pinned GitHub Releases URL was, so
+keep the pinned URL, at the cost of the `?ref=macupdate.com` attribution and a bump per release.
 
-Because no version of this listing was ever published, "Version changes" covers v0.46.0 alone rather than accumulating
-every unsubmitted release: for a listing with no history, it's the changes in the version being submitted, and a reader
-meeting Cmdr for the first time gets the Description for everything else.
+"Version changes" covers the release being submitted (the whole minor line, patches included, once patches start getting
+skipped here); the Description carries everything older.
 
 Refresh cadence and what to update per release: `docs/guides/releasing.md` § "Refreshing the app-directory listings".
 
@@ -30,15 +26,14 @@ the Price field and the note to the review team instead.
 
 - **App name**: `Cmdr`
 - **Developer name**: `David Veszelovszki`
-- **Download URL**: `https://getcmdr.com/download/latest/universal?ref=macupdate.com`
-  - Always points at the current release, so it never needs a resubmission, and it attributes the download to MacUpdate
-    in the dashboard. Plain fallback if they reject redirects:
-    `https://github.com/vdavid/cmdr/releases/download/v0.46.0/Cmdr_0.46.0_universal.dmg` (version-pinned, so it would
-    need bumping per release).
+- **Download URL**: `https://github.com/vdavid/cmdr/releases/download/v0.47.0/Cmdr_0.47.0_universal.dmg`
+  - Version-pinned, so bump it with every listing update (see the Download URL note at the top). The redirecting
+    `https://getcmdr.com/download/latest/universal?ref=macupdate.com` would never go stale and would attribute downloads
+    to MacUpdate, but it's what the rejected submissions used.
 - **Product page URL**: `https://getcmdr.com`
 - **Purchase URL**: `https://getcmdr.com/pricing`
 - **Developer support URL**: `https://github.com/vdavid/cmdr/issues`
-- **Version number**: `0.46.0`
+- **Version number**: `0.47.0`
 - **Price**: leave empty (their hint says empty means free). Cmdr is free for personal use; commercial licenses are sold
   on the purchase URL and explained to the review team below.
 
@@ -135,83 +130,68 @@ A blazing-fast, keyboard-driven two-pane file manager for macOS, with fully opti
 
 ### Version changes
 
-Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. No listing was ever
-published, so this covers v0.46.0 alone; everything older is the Description's job.
+Their hint asks for the changes in the current version, with `<h5>` section heads and `<ul>` lists. This covers v0.47.0;
+everything older is the Description's job.
 
 ```html
 <h5>New</h5>
 <ul>
   <li>
-    Press Ctrl-D for your favorites, then a number key to jump straight to one. Drag to reorder them, press 0 to add the
-    folder you're standing in.
+    The file viewer opens files with one huge line, like minified JSON, without hanging. Reading, searching, copying,
+    and saving all stay fast.
   </li>
+  <li>Give any favorite a letter shortcut from its right-click menu. Contributed by Gábor Gyebnár. Thank you!</li>
+  <li>A new "Allow cloud AI" switch: no AI feature sends anything to a cloud service until you turn it on.</li>
   <li>
-    Option-Shift-= selects the rest of the files like the one you're on: every PDF, every folder, every file with no
-    extension. The menu item says what it would pick before you press it.
+    A per-share switch for Cmdr's fast direct network connection, so you can keep a share on the regular macOS mount,
+    and a one-click "Connect directly now".
   </li>
-  <li>Finder's tag colors as one row of circles in the right-click menu, instead of seven stacked items.</li>
-  <li>Ctrl-Return opens the right-click menu on the row you're on, so 40-odd file actions stop needing a mouse.</li>
-  <li>A refused eject now names the app holding the drive, so there's something to go and close.</li>
-  <li>A search counts its hits in the footer, and results open in a tab of their own.</li>
-  <li>
-    A badge in the title bar when Full Disk Access is missing, and a refused trash that explains itself instead of
-    saying "try again".
-  </li>
-  <li>
-    Unplug a drive mid-index and Cmdr says why its folder sizes get recomputed, rather than rescanning in silence.
-  </li>
+  <li>Command-Option-Left and Right switch tabs too, like in browsers.</li>
+  <li>A refused move or delete now names the folder that said no, and whether admin rights would help.</li>
+  <li>A search says when it's waiting for the drive's index to load.</li>
 </ul>
 <h5>Improved</h5>
 <ul>
+  <li>An SMB share stays browsable while you copy to it.</li>
   <li>
-    Ejecting takes the drive's whole physical disk down, or says why it couldn't, instead of reporting success over a
-    partition that's still mounted.
+    Cmdr no longer talks to PostHog: usage stats and update checks go through Cmdr's own server, every three hours.
   </li>
+  <li>The search dialog opens much faster on large drives.</li>
+  <li>Less CPU and memory use while idle.</li>
+  <li>Faster uploads to WebDAV servers.</li>
   <li>
-    Every unmount waits for Cmdr's index to let go first, whoever started it: Finder, Disk Utility, or another app.
+    Each drive's actions (eject, disconnect, rename, pin, forget) live in its own submenu in the drive list, and
+    "Connect to server" moved to the Go menu, like in Finder.
   </li>
-  <li>A drive pulled from its port stops its index instead of leaving one reading a filesystem that isn't there.</li>
-  <li>A cloud drive mounted in your home folder, like pCloud's, gets its own row in the drive list beside Dropbox.</li>
-  <li>Cmdr is now $59 bought once, with a year of updates. The yearly subscription is retired.</li>
 </ul>
 <h5>Fixed</h5>
 <ul>
   <li>
-    A drive pulled mid-transfer kept every original, and the message names the drive and how far it got. A move to a USB
-    stick no longer deletes the sources before the files are really on it.
+    Accented file names on a NAS's network share showed up but couldn't be opened, copied, renamed, or deleted. (Even
+    Finder gets this one wrong.)
   </li>
-  <li>A crash or force-quit mid-overwrite could lose the file being replaced.</li>
+  <li>Copies to some NAS and Samba setups failed or hung.</li>
+  <li>Downloading a 1–8 MB file from a network share showed no progress and blocked browsing that share.</li>
+  <li>A failed copy could delete a file someone else had just saved under the same name.</li>
+  <li>In rare error cases on a network share, a rename or overwrite could replace the wrong file.</li>
+  <li>A refused overwrite could leave a temporary file in your folder for up to an hour.</li>
   <li>
-    A drive that left mid-scan could blank its own index, and an eject could unmount a drive Cmdr was still reading.
+    In the viewer, Command-A then copy could drop a file's last line, and a copy could come back empty or with a line
+    twice.
   </li>
-  <li>Renaming anything on a mounted network share failed every time.</li>
-  <li>Copying and moving did nothing on an SFTP, WebDAV, or Android server rooted at "/".</li>
-  <li>
-    A company share published as a DFS namespace root crawled on the slow macOS mount instead of connecting directly.
-  </li>
-  <li>F8 in a Dropbox or Google Drive folder failed with a message about the wrong disk.</li>
-  <li>A batch trash that left items behind reported a clean success.</li>
-  <li>A drive mounted outside /Volumes dead-ended on "Volume not found".</li>
-  <li>Photos in a folder you excluded still showed up in photo search, find similar, and the AI's photo tools.</li>
-  <li>A search handed back at most 1,000 rows, and "Show all in main window" opened with only 30.</li>
-  <li>
-    The right-click menu showed the default keys after you rebound a command, and Option shortcuts showed no key at all.
-  </li>
-  <li>The viewer's Edit menu acted on the status bar instead of the file.</li>
-  <li>
-    "Add to favorites" could write a favorite nobody could ever see, on phones, archives, and protocol-only servers.
-  </li>
-  <li>Activating a license left "Personal use only" in the Dock until a relaunch.</li>
-  <li>Onboarding could stack macOS permission popups when Full Disk Access was revoked or half-granted.</li>
-  <li>An offline update check showed raw request text, and a crash report that didn't go out closed as if it had.</li>
-  <li>Turning the AI off didn't stick when the database refused the write.</li>
-  <li>Saved SFTP and WebDAV places with an email address as the username wouldn't open or sign in.</li>
+  <li>Enter could open a file twice, and Page Up, Page Down, Home, and End jumped twice as far.</li>
+  <li>Every menu icon went blank on macOS 27.</li>
+  <li>Escape on a dialog also took the window out of full screen.</li>
+  <li>An SFTP or WebDAV server that went silent hung operations instead of showing the disconnect.</li>
+  <li>A transfer's progress bar could jump backward, or freeze without saying it was waiting on the source.</li>
+  <li>A false "can't reach your server" notice could pop up at launch.</li>
+  <li>The drive list could stall on a network share that stopped responding.</li>
 </ul>
 <h5>Security</h5>
 <ul>
-  <li>An AI client can no longer change your consent answers over Cmdr's automation interface.</li>
-  <li>A multi-word filename could leak part of itself into an uploaded error report.</li>
-  <li>A password typed into a network address or server path could reach the log file.</li>
+  <li>Dropped a code-signing exception that could have let another program load code into Cmdr.</li>
+  <li>Release builds always keep server passwords and AI keys in the macOS Keychain.</li>
+  <li>Natural-language search queries stay out of the log and error reports.</li>
 </ul>
 ```
 
@@ -234,6 +214,16 @@ macOS 12 Monterey or later, both Apple Silicon and Intel. macOS 10.15 Catalina a
     `magick app-main-light.webp app-main-light.png`. Reshoot per `docs/guides/screenshots.md`.
 
 ## Comments for the review team
+
+For an update, keep it short:
+
+```
+Hi folks! Thanks for listing Cmdr! This is the v0.47.0 update: new version number, download link, and version changes. The description is unchanged.
+
+David
+```
+
+The note that went with the first (accepted) submission, kept for reference:
 
 ```
 Hi folks!
