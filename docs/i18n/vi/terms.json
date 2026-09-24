@@ -13,9 +13,7 @@
     "sources": "MS terminology (absolute path → đường dẫn tuyệt đối)"
   },
   "access": {
-    "accept": [
-      "quyền"
-    ],
+    "accept": ["quyền"],
     "chosen": "truy cập",
     "confidence": "high",
     "forms": "quyền truy cập (privacy access), không có quyền (no permission), quyền ghi (write access)",
@@ -40,9 +38,7 @@
     "sources": "macOS (Thêm, Thêm vào Dock, Thêm vào Mục ưa thích), Xfce Thunar, MS (add → thêm)"
   },
   "ai-feature": {
-    "accept": [
-      "tính năng AI"
-    ],
+    "accept": ["tính năng AI"],
     "chosen": "AI",
     "confidence": "high",
     "forms": "AI features → các tính năng AI; the AI as a subject → AI (❌ not Cmdr); AI-powered → do AI hỗ trợ",
@@ -61,18 +57,14 @@
     "sources": "MS terminology (tool → công cụ); catalog"
   },
   "allow": {
-    "accept": [
-      "được phép"
-    ],
+    "accept": ["được phép"],
     "chosen": "Cho phép",
     "confidence": "high",
     "forms": "button Cho phép / Cho phép tất cả; Android's own button quoted bare as Cho phép; not allowed → không được phép",
     "sources": "MS terminology (Allow … → Cho phép …), macOS TCC (REQUEST_ACCESS_ALLOW), AOSP usb_debugging_allow = Cho phép"
   },
   "already-exists": {
-    "accept": [
-      "đã có"
-    ],
+    "accept": ["đã có"],
     "chosen": "đã tồn tại",
     "confidence": "high",
     "forms": "conflict title Tệp đã tồn tại; There's already something at X → Đã có thứ gì đó ở \"{path}\"; doesn't exist yet → chưa tồn tại",
@@ -122,9 +114,7 @@
     "sources": "macOS ClassKitSettings.loctable APPLE_ID (live bundle, 2026-08-30)"
   },
   "apple-silicon": {
-    "accept": [
-      "Apple Silicon"
-    ],
+    "accept": ["Apple Silicon"],
     "chosen": "Apple silicon",
     "confidence": "high",
     "forms": "kept verbatim; M1 or later → M1 trở lên; a Mac with Apple silicon → máy Mac dùng chip Apple silicon",
@@ -155,10 +145,7 @@
     "sources": "standard; macOS Finder AirDrop pair Chấp nhận/Từ chối is another sense"
   },
   "archive": {
-    "accept": [
-      "tệp lưu trữ",
-      "zip"
-    ],
+    "accept": ["tệp lưu trữ", "zip"],
     "avoid": [
       {
         "form": "kho lưu trữ",
@@ -179,10 +166,7 @@
     "sources": "catalog (settings.listing.sizeDisplay.description, settings.fileViewer.suppressBinaryWarning); GNOME/MS nén; Finder đã nén"
   },
   "archive-chat": {
-    "accept": [
-      "bỏ lưu trữ",
-      "đã lưu trữ"
-    ],
+    "accept": ["bỏ lưu trữ", "đã lưu trữ"],
     "avoid": [
       {
         "form": "tệp nén",
@@ -195,12 +179,7 @@
     "sources": "macOS Finder AR40 (Archive → Lưu trữ); Bỏ lưu trữ mirrors Gmail/Zalo (tentative)"
   },
   "ask": {
-    "accept": [
-      "Ask Cmdr",
-      "nhờ",
-      "yêu cầu",
-      "xin"
-    ],
+    "accept": ["Ask Cmdr", "nhờ", "yêu cầu", "xin"],
     "chosen": "hỏi",
     "confidence": "high",
     "forms": "option hỏi mỗi lần (ask each time); asking a helper or a person to do something → nhờ",
@@ -228,9 +207,7 @@
     "sources": "standard MS/macOS offline convention, reworded for clarity"
   },
   "back": {
-    "accept": [
-      "Trở lại"
-    ],
+    "accept": ["Trở lại"],
     "chosen": "Quay lại",
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
@@ -311,10 +288,7 @@
     "sources": "macOS Finder/AppKit (Hủy)"
   },
   "case-sensitive": {
-    "accept": [
-      "chữ hoa",
-      "chữ thường"
-    ],
+    "accept": ["chữ hoa", "chữ thường"],
     "chosen": "phân biệt chữ hoa/thường",
     "confidence": "high",
     "sources": "macOS Finder (Phân biệt Chữ hoa/thường), sentence-cased"
@@ -360,11 +334,7 @@
     "sources": "MS terminology (chat → trò chuyện)"
   },
   "check": {
-    "accept": [
-      "xác minh",
-      "đối chiếu",
-      "xem"
-    ],
+    "accept": ["xác minh", "đối chiếu", "xem"],
     "chosen": "kiểm tra",
     "confidence": "high",
     "exceptions": {
@@ -385,9 +355,7 @@
     "sources": "macOS Finder N137 (Choose Application… → Chọn ứng dụng…)"
   },
   "clean-up": {
-    "accept": [
-      "dọn"
-    ],
+    "accept": ["dọn"],
     "avoid": [
       {
         "form": "xóa",
@@ -450,10 +418,7 @@
     "sources": "catalog"
   },
   "complete": {
-    "accept": [
-      "hoàn chỉnh",
-      "đầy đủ"
-    ],
+    "accept": ["hoàn chỉnh", "đầy đủ"],
     "avoid": [
       {
         "form": "Hoàn tất việc hoàn tác",
@@ -484,9 +449,7 @@
     "sources": "macOS PassKit (has been compromised → đã bị xâm phạm), StoreKit (Certificate Revoked → Chứng nhận bị thu hồi)"
   },
   "configure": {
-    "accept": [
-      "thiết lập"
-    ],
+    "accept": ["thiết lập"],
     "chosen": "cấu hình",
     "confidence": "high",
     "forms": "menu item Cấu hình… (opens Settings); configuration profile → hồ sơ cấu hình; set up → thiết lập",
@@ -505,9 +468,7 @@
     "sources": "MS terminology"
   },
   "connect": {
-    "accept": [
-      "Connect"
-    ],
+    "accept": ["Connect"],
     "avoid": [
       {
         "form": "Kết nối đã bị ngắt",
@@ -520,9 +481,7 @@
     "sources": "Xfce Thunar (kết nối mạng), macOS Finder (Kết nối với máy chủ), CFNetwork (Đã mất kết nối mạng)"
   },
   "context-menu": {
-    "accept": [
-      "chuột phải"
-    ],
+    "accept": ["chuột phải"],
     "chosen": "menu chuột phải",
     "confidence": "high",
     "forms": "right-click → bấm chuột phải",
@@ -547,10 +506,7 @@
     "sources": "MS terminology"
   },
   "copy": {
-    "accept": [
-      "bản sao",
-      "chép"
-    ],
+    "accept": ["bản sao", "chép"],
     "chosen": "sao chép",
     "confidence": "high",
     "exceptions": {
@@ -561,10 +517,7 @@
     "sources": "macOS AppKit (Sao chép)"
   },
   "crash-report": {
-    "accept": [
-      "sự cố",
-      "sập"
-    ],
+    "accept": ["sự cố", "sập"],
     "avoid": [
       {
         "form": "thoát đột ngột",
@@ -627,9 +580,7 @@
     "sources": "macOS Finder MenuBar (Default → Mặc định)"
   },
   "delete": {
-    "accept": [
-      "Delete"
-    ],
+    "accept": ["Delete"],
     "avoid": [
       {
         "form": "xoá",
@@ -752,10 +703,7 @@
     "sources": "catalog; macOS Finder/AppKit click verb bấm"
   },
   "download": {
-    "accept": [
-      "tải lại",
-      "tải-về"
-    ],
+    "accept": ["tải lại", "tải-về"],
     "avoid": [
       {
         "form": "tải xuống",
@@ -772,10 +720,7 @@
     "sources": "macOS vi (Đang tải về, Xóa bản tải về)"
   },
   "drive": {
-    "accept": [
-      "đĩa",
-      "Drive"
-    ],
+    "accept": ["đĩa", "Drive"],
     "chosen": "ổ đĩa",
     "confidence": "high",
     "forms": "drive and volume alike; startup disk → ổ đĩa khởi động; product names (Google Drive, iCloud Drive) stay English",
@@ -788,10 +733,7 @@
     "sources": "macOS Finder N154 (Tệp > Nhân bản)"
   },
   "edit": {
-    "accept": [
-      "sửa",
-      "chỉnh"
-    ],
+    "accept": ["sửa", "chỉnh"],
     "chosen": "chỉnh sửa",
     "confidence": "high",
     "forms": "editing a file or a zip's contents → chỉnh sửa; a form or command label → Sửa (Sửa máy chủ…, the Edit menu Sửa); modified-date sense → sửa đổi",
@@ -846,9 +788,7 @@
     "sources": "macOS vi keeps Enter"
   },
   "error-report": {
-    "accept": [
-      "trục trặc"
-    ],
+    "accept": ["trục trặc"],
     "avoid": [
       {
         "form": "báo cáo sự cố",
@@ -862,9 +802,7 @@
     "sources": "catalog split (settings.updates); macOS Problem Reporter owns báo cáo sự cố"
   },
   "escape-key": {
-    "accept": [
-      "Esc"
-    ],
+    "accept": ["Esc"],
     "chosen": "Escape",
     "confidence": "high",
     "forms": "in a label → phím Escape (Thoát toàn màn hình bằng phím Escape)",
@@ -891,9 +829,7 @@
     "sources": "MS terminology (expire → hết hạn)"
   },
   "extension": {
-    "accept": [
-      "đuôi"
-    ],
+    "accept": ["đuôi"],
     "avoid": [
       {
         "form": "phần mở rộng",
@@ -917,12 +853,7 @@
     "sources": "catalog (ai.local.installStepExtracting), GNOME Nautilus (Giải nén)"
   },
   "failed": {
-    "accept": [
-      "chưa hoàn tất",
-      "không thành công",
-      "không được",
-      "chưa … được"
-    ],
+    "accept": ["chưa hoàn tất", "không thành công", "không được", "chưa … được"],
     "avoid": [
       {
         "form": "lỗi",
@@ -962,9 +893,7 @@
     "sources": "MS (feedback → ý kiến phản hồi), shortened for UI"
   },
   "fetch": {
-    "accept": [
-      "lấy"
-    ],
+    "accept": ["lấy"],
     "avoid": [
       {
         "form": "Đang tìm nạp",
@@ -1050,9 +979,7 @@
     "sources": "macOS PhotosUI (Low Disk Space → Sắp hết dung lượng ổ đĩa); catalog"
   },
   "full-disk-access": {
-    "accept": [
-      "truy cập toàn bộ đĩa"
-    ],
+    "accept": ["truy cập toàn bộ đĩa"],
     "avoid": [
       {
         "form": "Full Disk Access",
@@ -1078,9 +1005,7 @@
     "sources": "catalog (view modes)"
   },
   "function-key-bar": {
-    "accept": [
-      "phím chức năng"
-    ],
+    "accept": ["phím chức năng"],
     "chosen": "thanh phím chức năng",
     "confidence": "high",
     "sources": "catalog (settings.appearance.showFunctionKeyBar.label)"
@@ -1109,9 +1034,7 @@
     "sources": "dev loanword; no clean native UI source"
   },
   "github-star": {
-    "accept": [
-      "gắn sao"
-    ],
+    "accept": ["gắn sao"],
     "avoid": [
       {
         "form": "đánh sao",
@@ -1129,20 +1052,14 @@
     "sources": "technical loanword; no native UI source"
   },
   "global": {
-    "accept": [
-      "trong ứng dụng",
-      "toàn hệ thống"
-    ],
+    "accept": ["trong ứng dụng", "toàn hệ thống"],
     "chosen": "toàn cục",
     "confidence": "high",
     "forms": "global shortcut → phím tắt toàn cục; in-app → trong ứng dụng",
     "sources": "standard vi for system-wide"
   },
   "go-back": {
-    "accept": [
-      "Tiếp theo",
-      "quay lại"
-    ],
+    "accept": ["Tiếp theo", "quay lại"],
     "avoid": [
       {
         "form": "Đi tới",
@@ -1243,10 +1160,7 @@
     "sources": "macOS Certificate Assistant (Hostname mismatch → Tên máy chủ không khớp), AddPrinter"
   },
   "hour": {
-    "accept": [
-      "phút",
-      "giây"
-    ],
+    "accept": ["phút", "giây"],
     "chosen": "giờ",
     "confidence": "high",
     "exceptions": {
@@ -1261,9 +1175,7 @@
     "sources": "MS terminology; catalog"
   },
   "image": {
-    "accept": [
-      "ảnh"
-    ],
+    "accept": ["ảnh"],
     "chosen": "hình ảnh",
     "confidence": "high",
     "decision": "Lập chỉ mục hình ảnh (`settings.mediaIndex.*`, `fileExplorer.imageIndex.*`, `search.imageResults.*`)",
@@ -1271,23 +1183,14 @@
     "sources": "MS (hình ảnh); English splits image (feature) from photos (counts)"
   },
   "image-search": {
-    "accept": [
-      "tìm kiếm ảnh",
-      "tìm kiếm ngữ nghĩa",
-      "tìm kiếm theo mô tả",
-      "theo từ khóa"
-    ],
+    "accept": ["tìm kiếm ảnh", "tìm kiếm ngữ nghĩa", "tìm kiếm theo mô tả", "theo từ khóa"],
     "chosen": "tìm kiếm hình ảnh",
     "confidence": "high",
     "forms": "semantic search → tìm kiếm ngữ nghĩa; search by description → tìm kiếm theo mô tả; keyword / tag search → tìm kiếm theo từ khóa / thẻ",
     "sources": "catalog (settings pane card Tìm kiếm hình ảnh)"
   },
   "in-use": {
-    "accept": [
-      "sử dụng",
-      "được dùng",
-      "đang dùng"
-    ],
+    "accept": ["sử dụng", "được dùng", "đang dùng"],
     "chosen": "đang sử dụng",
     "confidence": "high",
     "forms": "is in use by X → đang được X sử dụng / X vẫn đang sử dụng …; a still-open file → vẫn đang mở",
@@ -1309,9 +1212,7 @@
     "sources": "descriptive"
   },
   "install": {
-    "accept": [
-      "cài"
-    ],
+    "accept": ["cài"],
     "chosen": "cài đặt",
     "confidence": "high",
     "forms": "reinstalled → cài đặt lại; the same word as Settings (Cài đặt), context disambiguates",
@@ -1353,9 +1254,7 @@
     "sources": "macOS Certificate Assistant (Enter Passphrase → Nhập Cụm từ mật khẩu), DiskImages2"
   },
   "keychain": {
-    "accept": [
-      "kho khóa"
-    ],
+    "accept": ["kho khóa"],
     "avoid": [
       {
         "form": "Keychain",
@@ -1377,9 +1276,7 @@
     "sources": "macOS Finder ArrangeByMenu 119 / 338, N224 (Kind → Loại)"
   },
   "later": {
-    "accept": [
-      "sau"
-    ],
+    "accept": ["sau"],
     "chosen": "Để sau",
     "confidence": "high",
     "exceptions": {
@@ -1390,9 +1287,7 @@
     "sources": "macOS AppKit (Not Now → Để sau)"
   },
   "leave-alone": {
-    "accept": [
-      "để nguyên"
-    ],
+    "accept": ["để nguyên"],
     "chosen": "giữ nguyên",
     "confidence": "high",
     "decision": "Toast sau khi hoàn tác thao tác đang chạy (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)",
@@ -1400,11 +1295,7 @@
     "sources": "catalog (askCmdr.renameUndo.skipReason.*, fileOperations.cancelRollback.reason.*)"
   },
   "license": {
-    "accept": [
-      "Thương mại",
-      "Vĩnh viễn",
-      "đăng ký"
-    ],
+    "accept": ["Thương mại", "Vĩnh viễn", "đăng ký"],
     "chosen": "giấy phép",
     "confidence": "high",
     "forms": "tiers Thương mại / Cá nhân; perpetual → vĩnh viễn; subscription → đăng ký",
@@ -1421,10 +1312,7 @@
     "sources": "catalog root (fileExplorer.doubleClickHint.iLikeIt = Tôi thích); the word every vi social network uses"
   },
   "limit": {
-    "accept": [
-      "ngân sách",
-      "hạn chế"
-    ],
+    "accept": ["ngân sách", "hạn chế"],
     "chosen": "giới hạn",
     "confidence": "high",
     "forms": "no such limit → không có giới hạn như vậy; an AI budget → ngân sách; a privacy restriction → hạn chế",
@@ -1437,9 +1325,7 @@
     "sources": "GNOME (dòng)"
   },
   "local-network": {
-    "accept": [
-      "ở gần"
-    ],
+    "accept": ["ở gần"],
     "avoid": [
       {
         "form": "Truy cập mạng cục bộ",
@@ -1456,9 +1342,7 @@
     "sources": "macOS AppSystemSettingsUI + two .loctables (Local Network), TCC.framework (mạng cục bộ), 2026-09-09"
   },
   "location": {
-    "accept": [
-      "nơi"
-    ],
+    "accept": ["nơi"],
     "avoid": [
       {
         "form": "Địa điểm",
@@ -1500,20 +1384,14 @@
     "forms": "tool labels Đang xem bên trong tệp / Đã xem bên trong tệp",
     "sources": "catalog (bên trong), sibling tool labels"
   },
-  "mac": {
+  "this-mac": {
     "chosen": "máy Mac",
     "confidence": "high",
     "forms": "trên máy Mac này, Máy Mac này; ❌ a bare Mac as the noun phrase",
     "sources": "macOS IOBluetoothUI / FileProvider (on this Mac → trên máy Mac này)"
   },
   "macos-app-names": {
-    "accept": [
-      "Tiện ích ổ đĩa",
-      "Sửa nhanh",
-      "Giám sát hoạt động",
-      "Mission Control",
-      "Spaces"
-    ],
+    "accept": ["Tiện ích ổ đĩa", "Sửa nhanh", "Giám sát hoạt động", "Mission Control", "Spaces"],
     "avoid": [
       {
         "form": "Disk Utility",
@@ -1535,9 +1413,7 @@
     "sources": "live bundles, macOS 27.0 (Disk Utility.app InfoPlist.loctable, MainMenu.loctable; Activity Monitor.app InfoPlist.loctable), 2026-09-24"
   },
   "mailing-list": {
-    "accept": [
-      "danh sách"
-    ],
+    "accept": ["danh sách"],
     "chosen": "danh sách gửi thư",
     "confidence": "high",
     "sources": "MS terminology (mailing list → danh sách gửi thư)"
@@ -1553,10 +1429,7 @@
     "sources": "descriptive"
   },
   "memory": {
-    "accept": [
-      "RAM",
-      "ghi chú"
-    ],
+    "accept": ["RAM", "ghi chú"],
     "chosen": "bộ nhớ",
     "confidence": "high",
     "forms": "RAM → bộ nhớ; Ask Cmdr's memory (its notes) → ghi chú (thư mục ghi chú)",
@@ -1574,18 +1447,13 @@
     "sources": "GNOME (Hòa trộn thư mục)"
   },
   "model": {
-    "accept": [
-      "Model Context Protocol"
-    ],
+    "accept": ["Model Context Protocol"],
     "chosen": "mô hình",
     "confidence": "high",
     "sources": "MS terminology (ML sense → mô hình)"
   },
   "modified": {
-    "accept": [
-      "thay đổi",
-      "đã sửa"
-    ],
+    "accept": ["thay đổi", "đã sửa"],
     "chosen": "sửa đổi",
     "confidence": "high",
     "decision": "Rà soát trôi thuật ngữ toàn catalog",
@@ -1604,9 +1472,7 @@
     "sources": "Xfce Thunar (Gắn kết, Bỏ gắn kết)"
   },
   "move": {
-    "accept": [
-      "chuyển"
-    ],
+    "accept": ["chuyển"],
     "chosen": "di chuyển",
     "confidence": "high",
     "forms": "di chuyển is the Move operation only; a loose \"moving files\" covering copy/move/delete → chuyển tệp",
@@ -1629,10 +1495,7 @@
     "sources": "kept verbatim (một NAS ở nhà)"
   },
   "native": {
-    "accept": [
-      "tích hợp sẵn",
-      "hệ thống"
-    ],
+    "accept": ["tích hợp sẵn", "hệ thống"],
     "avoid": [
       {
         "form": "riêng của macOS",
@@ -1672,9 +1535,7 @@
     "sources": "composed from ổ đĩa + mạng"
   },
   "network-share": {
-    "accept": [
-      "thư mục chia sẻ"
-    ],
+    "accept": ["thư mục chia sẻ"],
     "avoid": [
       {
         "form": "bản chia sẻ",
@@ -1692,17 +1553,13 @@
     "sources": "macOS Finder (Thư mục được chia sẻ, chia sẻ); catalog (37 keys)"
   },
   "new-file": {
-    "accept": [
-      "tạo tệp"
-    ],
+    "accept": ["tạo tệp"],
     "chosen": "tệp mới",
     "confidence": "high",
     "sources": "catalog"
   },
   "new-folder": {
-    "accept": [
-      "tạo thư mục"
-    ],
+    "accept": ["tạo thư mục"],
     "chosen": "thư mục mới",
     "confidence": "high",
     "sources": "catalog; GNOME"
@@ -1713,20 +1570,14 @@
     "sources": "catalog"
   },
   "not-finished": {
-    "accept": [
-      "hoàn tất",
-      "xong"
-    ],
+    "accept": ["hoàn tất", "xong"],
     "chosen": "chưa hoàn tất",
     "confidence": "high",
     "forms": "status Chưa hoàn tất được; an unfinished move → một lần di chuyển chưa hoàn tất; didn't finish looking → chưa tìm xong",
     "sources": "macOS Finder (thao tác chưa hoàn tất)"
   },
   "note": {
-    "accept": [
-      "lời nhắn",
-      "ghi-chu"
-    ],
+    "accept": ["lời nhắn", "ghi-chu"],
     "chosen": "ghi chú",
     "confidence": "high",
     "forms": "a feedback message → lời nhắn; sample filename ghi-chu.txt (ASCII-folded)",
@@ -1739,9 +1590,7 @@
     "sources": "macOS/MS"
   },
   "onboarding": {
-    "accept": [
-      "thiết lập"
-    ],
+    "accept": ["thiết lập"],
     "avoid": [
       {
         "form": "hướng dẫn ban đầu",
@@ -1762,17 +1611,13 @@
     "sources": "catalog (wizard title Thiết lập ban đầu Cmdr)"
   },
   "online-only": {
-    "accept": [
-      "trực tuyến"
-    ],
+    "accept": ["trực tuyến"],
     "chosen": "chỉ có trực tuyến",
     "confidence": "tentative",
     "sources": "catalog"
   },
   "open": {
-    "accept": [
-      "beta"
-    ],
+    "accept": ["beta"],
     "chosen": "mở",
     "confidence": "high",
     "forms": "entering a server row → Mở (same as menu.file.open); an app name after Mở goes bare (Mở Cmdr), a file name is quoted",
@@ -1811,18 +1656,14 @@
     "sources": "macOS Finder (thao tác sao chép ^0 mục, thao tác này ×7)"
   },
   "operation-log": {
-    "accept": [
-      "lịch sử thao tác"
-    ],
+    "accept": ["lịch sử thao tác"],
     "chosen": "nhật ký thao tác",
     "confidence": "high",
     "forms": "the window → Nhật ký thao tác; operation history / Ask Cmdr's file history → lịch sử thao tác",
     "sources": "nhật ký (log) + macOS thao tác"
   },
   "operation-queue": {
-    "accept": [
-      "chờ"
-    ],
+    "accept": ["chờ"],
     "avoid": [
       {
         "form": "hàng đợi truyền",
@@ -1872,18 +1713,14 @@
     "sources": "macOS AppKit/Finder (Khung Xem trước, Khung hiện tại), Total Commander"
   },
   "parent-folder": {
-    "accept": [
-      "thư mục chứa"
-    ],
+    "accept": ["thư mục chứa"],
     "chosen": "thư mục cha",
     "confidence": "high",
     "forms": "Finder's Enclosing Folder menu item → Thư mục chứa; a descriptive \"the folder that contains it\" → thư mục chứa nó",
     "sources": "catalog (commands.navParent); macOS Finder (Go To Enclosing Folder → Đi tới thư mục chứa)"
   },
   "password": {
-    "accept": [
-      "Passwords"
-    ],
+    "accept": ["Passwords"],
     "chosen": "mật khẩu",
     "confidence": "high",
     "forms": "That password didn't work → Mật khẩu đó không đúng",
@@ -1917,27 +1754,21 @@
     "sources": "macOS AppKit (NSPauseTemplate → tạm dừng), MS"
   },
   "percent": {
-    "accept": [
-      "%"
-    ],
+    "accept": ["%"],
     "chosen": "phần trăm",
     "confidence": "high",
     "forms": "spelled only for screen readers ({percentText} phần trăm); no space before a visible %",
     "sources": "MS terminology (phần trăm hoàn thành)"
   },
   "permission": {
-    "accept": [
-      "phép"
-    ],
+    "accept": ["phép"],
     "chosen": "quyền",
     "confidence": "high",
     "forms": "don't have permission → không có quyền; asking permission → xin phép",
     "sources": "Xfce Thunar (Quyền hạn, không có quyền)"
   },
   "phone": {
-    "accept": [
-      "Android"
-    ],
+    "accept": ["Android"],
     "chosen": "điện thoại",
     "confidence": "high",
     "sources": "catalog (every ADB key)"
@@ -1986,10 +1817,7 @@
     "sources": "macOS (Xem trước; Preview.app InfoPlist.loctable CFBundleName = Xem trước)"
   },
   "previous-next": {
-    "accept": [
-      "tiếp",
-      "sau"
-    ],
+    "accept": ["tiếp", "sau"],
     "chosen": "trước",
     "confidence": "tentative",
     "sources": "catalog"
@@ -2001,10 +1829,7 @@
     "sources": "macOS SystemSettings verbatim"
   },
   "process": {
-    "accept": [
-      "daemon",
-      "xử lý"
-    ],
+    "accept": ["daemon", "xử lý"],
     "avoid": [
       {
         "form": "quy trình",
@@ -2017,14 +1842,7 @@
     "sources": "standard vi OS term"
   },
   "progress": {
-    "accept": [
-      "tiến triển",
-      "tiến độ",
-      "đang chạy",
-      "đang tiến hành",
-      "đang quét",
-      "dở dang"
-    ],
+    "accept": ["tiến triển", "tiến độ", "đang chạy", "đang tiến hành", "đang quét", "dở dang"],
     "chosen": "tiến trình",
     "confidence": "tentative",
     "decision": "Lần truyền bị đứng yên: thông báo trên hộp thoại + hàng đợi (`fileOperations.transferProgress.stall*`, `fileOperations.transferProgress.close`)",
@@ -2037,9 +1855,7 @@
     "sources": "MS terminology"
   },
   "protocol": {
-    "accept": [
-      "Protocol"
-    ],
+    "accept": ["Protocol"],
     "chosen": "giao thức",
     "confidence": "high",
     "sources": "macOS AddPrinter IP.plugin (Protocol: → Giao thức:)"
@@ -2094,13 +1910,14 @@
     "sources": "Xfce Thunar, GNOME (Chỉ đọc)"
   },
   "recent": {
-    "accept": [
-      "mới nhất"
-    ],
+    "accept": ["mới nhất"],
     "chosen": "gần đây",
     "confidence": "high",
     "forms": "most recent → mới nhất",
-    "sources": "macOS Finder (Gần đây)"
+    "sources": "macOS Finder (Gần đây)",
+    "exceptions": {
+      "commands.handler.noRecentlyClosedTabs": "recently closed tabs read as tabs just closed (vừa đóng)"
+    }
   },
   "reclaim": {
     "chosen": "giải phóng",
@@ -2125,9 +1942,7 @@
     "sources": "descriptive"
   },
   "reference-id": {
-    "accept": [
-      "mã báo cáo"
-    ],
+    "accept": ["mã báo cáo"],
     "chosen": "ID tham chiếu",
     "confidence": "high",
     "forms": "report ID → Mã báo cáo",
@@ -2146,9 +1961,7 @@
     "sources": "MS (làm mới)"
   },
   "regex": {
-    "accept": [
-      "biểu thức chính quy"
-    ],
+    "accept": ["biểu thức chính quy"],
     "chosen": "Regex",
     "confidence": "tentative",
     "forms": "the mode label → Regex; in prose → biểu thức chính quy",
@@ -2224,10 +2037,7 @@
     "sources": "GNOME (Đổi tên)"
   },
   "replace": {
-    "accept": [
-      "ghi đè",
-      "thay"
-    ],
+    "accept": ["ghi đè", "thay"],
     "chosen": "thay thế",
     "confidence": "high",
     "sources": "macOS Finder PE108 (Replace → Thay thế)"
@@ -2238,18 +2048,14 @@
     "sources": "MS (report → báo cáo)"
   },
   "repository": {
-    "accept": [
-      "kho"
-    ],
+    "accept": ["kho"],
     "chosen": "repo",
     "confidence": "high",
     "forms": "EN repo → repo; EN repository → kho (Huy hiệu kho)",
     "sources": "catalog (errors.git.*, onboarding.stepBeta.checklist.star); MS (kho lưu trữ)"
   },
   "reserved": {
-    "accept": [
-      "giữ riêng"
-    ],
+    "accept": ["giữ riêng"],
     "chosen": "dành riêng",
     "confidence": "tentative",
     "forms": "reserved names (CON, NUL) → tên dành riêng; reserved by macOS → macOS giữ riêng",
@@ -2294,9 +2100,7 @@
     "sources": "macOS Finder (Tiếp tục)"
   },
   "retry": {
-    "accept": [
-      "thử"
-    ],
+    "accept": ["thử"],
     "chosen": "thử lại",
     "confidence": "high",
     "forms": "Try again? → Thử lại?; Retry connection → Thử kết nối lại",
@@ -2320,9 +2124,7 @@
     "sources": "macOS AppKit (Undo → Hoàn tác); catalog"
   },
   "root-folder": {
-    "accept": [
-      "thư mục bắt đầu"
-    ],
+    "accept": ["thư mục bắt đầu"],
     "avoid": [
       {
         "form": "thư mục khởi động",
@@ -2346,11 +2148,7 @@
     "sources": "catalog (Hàng sọc xen kẽ); MS (row → hàng)"
   },
   "running": {
-    "accept": [
-      "chạy",
-      "đang tiến hành",
-      "đang quét"
-    ],
+    "accept": ["chạy", "đang tiến hành", "đang quét"],
     "chosen": "đang chạy",
     "confidence": "high",
     "forms": "Still running → Vẫn đang chạy; while X is running → trong khi X đang chạy",
@@ -2374,9 +2172,7 @@
     "sources": "macOS Finder (phạm vi tìm kiếm)"
   },
   "screenshot": {
-    "accept": [
-      "quay màn hình"
-    ],
+    "accept": ["quay màn hình"],
     "chosen": "chụp màn hình",
     "confidence": "high",
     "forms": "screen recording → quay màn hình",
@@ -2395,9 +2191,7 @@
     "sources": "macOS AppKit (Search → Tìm kiếm, Find → Tìm; Finder MenuBar 300783)"
   },
   "search-match": {
-    "accept": [
-      "khớp"
-    ],
+    "accept": ["khớp"],
     "chosen": "kết quả",
     "confidence": "high",
     "forms": "so far → đến giờ (Đến giờ có {countText} kết quả)",
@@ -2410,9 +2204,7 @@
     "sources": "macOS Finder (TL_HELP_BACK Xem các thư mục bạn đã xem)"
   },
   "select": {
-    "accept": [
-      "lựa chọn"
-    ],
+    "accept": ["lựa chọn"],
     "chosen": "chọn",
     "confidence": "high",
     "decision": "Chọn và bỏ chọn: hộp thoại Select / Deselect (`selection.*`)",
@@ -2450,9 +2242,7 @@
     "sources": "MS"
   },
   "settings": {
-    "accept": [
-      "thiết lập"
-    ],
+    "accept": ["thiết lập"],
     "chosen": "cài đặt",
     "confidence": "high",
     "exceptions": {
@@ -2473,14 +2263,7 @@
     "sources": "MS terminology (shortcut → phím tắt)"
   },
   "show": {
-    "accept": [
-      "xuất hiện",
-      "hiện ra",
-      "cho thấy",
-      "cho bạn thấy",
-      "cho bạn xem",
-      "thu gọn"
-    ],
+    "accept": ["xuất hiện", "hiện ra", "cho thấy", "cho bạn thấy", "cho bạn xem", "thu gọn"],
     "avoid": [
       {
         "form": "hiện",
@@ -2517,10 +2300,7 @@
     "sources": "macOS StoreKit (Sign Out → Đăng xuất), Erase Assistant"
   },
   "size": {
-    "accept": [
-      "cỡ",
-      "dung lượng"
-    ],
+    "accept": ["cỡ", "dung lượng"],
     "avoid": [
       {
         "form": "kích thước",
@@ -2550,10 +2330,7 @@
     "sources": "standard"
   },
   "sort": {
-    "accept": [
-      "tăng dần",
-      "giảm dần"
-    ],
+    "accept": ["tăng dần", "giảm dần"],
     "chosen": "sắp xếp",
     "confidence": "high",
     "forms": "Sort by → Sắp xếp theo; Ascending / Descending → Tăng dần / Giảm dần",
@@ -2582,9 +2359,7 @@
     "sources": "macOS CGImageSource (Status → Trạng thái)"
   },
   "stop": {
-    "accept": [
-      "ngừng"
-    ],
+    "accept": ["ngừng"],
     "avoid": [
       {
         "form": "ngắt",
@@ -2612,9 +2387,7 @@
     "sources": "MS terminology (subscription → đăng ký)"
   },
   "suggestion": {
-    "accept": [
-      "gợi ý"
-    ],
+    "accept": ["gợi ý"],
     "chosen": "đề xuất",
     "confidence": "high",
     "forms": "Suggested operations → Thao tác được đề xuất",
@@ -2661,9 +2434,7 @@
     "sources": "macOS"
   },
   "system-settings-pane": {
-    "accept": [
-      "Mục đăng nhập"
-    ],
+    "accept": ["Mục đăng nhập"],
     "chosen": "Cài đặt chung",
     "confidence": "confirmed",
     "forms": "General → Cài đặt chung; Login Items & Extensions → Mục đăng nhập & Phần mở rộng; Storage → Dung lượng; Network → Mạng; Keyboard → Bàn phím",
@@ -2700,9 +2471,7 @@
     "sources": "macOS Finder (Thẻ…, Thêm thẻ…, TG_COLOR_*)"
   },
   "tail": {
-    "accept": [
-      "bám theo"
-    ],
+    "accept": ["bám theo"],
     "chosen": "Theo dõi",
     "confidence": "tentative",
     "forms": "Tail mode → Chế độ theo dõi: bám theo thay đổi của tệp",
@@ -2771,9 +2540,7 @@
     "sources": "catalog"
   },
   "timeout": {
-    "accept": [
-      "kịp thời"
-    ],
+    "accept": ["kịp thời"],
     "chosen": "thời gian chờ",
     "confidence": "high",
     "forms": "timed out → hết thời gian chờ; didn't answer in time → đã không phản hồi kịp thời",
@@ -2790,10 +2557,7 @@
     "sources": "MS lists token / mã thông báo; the loanword for the LLM sense"
   },
   "too-large": {
-    "accept": [
-      "lớn hơn",
-      "quá dài"
-    ],
+    "accept": ["lớn hơn", "quá dài"],
     "chosen": "quá lớn",
     "confidence": "high",
     "exceptions": {
@@ -2807,9 +2571,7 @@
     "sources": "GNOME Nautilus (Tập tin quá lớn đối với vị trí dán)"
   },
   "transfer": {
-    "accept": [
-      "truyền"
-    ],
+    "accept": ["truyền"],
     "chosen": "lần truyền",
     "confidence": "tentative",
     "decision": "Hàng đợi thao tác: \"operation queue\" (`queue.windowTitle`, `queue.heading`, `queue.list.aria`, `queue.row.*`, `commands.queueShow.*`, `fileOperations.transferProgress.queue*`)",
@@ -2823,9 +2585,7 @@
     "sources": "macOS Finder (Thùng rác), GNOME"
   },
   "trust": {
-    "accept": [
-      "tin tưởng"
-    ],
+    "accept": ["tin tưởng"],
     "chosen": "tin cậy",
     "confidence": "high",
     "forms": "button Tin cậy; untrusted → không tin cậy; Trusted X → X được tin cậy; the date prefix → Đã tin cậy; trusting a person → tin tưởng",
@@ -2837,9 +2597,7 @@
     "sources": "macOS Finder N224 (Kind → Loại)"
   },
   "typo": {
-    "accept": [
-      "nhập nhầm"
-    ],
+    "accept": ["nhập nhầm"],
     "chosen": "gõ nhầm",
     "confidence": "tentative",
     "sources": "catalog"
@@ -2856,29 +2614,20 @@
     "sources": "macOS ME13 / AppKit (Undo → Hoàn tác), Finder"
   },
   "unexpected": {
-    "accept": [
-      "không ổn",
-      "không mong muốn",
-      "bất thường"
-    ],
+    "accept": ["không ổn", "không mong muốn", "bất thường"],
     "chosen": "bất ngờ",
     "confidence": "high",
     "forms": "Something went wrong → Có gì đó không ổn; quit unexpectedly → thoát bất ngờ",
     "sources": "macOS AppKitErrors (thoát bất ngờ); catalog"
   },
   "unlock": {
-    "accept": [
-      "mở được"
-    ],
+    "accept": ["mở được"],
     "chosen": "mở khóa",
     "confidence": "high",
     "sources": "macOS AppKit (Mở khóa)"
   },
   "unplug": {
-    "accept": [
-      "kết nối",
-      "cắm"
-    ],
+    "accept": ["kết nối", "cắm"],
     "chosen": "rút",
     "confidence": "high",
     "forms": "rút … ra; reseat → rút và cắm lại cáp; a drive that dropped off → bị ngắt kết nối",
@@ -2886,12 +2635,7 @@
     "sources": "catalog only (four MTP strings); macOS (rút và cắm lại)"
   },
   "unreachable": {
-    "accept": [
-      "kết nối được tới",
-      "kết nối tới",
-      "truy cập được",
-      "không thể truy cập"
-    ],
+    "accept": ["kết nối được tới", "kết nối tới", "truy cập được", "không thể truy cập", "kết nối với"],
     "chosen": "không tới được",
     "confidence": "tentative",
     "forms": "a bare status → Không tới được; reaching a SERVER → không kết nối được tới; reaching a PATH or drive → không thể truy cập; a USB device → truy cập",
@@ -2911,11 +2655,7 @@
     "sources": "MS"
   },
   "usage": {
-    "accept": [
-      "mức dùng",
-      "dung lượng",
-      "chi tiêu"
-    ],
+    "accept": ["mức dùng", "dung lượng", "chi tiêu"],
     "avoid": [
       {
         "form": "số liệu sử dụng",
@@ -2951,9 +2691,7 @@
     "sources": "catalog"
   },
   "version": {
-    "accept": [
-      "bản mới nhất"
-    ],
+    "accept": ["bản mới nhất"],
     "chosen": "phiên bản",
     "confidence": "high",
     "sources": "macOS Finder/AppKit (version → phiên bản)"
@@ -2988,9 +2726,7 @@
     "sources": "catalog"
   },
   "waiting": {
-    "accept": [
-      "đợi"
-    ],
+    "accept": ["đợi"],
     "chosen": "chờ",
     "confidence": "high",
     "forms": "Waiting / queued → Đang chờ; Wait a moment → Hãy đợi một chút",
@@ -3002,9 +2738,7 @@
     "sources": "Xfce Thunar, KDE Dolphin (Cảnh báo)"
   },
   "watcher": {
-    "accept": [
-      "sự kiện"
-    ],
+    "accept": ["sự kiện"],
     "chosen": "theo dõi",
     "confidence": "tentative",
     "forms": "watcher → bộ theo dõi; file watching → Theo dõi tệp; events → sự kiện",
@@ -3014,12 +2748,14 @@
     "chosen": "Có gì mới",
     "confidence": "tentative",
     "forms": "What's new in Cmdr → Có gì mới trong Cmdr",
-    "sources": "natural framing"
+    "sources": "natural framing",
+    "exceptions": {
+      "settings.whatsNew.showOnUpdate.label": "a plain \"show what's new\" phrase, not the dialog title (điểm mới)",
+      "settings.whatsNew.lastSeenVersion.description": "internal setting hidden from the UI; names the popup loosely as điểm mới"
+    }
   },
   "word-wrap": {
-    "accept": [
-      "ngắt"
-    ],
+    "accept": ["ngắt"],
     "chosen": "ngắt dòng",
     "confidence": "high",
     "forms": "the View menu item → Tự ngắt dòng",
@@ -3036,11 +2772,7 @@
     "sources": "macOS Finder (ghi đè)"
   },
   "zoom": {
-    "accept": [
-      "phóng to",
-      "thu nhỏ",
-      "mức phóng"
-    ],
+    "accept": ["phóng to", "thu nhỏ", "mức phóng"],
     "chosen": "thu phóng",
     "confidence": "high",
     "forms": "zoom in / out → phóng to / thu nhỏ; zoom level → mức phóng; Window > Zoom → Thu phóng",

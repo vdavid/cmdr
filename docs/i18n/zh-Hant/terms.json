@@ -96,7 +96,7 @@
     "confidence": "confirmed",
     "sources": "AP-TW = AP-HK (ADVANCED_PANE_TITLE), MS; catalog settings.section.advanced"
   },
-  "agent": {
+  "ai-agent": {
     "avoid": [
       {
         "form": "代理人",
@@ -164,7 +164,6 @@
     "sources": "AP live HK 63 總是 / 0 永遠 / 0 一律; AP live TW mixes 38/27/2"
   },
   "android-platform-tools": {
-    "accept": ["Android 工具"],
     "chosen": "平台工具",
     "confidence": "high",
     "forms": "Android SDK Platform Tools → Android SDK 平台工具; English's short the Android platform tools → Android 平台工具; a second mention → 平台工具; adb and fastboot stay bare",
@@ -280,7 +279,7 @@
     "confidence": "high",
     "sources": "AP Photos + Preview (TW = HK)"
   },
-  "attributes": {
+  "attribute": {
     "chosen": "屬性",
     "confidence": "high",
     "sources": "DC; catalog errors.listing.attributeNotFound.*"
@@ -736,7 +735,7 @@
     "forms": "dark / light mode → 深色模式 / 淺色模式",
     "sources": "MS (the appearance strings aren't in the mined Apple bundles)"
   },
-  "debug": {
+  "debugging": {
     "accept": ["debug"],
     "chosen": "除錯",
     "confidence": "tentative",
@@ -1416,7 +1415,8 @@
     "chosen": "個人專屬資料夾",
     "confidence": "high",
     "forms": "Home alone → 個人專屬",
-    "sources": "AP-HK (AP-TW 個人專屬 for Home)"
+    "sources": "AP-HK (AP-TW 個人專屬 for Home)",
+    "accept": ["個人專屬"]
   },
   "host": {
     "chosen": "主機",
@@ -1694,7 +1694,7 @@
     "decision": "The termbase migration's drift fixes (`errors.listing.connectionRefused.explanation`, `main.oldWebkit.body`, `settings.behavior.textEditorApp.description`, `settings.behavior.openTerminalHereApp.description`, `errors.volume.notConnected`, `settings.search.autoApply.description`, `errors.mount.shareNotFound`, `errors.shareList.protocolError`, `fileOperations.delete.cloudOnlineOnly*`, `mtp.*.retry`, `commands.tabMcpAction.label`, `fileExplorer.network.forgotPassword`)",
     "sources": "AP-TW (53), AP-HK (58), live TW (75), live HK (71)"
   },
-  "loading": {
+  "load": {
     "avoid": [
       {
         "form": "載入中",
@@ -1937,7 +1937,7 @@
     "forms": "Move to Trash → 移至垃圾桶; the verbName phrase → 移到垃圾桶",
     "sources": "AP-HK, THU, DOL (AP-TW mixes 丟到垃圾桶 and 移至垃圾桶)"
   },
-  "multi-rename": {
+  "batch-rename": {
     "accept": ["大量重新命名"],
     "chosen": "多檔重新命名",
     "confidence": "high",
@@ -2821,7 +2821,7 @@
     "forms": "an image's own dimensions → 影像大小; folder sizes → 資料夾大小",
     "sources": "AP-TW = AP-HK = AP-CN, MS"
   },
-  "size-on-disk": {
+  "on-disk-size": {
     "avoid": [
       {
         "form": "佔用磁碟",
@@ -3359,5 +3359,16 @@
     "confidence": "high",
     "forms": "zoom in / out → 放大 / 縮小; zoom to fit → 縮放到適當大小; actual size → 實際大小",
     "sources": "AP Preview (TW = HK), MS"
+  },
+  "technical-details": {
+    "chosen": "技術詳細資訊",
+    "confidence": "high",
+    "forms": "errors point at this exact label",
+    "sources": "AP-TW Problem Reporter (Show Details → 顯示詳細資訊)"
+  },
+  "android-tools": {
+    "chosen": "Android 工具",
+    "confidence": "high",
+    "sources": "Google zh-TW docs (developer.android.com/studio/intro/update?hl=zh-tw)"
   }
 }

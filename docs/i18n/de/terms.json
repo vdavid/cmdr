@@ -11,11 +11,7 @@
     "sources": "MS terminology (absolute path → absoluter Pfad); catalog"
   },
   "access": {
-    "accept": [
-      "zugreif",
-      "zugänglich",
-      "greif"
-    ],
+    "accept": ["zugreif", "zugänglich", "greif"],
     "chosen": "Zugriff",
     "confidence": "high",
     "exceptions": {
@@ -26,9 +22,7 @@
     "sources": "macOS TCC (… möchte Zugriff auf Dateien auf einem Wechselmedium); MS terminology"
   },
   "account": {
-    "accept": [
-      "Konten"
-    ],
+    "accept": ["Konten"],
     "avoid": [
       {
         "form": "Account",
@@ -44,18 +38,13 @@
     "sources": "catalog (errors.listing.remotePermissionDenied.explanation: das Konto, mit dem du verbunden bist)"
   },
   "activate": {
-    "accept": [
-      "aktiviert",
-      "Aktivierung"
-    ],
+    "accept": ["aktiviert", "Aktivierung"],
     "chosen": "aktivieren",
     "confidence": "high",
     "sources": "macOS, MS terminology"
   },
   "add": {
-    "accept": [
-      "hinzu"
-    ],
+    "accept": ["hinzu"],
     "chosen": "hinzufügen",
     "confidence": "high",
     "exceptions": {
@@ -65,9 +54,7 @@
     "sources": "macOS Finder (Zum Dock hinzufügen 300772.title, Zur Seitenleiste hinzufügen 300790.title, Tags hinzufügen TL34)"
   },
   "advanced": {
-    "accept": [
-      "erweiterten"
-    ],
+    "accept": ["erweiterten"],
     "chosen": "Erweitert",
     "confidence": "high",
     "forms": "the Settings section and the sheet's group → Erweitert; in prose → in den erweiterten Einstellungen",
@@ -87,18 +74,14 @@
     "sources": "MS terminology (provider → Anbieter); catalog (askCmdr.error.notConfigured)"
   },
   "ai-reply": {
-    "accept": [
-      "Antworten"
-    ],
+    "accept": ["Antworten"],
     "chosen": "Antwort",
     "confidence": "high",
     "forms": "a reply that stopped mid-stream → Die Antwort wurde nicht abgeschlossen.",
     "sources": "standard German; catalog (askCmdr.error.unfinishedReply)"
   },
   "ai-tool": {
-    "accept": [
-      "Werkzeuge"
-    ],
+    "accept": ["Werkzeuge"],
     "avoid": [
       {
         "form": "Tool",
@@ -120,13 +103,7 @@
     "sources": "no direct source; picked for approachability"
   },
   "allow": {
-    "accept": [
-      "erlaubt",
-      "erlaubst",
-      "Erlaube",
-      "Erlaubnis",
-      "durfte"
-    ],
+    "accept": ["erlaubt", "erlaubst", "Erlaube", "Erlaubnis", "durfte"],
     "avoid": [
       {
         "form": "zulassen",
@@ -144,21 +121,14 @@
     "sources": "macOS Finder (Allow Anyway → Trotzdem erlauben); AOSP SystemUI de (usb_debugging_allow = Erlauben)"
   },
   "already-exists": {
-    "accept": [
-      "gibt es schon",
-      "bereits",
-      "schon"
-    ],
+    "accept": ["gibt es schon", "bereits", "schon"],
     "chosen": "gibt es bereits",
     "confidence": "high",
     "forms": "existence is the catalog's gibt es idiom (In diesem Ordner gibt es bereits …, Unter „{path}“ gibt es bereits etwas.); Diesen Ordner gibt es noch nicht",
     "sources": "catalog (conflictExistsFolder, errors.write.destinationExists.message)"
   },
   "answer": {
-    "accept": [
-      "antwortest",
-      "antworten"
-    ],
+    "accept": ["antwortest", "antworten"],
     "avoid": [
       {
         "form": "Wartet / warten",
@@ -177,9 +147,7 @@
     "sources": "standard German compound, API kept; catalog"
   },
   "app-bundle": {
-    "accept": [
-      "App-Pakete"
-    ],
+    "accept": ["App-Pakete"],
     "avoid": [
       {
         "form": "Bundle",
@@ -223,33 +191,20 @@
     "sources": "macOS Finder (TL_HELP_APPS Gehe zum Ordner „Programme“, sidebar Applications → Programme)"
   },
   "apply": {
-    "accept": [
-      "Anwenden",
-      "angewendet",
-      "wende",
-      "anzuwenden"
-    ],
+    "accept": ["Anwenden", "angewendet", "wende", "anzuwenden"],
     "chosen": "anwenden",
     "confidence": "high",
     "decision": "Der Auswahldialog: Dateien auswählen und abwählen (`selection.*`)",
     "sources": "macOS AppKit (NSFontOptionsPanel 100411.title, NSPreferences 7TY-1Z-cs2.title = Anwenden)"
   },
   "approve": {
-    "accept": [
-      "zugestimmt",
-      "Zustimmung",
-      "stimmst",
-      "genehmig"
-    ],
+    "accept": ["zugestimmt", "Zustimmung", "stimmst", "genehmig"],
     "chosen": "zustimmen",
     "confidence": "high",
     "sources": "catalog (askCmdr.decision.approved, ai.cloudConsent.askCmdr.contentsRule bevor du zustimmst)"
   },
   "archive": {
-    "accept": [
-      "Archive",
-      "Zip"
-    ],
+    "accept": ["Archive", "Zip"],
     "chosen": "Archiv",
     "confidence": "high",
     "decision": "Archive browsing (`settings.archives.*`, `fileExplorer.archiveEnterMenu.*`, `fileExplorer.readOnly.*`, `fileOperations.delete.archiveWarningStrong`)",
@@ -257,10 +212,7 @@
     "sources": "macOS Finder (Zip-Archiv, Komprimiert Objekte in ein Archiv, ist Archiv)"
   },
   "archive-chat": {
-    "accept": [
-      "Archiviert",
-      "Archivierung"
-    ],
+    "accept": ["Archiviert", "Archivierung"],
     "chosen": "archivieren",
     "confidence": "high",
     "decision": "Ask Cmdr (`askCmdr.*`, `settings.askCmdr.*`, `settings.advanced.logLlmCalls.*`, `commands.askCmdrToggle.*`)",
@@ -269,10 +221,7 @@
     "sources": "MS terminology (archive → archivieren, archived → Archiviert)"
   },
   "ask": {
-    "accept": [
-      "fragen",
-      "frag"
-    ],
+    "accept": ["fragen", "frag"],
     "chosen": "Fragen",
     "confidence": "high",
     "exceptions": {
@@ -286,9 +235,7 @@
     "sources": "MS terminology (Ask → Fragen); macOS nachfragen is the confirm-prompt sense"
   },
   "ask-cmdr": {
-    "accept": [
-      "Ask-Cmdr"
-    ],
+    "accept": ["Ask-Cmdr"],
     "chosen": "Ask Cmdr",
     "confidence": "high",
     "forms": "compounds couple through: Ask-Cmdr-Bereich, Ask-Cmdr-Einstellungen, Ask-Cmdr-Chats; the model field → Ask Cmdr-Modell",
@@ -296,31 +243,20 @@
     "sources": "product name; do-not-translate list"
   },
   "attachment": {
-    "accept": [
-      "Anhänge",
-      "anhängen",
-      "angehängt",
-      "hängt",
-      "häng"
-    ],
+    "accept": ["Anhänge", "anhängen", "angehängt", "hängt", "häng"],
     "chosen": "Anhang",
     "confidence": "high",
     "forms": "pl. Anhänge; attach → anhängen, also for attaching an email address to a report (Meine E-Mail-Adresse … anhängen)",
     "sources": "macOS AppKit (RTF mit Anhängen); catalog (common.attachEmail)"
   },
   "attribute": {
-    "accept": [
-      "Attribute",
-      "Metadaten"
-    ],
+    "accept": ["Attribute", "Metadaten"],
     "chosen": "Attribut",
     "confidence": "high",
     "sources": "MS terminology; standard German"
   },
-  "azure-deployment": {
-    "accept": [
-      "Ressource"
-    ],
+  "deployment": {
+    "accept": ["Ressource"],
     "chosen": "Bereitstellung",
     "confidence": "high",
     "forms": "an Azure resource → Ressource",
@@ -337,9 +273,7 @@
     "sources": "macOS (Zurück)"
   },
   "background": {
-    "accept": [
-      "Hintergrund"
-    ],
+    "accept": ["Hintergrund"],
     "avoid": [
       {
         "form": "Hintergrund (bare, on the button)",
@@ -357,10 +291,7 @@
     "sources": "macOS (Synchronisierung im Hintergrund); Total Commander de (Im &Hintergrund laden); Double Commander de (Im Hintergrund ausführen)"
   },
   "badge": {
-    "accept": [
-      "Statussymbole",
-      "Hinweis"
-    ],
+    "accept": ["Statussymbole", "Hinweis"],
     "avoid": [
       {
         "form": "Kennzeichen",
@@ -378,21 +309,14 @@
     "sources": "no direct source; Symbol = icon in German UI"
   },
   "brief-view": {
-    "accept": [
-      "Kompaktansicht",
-      "Kompaktmodus"
-    ],
+    "accept": ["Kompaktansicht", "Kompaktmodus"],
     "chosen": "Kompakt",
     "confidence": "tentative",
     "forms": "view mode Kompakt, command Kompaktansicht, mode Kompaktmodus",
     "sources": "no direct source; Kompakt matches macOS density wording"
   },
   "browse": {
-    "accept": [
-      "durchsieht",
-      "durchgesehen",
-      "durchsieh"
-    ],
+    "accept": ["durchsieht", "durchgesehen", "durchsieh"],
     "avoid": [
       {
         "form": "durchsuchen",
@@ -422,10 +346,7 @@
     "sources": "macOS Finder (ConnectToWindow.strings 48.title Browse → Durchsuchen)"
   },
   "cable": {
-    "accept": [
-      "anschließen",
-      "angeschlossen"
-    ],
+    "accept": ["anschließen", "angeschlossen"],
     "chosen": "Kabel",
     "confidence": "high",
     "decision": "Das Telefon über ADB öffnen: Bereichsmeldungen, Zeilen-Tooltips und der Hinweisstreifen (`adb.*`, `settings.behavior.adbHintDismissed.*`)",
@@ -433,10 +354,7 @@
     "sources": "macOS de Localizable.loctable (Schließe dieses iPad mit einem USB-Kabel an …)"
   },
   "cache": {
-    "accept": [
-      "zwischenspeicher",
-      "zwischengespeichert"
-    ],
+    "accept": ["zwischenspeicher", "zwischengespeichert"],
     "chosen": "Cache",
     "confidence": "high",
     "forms": "noun Cache (Cache-Dauer); verb zwischenspeichern",
@@ -450,13 +368,7 @@
     "sources": "Preview inspector (Kamera), MS (camera → Kamera); the compound follows the catalog's Dateiangaben"
   },
   "cancel": {
-    "accept": [
-      "Abbrechen",
-      "abgebrochen",
-      "Abbruch",
-      "bricht",
-      "brich"
-    ],
+    "accept": ["Abbrechen", "abgebrochen", "Abbruch", "bricht", "brich"],
     "chosen": "abbrechen",
     "confidence": "high",
     "forms": "button Abbrechen; status Abgebrochen; at your request → auf deinen Wunsch abgebrochen",
@@ -464,11 +376,7 @@
     "sources": "macOS (Cancel → Abbrechen)"
   },
   "case-sensitive": {
-    "accept": [
-      "Groß- und Kleinschreibung",
-      "Großbuchstaben",
-      "Kleinbuchstaben"
-    ],
+    "accept": ["Groß- und Kleinschreibung", "Großbuchstaben", "Kleinbuchstaben"],
     "chosen": "Groß-/Kleinschreibung",
     "confidence": "high",
     "forms": "Groß-/Kleinschreibung beachten (macOS shows the negation … ignorieren); aria wraps the label: Beim Abgleich Groß-/Kleinschreibung beachten; tell apart → zwischen Groß- und Kleinschreibung unterscheiden",
@@ -554,12 +462,7 @@
     "sources": "MS terminology (Checkliste for the Planner feature)"
   },
   "choose": {
-    "accept": [
-      "wählen",
-      "Wähle",
-      "ausgewählt",
-      "wähl"
-    ],
+    "accept": ["wählen", "Wähle", "ausgewählt", "wähl"],
     "chosen": "auswählen",
     "confidence": "high",
     "exceptions": {
@@ -569,11 +472,7 @@
     "sources": "macOS Finder (Choose Application… → Programm auswählen …)"
   },
   "clean-up": {
-    "accept": [
-      "räumt",
-      "entfernt",
-      "aufräum"
-    ],
+    "accept": ["räumt", "entfernt", "aufräum"],
     "avoid": [
       {
         "form": "löschen",
@@ -592,10 +491,7 @@
     "sources": "macOS Finder/AppKit (Zwischenablage)"
   },
   "close": {
-    "accept": [
-      "schließ",
-      "geschlossen"
-    ],
+    "accept": ["schließ", "geschlossen"],
     "chosen": "Schließen",
     "confidence": "high",
     "exceptions": {
@@ -637,9 +533,7 @@
     "sources": "catalog"
   },
   "command": {
-    "accept": [
-      "Befehle"
-    ],
+    "accept": ["Befehle"],
     "chosen": "Befehl",
     "confidence": "high",
     "sources": "macOS/MS standard"
@@ -655,13 +549,7 @@
     "sources": "MS terminology"
   },
   "complete": {
-    "accept": [
-      "abschließen",
-      "abgeschlossen",
-      "unvollständig",
-      "abschluss",
-      "abzuschließen"
-    ],
+    "accept": ["abschließen", "abgeschlossen", "unvollständig", "abschluss", "abzuschließen"],
     "avoid": [
       {
         "form": "unvollständig (for unfinished)",
@@ -674,11 +562,7 @@
     "sources": "macOS Finder (Der Vorgang kann nicht abgeschlossen werden., LA33 … beschädigt oder unvollständig ist.)"
   },
   "compress": {
-    "accept": [
-      "komprimiert",
-      "Komprimierung",
-      "Kompression"
-    ],
+    "accept": ["komprimiert", "Komprimierung", "Kompression"],
     "chosen": "komprimieren",
     "confidence": "high",
     "decision": "Archive-password dialog (`fileOperations.archivePassword.*`, `commands.fileCompress.*`, `settings.archives.compressionLevel.*`)",
@@ -692,24 +576,14 @@
     "sources": "macOS Wallet Localizable.loctable (… kompromittiert wurde)"
   },
   "configure": {
-    "accept": [
-      "Konfiguration",
-      "konfiguriert",
-      "eingerichtet",
-      "einricht",
-      "richte"
-    ],
+    "accept": ["Konfiguration", "konfiguriert", "eingerichtet", "einricht", "richte"],
     "chosen": "konfigurieren",
     "confidence": "high",
     "forms": "menu item Konfigurieren… (ellipsis attached); configuration profile → Konfigurationsprofil",
     "sources": "MS terminology (configure → konfigurieren); macOS (Configuration Profile → Konfigurationsprofil)"
   },
   "confirm": {
-    "accept": [
-      "bestätigt",
-      "Bestätigung",
-      "bestätig"
-    ],
+    "accept": ["bestätigt", "Bestätigung", "bestätig"],
     "avoid": [
       {
         "form": "prüfen",
@@ -723,24 +597,14 @@
     "sources": "catalog (fileExplorer.pane.trashUnconfirmedToast, fileOperations.mkdir.timeoutMessage)"
   },
   "conflict": {
-    "accept": [
-      "Konflikte"
-    ],
+    "accept": ["Konflikte"],
     "chosen": "Konflikt",
     "confidence": "high",
     "forms": "Checking for conflicts → Konflikte werden geprüft; comparison rows Bestehend / Neu",
     "sources": "MS terminology (Konflikt)"
   },
   "connect": {
-    "accept": [
-      "Verbindung",
-      "verbund",
-      "verbindest",
-      "verbunden",
-      "verbinde",
-      "anschließ",
-      "schließ"
-    ],
+    "accept": ["Verbindung", "verbund", "verbindest", "verbunden", "verbinde", "anschließ", "schließ"],
     "chosen": "verbinden",
     "confidence": "high",
     "exceptions": {
@@ -752,23 +616,14 @@
     "sources": "macOS Finder (Mit Server verbinden, Verbinden, Serveradresse); NetAuthAgent (CONNECT)"
   },
   "context-menu": {
-    "accept": [
-      "rechten Maustaste",
-      "Rechtsklick"
-    ],
+    "accept": ["rechten Maustaste", "Rechtsklick"],
     "chosen": "Kontextmenü",
     "confidence": "high",
     "forms": "an instruction to right-click → Klicke X mit der rechten Maustaste an; the short noun Rechtsklick only in tooltips",
     "sources": "macOS Finder (Kontextmenü einblenden); catalog (errors.listing.permissionDenied.suggestion)"
   },
   "continue": {
-    "accept": [
-      "fortfahren",
-      "fortsetzen",
-      "fortgesetzt",
-      "ausgeführt",
-      "fort"
-    ],
+    "accept": ["fortfahren", "fortsetzen", "fortgesetzt", "ausgeführt", "fort"],
     "avoid": [
       {
         "form": "Abbrechen (for Keep working)",
@@ -782,23 +637,14 @@
     "sources": "catalog (Weiter umbenennen, Läuft weiter im Hintergrund)"
   },
   "copy": {
-    "accept": [
-      "Kopie",
-      "kopiert"
-    ],
+    "accept": ["Kopie", "kopiert"],
     "chosen": "kopieren",
     "confidence": "high",
     "forms": "button Kopieren; progress Wird kopiert; result {phrase} kopiert; unfinished copy → unvollständige Kopie",
     "sources": "macOS (Copy → Kopieren)"
   },
   "crash-report": {
-    "accept": [
-      "Absturz",
-      "abgestürzt",
-      "abstürz",
-      "unerwartet beendet",
-      "Bericht"
-    ],
+    "accept": ["Absturz", "abgestürzt", "abstürz", "unerwartet beendet", "Bericht"],
     "chosen": "Absturzbericht",
     "confidence": "high",
     "decision": "Absturzdialog: die drei Eröffnungssätze (`crashReporter.dialog.body.ended`/`.keptRunning`/`.unknown`)",
@@ -807,14 +653,7 @@
     "sources": "macOS Problem Reporter (%@ wurde unerwartet beendet.); Apple/MS standard rendering"
   },
   "create": {
-    "accept": [
-      "erstellt",
-      "Erstellung",
-      "angelegt",
-      "anlegen",
-      "legt",
-      "erstell"
-    ],
+    "accept": ["erstellt", "Erstellung", "angelegt", "anlegen", "legt", "erstell"],
     "chosen": "erstellen",
     "confidence": "high",
     "forms": "progress arms Ordner wird erstellt / Datei wird erstellt; active reassurance Cmdr erstellt ihn",
@@ -832,10 +671,7 @@
     "sources": "MS terminology (Anmeldeinfos), catalog"
   },
   "current-folder": {
-    "accept": [
-      "aktuellen Ordner",
-      "aktueller Ordner"
-    ],
+    "accept": ["aktuellen Ordner", "aktueller Ordner"],
     "chosen": "aktuelle Ordner",
     "confidence": "high",
     "forms": "der aktuelle Ordner, the folder the pane shows (not the one under the cursor)",
@@ -848,18 +684,14 @@
     "sources": "standard German UI"
   },
   "custom": {
-    "accept": [
-      "eigen"
-    ],
+    "accept": ["eigen"],
     "chosen": "Eigene",
     "confidence": "high",
     "forms": "Eigenes …, Eigene Zeitüberschreitung, eigene Endpunkte",
     "sources": "macOS (Eigene … pattern)"
   },
   "cut": {
-    "accept": [
-      "ausgeschnitten"
-    ],
+    "accept": ["ausgeschnitten"],
     "chosen": "Ausschneiden",
     "confidence": "high",
     "sources": "macOS Finder/AppKit (Ausschneiden)"
@@ -871,10 +703,7 @@
     "sources": "macOS, MS terminology"
   },
   "delete": {
-    "accept": [
-      "gelöscht",
-      "Lösch"
-    ],
+    "accept": ["gelöscht", "Lösch"],
     "chosen": "löschen",
     "confidence": "high",
     "exceptions": {
@@ -884,9 +713,7 @@
     "sources": "macOS (Delete → Löschen, Erase → Löschen)"
   },
   "delete-permanently": {
-    "accept": [
-      "dauerhaft"
-    ],
+    "accept": ["dauerhaft"],
     "avoid": [
       {
         "form": "dauerhaft löschen / dauerhaft gelöscht",
@@ -899,11 +726,7 @@
     "sources": "catalog (menu.file.deletePermanently, commands.fileDeletePermanently.label, fileExplorer.functionKeyBar.deletePermanentlyAction)"
   },
   "deny": {
-    "accept": [
-      "abgelehnt",
-      "ablehn",
-      "lehnt"
-    ],
+    "accept": ["abgelehnt", "ablehn", "lehnt"],
     "avoid": [
       {
         "form": "verweigern",
@@ -921,12 +744,7 @@
     "sources": "macOS Finder"
   },
   "deselect": {
-    "accept": [
-      "abgewählt",
-      "Auswahl aufheben",
-      "Auswahl",
-      "oder ab"
-    ],
+    "accept": ["abgewählt", "Auswahl aufheben", "Auswahl", "oder ab"],
     "chosen": "abwählen",
     "confidence": "high",
     "decision": "Der Auswahldialog: Dateien auswählen und abwählen (`selection.*`)",
@@ -941,9 +759,7 @@
     "sources": "MS terminology (destination → Ziel); GNOME Nautilus (Das Ziel ist kein Ordner.); Total Commander de (NACH:)"
   },
   "device": {
-    "accept": [
-      "Geräte"
-    ],
+    "accept": ["Geräte"],
     "chosen": "Gerät",
     "confidence": "high",
     "forms": "USB device → USB-Gerät; the device holding {path} → das Gerät mit {path}",
@@ -951,23 +767,14 @@
     "sources": "standard German; catalog"
   },
   "disable": {
-    "accept": [
-      "deaktiviert",
-      "ausschalten",
-      "ausgeschaltet",
-      "aus",
-      "deaktivier"
-    ],
+    "accept": ["deaktiviert", "ausschalten", "ausgeschaltet", "aus", "deaktivier"],
     "chosen": "deaktivieren",
     "confidence": "high",
     "forms": "X is off → X ist deaktiviert; switches in prose → ein-/ausschalten",
     "sources": "macOS Finder, MS terminology"
   },
   "disconnect": {
-    "accept": [
-      "getrennt",
-      "trenne"
-    ],
+    "accept": ["getrennt", "trenne"],
     "avoid": [
       {
         "form": "aushängen",
@@ -1002,11 +809,7 @@
     "sources": "standard German compound; macOS says Speicherplatz for free space"
   },
   "dismiss": {
-    "accept": [
-      "schließ",
-      "Ausblenden",
-      "ausgeblendet"
-    ],
+    "accept": ["schließ", "Ausblenden", "ausgeblendet"],
     "avoid": [
       {
         "form": "Entfernen",
@@ -1027,9 +830,7 @@
     "sources": "macOS DockMenus (KEEP_IN_DOCK Im Dock behalten, REMOVE_FROM_DOCK Aus dem Dock entfernen); Finder 300772.title"
   },
   "documents": {
-    "accept": [
-      "Dokumente"
-    ],
+    "accept": ["Dokumente"],
     "chosen": "Dokument",
     "confidence": "high",
     "exceptions": {
@@ -1039,55 +840,34 @@
     "sources": "macOS Finder (TL6/GROUP_DOCUMENTS Dokumente; RTF-Dokument)"
   },
   "done": {
-    "accept": [
-      "erledigt",
-      "fertig"
-    ],
+    "accept": ["erledigt", "fertig"],
     "chosen": "Fertig",
     "confidence": "high",
     "sources": "catalog (queue.row.status done → Fertig)"
   },
   "double-click": {
-    "accept": [
-      "doppelklick"
-    ],
+    "accept": ["doppelklick"],
     "chosen": "Doppelklick",
     "confidence": "high",
     "forms": "noun Doppelklick; verb doppelklicken, du-imperative Doppelklicke auf …",
     "sources": "Double Commander (… durch Doppelklick auf den leeren Teil der Dateiansicht …); macOS (Doppelklick)"
   },
   "download": {
-    "accept": [
-      "heruntergeladen",
-      "Download",
-      "geladen",
-      "laden",
-      "lädt",
-      "lade",
-      "herunter"
-    ],
+    "accept": ["heruntergeladen", "Download", "geladen", "laden", "lädt", "lade", "herunter"],
     "chosen": "herunterladen",
     "confidence": "high",
     "forms": "noun Download (Zum neuesten Download gehen); a model or update → herunterladen; a file that finished → {fileName} geladen",
     "sources": "MS/macOS common usage; catalog (clip.download Modell herunterladen)"
   },
   "drag": {
-    "accept": [
-      "Zieh",
-      "gezogen",
-      "ablegen"
-    ],
+    "accept": ["Zieh", "gezogen", "ablegen"],
     "chosen": "ziehen",
     "confidence": "high",
     "forms": "drag an icon → ziehen; drop to attach → Zum Anhängen ablegen",
     "sources": "AppKit de (Ziehe deine Favoriten … in die Touch Bar); SystemSettings (Im Dock ablegen)"
   },
   "drive": {
-    "accept": [
-      "Laufwerke",
-      "Festplatte",
-      "Datenträger"
-    ],
+    "accept": ["Laufwerke", "Festplatte", "Datenträger"],
     "chosen": "Laufwerk",
     "confidence": "high",
     "exceptions": {
@@ -1144,19 +924,14 @@
     "sources": "MS terminology (drive → Laufwerk)"
   },
   "duplicate": {
-    "accept": [
-      "dupliziert"
-    ],
+    "accept": ["dupliziert"],
     "chosen": "Duplizieren",
     "confidence": "high",
     "decision": "Duplizieren: der Befehl, der im selben Ordner kopiert (`commands.fileDuplicate.*`)",
     "sources": "macOS Finder (Ablage > Duplizieren N154, Dupliziert Objekte an ihrem aktuellen Ort), verified 2026-08-19"
   },
   "edit": {
-    "accept": [
-      "bearbeitet",
-      "Bearbeitung"
-    ],
+    "accept": ["bearbeitet", "Bearbeitung"],
     "chosen": "bearbeiten",
     "confidence": "high",
     "exceptions": {
@@ -1166,14 +941,7 @@
     "sources": "standard German + MS terminology"
   },
   "eject": {
-    "accept": [
-      "Auswerfen",
-      "ausgeworfen",
-      "Wirf",
-      "wirft",
-      "Wechselmedi",
-      "werf"
-    ],
+    "accept": ["Auswerfen", "ausgeworfen", "Wirf", "wirft", "Wechselmedi", "werf"],
     "chosen": "auswerfen",
     "confidence": "high",
     "decision": "Auswerfen und Trennen: die neun Absagen (`errors.eject.*`)",
@@ -1181,9 +949,7 @@
     "sources": "macOS Finder (Auswerfen), AppKit (NSNavEjectButton)"
   },
   "email": {
-    "accept": [
-      "schreib uns"
-    ],
+    "accept": ["schreib uns"],
     "avoid": [
       {
         "form": "du@beispiel.de",
@@ -1196,14 +962,7 @@
     "sources": "macOS Mail, MS terminology"
   },
   "enable": {
-    "accept": [
-      "aktiviert",
-      "einschalt",
-      "eingeschaltet",
-      "Schalte",
-      "anlassen",
-      "aktivier"
-    ],
+    "accept": ["aktiviert", "einschalt", "eingeschaltet", "Schalte", "anlassen", "aktivier"],
     "chosen": "aktivieren",
     "confidence": "high",
     "exceptions": {
@@ -1214,34 +973,26 @@
     "sources": "macOS Finder (… aktivieren), MS terminology"
   },
   "encoding": {
-    "accept": [
-      "Zeichencodierung"
-    ],
+    "accept": ["Zeichencodierung"],
     "chosen": "Codierung",
     "confidence": "high",
     "forms": "detected → erkannt",
     "sources": "MS terminology (Codierung)"
   },
   "encrypted": {
-    "accept": [
-      "Verschlüsselung"
-    ],
+    "accept": ["Verschlüsselung"],
     "chosen": "verschlüsselt",
     "confidence": "high",
     "sources": "macOS, MS terminology"
   },
   "endpoint": {
-    "accept": [
-      "Endpunkte"
-    ],
+    "accept": ["Endpunkte"],
     "chosen": "Endpunkt",
     "confidence": "high",
     "sources": "MS terminology (GERMAN.tbx, 4 of 6 senses)"
   },
   "enter-key": {
-    "accept": [
-      "Enter"
-    ],
+    "accept": ["Enter"],
     "avoid": [
       {
         "form": "Return",
@@ -1254,17 +1005,13 @@
     "sources": "catalog (search.json, viewer.json, search.runHint)"
   },
   "entry": {
-    "accept": [
-      "Einträge"
-    ],
+    "accept": ["Einträge"],
     "chosen": "Eintrag",
     "confidence": "high",
     "sources": "MS terminology (Eintrag)"
   },
   "error-report": {
-    "accept": [
-      "Bericht"
-    ],
+    "accept": ["Bericht"],
     "chosen": "Fehlerbericht",
     "confidence": "high",
     "decision": "Fehlerbericht nachträglich ergänzen: der Notiz-Dialog (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)",
@@ -1273,10 +1020,7 @@
     "sources": "macOS/MS standard (Apple Fehlerbericht)"
   },
   "escape-key": {
-    "accept": [
-      "esc",
-      "Escape"
-    ],
+    "accept": ["esc", "Escape"],
     "chosen": "esc-Taste",
     "confidence": "high",
     "decision": "Vollbildmodus und esc-Taste (`main.escapeFullScreenHint.*`, `settings.advanced.exitFullScreenOnEscape*`)",
@@ -1284,9 +1028,7 @@
     "sources": "macOS AppKit FunctionKeyNames (Escape → esc-Taste)"
   },
   "extension": {
-    "accept": [
-      "Erw."
-    ],
+    "accept": ["Erw."],
     "chosen": "Endung",
     "confidence": "high",
     "exceptions": {
@@ -1299,9 +1041,7 @@
     "sources": "standard German; catalog (Das Ändern der Dateiendung ist nicht erlaubt)"
   },
   "extract": {
-    "accept": [
-      "entpackt"
-    ],
+    "accept": ["entpackt"],
     "avoid": [
       {
         "form": "extrahieren",
@@ -1348,9 +1088,7 @@
     "sources": "style guide voice rule; catalog"
   },
   "favorites": {
-    "accept": [
-      "Favorit"
-    ],
+    "accept": ["Favorit"],
     "avoid": [
       {
         "form": "Lesezeichen",
@@ -1369,10 +1107,7 @@
     "sources": "macOS, MS (loanword standard in German UI)"
   },
   "fetch": {
-    "accept": [
-      "geladen",
-      "Laden"
-    ],
+    "accept": ["geladen", "Laden"],
     "avoid": [
       {
         "form": "abrufen",
@@ -1389,9 +1124,7 @@
     "sources": "macOS Finder IN_MD1 (Fetching… → Laden …); System Settings (Fetching Menu Item)"
   },
   "file": {
-    "accept": [
-      "Dateien"
-    ],
+    "accept": ["Dateien"],
     "chosen": "Datei",
     "confidence": "high",
     "exceptions": {
@@ -1409,19 +1142,13 @@
     "sources": "no settled German UI term; technical context only"
   },
   "file-list": {
-    "accept": [
-      "Liste"
-    ],
+    "accept": ["Liste"],
     "chosen": "Dateiliste",
     "confidence": "tentative",
     "sources": "no direct source; macOS calls list view Listendarstellung"
   },
   "file-operations": {
-    "accept": [
-      "Dateioperationen",
-      "Vorgänge",
-      "Vorgang"
-    ],
+    "accept": ["Dateioperationen", "Vorgänge", "Vorgang"],
     "chosen": "Dateivorgänge",
     "confidence": "high",
     "decision": "Operation log (`operationLog.*`, `commands.logOperationLog.*`, `settings.operationLog.*`)",
@@ -1429,12 +1156,7 @@
     "sources": "catalog (settings.operationLog.intro Cmdr protokolliert deine Dateivorgänge)"
   },
   "file-system": {
-    "accept": [
-      "Dateisysteme",
-      "FAT32",
-      "exFAT",
-      "APFS"
-    ],
+    "accept": ["Dateisysteme", "FAT32", "exFAT", "APFS"],
     "chosen": "Dateisystem",
     "confidence": "high",
     "forms": "file system watching → Dateisystemüberwachung; format names stay verbatim (FAT32, exFAT)",
@@ -1453,56 +1175,41 @@
     "sources": "ActionKit (The host key's fingerprint is %@. → Der Fingerabdruck des Hostschlüssels ist %@.)"
   },
   "folder": {
-    "accept": [
-      "Verzeichnis"
-    ],
+    "accept": ["Verzeichnis"],
     "chosen": "Ordner",
     "confidence": "high",
     "forms": "Ordner is invariant in the plural (dative Ordnern after a preposition); directory → Verzeichnis only in the technical sense; the tight DIR status-bar slot → ORD",
     "sources": "macOS Finder (Der Ordner konnte nicht erstellt werden.), MS terminology"
   },
   "force-quit": {
-    "accept": [
-      "sofort beenden"
-    ],
+    "accept": ["sofort beenden"],
     "chosen": "Sofort beenden",
     "confidence": "high",
     "sources": "macOS AppKit (Force Quit %@ → %@ sofort beenden)"
   },
   "forget": {
-    "accept": [
-      "Vergiss"
-    ],
+    "accept": ["Vergiss"],
     "chosen": "vergessen",
     "confidence": "high",
     "forms": "Forget server → Server vergessen; Forget saved password → Gespeichertes Passwort vergessen; dialog titles byte-identical to the menu items",
     "sources": "catalog (fileExplorer.network.share.forgetPassword, menu.network.forgetServer)"
   },
   "format": {
-    "accept": [
-      "formatiert",
-      "Formate"
-    ],
+    "accept": ["formatiert", "Formate"],
     "chosen": "Format",
     "confidence": "high",
     "forms": "formatted as FAT32 → mit FAT32 formatiert",
     "sources": "macOS de (Format:); MS terminology (format → Format)"
   },
   "free-space": {
-    "accept": [
-      "Platz",
-      "freier Speicher",
-      "Speicher"
-    ],
+    "accept": ["Platz", "freier Speicher", "Speicher"],
     "chosen": "Speicherplatz",
     "confidence": "high",
     "forms": "Low disk space → Wenig Speicherplatz; running low → der Speicherplatz wird knapp; out of space → kein Platz mehr; a one-line summary that must not wrap → Platz",
     "sources": "macOS Finder (AXBADGE10/NE88.10 Kein Platz mehr; … da nicht genügend freier Platz zur Verfügung steht)"
   },
   "full-disk-access": {
-    "accept": [
-      "Festplattenzugriff"
-    ],
+    "accept": ["Festplattenzugriff"],
     "avoid": [
       {
         "form": "Vollständiger Festplattenzugriff (as the pane name)",
@@ -1522,19 +1229,14 @@
     "sources": "macOS AppKit MenuCommands (Enter Full Screen → Vollbildmodus); Finder MenuBar 300944"
   },
   "full-view": {
-    "accept": [
-      "Vollansicht"
-    ],
+    "accept": ["Vollansicht"],
     "chosen": "Voll",
     "confidence": "tentative",
     "forms": "view mode Voll, command Vollansicht",
     "sources": "no direct source; pairs with Kompakt"
   },
   "function-key-bar": {
-    "accept": [
-      "F-Tasten",
-      "Funktionstasten"
-    ],
+    "accept": ["F-Tasten", "Funktionstasten"],
     "chosen": "Funktionstastenleiste",
     "confidence": "high",
     "sources": "catalog (settings.appearance.showFunctionKeyBar.label)"
@@ -1544,14 +1246,10 @@
     "confidence": "high",
     "sources": "macOS Finder („Informationen“)"
   },
-  "git-working-tree": {
-    "accept": [
-      "Worktree",
-      "Arbeitsverzeichnis"
-    ],
+  "working-tree": {
     "chosen": "Arbeitsbaum",
     "confidence": "high",
-    "forms": "working tree → Arbeitsbaum; a linked worktree → Worktree (kept); working directory → Arbeitsverzeichnis",
+    "forms": "working tree → Arbeitsbaum; a linked worktree is its own concept (worktree, kept English)",
     "sources": "German git docs (working tree → Arbeitsbaum)"
   },
   "github-star": {
@@ -1563,12 +1261,7 @@
     "sources": "GitHub docs de (Klicke … auf **Stern**.), retrieved 2026-09-09"
   },
   "global": {
-    "accept": [
-      "globale",
-      "in der App",
-      "aus jeder App",
-      "systemweit"
-    ],
+    "accept": ["globale", "in der App", "aus jeder App", "systemweit"],
     "chosen": "global",
     "confidence": "high",
     "forms": "global shortcut → globaler Kurzbefehl; in-app → in der App; from any app → aus jeder App",
@@ -1602,18 +1295,13 @@
     "sources": "macOS de (Got It → Alles klar), verified on macOS 26.6.2, 2026-08-30"
   },
   "guest": {
-    "accept": [
-      "Gäste",
-      "Gastzugriff"
-    ],
+    "accept": ["Gäste", "Gastzugriff"],
     "chosen": "Gast",
     "confidence": "high",
     "sources": "macOS (Gast); NetAuthAgent (GUEST, EINFO_NO_ACCESS_GUEST)"
   },
-  "hardlink": {
-    "accept": [
-      "Hardlinks"
-    ],
+  "hard-link": {
+    "accept": ["Hardlinks"],
     "avoid": [
       {
         "form": "fester Link",
@@ -1626,9 +1314,7 @@
     "sources": "common German dev usage"
   },
   "hidden": {
-    "accept": [
-      "Verborgene"
-    ],
+    "accept": ["Verborgene"],
     "avoid": [
       {
         "form": "versteckt",
@@ -1656,11 +1342,7 @@
     "sources": "standard German; catalog (settings.listing.showHiddenFiles.description)"
   },
   "hide": {
-    "accept": [
-      "ausgeblendet",
-      "Ausblenden",
-      "blendet"
-    ],
+    "accept": ["ausgeblendet", "Ausblenden", "blendet"],
     "avoid": [
       {
         "form": "verborgen",
@@ -1681,9 +1363,7 @@
     "sources": "catalog"
   },
   "history": {
-    "accept": [
-      "Historie"
-    ],
+    "accept": ["Historie"],
     "chosen": "Verlauf",
     "confidence": "high",
     "exceptions": {
@@ -1692,28 +1372,20 @@
     "sources": "macOS (Verlauf); catalog (settings.operationLog.intro)"
   },
   "home-folder": {
-    "accept": [
-      "persönlicher Ordner",
-      "Persönlicher Ordner",
-      "Benutzerordner"
-    ],
+    "accept": ["persönlicher Ordner", "Persönlicher Ordner", "Benutzerordner"],
     "chosen": "persönlichen Ordner",
     "confidence": "high",
     "forms": "prose and palette → persönlicher Ordner (Zum persönlichen Ordner gehen); the native Go > Home menu item → Benutzerordner (Finder)",
     "sources": "macOS (persönlicher Ordner; Finder Go > Home → Benutzerordner)"
   },
   "host": {
-    "accept": [
-      "Hosts"
-    ],
+    "accept": ["Hosts"],
     "chosen": "Host",
     "confidence": "high",
     "sources": "MS terminology (Host, masc.)"
   },
   "host-key": {
-    "accept": [
-      "Schlüssel"
-    ],
+    "accept": ["Schlüssel"],
     "avoid": [
       {
         "form": "{host}s Schlüssel",
@@ -1727,14 +1399,7 @@
     "sources": "ActionKit (Der Fingerabdruck des Hostschlüssels ist %@.)"
   },
   "hour": {
-    "accept": [
-      "Stunden",
-      "Minute",
-      "Sekunde",
-      "Std.",
-      "Min.",
-      " s"
-    ],
+    "accept": ["Stunden", "Minute", "Sekunde", "Std.", "Min.", " s"],
     "chosen": "Stunde",
     "confidence": "high",
     "decision": "Indexing run-kind headers + hour-scale ETA (`indexing.run.*`, `indexing.eta.*`, `indexing.enrich.queued`, `settings.mediaIndex.importanceThreshold.waitingForDriveIndex`)",
@@ -1752,9 +1417,7 @@
     "sources": "catalog (indexing.enrich.pausedIdle, fileExplorer.mtp.deviceBusy)"
   },
   "image": {
-    "accept": [
-      "Bilder"
-    ],
+    "accept": ["Bilder"],
     "chosen": "Bild",
     "confidence": "high",
     "decision": "Image-content indexing on network drives (`settings.mediaIndex.networkVolumes.*`, `search.imageResults.networkOff`, `search.imageResults.paused`)",
@@ -1762,14 +1425,7 @@
     "sources": "catalog (settings.section.imageIndexing)"
   },
   "image-search": {
-    "accept": [
-      "per Beschreibung",
-      "Semantische Suche",
-      "Stichwörtern",
-      "Tags",
-      "Fotosuche",
-      "suche"
-    ],
+    "accept": ["per Beschreibung", "Semantische Suche", "Stichwörtern", "Tags", "Fotosuche", "suche"],
     "avoid": [
       {
         "form": "Beschreibungssuche",
@@ -1783,9 +1439,7 @@
     "sources": "catalog (clip.ready suche deine Fotos per Beschreibung)"
   },
   "importance": {
-    "accept": [
-      "wichtig"
-    ],
+    "accept": ["wichtig"],
     "avoid": [
       {
         "form": "Ordner-Wichtigkeit",
@@ -1798,13 +1452,7 @@
     "sources": "catalog (askCmdr.tool.folderImportance.*)"
   },
   "in-use": {
-    "accept": [
-      "verwendet",
-      "in Benutzung",
-      "belegt",
-      "nutzt",
-      "verwende"
-    ],
+    "accept": ["verwendet", "in Benutzung", "belegt", "nutzt", "verwende"],
     "avoid": [
       {
         "form": "gesperrt",
@@ -1818,11 +1466,7 @@
     "sources": "macOS Finder (NE66 Das Volume ist gerade in Verwendung …, NE31)"
   },
   "index": {
-    "accept": [
-      "Index",
-      "Indizierung",
-      "indiziert"
-    ],
+    "accept": ["Index", "Indizierung", "indiziert"],
     "avoid": [
       {
         "form": "indexieren",
@@ -1846,9 +1490,7 @@
     "sources": "macOS (Eingabequelle)"
   },
   "item": {
-    "accept": [
-      "Objekte"
-    ],
+    "accept": ["Objekte"],
     "avoid": [
       {
         "form": "Element",
@@ -1861,28 +1503,20 @@
     "sources": "macOS Finder (Ausgewählte Objekte, Objekte komprimieren; PE82)"
   },
   "keep": {
-    "accept": [
-      "behält",
-      "gelassen",
-      "bleib"
-    ],
+    "accept": ["behält", "gelassen", "bleib"],
     "chosen": "behalten",
     "confidence": "high",
     "forms": "Keep them (safe answer) → Dateien behalten (with the noun, standalone Behalten would be ambiguous); kept its name → behält seinen Namen",
     "sources": "macOS de (Behalten, Original behalten, Beide Dateien behalten)"
   },
-  "key-combo": {
-    "accept": [
-      "Tasten"
-    ],
+  "key-combination": {
+    "accept": ["Tasten"],
     "chosen": "Kombination",
     "confidence": "high",
     "sources": "standard German, short for Tastenkombination"
   },
   "key-file": {
-    "accept": [
-      "Passphrase"
-    ],
+    "accept": ["Passphrase"],
     "chosen": "Schlüsseldatei",
     "confidence": "tentative",
     "decision": "Das Verbindungsblatt, der Hostschlüssel und die zwei Vorschauzeilen (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`, `goToPath.dialog.opensServer`/`.addsServer`, `commands.serversConnect.label`)",
@@ -1917,10 +1551,7 @@
     "sources": "macOS (Not Now → Später)"
   },
   "leave-alone": {
-    "accept": [
-      "gelassen",
-      "unverändert"
-    ],
+    "accept": ["gelassen", "unverändert"],
     "chosen": "unverändert gelassen",
     "confidence": "high",
     "decision": "Der Toast nach einem abgebrochenen Vorgang: was die Rücknahme geschafft hat (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`)",
@@ -1928,11 +1559,7 @@
     "sources": "macOS AppKit Document.json (… die Datei unverändert lassen …)"
   },
   "license": {
-    "accept": [
-      "Gewerblich",
-      "unbefristet",
-      "Lizenzen"
-    ],
+    "accept": ["Gewerblich", "unbefristet", "Lizenzen"],
     "chosen": "Lizenz",
     "confidence": "high",
     "forms": "license type → Lizenztyp; tiers: Personal → Privat (Privat (kostenlos), Privatlizenz), Commercial → Gewerblich (Gewerbliche Lizenz, Gewerbliches Abo), perpetual → unbefristet; private use → private Nutzung",
@@ -1952,24 +1579,14 @@
     "sources": "Duden (das Like, liken)"
   },
   "limit": {
-    "accept": [
-      "begrenz",
-      "Begrenzung",
-      "Limits",
-      "Grenze",
-      "Einschränkung",
-      "Beschränkung",
-      "Budget"
-    ],
+    "accept": ["begrenz", "Begrenzung", "Limits", "Grenze", "Einschränkung", "Beschränkung", "Budget"],
     "chosen": "Limit",
     "confidence": "high",
     "forms": "noun Limit (Tab-Limit, kein Limit, Limit erreicht); verb limit to → begrenzen auf; a file-system size cap → Begrenzung (keine solche Begrenzung)",
     "sources": "catalog; KDE Dolphin (No limit → Keine Begrenzung) for the file-system cap"
   },
   "line": {
-    "accept": [
-      "Zeilen"
-    ],
+    "accept": ["Zeilen"],
     "avoid": [
       {
         "form": "Linie",
@@ -1985,12 +1602,7 @@
     "sources": "MS terminology (Zeilennummer); macOS (Zeile)"
   },
   "local-network": {
-    "accept": [
-      "Lokales Netzwerk",
-      "in der Nähe",
-      "Netzwerksuche",
-      "Suche im"
-    ],
+    "accept": ["Lokales Netzwerk", "in der Nähe", "Netzwerksuche", "Suche im"],
     "avoid": [
       {
         "form": "Zugriff auf das lokale Netzwerk",
@@ -2006,12 +1618,7 @@
     "sources": "SecurityPrivacyExtension.appex LOCAL_NETWORK (live macOS 26.6.2, 2026-09-09); Find My (… wurden in der Nähe gefunden)"
   },
   "location": {
-    "accept": [
-      "Orte",
-      "Speicherort",
-      "Aufnahmeort",
-      "Standort"
-    ],
+    "accept": ["Orte", "Speicherort", "Aufnahmeort", "Standort"],
     "avoid": [
       {
         "form": "Platz (for a place)",
@@ -2024,9 +1631,7 @@
     "sources": "macOS Finder (FI12 Dieser Ort ist schreibgeschützt., SD5/FI9 Orte, BU39 Speicherort wählen …)"
   },
   "locked": {
-    "accept": [
-      "Schutz"
-    ],
+    "accept": ["Schutz"],
     "avoid": [
       {
         "form": "gesperrt",
@@ -2039,11 +1644,7 @@
     "sources": "macOS Finder (Get Info checkbox Geschützt; Das Objekt ist … geschützt)"
   },
   "log": {
-    "accept": [
-      "Protokolle",
-      "protokolliert",
-      "Protokollierung"
-    ],
+    "accept": ["Protokolle", "protokolliert", "Protokollierung"],
     "chosen": "Protokoll",
     "confidence": "high",
     "exceptions": {
@@ -2057,11 +1658,7 @@
     "sources": "macOS/MS (Protokoll)"
   },
   "look-inside": {
-    "accept": [
-      "durchgesehen",
-      "durchsehen",
-      "hinein"
-    ],
+    "accept": ["durchgesehen", "durchsehen", "hinein"],
     "avoid": [
       {
         "form": "Dateiinhalte werden gelesen",
@@ -2095,9 +1692,7 @@
     "sources": "macOS de app names; macOS pile (Spotlight/Mission Control/Spaces kept), 2026-06-21"
   },
   "mailing-list": {
-    "accept": [
-      "Anmeldeserver"
-    ],
+    "accept": ["Anmeldeserver"],
     "avoid": [
       {
         "form": "Verteiler",
@@ -2111,26 +1706,19 @@
     "sources": "standard German"
   },
   "memory": {
-    "accept": [
-      "RAM",
-      "Notiz"
-    ],
+    "accept": ["RAM", "Notiz"],
     "chosen": "Speicher",
     "confidence": "high",
     "sources": "MS terminology (memory → Speicher)"
   },
   "merge": {
-    "accept": [
-      "zusammengeführt"
-    ],
+    "accept": ["zusammengeführt"],
     "chosen": "zusammenführen",
     "confidence": "high",
     "sources": "GNOME Nautilus (_Zusammenführen), MS terminology"
   },
   "model": {
-    "accept": [
-      "Modelle"
-    ],
+    "accept": ["Modelle"],
     "chosen": "Modell",
     "confidence": "high",
     "exceptions": {
@@ -2140,23 +1728,13 @@
     "sources": "MS terminology"
   },
   "modifier-key": {
-    "accept": [
-      "Sondertasten"
-    ],
+    "accept": ["Sondertasten"],
     "chosen": "Sondertaste",
     "confidence": "high",
     "sources": "macOS/MS standard German for ⌘⌥⌃⇧"
   },
   "mount": {
-    "accept": [
-      "eingebunden",
-      "bindet",
-      "binde",
-      "aushängen",
-      "ausgehängt",
-      "Mount",
-      "Einbindung"
-    ],
+    "accept": ["eingebunden", "bindet", "binde", "aushängen", "ausgehängt", "Mount", "Einbindung"],
     "avoid": [
       {
         "form": "gemountet",
@@ -2172,12 +1750,7 @@
     "sources": "macOS Finder (eingebunden/einbinden); MS (Einbinden)"
   },
   "move": {
-    "accept": [
-      "bewegt",
-      "Bewegung",
-      "Bewege",
-      "beweg"
-    ],
+    "accept": ["bewegt", "Bewegung", "Bewege", "beweg"],
     "avoid": [
       {
         "form": "verschieben",
@@ -2196,10 +1769,7 @@
     "sources": "macOS Finder (Move → Bewegen, Copy and Move Items → Objekte kopieren und bewegen)"
   },
   "move-to-trash": {
-    "accept": [
-      "in den Papierkorb bewegt",
-      "in den Papierkorb"
-    ],
+    "accept": ["in den Papierkorb bewegt", "in den Papierkorb"],
     "avoid": [
       {
         "form": "in den Papierkorb legen",
@@ -2212,11 +1782,7 @@
     "sources": "macOS Finder (Trash ${entities} → ${entities} in den Papierkorb bewegen)"
   },
   "name": {
-    "accept": [
-      "Namen",
-      "Dateiname",
-      "Ordnername"
-    ],
+    "accept": ["Namen", "Dateiname", "Ordnername"],
     "chosen": "Name",
     "confidence": "high",
     "exceptions": {
@@ -2230,10 +1796,7 @@
     "sources": "catalog (errors.listing.hostDown.suggestion)"
   },
   "native": {
-    "accept": [
-      "von macOS",
-      "eigene"
-    ],
+    "accept": ["von macOS", "eigene"],
     "avoid": [
       {
         "form": "nativ",
@@ -2247,69 +1810,40 @@
     "sources": "catalog (fileExplorer.pane.directConnectionTooSlowToast, fileOperations.transferDialog.smbNativeNote)"
   },
   "navigate": {
-    "accept": [
-      "springen",
-      "wechseln",
-      "gehen",
-      "Navigation",
-      "führt",
-      "navigier",
-      "spring"
-    ],
+    "accept": ["springen", "wechseln", "gehen", "Navigation", "führt", "navigier", "spring"],
     "chosen": "navigieren",
     "confidence": "high",
     "forms": "navigate to → zu … navigieren (breadcrumb tooltip zu {path} navigieren); jump to → springen zu / Zur Datei springen; go up a folder → in den übergeordneten Ordner wechseln (Double Commander's wording)",
     "sources": "macOS Finder (Navigiert zu einem Ort …), verified 2026-06-26; Double Commander de"
   },
   "network-drive": {
-    "accept": [
-      "Netzlaufwerke",
-      "Netzwerk-Volume",
-      "Netzwerkvolume"
-    ],
+    "accept": ["Netzlaufwerke", "Netzwerk-Volume", "Netzwerkvolume"],
     "chosen": "Netzlaufwerk",
     "confidence": "high",
     "decision": "Image-content indexing on network drives (`settings.mediaIndex.networkVolumes.*`, `search.imageResults.networkOff`, `search.imageResults.paused`)",
     "sources": "MS terminology (network drive → Netzlaufwerk)"
   },
   "network-share": {
-    "accept": [
-      "Freigaben",
-      "freigegeben"
-    ],
+    "accept": ["Freigaben", "freigegeben"],
     "chosen": "Freigabe",
     "confidence": "high",
     "forms": "network share → Netzwerkfreigabe; SMB share → SMB-Freigabe; Connect directly → Direkt verbinden",
     "sources": "macOS (Freigabe, Bildschirmfreigabe); NetAuthAgent EINFO_NO_SHARE"
   },
   "new-file": {
-    "accept": [
-      "Datei erstellen",
-      "Datei wird erstellt",
-      "erstellen"
-    ],
+    "accept": ["Datei erstellen", "Datei wird erstellt", "erstellen"],
     "chosen": "Neue Datei",
     "confidence": "high",
     "sources": "macOS, catalog"
   },
   "new-folder": {
-    "accept": [
-      "Ordner erstellen",
-      "Ordner wird erstellt",
-      "neue Ordner",
-      "neuen Ordner",
-      "erstellen"
-    ],
+    "accept": ["Ordner erstellen", "Ordner wird erstellt", "neue Ordner", "neuen Ordner", "erstellen"],
     "chosen": "Neuer Ordner",
     "confidence": "high",
     "sources": "macOS Finder (Neuer Ordner)"
   },
   "not-finished": {
-    "accept": [
-      "abschließen",
-      "beendet",
-      "fertig"
-    ],
+    "accept": ["abschließen", "beendet", "fertig"],
     "avoid": [
       {
         "form": "Fehler / fehlgeschlagen",
@@ -2327,9 +1861,7 @@
     "sources": "macOS Finder (Der Vorgang konnte nicht abgeschlossen werden.)"
   },
   "note": {
-    "accept": [
-      "Notizen"
-    ],
+    "accept": ["Notizen"],
     "avoid": [
       {
         "form": "Hinweis",
@@ -2347,42 +1879,29 @@
     "sources": "MS terminology (note → Notiz); catalog (errorReporter.dialog.noteLabel)"
   },
   "notification": {
-    "accept": [
-      "Benachrichtigungen",
-      "Hinweis",
-      "Mitteilung"
-    ],
+    "accept": ["Benachrichtigungen", "Hinweis", "Mitteilung"],
     "chosen": "Benachrichtigung",
     "confidence": "high",
     "forms": "Cmdr's own toast → Hinweis; a macOS system notification → macOS-Mitteilung (Apple's word for Notification Center items); the settings category → Benachrichtigungen",
     "sources": "MS terminology (Benachrichtigung); macOS (Mitteilungen)"
   },
   "offline": {
-    "accept": [
-      "nur online",
-      "online"
-    ],
+    "accept": ["nur online", "online"],
     "chosen": "offline",
     "confidence": "high",
     "forms": "make available offline → Offline verfügbar machen; online-only → nur online verfügbar",
     "sources": "MS (offline kept); macOS Finder (nur online verfügbar)"
   },
   "on-device": {
-    "accept": [
-      "auf dem Gerät",
-      "Lokales LLM"
-    ],
+    "accept": ["auf dem Gerät", "Lokales LLM"],
     "chosen": "lokal",
     "confidence": "high",
     "sources": "catalog (settings.ai.provider.opt.local Lokales LLM)"
   },
   "on-disk": {
-    "accept": [
-      "auf der Festplatte"
-    ],
+    "accept": ["auf der Festplatte"],
     "chosen": "auf dem Datenträger",
     "confidence": "high",
-    "forms": "the physical size → Auf dem Datenträger, pairing with the content size Inhalt",
     "sources": "standard German"
   },
   "onboarding": {
@@ -2392,12 +1911,7 @@
     "sources": "standard German UI rendering of guided first-run"
   },
   "open": {
-    "accept": [
-      "geöffnet",
-      "Öffne",
-      "öffnet",
-      "offen"
-    ],
+    "accept": ["geöffnet", "Öffne", "öffnet", "offen"],
     "chosen": "öffnen",
     "confidence": "high",
     "exceptions": {
@@ -2409,10 +1923,7 @@
     "sources": "macOS Finder (N151 Öffnen, FV7 In neuem Fenster öffnen), verified 2026-09-07"
   },
   "operation": {
-    "accept": [
-      "Vorgänge",
-      "Vorgangs"
-    ],
+    "accept": ["Vorgänge", "Vorgangs"],
     "avoid": [
       {
         "form": "Operation",
@@ -2438,9 +1949,7 @@
     "sources": "macOS Finder (Der Vorgang kann nicht abgeschlossen werden.); Double Commander de (Aktueller Vorgang:)"
   },
   "operation-log": {
-    "accept": [
-      "Verlauf"
-    ],
+    "accept": ["Verlauf"],
     "avoid": [
       {
         "form": "Aktionsprotokoll",
@@ -2454,10 +1963,7 @@
     "sources": "catalog (settings.navigationAndFileOps.card.operationLog)"
   },
   "operation-queue": {
-    "accept": [
-      "Vorgangswarteschlange",
-      "Wartet"
-    ],
+    "accept": ["Vorgangswarteschlange", "Wartet"],
     "avoid": [
       {
         "form": "Übertragungs-Warteschlange",
@@ -2471,9 +1977,7 @@
     "sources": "MS terminology (queue → Warteschlange, Übertragungswarteschlange); Double Commander de (Vorgänge in Warteschlange)"
   },
   "options": {
-    "accept": [
-      "Option"
-    ],
+    "accept": ["Option"],
     "chosen": "Optionen",
     "confidence": "high",
     "sources": "macOS"
@@ -2484,10 +1988,7 @@
     "sources": "MS terminology"
   },
   "outdated": {
-    "accept": [
-      "nicht mehr aktuell",
-      "aktuell"
-    ],
+    "accept": ["nicht mehr aktuell", "aktuell"],
     "chosen": "veraltet",
     "confidence": "high",
     "decision": "Der veraltete Index eines Telefons (`driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`)",
@@ -2495,10 +1996,7 @@
     "sources": "macOS/MS common usage"
   },
   "overwrite": {
-    "accept": [
-      "überschrieben",
-      "Überschreiben"
-    ],
+    "accept": ["überschrieben", "Überschreiben"],
     "chosen": "überschreiben",
     "confidence": "high",
     "forms": "Overwrite all → Alle überschreiben; Overwrite all smaller/older → Alle kleineren/älteren überschreiben; the rename badge → (Überschreiben!), nominalized so it labels the risk",
@@ -2508,30 +2006,28 @@
     "chosen": "Eigentümer",
     "confidence": "high",
     "note": "The person who runs a server is not an owner in this sense: die Person, die den Server betreibt.",
-    "sources": "macOS Finder Get Info (Teilen & Zugriffsrechte)"
+    "sources": "macOS Finder Get Info (Teilen & Zugriffsrechte)",
+    "exceptions": {
+      "servers.hostKey.firstContactBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt",
+      "servers.hostKey.changedBody": "the person who runs a server is not an owner in this sense: die Person, die den Server betreibt"
+    }
   },
   "package": {
-    "accept": [
-      "Pakete"
-    ],
+    "accept": ["Pakete"],
     "chosen": "Paket",
     "confidence": "high",
     "forms": "generic packages (.jar, .apk, Office documents) → Pakete, kept apart from App-Pakete; Linux package → Paket",
     "sources": "macOS Finder (Paketinhalt zeigen); KDE Dolphin (Das Paket %1 …)"
   },
   "page": {
-    "accept": [
-      "Seiten"
-    ],
+    "accept": ["Seiten"],
     "chosen": "Seite",
     "confidence": "high",
     "forms": "PDF-Seiten; einige Seiten eines PDFs",
     "sources": "Preview (Pages → Seiten, Page Count → Seitenanzahl); MS (page → Seite)"
   },
   "pane": {
-    "accept": [
-      "Bereiche"
-    ],
+    "accept": ["Bereiche"],
     "avoid": [
       {
         "form": "Fenster",
@@ -2548,21 +2044,14 @@
     "sources": "macOS (Der Bereich „Bewegen“ …, Bereich „Schreibtools“ anzeigen)"
   },
   "parent-folder": {
-    "accept": [
-      "übergeordnete Ordner",
-      "übergeordneter Ordner",
-      "Übergeordnete"
-    ],
+    "accept": ["übergeordnete Ordner", "übergeordneter Ordner", "Übergeordnete"],
     "chosen": "übergeordneten Ordner",
     "confidence": "high",
     "forms": "menu item Übergeordneter Ordner; command Zum übergeordneten Ordner gehen",
     "sources": "macOS Finder (Übergeordneter Ordner)"
   },
   "password": {
-    "accept": [
-      "Passwörter",
-      "Archivpasswort"
-    ],
+    "accept": ["Passwörter", "Archivpasswort"],
     "chosen": "Passwort",
     "confidence": "high",
     "forms": "saved password → gespeichertes Passwort; That password didn't work → Das Passwort hat nicht geklappt (the password is the subject, never ungültig)",
@@ -2575,11 +2064,7 @@
     "sources": "Total/Double Commander de phrasing + macOS"
   },
   "paste": {
-    "accept": [
-      "eingesetzt",
-      "Einsetzen",
-      "setze"
-    ],
+    "accept": ["eingesetzt", "Einsetzen", "setze"],
     "avoid": [
       {
         "form": "einfügen",
@@ -2591,9 +2076,7 @@
     "sources": "macOS Finder/AppKit (Einsetzen)"
   },
   "path": {
-    "accept": [
-      "Pfade"
-    ],
+    "accept": ["Pfade"],
     "chosen": "Pfad",
     "confidence": "high",
     "forms": "the full path → der vollständige Pfad",
@@ -2608,11 +2091,7 @@
     "sources": "MS terminology (Muster); macOS Finder (Muster einfügen)"
   },
   "pause": {
-    "accept": [
-      "Anhalten",
-      "angehalten",
-      "hält"
-    ],
+    "accept": ["Anhalten", "angehalten", "hält"],
     "avoid": [
       {
         "form": "Pause",
@@ -2630,39 +2109,28 @@
     "sources": "macOS Podcasts (PLAY_BUTTON_PAUSE Anhalten), Finder (Kopieren von „^0“ wurde angehalten), verified 2026-08-30"
   },
   "percent": {
-    "accept": [
-      "%"
-    ],
+    "accept": ["%"],
     "chosen": "Prozent",
     "confidence": "high",
     "forms": "the aria label spells it out; visible copy keeps the sign with a space ({percentText} %, DIN 5008)",
     "sources": "macOS de (Percent complete: ^0 → Prozent abgeschlossen: ^0)"
   },
   "permission": {
-    "accept": [
-      "Berechtigungen",
-      "Zugriffsrechte",
-      "Erlaubnis"
-    ],
+    "accept": ["Berechtigungen", "Zugriffsrechte", "Erlaubnis"],
     "chosen": "Berechtigung",
     "confidence": "high",
     "forms": "the abstract OS grant → Berechtigung (Cmdr hat keine Berechtigung …); a file's or folder's ACL → Zugriffsrechte; Get Info pane Teilen & Zugriffsrechte",
     "sources": "macOS Finder (Berechtigung, Zugriffsrechte); MS terminology"
   },
   "phone": {
-    "accept": [
-      "Telefone",
-      "Android"
-    ],
+    "accept": ["Telefone", "Android"],
     "chosen": "Telefon",
     "confidence": "high",
     "decision": "Das Telefon über ADB öffnen: Bereichsmeldungen, Zeilen-Tooltips und der Hinweisstreifen (`adb.*`, `settings.behavior.adbHintDismissed.*`)",
     "sources": "catalog (settings.fileOperations.adbEnabled.description eines Android-Telefons)"
   },
   "photo": {
-    "accept": [
-      "Fotos"
-    ],
+    "accept": ["Fotos"],
     "avoid": [
       {
         "form": "Bild (where the English says photos)",
@@ -2675,13 +2143,7 @@
     "sources": "macOS AirDrop (1 Foto empfangen); Photos (In „Fotos“ öffnen)"
   },
   "pin": {
-    "accept": [
-      "fixiert",
-      "lösen",
-      "gelöst",
-      "im Dock behalten",
-      "aus dem Dock entfernen"
-    ],
+    "accept": ["fixiert", "lösen", "gelöst", "im Dock behalten", "aus dem Dock entfernen"],
     "avoid": [
       {
         "form": "anpinnen",
@@ -2713,19 +2175,14 @@
     "sources": "MS terminology (GERMAN.tbx, both senses)"
   },
   "port": {
-    "accept": [
-      "Anschluss",
-      "Ports"
-    ],
+    "accept": ["Anschluss", "Ports"],
     "chosen": "Port",
     "confidence": "high",
     "forms": "a network port → Port, in use → belegt; a USB port → USB-Anschluss, another port → ein anderer Anschluss",
     "sources": "MS terminology (Port); AirPort Utility (USB port → USB-Anschluss)"
   },
   "preset": {
-    "accept": [
-      "Voreinstellungen"
-    ],
+    "accept": ["Voreinstellungen"],
     "chosen": "Voreinstellung",
     "confidence": "high",
     "forms": "back to presets → Zurück zu den Voreinstellungen",
@@ -2742,11 +2199,7 @@
     "sources": "macOS System Settings (PRIVACY_SECTION)"
   },
   "process": {
-    "accept": [
-      "Prozesse",
-      "Vorgang",
-      "dienst"
-    ],
+    "accept": ["Prozesse", "Vorgang", "dienst"],
     "chosen": "Prozess",
     "confidence": "high",
     "exceptions": {
@@ -2773,9 +2226,7 @@
     "sources": "macOS de (Kopierfortschritt anzeigen, Fortschrittsfenster einblenden); Double Commander (Gesamtfortschritt)"
   },
   "protocol": {
-    "accept": [
-      "Protokolle"
-    ],
+    "accept": ["Protokolle"],
     "chosen": "Protokoll",
     "confidence": "high",
     "exceptions": {
@@ -2785,14 +2236,7 @@
     "sources": "AddPrinter.app (Protocol: → Protokoll:)"
   },
   "put-back": {
-    "accept": [
-      "zurückgelegt",
-      "zurückzulegen",
-      "Zurücklegen",
-      "zurücksetzen",
-      "zurückgesetzt",
-      "zurück"
-    ],
+    "accept": ["zurückgelegt", "zurückzulegen", "Zurücklegen", "zurücksetzen", "zurückgesetzt", "zurück"],
     "chosen": "zurücklegen",
     "confidence": "high",
     "decision": "Papierkorb-Toast: Widerrufen und Zurücklegen (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)",
@@ -2801,10 +2245,7 @@
     "sources": "macOS Finder (N153.1 Put Back → Zurücklegen)"
   },
   "query": {
-    "accept": [
-      "Suche",
-      "abfragen"
-    ],
+    "accept": ["Suche", "abfragen"],
     "chosen": "Anfrage",
     "confidence": "high",
     "forms": "the verb → abfragen",
@@ -2823,11 +2264,7 @@
     "sources": "macOS Finder (TL14 Übersicht)"
   },
   "quit": {
-    "accept": [
-      "Beenden",
-      "beendet",
-      "beend"
-    ],
+    "accept": ["Beenden", "beendet", "beend"],
     "chosen": "beenden",
     "confidence": "high",
     "decision": "The quit gate (`main.quit.*`)",
@@ -2841,32 +2278,21 @@
     "sources": "MS terminology (disk quota → Kontingent)"
   },
   "read-only": {
-    "accept": [
-      "Schreibschutz"
-    ],
+    "accept": ["Schreibschutz"],
     "chosen": "schreibgeschützt",
     "confidence": "high",
     "forms": "write-protection switch → Schreibschutzschalter; read-only archive → Schreibgeschütztes Archiv",
     "sources": "MS terminology; macOS (schreibgeschützt)"
   },
   "recent": {
-    "accept": [
-      "zuletzt",
-      "neueste",
-      "kürzlich",
-      "aktuell",
-      "neuer"
-    ],
+    "accept": ["zuletzt", "neueste", "kürzlich", "aktuell", "neuer"],
     "chosen": "Letzte",
     "confidence": "high",
-    "forms": "recent X → Letzte X (Letzte Pfade, Letzte {mode}-Suche, Letzte Auswahlen); the palette group → Zuletzt verwendet; the server column Last used → Zuletzt benutzt; a file's date → Zuletzt geöffnet",
+    "forms": "recent X → Letzte X (Letzte Pfade, Letzte {mode}-Suche, Letzte Auswahlen); the palette group → Zuletzt verwendet; a file's date → Zuletzt geöffnet",
     "sources": "macOS Finder (Zuletzt benutzt, Letzte); ConnectToWindow (Zuletzt benutzte Server löschen)"
   },
   "reclaim": {
-    "accept": [
-      "gibt",
-      "frei"
-    ],
+    "accept": ["gibt", "frei"],
     "chosen": "freigeben",
     "confidence": "high",
     "forms": "reclaim {size} → {size} freigeben; This frees {size} → Das gibt {size} frei",
@@ -2898,28 +2324,20 @@
     "sources": "derived from macOS (Verbindung … herstellen); Kerberos menu (Reconnect → Erneut verbinden)"
   },
   "redact": {
-    "accept": [
-      "bereinigt",
-      "Bereinigung"
-    ],
+    "accept": ["bereinigt", "Bereinigung"],
     "chosen": "bereinigen",
     "confidence": "high",
     "sources": "standard German for privacy-scrubbing log data"
   },
   "reference-id": {
-    "accept": [
-      "Berichts-ID"
-    ],
+    "accept": ["Berichts-ID"],
     "chosen": "Referenz-ID",
     "confidence": "high",
     "forms": "reference ID → Referenz-ID; report ID → Berichts-ID",
     "sources": "standard German compounds"
   },
   "refresh": {
-    "accept": [
-      "aktualisiert",
-      "Aktualisierung"
-    ],
+    "accept": ["aktualisiert", "Aktualisierung"],
     "chosen": "aktualisieren",
     "confidence": "high",
     "exceptions": {
@@ -2929,30 +2347,20 @@
     "sources": "macOS Finder (Aktualisieren)"
   },
   "regex": {
-    "accept": [
-      "regulärer Ausdruck",
-      "regulären Ausdruck"
-    ],
+    "accept": ["regulärer Ausdruck", "regulären Ausdruck"],
     "chosen": "Regex",
     "confidence": "high",
     "forms": "the mode chip → Regex; prose → regulärer Ausdruck",
     "sources": "MS terminology (regulärer Ausdruck)"
   },
-  "registered": {
-    "accept": [
-      "registrier"
-    ],
+  "register-shortcut": {
+    "accept": ["registrier"],
     "chosen": "registriert",
     "confidence": "high",
     "sources": "MS terminology (registrieren)"
   },
   "reject": {
-    "accept": [
-      "abgelehnt",
-      "lehnt",
-      "Ablehnen",
-      "lehne"
-    ],
+    "accept": ["abgelehnt", "lehnt", "Ablehnen", "lehne"],
     "chosen": "ablehnen",
     "confidence": "high",
     "forms": "API key rejected → hat deinen API-Schlüssel abgelehnt",
@@ -2971,74 +2379,46 @@
     "sources": "Apple Automator (%[Relevance]@ → Relevanz), verified on macOS 26.6.2, 2026-09-06"
   },
   "reload": {
-    "accept": [
-      "Neu laden",
-      "neu gelad",
-      "neu zu laden",
-      "lade neu"
-    ],
+    "accept": ["Neu laden", "neu gelad", "neu zu laden", "lade neu"],
     "chosen": "neu laden",
     "confidence": "high",
     "sources": "standard German"
   },
   "remote": {
-    "accept": [
-      "entfernten",
-      "entfernte"
-    ],
+    "accept": ["entfernten", "entfernte"],
     "chosen": "Entfernt",
     "confidence": "high",
     "forms": "Remote folder → Entfernter Ordner",
     "sources": "macOS PrintCore (Remote Printer → Entfernter Drucker), LaunchServices (Entfernte CD/DVD)"
   },
   "removable": {
-    "accept": [
-      "Wechselmedien"
-    ],
+    "accept": ["Wechselmedien"],
     "chosen": "Wechselmedium",
     "confidence": "high",
     "sources": "macOS Finder (NE31, TL_HELP_EJCT Wechselmedien auswerfen …); MS terminology (removable media → Wechselmedien, 177320)"
   },
   "remove": {
-    "accept": [
-      "entfernt",
-      "Entfernen",
-      "entfern",
-      "aufzuheben",
-      "aufheb"
-    ],
+    "accept": ["entfernt", "Entfernen", "entfern", "aufzuheben", "aufheb"],
     "chosen": "entfernen",
     "confidence": "high",
     "forms": "Remove from list → Aus Liste entfernen; Removed … (rollback) → … entfernt",
     "sources": "macOS (Entfernen)"
   },
   "rename": {
-    "accept": [
-      "umbenannt",
-      "Umbenennung",
-      "umbenenn",
-      "benenne",
-      "benenn"
-    ],
+    "accept": ["umbenannt", "Umbenennung", "umbenenn", "benenne", "benenn"],
     "chosen": "umbenennen",
     "confidence": "high",
     "forms": "Rename all → Alle umbenennen; progress Wird umbenannt; noun Umbenennung/Umbenennungen; rename cycle → Umbenennungszyklus",
     "sources": "macOS Finder (Umbenennen …), Double Commander, Nautilus (wird … umbenannt)"
   },
   "replace": {
-    "accept": [
-      "ersetzt",
-      "Ersetzte",
-      "ersetz"
-    ],
+    "accept": ["ersetzt", "Ersetzte", "ersetz"],
     "chosen": "ersetzen",
     "confidence": "high",
     "sources": "macOS Finder (Replace → Ersetzen)"
   },
   "report": {
-    "accept": [
-      "Berichte"
-    ],
+    "accept": ["Berichte"],
     "chosen": "Bericht",
     "confidence": "high",
     "sources": "macOS/MS"
@@ -3049,103 +2429,61 @@
     "sources": "standard German for a packaged set of files"
   },
   "repository": {
-    "accept": [
-      "Repository",
-      "Repositorys",
-      "Repos"
-    ],
+    "accept": ["Repository", "Repositorys", "Repos"],
     "chosen": "Repo",
     "confidence": "high",
     "forms": "git stays lowercase verbatim (git-Browser, git-Repo)",
     "sources": "git domain usage"
   },
   "reset": {
-    "accept": [
-      "zurückgesetzt",
-      "Zurücksetz",
-      "setzen"
-    ],
+    "accept": ["zurückgesetzt", "Zurücksetz", "setzen"],
     "chosen": "zurücksetzen",
     "confidence": "high",
     "forms": "Reset to default → Auf Standard zurücksetzen",
     "sources": "MS terminology"
   },
   "respond": {
-    "accept": [
-      "geantwortet",
-      "antwortet",
-      "Antwort",
-      "reagiert",
-      "reagieren"
-    ],
+    "accept": ["geantwortet", "antwortet", "Antwort", "reagiert", "reagieren"],
     "chosen": "antworten",
     "confidence": "high",
     "forms": "a server or share → antwortet nicht; a device on a cable → reagiert nicht; didn't answer in time → hat nicht rechtzeitig geantwortet",
     "sources": "MS terminology (respond → antworten); NetAuthAgent (… antwortet nicht); HomeKit (… reagiert nicht)"
   },
   "restart": {
-    "accept": [
-      "Neustart",
-      "neu gestartet",
-      "startet neu",
-      "starte"
-    ],
+    "accept": ["Neustart", "neu gestartet", "startet neu", "starte"],
     "chosen": "neu starten",
     "confidence": "high",
     "forms": "Restart required → Neustart erforderlich",
     "sources": "MS terminology"
   },
   "restore": {
-    "accept": [
-      "wiederhergestellt"
-    ],
+    "accept": ["wiederhergestellt"],
     "chosen": "wiederherstellen",
     "confidence": "high",
     "note": "Put back from the trash stays zurücklegen.",
     "sources": "macOS AppKit Revisions/Document (Restore → Wiederherstellen, Restore a Copy → Eine Kopie wiederherstellen)"
   },
   "resume": {
-    "accept": [
-      "fortgesetzt",
-      "Fortsetzen"
-    ],
+    "accept": ["fortgesetzt", "Fortsetzen"],
     "chosen": "fortsetzen",
     "confidence": "high",
     "sources": "macOS Finder (Kopieren fortsetzen; NE101/PE108.1 Fortsetzen)"
   },
   "retry": {
-    "accept": [
-      "noch einmal",
-      "erneuter Versuch",
-      "Erneut",
-      "versuche",
-      "versucht",
-      "versuch"
-    ],
+    "accept": ["noch einmal", "erneuter Versuch", "Erneut", "versuche", "versucht", "versuch"],
     "chosen": "erneut versuchen",
     "confidence": "high",
     "forms": "button Erneut versuchen; Try again in a moment → Versuche es gleich noch einmal.; Retrying (the narrow space bar) → Erneuter Versuch …",
     "sources": "macOS (Try Again → Erneut versuchen)"
   },
   "review": {
-    "accept": [
-      "ansehen",
-      "überprüf",
-      "prüf",
-      "anzusehen",
-      "sieh"
-    ],
+    "accept": ["ansehen", "überprüf", "prüf", "anzusehen", "sieh"],
     "chosen": "prüfen",
     "confidence": "high",
     "sources": "catalog"
   },
   "rollback": {
-    "accept": [
-      "rückgängig",
-      "Rücknahme",
-      "zurücknehmen",
-      "zurückgenommen"
-    ],
+    "accept": ["rückgängig", "Rücknahme", "zurücknehmen", "zurückgenommen"],
     "chosen": "Rollback",
     "confidence": "high",
     "decision": "Ein halb zurückgenommener Vorgang: das Rollback zu Ende bringen (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)",
@@ -3153,11 +2491,7 @@
     "sources": "MS terminology keeps Rollback; catalog (settings.operationLog.intro Aktionen rückgängig machen)"
   },
   "root-folder": {
-    "accept": [
-      "Startordner",
-      "oberste Ordner",
-      "obersten Ordner"
-    ],
+    "accept": ["Startordner", "oberste Ordner", "obersten Ordner"],
     "avoid": [
       {
         "form": "Stammverzeichnis",
@@ -3171,21 +2505,14 @@
     "sources": "MS terminology (root folder → Stammordner, 233488); KDE Dolphin (Home URL → Startordner); GNOME Nautilus (… im obersten Ordner …)"
   },
   "row": {
-    "accept": [
-      "Zeilen",
-      "Reihe"
-    ],
+    "accept": ["Zeilen", "Reihe"],
     "chosen": "Zeile",
     "confidence": "high",
     "forms": "file row → Dateizeile",
     "sources": "MS terminology (row → Zeile); Double Commander (eins pro Zeile)"
   },
   "running": {
-    "accept": [
-      "läuft",
-      "laufen",
-      "aktiv"
-    ],
+    "accept": ["läuft", "laufen", "aktiv"],
     "chosen": "Läuft",
     "confidence": "high",
     "exceptions": {
@@ -3200,13 +2527,7 @@
     "sources": "catalog (queue.row.status); macOS Finder (A17 … da noch Vorgänge aktiv sind.)"
   },
   "save": {
-    "accept": [
-      "gesichert",
-      "Sichern",
-      "gespeichert",
-      "speicher",
-      "sicher"
-    ],
+    "accept": ["gesichert", "Sichern", "gespeichert", "speicher", "sicher"],
     "avoid": [
       {
         "form": "Speichern (as the button)",
@@ -3224,11 +2545,7 @@
     "sources": "macOS Finder (Sichern, Sichern unter …); AppKit Document/SavePanel"
   },
   "scan": {
-    "accept": [
-      "durchsucht",
-      "Durchlauf",
-      "Durchläufe"
-    ],
+    "accept": ["durchsucht", "Durchlauf", "Durchläufe"],
     "avoid": [
       {
         "form": "Scan",
@@ -3248,31 +2565,21 @@
     "sources": "macOS (durchsuchen); Double Commander uses Suche"
   },
   "scope": {
-    "accept": [
-      "Suchen in"
-    ],
+    "accept": ["Suchen in"],
     "chosen": "Bereich",
     "confidence": "high",
     "forms": "the search filter label → Suchen in; the recent-search summary → Bereich: {scope}",
     "sources": "derived; aligns with pane → Bereich"
   },
   "screenshot": {
-    "accept": [
-      "Bildschirmfotos",
-      "Bildschirmaufnahme"
-    ],
+    "accept": ["Bildschirmfotos", "Bildschirmaufnahme"],
     "chosen": "Bildschirmfoto",
     "confidence": "high",
     "forms": "screen recording → Bildschirmaufnahme",
     "sources": "macOS (Bildschirmfoto); MS (Bildschirmaufnahme)"
   },
   "search": {
-    "accept": [
-      "suchen",
-      "gesucht",
-      "Suchen",
-      "such"
-    ],
+    "accept": ["suchen", "gesucht", "Suchen", "such"],
     "chosen": "Suche",
     "confidence": "high",
     "decision": "Ein englisches Wort, ein deutsches Wort: die Drift-Prüfung (`commands.fileView.label`, `menu.file.view`, `fileExplorer.functionKeyBar.viewLabel`, `menu.bar.file`, `menu.bar.view`, `menu.window.zoom`, `menu.view.zoom`, `menu.tag.purple`, `settings.tint.purple`, `queue.row.dismiss`, `queryUi.bar.runLabel`, `ai.cloud.checking`, `licensing.dialog.checking`, `updates.status.checking`)",
@@ -3280,21 +2587,14 @@
     "sources": "macOS (Search → Suchen)"
   },
   "search-match": {
-    "accept": [
-      "Ergebnis",
-      "Suchergebnis"
-    ],
+    "accept": ["Ergebnis", "Suchergebnis"],
     "chosen": "Treffer",
     "confidence": "high",
     "forms": "No matches → Keine Treffer; search results → Suchergebnisse",
     "sources": "GNOME Nautilus (Keine Treffer)"
   },
   "see": {
-    "accept": [
-      "Ansehen",
-      "sehen",
-      "Sieh"
-    ],
+    "accept": ["Ansehen", "sehen", "Sieh"],
     "avoid": [
       {
         "form": "anzeigen",
@@ -3316,12 +2616,7 @@
     "sources": "catalog (settings.appearance.showFunctionKeyBar.description … Ansehen, Kopieren usw.)"
   },
   "select": {
-    "accept": [
-      "ausgewählt",
-      "Auswahl",
-      "wähle",
-      "wähl"
-    ],
+    "accept": ["ausgewählt", "Auswahl", "wähle", "wähl"],
     "chosen": "auswählen",
     "confidence": "high",
     "decision": "Der Auswahldialog: Dateien auswählen und abwählen (`selection.*`)",
@@ -3329,12 +2624,7 @@
     "sources": "macOS Finder (MenuBar.json 172.title Alles auswählen), verified 2026-08-29; Nautilus/Thunar/Dolphin (Auswählen)"
   },
   "send": {
-    "accept": [
-      "gesendet",
-      "sende",
-      "sendet",
-      "schick"
-    ],
+    "accept": ["gesendet", "sende", "sendet", "schick"],
     "chosen": "senden",
     "confidence": "high",
     "forms": "progress Wird gesendet …; What was sent → Was gesendet wurde",
@@ -3347,27 +2637,21 @@
     "sources": "macOS (Mit Server verbinden), MS terminology"
   },
   "server-address": {
-    "accept": [
-      "Adresse"
-    ],
+    "accept": ["Adresse"],
     "chosen": "Serveradresse",
     "confidence": "high",
     "forms": "prose → Serveradresse; the sheet's field and the column → Adresse",
     "sources": "Finder ConnectToWindow.strings (YEA-3L-WnW.placeholderString Serveradresse)"
   },
   "service": {
-    "accept": [
-      "Dienste"
-    ],
+    "accept": ["Dienste"],
     "chosen": "Dienst",
     "confidence": "high",
     "forms": "the Services menu → Dienste",
     "sources": "MS terminology; macOS Finder"
   },
   "settings": {
-    "accept": [
-      "Einstellung"
-    ],
+    "accept": ["Einstellung"],
     "chosen": "Einstellungen",
     "confidence": "high",
     "decision": "Einstellungsabschnitte (`settings.section.*`)",
@@ -3395,10 +2679,7 @@
     "sources": "macOS Finder (Teilen)"
   },
   "shortcut": {
-    "accept": [
-      "Kurzbefehle",
-      "Tastaturkurzbefehl"
-    ],
+    "accept": ["Kurzbefehle", "Tastaturkurzbefehl"],
     "avoid": [
       {
         "form": "Tastenkürzel",
@@ -3411,25 +2692,14 @@
     "sources": "macOS (Kurzbefehl)"
   },
   "show": {
-    "accept": [
-      "angezeigt",
-      "zeigt",
-      "zeigen",
-      "einblenden",
-      "eingeblendet",
-      "sichtbar",
-      "erschein"
-    ],
+    "accept": ["angezeigt", "zeigt", "zeigen", "einblenden", "eingeblendet", "sichtbar", "erschein"],
     "chosen": "anzeigen",
     "confidence": "high",
     "forms": "show a column or a list → anzeigen (Favoriten anzeigen, Server anzeigen); a toggle → einblenden/ausblenden (Verborgene Dateien einblenden, Alle einblenden)",
     "sources": "macOS Finder (Seitenleiste einblenden, Anzeigen; 300730.title Alle einblenden)"
   },
   "show-in-finder": {
-    "accept": [
-      "im Finder zeigen",
-      "Im Finder öffnen"
-    ],
+    "accept": ["im Finder zeigen", "Im Finder öffnen"],
     "chosen": "Im Finder anzeigen",
     "confidence": "high",
     "decision": "Das „Im Finder anzeigen“-Angebot und der Ersttreffer-Hinweis (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)",
@@ -3448,33 +2718,21 @@
     "sources": "derived from pane → Bereich"
   },
   "sign-in": {
-    "accept": [
-      "Anmeld",
-      "angemeldet",
-      "melde"
-    ],
+    "accept": ["Anmeld", "angemeldet", "melde"],
     "chosen": "anmelden",
     "confidence": "high",
     "forms": "button Anmelden; Sign in to {name} → Bei {name} anmelden; noun Anmeldung (also logging in to the Mac: Bei der Anmeldung öffnen); sign-in method → Anmeldemethode",
     "sources": "macOS Finder (Anmelden …, Die Anmeldung beim Server …); AppSSOKerberos (Sign In → Anmelden); DockMenus (OPEN_AT_LOGIN)"
   },
   "sign-out": {
-    "accept": [
-      "Abmelden",
-      "Abmeldung",
-      "abmelden",
-      "melde"
-    ],
+    "accept": ["Abmelden", "Abmeldung", "abmelden", "melde"],
     "chosen": "abgemeldet",
     "confidence": "high",
     "forms": "Signed out → Abgemeldet; logging out of the Mac → das Abmelden / eine Abmeldung",
     "sources": "macOS (Profile (Signed out) → Profil (abgemeldet); Abmelden)"
   },
   "size": {
-    "accept": [
-      "Größen",
-      "groß"
-    ],
+    "accept": ["Größen", "groß"],
     "chosen": "Größe",
     "confidence": "high",
     "exceptions": {
@@ -3485,54 +2743,35 @@
     "sources": "macOS, catalog"
   },
   "skip": {
-    "accept": [
-      "übersprungen",
-      "überspringt"
-    ],
+    "accept": ["übersprungen", "überspringt"],
     "chosen": "überspringen",
     "confidence": "high",
     "forms": "Skip all → Alle überspringen; outcome Übersprungen",
     "sources": "macOS Finder copy dialog (Überspringen), Double Commander, Nautilus"
   },
   "slow": {
-    "accept": [
-      "langsamer",
-      "verlangsam"
-    ],
+    "accept": ["langsamer", "verlangsam"],
     "chosen": "langsam",
     "confidence": "high",
     "forms": "The volume may be slow → Das Volume ist vielleicht langsam; multipliers keep the digit with a hyphen (4-mal langsamer)",
     "sources": "catalog"
   },
   "sort": {
-    "accept": [
-      "Sortier",
-      "sortiert",
-      "Aufsteigend",
-      "Absteigend"
-    ],
+    "accept": ["Sortier", "sortiert", "Aufsteigend", "Absteigend"],
     "chosen": "sortieren",
     "confidence": "high",
     "forms": "Sort By → Sortieren nach; Sort by X → Nach X sortieren; ascending/descending → Aufsteigend/Absteigend",
     "sources": "macOS Finder (Sortieren nach); Thunar + Dolphin (Aufsteigend/Absteigend)"
   },
   "source": {
-    "accept": [
-      "Von",
-      "Quell"
-    ],
+    "accept": ["Von", "Quell"],
     "chosen": "Quelle",
     "confidence": "high",
     "forms": "From: before a path and the transfer dialog's heading → Von / Von:",
     "sources": "MS terminology (Quelle); Total Commander de (VON:)"
   },
   "start-up": {
-    "accept": [
-      "startet",
-      "starten",
-      "gestartet",
-      "hochgefahren"
-    ],
+    "accept": ["startet", "starten", "gestartet", "hochgefahren"],
     "chosen": "Start",
     "confidence": "high",
     "sources": "catalog"
@@ -3543,14 +2782,7 @@
     "sources": "macOS Finder Get Info (Startvolume:, f82-Dg-tGh)"
   },
   "stop": {
-    "accept": [
-      "gestoppt",
-      "Stoppen",
-      "stoppt",
-      "stopp",
-      "aufhör",
-      "hört"
-    ],
+    "accept": ["gestoppt", "Stoppen", "stoppt", "stopp", "aufhör", "hört"],
     "avoid": [
       {
         "form": "anhalten",
@@ -3581,50 +2813,33 @@
     "sources": "MS terminology (Streaming)"
   },
   "subscription": {
-    "accept": [
-      "Abos",
-      "Abonnement"
-    ],
+    "accept": ["Abos", "Abonnement"],
     "chosen": "Abo",
     "confidence": "high",
     "sources": "standard German short form of Abonnement"
   },
   "suggestion": {
-    "accept": [
-      "Vorschläge",
-      "vorgeschlagen",
-      "vorschlagen",
-      "schlägt"
-    ],
+    "accept": ["Vorschläge", "vorgeschlagen", "vorschlagen", "schlägt"],
     "chosen": "Vorschlag",
     "confidence": "high",
     "sources": "MS terminology (Vorschlag)"
   },
   "supported": {
-    "accept": [
-      "unterstützen"
-    ],
+    "accept": ["unterstützen"],
     "chosen": "unterstützt",
     "confidence": "high",
     "forms": "not supported yet → unterstützt … noch nicht, active with Cmdr as subject; X and up → X und neuer",
     "sources": "macOS Finder (… da er nicht unterstützt wird.); SystemSettings (… oder neuer)"
   },
   "symlink": {
-    "accept": [
-      "Symlink",
-      "symbolischen Verknüpfung",
-      "Verknüpfung"
-    ],
+    "accept": ["Symlink", "symbolischen Verknüpfung", "Verknüpfung"],
     "chosen": "symbolische Verknüpfung",
     "confidence": "high",
     "forms": "the loop term and short titles keep Symlink (Symlink-Schleife)",
     "sources": "MS terminology (symbolische Verknüpfung)"
   },
   "sync": {
-    "accept": [
-      "synchronisier",
-      "Sync"
-    ],
+    "accept": ["synchronisier", "Sync"],
     "chosen": "synchronisiert",
     "confidence": "high",
     "forms": "a folder → wird mit … synchronisiert (passive; macOS de has the active form only with the service as subject)",
@@ -3643,9 +2858,7 @@
     "sources": "Apple Support DE (support.apple.com/de-de/102149), verified 2026-08-23; ET6 re-verified on macOS 26.5.2, 2026-08-24"
   },
   "system-settings": {
-    "accept": [
-      "{system_settings}"
-    ],
+    "accept": ["{system_settings}"],
     "chosen": "Systemeinstellungen",
     "confidence": "high",
     "decision": "Die Bereichsnamen kommen jetzt vom Mac des Nutzers (`errors.git.*`, `errors.provider.*`)",
@@ -3653,26 +2866,20 @@
     "sources": "macOS"
   },
   "system-settings-pane": {
-    "accept": [
-      "Anmeldeobjekte"
-    ],
+    "accept": ["Anmeldeobjekte"],
     "chosen": "Allgemein",
     "confidence": "high",
     "forms": "General → Allgemein; Login Items & Extensions → Anmeldeobjekte & Erweiterungen; Storage → Speicher",
     "sources": "macOS 26 de (LoginItems.appex Localizable.loctable), verified 2026-08-30"
   },
   "tab": {
-    "accept": [
-      "Tabs"
-    ],
+    "accept": ["Tabs"],
     "chosen": "Tab",
     "confidence": "high",
     "sources": "macOS, MS terminology"
   },
   "tag": {
-    "accept": [
-      "Tags"
-    ],
+    "accept": ["Tags"],
     "chosen": "Tag",
     "confidence": "high",
     "forms": "Finder tag colors: Rot, Orange, Gelb, Grün, Blau, Lila, Grau; the tag row → Tags, „{color}“ hinzufügen / „{color}“ entfernen",
@@ -3680,22 +2887,14 @@
     "sources": "macOS Finder (TG_COLOR_*, TG5, TG6, N169.37)"
   },
   "tail": {
-    "accept": [
-      "folgen",
-      "Folgemodus",
-      "verfolg"
-    ],
+    "accept": ["folgen", "Folgemodus", "verfolg"],
     "chosen": "Folgen",
     "confidence": "tentative",
     "forms": "tail mode → Folgemodus",
     "sources": "no canonical source; conveys auto-follow without the Unix jargon"
   },
   "tap": {
-    "accept": [
-      "tippe",
-      "antippst",
-      "Tippe"
-    ],
+    "accept": ["tippe", "antippst", "Tippe"],
     "avoid": [
       {
         "form": "tippen (for filling a field)",
@@ -3708,10 +2907,7 @@
     "sources": "AOSP de (Tippe auf „Übersicht“)"
   },
   "temporary": {
-    "accept": [
-      "temporäre",
-      "vorübergehend"
-    ],
+    "accept": ["temporäre", "vorübergehend"],
     "chosen": "temporär",
     "confidence": "high",
     "sources": "catalog"
@@ -3724,10 +2920,7 @@
     "sources": "macOS Finder (N67 In Terminal öffnen)"
   },
   "text-editor": {
-    "accept": [
-      "Editor",
-      "Standardeditor"
-    ],
+    "accept": ["Editor", "Standardeditor"],
     "chosen": "Text-Editor",
     "confidence": "high",
     "decision": "F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)",
@@ -3740,9 +2933,7 @@
     "sources": "MS terminology (Warnschwelle)"
   },
   "thumbnail": {
-    "accept": [
-      "Miniaturen"
-    ],
+    "accept": ["Miniaturen"],
     "avoid": [
       {
         "form": "Vorschaubild",
@@ -3754,29 +2945,21 @@
     "sources": "Preview (Thumbnails → Miniaturen); Photos (Miniaturen einblenden)"
   },
   "time-ago": {
-    "accept": [
-      "gerade eben"
-    ],
+    "accept": ["gerade eben"],
     "chosen": "vor",
     "confidence": "high",
     "forms": "vor {count} Min./Std./T./Wo./Mon./J. (vor first, abbreviated)",
     "sources": "standard German"
   },
   "time-left": {
-    "accept": [
-      "etwa",
-      "Fast fertig"
-    ],
+    "accept": ["etwa", "Fast fertig"],
     "chosen": "noch",
     "confidence": "high",
     "forms": "{n}s left → noch {n} s; {n}m left → noch {n} Min.; roughly {eta} → etwa {eta}; Almost done → Fast fertig",
     "sources": "standard German (noch first)"
   },
   "timeout": {
-    "accept": [
-      "rechtzeitig",
-      "nicht geantwortet"
-    ],
+    "accept": ["rechtzeitig", "nicht geantwortet"],
     "avoid": [
       {
         "form": "Timeout",
@@ -3789,11 +2972,7 @@
     "sources": "standard German + MS terminology"
   },
   "tint": {
-    "accept": [
-      "Farbtöne",
-      "einfärben",
-      "eingefärbt"
-    ],
+    "accept": ["Farbtöne", "einfärben", "eingefärbt"],
     "chosen": "Farbton",
     "confidence": "high",
     "forms": "the verb → einfärben (MTP-Bereiche einfärben); palette colors Orange, Cyan, and Indigo stay; Amber → Bernstein, Lime → Limette, Teal → Petrol, Purple → Violett, Pink → Rosa",
@@ -3805,29 +2984,21 @@
     "sources": "macOS"
   },
   "token": {
-    "accept": [
-      "Tokens"
-    ],
+    "accept": ["Tokens"],
     "chosen": "Token",
     "confidence": "high",
     "forms": "pl. Tokens (the LLM loanword takes -s, unlike native -en nouns)",
     "sources": "OpenAI's German help center (Was sind Tokens …)"
   },
   "too-large": {
-    "accept": [
-      "zu lang",
-      "größer als"
-    ],
+    "accept": ["zu lang", "größer als"],
     "chosen": "zu groß",
     "confidence": "high",
     "forms": "Datei zu groß für dieses Laufwerk",
     "sources": "standard German"
   },
   "transfer": {
-    "accept": [
-      "Übertragungen",
-      "übertragen"
-    ],
+    "accept": ["Übertragungen", "übertragen"],
     "chosen": "Übertragung",
     "confidence": "high",
     "forms": "feminine: diese Übertragung, sie; stays on the copy/move progress dialog where the English says transfer",
@@ -3839,12 +3010,7 @@
     "sources": "macOS Finder"
   },
   "trust": {
-    "accept": [
-      "vertraut",
-      "Vertrauen",
-      "vertrauenswürdig",
-      "vertrau"
-    ],
+    "accept": ["vertraut", "Vertrauen", "vertrauenswürdig", "vertrau"],
     "chosen": "vertrauen",
     "confidence": "high",
     "forms": "the verb takes the dative (Dem neuen Schlüssel vertrauen); trusted as an attribute → vertrauenswürdig (Vertrauenswürdige Hostschlüssel, Vertrauenswürdig seit <Datum>)",
@@ -3866,10 +3032,8 @@
     "note": "Process and app names stay verbatim (udev, ptpcamerad, Terminal).",
     "sources": "do-not-translate"
   },
-  "ui-action": {
-    "accept": [
-      "Aktionen"
-    ],
+  "action": {
+    "accept": ["Aktionen"],
     "chosen": "Aktion",
     "confidence": "high",
     "exceptions": {
@@ -3877,7 +3041,7 @@
     },
     "sources": "macOS (Aktion as a bare label; Diese Aktion …)"
   },
-  "ui-button": {
+  "button": {
     "avoid": [
       {
         "form": "Schaltfläche",
@@ -3890,13 +3054,7 @@
     "sources": "macOS de; catalog (Klicke unten auf die Taste „+“ …)"
   },
   "undo": {
-    "accept": [
-      "widerrufen",
-      "rückgängig",
-      "zurückgesetzt",
-      "zurückgelegt",
-      "zurückn"
-    ],
+    "accept": ["widerrufen", "rückgängig", "zurückgesetzt", "zurückgelegt", "zurückn"],
     "avoid": [
       {
         "form": "Rückgängig",
@@ -3910,11 +3068,7 @@
     "sources": "macOS AppKit MenuCommands (Undo Smart Dash → Intelligenten Bindestrich widerrufen)"
   },
   "unexpected": {
-    "accept": [
-      "schiefgelaufen",
-      "auf ein Problem gestoßen",
-      "Unerwartet"
-    ],
+    "accept": ["schiefgelaufen", "auf ein Problem gestoßen", "Unerwartet"],
     "avoid": [
       {
         "form": "ist ein Problem aufgetreten",
@@ -3927,9 +3081,7 @@
     "sources": "MS style guide de (Wir sind leider auf ein Problem gestoßen.)"
   },
   "unlock": {
-    "accept": [
-      "entsperr"
-    ],
+    "accept": ["entsperr"],
     "chosen": "Entsperren",
     "confidence": "high",
     "exceptions": {
@@ -3940,14 +3092,7 @@
     "sources": "macOS AppKit (locked-item button Entsperren)"
   },
   "unplug": {
-    "accept": [
-      "abgezogen",
-      "Zieh",
-      "getrennt",
-      "angeschlossen",
-      "herausgezogen",
-      "verbunden"
-    ],
+    "accept": ["abgezogen", "Zieh", "getrennt", "angeschlossen", "herausgezogen", "verbunden"],
     "chosen": "abziehen",
     "confidence": "high",
     "decision": "A drive pulled mid-transfer (`errors.write.deviceDisconnected.sided.*`)",
@@ -3955,32 +3100,20 @@
     "sources": "catalog (errors.listing.deviceReconnecting.suggestion, errors.provider.macDroid.*)"
   },
   "unreachable": {
-    "accept": [
-      "erreich"
-    ],
+    "accept": ["erreich"],
     "chosen": "nicht erreichbar",
     "confidence": "high",
     "sources": "catalog"
   },
   "update": {
-    "accept": [
-      "Updates",
-      "aktualisier",
-      "Aktualisierung",
-      "Softwareupdate"
-    ],
+    "accept": ["Updates", "aktualisier", "Aktualisierung", "Softwareupdate"],
     "chosen": "Update",
     "confidence": "high",
     "forms": "a new Cmdr version → Update; keeping an index current → Aktualisierung (Schnelle Aktualisierung); macOS's pane → Softwareupdate (one word)",
     "sources": "macOS (Softwareupdate; Nach Updates suchen)"
   },
   "usage": {
-    "accept": [
-      "Nutzungsstatistiken",
-      "Verbrauch",
-      "Kosten",
-      "Ausgaben"
-    ],
+    "accept": ["Nutzungsstatistiken", "Verbrauch", "Kosten", "Ausgaben"],
     "avoid": [
       {
         "form": "pseudonym / pseudonymisiert",
@@ -4006,17 +3139,13 @@
     "sources": "AOSP SettingsLib values-de (enable_adb = USB-Debugging), retrieved 2026-09-07; developer.android.com/tools/adb?hl=de (Android SDK Platform Tools), retrieved 2026-09-06"
   },
   "username": {
-    "accept": [
-      "Benutzernamen"
-    ],
+    "accept": ["Benutzernamen"],
     "chosen": "Benutzername",
     "confidence": "high",
     "sources": "NetAuthAgent (TOOLTIP_NAME_SMB Domain\\Benutzername)"
   },
   "version": {
-    "accept": [
-      "Versionen"
-    ],
+    "accept": ["Versionen"],
     "chosen": "Version",
     "confidence": "high",
     "exceptions": {
@@ -4039,9 +3168,7 @@
     "sources": "style guide; macOS preview UI"
   },
   "volume": {
-    "accept": [
-      "Volumes"
-    ],
+    "accept": ["Volumes"],
     "avoid": [
       {
         "form": "Lautstärke",
@@ -4064,30 +3191,20 @@
     "sources": "catalog (commands.paneLeftVolumeChooser.label, shortcuts.scope.volumeChooser)"
   },
   "waiting": {
-    "accept": [
-      "warte",
-      "wartet",
-      "Warten",
-      "ausstehend"
-    ],
+    "accept": ["warte", "wartet", "Warten", "ausstehend"],
     "chosen": "Wartet",
     "confidence": "high",
     "forms": "the queued status chip → Wartet; a waiting line in body prose gets a subject (Cmdr wartet auf eine Antwort vom Ziel.)",
     "sources": "catalog (queue.row.status)"
   },
   "warning": {
-    "accept": [
-      "Warn"
-    ],
+    "accept": ["Warn"],
     "chosen": "Warnung",
     "confidence": "high",
     "sources": "MS terminology"
   },
   "watcher": {
-    "accept": [
-      "überwach",
-      "Ereignis"
-    ],
+    "accept": ["überwach", "Ereignis"],
     "chosen": "Überwachung",
     "confidence": "high",
     "exceptions": {
@@ -4109,12 +3226,7 @@
     "sources": "macOS (Help > Neuigkeiten); catalog (menu.help.whatsNew, commands.helpWhatsNew.label)"
   },
   "word-wrap": {
-    "accept": [
-      "umbruch",
-      "umbrech",
-      "brech",
-      "bricht"
-    ],
+    "accept": ["umbruch", "umbrech", "brech", "bricht"],
     "avoid": [
       {
         "form": "Textumbruch",
@@ -4126,11 +3238,7 @@
     "sources": "MS terminology"
   },
   "write": {
-    "accept": [
-      "geschrieben",
-      "schreibt",
-      "schreib"
-    ],
+    "accept": ["geschrieben", "schreibt", "schreib"],
     "avoid": [
       {
         "form": "partiell",
@@ -4147,16 +3255,29 @@
     "sources": "catalog (errors.write.destinationFull.message)"
   },
   "zoom": {
-    "accept": [
-      "zoomen",
-      "Vergrößern",
-      "Verkleinern",
-      "vergrößer",
-      "verkleiner"
-    ],
+    "accept": ["zoomen", "Vergrößern", "Verkleinern", "vergrößer", "verkleiner"],
     "chosen": "Zoom",
     "confidence": "high",
     "forms": "zoom in/out → Vergrößern/Verkleinern; Zoom to N% → Auf N % zoomen; the text-size submenu → Zoom (noun); the Window menu's zoom → Zoomen (verb)",
     "sources": "macOS (vergrößern/verkleinern; Finder 300667.title Zoomen); Nautilus (Ansicht vergrößern)"
+  },
+  "worktree": {
+    "chosen": "Worktree",
+    "confidence": "high",
+    "forms": "a linked worktree → Worktree (kept, git term)",
+    "sources": "git term, kept verbatim as the @key descriptions ask"
+  },
+  "on-disk-size": {
+    "chosen": "Auf dem Datenträger",
+    "confidence": "high",
+    "forms": "the physical size label → Auf dem Datenträger, pairing with the content size Inhalt",
+    "sources": "standard German",
+    "accept": ["Datenträgergröße"]
+  },
+  "last-used": {
+    "chosen": "Zuletzt benutzt",
+    "confidence": "high",
+    "forms": "the server table's Last used column",
+    "sources": "macOS Finder (Zuletzt benutzt); ConnectToWindow (Zuletzt benutzte Server löschen)"
   }
 }

@@ -612,7 +612,7 @@
     "confidence": "tentative",
     "sources": "catalog (settings.askCmdr.spend.disclaimer)"
   },
-  "debug": {
+  "debugging": {
     "chosen": "depuración",
     "accept": ["depurar"],
     "forms": "debug level → nivel de depuración; for debugging → para depurar",
@@ -1720,7 +1720,7 @@
     "confidence": "high",
     "sources": "standard"
   },
-  "originals": {
+  "original": {
     "chosen": "originales",
     "accept": ["original"],
     "forms": "your originals are untouched → tus originales siguen intactos; kept your originals → conservó tus originales",

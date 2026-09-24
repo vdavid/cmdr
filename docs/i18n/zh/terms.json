@@ -49,7 +49,7 @@
     "forms": "button 添加到… (添加到报告, 添加到程序坞); favorites and the queue take 加入 (加入个人收藏, 加入队列); \"we've added\" → 新增",
     "sources": "macOS Finder (Add to Dock → 添加到程序坞)"
   },
-  "agent": {
+  "ai-agent": {
     "avoid": [
       {
         "form": "智能体",
@@ -2743,10 +2743,8 @@
     "sources": "MS terminology"
   },
   "subscription": {
-    "accept": ["续订"],
     "chosen": "订阅",
     "confidence": "high",
-    "forms": "renew 续订",
     "sources": "standard"
   },
   "suggestion": {
@@ -3082,7 +3080,11 @@
   "whats-new": {
     "chosen": "新增功能",
     "confidence": "high",
-    "sources": "macOS/MS"
+    "sources": "macOS/MS",
+    "exceptions": {
+      "settings.whatsNew.showOnUpdate.label": "a plain \"show what's new\" phrase: 新增内容 reads naturally after 显示",
+      "settings.whatsNew.lastSeenVersion.description": "internal setting hidden from the UI; names the popup loosely as 新增内容"
+    }
   },
   "wildcard": {
     "chosen": "通配符",
@@ -3096,7 +3098,6 @@
     "sources": "MS terminology"
   },
   "worktree": {
-    "accept": ["工作树"],
     "avoid": [
       {
         "form": "工作树 (for worktree)",
@@ -3106,7 +3107,7 @@
     "chosen": "worktree",
     "confidence": "high",
     "decision": "git 的 worktree（`errors.git.orphanedWorktree.*`、`settings.fileExplorer.git.showVirtualGitPortal.description`、`fileExplorer.git.size.linkedWorktrees`）",
-    "forms": "git's worktree stays verbatim (个关联 worktree); the working tree in general 工作树",
+    "forms": "git's worktree stays verbatim (个关联 worktree)",
     "sources": "git term"
   },
   "write": {
@@ -3126,5 +3127,16 @@
     "confidence": "confirmed",
     "forms": "zoom in / out 放大 / 缩小",
     "sources": "macOS AppKit"
+  },
+  "working-tree": {
+    "chosen": "工作树",
+    "confidence": "high",
+    "forms": "the checked-out files in general; git's own \"worktree\" stays verbatim (see worktree)",
+    "sources": "git term"
+  },
+  "renew": {
+    "chosen": "续订",
+    "confidence": "high",
+    "sources": "standard"
   }
 }

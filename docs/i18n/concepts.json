@@ -10,17 +10,34 @@
     "match": ["absolute path", "absolute"],
     "sense": "A path that starts at the file system root (begins with /)."
   },
+  "accent": {
+    "en": "accent",
+    "match": ["accent", "accents", "accented", "accent mark"],
+    "sense": "A diacritic on a letter (é), in the look-alike-names explanation."
+  },
   "access": {
     "distinct": ["permission", "full-disk-access"],
     "en": "access",
     "match": ["access", "exclusive access"],
     "sense": "Being able to reach or open something (macOS privacy access, a server granting access, a device held with exclusive access)."
   },
+  "accessibility": {
+    "distinct": ["system-settings-pane"],
+    "en": "Accessibility",
+    "match": ["accessibility"],
+    "sense": "The macOS Accessibility settings pane and its features (text size)."
+  },
   "account": {
     "distinct": ["apple-account"],
     "en": "account",
     "match": ["account", "accounts"],
     "sense": "The user account on a server or service that Cmdr signs in with."
+  },
+  "action": {
+    "distinct": ["operation", "command"],
+    "en": "action",
+    "match": ["action", "actions"],
+    "sense": "Something the user or a command can do in the UI (a dialog's choices, the viewer's context actions, a command's name in the shortcut list, an undoable action)."
   },
   "activate": {
     "en": "activate",
@@ -33,6 +50,26 @@
     "match": ["add", "adds", "adding", "added"],
     "notMatch": ["add up", "adds a row"],
     "sense": "Putting something into an existing list or report (a folder, a server, a favorite, a note)."
+  },
+  "advanced": {
+    "distinct": ["settings"],
+    "en": "Advanced",
+    "match": ["=advanced", "advanced settings", "advanced > input", "advanced"],
+    "notMatch": ["advanced users"],
+    "sense": "The Advanced section of Settings, and a collapsible Advanced group in a form."
+  },
+  "ai-agent": {
+    "distinct": ["ai-client", "ai-feature", "ask-cmdr"],
+    "en": "agent",
+    "match": ["agent", "agents"],
+    "notMatch": ["ssh-agent"],
+    "sense": "Cmdr's own AI acting on the user's behalf (it sets filters, proposes renames), including the operation log's initiator label."
+  },
+  "ai-client": {
+    "distinct": ["ai-agent"],
+    "en": "AI client",
+    "match": ["ai client", "ai clients"],
+    "sense": "An outside AI app driving Cmdr over its automation interface, named as the source of an operation."
   },
   "ai-feature": {
     "distinct": ["ask-cmdr", "cloud-ai"],
@@ -48,11 +85,24 @@
     "notMatch": ["=your cloud provider", "managed by a cloud provider"],
     "sense": "The company or service that runs the AI model Cmdr talks to (OpenAI, Anthropic, a local server)."
   },
+  "ai-reply": {
+    "distinct": ["answer", "respond"],
+    "en": "reply",
+    "match": ["reply", "replies"],
+    "notMatch": ["so we can reply"],
+    "sense": "An Ask Cmdr assistant answer, or an AI provider response."
+  },
   "ai-tool": {
     "en": "tool (AI)",
     "match": ["tool", "tools"],
     "note": "Developer tooling (Android platform tools) is not this concept.",
     "sense": "A function the AI can call (list a folder, search), and its status lines."
+  },
+  "alias": {
+    "distinct": ["symlink", "hard-link"],
+    "en": "alias",
+    "match": ["alias", "aliases"],
+    "sense": "A macOS Finder alias file."
   },
   "allow": {
     "distinct": ["approve", "deny"],
@@ -67,6 +117,31 @@
     "match": ["already exists", "already exist"],
     "sense": "A name clash: something with that name is already at the destination."
   },
+  "always": {
+    "en": "always",
+    "match": ["always ask", "always allow", "always send", "always show", "always use", "always open"],
+    "note": "Distinct from never; don't let a never sentence borrow the always word.",
+    "notMatch": ["can always send"],
+    "sense": "A setting or button choice meaning every time (Always send, Always allow)."
+  },
+  "android-platform-tools": {
+    "distinct": ["android-tools", "phone", "usb-debugging"],
+    "en": "platform tools",
+    "match": ["platform tools", "platform-tools"],
+    "sense": "Google's Android SDK Platform Tools package, which ships adb."
+  },
+  "android-tools": {
+    "distinct": ["android-platform-tools", "phone"],
+    "en": "Android tools",
+    "match": ["android tools", "android tooling"],
+    "sense": "The Android command-line developer tools installed on the Mac, as a group."
+  },
+  "anonymous": {
+    "distinct": ["redact"],
+    "en": "anonymous",
+    "match": ["anonymous", "anonymously", "anonymized"],
+    "sense": "Data collected without identifying the user."
+  },
   "answer": {
     "distinct": ["respond"],
     "en": "answer",
@@ -80,6 +155,13 @@
     "match": ["api key", "api keys"],
     "sense": "The secret key a cloud AI provider issues for API access."
   },
+  "app": {
+    "distinct": ["applications-folder", "app-bundle"],
+    "en": "app",
+    "match": ["app", "apps"],
+    "notMatch": ["app bundle", "app bundles", "app switcher", "app store"],
+    "sense": "An application in general: Cmdr itself as \"the app\", another app on the Mac, the app that opens a file, a cloud provider's sync app."
+  },
   "app-bundle": {
     "distinct": ["package", "archive"],
     "en": "app bundle",
@@ -91,6 +173,12 @@
     "en": "app switcher",
     "match": ["app switcher"],
     "sense": "The macOS Command-Tab app switcher (a reserved system shortcut)."
+  },
+  "appearance": {
+    "distinct": ["theme"],
+    "en": "Appearance",
+    "match": ["appearance"],
+    "sense": "The Appearance settings section in Cmdr and the macOS Appearance pane."
   },
   "apple-account": {
     "distinct": ["account"],
@@ -148,10 +236,33 @@
     "note": "Only the chat panel itself carries this name; a sentence that merely describes what the AI does says Cmdr or the AI.",
     "sense": "The product name of the AI chat panel; stays verbatim in every language."
   },
+  "ask-question": {
+    "distinct": ["ask", "ask-cmdr"],
+    "en": "ask about",
+    "match": ["ask about", "you ask about", "when you ask"],
+    "sense": "Putting a question to the AI about files, a folder, or the selection."
+  },
+  "aspect-ratio": {
+    "en": "aspect ratio",
+    "match": ["aspect ratio", "aspect ratios"],
+    "sense": "An image's width-to-height ratio."
+  },
   "attachment": {
     "en": "attachment",
     "match": ["attachment", "attachments", "attach", "attached"],
     "sense": "A file or folder the user attaches to an Ask Cmdr question."
+  },
+  "attribute": {
+    "distinct": ["tag", "metadata"],
+    "en": "attribute",
+    "match": ["attribute", "attributes", "extended attribute"],
+    "sense": "A piece of file metadata a file system stores (an extended attribute, a flag)."
+  },
+  "authentication": {
+    "distinct": ["sign-in", "credentials"],
+    "en": "authentication",
+    "match": ["authentication", "authenticate", "authenticated"],
+    "sense": "A server or volume checking the user's identity: the technical act behind signing in (authentication required, rejected)."
   },
   "available-offline": {
     "distinct": ["online-only"],
@@ -180,6 +291,24 @@
     "note": "Not the gamification sense some term bases give for badge.",
     "sense": "A small overlay marker on a file icon or in the title bar showing a state."
   },
+  "batch-rename": {
+    "distinct": ["rename"],
+    "en": "batch rename",
+    "match": ["batch rename", "bulk rename", "mass rename", "mass-rename", "multi-rename", "rename multiple"],
+    "sense": "Renaming many files at once from a pattern."
+  },
+  "blocked": {
+    "distinct": ["deny", "busy"],
+    "en": "blocked",
+    "match": ["blocked"],
+    "sense": "Something held back from proceeding: a proposed rename preflight won't let through, or an access macOS or another process prevents."
+  },
+  "bookmark": {
+    "distinct": ["favorites"],
+    "en": "bookmark",
+    "match": ["bookmark", "bookmarks"],
+    "sense": "A saved location in a file manager (not Cmdr's favorites)."
+  },
   "brief-view": {
     "distinct": ["full-view"],
     "en": "Brief view",
@@ -199,10 +328,59 @@
     "match": ["browse…", "browse..."],
     "sense": "The button that opens the system file picker to choose a file or folder."
   },
+  "buffer": {
+    "distinct": ["watcher"],
+    "en": "buffer",
+    "match": ["buffer", "buffers"],
+    "sense": "A block of memory Cmdr keeps filled ahead of use or that can fill up and overflow (the viewer's prefetch buffer, the type-to-jump buffer, the file watcher's event buffer)."
+  },
+  "bug": {
+    "en": "bug",
+    "match": ["bug", "bugs"],
+    "sense": "A defect in Cmdr the user helps find and the developer fixes."
+  },
+  "busy": {
+    "distinct": ["in-use", "idle"],
+    "en": "busy",
+    "match": ["busy"],
+    "note": "A volume someone holds open is in-use; a device with nothing running is idle.",
+    "notMatch": ["busy folders", "you're not busy", "not busy"],
+    "sense": "Occupied and unable to take a request right now: a volume with operations running (the greyed menu item's (busy) marker), a device, a provider, a system resource."
+  },
+  "button": {
+    "distinct": ["shortcut"],
+    "en": "button",
+    "match": ["button", "buttons"],
+    "sense": "An on-screen button, named in running text (click the + button)."
+  },
+  "button-bar": {
+    "distinct": ["function-key-bar", "toolbar"],
+    "en": "button bar",
+    "match": ["button bar"],
+    "sense": "A row of command buttons (Total Commander's drive-button bar)."
+  },
+  "byte": {
+    "en": "byte",
+    "match": ["byte", "bytes"],
+    "sense": "The byte as a size unit (a byte count, bytes transferred), and raw bytes the viewer shows."
+  },
+  "cable": {
+    "distinct": ["unplug", "port"],
+    "en": "cable",
+    "match": ["cable", "cables"],
+    "sense": "The USB cable that connects a phone, camera, or drive to the Mac."
+  },
   "cache": {
     "en": "cache",
     "match": ["cache", "caches", "cached"],
     "sense": "Locally stored data kept to speed things up."
+  },
+  "camera": {
+    "distinct": ["camera-details", "device"],
+    "en": "camera",
+    "match": ["camera", "cameras"],
+    "notMatch": ["camera details", "camera daemon"],
+    "sense": "A digital camera reached over MTP/PTP, or the camera that took a photo."
   },
   "camera-details": {
     "distinct": ["device"],
@@ -273,6 +451,12 @@
     "match": ["checklist"],
     "sense": "The onboarding list of small optional favors (star, like, email)."
   },
+  "chip": {
+    "distinct": ["badge", "tag"],
+    "en": "chip",
+    "match": ["chip", "chips"],
+    "sense": "A small labeled pill in the UI, such as the repository chip that shows a folder is inside a git repo."
+  },
   "choose": {
     "distinct": ["select", "browse-file-picker"],
     "en": "choose",
@@ -303,6 +487,19 @@
       "usually clears it"
     ],
     "sense": "Emptying a field, a search, an index, or a list of recent items without deleting files."
+  },
+  "click": {
+    "distinct": ["double-click", "context-menu", "tap"],
+    "en": "click",
+    "match": ["click", "clicks", "clicked", "clicking"],
+    "note": "Many languages split this from pressing a key; a locale that uses one verb for both still records the choice.",
+    "notMatch": ["right-click*", "right click*", "double-click*", "double click*"],
+    "sense": "Pressing the mouse or trackpad button once on a control (a button, a link, a row), as opposed to pressing a key."
+  },
+  "client": {
+    "en": "client",
+    "match": ["client", "clients"],
+    "sense": "A program that connects to a server (an AI client over MCP, a sync client)."
   },
   "clipboard": {
     "en": "clipboard",
@@ -338,12 +535,29 @@
     ],
     "sense": "A file-sync service (iCloud Drive, Dropbox, Google Drive) whose folders Cmdr shows."
   },
+  "column": {
+    "distinct": ["row", "brief-view"],
+    "en": "column",
+    "match": ["column", "columns", "column width"],
+    "sense": "A column of the file list (Name, Size, Ext), a table, or Brief view's multi-column layout."
+  },
+  "coming-soon": {
+    "en": "coming soon",
+    "match": ["coming soon"],
+    "sense": "A marker on a feature or control that isn't available yet but is planned."
+  },
   "command": {
     "distinct": ["command-palette"],
     "en": "command",
     "match": ["command", "commands"],
     "notMatch": ["git command", "mount command"],
     "sense": "An action the user can run from the command palette or a menu, or a terminal command."
+  },
+  "command-line": {
+    "distinct": ["command", "terminal"],
+    "en": "command line",
+    "match": ["command line", "command-line"],
+    "sense": "A shell command line (a terminal's, or Total Commander's command-line bar)."
   },
   "command-palette": {
     "distinct": ["command"],
@@ -355,6 +569,11 @@
     "en": "comparator",
     "match": ["comparator", "comparators"],
     "sense": "A comparison sign (<, >, =) in a search filter."
+  },
+  "compare-folders": {
+    "en": "compare folders",
+    "match": ["compare folders", "compare directories"],
+    "sense": "The two-pane command that compares two folders' contents."
   },
   "complete": {
     "distinct": ["done", "not-finished"],
@@ -417,6 +636,12 @@
     "notMatch": ["search keep working"],
     "sense": "Going on with a flow or an operation after a pause or a question."
   },
+  "conversation": {
+    "distinct": ["chat"],
+    "en": "conversation",
+    "match": ["conversation", "conversations"],
+    "sense": "One thread of messages between the user and Ask Cmdr, as distinct from chatting as an activity."
+  },
   "convert": {
     "en": "convert",
     "match": ["convert", "converts", "converting", "converted"],
@@ -429,6 +654,13 @@
     "notMatch": ["released copy"],
     "note": "\"A copy\" as a noun (the duplicate object) may take a different word than the verb.",
     "sense": "Duplicating files to another location (F5), or copying text or a path to the clipboard."
+  },
+  "cost": {
+    "distinct": ["usage", "estimate"],
+    "en": "cost",
+    "match": ["cost", "costs"],
+    "note": "Regional spelling splits (es coste / costo) are recorded per locale.",
+    "sense": "What something takes in money (AI usage) or in resources (disk space, a macOS process to suppress)."
   },
   "crash-report": {
     "distinct": ["error-report", "report"],
@@ -456,6 +688,12 @@
     "match": ["current folder", "current directory"],
     "sense": "The folder the active pane is showing."
   },
+  "cursor": {
+    "distinct": ["select"],
+    "en": "cursor",
+    "match": ["cursor", "cursors", "under the cursor", "under cursor"],
+    "sense": "The file-list cursor: the highlighted row that keyboard commands act on (also the viewer's text cursor)."
+  },
   "custom": {
     "distinct": ["default", "preset"],
     "en": "Custom",
@@ -473,10 +711,38 @@
     "match": ["damaged", "corrupt", "corrupted"],
     "sense": "A file or archive whose contents can't be read correctly."
   },
+  "dark-mode": {
+    "distinct": ["theme", "appearance"],
+    "en": "dark mode",
+    "match": ["dark mode", "light mode"],
+    "sense": "The macOS light or dark appearance."
+  },
   "dashboard": {
     "en": "dashboard",
     "match": ["dashboard"],
     "sense": "An AI provider's billing or usage web page."
+  },
+  "database": {
+    "en": "database",
+    "match": ["database", "databases"],
+    "sense": "A structured data store (the index database, a provider's database)."
+  },
+  "date-wilting": {
+    "en": "Wilting",
+    "match": ["wilting"],
+    "sense": "The date-color scheme that fades file dates like a wilting plant (green, yellow, brown)."
+  },
+  "debounce": {
+    "en": "debounce",
+    "match": ["debounce", "debounced"],
+    "sense": "Waiting for a burst of events to settle before acting on them (an advanced setting)."
+  },
+  "debugging": {
+    "distinct": ["usb-debugging", "verbose", "log"],
+    "en": "debugging",
+    "match": ["debug", "debugging", "debug level"],
+    "notMatch": ["usb debugging"],
+    "sense": "Diagnosing problems in Cmdr itself: a debug log level, logs or files kept for debugging."
   },
   "default": {
     "distinct": ["custom"],
@@ -502,11 +768,23 @@
     "match": ["deny", "denies", "deny all"],
     "sense": "Refusing a permission request or a proposed rename."
   },
+  "deployment": {
+    "distinct": ["model", "endpoint"],
+    "en": "deployment",
+    "match": ["deployment", "deployments"],
+    "sense": "An Azure OpenAI deployment: the name a deployed model gets in the user's Azure resource, which may differ from the model name."
+  },
   "deselect": {
     "distinct": ["select"],
     "en": "deselect",
     "match": ["deselect", "deselects", "deselecting", "unselect"],
     "sense": "Removing files from the selection."
+  },
+  "desktop": {
+    "distinct": ["documents", "download"],
+    "en": "Desktop",
+    "match": ["desktop"],
+    "sense": "The macOS Desktop folder (named in lists of protected folders), and the Desktop & Dock settings pane."
   },
   "destination": {
     "distinct": ["source"],
@@ -515,12 +793,60 @@
     "note": "A symlink's target is a different sense (what the link points at).",
     "sense": "Where a copy, move, or compress writes to."
   },
+  "details": {
+    "distinct": ["camera-details", "technical-details"],
+    "en": "details",
+    "match": ["details", "detail", "show details"],
+    "notMatch": ["camera details", "technical details"],
+    "sense": "Further information behind a disclosure (license details, report details)."
+  },
+  "detect": {
+    "en": "detect",
+    "match": ["detect", "detects", "detected", "detecting"],
+    "sense": "Noticing a connected device or a condition (a phone plugged in, a symlink loop)."
+  },
   "device": {
     "distinct": ["drive", "phone"],
     "en": "device",
     "match": ["device", "devices"],
     "notMatch": ["on-device"],
     "sense": "An MTP/PTP or USB device such as a phone, Kindle, or camera."
+  },
+  "diagnostics": {
+    "distinct": ["log", "report"],
+    "en": "diagnostics",
+    "match": ["diagnostic", "diagnostics", "diagnose"],
+    "sense": "Diagnostic information collected to troubleshoot a problem."
+  },
+  "dialog": {
+    "distinct": ["window", "notification"],
+    "en": "dialog",
+    "match": ["dialog", "dialogs", "dialog box"],
+    "sense": "A dialog window in Cmdr or macOS."
+  },
+  "dimensions": {
+    "distinct": ["size"],
+    "en": "dimensions",
+    "match": ["dimensions"],
+    "sense": "An image's pixel width and height."
+  },
+  "direct-connection": {
+    "distinct": ["native", "connect", "network-share"],
+    "en": "direct connection",
+    "match": [
+      "direct connection",
+      "direct connections",
+      "connect directly",
+      "connected directly",
+      "connecting directly"
+    ],
+    "sense": "Cmdr's own fast SMB connection to a share, as opposed to the slower connection macOS mounts."
+  },
+  "directory-hotlist": {
+    "distinct": ["favorites", "bookmark"],
+    "en": "directory hotlist",
+    "match": ["hotlist", "directory hotlist"],
+    "sense": "Total Commander's list of frequently used folders (a feature Cmdr doesn't ship)."
   },
   "disable": {
     "distinct": ["enable"],
@@ -538,6 +864,12 @@
     "en": "disk image",
     "match": ["disk image", "disk images"],
     "sense": "A .dmg or similar file macOS mounts as a volume."
+  },
+  "disk-usage": {
+    "distinct": ["free-space", "on-disk"],
+    "en": "disk usage",
+    "match": ["disk usage"],
+    "sense": "How much of a drive is used, shown as a bar or a figure."
   },
   "dismiss": {
     "distinct": ["close", "clear", "cancel"],
@@ -575,6 +907,13 @@
     "match": ["download", "downloads", "downloading", "downloaded"],
     "sense": "Fetching an update, a model, or a file from the internet; also the Downloads folder jump."
   },
+  "drag": {
+    "distinct": ["move"],
+    "en": "drag",
+    "match": ["drag", "drags", "dragging", "dragged", "drop to"],
+    "notMatch": ["drag pan"],
+    "sense": "Moving something with the mouse held down (drag and drop, a drag threshold, dragging an icon to the Dock)."
+  },
   "drive": {
     "distinct": ["volume", "device", "network-drive", "startup-disk"],
     "en": "drive",
@@ -607,6 +946,12 @@
     "note": "Placeholder addresses use a reserved example domain; never a registrable one.",
     "sense": "An email address the user gives Cmdr, or emailing the developer."
   },
+  "empty-trash": {
+    "distinct": ["trash", "delete-permanently"],
+    "en": "Empty the Trash",
+    "match": ["empty the trash", "empty trash"],
+    "sense": "Permanently deleting everything in the macOS Trash (Finder's Empty Trash)."
+  },
   "enable": {
     "distinct": ["disable"],
     "en": "enable",
@@ -637,6 +982,12 @@
     "note": "Also the verb \"enter a value\"; that sense is not this concept.",
     "sense": "The Enter/Return key (\"press Enter to …\")."
   },
+  "entry": {
+    "distinct": ["item"],
+    "en": "entry",
+    "match": ["entry", "entries"],
+    "sense": "One record in a list, an index, a scan, or a credential store (an indexed file, a recent search, a Keychain entry)."
+  },
   "error-report": {
     "distinct": ["crash-report", "report"],
     "en": "error report",
@@ -654,10 +1005,28 @@
     "note": "Not the business-quote sense some term bases list first.",
     "sense": "A rough cost estimate for AI usage."
   },
+  "example": {
+    "en": "Example:",
+    "match": ["example:", "e.g."],
+    "note": "Many languages split the full word (\"Example:\") from the abbreviation (\"e.g.\").",
+    "sense": "A prefix introducing a sample value in a placeholder or hint."
+  },
+  "exclude": {
+    "distinct": ["skip", "remove"],
+    "en": "exclude",
+    "match": ["exclude", "excludes", "excluded", "excluding", "exclusion"],
+    "sense": "The user deliberately leaving a folder or file out of indexing or a search scope."
+  },
   "expired": {
     "en": "expired",
     "match": ["expired", "expires", "expiry"],
     "sense": "A license that is no longer valid."
+  },
+  "exposure": {
+    "distinct": ["camera-details"],
+    "en": "exposure",
+    "match": ["exposure", "aperture", "iso speed"],
+    "sense": "A photo's exposure, aperture, and ISO metadata fields."
   },
   "extension": {
     "en": "extension",
@@ -702,11 +1071,30 @@
     "note": "The macOS menu bar's File menu is Apple's own localized title and may differ from the ordinary word.",
     "sense": "A file on disk."
   },
+  "file-handle": {
+    "distinct": ["in-use"],
+    "en": "file handle",
+    "match": [
+      "open handle",
+      "last handle",
+      "that handle",
+      "handles it",
+      "handle closes",
+      "file handle",
+      "file handles"
+    ],
+    "sense": "An open reference an app, process, or server holds on a file, which keeps it in use."
+  },
   "file-list": {
     "distinct": ["pane"],
     "en": "file list",
     "match": ["file list"],
     "sense": "The list of files and folders inside a pane."
+  },
+  "file-manager": {
+    "en": "file manager",
+    "match": ["file manager", "file managers"],
+    "sense": "The kind of app Cmdr is."
   },
   "file-operations": {
     "distinct": ["operation"],
@@ -719,6 +1107,12 @@
     "en": "file system",
     "match": ["file system", "file systems", "filesystem", "filesystems", "file system watching"],
     "sense": "A volume's on-disk format and structure (APFS, FAT32, exFAT), and the file-system watcher settings."
+  },
+  "filter": {
+    "distinct": ["search", "query"],
+    "en": "filter",
+    "match": ["filter", "filters", "filtering", "filtered"],
+    "sense": "Narrowing a list or search results by a condition (search facets, the recent-queries filter)."
   },
   "finder": {
     "en": "Finder",
@@ -737,11 +1131,23 @@
     "match": ["folder", "folders", "directory", "directories"],
     "sense": "A folder on disk."
   },
+  "font": {
+    "en": "font",
+    "match": ["font", "fonts", "typeface"],
+    "sense": "A typeface used to draw text."
+  },
   "force-quit": {
     "distinct": ["quit"],
     "en": "Force Quit",
     "match": ["force quit"],
     "sense": "The macOS Force Quit Applications window and its reserved shortcut."
+  },
+  "forget": {
+    "distinct": ["remove", "clear", "delete"],
+    "en": "forget",
+    "match": ["forget", "forgets", "forgot", "forgotten", "forgetting"],
+    "notMatch": ["don't forget"],
+    "sense": "Dropping something Cmdr remembers (a saved server, a saved password, a trusted host key, a drive's index, Ask Cmdr's notes) without touching any files."
   },
   "format": {
     "distinct": ["file-system"],
@@ -750,12 +1156,23 @@
     "note": "Several senses: a drive's format, an archive's compression method, and a date or number display format; many locales split them.",
     "sense": "A disk's file-system format (formatted as exFAT), an archive's compression format, or a display format (dates, sizes)."
   },
+  "frame": {
+    "en": "frame",
+    "match": ["frame", "frames", "frame rate"],
+    "sense": "A video frame, and the frame rate."
+  },
   "free-space": {
     "distinct": ["reclaim"],
     "en": "free space",
     "match": ["free space", "disk space", "low disk space", "low on space", "running low", "no room"],
     "note": "The price sense of \"free\" (no cost) is not this concept.",
     "sense": "Unused capacity on a drive."
+  },
+  "from-to": {
+    "distinct": ["source", "destination"],
+    "en": "From / To",
+    "match": ["=from", "=to", "=from:"],
+    "sense": "The paired source and destination headings of the copy/move dialog, and the scan phase's source label."
   },
   "full-disk-access": {
     "distinct": ["access", "permission"],
@@ -779,12 +1196,46 @@
     "match": ["function key bar", "function keys"],
     "sense": "The row of F-key command buttons at the bottom of the window."
   },
+  "generate": {
+    "distinct": ["create"],
+    "en": "generate",
+    "match": ["generate", "generates", "generating", "generated", "regenerate"],
+    "sense": "An AI model producing text (stop generating, regenerate)."
+  },
   "get-info": {
     "distinct": ["properties"],
     "en": "Get Info",
     "match": ["get info"],
     "note": "Apple localizes this label in every language, even where a @key description says to keep it English.",
     "sense": "Finder's Get Info command and window."
+  },
+  "git-branch": {
+    "distinct": ["git-commit", "repository"],
+    "en": "branch",
+    "match": ["branch", "branches"],
+    "sense": "A git branch, shown in the repository chip and git status and browsable in the .git portal."
+  },
+  "git-browser": {
+    "distinct": ["browse"],
+    "en": "git browser",
+    "match": ["git browser"],
+    "sense": "Cmdr's view that lists a repo's branches, tags, commits, and worktrees like folders."
+  },
+  "git-commit": {
+    "distinct": ["git-branch", "repository", "snapshot"],
+    "en": "commit",
+    "match": ["commit", "commits"],
+    "sense": "A git commit (a snapshot in the repo's history), as the .git portal lists it."
+  },
+  "git-dirty": {
+    "en": "dirty",
+    "match": ["dirty"],
+    "sense": "A git working tree with uncommitted changes."
+  },
+  "github-issue": {
+    "en": "issue (GitHub)",
+    "match": ["github issue", "github issues", "open an issue", "file an issue"],
+    "sense": "A GitHub issue someone opens to report a problem or request."
   },
   "github-star": {
     "distinct": ["like"],
@@ -825,10 +1276,37 @@
     "match": ["got it"],
     "sense": "The acknowledgement button on a notice."
   },
+  "grant": {
+    "distinct": ["allow", "revoke"],
+    "en": "grant",
+    "match": ["grant", "grants", "granted", "granting"],
+    "sense": "Giving an app a permission (grant full disk access, grant Cmdr access)."
+  },
+  "group": {
+    "en": "group",
+    "match": ["group", "groups"],
+    "sense": "A labelled group of rows (the volume switcher's Network group), or a Unix file group."
+  },
   "guest": {
     "en": "guest",
     "match": ["guest", "guests"],
     "sense": "Connecting to a server without an account."
+  },
+  "hard-link": {
+    "distinct": ["symlink", "alias"],
+    "en": "hard link",
+    "match": ["hard link", "hard links", "hardlink", "hardlinks", "hardlinked"],
+    "sense": "A second directory entry for the same file data, so files sharing it are counted once on disk."
+  },
+  "help-menu": {
+    "en": "Help menu",
+    "match": ["help menu", "=help"],
+    "sense": "The menu bar's Help menu, named in prose (send a report from the Help menu)."
+  },
+  "hex": {
+    "en": "hexadecimal",
+    "match": ["hexadecimal", "hex", "binary view"],
+    "sense": "Base-16 (and base-2) number display in the viewer."
   },
   "hidden": {
     "distinct": ["hide"],
@@ -846,6 +1324,19 @@
     "en": "hint",
     "match": ["hint", "hints"],
     "sense": "A one-time tip Cmdr shows, and the internal flags that record it was shown."
+  },
+  "history": {
+    "distinct": ["operation-log", "recent", "log"],
+    "en": "history",
+    "match": ["history", "histories"],
+    "notMatch": ["operation history"],
+    "sense": "A record of past things: file operations Cmdr ran, a chat's earlier messages, recent searches, closed tabs, git history."
+  },
+  "home-folder": {
+    "distinct": ["root-folder", "folder"],
+    "en": "home folder",
+    "match": ["home folder", "home directory", "=home"],
+    "sense": "The user's home folder (~), and the Go menu's Home item."
   },
   "host": {
     "distinct": ["server", "hostname"],
@@ -874,10 +1365,22 @@
     "sense": "Spelled-out durations in a time-remaining line or a countdown.",
     "notMatch": ["wait a minute"]
   },
+  "icloud-drive": {
+    "distinct": ["cloud-provider", "drive"],
+    "en": "iCloud Drive",
+    "match": ["icloud drive"],
+    "sense": "Apple's iCloud Drive, which Apple localizes per language."
+  },
   "icon": {
     "en": "icon",
     "match": ["icon", "icons"],
     "sense": "An app or file icon (in the Dock, in a file row)."
+  },
+  "idle": {
+    "distinct": ["waiting"],
+    "en": "idle",
+    "match": ["idle"],
+    "sense": "Not busy: a device with no transfer running, or a user who stopped typing and clicking."
   },
   "image": {
     "distinct": ["photo", "disk-image"],
@@ -899,12 +1402,24 @@
     ],
     "sense": "Searching pictures by their contents or a description (the image index's search features)."
   },
+  "importance": {
+    "distinct": ["relevance"],
+    "en": "importance",
+    "match": ["importance", "important folders", "matter to you"],
+    "sense": "Cmdr's ranking of how much a folder matters to the user, which decides what gets indexed first and feeds AI context."
+  },
   "in-use": {
     "en": "in use",
     "match": ["in use", "still using", "is using", "are using"],
     "notMatch": ["using it for work"],
     "note": "A full sentence and a grayed-out menu item's short state marker may differ.",
     "sense": "A volume, device, or file that something still has open."
+  },
+  "incoming-connections": {
+    "distinct": ["local-network"],
+    "en": "incoming connections",
+    "match": ["incoming connections", "incoming connection"],
+    "sense": "The macOS prompt to accept incoming network connections."
   },
   "index": {
     "distinct": ["scan", "image-search"],
@@ -922,10 +1437,22 @@
     ],
     "sense": "Cmdr's database of a drive's files and folder sizes, and the image index; also the act of building them."
   },
+  "info": {
+    "distinct": ["get-info", "details"],
+    "en": "info",
+    "match": ["info", "information"],
+    "notMatch": ["get info"],
+    "sense": "Information shown or collected (license info, diagnostic info)."
+  },
   "input-source": {
     "en": "input source",
     "match": ["input source", "input sources"],
     "sense": "A macOS keyboard input source (named in a reserved-shortcut list)."
+  },
+  "inspector": {
+    "en": "inspector",
+    "match": ["inspector"],
+    "sense": "An inspector panel (Preview's)."
   },
   "install": {
     "en": "install",
@@ -933,12 +1460,30 @@
     "notMatch": ["brew install"],
     "sense": "Installing an update, a tool, or a model."
   },
+  "internet": {
+    "distinct": ["network"],
+    "en": "internet",
+    "match": ["internet", "internet connection"],
+    "sense": "The internet as a whole, as opposed to a local network (mostly \"check your internet connection\" advice)."
+  },
+  "interrupted": {
+    "distinct": ["not-finished", "cancel"],
+    "en": "interrupted",
+    "match": ["interrupted", "interruption"],
+    "sense": "Something cut off before it could finish by an outside cause (a signal, a dropped connection)."
+  },
   "invert-selection": {
     "distinct": ["select", "deselect"],
     "en": "Invert selection",
     "match": ["invert selection", "inverts the selection"],
     "note": "Total Commander and Double Commander have this exact item; the menu item and the palette command share one English string.",
     "sense": "The command that flips the selection in the active pane (⇧8): selected files become unselected and the rest selected."
+  },
+  "ip-address": {
+    "distinct": ["hostname", "server-address"],
+    "en": "IP address",
+    "match": ["ip address", "ip addresses"],
+    "sense": "A host's numeric network address."
   },
   "item": {
     "distinct": ["file", "folder"],
@@ -948,11 +1493,22 @@
     "note": "A menu item or a list entry that isn't a file keeps the ordinary word.",
     "sense": "A file or folder when the string covers both, or an entry in a scan."
   },
+  "just-now": {
+    "en": "just now",
+    "match": ["just now"],
+    "sense": "The newest step of a relative-time label (just now, 5m ago)."
+  },
   "keep": {
     "distinct": ["leave-alone"],
     "en": "keep",
     "match": ["keep them", "keep the files", "kept its name", "kept their names", "keep the names"],
     "sense": "Leaving files or a name as they are (the safe answer in a rollback prompt, a rename that kept its name)."
+  },
+  "key-combination": {
+    "distinct": ["shortcut", "modifier-key"],
+    "en": "key combination",
+    "match": ["combo", "combos", "key combination", "key combinations"],
+    "sense": "The actual keys pressed together that a shortcut is bound to, as recorded or named in a conflict warning."
   },
   "key-file": {
     "distinct": ["host-key", "password"],
@@ -966,11 +1522,28 @@
     "note": "Apple localizes Keychain and Keychain Access in many languages; it is not a do-not-translate brand.",
     "sense": "The macOS credential store, its Keychain Access app, and the equivalent keyring on other systems."
   },
+  "keyword": {
+    "distinct": ["image-search", "tag"],
+    "en": "keyword",
+    "match": ["keyword", "keywords"],
+    "sense": "A search term in keyword (not semantic) image search."
+  },
   "kind": {
     "distinct": ["type"],
     "en": "kind",
     "match": ["kind", "same kind"],
     "sense": "A file's type as Finder names it (the Kind column and \"select all of the same kind\")."
+  },
+  "language": {
+    "en": "language",
+    "match": ["language", "languages"],
+    "sense": "The UI language, or a natural language in search."
+  },
+  "last-used": {
+    "distinct": ["modified"],
+    "en": "Last used",
+    "match": ["last used"],
+    "sense": "The column that shows when a saved server was last opened."
   },
   "later": {
     "en": "Later",
@@ -978,17 +1551,40 @@
     "notMatch": ["any time later"],
     "sense": "A button that defers a prompt."
   },
+  "layout": {
+    "en": "layout",
+    "match": ["layout", "layouts"],
+    "sense": "How UI elements are arranged on screen."
+  },
+  "learn-more": {
+    "en": "learn more",
+    "match": ["more about", "learn more"],
+    "sense": "An info link or button that explains a setting further."
+  },
   "leave-alone": {
     "distinct": ["skip", "keep"],
     "en": "leave alone",
     "match": ["left alone", "leave alone", "leaves alone", "left where", "left in place", "left them"],
     "sense": "Cmdr deliberately not touching files it can't be sure about during a rollback or undo."
   },
+  "level": {
+    "distinct": ["threshold"],
+    "en": "level",
+    "match": ["level", "levels"],
+    "notMatch": ["top level", "top-level", "hardware-level"],
+    "sense": "A step on a graded setting (compression level, zoom level, log level)."
+  },
   "license": {
     "distinct": ["license-key"],
     "en": "license",
     "match": ["license", "licenses", "licensed", "perpetual", "commercial"],
     "sense": "A Cmdr license and its tiers (personal, commercial, perpetual)."
+  },
+  "license-agreement": {
+    "distinct": ["license"],
+    "en": "license agreement",
+    "match": ["license agreement", "terms of use"],
+    "sense": "The legal license agreement document."
   },
   "license-key": {
     "distinct": ["api-key"],
@@ -1014,6 +1610,32 @@
     "en": "line",
     "match": ["line", "lines"],
     "sense": "A line of text in the viewer, or a line in a config file."
+  },
+  "linux-distribution": {
+    "en": "distribution",
+    "match": ["distribution", "distributions", "distro"],
+    "sense": "A Linux distribution, whose package manager provides a missing package."
+  },
+  "list": {
+    "distinct": ["file-list"],
+    "en": "list",
+    "match": ["list", "lists"],
+    "notMatch": ["mailing list", "mailing lists", "on the list", "checklist", "file list", "remove from list"],
+    "sense": "A generic UI list (a server list, the list of apps, a list of results)."
+  },
+  "load": {
+    "distinct": ["reload", "download"],
+    "en": "load",
+    "match": ["load", "loads", "loading", "loaded", "load more"],
+    "notMatch": ["heavy load"],
+    "sense": "Reading data into the app or into memory before showing it (loading a folder, a model, suggestions, more rows)."
+  },
+  "local": {
+    "distinct": ["remote", "local-network"],
+    "en": "local",
+    "match": ["local", "locally"],
+    "notMatch": ["local network", "local networks"],
+    "sense": "On this Mac, as opposed to a server or the cloud (a local model, stored locally)."
   },
   "local-network": {
     "distinct": ["network-share"],
@@ -1066,21 +1688,68 @@
     "match": ["manifest"],
     "sense": "The list of files included in an error-report bundle."
   },
+  "mcp-server": {
+    "en": "MCP server",
+    "match": ["mcp server"],
+    "sense": "Cmdr's Model Context Protocol server that AI assistants can connect to."
+  },
+  "media-duration": {
+    "en": "duration",
+    "match": ["duration"],
+    "notMatch": ["cache duration"],
+    "sense": "How long a video or audio file plays."
+  },
+  "media-playback": {
+    "distinct": ["pause", "volume"],
+    "en": "play",
+    "match": ["play", "mute", "unmute", "playback"],
+    "sense": "Playing video or audio in a preview (play, pause, mute, volume)."
+  },
   "memory": {
     "en": "memory",
     "match": ["memory", "ram"],
     "note": "Two senses: system RAM and Ask Cmdr's remembered notes.",
     "sense": "RAM; also Ask Cmdr's saved notes (\"memory\") in some strings."
   },
+  "menu": {
+    "distinct": ["context-menu", "command-palette"],
+    "en": "menu",
+    "match": ["menu", "menus", "menu bar"],
+    "sense": "A menu in the macOS menu bar, a context menu, or Cmdr's favorites menu."
+  },
   "merge": {
     "en": "merge",
     "match": ["merge", "merges", "merged", "merging"],
     "sense": "Combining the contents of two same-named folders in a conflict."
   },
+  "message": {
+    "distinct": ["notification", "note"],
+    "en": "message",
+    "match": ["message", "messages"],
+    "sense": "A chat message to or from the AI, or a message the user writes."
+  },
+  "metadata": {
+    "distinct": ["attribute", "camera-details"],
+    "en": "metadata",
+    "match": ["metadata"],
+    "sense": "Data about a file (tags, permissions, EXIF) rather than its contents."
+  },
+  "minimize": {
+    "distinct": ["zoom", "hide"],
+    "en": "Minimize",
+    "match": ["minimize"],
+    "sense": "The Window menu's Minimize command."
+  },
   "model": {
     "en": "model",
     "match": ["model", "models"],
     "sense": "An AI model (local or cloud)."
+  },
+  "model-library": {
+    "distinct": ["folder", "model"],
+    "en": "library",
+    "match": ["library", "model library"],
+    "sense": "A provider's catalog of downloadable models (the Ollama library)."
   },
   "modified": {
     "distinct": ["create"],
@@ -1154,6 +1823,22 @@
     "match": ["navigate", "navigates", "navigating", "navigation", "jump to", "jumps to", "go up a folder"],
     "sense": "Going to a folder in a pane (clicking a breadcrumb, jumping to a download, the Navigation settings)."
   },
+  "network": {
+    "distinct": ["local-network", "network-drive", "network-share", "internet"],
+    "en": "network",
+    "match": ["network", "networks"],
+    "notMatch": [
+      "local network",
+      "local networks",
+      "network share",
+      "network shares",
+      "network drive",
+      "network drives",
+      "network volume",
+      "network volumes"
+    ],
+    "sense": "A computer network in general (Wi-Fi, Ethernet, the network a server is on, network errors), and the volume switcher's Network group."
+  },
   "network-drive": {
     "distinct": ["network-share", "drive"],
     "en": "network drive",
@@ -1192,6 +1877,12 @@
     "notMatch": ["finish measuring"],
     "sense": "An operation that stopped before completing, stated gently (queue status, failure toast)."
   },
+  "not-found": {
+    "distinct": ["unreachable", "already-exists"],
+    "en": "not found",
+    "match": ["not found", "couldn't be found", "can't be found", "cannot be found"],
+    "sense": "Something Cmdr looked for isn't there (a path, a file, a share, a device, a command, the adb binary)."
+  },
   "note": {
     "distinct": ["feedback"],
     "en": "note",
@@ -1205,6 +1896,32 @@
     "match": ["notification", "notifications", "notice", "toast"],
     "notMatch": ["notice cmdr"],
     "sense": "A toast or system notification Cmdr shows."
+  },
+  "offline": {
+    "distinct": ["available-offline", "online-only", "cloud-provider"],
+    "en": "offline",
+    "match": ["offline"],
+    "notMatch": ["available offline"],
+    "sense": "Without a network connection, or back on one (a model that works offline, a host that comes back online)."
+  },
+  "on-device": {
+    "distinct": ["cloud-ai", "device", "model"],
+    "en": "on-device",
+    "match": ["on-device", "on device"],
+    "sense": "An AI model that runs on this Mac itself, as opposed to a cloud provider's servers."
+  },
+  "on-disk": {
+    "distinct": ["on-disk-size", "drive"],
+    "en": "on disk",
+    "match": ["on disk", "on-disk"],
+    "notMatch": ["=on disk", "on-disk size", "on-disk sizes", "size on disk"],
+    "sense": "Where a file's data physically lives, on the drive (a file changed on disk, repo data on disk)."
+  },
+  "on-disk-size": {
+    "distinct": ["size", "on-disk", "disk-usage"],
+    "en": "On disk",
+    "match": ["=on disk", "on-disk size", "on-disk sizes", "size on disk"],
+    "sense": "A file's or folder's physical size on the drive (allocated blocks), paired with its content size."
   },
   "onboarding": {
     "en": "onboarding",
@@ -1223,6 +1940,18 @@
     "match": ["open", "opens", "opening", "opened"],
     "notMatch": ["open this file in an editor"],
     "sense": "Opening a file with its app, entering a folder or server, or showing a window."
+  },
+  "open-beta": {
+    "distinct": ["open"],
+    "en": "open beta",
+    "match": ["open beta"],
+    "sense": "Cmdr's current public beta phase, named in onboarding, the About window, and the analytics setting."
+  },
+  "open-with": {
+    "distinct": ["open", "default"],
+    "en": "Open with",
+    "match": ["open with"],
+    "sense": "Opening a file in a chosen app: the Open With submenu, and opening with the default app."
   },
   "operation": {
     "distinct": ["transfer", "file-operations", "operation-queue"],
@@ -1249,6 +1978,19 @@
     "note": "The Option key is the modifier-key concept.",
     "sense": "A set of choices in a popover, a dropdown, or a settings row."
   },
+  "organization": {
+    "distinct": ["license"],
+    "en": "organization",
+    "match": ["organization", "organizations", "organisation"],
+    "sense": "The company or organization a commercial license is issued to."
+  },
+  "original": {
+    "distinct": ["source", "untouched"],
+    "en": "original",
+    "match": ["original", "originals"],
+    "notMatch": ["original name", "original mount command"],
+    "sense": "The source files of a copy or move, which Cmdr keeps where they were until the destination copy is safe."
+  },
   "outdated": {
     "distinct": ["index"],
     "en": "out of date",
@@ -1260,6 +2002,12 @@
     "en": "overwrite",
     "match": ["overwrite", "overwrites", "overwriting", "overwritten"],
     "sense": "Replacing an existing file at the destination with the incoming one."
+  },
+  "owner": {
+    "distinct": ["permission", "account"],
+    "en": "owner",
+    "match": ["owner", "owners", "ownership"],
+    "sense": "The account that owns a file or folder (shown in its permissions), or the person who runs a server."
   },
   "package": {
     "distinct": ["app-bundle", "archive"],
@@ -1311,6 +2059,12 @@
     "notMatch": ["folder-path"],
     "sense": "A file-system path string."
   },
+  "pattern": {
+    "distinct": ["glob", "regex", "wildcard"],
+    "en": "pattern",
+    "match": ["pattern", "patterns"],
+    "sense": "A text pattern that names are matched against or renamed by (a glob or regex in search and selection, a rename pattern)."
+  },
   "pause": {
     "distinct": ["resume", "stop"],
     "en": "pause",
@@ -1328,6 +2082,11 @@
     "match": ["permission", "permissions", "permission denied"],
     "note": "Consent to share data is a different sense in some locales.",
     "sense": "File-system rights to read or change a file."
+  },
+  "personal-data": {
+    "en": "personal data",
+    "match": ["personal data", "personal information", "private info"],
+    "sense": "Information that identifies the user or their files."
   },
   "phone": {
     "distinct": ["device"],
@@ -1347,10 +2106,27 @@
     "match": ["pin", "pins", "pinned", "pinning", "unpin", "unpinned"],
     "sense": "Keeping a tab, a server row, or Cmdr's Dock icon in place, and releasing it."
   },
+  "placeholder": {
+    "en": "placeholder",
+    "match": ["placeholder", "placeholders"],
+    "note": "Two senses under one English word; a language may need two words. Unrelated to the catalog's {name} placeholders.",
+    "sense": "A stand-in to replace with a real value: the example text in an empty input field, or a token in a format string or URL (YYYY, an Azure endpoint's resource name)."
+  },
+  "plain-text": {
+    "en": "plain text",
+    "match": ["plain text", "plain-text"],
+    "sense": "Unformatted text."
+  },
   "port": {
     "en": "port",
     "match": ["port", "ports", "usb port"],
     "sense": "A network port number, or a USB port."
+  },
+  "preferences": {
+    "distinct": ["settings"],
+    "en": "Preferences",
+    "match": ["preferences"],
+    "sense": "An OS or device Preferences label the user must find (Android's USB Preferences)."
   },
   "preset": {
     "distinct": ["custom", "default"],
@@ -1378,6 +2154,13 @@
     "match": ["privacy & security", "privacy and security"],
     "sense": "The macOS System Settings pane."
   },
+  "problem": {
+    "distinct": ["failed", "unexpected"],
+    "en": "problem",
+    "match": ["problem", "problems", "glitch", "trouble"],
+    "note": "Cmdr's voice avoids a bare error word; this is the neutral noun for what went wrong.",
+    "sense": "A non-fatal issue named in explanatory prose, in Cmdr's calm voice."
+  },
   "process": {
     "en": "process",
     "match": ["process", "processes", "daemon", "daemons"],
@@ -1387,6 +2170,12 @@
     "en": "progress",
     "match": ["progress"],
     "sense": "How far a running operation has got."
+  },
+  "prompt": {
+    "distinct": ["dialog", "query"],
+    "en": "prompt",
+    "match": ["prompt", "prompts"],
+    "sense": "A dialog asking the user something (a system prompt), or the text sent to an AI model."
   },
   "properties": {
     "distinct": ["get-info"],
@@ -1424,17 +2213,49 @@
     "match": ["quit", "quits", "quitting"],
     "sense": "The app stopping (Quit Cmdr, the quit gate, quit unexpectedly)."
   },
+  "quit-and-reopen": {
+    "distinct": ["quit", "restart"],
+    "en": "Quit & Reopen",
+    "match": ["quit & reopen"],
+    "sense": "The macOS button that relaunches an app after a permission change."
+  },
   "quota": {
     "distinct": ["limit"],
     "en": "quota",
     "match": ["quota", "quotas"],
     "sense": "A storage or usage allowance that has run out."
   },
+  "rate-limit": {
+    "distinct": ["quota", "limit"],
+    "en": "rate limit",
+    "match": [
+      "rate limit",
+      "rate limits",
+      "rate-limit",
+      "rate-limiting",
+      "rate limiting",
+      "rate limited",
+      "rate-limited",
+      "too many requests"
+    ],
+    "sense": "An AI provider refusing or throttling requests because too many came too fast."
+  },
   "read-only": {
     "distinct": ["locked"],
     "en": "read-only",
     "match": ["read-only", "read only"],
     "sense": "A volume, device, or archive that can be read but not changed."
+  },
+  "ready": {
+    "en": "ready",
+    "match": ["=ready", "is ready", "are ready", "now ready", "ready to use"],
+    "sense": "Prepared and available (an index, a model, an update)."
+  },
+  "recent": {
+    "distinct": ["history", "last-used"],
+    "en": "recent",
+    "match": ["recent", "recently", "recents", "most recent"],
+    "sense": "Recently used or newest items (recent paths, searches, selections, the palette's Recent group, recently closed tabs, the latest download)."
   },
   "reclaim": {
     "distinct": ["free-space"],
@@ -1458,6 +2279,12 @@
     "match": ["redact", "redacted", "scrub", "scrubbed"],
     "sense": "Removing private details from logs before a report is sent."
   },
+  "redo": {
+    "distinct": ["undo"],
+    "en": "redo",
+    "match": ["redo"],
+    "sense": "Reapplying the last undone text edit."
+  },
   "reference-id": {
     "en": "reference ID",
     "match": ["reference id", "report id"],
@@ -1469,11 +2296,29 @@
     "match": ["refresh", "refreshes", "refreshing"],
     "sense": "Re-reading a folder or list from disk."
   },
+  "regex": {
+    "distinct": ["glob", "pattern", "wildcard"],
+    "en": "regex",
+    "match": ["regex", "regexes", "regular expression", "regular expressions"],
+    "sense": "A regular expression: the Regex mode of the search and selection bars, and a pattern written in it."
+  },
+  "register-shortcut": {
+    "distinct": ["shortcut", "global"],
+    "en": "register",
+    "match": ["register", "registered", "unregistered", "not registered"],
+    "sense": "Whether macOS accepted (registered) a system-wide keyboard shortcut for Cmdr."
+  },
   "reject": {
     "distinct": ["deny", "approve"],
     "en": "reject",
     "match": ["reject", "rejects", "rejected"],
     "sense": "Saying no to an AI-suggested operation."
+  },
+  "release-notes": {
+    "distinct": ["changelog", "whats-new"],
+    "en": "release notes",
+    "match": ["release notes", "update notes"],
+    "sense": "Notes describing what changed in a release."
   },
   "relevance": {
     "en": "relevance",
@@ -1491,6 +2336,12 @@
     "match": ["remote"],
     "sense": "On another machine (a remote folder on a server)."
   },
+  "removable": {
+    "distinct": ["eject", "drive"],
+    "en": "removable",
+    "match": ["removable", "removable media", "non-removable"],
+    "sense": "A drive built to be ejected and unplugged (USB stick, SD card), as opposed to an internal disk."
+  },
   "remove": {
     "distinct": ["delete", "dismiss"],
     "en": "remove",
@@ -1503,11 +2354,29 @@
     "match": ["rename", "renames", "renaming", "renamed"],
     "sense": "Changing a file's name (the command, the act, and a single name change as a noun)."
   },
+  "rename-cycle": {
+    "distinct": ["rename"],
+    "en": "rename cycle",
+    "match": ["cycle", "cycles", "rotating these files"],
+    "sense": "A set of renames that swap names in a loop, so one needs a temporary name."
+  },
+  "renew": {
+    "distinct": ["subscription", "update"],
+    "en": "renew",
+    "match": ["renew", "renews", "renewed", "renewal"],
+    "sense": "Extending a subscription license for another period."
+  },
   "replace": {
     "distinct": ["overwrite"],
     "en": "replace",
     "match": ["replace", "replaces", "replaced", "replacing"],
     "sense": "Putting one thing in place of another (an existing file, an archive)."
+  },
+  "reply": {
+    "distinct": ["answer"],
+    "en": "reply",
+    "match": ["reply", "replies"],
+    "sense": "The AI's answer in an Ask Cmdr chat, or a logged model response."
   },
   "report": {
     "distinct": ["crash-report", "error-report"],
@@ -1515,10 +2384,50 @@
     "match": ["report", "reports"],
     "sense": "A diagnostic report sent to the developer (crash or error)."
   },
+  "report-bundle": {
+    "distinct": ["app-bundle", "error-report"],
+    "en": "bundle (report)",
+    "match": ["save bundle", "saved bundle", "bundle to disk", "bundle unavailable"],
+    "sense": "The packaged set of logs and details that makes up an error report, saved to disk for debugging."
+  },
+  "repository": {
+    "distinct": ["worktree", "working-tree", "git-branch", "git-commit"],
+    "en": "repository",
+    "match": ["repository", "repositories", "repo", "repos"],
+    "note": "English uses both the short \"repo\" and the full \"repository\"; a locale may mirror that register split.",
+    "sense": "A git repository Cmdr detects and browses (the repository chip, the .git portal), and Cmdr's own repository on GitHub."
+  },
+  "request": {
+    "en": "request",
+    "match": ["request", "requests"],
+    "sense": "A call sent to an API, a server, or a tool (an AI request, a permission request)."
+  },
   "reserved": {
     "en": "reserved",
     "match": ["reserved"],
     "sense": "A key combination or name the system keeps for itself."
+  },
+  "reset": {
+    "distinct": ["default", "undo", "restart"],
+    "en": "reset",
+    "match": ["reset", "resets", "resetting", "reset to default", "reset all", "restore defaults"],
+    "note": "Not a network connection being reset.",
+    "notMatch": [
+      "connection reset",
+      "was unexpectedly reset",
+      "reset by",
+      "session reset",
+      "type-to-jump reset",
+      "reset faster"
+    ],
+    "sense": "Putting a setting, a shortcut, or the zoom level back to its default value."
+  },
+  "resolution": {
+    "distinct": ["dimensions"],
+    "en": "resolution",
+    "match": ["resolution"],
+    "notMatch": ["name resolution", "network resolution"],
+    "sense": "An image's pixel resolution."
   },
   "respond": {
     "distinct": ["answer"],
@@ -1541,6 +2450,13 @@
     "match": ["restart", "restarts", "restarted", "restarting"],
     "sense": "Restarting the app or the Mac."
   },
+  "restore": {
+    "distinct": ["put-back", "undo", "rollback", "reset"],
+    "en": "restore",
+    "match": ["restore", "restores", "restored", "restoring"],
+    "notMatch": ["politely restored", "restore defaults"],
+    "sense": "Getting a file or an earlier state back from somewhere that kept it (a document revision, a cloud service's trash, a backup)."
+  },
   "resume": {
     "distinct": ["pause", "continue"],
     "en": "resume",
@@ -1559,6 +2475,12 @@
     "match": ["review", "reviews", "reviewing"],
     "note": "A plain look-over with no decision (\"see a history\") is the see concept.",
     "sense": "Going through proposed changes to approve or deny each (an approval gate)."
+  },
+  "revoke": {
+    "distinct": ["grant"],
+    "en": "revoke",
+    "match": ["revoke", "revoked", "revoking"],
+    "sense": "Taking back a permission or a key that was granted before."
   },
   "rollback": {
     "distinct": ["undo", "put-back", "cancel"],
@@ -1581,6 +2503,11 @@
     "match": ["root folder", "top folder", "start folder", "starting folder"],
     "sense": "The ceiling folder of a saved server, a volume's top folder, and the folder a pane opens in."
   },
+  "rotate": {
+    "en": "rotate",
+    "match": ["rotate", "rotates", "rotated", "rotation"],
+    "sense": "Turning an image left or right."
+  },
   "row": {
     "distinct": ["line"],
     "en": "row",
@@ -1596,11 +2523,22 @@
     "note": "An operation in progress and a local AI server that is up can legitimately take different words.",
     "sense": "A task or operation currently in progress; also a server process that is up."
   },
+  "runtime": {
+    "distinct": ["on-device"],
+    "en": "runtime",
+    "match": ["runtime"],
+    "sense": "The software environment the local AI model runs in, which Cmdr downloads and installs before a local model can run."
+  },
   "save": {
     "distinct": ["keep"],
     "en": "save",
     "match": ["save", "saves", "saved", "saving"],
     "sense": "Storing something (a file, a setting, a password) so it persists."
+  },
+  "save-panel": {
+    "en": "save panel",
+    "match": ["save panel"],
+    "sense": "The macOS Save dialog Cmdr opens to save content as a file."
   },
   "scan": {
     "distinct": ["check", "index", "search"],
@@ -1612,6 +2550,13 @@
     "en": "scope",
     "match": ["scope", "scopes"],
     "sense": "Where a search looks, or where a keyboard shortcut applies."
+  },
+  "screen": {
+    "distinct": ["full-screen"],
+    "en": "screen",
+    "match": ["screen", "screens"],
+    "notMatch": ["screen reader", "screen readers", "full screen"],
+    "sense": "A display, or a phone's screen."
   },
   "screenshot": {
     "en": "screenshot",
@@ -1689,6 +2634,12 @@
     "match": ["=share", "share options"],
     "sense": "The Share submenu that hands files to other apps (AirDrop, Mail)."
   },
+  "sharing-and-permissions": {
+    "distinct": ["get-info", "permission"],
+    "en": "Sharing & Permissions",
+    "match": ["sharing & permissions", "sharing and permissions"],
+    "sense": "The section of Finder's Get Info window that lists who can read and write an item."
+  },
   "shortcut": {
     "distinct": ["modifier-key"],
     "en": "keyboard shortcut",
@@ -1714,6 +2665,12 @@
     "match": ["side panel"],
     "sense": "The panel beside the file panes that holds Ask Cmdr."
   },
+  "sidebar": {
+    "distinct": ["side-panel"],
+    "en": "sidebar",
+    "match": ["sidebar", "sidebars"],
+    "sense": "A window's sidebar (Finder's, and the Settings window's)."
+  },
   "sign-in": {
     "distinct": ["sign-out", "connect"],
     "en": "sign in",
@@ -1725,6 +2682,19 @@
     "en": "signed out",
     "match": ["sign out", "signed out", "log out", "logout", "logged out"],
     "sense": "Not (or no longer) authenticated; also logging out of the Mac."
+  },
+  "sign-up": {
+    "distinct": ["sign-in", "mailing-list"],
+    "en": "sign up",
+    "match": ["sign up", "signs up", "signing up", "signed up", "signup"],
+    "notMatch": ["signup server"],
+    "sense": "Joining the occasional-updates mailing list, or creating an account with a provider."
+  },
+  "similar": {
+    "distinct": ["image-search"],
+    "en": "similar",
+    "match": ["similar images", "similar to", "find similar", "no similar"],
+    "sense": "Image-similarity search: finding pictures that look like a given one."
   },
   "size": {
     "distinct": ["too-large"],
@@ -1738,10 +2708,28 @@
     "match": ["skip", "skips", "skipped", "skipping", "skip all"],
     "sense": "Leaving one item out of an operation (a conflict answer, a per-item outcome)."
   },
+  "slideshow": {
+    "en": "slideshow",
+    "match": ["slideshow", "slide show"],
+    "sense": "Showing images one after another full screen."
+  },
   "slow": {
     "en": "slow",
     "match": ["slow", "slower", "slowly"],
     "sense": "A volume or connection that answers slowly."
+  },
+  "snapshot": {
+    "distinct": ["git-commit"],
+    "en": "snapshot",
+    "match": ["snapshot", "snapshots"],
+    "sense": "A frozen point-in-time copy: a git commit seen as a folder, or an APFS snapshot folder search skips."
+  },
+  "software": {
+    "distinct": ["app"],
+    "en": "software",
+    "match": ["software", "hardware"],
+    "notMatch": ["software update"],
+    "sense": "Programs, and the hardware they run on."
   },
   "sort": {
     "en": "sort",
@@ -1756,6 +2744,30 @@
     "note": "Open-source and a reference source are not this concept.",
     "sense": "Where a copy or move reads from."
   },
+  "source-available": {
+    "distinct": ["license"],
+    "en": "source-available",
+    "match": ["source-available", "source available"],
+    "note": "Never translate as \"open source\": that claim is false for Cmdr.",
+    "sense": "Cmdr's license model: the code is public to read under the BSL, which isn't an open-source license."
+  },
+  "speed": {
+    "en": "speed",
+    "match": ["speed", "speeds", "faster", "speed up", "speeds up"],
+    "sense": "How fast a transfer or a connection goes, and making it faster."
+  },
+  "stack-trace": {
+    "distinct": ["crash-report"],
+    "en": "stack trace",
+    "match": ["stack trace", "stack traces", "backtrace"],
+    "sense": "The list of code locations active when a crash happened."
+  },
+  "stall": {
+    "distinct": ["stop", "not-finished"],
+    "en": "stalled",
+    "match": ["stalled", "stopped moving", "stopped arriving"],
+    "sense": "A transfer or file fetch that is still alive but has made no progress for a while."
+  },
   "start-up": {
     "distinct": ["restart", "startup-disk"],
     "en": "start up",
@@ -1767,6 +2779,24 @@
     "en": "startup disk",
     "match": ["startup disk", "boot disk"],
     "sense": "The drive macOS boots from."
+  },
+  "status": {
+    "distinct": ["progress", "badge", "status-bar"],
+    "en": "status",
+    "match": ["status", "statuses"],
+    "notMatch": ["status bar"],
+    "sense": "The current state of something (a server, a license, a git file, an index, a sync app), as a label, column, dot, or badge."
+  },
+  "status-bar": {
+    "en": "status bar",
+    "match": ["status bar"],
+    "sense": "The bar at the bottom of a pane or the viewer showing counts and state."
+  },
+  "step": {
+    "distinct": ["onboarding"],
+    "en": "step",
+    "match": ["step", "steps"],
+    "sense": "One numbered stage of the onboarding wizard, a setup guide, or an install (Step 2 of 4)."
   },
   "stop": {
     "distinct": ["cancel", "pause", "quit"],
@@ -1782,11 +2812,41 @@
     ],
     "sense": "Halting something that runs (a search, a local AI server, an operation during rollback)."
   },
+  "storage": {
+    "distinct": ["free-space"],
+    "en": "storage",
+    "match": ["storage"],
+    "sense": "Space to store data (a phone's storage, cloud storage, the Storage pane)."
+  },
+  "store": {
+    "distinct": ["save", "write"],
+    "en": "store",
+    "match": ["store", "stores", "stored", "storing"],
+    "sense": "Where data or a name physically lives (a destination that can't store a name, a file stored on a drive, a password stored in the keychain)."
+  },
   "streaming": {
     "distinct": ["tail"],
     "en": "streaming",
     "match": ["streaming", "stream"],
     "sense": "The viewer's mode that reads a huge file in pieces instead of loading it whole."
+  },
+  "striped-rows": {
+    "distinct": ["row"],
+    "en": "striped rows",
+    "match": ["striped rows", "striped", "stripes"],
+    "sense": "Alternate row shading in the file list."
+  },
+  "subfolder": {
+    "distinct": ["parent-folder"],
+    "en": "subfolder",
+    "match": ["subfolder", "subfolders"],
+    "sense": "A folder inside another folder."
+  },
+  "subscription": {
+    "distinct": ["license", "renew"],
+    "en": "subscription",
+    "match": ["subscription", "subscriptions"],
+    "sense": "A time-limited commercial license the user renews, as opposed to a perpetual one."
   },
   "suggestion": {
     "en": "suggestion",
@@ -1798,10 +2858,23 @@
     "match": ["supported", "not supported", "unsupported"],
     "sense": "Whether a volume, OS version, or feature is handled."
   },
+  "swap-panes": {
+    "distinct": ["pane"],
+    "en": "swap panes",
+    "match": ["swap panes", "swap the panes", "swap sides"],
+    "sense": "Exchanging the left and right panes."
+  },
   "symlink": {
     "en": "symbolic link",
     "match": ["symbolic link", "symbolic links", "symlink", "symlinks"],
     "sense": "A file-system link that points at another path."
+  },
+  "sync": {
+    "distinct": ["cloud-provider"],
+    "en": "sync",
+    "match": ["sync", "syncs", "synced", "syncing", "sync status", "live-synced", "synchronize", "synchronized"],
+    "notMatch": ["sync.com", "sync app"],
+    "sense": "Keeping two copies in step (a cloud folder with its provider, live-synced settings)."
   },
   "system-integrity-protection": {
     "en": "System Integrity Protection",
@@ -1843,6 +2916,12 @@
     "match": ["tap", "taps"],
     "sense": "Touching a button on a phone's screen."
   },
+  "technical-details": {
+    "distinct": ["details", "report"],
+    "en": "Technical details",
+    "match": ["technical details"],
+    "sense": "The disclosure under an error message that holds the raw system code and message, which suggestion text points at."
+  },
   "temporary": {
     "en": "temporary",
     "match": ["temporary", "temporarily", "temp"],
@@ -1859,10 +2938,29 @@
     "match": ["text editor", "editor"],
     "sense": "The app that opens a file for editing (F4)."
   },
+  "theme": {
+    "distinct": ["appearance", "dark-mode"],
+    "en": "theme",
+    "match": ["theme", "themes", "theme mode"],
+    "sense": "Cmdr's light, dark, or follow-the-system appearance setting."
+  },
   "thinking": {
     "en": "Thinking…",
     "match": ["thinking"],
     "sense": "The AI's reasoning status line."
+  },
+  "this-computer": {
+    "en": "this computer",
+    "match": ["this computer", "your computer", "your machine", "this machine"],
+    "note": "Regional vocabulary splits here (es ordenador / computadora / equipo); a locale records its pan-regional choice.",
+    "sense": "The user's own computer, named generically (not Mac) because the sentence also runs on Linux or means any machine."
+  },
+  "this-mac": {
+    "distinct": ["this-computer", "local"],
+    "en": "this Mac",
+    "match": ["this mac", "your mac"],
+    "note": "Apple's prose names the machine with a classifier in several languages; keep \"Mac\" itself verbatim.",
+    "sense": "The user's own computer, named as the Mac Cmdr runs on (\"on this Mac\", \"stays on your Mac\")."
   },
   "threshold": {
     "distinct": ["limit"],
@@ -1870,10 +2968,22 @@
     "match": ["threshold", "thresholds"],
     "sense": "A cutoff value in a setting."
   },
+  "throughput": {
+    "distinct": ["speed"],
+    "en": "throughput",
+    "match": ["throughput"],
+    "sense": "Data moved per unit of time."
+  },
   "thumbnail": {
     "en": "thumbnail",
     "match": ["thumbnail", "thumbnails"],
     "sense": "A small preview image of a file."
+  },
+  "time-ago": {
+    "distinct": ["time-left"],
+    "en": "ago",
+    "match": ["ago", "a moment ago"],
+    "sense": "A relative past time (5m ago, a moment ago) in recent-search tooltips and error panes."
   },
   "time-left": {
     "en": "left",
@@ -1886,10 +2996,28 @@
     "match": ["timeout", "timed out", "time out", "time-out"],
     "sense": "A request that took too long and was given up on."
   },
+  "timestamp": {
+    "en": "timestamp",
+    "match": ["timestamp", "timestamps"],
+    "sense": "A recorded date and time on an event."
+  },
+  "tint": {
+    "distinct": ["background", "pane"],
+    "en": "tint",
+    "match": ["tint", "tints", "tinted"],
+    "sense": "The faint background color Cmdr gives a pane by volume type (local, SMB/SFTP/WebDAV, MTP), and its color palette."
+  },
   "title-bar": {
     "en": "title bar",
     "match": ["title bar"],
     "sense": "The window's title bar (where the Full Disk Access badge sits)."
+  },
+  "toggle": {
+    "distinct": ["enable", "disable"],
+    "en": "toggle",
+    "match": ["toggle", "toggles", "toggling"],
+    "notMatch": ["toggle it on", "toggle it off"],
+    "sense": "Switching something between two states (a command label, a settings switch)."
   },
   "token": {
     "en": "token",
@@ -1901,6 +3029,12 @@
     "en": "too large",
     "match": ["too large", "too big", "larger than", "too long"],
     "sense": "A file too big for the destination's file system or for the viewer, or a name too long."
+  },
+  "toolbar": {
+    "distinct": ["button-bar"],
+    "en": "toolbar",
+    "match": ["toolbar", "toolbars"],
+    "sense": "A row of buttons at the top of a window or panel."
   },
   "transfer": {
     "distinct": ["operation", "operation-queue", "copy", "move"],
@@ -1949,6 +3083,11 @@
     "match": ["unexpected", "unexpectedly", "something went wrong"],
     "sense": "Something happened that Cmdr didn't anticipate."
   },
+  "unknown": {
+    "en": "unknown",
+    "match": ["unknown"],
+    "sense": "A value Cmdr can't determine (an unknown size, cost, or model)."
+  },
   "unlock": {
     "distinct": ["locked", "password-protected"],
     "en": "unlock",
@@ -1965,6 +3104,17 @@
     "en": "unreachable",
     "match": ["unreachable", "can't reach", "couldn't reach"],
     "sense": "A host or share Cmdr can't get to over the network."
+  },
+  "untouched": {
+    "en": "untouched",
+    "match": ["untouched"],
+    "sense": "Files Cmdr guarantees it didn't change (the originals after a failed transfer)."
+  },
+  "up-to-date": {
+    "distinct": ["update", "outdated"],
+    "en": "up to date",
+    "match": ["up to date", "up-to-date", "latest version"],
+    "sense": "At the newest version, or an index that is current."
   },
   "update": {
     "distinct": ["refresh"],
@@ -1988,11 +3138,23 @@
     "note": "Quote the phone vendor's localized label; the user finds the switch by that text.",
     "sense": "The Android developer option that lets ADB reach the phone."
   },
+  "user": {
+    "distinct": ["account", "username"],
+    "en": "user",
+    "match": ["user", "users"],
+    "notMatch": ["user name", "username"],
+    "sense": "A person using Cmdr, or a macOS or server user account."
+  },
   "username": {
     "distinct": ["credentials", "account"],
     "en": "username",
     "match": ["username", "usernames", "user name"],
     "sense": "The account name used to sign in to a server."
+  },
+  "valid": {
+    "en": "valid",
+    "match": ["valid", "invalid", "validity"],
+    "sense": "Whether a license key, a name, or a value is acceptable."
   },
   "verbose": {
     "en": "verbose",
@@ -2004,6 +3166,18 @@
     "match": ["version", "versions"],
     "notMatch": ["api-version"],
     "sense": "An app or OS version."
+  },
+  "video": {
+    "distinct": ["image", "photo"],
+    "en": "video",
+    "match": ["video", "videos"],
+    "sense": "A video file."
+  },
+  "view-mode": {
+    "distinct": ["see", "brief-view", "full-view"],
+    "en": "view mode",
+    "match": ["view mode", "view modes", "view menu"],
+    "sense": "A pane's layout (Brief, Full) and the View menu that switches it."
   },
   "viewer": {
     "distinct": ["see", "preview", "quick-look"],
@@ -2032,6 +3206,11 @@
     "notMatch": ["suggestions are waiting", "wait a minute", "wait a moment"],
     "sense": "Queued and not yet running, or waiting on the user or a device."
   },
+  "wake": {
+    "en": "wake",
+    "match": ["wake", "wakes", "waking", "woke"],
+    "sense": "Waking a phone's screen or a sleeping Mac."
+  },
   "warning": {
     "en": "warning",
     "match": ["warning", "warnings"],
@@ -2048,10 +3227,41 @@
     "match": ["what's new"],
     "sense": "The release-notes window shown after an update."
   },
+  "wildcard": {
+    "distinct": ["glob", "pattern", "regex"],
+    "en": "wildcard",
+    "match": ["wildcard", "wildcards"],
+    "sense": "The * and ? characters standing for any text in a filename pattern."
+  },
+  "window": {
+    "distinct": ["main-window", "pane", "dialog", "context-window"],
+    "en": "window",
+    "match": ["window", "windows"],
+    "notMatch": ["context window", "main window"],
+    "sense": "An app window (a dialog window, the About window, the queue window, the window edge) and the Window menu."
+  },
+  "wizard": {
+    "distinct": ["onboarding", "step"],
+    "en": "wizard",
+    "match": ["wizard", "wizards"],
+    "sense": "A step-by-step setup flow (the onboarding wizard, the AI provider setup)."
+  },
   "word-wrap": {
     "en": "word wrap",
     "match": ["word wrap", "wrap"],
     "sense": "Wrapping long lines in the viewer."
+  },
+  "working-tree": {
+    "distinct": ["worktree", "repository"],
+    "en": "working tree",
+    "match": ["working tree"],
+    "sense": "The checked-out files of a git repository, in the ordinary git sense."
+  },
+  "worktree": {
+    "distinct": ["working-tree", "repository"],
+    "en": "worktree",
+    "match": ["worktree", "worktrees"],
+    "sense": "Git's own name for a linked checkout, kept verbatim by the @key descriptions."
   },
   "write": {
     "distinct": ["save"],

@@ -219,7 +219,7 @@
     "forms": "attach → bifoga (Släpp för att bifoga); attachment → bilaga (Ta bort bilaga)",
     "sources": "MS terminology (attach → bifoga, attachment → bilaga)"
   },
-  "authenticate": {
+  "authentication": {
     "accept": ["autentisering", "logga in", "inloggning"],
     "chosen": "autentisera",
     "confidence": "high",
@@ -633,7 +633,10 @@
   "debugging": {
     "chosen": "felsökning",
     "confidence": "high",
-    "sources": "macOS Safari DeveloperPreferences (felsökningsläge), 26.6.2 25G83, 2026-09-06"
+    "sources": "macOS Safari DeveloperPreferences (felsökningsläge), 26.6.2 25G83, 2026-09-06",
+    "exceptions": {
+      "errorReporter.dialog.saveToDisk": "the parenthesized (debug) tag names the bundle mode and stays English"
+    }
   },
   "default": {
     "accept": ["förval"],
@@ -1128,7 +1131,7 @@
     "confidence": "tentative",
     "sources": "standard Swedish git usage; MS förgrena is the verb sense"
   },
-  "git-repository": {
+  "repository": {
     "accept": ["repository"],
     "chosen": "repo",
     "confidence": "tentative",
@@ -2647,7 +2650,7 @@
     "sources": "plain Swedish"
   },
   "this-mac": {
-    "accept": ["den här datorn"],
+    "accept": ["den här datorn", "din Mac"],
     "chosen": "den här Macen",
     "confidence": "high",
     "forms": "sentences that also show on Linux say den här datorn",
@@ -2884,7 +2887,8 @@
     "chosen": "Nyheter",
     "confidence": "high",
     "forms": "the dialog Nyheter i Cmdr",
-    "sources": "standard Swedish app-menu term"
+    "sources": "standard Swedish app-menu term",
+    "accept": ["vad som är nytt"]
   },
   "wildcard": {
     "accept": ["jokerteckn"],

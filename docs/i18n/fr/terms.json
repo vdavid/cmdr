@@ -336,10 +336,6 @@
     "chosen": "occupé",
     "confidence": "high",
     "decision": "Menus natifs : barre de menus, menus contextuels, titres de fenêtre (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)",
-    "exceptions": {
-      "indexing.enrich.pausedIdle": "English-sense: the user being idle (votre inactivité), not a busy device.",
-      "settings.askCmdr.wakeDelay.summary": "English-sense: busy folders are ones with a lot of activity (actifs)."
-    },
     "forms": "the greyed menu marker: the base label word for word, then (occupé), invariable (Oublier le mot de passe enregistré (occupé)); idle → quand il n'est plus occupé",
     "sources": "MS terminology FRA (busy → occupé)"
   },
@@ -1122,11 +1118,12 @@
     "forms": "status noun Récupération…; title follows Finder's progress moule (Préparation de la copie de « ^1 »), with the file name in « »",
     "sources": "macOS Réglages Système Localizable.json (Fetching… → Récupération…)"
   },
-  "field-placeholder": {
+  "placeholder": {
     "chosen": "espace réservé",
     "confidence": "high",
     "forms": "format placeholders (YYYY, MM) → marqueurs",
-    "sources": "MS terminology FRA (ids 146440, 2129624)"
+    "sources": "MS terminology FRA (ids 146440, 2129624)",
+    "accept": ["marqueur"]
   },
   "file": {
     "chosen": "fichier",
@@ -2003,7 +2000,8 @@
     ],
     "chosen": "motif",
     "confidence": "high",
-    "sources": "macOS pattern usage"
+    "sources": "macOS pattern usage",
+    "accept": ["modèle de renommage"]
   },
   "pause": {
     "accept": ["pause"],
