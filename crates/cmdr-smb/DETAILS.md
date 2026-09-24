@@ -700,6 +700,14 @@ pre-issued so events during consumer processing don't fall in a re-arm gap). Sta
 through the share's own `get_metadata` at its active root, reached by a `SelfHandle` (the main session, never the
 watcher's), so the cmdr-side `notify_mutation` cache patch from our own writes lands first regardless.
 
+**Decision**: A change batch's follow-up stats run together (`WATCHER_STAT_CONCURRENCY`, 8), answered in event order
+**Why**: a busy QNAP holds a single `stat` for up to 6 s while its session stays healthy, and asked one after another
+that one stall delayed every later change in the batch by the same 6 s. `process_event_batch_with` queues every stat the
+batch needs up front and drains them through `buffered`, which yields in queue order, so the listing hears the changes
+exactly as before (a removal keeps its place between two slow additions). ❗ The queue mirrors the emit loop (same map,
+same order, one `stat_for` per `needs_stat` event whose path is under the anchor); change one and change the other.
+Pinned by `watcher/stat_concurrency_test.rs`.
+
 **Decision**: Watcher task is not stored on `SmbVolume`, only the cancel sender is **Why**: The spawned task owns its
 own `Watcher` and `SmbClient`. Storing them on the struct alongside the cancel sender would just duplicate ownership
 without buying anything — `watcher.next_events()` is `&mut self`, so the task is the only thing that can drive it

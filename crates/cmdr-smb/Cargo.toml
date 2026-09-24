@@ -56,7 +56,8 @@ tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
 # same shape `cmdr-fs` pins, so no second copy enters the graph.
 tokio-util = { version = "0.7.18", default-features = false }
 # `FuturesUnordered`, which is how the scan walk and the scan pool keep N
-# listings in flight on one session.
+# listings in flight on one session, and `buffered`, which does the same for the
+# watcher's follow-up stats while keeping them in event order.
 futures-util = "0.3"
 # Folding names to COMPARE them: the foreign-path resolve (`volume/spelling.rs`),
 # the mount anchor, and the share name TreeConnect takes. A name inside a share
@@ -77,5 +78,6 @@ cmdr-smb = { path = ".", features = ["testing"] }
 cmdr-fs = { path = "../cmdr-fs", features = ["testing"] }
 # The Docker-backed suites drive real concurrency, so their tests need a
 # multi-threaded runtime the lib deliberately can't build for itself. `net` and
-# `io-util` are the credit-cap proxy's (`volume/credit_cap_proxy.rs`).
-tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util"] }
+# `io-util` are the credit-cap proxy's (`volume/credit_cap_proxy.rs`). `test-util`
+# pauses the clock for the watcher's slow-server tests.
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "test-util"] }

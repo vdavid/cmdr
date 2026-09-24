@@ -21,6 +21,7 @@ use cmdr_fs::ignore_poison::RwLockIgnorePoison;
 use cmdr_fs::volume::host::VolumeHost;
 use cmdr_fs::volume::host::indexing::WatchGap;
 use cmdr_fs::volume::{DirectoryChange, SelfHandle, Volume};
+use futures_util::StreamExt;
 use log::{debug, info, warn};
 use smb2::{ClientConfig, FileNotifyAction, SmbClient};
 use std::collections::HashMap;
@@ -33,6 +34,19 @@ const WATCHER_BATCH_THRESHOLD: usize = 50;
 
 /// Debounce window: after receiving a batch of events, wait this long for more.
 const WATCHER_DEBOUNCE: Duration = Duration::from_millis(200);
+
+/// Most follow-up stats one change batch keeps in flight on the share's main
+/// session. Enough that one stalled stat doesn't hold up the rest, few enough
+/// that a burst of changes can't crowd out the pane's own requests.
+const WATCHER_STAT_CONCURRENCY: usize = 8;
+
+/// Whether an event's change carries a fresh `FileEntry`, which costs a `stat`.
+fn needs_stat(action: FileNotifyAction) -> bool {
+    matches!(
+        action,
+        FileNotifyAction::Added | FileNotifyAction::Modified | FileNotifyAction::RenamedNewName
+    )
+}
 
 /// Converts a SHARE-relative watcher path to the display path under this mount
 /// that the listing cache is keyed on.
@@ -113,6 +127,45 @@ async fn process_event_batch(
     share: &SelfHandle<SmbVolumeInner>,
     anchor: &MountAnchor,
 ) {
+    process_event_batch_with(host, events_by_dir, volume_id, anchor, |path| async move {
+        stat_via_share(share, &path).await
+    })
+    .await;
+}
+
+/// [`process_event_batch`] with the follow-up `stat` injected, so a test can
+/// stand in for a server that holds one.
+async fn process_event_batch_with<Stat, StatFuture>(
+    host: &VolumeHost,
+    events_by_dir: HashMap<PathBuf, Vec<(FileNotifyAction, String)>>,
+    volume_id: &str,
+    anchor: &MountAnchor,
+    stat: Stat,
+) where
+    Stat: Fn(PathBuf) -> StatFuture,
+    StatFuture: Future<Output = Option<FileEntry>>,
+{
+    // Every follow-up stat the batch needs, asked together and answered in event
+    // order. A busy NAS holds a single stat for seconds while its session stays
+    // healthy; asked one after another, that one stall held up every later
+    // change in the batch. `buffered` keeps up to `WATCHER_STAT_CONCURRENCY` in
+    // flight and yields in the order they were queued, so the loop below still
+    // emits exactly as before, and a change that needs no stat (a removal) keeps
+    // its place. ❗ The queue has to mirror the loop: same map, same iteration
+    // order, one entry per `stat_for` call.
+    let stat_targets: Vec<PathBuf> = events_by_dir
+        .values()
+        .filter(|events| events.len() <= WATCHER_BATCH_THRESHOLD)
+        .flatten()
+        .filter(|(action, _)| needs_stat(*action))
+        .filter_map(|(_, filename)| to_display_path(anchor, filename))
+        .collect();
+    let stats = futures_util::stream::iter(stat_targets)
+        .map(&stat)
+        .buffered(WATCHER_STAT_CONCURRENCY);
+    let mut stats = std::pin::pin!(stats);
+    let mut stat_for = async || stats.next().await.flatten();
+
     // One seam call per event, never per directory ENTRY: a batch past
     // `WATCHER_BATCH_THRESHOLD` collapses to a single `FullRefresh`.
     let listings = host.listings();
@@ -140,7 +193,7 @@ async fn process_event_batch(
                     let Some(entry_path) = to_display_path(anchor, filename) else {
                         continue;
                     };
-                    match stat_via_share(share, &entry_path).await {
+                    match stat_for().await {
                         Some(entry) => {
                             listings.directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                         }
@@ -159,7 +212,7 @@ async fn process_event_batch(
                     let Some(entry_path) = to_display_path(anchor, filename) else {
                         continue;
                     };
-                    match stat_via_share(share, &entry_path).await {
+                    match stat_for().await {
                         Some(entry) => {
                             listings.directory_changed(volume_id, parent_path, DirectoryChange::Modified(entry));
                         }
@@ -184,7 +237,7 @@ async fn process_event_batch(
                         continue;
                     };
                     if let Some(old_name) = pending_old_name.take() {
-                        match stat_via_share(share, &entry_path).await {
+                        match stat_for().await {
                             Some(new_entry) => {
                                 listings.directory_changed(
                                     volume_id,
@@ -199,7 +252,7 @@ async fn process_event_batch(
                         }
                     } else {
                         // Got new name without old name, treating as add
-                        if let Some(entry) = stat_via_share(share, &entry_path).await {
+                        if let Some(entry) = stat_for().await {
                             listings.directory_changed(volume_id, parent_path, DirectoryChange::Added(entry));
                         }
                     }
@@ -492,3 +545,6 @@ pub(super) async fn run_smb_watcher(
 
 #[cfg(test)]
 mod archive_refresh_test;
+
+#[cfg(test)]
+mod stat_concurrency_test;
