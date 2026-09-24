@@ -136,17 +136,25 @@ function escapeRegExp(text: string): string {
  * a phrase, and a trailing `*` meaning "this prefix".
  */
 export function compileMatch(forms: readonly string[]): (text: string) => boolean {
-  const alternatives = forms
-    .map((form) => form.trim())
-    .filter((form) => form.length > 0)
+  const trimmed = forms.map((form) => form.trim()).filter((form) => form.length > 0)
+  const wholeValues = new Set(trimmed.filter((form) => form.startsWith('=')).map((form) => wholeValueOf(form.slice(1))))
+  const alternatives = trimmed
+    .filter((form) => !form.startsWith('='))
     .map((form) => {
       const prefix = form.endsWith('*')
       const body = (prefix ? form.slice(0, -1) : form).split(/\s+/).map(escapeRegExp).join('\\s+')
       return prefix ? body : `${body}(?![\\p{L}\\p{N}])`
     })
-  if (alternatives.length === 0) return () => false
-  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join('|')})`, 'iu')
-  return (text) => re.test(text)
+  const re = alternatives.length > 0 ? new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join('|')})`, 'iu') : undefined
+  return (text) => (re?.test(text) ?? false) || (wholeValues.size > 0 && wholeValues.has(wholeValueOf(text)))
+}
+
+/** Edge punctuation and whitespace a whole-value (`=back`) match ignores: `Back…` and ` Back ` are `back`. */
+const WHOLE_VALUE_EDGES = /^[\s\p{P}]+|[\s\p{P}]+$/gu
+
+/** Normalizes a text or a `=form` body for whole-value comparison. */
+function wholeValueOf(text: string): string {
+  return text.replace(WHOLE_VALUE_EDGES, '').replace(/\s+/gu, ' ').toLowerCase()
 }
 
 /**
@@ -160,8 +168,21 @@ export function compileMatch(forms: readonly string[]): (text: string) => boolea
  */
 export function englishMatchText(key: string, value: string): string {
   const literals = isRawKey(key) ? undefined : visibleLiterals(value)
-  const text = (literals ?? value.replace(/\{[^{}]*\}/g, '')).replace(/`[^`\n]*`/g, '')
+  const text = (literals ?? stripRawIdentifiers(value)).replace(/`[^`\n]*`/g, '')
   return isRawKey(key) ? text : text.replace(/''/g, "'")
+}
+
+/**
+ * The identifier-shaped parts of a value the ICU engine didn't parse (a raw
+ * family, or invalid ICU): `{token}` spans, `<name>` / `</name>` tags, and markdown
+ * link targets (`](x-apple.systempreferences:…)`). None of them is copy, and a
+ * concept like "name" or "folder" would otherwise match them dozens of times.
+ */
+function stripRawIdentifiers(value: string): string {
+  return value
+    .replace(/\{[^{}]*\}/g, '')
+    .replace(/<\/?[A-Za-z][\w-]*>/g, '')
+    .replace(/\]\([^)\s]*\)/g, ']')
 }
 
 /** Compiled matchers, one per concept, reused across a run. */
@@ -191,7 +212,10 @@ export function conceptsInText(concepts: Concepts | ConceptMatchers, text: strin
  * whole-word test would miss.
  */
 export function localeValueCarriesTerm(tag: string, value: string, term: Pick<Term, 'chosen' | 'accept'>): boolean {
-  const text = (visibleLiterals(value, tag) ?? value.replace(/\{[^{}]*\}/g, '')).toLocaleLowerCase(tag)
+  // The fallback (raw family, invalid ICU) still carries ICU's doubled apostrophe
+  // on ICU-family keys, so `foto''s` has to read as `foto's` for the accept form.
+  const visible = visibleLiterals(value, tag) ?? stripRawIdentifiers(value).replace(/''/g, "'")
+  const text = visible.toLocaleLowerCase(tag)
   const forms = [term.chosen, ...(term.accept ?? [])].filter((form) => typeof form === 'string' && form.length > 0)
   return forms.some((form) => text.includes(form.toLocaleLowerCase(tag)))
 }

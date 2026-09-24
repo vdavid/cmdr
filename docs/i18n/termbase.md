@@ -43,9 +43,11 @@ fork table `apps/desktop/scripts/i18n-en-overlays.test.ts` mirrors.
 
 - `en` (required): the headword as it reads in the English UI.
 - `match` (required, non-empty): lowercase English surface forms, matched case-insensitively at word boundaries against
-  the VISIBLE English copy (placeholder names, plural/select categories, and tag names are stripped first, so
-  `{count, plural, …}` never reads as "count"). A multi-word phrase is fine (`go to path`). A trailing `*` means prefix
-  (`index*`). Keep them tight: they drive both the brief and the drift check.
+  the VISIBLE English copy (placeholder names, plural/select categories, tag names, markdown code spans, and link
+  targets are stripped first, so `{count, plural, …}` never reads as "count"). A multi-word phrase is fine
+  (`go to path`). A trailing `*` means prefix (`index*`). A leading `=` means the WHOLE value, ignoring edge punctuation
+  and case (`=back` hits `Back` and `Back…`, never "come back"): use it for a short UI label whose bare word also runs
+  through prose. Keep them tight: they drive both the brief and the drift check.
 - `sense` (required): one sentence, what this concept means in Cmdr. Split one English word into several concepts when
   it has several senses (`browse-file-picker` vs `browse-archive`), give each a `match` as specific as possible (they
   may overlap; the brief shows both), and link them with `distinct`.

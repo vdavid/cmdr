@@ -34,6 +34,17 @@ describe('compileMatch', () => {
     expect(hits('Go  to path…')).toBe(true)
     expect(hits('go to paths')).toBe(false)
   })
+  it('matches a form that ends in punctuation', () => {
+    expect(compileMatch(['browse…'])('Browse…')).toBe(true)
+    expect(compileMatch(['browse...'])('Browse...')).toBe(true)
+  })
+  it('treats a leading = as a whole-value match, ignoring edge punctuation and case', () => {
+    const hits = compileMatch(['=back'])
+    expect(hits('Back')).toBe(true)
+    expect(hits(' Back… ')).toBe(true)
+    expect(hits('Go back')).toBe(false)
+    expect(compileMatch(['=go back'])('Go  back')).toBe(true)
+  })
   it('keeps accented letters inside the word boundary', () => {
     expect(compileMatch(['caf'])('café')).toBe(false)
   })
@@ -52,6 +63,11 @@ describe('englishMatchText', () => {
   })
   it('drops markdown code spans, which are literal commands rather than copy', () => {
     expect(englishMatchText('errors.x', 'Try `ping <hostname>` in Terminal')).toBe('Try  in Terminal')
+  })
+  it('drops markdown link targets and tag-shaped tokens from a raw value', () => {
+    expect(englishMatchText('errors.x', 'Open [Settings](x-apple.systempreferences:com.apple.folder) for <name>')).toBe(
+      'Open [Settings] for ',
+    )
   })
   it('unescapes the doubled ICU apostrophe', () => {
     expect(englishMatchText('a.b', "Couldn''t copy")).toBe("Couldn't copy")
@@ -76,6 +92,11 @@ describe('localeValueCarriesTerm', () => {
     const term = { chosen: 'bewerking', accept: ['Bewerkingen'], confidence: 'high' as const, sources: 's' }
     expect(localeValueCarriesTerm('nl', 'Bewerkingenwachtrij', term)).toBe(true)
     expect(localeValueCarriesTerm('nl', 'De actie', term)).toBe(false)
+  })
+  it("reads an ICU-doubled apostrophe as one, so an accept form like foto's matches", () => {
+    const term = { chosen: "foto's", confidence: 'high' as const, sources: 's' }
+    expect(localeValueCarriesTerm('nl', "{count} foto''s", term)).toBe(true)
+    expect(localeValueCarriesTerm('nl', "Geen foto''s: {reason} en {x", term)).toBe(true)
   })
   it('ignores placeholder names, so a term inside a {name} never counts', () => {
     const term = { chosen: 'count', confidence: 'high' as const, sources: 's' }
