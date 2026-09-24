@@ -43,6 +43,8 @@
     "i18n:check-dont-translate": "node scripts/i18n-check-dont-translate.ts",
     "i18n:check-term-consistency": "node scripts/i18n-check-term-consistency.ts",
     "i18n:check-aria-label": "node scripts/i18n-check-aria-label.ts",
+    "i18n:check-termbase": "node scripts/i18n-check-termbase.ts",
+    "i18n:brief": "node scripts/i18n-brief.ts",
     "analytics:defaults": "node scripts/gen-analytics-defaults.ts",
     "marketing:shots": "node scripts/marketing-shots.ts",
     "i18n:couple": "node scripts/couple-screenshots.ts",
