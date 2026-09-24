@@ -276,6 +276,33 @@ function decisionHeadings(tag: string, docsRoot?: string): Set<string> {
 }
 
 /**
+ * Exceptions whose key's English no longer hits the concept (its `match` changed,
+ * a `notMatch` now covers it, or the English was reworded). A stale exception
+ * excuses nothing today and would silently excuse the key again if the English
+ * ever matched, so it's an error: drop it, or fix the concept.
+ */
+function staleExceptionErrors(
+  tag: string,
+  terms: Termbase,
+  concepts: Concepts,
+  en: Record<string, string>,
+): string[] {
+  const matchers = compileConcepts(concepts)
+  const errors: string[] = []
+  for (const [id, term] of Object.entries(terms)) {
+    const hits = matchers.get(id)
+    // A malformed `exceptions` is `validateTerms`' finding; nothing to judge here.
+    const exceptions: unknown = term.exceptions
+    if (!hits || !isRecord(exceptions)) continue
+    for (const key of Object.keys(exceptions)) {
+      if (!(key in en) || hits(englishMatchText(key, en[key]))) continue
+      errors.push(`${tag}/terms.json: ${id}: exception "${key}" is stale: its English no longer matches the concept, so drop it`)
+    }
+  }
+  return errors
+}
+
+/**
  * The concepts one locale's termbase may name: the shared registry plus its
  * `concepts-proposed.json` (the parallel-migration staging file), whose schema
  * problems and clashes with a shared ID land in `schemaErrors`.
@@ -332,6 +359,7 @@ export function inspectTermbase({
         decisionHeadings: decisionHeadings(tag, docsRoot),
       }),
     )
+    schemaErrors.push(...staleExceptionErrors(tag, terms, concepts, en.messages))
     const drift = findDrift({ tag, terms, concepts, en: en.messages, locale: loadCatalog(tag, messagesRoot).messages })
     locales.push({ locale: tag, drift, baseline: baseline.drift[tag] })
   }

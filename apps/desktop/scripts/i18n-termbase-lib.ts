@@ -126,6 +126,15 @@ export function loadTerms(tag: string, docsRoot?: string): Termbase | undefined 
   return readJsonIfPresent(termsPath(tag, docsRoot)) as Termbase | undefined
 }
 
+/**
+ * Curly apostrophes and quotes as straight ones, one character for one (so match
+ * offsets survive). Copy uses both (`isn’t` in French, `isn't` in a pattern), and
+ * neither side should have to guess which.
+ */
+export function straightQuotes(text: string): string {
+  return text.replace(/[‘’‚‛]/g, "'").replace(/[“”„‟]/g, '"')
+}
+
 /** Regex metacharacters, escaped. */
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -138,7 +147,7 @@ function escapeRegExp(text: string): string {
  * a phrase, and a trailing `*` meaning "this prefix".
  */
 export function compileMatch(forms: readonly string[]): (text: string) => boolean {
-  const trimmed = forms.map((form) => form.trim()).filter((form) => form.length > 0)
+  const trimmed = forms.map((form) => straightQuotes(form.trim())).filter((form) => form.length > 0)
   const wholeValues = new Set(trimmed.filter((form) => form.startsWith('=')).map((form) => wholeValueOf(form.slice(1))))
   const alternatives = trimmed
     .filter((form) => !form.startsWith('='))
@@ -148,7 +157,10 @@ export function compileMatch(forms: readonly string[]): (text: string) => boolea
       return prefix ? body : `${body}(?![\\p{L}\\p{N}])`
     })
   const re = alternatives.length > 0 ? new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives.join('|')})`, 'iu') : undefined
-  return (text) => (re?.test(text) ?? false) || (wholeValues.size > 0 && wholeValues.has(wholeValueOf(text)))
+  return (raw) => {
+    const text = straightQuotes(raw)
+    return (re?.test(text) ?? false) || (wholeValues.size > 0 && wholeValues.has(wholeValueOf(text)))
+  }
 }
 
 /**
@@ -156,11 +168,13 @@ export function compileMatch(forms: readonly string[]): (text: string) => boolea
  * phrase form, or the whole text for a matching `=` form. The brief uses it to tell
  * which content words of a key no concept speaks for.
  */
-export function coveredSpans(forms: readonly string[], text: string): [number, number][] {
+export function coveredSpans(forms: readonly string[], raw: string): [number, number][] {
+  // One character for one, so the spans still index `raw`.
+  const text = straightQuotes(raw)
   const spans: [number, number][] = []
   const whole = forms.filter((form) => form.trim().startsWith('='))
   if (whole.length > 0 && compileMatch(whole)(text)) spans.push([0, text.length])
-  for (const form of forms.map((f) => f.trim()).filter((f) => f.length > 0 && !f.startsWith('='))) {
+  for (const form of forms.map((f) => straightQuotes(f.trim())).filter((f) => f.length > 0 && !f.startsWith('='))) {
     const prefix = form.endsWith('*')
     const body = (prefix ? form.slice(0, -1) : form).split(/\s+/).map(escapeRegExp).join('\\s+')
     const re = new RegExp(`(?<![\\p{L}\\p{N}])${body}${prefix ? '[\\p{L}\\p{N}]*' : '(?![\\p{L}\\p{N}])'}`, 'giu')
@@ -242,9 +256,9 @@ export function localeValueCarriesTerm(tag: string, value: string, term: Pick<Te
   // The fallback (raw family, invalid ICU) still carries ICU's doubled apostrophe
   // on ICU-family keys, so `foto''s` has to read as `foto's` for the accept form.
   const visible = visibleLiterals(value, tag) ?? stripRawIdentifiers(value).replace(/''/g, "'")
-  const text = visible.toLocaleLowerCase(tag)
+  const text = straightQuotes(visible).toLocaleLowerCase(tag)
   const forms = [term.chosen, ...(term.accept ?? [])].filter((form) => typeof form === 'string' && form.length > 0)
-  return forms.some((form) => text.includes(form.toLocaleLowerCase(tag)))
+  return forms.some((form) => text.includes(straightQuotes(form).toLocaleLowerCase(tag)))
 }
 
 /** One `##` or `###` section of a `decisions.md`. */

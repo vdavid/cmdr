@@ -162,7 +162,11 @@ Deterministic (no time, RNG, or model), about 0.3 s for a 40-key batch.
 
 - **Schema problems are an ERROR** (exit 3): an unknown concept ID in `terms.json`, a missing `chosen` / `confidence` /
   `sources`, a bad confidence, an `exceptions` key the English catalog lacks, a `decision` naming no heading, a
-  malformed `avoid`, a non-kebab concept ID, an empty or uppercase `match` form, a dangling `distinct`, unknown fields.
+  malformed `avoid`, a non-kebab concept ID, an empty or uppercase `match` form, a dangling `distinct`, unknown fields,
+  and a STALE exception: an `exceptions` key whose English no longer matches the concept (after a `match` / `notMatch`
+  change or an English edit). It excuses nothing today and would silently excuse the key again later, so drop it.
+- All matching reads curly apostrophes and quotes (’ ‘ “ ”) as straight ones, in the forms and in the copy, English and
+  translated alike.
 - **Coverage drift is a WARN** (exit 1): for each ruling, every shipped key whose English matches the concept while its
   translation contains none of `chosen` / `accept` and isn't in `exceptions`. Held to a per-locale count baseline in
   `apps/desktop/scripts/i18n-termbase-baseline.json`: at or under it, one line; past it, every drifting key. Local runs

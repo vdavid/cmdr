@@ -45,6 +45,11 @@ describe('compileMatch', () => {
     expect(hits('Go back')).toBe(false)
     expect(compileMatch(['=go back'])('Go  back')).toBe(true)
   })
+  it('treats curly apostrophes and quotes as straight ones, in the form and in the text', () => {
+    expect(compileMatch(["isn't complete"])('The copy isn’t complete')).toBe(true)
+    expect(compileMatch(['isn’t complete'])("The copy isn't complete")).toBe(true)
+    expect(compileMatch(['=“done”'])('"Done"')).toBe(true)
+  })
   it('keeps accented letters inside the word boundary', () => {
     expect(compileMatch(['caf'])('café')).toBe(false)
   })
@@ -100,6 +105,11 @@ describe('localeValueCarriesTerm', () => {
     const term = { chosen: 'bewerking', accept: ['Bewerkingen'], confidence: 'high' as const, sources: 's' }
     expect(localeValueCarriesTerm('nl', 'Bewerkingenwachtrij', term)).toBe(true)
     expect(localeValueCarriesTerm('nl', 'De actie', term)).toBe(false)
+  })
+  it('treats a curly apostrophe in the translation or the form as a straight one', () => {
+    const term = { chosen: "n'est", confidence: 'high' as const, sources: 's' }
+    expect(localeValueCarriesTerm('fr', 'La copie n’est pas terminée', term)).toBe(true)
+    expect(localeValueCarriesTerm('fr', "La copie n''est pas terminée", { ...term, chosen: 'n’est' })).toBe(true)
   })
   it("reads an ICU-doubled apostrophe as one, so an accept form like foto's matches", () => {
     const term = { chosen: "foto's", confidence: 'high' as const, sources: 's' }
