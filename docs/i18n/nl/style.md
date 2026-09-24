@@ -1,7 +1,66 @@
 # Dutch (nl) translation style guide
 
 Working notes for translating Cmdr into Dutch. Read `../README.md` for how this fits the translation process, and the
-app-wide `docs/style-guide.md` for the English voice these notes carry into Dutch.
+app-wide `docs/style-guide.md` for the English voice these notes carry into Dutch. Term rulings live in `terms.json`
+(keyed by the shared `../concepts.json`), their rationale in `decisions.md`, and open questions in `review-queue.md`.
+
+## Digest
+
+The must-know rules; the rest of this file elaborates them.
+
+- **Address**: informal `je` / `jij` / `jou` / `jouw` everywhere, like macOS Dutch (zero `u` in Finder or AppKit).
+  Unstressed `je` by default; `jij` / `jouw` only for contrast ("tot jij het goedkeurt"). Don't force `je` into lines
+  macOS phrases neutrally ("Versturen…").
+- **Voice**: friendly, concise, active, calm. Error copy states the problem and a next step and never uses `fout` or
+  `mislukt` as a label: "X failed" → `X lukte niet`, "Couldn't X" → `Kon … niet` / `X lukte niet`, a stopped operation →
+  `Niet voltooid`, "Something went wrong" → `Er ging iets mis`. Compounds like `foutrapport` and `typefout` are fine. No
+  apologies in notices that report a deliberate choice.
+- **Register by UI slot**:
+  - buttons and menu items: bare-stem imperative, like Finder (`Verstuur`, `Annuleer`, `Kopieer`, `Toon`, `Stop`), even
+    when only a screen reader hears the label;
+  - window and dialog titles, yes/no questions: infinitive (`Foutrapport versturen`, `Deze bewerking terugdraaien?`);
+  - Settings labels (checkbox, field): infinitive last (`Verborgen bestanden tonen`); their descriptions: imperative;
+  - progress: `Bezig met …` for a running operation or queue row, bare infinitive plus ellipsis for a short inline line
+    (`Zoeken…`, `Verbinden met {name}…`); a heading uses the infinitive, a full sentence the finite verb.
+  - A separable verb keeps its particle at the END: `Voeg aan favorieten toe`, `Werp {name} uit`, `Pas … toe` (Apple's
+    verbatim `Voeg toe aan Dock` is the one exception).
+- **Menu-bar and Apple names follow the Dutch macOS**, even when odd: `Archief` (File), `Wijzig` (Edit), `Weergave`
+  (View), `Ga`, `Venster`, `Voorzieningen`, `Vergroot/verklein` (Window > Zoom), `Toon info` (Get Info), `Beveiligd`
+  (Locked), `snelle weergave` / `Geef snel weer` (Quick Look), `Sleutelhanger`, `Teksteditor`, `Voorvertoning`, the
+  folder `Apps`. Localize what Apple localizes, whatever a `@key` description says. Kept English: Finder, Spotlight,
+  Terminal, Disk Utility, First Aid, Activity Monitor, Mission Control, Dock (with `het` in a sentence), Apple silicon,
+  System Integrity Protection. On a phone, Android's own Dutch wins (`USB-foutopsporing`, `Toestaan`, `tik op`).
+- **Capitalization**: sentence case; only the first word and proper nouns.
+- **Punctuation**: quote UI strings in running text with single curly quotes `‘…’`, never straight `"…"`. Mirror the
+  English ellipsis per key (`…` or `...`). No space before `%`. Menu-path separators (`>`, `→`, `›`) mirror EN per key.
+  ICU values double a straight apostrophe (`foto''s`, `pagina''s`); RAW families (`errors.*`, `menu.*`) don't.
+- **Compounds** concatenate (`crashrapport`, `bestandenlijst`); hyphenate before an acronym or English proper name
+  (`SMB-share`, `macOS-versie`, `Klembord-PDF`, `het Help-menu`, `Ask Cmdr-model`); format tokens stay lowercase
+  (`zip-archief`). A hyphenated first part closes up: `alleen-lezenvolume`.
+- **Brand**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, `Safari` stay verbatim and take NO genitive-s: `de AI van Cmdr`,
+  never `Cmdrs AI` (the don't-translate check reads `Cmdrs` as a dropped brand). `Ask Cmdr` names only the chat panel;
+  prose about what the AI does says `Cmdr` or `de AI`.
+- **Plurals**: CLDR `one` / `other`. Dutch inflects the verb with the count, so pull only the noun plus its verb into
+  the branches and share the rest (`{count, plural, one {# bestand is} other {# bestanden zijn}} nog open`). No definite
+  article before a numeral: `Alles is teruggezet: {countText} onderdelen.`
+- **Placeholders**: never refer back to an uncontrolled `{name}`, `{path}`, `{app}`, or `{host}` with a pronoun (gender
+  unknown); use a pronominal adverb (`daar staat nu iets in`, `er … mee`) or repeat the noun (`Open de server opnieuw`).
+  A process name `{app}` leads without an article.
+- **Top traps** (details in `terms.json`):
+  - operation → `bewerking` (the queue `Bewerkingenwachtrij`, the log `Bewerkingenlogboek`); transfer → `overdracht`
+    only for a copy or move in flight.
+  - rename → `naam wijzigen` / `Wijzig naam`, noun `naamwijziging`; never `hernoemen`.
+  - eject → `Werp … uit` / `uitwerpen`, never macOS's `Verwijder` (that is delete).
+  - dismiss → `Sluit`, never `Wis`; clear → `wissen`.
+  - quit → `Stop` / `stoppen`, never `Afsluiten`; save → `Bewaar` / `bewaren` (the adjective stays `opgeslagen`).
+  - send → `Verstuur` / `versturen`, never `Stuur` or `verzenden`.
+  - device → `apparaat`, never `toestel`; drive → `schijf` (a de-word: `hij`/`hem`); item → `onderdeel`.
+  - locked file → `beveiligd`, never `vergrendeld`; Brief / Full view → `Beknopte weergave` / `Volledige weergave`,
+    never `Kort` / `Volledig`.
+  - Edit: `Bewerk` opens an editor, `Wijzig …` opens a form, `Wijzig` is the menu bar.
+  - Undo: `Herstel` (Edit menu), `Zet terug` (trash toast), `Ongedaan maken` (Ask Cmdr rename run).
+  - A feature switched off, named from elsewhere: `… staat uit`; turning it on in a hint: `Zet … aan`; the Settings
+    label: `inschakelen` / `ingeschakeld`. Drive indexing in prose: `het indexeren van schijven`.
 
 ## Formality: `je`, settled
 
@@ -40,121 +99,21 @@ so don't copy that pattern.
     stem is the native-Mac feel, so prefer it for Cmdr's buttons.
   - When the English button is a verb Dutch has no verb for (English "Background" as an act; there is no
     `achtergronden`), don't fall back to the bare noun, which reads as a label: use the prepositional or directional
-    phrase the catalog already uses for the concept ("Op de achtergrond", like the settled "Naar prullenmand"). See the
-    glossary's empty-queue button pass.
+    phrase the catalog already uses for the concept ("Op de achtergrond", like the settled "Naar prullenmand"). See
+    `decisions.md` § De knop voor een lege wachtrij.
   - **A separable verb keeps its particle at the END of the label**, however far that pushes it: "Add to report" →
     `Voeg aan rapport toe`, not the English-ordered "Voeg toe aan rapport". macOS does exactly this ("Voeg aan begin van
     knoppenbalk toe", "Voeg het lettertype aan de stijl toe", verified in `nl/macOS/AppKit`, 2026-08-28). Same for
     `zet … terug`, `werp … uit`, `koppel … los`.
 
-## Terminology and glossary
+## Terminology
 
-Format per term: `English → chosen · sources · confidence`. Tier order is macOS (highest, Tier 1) → Microsoft (Tier 2) →
-GNOME/Xfce (Tier 3). Confidence is `confirmed` (human signed off), `high` (authoritative sources agree), or `tentative`
-(sources conflict or none had it).
-
-Straightforward (sources agree, `high`):
-
-- send → versturen (verb) / Verstuur (button) · macOS Finder ("Send"→"Verstuur", "Sending…"→"Versturen…") · high
-  - Microsoft uses "verzenden"; macOS is Tier 1 and "versturen" is the native-Mac form, so prefer it.
-- cancel → Annuleer (button) / annuleren · macOS ("Cancel"→"Annuleer", consistent across AppKit + Finder) · high
-- copy → Kopieer (button) / kopiëren · macOS ("Copy"→"Kopieer") · high
-- copied → gekopieerd (past participle) · GNOME Nautilus ("Copied …"→"… gekopieerd") · high
-- show details → Toon details · macOS AppKit ("Show Details"→"Toon details") · high
-- settings → Instellingen · macOS ("Settings"→"Instellingen"), MS ("settings"→"instellingen") · high
-- updates → Updates (kept; capitalized as a Settings-section name) · MS ("Updates"→"Updates", ProperNoun) · high
-- version → versie · MS ("version"→"versie") · high
-- report → rapport · MS ("report"→"rapport") · high
-- crash report → crashrapport · macOS uses "Crashrapportage" for crash reporting; "crashrapport" is the natural Dutch
-  compound for the report itself · high
-- quit unexpectedly → onverwachts gestopt · macOS ("unexpectedly quit"→"onverwachts gestopt") · high
-- dismiss → Sluit (button) / sluiten · MS ("dismiss"→"sluiten"); rendered as the bare-stem imperative per the button
-  rule · high
-- done → Gereed · macOS ("Done"→"Gereed") · high
-- save → bewaren · macOS ("Save"→"Bewaar"); macOS uses "bewaren", NOT "opslaan", for save · high
-- file → bestand (plural bestanden) · macOS, MS, Nautilus · high
-- Get Info (Finder) → Toon info · macOS Finder ("Get Info"→"Toon info") · high
-- Locked (the Info-panel checkbox) → Beveiligd · macOS Finder (`InfoWindowGeneralView` `1073.title`) + AppKit
-  ("Locked"→"Beveiligd") · high
-- uncheck Locked → deselecteer ‘Beveiligd’ · macOS Finder `NE18`, Apple's own wording for this same recovery advice ·
-  high
-- eject (past participle) → uitgeworpen · from the settled eject→uitwerpen · high
-- in use → in gebruik · macOS Finder ("… is in gebruik") · high
-- unplug (a device) → loskoppelen ("Koppel het los") · catalog `mtp.permissionDialog.helpText`, macOS-consistent · high
-- idle (a device) → niet meer bezig · counterpart of the catalog's "Het apparaat is bezig" · high
-- put back (an item out of the prullenmand) → terugzetten / teruggezet · macOS Finder (`Put Back`→`Zet terug`, "could
-  not be put back"→"konden niet worden teruggezet") · high
-- undo, on the trash toast → Zet terug · macOS Finder's own Put Back command, which IS this action; short and
-  unambiguous where `Herstel` also means Revert/Repair. The generic undo button elsewhere stays `Ongedaan maken`. See
-  the glossary's prullenmandmelding pass · high
-- go to trash → Ga naar prullenmand · macOS Finder (`Go to the Trash`→`Ga naar de prullenmand`), article dropped the way
-  Finder's own button does (`Go to Folder…`→`Ga naar map…`) · high. NOT `Naar prullenmand`, which already means MOVE to
-  trash in `fileOperations.json`
-- add (to something that already exists) → toevoegen / toegevoegd; button `Voeg aan {X} toe` · macOS Finder ("Als je
-  personen aan dit document wilt toevoegen …") + AppKit ("Voeg aan begin van knoppenbalk toe") · high
-- note (free-text the user writes) → notitie · MS (`note`→`notitie`); settled across `errorReporter.json`. The
-  feedback-pass row `note → bericht` is that surface only; don't mix the two words in one dialog · high
-- the Help menu → het Help-menu · the Dutch macOS menu bar keeps `Help` (see the glossary's native-menu pass); hyphen
-  after the English proper name, like `SMB-share` · high
-- leave alone (Cmdr deliberately doesn't touch something) → ongemoeid laten / ongemoeid gelaten · the shipped
-  `askCmdr.renameUndo.skipReason.*` family renders this exact English sentence that way, and two rollback-toast keys
-  carry byte-identical English with it · high. Keep it apart from `overslaan` (`skip`), which the confirmation before
-  the rollback uses. See the glossary's terugdraaimelding pass
-- left where it is (a move that doesn't travel back) → laten staan · follows the settled `blijven staan`
-  (`rollbackConfirm.bodyUndoByMovingBack`) · high
-
-Add rows as terms come up, each with sources and a confidence.
-
-From the Android (ADB) settings pass (`settings.fileOperations.adb*`; the reference pile is absent on the machine this
-pass ran on, so Tier 1 was mined from the LIVE macOS bundles per `docs/i18n/reference-pile/how-to-mine.md` § "No pile on
-this machine?", all verified on macOS 26.6.2, build 25G83, 2026-09-06):
-
-- location (of a file or command on disk) → locatie · macOS Finder `Localizable.strings` (`Location`→`Locatie`,
-  `Go To Location`→`Ga naar locatie`) · high
-- file system → bestandssysteem · macOS AppKit `DocumentDragging.loctable` ("could not be found in the file system"→"is
-  niet gevonden in het bestandssysteem") · high
-- turned on (a setting that is enabled) → ingeschakeld · macOS System Settings `Localizable.loctable`, dozens of keys
-  ("%@ is turned on but is not connected to a network"→"%@ is ingeschakeld, maar is niet verbonden met een netwerk") ·
-  high. Prefer it over the colloquial `aanstaat`
-- leave (a field) empty → laat dit leeg · macOS `Localizable.loctable` shortcut parameter help ("leave empty to preserve
-  the document type"→"laat dit leeg om het documenttype te behouden"), verbatim including the `dit` · high
-- installed → geïnstalleerd · macOS System Settings ("… is installed with macOS"→"… wordt samen met macOS
-  geïnstalleerd") · high
-- debugging → foutopsporing; USB debugging → USB-foutopsporing · AOSP's own Dutch, `SettingsLib`
-  `res/values-nl/strings.xml` `enable_adb` = "USB-foutopsporing" (fetched 2026-09-07), matching Apple Dutch's
-  "foutopsporingsmodus" (Safari `DeveloperPreferences.strings`). `USB` stays, the rest is localized, so the user sees
-  their own phone's wording · high
-- Android platform tools → Android platform tools (kept English) · the download package's own name; Google keeps it
-  English in Dutch. Two words, so the Dutch compound-concatenation rule does not apply · tentative
-- Android tooling (the general "you have no Android tooling installed") → Android-tools · distinct from the specific
-  `platform tools` above; hyphen after the English proper name, like `SMB-share` · tentative
-
-From the AI-copy sweep and the provider-setup pass (the app stopped calling its AI "Ask Cmdr" everywhere it just meant
-"AI"; the name now survives only where it names the chat panel):
-
-- AI features → AI-functies · the catalog itself (`settings.ai.tooltipOff` "AI-functies staan uit",
-  `settings.ai.provider.description` "Kies hoe AI-functies worden aangedreven.", `onboarding.stepAi.intro`) · high
-- the AI (as the acting subject, where the English deliberately doesn't say "Cmdr") → de AI · the catalog
-  (`settings.askCmdr.intro` "Chat met een AI …") · high. Boundary: `Cmdr` stays `Cmdr` and `Ask Cmdr` stays `Ask Cmdr`;
-  see the note below on which of the three names goes where
-- AI provider → AI-aanbieder · the catalog throughout (`askCmdr.error.notConfigured`, and the retired
-  askCmdr.consent.intro) · high
-- file operations → bestandsbewerkingen · the catalog (`commands.logOperationLog.description`, `fileExplorer` "snelle
-  bestandsbewerkingen", `settings` several) · high
-- placeholder → tijdelijke aanduiding · Microsoft terminology (`DUTCH.tbx`, both senses, NLD + BEL) · high
-- deployment (an Azure deployment) → implementatie · Microsoft terminology (`DUTCH.tbx`; the third sense, `inzetten`, is
-  the verb) · high
-- resource (an Azure resource) → resource (kept English) · Microsoft terminology (`DUTCH.tbx` keeps `resource` in three
-  of four senses; only one reads `bron`) · high
-- endpoint → eindpunt · Microsoft terminology (`DUTCH.tbx`), including the exact sense used here ("The logical
-  representation of a location, typically expressed in URL form"), plus `API Endpoint` → `API-eindpunt` and
-  `endpoint address` → `eindpuntadres`, which give the label its shape. Apple is silent: neither `endpoint` nor
-  `eindpunt` appears anywhere in `nl/macOS/`, so Tier 2 decides · high. Both keys carrying the word moved TOGETHER
-  (`onboarding.cloudSetup.step.endpoint` → `Eindpunt-URL`, and the caption `onboarding.cloudSetup.hint.azureEndpoint` →
-  "Dit eindpunt …"), because a native caption under an English label reads as two different fields. `eindpunt` is a
-  het-word, so "dit eindpunt"; the hyphen before the initialism follows the same rule as `API-eindpunt`
-- in Azure (never "op Azure") · Microsoft's own Dutch style guide writes "de servers in Azure"
-  (`microsoft-style-guides/StyleGuide.pdf`, its gender-neutral-writing examples) · high
+Every term ruling lives in `terms.json`, keyed by the concept IDs in `../concepts.json`: `chosen`, accepted forms, usage
+notes, forms to avoid with the reason, a confidence (`confirmed` / `high` / `tentative`), and sources. Tier order is
+macOS (Tier 1) → Microsoft (Tier 2) → the file-manager catalogs (Tier 3); a vendor's own Dutch UI (Apple, Android) beats
+a `@key` description. Rationale worth more than a line sits in `decisions.md` under a heading that cites its keys, and
+the term's `decision` field names that heading. Never guess a term: mine the reference pile first
+(`../reference-pile/how-to-mine.md`).
 
 ## Brand and do-not-translate
 
@@ -186,13 +145,13 @@ second half is now a normal plural with a real verb
 - **Native menu's volgen de Finder-formulering, niet die van de catalogus.** Waar macOS een equivalent heeft, wint dat
   (`Archief`, `Voorzieningen`, `Geef snel weer`, `Vergroot/verklein`), omdat de gebruiker Cmdrs menubalk naast die van
   de Finder ziet. De ene uitzondering is `eject`, waar Apples `Verwijder` met _delete_ zou botsen. Bewijs en
-  uitzonderingen: `glossary.md` § Native menu's.
+  uitzonderingen: `decisions.md` § Native menu's.
 - **The grayed-out menu item keeps its base label and adds ` (bezet)`.** A `*Busy` key is the same command in a second
   state, so it repeats its base item byte-identically and appends one marker, exactly as `menu.volume.ejectBusy`
   (`Werp uit ({name}) (bezet)`) does: `Verbreek (bezet)`, `Vergeet server (bezet)`,
   `Vergeet opgeslagen wachtwoord (bezet)`. `bezet` is the short adjectival form a parenthetical needs and it fits every
-  base label unchanged; the glossary's `in use → in gebruik` is for full sentences about a volume, so don't swap one for
-  the other. Never invent a second marker: if a future base label can't take `(bezet)`, report it.
+  base label unchanged; the `in-use` term's `in gebruik` is for full sentences about a volume, so don't swap one for the
+  other. Never invent a second marker: if a future base label can't take `(bezet)`, report it.
 - **Sentence case, not title case.** Dutch capitalizes only the first word and proper nouns, which fits the app's
   sentence-case rule directly. "Verstuur crashrapport?" not "Verstuur Crashrapport?".
 - **Quotation marks:** macOS Dutch uses single curly quotes `‘…’` for quoted UI strings ("Klik op 'Ga door' …", and
@@ -212,12 +171,12 @@ second half is now a normal plural with a real verb
 - **Speed multipliers**: write them as digits plus `x` and the equality shape, `4x zo langzaam als …` /
   `4x zo snel als …`, not `4x langzamer dan`, which leaves open whether the factor applies to the difference or the
   whole. The Microsoft style guide prescribes digits for units and percentages; the shape itself has no pile precedent,
-  so it's a judgment call (see the glossary's `osMountFallback` pass).
+  so it's a judgment call (see `decisions.md` § De terugvalmelding voor de systeem-SMB-verbinding).
 - **An uncontrolled `{name}` NEVER takes a pronoun.** The name can be a file (`het`) or a folder (`de`), so any pronoun
   is wrong half the time. Reach for the pronominal adverb, which works for both genders AND both numbers:
   `daar is iets aan gewijzigd`, `daar staat nu iets in`, `nadat Cmdr er klaar mee was`. Bonus: with no pronoun left, a
   `.named` and a `.counted` sibling can share one sentence, and the counted one keeps a single `plural` block instead of
-  three. Worked example: `glossary.md` § De terugdraaimelding.
+  three. Worked example: `decisions.md` § De terugdraaimelding.
 - **No definite article in front of a numeral.** English's "the {countText} items" has no Dutch counterpart
   (`De 1 onderdeel` is wrong), so put the completeness first and the number in an apposition after a colon:
   `Alles is teruggezet: {countText} onderdelen.` That reads correctly at every count, 1 included.
@@ -234,14 +193,13 @@ second half is now a normal plural with a real verb
   hunting for a string their phone never shows. Keep the acronym, localize the rest, and report the clash upward.
 - **The volume switcher is `de volumekiezer`, in every string.** English calls one UI both "volume switcher" and "volume
   chooser"; the catalog already gives it a single Dutch name (`commands.volumeClose.label`,
-  `shortcuts.scope.volumeChooser`), so a new string about it reuses that word. The glossary row `switcher → wisselaar`
-  stays unused.
+  `shortcuts.scope.volumeChooser`), so a new string about it reuses that word. The old coinage `wisselaar` stays unused.
 - **`Wijzig …` opens a form; `Bewerk …` opens an editor.** macOS renders a standalone `Edit…` as `Wijzig…`
   (`Network.appex`, AppKit, verified on macOS 26.6.2, build 25G83, 2026-09-06), and this catalog reserves `Bewerk` for
   opening a file in an editor (`commands.fileEdit.label`, `menu.file.edit`). Pick by which of the two the string means.
 - **A feature switched off in Settings, referenced from elsewhere, reads `… staat uit.`** The whole
   `driveIndex.tooltip*` family already says it that way, and the pointer next to it is `Zet het aan in Instellingen` /
-  `Zet het aan bij <pad>`. The glossary row `turned on → ingeschakeld` is for the Settings label itself.
+  `Zet het aan bij <pad>`. The term `enable` (`ingeschakeld`) is for the Settings label itself.
 - **Een voortgangskop staat in de infinitief, een hele zin in de werkwoordsvorm.** `Reconnecting to {name}…` wordt
   `Opnieuw verbinden met {name}…` (Apples eigen `Opnieuw verbinden…` in `ScreenSharing.loctable`, en het al aanwezige
   `errors.listing.deviceReconnecting.title`), terwijl `Try reconnecting` in een lopende zin `opnieuw verbinding maken`
@@ -256,18 +214,18 @@ second half is now a normal plural with a real verb
   `android.googlesource.com` (`packages/apps/Settings`, `frameworks/base/packages/SettingsLib`, and
   `frameworks/base/packages/SystemUI`, each `res/values-nl/strings.xml`, base64 via `?format=TEXT`), and they settle
   `USB-foutopsporing`, the `Toestaan` button, `tik op`, and the `Zet … aan` imperative. Use them the way term-choice
-  principle 1 uses Apple: the word in Cmdr has to be the word on the phone's screen. Evidence: `glossary.md` § Het
+  principle 1 uses Apple: the word in Cmdr has to be the word on the phone's screen. Evidence: `decisions.md` § Het
   telefoonpaneel via ADB.
 - **A command's register follows its ENGLISH SHAPE, not whether it toggles.** `commands.serversTogglePin.label` ("Pin /
   unpin server") keeps the slash and the imperative: `Zet server vast / maak hem los`. The two `aan/uit` commands answer
   a different English (`Toggle pin tab`, `Toggle hidden files`), which Dutch renders as `<object> <infinitive> aan/uit`;
   an English imperative takes a Dutch imperative, as all four sibling `servers.*` commands and both menu pin items
-  already do. Confidence: high. Evidence: `glossary.md` § De serverhub.
+  already do. Confidence: high. Evidence: `decisions.md` § De serverhub.
 - **`vastzetten` en `vast maken` zijn één werkwoordpaar, geen twee.** Beide dragen hetzelfde partikel, en het hele
   catalogus-cluster staat op `vast` / `los`: `Maak tabblad vast` / `Maak tabblad los`, `Maak vast in volumekiezer` /
   `Maak los`, `Tabblad vastzetten aan/uit`, `Vastgezet`, `Zet server vast / maak hem los`. ❌ Veeg ze dus niet samen op
   één licht werkwoord: `Maak server vast / maak hem los` herhaalt `maak` in één label. Confidence: high. Bewijs:
-  `glossary.md` § De vastzet-hint.
+  `decisions.md` § De vastzet-hint.
 - **"USB debugging" → `USB-foutopsporing`, settled.** It is what a Dutch Android phone shows, sourced straight from AOSP
   (`SettingsLib` `enable_adb`), and the English `@key.description` now asks for exactly that: the phrase the way the
   vendor's localized Android renders it. The `adb.*` pass reuses the same rendering. Confidence: high.
@@ -287,11 +245,11 @@ second half is now a normal plural with a real verb
 - **`Dock` blijft Engels en krijgt het lidwoord `het`.** Apple laat het lidwoord weg in korte labels
   (`Voeg toe aan Dock`, `Verwijder uit Dock`), maar zet het er in een zin wél bij (`Toon/verberg het Dock automatisch`,
   Systeeminstellingen). Kies op de vorm: label zonder, zin met. De bezittelijke vorm `je Dock` mag waar het Engels
-  `your Dock` zegt. Bewijs: `glossary.md` § Het Dock-aanbod.
+  `your Dock` zegt. Bewijs: `decisions.md` § Het Dock-aanbod.
 - **Voor een item in Cmdrs Dock-menu is `Dock.app` `nl.lproj/DockMenus.strings` de Tier-1-bron**, naast Finders
   `MenuBar.strings`. Het bestand draagt het hele Nederlandse Dock-menu op leesbare sleutels (`OPEN`, `HIDE`, `QUIT`,
   `SHOW_ALL_WINDOWS`, `KEEP_IN_DOCK`), dus een label dat het Dock zelf al kent, schrijf je niet zelf. Bewijs:
-  `glossary.md` § Het Dock-menu van Cmdr zelf.
+  `decisions.md` § Het Dock-menu van Cmdr zelf.
 - **De map Applications heet in het Nederlandse macOS `Apps`, niet `Programma's`.** Finder gebruikt `Apps` in de
   navigatiekolom, het Ga-menu en de knopbaltip `Ga naar de map ‘Apps’`; `Programma's` leeft alleen nog in
   `Hulpprogramma's`. Schrijf `de map ‘Apps’`, met de enkele krulaanhalingstekens die deze gids voorschrijft.
@@ -300,127 +258,30 @@ second half is now a normal plural with a real verb
   gebruiker daar aanklikt heten `Star` en `Like`. Cmdr schrijft `Geef de repo een star op GitHub` en
   `Geef Cmdr een like op AlternativeTo`: het leenwoord blijft, het Nederlands draagt alleen het werkwoord. Zoek dus
   eerst uit óf het platform je taal spreekt, voordat je "gebruik de term van het platform" toepast. Bewijs:
-  `glossary.md` § De onboarding-herschrijving.
+  `decisions.md` § De onboarding-herschrijving.
 - **Een `…summary`-regel naast een schakelaar mag niet omlopen**, dus die erft de terminologie van zijn lange
   `…desc`-buur maar niet diens zinsbouw: benoem in telegramstijl de kosten en de baten, en houd de regel rond de lengte
   van het Engels. Wordt het langer, snoei dan een bijwoord of een lidwoord weg, nooit een van de feiten.
 - **Een `{app}`-achtige procesnaam staat vooraan zonder lidwoord, en krijgt nooit een voornaamwoord.** Een naam die Cmdr
   uit een draaiend proces leest, is een eigennaam, dus `{app} gebruikt deze schijf nog` (geen `de`/`het`), en het
   Engelse „anything **it** has open" wordt een plaatsbijwoord: `Sluit alles wat daar openstaat`. Dezelfde reden als bij
-  een ongecontroleerde `{name}`: het geslacht van de naam is onbekend. Bewijs: `glossary.md` § Wie de schijf vasthoudt.
+  een ongecontroleerde `{name}`: het geslacht van de naam is onbekend. Bewijs: `decisions.md` § Wie de schijf vasthoudt.
 - **Een leeg inline-vakje (`<field></field>`) hoort achter het scheidbare partikel**, niet ertussenin:
   `Vul je e-mailadres in <field></field> om …`. Het partikel hoort bij zijn werkwoord; het vakje komt daarna, op
   dezelfde plek als in het Engels.
 - Record case-by-case rulings here.
 
-## Decisions to confirm with David
+## Open questions
 
-The formality (`je`) and the send/cancel/copy terms are settled from macOS (Tier 1). Open subjective items:
+Subjective calls and coined terms that a native reviewer should confirm live in `review-queue.md`; each already ships a
+reasoned value.
 
-- **send → versturen vs verzenden** (resolved to `versturen` from macOS, but Microsoft prefers `verzenden`): confirm
-  "Verstuur rapport" reads better than "Verzend rapport" for the crash-report button. Low stakes; both are correct.
-- **crash report → crashrapport** (high, but no exact macOS string for the noun): macOS has "Crashrapportage" (the
-  reporting feature). Confirm "crashrapport" for the artifact reads natural in Cmdr's dialog.
-- **The two new crash-dialog openings** (`crashReporter.dialog.body.keptRunning`/`.unknown`): confirm
-  `een probleem tegengekomen` over the better-sourced but stiffer Tier-1 `heeft … aangetroffen`, and
-  `is gewoon blijven werken` over `is gewoon actief gebleven`. Both picks trade a citation for Cmdr's warmer register.
-  Evidence and the rejected alternatives: `glossary.md` § De drie crashdialoog-openingen.
-- **Ask Cmdr tool-status doing/done pairs** (`askCmdr.tool.*`): no pile precedent for AI-assistant status lines, so the
-  seven pairs are coined (present tense for "doing", past-participle-led for "done"; see glossary "Ask Cmdr pass" REVIEW
-  FLAGS). Confirm the tone lands, and that seven distinct verbs read as a coherent family rather than ad hoc.
-- **unarchive → "Uit archief halen"**: no single natural Dutch imperative verb for "unarchive" the way "Archiveer" works
-  for "archive". Confirm this multi-word button reads fine next to its short siblings.
-- **`Onboardingchecklist` aaneen** (`onboarding.stepBeta.checklist.title`): orthografisch correct en in lijn met
-  `onboardingopties`, maar 19 letters. Bevestig tegenover `Onboarding-checklist`.
-- **`de inschrijfserver` en `mailinglijst`** (`onboarding.stepBeta.signup.unreachable` / `.rejected`): de eerste is
-  gemunt, de tweede wijkt bewust af van Microsofts `adressenlijst` (dat een ander begrip benoemt). Bewijs: `glossary.md`
-  § De onboarding-herschrijving.
-- **`de macOS-afhandeling` voor `native handler`** (`onboarding.stepOptional.mtp.summary`): gemunt en gekozen op lengte,
-  want de regel mag niet omlopen. Alternatief `het eigen macOS-proces` is langer en `eigen` leest dubbelzinnig.
-- **"Ask Cmdr model" → "Ask Cmdr-model"**: hyphenating after a two-word English brand name is a judgment call (no exact
-  pile precedent for a multi-word brand + suffix). Confirm it doesn't read as awkward.
-- **rename as a NOUN → "naamwijziging"** (with the compound "naamwijzigingsplan"), sourced from Microsoft's
-  "naamwijzigingsvoorstellen"; the Tier-3-only "hernoeming" is out. A few keys outside the bulk-rename feature still say
-  "hernoemen" (see the glossary's review flags); confirm a locale-wide sweep.
-- **"Review file renames" → "Naamwijzigingen beoordelen"**: "beoordelen" (decide) over macOS's look-over "bekijken",
-  because the modal is a per-row allow/deny gate. Confirm the register.
-- **"No progress for {duration}" → "Al {duration} geen voortgang"**: `voortgang` is settled, but nothing in the pile
-  phrases an elapsed stall, so the "al X geen Y" shape is a judgment call. Confirm it reads natural in the progress
-  dialog and on a queue row.
-- **"4x slower" → "4x zo langzaam als"** (`osMountFallback.message`): nothing in the pile puts a multiplier in front of
-  a comparative, so the equality shape is a judgment call over the shorter, more colloquial "4x langzamer dan". Confirm
-  which one reads better in a toast.
-- **`errors.eject.notEjectable` avoids the macOS word for "removable"**: macOS `nl` says `Verwijderbaar`, but in a
-  sentence about ejecting that reads as _deletable_ (the same collision that already ruled out `Verwijder` for eject),
-  so the string says what you can do instead: "Deze schijf kun je niet uitwerpen, dus hij blijft aangesloten." Confirm
-  the sidestep.
-- **`errors.eject.notAnSmbVolume` repeats "verbreken" after its wrapper** ("Verbinding verbreken lukte niet: Dit is geen
-  netwerkshare, dus er is geen verbinding om te verbreken."). English repeats it the same way, and Dutch `verbreken`
-  needs its object, so it's deliberate. Confirm it doesn't grate in a small toast.
-- **`vergrendeld` vs `beveiligd` for a locked file**: `errors.write.fileLocked.*` says `vergrendeld`, while
-  `errors.mutation.fileLocked` and Apple itself say `beveiligd`. Left as-is this pass; confirm a locale-wide sweep to
-  `beveiligd`. Evidence: `glossary.md` § Get Info en Beveiligd.
-- **"The transfer has stopped moving" → "De overdracht komt niet meer vooruit"**: picked over the more idiomatic
-  standstill phrase "ligt stil", which sits too close to the neighbouring "Gepauzeerd" state. Confirm the tradeoff.
-- **"leave alone" → "ongemoeid gelaten"** (`fileOperations.cancelRollback.reason.*`, `askCmdr.renameUndo.skipReason.*`):
-  nothing in the pile carries this register for files, so the shipped sibling family is the source. Confirm the register
-  reads right in a toast, and that `Map {name} ongemoeid gelaten` (no article, inherited byte-for-byte from the askCmdr
-  sibling the consistency check ties it to) doesn't read as clipped.
-- **"after Cmdr put it there" → "nadat Cmdr er klaar mee was"**: the English place adverbial goes, so the line can stay
-  gender- and number-neutral (see § Notes and decisions). Confirm the trade, and whether "De rest staat nog op de nieuwe
-  plek" is the best rendering of "where the move put them".
-- **"View or add notes to the report" → "Bekijk het rapport of voeg notities toe"** (`autoSentToast.viewOrAddNotes`): 39
-  characters against the English 31, on a toast next to the short "Wijzig instellingen". Dutch can't hang one shared
-  object in front of both verbs, so each verb carries its own half. The compact "Bekijk of vul het rapport aan" fits
-  better but drops the notitie the dialog is for. Confirm which one wins in the real toast, and overflow-check it.
-- **"Android file access over ADB" → "Toegang tot Android-bestanden via ADB"**: the sibling toggle above it reads
-  "Ondersteuning voor Android/Kindle/camera (PTP en MTP)", so the two Android rows open with different words. Confirm
-  the label pair reads as one section rather than two unrelated settings.
-- **"platform tools" kept English, "Android tooling" → "Android-tools"**: no pile source (Google's Dutch pages keep the
-  package name English, and the Tier-2 sources were unreachable on this machine). Confirm the split reads right, and
-  that "de Android platform tools" doesn't want a hyphen.
-- **"Places" → `Locaties`**: English picked `Places` over `Locations` on purpose, and Dutch has one word for both.
-  Confirm `Locaties` reads right as a shortcuts-list heading next to `Volumekiezer` and `Servers`.
-- **"Found nearby" → `Gevonden in de buurt`**: `in de buurt` is Apple's own rendering of `nearby`, but the word order is
-  a judgment call and the label runs 20 characters in a narrow status column. Overflow-check it.
-- **"Local network discovery" → `lokale netwerkdetectie`**: both halves are sourced, the compound is not. Confirm it
-  over the looser `Detectie in je lokale netwerk`.
-- **"there''s nothing to type" → `er valt niets te typen`** (`servers.paneState.signedOutNothingToAsk`): niets in de
-  bundels draagt deze wending. `hoef je niets in te vullen` is warmer en gangbaarder, maar verschuift de zin van "er is
-  niets" naar "jij hoeft niets". Bevestig welke in een klein paneel beter leest.
-- **`een sleutel` naast de hostsleutel** (`servers.paneState.signedOutNothingToAsk`): dezelfde dubbelzinnigheid als het
-  Engels (de sleutel van de gebruiker tegenover die van de server, waar `hostKey.*` het over heeft). De twee
-  paneelstanden zijn nooit tegelijk in beeld, dus de waarde blijft letterlijk. Bevestig, of kies `een SSH-sleutel` en
-  wijk daarmee van het Engels af.
-- **host key → `serversleutel`** (`settings.servers.card.trustedHostKeys`, `settings.summary.servers`): gemunt, alleen
-  waar het Engels zélf `host key` zegt; in het serverpaneel blijft het `de sleutel`. Bevestig dat het niet leest als
-  "sleutel tót de server".
-- **"Watching for phones." → `Cmdr let op telefoons.`**: het Nederlands heeft een onderwerp nodig waar het Engels er
-  geen heeft. Bevestig de toon tegenover `Cmdr houdt in de gaten of er een telefoon wordt aangesloten.` (Apples idioom,
-  twee keer zo lang).
-- **"AI suggestions are waiting." → `Er staan AI-suggesties klaar.`** (`suggestedOps.indicatorTooltip`): nothing in the
-  pile phrases waiting suggestions, so the `staan klaar` shape is a judgment call over the flatter "Er wachten
-  AI-suggesties". Confirm which reads better in the status corner.
-- **"Click to set one up in settings." → `Klik om er een te kiezen in instellingen.`** (`askCmdr.wake.needsApiKey`): the
-  literal `in te stellen in instellingen` jangles, so the verb follows what the key's description says actually happens
-  (the settings screen is where the provider is picked). Confirm the swap from "set up" to "kiezen".
-- **`pin` in het Dock → `vastzetten` / `losmaken`** (`main.dockPinNudge.body`, `.unpinNote`): het paar dat de rest van
-  de catalogus gebruikt, maar Apples eigen Dock-menu zegt `Permanent in Dock` en `Verwijder uit Dock`. Bevestig dat de
-  catalogusconsistentie hier zwaarder weegt dan Apples woorden voor dezelfde handeling.
-- **`dus het lijkt goed te bevallen`** (`main.dockPinNudge.body`): vrijere weergave van "so it seems to be working for
-  you". Letterlijker is `dus het werkt blijkbaar goed voor je`, wat stroever leest. Bevestig de toon.
-- **`staat nog open` voor een gekoppelde schijfkopie** (`errors.eject.unmountRefusedByDiskImage`): gemunt, want het pile
-  kent `openstaan` niet voor bestanden. Het houdt de lichte toon van het Engelse „open", waar het preciezere
-  `is nog gekoppeld` het register optilt. Bevestig de ruil, plus `Wacht een minuutje` (warm) tegenover
-  `Wacht een minuut` (zakelijk) in `errors.eject.unmountRefusedBySystem`. Bewijs: `glossary.md` § Wie de schijf
-  vasthoudt.
-- **"camera details" → `cameragegevens`** (`ai.cloudConsent.askCmdr.item.contents`, `contentsRule`, and the retired
-  what's-new text): a coined compound for a photo's EXIF block, no source has a collective noun for it. Confirm it reads
-  as "what the camera recorded", not "data about the camera". Evidence and the fallback: `glossary.md` § Ask Cmdr looks
-  inside files.
+## Termbase files
 
-## Glossary
+- `../concepts.json`: the shared, language-agnostic concept registry (sense, `match` patterns, confusable neighbors).
+- `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
+- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `review-queue.md`: open questions for a native reviewer.
 
-The living term glossary for this language is in `glossary.md`. Read it before translating and add to it as you settle
-terms, each sourced from the reference pile (`_ignored/i18n/nl/`; recipes in `docs/i18n/reference-pile/how-to-mine.md`).
-Never guess a term.
+Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section
+when the reason needs more than a line.

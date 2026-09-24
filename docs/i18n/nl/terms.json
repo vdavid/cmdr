@@ -1,0 +1,2719 @@
+{
+  "about": {
+    "chosen": "Over",
+    "confidence": "high",
+    "forms": "app menu: Over Cmdr",
+    "sources": "macOS Finder (\"About Finder\" → \"Over Finder\")"
+  },
+  "absolute-path": {
+    "chosen": "absoluut pad",
+    "confidence": "high",
+    "exceptions": {
+      "fileOperations.validation.pathNotAbsolute": "Predicate use: \"Het pad moet absoluut zijn\" carries the term without the compound."
+    },
+    "forms": "\"Pad moet absoluut zijn (begint met /)\"",
+    "sources": "MS terminology (absolute path → absoluut pad)"
+  },
+  "access": {
+    "accept": ["toegankelijk", "benader"],
+    "chosen": "toegang",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.resourceBusy.explanation": "The access here is opening a file another app holds exclusively; openen names the act."
+    },
+    "forms": "exclusive access → exclusieve toegang",
+    "sources": "macOS (\"geen toegang\")"
+  },
+  "account": {
+    "chosen": "account",
+    "confidence": "high",
+    "forms": "het account (het-woord)",
+    "sources": "catalog (errors.json five times, onboarding.json)"
+  },
+  "activate": {
+    "accept": ["activeren", "geactiveerd", "activering"],
+    "chosen": "Activeer",
+    "confidence": "high",
+    "forms": "button Activeer; progress Activeren",
+    "sources": "macOS (\"Activeer\")"
+  },
+  "add": {
+    "accept": ["voeg", "toegevoegd"],
+    "avoid": [
+      {
+        "form": "Voeg toe aan …",
+        "why": "English word order; the separable particle goes to the end (exception: Apple's verbatim `Voeg toe aan Dock`)"
+      }
+    ],
+    "chosen": "toevoegen",
+    "confidence": "high",
+    "decision": "Aanvullen wat al verstuurd is: het notitievenster bij een automatisch foutrapport (`errorReporter.amend.*`, `errorReporter.amendedToast.message`, `errorReporter.autoSentToast.viewOrAddNotes`)",
+    "exceptions": {
+      "fileExplorer.navigation.spaceMtpHint": "\"Add up to\" is arithmetic (komen samen op), not adding to a list.",
+      "onboarding.stepAi.table.renameWith": "Quoted example prompt \"add ISO date prefix\", rendered as natural speech (zet er … voor).",
+      "settings.mediaIndex.showInSearch.description": "\"Search adds a row\" means places a row (zet), not the add-to-a-list act."
+    },
+    "forms": "button Voeg … toe with the particle LAST (Voeg aan rapport toe, Voeg server toe…, Voeg huidige map aan favorieten toe); window title Toevoegen aan je foutrapport; participle toegevoegd",
+    "sources": "macOS Finder (Add Password → Voeg wachtwoord toe, Add Tags → Voeg tags toe), AppKit (Voeg aan begin van knoppenbalk toe)"
+  },
+  "ai-feature": {
+    "accept": ["de AI", "AI-"],
+    "chosen": "AI-functies",
+    "confidence": "high",
+    "forms": "AI features → AI-functies; the AI (acting subject) → de AI; Cmdr's AI → de AI van Cmdr",
+    "sources": "catalog (settings.ai.tooltipOff, settings.ai.provider.description, settings.askCmdr.intro)"
+  },
+  "ai-provider": {
+    "accept": ["AI-aanbieder", "cloudaanbieder"],
+    "avoid": [{ "form": "synchronisatievoorziening", "why": "MS's first hit is the sync-provider sense" }],
+    "chosen": "aanbieder",
+    "confidence": "high",
+    "exceptions": {
+      "errors.provider.genericCloudStorage.displayName": "Sync-service sense (the cloud-provider concept): je cloudprovider.",
+      "errors.provider.genericCloudStorage.nonTransient": "Sync-service sense (the cloud-provider concept): een cloudprovider.",
+      "errors.provider.genericCloudStorage.transient": "Sync-service sense (the cloud-provider concept): een cloudprovider."
+    },
+    "forms": "AI provider → AI-aanbieder; naar je aanbieder",
+    "sources": "general NL; catalog throughout (askCmdr.error.notConfigured)"
+  },
+  "ai-tool": {
+    "accept": ["hulpmiddelen", "tool", "tools"],
+    "chosen": "hulpmiddel",
+    "confidence": "high",
+    "forms": "tool status lines: present tense without subject for doing (Kijkt in bestanden), participle-led for done (In bestanden gekeken); Android platform tools stays English, Android tooling → Android-tools",
+    "sources": "MS terminology (tool → hulpmiddel)"
+  },
+  "allow": {
+    "accept": ["toestaan", "toegestaan", "Sta alles toe", "Toestaan", "toestaat", "toe te staan", "Sta ", "mocht"],
+    "chosen": "Sta toe",
+    "confidence": "high",
+    "forms": "button Sta toe / Sta alles toe; settings label <object> toestaan (Cloud-AI toestaan); Android's own dialog button is quoted as ‘Toestaan’",
+    "sources": "macOS Finder (Allow Anyway → Sta toch toe), MS (allow → toestaan), AOSP SystemUI usb_debugging_allow = Toestaan"
+  },
+  "already-exists": {
+    "accept": ["staat al", "bestaan al"],
+    "chosen": "bestaat al",
+    "confidence": "high",
+    "forms": "\"Er bestaat al … op deze locatie\"; conflict title Bestand bestaat al",
+    "sources": "macOS Finder (\"Er bestaat al een onderdeel … op deze locatie\")"
+  },
+  "answer": {
+    "accept": ["antwoord", "beantwoord"],
+    "avoid": [{ "form": "reageren", "why": "reserved for a device or share answering (respond)" }],
+    "chosen": "antwoorden",
+    "confidence": "high",
+    "decision": "Het losse conflictvenster (`fileOperations.operationConflict.*`)",
+    "forms": "intransitive antwoorden (totdat je antwoordt); with an object beantwoorden (Beantwoord de vraag …); status Antwoord nodig",
+    "sources": "MS (answer → beantwoorden); catalog totdat-shape"
+  },
+  "api-key": {
+    "chosen": "API-sleutel",
+    "confidence": "high",
+    "sources": "standard NL compound"
+  },
+  "app-bundle": {
+    "accept": ["App-pakketten", "pakketten"],
+    "avoid": [
+      { "form": "bundel", "why": "MS's word; Apple's user-facing word for a .app is pakket (Toon pakketinhoud)" }
+    ],
+    "chosen": "pakket",
+    "confidence": "high",
+    "forms": "aria label bare pakket; Settings card and row App-pakketten",
+    "sources": "macOS Finder (Show Package Contents → Toon pakketinhoud)"
+  },
+  "app-switcher": {
+    "chosen": "app-wisselaar",
+    "confidence": "tentative",
+    "sources": "compositional (no source term)"
+  },
+  "apple-account": {
+    "accept": ["Apple-account"],
+    "chosen": "Apple Account",
+    "confidence": "high",
+    "forms": "the System Settings pane name stays English (Apple Account); in running prose the common noun is het Apple-account",
+    "sources": "macOS 26.6.2 (25G83) AppleIDSettings.appex InfoPlist.loctable, 2026-08-30"
+  },
+  "apple-silicon": {
+    "chosen": "Apple silicon",
+    "confidence": "high",
+    "sources": "Apple's Dutch macOS keeps it untranslated"
+  },
+  "applications-folder": {
+    "avoid": [
+      {
+        "form": "Programma's",
+        "why": "Dutch macOS names the folder Apps; Programma's survives only in Hulpprogramma's"
+      }
+    ],
+    "chosen": "Apps",
+    "confidence": "high",
+    "decision": "Het Dock-aanbod (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)",
+    "forms": "de map ‘Apps’",
+    "sources": "macOS Finder (TL5 / GROUP_APPLICATIONS = Apps, Go menu 258.title, TL_HELP_APPS = Ga naar de map 'Apps')"
+  },
+  "apply": {
+    "accept": ["toepassen", "toegepast", "toe te passen", "past"],
+    "chosen": "Pas toe",
+    "confidence": "high",
+    "exceptions": {
+      "selection.recent.applyAria": "Separable verb with the particle last: Pas recente {mode}-selectie toe.",
+      "settings.network.smbConcurrency.description": "\"Changes apply\" means take effect: Wijzigingen gaan in."
+    },
+    "forms": "separable particle last: Pas recente {mode}-selectie toe: {query}",
+    "sources": "macOS AppKit (NSFontOptionsPanel, NSPreferences = Pas toe)"
+  },
+  "approve": {
+    "accept": ["goedkeur", "goedgekeurd", "goedkeuring", "keur"],
+    "avoid": [{ "form": "Accepteer", "why": "macOS's accept-something sense; approving grants permission" }],
+    "chosen": "Goedkeuren",
+    "confidence": "high",
+    "decision": "Voorgestelde bewerkingen: het venster met wat Ask Cmdr voorstelt (`suggestedOps.*`, `commands.suggestedOpsShow.*`)",
+    "forms": "suggested-ops buttons are infinitives (Goedkeuren / Weigeren)",
+    "sources": "MS / standard NL"
+  },
+  "archive": {
+    "accept": ["archieven", "zip-", "tar-", "7z-"],
+    "chosen": "archief",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.sessions.archive": "The chat-archiving sense (archive-chat): Archiveer."
+    },
+    "forms": "pl. archieven; format tokens hyphenate lowercase (zip-archief, zip-archieven, tar-archieven, 7z-archieven, zip-bestand); archive format → archiefstructuur, an entry's compression method → structuur; archive edit → archiefbewerking",
+    "sources": "macOS Finder (Zip archive → Zip-archief, Kind is archives → Soort is Archief, Zip archive format → Zip-archiefstructuur)"
+  },
+  "archive-chat": {
+    "accept": ["gearchiveerd", "Uit archief halen", "archiveren"],
+    "chosen": "Archiveer",
+    "confidence": "tentative",
+    "forms": "button Archiveer; restore Uit archief halen (no single-word reverse verb); badge gearchiveerd",
+    "sources": "coined from the settled noun archief; no pile source for this sense"
+  },
+  "ask": {
+    "accept": ["vragen", "vraagt", "Ask Cmdr"],
+    "chosen": "Vraag",
+    "confidence": "high",
+    "forms": "segmented option Vraag (imperative stem)",
+    "sources": "Double Commander (\"vraag elke keer welke te gebruiken\")"
+  },
+  "ask-cmdr": {
+    "chosen": "Ask Cmdr",
+    "confidence": "high",
+    "forms": "compounds hyphenate after the full brand: Ask Cmdr-model, Ask Cmdr-chats, de Ask Cmdr-instellingen, het Ask Cmdr-gedeelte",
+    "sources": "brand name"
+  },
+  "attachment": {
+    "accept": ["bijvoegen", "bij te voegen", "bijgevoegd", "voeg"],
+    "avoid": [{ "form": "beschikbaar maken", "why": "MS's device-attach sense" }],
+    "chosen": "bijlage",
+    "confidence": "high",
+    "forms": "noun bijlage; verb bijvoegen (Zet hier neer om bij te voegen)",
+    "sources": "MS (attachment → bijlage); verb paired with the noun (tentative)"
+  },
+  "back": {
+    "accept": ["Vorige", "terug"],
+    "chosen": "Terug",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "exceptions": {
+      "settings.updates.emailPrivacyNote": "\"Tied back to you\" is not the back button; gekoppeld aan jou."
+    },
+    "forms": "Terug = the standalone back button in a list you drill into (network browser); Vorige = the paired previous/next of the Go menu and the wizard",
+    "sources": "standard NL UI; macOS Vorige for the pair"
+  },
+  "background": {
+    "accept": ["Op de achtergrond", "achtergrond"],
+    "avoid": [
+      { "form": "Achtergrond", "why": "bare noun reads as a picture or color label in Dutch macOS" },
+      { "form": "Naar achtergrond", "why": "suggests moving a window behind another, not running there" }
+    ],
+    "chosen": "op de achtergrond",
+    "confidence": "high",
+    "decision": "De knop voor een lege wachtrij: \"Background\"",
+    "forms": "button Op de achtergrond; aria Op de achtergrond laten doorlopen; a running operation keeps going with doorlopen (Loopt nog op de achtergrond); send to the queue → Naar de bewerkingenwachtrij sturen",
+    "sources": "Double Commander (Werk op de achtergrond)"
+  },
+  "badge": {
+    "accept": ["statusmarkering", "markeringen"],
+    "avoid": [
+      { "form": "badge", "why": "MS keeps it only for the gamification sense" },
+      { "form": "embleem", "why": "Tier-3 Thunar only" }
+    ],
+    "chosen": "markering",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepBeta.openBeta": "The Alpha pill is a visible labelled badge in the UI, not a status marker on an icon; <alpha></alpha>-badges."
+    },
+    "forms": "badge → markering, status badge → statusmarkering",
+    "sources": "macOS Finder Markeer (QK4); catalog gemarkeerd"
+  },
+  "brief-view": {
+    "accept": ["beknopt"],
+    "avoid": [{ "form": "Kort", "why": "named a view the menu bar doesn't have" }],
+    "chosen": "Beknopte weergave",
+    "confidence": "high",
+    "sources": "compositional; the View menu name (menu.view.briefView)"
+  },
+  "browse": {
+    "accept": ["blader", "doorbladeren", "doorbladert", "bekijk"],
+    "chosen": "bladeren",
+    "confidence": "high",
+    "forms": "short menu or toggle imperative Blader (Blader als een map); in a sentence doorbladeren or erin bladeren; Browse <place> → Blader op <place>",
+    "sources": "macOS Finder (Browse → Blader, key 48.title), MS (browse → bladeren)"
+  },
+  "browse-file-picker": {
+    "avoid": [{ "form": "Bladeren", "why": "Safari's infinitive menu form; this is a button" }],
+    "chosen": "Blader…",
+    "confidence": "high",
+    "sources": "macOS Finder ConnectToWindow.strings 48.title"
+  },
+  "cache": {
+    "chosen": "cache",
+    "confidence": "high",
+    "sources": "MS (unchanged)"
+  },
+  "camera-details": {
+    "chosen": "cameragegevens",
+    "confidence": "tentative",
+    "decision": "Ask Cmdr looks inside files: the `inspectFile` tool line and the reworded consent screen (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)",
+    "sources": "coined compound (camera + the catalog's gegevens for metadata)"
+  },
+  "cancel": {
+    "accept": ["annuleren", "geannuleerd"],
+    "chosen": "Annuleer",
+    "confidence": "high",
+    "forms": "button Annuleer; status Geannuleerd",
+    "sources": "macOS (Cancel → Annuleer, AppKit + Finder)"
+  },
+  "case-sensitive": {
+    "accept": ["hoofdletters"],
+    "chosen": "hoofdlettergevoelig",
+    "confidence": "high",
+    "forms": "upper and lower case → hoofdletters en kleine letters",
+    "sources": "standard NL; macOS (Negeer hoofdletters)"
+  },
+  "certificate": {
+    "chosen": "certificaat",
+    "confidence": "high",
+    "sources": "Keychain Access InfoPlist.loctable (certificate → certificaat)"
+  },
+  "changelog": {
+    "accept": ["changelog"],
+    "chosen": "Wijzigingenlogboek",
+    "confidence": "high",
+    "decision": "Native menu's: menubalk, contextmenu's, venstertitels (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)",
+    "forms": "the Help-menu item is Wijzigingenlogboek, distinct from Wat is er nieuw (the news)",
+    "sources": "MS terminology"
+  },
+  "character": {
+    "accept": ["tekens"],
+    "chosen": "teken",
+    "confidence": "high",
+    "exceptions": {
+      "shortcuts.system.characterViewer": "Apple's picker name (character-viewer concept): Emoji's en symbolen."
+    },
+    "forms": "null character → null-teken",
+    "sources": "MS (character → teken, null character → null-teken)"
+  },
+  "character-viewer": {
+    "chosen": "Emoji's en symbolen",
+    "confidence": "high",
+    "sources": "macOS Dutch (the picker is labeled Emoji's en symbolen)"
+  },
+  "chat": {
+    "accept": ["chats", "gesprek"],
+    "avoid": [{ "form": "sessie", "why": "MS's generic session; Cmdr calls a saved conversation a chat throughout" }],
+    "chosen": "chat",
+    "confidence": "high",
+    "exceptions": {
+      "queryUi.ai.refineTooltip": "\"Chat back\" is the verb; praat terug met de agent."
+    },
+    "sources": "MS terminology (chat, NLD/BEL); catalog (askCmdr.sessions.title)"
+  },
+  "check": {
+    "accept": ["controleer", "controle", "gecontroleerd", "kijk", "verifi", "naar updates", "vergelijk", "vergeleken"],
+    "avoid": [
+      {
+        "form": "nagaan",
+        "why": "the rollback reason lines use controleren (99 keys); only resolvingCoverage keeps nagaan, for different English"
+      }
+    ],
+    "chosen": "controleren",
+    "confidence": "high",
+    "decision": "Schijfindex: de wijzigingscontrole",
+    "exceptions": {
+      "errors.git.blobTooLarge.suggestion": "Git's own verb \"check out\", kept as uitchecken.",
+      "errors.listing.authRequiredEneedauth.suggestion": "\"Check with the administrator\" means ask: neem contact op met de beheerder.",
+      "errors.write.originalsKeptAside.suggestion.many": "Restructured: the details below say where each file is.",
+      "fileExplorer.git.tooltip.worktreeOnBranch": "Git's \"checked out\": uitgecheckt."
+    },
+    "forms": "progress Controleren; Checking for changes → Controleren op wijzigingen; Re-check → Controleer opnieuw; noun controle (de volgende volledige controle)",
+    "sources": "Double Commander (Controleer …), Nautilus (controleren op), Mail/SoftwareUpdate (Check Again → Controleer opnieuw)"
+  },
+  "checklist": {
+    "avoid": [{ "form": "controlelijst", "why": "MS's Planner sense, reads as an inspection" }],
+    "chosen": "checklist",
+    "confidence": "high",
+    "decision": "De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels",
+    "forms": "compound Onboardingchecklist (closed)",
+    "sources": "Van Dale loanword"
+  },
+  "choose": {
+    "accept": ["kiezen", "gekozen", "koos"],
+    "chosen": "Kies",
+    "confidence": "high",
+    "forms": "dropdown placeholder Kies...; Choose an app… → Kies app…",
+    "sources": "macOS picker prompt; Finder Choose Application… (N137)"
+  },
+  "clean-up": {
+    "accept": ["ruimt", "opgeruimd"],
+    "avoid": [
+      {
+        "form": "verwijdert",
+        "why": "a second delete verb beside queue rows that say Bezig met verwijderen reads as more deleting"
+      }
+    ],
+    "chosen": "opruimen",
+    "confidence": "tentative",
+    "decision": "Het stoppoortje: afsluiten terwijl er nog werk loopt (`main.quit.*`)",
+    "exceptions": {
+      "errors.git.corruptRepo.suggestion": "\"Clears it up\" means fixes it: lost dit op.",
+      "fileExplorer.navigation.driveIndex.refusedInternal": "\"Clears it\" means fixes the snag: lost het op."
+    },
+    "forms": "separable: ruimt … op",
+    "sources": "plain Dutch; no pile string names this act"
+  },
+  "clear": {
+    "accept": ["wis"],
+    "chosen": "wissen",
+    "confidence": "high",
+    "exceptions": {
+      "errors.git.corruptRepo.suggestion": "\"Clears it up\" means fixes it: lost dit op.",
+      "errors.listing.temporarilyUnavailable.explanation": "\"Clears up on its own\" means passes: gaat vanzelf over.",
+      "errors.write.permissionDenied.suggestion.systemProtectedOther": "A flag that has to come off: die er eerst af moet.",
+      "fileExplorer.navigation.driveIndex.refusedInternal": "\"Clears it\" means fixes the snag: lost het op.",
+      "fileOperations.cancelRollback.stagedLeftover.counted": "Cmdr tidying its own leftovers (clean-up concept): ruimt … op.",
+      "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr tidying its own leftover (clean-up concept): ruimt … op.",
+      "licensing.dialog.serverInvalidError": "A payment that didn't clear: niet is verwerkt.",
+      "main.quit.body": "Cmdr tidying half-written output (clean-up concept): ruimt Cmdr op.",
+      "queryUi.dialog.runQueryUnknownReason": "Adjective \"clear\" (obvious): onduidelijk.",
+      "settings.mediaIndex.reclaim.alreadyCleared": "Index entries that are gone: al verwijderd."
+    },
+    "forms": "Index wissen, Zoekopdracht wissen, Druk op ESC om te wissen",
+    "sources": "macOS Finder + AppKit (Clear Menu → Wis menu)"
+  },
+  "clipboard": {
+    "chosen": "klembord",
+    "confidence": "high",
+    "forms": "clipboard content → klembordinhoud; Klembordafbeelding, Klembordtekst, Klembord-PDF (hyphen before an acronym)",
+    "sources": "macOS AppKit (Clipboard → Klembord), MS"
+  },
+  "close": {
+    "accept": ["sluiten", "gesloten"],
+    "chosen": "Sluit",
+    "confidence": "high",
+    "exceptions": {
+      "errors.eject.deviceDisconnectRefused": "A device ending its connection: wilde de verbinding niet verbreken.",
+      "errors.listing.connectionReset.explanation": "A server closing a connection: sloot de verbinding."
+    },
+    "forms": "button Sluit",
+    "sources": "macOS Finder (Close → Sluit, FR26)"
+  },
+  "cloud-ai": {
+    "accept": ["Cloud-AI"],
+    "chosen": "cloud-AI",
+    "confidence": "high",
+    "decision": "De schakelaar ‘Cloud-AI toestaan’ en de toestanden waarin cloud-AI uit staat (`ai.cloudConsent.label`, `ai.cloudConsent.description`, `askCmdr.gate.cloudOff.body`, `settings.ai.cloudConsent.lockedHint`, `settings.askCmdr.enabled.label`)",
+    "forms": "de-woord: refer back with die or repeat it; switch Cloud-AI toestaan, verb form Sta … cloud-AI toe",
+    "sources": "catalog (settings.ai.provider.opt.cloud)"
+  },
+  "cloud-provider": {
+    "accept": ["cloudmap", "cloudservice", "Cloudkoppeling", "cloudopslag"],
+    "chosen": "cloudprovider",
+    "confidence": "high",
+    "forms": "your cloud provider → je cloudprovider; cloud folders → cloudmappen; cloud mount → Cloudkoppeling; provider app names (Dropbox, Google Drive, OneDrive, iCloud Drive, macFUSE) stay verbatim",
+    "sources": "compositional; brands do-not-translate"
+  },
+  "command": {
+    "accept": ["opdrachten"],
+    "chosen": "opdracht",
+    "confidence": "high",
+    "exceptions": {
+      "errors.git.indexLocked.message": "A git command in a git context: git-commando.",
+      "errors.git.indexLocked.suggestion": "A git command in a git context: git-commando.",
+      "errors.provider.macFuse.serious": "A third-party mount command in a shell context: mount-commando."
+    },
+    "forms": "Search commands → Zoek opdrachten; the command adb → de opdracht adb",
+    "sources": "Double Commander (command line → opdrachtregel), MS (command → opdracht)"
+  },
+  "command-palette": {
+    "chosen": "opdrachtenpalet",
+    "confidence": "tentative",
+    "forms": "in het opdrachtenpalet",
+    "sources": "compositional (opdracht + palet); no source term"
+  },
+  "comparator": {
+    "accept": ["vergelijkingstekens"],
+    "chosen": "vergelijkingsteken",
+    "confidence": "tentative",
+    "sources": "standard NL (math comparison sign)"
+  },
+  "complete": {
+    "accept": ["voltooi", "voltooien", "onvolledig", "niet voltooid"],
+    "avoid": [{ "form": "afgerond", "why": "belongs to scans and AI answers; file operations are voltooid" }],
+    "chosen": "voltooid",
+    "confidence": "high",
+    "decision": "Een half teruggedraaide bewerking afmaken (`operationLog.dialog.finishRollBack`, `operationLog.rollback.partiallyRolledBackNotice`, `fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`, `queue.row.reversalInFolder`)",
+    "exceptions": {
+      "errors.write.newDataKeptAt.message": "\"Written and complete\" describes the file: volledig weggeschreven.",
+      "operationLog.rollback.refusalJournalIncomplete": "An incomplete record: niet volledig vastgelegd.",
+      "settings.advanced.showStagingTempFiles.description": "A file that is complete (whole), not an operation: compleet."
+    },
+    "forms": "Copy complete → Kopiëren voltooid; wizard button Voltooi; Finish rolling back → Voltooi terugdraaien; an unfinished copy → onvolledig exemplaar",
+    "sources": "macOS (voltooid for completed operations; NE108 Finish Copying → Voltooi kopiëren)"
+  },
+  "compress": {
+    "accept": ["comprimeren", "gecomprimeerd", "compressie"],
+    "chosen": "Comprimeer",
+    "confidence": "high",
+    "forms": "command and button Comprimeer; progress Bezig met comprimeren; result gecomprimeerd; Compressieniveau with ends Sneller (1) and Kleiner (9)",
+    "sources": "macOS Finder (Compress ${sources} → Comprimeer ${sources}); TC, 7-Zip (Compressieniveau)"
+  },
+  "compromised": {
+    "avoid": [{ "form": "ingetrokken", "why": "Apple's certificate word says no longer valid, not proven unsafe" }],
+    "chosen": "gecompromitteerd",
+    "confidence": "tentative",
+    "sources": "common Dutch security term; no Apple or MS source"
+  },
+  "configure": {
+    "accept": ["configuratie", "geconfigureerd", "stel", "ingesteld"],
+    "chosen": "Configureer",
+    "confidence": "high",
+    "forms": "button Configureer…; configuration profile → configuratieprofiel; Configure it below → Stel het hieronder in",
+    "sources": "macOS Finder (Configure Time Machine… → Configureer Time Machine…), System Settings (Configuratieprofiel)"
+  },
+  "confirm": {
+    "accept": ["bevestig", "bevestiging"],
+    "chosen": "bevestigen",
+    "confidence": "high",
+    "decision": "De onbevestigde naamwijziging en de onbruikbare naam (`fileExplorer.rename.unconfirmed`/`unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)",
+    "forms": "\"Couldn't confirm …\" → We konden … niet bevestigen / Cmdr kon … niet bevestigen; heading Kon het verplaatsen niet bevestigen",
+    "sources": "MS (confirm → bevestigen), macOS AppKit (Bevestig)"
+  },
+  "conflict": {
+    "accept": ["conflicten"],
+    "chosen": "conflict",
+    "confidence": "high",
+    "sources": "standard NL"
+  },
+  "connect": {
+    "accept": ["verbind", "verbinding", "verbonden", "aangesloten", "aansluit", "sluit", "Connect"],
+    "chosen": "verbinden",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.pane.directConnectionNotNetworkShareToast": "Rephrased: er valt niets te versnellen (no connection to speed up).",
+      "onboarding.stepBeta.emailNote": "\"Never connected to your usage stats\" means tied to: nooit gekoppeld aan."
+    },
+    "forms": "button Verbind; Connect to server → Verbind met server; Connect as guest → Verbind als gast; progress Verbinden met {name}…; status Verbonden; in a sentence verbinding maken; a phone plugged in by cable is aangesloten, not verbonden",
+    "sources": "macOS Finder (Connect to server → Verbind met server, Connect As… → Verbind als…), AppKit (Connecting… → Verbinden…, Connected → Verbonden)"
+  },
+  "context-menu": {
+    "accept": ["rechtermuisknop"],
+    "avoid": [{ "form": "snelmenu", "why": "the Windows term" }],
+    "chosen": "contextmenu",
+    "confidence": "high",
+    "exceptions": {
+      "queryUi.recent.popoverHint": "Terse key-hint line: rechtsklik keeps it short next to the other hints."
+    },
+    "forms": "Right-click <x> → Klik met de rechtermuisknop op <x>",
+    "sources": "Double Commander (Toon contextmenu)"
+  },
+  "context-window": {
+    "chosen": "contextvenster",
+    "confidence": "tentative",
+    "sources": "compositional; no source term"
+  },
+  "continue": {
+    "accept": ["doorgaan", "gaat door", "gaat verder", "Werk door", "verder"],
+    "chosen": "Ga door",
+    "confidence": "high",
+    "exceptions": {
+      "settings.mediaIndex.clip.deleteConfirmBody": "\"Keep working\" said of search features: blijft werken."
+    },
+    "forms": "button Ga door; Keep working (calls the quit off) → Werk door",
+    "sources": "macOS (Continue → Ga door)"
+  },
+  "convert": {
+    "accept": ["converteer", "geconverteerd"],
+    "chosen": "converteren",
+    "confidence": "high",
+    "sources": "macOS (Converting… → Converteren…)"
+  },
+  "copy": {
+    "accept": ["kopiëren", "gekopieerd", "kopie", "exemplaar"],
+    "chosen": "Kopieer",
+    "confidence": "high",
+    "exceptions": {
+      "settings.revealHandler.notProductionBuild": "\"A released copy\" is a release: een uitgebrachte versie."
+    },
+    "forms": "button Kopieer; verb kopiëren; participle gekopieerd; noun kopie; an unfinished copy → onvolledig exemplaar",
+    "sources": "macOS (Copy → Kopieer), Nautilus (Copied … → … gekopieerd)"
+  },
+  "crash-report": {
+    "accept": ["crashrapporten", "gecrasht", "crash", "vastgelopen"],
+    "chosen": "crashrapport",
+    "confidence": "high",
+    "forms": "the setting label stays Crashrapporten sturen; a sentence that covers both crash and background problem says een rapport",
+    "sources": "macOS Crashrapportage (feature); natural compound for the report"
+  },
+  "create": {
+    "accept": ["maak", "aangemaakt", "aanmaak", "maken"],
+    "chosen": "aanmaken",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.symlinkLoopErrno.suggestion": "A link that causes a loop: veroorzaakt.",
+      "errors.write.symlinkLoop.message": "Links that form a loop: vormen."
+    },
+    "forms": "separable: Cmdr maakt hem aan; radio options Bestand aanmaken / Aanmaken en naam wijzigen; column header Aanmaakdatum; date balloon Aangemaakt",
+    "sources": "macOS Finder (Create a folder named … → Maak … een map aan; Date Created → Aanmaakdatum)"
+  },
+  "credentials": {
+    "chosen": "inloggegevens",
+    "confidence": "tentative",
+    "sources": "standard NL; macOS uses naam en wachtwoord descriptively"
+  },
+  "current-folder": {
+    "chosen": "huidige map",
+    "confidence": "high",
+    "forms": "no article in a short label (Kopieer pad van huidige map), article in a full sentence",
+    "sources": "catalog; macOS (Ga naar map in huidige locatie)"
+  },
+  "custom": {
+    "accept": ["aangepaste"],
+    "chosen": "Aangepast",
+    "confidence": "high",
+    "forms": "custom endpoints → aangepaste eindpunten",
+    "sources": "macOS (Custom → Aangepast)"
+  },
+  "cut": {
+    "accept": ["knippen", "geknipt"],
+    "chosen": "Knip",
+    "confidence": "high",
+    "sources": "macOS AppKit (Cut → Knip)"
+  },
+  "damaged": {
+    "chosen": "beschadigd",
+    "confidence": "high",
+    "sources": "macOS Finder (LA33 / NE59)"
+  },
+  "dashboard": {
+    "chosen": "dashboard",
+    "confidence": "high",
+    "sources": "MS terminology"
+  },
+  "default": {
+    "accept": ["standaard"],
+    "chosen": "Standaard",
+    "confidence": "high",
+    "forms": "system default → Systeemstandaard; default app → standaardapp; default text editor → standaardeditor; Reset to default → Herstel naar standaard",
+    "sources": "macOS (Default → Standaard), Finder (no default app specified → Er is geen standaardapp opgegeven)"
+  },
+  "delete": {
+    "accept": ["verwijderen", "verwijderd", "verwijdering", "Delete"],
+    "chosen": "Verwijder",
+    "confidence": "high",
+    "forms": "button Verwijder; progress Bezig met verwijderen / Verwijderen…",
+    "sources": "macOS Finder (Delete → Verwijder)"
+  },
+  "delete-permanently": {
+    "accept": ["voorgoed"],
+    "avoid": [{ "form": "permanent", "why": "the drift round unified three keys on definitief" }],
+    "chosen": "definitief",
+    "confidence": "high",
+    "forms": "button and menu item Verwijder definitief; in prose definitief verwijderen",
+    "sources": "macOS Finder (definitief verwijderen; Verwijder onmiddellijk… puts the verb first)"
+  },
+  "deny": {
+    "accept": ["weigeren", "geweigerd", "Weiger alles"],
+    "chosen": "Weiger",
+    "confidence": "high",
+    "sources": "macOS AppKit (Deny → Weiger), MS (deny → weigeren)"
+  },
+  "deselect": {
+    "accept": ["deselecteren", "gedeselecteerd"],
+    "avoid": [
+      { "form": "Maak selectie ongedaan", "why": "Finder's whole-selection wording can't take an object" },
+      { "form": "selectie opheffen", "why": "the Windows form" }
+    ],
+    "chosen": "Deselecteer",
+    "confidence": "high",
+    "decision": "Het selectievenster: bestanden selecteren en deselecteren (`selection.*`)",
+    "forms": "Deselect all → Deselecteer alles; Deselecteer bestanden (menu, command, and the dialog title it opens stay identical)",
+    "sources": "Double Commander (Deselecteer alles, Deselecteer een groep…), macOS Finder NE18 (deselecteer het aankruisvak)"
+  },
+  "destination": {
+    "accept": ["doelmap", "doel", "Naar"],
+    "avoid": [{ "form": "bestemmingsmap", "why": "the catalog says doelmap (five against one)" }],
+    "chosen": "bestemming",
+    "confidence": "high",
+    "forms": "the side written to → bestemming (op de bestemming); destination folder → doelmap; a symlink's target → doel; the dialog heading pair is Van / Naar",
+    "note": "MS's doel is the Windows word for the destination side; macOS wins.",
+    "sources": "macOS Finder (destination folder → doelmap, at Destination → op bestemming)"
+  },
+  "device": {
+    "accept": ["apparaten"],
+    "avoid": [{ "form": "toestel", "why": "the drift round unified on macOS's apparaat" }],
+    "chosen": "apparaat",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.cost.free": "Terse cost readout: on-device → lokaal."
+    },
+    "forms": "an idle device → niet meer bezig (counterpart of Het apparaat is bezig)",
+    "sources": "macOS Dutch"
+  },
+  "disable": {
+    "accept": ["uitgeschakeld", "schakel", "uit"],
+    "chosen": "uitschakelen",
+    "confidence": "high",
+    "forms": "a feature switched off, referenced from elsewhere → … staat uit",
+    "sources": "MS (disable → uitschakelen)"
+  },
+  "disconnect": {
+    "accept": ["verbreken", "verbroken", "Verbreek verbinding", "losgekoppeld", "koppel"],
+    "chosen": "Verbreek",
+    "confidence": "high",
+    "decision": "De serverhub: verbindingsscherm, verbindingstooltips en de vergeet-bevestigingen (`servers.*`, `fileExplorer.navigation.connectionTooltip*`, `.disconnect*`, `.forget*`)",
+    "forms": "button Verbreek; command Verbreek verbinding met server; in a sentence always Verbreek de verbinding (met {name}), never Verbreek de server; toast wrapper Verbinding verbreken lukte niet: …; grayed state Verbreek (bezet)",
+    "sources": "macOS Finder (MR10.1, N200), AppKit SavePanel"
+  },
+  "disk-image": {
+    "chosen": "schijfkopie",
+    "confidence": "high",
+    "forms": "de-woord; repeat the noun instead of die when schijf is also in the sentence",
+    "sources": "macOS Finder (InfoWindowGeneralView Schijfkopie:)"
+  },
+  "dismiss": {
+    "accept": ["sluiten", "gesloten"],
+    "avoid": [
+      {
+        "form": "Wis",
+        "why": "means erase; the @key says nothing is undone, retried, or deleted (same class of bug as zh-Hant's Negeren)"
+      },
+      { "form": "Verberg", "why": "implies the row can come back" }
+    ],
+    "chosen": "Sluit",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "forms": "button Sluit; toast aria Sluit melding; queue row Sluit, Sluit deze bewerking, toolbar Sluit alles",
+    "sources": "MS (dismiss → sluiten)"
+  },
+  "dock": {
+    "chosen": "Dock",
+    "confidence": "high",
+    "decision": "Het Dock-aanbod (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)",
+    "forms": "untranslated; het Dock in a sentence, no article in a short label (Voeg toe aan Dock, Apple's verbatim label); je Dock where English says your Dock",
+    "sources": "macOS Finder (Voeg toe aan Dock), Dock.app DockMenus.strings, System Settings (Toon/verberg het Dock automatisch)"
+  },
+  "documents": {
+    "accept": ["documenten"],
+    "chosen": "document",
+    "confidence": "high",
+    "sources": "macOS Finder (TL6 / GROUP_DOCUMENTS → Documenten)"
+  },
+  "done": {
+    "accept": ["Klaar"],
+    "chosen": "Gereed",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "forms": "lifecycle status and wizard button Gereed; the screen-reader word after a finished checklist step Klaar; Almost done → Bijna klaar; Almost done → Bijna klaar",
+    "sources": "macOS AppKit (Done → Gereed)"
+  },
+  "double-click": {
+    "accept": ["dubbelklikken"],
+    "chosen": "Dubbelklik",
+    "confidence": "high",
+    "forms": "pane background → paneelachtergrond",
+    "sources": "Double Commander (dubbelklik voor bestanden), KDE Dolphin"
+  },
+  "download": {
+    "accept": ["download", "gedownload"],
+    "chosen": "downloaden",
+    "confidence": "high",
+    "forms": "progress wordt gedownload",
+    "sources": "MS (Download, NLD/BEL)"
+  },
+  "drive": {
+    "accept": ["schijven", "netwerkschijf", "Drive"],
+    "chosen": "schijf",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.unexpectedSystemResponse.suggestion": "Matches only through Apple's app name Disk Utility, kept verbatim."
+    },
+    "forms": "de-woord (hij/hem); compounds schijfindex, schijfruimte, schijfkopie",
+    "sources": "macOS Finder (schijf throughout)"
+  },
+  "duplicate": {
+    "accept": ["dupliceren"],
+    "chosen": "Dupliceer",
+    "confidence": "high",
+    "decision": "Dupliceer: de opdracht die in dezelfde map kopieert (`commands.fileDuplicate.*`)",
+    "sources": "macOS Finder nl menu Archief > Dupliceer (N154), verified on macOS 26.6.1, 2026-08-19"
+  },
+  "edit": {
+    "accept": ["bewerken", "bewerkt", "bewerking", "Wijzig"],
+    "chosen": "Bewerk",
+    "confidence": "high",
+    "decision": "De serverhub (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.server*Toast`, `shortcuts.scope.servers`/`.places`)",
+    "forms": "F4, a file in an editor → Bewerk (Bewerk in standaardeditor); a zip's entries → bewerken (Bezig met archief bewerken); a form to change a saved item → Wijzig… (Wijzig server…); the menu bar's Edit menu → Wijzig (Apple's title)",
+    "sources": "macOS Network.appex and AppKit (Edit… → Wijzig…), Double Commander (Bewerken)"
+  },
+  "eject": {
+    "accept": ["werp", "uitgeworpen"],
+    "avoid": [
+      {
+        "form": "Verwijder",
+        "why": "macOS's own eject word, but in Cmdr it is delete; an eject would read as a delete"
+      },
+      { "form": "verwijderbaar", "why": "macOS's removable; next to eject it reads as deletable" }
+    ],
+    "chosen": "uitwerpen",
+    "confidence": "high",
+    "decision": "De negen uitwerp- en verbreekzinnen (`errors.eject.*`)",
+    "forms": "button Werp {name} uit / Werp uit; toast wrapper {volumeName} uitwerpen lukte niet: …; can't be ejected → Deze schijf kun je niet uitwerpen",
+    "sources": "Nautilus, KDE Dolphin, Thunar, Double Commander, MS (Uitwerpen)"
+  },
+  "email": {
+    "accept": ["e-mail", "mail"],
+    "avoid": [{ "form": "voorbeeld.com", "why": "a real, registrable domain; example.com is reserved for examples" }],
+    "chosen": "e-mailadres",
+    "confidence": "high",
+    "decision": "Wat het Engels over zichzelf rechtzette, en wat dat voor `nl` betekende",
+    "forms": "email us → mail ons; the placeholder address is jij@example.com in all three fields (local part translated like MS iemand@, domain example.com per RFC 2606)",
+    "sources": "macOS (Email Address → E-mailadres), MS terminology (iemand@example.com)"
+  },
+  "enable": {
+    "accept": ["ingeschakeld", "schakel", "zet", "aan"],
+    "chosen": "inschakelen",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepBeta.checklist.starNote": "\"Enable a command\" means make it possible: mogelijk te maken."
+    },
+    "forms": "Settings label inschakelen; a setting that is on → ingeschakeld (prefer over aanstaat); a hint telling the user to switch it on → Zet … aan (Zet het aan in Instellingen, Zet USB-foutopsporing aan)",
+    "sources": "MS (enable → inschakelen), macOS System Settings (is turned on → is ingeschakeld), AOSP (Zet … aan)"
+  },
+  "encoding": {
+    "chosen": "codering",
+    "confidence": "high",
+    "sources": "MS (encoding → codering)"
+  },
+  "encrypted": {
+    "accept": ["versleuteling"],
+    "chosen": "versleuteld",
+    "confidence": "high",
+    "sources": "macOS (Encrypted → Versleuteld)"
+  },
+  "endpoint": {
+    "accept": ["Eindpunt"],
+    "avoid": [
+      {
+        "form": "Endpoint",
+        "why": "superseded: Apple is silent and MS terminology gives eindpunt for exactly this sense"
+      }
+    ],
+    "chosen": "eindpunt",
+    "confidence": "high",
+    "forms": "het-woord (dit eindpunt); Eindpunt-URL; API-eindpunt; custom endpoints → aangepaste eindpunten; the AI API term completions stays completions; an Azure deployment → implementatie (MS, the noun sense); an Azure resource stays resource (MS keeps it in three of four senses); in Azure, never op Azure (MS style guide)",
+    "sources": "MS terminology (DUTCH.tbx, API Endpoint → API-eindpunt, endpoint address → eindpuntadres)"
+  },
+  "enter-key": {
+    "avoid": [
+      { "form": "Return", "why": "the catalog already says Enter" },
+      { "form": "Invoer", "why": "not how a Dutch Mac names the key" }
+    ],
+    "chosen": "Enter",
+    "confidence": "high",
+    "forms": "Druk op Enter om …",
+    "sources": "catalog (search.runHint)"
+  },
+  "error-report": {
+    "accept": ["foutrapporten"],
+    "chosen": "foutrapport",
+    "confidence": "high",
+    "forms": "Send error report → Verstuur foutrapport (button, menu), Foutrapport versturen (dialog title); fout is fine inside this compound",
+    "sources": "NL compound (fout + rapport)"
+  },
+  "escape-key": {
+    "accept": ["ESC", "Esc"],
+    "chosen": "Escape",
+    "confidence": "high",
+    "forms": "in a sentence de Escape-toets, bare Escape where English is bare",
+    "sources": "macOS (Escape → Escape)"
+  },
+  "estimate": {
+    "accept": ["geschat"],
+    "avoid": [{ "form": "offerte", "why": "MS's first hit is the business-quote sense" }],
+    "chosen": "schatting",
+    "confidence": "high",
+    "sources": "standard NL"
+  },
+  "expired": {
+    "chosen": "verlopen",
+    "confidence": "high",
+    "forms": "expired on → Verlopen op",
+    "sources": "standard NL"
+  },
+  "extension": {
+    "accept": ["extensies"],
+    "avoid": [{ "form": "achtervoegsel", "why": "Double Commander's word; macOS says extensie" }],
+    "chosen": "extensie",
+    "confidence": "high",
+    "forms": "Selecteer alles met extensie *.{extension}",
+    "sources": "macOS (extensie, bestandsextensie)"
+  },
+  "extract": {
+    "accept": ["pak", "uitgepakt"],
+    "chosen": "uitpakken",
+    "confidence": "high",
+    "sources": "Double Commander (Bestanden uitpakken), MS (extract → uitpakken)"
+  },
+  "failed": {
+    "accept": ["niet", "mis"],
+    "avoid": [
+      {
+        "form": "mislukt",
+        "why": "reads as a bare failure label; allowed only as a descriptive word in flowing prose"
+      },
+      { "form": "fout", "why": "same voice rule (compounds like foutrapport, typefout are fine)" },
+      { "form": "Error: {message}", "why": "no error-prefix; word the problem as a whole calm sentence" }
+    ],
+    "chosen": "lukte niet",
+    "confidence": "high",
+    "forms": "\"X failed\" titles and toasts → X lukte niet (Inloggen lukte niet, {volumeName} uitwerpen lukte niet); couldn't/can't titles → Kon … niet / Kan … niet; Something went wrong → Er ging iets mis",
+    "sources": "Cmdr voice rule (stricter than macOS, which uses fout freely)"
+  },
+  "favorites": {
+    "accept": ["favoriet"],
+    "chosen": "favorieten",
+    "confidence": "high",
+    "decision": "Het favorietenmenu (`commands.favoritesOpen.label`/`.description`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)",
+    "forms": "lowercase in a verb phrase (Toon favorieten), capitalized as a group heading (Favorieten); favorites menu → favorietenmenu",
+    "sources": "macOS Finder (Favorieten; kan niet aan je favorieten worden toegevoegd), AppKit"
+  },
+  "feedback": {
+    "chosen": "feedback",
+    "confidence": "high",
+    "forms": "Send feedback → Verstuur feedback (button), Feedback versturen (title)",
+    "sources": "loanword, standard NL UI"
+  },
+  "fetch": {
+    "accept": ["haal", "opgehaald"],
+    "chosen": "ophalen",
+    "confidence": "high",
+    "decision": "Het weergavevenster haalt een bestand eerst op (`viewer.pull.*`, `viewer.error.stoppedResponding`)",
+    "exceptions": {
+      "errors.git.missingObject.suggestion": "Git's own command name git fetch, verbatim.",
+      "errors.git.shallowBoundary.suggestion": "Git's own command name git fetch, verbatim."
+    },
+    "forms": "progress {fileName} ophalen om te bekijken; Pull a model → Haal een model op",
+    "sources": "macOS Finder IN_MD1 (Fetching… → Ophalen…), MS (fetch → ophalen)"
+  },
+  "file": {
+    "accept": ["bestanden", "bestands"],
+    "chosen": "bestand",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.renameReview.title": "The modal context supplies the files: Naamwijzigingen beoordelen.",
+      "commands.handler.openTerminalHere.hint": "Quotes the short section name Navigatie en bewerkingen.",
+      "errors.write.readOnlyDevice.source.suggestion": "Pronoun ze for the files already named.",
+      "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Restructured into a free relative (Wat daarbij is vervangen).",
+      "indexing.rescan.journalGap": "\"File change log\" is the system's change log: wijzigingslogboek.",
+      "menu.bar.file": "The menu bar's File menu is Apple's title: Archief.",
+      "onboarding.stepAi.table.selectWith": "Quoted example prompt: selecteer alle afbeeldingen.",
+      "settings.section.navigationAndFileOps": "Short section name: Navigatie en bewerkingen.",
+      "settings.viewer.showTextCursor.description": "\"File viewer\" is the viewer concept: weergavevenster.",
+      "settings.viewer.wordWrap.description": "\"File viewer\" is the viewer concept: weergavevenster.",
+      "viewer.srHeading": "\"File viewer\" is the viewer concept: Weergavevenster."
+    },
+    "forms": "pl. bestanden; compounds bestandsnaam, bestandenlijst",
+    "note": "The menu bar's File menu is Apple's Archief; never replace a menu-bar title with the ordinary word.",
+    "sources": "macOS, MS, Nautilus"
+  },
+  "file-list": {
+    "chosen": "bestandenlijst",
+    "confidence": "high",
+    "sources": "Double Commander (file list → bestandenlijst)"
+  },
+  "file-operations": {
+    "accept": ["Bestandsbewerkingen", "bewerkingen"],
+    "chosen": "bestandsbewerkingen",
+    "confidence": "high",
+    "forms": "the short Settings section Navigation & file ops → Navigatie en bewerkingen; the card keeps the full Bestandsbewerkingen",
+    "sources": "macOS bewerking; catalog (commands.logOperationLog.description)"
+  },
+  "file-system": {
+    "accept": ["bestandssystemen"],
+    "chosen": "bestandssysteem",
+    "confidence": "high",
+    "forms": "File system watching (section) → Bestandssysteem volgen (tentative)",
+    "sources": "macOS AppKit DocumentDragging.loctable (in het bestandssysteem)"
+  },
+  "finder": {
+    "chosen": "Finder",
+    "confidence": "high",
+    "forms": "Show in Finder → ‘Toon in Finder’; Hide Finder → Verberg Finder",
+    "sources": "macOS Dutch keeps Finder"
+  },
+  "fingerprint": {
+    "avoid": [
+      {
+        "form": "fingerprint",
+        "why": "only Apple's two weakest SSH strings keep it; the system-wide word is vingerafdruk"
+      }
+    ],
+    "chosen": "vingerafdruk",
+    "confidence": "high",
+    "decision": "Het serververbindingsvenster en de sleutelvraag (`servers.sheet.*`, `servers.hostKey.*`, `servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`, `goToPath.dialog.opensServer`/`.addsServer`, `commands.serversConnect.label`)",
+    "forms": "Key fingerprint → Vingerafdruk van de sleutel (possessor after the noun, not a compound)",
+    "sources": "macOS system-wide (De vingerafdruk van de SCEP-server '%@' komt niet overeen)"
+  },
+  "folder": {
+    "accept": ["mappen"],
+    "chosen": "map",
+    "confidence": "high",
+    "forms": "pl. mappen; de-woord (hem: Cmdr maakt hem aan)",
+    "sources": "macOS Finder (folder → map)"
+  },
+  "force-quit": {
+    "chosen": "Forceer stop",
+    "confidence": "high",
+    "sources": "macOS Dutch (Forceer stop…)"
+  },
+  "format": {
+    "accept": ["geformatteerd", "structuur", "notatie", "notaties", "opmaak"],
+    "chosen": "formaat",
+    "confidence": "high",
+    "forms": "a drive's format → geformatteerd als FAT32/exFAT; an archive's compression format → (archief)structuur; generic each format → elk formaat; display formats (Colors and formats) → notaties; FAT32 / exFAT / MS-DOS (FAT) verbatim",
+    "sources": "MS (format → formatteren), macOS Finder (Zip-archiefstructuur, compressiestructuur)"
+  },
+  "free-space": {
+    "accept": ["ruimte", "vol"],
+    "chosen": "vrij",
+    "confidence": "high",
+    "forms": "{freeText} vrij; low disk space → weinig schijfruimte; running low → raakt vol; no room left → Er is geen ruimte meer op dit volume",
+    "sources": "standard NL; macOS Finder PE4 / PE18"
+  },
+  "full-disk-access": {
+    "accept": ["Volledige schijftoegang"],
+    "chosen": "volledige schijftoegang",
+    "confidence": "high",
+    "decision": "The title-bar full-disk-access badge",
+    "forms": "badge Geen volledige schijftoegang",
+    "sources": "macOS SecurityPrivacyExtension ALL_FILES (macOS 27.0 build 26A428, verified 2026-09-16)"
+  },
+  "full-screen": {
+    "accept": ["schermvullend"],
+    "chosen": "schermvullende weergave",
+    "confidence": "high",
+    "decision": "Escape en de schermvullende weergave (`main.escapeFullScreenHint.*`, `settings.advanced.exitFullScreenOnEscape*`)",
+    "forms": "noun schermvullende weergave, adjective schermvullend; Exit full screen on Escape → Schermvullende weergave uitschakelen met Escape",
+    "sources": "macOS AppKit (Enter Full Screen → Schakel schermvullende weergave in, Full Screen → Schermvullend)"
+  },
+  "full-view": {
+    "chosen": "Volledige weergave",
+    "confidence": "high",
+    "sources": "compositional; the View menu name"
+  },
+  "function-key-bar": {
+    "accept": ["functietoets"],
+    "chosen": "functietoetsbalk",
+    "confidence": "high",
+    "sources": "catalog (settings.appearance.showFunctionKeyBar.label)"
+  },
+  "get-info": {
+    "chosen": "Toon info",
+    "confidence": "high",
+    "decision": "Get Info en Beveiligd (macOS-UI-namen die Apple wél vertaalt)",
+    "note": "Not do-not-translate: Apple localizes it, whatever an old @key description says.",
+    "sources": "macOS Finder (Get Info → Toon info; NE18 Kies 'Archief' > 'Toon info')"
+  },
+  "github-star": {
+    "accept": ["stars"],
+    "avoid": [
+      { "form": "ster", "why": "the rating star in MS terminology" },
+      { "form": "favoriet", "why": "the browser bookmark" }
+    ],
+    "chosen": "star",
+    "confidence": "high",
+    "decision": "De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels",
+    "forms": "button Geef de repo een star op GitHub (shares its shape with the like row)",
+    "sources": "MS terminology DUTCH.tbx (star, this exact GitHub sense); GitHub has no Dutch UI since 2016-11-18"
+  },
+  "glob": {
+    "accept": ["glob"],
+    "chosen": "Glob",
+    "confidence": "high",
+    "sources": "technical term kept (no Dutch equivalent)"
+  },
+  "global": {
+    "accept": ["Globaal", "in de app", "globale", "systeembrede"],
+    "chosen": "globaal",
+    "confidence": "high",
+    "forms": "in-app → in de app",
+    "sources": "standard NL"
+  },
+  "go-back": {
+    "accept": ["Ga vooruit", "terug", "vooruit"],
+    "chosen": "Ga terug",
+    "confidence": "high",
+    "exceptions": {
+      "menu.go.forward": "The Go menu's paired previous/next: Vorige / Volgende."
+    },
+    "sources": "standard NL navigation (macOS Terug / Vooruit)"
+  },
+  "go-to-path": {
+    "accept": ["Ga naar map"],
+    "chosen": "Ga naar pad",
+    "confidence": "high",
+    "forms": "Cmdr's dialog Ga naar pad…; the Dock menu's Finder item Go to Folder… → Ga naar map…",
+    "sources": "macOS Finder Ga naar … pattern (MenuBar 261.title Ga naar map…)"
+  },
+  "go-to-trash": {
+    "avoid": [{ "form": "Naar prullenmand", "why": "already means MOVE to trash in fileOperations.json" }],
+    "chosen": "Ga naar prullenmand",
+    "confidence": "high",
+    "sources": "macOS Finder TL_HELP_TCAN (Go to the Trash → Ga naar de prullenmand), article dropped like N83 (Go to Folder… → Ga naar map…)"
+  },
+  "got-it": {
+    "avoid": [{ "form": "Duidelijk", "why": "the one outlier the drift round removed" }],
+    "chosen": "Begrepen",
+    "confidence": "high",
+    "sources": "macOS (Begrepen)"
+  },
+  "guest": {
+    "accept": ["gasten", "gasttoegang"],
+    "chosen": "gast",
+    "confidence": "high",
+    "sources": "NetAuthAgent AuthDialog.loctable, EINFO_NO_ACCESS_GUEST"
+  },
+  "hidden": {
+    "chosen": "verborgen",
+    "confidence": "high",
+    "sources": "macOS, Nautilus; catalog (menu.view.showHiddenFiles)"
+  },
+  "hide": {
+    "accept": ["verbergen"],
+    "chosen": "Verberg",
+    "confidence": "high",
+    "forms": "Hide Cmdr → Verberg Cmdr; Hide Others → Verberg andere",
+    "sources": "macOS Finder (Verberg Finder, Verberg andere; MenuBar 300729.title)"
+  },
+  "hint": {
+    "chosen": "hint",
+    "confidence": "high",
+    "exceptions": {
+      "settings.advanced.exitFullScreenOnEscapeHintShown.label": "Internal flag, never shown; names the one-time notice (melding)."
+    },
+    "forms": "internal seen-flags: Hint voor … getoond / … gesloten",
+    "sources": "MS terminology (hint → hint)"
+  },
+  "host": {
+    "accept": ["hosts"],
+    "chosen": "host",
+    "confidence": "tentative",
+    "exceptions": {
+      "settings.servers.card.trustedHostKeys": "Where English says host key, the Settings list says serversleutel (host-key concept).",
+      "settings.summary.servers": "Where English says host key, the Settings list says serversleutel (host-key concept)."
+    },
+    "sources": "technical term; no native macOS term for an SMB host"
+  },
+  "host-key": {
+    "accept": ["serversleutel", "SSH-sleutel"],
+    "avoid": [
+      {
+        "form": "hostsleutel",
+        "why": "rejected; serversleutel matches Servers (SFTP, WebDAV) and Apple's possessive shape"
+      }
+    ],
+    "chosen": "sleutel",
+    "confidence": "tentative",
+    "decision": "De vastzet-hint, de vertrouwde serversleutels en het ADB-paneel (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.summary.servers`/`.adb`, `settings.appearance.tintSmb.*`)",
+    "forms": "in the server panel where English says only key → de sleutel (van {host}); where English says host key (the Settings list) → serversleutel, SSH-serversleutels; SSH key → SSH-sleutel",
+    "sources": "catalog (servers.refusal.hostKeyUntrusted); Apple ScreenSharing (SSH key → SSH-sleutel)"
+  },
+  "hostname": {
+    "chosen": "hostnaam",
+    "confidence": "high",
+    "sources": "macOS AirPortSettings (Hostname → Hostnaam), OID (Host Name → Hostnaam)"
+  },
+  "hour": {
+    "accept": ["minuut", "minuten", "seconde", "seconden"],
+    "avoid": [{ "form": "uren", "why": "not used after a cardinal for a duration" }],
+    "chosen": "uur",
+    "confidence": "high",
+    "forms": "uur stays invariant after a numeral for durations (2 uur, 20 uur); minuut/minuten; seconde/seconden; Over {secondsText} seconden",
+    "sources": "standard NL; macOS remaining time; Nautilus (%d seconde / %d seconden)"
+  },
+  "icon": {
+    "accept": ["symbolen"],
+    "chosen": "symbool",
+    "confidence": "high",
+    "exceptions": {
+      "licensing.acknowledgements.vendoredHeading": "A credits heading for bundled icon sets: pictogrammen."
+    },
+    "sources": "macOS Finder (symboolweergave); catalog (het symbool van de app)"
+  },
+  "image": {
+    "accept": ["afbeeldingen", "schijfkopie", "beeld"],
+    "chosen": "afbeelding",
+    "confidence": "high",
+    "forms": "technical and label register (Afbeeldingen indexeren, afbeeldingsbestand); warm user-facing rows use foto",
+    "sources": "macOS (Afbeelding / Afbeeldingen)"
+  },
+  "image-search": {
+    "accept": [
+      "doorzoeken van afbeeldingen",
+      "zoeken op beschrijving",
+      "op beschrijving zoeken",
+      "semantisch zoeken",
+      "zoeken op trefwoord",
+      "zoeken op tag",
+      "fotozoekfunctie"
+    ],
+    "avoid": [{ "form": "zoeken in afbeeldingen", "why": "a coinage; the catalog's verb phrase is the settled name" }],
+    "chosen": "het doorzoeken van afbeeldingen",
+    "confidence": "high",
+    "forms": "the feature named in prose → het doorzoeken van afbeeldingen; semantic search → Semantisch zoeken; search photos by description → Foto's op beschrijving zoeken; keyword / tag search → zoeken op trefwoord / zoeken op tag; photo search (consent screen) → de fotozoekfunctie (tentative)",
+    "sources": "catalog (fileExplorer.imageIndex.drive.off, settings.mediaIndex.clip.ready)"
+  },
+  "in-use": {
+    "accept": ["bezet", "gebruikt", "gebruiken"],
+    "chosen": "in gebruik",
+    "confidence": "high",
+    "decision": "Wie de schijf vasthoudt: de zes geweigerde-uitwerpzinnen (`errors.eject.unmountRefusedBy*`, `.otherApps`)",
+    "exceptions": {
+      "licensing.expiration.info": "\"Still using it for work\": Gebruik je het nog steeds voor je werk."
+    },
+    "forms": "full sentence is in gebruik; a grayed-out menu item repeats its base label plus (bezet); with a named holder: {app} gebruikt deze schijf nog",
+    "sources": "macOS Finder (… is in gebruik), MS (busy → bezet)"
+  },
+  "index": {
+    "accept": ["indexeren", "geïndexeerd", "indexering", "Schijfindex"],
+    "avoid": [
+      {
+        "form": "Schijf indexeren staat uit",
+        "why": "the bare label as a sentence subject garden-paths as an imperative"
+      }
+    ],
+    "chosen": "index",
+    "confidence": "high",
+    "forms": "verb indexeren, participle geïndexeerd; drive index → Schijfindex; user-facing prose names the feature as a nominalized verb (het indexeren van schijven, het indexeren van afbeeldingen); terse slots take the compound (schijfindexering, achtergrondindexering); the toggle label Schijf indexeren is quoted verbatim only in a navigation path",
+    "sources": "standard NL; KDE Dolphin (File Indexing → Indexeren van bestanden), MS (content indexing → inhoudsindexering)"
+  },
+  "input-source": {
+    "chosen": "invoerbron",
+    "confidence": "high",
+    "sources": "macOS"
+  },
+  "install": {
+    "accept": ["geïnstalleerd", "installeer", "installatie"],
+    "chosen": "installeren",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepBeta.checklist.starNote": "Homebrew command brew install cmdr, verbatim."
+    },
+    "forms": "progress wordt geïnstalleerd",
+    "sources": "macOS System Settings (… wordt samen met macOS geïnstalleerd)"
+  },
+  "item": {
+    "accept": ["onderdelen"],
+    "chosen": "onderdeel",
+    "confidence": "high",
+    "decision": "Namen die er hetzelfde uitzien (`fileOperations.transferProgress.lookAlikeHint`, `errors.listing.ambiguousName.title`, `errors.volume.ambiguousName`)",
+    "exceptions": {
+      "fileExplorer.navigation.connectionTooltipSystem": "A menu item, not a file: menu-item."
+    },
+    "forms": "het-woord; one other file → één ander bestand, N other items → N andere onderdelen; keeps item only for non-files (menu-item, stash-item, recent-list entries)",
+    "sources": "macOS Finder (items → onderdelen), Keychain Access (Alle onderdelen)"
+  },
+  "keep": {
+    "accept": ["behouden", "behoudt", "houdt", "gehouden"],
+    "chosen": "Behoud",
+    "confidence": "high",
+    "decision": "De terugdraaibevestiging en de rij die op antwoord wacht (`fileOperations.rollbackConfirm.*`, `queue.row.statusAwaitingAnswer`/`awaitingAnswerTooltip`, `transferProgress.foregroundBusyToast`/`rollbackTooltip`)",
+    "exceptions": {
+      "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "\"May keep the names they have now\": houden misschien hun huidige naam."
+    },
+    "forms": "rollback prompt's safe button Behoud de bestanden; a rename that kept its name → behoudt zijn naam",
+    "sources": "macOS AppKit Revisions (Behoud beide), Finder (Behoud origineel)"
+  },
+  "key-file": {
+    "accept": ["wachtzin", "Sleutelwachtzin"],
+    "avoid": [
+      { "form": "wachtwoordzin", "why": "Apple writes wachtzin everywhere" },
+      { "form": "passphrase", "why": "Apple localizes it" }
+    ],
+    "chosen": "Sleutelbestand",
+    "confidence": "tentative",
+    "forms": "passphrase → wachtzin, key passphrase → Sleutelwachtzin (tentative compound)",
+    "sources": "coined compound; Apple SecErrorMessages / P12Password (wachtzin)"
+  },
+  "keychain": {
+    "accept": ["Sleutelhangertoegang", "sleutelhanger"],
+    "avoid": [{ "form": "Keychain", "why": "Apple localizes it; not on the don't-translate list" }],
+    "chosen": "Sleutelhanger",
+    "confidence": "high",
+    "forms": "the store → Sleutelhanger (Onthoud in Sleutelhanger); the app → Sleutelhangertoegang; another system's keyring → sleutelhanger, Passwords / Keyrings app → Wachtwoorden / Sleutelhangers",
+    "sources": "macOS Dutch; Keychain Access.app InfoPlist.loctable (CFBundleName Sleutelhangertoegang); MS (Windows Sleutelhanger)"
+  },
+  "kind": {
+    "accept": ["soort"],
+    "chosen": "Soort",
+    "confidence": "high",
+    "sources": "macOS Finder ArrangeByMenu 119.title / 338.title"
+  },
+  "later": {
+    "chosen": "Later",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.functionKeyBar.hiddenToast": "\"Any time later\" is not the defer button: op elk moment."
+    },
+    "forms": "the defer-for-now button",
+    "sources": "same word in NL"
+  },
+  "leave-alone": {
+    "accept": ["laten staan", "laat staan", "gelaten", "blijven staan"],
+    "avoid": [
+      { "form": "overgeslagen", "why": "that is Skipped in this catalog" },
+      { "form": "met rust gelaten", "why": "coined, and would split one toast across two forms" }
+    ],
+    "chosen": "ongemoeid",
+    "confidence": "high",
+    "decision": "De terugdraaimelding: wat er weg is, en wat Cmdr met rust liet (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)",
+    "forms": "leave alone → ongemoeid laten / ongemoeid gelaten; left where it is (a move that doesn't travel back) → laten staan",
+    "sources": "catalog (askCmdr.renameUndo.skipReason.*)"
+  },
+  "license": {
+    "accept": ["licenties", "eeuwigdurend", "commercieel", "commerciële"],
+    "chosen": "licentie",
+    "confidence": "high",
+    "forms": "perpetual → eeuwigdurend (tentative); commercial → commercieel; the tier name Personal stays; valid until → geldig tot",
+    "sources": "standard NL"
+  },
+  "license-key": {
+    "chosen": "licentiesleutel",
+    "confidence": "high",
+    "sources": "NL compound"
+  },
+  "like": {
+    "avoid": [{ "form": "vind ik leuk", "why": "Facebook's Dutch button, not the one on screen" }],
+    "chosen": "like",
+    "confidence": "high",
+    "decision": "De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels",
+    "forms": "button Geef Cmdr een like op AlternativeTo",
+    "sources": "AlternativeTo is English-only; standard een like geven"
+  },
+  "limit": {
+    "accept": ["beperking", "maximum", "maximaal", "drempel", "begrens"],
+    "chosen": "limiet",
+    "confidence": "tentative",
+    "forms": "a file-system size cap → beperking; an AI step or time budget → limiet (the word budget never appears)",
+    "sources": "MS (restriction/limit → beperking); general NL limiet"
+  },
+  "line": {
+    "accept": ["regels"],
+    "chosen": "regel",
+    "confidence": "high",
+    "forms": "ssh line → ssh-regel",
+    "sources": "MS (line → regel)"
+  },
+  "local-network": {
+    "accept": ["lokale netwerk", "in de buurt", "detectie"],
+    "avoid": [{ "form": "Lokale netwerktoegang", "why": "a description the user can't find in System Settings" }],
+    "chosen": "lokaal netwerk",
+    "confidence": "high",
+    "forms": "Apple's pane row ‘Lokaal netwerk’; discovery → detectie, local network discovery → lokale netwerkdetectie (tentative); Found nearby → Gevonden in de buurt",
+    "sources": "macOS System Settings (Local Network → Lokaal netwerk, LOCAL_NETWORK), Finder AirDrop (in de buurt)"
+  },
+  "location": {
+    "accept": ["Locaties", "plek"],
+    "chosen": "locatie",
+    "confidence": "high",
+    "forms": "Places (the heading under a server) → Locaties; where a photo was taken → locatie",
+    "sources": "macOS Finder (Location → Locatie, Locations → Locaties SD5 / FI9)"
+  },
+  "locked": {
+    "accept": ["Beveiligd", "beveiliging"],
+    "avoid": [
+      {
+        "form": "vergrendeld",
+        "why": "AppKit reserves it for the document lock; the checkbox the user sees is Beveiligd"
+      }
+    ],
+    "chosen": "beveiligd",
+    "confidence": "high",
+    "decision": "Get Info en Beveiligd (macOS-UI-namen die Apple wél vertaalt)",
+    "exceptions": {
+      "errors.git.indexLocked.message": "Git's lock file, not the Finder Locked flag: vergrendeld."
+    },
+    "forms": "the Get Info checkbox Beveiligd, quoted ‘Beveiligd’; uncheck Locked → deselecteer ‘Beveiligd’; unlock the file → de beveiliging opheffen",
+    "sources": "macOS Finder (InfoWindowGeneralView 1073.title, AXNODE1, NE17, NE18, BN43), AppKit AutosaveButton"
+  },
+  "log": {
+    "accept": ["logboek", "logbestanden", "log"],
+    "avoid": [
+      {
+        "form": "het logboek (for the file)",
+        "why": "Bewerkingenlogboek is a feature name; Het logboek heeft de details would point at the wrong thing"
+      }
+    ],
+    "chosen": "logbestand",
+    "confidence": "high",
+    "decision": "Vastgelopen overdracht: het stall-bericht",
+    "forms": "Cmdr's on-disk file → het logbestand (Open logbestand); the Settings section Logging → Logboek",
+    "sources": "MS (log → logboek); catalog (settings.logging.openLogFile)"
+  },
+  "look-inside": {
+    "accept": ["gekeken", "kijken", "inspecteren", "kijkt"],
+    "chosen": "kijkt in",
+    "confidence": "tentative",
+    "decision": "Ask Cmdr looks inside files: the `inspectFile` tool line and the reworded consent screen (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)",
+    "forms": "tool line Kijkt in bestanden / In bestanden gekeken; kijkt alleen in een bestand als je ernaar vraagt",
+    "sources": "coined in the shape of the sibling tool lines"
+  },
+  "macos-app-names": {
+    "accept": ["First Aid", "Activity Monitor", "Spotlight", "Mission Control", "Spaces"],
+    "chosen": "Disk Utility",
+    "confidence": "high",
+    "forms": "all kept verbatim in nl copy",
+    "sources": "Apple-name literals kept per their @key notes; Mission Control / Spotlight / Spaces stay English in Dutch macOS"
+  },
+  "mailing-list": {
+    "accept": ["inschrijf"],
+    "avoid": [{ "form": "adressenlijst", "why": "MS's admin-built distribution list, a different concept" }],
+    "chosen": "mailinglijst",
+    "confidence": "tentative",
+    "decision": "De onboarding-herschrijving: de checklist, de stapteller en de vier verdictregels",
+    "forms": "signup server → de inschrijfserver (coined, tentative)",
+    "sources": "Van Dale standard"
+  },
+  "main-window": {
+    "chosen": "hoofdvenster",
+    "confidence": "high",
+    "sources": "compositional (hoofd + macOS venster)"
+  },
+  "manifest": {
+    "chosen": "Manifest",
+    "confidence": "high",
+    "sources": "technical term kept (identical to English)"
+  },
+  "memory": {
+    "accept": ["notities", "RAM", "notitie"],
+    "chosen": "geheugen",
+    "confidence": "high",
+    "forms": "RAM → geheugen; Ask Cmdr's saved notes → notities (Werkt zijn eigen notities bij)",
+    "sources": "macOS (onvoldoende geheugen beschikbaar)"
+  },
+  "merge": {
+    "accept": ["samengevoegd", "voeg samen"],
+    "chosen": "samenvoegen",
+    "confidence": "high",
+    "sources": "Nautilus (Merge → Samenvoegen)"
+  },
+  "model": {
+    "accept": ["modellen"],
+    "chosen": "model",
+    "confidence": "high",
+    "forms": "semantic search model → het model voor semantisch zoeken",
+    "sources": "kept"
+  },
+  "modified": {
+    "accept": ["Bewerkingsdatum", "wijzig"],
+    "chosen": "gewijzigd",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "forms": "column header and date filters → Bewerkingsdatum (Finder's Date Modified); date balloon Laatst gewijzigd (with Aangemaakt, Laatst geopend, Laatst verplaatst); a changed file → gewijzigd; shortcuts the user changed → Gewijzigd",
+    "sources": "macOS Finder (Date Modified → Bewerkingsdatum)"
+  },
+  "modifier-key": {
+    "accept": ["wijzigingstoetsen"],
+    "chosen": "wijzigingstoets",
+    "confidence": "high",
+    "sources": "macOS / standard NL"
+  },
+  "mount": {
+    "accept": ["koppel", "gekoppeld"],
+    "avoid": [{ "form": "activeren", "why": "macOS's word, but absent from this catalog; a second term for one act" }],
+    "chosen": "aankoppelen",
+    "confidence": "high",
+    "decision": "Het favorietenmenu (`commands.favoritesOpen.label`/`.description`, `commands.favoritesOpenByNumber.label`, `commands.favoritesAdd.description`, `fileExplorer.navigation.favoritesAddCurrent`/`.favoritesAlreadyAdded`/`.favoritesCantAddHere`/`.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)",
+    "forms": "a mounted share → een gekoppelde netwerkshare; Gedeelde map aankoppelen lukte niet",
+    "sources": "Double Commander (unmounted → niet-aangekoppelde); macOS koppel for disks"
+  },
+  "move": {
+    "accept": ["verplaatsen", "verplaatst"],
+    "avoid": [{ "form": "de verplaatsing", "why": "not a Dutch UI form; zero hits in nl/macOS" }],
+    "chosen": "Verplaats",
+    "confidence": "high",
+    "decision": "Files a drive brings back from a move that never finished (`fileOperations.leftovers.stagingFolderKept`)",
+    "exceptions": {
+      "commands.navLeft.label": "Cursor movement, not a file move: Ga naar linkerkolom.",
+      "commands.navRight.label": "Cursor movement, not a file move: Ga naar rechterkolom.",
+      "commands.selectionToggleAndDown.description": "Cursor movement: gaat omlaag.",
+      "commands.selectionToggleAndDown.label": "Cursor movement: omlaag.",
+      "errors.write.originalsKeptAside.suggestion.many": "\"Moved the folders out of the way\": opzij gezet.",
+      "errors.write.originalsKeptAside.suggestion.one": "\"Moved the folder out of the way\": opzij gezet.",
+      "fileOperations.cancelRollback.stoppedMovingBack": "Moving back is the put-back concept: terugzetten.",
+      "fileOperations.delete.confirmMoveToTrash": "The move-to-trash concept: Naar prullenmand.",
+      "fileOperations.delete.trashSwitch": "The move-to-trash concept: Naar prullenmand.",
+      "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Moving back is the put-back concept: zet terug.",
+      "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Undoing the move is the rollback concept: terugdraaien.",
+      "fileOperations.transferProgress.stallUnknown": "\"Stopped moving\" means stalled: komt niet meer vooruit.",
+      "search.coverage.walk.abandoned": "\"Moved on\" means continued: ging verder.",
+      "search.coverage.walk.abandonedCount": "\"Moved on\" means continued: ging verder."
+    },
+    "forms": "button Verplaats; the move as a noun → het verplaatsen (voordat Cmdr het verplaatsen kon voltooien)",
+    "sources": "macOS Finder (move → verplaatsen; NE111 het kopiëren)"
+  },
+  "move-to-trash": {
+    "accept": ["naar de prullenmand"],
+    "chosen": "Naar prullenmand",
+    "confidence": "high",
+    "forms": "switch and confirm button Naar prullenmand; sentence and gerund Naar prullenmand verplaatsen / naar de prullenmand verplaatsen",
+    "sources": "macOS Finder (Verplaats naar prullenmand, AL13 / N153)"
+  },
+  "name": {
+    "accept": ["namen", "Naam"],
+    "chosen": "naam",
+    "confidence": "high",
+    "exceptions": {
+      "servers.sheet.identityLocked": "\"What name this server\" is a verb (identify); bepalen welke server dit is, to avoid pointing at the Name field."
+    },
+    "forms": "column Naam; a pronoun never refers back to an uncontrolled {name}",
+    "sources": "macOS Finder (Name → Naam)"
+  },
+  "nas": {
+    "chosen": "NAS",
+    "confidence": "high",
+    "sources": "catalog (NAS-hardware); standard Dutch"
+  },
+  "native": {
+    "accept": ["systeemverbinding"],
+    "chosen": "systeemeigen",
+    "confidence": "high",
+    "decision": "De terugvalmelding voor de systeem-SMB-verbinding (`fileExplorer.network.osMountFallback.*`)",
+    "exceptions": {
+      "onboarding.stepOptional.mtp.summary": "Terse summary row: de macOS-afhandeling."
+    },
+    "forms": "introducing it → de systeemeigen SMB-netwerkverbinding van macOS; where the context is already SMB → de systeemverbinding",
+    "sources": "MS terminology (native → systeemeigen)"
+  },
+  "navigate": {
+    "accept": ["ga", "gaan", "gaat", "navig", "spring", "naar"],
+    "chosen": "naar … gaan",
+    "confidence": "high",
+    "forms": "tooltip Klik om naar {path} te gaan; Navigation (card and section) → Navigatie; jump to → springen naar / Spring naar",
+    "sources": "macOS Finder (Ga naar bovenliggende map), MS (Navigation → Navigatie)"
+  },
+  "network-drive": {
+    "accept": ["netwerkschijven", "netwerkvolume"],
+    "avoid": [{ "form": "netwerkstation", "why": "Windows-flavored" }],
+    "chosen": "netwerkschijf",
+    "confidence": "high",
+    "sources": "macOS Finder (Netwerkschijf koppelen…)"
+  },
+  "network-share": {
+    "accept": ["netwerkshare", "share", "gedeelde mappen"],
+    "chosen": "gedeelde map",
+    "confidence": "high",
+    "decision": "Waarom een gedeelde map niet aankoppelt of de lijst niet laadt (`errors.mount.*`, `errors.shareList.*`)",
+    "exceptions": {
+      "menu.context.share": "The Share submenu (share-menu concept): Deel.",
+      "menu.context.shareLoading": "The Share submenu (share-menu concept): deelopties.",
+      "menu.context.shareNone": "The Share submenu (share-menu concept): deelopties."
+    },
+    "forms": "in the pane, share lists, and mount messages → gedeelde map; \"not a network share\" and the error family → netwerkshare; compounds keep share (SMB-share, SMB-/netwerkshares)",
+    "sources": "macOS Finder (Shared folder → Gedeelde map), MS (network share → netwerkshare)"
+  },
+  "new-file": {
+    "accept": ["Bestand aanmaken", "Maak nieuw bestand", "Maak bestand"],
+    "chosen": "Nieuw bestand",
+    "confidence": "high",
+    "exceptions": {
+      "errors.write.newDataKeptAt.title": "\"Your new file\" is not the New file command."
+    },
+    "forms": "Create new file → Maak nieuw bestand; radio option Bestand aanmaken",
+    "sources": "nieuw + macOS bestand"
+  },
+  "new-folder": {
+    "accept": ["map aanmaken", "maak", "aangemaakt"],
+    "chosen": "Nieuwe map",
+    "confidence": "high",
+    "sources": "macOS Finder (New Folder → Nieuwe map)"
+  },
+  "none": {
+    "chosen": "Geen",
+    "confidence": "high",
+    "sources": "macOS (None → Geen)"
+  },
+  "not-finished": {
+    "accept": ["niet voltooid", "niet is voltooid", "voltooi", "niet alles"],
+    "chosen": "Niet voltooid",
+    "confidence": "high",
+    "decision": "De voortgangschip en het niet-voltooid-bericht",
+    "exceptions": {
+      "fileOperations.transferDialog.scanStopped": "A size count, not an operation: niet helemaal doormeten.",
+      "indexing.rescan.incompletePreviousScan": "A scan, not a file operation, is afgerond."
+    },
+    "forms": "status Niet voltooid; headline X niet voltooid (Kopiëren niet voltooid, …); count headline {countText} bewerking is / bewerkingen zijn niet voltooid",
+    "sources": "macOS (kon niet worden voltooid)"
+  },
+  "note": {
+    "accept": ["notities", "bericht"],
+    "chosen": "notitie",
+    "confidence": "high",
+    "exceptions": {
+      "fileOperations.delete.cloudOnlineOnlyHandedBack": "A note on screen (the banner text): de opmerking.",
+      "onboarding.stepBeta.analyticsCaption": "\"Note that\" is the discourse marker: Let op."
+    },
+    "forms": "error-report notes and the free-text field → notitie; the feedback dialog's Your note → je bericht (that surface only; never mix the two in one dialog)",
+    "sources": "MS (note → notitie)"
+  },
+  "notification": {
+    "accept": ["meldingen"],
+    "chosen": "melding",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepBeta.checklist.alternativeToNote": "\"Notice Cmdr\" is the verb: valt op."
+    },
+    "forms": "dismiss aria Sluit melding",
+    "sources": "MS (notification → melding)"
+  },
+  "onboarding": {
+    "chosen": "onboarding",
+    "confidence": "tentative",
+    "forms": "closed compounds onboardingopties, onboardingwizard, Onboardingchecklist",
+    "sources": "loanword kept (matches the untranslated app title Cmdr onboarding)"
+  },
+  "open": {
+    "accept": ["openen", "geopend", "opent", "openstaat", "open"],
+    "chosen": "Open",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.edit.notOnThisMac": "\"Open in an editor\" is edit: in een editor bewerken.",
+      "fileExplorer.searchResults.unavailableBody": "Open a new search: Start een nieuwe zoekopdracht."
+    },
+    "forms": "button, menu item, and segmented option Open (same as English, justified); Open with default app → Open met standaardapp; loading line Map openen...",
+    "sources": "macOS Finder (Open, Open met N152, Open in nieuw venster FV7)"
+  },
+  "operation": {
+    "accept": ["bewerkingen"],
+    "avoid": [
+      { "form": "actie", "why": "Double Commander's word; macOS Tier 1 says bewerking for a file operation" },
+      { "form": "overdracht", "why": "copy or move only (transfer)" }
+    ],
+    "chosen": "bewerking",
+    "confidence": "high",
+    "decision": "Operation queue: de hernoeming van Overdrachtswachtrij",
+    "exceptions": {
+      "errors.write.cancelled.message.copy": "The nominalized verb (Het kopiëren is geannuleerd) is the natural Dutch for \"the copy operation\".",
+      "errors.write.cancelled.message.delete": "The nominalized verb (Het verwijderen …) is the natural Dutch for \"the delete operation\".",
+      "errors.write.cancelled.message.move": "The nominalized verb (Het verplaatsen …) is the natural Dutch for \"the move operation\".",
+      "errors.write.cancelled.message.trash": "The nominalized verb (Het verplaatsen naar de prullenmand …) is the natural Dutch for \"the move to trash operation\"."
+    },
+    "forms": "pl. bewerkingen; compounds take -en- (Bewerkingenwachtrij, Bewerkingenlogboek) and -s- before other nouns (bewerkingsgeschiedenis); queue-row aria Pauzeer/Hervat/Annuleer/Selecteer deze bewerking; the control's aria label Bewerking",
+    "note": "bewerking also reads as edit; accepted, since macOS uses it for file operations and the archive-edit queue row says archief bewerken.",
+    "sources": "macOS Finder / AppKit (… nog bewerkingen worden uitgevoerd), MS (operation → bewerking), Double Commander (Toon voortgang van bewerkingen)"
+  },
+  "operation-log": {
+    "accept": ["bewerkingenlogboek", "bewerkingsgeschiedenis"],
+    "chosen": "Bewerkingenlogboek",
+    "confidence": "high",
+    "forms": "the feature, dialog title, and command label → Bewerkingenlogboek; operation history in prose → bewerkingsgeschiedenis / geschiedenis",
+    "sources": "macOS bewerking + MS logboek; macOS history → geschiedenis"
+  },
+  "operation-queue": {
+    "accept": ["bewerkingenwachtrij", "wachtrij", "Wachten"],
+    "avoid": [
+      {
+        "form": "Overdrachtswachtrij",
+        "why": "superseded when the English widened from Transfer queue to Operation queue"
+      },
+      {
+        "form": "Bewerkingswachtrij",
+        "why": "defensible, but -en- pairs with the shipped Bewerkingenlogboek; the two must move together"
+      }
+    ],
+    "chosen": "Bewerkingenwachtrij",
+    "confidence": "high",
+    "decision": "Operation queue: de hernoeming van Overdrachtswachtrij",
+    "forms": "the window, View-menu item, and palette command are exactly Bewerkingenwachtrij; mid-sentence with article in de bewerkingenwachtrij; queue (noun) → wachtrij",
+    "sources": "Double Commander, Total Commander, Thunar, MS (queue → wachtrij)"
+  },
+  "options": {
+    "accept": ["opties", "optie"],
+    "chosen": "Opties",
+    "confidence": "high",
+    "exceptions": {
+      "commands.cmdrOpenOnboarding.description": "\"First-launch setup options\": de instellingen van de eerste start."
+    },
+    "sources": "macOS (Options → Opties)"
+  },
+  "outdated": {
+    "chosen": "verouderd",
+    "confidence": "high",
+    "forms": "De index van deze schijf is mogelijk verouderd",
+    "sources": "standard NL"
+  },
+  "overwrite": {
+    "accept": ["overschrijven", "overschreven"],
+    "chosen": "Overschrijf",
+    "confidence": "high",
+    "forms": "button Overschrijf; in a sentence Met ‘Overschrijf’ vervang je …",
+    "sources": "macOS (Overschrijf), Double Commander (Overschrijven, Overschrijf alles)"
+  },
+  "package": {
+    "accept": ["pakketten"],
+    "chosen": "pakket",
+    "confidence": "high",
+    "forms": "the OOXML row uses the bare pakketten so it stays broader than the App-pakketten card below",
+    "sources": "macOS Finder (Toon pakketinhoud), KDE Dolphin (Kon pakket %1 niet vinden)"
+  },
+  "page": {
+    "accept": ["pagina's"],
+    "chosen": "pagina",
+    "confidence": "high",
+    "exceptions": {
+      "askCmdr.forget.message": "Idiom \"a blank page\": een leeg blad."
+    },
+    "forms": "pl. pagina''s (ICU-doubled); PDF pages → PDF-pagina''s; Page up / down → Pagina omhoog / omlaag",
+    "sources": "macOS Finder (Webpagina's), Dolphin (Aantal pagina's)"
+  },
+  "pane": {
+    "accept": ["panelen", "linkerpaneel", "rechterpaneel"],
+    "chosen": "paneel",
+    "confidence": "high",
+    "forms": "left/right → linkerpaneel / rechterpaneel; pane background → paneelachtergrond",
+    "sources": "Double Commander (left panel → linkerpaneel)"
+  },
+  "parent-folder": {
+    "accept": ["Bovenliggende map"],
+    "chosen": "bovenliggende map",
+    "confidence": "high",
+    "forms": "Enclosing Folder → Bovenliggende map; go up a folder → naar de bovenliggende map gaan",
+    "sources": "macOS Finder (enclosing folder → bovenliggende map), Double Commander (Ga naar bovenliggende map)"
+  },
+  "password": {
+    "accept": ["wachtwoorden", "Archiefwachtwoord"],
+    "chosen": "wachtwoord",
+    "confidence": "high",
+    "forms": "archive field aria Archiefwachtwoord; saved password → opgeslagen wachtwoord",
+    "sources": "macOS, MS"
+  },
+  "password-protected": {
+    "chosen": "beveiligd met een wachtwoord",
+    "confidence": "high",
+    "sources": "Total Commander, Double Commander"
+  },
+  "paste": {
+    "accept": ["plakken", "geplakt"],
+    "chosen": "Plak",
+    "confidence": "high",
+    "forms": "button Plak; participle geplakt; Paste clipboard content as a file → Klembordinhoud als bestand plakken",
+    "sources": "macOS AppKit (Paste → Plak)"
+  },
+  "path": {
+    "accept": ["paden"],
+    "chosen": "pad",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.resourceBusy.suggestion": "Matches only the literal shell argument <folder-path>, verbatim."
+    },
+    "forms": "the ~/Documents sample stays verbatim; het volledige pad",
+    "sources": "standard NL"
+  },
+  "pause": {
+    "accept": ["pauzeren", "gepauzeerd"],
+    "chosen": "Pauzeer",
+    "confidence": "high",
+    "forms": "button Pauzeer, toolbar Pauzeer alles; state Gepauzeerd; Everything else is paused → Al het andere is gepauzeerd",
+    "sources": "macOS Finder (Kopiëren van '^0' is gepauzeerd), AppKit (Pauzeer animatie), Double Commander (Pauzeer alles)"
+  },
+  "percent": {
+    "accept": ["percentage"],
+    "chosen": "procent",
+    "confidence": "high",
+    "forms": "the % sign stays in visual text, no space before it ({percentText}%)",
+    "sources": "standard NL (VoiceOver reads it naturally)"
+  },
+  "permission": {
+    "accept": ["bevoegdheden", "rechten", "toestemming", "toegang"],
+    "avoid": [{ "form": "toestemming (for file rights)", "why": "Apple keeps toestemming for consent to share" }],
+    "chosen": "bevoegdheid",
+    "confidence": "high",
+    "forms": "file-system permission → bevoegdheid / bevoegdheden (leesbevoegdheden)",
+    "sources": "macOS (geen bevoegdheden, leesbevoegdheden, bevoegdhedenfout)"
+  },
+  "phone": {
+    "accept": ["telefoons", "Android"],
+    "chosen": "telefoon",
+    "confidence": "high",
+    "forms": "deze telefoon / de telefoon / je telefoon per the English",
+    "sources": "catalog (adb.* family)"
+  },
+  "photo": {
+    "accept": ["foto''s", "foto's"],
+    "chosen": "foto",
+    "confidence": "high",
+    "forms": "pl. foto''s (ICU-doubled apostrophe); photo archive → fotoarchief",
+    "sources": "macOS (Foto's app, ^0 foto's ontvangen)"
+  },
+  "pin": {
+    "accept": ["vast", "los"],
+    "avoid": [
+      { "form": "vastmaken", "why": "MS's pin; the catalog cluster is on vast / los with Apple's Maak … vast" },
+      {
+        "form": "Maak server vast / maak hem los",
+        "why": "repeats maak in one label; vastzetten and vast maken are one verb pair"
+      },
+      { "form": "Permanent in Dock", "why": "Apple's Dock menu label, not a verb pair" }
+    ],
+    "chosen": "vastzetten",
+    "confidence": "high",
+    "decision": "De vastzet-hint, de vertrouwde serversleutels en het ADB-paneel (`menu.network.pinToSwitcher`/`.unpin`, `servers.pinHint.*`, `settings.servers.*`, `settings.adb.*`, `settings.section.servers`/`.adb`, `settings.summary.servers`/`.adb`, `settings.appearance.tintSmb.*`)",
+    "forms": "menu items Maak tabblad vast / Maak tabblad los, Maak vast in volumekiezer / Maak los; toggle Tabblad vastzetten aan/uit; state Vastgezet; palette command Zet server vast / maak hem los; Dock body vastzetten / losmaken",
+    "sources": "Safari (Maak tabblad vast / los), macOS (Pin in Menu Bar → Maak vast in menubalk, Unpin → Maak los in eight bundles)"
+  },
+  "port": {
+    "accept": ["poorten", "USB-poort"],
+    "chosen": "poort",
+    "confidence": "high",
+    "sources": "MS (port → poort)"
+  },
+  "preset": {
+    "accept": ["voorinstellingen"],
+    "chosen": "voorinstelling",
+    "confidence": "high",
+    "forms": "back to presets → Terug naar voorinstellingen",
+    "sources": "Double Commander (gewijzigde voorinstelling)"
+  },
+  "preview": {
+    "accept": ["voorvertoning", "bekijken"],
+    "avoid": [{ "form": "Voorbeeld", "why": "the drift round unified on Voorvertoning" }],
+    "chosen": "Voorvertoning",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.quickLookHint.finderComparison": "Finder's Quick Look action (quick-look concept): ‘Snelle weergave’."
+    },
+    "forms": "noun Voorvertoning; the verb preview → bekijken (om vanaf hier te bekijken); Apple's Preview app → Voorvertoning",
+    "sources": "macOS AppKit, Finder TL45 (Preview → Voorvertoning)"
+  },
+  "previous-next": {
+    "accept": ["Volgende", "Vorig", "Volgend"],
+    "chosen": "Vorige",
+    "confidence": "high",
+    "forms": "wizard Volgende / Vorige; search matches Volgend / Vorig resultaat",
+    "sources": "macOS (Next → Volgende)"
+  },
+  "privacy-and-security": {
+    "chosen": "Privacy en beveiliging",
+    "confidence": "high",
+    "forms": "usually arrives via the {privacy_and_security} token; keep the token literal",
+    "sources": "macOS System Settings"
+  },
+  "process": {
+    "accept": ["processen", "daemon", "verwerk"],
+    "chosen": "proces",
+    "confidence": "high",
+    "forms": "daemon stays daemon (systeemdaemon, cameradaemon); never name a diagnostic like adb-server or transport in user copy",
+    "sources": "standard NL; technical term kept"
+  },
+  "progress": {
+    "accept": ["bezig", "ontwikkeling"],
+    "chosen": "voortgang",
+    "confidence": "high",
+    "decision": "Vastgelopen overdracht: het stall-bericht",
+    "forms": "No progress for {duration} → Al {duration} geen voortgang (tentative construction)",
+    "sources": "macOS AppKit / Finder (Progress → Voortgang), MS, Thunar, Double Commander"
+  },
+  "properties": {
+    "chosen": "eigenschappen",
+    "confidence": "high",
+    "forms": "Bestandseigenschappen",
+    "sources": "standard NL"
+  },
+  "protocol": {
+    "accept": ["protocollen", "Protocol"],
+    "chosen": "protocol",
+    "confidence": "high",
+    "forms": "the sheet legend Protocol equals English (sameAsSourceJustification)",
+    "sources": "macOS IP.loctable (Protocol: → Protocol:)"
+  },
+  "put-back": {
+    "accept": ["terugzetten", "teruggezet", "terug te zetten", "zet"],
+    "chosen": "Zet terug",
+    "confidence": "high",
+    "decision": "De twee knoppen van de prullenmandmelding en de terugzet-familie (`fileOperations.trash.*`, `commands.fileGoToTrash.*`)",
+    "forms": "button Zet terug; progress Bezig met terugzetten...; result teruggezet; old names put back → De oude namen … teruggezet",
+    "sources": "macOS Finder (N153.1 Put Back → Zet terug; PE130_V2 konden niet worden teruggezet)"
+  },
+  "query": {
+    "accept": ["zoekopdrachten"],
+    "chosen": "zoekopdracht",
+    "confidence": "high",
+    "sources": "macOS Finder (zoekopdracht)"
+  },
+  "quick-look": {
+    "accept": ["Geef snel weer"],
+    "avoid": [{ "form": "Quick Look", "why": "Apple localizes this feature name in Dutch" }],
+    "chosen": "snelle weergave",
+    "confidence": "high",
+    "forms": "the feature noun snelle weergave; the menu action Geef snel weer",
+    "sources": "macOS AppKit (Close Quick Look → Sluit snelle weergave), Finder TL14 (Geef '^1' snel weer)"
+  },
+  "quit": {
+    "accept": ["stoppen", "stopt", "gestopt"],
+    "avoid": [{ "form": "Afsluiten", "why": "macOS uses Stop for Quit" }],
+    "chosen": "Stop",
+    "confidence": "high",
+    "decision": "Het stoppoortje: afsluiten terwijl er nog werk loopt (`main.quit.*`)",
+    "forms": "button and menu Stop (Stop Cmdr, Stop nu); in a sentence stoppen; quit unexpectedly → onverwachts gestopt",
+    "sources": "macOS Finder (Stop Finder; A17 De Finder kan niet worden gestopt), AppKit (Quit Anyway → Stop toch)"
+  },
+  "quota": {
+    "chosen": "quotum",
+    "confidence": "high",
+    "sources": "macOS (quotumlimiet bereikt)"
+  },
+  "read-only": {
+    "accept": ["Alleen-lezen"],
+    "chosen": "alleen-lezen",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "forms": "a compound noun closes up: alleen-lezenvolume, alleen-lezenapparaat, alleen-lezenarchief, alleen-lezenmap, alleen-lezenbron; the adjective stays open as a predicate or after a comma (is alleen-lezen, een tijdelijke, alleen-lezen kopie); Alleen-lezen git-portaal stays open to avoid a double hyphen",
+    "sources": "macOS Finder (Read Only → Alleen lezen; bevindt zich op een alleen-lezenvolume)"
+  },
+  "reclaim": {
+    "accept": ["vrij te maken", "vrijgemaakt", "maakt", "vrij"],
+    "chosen": "vrijmaken",
+    "confidence": "high",
+    "forms": "reclaim {size} → {size} vrijmaken; This frees {size} → Dit maakt {size} vrij",
+    "sources": "catalog (settings.mediaIndex.reclaim.*)"
+  },
+  "recommended": {
+    "chosen": "aanbevolen",
+    "confidence": "high",
+    "sources": "standard NL"
+  },
+  "reconnect": {
+    "accept": ["Opnieuw verbinden", "opnieuw verbinding", "Verbind opnieuw", "verbinding", "opnieuw"],
+    "chosen": "opnieuw verbinden",
+    "confidence": "high",
+    "decision": "Twee paneelregels erbij: automatisch opnieuw verbinden en inloggen met een sleutel (`servers.paneState.reconnecting`, `.signedOutNothingToAsk`)",
+    "forms": "progress heading Opnieuw verbinden met {name}…; in a full sentence opnieuw verbinding maken; button Verbind opnieuw, Verbind automatisch opnieuw",
+    "sources": "macOS ScreenSharing.loctable (Reconnecting… → Opnieuw verbinden…, Reconnect → Verbind opnieuw), Finder (opnieuw verbinding maken met '^0'), PPP family"
+  },
+  "redact": {
+    "accept": ["geschoond"],
+    "chosen": "schonen",
+    "confidence": "tentative",
+    "sources": "natural NL for privacy redaction"
+  },
+  "reference-id": {
+    "accept": ["Rapport-ID"],
+    "chosen": "referentie-ID",
+    "confidence": "high",
+    "forms": "Report ID → Rapport-ID",
+    "sources": "NL compound"
+  },
+  "refresh": {
+    "accept": ["verversen"],
+    "chosen": "Ververs",
+    "confidence": "high",
+    "exceptions": {
+      "indexing.staleDialog.body": "\"A rescan refreshes it\": opnieuw doorzoeken werkt alles weer bij."
+    },
+    "sources": "Double Commander (Refresh → Verversen)"
+  },
+  "reject": {
+    "accept": ["weiger", "geweigerd"],
+    "chosen": "Weigeren",
+    "confidence": "high",
+    "sources": "macOS Finder AirDrop (Accepteer / Weiger pair); infinitive because the sibling buttons are"
+  },
+  "relevance": {
+    "chosen": "relevantie",
+    "confidence": "high",
+    "forms": "Sorteer op relevantie",
+    "sources": "macOS WorkflowKit, AppStoreKit, Automator, Music (Relevance → Relevantie), verified on macOS 26.6.2 (25G83), 2026-09-06"
+  },
+  "reload": {
+    "accept": ["opnieuw laden", "opnieuw geladen", "opnieuw te laden"],
+    "chosen": "Laad opnieuw",
+    "confidence": "high",
+    "sources": "MS (reload → opnieuw laden)"
+  },
+  "remote": {
+    "accept": ["externe"],
+    "chosen": "extern",
+    "confidence": "high",
+    "forms": "Remote folder → Externe map",
+    "sources": "macOS Finder (Remote Volume → Extern volume), ScreenSharing, Disk Utility"
+  },
+  "remove": {
+    "accept": ["verwijderen", "verwijderd", "haal", "gehaald", "opheffen", "op te heffen"],
+    "chosen": "Verwijder",
+    "confidence": "high",
+    "forms": "remove from list → Verwijder uit lijst; tag row Verwijder ‘{color}’",
+    "sources": "macOS AppKit (Remove → Verwijder), Finder (Remove from Sidebar → Verwijder uit navigatiekolom)"
+  },
+  "rename": {
+    "accept": ["Wijzig naam", "naamwijziging", "naamwijzigingen", "namen", "wijzig de naam", "naam"],
+    "avoid": [
+      { "form": "hernoemen", "why": "zero hits in nl/macOS (Tier 1); Tier-3 only" },
+      { "form": "hernoeming", "why": "same; the noun is naamwijziging (MS naamwijzigingsvoorstellen)" }
+    ],
+    "chosen": "naam wijzigen",
+    "confidence": "high",
+    "forms": "button and menu Wijzig naam / Wijzig alle namen; verb naam wijzigen (de naam wijzigen van …); noun naamwijziging, compound naamwijzigingsplan; summary Naam van {countText} onderdeel gewijzigd; progress Bezig met naam wijzigen",
+    "sources": "macOS Finder (Rename → Wijzig naam; De naam ... kan niet worden gewijzigd), MS (Rename → Naam wijzigen, rename suggestions → naamwijzigingsvoorstellen)"
+  },
+  "replace": {
+    "accept": ["vervang", "vervangt"],
+    "chosen": "vervangen",
+    "confidence": "high",
+    "sources": "macOS Finder (Replace → Vervang)"
+  },
+  "report": {
+    "accept": ["rapporten", "rapportdetails"],
+    "chosen": "rapport",
+    "confidence": "high",
+    "forms": "Send report → Verstuur rapport (button), Rapport versturen (title)",
+    "sources": "MS (report → rapport)"
+  },
+  "reserved": {
+    "accept": ["gereserveerde"],
+    "chosen": "gereserveerd",
+    "confidence": "high",
+    "sources": "standard NL"
+  },
+  "respond": {
+    "accept": ["reageert", "reageerde", "gereageerd"],
+    "avoid": [{ "form": "beantwoorden", "why": "MS's reply-to-a-message sense" }],
+    "chosen": "reageren",
+    "confidence": "high",
+    "decision": "Vastgelopen overdracht: het stall-bericht",
+    "exceptions": {
+      "search.coverage.walk.abandoned": "Folders that stopped answering a walk: gaven geen antwoord meer.",
+      "search.coverage.walk.abandonedCount": "Spots that stopped answering a walk: gaf geen antwoord meer."
+    },
+    "forms": "Waiting for X to respond → Wachten tot X reageert; didn't answer in time → reageerde niet op tijd; hasn't answered yet → heeft nog niet gereageerd; is not responding → reageert niet",
+    "sources": "macOS AppKit (… reageert niet op het verzoek om voorzieningen), loginwindow (… en reageert niet)"
+  },
+  "restart": {
+    "accept": ["herstarten", "herstart", "opnieuw gestart", "opnieuw opstarten", "opnieuw"],
+    "avoid": [{ "form": "opnieuw opstarten (for the Mac menu)", "why": "the Windows form; macOS labels it Herstart" }],
+    "chosen": "Herstart",
+    "confidence": "high",
+    "forms": "button Herstart; Restart to update → Herstart om bij te werken; a restart (of the Mac) → herstarten",
+    "sources": "macOS (Restart → Herstart)"
+  },
+  "resume": {
+    "accept": ["hervatten", "hervat", "gaat verder"],
+    "chosen": "Hervat",
+    "confidence": "high",
+    "forms": "button Hervat / Hervat alles; a paused pass resuming on its own → gaat verder (zodra …)",
+    "sources": "macOS Finder (Hervat, Hervat kopiëren)"
+  },
+  "retry": {
+    "accept": ["opnieuw", "nog eens", "poging"],
+    "chosen": "Probeer opnieuw",
+    "confidence": "high",
+    "forms": "button Probeer opnieuw; in prose Probeer het opnieuw / Probeer het zo meteen opnieuw; after another opnieuw in the same sentence → nog eens",
+    "sources": "macOS Finder (Probeer het opnieuw)"
+  },
+  "review": {
+    "accept": ["beoordeel", "beoordeling", "bekijk", "nakijken", "na te kijken", "kijkt"],
+    "avoid": [
+      {
+        "form": "bekijken",
+        "why": "macOS's look-over sense (Bekijk wijzigingen…); an approval gate needs a decision word"
+      }
+    ],
+    "chosen": "beoordelen",
+    "confidence": "tentative",
+    "forms": "Review file renames → Naamwijzigingen beoordelen; Beoordeel de bestandsbewerkingen …",
+    "sources": "judgment over macOS (Review Changes… → Bekijk wijzigingen…)"
+  },
+  "rollback": {
+    "accept": ["Terugdraaien", "teruggedraaid", "draai", "terug te draaien"],
+    "chosen": "terugdraaien",
+    "confidence": "high",
+    "decision": "De terugdraaimelding: wat er weg is, en wat Cmdr met rust liet (`fileOperations.cancelRollback.*`, `rollbackConfirm.body`)",
+    "forms": "button Terugdraaien (kept identical to the button that opened the prompt, over the imperative rule); roll them back → draai ze terug; status Teruggedraaid, Gedeeltelijk teruggedraaid; progress Bezig met terugdraaien; badges Terug te draaien / Niet terug te draaien; Finish rolling back → Voltooi terugdraaien",
+    "note": "Never for a single item: an item is deleted (verwijderen) or put back (terugzetten).",
+    "sources": "standard NL; MS (roll back → terugdraaien)"
+  },
+  "root-folder": {
+    "accept": ["beginmap"],
+    "avoid": [
+      { "form": "rootmap", "why": "half English (Double Commander)" },
+      { "form": "startmap", "why": "evokes Windows' Opstartmap" },
+      { "form": "Externe map", "why": "the old label, doesn't carry the ceiling sense" }
+    ],
+    "chosen": "hoofdmap",
+    "confidence": "high",
+    "decision": "Hoofdmap en beginmap van een opgeslagen server (`servers.sheet.rootFolder*`, `servers.sheet.startFolder*`, `servers.refusal.*`)",
+    "forms": "the server ceiling and a volume's top folder → hoofdmap; where a pane opens → beginmap (tentative)",
+    "sources": "MS (root folder → hoofdmap), Thunar, KDE Dolphin; Double Commander (Start path → Beginpad)"
+  },
+  "row": {
+    "accept": ["rijen", "bestandsrij"],
+    "chosen": "rij",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.interrupted.suggestion": "Idiom \"twice in a row\": twee keer achter elkaar."
+    },
+    "forms": "file row → bestandsrij",
+    "sources": "MS (row → rij), Double Commander (één per rij)"
+  },
+  "running": {
+    "accept": ["bezig", "Actief", "loopt", "lopen", "draai", "uitgevoerd"],
+    "chosen": "Bezig",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "exceptions": {
+      "lowDiskSpace.toast.message": "\"Running low on space\" is the free-space concept: raakt vol.",
+      "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "Restructured: De schijf wordt nog doorzocht."
+    },
+    "forms": "an operation or task in progress → Bezig (Bezig met …, Nog bezig); a local AI server that is up → Actief; a running operation keeps going → doorlopen",
+    "sources": "Double Commander (Bezig); matches the Bezig met … progress family"
+  },
+  "save": {
+    "accept": ["bewaren", "bewaard", "opgeslagen", "opslaan", "op te slaan", "slaat"],
+    "avoid": [{ "form": "opslaan (as the button or verb)", "why": "macOS uses bewaren for save" }],
+    "chosen": "Bewaar",
+    "confidence": "high",
+    "forms": "button Bewaar; verb bewaren (store files on a drive → bewaren); the adjectival participle for a stored thing stays opgeslagen (Opgeslagen wachtwoord, status Opgeslagen)",
+    "note": "The catalog still carries both bewaren and opslaan in places where the boundary isn't clean; an open review item.",
+    "sources": "macOS (Save → Bewaar), Finder (Store … in iCloud → Bewaar … in iCloud)"
+  },
+  "scan": {
+    "accept": ["doorzoek", "doorzocht", "scan", "scannen", "herscan", "doorloop", "doorlopen"],
+    "chosen": "doorzoeken",
+    "confidence": "high",
+    "forms": "progress Doorzoeken…; Je schijf wordt doorzocht...; run-kind headers use the noun scan (Eerste volledige scan, Volledige herscan); rescan → opnieuw doorzoeken (dialog) / opnieuw scannen (tooltip, MS); status Bezig met scannen",
+    "sources": "Double Commander (Scanning → Doorzoeken), MS (rescan → opnieuw scannen)"
+  },
+  "scope": {
+    "chosen": "bereik",
+    "confidence": "tentative",
+    "sources": "standard NL"
+  },
+  "screenshot": {
+    "accept": ["schermafbeeldingen", "schermopname"],
+    "chosen": "schermafbeelding",
+    "confidence": "high",
+    "forms": "screen recording → schermopname",
+    "sources": "macOS Dutch (schermafbeelding)"
+  },
+  "scroll": {
+    "accept": ["schuif", "scroll"],
+    "chosen": "schuiven",
+    "confidence": "tentative",
+    "sources": "MS (scroll → schuiven)"
+  },
+  "search": {
+    "accept": ["zoeken", "zoek", "Zoeken", "doorzocht", "gezocht"],
+    "chosen": "Zoek",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "forms": "the button that starts a search → Zoek; the feature's name (window title, Settings section, onboarding row) → Zoeken; inline progress Zoeken…; Check for updates → Zoek naar updates",
+    "sources": "macOS Finder (Search → Zoek)"
+  },
+  "search-match": {
+    "accept": ["resultaten", "zoekresultaten", "overeen", "past bij", "voldoen", "aanmerking"],
+    "chosen": "resultaat",
+    "confidence": "high",
+    "forms": "No matches → Geen resultaten; Next / Previous match → Volgend / Vorig resultaat; search results → zoekresultaten",
+    "sources": "macOS Finder (matches → zoekresultaten)"
+  },
+  "see": {
+    "accept": ["bekijken", "Toon", "bekeken"],
+    "chosen": "Bekijk",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "exceptions": {
+      "askCmdr.wakeToast.openThread": "\"See why\" as a terse link: Waarom?",
+      "menu.bar.view": "The menu bar's View menu is Apple's title: Weergave.",
+      "queue.chip.failed": "\"To see why\" in running prose: om te zien waarom."
+    },
+    "forms": "See (look only) → Bekijk (Bekijk {count} favorieten); the F3 View command → Toon; the menu bar's View menu → Weergave (Apple's title)",
+    "sources": "macOS (View → Weergave for the menu); catalog (commands.logOperationLog.label Bekijk)"
+  },
+  "select": {
+    "accept": ["selecteren", "geselecteerd", "selectie", "selecties"],
+    "chosen": "Selecteer",
+    "confidence": "high",
+    "decision": "Het selectievenster: bestanden selecteren en deselecteren (`selection.*`)",
+    "exceptions": {
+      "onboarding.stepAi.cloud.pickerTitle": "Picking from a list is the choose concept: Kies een aanbieder.",
+      "onboarding.stepAi.table.searchWithout": "Picking a filter option is the choose concept: kiest.",
+      "ui.select.placeholder": "Dropdown placeholder, the choose concept: Kies..."
+    },
+    "forms": "button and menu Selecteer, Selecteer alles; the selection (a noun, the submenu title) → Selectie; recent selections → recente selecties; onboarding feature-row name → Selecteren",
+    "sources": "macOS AppKit / Finder (Select All → Selecteer alles, MenuBar 172.title), Double Commander"
+  },
+  "send": {
+    "accept": ["versturen", "verstuurd", "stuurt", "sturen", "meegestuurd", "afzender"],
+    "avoid": [
+      { "form": "Stuur", "why": "forked the Send family three ways; the drift round unified on macOS's Verstuur" },
+      { "form": "verzenden", "why": "Microsoft's word; macOS is Tier 1" }
+    ],
+    "chosen": "Verstuur",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "forms": "button Verstuur; dialog title X versturen (Foutrapport versturen); verb versturen; the toggle label Gebruiksstatistieken sturen and Crashrapporten sturen keep sturen",
+    "sources": "macOS Finder (Send → Verstuur, Sending… → Versturen…)"
+  },
+  "server": {
+    "accept": ["servers"],
+    "chosen": "server",
+    "confidence": "high",
+    "forms": "same as English (sameAsSourceJustification where a whole value matches); server list → serverlijst; server's owner → servereigenaar (tentative)",
+    "sources": "macOS Finder (Connect to server → Verbind met server), AppKit Menus (Servers)"
+  },
+  "server-address": {
+    "accept": ["Adres", "adres"],
+    "chosen": "serveradres",
+    "confidence": "high",
+    "exceptions": {
+      "commands.cloudCopyGoogleDriveLink.description": "A web address (URL) of an item: de link."
+    },
+    "forms": "column Adres",
+    "sources": "macOS Finder ConnectToWindow (Server Address → Serveradres)"
+  },
+  "service": {
+    "accept": ["services", "cloudservice", "Voorzieningen"],
+    "chosen": "service",
+    "confidence": "high",
+    "forms": "the app menu's Services submenu → Voorzieningen (Apple's title)",
+    "sources": "MS (service → service)"
+  },
+  "settings": {
+    "accept": ["instellingen", "instelling", "instel"],
+    "chosen": "Instellingen",
+    "confidence": "high",
+    "exceptions": {
+      "settings.mediaIndex.parallelism.description": "\"Higher settings\" means higher values: hogere waarden."
+    },
+    "forms": "Cmdr's own window, capitalized: Instellingen; navigation paths Instellingen > AI (separator mirrors English per key); leave a field empty → laat dit leeg (macOS, verbatim with dit)",
+    "sources": "macOS, MS (settings → instellingen)"
+  },
+  "share-menu": {
+    "accept": ["deel"],
+    "chosen": "Deel",
+    "confidence": "high",
+    "decision": "Wachtregels in \"Open met\" en \"Deel\" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)",
+    "forms": "share options → deelopties (tentative); No share options → Geen deelopties",
+    "sources": "macOS Share submenu"
+  },
+  "shortcut": {
+    "accept": ["sneltoetsen", "toets"],
+    "chosen": "sneltoets",
+    "confidence": "high",
+    "exceptions": {
+      "errors.listing.symlinkLoopErrno.explanation": "Glosses symbolic links as shortcuts (aliases): snelkoppelingen."
+    },
+    "forms": "Keyboard shortcuts (section) → Sneltoetsen; bound → toegewezen; fixed key → vaste toets / Vast; reserved → gereserveerd; register a global hotkey → registreren (Registreren lukte niet)",
+    "sources": "common macOS / NL UI; MS toetsencombinatie is the longer form"
+  },
+  "show": {
+    "accept": ["tonen", "getoond", "toont", "verschijn", "zien", "weergegeven", "weergave"],
+    "chosen": "Toon",
+    "confidence": "high",
+    "exceptions": {
+      "search.coverage.walk.cancelled": "\"It shows what Cmdr found\": je ziet wat.",
+      "selection.notice.snapshotPane": "\"What is shown in the list\": wat in de lijst staat.",
+      "settings.mediaIndex.showFileStatusIcons.description": "\"A badge showing whether\": die aangeeft of."
+    },
+    "forms": "button and menu Toon (Toon favorieten, Toon alles, Toon details); Settings label infinitive-last (Verborgen bestanden tonen)",
+    "sources": "macOS AppKit (Show Details → Toon details, Show Sidebar → Toon navigatiekolom), Finder (Toon alles)"
+  },
+  "show-in-finder": {
+    "accept": ["Toon in Finder"],
+    "chosen": "‘Toon in Finder’",
+    "confidence": "high",
+    "decision": "Het ‘Toon in Finder’-aanbod en de melding bij de eerste keer (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)",
+    "sources": "catalog (settings.navigationAndFileOps.card.showInFinder); macOS"
+  },
+  "side-panel": {
+    "chosen": "zijpaneel",
+    "confidence": "tentative",
+    "sources": "no precedent in the catalog"
+  },
+  "sign-in": {
+    "accept": [
+      "inloggen",
+      "ingelogd",
+      "inlog",
+      "log je in",
+      "log in",
+      "log opnieuw in",
+      "log één keer in",
+      "in te loggen"
+    ],
+    "chosen": "Log in",
+    "confidence": "high",
+    "forms": "button Log in / Log in…; Sign in to X → Log in bij X; sign in with → Log in met …; sign-in method → inlogmethode (tentative); status Ingelogd",
+    "sources": "macOS Finder (Log In… → Log in…), CloudKit (Sign In to %1$@ → Log in bij %1$@)"
+  },
+  "sign-out": {
+    "accept": ["uitloggen", "Log uit", "uitgelogd"],
+    "avoid": [{ "form": "afmelden", "why": "the Windows form" }],
+    "chosen": "Uitgelogd",
+    "confidence": "high",
+    "forms": "status Uitgelogd; Signed out of X → Uitgelogd bij X; log out of the Mac → uitloggen",
+    "sources": "macOS Localizable.loctable (iCloud Signed Out → Uitgelogd bij iCloud), menu Log uit"
+  },
+  "size": {
+    "accept": ["grootte", "groottes"],
+    "chosen": "Grootte",
+    "confidence": "high",
+    "exceptions": {
+      "fileOperations.transferDialog.scanStopped": "Restructured: meer konden we niet tellen.",
+      "fileOperations.transferDialog.scanUnresponsive": "Restructured: meer konden we niet tellen."
+    },
+    "forms": "folder sizes → mapgroottes; File and folder sizes → Bestands- en mapgroottes",
+    "sources": "macOS Finder (Size → Grootte)"
+  },
+  "skip": {
+    "accept": ["overslaan", "overgeslagen", "slaat", "sla", "sloeg"],
+    "chosen": "Sla over",
+    "confidence": "high",
+    "forms": "button Sla over / Sla alles over; outcome Overgeslagen; Cmdr skips anything it isn't sure about → Cmdr slaat alles over waar het niet zeker van is",
+    "sources": "Nautilus (Overslaan), bare-stem imperative per the button rule"
+  },
+  "slow": {
+    "accept": ["langzamer", "langzaam", "trager", "vertrag", "trage"],
+    "chosen": "traag",
+    "confidence": "high",
+    "forms": "The volume may be slow → Het volume is mogelijk traag; speed multipliers 4x zo langzaam als …; a lot slower → een stuk langzamer",
+    "sources": "macOS Finder LA20 (… zijn erg traag)"
+  },
+  "sort": {
+    "accept": ["sorteer", "sorteren", "gesorteerd", "Oplopend", "Aflopend", "sortering"],
+    "chosen": "Sorteer op",
+    "confidence": "high",
+    "forms": "Sort by → Sorteer op (Sorteer op naam, Sorteer op relevantie); ascending / descending → Oplopend / Aflopend",
+    "sources": "macOS Finder (Sort By → Sorteer op), Thunar, Dolphin"
+  },
+  "source": {
+    "accept": ["Van", "Vanuit"],
+    "chosen": "bron",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepFda.con.body": "The licensing term source-available, kept verbatim."
+    },
+    "forms": "dialog heading pair Van / Naar; the inline label before a path Vanuit:",
+    "sources": "Double Commander (Source → Bron), MS; Total Commander / Double Commander (Van: / Naar:)"
+  },
+  "start-up": {
+    "accept": ["opstart", "start", "gestart"],
+    "chosen": "opstarten",
+    "confidence": "high",
+    "sources": "MS terminology (29 hits opstarten); catalog opstartschijf"
+  },
+  "startup-disk": {
+    "chosen": "opstartschijf",
+    "confidence": "high",
+    "sources": "macOS (Startup Disk → Opstartschijf)"
+  },
+  "stop": {
+    "accept": ["stoppen", "gestopt", "stopt"],
+    "avoid": [
+      { "form": "Annuleer (for a rollback tooltip)", "why": "the @key forbids reading as the Cancel button beside it" }
+    ],
+    "chosen": "Stop",
+    "confidence": "high",
+    "exceptions": {
+      "fileExplorer.navigation.forgetServerConfirm": "\"Stops listing it\": haalt de server uit de lijst.",
+      "fileOperations.transferProgress.stallUnknown": "\"Stopped moving\" means stalled: komt niet meer vooruit.",
+      "search.coverage.walk.abandoned": "\"Stopped answering\": gaven geen antwoord meer.",
+      "search.coverage.walk.abandonedCount": "\"Stopped answering\": gaf geen antwoord meer.",
+      "search.walkHandoff.superseded": "\"Stopped adding\": voegt niets meer toe.",
+      "settings.updates.emailPrivacyNote": "\"To stop getting emails\": om geen e-mails meer te ontvangen.",
+      "viewer.error.stoppedResponding": "\"Stopped arriving\": er komen geen gegevens meer binnen."
+    },
+    "forms": "button Stop everywhere (Stop met zoeken, Stop en verwijder …); a button that stops running work is the imperative even when only a screen reader hears it",
+    "sources": "macOS Finder (BN62, PE107, SD23)"
+  },
+  "streaming": {
+    "accept": ["streammodus", "stream"],
+    "chosen": "streamen",
+    "confidence": "tentative",
+    "sources": "loanword kept; no Dutch UI equivalent"
+  },
+  "suggestion": {
+    "accept": ["suggesties", "voorgesteld", "voorstel"],
+    "chosen": "suggestie",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepAi.table.selectWith": "\"Suggests a selection\": stelt een selectie voor."
+    },
+    "forms": "suggested ops → Voorgestelde bewerkingen; AI suggestions are waiting → Er staan AI-suggesties klaar",
+    "sources": "standard NL; catalog"
+  },
+  "supported": {
+    "accept": ["ondersteunt", "ondersteuning"],
+    "chosen": "ondersteund",
+    "confidence": "high",
+    "forms": "not supported → niet ondersteund; X and up → X en nieuwer",
+    "sources": "macOS (worden niet ondersteund op het doelvolume; … omdat deze niet wordt ondersteund)"
+  },
+  "symlink": {
+    "accept": ["symbolische koppelingen"],
+    "chosen": "symbolische koppeling",
+    "confidence": "high",
+    "forms": "a symlink's target → doel",
+    "sources": "macOS (koppeling)"
+  },
+  "system-integrity-protection": {
+    "chosen": "System Integrity Protection",
+    "confidence": "high",
+    "sources": "macOS Finder ET6 keeps the name in Dutch (… vanwege System Integrity Protection)"
+  },
+  "system-settings": {
+    "chosen": "Systeeminstellingen",
+    "confidence": "high",
+    "forms": "usually the {system_settings} token; keep the token literal",
+    "sources": "macOS Finder"
+  },
+  "system-settings-pane": {
+    "accept": ["Inlogonderdelen en extensies", "Opslag"],
+    "avoid": [{ "form": "Inloggen", "why": "the older, shorter pane name" }],
+    "chosen": "Algemeen",
+    "confidence": "high",
+    "decision": "Wat het Engels over zichzelf rechtzette, en wat dat voor `nl` betekende",
+    "forms": "General → Algemeen; Login Items & Extensions → Inlogonderdelen en extensies; Apple Account stays Apple Account",
+    "sources": "macOS 26.6.2 (25G83) SystemSettings Localizable GENERAL, LoginItems.appex Localizable.loctable, 2026-08-30"
+  },
+  "tab": {
+    "accept": ["tabbladen"],
+    "chosen": "tabblad",
+    "confidence": "high",
+    "sources": "macOS Finder (New Tab → Nieuw tabblad)"
+  },
+  "tag": {
+    "accept": ["tags", "Tags"],
+    "chosen": "tag",
+    "confidence": "high",
+    "forms": "row Tags; Voeg ‘{color}’ toe / Verwijder ‘{color}’; Finder tag colors Rood, Oranje, Geel, Groen, Blauw, Paars, Grijs",
+    "sources": "macOS Finder (TG5, TG6, N169.37, TG_COLOR_*)"
+  },
+  "tail": {
+    "chosen": "Tail",
+    "confidence": "tentative",
+    "forms": "kept verbatim; aria and tooltip explain it (volg bestandswijzigingen)",
+    "sources": "technical term, no Dutch equivalent"
+  },
+  "tap": {
+    "accept": ["tik"],
+    "chosen": "tik op",
+    "confidence": "high",
+    "sources": "AOSP Settings values-nl (Tik op een melding)"
+  },
+  "temporary": {
+    "accept": ["tijdelijke"],
+    "chosen": "tijdelijk",
+    "confidence": "high",
+    "forms": "placeholder → tijdelijke aanduiding",
+    "sources": "macOS (temporarily unavailable → tijdelijk niet beschikbaar)"
+  },
+  "terminal": {
+    "accept": ["Terminal"],
+    "chosen": "terminal",
+    "confidence": "high",
+    "decision": "‘Terminal hier openen’ en de app-keuze (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)",
+    "forms": "the generic app kind → terminal, terminal app → terminal-app; Apple's app → Terminal; Open terminal here → Terminal hier openen",
+    "sources": "macOS Finder N67 (Open in Terminal)"
+  },
+  "text-editor": {
+    "accept": ["editor", "standaardeditor"],
+    "chosen": "teksteditor",
+    "confidence": "high",
+    "decision": "F4 and its text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)",
+    "forms": "default text editor → standaardeditor; Edit files in [app] → Bewerk bestanden in",
+    "sources": "MS terminology (text editor → teksteditor)"
+  },
+  "thinking": {
+    "chosen": "Nadenken…",
+    "confidence": "tentative",
+    "sources": "bare infinitive + ellipsis per the progress convention; no AI-assistant precedent in the pile"
+  },
+  "threshold": {
+    "accept": ["drempelwaarde"],
+    "chosen": "drempel",
+    "confidence": "tentative",
+    "sources": "standard NL"
+  },
+  "thumbnail": {
+    "accept": ["miniaturen"],
+    "chosen": "miniatuur",
+    "confidence": "high",
+    "sources": "macOS Finder (Miniatuurgrootte:), MS, Nautilus / Thunar / Double Commander (miniaturen)"
+  },
+  "time-left": {
+    "accept": ["resterend", "nog"],
+    "chosen": "nog",
+    "confidence": "high",
+    "forms": "nog 45s, nog 3m, nog 1 uur 24 minuten (leads with nog)",
+    "sources": "natural NL for a countdown"
+  },
+  "timeout": {
+    "accept": ["niet op tijd", "te lang"],
+    "chosen": "time-out",
+    "confidence": "tentative",
+    "forms": "in a sentence prefer the settled reageerde niet op tijd",
+    "sources": "standard NL spelling"
+  },
+  "title-bar": {
+    "chosen": "titelbalk",
+    "confidence": "high",
+    "sources": "standard NL"
+  },
+  "token": {
+    "accept": ["tokens"],
+    "chosen": "token",
+    "confidence": "high",
+    "forms": "askCmdr.cost.tokens renders byte-identical to English (sameAsSourceJustification)",
+    "sources": "standard AI term, kept"
+  },
+  "too-large": {
+    "accept": ["groter dan", "te lang"],
+    "chosen": "te groot",
+    "confidence": "high",
+    "exceptions": {
+      "errors.write.filesTooLargeForFilesystem.message.one": "Word order in a relative clause: groter zijn dan."
+    },
+    "forms": "file vs drive → te groot; larger than → groter dan; an over-long name → te lang",
+    "sources": "standard NL; MS (larger than → groter dan)"
+  },
+  "transfer": {
+    "accept": ["overdrachten", "overgedragen"],
+    "avoid": [
+      { "form": "overdracht (for the queue or a queue row)", "why": "those name the wider category: bewerking" }
+    ],
+    "chosen": "overdracht",
+    "confidence": "high",
+    "decision": "Operation queue: de hernoeming van Overdrachtswachtrij",
+    "forms": "copy/move sense only (Pauzeer deze overdracht, bij een latere overdracht); de-woord, pronoun hem",
+    "sources": "standard NL"
+  },
+  "trash": {
+    "chosen": "prullenmand",
+    "confidence": "high",
+    "forms": "naar de prullenmand; This volume has no Trash → Dit volume heeft geen prullenmand",
+    "sources": "macOS Finder (Trash → Prullenmand, to the Trash → naar de prullenmand)"
+  },
+  "trust": {
+    "accept": ["vertrouw", "vertrouwd", "vertrouwde"],
+    "chosen": "vertrouwen",
+    "confidence": "high",
+    "forms": "button Vertrouw / Vertrouw altijd / Vertrouw en verbind; not trusted → wordt niet vertrouwd; Trusted <x> → Vertrouwde <x>; Trusted <date> → Vertrouwd op",
+    "sources": "macOS Localizable.loctable (Trust → Vertrouw, Trusted servers → Vertrouwde servers)"
+  },
+  "type": {
+    "accept": ["type", "soort"],
+    "avoid": [{ "form": "Soort (for the protocol column)", "why": "that is Finder's Kind column for a file kind" }],
+    "chosen": "Type",
+    "confidence": "high",
+    "forms": "the server protocol column Type (same as English)",
+    "sources": "macOS System Settings (Type → Type)"
+  },
+  "typo": {
+    "accept": ["typefouten"],
+    "chosen": "typefout",
+    "confidence": "high",
+    "note": "Fine despite the voice rule: it is the ordinary name of the thing, not an error label.",
+    "sources": "catalog (licensing.error.badSignatureHint)"
+  },
+  "udev": {
+    "accept": ["udev"],
+    "chosen": "udev-regels",
+    "confidence": "high",
+    "sources": "Linux term udev kept, regels translated"
+  },
+  "undo": {
+    "accept": ["ongedaan", "Herstel", "Zet terug", "terugdraaien"],
+    "avoid": [{ "form": "Herstel (outside the Edit menu)", "why": "macOS also uses it for Revert and Repair" }],
+    "chosen": "Ongedaan maken",
+    "confidence": "high",
+    "decision": "Eén ding, één naam: de interne driftronde",
+    "forms": "text undo in the Edit menu → Herstel (Apple's ⌘Z); the trash toast's undo → Zet terug (it IS Finder's Put Back); undoing an Ask Cmdr rename run → Ongedaan maken; This can't be undone → Dit kun je niet ongedaan maken",
+    "sources": "macOS Finder (ME13 Herstel, N153.1 Zet terug)"
+  },
+  "unexpected": {
+    "accept": ["onverwachts", "mis"],
+    "chosen": "onverwacht",
+    "confidence": "high",
+    "forms": "Something went wrong → Er ging iets mis; the catch-all toast Er ging iets mis, en Cmdr kon niet achterhalen wat.",
+    "sources": "macOS (een onverwachte fout)"
+  },
+  "unlock": {
+    "accept": ["ontgrendel", "ontgrendelt", "ontgrendeld", "beveiliging op"],
+    "chosen": "Ontgrendelen",
+    "confidence": "high",
+    "decision": "Het archiefwachtwoord (`fileOperations.archivePassword.*`)",
+    "forms": "the archive-password button Ontgrendelen; om het te ontgrendelen",
+    "sources": "macOS AppKit (Ontgrendelen)"
+  },
+  "unplug": {
+    "accept": ["losgekoppeld", "koppel", "aangesloten", "aansluit", "verbroken", "niet verbonden"],
+    "chosen": "loskoppelen",
+    "confidence": "high",
+    "decision": "A drive pulled mid-transfer (`errors.write.deviceDisconnected.sided.destination.copy`)",
+    "forms": "unplug it → koppel het los; a drive that dropped off → wordt losgekoppeld (in progress) / werd losgekoppeld (already gone); a phone or device on a cable → aangesloten; reseat the cable → sluit de kabel opnieuw aan",
+    "sources": "catalog (mtp.permissionDialog.helpText); macOS koppel family; Thunar (Ontkoppelen van apparaat...)"
+  },
+  "unreachable": {
+    "accept": ["bereiken", "bereikbaar", "bereikt"],
+    "chosen": "onbereikbaar",
+    "confidence": "high",
+    "sources": "standard NL; catalog (servers.refusal.unreachable)"
+  },
+  "update": {
+    "accept": ["updates", "bijwerken", "bijgewerkt", "bij te werken", "werkt"],
+    "avoid": [{ "form": "houdt … bij (for keeping the index current)", "why": "means record/track in this catalog" }],
+    "chosen": "update",
+    "confidence": "high",
+    "forms": "noun update; verb bijwerken (Herstart om bij te werken; werkt de index bij); Check for updates → Zoek naar updates; Software Update → Software-update; the Settings section Updates keeps the loanword capitalized (Updates en privacy)",
+    "sources": "MS (update); macOS Software-update"
+  },
+  "upgrade": {
+    "accept": ["upgradepagina"],
+    "chosen": "upgrade",
+    "confidence": "tentative",
+    "forms": "upgrade page → upgradepagina",
+    "sources": "loanword + pagina"
+  },
+  "usage": {
+    "accept": ["gebruiksstatistieken", "Uitgaven"],
+    "avoid": [
+      { "form": "anonieme", "why": "the stats carry a stable per-install id, so they were never anonymous" },
+      { "form": "pseudoniem / gepseudonimiseerd", "why": "jargon the everyday English avoids" }
+    ],
+    "chosen": "gebruik",
+    "confidence": "high",
+    "decision": "Usage stats: \"anonieme\" dropped, \"een willekeurige id\" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)",
+    "forms": "usage stats → gebruiksstatistieken (toggle and onboarding title Gebruiksstatistieken sturen); spending → Uitgaven; a random id → een willekeurige id; tied to → gekoppeld aan",
+    "sources": "MS (usage → gebruik, spending → uitgaven, random → willekeurig, identifier → id)"
+  },
+  "usb-debugging": {
+    "accept": ["foutopsporing"],
+    "chosen": "USB-foutopsporing",
+    "confidence": "high",
+    "decision": "Het telefoonpaneel via ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`)",
+    "forms": "debugging → foutopsporing; Turn on USB debugging → Zet USB-foutopsporing aan",
+    "sources": "AOSP SettingsLib values-nl enable_adb (fetched 2026-09-07); Safari foutopsporingsmodus"
+  },
+  "username": {
+    "chosen": "gebruikersnaam",
+    "confidence": "high",
+    "sources": "macOS / MS standard"
+  },
+  "verbose": {
+    "chosen": "uitgebreid",
+    "confidence": "tentative",
+    "sources": "standard NL (verbose output → uitgebreide uitvoer)"
+  },
+  "version": {
+    "accept": ["versies", "appversie"],
+    "chosen": "versie",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.cloudSetup.hint.azureEndpoint": "The API parameter name api-version, verbatim."
+    },
+    "forms": "app version → appversie (closed); macOS-versie (hyphen after the brand); a released copy → uitgebrachte versie",
+    "sources": "MS (version → versie)"
+  },
+  "viewer": {
+    "accept": ["Weergavevenster"],
+    "chosen": "weergavevenster",
+    "confidence": "tentative",
+    "exceptions": {
+      "shortcuts.system.characterViewer": "Apple's picker name (character-viewer concept): Emoji's en symbolen."
+    },
+    "forms": "Settings section Viewer → Weergavevenster",
+    "sources": "compositional (weergave + venster)"
+  },
+  "volume": {
+    "accept": ["volumes"],
+    "chosen": "volume",
+    "confidence": "high",
+    "sources": "macOS Finder (Volume → Volume)"
+  },
+  "volume-switcher": {
+    "accept": ["Volumekiezer"],
+    "avoid": [
+      {
+        "form": "wisselaar",
+        "why": "the old compositional coinage stays unused; the catalog names this UI volumekiezer"
+      }
+    ],
+    "chosen": "volumekiezer",
+    "confidence": "high",
+    "sources": "catalog (commands.volumeClose.label, shortcuts.scope.volumeChooser)"
+  },
+  "waiting": {
+    "accept": ["wacht", "wachten", "wachtende"],
+    "chosen": "Wachten",
+    "confidence": "high",
+    "exceptions": {
+      "suggestedOps.indicatorTooltip": "Suggestions ready for you: Er staan AI-suggesties klaar."
+    },
+    "forms": "queue status Wachten; Waiting for <noun> → Wachten op …; Waiting for X to respond → Wachten tot X reageert; Waiting to be indexed → Wacht op indexering",
+    "sources": "macOS Finder (Wachten; Waiting for disc drive… → Wachten op schijfeenheid…)"
+  },
+  "warning": {
+    "accept": ["waarschuwingen"],
+    "chosen": "waarschuwing",
+    "confidence": "high",
+    "sources": "MS (warning → waarschuwing)"
+  },
+  "watcher": {
+    "accept": ["wijzigingen", "bewaken", "let op", "volgen", "let "],
+    "chosen": "bewaker",
+    "confidence": "tentative",
+    "forms": "file change watcher → bewaker voor bestandswijzigingen; events processed → wijzigingen verwerkt; Watching for phones → Cmdr let op telefoons (tentative)",
+    "sources": "from bewaken; wijzigingen reads clearer than gebeurtenissen"
+  },
+  "whats-new": {
+    "chosen": "Wat is er nieuw",
+    "confidence": "high",
+    "sources": "standard NL"
+  },
+  "word-wrap": {
+    "accept": ["terugloop", "teruglopen", "lopen terug"],
+    "chosen": "Tekstterugloop",
+    "confidence": "high",
+    "forms": "menu and setting Tekstterugloop; the terse viewer badge terugloop",
+    "sources": "MS terminology (word wrap → tekstterugloop)"
+  },
+  "write": {
+    "accept": ["geschreven", "schrijft", "weggeschreven"],
+    "chosen": "schrijven",
+    "confidence": "high",
+    "exceptions": {
+      "errorReporter.amend.description": "Composing a note: Schrijf een notitie.",
+      "suggestedOps.reversibleDeleteWritten": "\"What it writes\" as a noun: het gemaakte."
+    },
+    "forms": "partly written → gedeeltelijk geschreven; every file written so far → elk bestand dat tot nu toe is geschreven",
+    "sources": "macOS Finder (Er zijn gegevens naar deze schijf geschreven …)"
+  },
+  "zoom": {
+    "accept": ["zoom", "Vergroot/verklein"],
+    "chosen": "Zoom",
+    "confidence": "high",
+    "forms": "Zoom in / Zoom uit; Zoom naar N%; the Window menu's Zoom → Vergroot/verklein (Apple's title)",
+    "sources": "macOS (in- of uitzoomen; Window > Zoom → Vergroot/verklein)"
+  }
+}
