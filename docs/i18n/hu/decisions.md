@@ -2236,7 +2236,7 @@ kell kiolvasni. (macOS 26.6.2, build 25G83, `plutil` + `jq`, 2026-09-09.)
 - **`Connect to server…` → `Kapcsolódás szerverre…`** · mac Finder `hu` (`MenuBar` `266.title`, ablakcím
   `ConnectToWindow` `1.title` = „Kapcsolódás szerverre”), plusz a szállított `commands.serversConnect.label` és
   `settings.network.permissionIntroConnectLink`, amelyek angolja betű szerint ugyanez · `high`. A `szerver` (nem
-  `kiszolgáló`) a szótár szállított döntése (`style.md` § server → `szerver`).
+  `kiszolgáló`) a szótár szállított döntése (`style.md` § Digest, top traps).
 - **`{name} ({parent})` → változatlan, `sameAsSourceJustification`-nel** · mac Finder `hu` (`LocalizableMerged`
   `SB_iCloudDetail` = „^0 (^1)”, `IN_G6_V1` = „^2 (^3)”) · `high`. A magyar ugyanabban a sorrendben és ugyanazzal a
   zárójelezéssel írja a név + minősítő párost, mint az angol, tehát nincs mit átrendezni. Toldalék egyik helyőrzőre sem

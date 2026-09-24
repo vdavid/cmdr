@@ -271,7 +271,7 @@ Two mechanics that bite in Portuguese specifically:
   `Ejetar ({name}) (ocupado)`, que é o molde original. O texto base copia byte a byte a chave irmã não ocupada
   (`menu.network.disconnect`, `menu.network.forgetSavedPassword`, `menu.network.forgetServer`, `menu.volume.eject`): as
   duas linhas se alternam no mesmo lugar do menu, e qualquer diferença de palavra lê como outro comando. Termo:
-  `decisions.md` § Menus nativos (busy).
+  `decisions.md` § Menus nativos, nas linhas ocupadas.
 - **`Servidores` e `Rede` convivem no seletor de volumes, e a diferença é o ponto.** A LINHA que abre o hub é
   `Servidores` (`fileExplorer.navigation.networkVolume`); o GRUPO onde ela fica continua `Rede`
   (`fileExplorer.navigation.groupNetwork`). A seção de atalhos dos lugares dentro de um servidor é `Locais`, o termo do

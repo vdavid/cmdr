@@ -413,11 +413,11 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   (`Ask Cmdr 設定`, `「Ask Cmdr」區段`); write bare `Cmdr` when the sentence describes what the AI does; write `AI` in
   the four `suggestedOps.*` strings, which have to stay distinguishable from the neighbouring `Cmdr 知道的事實`. ❗
   Don't "restore" `Ask Cmdr` as a sentence subject: the English deliberately moved every such subject to `Cmdr`. Per-key
-  evidence: `decisions.md` § "AI 文案的主詞：`Cmdr` / `AI`，`Ask Cmdr` 只指面板".
+  evidence: `decisions.md` § "AI 文案的主詞：`Cmdr` / `AI`，`Ask Cmdr`".
 - **Click is `按一下`, not macOS zh-CN's `點按`.** Apple zh-TW writes `按一下` 50 times against 4 `點一下` and zero
   `點按` (measured 2026-09-09). A "Click to …" instruction becomes `按一下就能…`.
 - **`context` is `上下文`** (`上下文視窗` for the window, `上下文大小` for the size). The ruling and why it's still
-  `tentative`: `terms.json` `context-window` and `decisions.md` § "狀態角落的兩條 AI 提示、`同意` 的統一，與 `上下文`".
+  `tentative`: `terms.json` `context-window` and `decisions.md` § "狀態角落的兩條 AI 提示、`同意` 的統一，與".
 - **A menu item that names the app is `動詞 + 空格 + Cmdr`, unquoted.** `隱藏 Cmdr`, `結束 Cmdr`, `關於 Cmdr`,
   `開啟 Cmdr`. Apple's Dock quotes the name (`隱藏「%@」`) only because that `%@` is an arbitrary app name filled in at
   runtime; ours is the literal brand, and corner brackets would make the Dock menu disagree with the app menu right next
@@ -436,7 +436,7 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `shortcuts.scope.volumeChooser` and the two `commands.pane*VolumeChooser.label` moved off `卷宗選擇器` to match the
   `fileExplorer.navigation.server*Toast` pair. ❗ The message KEYS still spell `Chooser`: they mirror the persisted
   command ids `pane.leftVolumeChooser` / `pane.rightVolumeChooser`, which can't be renamed. Translate the value, ignore
-  the key. Same shape recorded in `decisions.md` § "伺服器中心".
+  the key. Same shape recorded in `decisions.md` § "伺服器中心（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.server*Toast`）".
 - **A grayed-out "(busy)" menu item is its base label plus `（使用中）`, nothing else.** The `*Busy` keys are the
   disabled twin of an ordinary menu item, shown while a transfer still holds the volume or server, so they have to read
   as the same item in a second state. Copy the base key's value character for character and append the marker:
@@ -444,7 +444,7 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `menu.network.disconnect` → `menu.volume.disconnectBusy` (`中斷連線（使用中）`), `menu.network.forgetServer` →
   `menu.volume.forgetServerBusy` (`忘記伺服器（使用中）`), and `menu.network.forgetSavedPassword` →
   `menu.volume.forgetSavedPasswordBusy` (`忘記已儲存的密碼（使用中）`). `使用中` is the catalog's own word for a
-  resource someone else is working on, the same sense `decisions.md` § Failure-sentence shapes gives it in the
+  resource someone else is working on, the same sense `decisions.md` § "Failure-sentence shapes" gives it in the
   `…因此無法…` blocker shape, and full-width parens follow § Punctuation. ❗ Don't invent a second marker (`忙碌中`,
   `處理中`) for a new pair, and don't reword the base half to make the compound shorter.
 
@@ -453,7 +453,7 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `正在重新連線到 {name}…`), and Apple's own Traditional progress strings are `正在重新連線⋯` in three separate bundles.
   A new state in the family copies the shape rather than inventing a second one. ❗ Apple's `重新連接` is its imperative
   form ("unplug it and reconnect the iPhone"); a STATE is always `重新連線`. Evidence and the rest of the pane family:
-  `decisions.md` § 自動重連的窗格與「沒東西可問」那一行.
+  `decisions.md` § "自動重連的窗格與「沒東西可問」那一行（`servers.paneState.reconnecting`、`servers.paneState.signedOutNothingToAsk`）".
 
 - **English "easy" / "simple" is dodged, not rendered as `簡單`.** The house voice bans trivializing words, and the
   English onboarding copy uses them anyway ("a few easy choices", "Three easy steps"). This catalog resolves the clash
