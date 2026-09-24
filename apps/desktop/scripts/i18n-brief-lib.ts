@@ -12,7 +12,10 @@
  *  - header: languages, how the keys were chosen, the reference pile, the style guide
  *  - instructions: the translator's standing instructions, single-sourced from
  *    `docs/i18n/translator-instructions.md` and rendered for the language(s)
- *  - digest: the `## Digest` section of each language's style guide
+ *  - principles: the shared judgment calls, single-sourced in
+ *    `docs/i18n/translation-principles.md`
+ *  - digest: the `## Digest` section of each language's style guide, plus its
+ *    declared typography (`mechanics.json`) in one line
  *  - keys: key, English, `@key` description, placeholders/tags, current value(s),
  *    and the content words no concept covers ("No concept yet")
  *  - terms: every concept whose `match` hits a batch key's English, plus those of
@@ -59,6 +62,7 @@ import {
   stylePath,
 } from './i18n-termbase-lib.ts'
 import type { Concept, DecisionSection, Term, Termbase } from './i18n-termbase-lib.ts'
+import { loadMechanicsRaw, mechanicsSummary } from './i18n-mechanics-lib.ts'
 
 /** What to build a brief for. */
 export interface BriefOptions {
@@ -210,16 +214,38 @@ function languageName(tag: string): string {
  * every brief can't drift apart.
  */
 function instructionsSection(ctx: BriefContext): BriefSection {
-  const markdown = readTextIfPresent(join(resolveDocsRoot(ctx.opts.docsRoot), 'translator-instructions.md'))
-  const start = markdown?.search(/^## Instructions\s*$/m) ?? -1
-  if (markdown === undefined || start === -1) return { name: 'instructions', text: '' }
+  return embeddedSection(ctx, { name: 'instructions', file: 'translator-instructions.md', heading: 'Instructions' })
+}
+
+/**
+ * The shared translation principles (voice, names vs prose, no hedged grammar,
+ * native typography, escalation): everything under `## Principles` in
+ * `translation-principles.md`, right after the instructions. Single-sourced there.
+ */
+function principlesSection(ctx: BriefContext): BriefSection {
+  return embeddedSection(ctx, { name: 'principles', file: 'translation-principles.md', heading: 'Principles' })
+}
+
+/**
+ * Everything under one `## <heading>` of a doc in `docs/i18n/` (to the end of the
+ * file), with `{{LANGUAGE}}` and `{{TAG}}` filled in; the tag reads `<tag>` for
+ * several languages. Empty when the doc or the heading is missing.
+ */
+function embeddedSection(
+  ctx: BriefContext,
+  { name, file, heading }: { name: string; file: string; heading: string },
+): BriefSection {
+  const markdown = readTextIfPresent(join(resolveDocsRoot(ctx.opts.docsRoot), file))
+  const marker = new RegExp(`^## ${heading}\\s*$`, 'm')
+  const start = markdown?.search(marker) ?? -1
+  if (markdown === undefined || start === -1) return { name, text: '' }
   const body = markdown
     .slice(start)
-    .replace(/^## Instructions\s*\n/, '')
+    .replace(new RegExp(`^## ${heading}\\s*\\n`), '')
     .trim()
     .replaceAll('{{LANGUAGE}}', ctx.opts.langs.map(languageName).join(', '))
     .replaceAll('{{TAG}}', ctx.multi ? '<tag>' : ctx.opts.langs[0])
-  return { name: 'instructions', text: `## Instructions\n\n${body}` }
+  return { name, text: `## ${heading}\n\n${body}` }
 }
 
 /** A word must appear in at least this many English keys to be a candidate term: concepts recur. */
@@ -258,7 +284,8 @@ function digestSection(ctx: BriefContext): BriefSection {
     const markdown = readTextIfPresent(path)
     const digest = markdown === undefined ? undefined : extractDigest(markdown)
     const body = digest ?? `(no digest yet: read \`${shown(path, ctx.opts.repoRoot)}\` in full)`
-    return `## Style digest: ${tag}\n\n${body}`
+    const mechanics = mechanicsSummary(loadMechanicsRaw(tag, ctx.opts.docsRoot))
+    return `## Style digest: ${tag}\n\n${body}\n\n- **Mechanics** (\`${tag}/mechanics.json\`): ${mechanics}.`
   })
   return { name: 'digest', text: blocks.join('\n\n') }
 }
@@ -289,6 +316,7 @@ function rulingLine(ctx: BriefContext, tag: string, id: string): string {
   if (!term) return `- ${tag}: no ruling (mine the pile, then add one)`
   const parts = [`**${term.chosen}** (${term.confidence})`]
   if (term.accept?.length) parts.push(`accept: ${term.accept.join(', ')}`)
+  if (term.proseAccept?.length) parts.push(`prose only: ${term.proseAccept.join(', ')} (never in a name or label)`)
   if (term.forms) parts.push(`forms: ${term.forms}`)
   if (term.avoid?.length) parts.push(`avoid: ${term.avoid.map((a) => `${a.form} (${a.why})`).join('; ')}`)
   if (term.note) parts.push(`note: ${term.note}`)
@@ -555,6 +583,7 @@ export function buildBrief(opts: BriefOptions): Brief {
   let sections = [
     headerSection(ctx),
     instructionsSection(ctx),
+    principlesSection(ctx),
     digestSection(ctx),
     keysSection(ctx),
     termsSection(ctx),

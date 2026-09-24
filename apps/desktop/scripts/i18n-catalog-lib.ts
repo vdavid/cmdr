@@ -396,6 +396,41 @@ export function visibleLiterals(value: string, locale = 'en'): string | undefine
   return runs.join(' ')
 }
 
+/** Stands in for a value Cmdr inserts at runtime: never copy, never punctuation. */
+export const INSERT_MARK = '￼'
+
+/**
+ * The text a reader sees, as contiguous runs a typography check can scan. Where
+ * `visibleLiterals` joins runs with a space (fine for matching words), this keeps
+ * adjacency: an argument, `#`, or a whole `plural`/`select` becomes one
+ * `INSERT_MARK`, a tag's children stay inline, and each branch body is its own
+ * segment after the one it sits in. So `« {name} »` still shows the spaces the
+ * translator typed, and nothing is invented between two runs.
+ *
+ * @returns the segments, the top level first, or `undefined` when the value isn't valid ICU
+ */
+export function visibleTextSegments(value: string, locale = 'en'): string[] | undefined {
+  const ast = astOrUndefined(value, locale)
+  if (!ast) return undefined
+  const segments: string[] = []
+  const render = (elements: readonly AstElement[]): string => {
+    let text = ''
+    for (const el of elements) {
+      if (el.type === TYPE.literal) text += el.value
+      else if (el.type === TYPE.tag) text += render(el.children ?? [])
+      else text += INSERT_MARK
+    }
+    for (const el of elements) {
+      if (el.type === TYPE.select || el.type === TYPE.plural) {
+        for (const branch of Object.values(el.options ?? {})) segments.push(render(branch.value))
+      }
+    }
+    return text
+  }
+  segments.unshift(render(ast))
+  return segments
+}
+
 /** Parses to an AST, or `undefined` when the value isn't valid ICU. */
 function astOrUndefined(value: string, locale: string): readonly AstElement[] | undefined {
   try {

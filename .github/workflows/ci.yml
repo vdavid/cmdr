@@ -913,6 +913,10 @@ jobs:
       - name: Check the translation termbase schema and coverage drift
         run: ./scripts/check/check --check desktop-i18n-termbase --ci
 
+      # Same reason: each locale's `mechanics.json` lives under `docs/i18n/`.
+      - name: Check catalog values follow each locale's declared typography
+        run: ./scripts/check/check --check desktop-i18n-mechanics --ci
+
       - name: Check PostHog events match their catalog
         run: ./scripts/check/check --check analytics-event-catalog --ci
 

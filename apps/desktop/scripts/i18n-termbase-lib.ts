@@ -48,6 +48,8 @@ export interface AvoidForm {
 export interface Term {
   chosen: string
   accept?: string[]
+  /** forms accepted in prose keys only (`isNameKey` false): an everyday synonym never allowed in a name */
+  proseAccept?: string[]
   forms?: string
   avoid?: AvoidForm[]
   confidence: Confidence
@@ -283,6 +285,44 @@ export function localeValueCarriesTerm(tag: string, value: string, term: Pick<Te
     // An explicit prefix: the form has to START a word, where a bare form may sit anywhere.
     return new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(form.slice(0, -1))}`, 'u').test(text)
   })
+}
+
+/** A fragment of at most this many words reads as a label wherever it sits. */
+const NAME_MAX_WORDS = 4
+
+/** A last key segment that names a label-type slot: `label`, or a camelCase `…Label`, `…Aria`, and so on. */
+const NAME_SEGMENT =
+  /^(?:label|title|name|button|heading|tab|badge|aria)$|[a-z0-9](?:Label|Title|Name|Button|Heading|Tab|Badge|Aria)$/
+
+/** Visible English that ends a sentence, or holds a break between two. */
+function isSentence(text: string): boolean {
+  return /[.!?]["'”’)\]]*$/u.test(text) || /[.!?]\s+\p{Lu}/u.test(text)
+}
+
+/**
+ * Whether a key is a NAME (a menu item, setting, command, button, title: the
+ * thing a user looks up and sees again elsewhere) rather than PROSE. A term
+ * ruling locks names; a ruling's `proseAccept` forms count only in prose. Judged
+ * from the key and its English, in order:
+ *
+ *  1. `menu.*` is a name: it's the native menu, whatever its shape.
+ *  2. A sentence (visible English ending in `.` `!` `?`, or holding a break
+ *     between two) is prose, whatever its key says.
+ *  3. A fragment of at most `NAME_MAX_WORDS` words is a name, wherever it sits
+ *     (a tooltip reading "Close" names its button).
+ *  4. A longer fragment is a name under a label-type key (`NAME_SEGMENT`:
+ *     `.label`, `.title`, `*Aria`, `*Name`, …) and prose otherwise.
+ *
+ * Deliberately leans to "name": the termbase is the default, and the prose
+ * freedom is small on purpose.
+ */
+export function isNameKey(key: string, englishValue: string): boolean {
+  if (key.startsWith('menu.')) return true
+  const visible = isRawKey(key) ? undefined : visibleLiterals(englishValue)
+  const text = (visible ?? stripRawIdentifiers(englishValue)).trim()
+  if (isSentence(text)) return false
+  if ((text.match(/\p{L}+/gu) ?? []).length <= NAME_MAX_WORDS) return true
+  return NAME_SEGMENT.test(key.split('.').at(-1) ?? '')
 }
 
 /** One `##` or `###` section of a `decisions.md`. */

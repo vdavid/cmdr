@@ -125,7 +125,7 @@ function resolveKeys(args: readonly string[], langs: readonly string[], messages
 
 /** One `--stats` line. */
 function statsLine(name: string, text: string): string {
-  return `${name.padEnd(10)} ${String(text.length).padStart(7)} chars  ~${String(roughTokens(text)).padStart(6)} tokens`
+  return `${name.padEnd(12)} ${String(text.length).padStart(7)} chars  ~${String(roughTokens(text)).padStart(6)} tokens`
 }
 
 function main(): void {

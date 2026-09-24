@@ -568,6 +568,27 @@ var AllChecks = []CheckDefinition{
 		Run: RunDesktopI18nTermbase,
 	},
 	{
+		ID:          "desktop-i18n-mechanics",
+		Nickname:    "i18n-mechanics",
+		DisplayName: "i18n-mechanics",
+		App:         AppDesktop,
+		Tech:        "\U0001F3A8 Svelte",
+		// ERROR on a malformed `docs/i18n/<tag>/mechanics.json`; WARN on catalog
+		// values that break the locale's declared typography (quote marks, spacing,
+		// `...`, hedged forms) past its ratchet-down baseline. Its CI step sits in
+		// `hygiene` next to i18n-termbase, since the declarations live under
+		// `docs/i18n/`, which the `svelte` filter can't see.
+		DependsOn: nil,
+		IsFast:    true,
+		Inputs: inputs([]string{
+			"docs/i18n/**",
+			"apps/desktop/src/lib/intl/messages/**",
+			"apps/desktop/scripts/i18n-*.ts",
+			"apps/desktop/scripts/i18n-mechanics-baseline.json",
+		}),
+		Run: RunDesktopI18nMechanics,
+	},
+	{
 		ID:          "desktop-i18n-icu",
 		Nickname:    "i18n-icu",
 		DisplayName: "i18n-icu",

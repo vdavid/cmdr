@@ -36,6 +36,7 @@ import {
   conceptsPath,
   decisionsPath,
   englishMatchText,
+  isNameKey,
   loadTerms,
   localeValueCarriesTerm,
   decisionPointers,
@@ -53,10 +54,12 @@ export const EXIT_SCHEMA = 3
 /** Where the per-locale drift baselines live. */
 export const BASELINE_PATH: string = join(import.meta.dirname, 'i18n-termbase-baseline.json')
 
-/** The baseline file's shape: locale → how many drifting keys it may still carry. */
+/** The baseline file's shape: per locale, how many drifting keys it may still carry, and how big `decisions.md` may be. */
 export interface Baseline {
   $comment?: string
   drift: Record<string, number>
+  /** locale → the byte size its `decisions.md` may not grow past; ratchets down only */
+  decisionsBytes?: Record<string, number>
 }
 
 /** A concept ID: lowercase kebab-case. */
@@ -66,6 +69,7 @@ const CONCEPT_FIELDS = new Set(['en', 'match', 'notMatch', 'sense', 'distinct', 
 const TERM_FIELDS = new Set([
   'chosen',
   'accept',
+  'proseAccept',
   'forms',
   'avoid',
   'confidence',
@@ -181,7 +185,10 @@ function termFieldErrors(at: string, term: Record<string, unknown>): string[] {
   else if (!CONFIDENCES.includes(term.confidence as never)) {
     errors.push(`${at}: confidence ${shownValue(term.confidence)} must be one of ${CONFIDENCES.join(', ')}`)
   }
-  if (term.accept !== undefined && !isStringList(term.accept)) errors.push(`${at}: "accept" must be a list of strings`)
+  for (const field of ['accept', 'proseAccept'] as const) {
+    if (term[field] !== undefined && !isStringList(term[field]))
+      errors.push(`${at}: "${field}" must be a list of strings`)
+  }
   for (const field of ['forms', 'note'] as const) {
     if (term[field] !== undefined && typeof term[field] !== 'string') errors.push(`${at}: "${field}" must be a string`)
   }
@@ -260,7 +267,8 @@ export function findDrift({ tag, terms, concepts, en, locale }: FindDriftArgs): 
       // The schema half reports a missing `chosen`; drift can't be judged without one.
       const chosen: unknown = term.chosen
       if (!isNonEmptyString(chosen)) continue
-      if (localeValueCarriesTerm(tag, locale[key], term)) continue
+      const prose = term.proseAccept?.length && !isNameKey(key, en[key]) ? term.proseAccept : []
+      if (localeValueCarriesTerm(tag, locale[key], { chosen, accept: [...(term.accept ?? []), ...prose] })) continue
       findings.push({ key, concept: id, value: locale[key] })
     }
   }
@@ -272,6 +280,10 @@ export interface LocaleOutcome {
   locale: string
   drift: DriftFinding[]
   baseline?: number
+  /** the size of its `decisions.md` in bytes, when it has one */
+  decisionsBytes?: number
+  /** the size that file may not grow past (`Baseline.decisionsBytes`) */
+  decisionsBudget?: number
 }
 
 /** The whole run: schema problems across every file, plus each migrated locale's drift. */
@@ -369,7 +381,14 @@ export function inspectTermbase({
     )
     schemaErrors.push(...staleExceptionErrors(tag, terms, concepts, en.messages))
     const drift = findDrift({ tag, terms, concepts, en: en.messages, locale: loadCatalog(tag, messagesRoot).messages })
-    locales.push({ locale: tag, drift, baseline: baseline.drift[tag] })
+    const decisions = readTextIfPresent(decisionsPath(tag, docsRoot))
+    locales.push({
+      locale: tag,
+      drift,
+      baseline: baseline.drift[tag],
+      decisionsBytes: decisions === undefined ? undefined : Buffer.byteLength(decisions, 'utf8'),
+      decisionsBudget: baseline.decisionsBytes?.[tag],
+    })
   }
   return { schemaErrors, locales }
 }
@@ -377,7 +396,7 @@ export function inspectTermbase({
 /** Reads the baseline, tolerating a missing file (every locale is then strict). */
 export function loadBaseline(path: string = BASELINE_PATH): Baseline {
   const raw = readJsonIfPresent(path) as Partial<Baseline> | undefined
-  return { ...raw, drift: raw?.drift ?? {} }
+  return { ...raw, drift: raw?.drift ?? {}, decisionsBytes: raw?.decisionsBytes ?? {} }
 }
 
 /** Renders one drift finding. */
@@ -409,7 +428,10 @@ export function report(outcome: TermbaseOutcome, write?: (line: string) => void,
     return outcome.schemaErrors.length > 0 ? EXIT_SCHEMA : EXIT_CLEAN
   }
 
-  const grown = outcome.locales.filter((locale) => reportLocale(locale, out, listAll)).length
+  const grown = outcome.locales.filter((locale) => {
+    const drifted = reportLocale(locale, out, listAll)
+    return reportDecisionsGrowth(locale, out) || drifted
+  }).length
   if (outcome.schemaErrors.length > 0) return EXIT_SCHEMA
   if (grown > 0) return EXIT_ISSUES
   const carried = outcome.locales.reduce((total, { drift }) => total + drift.length, 0)
@@ -454,22 +476,72 @@ function reportLocale(
 }
 
 /**
- * Ratchets baselines down to the drift that's left and drops a locale that no
- * longer has a termbase. Never raises a number. Local runs only; CI reads the
- * file as committed.
+ * Warns when a locale's `decisions.md` grew past its byte budget. The file holds
+ * distilled rulings, edited in place; growth usually means an appended story or
+ * a superseded entry left beside its replacement.
+ *
+ * @returns whether it grew past the budget
+ */
+function reportDecisionsGrowth(
+  { locale, decisionsBytes, decisionsBudget }: LocaleOutcome,
+  out: (line: string) => void,
+): boolean {
+  if (decisionsBytes === undefined || decisionsBudget === undefined || decisionsBytes <= decisionsBudget) return false
+  out(
+    `${locale}/decisions.md grew to ${String(decisionsBytes)} bytes, past its budget of ${String(decisionsBudget)}: ` +
+      `distill instead of appending (edit or replace the ruling, delete what's superseded). Raising the budget needs David's OK.`,
+  )
+  return true
+}
+
+/**
+ * Ratchets one baseline map down to the current values: a lower value moves it,
+ * a locale no longer measured is dropped, and with `recordNew` a locale measured
+ * for the first time is recorded. Never raises a number.
+ *
+ * @returns the locales whose entry moved
+ */
+function ratchet(
+  entries: Record<string, number>,
+  current: ReadonlyMap<string, number>,
+  recordNew: boolean,
+): { kept: Record<string, number>; moved: string[] } {
+  const moved: string[] = []
+  const kept: Record<string, number> = {}
+  for (const [locale, allowed] of Object.entries(entries)) {
+    const value = current.get(locale)
+    if (value === undefined || value < allowed) moved.push(locale)
+    if (value !== undefined) kept[locale] = Math.min(value, allowed)
+  }
+  if (recordNew) {
+    for (const [locale, value] of current) {
+      if (locale in entries) continue
+      kept[locale] = value
+      moved.push(locale)
+    }
+  }
+  return { kept: Object.fromEntries(Object.entries(kept).sort(([a], [b]) => a.localeCompare(b))), moved }
+}
+
+/**
+ * Ratchets baselines down: drift to what's left, each `decisions.md` budget to
+ * the file's current size (a file seen for the first time is recorded at its
+ * size), and drops a locale that no longer has a termbase. Never raises a
+ * number. Local runs only; CI reads the file as committed.
  *
  * @returns the locales whose baseline moved
  */
 export function shrinkWrap(outcome: TermbaseOutcome, baseline: Baseline, path: string): string[] {
-  const moved: string[] = []
-  const counts = new Map(outcome.locales.map(({ locale, drift }) => [locale, drift.length]))
-  const kept: Record<string, number> = {}
-  for (const [locale, allowed] of Object.entries(baseline.drift)) {
-    const count = counts.get(locale)
-    if (count === undefined || count < allowed) moved.push(locale)
-    if (count !== undefined) kept[locale] = Math.min(count, allowed)
-  }
-  baseline.drift = kept
+  const drift = ratchet(baseline.drift, new Map(outcome.locales.map(({ locale, drift }) => [locale, drift.length])), false)
+  const sizes = new Map(
+    outcome.locales.flatMap(({ locale, decisionsBytes }) =>
+      decisionsBytes === undefined ? [] : [[locale, decisionsBytes] as const],
+    ),
+  )
+  const decisions = ratchet(baseline.decisionsBytes ?? {}, sizes, true)
+  baseline.drift = drift.kept
+  baseline.decisionsBytes = decisions.kept
+  const moved = [...new Set([...drift.moved, ...decisions.moved])]
   if (moved.length > 0) writeFileSync(path, `${JSON.stringify(baseline, null, 2)}\n`)
   return moved.sort()
 }

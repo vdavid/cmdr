@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // RunDesktopI18nTermbase holds the termbase (`docs/i18n/concepts.json` plus each
@@ -19,6 +20,9 @@ import (
 //     translation carries none of the ruling's forms and isn't in `exceptions`.
 //     Held to a per-locale count baseline that only ratchets down, so a
 //     half-cleaned locale reports one line instead of breaking the build.
+//   - Decisions growth (WARN): a locale's `decisions.md` grew past its byte
+//     budget in the same baseline, which also only ratchets down, so the file
+//     stays distilled rulings rather than regrowing into a journal.
 //
 // A locale without `terms.json` is skipped. See
 // `apps/desktop/scripts/i18n-check-termbase.ts` and `docs/i18n/termbase.md`.
@@ -48,12 +52,13 @@ func RunDesktopI18nTermbase(ctx *CheckContext) (CheckResult, error) {
 
 	switch exitErr.ExitCode() {
 	case 1:
-		findings := countDriftLines(output)
+		findings := countDriftLines(output) + countDecisionsGrowth(output)
 		msg := fmt.Sprintf(
-			"%d %s drift from the termbase past the locale's baseline: the English uses a ruled concept and "+
-				"the translation uses none of its forms. Fix the translation, widen the ruling's \"accept\", or record "+
-				"the key in the term's \"exceptions\" with the reason:\n%s",
-			findings, Pluralize(findings, "key", "keys"), indentOutput(output),
+			"the termbase grew past its baseline (%d %s). A drifting key: the English uses a ruled concept and "+
+				"the translation uses none of its forms; fix the translation, widen the ruling's \"accept\", or record "+
+				"the key in the term's \"exceptions\" with the reason. A grown decisions.md: distill it instead of "+
+				"appending:\n%s",
+			findings, Pluralize(findings, "finding", "findings"), indentOutput(output),
 		)
 		return CheckResult{Code: ResultWarning, Message: msg, Total: -1, Issues: findings, Changes: -1}, nil
 	case 3:
@@ -62,4 +67,15 @@ func RunDesktopI18nTermbase(ctx *CheckContext) (CheckResult, error) {
 				"(docs/i18n/termbase.md has the schema):\n%s", indentOutput(output))
 	}
 	return CheckResult{}, fmt.Errorf("couldn't run the i18n termbase check\n%s", indentOutput(output))
+}
+
+// countDecisionsGrowth counts the script's "<tag>/decisions.md grew to …" lines.
+func countDecisionsGrowth(output string) int {
+	n := 0
+	for _, line := range strings.Split(output, "\n") {
+		if strings.Contains(line, "/decisions.md grew to ") {
+			n++
+		}
+	}
+	return n
 }

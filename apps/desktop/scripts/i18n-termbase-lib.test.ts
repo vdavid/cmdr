@@ -10,6 +10,7 @@ import {
   conceptsInText,
   englishMatchText,
   extractDigest,
+  isNameKey,
   parseDecisions,
   sectionCitesKey,
   localeValueCarriesTerm,
@@ -202,6 +203,32 @@ describe('sectionCitesKey', () => {
   })
   it('never suffix-matches a citation that starts at a real namespace', () => {
     expect(cites('servers.*', 'settings.servers.title')).toBe(false)
+  })
+})
+
+describe('isNameKey', () => {
+  it('reads every native menu key as a name, sentence or not', () => {
+    expect(isNameKey('menu.file.copy', 'Copy…')).toBe(true)
+    expect(isNameKey('menu.view.hint', 'Shows hidden files. Toggle it again to hide them.')).toBe(true)
+  })
+  it('reads a sentence as prose, whatever its key says', () => {
+    expect(isNameKey('errors.volume.invalidName', "The destination can't hold that name. Pick a different one.")).toBe(
+      false,
+    )
+    expect(isNameKey('a.b.title', 'Nothing here yet!')).toBe(false)
+  })
+  it('reads a short fragment as a name, wherever it sits', () => {
+    expect(isNameKey('viewer.search.closeTooltip', 'Close')).toBe(true)
+    expect(isNameKey('queue.row.statusDone', 'Moved to trash')).toBe(true)
+    expect(isNameKey('a.b', '{count, plural, one {# file} other {# files}}')).toBe(true)
+  })
+  it('reads a long fragment as a name only under a label-type key', () => {
+    expect(isNameKey('settings.x.label', 'Notify me if any external drive index goes stale')).toBe(true)
+    expect(isNameKey('commands.paneCopy.label', 'Copy path from left to right pane')).toBe(true)
+    expect(isNameKey('main.quit.countdownAria', 'Time until Cmdr quits on its own')).toBe(true)
+    expect(isNameKey('errors.provider.box.appName', 'Box Drive for your whole team today')).toBe(true)
+    expect(isNameKey('adb.readiness.waitingForAuthorization', 'Waiting for you to tap Allow on your phone')).toBe(false)
+    expect(isNameKey('a.stab', 'Waiting for you to tap Allow on your phone')).toBe(false)
   })
 })
 

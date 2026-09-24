@@ -112,6 +112,12 @@ describe('validateTerms', () => {
     expect(text).toMatch(/operation: decision "No such heading" matches no heading in nl\/decisions\.md/)
     expect(text).toMatch(/operation: avoid\[0\] needs a "form" and a "why"/)
   })
+  it('holds proseAccept to a list of strings', () => {
+    const ok = { operation: { chosen: 'x', proseAccept: ['klus'], confidence: 'high', sources: 's' } }
+    expect(validateTerms({ ...base, terms: ok })).toEqual([])
+    const bad = { operation: { chosen: 'x', proseAccept: 'klus', confidence: 'high', sources: 's' } }
+    expect(validateTerms({ ...base, terms: bad }).join('\n')).toMatch(/"proseAccept" must be a list of strings/)
+  })
 })
 
 describe('validateTerms: decision resolution', () => {
@@ -165,6 +171,15 @@ describe('findDrift', () => {
     expect(findDrift({ tag: 'nl', terms, concepts, en, locale: nl })).toEqual([
       { key: 'q.a', concept: 'operation', value: 'Maak de actie ongedaan' },
     ])
+  })
+  it('accepts a proseAccept form in a prose key and never in a name key', () => {
+    const en = {
+      'q.prose': 'Cmdr finished the operation you started, so you can close this window now.',
+      'q.label': 'Operation log',
+    }
+    const nl = { 'q.prose': 'Cmdr heeft je klus afgerond, dus je kunt dit venster sluiten.', 'q.label': 'Kluslogboek' }
+    const withProse = { operation: { ...terms.operation, proseAccept: ['klus'] } }
+    expect(findDrift({ tag: 'nl', terms: withProse, concepts, en, locale: nl }).map((f) => f.key)).toEqual(['q.label'])
   })
   it('skips a key in exceptions and a key the locale lacks', () => {
     const withException = { operation: { ...terms.operation, exceptions: { 'q.a': 'deliberate' } } }
@@ -224,6 +239,37 @@ describe('inspectTermbase + report + shrinkWrap (fixture tree)', () => {
     const path = join(root, 'baseline.json')
     expect(shrinkWrap(outcome, baseline, path)).toEqual(['fr'])
     expect((JSON.parse(readFileSync(path, 'utf8')) as Baseline).drift).toEqual({ nl: 2 })
+  })
+
+  it('warns when decisions.md grows past its byte budget, and ratchets the budget down only', () => {
+    write(join(docsRoot, 'nl', 'decisions.md'), '# nl decisions\n\n## A\n\nShort.\n')
+    const size = Buffer.byteLength('# nl decisions\n\n## A\n\nShort.\n')
+    const baseline: Baseline = { drift: { nl: 2 }, decisionsBytes: { nl: size - 1 } }
+    const grown = inspectTermbase({ messagesRoot, docsRoot, baseline })
+    const out = capture()
+    expect(report(grown, out.write)).toBe(EXIT_ISSUES)
+    expect(out.lines.join('\n')).toMatch(
+      new RegExp(`nl/decisions\\.md grew to ${String(size)} bytes, past its budget of ${String(size - 1)}`),
+    )
+
+    const roomy: Baseline = { drift: { nl: 2 }, decisionsBytes: { nl: size + 100 } }
+    const outcome = inspectTermbase({ messagesRoot, docsRoot, baseline: roomy })
+    expect(report(outcome, capture().write)).toBe(EXIT_CLEAN)
+    const path = join(root, 'baseline.json')
+    expect(shrinkWrap(outcome, roomy, path)).toEqual(['nl'])
+    expect((JSON.parse(readFileSync(path, 'utf8')) as Baseline).decisionsBytes).toEqual({ nl: size })
+  })
+
+  it('records a decisions.md budget the first time it sees one, and drops it with the file', () => {
+    write(join(docsRoot, 'nl', 'decisions.md'), '# nl decisions\n')
+    const baseline: Baseline = { drift: { nl: 2 }, decisionsBytes: { fr: 10 } }
+    const outcome = inspectTermbase({ messagesRoot, docsRoot, baseline })
+    expect(report(outcome, capture().write)).toBe(EXIT_CLEAN)
+    const path = join(root, 'baseline.json')
+    expect(shrinkWrap(outcome, baseline, path)).toEqual(['fr', 'nl'])
+    expect((JSON.parse(readFileSync(path, 'utf8')) as Baseline).decisionsBytes).toEqual({
+      nl: Buffer.byteLength('# nl decisions\n'),
+    })
   })
 
   it('exits with the schema code when a termbase names an unknown concept, whatever the drift', () => {

@@ -139,11 +139,21 @@ describe('buildBrief (fixture tree)', () => {
       join(docsRoot, 'translator-instructions.md'),
       '# Translator instructions\n\nIntro for humans.\n\n## Instructions\n\nTranslate into {{LANGUAGE}}; read docs/i18n/{{TAG}}/style.md.\n',
     )
+    write(
+      join(docsRoot, 'translation-principles.md'),
+      '# Translation principles\n\nWhy this file exists.\n\n## Principles\n\n- Pick the everyday word.\n',
+    )
+    write(join(docsRoot, 'nl', 'mechanics.json'), {
+      quotes: { primary: ['‘', '’'], nested: ['“', '”'] },
+      apostrophes: ['’'],
+      hedges: [{ pattern: '\\(n\\)', why: 'a bracketed plural ending' }],
+    })
     write(join(docsRoot, 'nl', 'terms.json'), {
       operation: {
         chosen: 'bewerking',
         forms: 'window title Bewerkingenwachtrij; with an app named, {app} houdt de wachtrij vast',
         accept: ['bewerkingen'],
+        proseAccept: ['klus'],
         avoid: [{ form: 'actie', why: 'reads as a user action' }],
         confidence: 'high',
         sources: 'macOS',
@@ -237,6 +247,29 @@ describe('buildBrief (fixture tree)', () => {
     const multi = renderBrief(buildBrief({ ...opts, langs: ['de', 'nl'] }))
     expect(multi.split('Translate into').length - 1).toBe(1)
     expect(multi).toContain('Translate into German (de), Dutch (nl); read docs/i18n/<tag>/style.md.')
+  })
+
+  it('embeds the shared principles once, right after the instructions', () => {
+    const brief = buildBrief({ ...opts, langs: ['de', 'nl'] })
+    const names = brief.sections.map((section) => section.name)
+    expect(names.indexOf('principles')).toBe(names.indexOf('instructions') + 1)
+    const text = renderBrief(brief)
+    expect(text.split('Pick the everyday word.').length - 1).toBe(1)
+    expect(text).not.toContain('Why this file exists.')
+  })
+
+  it("shows each language's declared mechanics beside its digest, and says when none are declared", () => {
+    const digest =
+      buildBrief({ ...opts, langs: ['de', 'nl'] }).sections.find((section) => section.name === 'digest')?.text ?? ''
+    expect(digest).toContain('quotes ‘…’, nested “…”')
+    expect(digest).toContain('apostrophe ’')
+    expect(digest).toContain('`\\(n\\)` (a bracketed plural ending)')
+    expect(digest).toMatch(/de[\s\S]*no mechanics\.json yet/)
+  })
+
+  it('marks proseAccept forms as prose only', () => {
+    const text = renderBrief(buildBrief(opts))
+    expect(text).toContain('prose only: klus')
   })
 
   it('lists an easy-to-confuse neighbor only when its words appear in the batch English', () => {
