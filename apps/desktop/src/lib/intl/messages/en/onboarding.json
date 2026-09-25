@@ -189,7 +189,7 @@
   "@onboarding.stepFda.step2.older": {
     "description": "Second numbered instruction, for macOS 12 and older, where a newly-added app appears at the end of the Full Disk Access list. <strong> bolds the app name. \"Cmdr\" is the product name and stays untranslated."
   },
-  "onboarding.stepFda.step2.tip": "Is Cmdr not in the list? Click the \"+\" button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.",
+  "onboarding.stepFda.step2.tip": "Is Cmdr not in the list? Click the “+” button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.",
   "@onboarding.stepFda.step2.tip": {
     "description": "Helper tip under the second instruction, for when the app isn't listed yet: add it manually with the plus button. <strong> bolds \"Cmdr\" and the \"Applications\" folder name. \"Cmdr\" is the product name; \"Applications\" is the macOS folder name (use your locale's standard macOS name). Keep the literal \"+\" character.",
     "screenshot": "onboarding-fda-notgranted.png"
@@ -254,7 +254,7 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn''t seem to have gotten it. You might need to restart the app (do it now, we''ll continue from here!), or go to your <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little \"+\" button at the bottom.",
+  "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn''t seem to have gotten it. You might need to restart the app (do it now, we''ll continue from here!), or go to your <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little “+” button at the bottom.",
   "@onboarding.stepAi.bannerBody.stuck": {
     "description": "Body of the warning banner when Full Disk Access didn't take: suggests restarting or opening the exact System Settings pane. <settingsLink> wraps the clickable text that opens that pane; keep the breadcrumb path inside it. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it. \"Privacy & Security\" and \"Full Disk Access\" are the macOS settings pane names (use the exact macOS wording in your locale). Use literal \">\" and \"&\" characters in the breadcrumb (not HTML entities). \"Cmdr\" is the product name. Keep the literal \"+\" character.",
     "placeholders": {
@@ -310,12 +310,12 @@
     "description": "Row label in the comparison table for the file-search task. Short noun.",
     "screenshot": "onboarding-ai.png"
   },
-  "onboarding.stepAi.table.searchWithout": "You type something like <code>*fish*.ppt</code>, and select the \"after 1st of this month\" filter.",
+  "onboarding.stepAi.table.searchWithout": "You type something like <code>*fish*.ppt</code>, and select the “after 1st of this month” filter.",
   "@onboarding.stepAi.table.searchWithout": {
-    "description": "Comparison cell: how you search without AI. <code> wraps a literal filename glob pattern, which must NOT be translated. \"after 1st of this month\" names a date filter option in the app.",
+    "description": "Comparison cell: how you search without AI. <code> wraps a literal filename glob pattern, which must NOT be translated. “after 1st of this month” names a date filter option in the app.",
     "screenshot": "onboarding-ai.png"
   },
-  "onboarding.stepAi.table.searchWith": "You say \"my recent fish-related presentations\", agent sets your filters.",
+  "onboarding.stepAi.table.searchWith": "You say “my recent fish-related presentations”, agent sets your filters.",
   "@onboarding.stepAi.table.searchWith": {
     "description": "Comparison cell: how you search with AI, by describing what you want in plain words. \"agent\" means the AI assistant. The quoted phrase is an example of what a user might say.",
     "screenshot": "onboarding-ai.png"
@@ -330,7 +330,7 @@
     "description": "Comparison cell: how you bulk-rename without AI, by setting a pattern by hand. \"batch rename UI\" is the bulk-rename screen in the app.",
     "screenshot": "onboarding-ai.png"
   },
-  "onboarding.stepAi.table.renameWith": "You say \"add ISO date prefix\", agent sets your rename pattern, you review and apply at will.",
+  "onboarding.stepAi.table.renameWith": "You say “add ISO date prefix”, agent sets your rename pattern, you review and apply at will.",
   "@onboarding.stepAi.table.renameWith": {
     "description": "Comparison cell: how you bulk-rename with AI, by describing the change. \"agent\" means the AI assistant. \"ISO date\" is the YYYY-MM-DD date format; \"ISO\" stays as-is. The quoted phrase is an example user request.",
     "screenshot": "onboarding-ai.png"
@@ -345,13 +345,13 @@
     "description": "Comparison cell: how you select files without AI, when the select-files shortcut is bound to a key. <chip> wraps the visual key-shortcut chip (it has no inner text; leave it empty). Worded \"the ... key\" so the chip reads as a key. <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated.",
     "screenshot": "onboarding-ai.png"
   },
-  "onboarding.stepAi.table.selectWithoutUnbound": "You open \"Select files…\" and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
+  "onboarding.stepAi.table.selectWithoutUnbound": "You open “Select files…” and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "description": "Comparison cell: how you select files without AI, when no shortcut key is bound, so it names the menu action instead. \"Select files…\" is the name of that action in the app (keep the trailing ellipsis character). <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated.",
+    "description": "Comparison cell: how you select files without AI, when no shortcut key is bound, so it names the menu action instead. “Select files…” is the name of that action in the app (keep the trailing ellipsis character). <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated.",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.table.selectWith": "You say \"select all image files\", agent suggests a selection, you review and apply at will.",
+  "onboarding.stepAi.table.selectWith": "You say “select all image files”, agent suggests a selection, you review and apply at will.",
   "@onboarding.stepAi.table.selectWith": {
     "description": "Comparison cell: how you select files with AI, by describing them. \"agent\" means the AI assistant. The quoted phrase is an example user request.",
     "screenshot": "onboarding-ai.png"
@@ -410,7 +410,7 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click \"{nextLabel}\" again to ignore this and go on.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click “{nextLabel}” again to ignore this and go on.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
     "description": "Warning shown on the Next button on the AI step when the user picked a cloud provider but stored no API key. The press doesn't advance; the next one does. Matter-of-fact, not scolding. <strong> bolds the way out, which is the sentence the user acts on. {nextLabel} is that button's own label, supplied from onboarding.wizard.next so the two can't drift; keep the quotes around it. \"API key\" is a technical credential term. \"above\" points at the provider setup higher up the same page. The blank line is a real paragraph break in the tooltip; keep it.",
     "placeholders": {
@@ -479,9 +479,9 @@
     "description": "Link text on the checklist row that opens Cmdr's page on the AlternativeTo software directory so the user can like it. \"Like\" is that site's own verb for an upvote. \"Cmdr\" and \"AlternativeTo\" are names and stay untranslated.",
     "screenshot": "onboarding-beta.png"
   },
-  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the \"Cmdr\" title. This helps people and Google notice Cmdr!",
+  "onboarding.stepBeta.checklist.alternativeToNote": "At the very top of the page, next to the “Cmdr” title. This helps people and Google notice Cmdr!",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "description": "Quieter explanation beside the AlternativeTo link: where the Like button is on that page, and why liking helps. \"Cmdr\" is the product name and \"Google\" is the search engine's name; both stay untranslated.",
+    "description": "Quieter explanation beside the AlternativeTo link: where the Like button is on that page, and why liking helps. “Cmdr” is the product name and \"Google\" is the search engine's name; both stay untranslated.",
     "screenshot": "onboarding-beta.png"
   },
   "onboarding.stepBeta.checklist.email": "Enter your email address <field></field> to get very occasional updates and questions",
@@ -600,14 +600,14 @@
     "description": "Title of the networking toggle on the optional-setup step (controls connecting to SMB network shares).",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.networking.summary": "Needs accepting \"Local Network\" once",
+  "onboarding.stepOptional.networking.summary": "Needs accepting “Local Network” once",
   "@onboarding.stepOptional.networking.summary": {
-    "description": "Half-line summary under the networking toggle's title, naming its one cost. The full explanation sits behind the info glyph beside the title. \"Local Network\" is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase: it's what the user has to go find. Keep it to one short line.",
+    "description": "Half-line summary under the networking toggle's title, naming its one cost. The full explanation sits behind the info glyph beside the title. “Local Network” is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase: it's what the user has to go find. Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow \"Local Network\", and one for \"Accepting incoming connections\".\nBoth dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
+  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
   "@onboarding.stepOptional.networking.desc": {
-    "description": "Long explanation of the networking toggle, shown in the tooltip behind its info glyph: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. \"Local Network\" is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase; it must match onboarding.stepOptional.networking.summary. \"Accepting incoming connections\" describes the firewall prompt rather than quoting a label, so translate it as prose. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
+    "description": "Long explanation of the networking toggle, shown in the tooltip behind its info glyph: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. “Local Network” is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase; it must match onboarding.stepOptional.networking.summary. “Accepting incoming connections” describes the firewall prompt rather than quoting a label, so translate it as prose. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
   },
   "onboarding.stepOptional.indexing.title": "Drive indexing",

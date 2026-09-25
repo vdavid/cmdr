@@ -55,9 +55,9 @@
   "@commands.selectionInvert.description": {
     "sourceHash": "b63ce32"
   },
-  "commands.handler.favoriteAdded": "Added \"{name}\" to favourites",
+  "commands.handler.favoriteAdded": "Added “{name}” to favourites",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
   "commands.handler.favoriteAddFailed": "Couldn't add that folder to favourites. Try again?",
   "@commands.handler.favoriteAddFailed": {

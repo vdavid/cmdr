@@ -3,13 +3,13 @@
   "@fileOperations.delete.noTrashWarningStrong": {
     "sourceHash": "ef122e2"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Some of your selection is online-only. Moving those to the Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Bin, but cloud services usually keep their own deleted files for about 30 days. Click \"Delete\" if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or unselect all online-only files.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Some of your selection is online-only. Moving those to the Bin would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Bin, but cloud services usually keep their own deleted files for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or unselect all online-only files.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Everything you selected is online-only. Moving it to the Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Bin, but cloud services usually keep their own deleted files for about 30 days. Click \"Delete\" if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Everything you selected is online-only. Moving it to the Bin would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Bin, but cloud services usually keep their own deleted files for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
   "fileOperations.delete.archiveWarningStrong": "There''s no Bin inside an archive.",
   "@fileOperations.delete.archiveWarningStrong": {

@@ -8,7 +8,7 @@
   "@servers.pinHint.title": {
     "description": "Title of a one-time notification, shown the first time five servers sit in the volume switcher's Network group. \"Network group\" is the heading in the switcher (the dropdown listing disks and servers) that servers are filed under; use the same wording as that heading. Friendly and factual, never a warning."
   },
-  "servers.pinHint.body": "Right-click a server and choose Unpin, or use \"{command}\" from the command palette. It stays in the Servers list.",
+  "servers.pinHint.body": "Right-click a server and choose Unpin, or use “{command}” from the command palette. It stays in the Servers list.",
   "@servers.pinHint.body": {
     "description": "Body of that notification: how to take a server out of the volume switcher, and the reassurance that unpinning loses nothing. \"Unpin\" must match the context-menu item menu.network.unpin word for word. \"Servers\" is the hub row in the switcher that lists every saved server. The command name arrives translated in {command}; keep the quotation marks your language uses around a UI label.",
     "placeholders": {

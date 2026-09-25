@@ -1098,7 +1098,7 @@
   "@fileExplorer.readOnly.deviceTitle": {
     "description": "Alert title shown when the user tries to copy/move files ONTO a read-only device."
   },
-  "fileExplorer.readOnly.deviceMessage": "\"{name}\" is read-only. You can copy files from it, but not to it.",
+  "fileExplorer.readOnly.deviceMessage": "“{name}” is read-only. You can copy files from it, but not to it.",
   "@fileExplorer.readOnly.deviceMessage": {
     "description": "Alert body explaining a device is read-only, so files can be copied off it but not onto it. {name} is the device''s display name, shown in quotes.",
     "placeholders": {
@@ -1132,7 +1132,7 @@
       "reason": "the validation message explaining what is wrong with the typed name"
     }
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. \"{name}\" kept its name.",
+  "fileExplorer.rename.chainKeptOriginalName": "{reason}. “{name}” kept its name.",
   "@fileExplorer.rename.chainKeptOriginalName": {
     "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and ONE of those renames didn''t apply (the typed name was unusable, or the name was already taken). The editor has already moved on to another file, so the toast names the file that kept its original name. {reason} is the reason, a full sentence without a closing period (for example \"Changing the file extension isn''t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"). {name} is the filename, shown in quotes. As soon as a second file keeps its name, this same toast is rewritten with fileExplorer.rename.chainKeptOriginalNameAndOthers, so the two read as one message that grows.",
     "placeholders": {
@@ -1140,7 +1140,7 @@
       "name": "the name the file still has"
     }
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. \"{name}\" kept its name, and so did {others, plural, one {one other file} other {{othersText} other files}}.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. “{name}” kept its name, and so did {others, plural, one {one other file} other {{othersText} other files}}.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
     "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and SEVERAL of those renames didn''t apply. It is the same single toast as fileExplorer.rename.chainKeptOriginalName, rewritten each time another file keeps its name: it names the most recent one and counts the earlier ones, so a long run can''t bury the user in toasts. {reason} is why the most recent rename didn''t apply, a full sentence without a closing period (for example \"Changing the file extension isn''t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"); it describes that one file only. {name} is that file''s name, shown in quotes. {othersText} is how many OTHER files kept their names, already formatted for display; it is always 1 or more.",
     "placeholders": {
@@ -1150,14 +1150,14 @@
       "others": "the same number of other files (drives the singular/plural form)"
     }
   },
-  "fileExplorer.rename.unconfirmed": "Couldn''t confirm the rename of \"{name}\". The volume may be slow, so the rename may still have gone through.",
+  "fileExplorer.rename.unconfirmed": "Couldn''t confirm the rename of “{name}”. The volume may be slow, so the rename may still have gone through.",
   "@fileExplorer.rename.unconfirmed": {
     "description": "Warning toast shown when a rename gets no answer from the volume in time (a slow network share or phone). The rename may well have succeeded on disk, so the message must never say the file kept its name; it says Cmdr couldn''t tell. Cmdr re-reads the folder right after, so the user will see which it was. {name} is the name the file had before the rename, shown in quotes. As soon as a second rename goes unanswered, this same toast is rewritten with fileExplorer.rename.unconfirmedAndOthers, so the two read as one message that grows.",
     "placeholders": {
       "name": "the name the file had before the rename"
     }
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Couldn''t confirm the rename of \"{name}\" and {others, plural, one {one other file} other {{othersText} other files}}. The volume may be slow, so the renames may still have gone through.",
+  "fileExplorer.rename.unconfirmedAndOthers": "Couldn''t confirm the rename of “{name}” and {others, plural, one {one other file} other {{othersText} other files}}. The volume may be slow, so the renames may still have gone through.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
     "description": "Warning toast shown when SEVERAL renames get no answer from the volume in time, which happens when the user renames a run of files by pressing the up/down arrow inside the inline rename editor and each rename is still waiting on a slow network share or phone. It is the same single toast as fileExplorer.rename.unconfirmed, rewritten each time another rename goes unanswered, so a long run can''t bury the user in toasts. The renames may well have succeeded on disk, so the message must never say the files kept their names. {name} is the name the most recent file had before its rename, shown in quotes. {othersText} is how many OTHER renames went unanswered, already formatted for display; it is always 1 or more.",
     "placeholders": {
@@ -1404,7 +1404,7 @@
       "count": "the same number of files a commit changed (drives the singular/plural form)"
     }
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} ahead, {behind, plural, one {{behindText} commit} other {{behindText} commits}} behind \"{vs}\"",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} ahead, {behind, plural, one {{behindText} commit} other {{behindText} commits}} behind “{vs}”",
   "@fileExplorer.git.tooltip.aheadBehind": {
     "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a branch row''s `+n / -n` cell in words. \"Ahead\" means this branch has commits the other one doesn''t; \"behind\" means the other one has commits this branch doesn''t. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
@@ -1429,14 +1429,14 @@
       "id": "the commit''s full identifier, a 40-character hexadecimal string"
     }
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Created on branch \"{branch}\"",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Created on branch “{branch}”",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
     "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a stash entry''s row: which branch the user was on when they set those changes aside. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
       "branch": "the branch name, for example \"main\" (a name, never translated)"
     }
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch \"{branch}\" is checked out",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Branch “{branch}” is checked out",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
     "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree''s row: which branch that worktree currently has open. \"Checked out\" is the git term for the branch a folder is showing. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
@@ -1477,9 +1477,9 @@
   "@fileExplorer.dateTooltip.lastOpened": {
     "description": "Label in a file''s date tooltip for when it was last opened."
   },
-  "fileExplorer.dateTooltip.lastMoved": "Last moved (\"added\")",
+  "fileExplorer.dateTooltip.lastMoved": "Last moved (“added”)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "description": "Label in a file''s date tooltip for when it was last moved into its folder. The parenthetical \"added\" is the macOS Finder term for the same timestamp; keep both."
+    "description": "Label in a file''s date tooltip for when it was last moved into its folder. The parenthetical “added” is the macOS Finder term for the same timestamp; keep both."
   },
   "fileExplorer.dateTooltip.lastModified": "Last modified",
   "@fileExplorer.dateTooltip.lastModified": {
@@ -1696,7 +1696,7 @@
     "description": "Title of the dialog shown when renaming a file to a name that already exists in the folder.",
     "screenshot": "rename-conflict-newer-and-larger.png"
   },
-  "fileExplorer.renameConflict.description": "\"{name}\" already exists in this folder. What would you like to do?",
+  "fileExplorer.renameConflict.description": "“{name}” already exists in this folder. What would you like to do?",
   "@fileExplorer.renameConflict.description": {
     "description": "Body of the rename-conflict dialog, naming the existing file and asking how to proceed. {name} is the existing file''s name, shown in quotes.",
     "placeholders": {
@@ -1755,7 +1755,7 @@
     "description": "Title of the dialog confirming a change to a file''s extension during rename.",
     "screenshot": "extension-change.png"
   },
-  "fileExplorer.extensionChange.description": "Are you sure you want to change the extension from \".{oldExt}\" to \".{newExt}\"? Your file may open in a different app next time you open it.",
+  "fileExplorer.extensionChange.description": "Are you sure you want to change the extension from “.{oldExt}” to “.{newExt}”? Your file may open in a different app next time you open it.",
   "@fileExplorer.extensionChange.description": {
     "description": "Body of the extension-change confirmation, warning that changing the extension may change which app opens the file. The leading dots are part of the displayed extensions.",
     "placeholders": {
@@ -1793,9 +1793,9 @@
     },
     "screenshot": "quick-look-hint.png"
   },
-  "fileExplorer.quickLookHint.finderComparison": "If you come from Finder, this might be unusual because Finder triggers a \"Quick preview\" action on <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "If you come from Finder, this might be unusual because Finder triggers a “Quick preview” action on <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "description": "Second line of the Finder-convert toast, contrasting Cmdr with Finder. The <space></space> tag wraps an inline Space-key chip. \"Finder\" is the macOS file manager and \"Quick preview\" its feature; keep both. Reorder words naturally but keep the chip.",
+    "description": "Second line of the Finder-convert toast, contrasting Cmdr with Finder. The <space></space> tag wraps an inline Space-key chip. \"Finder\" is the macOS file manager and “Quick preview” its feature; keep both. Reorder words naturally but keep the chip.",
     "placeholders": {
       "space": "marks where the Space-key chip is shown inline; carries no translatable text"
     },
@@ -1940,7 +1940,7 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "description": "Hover tooltip on the connection indicator of a network volume that is connected directly (the fast path)."
   },
-  "fileExplorer.navigation.connectionTooltipSystem": "Using system connection. Use the \"Connect directly for faster access\" menu item for faster access.",
+  "fileExplorer.navigation.connectionTooltipSystem": "Using system connection. Use the “Connect directly for faster access” menu item for faster access.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
     "description": "Hover tooltip on the connection indicator of a network volume mounted via the OS (slower path), pointing the user at the menu item that upgrades to a direct connection. The quoted menu item label must match the menu item exactly.",
     "screenshot": "pane-volume-chooser.png"
@@ -1970,7 +1970,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "description": "Persistent progress toast shown while connecting to a network share using the password macOS already saved."
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for \"{displayName}\". You''ll see a system prompt asking to allow Keychain access. That''s expected, so click Allow.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for “{displayName}”. You''ll see a system prompt asking to allow Keychain access. That''s expected, so click Allow.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "description": "Body of the confirmation dialog offering to reuse a network share''s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can''t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt — localize both to the terms your macOS uses (Apple localizes Keychain Access and the Allow button), per the Term-choice principles.",
     "placeholders": {

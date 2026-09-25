@@ -32,14 +32,14 @@
     "screenshot": "delete-confirmation-no-trash-support.png"
   },
 
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Some of your selection is online-only. Moving those to the Trash would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click \"Delete\" if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Some of your selection is online-only. Moving those to the Trash would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "description": "Warning banner in the delete dialog, shown when the person pressed the \"move to trash\" key over a selection where SOME items are online-only and the rest aren't. Online-only means the file lives in a cloud-storage folder (Dropbox, Google Drive, OneDrive, …) and the provider has evicted its contents to its own servers, leaving a placeholder on the Mac; \"online-only\" is Apple's Finder term, so prefer your platform's own existing wording for it. Four facts, all of which matter: (1) the Trash lives on the Mac, so putting an online-only file there would download it from the cloud service first; (2) because one gesture can't be half a trash and half a delete, Cmdr offers to delete the WHOLE selection permanently; (3) there will be NO copies in the macOS Trash afterwards, though the cloud service keeps its own deleted-files history (Dropbox keeps 30 days) to restore from — don't soften this into \"it goes to the trash anyway\", it does not; (4) two ways out, both real in Cmdr: make the files available offline (the provider's own download action, in Cmdr's right-click menu — don't name that menu item, its label comes from the provider), or deselect the online-only files (Cmdr badges them in the file pane). <strong> bolds \"download them first\" and \"delete\". \"Delete\" in quotes is the confirm button's own label: use the same word you translated fileOperations.delete.confirmDelete to. \"Click\" is deliberate even though Enter works too. \"Trash\" is the macOS Trash the Finder uses; the lowercase \"their own trash\" is the cloud service's, not Apple's.",
+    "description": "Warning banner in the delete dialog, shown when the person pressed the \"move to trash\" key over a selection where SOME items are online-only and the rest aren't. Online-only means the file lives in a cloud-storage folder (Dropbox, Google Drive, OneDrive, …) and the provider has evicted its contents to its own servers, leaving a placeholder on the Mac; \"online-only\" is Apple's Finder term, so prefer your platform's own existing wording for it. Four facts, all of which matter: (1) the Trash lives on the Mac, so putting an online-only file there would download it from the cloud service first; (2) because one gesture can't be half a trash and half a delete, Cmdr offers to delete the WHOLE selection permanently; (3) there will be NO copies in the macOS Trash afterwards, though the cloud service keeps its own deleted-files history (Dropbox keeps 30 days) to restore from — don't soften this into \"it goes to the trash anyway\", it does not; (4) two ways out, both real in Cmdr: make the files available offline (the provider's own download action, in Cmdr's right-click menu — don't name that menu item, its label comes from the provider), or deselect the online-only files (Cmdr badges them in the file pane). <strong> bolds \"download them first\" and \"delete\". “Delete” in quotes is the confirm button's own label: use the same word you translated fileOperations.delete.confirmDelete to. \"Click\" is deliberate even though Enter works too. \"Trash\" is the macOS Trash the Finder uses; the lowercase \"their own trash\" is the cloud service's, not Apple's.",
     "screenshot": "delete-confirm.png",
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Everything you selected is online-only. Moving it to the Trash would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click \"Delete\" if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Everything you selected is online-only. Moving it to the Trash would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "description": "The same warning banner as fileOperations.delete.cloudOnlineOnlyMixedWarning (read its description for every term and fact), for the case where EVERY selected item is online-only. Keep the two in one voice; they differ in two places only: this one says the whole selection is online-only, and it offers just one way out, since \"deselect the online-only files\" would leave nothing selected.",
     "screenshot": "delete-confirm.png",
@@ -417,9 +417,9 @@
     "screenshotNote": "The copy/move dialog, pictured here. Your string replaces the free-space line next to the destination picker when the destination has no size limit, such as a cloud account with no quota."
   },
 
-  "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use \"Connect directly\" in the volume picker for faster transfers and reliable cancel.",
+  "fileOperations.transferDialog.smbNativeNote": "This share uses the system connection. Cancellation may be delayed. Use “Connect directly” in the volume picker for faster transfers and reliable cancel.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that canceling a transfer may lag. Keep the quoted \"Connect directly\" matching that picker action's label."
+    "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that canceling a transfer may lag. Keep the quoted “Connect directly” matching that picker action's label."
   },
 
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "This folder doesn''t exist yet. Cmdr will create it during the copy.",
@@ -629,7 +629,7 @@
     "screenshot": "transfer-confirmation-copy.png"
   },
 
-  "fileOperations.transferDialog.pathErrorSubfolder": "Can''t {verb, select, copy {copy} other {move}} \"{name}\" into its own subfolder",
+  "fileOperations.transferDialog.pathErrorSubfolder": "Can''t {verb, select, copy {copy} other {move}} “{name}” into its own subfolder",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
     "description": "Validation error under the destination-path field when the chosen destination is inside the item being transferred. The verb matches the operation (copy/move). The name is the source folder/file name, kept in straight double quotes.",
     "placeholders": {
@@ -638,7 +638,7 @@
     }
   },
 
-  "fileOperations.transferDialog.pathErrorAlreadyThere": "\"{name}\" is already in this location",
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "“{name}” is already in this location",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
     "description": "Validation error under the destination-path field when the destination is the item's current parent folder, so the transfer would be a no-op. The name is kept in straight double quotes.",
     "placeholders": {
@@ -646,7 +646,7 @@
     }
   },
 
-  "fileOperations.transferDialog.pathErrorNotZip": "The archive name must end in \".zip\".",
+  "fileOperations.transferDialog.pathErrorNotZip": "The archive name must end in “.zip”.",
   "@fileOperations.transferDialog.pathErrorNotZip": {
     "description": "Validation error under the destination-path field in the Compress dialog when the typed target file name doesn't end in the .zip extension. Cmdr only creates zip archives for now. Keep \".zip\" in straight double quotes."
   },
@@ -1556,7 +1556,7 @@
     "screenshot": "archive-password-first-attempt.png"
   },
 
-  "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can''t contain \"/\" or null characters} other {Filename can''t contain \"/\" or null characters}}",
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can''t contain “/” or null characters} other {Filename can''t contain “/” or null characters}}",
   "@fileOperations.validation.disallowedChars": {
     "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name includes a slash or a null character (both forbidden on the file system). The \"/\" is a literal slash character and must stay as-is. Write each branch as a complete, natural sentence for a file versus a folder (the noun and its agreement differ across languages).",
     "placeholders": {
@@ -1592,7 +1592,7 @@
     }
   },
 
-  "fileOperations.validation.extensionChangeBlocked": "Changing the file extension isn''t allowed (was \"{oldExt}\")",
+  "fileOperations.validation.extensionChangeBlocked": "Changing the file extension isn''t allowed (was “{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
     "description": "Inline validation message shown live while renaming a file, when the user changed the file extension but their setting forbids extension changes. \"{oldExt}\" is the original extension WITH its leading dot (e.g. \".txt\"); it''s the user''s own filename text, so keep it verbatim and structure the sentence to tolerate any extension.",
     "placeholders": {
@@ -1600,7 +1600,7 @@
     }
   },
 
-  "fileOperations.validation.conflict": "\"{name}\" already exists in this folder",
+  "fileOperations.validation.conflict": "“{name}” already exists in this folder",
   "@fileOperations.validation.conflict": {
     "description": "Inline validation WARNING (not a hard error) shown live while renaming or creating, when a file or folder with the same name already exists in the target folder (matching is case-insensitive). \"{name}\" is the name the user typed; it''s uncontrolled user text, so keep it verbatim and structure the sentence to tolerate any name, casing, or length.",
     "placeholders": {

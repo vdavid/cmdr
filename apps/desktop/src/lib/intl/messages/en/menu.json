@@ -546,7 +546,7 @@
     "description": "VERB phrase (imperative). A file's right-click menu: selects the file under the cursor if it isn't selected, unselects it if it is (Space). \"Toggle\" is the flip-either-way sense. It sits in its own group so the Space shortcut is discoverable."
   },
 
-  "menu.context.copyNamed": "Copy \"{name}\"",
+  "menu.context.copyNamed": "Copy “{name}”",
   "@menu.context.copyNamed": {
     "description": "VERB (imperative). A file's right-click menu: puts that one file's name on the clipboard, showing the name so the user sees exactly what they'll get. This is Finder's own \"Copy \"photo.jpg\"\" item; match your Finder's phrasing and its quotation marks. Keep the {name} token exactly as written, braces included; it is replaced literally, with no formatting.",
     "placeholders": {
@@ -634,7 +634,7 @@
 
   "menu.tag.red": "Red",
   "@menu.tag.red": {
-    "description": "COLOR NAME. One of the seven macOS Finder tag colors in a file's right-click menu, drawn as a colored circle in the tag row; clicking it tags or untags the selection. The name appears in three places: it's what a screen reader announces for the circle, it's the label of the plain menu item shown where the row can't be, and it's quoted inside menu.tag.addNamed and menu.tag.removeNamed (\"Add \"Red\"\"). Use the exact name macOS uses for this tag color in this language, so it matches what Finder shows, in its bare form so it also reads well between quotation marks."
+    "description": "COLOR NAME. One of the seven macOS Finder tag colors in a file's right-click menu, drawn as a colored circle in the tag row; clicking it tags or untags the selection. The name appears in three places: it's what a screen reader announces for the circle, it's the label of the plain menu item shown where the row can't be, and it's quoted inside menu.tag.addNamed and menu.tag.removeNamed (\"Add “Red”\"). Use the exact name macOS uses for this tag color in this language, so it matches what Finder shows, in its bare form so it also reads well between quotation marks."
   },
 
   "menu.tag.orange": "Orange",
@@ -672,17 +672,17 @@
     "description": "NOUN (plural). macOS only. The small gray caption under the row of seven tag-color circles in a file's right-click menu, shown while the pointer isn't on any circle. It names the row like a heading; it isn't a command, so it takes no ellipsis. While a circle is hovered, menu.tag.addNamed or menu.tag.removeNamed replaces it. Use your Finder's word for \"Tags\" (its \"Tags…\" menu item, without the ellipsis)."
   },
 
-  "menu.tag.addNamed": "Add \"{color}\"",
+  "menu.tag.addNamed": "Add “{color}”",
   "@menu.tag.addNamed": {
-    "description": "VERB (imperative). macOS only. The small gray caption under the row of tag-color circles in a file's right-click menu, shown while the pointer is on a color that isn't on every selected file yet; clicking that circle adds the tag to the files that lack it. This is Finder's own \"Add \"Green\"\" caption under its tag row; match your Finder's phrasing and its quotation marks. Its opposite is menu.tag.removeNamed, and the two must read as a pair. Keep the {color} token exactly as written, braces included; it is replaced literally, with no formatting.",
+    "description": "VERB (imperative). macOS only. The small gray caption under the row of tag-color circles in a file's right-click menu, shown while the pointer is on a color that isn't on every selected file yet; clicking that circle adds the tag to the files that lack it. This is Finder's own \"Add “Green”\" caption under its tag row; match your Finder's phrasing and its quotation marks. Its opposite is menu.tag.removeNamed, and the two must read as a pair. Keep the {color} token exactly as written, braces included; it is replaced literally, with no formatting.",
     "placeholders": {
       "color": "the tag color's name exactly as this language translates menu.tag.red … menu.tag.gray (e.g. \"Green\"); it's inserted unchanged, so it can't take a case ending or an article"
     }
   },
 
-  "menu.tag.removeNamed": "Remove \"{color}\"",
+  "menu.tag.removeNamed": "Remove “{color}”",
   "@menu.tag.removeNamed": {
-    "description": "VERB (imperative). macOS only. The small gray caption under the row of tag-color circles in a file's right-click menu, shown while the pointer is on a color every selected file already has; clicking that circle removes the tag from all of them. This is Finder's own \"Remove \"Green\"\" caption under its tag row; match your Finder's phrasing and its quotation marks. Its opposite is menu.tag.addNamed, and the two must read as a pair. Keep the {color} token exactly as written, braces included; it is replaced literally, with no formatting.",
+    "description": "VERB (imperative). macOS only. The small gray caption under the row of tag-color circles in a file's right-click menu, shown while the pointer is on a color every selected file already has; clicking that circle removes the tag from all of them. This is Finder's own \"Remove “Green”\" caption under its tag row; match your Finder's phrasing and its quotation marks. Its opposite is menu.tag.addNamed, and the two must read as a pair. Keep the {color} token exactly as written, braces included; it is replaced literally, with no formatting.",
     "placeholders": {
       "color": "the tag color's name exactly as this language translates menu.tag.red … menu.tag.gray (e.g. \"Green\"); it's inserted unchanged, so it can't take a case ending or an article"
     }

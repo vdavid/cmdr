@@ -4,9 +4,9 @@
     "description": "Label for the app-language picker in Settings > Appearance > Colors and formats. Lets the user choose which language Cmdr's interface uses.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.appearance.language.description": "Choose the language Cmdr uses. \"System default\" follows your Mac's language.",
+  "settings.appearance.language.description": "Choose the language Cmdr uses. “System default” follows your Mac's language.",
   "@settings.appearance.language.description": {
-    "description": "Help text under the language picker in Settings > Appearance. \"Cmdr\" is the product name; do not translate it. \"System default\" must match the wording of the settings.appearance.language.opt.system option below.",
+    "description": "Help text under the language picker in Settings > Appearance. \"Cmdr\" is the product name; do not translate it. “System default” must match the wording of the settings.appearance.language.opt.system option below.",
     "screenshot": "settings-appearance.png"
   },
   "settings.appearance.language.opt.system": "System default",
@@ -216,7 +216,7 @@
     "description": "Label for the text-size slider in Settings > Appearance > Zoom and density.",
     "screenshot": "settings-appearance-zoom.png"
   },
-  "settings.appearance.textSize.description": "Scales text and UI throughout the app. Compounds with the macOS Accessibility text size, where 100% means \"exactly the system size\".",
+  "settings.appearance.textSize.description": "Scales text and UI throughout the app. Compounds with the macOS Accessibility text size, where 100% means “exactly the system size”.",
   "@settings.appearance.textSize.description": {
     "description": "Help text for the text-size slider. Notes it multiplies with the macOS Accessibility text-size setting, so 100% equals the current system size. \"100%\" is a literal value; keep the percent sign.",
     "screenshot": "settings-appearance-zoom.png"
@@ -1175,9 +1175,9 @@
       }
     }
   },
-  "settings.ai.cloudConsent.lockedHint": "Turn on \"Allow cloud AI\" above to set up a service.",
+  "settings.ai.cloudConsent.lockedHint": "Turn on “Allow cloud AI” above to set up a service.",
   "@settings.ai.cloudConsent.lockedHint": {
-    "description": "Hint above the dimmed, locked service setup in Settings > AI > Provider while the Allow cloud AI switch is off. \"Allow cloud AI\" is the switch label (ai.cloudConsent.label); translate it the same way."
+    "description": "Hint above the dimmed, locked service setup in Settings > AI > Provider while the Allow cloud AI switch is off. “Allow cloud AI” is the switch label (ai.cloudConsent.label); translate it the same way."
   },
   "settings.ai.cloudProvider.description": "Which cloud AI service to use.",
   "@settings.ai.cloudProvider.description": {
@@ -1325,18 +1325,18 @@
     "description": "Label for the toggle enabling USB device support. \"Kindle\" is a product name; \"PTP\" and \"MTP\" are USB device protocol abbreviations; keep all three as-is. In Settings > File systems > MTP.",
     "screenshot": "settings-file-systems-mtp.png"
   },
-  "settings.fileOperations.mtpEnabled.description": "Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you''ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to \"File transfer\", \"Android Auto\", or similar. (Varies by device.)",
+  "settings.fileOperations.mtpEnabled.description": "Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you''ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to “File transfer”, “Android Auto”, or similar. (Varies by device.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "description": "Help text for the MTP toggle. \"Android\" and \"Android Auto\" are product names; keep them. \"Settings > USB Preferences\", \"File transfer\", and \"Android Auto\" are on-phone Android menu labels quoted as examples; translate the descriptive parts but note these vary by device. \"USB\" is a connector name; keep it.",
+    "description": "Help text for the MTP toggle. \"Android\" and “Android Auto” are product names; keep them. \"Settings > USB Preferences\", “File transfer”, and “Android Auto” are on-phone Android menu labels quoted as examples; translate the descriptive parts but note these vary by device. \"USB\" is a connector name; keep it.",
     "screenshot": "settings-file-systems-mtp.png"
   },
   "settings.fileOperations.adbEnabled.label": "Android file access over ADB",
   "@settings.fileOperations.adbEnabled.label": {
     "description": "Label for the toggle enabling Android Debug Bridge support. \"Android\" is a product name and \"ADB\" is the abbreviation for Android Debug Bridge; keep both as-is. In Settings > File systems > Android (ADB)."
   },
-  "settings.fileOperations.adbEnabled.description": "Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can''t show you. Needs the Android platform tools (the \"adb\" command) on this Mac. Leaving this on costs nothing when you have no Android tooling installed.",
+  "settings.fileOperations.adbEnabled.description": "Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can''t show you. Needs the Android platform tools (the “adb” command) on this Mac. Leaving this on costs nothing when you have no Android tooling installed.",
   "@settings.fileOperations.adbEnabled.description": {
-    "description": "Help text for the ADB toggle. \"USB debugging\" and \"platform tools\" are labels the reader has to find on their own phone and in Google’s own docs, so render them the way the vendor’s localized Android shows them in your language, ❌ never keep the English. \"Android\", \"MTP\", and the command name \"adb\" stay as-is."
+    "description": "Help text for the ADB toggle. \"USB debugging\" and \"platform tools\" are labels the reader has to find on their own phone and in Google’s own docs, so render them the way the vendor’s localized Android shows them in your language, ❌ never keep the English. \"Android\", \"MTP\", and the command name “adb” stay as-is."
   },
   "settings.fileOperations.adbBinaryPath.label": "Location of adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1460,9 +1460,9 @@
   "@settings.whatsNew.lastSeenVersion.label": {
     "description": "Internal, hidden-from-UI label for the stored last-shown changelog version. Surfaces only in settings search."
   },
-  "settings.whatsNew.lastSeenVersion.description": "Internal: the version we last showed in the \"What’s new\" popup. Advances silently on every launch so re-enabling the popup never replays a months-deep backlog. Hidden from the UI.",
+  "settings.whatsNew.lastSeenVersion.description": "Internal: the version we last showed in the “What’s new” popup. Advances silently on every launch so re-enabling the popup never replays a months-deep backlog. Hidden from the UI.",
   "@settings.whatsNew.lastSeenVersion.description": {
-    "description": "Internal help text for the last-seen-version flag (not user-facing). \"What’s new\" is the Cmdr popup name; translate consistently with the what's-new copy elsewhere. The apostrophe is curly (U+2019)."
+    "description": "Internal help text for the last-seen-version flag (not user-facing). “What’s new” is the Cmdr popup name; translate consistently with the what's-new copy elsewhere. The apostrophe is curly (U+2019)."
   },
   "settings.analytics.enabled.label": "Send usage stats",
   "@settings.analytics.enabled.label": {
@@ -1589,9 +1589,9 @@
     "description": "Advanced-section label for the number input setting how many recently closed tabs to keep per pane. \"pane\" is one of the two file lists.",
     "screenshot": "settings-advanced.png"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "How many recently closed tabs to keep per pane for \"Reopen closed tab\" (⌘⇧T). Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "How many recently closed tabs to keep per pane for “Reopen closed tab” (⌘⇧T). Higher values let you reopen further back in history; lower values free up memory sooner. Only applies to tabs closed in the current session.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "description": "Help text for the closed-tab-history-size setting. \"Reopen closed tab\" is a Cmdr command name; translate consistently with that command. \"⌘⇧T\" is a macOS shortcut glyph string (Command-Shift-T); keep the glyphs as-is. \"pane\" is one of the two file lists.",
+    "description": "Help text for the closed-tab-history-size setting. “Reopen closed tab” is a Cmdr command name; translate consistently with that command. \"⌘⇧T\" is a macOS shortcut glyph string (Command-Shift-T); keep the glyphs as-is. \"pane\" is one of the two file lists.",
     "screenshot": "settings-advanced.png"
   },
   "settings.advanced.dragThreshold.label": "Drag threshold",
@@ -1675,7 +1675,7 @@
     "description": "Advanced-section label for the toggle that shows macOS safe-save scratch files other apps leave while saving.",
     "screenshot": "settings-advanced.png"
   },
-  "settings.advanced.showSafeSaveFiles.description": "When apps like TextEdit and Preview save a file, macOS writes the new version alongside it under a temporary name (ending in \".sb-\") and swaps it in. Turn this off to keep those out of the file list.",
+  "settings.advanced.showSafeSaveFiles.description": "When apps like TextEdit and Preview save a file, macOS writes the new version alongside it under a temporary name (ending in “.sb-”) and swaps it in. Turn this off to keep those out of the file list.",
   "@settings.advanced.showSafeSaveFiles.description": {
     "description": "Help text for the show-safe-save-files toggle (advanced). \"macOS\" is a brand name (keep it), and \".sb-\" is a literal filename fragment (keep it exactly). \"TextEdit\" and \"Preview\" are Apple''s apps, and macOS localizes their names (for example fr \"Aperçu\", zh \"文本编辑\" and \"预览\"): use the names your language''s macOS shows (check the reference pile or the app bundle).",
     "screenshot": "settings-advanced.png"
@@ -1742,7 +1742,7 @@
   "@settings.onboarding.upgradeNudgeShown.label": {
     "description": "Internal, hidden-from-UI label for a flag tracking whether a one-time onboarding nudge toast fired. Surfaces only in settings search. \"nudge\" = a gentle prompt."
   },
-  "settings.onboarding.upgradeNudgeShown.description": "Internal: tracks whether the one-time \"the Onboarding menu item now exists\" toast has fired for an existing user after the wizard revamp. Hidden from the UI.",
+  "settings.onboarding.upgradeNudgeShown.description": "Internal: tracks whether the one-time “the Onboarding menu item now exists” toast has fired for an existing user after the wizard revamp. Hidden from the UI.",
   "@settings.onboarding.upgradeNudgeShown.description": {
     "description": "Internal help text for the upgrade-nudge flag (not user-facing). \"Onboarding\" is the Cmdr setup-wizard feature name; \"toast\" = a small transient notification."
   },
@@ -1924,14 +1924,14 @@
     "description": "Label of the switch that hands the macOS \"Show in Finder\" command to Cmdr, in Settings > Behavior > Navigation & file ops. \"Cmdr\" is the product name; keep it. Addressed to the user, describing what turning the switch on allows.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.revealHandler.description": "When another app runs \"Show in Finder\", Cmdr opens that folder with the file under the cursor. Finder stays your default file manager everywhere else.",
+  "settings.revealHandler.description": "When another app runs “Show in Finder”, Cmdr opens that folder with the file under the cursor. Finder stays your default file manager everywhere else.",
   "@settings.revealHandler.description": {
-    "description": "Help text under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops. Two sentences: what the switch does, then the honest limit (this does NOT make Cmdr replace Finder; double-clicking a folder still opens Finder). \"Show in Finder\" is the macOS command name and \"Finder\" the macOS file manager; use your locale's macOS wording for both. \"Cmdr\" is the product name; keep it. \"cursor\" = the highlighted row in a Cmdr file pane.",
+    "description": "Help text under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops. Two sentences: what the switch does, then the honest limit (this does NOT make Cmdr replace Finder; double-clicking a folder still opens Finder). “Show in Finder” is the macOS command name and \"Finder\" the macOS file manager; use your locale's macOS wording for both. \"Cmdr\" is the product name; keep it. \"cursor\" = the highlighted row in a Cmdr file pane.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.revealHandler.heldByOtherApp": "Currently: {app}. Turning this on hands \"Show in Finder\" to Cmdr.",
+  "settings.revealHandler.heldByOtherApp": "Currently: {app}. Turning this on hands “Show in Finder” to Cmdr.",
   "@settings.revealHandler.heldByOtherApp": {
-    "description": "Status line under the \"Let other apps show files in Cmdr\" switch, shown when a third app (Path Finder, ForkLift, and the like) currently receives the macOS \"Show in Finder\" command. Says who has it and that turning the switch on takes it over. \"Show in Finder\" is the macOS command name; use your locale's macOS wording. \"Cmdr\" is the product name; keep it.",
+    "description": "Status line under the \"Let other apps show files in Cmdr\" switch, shown when a third app (Path Finder, ForkLift, and the like) currently receives the macOS “Show in Finder” command. Says who has it and that turning the switch on takes it over. “Show in Finder” is the macOS command name; use your locale's macOS wording. \"Cmdr\" is the product name; keep it.",
     "placeholders": {
       "app": {
         "description": "Name of the app that currently receives \"Show in Finder\", for example \"Path Finder\". Falls back to that app's raw bundle identifier (like com.cocoatech.PathFinder) when the app isn't installed any more. Never translated."
@@ -1939,17 +1939,17 @@
     },
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.revealHandler.uninstallWarning": "<lead>Before you uninstall Cmdr, switch this off.</lead> macOS keeps sending \"Show in Finder\" here, and with Cmdr gone those clicks quietly do nothing.",
+  "settings.revealHandler.uninstallWarning": "<lead>Before you uninstall Cmdr, switch this off.</lead> macOS keeps sending “Show in Finder” here, and with Cmdr gone those clicks quietly do nothing.",
   "@settings.revealHandler.uninstallWarning": {
-    "description": "Warning under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops, shown only while the switch is ON. macOS remembers the choice in a system-wide setting that nothing clears when an app is deleted, and it does NOT fall back to Finder, so deleting Cmdr while this is on breaks \"Show in Finder\" in every app until the user turns it off first. The <lead> tag makes the first sentence bold; keep the tag around whichever words start the sentence in your locale. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both as your locale's macOS spells them."
+    "description": "Warning under the \"Let other apps show files in Cmdr\" switch in Settings > Behavior > Navigation & file ops, shown only while the switch is ON. macOS remembers the choice in a system-wide setting that nothing clears when an app is deleted, and it does NOT fall back to Finder, so deleting Cmdr while this is on breaks “Show in Finder” in every app until the user turns it off first. The <lead> tag makes the first sentence bold; keep the tag around whichever words start the sentence in your locale. “Show in Finder” is the macOS command name and \"Cmdr\" the product name; keep both as your locale's macOS spells them."
   },
-  "settings.revealHandler.notInApplications": "Move Cmdr to your Applications folder to switch this on. From where it runs now, moving or deleting Cmdr would leave every \"Show in Finder\" click pointing at nothing.",
+  "settings.revealHandler.notInApplications": "Move Cmdr to your Applications folder to switch this on. From where it runs now, moving or deleting Cmdr would leave every “Show in Finder” click pointing at nothing.",
   "@settings.revealHandler.notInApplications": {
-    "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this copy of Cmdr is running from somewhere other than an Applications folder (the Downloads folder, a mounted disk image, or the read-only copy macOS makes for a freshly downloaded app). Says what to do first, then why. \"Applications folder\" is the macOS folder of that name; use your locale's macOS name for it. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both."
+    "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this copy of Cmdr is running from somewhere other than an Applications folder (the Downloads folder, a mounted disk image, or the read-only copy macOS makes for a freshly downloaded app). Says what to do first, then why. \"Applications folder\" is the macOS folder of that name; use your locale's macOS name for it. “Show in Finder” is the macOS command name and \"Cmdr\" the product name; keep both."
   },
-  "settings.revealHandler.notProductionBuild": "Only a released copy of Cmdr can switch this on. Dev and test builds come and go, and deleting one would leave every \"Show in Finder\" click pointing at nothing.",
+  "settings.revealHandler.notProductionBuild": "Only a released copy of Cmdr can switch this on. Dev and test builds come and go, and deleting one would leave every “Show in Finder” click pointing at nothing.",
   "@settings.revealHandler.notProductionBuild": {
-    "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this is a development or automated-test build of Cmdr rather than a released one. Mostly seen by people who build Cmdr themselves. Says who can switch it on, then why. \"Dev and test builds\" means builds made while developing and testing Cmdr. \"Show in Finder\" is the macOS command name and \"Cmdr\" the product name; keep both.",
+    "description": "Tooltip on the \"Let other apps show files in Cmdr\" row in Settings > Behavior > Navigation & file ops, shown while the switch is disabled because this is a development or automated-test build of Cmdr rather than a released one. Mostly seen by people who build Cmdr themselves. Says who can switch it on, then why. \"Dev and test builds\" means builds made while developing and testing Cmdr. “Show in Finder” is the macOS command name and \"Cmdr\" the product name; keep both.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.textEditorApp.label": "Edit files in",
@@ -1957,9 +1957,9 @@
     "description": "Label of the dropdown that picks which app F4 (edit) opens files in, in the Text editor card of Settings > Behavior > Navigation & file ops. The sentence continues in the dropdown beside it, which names an app: \"Edit files in [Sublime Text]\" or \"Edit files in [System default (TextEdit)]\". If your language can't continue a label into an app name, a noun label like \"Editor app\" is fine.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.behavior.textEditorApp.description": "Cmdr lists the text editors macOS knows about on this Mac. To use a different app, pick \"Choose an app…\".",
+  "settings.behavior.textEditorApp.description": "Cmdr lists the text editors macOS knows about on this Mac. To use a different app, pick “Choose an app…”.",
   "@settings.behavior.textEditorApp.description": {
-    "description": "Helper text under the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is what macOS itself reports as text editors on this Mac, and there's a way to pick any other app. \"Choose an app…\" is the last row of that same dropdown and matches the terminal row below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key. \"Cmdr\" is the product name and \"macOS\" the system name; keep both.",
+    "description": "Helper text under the \"Edit files in\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is what macOS itself reports as text editors on this Mac, and there's a way to pick any other app. “Choose an app…” is the last row of that same dropdown and matches the terminal row below it, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key. \"Cmdr\" is the product name and \"macOS\" the system name; keep both.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.textEditorApp.systemDefault": "System default ({app})",
@@ -2001,9 +2001,9 @@
     "description": "Label of the dropdown that picks which terminal app the \"Open terminal here\" action launches, in Settings > Behavior > Navigation & file ops. \"Open terminal here\" is Cmdr's own command name (it opens a terminal at the folder you're looking at), so translate it the same way as the command of that name. The sentence continues in the dropdown beside it, which names an app: \"Open terminal here uses [Ghostty]\".",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.behavior.openTerminalHereApp.description": "Cmdr lists the terminal apps it finds on this Mac. To use one it doesn''t know, pick \"Choose an app…\".",
+  "settings.behavior.openTerminalHereApp.description": "Cmdr lists the terminal apps it finds on this Mac. To use one it doesn''t know, pick “Choose an app…”.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "description": "Helper text under the \"Open terminal here uses\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is built from what's installed right now, and there's a way out for an app Cmdr doesn't carry a recipe for. \"Choose an app…\" is the last row of that same dropdown, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key.",
+    "description": "Helper text under the \"Open terminal here uses\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is built from what's installed right now, and there's a way out for an app Cmdr doesn't carry a recipe for. “Choose an app…” is the last row of that same dropdown, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "Choose an app…",
@@ -2071,7 +2071,7 @@
   "@settings.behavior.revealNudgeOfferedAt.label": {
     "description": "Internal, never shown in the UI: records when the one-time offer to open \"Show in Finder\" in Cmdr was made."
   },
-  "settings.behavior.revealNudgeOfferedAt.description": "When the one-time offer to open \"Show in Finder\" in Cmdr was made.",
+  "settings.behavior.revealNudgeOfferedAt.description": "When the one-time offer to open “Show in Finder” in Cmdr was made.",
   "@settings.behavior.revealNudgeOfferedAt.description": {
     "description": "Internal, never shown in the UI. Pairs with the Show in Finder offer label."
   },
@@ -2079,7 +2079,7 @@
   "@settings.behavior.revealActivationNoticeSeen.label": {
     "description": "Internal, never shown in the UI: tracks whether the one-time notice about the first \"Show in Finder\" landing in Cmdr has been shown."
   },
-  "settings.behavior.revealActivationNoticeSeen.description": "Whether the notice about the first \"Show in Finder\" landing in Cmdr has been shown.",
+  "settings.behavior.revealActivationNoticeSeen.description": "Whether the notice about the first “Show in Finder” landing in Cmdr has been shown.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
     "description": "Internal, never shown in the UI. Pairs with the first reveal notice label."
   },
