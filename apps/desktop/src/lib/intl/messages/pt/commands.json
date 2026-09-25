@@ -764,9 +764,9 @@
   "@commands.paletteClose.label": {
     "sourceHash": "2e75050"
   },
-  "commands.handler.favoriteAdded": "\"{name}\" adicionado aos favoritos",
+  "commands.handler.favoriteAdded": "“{name}” adicionado aos favoritos",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
   "commands.handler.favoriteAddFailed": "Não foi possível adicionar essa pasta aos favoritos. Tentar de novo?",
   "@commands.handler.favoriteAddFailed": {

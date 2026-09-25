@@ -448,7 +448,7 @@
   },
   "menu.context.copyNamed": "Copiar “{name}”",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "Adicionar aos favoritos",
   "@menu.context.addToFavorites": {
@@ -544,11 +544,11 @@
   },
   "menu.tag.addNamed": "Adicionar “{color}”",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
   "menu.tag.removeNamed": "Remover “{color}”",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "Adicionar às pastas indexadas",
   "@menu.mediaIndex.addFolder": {

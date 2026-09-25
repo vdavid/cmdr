@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Clique em um servidor com o botão direito e escolha Desafixar, ou use “{command}” na paleta de comandos. O servidor continua na lista Servidores.",
   "@servers.pinHint.body": {
-    "sourceHash": "0663b02"
+    "sourceHash": "e47522b"
   },
   "servers.pinHint.gotIt": "Entendi",
   "@servers.pinHint.gotIt": {

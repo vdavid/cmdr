@@ -259,7 +259,7 @@
   "@errors.listing.readOnlyVolumeErrno.explanation": {
     "sourceHash": "cb19e8c"
   },
-  "errors.listing.readOnlyVolumeErrno.suggestion": "Veja o que tentar:\n- Se o dispositivo tiver uma chave física de proteção contra gravação (comum em cartões SD), desligue-a\n- Se for uma imagem de disco, monte-a de novo com acesso de gravação\n- Caso contrário, copie os arquivos para um local gravável primeiro",
+  "errors.listing.readOnlyVolumeErrno.suggestion": "Veja o que tentar:\n- Se o dispositivo tiver uma chave física de proteção contra gravação (comum em cartões SD), desligue-a\n- Se for uma imagem de disco, monte-a de novo com acesso de gravação\n- Senão, copie os arquivos para um local gravável primeiro",
   "@errors.listing.readOnlyVolumeErrno.suggestion": {
     "sourceHash": "6ce54da"
   },
@@ -571,7 +571,7 @@
   "@errors.listing.readOnly.explanation": {
     "sourceHash": "99924c3"
   },
-  "errors.listing.readOnly.suggestion": "Veja o que tentar:\n- Se o dispositivo tiver uma chave física de proteção contra gravação (comum em cartões SD), desligue-a\n- Se for uma imagem de disco, monte-a de novo com acesso de gravação\n- Caso contrário, copie os arquivos para um local gravável primeiro",
+  "errors.listing.readOnly.suggestion": "Veja o que tentar:\n- Se o dispositivo tiver uma chave física de proteção contra gravação (comum em cartões SD), desligue-a\n- Se for uma imagem de disco, monte-a de novo com acesso de gravação\n- Senão, copie os arquivos para um local gravável primeiro",
   "@errors.listing.readOnly.suggestion": {
     "sourceHash": "6ce54da"
   },
@@ -1395,7 +1395,7 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "O Cmdr também não tem acesso total ao disco neste Mac, o que é uma causa comum. O selo “Sem acesso total ao disco” na barra de título leva você a essa escolha.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "ab20ec5"
+    "sourceHash": "0dbe21b"
   },
   "errors.write.ioError.title.copy": "Não foi possível copiar",
   "@errors.write.ioError.title.copy": {
@@ -1677,17 +1677,17 @@
   "@errors.write.fallback.suggestion": {
     "sourceHash": "23de5a9"
   },
-  "errors.mutation.notFound": "Não há mais nada em \"{path}\".",
+  "errors.mutation.notFound": "Não há mais nada em “{path}”.",
   "@errors.mutation.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.mutation.cantRenameVolumeRoot": "A pasta raiz de um volume não pode ser renomeada por aqui.",
   "@errors.mutation.cantRenameVolumeRoot": {
     "sourceHash": "baf4d16"
   },
-  "errors.mutation.parentNotWritable": "O Cmdr não consegue gravar em \"{path}\". Verifique as permissões da pasta no Finder.",
+  "errors.mutation.parentNotWritable": "O Cmdr não consegue gravar em “{path}”. Verifique as permissões da pasta no Finder.",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "902f3a5"
+    "sourceHash": "3659a5a"
   },
   "errors.mutation.fileLocked": "Este item está bloqueado. Desbloqueie-o no painel Obter Informações do Finder e tente de novo.",
   "@errors.mutation.fileLocked": {
@@ -1733,17 +1733,17 @@
   "@errors.mutation.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.volume.notFound": "Não há mais nada em \"{path}\".",
+  "errors.volume.notFound": "Não há mais nada em “{path}”.",
   "@errors.volume.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
-  "errors.volume.permissionDenied": "O Cmdr não tem acesso a \"{path}\".",
+  "errors.volume.permissionDenied": "O Cmdr não tem acesso a “{path}”.",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "1f63dc1"
+    "sourceHash": "fee452b"
   },
-  "errors.volume.alreadyExists": "Já existe algo em \"{path}\".",
+  "errors.volume.alreadyExists": "Já existe algo em “{path}”.",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "e070962"
+    "sourceHash": "de0bbb9"
   },
   "errors.volume.notSupported": "Este volume não oferece suporte a isso.",
   "@errors.volume.notSupported": {
@@ -1777,9 +1777,9 @@
   "@errors.volume.cancelled": {
     "sourceHash": "a88c4fc"
   },
-  "errors.volume.isADirectory": "\"{path}\" é uma pasta, não um arquivo.",
+  "errors.volume.isADirectory": "“{path}” é uma pasta, não um arquivo.",
   "@errors.volume.isADirectory": {
-    "sourceHash": "fe76957"
+    "sourceHash": "224ae5e"
   },
   "errors.volume.invalidName": "O destino não consegue armazenar esse nome. Escolha outro.",
   "@errors.volume.invalidName": {
@@ -1789,9 +1789,9 @@
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
   },
-  "errors.volume.ambiguousName": "Mais de um item no servidor corresponde a \"{path}\", então o Cmdr não escolheu nenhum. Escolha o item na pasta onde ele está.",
+  "errors.volume.ambiguousName": "Mais de um item no servidor corresponde a “{path}”, então o Cmdr não escolheu nenhum. Escolha o item na pasta onde ele está.",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "024d1da"
+    "sourceHash": "f866182"
   },
   "errors.volume.staleDestinationHandle": "O Cmdr perdeu a referência da pasta de destino no dispositivo. Abra a pasta de novo e tente outra vez.",
   "@errors.volume.staleDestinationHandle": {
@@ -1901,81 +1901,81 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "O Cmdr não conseguiu alcançar \"{server}\". Verifique se ele está ligado e na mesma rede que este computador.",
+  "errors.mount.hostUnreachable": "O Cmdr não conseguiu alcançar “{server}”. Verifique se ele está ligado e na mesma rede que este computador.",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
-  "errors.mount.timeout": "O Cmdr esperou, mas \"{server}\" não respondeu a tempo. Verifique se ele está ligado e acessível e tente novamente.",
+  "errors.mount.timeout": "O Cmdr esperou, mas “{server}” não respondeu a tempo. Verifique se ele está ligado e acessível e tente novamente.",
   "@errors.mount.timeout": {
-    "sourceHash": "bfb786c"
+    "sourceHash": "00d198e"
   },
-  "errors.mount.shareNotFound": "Não há nenhum compartilhamento chamado \"{share}\" em \"{server}\". Volte e escolha um da lista.",
+  "errors.mount.shareNotFound": "Não há nenhum compartilhamento chamado “{share}” em “{server}”. Volte e escolha um da lista.",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "4f930a5"
+    "sourceHash": "08aee2a"
   },
-  "errors.mount.authRequired": "Inicie a sessão para abrir \"{share}\" em \"{server}\".",
+  "errors.mount.authRequired": "Inicie a sessão para abrir “{share}” em “{server}”.",
   "@errors.mount.authRequired": {
-    "sourceHash": "8466652"
+    "sourceHash": "b2af295"
   },
-  "errors.mount.authFailed": "Esse nome de usuário e essa senha não funcionaram em \"{server}\". Confira os dois e inicie a sessão de novo.",
+  "errors.mount.authFailed": "Esse nome de usuário e essa senha não funcionaram em “{server}”. Confira os dois e inicie a sessão de novo.",
   "@errors.mount.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
-  "errors.mount.permissionDenied": "Você iniciou a sessão em \"{server}\" como \"{username}\", mas essa conta não pode abrir \"{share}\". Inicie a sessão com outra conta.",
+  "errors.mount.permissionDenied": "Você iniciou a sessão em “{server}” como “{username}”, mas essa conta não pode abrir “{share}”. Inicie a sessão com outra conta.",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "12e20d9"
+    "sourceHash": "f8e000b"
   },
-  "errors.mount.cancelled": "A conexão com \"{share}\" parou antes de terminar. Tente de novo quando quiser.",
+  "errors.mount.cancelled": "A conexão com “{share}” parou antes de terminar. Tente de novo quando quiser.",
   "@errors.mount.cancelled": {
-    "sourceHash": "0b0ec30"
+    "sourceHash": "4f6ff32"
   },
-  "errors.mount.unsupportedProtocol": "Este computador e \"{server}\" não têm nenhuma versão do SMB em comum. Ative o SMB 2 ou posterior nas configurações do servidor e tente novamente.",
+  "errors.mount.unsupportedProtocol": "Este computador e “{server}” não têm nenhuma versão do SMB em comum. Ative o SMB 2 ou posterior nas configurações do servidor e tente novamente.",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "bf9c71e"
+    "sourceHash": "7cb18f6"
   },
-  "errors.mount.mountRefused": "Você iniciou a sessão em \"{server}\", mas o servidor se recusou a abrir \"{share}\". Verifique as configurações do compartilhamento no servidor e tente novamente.",
+  "errors.mount.mountRefused": "Você iniciou a sessão em “{server}”, mas o servidor se recusou a abrir “{share}”. Verifique as configurações do compartilhamento no servidor e tente novamente.",
   "@errors.mount.mountRefused": {
-    "sourceHash": "c354782"
+    "sourceHash": "84344ca"
   },
-  "errors.mount.mountMissing": "Seu computador informou que \"{share}\" em \"{server}\" estava conectado, mas o compartilhamento nunca apareceu. Tente novamente.",
+  "errors.mount.mountMissing": "Seu computador informou que “{share}” em “{server}” estava conectado, mas o compartilhamento nunca apareceu. Tente novamente.",
   "@errors.mount.mountMissing": {
-    "sourceHash": "a5f61b5"
+    "sourceHash": "72ab946"
   },
   "errors.mount.gvfsMissing": "Para conectar a compartilhamentos de rede no Linux, é preciso ter o GVFS. Instale o pacote gvfs-smb da sua distribuição e tente novamente.",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Algo deu errado ao conectar a \"{share}\" em \"{server}\". Tente novamente em instantes.",
+  "errors.mount.unexpected": "Algo deu errado ao conectar a “{share}” em “{server}”. Tente novamente em instantes.",
   "@errors.mount.unexpected": {
-    "sourceHash": "8daf9ba"
+    "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "O Cmdr não conseguiu alcançar \"{server}\". Verifique se ele está ligado e na mesma rede que este computador.",
+  "errors.shareList.hostUnreachable": "O Cmdr não conseguiu alcançar “{server}”. Verifique se ele está ligado e na mesma rede que este computador.",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
-  "errors.shareList.timeout": "O Cmdr esperou, mas \"{server}\" não respondeu a tempo. Tente novamente em instantes.",
+  "errors.shareList.timeout": "O Cmdr esperou, mas “{server}” não respondeu a tempo. Tente novamente em instantes.",
   "@errors.shareList.timeout": {
-    "sourceHash": "ae84e14"
+    "sourceHash": "a07b7c8"
   },
-  "errors.shareList.authRequired": "Inicie a sessão para ver os compartilhamentos de \"{server}\".",
+  "errors.shareList.authRequired": "Inicie a sessão para ver os compartilhamentos de “{server}”.",
   "@errors.shareList.authRequired": {
-    "sourceHash": "4268ae9"
+    "sourceHash": "68f86c4"
   },
-  "errors.shareList.signingRequired": "\"{server}\" não mostra seus compartilhamentos para convidados. Inicie a sessão para vê-los.",
+  "errors.shareList.signingRequired": "“{server}” não mostra seus compartilhamentos para convidados. Inicie a sessão para vê-los.",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "8ae651a"
+    "sourceHash": "ecc570d"
   },
-  "errors.shareList.authFailed": "Esse nome de usuário e essa senha não funcionaram em \"{server}\". Confira os dois e inicie a sessão de novo.",
+  "errors.shareList.authFailed": "Esse nome de usuário e essa senha não funcionaram em “{server}”. Confira os dois e inicie a sessão de novo.",
   "@errors.shareList.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
-  "errors.shareList.protocolError": "Algo deu errado ao pedir a lista de compartilhamentos a \"{server}\". Tente novamente em instantes.",
+  "errors.shareList.protocolError": "Algo deu errado ao pedir a lista de compartilhamentos a “{server}”. Tente novamente em instantes.",
   "@errors.shareList.protocolError": {
-    "sourceHash": "064a773"
+    "sourceHash": "da302ca"
   },
-  "errors.shareList.resolutionFailed": "O Cmdr não encontrou \"{server}\" na rede. Verifique o nome ou tente novamente quando ele estiver online de novo.",
+  "errors.shareList.resolutionFailed": "O Cmdr não encontrou “{server}” na rede. Verifique o nome ou tente novamente quando ele estiver online de novo.",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "d2e5b54"
+    "sourceHash": "62e91cf"
   },
   "errors.shareList.missingDependency": "Para listar compartilhamentos, este computador precisa do smbclient, que não está instalado. Instale-o e tente novamente.",
   "@errors.shareList.missingDependency": {

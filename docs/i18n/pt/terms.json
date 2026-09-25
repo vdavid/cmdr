@@ -41,7 +41,7 @@
     "forms": "AI features → os recursos de IA; the AI (sentence subject) → a IA (A IA está desativada)",
     "confidence": "high",
     "sources": "shipped pt catalog (ai.translateError.*, settings.ai.tooltipOff)",
-    "decision": "A IA deixou de se chamar Ask Cmdr fora do painel de chat"
+    "decision": "Ask Cmdr names only the chat panel"
   },
   "ai-provider": {
     "chosen": "provedor",
@@ -85,7 +85,7 @@
     "accept": ["pacote"],
     "confidence": "high",
     "sources": "macOS Finder pt-BR (Mostrar Conteúdo do Pacote); MS terminology pt-BR (pacote de aplicativo)",
-    "decision": "Navegar em arquivos compactados"
+    "decision": "Archives"
   },
   "app-switcher": {
     "chosen": "alternador de apps",
@@ -103,7 +103,7 @@
     ],
     "confidence": "high",
     "sources": "macOS 26.6.2 (25G83) AppleIDSettings.appex InfoPlist pt_BR.CFBundleDisplayName, 2026-08-30",
-    "decision": "O que o inglês corrigiu em si mesmo, e o que isso decidiu em `pt`"
+    "decision": "macOS pane names, Apple menu items, and the example email"
   },
   "apple-silicon": {
     "chosen": "Apple silicon",
@@ -115,7 +115,7 @@
     "accept": ["Aplicativos"],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (TL_HELP_APPS Ir para a pasta Aplicativos)",
-    "decision": "O convite para fixar o Cmdr no Dock"
+    "decision": "Dock pin nudge"
   },
   "apply": {
     "chosen": "Aplicar",
@@ -142,7 +142,7 @@
     "confidence": "high",
     "sources": "Total Commander pt-BR (arquivo compactado), macOS Finder pt-BR (Arquivo compactado), shipped pt catalog",
     "note": "arquivo alone means file, so a sentence about the archive itself needs compactado.",
-    "decision": "Navegar em arquivos compactados"
+    "decision": "Archives"
   },
   "archive-chat": {
     "chosen": "arquivar",
@@ -163,7 +163,7 @@
     "confidence": "confirmed",
     "sources": "product name, verbatim",
     "note": "Only where the English keeps it (the chat panel itself); prose about what the AI does says O Cmdr or a IA.",
-    "decision": "A IA deixou de se chamar Ask Cmdr fora do painel de chat"
+    "decision": "Ask Cmdr names only the chat panel"
   },
   "attachment": {
     "chosen": "anexo",
@@ -194,7 +194,7 @@
     ],
     "confidence": "confirmed",
     "sources": "Total Commander pt-BR (Download em segundo plano); MS terminology pt-BR (background adj → em segundo plano)",
-    "decision": "Empty-queue button label"
+    "decision": "Background button"
   },
   "badge": {
     "chosen": "selo",
@@ -211,7 +211,7 @@
     ],
     "confidence": "high",
     "sources": "MS terminology pt-BR (badge → selo)",
-    "decision": "Image-index status badge terms"
+    "decision": "Image index"
   },
   "brief-view": {
     "chosen": "visualização resumida",
@@ -230,7 +230,7 @@
       "settings.adb.browse": "The file-picker button (browse-file-picker): Escolher…, as Apple labels it.",
       "settings.mediaIndex.networkVolumes.alwaysHelp": "Browsing a photo archive in passing is opening it: raramente abre."
     },
-    "decision": "Navegar em arquivos compactados"
+    "decision": "Archives"
   },
   "browse-file-picker": {
     "chosen": "Escolher…",
@@ -251,7 +251,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS pt-BR (Choose… → Escolher…, Choose File… → Escolher Arquivo…)",
-    "decision": "O painel de adicionar servidor, a chave de host e as duas linhas do \"Ir para o caminho\""
+    "decision": "Server sheet and host keys"
   },
   "buffer": {
     "chosen": "buffer",
@@ -277,7 +277,7 @@
     ],
     "confidence": "high",
     "sources": "MS terminology pt-BR (câmera id 27160); shipped pt catalog (askCmdr.renameReview.evidence.metadata detalhes)",
-    "decision": "O que o Ask Cmdr lê dentro de um arquivo"
+    "decision": "What Ask Cmdr reads inside files"
   },
   "cancel": {
     "chosen": "Cancelar",
@@ -291,7 +291,7 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR (id 28521 → 28529, BRA)",
     "note": "The accessible name must contain the visible label (WCAG 2.5.3): move queryUi.scope.toggle.caseSensitive and its Aria together.",
-    "decision": "Uma coisa, um nome"
+    "decision": "One thing, one name"
   },
   "certificate": {
     "chosen": "certificado",
@@ -313,7 +313,7 @@
     "exceptions": {
       "settings.whatsNew.lastSeenVersion.label": "Internal setting label: the version is the one the Novidades window last showed."
     },
-    "decision": "Menus nativos: barra de menus, menus de contexto, títulos de janela"
+    "decision": "Native menus"
   },
   "character": {
     "chosen": "caractere",
@@ -332,7 +332,7 @@
     "confidence": "confirmed",
     "sources": "MS terminology pt-BR (chat → chat, masculine, BRA)",
     "note": "chat, conversar, and conversa follow the English of each key; never swap one for another.",
-    "decision": "A IA deixou de se chamar Ask Cmdr fora do painel de chat"
+    "decision": "Ask Cmdr names only the chat panel"
   },
   "check": {
     "chosen": "verificar",
@@ -345,7 +345,7 @@
     "chosen": "lista de verificação",
     "confidence": "confirmed",
     "sources": "MS terminology pt-BR (checklist → lista de verificação)",
-    "decision": "Termos da reescrita da introdução"
+    "decision": "Onboarding"
   },
   "choose": {
     "chosen": "Escolher",
@@ -387,7 +387,7 @@
     "forms": "feminine: a IA na nuvem está desativada; the switch Permitir IA na nuvem, quoted with curly quotes after Ative",
     "confidence": "high",
     "sources": "shipped pt catalog (settings.ai.provider.opt.cloud)",
-    "decision": "O interruptor “Permitir IA na nuvem” e os estados de nuvem desligada"
+    "decision": "Cloud AI consent"
   },
   "cloud-provider": {
     "chosen": "serviço de nuvem",
@@ -514,7 +514,7 @@
     "confidence": "high",
     "sources": "macOS pt-BR convention",
     "note": "O Cmdr teve um problema opens the non-crash dialogs; falha belongs to the crash only.",
-    "decision": "Diálogo de falha: as três aberturas"
+    "decision": "Crash dialog"
   },
   "create": {
     "chosen": "Criar",
@@ -554,7 +554,7 @@
     "exceptions": {
       "menu.edit.cut": "The menu bar copies Finder's Edit menu (MenuBar.json 160.title Cortar)."
     },
-    "decision": "Menus nativos: barra de menus, menus de contexto, títulos de janela"
+    "decision": "Native menus"
   },
   "damaged": {
     "chosen": "danificado",
@@ -590,7 +590,7 @@
     ],
     "confidence": "high",
     "sources": "macOS Finder pt-BR (Apagar; 0 Excluir in Finder pt-BR)",
-    "decision": "Apagar, nunca Excluir"
+    "decision": "Apagar, never Excluir"
   },
   "delete-permanently": {
     "chosen": "Apagar permanentemente",
@@ -609,7 +609,7 @@
     ],
     "confidence": "high",
     "sources": "MS terminology pt-BR (Deny → Negar, BRA)",
-    "decision": "Bulk-rename review terms"
+    "decision": "Bulk-rename review"
   },
   "deselect": {
     "chosen": "Desmarcar",
@@ -686,13 +686,13 @@
     ],
     "confidence": "high",
     "sources": "shipped pt catalog",
-    "decision": "Progress-chip and failure-notice terms"
+    "decision": "Queue chip, dismiss, and failure notices"
   },
   "dock": {
     "chosen": "Dock",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (Add to Dock → Adicionar ao Dock)",
-    "decision": "O convite para fixar o Cmdr no Dock"
+    "decision": "Dock pin nudge"
   },
   "documents": {
     "chosen": "Documentos",
@@ -740,7 +740,7 @@
     "exceptions": {
       "settings.indexing.overriddenBadge": "Badge brevity: it renders only under the Indexação de disco toggle, so the short a indexação carries the drive."
     },
-    "decision": "`drive` é sempre `disco`"
+    "decision": "`drive` is always `disco`"
   },
   "duplicate": {
     "chosen": "Duplicar",
@@ -760,7 +760,7 @@
     "forms": "Ejete-o de novo; noun a ejeção",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR",
-    "decision": "Recusas de ejetar e desconectar: as nove mensagens do aviso rápido"
+    "decision": "Eject and disconnect refusals"
   },
   "email": {
     "chosen": "e-mail",
@@ -778,7 +778,7 @@
     ],
     "confidence": "high",
     "sources": "shipped pt catalog",
-    "decision": "O que o inglês corrigiu em si mesmo, e o que isso decidiu em `pt`"
+    "decision": "macOS pane names, Apple menu items, and the example email"
   },
   "empty-trash": {
     "chosen": "Esvaziar",
@@ -823,7 +823,7 @@
     ],
     "confidence": "high",
     "sources": "MS terminology pt-BR (endpoint, API Endpoint → Ponto de Extremidade de API); Apple has no pt-BR endpoint",
-    "decision": "Os passos de configuração de provedor de IA"
+    "decision": "AI provider setup"
   },
   "enter-key": {
     "chosen": "Enter",
@@ -842,7 +842,7 @@
     ],
     "confidence": "high",
     "sources": "shipped pt catalog",
-    "decision": "Uma coisa, um nome"
+    "decision": "One thing, one name"
   },
   "escape-key": {
     "chosen": "Esc",
@@ -854,7 +854,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS pt-BR AppKit FunctionKeyNames (Escape → Esc), macOS 27.0 26A428, 2026-09-23",
-    "decision": "Esc e tela cheia"
+    "decision": "Esc and full screen"
   },
   "estimate": {
     "chosen": "estimativa",
@@ -903,7 +903,7 @@
     "forms": "lowercase as a common noun, Favoritos when it names the section; favorites menu → menu de favoritos; já está nos favoritos",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (FI10, TL4 Favoritos)",
-    "decision": "O menu de favoritos"
+    "decision": "Favorites menu"
   },
   "feedback": {
     "chosen": "feedback",
@@ -927,7 +927,7 @@
     ],
     "confidence": "high",
     "sources": "macOS Finder pt-BR (IN_MD1 Fetching… → Obtendo…)",
-    "decision": "O painel do visualizador enquanto o arquivo chega"
+    "decision": "Viewer fetch pane"
   },
   "file": {
     "chosen": "arquivo",
@@ -973,7 +973,7 @@
     "forms": "Key fingerprint → Impressão digital da chave",
     "confidence": "confirmed",
     "sources": "Apple pt-BR ActionKit (A impressão digital da chave do host é %@)",
-    "decision": "O painel de adicionar servidor, a chave de host e as duas linhas do \"Ir para o caminho\""
+    "decision": "Server sheet and host keys"
   },
   "folder": {
     "chosen": "pasta",
@@ -1011,13 +1011,13 @@
     "forms": "the pane NAME keeps title case; the badge label is sentence case: Sem acesso total ao disco",
     "confidence": "high",
     "sources": "macOS SecurityPrivacyExtension ALL_FILES, macOS 27.0 26A428, 2026-09-16",
-    "decision": "The title-bar full-disk-access badge"
+    "decision": "Full disk access badge"
   },
   "full-screen": {
     "chosen": "tela cheia",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (FV20 Sair da Tela Cheia)",
-    "decision": "Esc e tela cheia"
+    "decision": "Esc and full screen"
   },
   "full-view": {
     "chosen": "visualização completa",
@@ -1043,7 +1043,7 @@
     "confidence": "confirmed",
     "sources": "GitHub in Portuguese (Adicionar aos favoritos; the counter says Estrelas); MS (star → adicionar aos favoritos)",
     "note": "The button and the counter use different words on purpose, as GitHub itself does.",
-    "decision": "Termos da reescrita da introdução"
+    "decision": "Onboarding"
   },
   "glob": {
     "chosen": "Glob",
@@ -1164,7 +1164,7 @@
     ],
     "confidence": "confirmed",
     "sources": "shipped pt catalog",
-    "decision": "Image-index status and scope terms"
+    "decision": "Image index"
   },
   "in-use": {
     "chosen": "em uso",
@@ -1172,7 +1172,7 @@
     "forms": "Algo ainda está usando este disco.; menu suffix (ocupado)",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (está sendo usado, está em uso)",
-    "decision": "Recusas de ejetar e desconectar: as nove mensagens do aviso rápido"
+    "decision": "Eject and disconnect refusals"
   },
   "index": {
     "chosen": "índice",
@@ -1223,7 +1223,7 @@
     "forms": "Key passphrase → Frase-senha da chave",
     "confidence": "confirmed",
     "sources": "Apple pt-BR DiskImages2 / DiskManagement (frase-senha); Keychain Access (chave)",
-    "decision": "O painel de adicionar servidor, a chave de host e as duas linhas do \"Ir para o caminho\""
+    "decision": "Server sheet and host keys"
   },
   "keychain": {
     "chosen": "Acesso às Chaves",
@@ -1236,7 +1236,7 @@
     "chosen": "Tipo",
     "confidence": "high",
     "sources": "macOS Finder pt-BR ArrangeByMenu (Kind → Tipo)",
-    "decision": "Select all of the same kind"
+    "decision": "Select same kind"
   },
   "later": {
     "chosen": "mais tarde",
@@ -1250,7 +1250,7 @@
     "forms": "{name} ficou como está: <motivo>.; spotTaken → ficou onde está",
     "confidence": "confirmed",
     "sources": "shipped pt catalog (askCmdr.renameUndo.skipReason.*)",
-    "decision": "O aviso do que a reversão conseguiu, e o que ela deixou"
+    "decision": "Rollback outcome notice"
   },
   "license": {
     "chosen": "licença",
@@ -1296,7 +1296,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS SecurityPrivacyExtension LOCAL_NETWORK; Apple pt-BR (Nearby → Por Perto)",
-    "decision": "A tabela do hub de servidores: colunas, estados e o estado vazio"
+    "decision": "Server hub"
   },
   "location": {
     "chosen": "localização",
@@ -1310,7 +1310,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (FI12, BU39 Escolher Localização…)",
-    "decision": "A tabela do hub de servidores: colunas, estados e o estado vazio"
+    "decision": "Server hub"
   },
   "locked": {
     "chosen": "bloqueado",
@@ -1330,7 +1330,7 @@
     "accept": ["olha dentro", "olhando dentro", "olhou dentro", "inspecion"],
     "confidence": "high",
     "sources": "shipped pt catalog (search.coverage.denied)",
-    "decision": "O que o Ask Cmdr lê dentro de um arquivo"
+    "decision": "What Ask Cmdr reads inside files"
   },
   "mailing-list": {
     "chosen": "lista de e-mails",
@@ -1373,7 +1373,7 @@
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR",
     "note": "Modificado (a file date) vs Modificados (the shortcut filter) is agreement, not drift.",
-    "decision": "Uma coisa, um nome"
+    "decision": "One thing, one name"
   },
   "modifier-key": {
     "chosen": "tecla modificadora",
@@ -1449,7 +1449,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (disco) + Total Commander pt-BR (discos de rede)",
-    "decision": "`drive` é sempre `disco`"
+    "decision": "`drive` is always `disco`"
   },
   "network-share": {
     "chosen": "compartilhamento",
@@ -1492,7 +1492,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (NE113, PW38 Não foi possível concluir a operação…)",
-    "decision": "Progress-chip and failure-notice terms"
+    "decision": "Queue chip, dismiss, and failure notices"
   },
   "note": {
     "chosen": "nota",
@@ -1561,7 +1561,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (NE1, NE82, A17), MS terminology pt-BR, Double Commander, Total Commander, Nautilus",
-    "decision": "Operation-queue rename"
+    "decision": "Operation queue"
   },
   "operation-log": {
     "chosen": "Registro de operações",
@@ -1569,7 +1569,7 @@
     "confidence": "confirmed",
     "sources": "shipped pt catalog; log → registro",
     "note": "Pairs with Fila de operações in one View menu block; never rename one without the other.",
-    "decision": "Operation-log terms (Operation log dialog, `operationLog.*` + `commands.logOperationLog.*`)"
+    "decision": "Operation log"
   },
   "operation-queue": {
     "chosen": "Fila de operações",
@@ -1582,7 +1582,7 @@
     ],
     "confidence": "confirmed",
     "sources": "Total Commander, Double Commander pt-BR (Fila); MS (fila de impressão)",
-    "decision": "Operation-queue rename"
+    "decision": "Operation queue"
   },
   "options": {
     "chosen": "Opções",
@@ -1614,7 +1614,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (Substituir); MS terminology pt-BR; Total Commander (Confirmar substituição)",
-    "decision": "Bulk-rename review terms"
+    "decision": "Bulk-rename review"
   },
   "package": {
     "chosen": "pacote",
@@ -1652,7 +1652,7 @@
     "confidence": "high",
     "sources": "shipped pt catalog (commands.navParent.label Ir para a pasta superior)",
     "note": "Not the volume top folder (a pasta raiz de um volume).",
-    "decision": "A pasta superior"
+    "decision": "Parent folder"
   },
   "password": {
     "chosen": "senha",
@@ -1707,7 +1707,7 @@
     ],
     "confidence": "confirmed",
     "sources": "shipped pt catalog",
-    "decision": "O painel do celular Android e a dica de depuração USB"
+    "decision": "Android over ADB"
   },
   "photo": {
     "chosen": "foto",
@@ -1721,7 +1721,7 @@
     "forms": "Pin to switcher → Fixar no seletor; toggle Fixar/desafixar aba",
     "confidence": "confirmed",
     "sources": "Safari pt-BR (Fixar Aba); Notes.app (Desafixar Nota); MS",
-    "decision": "Fixar no seletor, chaves de host confiáveis e o painel do ADB"
+    "decision": "Pin, unpin, and trusted host keys"
   },
   "placeholder": {
     "chosen": "espaço reservado",
@@ -1729,7 +1729,7 @@
     "forms": "a format token (YYYY, MM) is a marcador (Marcadores de formato)",
     "confidence": "high",
     "sources": "MS terminology pt-BR (placeholder → espaço reservado)",
-    "decision": "Os passos de configuração de provedor de IA"
+    "decision": "AI provider setup"
   },
   "android-platform-tools": {
     "chosen": "ferramentas de plataforma",
@@ -1754,7 +1754,7 @@
     "forms": "noun Pré-visualização (the panel label); verb Pré-visualizar (the command)",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR",
-    "decision": "Uma coisa, um nome"
+    "decision": "One thing, one name"
   },
   "previous-next": {
     "chosen": "Anterior",
@@ -1797,7 +1797,7 @@
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (N153.1 Colocar de Volta)",
     "note": "Three families: colocar de volta (out of the Trash), restaurar (an old NAME), levar de volta (a rollback moving files back).",
-    "decision": "O aviso do que a reversão conseguiu, e o que ela deixou"
+    "decision": "Rollback outcome notice"
   },
   "query": {
     "chosen": "busca",
@@ -1815,7 +1815,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR MenuBar (TL14 Visualização Rápida)",
-    "decision": "Menus nativos: barra de menus, menus de contexto, títulos de janela"
+    "decision": "Native menus"
   },
   "quit": {
     "chosen": "Encerrar",
@@ -1823,7 +1823,7 @@
     "forms": "Quit Cmdr → Encerrar Cmdr; gerund Encerrando; Quit now → Encerrar agora; logout → encerramento da sessão",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (Encerrar Finder); MS terminology pt-BR",
-    "decision": "Quit-gate dialog terms"
+    "decision": "Quit gate"
   },
   "quota": {
     "chosen": "cota",
@@ -1937,7 +1937,7 @@
     ],
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR MenuBar (OPI-Bm-bCw); Nautilus (Renomear %d arquivos)",
-    "decision": "Bulk-rename review terms"
+    "decision": "Bulk-rename review"
   },
   "replace": {
     "chosen": "Substituir",
@@ -1968,7 +1968,7 @@
     ],
     "confidence": "high",
     "sources": "macOS Finder pt-BR (Restaurar aos Padrões)",
-    "decision": "Uma coisa, um nome"
+    "decision": "One thing, one name"
   },
   "respond": {
     "chosen": "responder",
@@ -2009,7 +2009,7 @@
     ],
     "confidence": "high",
     "sources": "MS terminology pt-BR (review → revisão)",
-    "decision": "Bulk-rename review terms"
+    "decision": "Bulk-rename review"
   },
   "rollback": {
     "chosen": "Reverter",
@@ -2017,7 +2017,7 @@
     "forms": "operation Revertida (fem), item Revertido (masc), progress Revertendo; noun a reversão; Finish rolling back → Concluir a reversão",
     "confidence": "confirmed",
     "sources": "shipped pt catalog",
-    "decision": "Uma operação revertida pela metade: concluir a reversão"
+    "decision": "Rollback confirm and finish"
   },
   "root-folder": {
     "chosen": "pasta raiz",
@@ -2035,7 +2035,7 @@
     ],
     "confidence": "high",
     "sources": "MS terminology pt-BR (root folder → pasta raiz); macOS Finder pt-BR (SC11); Total Commander (Pasta inicial)",
-    "decision": "Pasta raiz e pasta inicial de um servidor salvo"
+    "decision": "Root and start folder"
   },
   "row": {
     "chosen": "linha",
@@ -2049,7 +2049,7 @@
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (algumas operações ainda estão em andamento)",
     "note": "Em andamento for a task in progress; Em execução for a server or process that is up.",
-    "decision": "Quit-gate dialog terms"
+    "decision": "Quit gate"
   },
   "save": {
     "chosen": "Salvar",
@@ -2070,7 +2070,7 @@
     "confidence": "high",
     "sources": "shipped pt catalog",
     "note": "varredura is the drive-index walk; análise is reserved for the transfer/delete pre-count.",
-    "decision": "Drive-scan run-kind headers and drive-scan noun"
+    "decision": "Drive scan"
   },
   "scope": {
     "chosen": "escopo",
@@ -2095,7 +2095,7 @@
     "forms": "noun Busca (the Settings section); verb Buscar (the button and the dialog title); progress Buscando",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR MenuBar (Buscar)",
-    "decision": "Uma coisa, um nome"
+    "decision": "One thing, one name"
   },
   "search-match": {
     "chosen": "resultado",
@@ -2183,7 +2183,7 @@
     "forms": "quoted in running text with curly quotes: “Mostrar no Finder”",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR",
-    "decision": "A oferta de “Mostrar no Finder” e o aviso da primeira vez"
+    "decision": "Show in Finder offer"
   },
   "side-panel": {
     "chosen": "painel lateral",
@@ -2199,7 +2199,7 @@
     "exceptions": {
       "errors.listing.authRequiredEauth.explanation": "The noun login here is the credential in use (o login atual), as MS pt-BR uses it; the verb stays iniciar a sessão."
     },
-    "decision": "O hub de servidores: painel de conexão, esquecer servidor e esquecer senha"
+    "decision": "Server pane, sign in, and forget"
   },
   "sign-out": {
     "chosen": "Sessão encerrada",
@@ -2207,7 +2207,7 @@
     "forms": "agrees with the session, never the person",
     "confidence": "high",
     "sources": "macOS pt-BR (Encerrar Sessão)",
-    "decision": "O hub de servidores: painel de conexão, esquecer servidor e esquecer senha"
+    "decision": "Server pane, sign in, and forget"
   },
   "similar": {
     "chosen": "semelhante",
@@ -2268,7 +2268,7 @@
     ],
     "confidence": "high",
     "sources": "shipped pt catalog (licensing.section.labelStatus, servers.hub.colStatus)",
-    "decision": "A tabela do hub de servidores: colunas, estados e o estado vazio"
+    "decision": "Server hub"
   },
   "step": {
     "chosen": "etapa",
@@ -2280,7 +2280,7 @@
     ],
     "confidence": "high",
     "sources": "shipped pt catalog (onboarding.wizard.stepProgress)",
-    "decision": "Termos da reescrita da introdução"
+    "decision": "Onboarding"
   },
   "stop": {
     "chosen": "Parar",
@@ -2344,7 +2344,7 @@
     "chosen": "Proteção de Integridade do Sistema",
     "confidence": "confirmed",
     "sources": "macOS Finder pt-BR (ET6)",
-    "decision": "Recusas de renomear e criar: as 31 mensagens de uma linha"
+    "decision": "Rename and create refusals"
   },
   "system-settings": {
     "chosen": "Ajustes do Sistema",
@@ -2363,7 +2363,7 @@
     ],
     "confidence": "high",
     "sources": "macOS 26.6.2 (25G83) LoginItems.appex; SystemSettings GENERAL, 2026-08-30",
-    "decision": "O que o inglês corrigiu em si mesmo, e o que isso decidiu em `pt`"
+    "decision": "macOS pane names, Apple menu items, and the example email"
   },
   "tab": {
     "chosen": "aba",
@@ -2423,7 +2423,7 @@
     "forms": "default text editor → editor de texto padrão",
     "confidence": "high",
     "sources": "MS terminology pt-BR",
-    "decision": "F4 and its text editor"
+    "decision": "F4 text editor"
   },
   "thinking": {
     "chosen": "Pensando",
@@ -2475,7 +2475,7 @@
     "confidence": "high",
     "sources": "shipped pt catalog",
     "note": "The progress dialog talks about one transferência; the queue window talks about operações.",
-    "decision": "Operation-queue rename"
+    "decision": "Operation queue"
   },
   "trash": {
     "chosen": "Lixo",
@@ -2498,7 +2498,7 @@
     "forms": "Trusted since → Confiável desde",
     "confidence": "confirmed",
     "sources": "Keychain Access pt-BR (Ajustes de Confiança, é confiável); UsersGroups (Trust → Confiar)",
-    "decision": "Fixar no seletor, chaves de host confiáveis e o painel do ADB"
+    "decision": "Pin, unpin, and trusted host keys"
   },
   "type": {
     "chosen": "Tipo",
@@ -2578,7 +2578,7 @@
     "chosen": "depuração USB",
     "confidence": "confirmed",
     "sources": "AOSP SystemUI values-pt-rBR (usb_debugging_title)",
-    "decision": "O painel do celular Android e a dica de depuração USB"
+    "decision": "Android over ADB"
   },
   "username": {
     "chosen": "nome de usuário",
@@ -2682,7 +2682,7 @@
     ],
     "confidence": "high",
     "sources": "Safari pt-BR MainMenu (Ampliar / Reduzir, 2026-08-30)",
-    "decision": "Menus nativos: barra de menus, menus de contexto, títulos de janela"
+    "decision": "Native menus"
   },
   "search-walk": {
     "chosen": "varredura",

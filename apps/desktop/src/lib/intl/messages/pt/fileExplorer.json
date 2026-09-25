@@ -469,7 +469,7 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "O compartilhamento ''{shareName}'' não foi encontrado em {hostName}",
+  "fileExplorer.network.share.notFound": "O compartilhamento “{shareName}” não foi encontrado em {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
@@ -741,9 +741,9 @@
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
   },
-  "fileExplorer.readOnly.deviceMessage": "\"{name}\" é somente leitura. Você pode copiar arquivos dele, mas não para ele.",
+  "fileExplorer.readOnly.deviceMessage": "“{name}” é somente leitura. Você pode copiar arquivos dele, mas não para ele.",
   "@fileExplorer.readOnly.deviceMessage": {
-    "sourceHash": "039488f"
+    "sourceHash": "5582a47"
   },
   "fileExplorer.readOnly.gitPortalTitle": "Portal git somente leitura",
   "@fileExplorer.readOnly.gitPortalTitle": {
@@ -769,21 +769,21 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. \"{name}\" manteve o nome.",
+  "fileExplorer.rename.chainKeptOriginalName": "{reason}. “{name}” manteve o nome.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "5b5e6ce"
+    "sourceHash": "638394d"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. \"{name}\" manteve o nome, assim como {others, plural, one {outro arquivo} many {outros {othersText} arquivos} other {outros {othersText} arquivos}}.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. “{name}” manteve o nome, assim como {others, plural, one {outro arquivo} many {outros {othersText} arquivos} other {outros {othersText} arquivos}}.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "7b23e8e"
+    "sourceHash": "be35bc8"
   },
-  "fileExplorer.rename.unconfirmed": "Não foi possível confirmar a renomeação de \"{name}\". O volume pode estar lento, então a renomeação pode ter sido concluída mesmo assim.",
+  "fileExplorer.rename.unconfirmed": "Não foi possível confirmar a renomeação de “{name}”. O volume pode estar lento, então a renomeação pode ter sido concluída mesmo assim.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d43e419"
+    "sourceHash": "bcea9d0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Não foi possível confirmar a renomeação de \"{name}\" e de {others, plural, one {outro arquivo} many {outros {othersText} arquivos} other {outros {othersText} arquivos}}. O volume pode estar lento, então as renomeações podem ter sido concluídas mesmo assim.",
+  "fileExplorer.rename.unconfirmedAndOthers": "Não foi possível confirmar a renomeação de “{name}” e de {others, plural, one {outro arquivo} many {outros {othersText} arquivos} other {outros {othersText} arquivos}}. O volume pode estar lento, então as renomeações podem ter sido concluídas mesmo assim.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "1258eb3"
+    "sourceHash": "c64e665"
   },
   "fileExplorer.columns.name": "Nome",
   "@fileExplorer.columns.name": {
@@ -951,9 +951,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} à frente, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} atrás de \"{vs}\"",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} à frente, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} atrás de “{vs}”",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "2eba558"
+    "sourceHash": "6a24049"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Commit marcado {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -963,13 +963,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Criado no branch \"{branch}\"",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Criado no branch “{branch}”",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "770565f"
+    "sourceHash": "5a1ad8d"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "O branch \"{branch}\" está ativo",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "O branch “{branch}” está ativo",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "5036eb7"
+    "sourceHash": "4941fa5"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Desanexado em {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
@@ -999,9 +999,9 @@
   "@fileExplorer.dateTooltip.lastOpened": {
     "sourceHash": "e300685"
   },
-  "fileExplorer.dateTooltip.lastMoved": "Movido pela última vez (\"adicionado\")",
+  "fileExplorer.dateTooltip.lastMoved": "Movido pela última vez (“adicionado”)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "sourceHash": "450ebc0"
+    "sourceHash": "1366405"
   },
   "fileExplorer.dateTooltip.lastModified": "Modificado pela última vez",
   "@fileExplorer.dateTooltip.lastModified": {
@@ -1148,9 +1148,9 @@
   "@fileExplorer.renameConflict.title": {
     "sourceHash": "92ae292"
   },
-  "fileExplorer.renameConflict.description": "\"{name}\" já existe nesta pasta. O que você gostaria de fazer?",
+  "fileExplorer.renameConflict.description": "“{name}” já existe nesta pasta. O que você gostaria de fazer?",
   "@fileExplorer.renameConflict.description": {
-    "sourceHash": "ded53e8"
+    "sourceHash": "e3f2532"
   },
   "fileExplorer.renameConflict.yours": "{name} (o seu)",
   "@fileExplorer.renameConflict.yours": {
@@ -1188,9 +1188,9 @@
   "@fileExplorer.extensionChange.title": {
     "sourceHash": "799828d"
   },
-  "fileExplorer.extensionChange.description": "Tem certeza de que quer alterar a extensão de \".{oldExt}\" para \".{newExt}\"? Seu arquivo pode abrir em um aplicativo diferente da próxima vez.",
+  "fileExplorer.extensionChange.description": "Tem certeza de que quer alterar a extensão de “.{oldExt}” para “.{newExt}”? Seu arquivo pode abrir em um aplicativo diferente da próxima vez.",
   "@fileExplorer.extensionChange.description": {
-    "sourceHash": "d0f428b"
+    "sourceHash": "ef7ac59"
   },
   "fileExplorer.extensionChange.alwaysAllow": "Permitir sempre alterações de extensão",
   "@fileExplorer.extensionChange.alwaysAllow": {
@@ -1208,9 +1208,9 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Se você vem do Finder, isso pode ser incomum porque o Finder aciona uma ação de \"Visualização rápida\" com <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Se você vem do Finder, isso pode ser incomum porque o Finder aciona uma ação de “Visualização rápida” com <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "2089192"
+    "sourceHash": "56d3119"
   },
   "fileExplorer.quickLookHint.quickView": "No Cmdr, você pode acionar a visualização rápida com <key></key>. (<key></key> também funciona no Finder, aliás!)",
   "@fileExplorer.quickLookHint.quickView": {
@@ -1322,9 +1322,9 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
-  "fileExplorer.navigation.connectionTooltipSystem": "Usando a conexão do sistema. Use o item de menu \"Conectar diretamente para acesso mais rápido\" para acesso mais rápido.",
+  "fileExplorer.navigation.connectionTooltipSystem": "Usando a conexão do sistema. Use o item de menu “Conectar diretamente para acesso mais rápido” para acesso mais rápido.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "sourceHash": "0cbfa05"
+    "sourceHash": "e4ac697"
   },
   "fileExplorer.navigation.connectDirectly": "Conectar diretamente para acesso mais rápido",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1350,9 +1350,9 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "0fb0ca3"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "O Cmdr pode reutilizar a senha que o macOS já salvou para \"{displayName}\". Você verá um aviso do sistema pedindo para liberar o acesso ao Acesso às Chaves. Isso é esperado, então clique em Permitir.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "O Cmdr pode reutilizar a senha que o macOS já salvou para “{displayName}”. Você vai ver um aviso do sistema pedindo para liberar o acesso ao Acesso às Chaves. Isso é esperado, então clique em Permitir.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "6bb2c1d"
+    "sourceHash": "334f7de"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Usar a senha salva?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1486,7 +1486,7 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
-  "fileExplorer.navigation.spaceMtpHint": "Em um celular, isso também conta aplicativos e arquivos do sistema. Pelo USB, o Cmdr consegue acessar apenas seus arquivos compartilhados, então as pastas aqui somam menos que o espaço utilizado.",
+  "fileExplorer.navigation.spaceMtpHint": "Em um celular, isso também conta aplicativos e arquivos do sistema. Pelo USB, o Cmdr consegue acessar apenas seus arquivos compartilhados, então as pastas aqui somam menos que o espaço usado.",
   "@fileExplorer.navigation.spaceMtpHint": {
     "sourceHash": "43ec861"
   },

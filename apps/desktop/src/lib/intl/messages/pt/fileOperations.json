@@ -22,11 +22,11 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Parte da sua seleção está somente online. Movê-los para o Lixo faria o <strong>download deles primeiro</strong>. Por isso aqui o Cmdr só oferece <strong>apagar</strong> a seleção inteira. Não vai ficar nenhuma cópia no Lixo, mas os serviços de nuvem costumam guardar o próprio lixo por uns 30 dias. Clique em “Apagar” se apagar estiver tudo bem; senão, cancele esta janela e deixe todos os arquivos disponíveis offline primeiro, ou desmarque todos os arquivos que estão somente online.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "Tudo o que você selecionou está somente online. Movê-lo para o Lixo faria o <strong>download dele primeiro</strong>. Por isso aqui o Cmdr só oferece <strong>apagar</strong> a seleção inteira. Não vai ficar nenhuma cópia no Lixo, mas os serviços de nuvem costumam guardar o próprio lixo por uns 30 dias. Clique em “Apagar” se apagar estiver tudo bem; senão, cancele esta janela e deixe estes arquivos disponíveis offline primeiro.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "Sua seleção tem conteúdo somente online, então o botão abaixo agora oferece “Apagar”. Leia a observação acima e aperte de novo se estiver tudo certo.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
@@ -241,9 +241,9 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Este compartilhamento usa a conexão do sistema. O cancelamento pode demorar. Use \"Conectar diretamente\" no seletor de volumes para transferências mais rápidas e um cancelamento confiável.",
+  "fileOperations.transferDialog.smbNativeNote": "Este compartilhamento usa a conexão do sistema. O cancelamento pode demorar. Use “Conectar diretamente” no seletor de volumes para transferências mais rápidas e um cancelamento confiável.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "cfec439"
+    "sourceHash": "60af535"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Esta pasta ainda não existe. O Cmdr vai criá-la durante a cópia.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -365,17 +365,17 @@
   "@fileOperations.transferDialog.foldersPart": {
     "sourceHash": "9bd56b2"
   },
-  "fileOperations.transferDialog.pathErrorSubfolder": "Não é possível {verb, select, copy {copiar} other {mover}} \"{name}\" para uma subpasta dele mesmo",
+  "fileOperations.transferDialog.pathErrorSubfolder": "Não é possível {verb, select, copy {copiar} other {mover}} “{name}” para uma subpasta dele mesmo",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "4ad1eaf"
+    "sourceHash": "815204a"
   },
-  "fileOperations.transferDialog.pathErrorAlreadyThere": "\"{name}\" já está nesta localização",
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "“{name}” já está nesta localização",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
-    "sourceHash": "1030a7a"
+    "sourceHash": "1bf762e"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "O nome do arquivo compactado precisa terminar em \".zip\".",
+  "fileOperations.transferDialog.pathErrorNotZip": "O nome do arquivo compactado precisa terminar em “.zip”.",
   "@fileOperations.transferDialog.pathErrorNotZip": {
-    "sourceHash": "c85c6f8"
+    "sourceHash": "7700864"
   },
   "fileOperations.transferDialog.confirmCopy": "Copiar",
   "@fileOperations.transferDialog.confirmCopy": {
@@ -505,7 +505,7 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "O destino já existe e é uma <strong>pasta</strong>. Você está prestes a substituí-la por um <strong>arquivo</strong> com o mesmo nome. Todo o conteúdo da pasta de destino seria apagado e substituído pelo arquivo. O que deseja fazer?",
+  "fileOperations.transferProgress.warningFileOverFolder": "O destino já existe e é uma <strong>pasta</strong>. Você está prestes a substituí-la por um <strong>arquivo</strong> com o mesmo nome. Todo o conteúdo da pasta de destino seria apagado e substituído pelo arquivo. O que você quer fazer?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
   },
@@ -886,9 +886,9 @@
   "@fileOperations.archivePassword.unlock": {
     "sourceHash": "4ac709a"
   },
-  "fileOperations.validation.disallowedChars": "{kind, select, folder {O nome da pasta não pode conter \"/\" nem caracteres nulos} other {O nome do arquivo não pode conter \"/\" nem caracteres nulos}}",
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {O nome da pasta não pode conter “/” nem caracteres nulos} other {O nome do arquivo não pode conter “/” nem caracteres nulos}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "d84512c"
+    "sourceHash": "4fa16ce"
   },
   "fileOperations.validation.empty": "{kind, select, folder {O nome da pasta não pode ficar em branco} other {O nome do arquivo não pode ficar em branco}}",
   "@fileOperations.validation.empty": {
@@ -902,13 +902,13 @@
   "@fileOperations.validation.pathTooLong": {
     "sourceHash": "1658c7a"
   },
-  "fileOperations.validation.extensionChangeBlocked": "Não é permitido alterar a extensão do arquivo (era \"{oldExt}\")",
+  "fileOperations.validation.extensionChangeBlocked": "Não é permitido alterar a extensão do arquivo (era “{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "43c2dc1"
+    "sourceHash": "0b2df1e"
   },
-  "fileOperations.validation.conflict": "\"{name}\" já existe nesta pasta",
+  "fileOperations.validation.conflict": "“{name}” já existe nesta pasta",
   "@fileOperations.validation.conflict": {
-    "sourceHash": "ba13237"
+    "sourceHash": "842d02d"
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {Esse nome de pasta não pode ser usado} other {Esse nome de arquivo não pode ser usado}}",
   "@fileOperations.validation.nameNotUsable": {

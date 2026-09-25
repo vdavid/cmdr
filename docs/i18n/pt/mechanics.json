@@ -1,0 +1,25 @@
+{
+  "$comment": "Brazilian Portuguese typography: curly double quotes, curly single quotes nested, the curly apostrophe (rare: d’água). macOS pt-BR quotes with “%@” (442 pairs across Finder and System Settings in the reference pile, no guillemets); the pt-PT «» is a variant tell. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "apostrophes": ["’"],
+  "spacing": [
+    {
+      "pattern": "[\\d\\uFFFC][ \\u00a0\\u202f]%",
+      "why": "pt-BR writes the percent sign tight to its number (50%), as macOS pt-BR does"
+    },
+    {
+      "pattern": "[\\p{L}\\d\\uFFFC)”’][ \\u00a0\\u202f][!?;:](?=$|\\n| \\p{Lu})",
+      "why": "no space before a sentence’s ! ? ; : in Portuguese (the French habit); a literal ? or ! mid-sentence, like a wildcard, isn’t punctuation"
+    }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\p{L}\\((?:a|as|o|os|s|es|is|ns)\\)",
+      "why": "a bracketed gender or plural ending (selecionado(a), arquivo(s)); use ICU plural/select, or rephrase so nothing agrees"
+    },
+    {
+      "pattern": "(?<=\\p{L})/(?:a|as|o|os)(?!\\p{L})",
+      "why": "a slashed gender ending (conectado/a, o/a); use ICU select, or rephrase so nothing agrees"
+    }
+  ]
+}

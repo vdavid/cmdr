@@ -34,10 +34,13 @@ The must-know rules; the rest of this file elaborates them.
 - **Capitalization**: sentence case everywhere, even where Apple's pt-BR title-cases (`Nova pasta…`, not `Nova Pasta`):
   only the term comes from Finder. A name Apple gives a pane or window keeps Apple's capitals when a string NAMES it
   (`Obter Informações`, `Acesso Total ao Disco`, `Privacidade e Segurança`).
-- **Punctuation**: quote a UI label in running text with curly `“…”` (`Ative “Permitir IA na nuvem”`); keep straight
-  quotes where the family already quotes a `{name}` that way. No space before `%`. Speed multipliers sit tight:
-  `4x mais lenta do que …`. Sentence-final `por quê` takes the circumflex. ICU values double a straight apostrophe; RAW
-  families (`errors.*`, `menu.*`) don't.
+- **Typography** (`mechanics.json`): curly `“…”` outside, `‘…’` nested, `’` for the rare apostrophe, `…` for an
+  ellipsis; never straight quotes, never the pt-PT `«»`. Quote a UI label in running text
+  (`Ative “Permitir IA na nuvem”`) and a `{name}` wherever English quotes it. No space before `%` `!` `?` `:` `;`.
+  Multipliers sit tight: `4x mais lenta do que …`. Sentence-final `por quê` takes the circumflex.
+- **No hedged grammar**: never `arquivo(s)`, `selecionado(a)`, `conectado/a`, `o(a)`; use ICU `plural` / `select` when
+  Cmdr knows the value, else rephrase so nothing agrees (the noun first: `a pasta {name}`; a verb; `tudo`). Never guess
+  a file or pane name's gender with a contracted article (`na {name}`, `nos {system_settings}`): `em {system_settings}`.
 - **Brand and Apple names**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, `Safari` stay verbatim; `Cmdr` as a subject takes
   the article (`O Cmdr`), and so does `Finder` (`no Finder`). `Dock`, `Finder`, `Mac`, `Spotlight` stay English;
   localize what Apple localizes, whatever a `@key` says: `Visualização rápida`, `pasta Aplicativos`, `Downloads` /
@@ -47,10 +50,9 @@ The must-know rules; the rest of this file elaborates them.
 - **Plurals**: CLDR `one` / `many` / `other`, all three always written. Anything that agrees with the counted noun
   (participles, `Todas as`, `ficou`/`ficaram`) goes INSIDE the branches. `one` covers 0.
 - **Placeholders and gender**: nothing agrees with an uncontrolled `{name}`, `{path}`, `{app}`, or `{volumeName}`: write
-  the noun (`a pasta {name}`, `no disco {volumeName}`) or use a verb. Never contract a preposition with a token
-  (`em {system_settings}`, not `nos {system_settings}`). `{app}` leads without an article. Avoid gendered adjectives
-  about the user (`por conta própria`, `Não precisa` for "No, thanks"); the unmarked masculine only where Apple itself
-  uses it (`Você está conectado`).
+  the noun (`a pasta {name}`, `no disco {volumeName}`) or use a verb. `{app}` leads without an article. Avoid gendered
+  adjectives about the user (`por conta própria`, `Não precisa` for "No, thanks"); the unmarked masculine only where
+  Apple itself uses it (`Você está conectado`).
 - **Clitics**: enclisis (`Ative-a`, `Abra-o`, `desafixá-lo`), never proclisis, and only when the gender closes on its
   own; otherwise repeat the noun (`abra o servidor de novo`).
 - **Top traps** (details in `terms.json`):
@@ -156,7 +158,7 @@ move-to-trash), so it's the most likely consistency bug. **Locked in `terms.json
 permanently → **Apagar permanentemente**, the trash action → **Mover para o Lixo** (trash noun = **Lixo**, the macOS
 Finder Tier-1 value). Cmdr is a macOS app, so Finder's own "Apagar" beats the Windows-influenced "Excluir" (term-choice
 principle 2), for files and for a local AI model or index entries alike. "excluir" survives only in its exclude sense
-(the query-scope exclude, excluded folders). See `decisions.md` § Apagar, nunca Excluir.
+(the query-scope exclude, excluded folders). See `decisions.md` § Apagar, never Excluir.
 
 ## Terminology
 
@@ -197,90 +199,80 @@ Two mechanics that bite in Portuguese specifically:
 
 - **Os menus nativos seguem o texto do Finder, mas NÃO a capitalização dele.** O Finder brasileiro usa Title Case („Nova
   Pasta”); o Cmdr fica em sentence case („Nova pasta…”), como o resto do catálogo e o `docs/style-guide.md`. Só o termo
-  vem do Finder. Evidência e exceções: `decisions.md` § Menus nativos.
+  vem do Finder. Evidência e exceções: `decisions.md` § Native menus.
 - Roster: Cmdr ships pt-BR for wave 1; pt-PT is a separate wave-2 variant (vocabulary, você/tu, spelling). See
   `../language-selection-decisions.md`.
 - **Multiplicadores de velocidade** ("4x slower") ficam colados ao numeral, com `x` minúsculo e sem espaço nem `×`:
   `4x mais lenta`, `(às vezes 100x)`. O comparativo usa `do que`, não `que`. Evidência e a chave onde isso aparece:
-  `decisions.md` § Aviso de conexão pelo sistema.
-- Quotation marks: pt-BR commonly uses curly "" (like English); pt-PT traditionally uses guillemets «». Match the chosen
-  variant.
+  `decisions.md` § Mount and share-list failures.
 - Decimal/thousands: both use comma decimal, period (pt-PT) or period/space thousands. `Intl` handles this; don't
   hardcode.
-- See the template's ICU mechanics note (double apostrophes, keep `{placeholder}`/`<tag>` verbatim).
 - **network drive fica `disco de rede`, nunca "drive de rede".** O termo do disco é **disco** (Finder) em todos os
   sentidos, e o catálogo inteiro já está alinhado: as chaves de rede, os `drive externo / interno / virtual` do
   `errors.json`, e `fileExplorer.unreachable.detailTimeout`. Sobram só marcas (iCloud Drive), o placeholder `{drive}` e
-  os nomes de chave `driveIndex.*`. Evidência: `decisions.md` § `drive` é sempre `disco`.
+  os nomes de chave `driveIndex.*`. Evidência: `decisions.md` § `drive` is always `disco`.
 - **Os avisos de ejetar/desconectar entram depois de dois pontos** (`fileExplorer.pane.ejectFailedToast` /
   `disconnectFailedToast`), então cada valor é uma oração completa, começa com maiúscula e cabe em uma ou duas frases
-  curtas. `timedOut` não pode soar como falha. Evidência: `decisions.md` § Recusas de ejetar e desconectar.
+  curtas. `timedOut` não pode soar como falha. Evidência: `decisions.md` § Eject and disconnect refusals.
 - **As recusas que NOMEIAM quem segura o disco repetem o molde da genérica.** `unmountRefusedByApp` /`ByApps` e
   `unmountRefused` são uma família só (`<sujeito> ainda está usando este disco. <ação>, depois ejete-o de novo.`);
   `{app}` abre a frase sem artigo e sem aspas, `outros apps` é item final de lista (o `e` vem do `Intl.ListFormat`,
   nunca da string), e o `BySystem` troca o verbo de propósito (`trabalhando com`), porque lá não há nada para fechar.
-  Evidência: `decisions.md` § Quem está segurando o disco.
+  Evidência: `decisions.md` § Eject and disconnect refusals.
 - **Um relatório já enviado recebe uma NOTA, nunca um segundo envio.** As chaves de `errorReporter.amend.*` falam do
   mesmo relatório (`e isso entra no mesmo relatório que a equipe já tem`), a caixa continua sendo uma **nota** (o termo
   do diálogo de envio, para as duas telas não terem costura) e o encaminhamento quando não dá mais para acrescentar é
   sempre **pelo menu Ajuda**, a frase que `settings.updates.errorReports.description` já publica. Evidência:
-  `decisions.md` § Notas anexadas a um relatório já enviado.
+  `decisions.md` § Report notes.
 - **O diálogo de falha tem três aberturas, e duas delas não podem falar em falha.** `crashReporter.dialog.body.ended`
   fala do app que encerrou; `keptRunning` e `unknown` descrevem um problema que o Cmdr atravessou (ou pode ter
   atravessado), então nelas não entram `falha`, `encerrou`, `fechou`, `parou` nem `travou`, e o relatório fica
-  **relatório** sem o `de falha`. Evidência e os termos recusados: `decisions.md` § Diálogo de falha.
+  **relatório** sem o `de falha`. Evidência e os termos recusados: `decisions.md` § Crash dialog.
 - **"Put back" tem TRÊS verbos em `pt`, e cada um é de uma família.** `colocar de volta` tira do Lixo, `restaurar`
   devolve o NOME anterior, e `levar de volta` é a reversão levando o arquivo ao lugar de origem. O inglês usa um verbo
   só e as `@key` chegam a mandar unificar; em português não dá. Evidência e as chaves de cada família: `decisions.md` §
-  O aviso do que a reversão conseguiu.
+  Rollback outcome notice.
 - **Uma frase de resultado nunca fica sem sujeito.** `Apagou {countText} itens…` também se lê como `você apagou`, e a §
   Variant acima já lista o `você` omitido como indício pt-PT. As manchetes de aviso escrevem `O Cmdr` ou `A reversão`
   por extenso, ainda que o inglês elida o sujeito; as linhas de motivo escapam disso pondo o ITEM como sujeito
-  (`{name} ficou como está: …`), o molde que `askCmdr.renameUndo.skipReason.*` já publica. Evidência: `decisions.md` § O
-  aviso do que a reversão conseguiu.
-- **Duas chaves com o MESMO inglês precisam do mesmo português, mesmo em telas diferentes.** O
-  `desktop-i18n-term-consistency` pareia por valor inglês, então `fileOperations.cancelRollback.reason.folderNotEmpty.*`
-  copia byte a byte as gêmeas do `askCmdr.renameUndo.skipReason.*` (o inglês é idêntico), inclusive uma concordância que
-  a chave original deixou fora do plural. Quando isso acontecer, alinhe a FAMÍLIA inteira ao molde já publicado: um
-  aviso com cinco linhas em dois moldes é uma inconsistência que a pessoa vê de um golpe só, enquanto a diferença entre
-  telas ninguém vê lado a lado.
+  (`{name} ficou como está: …`), o molde que `askCmdr.renameUndo.skipReason.*` já publica. Evidência: `decisions.md` §
+  Rollback outcome notice.
 - **Nada concorda com um `{name}`**: ele pode ser arquivo ou pasta, então nenhum particípio, adjetivo ou possessivo pode
   se apoiar nele; só verbos e preposições sem artigo. Quando a linha precisa do gênero, ela escreve o substantivo
-  (`a pasta {name}`). Mesma lógica dos tokens de painel do macOS (`decisions.md` § O que o inglês corrigiu em si mesmo).
+  (`a pasta {name}`). Mesma lógica dos tokens de painel do macOS (`decisions.md` § macOS pane names, Apple menu items,
+  and the example email).
 - **`obrigado` num botão impõe um gênero ao usuário**, porque concorda com quem fala. `No, thanks` sai como
   **`Não precisa`**, uma recusa educada corriqueira e sem gênero; `Agora não` fica reservado ao `Not now`, que promete
   uma próxima vez. É o caso típico do "reestruture para o neutro" da § Gender acima: a saída neutra existe e soa
-  natural, então ela ganha do masculino não marcado. Evidência e as formas recusadas: `decisions.md` § O convite para
-  fixar o Cmdr no Dock.
+  natural, então ela ganha do masculino não marcado. Evidência e as formas recusadas: `decisions.md` § Dock pin nudge.
 - **`Dock`, `Finder` e `Mac` ficam em inglês; `Applications` vira `pasta Aplicativos`.** O macOS pt-BR decide isso
   rótulo a rótulo, e a pilha fecha os três: `Adicionar ao Dock` mantém `Dock`, `Busca … no Finder` mantém `Finder`, e
   `Ir para a pasta Aplicativos` traduz a pasta. `configuration profile` é `perfil de configuração` (Apple) e `managed` é
-  `gerenciado`. Evidência por chave: `decisions.md` § O convite para fixar o Cmdr no Dock.
+  `gerenciado`. Evidência por chave: `decisions.md` § Dock pin nudge.
 - **Android por ADB: `depuração USB` e `ferramentas de plataforma` traduzem; `adb`, `ADB`, `Android SDK` e `Homebrew`
   ficam.** As duas linhas de `settings.fileOperations.adb*` chamam o campo de `Localização do adb` (o `localização` do
   Finder), o alvo de `sistema de arquivos` (o termo do Utilitário de Disco) e o interruptor de
   `Acesso aos arquivos do Android por ADB`, no molde `por USB` que o catálogo já usa. Evidência e confiança:
-  `decisions.md` § O acesso por ADB nos Ajustes.
+  `decisions.md` § ADB settings.
 - **O Ask Cmdr agora lê partes de um arquivo, e nenhuma frase pode prometer o contrário.** A tela de consentimento diz
   `arquivos inteiros, fotos ou miniaturas` (nunca enviados) e `uma parte limitada dele` (o que pode sair); o verbo de
   espiar é `olhar dentro de`, os metadados de foto são `detalhes da câmera` e o lugar é `localização` /
-  `onde ela foi tirada`. Evidência: `decisions.md` § O que o Ask Cmdr lê dentro de um arquivo.
+  `onde ela foi tirada`. Evidência: `decisions.md` § What Ask Cmdr reads inside files.
 - **A forma "ocupada" de um item de menu é o item inteiro mais ` (ocupado)` no fim, sem mais nada.** O sufixo é
   invariável: fica no masculino singular porque descreve o servidor ou o disco, não o usuário nem o item, então serve
   igual para `Desconectar (ocupado)`, `Esquecer senha salva (ocupado)`, `Esquecer servidor (ocupado)` e
   `Ejetar ({name}) (ocupado)`, que é o molde original. O texto base copia byte a byte a chave irmã não ocupada
   (`menu.network.disconnect`, `menu.network.forgetSavedPassword`, `menu.network.forgetServer`, `menu.volume.eject`): as
   duas linhas se alternam no mesmo lugar do menu, e qualquer diferença de palavra lê como outro comando. Termo:
-  `decisions.md` § Menus nativos, nas linhas ocupadas.
+  `decisions.md` § Native menus.
 - **`Servidores` e `Rede` convivem no seletor de volumes, e a diferença é o ponto.** A LINHA que abre o hub é
   `Servidores` (`fileExplorer.navigation.networkVolume`); o GRUPO onde ela fica continua `Rede`
   (`fileExplorer.navigation.groupNetwork`). A seção de atalhos dos lugares dentro de um servidor é `Locais`, o termo do
-  Finder, e não mais `Navegador de compartilhamentos`, que só descrevia o SMB. Evidência: `decisions.md` § A tabela do
-  hub de servidores.
+  Finder, e não mais `Navegador de compartilhamentos`, que só descrevia o SMB. Evidência: `decisions.md` § Server hub.
 - **Um cabeçalho de coluna estreita não herda a forma longa nem a forma flexionada da Apple.** `Last used` sai como
   `Último uso`: a `Última Usada` do macOS trava no feminino e o sujeito é `o servidor`, e o `Usado pela última vez` do
   Mail (que é justamente um cabeçalho de tabela) tem quatro palavras. A forma nominal não concorda com nada e cabe.
-  Evidência: `decisions.md` § A tabela do hub de servidores.
+  Evidência: `decisions.md` § Server hub.
 - **Nenhum estado do hub pode soar como falha.** `Salvo` é o servidor parado e nada aconteceu de errado;
   `Sessão encerrada` concorda com a SESSÃO, não com a pessoa, e diz que só falta iniciar sessão de novo;
   `Aguardando você conferir a chave` põe a pessoa como quem age. O verbo de uma verificação FEITA PELA PESSOA é
@@ -288,7 +280,7 @@ Two mechanics that bite in Portuguese specifically:
 - **Uma manchete de progresso vai no gerúndio, e a irmã dela manda na preposição.** `Reconnecting to {name}…` sai como
   `Reconectando a {name}…`: o gerúndio é a forma pt-BR (o `A reconectar` do pt-PT é marcador de variante, § acima), o
   `Reconectando…` é literal da Apple, e o `a` vem da irmã `servers.paneState.connecting` (`Conectando a {name}…`), que
-  se alterna com ela no MESMO lugar do painel. Evidência: `decisions.md` § Duas linhas novas no painel.
+  se alterna com ela no MESMO lugar do painel. Evidência: `decisions.md` § Reconnect and key-only sign-in.
 - **`então não há nada para …` é o molde fixo de "so there''s nothing to …".** Três chaves já o publicam (`ejetar`,
   `desconectar`, `digitar`), e o `desktop-i18n-term-consistency` compara pelo inglês, então uma quarta copia o molde em
   vez de reinventar a frase. O verbo de preencher uma credencial é `digitar`, o da Apple.
@@ -298,35 +290,27 @@ Two mechanics that bite in Portuguese specifically:
 - **`Ask Cmdr` só sobrevive onde o inglês o mantém, e ele agora só nomeia o PAINEL de chat.** Fora daí, o sujeito é
   `O Cmdr` ou `a IA`, conforme a chave em inglês; `AI features` é `os recursos de IA`. Nunca traduza pela memória de
   como a chave era antes: leia o inglês atual. Termos, fontes e as três palavras que não se confundem (`chat`,
-  `conversar`, `conversa`): `decisions.md` § A IA deixou de se chamar Ask Cmdr fora do painel de chat.
-- **Uma legenda de configuração não troca a palavra do rótulo que está logo acima dela: mova as duas juntas.** Quando o
-  rótulo e a legenda dividem um termo, trocar só uma delas faz o leitor achar que são dois campos diferentes. O rótulo
-  também é uma string traduzível: `endpoint` virou `ponto de extremidade` no rótulo E na legenda de uma vez só.
-  Evidência e a confiança (`high`): `decisions.md` § Os passos de configuração de provedor de IA.
+  `conversar`, `conversa`): `decisions.md` § Ask Cmdr names only the chat panel.
 - **O menu do ícone no Dock tem uma fonte Tier 1 que a pilha NÃO carrega**:
   `Dock.app/Contents/Resources/pt_BR.lproj/DockMenus.strings` (leia com `plutil -convert json -o -`). Ele decide a forma
   "verbo + nome do app" (`Abrir Cmdr`, sem artigo e sem aspas, seguindo `Ocultar %@` / `Mostrar %@`) e separa essa forma
   da de ARQUIVO, que a Apple põe entre aspas (`Abrir “%@”`). Atenção à pasta: `pt_BR.lproj` é o brasileiro. Evidência:
-  `decisions.md` § O menu do ícone do Cmdr no Dock.
+  `decisions.md` § Dock icon menu.
 - **Um compositor `{a} ({b})` fica idêntico ao inglês em pt-BR, e há fonte para isso.** O `%@ (%@)` do AppKit sai
   inalterado no `pt` da Apple, embora a mesma chave seja adaptada em `ja`, `zh_CN`, `ar` e `he`: parênteses ASCII, um
   espaço antes, ordem núcleo → qualificador. Quando a chave só junta dois nomes vindos do disco, não invente `em` nem
-  inverta a ordem; registre o `sameAsSourceJustification`. Evidência: `decisions.md` § O menu do ícone do Cmdr no Dock.
+  inverta a ordem; registre o `sameAsSourceJustification`. Evidência: `decisions.md` § Dock icon menu.
 - **O botão e o contador de "star" do GitHub NÃO usam a mesma palavra em pt-BR, e está certo assim.** O botão é
   `Adicionar aos favoritos` (é como o próprio GitHub em português chama) e a contagem é `estrelas`. Uma linha de link
   nomeia o botão que a pessoa vai procurar; a nota abaixo nomeia o número que ela vai ver. Evidência e as duas fontes:
-  `decisions.md` § Termos da reescrita da introdução.
+  `decisions.md` § Onboarding.
 - **`step` é `etapa` na introdução inteira**, tanto a etapa do assistente quanto a etapa numerada de instrução. Nunca
   `passo`: o catálogo já fechou `etapa` e uma tela que alterna as duas palavras lê como dois conceitos.
 - **Um resumo de meia linha ao lado de um interruptor tem o INTERRUPTOR como sujeito, e não pode quebrar linha.** Os
   quatro `onboarding.stepOptional.*.summary` são orações sem sujeito na mesma forma (`Precisa aceitar…`, `Ocupa 1 GB…`,
   `Permite conectar…`), o que dispensa o `você` que a § Variant cobra em frases de RESULTADO e também evita qualquer
   concordância de gênero com a pessoa. Como o espaço é de uma linha, cada valor ficou igual ou mais curto que o inglês:
-  vale deixar implícito o que a legenda longa atrás do glifo já diz. Evidência: `decisions.md` § Termos da reescrita da
-  introdução.
-- **Um resumo curto não troca a palavra da legenda longa que está atrás do glifo de informação.** É a mesma regra da
-  legenda de configuração acima, um nível abaixo: `native handler` saiu como `processo nativo do macOS` porque o
-  `stepOptional.mtp.desc` já dizia `esse processo do macOS`, e não como o `manipulador` da Microsoft.
+  vale deixar implícito o que a legenda longa atrás do glifo já diz. Evidência: `decisions.md` § Onboarding.
 - **`Por quê?` isolado leva circunflexo**; o `Por que` átono do meio da frase (`Por que este nome`) não. As duas formas
   convivem no catálogo e são as duas corretas.
 

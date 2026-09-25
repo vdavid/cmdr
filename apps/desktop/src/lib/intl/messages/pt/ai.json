@@ -436,9 +436,9 @@
   "@ai.secretError.keychainTitle": {
     "sourceHash": "ec77588"
   },
-  "ai.secretError.keychainBody": "{op, select, save {Abra o Acesso às Chaves e verifique o item \"Cmdr\", ou apague-o e tente salvar de novo.} other {Abra o Acesso às Chaves, encontre o item \"Cmdr\", conceda acesso, ou apague-o e digite sua chave outra vez.}}",
+  "ai.secretError.keychainBody": "{op, select, save {Abra o Acesso às Chaves e verifique o item “Cmdr”, ou apague-o e tente salvar de novo.} other {Abra o Acesso às Chaves, encontre o item “Cmdr”, conceda acesso, ou apague-o e digite sua chave outra vez.}}",
   "@ai.secretError.keychainBody": {
-    "sourceHash": "2a0fe5e"
+    "sourceHash": "8f1380e"
   },
   "ai.secretError.keyringTitle": "{op, select, save {Não foi possível salvar sua chave de API: o chaveiro do sistema negou o acesso} other {Não foi possível ler sua chave de API salva: o chaveiro do sistema negou o acesso}}",
   "@ai.secretError.keyringTitle": {

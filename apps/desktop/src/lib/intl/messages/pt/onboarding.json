@@ -143,9 +143,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "O Cmdr não está na lista? Clique no botão \"+\" embaixo e escolha o <strong>Cmdr</strong> na sua pasta <strong>Aplicativos</strong>.",
+  "onboarding.stepFda.step2.tip": "O Cmdr não está na lista? Clique no botão “+” embaixo e escolha o <strong>Cmdr</strong> na sua pasta <strong>Aplicativos</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "30d0299"
+    "sourceHash": "ffc4289"
   },
   "onboarding.stepFda.step3": "Confirme e clique em <strong>Encerrar e Reabrir</strong>",
   "@onboarding.stepFda.step3": {
@@ -187,9 +187,9 @@
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Você disse que queria ativar o acesso total ao disco, mas o Cmdr não parece ter conseguido. Talvez você precise reiniciar o app (faça agora, continuamos a partir daqui!), ou ir até <settingsLink>{systemSettings} > Privacidade e Segurança > Acesso Total ao Disco</settingsLink> e encontrar o Cmdr, ou adicioná-lo manualmente com o botão \"+\" embaixo.",
+  "onboarding.stepAi.bannerBody.stuck": "Você disse que queria ativar o acesso total ao disco, mas o Cmdr não parece ter conseguido. Talvez você precise reiniciar o app (faça agora, continuamos a partir daqui!), ou ir até <settingsLink>{systemSettings} > Privacidade e Segurança > Acesso Total ao Disco</settingsLink> e encontrar o Cmdr, ou adicioná-lo manualmente com o botão “+” embaixo.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "79d5765"
+    "sourceHash": "fcdff85"
   },
   "onboarding.stepAi.welcomeLinux.title": "Boas-vindas ao Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -227,13 +227,13 @@
   "@onboarding.stepAi.table.rowSearch": {
     "sourceHash": "49c266b"
   },
-  "onboarding.stepAi.table.searchWithout": "Você digita algo como <code>*peixe*.ppt</code> e seleciona o filtro \"após o dia 1 deste mês\".",
+  "onboarding.stepAi.table.searchWithout": "Você digita algo como <code>*peixe*.ppt</code> e seleciona o filtro “após o dia 1 deste mês”.",
   "@onboarding.stepAi.table.searchWithout": {
-    "sourceHash": "872cb1e"
+    "sourceHash": "ebd8f45"
   },
-  "onboarding.stepAi.table.searchWith": "Você diz \"minhas apresentações recentes sobre peixes\", e o agente ajusta seus filtros.",
+  "onboarding.stepAi.table.searchWith": "Você diz “minhas apresentações recentes sobre peixes”, e o agente ajusta seus filtros.",
   "@onboarding.stepAi.table.searchWith": {
-    "sourceHash": "b69cd82"
+    "sourceHash": "457e19a"
   },
   "onboarding.stepAi.table.rowRename": "Renomear em massa",
   "@onboarding.stepAi.table.rowRename": {
@@ -243,9 +243,9 @@
   "@onboarding.stepAi.table.renameWithout": {
     "sourceHash": "b12d997"
   },
-  "onboarding.stepAi.table.renameWith": "Você diz \"adicionar prefixo de data ISO\", o agente ajusta seu padrão de renomeação, você revisa e aplica à vontade.",
+  "onboarding.stepAi.table.renameWith": "Você diz “adicionar prefixo de data ISO”, o agente ajusta seu padrão de renomeação, você revisa e aplica à vontade.",
   "@onboarding.stepAi.table.renameWith": {
-    "sourceHash": "7fba3f5"
+    "sourceHash": "5287ae3"
   },
   "onboarding.stepAi.table.rowSelect": "Selecionar",
   "@onboarding.stepAi.table.rowSelect": {
@@ -255,13 +255,13 @@
   "@onboarding.stepAi.table.selectWithoutBound": {
     "sourceHash": "83f83b9"
   },
-  "onboarding.stepAi.table.selectWithoutUnbound": "Você abre \"Selecionar arquivos…\" e digita algo como <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, revisa e aplica.",
+  "onboarding.stepAi.table.selectWithoutUnbound": "Você abre “Selecionar arquivos…” e digita algo como <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, revisa e aplica.",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "sourceHash": "4cdc972"
+    "sourceHash": "bf9239a"
   },
-  "onboarding.stepAi.table.selectWith": "Você diz \"selecionar todos os arquivos de imagem\", o agente sugere uma seleção, você revisa e aplica à vontade.",
+  "onboarding.stepAi.table.selectWith": "Você diz “selecionar todos os arquivos de imagem”, o agente sugere uma seleção, você revisa e aplica à vontade.",
   "@onboarding.stepAi.table.selectWith": {
-    "sourceHash": "07f1063"
+    "sourceHash": "c1cc90b"
   },
   "onboarding.stepAi.resumeCue": "Você escolheu isto da última vez. Confirme ou altere abaixo.",
   "@onboarding.stepAi.resumeCue": {
@@ -303,9 +303,9 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "75c6d48"
   },
-  "onboarding.stepAi.missingKeyWarning": "Você ativou a IA, mas não digitou uma chave de API. A IA não vai funcionar e você vai ver um aviso. Corrija isso acima.\n\n<strong>Clique em \"{nextLabel}\" de novo para ignorar e seguir em frente.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "Você ativou a IA, mas não digitou uma chave de API. A IA não vai funcionar e você vai ver um aviso. Corrija isso acima.\n\n<strong>Clique em “{nextLabel}” de novo para ignorar e seguir em frente.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "3d66d11"
+    "sourceHash": "bdb8a08"
   },
   "onboarding.stepAi.cloudConsentOffNote": "A IA na nuvem fica desativada até você permitir. Dá para fazer isso depois em Ajustes > IA.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -355,9 +355,9 @@
   "@onboarding.stepBeta.checklist.alternativeTo": {
     "sourceHash": "c9b1e1e"
   },
-  "onboarding.stepBeta.checklist.alternativeToNote": "Bem no topo da página, ao lado do título \"Cmdr\". Isso ajuda as pessoas e o Google a notarem o Cmdr!",
+  "onboarding.stepBeta.checklist.alternativeToNote": "Bem no topo da página, ao lado do título “Cmdr”. Isso ajuda as pessoas e o Google a notarem o Cmdr!",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "sourceHash": "ea4903a"
+    "sourceHash": "ee4aed4"
   },
   "onboarding.stepBeta.checklist.email": "Digite seu endereço de e-mail <field></field> para receber novidades e perguntas bem de vez em quando",
   "@onboarding.stepBeta.checklist.email": {
@@ -455,13 +455,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Precisa aceitar a \"Rede Local\" uma vez",
+  "onboarding.stepOptional.networking.summary": "Precisa aceitar a “Rede Local” uma vez",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "5006f53"
+    "sourceHash": "f49fbc6"
   },
-  "onboarding.stepOptional.networking.desc": "Ter isto <em>ativado</em> significa que você pode se conectar a servidores SMB como compartilhamentos de rede da empresa, um NAS doméstico e afins.\nO único custo é um diálogo de permissão do macOS que aparece pedindo para você permitir a \"Rede Local\" e outro para \"Aceitar conexões de entrada\".\nOs dois diálogos são inofensivos, mas se você não sabe o que são, eles podem assustar ou incomodar.",
+  "onboarding.stepOptional.networking.desc": "Ter isto <em>ativado</em> significa que você pode se conectar a servidores SMB como compartilhamentos de rede da empresa, um NAS doméstico e afins.\nO único custo é um diálogo de permissão do macOS que aparece pedindo para você permitir a “Rede Local” e outro para “Aceitar conexões de entrada”.\nOs dois diálogos são inofensivos, mas se você não sabe o que são, eles podem assustar ou incomodar.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "089707f"
+    "sourceHash": "c03c7df"
   },
   "onboarding.stepOptional.indexing.title": "Indexação de disco",
   "@onboarding.stepOptional.indexing.title": {

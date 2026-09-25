@@ -25,9 +25,6 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   catalog keeps `pasta superior`. Switching is a whole-catalog migration.
 - **`online` unhyphenated** (`commands.cloudRemoveDownload.description`, `fileOperations.delete.cloudOnlineOnly*`): the
   catalog writes `online`; the VOLP spelling is `on-line`.
-- **Apple app names localized against the `@key`** (`settings.advanced.showSafeSaveFiles.description`:
-  `o Editor de Texto e a Pré-Visualização`): the `@key` asks to keep `TextEdit` / `Preview`; macOS pt-BR names them this
-  way.
 - **Smaller tentative calls**: `comparador` (`queryUi.*.aria.comparator`), `manifesto`
   (`errorReporter.dialog.manifestHeading`), `transmissão` / `transmitindo` for the viewer's streaming mode
   (`viewer.statusBar.badge.streaming*`), `Acompanhar` for Tail (`viewer.toolbar.tail.*`), `Saída detalhada`

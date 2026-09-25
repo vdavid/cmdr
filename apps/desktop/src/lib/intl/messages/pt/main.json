@@ -53,11 +53,11 @@
   },
   "main.revealNudge.title": "Abrir “Mostrar no Finder” no Cmdr?",
   "@main.revealNudge.title": {
-    "sourceHash": "c92e1b7"
+    "sourceHash": "45a5b47"
   },
   "main.revealNudge.body": "Você já vem usando o Cmdr há um tempo. Quando outro app executa “Mostrar no Finder”, o Cmdr pode abrir essa pasta no lugar dele, com o arquivo já sob o cursor.",
   "@main.revealNudge.body": {
-    "sourceHash": "fe4072b"
+    "sourceHash": "1db1d28"
   },
   "main.revealNudge.switchBackNote": "Você pode desfazer isso quando quiser nos Ajustes.",
   "@main.revealNudge.switchBackNote": {
@@ -73,19 +73,19 @@
   },
   "main.revealNudge.turnedOn": "O Cmdr agora abre “Mostrar no Finder” vindo de outros apps.",
   "@main.revealNudge.turnedOn": {
-    "sourceHash": "8eab42b"
+    "sourceHash": "27c0ea2"
   },
   "main.revealNudge.heldByOtherApp": "No momento, quem tem o “Mostrar no Finder” é o {app}. Você pode passá-lo para o Cmdr nos Ajustes quando quiser.",
   "@main.revealNudge.heldByOtherApp": {
-    "sourceHash": "3f513b0"
+    "sourceHash": "0893821"
   },
   "main.revealNudge.notTurnedOn": "O Cmdr não conseguiu assumir o “Mostrar no Finder” desta vez. O botão está nos Ajustes quando você quiser tentar de novo.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "4a9920d"
+    "sourceHash": "953a4ee"
   },
   "main.revealActivation.title": "“Mostrar no Finder” abriu aqui",
   "@main.revealActivation.title": {
-    "sourceHash": "23d50e1"
+    "sourceHash": "6bb18bb"
   },
   "main.revealActivation.body": "O Cmdr está configurado para receber esses pedidos, então o arquivo apareceu em um painel em vez de no Finder. O resto continua abrindo do mesmo jeito.",
   "@main.revealActivation.body": {
