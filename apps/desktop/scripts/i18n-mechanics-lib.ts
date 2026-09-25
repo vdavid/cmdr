@@ -12,9 +12,9 @@ import { readJsonIfPresent, resolveDocsRoot } from './i18n-termbase-lib.ts'
 
 /** A pattern a locale's catalog values must NOT contain, and why. */
 export interface MechanicsRule {
-    /** a JavaScript regex source, compiled with the `u` flag; `INSERT_MARK` stands in for a placeholder */
-    pattern: string
-    why: string
+  /** a JavaScript regex source, compiled with the `u` flag; `INSERT_MARK` stands in for a placeholder */
+  pattern: string
+  why: string
 }
 
 /** An opening and a closing quotation mark. */
@@ -22,23 +22,23 @@ export type QuotePair = [string, string]
 
 /** How a locale writes an ellipsis. */
 export interface Ellipsis {
-    /** the glyph (`…`, or `⋯` in zh-Hant), from `ELLIPSIS_GLYPHS` */
-    glyph: string
-    /** the no-break space a label-ending ellipsis takes before it (German `Laden …`); absent, it hugs its word */
-    spaceBefore?: string
+  /** the glyph (`…`, or `⋯` in zh-Hant), from `ELLIPSIS_GLYPHS` */
+  glyph: string
+  /** the no-break space a label-ending ellipsis takes before it (German `Laden …`); absent, it hugs its word */
+  spaceBefore?: string
 }
 
 /** One locale's `mechanics.json`. */
 export interface Mechanics {
-    quotes: { primary: QuotePair; nested?: QuotePair }
-    ellipsis: Ellipsis
-    /** the characters this language writes as an apostrophe (`’`, or `'` where the straight one is the norm) */
-    apostrophes?: string[]
-    /** spacing the language requires, each written as the pattern that breaks it */
-    spacing?: MechanicsRule[]
-    /** parenthesized or slashed alternatives this language's grammar tempts translators into */
-    hedges?: MechanicsRule[]
-    $comment?: string
+  quotes: { primary: QuotePair; nested?: QuotePair }
+  ellipsis: Ellipsis
+  /** the characters this language writes as an apostrophe (`’`, or `'` where the straight one is the norm) */
+  apostrophes?: string[]
+  /** spacing the language requires, each written as the pattern that breaks it */
+  spacing?: MechanicsRule[]
+  /** parenthesized or slashed alternatives this language's grammar tempts translators into */
+  hedges?: MechanicsRule[]
+  $comment?: string
 }
 
 /**
@@ -47,26 +47,26 @@ export interface Mechanics {
  * straight double quote is never allowed, whatever the declaration.
  */
 export const QUOTE_MARKS: ReadonlySet<string> = new Set([
-    '"',
-    "'",
-    '“',
-    '”',
-    '„',
-    '‟',
-    '‘',
-    '’',
-    '‚',
-    '‛',
-    '«',
-    '»',
-    '「',
-    '」',
-    '『',
-    '』',
-    '〝',
-    '〞',
-    '〟',
-    '＂',
+  '"',
+  "'",
+  '“',
+  '”',
+  '„',
+  '‟',
+  '‘',
+  '’',
+  '‚',
+  '‛',
+  '«',
+  '»',
+  '「',
+  '」',
+  '『',
+  '』',
+  '〝',
+  '〞',
+  '〟',
+  '＂',
 ])
 
 /**
@@ -81,39 +81,39 @@ export const ELLIPSIS_GLYPHS: ReadonlySet<string> = new Set(['…', '⋯'])
 
 /** The no-break spaces a label-ending ellipsis may take before it, with their names for the brief. */
 export const NO_BREAK_SPACES: ReadonlyMap<string, string> = new Map([
-    ['\u00a0', 'a no-break space (U+00A0)'],
-    ['\u202f', 'a narrow no-break space (U+202F)'],
+  ['\u00a0', 'a no-break space (U+00A0)'],
+  ['\u202f', 'a narrow no-break space (U+202F)'],
 ])
 
 /** A locale's mechanics path. */
 export function mechanicsPath(tag: string, docsRoot?: string): string {
-    return join(resolveDocsRoot(docsRoot), tag, 'mechanics.json')
+  return join(resolveDocsRoot(docsRoot), tag, 'mechanics.json')
 }
 
 /** The raw parsed `mechanics.json`, or `undefined` when the locale hasn't declared one yet. */
 export function loadMechanicsRaw(tag: string, docsRoot?: string): unknown {
-    return readJsonIfPresent(mechanicsPath(tag, docsRoot))
+  return readJsonIfPresent(mechanicsPath(tag, docsRoot))
 }
 
 /** The rule list, however loosely the file is written: the brief should still render around a typo. */
 function rules(value: unknown): MechanicsRule[] {
-    if (!Array.isArray(value)) return []
-    return value.filter(
-        (rule): rule is MechanicsRule =>
-            typeof rule === 'object' && rule !== null && typeof (rule as MechanicsRule).pattern === 'string',
-    )
+  if (!Array.isArray(value)) return []
+  return value.filter(
+    (rule): rule is MechanicsRule =>
+      typeof rule === 'object' && rule !== null && typeof (rule as MechanicsRule).pattern === 'string',
+  )
 }
 
 /** A quote pair as `‘…’`, or `undefined` when it isn't a pair. */
 function pairShown(pair: unknown): string | undefined {
-    return Array.isArray(pair) && pair.length === 2 ? `${String(pair[0])}…${String(pair[1])}` : undefined
+  return Array.isArray(pair) && pair.length === 2 ? `${String(pair[0])}…${String(pair[1])}` : undefined
 }
 
 /** The ellipsis as `ellipsis … with a no-break space (U+00A0) before a label-ending one, never `...``. */
 function ellipsisShown(ellipsis: Partial<Ellipsis> | undefined): string {
-    const glyph = typeof ellipsis?.glyph === 'string' ? ellipsis.glyph : '…'
-    const space = NO_BREAK_SPACES.get(ellipsis?.spaceBefore ?? '')
-    return `ellipsis ${glyph}${space ? ` with ${space} before a label-ending one` : ''}, never \`...\``
+  const glyph = typeof ellipsis?.glyph === 'string' ? ellipsis.glyph : '…'
+  const space = NO_BREAK_SPACES.get(ellipsis?.spaceBefore ?? '')
+  return `ellipsis ${glyph}${space ? ` with ${space} before a label-ending one` : ''}, never \`...\``
 }
 
 /**
@@ -121,21 +121,20 @@ function ellipsisShown(ellipsis: Partial<Ellipsis> | undefined): string {
  * digest when it has none: `quotes «…», nested “…” · apostrophe ’ · spacing: … · hedges: …`.
  */
 export function mechanicsSummary(raw: unknown): string {
-    if (typeof raw !== 'object' || raw === null)
-        return 'no mechanics.json yet: follow the digest for quotes and spacing'
-    const m = raw as Partial<Mechanics>
-    const parts: string[] = []
-    const primary = pairShown(m.quotes?.primary)
-    const nested = pairShown(m.quotes?.nested)
-    if (primary) {
-        parts.push(`${nested ? `quotes ${primary}, nested ${nested}` : `quotes ${primary}`}, never a straight \`"\``)
-    }
-    if (Array.isArray(m.apostrophes) && m.apostrophes.length > 0) parts.push(`apostrophe ${m.apostrophes.join(' or ')}`)
-    parts.push(ellipsisShown(m.ellipsis))
-    const shown = (list: MechanicsRule[]) => list.map((rule) => `\`${rule.pattern}\` (${rule.why})`).join('; ')
-    const spacing = rules(m.spacing)
-    if (spacing.length > 0) parts.push(`spacing, never: ${shown(spacing)}`)
-    const hedges = rules(m.hedges)
-    if (hedges.length > 0) parts.push(`hedges to rephrase: ${shown(hedges)}`)
-    return parts.join(' · ')
+  if (typeof raw !== 'object' || raw === null) return 'no mechanics.json yet: follow the digest for quotes and spacing'
+  const m = raw as Partial<Mechanics>
+  const parts: string[] = []
+  const primary = pairShown(m.quotes?.primary)
+  const nested = pairShown(m.quotes?.nested)
+  if (primary) {
+    parts.push(`${nested ? `quotes ${primary}, nested ${nested}` : `quotes ${primary}`}, never a straight \`"\``)
+  }
+  if (Array.isArray(m.apostrophes) && m.apostrophes.length > 0) parts.push(`apostrophe ${m.apostrophes.join(' or ')}`)
+  parts.push(ellipsisShown(m.ellipsis))
+  const shown = (list: MechanicsRule[]) => list.map((rule) => `\`${rule.pattern}\` (${rule.why})`).join('; ')
+  const spacing = rules(m.spacing)
+  if (spacing.length > 0) parts.push(`spacing, never: ${shown(spacing)}`)
+  const hedges = rules(m.hedges)
+  if (hedges.length > 0) parts.push(`hedges to rephrase: ${shown(hedges)}`)
+  return parts.join(' · ')
 }
