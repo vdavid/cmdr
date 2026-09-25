@@ -71,6 +71,7 @@ describe('ViewModePicker', () => {
     expect(trigger?.hasAttribute('data-disabled')).toBe(false)
     expect(trigger?.textContent).toContain('PDF')
     expect(itemValues()).toEqual(['text', 'binary', 'hex', 'media'])
+    expect(items().find((o) => o.getAttribute('data-value') === 'media')?.textContent).toContain('PDF (0)')
 
     void unmount(instance)
   })
@@ -85,7 +86,7 @@ describe('ViewModePicker', () => {
     expect(trigger?.textContent).toContain('Text')
     expect(itemValues()).toEqual(['text', 'binary', 'hex', 'media'])
     const reverse = items().find((o) => o.getAttribute('data-value') === 'media')
-    expect(reverse?.textContent).toContain('View as image')
+    expect(reverse?.textContent).toContain('View as image (0)')
 
     void unmount(instance)
   })
@@ -95,7 +96,7 @@ describe('ViewModePicker', () => {
     await settle()
 
     const reverse = items().find((o) => o.getAttribute('data-value') === 'media')
-    expect(reverse?.textContent).toContain('View as PDF')
+    expect(reverse?.textContent).toContain('View as PDF (0)')
 
     void unmount(instance)
   })

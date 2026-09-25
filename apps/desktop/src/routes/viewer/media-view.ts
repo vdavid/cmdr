@@ -27,6 +27,15 @@ export function isMediaKind(kind: ViewerContentKind): boolean {
   return kind === 'image' || kind === 'pdf'
 }
 
+/** The dedicated viewer available for the current or previously detected media session. */
+export function availableMediaKind(
+  kind: ViewerContentKind,
+  lastMediaKind: ViewerContentKind | null,
+): ViewerContentKind | null {
+  if (isMediaKind(kind)) return kind
+  return lastMediaKind !== null && isMediaKind(lastMediaKind) ? lastMediaKind : null
+}
+
 /** The sentence-case label the picker and status bar show for a kind. */
 export function mediaKindLabel(kind: ViewerContentKind): string {
   switch (kind) {

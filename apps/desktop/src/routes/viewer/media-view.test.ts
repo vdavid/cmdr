@@ -3,6 +3,7 @@ import { afterEach, beforeAll, afterAll, describe, it, expect } from 'vitest'
 import {
   mediaUrl,
   isMediaKind,
+  availableMediaKind,
   mediaKindLabel,
   viewAsMediaLabel,
   formatMediaDimensions,
@@ -38,6 +39,15 @@ describe('isMediaKind', () => {
     expect(isMediaKind('image')).toBe(true)
     expect(isMediaKind('pdf')).toBe(true)
     expect(isMediaKind('text')).toBe(false)
+  })
+})
+
+describe('availableMediaKind', () => {
+  it('uses the active or remembered dedicated viewer', () => {
+    expect(availableMediaKind('image', null)).toBe('image')
+    expect(availableMediaKind('text', 'pdf')).toBe('pdf')
+    expect(availableMediaKind('text', null)).toBeNull()
+    expect(availableMediaKind('text', 'text')).toBeNull()
   })
 })
 

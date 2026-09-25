@@ -1,10 +1,8 @@
 # File viewer module (frontend)
 
-Opens files in a read-only viewer with instant load for any file size, virtual scrolling, and background search. Full
-details (decisions, the full gotcha catalog): `DETAILS.md`.
+Opens files read-only with instant load, virtual scrolling, and background search. Details: `DETAILS.md`.
 
-Backend counterpart: `apps/desktop/src-tauri/src/file_viewer/CLAUDE.md` for the three backend strategies, session
-lifecycle, and background search. The viewer route shell: `apps/desktop/src/routes/viewer/CLAUDE.md`.
+Backend: `apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`. Viewer route: `apps/desktop/src/routes/viewer/CLAUDE.md`.
 
 ## Key files
 
@@ -28,7 +26,8 @@ also silences the unrendered ones, which then show raw bytes with no nudge.
 - **Cmd+F / Ctrl+F** opens the search bar (case-insensitive, 100ms debounce); **Enter / Shift+Enter** = next/previous
   match; **Escape** closes the search bar (if open) else the window.
 - **W** toggles word wrap (per-line heights for FullLoad, averaged for others).
-- **1 / 2 / 3** switch the viewer between Text, Binary, and Hex. Binary and Hex use original bytes, not decoded lines.
+- **1 / 2 / 3** switch Text / Binary / Hex; **0** returns to Media when the file has an image or PDF viewer. Binary and
+  Hex use original bytes, not decoded lines.
 
 ## Architecture (summary)
 

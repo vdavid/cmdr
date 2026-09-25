@@ -9,9 +9,8 @@ other components and helpers beside this file. Architecture and decision detail:
 
 - The text view works in **rows, not physical lines**. Long lines split into rows; text coordinates use row indexes and
   UTF-16 columns. Binary and Hex work in byte offsets. Keep their state and selection paths separate.
-- Mode keys **1, 2, 3** select Text, Binary, and Hex while the viewer has focus. Ignore them in editable controls. Media
-  remains available through the picker for supported images and PDFs. Preserve the backend media kind when switching
-  away from and back to it.
+- Mode keys **1, 2, 3** select Text, Binary, and Hex; **0** selects Media only for a supported image or PDF. Ignore them
+  in editable controls. Preserve the backend media kind when switching away from and back to it.
 - Binary and Hex read bounded chunks through `viewerGetBytes`; a routed or phone file uses the session's materialized
   path. Do not decode these reads through the text backends. Their DOM text selection covers rendered rows only.
 - Text-only effects, search, word wrap, encoding, and tail mode must not run in a raw byte or media view. A binary

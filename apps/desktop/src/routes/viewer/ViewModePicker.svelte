@@ -1,7 +1,7 @@
 <script lang="ts">
   import Select, { type SelectItem } from '$lib/ui/Select.svelte'
   import type { ViewerContentKind } from '$lib/ipc/bindings'
-  import { isMediaKind, mediaKindLabel, viewAsMediaLabel } from './media-view'
+  import { availableMediaKind, mediaKindLabel, viewAsMediaLabel } from './media-view'
   import type { ViewerDisplayMode } from './viewer-view-mode'
   import { tString } from '$lib/intl/messages.svelte'
 
@@ -13,13 +13,13 @@
   }
 
   const { mode, kind, lastMediaKind, onModeChange }: Props = $props()
-  const mediaKind = $derived(isMediaKind(kind) ? kind : lastMediaKind)
+  const mediaKind = $derived(availableMediaKind(kind, lastMediaKind))
   const items = $derived<SelectItem[]>([
     { value: 'text', label: `${tString('viewer.toolbar.viewMode.text')} (1)` },
     { value: 'binary', label: `${tString('viewer.toolbar.viewMode.binary')} (2)` },
     { value: 'hex', label: `${tString('viewer.toolbar.viewMode.hex')} (3)` },
-    ...(mediaKind && isMediaKind(mediaKind)
-      ? [{ value: 'media', label: mode === 'media' ? mediaKindLabel(mediaKind) : viewAsMediaLabel(mediaKind) }]
+    ...(mediaKind
+      ? [{ value: 'media', label: `${mode === 'media' ? mediaKindLabel(mediaKind) : viewAsMediaLabel(mediaKind)} (0)` }]
       : []),
   ])
 </script>

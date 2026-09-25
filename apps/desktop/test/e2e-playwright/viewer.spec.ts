@@ -134,6 +134,9 @@ test.describe('File viewer', () => {
 
     await viewer.keyboard.press('1')
     await expect.poll(() => viewer.isVisible('.file-content'), { timeout: waitBudget(5000) }).toBe(true)
+
+    await viewer.keyboard.press('0')
+    expect(await viewer.isVisible('.file-content')).toBe(true)
   })
 })
 

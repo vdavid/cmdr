@@ -126,6 +126,9 @@ branches on `viewMode`: text uses the line pipeline; binary and hex use original
   `viewer_open_as_text` (text) or `viewer_open` (re-classifies → media), swaps to it, and closes the old session
   EXPLICITLY (different id). The page tears down per-session listeners first because `openViewerSession` re-attaches
   them. No backend change: `viewer_open` re-classification is what re-derives the media kind.
+- **Media mode uses `0`** in the picker and keyboard router only when the active or remembered backend kind is image or
+  PDF. A plain text file has no Media option, and `0` retains its ordinary key behavior there. The reverse switch from
+  forced Text reopens the natural media session; Binary and Hex can return to the existing media session.
 
 ### Binary and hex views
 

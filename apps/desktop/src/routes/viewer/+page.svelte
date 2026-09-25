@@ -60,6 +60,7 @@
     import ViewerRow from './ViewerRow.svelte'
     import RawByteView from './RawByteView.svelte'
     import { modeForKey, type ViewerDisplayMode } from './viewer-view-mode'
+    import { availableMediaKind } from './media-view'
     import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
     import MediaImageView from './MediaImageView.svelte'
     import MediaPdfView from './MediaPdfView.svelte'
@@ -220,9 +221,8 @@
     let warningSuppressed = $state(false)
     let bannerDismissed = $state(false)
     const warning = $derived(categorizeForViewerWarning(fileName))
-    // Media kinds render inline, so they never warn (the classifier already returns
-    // no-warn for images / PDFs, but gate on `isMedia` too so a stray extension
-    // mismatch can't surface the raw-bytes banner over a rendered image).
+    // The extension classifier flags images and PDFs, but the warning concerns
+    // decoded text only. Rendered media and byte views never show it.
     const showWarningBanner = $derived(
         isTextView && warning.shouldWarn && !bannerDismissed && !warningSuppressed && !loading,
     )
@@ -606,6 +606,7 @@
 
     async function switchViewMode(next: ViewerDisplayMode): Promise<void> {
         if (loading || !sessionId || next === viewMode) return
+        if (next === 'media' && availableMediaKind(media.kind, media.lastMediaKind) === null) return
         if (next !== 'text') search.closeSearch()
         pointerDrag.closeContextMenu()
         if (next === 'text' && media.kind !== 'text') {
@@ -629,7 +630,7 @@
      * the focused `MediaImageView` stage, and the PDF embed owns its own keys.
      */
     function handleWindowKeyDown(e: KeyboardEvent) {
-        const mode = modeForKey(e)
+        const mode = modeForKey(e, availableMediaKind(media.kind, media.lastMediaKind) !== null)
         const target = e.target
         const editing = target instanceof HTMLElement && target.closest('input, textarea, [contenteditable="true"], [role="combobox"]')
         if (mode && !editing && !loading && sessionId) {

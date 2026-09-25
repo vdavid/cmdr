@@ -119,10 +119,7 @@ test.describe('File viewer media rendering', () => {
       await expect.poll(() => viewer.isVisible('.raw-hex'), { timeout: waitBudget(5000) }).toBe(true)
       expect((await viewer.textContent('.raw-hex'))?.startsWith('89 50 4E 47')).toBe(true)
 
-      const trigger = `document.querySelector('.viewer-toolbar-pickers .select-trigger')`
-      expect(await pointerClick(viewer, trigger)).toBe('clicked')
-      const mediaOption = `${selectContentExpr(trigger)}.querySelector('[data-value="media"]')`
-      expect(await pointerClick(viewer, mediaOption)).toBe('clicked')
+      await viewer.keyboard.press('0')
       await expect.poll(() => viewer.isVisible('.media-image-stage'), { timeout: waitBudget(5000) }).toBe(true)
     } finally {
       await closeScopedWindow(main, viewer, label)
