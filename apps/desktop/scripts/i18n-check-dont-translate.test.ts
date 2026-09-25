@@ -48,6 +48,13 @@ describe('droppedTokens: pure detector', () => {
     expect(droppedTokens('Open in Cmdr', 'Megnyitás Cmdrben')).toEqual([])
     expect(droppedTokens("Cmdr's window", 'Cmdrs fönster')).toEqual([])
     expect(droppedTokens('About Cmdr', 'A Cmdrről')).toEqual([])
+    // The other shapes the sv, hu, and fr sweeps write: apostrophe, colon, and hyphen
+    // genitives and case endings, markdown around the brand, a brand ending in a capital.
+    for (const inflected of ['Cmdr’s', "Cmdr''s", 'Cmdr:s', 'Cmdr-ral', '**Cmdr**-ben', '<b>Cmdr</b>t']) {
+      expect(droppedTokens('Cmdr’s window', `${inflected} ablak`)).toEqual([])
+    }
+    expect(droppedTokens('On macOS', 'macOS-en')).toEqual([])
+    expect(droppedTokens('Over SMB', 'SMB:n')).toEqual([])
   })
 
   it('still flags a brand entirely missing from the locale value', () => {
