@@ -70,7 +70,7 @@ describe('ViewModePicker', () => {
     const trigger = target.querySelector<HTMLButtonElement>('.select-trigger')
     expect(trigger?.hasAttribute('data-disabled')).toBe(false)
     expect(trigger?.textContent).toContain('PDF')
-    expect(itemValues()).toEqual(['text', 'binary', 'hex', 'media'])
+    expect(itemValues()).toEqual(['media', 'text', 'binary', 'hex'])
     expect(items().find((o) => o.getAttribute('data-value') === 'media')?.textContent).toContain('PDF (0)')
 
     void unmount(instance)
@@ -84,7 +84,7 @@ describe('ViewModePicker', () => {
     // Not disabled: there's a real switch-back available.
     expect(trigger?.hasAttribute('data-disabled')).toBe(false)
     expect(trigger?.textContent).toContain('Text')
-    expect(itemValues()).toEqual(['text', 'binary', 'hex', 'media'])
+    expect(itemValues()).toEqual(['media', 'text', 'binary', 'hex'])
     const reverse = items().find((o) => o.getAttribute('data-value') === 'media')
     expect(reverse?.textContent).toContain('View as image (0)')
 

@@ -15,12 +15,12 @@
   const { mode, kind, lastMediaKind, onModeChange }: Props = $props()
   const mediaKind = $derived(availableMediaKind(kind, lastMediaKind))
   const items = $derived<SelectItem[]>([
-    { value: 'text', label: `${tString('viewer.toolbar.viewMode.text')} (1)` },
-    { value: 'binary', label: `${tString('viewer.toolbar.viewMode.binary')} (2)` },
-    { value: 'hex', label: `${tString('viewer.toolbar.viewMode.hex')} (3)` },
     ...(mediaKind
       ? [{ value: 'media', label: `${mode === 'media' ? mediaKindLabel(mediaKind) : viewAsMediaLabel(mediaKind)} (0)` }]
       : []),
+    { value: 'text', label: `${tString('viewer.toolbar.viewMode.text')} (1)` },
+    { value: 'binary', label: `${tString('viewer.toolbar.viewMode.binary')} (2)` },
+    { value: 'hex', label: `${tString('viewer.toolbar.viewMode.hex')} (3)` },
   ])
 </script>
 
