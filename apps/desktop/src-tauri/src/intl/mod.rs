@@ -74,7 +74,7 @@ pub(crate) struct ShippedLocale {
     pub(crate) region_scripts: &'static [(&'static str, &'static str)],
     /// CLDR nodes this catalog answers for besides its own [`Self::tag`],
     /// lowercased. Only `en-GB` carries one today: it answers for `en-001`,
-    /// CLDR's World English, which is where [`PARENT_LOCALES`] sends `en-NZ`,
+    /// CLDR's World English, which is where [`shipped_locales::PARENT_LOCALES`] sends `en-NZ`,
     /// `en-IE`, `en-ZA`, and ~110 other regions nobody ships a catalog for.
     /// Declared in the generator's `CATALOG_COVERS`, with the reasoning.
     pub(crate) covers: &'static [&'static str],
