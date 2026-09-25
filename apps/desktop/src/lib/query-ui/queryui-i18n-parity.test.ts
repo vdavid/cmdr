@@ -74,7 +74,7 @@ describe('query-ui interpolated-string parity (en)', () => {
       'Index ready (12.3K entries)',
     )
     expect(tString('queryUi.results.scanningWithCount', { countText: '999', count: 999 })).toBe(
-      'Scanning in progress (999 entries)…',
+      'Scan in progress (999 entries)…',
     )
   })
 })

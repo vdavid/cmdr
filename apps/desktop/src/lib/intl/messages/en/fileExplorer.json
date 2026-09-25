@@ -1793,17 +1793,17 @@
     },
     "screenshot": "quick-look-hint.png"
   },
-  "fileExplorer.quickLookHint.finderComparison": "If you come from Finder, this might be unusual because Finder triggers a “Quick preview” action on <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "If you come from Finder, this might be unusual because Finder opens Quick Look on <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "description": "Second line of the Finder-convert toast, contrasting Cmdr with Finder. The <space></space> tag wraps an inline Space-key chip. \"Finder\" is the macOS file manager and “Quick preview” its feature; keep both. Reorder words naturally but keep the chip.",
+    "description": "Second line of the Finder-convert toast, contrasting Cmdr with Finder. The <space></space> tag wraps an inline Space-key chip. \"Finder\" is the macOS file manager and “Quick Look” its preview feature; use the names your language’s macOS shows. Reorder words naturally but keep the chip.",
     "placeholders": {
       "space": "marks where the Space-key chip is shown inline; carries no translatable text"
     },
     "screenshot": "quick-look-hint.png"
   },
-  "fileExplorer.quickLookHint.quickView": "In Cmdr, you can trigger quick view via <key></key>. (<key></key> works in Finder, too, btw!)",
+  "fileExplorer.quickLookHint.quickView": "In Cmdr, you can trigger Quick Look via <key></key>. (<key></key> works in Finder, too, btw!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "description": "Third line of the Finder-convert toast, telling the user the Cmdr shortcut for quick view. Each <key></key> tag wraps an inline chip showing the same Quick Look shortcut (it appears twice). \"Cmdr\"/\"Finder\" are app names; \"btw\" is casual for \"by the way\". Keep both chips in the sentence.",
+    "description": "Third line of the Finder-convert toast, telling the user the Cmdr shortcut for Quick Look (the macOS preview feature; use the name your language’s macOS shows). Each <key></key> tag wraps an inline chip showing the same Quick Look shortcut (it appears twice). \"Cmdr\"/\"Finder\" are app names; \"btw\" is casual for \"by the way\". Keep both chips in the sentence.",
     "placeholders": {
       "key": "marks where the Quick Look shortcut chip is shown inline (appears twice, same shortcut); carries no translatable text"
     },

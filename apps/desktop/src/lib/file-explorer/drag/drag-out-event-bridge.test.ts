@@ -102,7 +102,7 @@ describe('drag-out event bridge', () => {
       payload: { sessionKey: 4, filesSucceeded: 1, foldersSucceeded: 0, failures: ['clip.mov'] },
     })
     const [message, options] = addToastMock.mock.calls[0]
-    expect(message).toBe("Copied 1 file. Couldn’t copy “clip.mov”.")
+    expect(message).toBe('Copied 1 file. Couldn’t copy “clip.mov”.')
     expect(options).toMatchObject({ id: 'drag-out:4', level: 'warn' })
   })
 
@@ -110,7 +110,7 @@ describe('drag-out event bridge', () => {
     const { complete } = await mountBridge()
     complete({ payload: { sessionKey: 5, filesSucceeded: 0, foldersSucceeded: 0, failures: ['a.jpg'] } })
     const [message, options] = addToastMock.mock.calls[0]
-    expect(message).toBe("Couldn’t copy “a.jpg”.")
+    expect(message).toBe('Couldn’t copy “a.jpg”.')
     expect(options).toMatchObject({ id: 'drag-out:5', level: 'error' })
   })
 })

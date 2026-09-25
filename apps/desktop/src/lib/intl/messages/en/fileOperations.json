@@ -799,7 +799,7 @@
   "@fileOperations.transferProgress.openingSource": {
     "description": "Replaces the time-left text at the very start of a copy/move, while the first file has been requested from the drive, share, or phone being read FROM and not a single byte has come back yet. Not a warning: a busy network drive can take a while to answer. Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the operation queue window. It sits right-aligned under the progress bars, so keep it short. {duration} is how long it has been waiting so far, already formatted, such as '4s'.",
     "placeholders": {
-      "duration": { "content": "$1", "example": "4s" }
+      "duration": "how long Cmdr has waited so far, already formatted (for example 4s)"
     },
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
@@ -816,7 +816,7 @@
   "@fileOperations.transferProgress.stallNotice": {
     "description": "Replaces the time-left text when a transfer has stopped moving, so we stop showing a countdown we no longer believe. Appears on both surfaces that show a running transfer: the copy/move/delete progress dialog and the rows of the operation queue window. {duration} is a formatted length of time such as '45s' or '2m 30s'.",
     "placeholders": {
-      "duration": { "content": "$1", "example": "45s" }
+      "duration": "how long the transfer has gone without progress, already formatted (for example 45s)"
     },
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
@@ -847,7 +847,7 @@
   "@fileOperations.transferProgress.stallInFlight": {
     "description": "Shown on a stalled copy/move. Explains why the finished-files counter can read lower than what the person sees at the destination: files still open have data written but aren't counted as done yet. {count} is how many are open.",
     "placeholders": {
-      "count": { "content": "$1", "example": "5" }
+      "count": "how many files are still open (for example 5)"
     },
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
@@ -928,23 +928,23 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.newFolderLabel": "New folder:",
+  "fileOperations.transferProgress.newFolderLabel": "Incoming folder:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "description": "Row label in the conflict comparison for the incoming item, when it is a folder (the incoming folder, not a command to create one). Keep the trailing colon.",
+    "description": "Row label in the conflict comparison for the incoming item (the one being copied or moved in), when it is a folder. Not the create-folder command. Keep the trailing colon.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.newFileLabel": "New file:",
+  "fileOperations.transferProgress.newFileLabel": "Incoming file:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "description": "Row label in the conflict comparison for the incoming item, when it is a file (and the existing item is a folder). Keep the trailing colon.",
+    "description": "Row label in the conflict comparison for the incoming item (the one being copied or moved in), when it is a file and the existing item is a folder. Not the create-file command. Keep the trailing colon.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.newLabel": "New:",
+  "fileOperations.transferProgress.newLabel": "Incoming:",
   "@fileOperations.transferProgress.newLabel": {
-    "description": "Row label in the conflict comparison for the incoming item, when both items are the same type. Keep the trailing colon.",
+    "description": "Row label in the conflict comparison for the incoming item (the one being copied or moved in), when both items are the same type. Keep the trailing colon.",
     "screenshot": "conflict-dialog.png"
   },
 
@@ -1332,9 +1332,9 @@
     }
   },
 
-  "fileOperations.cancelRollback.stoppedDeleting": "Stopped after removing {countText} {count, plural, one {item} other {items}}. The rest stayed where the copy put them.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Stopped after removing {countText} {count, plural, one {item} other {items}}. The rest stayed where Cmdr put them.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "description": "Toast shown when the user cancels a copy with Rollback and then stops the undo partway through, so some of the copied items were removed and the others are still sitting at the destination. The user chose this, so state it plainly with no hint of a warning. “Where the copy put them” is the destination folder the copy wrote to; it mirrors fileOperations.cancelRollback.stoppedMovingBack. Sentence case.",
+    "description": "Toast shown when the user cancels a copy or a compress with Rollback and then stops the undo partway through, so some of the items it wrote were removed and the others are still sitting at the destination. The user chose this, so state it plainly with no hint of a warning. “Where Cmdr put them” is the destination the copy or compress wrote to; it mirrors fileOperations.cancelRollback.stoppedMovingBack. Sentence case.",
     "placeholders": {
       "countText": "how many items the undo removed before it stopped, already formatted for display (e.g. 1,234)",
       "count": "the same number of items (drives the singular/plural form of the noun)"

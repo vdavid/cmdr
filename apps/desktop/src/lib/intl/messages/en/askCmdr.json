@@ -271,9 +271,7 @@
   "@askCmdr.event.contextTrimmed": {
     "description": "A small centered timeline line in the chat thread, shown when older tool results had to leave the model's context so this turn would fit its token budget. It tells the user the reply was written with less than the whole chat in view. Sentence case. The apostrophe is U+2019.",
     "placeholders": {
-      "count": {
-        "content": "How many earlier tool results were left out, as an integer."
-      }
+      "count": "How many earlier tool results were left out, as an integer."
     }
   },
   "askCmdr.event.modelChanged": "Switched to {model}",
@@ -423,12 +421,8 @@
   "@askCmdr.cost.tokens": {
     "description": "The token count in the chat's cost footer. countText is the preformatted number (with thousands separators); count is the raw integer that selects singular or plural.",
     "placeholders": {
-      "countText": {
-        "content": "The token count, already formatted with thousands separators, like 1,234."
-      },
-      "count": {
-        "content": "The raw token count as an integer, used only to pick the singular or plural word."
-      }
+      "countText": "The token count, already formatted with thousands separators, like 1,234.",
+      "count": "The raw token count as an integer, used only to pick the singular or plural word."
     },
     "screenshot": "settings-ai-ask-cmdr.png"
   },
@@ -441,9 +435,7 @@
   "@askCmdr.cost.estimate": {
     "description": "Estimated cost of a chat with a known cloud model. amount is a preformatted currency string like $0.0023. Lowercase 'about' signals it's an estimate, not an exact bill.",
     "placeholders": {
-      "amount": {
-        "content": "The estimated cost, already formatted as a currency amount, like $0.0023."
-      }
+      "amount": "The estimated cost, already formatted as a currency amount, like $0.0023."
     }
   },
   "askCmdr.cost.unknown": "cost unknown",
@@ -488,9 +480,7 @@
   "@askCmdr.renameReview.openPreview": {
     "description": "Accessible name of the per-row thumbnail button in the bulk rename review, which opens the file in the viewer so the user can check the proposed name against the file itself.",
     "placeholders": {
-      "name": {
-        "content": "The file's current name."
-      }
+      "name": "The file's current name."
     },
     "screenshot": "bulk-rename-review-all-allowed.png"
   },
@@ -503,9 +493,7 @@
   "@askCmdr.renameReview.editName": {
     "description": "Accessible label for the editable new name field in each bulk rename review row, so a wrong proposed name can be corrected in place instead of denied. Placeholder is the file's current name.",
     "placeholders": {
-      "name": {
-        "content": "The file's current name."
-      }
+      "name": "The file's current name."
     },
     "screenshot": "bulk-rename-review-all-allowed.png"
   },
@@ -544,19 +532,14 @@
     "description": "Label shown in the bulk rename review when the user replaced the proposed name with one they typed themselves. The row then carries no evidence at all, and never the model’s.",
     "screenshot": "bulk-rename-review-edited-names.png"
   },
-  "askCmdr.renameReview.coverage": "Matched {matchedText} of {totalText} {total, plural, one {character} other {characters}}",
+  "askCmdr.renameReview.coverage": "{matched, plural, one {Matched} other {Matched}} {matchedText} of {totalText} {total, plural, one {character} other {characters}}",
   "@askCmdr.renameReview.coverage": {
     "description": "Caption under the quote in the bulk rename review's evidence column, saying how much of the text Cmdr read in the image the quote covers. Lets the user see that a short match inside a page of recognized text is weak evidence for a name. Both numbers arrive preformatted with thousands separators.",
     "placeholders": {
-      "total": {
-        "content": "The same total number of characters (decides whether the noun is singular or plural)."
-      },
-      "matchedText": {
-        "content": "How many characters the quote covers, preformatted."
-      },
-      "totalText": {
-        "content": "How many characters Cmdr read in the image, preformatted."
-      }
+      "matched": "The same number of matched characters (decides the verb’s agreement where your language needs it).",
+      "total": "The same total number of characters (decides whether the noun is singular or plural).",
+      "matchedText": "How many characters the quote covers, preformatted.",
+      "totalText": "How many characters Cmdr read in the image, preformatted."
     },
     "screenshot": "bulk-rename-review-why-this-name.png"
   },
@@ -594,9 +577,7 @@
   "@askCmdr.renameReview.rename": {
     "description": "Disabled-until-apply primary action label in the bulk rename review. count is the number of allowed rows.",
     "placeholders": {
-      "count": {
-        "content": "The number of allowed rename rows."
-      }
+      "count": "The number of allowed rename rows."
     },
     "screenshot": "bulk-rename-review-all-allowed.png"
   },
@@ -674,12 +655,8 @@
   "@askCmdr.renameReview.status": {
     "description": "Screen-reader status summary for the bulk rename review list. allowed and blocked are raw counts.",
     "placeholders": {
-      "allowed": {
-        "content": "The number of currently allowed rows."
-      },
-      "blocked": {
-        "content": "The number of rows blocked by preflight."
-      }
+      "allowed": "The number of currently allowed rows.",
+      "blocked": "The number of rows blocked by preflight."
     },
     "screenshot": "bulk-rename-review-all-allowed.png"
   },
@@ -687,12 +664,8 @@
   "@askCmdr.renameUndo.applied": {
     "description": "A line in the Ask Cmdr chat thread, shown right after a batch of files was renamed. It reports what happened and sits beside an Undo button. Sentence case.",
     "placeholders": {
-      "countText": {
-        "content": "How many files were renamed, ready to drop into the sentence (e.g. 1,234)."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files were renamed, ready to drop into the sentence (e.g. 1,234).",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.undo": "Undo",
@@ -703,39 +676,25 @@
   "@askCmdr.renameUndo.undoLabel": {
     "description": "Accessible name (aria-label) for the Undo button beside the 'Renamed N files.' line, so a screen reader announces WHAT would be undone rather than a bare 'Undo'. Never shown on screen.",
     "placeholders": {
-      "countText": {
-        "content": "How many files this button would rename back, ready to drop into the sentence (e.g. 1,234)."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files this button would rename back, ready to drop into the sentence (e.g. 1,234).",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.undoJob": "Undo all {countText} {count, plural, one {batch} other {batches}}",
   "@askCmdr.renameUndo.undoJob": {
     "description": "Second button, shown only when the user renamed files in several batches during one run: it undoes every batch at once. A 'batch' is one reviewed group of renames the user approved. Keep it short: it sits inline in a narrow side panel.",
     "placeholders": {
-      "countText": {
-        "content": "How many batches would be undone, ready to drop into the sentence (e.g. 12)."
-      },
-      "count": {
-        "content": "The same number of batches (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many batches would be undone, ready to drop into the sentence (e.g. 12).",
+      "count": "The same number of batches (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.undoJobLabel": "Undo every rename in this run: {filesText} {files, plural, one {file} other {files}} across {batches, plural, one {# batch} other {# batches}}",
   "@askCmdr.renameUndo.undoJobLabel": {
     "description": "Accessible name (aria-label) for the 'Undo all N batches' button, naming both totals so a screen reader conveys the scale of what would be undone. A 'batch' is one reviewed group of renames the user approved. Never shown on screen.",
     "placeholders": {
-      "filesText": {
-        "content": "Total files across every batch, ready to drop into the sentence (e.g. 1,234)."
-      },
-      "files": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      },
-      "batches": {
-        "content": "How many batches would be undone."
-      }
+      "filesText": "Total files across every batch, ready to drop into the sentence (e.g. 1,234).",
+      "files": "The same number of files (decides whether the noun is singular or plural).",
+      "batches": "How many batches would be undone."
     }
   },
   "askCmdr.renameUndo.undoing": "Putting the old names back…",
@@ -746,153 +705,107 @@
   "@askCmdr.renameUndo.undone": {
     "description": "Result line shown when an undo put every file's previous NAME back. The files never moved: only their names changed back, so use your language's verb for restoring a name, which is often not the verb for restoring a file from the Trash (fileOperations.trash.undone). Sentence case.",
     "placeholders": {
-      "countText": {
-        "content": "How many files got their previous name back, ready to drop into the sentence (e.g. 1,234)."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files got their previous name back, ready to drop into the sentence (e.g. 1,234).",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.partial": "Put the old {count, plural, one {name} other {names}} back on {countText} {count, plural, one {file} other {files}}.",
   "@askCmdr.renameUndo.partial": {
     "description": "First of two lines shown when an undo could only put SOME files' previous NAMES back; the second line is askCmdr.renameUndo.skipped. Same wording as askCmdr.renameUndo.undone, kept as its own key because it is followed by the explanation line and translators may want to pair the two. Restoring a name, not restoring a file from the Trash (fileOperations.trash.undone). Sentence case.",
     "placeholders": {
-      "countText": {
-        "content": "How many files got their previous name back, ready to drop into the sentence (e.g. 1,234)."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files got their previous name back, ready to drop into the sentence (e.g. 1,234).",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.skipped": "Left {countText} {count, plural, one {file} other {files}} alone: {count, plural, one {it changed} other {they changed}} since the rename, or the old name is taken again.",
   "@askCmdr.renameUndo.skipped": {
     "description": "Second line of a partial undo result: it explains why some files kept their new names. Cmdr never overwrites during an undo, so a file that changed after the rename, or whose old name now belongs to something else, is deliberately left as it is. Say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
-      "countText": {
-        "content": "How many files were left as they are, ready to drop into the sentence (e.g. 1,234)."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files were left as they are, ready to drop into the sentence (e.g. 1,234).",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.skipReason.drift.named": "Left {name} alone: it changed since the rename.",
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to exactly ONE file, so the line names it. This reason: the file was edited after Cmdr renamed it, so putting the old name back would touch a file the user has since changed. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
-      "name": {
-        "content": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
-      }
+      "name": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
     }
   },
   "askCmdr.renameUndo.skipReason.drift.counted": "Left {countText} {count, plural, one {file} other {files}} alone: they changed since the rename.",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. This reason: the file was edited after Cmdr renamed it, so putting the old name back would touch a file the user has since changed. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
-      "countText": {
-        "content": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more.",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.skipReason.nameTaken.named": "Left {name} alone: its old name is taken again.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to exactly ONE file, so the line names it. This reason: something else now sits at the name the file used to have, so the file keeps its new name. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
-      "name": {
-        "content": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
-      }
+      "name": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
     }
   },
   "askCmdr.renameUndo.skipReason.nameTaken.counted": "Left {countText} {count, plural, one {file} other {files}} alone: their old names are taken again.",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. This reason: something else now sits at the name the file used to have, so the file keeps its new name. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
-      "countText": {
-        "content": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more.",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.skipReason.unverifiable.named": "Left {name} alone: Cmdr couldn’t check whether it changed.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to exactly ONE file, so the line names it. This reason: the drive could not tell Cmdr whether the file has changed since the rename (some network drives and phones cannot), and Cmdr never renames a file it cannot check first. Say this as caution, not as a fault. Sentence case; the apostrophe is U+2019.",
     "placeholders": {
-      "name": {
-        "content": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
-      }
+      "name": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
     }
   },
   "askCmdr.renameUndo.skipReason.unverifiable.counted": "Left {countText} {count, plural, one {file} other {files}} alone: Cmdr couldn’t check whether they changed.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. This reason: the drive could not tell Cmdr whether the file has changed since the rename (some network drives and phones cannot), and Cmdr never renames a file it cannot check first. Say this as caution, not as a fault. Sentence case; the apostrophe is U+2019.",
     "placeholders": {
-      "countText": {
-        "content": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more.",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "Left the folder {name} alone: it has something in it now.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "description": "One line of a partial undo result, about FOLDERS rather than files. This reason: undoing would have removed a folder Cmdr created, but something has been put inside it since, so Cmdr keeps the folder and what is in it. This version is used when the reason applies to exactly ONE file, so the line names it. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
-      "name": {
-        "content": "The folder’s own name, e.g. Scans. Never translate it: it is the real name on disk."
-      }
+      "name": "The folder’s own name, e.g. Scans. Never translate it: it is the real name on disk."
     }
   },
   "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "Left {countText} {count, plural, one {folder} other {folders}} alone: they have something in them now.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
     "description": "One line of a partial undo result, about FOLDERS rather than files. This reason: undoing would have removed a folder Cmdr created, but something has been put inside it since, so Cmdr keeps the folder and what is in it. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. Cmdr never overwrites while undoing, so say this as a considered choice, not as something going wrong. Sentence case.",
     "placeholders": {
-      "countText": {
-        "content": "How many folders this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
-      },
-      "count": {
-        "content": "The same number of folders (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many folders this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more.",
+      "count": "The same number of folders (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.skipReason.failed.named": "Left {name} alone: Cmdr couldn’t put its old name back.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to exactly ONE file, so the line names it. This reason: the drive refused to rename the file back (it is disconnected, read-only, or reported a problem). Unlike the other reasons this one is not a deliberate choice, so it may be worth trying again. Sentence case; the apostrophe is U+2019.",
     "placeholders": {
-      "name": {
-        "content": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
-      }
+      "name": "The file’s own name, e.g. invoice-2026.pdf. Never translate it: it is the real name on disk."
     }
   },
   "askCmdr.renameUndo.skipReason.failed.counted": "Left {countText} {count, plural, one {file} other {files}} alone: Cmdr couldn’t put their old names back.",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
     "description": "One line of a partial undo result in the Ask Cmdr chat thread, saying which of the renamed files kept their new names and why. This version is used when the reason applies to two or more files, so the line counts them instead of naming them. This reason: the drive refused to rename the file back (it is disconnected, read-only, or reported a problem). Unlike the other reasons this one is not a deliberate choice, so it may be worth trying again. Sentence case; the apostrophe is U+2019.",
     "placeholders": {
-      "countText": {
-        "content": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more."
-      },
-      "count": {
-        "content": "The same number of files (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many files this reason applies to, ready to drop into the sentence (e.g. 1,234). Always two or more.",
+      "count": "The same number of files (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.refusedBatches": "Cmdr couldn’t undo {countText} {count, plural, one {batch} other {batches}}. The operation log has the details.",
   "@askCmdr.renameUndo.refusedBatches": {
     "description": "Extra line of a partial undo result, shown when whole batches could not be reversed at all (already undone, or a drive they need is disconnected). 'The operation log' is Cmdr's history of file changes; use whatever your locale calls that feature. A 'batch' is one reviewed group of renames the user approved. Sentence case; the apostrophe is U+2019.",
     "placeholders": {
-      "countText": {
-        "content": "How many batches could not be undone, ready to drop into the sentence (e.g. 3)."
-      },
-      "count": {
-        "content": "The same number of batches (decides whether the noun is singular or plural)."
-      }
+      "countText": "How many batches could not be undone, ready to drop into the sentence (e.g. 3).",
+      "count": "The same number of batches (decides whether the noun is singular or plural)."
     }
   },
   "askCmdr.renameUndo.unavailable": "Nothing to put back. This batch may already be undone, or its drive isn’t connected.",
@@ -934,60 +847,40 @@
   "@askCmdr.wakeDigest.summary": {
     "description": "The always-visible label on the collapsed block that opens a chat Ask Cmdr started by itself: it says how many folders the agent looked at before it spoke. Pressing the label expands the per-folder breakdown. A folder counted here may be named outright inside or only be part of a rollup line, so the number covers both. Sentence case, no full stop: it is a label on a disclosure control, not a sentence.",
     "placeholders": {
-      "foldersText": {
-        "content": "How many folders the agent looked at, already formatted with thousands separators, like 1,234."
-      },
-      "folders": {
-        "content": "The same folder count as a raw integer, used only to pick the singular or plural word."
-      }
+      "foldersText": "How many folders the agent looked at, already formatted with thousands separators, like 1,234.",
+      "folders": "The same folder count as a raw integer, used only to pick the singular or plural word."
     }
   },
   "askCmdr.wakeDigest.created": "{countText} {count, plural, one {new item} other {new items}}",
   "@askCmdr.wakeDigest.created": {
     "description": "One fragment in the comma-separated tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself. Counts things that appeared in that folder. \"Item\" is the app's word for a file or a folder, because the tally covers both. Lowercase and no full stop: several of these fragments are joined with commas on one line.",
     "placeholders": {
-      "countText": {
-        "content": "How many things appeared, already formatted with thousands separators, like 1,234."
-      },
-      "count": {
-        "content": "The same count as a raw integer, used only to pick the singular or plural word."
-      }
+      "countText": "How many things appeared, already formatted with thousands separators, like 1,234.",
+      "count": "The same count as a raw integer, used only to pick the singular or plural word."
     }
   },
   "askCmdr.wakeDigest.modified": "{countText} {count, plural, one {changed item} other {changed items}}",
   "@askCmdr.wakeDigest.modified": {
     "description": "One fragment in the comma-separated tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself. Counts things whose contents changed in that folder, as opposed to things that appeared, went away, or were renamed. \"Item\" is the app's word for a file or a folder. Lowercase and no full stop: several of these fragments are joined with commas on one line.",
     "placeholders": {
-      "countText": {
-        "content": "How many things changed, already formatted with thousands separators, like 1,234."
-      },
-      "count": {
-        "content": "The same count as a raw integer, used only to pick the singular or plural word."
-      }
+      "countText": "How many things changed, already formatted with thousands separators, like 1,234.",
+      "count": "The same count as a raw integer, used only to pick the singular or plural word."
     }
   },
   "askCmdr.wakeDigest.removed": "{countText} {count, plural, one {removed item} other {removed items}}",
   "@askCmdr.wakeDigest.removed": {
     "description": "One fragment in the comma-separated tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself. Counts things that are no longer in that folder, whichever way they went (trashed, deleted, or moved out). \"Item\" is the app's word for a file or a folder. Lowercase and no full stop: several of these fragments are joined with commas on one line.",
     "placeholders": {
-      "countText": {
-        "content": "How many things went away, already formatted with thousands separators, like 1,234."
-      },
-      "count": {
-        "content": "The same count as a raw integer, used only to pick the singular or plural word."
-      }
+      "countText": "How many things went away, already formatted with thousands separators, like 1,234.",
+      "count": "The same count as a raw integer, used only to pick the singular or plural word."
     }
   },
   "askCmdr.wakeDigest.renamed": "{countText} {count, plural, one {renamed item} other {renamed items}}",
   "@askCmdr.wakeDigest.renamed": {
     "description": "One fragment in the comma-separated tally under a folder name, inside the expanded block that opens a chat Ask Cmdr started by itself. Counts things that kept their contents but got a new name. \"Item\" is the app's word for a file or a folder. Lowercase and no full stop: several of these fragments are joined with commas on one line.",
     "placeholders": {
-      "countText": {
-        "content": "How many things were renamed, already formatted with thousands separators, like 1,234."
-      },
-      "count": {
-        "content": "The same count as a raw integer, used only to pick the singular or plural word."
-      }
+      "countText": "How many things were renamed, already formatted with thousands separators, like 1,234.",
+      "count": "The same count as a raw integer, used only to pick the singular or plural word."
     }
   },
   "askCmdr.wakeDigest.noChanges": "Nothing changed",
@@ -998,21 +891,11 @@
   "@askCmdr.wakeDigest.rollup": {
     "description": "The last line inside the expanded block that opens a chat Ask Cmdr started by itself, admitting how much the block is NOT showing: the agent had room to name only the busiest folders, and these are the rest, counted together under the deepest folder they all sit in. Being honest about the size of what is hidden is the whole point of the line, so keep both numbers. Sentence case, no full stop.",
     "placeholders": {
-      "foldersText": {
-        "content": "How many folders are being summarized rather than named, already formatted with thousands separators, like 1,234."
-      },
-      "folders": {
-        "content": "The same folder count as a raw integer, used only to pick the singular or plural word."
-      },
-      "ancestor": {
-        "content": "The absolute path of the deepest folder all of them sit under, like /Users/dana/Projects. Never translate a path."
-      },
-      "changesText": {
-        "content": "How many changes happened across those folders in total, already formatted with thousands separators, like 1,234."
-      },
-      "changes": {
-        "content": "The same change count as a raw integer, used only to pick the singular or plural word."
-      }
+      "foldersText": "How many folders are being summarized rather than named, already formatted with thousands separators, like 1,234.",
+      "folders": "The same folder count as a raw integer, used only to pick the singular or plural word.",
+      "ancestor": "The absolute path of the deepest folder all of them sit under, like /Users/dana/Projects. Never translate a path.",
+      "changesText": "How many changes happened across those folders in total, already formatted with thousands separators, like 1,234.",
+      "changes": "The same change count as a raw integer, used only to pick the singular or plural word."
     }
   },
   "askCmdr.sessions.wakeThread": "Cmdr started this chat",
@@ -1023,12 +906,8 @@
   "@askCmdr.wakeToast.title": {
     "description": "Headline of the pop-up notice that appears when the app noticed something on its own and staged changes for the user to look at. Nobody asked for these, so the sentence names the app as the one making the offer rather than telling the user to do anything. \"Cmdr\" is the product name and stays verbatim with its capital C. Sentence case, no full stop.",
     "placeholders": {
-      "countText": {
-        "content": "How many suggestions are waiting, already formatted with thousands separators, like 1,234. Always at least one."
-      },
-      "count": {
-        "content": "The same count as a raw integer, used only to pick the singular or plural word."
-      }
+      "countText": "How many suggestions are waiting, already formatted with thousands separators, like 1,234. Always at least one.",
+      "count": "The same count as a raw integer, used only to pick the singular or plural word."
     }
   },
   "askCmdr.wakeToast.action": "Review",
@@ -1043,45 +922,27 @@
   "@askCmdr.decision.rejected": {
     "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This is the wording for a suggestion the person said no to in the review. Sentence case, no full stop. Address the person directly, in the informal register this app uses throughout.",
     "placeholders": {
-      "countText": {
-        "content": "How many files or folders the suggestion covered, already formatted with thousands separators, like 1,234."
-      },
-      "count": {
-        "content": "The same count as a raw integer, used only to pick the singular or plural word."
-      },
-      "verbName": {
-        "content": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting."
-      }
+      "countText": "How many files or folders the suggestion covered, already formatted with thousands separators, like 1,234.",
+      "count": "The same count as a raw integer, used only to pick the singular or plural word.",
+      "verbName": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting."
     }
   },
   "askCmdr.decision.approved": "You approved {verbName} {countText} {count, plural, one {item} other {items}}",
   "@askCmdr.decision.approved": {
     "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This is the wording for a suggestion the person approved and that has since finished running; what actually happened to each file is said on the next line, askCmdr.decision.result. Sentence case, no full stop. Address the person directly, in the informal register this app uses throughout.",
     "placeholders": {
-      "countText": {
-        "content": "How many files or folders the suggestion covered, already formatted with thousands separators, like 1,234."
-      },
-      "count": {
-        "content": "The same count as a raw integer, used only to pick the singular or plural word."
-      },
-      "verbName": {
-        "content": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting."
-      }
+      "countText": "How many files or folders the suggestion covered, already formatted with thousands separators, like 1,234.",
+      "count": "The same count as a raw integer, used only to pick the singular or plural word.",
+      "verbName": "The action the agent suggested, already translated, from the askCmdr.decision.verb* keys: for English, one of moving, copying, trashing, deleting, renaming, compressing, extracting."
     }
   },
   "askCmdr.decision.result": "{doneText} done, {skippedText} skipped, {failedText} failed",
   "@askCmdr.decision.result": {
     "description": "A line in the Ask Cmdr chat rail recording what the person answered when the agent suggested doing something to a batch of their files. It appears in the thread the suggestion came from, and the file path or pattern it refers to is shown beside it rather than inside this sentence. This second line follows an approved suggestion and says what the run actually did, which is not always what was approved: a file that changed after the review is passed over rather than acted on. All three numbers are always shown, zeros included, because a partial run is exactly what this line exists to admit to. Lowercase fragments joined by commas, no full stop.",
     "placeholders": {
-      "doneText": {
-        "content": "How many files the run finished, already formatted with thousands separators, like 1,234."
-      },
-      "skippedText": {
-        "content": "How many files the run passed over, already formatted with thousands separators, like 1,234."
-      },
-      "failedText": {
-        "content": "How many files the run could not finish, already formatted with thousands separators, like 1,234."
-      }
+      "doneText": "How many files the run finished, already formatted with thousands separators, like 1,234.",
+      "skippedText": "How many files the run passed over, already formatted with thousands separators, like 1,234.",
+      "failedText": "How many files the run could not finish, already formatted with thousands separators, like 1,234."
     }
   },
   "askCmdr.decision.verbMove": "moving",

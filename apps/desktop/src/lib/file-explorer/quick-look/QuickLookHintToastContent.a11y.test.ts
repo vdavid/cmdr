@@ -50,7 +50,7 @@ describe('QuickLookHintToastContent', () => {
     expect(text).toContain('Space')
     expect(text).toContain('selects the file under the cursor')
     expect(text).toContain('Finder')
-    expect(text).toContain('Quick preview')
+    expect(text).toContain('Finder opens Quick Look on')
     expect(text).toContain('⇧Space')
     expect(text).toContain('works in Finder, too')
     expect(text).toContain('Enter')

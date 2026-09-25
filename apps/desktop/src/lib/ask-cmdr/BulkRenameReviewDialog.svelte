@@ -527,6 +527,7 @@
                                                     {/if}
                                                     {tString('askCmdr.renameReview.coverage', {
                                                         matchedText: formatInteger(coverage.matchedChars),
+                                                        matched: coverage.matchedChars,
                                                         totalText: formatInteger(coverage.deliveredChars),
                                                         total: coverage.deliveredChars,
                                                     })}

@@ -82,10 +82,10 @@ describe('readCancelRollback', () => {
   describe('a reversal the user stopped partway', () => {
     // Told apart by its EMPTY skips: a full pass that skipped nothing lands
     // `rolledBack`, so `partiallyRolledBack` with no groups can only be a stop.
-    it('says the rest stayed where the copy put them, for a copy', () => {
+    it('says the rest stayed where Cmdr put them, for a copy', () => {
       const readout = readCancelRollback(rollback({ outcome: 'partiallyRolledBack', reversed: 12 }), 'copy')
       expect(readout).toEqual({
-        headline: 'Stopped after removing 12 items. The rest stayed where the copy put them.',
+        headline: 'Stopped after removing 12 items. The rest stayed where Cmdr put them.',
         leftBehind: null,
         reasons: [],
         staged: null,
@@ -216,7 +216,7 @@ describe('readCancelRollback', () => {
         'copy',
       )
       expect(readout).toEqual({
-        headline: 'Stopped after removing 5 items. The rest stayed where the copy put them.',
+        headline: 'Stopped after removing 5 items. The rest stayed where Cmdr put them.',
         leftBehind: null,
         reasons: [],
         staged: null,

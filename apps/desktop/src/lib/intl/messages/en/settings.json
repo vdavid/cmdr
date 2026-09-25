@@ -708,9 +708,7 @@
   "@settings.mediaIndex.networkVolumes.optInLabel": {
     "description": "Accessible label for the on/off switch that opts a network drive into background image indexing.",
     "placeholders": {
-      "name": {
-        "content": "The network drive’s name, like \"naspi\"."
-      }
+      "name": "The network drive’s name, like \"naspi\"."
     }
   },
   "settings.mediaIndex.networkVolumes.optInHelp": "Cmdr reads the text inside these photos so you can search it. It runs on your Mac, and the photos never leave your network.",
@@ -729,9 +727,7 @@
   "@settings.mediaIndex.networkVolumes.alwaysAria": {
     "description": "Accessible label for the \"Always index this drive\" switch.",
     "placeholders": {
-      "name": {
-        "content": "The network drive’s name, like \"naspi\"."
-      }
+      "name": "The network drive’s name, like \"naspi\"."
     }
   },
   "settings.mediaIndex.networkVolumes.paused": "Paused, resumes when this drive reconnects",
@@ -742,12 +738,8 @@
   "@settings.mediaIndex.networkVolumes.indexed": {
     "description": "Status line showing how many of a drive’s photos are already indexed and searchable.",
     "placeholders": {
-      "count": {
-        "content": "The number of indexed photos, used to choose singular or plural wording."
-      },
-      "countText": {
-        "content": "The same number, preformatted with thousands separators for display."
-      }
+      "count": "The number of indexed photos, used to choose singular or plural wording.",
+      "countText": "The same number, preformatted with thousands separators for display."
     }
   },
   "settings.mediaIndex.networkVolumes.notIndexedYet": "Not indexed yet",
@@ -794,18 +786,10 @@
   "@settings.mediaIndex.importanceThreshold.preview": {
     "description": "Live count under the slider, showing how much the current level covers across the drives being indexed. Both numbers are approximate and update as the user drags.",
     "placeholders": {
-      "images": {
-        "content": "The number of images that would be indexed, used to choose singular or plural wording."
-      },
-      "imagesText": {
-        "content": "The same image count, preformatted with thousands separators."
-      },
-      "folders": {
-        "content": "The number of folders that would be indexed, used to choose singular or plural wording."
-      },
-      "foldersText": {
-        "content": "The same folder count, preformatted with thousands separators."
-      }
+      "images": "The number of images that would be indexed, used to choose singular or plural wording.",
+      "imagesText": "The same image count, preformatted with thousands separators.",
+      "folders": "The number of folders that would be indexed, used to choose singular or plural wording.",
+      "foldersText": "The same folder count, preformatted with thousands separators."
     }
   },
   "settings.mediaIndex.importanceThreshold.previewNone": "Nothing matches at this level yet. Drag right to index more.",
@@ -832,24 +816,16 @@
   "@settings.mediaIndex.importanceThreshold.deltaAdd": {
     "description": "Shown while dragging the slider toward more coverage: how many more images this new level would index compared with the saved level.",
     "placeholders": {
-      "images": {
-        "content": "The number of extra images, used to choose singular or plural wording."
-      },
-      "imagesText": {
-        "content": "The same number, preformatted with thousands separators."
-      }
+      "images": "The number of extra images, used to choose singular or plural wording.",
+      "imagesText": "The same number, preformatted with thousands separators."
     }
   },
   "settings.mediaIndex.importanceThreshold.deltaRemove": "{images, plural, one {Leaves out about {imagesText} image} other {Leaves out about {imagesText} images}}",
   "@settings.mediaIndex.importanceThreshold.deltaRemove": {
     "description": "Shown while dragging the slider toward less coverage: how many images this new level would leave out compared with the saved level.",
     "placeholders": {
-      "images": {
-        "content": "The number of images left out, used to choose singular or plural wording."
-      },
-      "imagesText": {
-        "content": "The same number, preformatted with thousands separators."
-      }
+      "images": "The number of images left out, used to choose singular or plural wording.",
+      "imagesText": "The same number, preformatted with thousands separators."
     }
   },
   "settings.mediaIndex.importanceThreshold.floor": "Junk like node_modules and system caches is always skipped.",
@@ -864,15 +840,9 @@
   "@settings.mediaIndex.progress.ofTotal": {
     "description": "Honest progress line for a drive: how many of its qualifying images are indexed so far.",
     "placeholders": {
-      "total": {
-        "content": "The total number of qualifying images, used to choose singular or plural wording."
-      },
-      "enrichedText": {
-        "content": "The number indexed so far, preformatted with thousands separators."
-      },
-      "totalText": {
-        "content": "The total number of qualifying images, preformatted with thousands separators."
-      }
+      "total": "The total number of qualifying images, used to choose singular or plural wording.",
+      "enrichedText": "The number indexed so far, preformatted with thousands separators.",
+      "totalText": "The total number of qualifying images, preformatted with thousands separators."
     }
   },
   "settings.mediaIndex.progress.counting": "Counting images…",
@@ -883,45 +853,27 @@
   "@settings.mediaIndex.progress.done": {
     "description": "Progress line for a drive whose images are all indexed (indexed count equals the total).",
     "placeholders": {
-      "total": {
-        "content": "The total number of indexed images, used to choose singular or plural wording."
-      },
-      "totalText": {
-        "content": "The same number, preformatted with thousands separators."
-      }
+      "total": "The total number of indexed images, used to choose singular or plural wording.",
+      "totalText": "The same number, preformatted with thousands separators."
     }
   },
   "settings.mediaIndex.reclaim.line": "You have {totalText} {total, plural, one {image} other {images}} indexed; your setting covers {coveredText}. The extra {doomed, plural, one {{doomedText} entry stays} other {{doomedText} entries stay}} searchable until you delete them.",
   "@settings.mediaIndex.reclaim.line": {
     "description": "Shown under the slider when the drive holds many more indexed images than the current level covers (because lowering the level never deletes anything). Frames the leftover entries as still useful before offering to delete them. Pairs with the reclaim button below it.",
     "placeholders": {
-      "total": {
-        "content": "The same total (decides whether the noun is singular or plural)."
-      },
-      "totalText": {
-        "content": "The total number of indexed images, preformatted with thousands separators."
-      },
-      "coveredText": {
-        "content": "How many indexed images the current level covers, preformatted with thousands separators."
-      },
-      "doomed": {
-        "content": "The number of leftover indexed entries outside the current level, used to choose singular or plural wording."
-      },
-      "doomedText": {
-        "content": "The same leftover count, preformatted with thousands separators."
-      }
+      "total": "The same total (decides whether the noun is singular or plural).",
+      "totalText": "The total number of indexed images, preformatted with thousands separators.",
+      "coveredText": "How many indexed images the current level covers, preformatted with thousands separators.",
+      "doomed": "The number of leftover indexed entries outside the current level, used to choose singular or plural wording.",
+      "doomedText": "The same leftover count, preformatted with thousands separators."
     }
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Delete the extra entry and free about {size}} other {Delete the extra entries and free about {size}}}",
   "@settings.mediaIndex.reclaim.button": {
     "description": "Button under the reclaim line that deletes the leftover indexed entries and reclaims their disk space. {size} is a human-friendly size like \"1.9 GB\".",
     "placeholders": {
-      "doomed": {
-        "content": "The number of leftover entries that would be deleted, used to choose singular or plural wording."
-      },
-      "size": {
-        "content": "The approximate disk space that would be freed, preformatted (for example \"1.9 GB\")."
-      }
+      "doomed": "The number of leftover entries that would be deleted, used to choose singular or plural wording.",
+      "size": "The approximate disk space that would be freed, preformatted (for example \"1.9 GB\")."
     }
   },
   "settings.mediaIndex.reclaim.confirmTitle": "Delete extra indexed entries",
@@ -932,24 +884,16 @@
   "@settings.mediaIndex.reclaim.confirmBody": {
     "description": "Body of the confirmation dialog before deleting leftover indexed entries. Makes clear the delete is recoverable but re-indexing costs time.",
     "placeholders": {
-      "doomed": {
-        "content": "The number of entries that would be deleted, used to choose singular or plural wording."
-      },
-      "doomedText": {
-        "content": "The same count, preformatted with thousands separators."
-      },
-      "size": {
-        "content": "The approximate disk space that would be freed, preformatted (for example \"1.9 GB\")."
-      }
+      "doomed": "The number of entries that would be deleted, used to choose singular or plural wording.",
+      "doomedText": "The same count, preformatted with thousands separators.",
+      "size": "The approximate disk space that would be freed, preformatted (for example \"1.9 GB\")."
     }
   },
   "settings.mediaIndex.reclaim.freed": "Freed about {size}",
   "@settings.mediaIndex.reclaim.freed": {
     "description": "Success toast after deleting leftover indexed entries, reporting the disk space reclaimed.",
     "placeholders": {
-      "size": {
-        "content": "The disk space freed, preformatted (for example \"1.9 GB\")."
-      }
+      "size": "The disk space freed, preformatted (for example \"1.9 GB\")."
     }
   },
   "settings.mediaIndex.reclaim.alreadyCleared": "Those entries are already cleared",
@@ -1173,9 +1117,7 @@
   "@settings.ai.cloudConsent.onSince": {
     "description": "Smaller line under the Allow cloud AI switch in Settings > AI > Provider, showing when the user turned it on. date is a preformatted date string.",
     "placeholders": {
-      "date": {
-        "content": "The date the user turned Ask Cmdr on, already formatted for the locale."
-      }
+      "date": "The date the user turned Ask Cmdr on, already formatted for the locale."
     }
   },
   "settings.ai.cloudConsent.lockedHint": "Turn on “Allow cloud AI” above to set up a service.",
@@ -2172,9 +2114,7 @@
   "@settings.askCmdr.provider.shared": {
     "description": "Line telling the user this section shares the provider configured in the AI settings section. provider is the current provider's name (Off, Cloud AI, or Local LLM). The › is a right-pointing angle separating the settings path.",
     "placeholders": {
-      "provider": {
-        "content": "The current AI provider label: Off, Cloud AI, or Local LLM."
-      }
+      "provider": "The current AI provider label: Off, Cloud AI, or Local LLM."
     },
     "screenshot": "settings-ai-ask-cmdr.png",
     "screenshotNote": "Settings > AI > Ask Cmdr, pictured here. Your string belongs to a state this screenshot doesn’t show (off, or asking you to review changed wording), a confirmation or empty state in one of its panels, or a note under one of its controls."
@@ -2250,12 +2190,8 @@
   "@settings.askCmdr.wakeDelay.summary": {
     "description": "Help text under the cadence slider, naming both waits the current setting produces: the one for folders with a lot going on, and the longer one for quieter folders. Both values arrive already formatted (\"30s\", \"5m\", \"2h\"); don't add units or reformat them.",
     "placeholders": {
-      "hot": {
-        "content": "How long a busy folder waits, already formatted, for example \"30s\"."
-      },
-      "warm": {
-        "content": "How long a quieter folder waits, already formatted, for example \"30m\"."
-      }
+      "hot": "How long a busy folder waits, already formatted, for example \"30s\".",
+      "warm": "How long a quieter folder waits, already formatted, for example \"30m\"."
     },
     "screenshot": "settings-ai-ask-cmdr.png"
   },
