@@ -27,7 +27,7 @@
   "@viewer.error.notFound": {
     "sourceHash": "580b83c"
   },
-  "viewer.error.isDirectory": "C''est un dossier, il n''y a donc rien à afficher ici. Ouvrez-le dans la fenêtre principale pour voir son contenu.",
+  "viewer.error.isDirectory": "C’est un dossier, il n’y a donc rien à afficher ici. Ouvrez-le dans la fenêtre principale pour voir son contenu.",
   "@viewer.error.isDirectory": {
     "sourceHash": "b29fe2e"
   },
@@ -35,11 +35,11 @@
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
-  "viewer.error.tooLargeToPreview": "Ce fichier est trop volumineux pour être prévisualisé depuis ici. Copiez-le d''abord ailleurs, puis ouvrez-le.",
+  "viewer.error.tooLargeToPreview": "Ce fichier est trop volumineux pour être prévisualisé depuis ici. Copiez-le d’abord ailleurs, puis ouvrez-le.",
   "@viewer.error.tooLargeToPreview": {
     "sourceHash": "8696039"
   },
-  "viewer.error.archiveUnreadable": "Impossible d''ouvrir ce fichier depuis l''archive. Il est peut-être chiffré, endommagé ou utilise un format que Cmdr ne sait pas lire.",
+  "viewer.error.archiveUnreadable": "Impossible d’ouvrir ce fichier depuis l’archive. Il est peut-être chiffré, endommagé ou utilise un format que Cmdr ne sait pas lire.",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "01490a6"
   },
@@ -51,11 +51,11 @@
   "@viewer.error.cancel": {
     "sourceHash": "19766ed"
   },
-  "viewer.error.stoppedResponding": "La récupération de ce fichier n''avance plus. Vérifiez que le téléphone ou le serveur est toujours connecté, puis réessayez.",
+  "viewer.error.stoppedResponding": "La récupération de ce fichier n’avance plus. Vérifiez que le téléphone ou le serveur est toujours connecté, puis réessayez.",
   "@viewer.error.stoppedResponding": {
     "sourceHash": "f88b690"
   },
-  "viewer.pull.title": "Récupération de « {fileName} » pour l''aperçu",
+  "viewer.pull.title": "Récupération de « {fileName} » pour l’aperçu",
   "@viewer.pull.title": {
     "sourceHash": "3a02768"
   },
@@ -63,15 +63,15 @@
   "@viewer.pull.progress": {
     "sourceHash": "edce3be"
   },
-  "viewer.pull.progressUnknownTotal": "{doneText} pour l''instant",
+  "viewer.pull.progressUnknownTotal": "{doneText} pour l’instant",
   "@viewer.pull.progressUnknownTotal": {
     "sourceHash": "548095e"
   },
-  "viewer.content.ariaLabel": "Contenu du fichier : {fileName}",
+  "viewer.content.ariaLabel": "Contenu du fichier : {fileName}",
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Ceci est l''affichage brut du fichier. Vous voudrez peut-être afficher plutôt le véritable <kindName>{kind}</kindName>. Pour cela, fermez cette fenêtre et appuyez sur <quickLookKey></quickLookKey> pour ouvrir l''aperçu rapide, ou appuyez sur <openKey></openKey> (ou double-cliquez sur le fichier) pour l''ouvrir dans l''application associée.",
+  "viewer.binaryWarning.body": "C’est l’affichage brut du fichier. Vous voudrez peut-être afficher plutôt le véritable <kindName>{kind}</kindName>. Pour cela, fermez cette fenêtre et appuyez sur <quickLookKey></quickLookKey> pour ouvrir l’aperçu rapide, ou appuyez sur <openKey></openKey> (ou double-cliquez sur le fichier) pour l’ouvrir dans l’application associée.",
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
@@ -130,7 +130,7 @@
   "@viewer.search.stop": {
     "sourceHash": "c48cf72"
   },
-  "viewer.search.stopTooltip": "Arrêter l''analyse et garder les résultats",
+  "viewer.search.stopTooltip": "Arrêter l’analyse et garder les résultats",
   "@viewer.search.stopTooltip": {
     "sourceHash": "b86629c"
   },
@@ -150,7 +150,7 @@
   "@viewer.search.closeTooltip": {
     "sourceHash": "7d9eb7a"
   },
-  "viewer.toolbar.viewMode.ariaLabel": "Mode d''affichage",
+  "viewer.toolbar.viewMode.ariaLabel": "Mode d’affichage",
   "@viewer.toolbar.viewMode.ariaLabel": {
     "sourceHash": "18997f2"
   },
@@ -205,7 +205,7 @@
   "@viewer.toolbar.tail.label": {
     "sourceHash": "ae9c3bd"
   },
-  "viewer.toolbar.tail.ariaLabel": "Mode suivi : suivre les changements du fichier",
+  "viewer.toolbar.tail.ariaLabel": "Mode suivi : suivre les changements du fichier",
   "@viewer.toolbar.tail.ariaLabel": {
     "sourceHash": "af0477f"
   },
@@ -229,7 +229,7 @@
   "@viewer.statusBar.badge.inMemory": {
     "sourceHash": "d9b8483"
   },
-  "viewer.statusBar.badge.inMemoryTooltip": "Le fichier est entièrement en mémoire. Vous pouvez faire défiler rapidement jusqu''à n''importe quelle ligne.",
+  "viewer.statusBar.badge.inMemoryTooltip": "Le fichier est entièrement en mémoire. Vous pouvez faire défiler rapidement jusqu’à n’importe quelle ligne.",
   "@viewer.statusBar.badge.inMemoryTooltip": {
     "sourceHash": "4eb50b8"
   },
@@ -237,7 +237,7 @@
   "@viewer.statusBar.badge.indexed": {
     "sourceHash": "658a3e8"
   },
-  "viewer.statusBar.badge.indexedTooltip": "Le fichier est indexé : les numéros de ligne sont exacts, et vous pouvez faire défiler rapidement jusqu''à n''importe quel point.",
+  "viewer.statusBar.badge.indexedTooltip": "Le fichier est indexé : les numéros de ligne sont exacts, et vous pouvez faire défiler rapidement jusqu’à n’importe quel point.",
   "@viewer.statusBar.badge.indexedTooltip": {
     "sourceHash": "2604f1a"
   },
@@ -245,7 +245,7 @@
   "@viewer.statusBar.badge.streamingIndexing": {
     "sourceHash": "db1718e"
   },
-  "viewer.statusBar.badge.streamingIndexingTooltip": "Ceci est un gros fichier en mode streaming. Nous construisons un index en arrière-plan (max {seconds} s)… Les numéros de ligne sont actuellement approximatifs.",
+  "viewer.statusBar.badge.streamingIndexingTooltip": "C’est un gros fichier en mode streaming. Nous construisons un index en arrière-plan (max {seconds} s)… Les numéros de ligne sont actuellement approximatifs.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
     "sourceHash": "033d82d"
   },
@@ -254,7 +254,7 @@
     "sourceHash": "b304adc",
     "sameAsSourceJustification": "'streaming' kept verbatim: no concise French equivalent in the reference pile, per the glossary (matches the de sibling)."
   },
-  "viewer.statusBar.badge.streamingTooltip": "Ceci est un gros fichier en mode streaming. L''indexation aurait pris plus de {seconds} s, nous ne l''avons donc pas faite. Les numéros de ligne sont des estimations.",
+  "viewer.statusBar.badge.streamingTooltip": "C’est un gros fichier en mode streaming. L’indexation aurait pris plus de {seconds} s, nous ne l’avons donc pas faite. Les numéros de ligne sont des estimations.",
   "@viewer.statusBar.badge.streamingTooltip": {
     "sourceHash": "1752e59"
   },
@@ -266,7 +266,7 @@
   "@viewer.statusBar.badge.wrapTooltip": {
     "sourceHash": "af2ca76"
   },
-  "viewer.statusBar.hint.image": "Clic 100 % / ajusté · Molette zoom · Glisser déplacer",
+  "viewer.statusBar.hint.image": "Clic 100 % / ajusté · Molette zoom · Glisser déplacer",
   "@viewer.statusBar.hint.image": {
     "sourceHash": "bca0205"
   },
@@ -279,11 +279,11 @@
     "sourceHash": "ece2cad",
     "sameAsSourceJustification": "Placeholder-only string ('{width} × {height}'); the × multiplication sign is identical in French."
   },
-  "viewer.image.loading": "Chargement de l''image",
+  "viewer.image.loading": "Chargement de l’image",
   "@viewer.image.loading": {
     "sourceHash": "65999b8"
   },
-  "viewer.image.error": "Désolé, nous n''avons pas pu afficher cette image. Le fichier est peut-être endommagé ou dans un format que nous ne pouvons pas afficher.",
+  "viewer.image.error": "Désolé, nous n’avons pas pu afficher cette image. Le fichier est peut-être endommagé ou dans un format que nous ne pouvons pas afficher.",
   "@viewer.image.error": {
     "sourceHash": "9a24fe8"
   },
@@ -303,11 +303,11 @@
   "@viewer.contextMenu.selectAll": {
     "sourceHash": "1fc9a38"
   },
-  "viewer.copyDialog.confirmTitleKnown": "Copier {size} dans le presse-papiers ?",
+  "viewer.copyDialog.confirmTitleKnown": "Copier {size} dans le presse-papiers ?",
   "@viewer.copyDialog.confirmTitleKnown": {
     "sourceHash": "7f97ebf"
   },
-  "viewer.copyDialog.confirmTitleUnknown": "Copier cette sélection dans le presse-papiers ?",
+  "viewer.copyDialog.confirmTitleUnknown": "Copier cette sélection dans le presse-papiers ?",
   "@viewer.copyDialog.confirmTitleUnknown": {
     "sourceHash": "0956c8b"
   },
@@ -327,11 +327,11 @@
   "@viewer.copyDialog.copy": {
     "sourceHash": "e21f935"
   },
-  "viewer.copyDialog.refuseBody": "C''est plus grand que la limite de 100 Mo du presse-papiers. Essayez la recherche (⌘F) pour trouver ce dont vous avez besoin, ou enregistrez la sélection dans un fichier.",
+  "viewer.copyDialog.refuseBody": "C’est plus grand que la limite de 100 Mo du presse-papiers. Essayez la recherche (⌘F) pour trouver ce dont vous avez besoin, ou enregistrez la sélection dans un fichier.",
   "@viewer.copyDialog.refuseBody": {
     "sourceHash": "75f3043"
   },
-  "viewer.reloadToast.grew": "Le fichier a changé sur le disque. Recharger ?",
+  "viewer.reloadToast.grew": "Le fichier a changé sur le disque. Recharger ?",
   "@viewer.reloadToast.grew": {
     "sourceHash": "d66b013"
   },
@@ -351,19 +351,19 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
-  "viewer.copy.clipboardUnreachable": "Accès au presse-papiers impossible. Réessayer ?",
+  "viewer.copy.clipboardUnreachable": "Accès au presse-papiers impossible. Réessayer ?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "c0382ba"
   },
-  "viewer.copy.readTooLong": "La lecture a pris trop de temps. Essayer une sélection plus petite ?",
+  "viewer.copy.readTooLong": "La lecture a pris trop de temps. Essayer une sélection plus petite ?",
   "@viewer.copy.readTooLong": {
     "sourceHash": "2275e83"
   },
-  "viewer.copy.copyFailed": "Copie de la sélection impossible. Réessayer ?",
+  "viewer.copy.copyFailed": "Copie de la sélection impossible. Réessayer ?",
   "@viewer.copy.copyFailed": {
     "sourceHash": "6a1ab41"
   },
-  "viewer.copy.readFailed": "Lecture de la sélection impossible. Réessayer ?",
+  "viewer.copy.readFailed": "Lecture de la sélection impossible. Réessayer ?",
   "@viewer.copy.readFailed": {
     "sourceHash": "bde5f85"
   },
@@ -376,7 +376,7 @@
     "sourceHash": "6504513",
     "sameAsSourceJustification": "File-name-safe literal ('selection': lowercase, no spaces, safe as a file name per the @key note); kept as-is, not translated, per the glossary."
   },
-  "viewer.saveAs.panelFailed": "Ouverture de la fenêtre d''enregistrement impossible. Réessayer ?",
+  "viewer.saveAs.panelFailed": "Ouverture de la fenêtre d’enregistrement impossible. Réessayer ?",
   "@viewer.saveAs.panelFailed": {
     "sourceHash": "70c3f76"
   },
@@ -384,27 +384,27 @@
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
-  "viewer.saveAs.tooLong": "L''enregistrement a pris trop de temps. Essayer une sélection plus petite ?",
+  "viewer.saveAs.tooLong": "L’enregistrement a pris trop de temps. Essayer une sélection plus petite ?",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"
   },
-  "viewer.saveAs.saveFailed": "Enregistrement de la sélection impossible. Réessayer ?",
+  "viewer.saveAs.saveFailed": "Enregistrement de la sélection impossible. Réessayer ?",
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
-  "viewer.saveAs.destinationReadOnly": "Cet emplacement est en lecture seule. Choisis un autre dossier pour enregistrer ?",
+  "viewer.saveAs.destinationReadOnly": "Cet emplacement est en lecture seule. Choisis un autre dossier pour enregistrer ?",
   "@viewer.saveAs.destinationReadOnly": {
     "sourceHash": "8d627aa"
   },
-  "viewer.row.continuesTooltip": "Cmdr a coupé cette ligne parce qu''elle était très longue. Il n''y a pas de véritable saut de ligne ici dans le fichier.",
+  "viewer.row.continuesTooltip": "Cmdr a coupé cette ligne parce qu’elle était très longue. Il n’y a pas de véritable saut de ligne ici dans le fichier.",
   "@viewer.row.continuesTooltip": {
     "sourceHash": "7df69ed"
   },
-  "viewer.row.continuesLabel": "Cmdr a coupé cette ligne parce qu''elle était très longue. Il n''y a pas de véritable saut de ligne ici dans le fichier.",
+  "viewer.row.continuesLabel": "Cmdr a coupé cette ligne parce qu’elle était très longue. Il n’y a pas de véritable saut de ligne ici dans le fichier.",
   "@viewer.row.continuesLabel": {
     "sourceHash": "7df69ed"
   },
-  "viewer.selection.toEndOfFile": "Sélection de la ligne {line} jusqu''à la fin du fichier",
+  "viewer.selection.toEndOfFile": "Sélection de la ligne {line} jusqu’à la fin du fichier",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
@@ -420,7 +420,7 @@
   "@viewer.selection.charsOnly": {
     "sourceHash": "b772db6"
   },
-  "viewer.selection.toEndOfFileNoLine": "Sélection jusqu''à la fin du fichier",
+  "viewer.selection.toEndOfFileNoLine": "Sélection jusqu’à la fin du fichier",
   "@viewer.selection.toEndOfFileNoLine": {
     "sourceHash": "e7e0442"
   }

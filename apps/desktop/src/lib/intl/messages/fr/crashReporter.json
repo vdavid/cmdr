@@ -1,13 +1,13 @@
 {
-  "crashReporter.dialog.title.crash": "Envoyer le rapport d''incident ?",
+  "crashReporter.dialog.title.crash": "Envoyer le rapport d’incident ?",
   "@crashReporter.dialog.title.crash": {
     "sourceHash": "06ba6fb"
   },
-  "crashReporter.dialog.title.report": "Envoyer le rapport ?",
+  "crashReporter.dialog.title.report": "Envoyer le rapport ?",
   "@crashReporter.dialog.title.report": {
     "sourceHash": "d8b86d2"
   },
-  "crashReporter.dialog.body.ended": "Cmdr a quitté inopinément la dernière fois. Voici un rapport d''incident avec des détails qui peuvent aider à corriger ça.",
+  "crashReporter.dialog.body.ended": "Cmdr a quitté inopinément la dernière fois. Voici un rapport d’incident avec des détails qui peuvent aider à corriger ça.",
   "@crashReporter.dialog.body.ended": {
     "sourceHash": "a9661e3"
   },
@@ -19,11 +19,11 @@
   "@crashReporter.dialog.body.unknown": {
     "sourceHash": "962305e"
   },
-  "crashReporter.dialog.privacyNote": "Il contient la version de l''app, la version de macOS et la partie du code concernée. Aucun nom de fichier ni donnée personnelle.",
+  "crashReporter.dialog.privacyNote": "Il contient la version de l’app, la version de macOS et la partie du code concernée. Aucun nom de fichier ni donnée personnelle.",
   "@crashReporter.dialog.privacyNote": {
     "sourceHash": "c6875a7"
   },
-  "crashReporter.dialog.reportIdLabel": "Identifiant du rapport :",
+  "crashReporter.dialog.reportIdLabel": "Identifiant du rapport :",
   "@crashReporter.dialog.reportIdLabel": {
     "sourceHash": "df3d47e"
   },
@@ -43,7 +43,7 @@
   "@crashReporter.dialog.copied": {
     "sourceHash": "8d525e5"
   },
-  "crashReporter.dialog.alwaysSend": "Toujours envoyer les rapports d''incident",
+  "crashReporter.dialog.alwaysSend": "Toujours envoyer les rapports d’incident",
   "@crashReporter.dialog.alwaysSend": {
     "sourceHash": "8306c0e"
   },
@@ -59,15 +59,15 @@
   "@crashReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },
-  "crashReporter.dialog.notSent": "Le rapport n''a pas été envoyé. {reason}",
+  "crashReporter.dialog.notSent": "Le rapport n’a pas été envoyé. {reason}",
   "@crashReporter.dialog.notSent": {
     "sourceHash": "71ae809"
   },
-  "crashReporter.sentToast.message.crash": "Rapport d''incident envoyé. Merci d''aider à améliorer Cmdr.",
+  "crashReporter.sentToast.message.crash": "Rapport d’incident envoyé. Merci d’aider à améliorer Cmdr.",
   "@crashReporter.sentToast.message.crash": {
     "sourceHash": "734d62a"
   },
-  "crashReporter.sentToast.message.report": "Rapport envoyé. Merci d''aider à améliorer Cmdr.",
+  "crashReporter.sentToast.message.report": "Rapport envoyé. Merci d’aider à améliorer Cmdr.",
   "@crashReporter.sentToast.message.report": {
     "sourceHash": "a676ed5"
   },
@@ -79,15 +79,15 @@
   "@crashReporter.sentToast.sendLog": {
     "sourceHash": "61a9b1a"
   },
-  "crashReporter.sentToast.sendLogHint": "Voulez-vous aider à diagnostiquer le problème en joignant aussi un extrait de votre journal Cmdr ? Le journal contient beaucoup plus de détails. Les informations privées comme les noms de fichiers et de dossiers sont anonymisées avant l''envoi.",
+  "crashReporter.sentToast.sendLogHint": "Voulez-vous aider à diagnostiquer le problème en joignant aussi un extrait de votre journal Cmdr ? Le journal contient beaucoup plus de détails. Les informations privées comme les noms de fichiers et de dossiers sont anonymisées avant l’envoi.",
   "@crashReporter.sentToast.sendLogHint": {
     "sourceHash": "aec472c"
   },
-  "crashReporter.sentToast.logSent": "Journal envoyé sous l''identifiant {id}. Cela rend le problème bien plus facile à localiser.",
+  "crashReporter.sentToast.logSent": "Journal envoyé sous l’identifiant {id}. Cela rend le problème bien plus facile à localiser.",
   "@crashReporter.sentToast.logSent": {
     "sourceHash": "9a0dc9e"
   },
-  "crashReporter.sentToast.logNotSent": "Le journal n''a pas été envoyé. {reason}",
+  "crashReporter.sentToast.logNotSent": "Le journal n’a pas été envoyé. {reason}",
   "@crashReporter.sentToast.logNotSent": {
     "sourceHash": "617245e"
   }

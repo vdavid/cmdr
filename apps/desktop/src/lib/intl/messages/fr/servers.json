@@ -1,17 +1,17 @@
 {
-  "servers.sheet.usernamePlaceholder": "Exemple : barry",
+  "servers.sheet.usernamePlaceholder": "Exemple : barry",
   "@servers.sheet.usernamePlaceholder": {
     "sourceHash": "1b5b09c"
   },
-  "servers.pinHint.title": "Votre groupe Réseau s''allonge",
+  "servers.pinHint.title": "Votre groupe Réseau s’allonge",
   "@servers.pinHint.title": {
     "sourceHash": "0cf001a"
   },
-  "servers.pinHint.body": "Faites un clic droit sur un serveur et choisissez Désépingler, ou utilisez « {command} » dans la palette de commandes. Le serveur reste dans la liste Serveurs.",
+  "servers.pinHint.body": "Faites un clic droit sur un serveur et choisissez Désépingler, ou utilisez « {command} » dans la palette de commandes. Le serveur reste dans la liste Serveurs.",
   "@servers.pinHint.body": {
-    "sourceHash": "0663b02"
+    "sourceHash": "e47522b"
   },
-  "servers.pinHint.gotIt": "D''accord",
+  "servers.pinHint.gotIt": "D’accord",
   "@servers.pinHint.gotIt": {
     "sourceHash": "5ad3dbd"
   },
@@ -104,7 +104,7 @@
   "@servers.paneState.disconnect": {
     "sourceHash": "acfc5be"
   },
-  "servers.refusal.authenticationRejected": "Ce mot de passe n''a pas fonctionné pour {username}.",
+  "servers.refusal.authenticationRejected": "Ce mot de passe n’a pas fonctionné pour {username}.",
   "@servers.refusal.authenticationRejected": {
     "sourceHash": "b2c42b0"
   },
@@ -112,15 +112,15 @@
   "@servers.refusal.needsCredentials": {
     "sourceHash": "f5f689b"
   },
-  "servers.refusal.accountNotPermitted": "{username} n''a pas accès ici. Essayez avec un autre compte.",
+  "servers.refusal.accountNotPermitted": "{username} n’a pas accès ici. Essayez avec un autre compte.",
   "@servers.refusal.accountNotPermitted": {
     "sourceHash": "fbd3b7b"
   },
-  "servers.refusal.authMethodUnsupported": "Ce serveur utilise une méthode d''identification que Cmdr ne prend pas encore en charge.",
+  "servers.refusal.authMethodUnsupported": "Ce serveur utilise une méthode d’identification que Cmdr ne prend pas encore en charge.",
   "@servers.refusal.authMethodUnsupported": {
     "sourceHash": "62b963e"
   },
-  "servers.refusal.certificateUntrusted": "macOS n''approuve pas le certificat de ce serveur. Ajoutez-le dans Trousseaux d''accès, puis réessayez.",
+  "servers.refusal.certificateUntrusted": "macOS n’approuve pas le certificat de ce serveur. Ajoutez-le dans Trousseaux d’accès, puis réessayez.",
   "@servers.refusal.certificateUntrusted": {
     "sourceHash": "6db00c6"
   },
@@ -132,43 +132,43 @@
   "@servers.refusal.invalidUrl": {
     "sourceHash": "9a121ac"
   },
-  "servers.refusal.timedOut": "{host} n''a pas répondu à temps.",
+  "servers.refusal.timedOut": "{host} n’a pas répondu à temps.",
   "@servers.refusal.timedOut": {
     "sourceHash": "7662825"
   },
-  "servers.refusal.unreachable": "Cmdr n''a pas pu joindre {host}.",
+  "servers.refusal.unreachable": "Cmdr n’a pas pu joindre {host}.",
   "@servers.refusal.unreachable": {
     "sourceHash": "ae716c3"
   },
-  "servers.refusal.hostKeyUntrusted": "Cmdr n''a pas encore approuvé la clé de {host}.",
+  "servers.refusal.hostKeyUntrusted": "Cmdr n’a pas encore approuvé la clé de {host}.",
   "@servers.refusal.hostKeyUntrusted": {
     "sourceHash": "40a9d28"
   },
-  "servers.refusal.hostKeyRevoked": "La clé de {host} est marquée comme compromise dans vos réglages SSH sur ce Mac. Cmdr ne s''y connectera pas.",
+  "servers.refusal.hostKeyRevoked": "La clé de {host} est marquée comme compromise dans vos réglages SSH sur ce Mac. Cmdr ne s’y connectera pas.",
   "@servers.refusal.hostKeyRevoked": {
     "sourceHash": "47aacda"
   },
-  "servers.refusal.startFolderOutsideRoot": "Le dossier initial doit être le dossier racine ou un dossier à l''intérieur de celui-ci.",
+  "servers.refusal.startFolderOutsideRoot": "Le dossier initial doit être le dossier racine ou un dossier à l’intérieur de celui-ci.",
   "@servers.refusal.startFolderOutsideRoot": {
     "sourceHash": "a1d1efb"
   },
-  "servers.refusal.rootNotFound": "Cmdr ne peut pas ouvrir ce dossier sur {host}. Vérifiez qu''il existe et que votre compte peut le lire.",
+  "servers.refusal.rootNotFound": "Cmdr ne peut pas ouvrir ce dossier sur {host}. Vérifiez qu’il existe et que votre compte peut le lire.",
   "@servers.refusal.rootNotFound": {
     "sourceHash": "883a0bc"
   },
-  "servers.refusal.startFolderNotFound": "Cmdr ne peut pas ouvrir ce dossier initial sur {host}. Vérifiez qu''il existe et que votre compte peut le lire.",
+  "servers.refusal.startFolderNotFound": "Cmdr ne peut pas ouvrir ce dossier initial sur {host}. Vérifiez qu’il existe et que votre compte peut le lire.",
   "@servers.refusal.startFolderNotFound": {
     "sourceHash": "f1df16e"
   },
-  "servers.refusal.saveUnconfirmed": "{host} n''a pas répondu à temps, Cmdr n''a donc rien enregistré. Réessayez dans un instant.",
+  "servers.refusal.saveUnconfirmed": "{host} n’a pas répondu à temps, Cmdr n’a donc rien enregistré. Réessayez dans un instant.",
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "f7bb3a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr n''a pas pu enregistrer ce mot de passe dans le trousseau. Réessayez ou désactivez « Mémoriser dans le trousseau » pour vous identifier sans l''enregistrer.",
+  "servers.refusal.secretNotStored": "Cmdr n’a pas pu enregistrer ce mot de passe dans le trousseau. Réessayez ou désactivez « Mémoriser dans le trousseau » pour vous identifier sans l’enregistrer.",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "080b475"
   },
-  "servers.refusal.savedSecretNotUpdated": "Cmdr a enregistré vos modifications, mais n''a pas pu mettre à jour le mot de passe dans le trousseau. Enregistrez à nouveau pour réessayer.",
+  "servers.refusal.savedSecretNotUpdated": "Cmdr a enregistré vos modifications, mais n’a pas pu mettre à jour le mot de passe dans le trousseau. Enregistrez à nouveau pour réessayer.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "471a6d8"
   },
@@ -176,7 +176,7 @@
   "@servers.sheet.addTitle": {
     "sourceHash": "1099b2a"
   },
-  "servers.sheet.signInTitle": "S''identifier sur {name}",
+  "servers.sheet.signInTitle": "S’identifier sur {name}",
   "@servers.sheet.signInTitle": {
     "sourceHash": "47e7f20"
   },
@@ -188,7 +188,7 @@
   "@servers.sheet.connect": {
     "sourceHash": "1a2303e"
   },
-  "servers.sheet.signIn": "S''identifier",
+  "servers.sheet.signIn": "S’identifier",
   "@servers.sheet.signIn": {
     "sourceHash": "bfd402b"
   },
@@ -232,15 +232,15 @@
     "sourceHash": "5e0ec1d",
     "sameAsSourceJustification": "A literal example hostname, not prose: `nas` is the same abbreviation in French (the shipped `servers.hub.emptyMessage` writes \"un Mac ou un NAS\") and `.local` is the reserved mDNS suffix macOS itself shows (Finder `ConnectToWindow.strings` fr placeholder \"Adresse du serveur\" takes the same form). Translating it would print an address that does not resolve."
   },
-  "servers.sheet.addressHelp": "Un nom d''hôte, une adresse que vous avez copiée ou toute une ligne ssh. Cmdr choisit le protocole.",
+  "servers.sheet.addressHelp": "Un nom d’hôte, une adresse que vous avez copiée ou toute une ligne ssh. Cmdr choisit le protocole.",
   "@servers.sheet.addressHelp": {
     "sourceHash": "f91dc8a"
   },
-  "servers.sheet.identityLocked": "L''adresse et le compte identifient ce serveur. Pour les modifier, oubliez ce serveur puis ajoutez-le à nouveau.",
+  "servers.sheet.identityLocked": "L’adresse et le compte identifient ce serveur. Pour les modifier, oubliez ce serveur puis ajoutez-le à nouveau.",
   "@servers.sheet.identityLocked": {
     "sourceHash": "c16657d"
   },
-  "servers.sheet.username": "Nom d''utilisateur",
+  "servers.sheet.username": "Nom d’utilisateur",
   "@servers.sheet.username": {
     "sourceHash": "e3b89e9"
   },
@@ -260,11 +260,11 @@
   "@servers.sheet.connectionModeLegend": {
     "sourceHash": "2198ec8"
   },
-  "servers.sheet.connectAsGuest": "Se connecter en tant qu''invité",
+  "servers.sheet.connectAsGuest": "Se connecter en tant qu’invité",
   "@servers.sheet.connectAsGuest": {
     "sourceHash": "d3cee9e"
   },
-  "servers.sheet.signInWithCredentials": "S''identifier avec un nom d''utilisateur et un mot de passe",
+  "servers.sheet.signInWithCredentials": "S’identifier avec un nom d’utilisateur et un mot de passe",
   "@servers.sheet.signInWithCredentials": {
     "sourceHash": "d71eef0"
   },
@@ -292,7 +292,7 @@
   "@servers.sheet.startFolder": {
     "sourceHash": "ef05c31"
   },
-  "servers.sheet.startFolderHelp": "Le serveur s''ouvre dans ce dossier. Laissez ce champ vide pour ouvrir le dossier racine.",
+  "servers.sheet.startFolderHelp": "Le serveur s’ouvre dans ce dossier. Laissez ce champ vide pour ouvrir le dossier racine.",
   "@servers.sheet.startFolderHelp": {
     "sourceHash": "514018e"
   },
@@ -312,19 +312,19 @@
   "@servers.sheet.autoReconnect": {
     "sourceHash": "a56b579"
   },
-  "servers.sheet.autoReconnectHelp": "Si la connexion est interrompue, Cmdr se reconnecte de lui-même à ce serveur. Cette option ne connecte pas Cmdr au démarrage : la connexion se fait quand vous ouvrez le serveur dans un panneau.",
+  "servers.sheet.autoReconnectHelp": "Si la connexion est interrompue, Cmdr se reconnecte de lui-même à ce serveur. Cette option ne connecte pas Cmdr au démarrage : la connexion se fait quand vous ouvrez le serveur dans un panneau.",
   "@servers.sheet.autoReconnectHelp": {
     "sourceHash": "5fc66ee"
   },
-  "servers.sheet.autoReconnectInfoLabel": "En savoir plus sur « Se reconnecter automatiquement »",
+  "servers.sheet.autoReconnectInfoLabel": "En savoir plus sur « Se reconnecter automatiquement »",
   "@servers.sheet.autoReconnectInfoLabel": {
     "sourceHash": "edb9b82"
   },
-  "servers.sheet.needsStoredSecret": "La reconnexion automatique nécessite un mot de passe mémorisé. Activez « Mémoriser dans le trousseau » et identifiez-vous une fois.",
+  "servers.sheet.needsStoredSecret": "La reconnexion automatique nécessite un mot de passe mémorisé. Activez « Mémoriser dans le trousseau » et identifiez-vous une fois.",
   "@servers.sheet.needsStoredSecret": {
     "sourceHash": "32336f3"
   },
-  "servers.sheet.tryNextcloudAddress": "Essayer l''adresse Nextcloud",
+  "servers.sheet.tryNextcloudAddress": "Essayer l’adresse Nextcloud",
   "@servers.sheet.tryNextcloudAddress": {
     "sourceHash": "1afdfc7"
   },
@@ -332,7 +332,7 @@
   "@servers.hostKey.firstContactTitle": {
     "sourceHash": "6282d68"
   },
-  "servers.hostKey.firstContactBody": "Comparez l''empreinte ci-dessous avec celle que le propriétaire du serveur vous a communiquée, puis approuvez la clé.",
+  "servers.hostKey.firstContactBody": "Comparez l’empreinte ci-dessous avec celle que le propriétaire du serveur vous a communiquée, puis approuvez la clé.",
   "@servers.hostKey.firstContactBody": {
     "sourceHash": "befd6c3"
   },
@@ -340,11 +340,11 @@
   "@servers.hostKey.changedTitle": {
     "sourceHash": "dde14d6"
   },
-  "servers.hostKey.changedBody": "Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s''est interposé entre vous et lui. Vérifiez l''empreinte auprès du propriétaire du serveur avant d''approuver la clé.",
+  "servers.hostKey.changedBody": "Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s’est interposé entre vous et lui. Vérifiez l’empreinte auprès du propriétaire du serveur avant d’approuver la clé.",
   "@servers.hostKey.changedBody": {
     "sourceHash": "34552a6"
   },
-  "servers.hostKey.changedDisclosure": "Je l''ai vérifiée",
+  "servers.hostKey.changedDisclosure": "Je l’ai vérifiée",
   "@servers.hostKey.changedDisclosure": {
     "sourceHash": "29d1f63"
   },
@@ -364,7 +364,7 @@
   "@servers.paneState.signedOut": {
     "sourceHash": "b1d908f"
   },
-  "servers.paneState.signIn": "S''identifier…",
+  "servers.paneState.signIn": "S’identifier…",
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
@@ -372,7 +372,7 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "123ff4f"
   },
-  "servers.paneState.hostKeyChangedHint": "Sa clé a changé. Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s''est interposé entre vous et lui. Déconnectez-vous, puis ouvrez-le à nouveau pour vérifier l''empreinte.",
+  "servers.paneState.hostKeyChangedHint": "Sa clé a changé. Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s’est interposé entre vous et lui. Déconnectez-vous, puis ouvrez-le à nouveau pour vérifier l’empreinte.",
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
   },
@@ -380,7 +380,7 @@
   "@servers.paneState.reconnecting": {
     "sourceHash": "dce8cef"
   },
-  "servers.paneState.signedOutNothingToAsk": "Ce serveur vous identifie par une clé plutôt que par un mot de passe, il n''y a donc rien à saisir. Ouvrez-le à nouveau pour réessayer.",
+  "servers.paneState.signedOutNothingToAsk": "Ce serveur vous identifie par une clé plutôt que par un mot de passe, il n’y a donc rien à saisir. Ouvrez-le à nouveau pour réessayer.",
   "@servers.paneState.signedOutNothingToAsk": {
     "sourceHash": "71d7eee"
   },
@@ -396,15 +396,15 @@
   "@servers.paneState.retryNowTooltip": {
     "sourceHash": "11525f0"
   },
-  "servers.paneState.cancelCycleTooltip": "Arrêter d''essayer pour l''instant. La connexion reste disponible. Revenez pour réessayer.",
+  "servers.paneState.cancelCycleTooltip": "Arrêter d’essayer pour l’instant. La connexion reste disponible. Revenez pour réessayer.",
   "@servers.paneState.cancelCycleTooltip": {
     "sourceHash": "377638b"
   },
-  "servers.paneState.disconnectCycleTooltip": "Arrêter d''essayer et se déconnecter du serveur.",
+  "servers.paneState.disconnectCycleTooltip": "Arrêter d’essayer et se déconnecter du serveur.",
   "@servers.paneState.disconnectCycleTooltip": {
     "sourceHash": "8fba8b0"
   },
-  "servers.paneState.retryKeepsTrying": "Cmdr continuera d''essayer pendant {duration} au total.",
+  "servers.paneState.retryKeepsTrying": "Cmdr continuera d’essayer pendant {duration} au total.",
   "@servers.paneState.retryKeepsTrying": {
     "sourceHash": "e4d25b7"
   },

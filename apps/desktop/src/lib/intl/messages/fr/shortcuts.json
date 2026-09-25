@@ -43,7 +43,7 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "Écran d'erreur",
+  "shortcuts.scope.errorScreen": "Écran d’erreur",
   "@shortcuts.scope.errorScreen": {
     "sourceHash": "d3da94a"
   },
@@ -63,7 +63,7 @@
   "@shortcuts.scope.onboarding": {
     "sourceHash": "a2198f4"
   },
-  "shortcuts.conflict.reservedByMacOs": "{combo} est réservé par macOS ({command}) et n''atteindra pas Cmdr. Choisissez une autre combinaison.",
+  "shortcuts.conflict.reservedByMacOs": "{combo} est réservé par macOS ({command}) et n’atteindra pas Cmdr. Choisissez une autre combinaison.",
   "@shortcuts.conflict.reservedByMacOs": {
     "sourceHash": "4aad26f"
   },
@@ -92,7 +92,7 @@
   "@shortcuts.system.inputSourceSwitching": {
     "sourceHash": "11c5d7a"
   },
-  "shortcuts.system.appSwitcher": "le sélecteur d''applications",
+  "shortcuts.system.appSwitcher": "le sélecteur d’applications",
   "@shortcuts.system.appSwitcher": {
     "sourceHash": "5b8be44"
   },
@@ -101,7 +101,7 @@
     "sourceHash": "1a9a658",
     "sameAsSourceJustification": "Apple feature name Apple keeps English in every locale (macOS French keeps 'Mission Control'); kept verbatim per the term-choice principle."
   },
-  "shortcuts.system.appWindows": "Fenêtres de l''application",
+  "shortcuts.system.appWindows": "Fenêtres de l’application",
   "@shortcuts.system.appWindows": {
     "sourceHash": "a480ccd"
   },
@@ -110,11 +110,11 @@
     "sourceHash": "077a293",
     "sameAsSourceJustification": "Apple feature name Apple keeps English in every locale (macOS French keeps 'Spaces'); kept verbatim per the term-choice principle."
   },
-  "shortcuts.system.screenshots": "les captures d''écran",
+  "shortcuts.system.screenshots": "les captures d’écran",
   "@shortcuts.system.screenshots": {
     "sourceHash": "98d875b"
   },
-  "shortcuts.system.screenRecording": "l''enregistrement de l''écran",
+  "shortcuts.system.screenRecording": "l’enregistrement de l’écran",
   "@shortcuts.system.screenRecording": {
     "sourceHash": "fac7b60"
   },
@@ -122,7 +122,7 @@
   "@shortcuts.system.loggingOut": {
     "sourceHash": "de70b14"
   },
-  "shortcuts.system.lockingScreen": "le verrouillage de l''écran",
+  "shortcuts.system.lockingScreen": "le verrouillage de l’écran",
   "@shortcuts.system.lockingScreen": {
     "sourceHash": "b54447c"
   },
@@ -134,7 +134,7 @@
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "Rechercher par nom d''action…",
+  "shortcuts.section.searchByNamePlaceholder": "Rechercher par nom d’action…",
   "@shortcuts.section.searchByNamePlaceholder": {
     "sourceHash": "b20d3e3"
   },
@@ -170,11 +170,11 @@
   "@shortcuts.section.keepBoth": {
     "sourceHash": "9367221"
   },
-  "shortcuts.section.removeFromOther": "Retirer de l''autre",
+  "shortcuts.section.removeFromOther": "Retirer de l’autre",
   "@shortcuts.section.removeFromOther": {
     "sourceHash": "f154164"
   },
-  "shortcuts.section.alreadyBound": "<b>{combo}</b> est déjà assigné à « {command} »",
+  "shortcuts.section.alreadyBound": "<b>{combo}</b> est déjà assigné à « {command} »",
   "@shortcuts.section.alreadyBound": {
     "sourceHash": "5c29fcb"
   },

@@ -1,21 +1,21 @@
 {
-  "updates.failure.check": "Cmdr n''a pas pu rechercher les mises à jour. {reason}",
+  "updates.failure.check": "Cmdr n’a pas pu rechercher les mises à jour. {reason}",
   "@updates.failure.check": {
     "sourceHash": "66f0ef1"
   },
-  "updates.failure.checkUntyped": "Cmdr n''a pas pu rechercher les mises à jour. Vérifiez votre connexion Internet et réessayez plus tard.",
+  "updates.failure.checkUntyped": "Cmdr n’a pas pu rechercher les mises à jour. Vérifiez votre connexion Internet et réessayez plus tard.",
   "@updates.failure.checkUntyped": {
     "sourceHash": "55dcdd7"
   },
-  "updates.failure.download": "Cmdr n''a pas pu télécharger la mise à jour. Réessayez plus tard.",
+  "updates.failure.download": "Cmdr n’a pas pu télécharger la mise à jour. Réessayez plus tard.",
   "@updates.failure.download": {
     "sourceHash": "fdd5095"
   },
-  "updates.failure.install": "Cmdr n''a pas pu installer la mise à jour. Réessayez plus tard, ou téléchargez la dernière version de Cmdr sur getcmdr.com.",
+  "updates.failure.install": "Cmdr n’a pas pu installer la mise à jour. Réessayez plus tard, ou téléchargez la dernière version de Cmdr sur getcmdr.com.",
   "@updates.failure.install": {
     "sourceHash": "c997a13"
   },
-  "updates.checkToast.sendErrorReport": "Envoyer un rapport d''incident",
+  "updates.checkToast.sendErrorReport": "Envoyer un rapport d’incident",
   "@updates.checkToast.sendErrorReport": {
     "sourceHash": "c327e68"
   },
@@ -23,7 +23,7 @@
   "@updates.toast.ready": {
     "sourceHash": "622668e"
   },
-  "updates.toast.readyDetail": "Redémarrez maintenant, ou vous l''aurez à la prochaine ouverture de Cmdr.",
+  "updates.toast.readyDetail": "Redémarrez maintenant, ou vous l’aurez à la prochaine ouverture de Cmdr.",
   "@updates.toast.readyDetail": {
     "sourceHash": "aab853f"
   },
@@ -48,11 +48,11 @@
   "@updates.moveToApplicationsDialog.title": {
     "sourceHash": "97f87a0"
   },
-  "updates.moveToApplicationsDialog.translocated": "Une nouvelle version est prête, mais macOS exécute Cmdr depuis une copie temporaire en lecture seule. C''est ce qui arrive quand on ouvre une app directement depuis son dossier de téléchargement, et les mises à jour n''ont alors nulle part où s''installer.",
+  "updates.moveToApplicationsDialog.translocated": "Une nouvelle version est prête, mais macOS exécute Cmdr depuis une copie temporaire en lecture seule. C’est ce qui arrive quand on ouvre une app directement depuis son dossier de téléchargement, et les mises à jour n’ont alors nulle part où s’installer.",
   "@updates.moveToApplicationsDialog.translocated": {
     "sourceHash": "510a3a6"
   },
-  "updates.moveToApplicationsDialog.readOnlyVolume": "Une nouvelle version est prête, mais Cmdr s''exécute depuis un emplacement en lecture seule, en général une image disque encore montée. Les mises à jour n''ont nulle part où s''installer.",
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Une nouvelle version est prête, mais Cmdr s’exécute depuis un emplacement en lecture seule, en général une image disque encore montée. Les mises à jour n’ont nulle part où s’installer.",
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
     "sourceHash": "94edc89"
   },
@@ -60,11 +60,11 @@
   "@updates.moveToApplicationsDialog.howTo": {
     "sourceHash": "76a136d"
   },
-  "updates.moveToApplicationsDialog.gotIt": "D''accord",
+  "updates.moveToApplicationsDialog.gotIt": "D’accord",
   "@updates.moveToApplicationsDialog.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "updates.status.noUpdates": "Aucune mise à jour trouvée. Version actuelle : v{version}",
+  "updates.status.noUpdates": "Aucune mise à jour trouvée. Version actuelle : v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"
   },
@@ -72,15 +72,15 @@
   "@updates.status.checking": {
     "sourceHash": "ec963ff"
   },
-  "updates.status.downloading": "Mise à jour trouvée, téléchargement de la v{next} (actuelle : v{prev})…",
+  "updates.status.downloading": "Mise à jour trouvée, téléchargement de la v{next} (actuelle : v{prev})…",
   "@updates.status.downloading": {
     "sourceHash": "480c6da"
   },
-  "updates.status.installing": "Installation de la v{next} (actuelle : v{prev})…",
+  "updates.status.installing": "Installation de la v{next} (actuelle : v{prev})…",
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
-  "updates.status.ready": "Mise à jour v{next} prête. Redémarrez pour l''appliquer.",
+  "updates.status.ready": "Mise à jour v{next} prête. Redémarrez pour l’appliquer.",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"
   }

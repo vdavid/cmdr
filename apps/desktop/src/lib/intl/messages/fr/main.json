@@ -3,7 +3,7 @@
   "@main.instanceLock.alertTitle": {
     "sourceHash": "7c8f09d"
   },
-  "main.instanceLock.alertBody": "Une autre copie de Cmdr utilise ce dossier de données. Passez à l'app en cours, ou quittez-la et réessayez.",
+  "main.instanceLock.alertBody": "Une autre copie de Cmdr utilise ce dossier de données. Passez à l’app en cours, ou quittez-la et réessayez.",
   "@main.instanceLock.alertBody": {
     "sourceHash": "140c57d"
   },
@@ -15,15 +15,15 @@
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
-  "main.dockPinNudge.title": "Garder Cmdr dans votre Dock ?",
+  "main.dockPinNudge.title": "Garder Cmdr dans votre Dock ?",
   "@main.dockPinNudge.title": {
     "sourceHash": "3a6ce9f"
   },
-  "main.dockPinNudge.body": "Vous utilisez Cmdr depuis quelques jours, il semble donc vous convenir. Vous voulez qu''il reste en bas, juste à côté du Finder ?",
+  "main.dockPinNudge.body": "Vous utilisez Cmdr depuis quelques jours, il semble donc vous convenir. Vous voulez qu’il reste en bas, juste à côté du Finder ?",
   "@main.dockPinNudge.body": {
     "sourceHash": "1718271"
   },
-  "main.dockPinNudge.unpinNote": "Vous pourrez le supprimer du Dock à tout moment si vous changez d''avis.",
+  "main.dockPinNudge.unpinNote": "Vous pourrez le supprimer du Dock à tout moment si vous changez d’avis.",
   "@main.dockPinNudge.unpinNote": {
     "sourceHash": "28748d3"
   },
@@ -39,25 +39,25 @@
   "@main.dockPinNudge.added": {
     "sourceHash": "61bec58"
   },
-  "main.dockPinNudge.addedButDockDidNotRestart": "L''icône de Cmdr est en place, mais le Dock ne s''est pas rechargé. Elle apparaîtra à votre prochaine ouverture de session.",
+  "main.dockPinNudge.addedButDockDidNotRestart": "L’icône de Cmdr est en place, mais le Dock ne s’est pas rechargé. Elle apparaîtra à votre prochaine ouverture de session.",
   "@main.dockPinNudge.addedButDockDidNotRestart": {
     "sourceHash": "b035470"
   },
-  "main.dockPinNudge.managedDock": "Votre Dock est géré par un profil de configuration, Cmdr ne peut donc pas s''y ajouter. La personne qui gère ce Mac peut modifier ce réglage.",
+  "main.dockPinNudge.managedDock": "Votre Dock est géré par un profil de configuration, Cmdr ne peut donc pas s’y ajouter. La personne qui gère ce Mac peut modifier ce réglage.",
   "@main.dockPinNudge.managedDock": {
     "sourceHash": "dae0836"
   },
-  "main.dockPinNudge.notAdded": "Cmdr n''a pas pu s''ajouter au Dock cette fois-ci. Vous pouvez l''y faire glisser depuis votre dossier Applications quand vous voulez.",
+  "main.dockPinNudge.notAdded": "Cmdr n’a pas pu s’ajouter au Dock cette fois-ci. Vous pouvez l’y faire glisser depuis votre dossier Applications quand vous voulez.",
   "@main.dockPinNudge.notAdded": {
     "sourceHash": "0d122cb"
   },
-  "main.revealNudge.title": "Ouvrir « Afficher dans le Finder » dans Cmdr ?",
+  "main.revealNudge.title": "Ouvrir « Afficher dans le Finder » dans Cmdr ?",
   "@main.revealNudge.title": {
-    "sourceHash": "c92e1b7"
+    "sourceHash": "45a5b47"
   },
-  "main.revealNudge.body": "Vous utilisez Cmdr depuis un moment. Quand une autre app lance « Afficher dans le Finder », Cmdr peut ouvrir ce dossier à la place, avec le fichier déjà sous le curseur.",
+  "main.revealNudge.body": "Vous utilisez Cmdr depuis un moment. Quand une autre app lance « Afficher dans le Finder », Cmdr peut ouvrir ce dossier à la place, avec le fichier déjà sous le curseur.",
   "@main.revealNudge.body": {
-    "sourceHash": "fe4072b"
+    "sourceHash": "1db1d28"
   },
   "main.revealNudge.switchBackNote": "Vous pourrez revenir en arrière à tout moment dans les Réglages.",
   "@main.revealNudge.switchBackNote": {
@@ -71,23 +71,23 @@
   "@main.revealNudge.accept": {
     "sourceHash": "3291bb4"
   },
-  "main.revealNudge.turnedOn": "Cmdr ouvre maintenant « Afficher dans le Finder » depuis les autres apps.",
+  "main.revealNudge.turnedOn": "Cmdr ouvre maintenant « Afficher dans le Finder » depuis les autres apps.",
   "@main.revealNudge.turnedOn": {
-    "sourceHash": "8eab42b"
+    "sourceHash": "27c0ea2"
   },
-  "main.revealNudge.heldByOtherApp": "« Afficher dans le Finder » appartient pour l''instant à {app}. Vous pouvez le confier à Cmdr dans les Réglages quand vous voulez.",
+  "main.revealNudge.heldByOtherApp": "« Afficher dans le Finder » appartient pour l’instant à {app}. Vous pouvez le confier à Cmdr dans les Réglages quand vous voulez.",
   "@main.revealNudge.heldByOtherApp": {
-    "sourceHash": "3f513b0"
+    "sourceHash": "0893821"
   },
-  "main.revealNudge.notTurnedOn": "Cmdr n''a pas pu récupérer « Afficher dans le Finder » cette fois-ci. L''option est dans les Réglages si vous voulez réessayer.",
+  "main.revealNudge.notTurnedOn": "Cmdr n’a pas pu récupérer « Afficher dans le Finder » cette fois-ci. L’option est dans les Réglages si vous voulez réessayer.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "4a9920d"
+    "sourceHash": "953a4ee"
   },
-  "main.revealActivation.title": "« Afficher dans le Finder » s''est ouvert ici",
+  "main.revealActivation.title": "« Afficher dans le Finder » s’est ouvert ici",
   "@main.revealActivation.title": {
-    "sourceHash": "23d50e1"
+    "sourceHash": "6bb18bb"
   },
-  "main.revealActivation.body": "Cmdr est configuré pour les récupérer, donc le fichier est arrivé dans un panneau plutôt que dans le Finder. Tout le reste s''ouvre comme avant.",
+  "main.revealActivation.body": "Cmdr est configuré pour les récupérer, donc le fichier est arrivé dans un panneau plutôt que dans le Finder. Tout le reste s’ouvre comme avant.",
   "@main.revealActivation.body": {
     "sourceHash": "19ea7d6"
   },
@@ -95,11 +95,11 @@
   "@main.revealActivation.openSettings": {
     "sourceHash": "673f711"
   },
-  "main.quit.title": "{count, plural, one {Quitter alors qu''une opération est en cours ?} many {Quitter alors que {countText} opérations sont en cours ?} other {Quitter alors que {countText} opérations sont en cours ?}}",
+  "main.quit.title": "{count, plural, one {Quitter alors qu’une opération est en cours ?} many {Quitter alors que {countText} opérations sont en cours ?} other {Quitter alors que {countText} opérations sont en cours ?}}",
   "@main.quit.title": {
     "sourceHash": "2671a89"
   },
-  "main.quit.body": "Tout ce qui est déjà terminé le reste. Ce qui est encore en cours d''écriture s''arrête là où il en est, et Cmdr supprime tout fichier à moitié écrit.",
+  "main.quit.body": "Tout ce qui est déjà terminé le reste. Ce qui est encore en cours d’écriture s’arrête là où il en est, et Cmdr supprime tout fichier à moitié écrit.",
   "@main.quit.body": {
     "sourceHash": "c17f6e7"
   },
@@ -123,11 +123,11 @@
   "@main.quit.operationsHeading": {
     "sourceHash": "89acce5"
   },
-  "main.oldWebkit.title": "Cmdr a besoin d''une version plus récente de Safari",
+  "main.oldWebkit.title": "Cmdr a besoin d’une version plus récente de Safari",
   "@main.oldWebkit.title": {
     "sourceHash": "03e502b"
   },
-  "main.oldWebkit.body": "L''interface de Cmdr nécessite Safari 15.4 ou une version plus récente, et ce Mac en a une plus ancienne. Ouvrez Mise à jour de logiciels et installez tout ce qui est en attente. Cela devrait suffire.",
+  "main.oldWebkit.body": "L’interface de Cmdr nécessite Safari 15.4 ou une version plus récente, et ce Mac en a une plus ancienne. Ouvrez Mise à jour de logiciels et installez tout ce qui est en attente. Cela devrait suffire.",
   "@main.oldWebkit.body": {
     "sourceHash": "bcadac5"
   },
@@ -135,11 +135,11 @@
   "@main.oldMacos.title": {
     "sourceHash": "e75f925"
   },
-  "main.oldMacos.body": "Cmdr prend officiellement en charge macOS 12 et les versions plus récentes, donc ici il fait au mieux. La plupart des choses fonctionnent, mais certaines couleurs et de petits détails de mise en page peuvent être décalés, et les corrections pour les anciens systèmes passent en dernier. Si vous tombez sur quelque chose de cassé, j''aimerais quand même le savoir.",
+  "main.oldMacos.body": "Cmdr prend officiellement en charge macOS 12 et les versions plus récentes, donc ici il fait au mieux. La plupart des choses fonctionnent, mais certaines couleurs et de petits détails de mise en page peuvent être décalés, et les corrections pour les anciens systèmes passent en dernier. Si vous tombez sur quelque chose de cassé, j’aimerais quand même le savoir.",
   "@main.oldMacos.body": {
     "sourceHash": "9484b91"
   },
-  "main.oldMacos.gotIt": "D''accord",
+  "main.oldMacos.gotIt": "D’accord",
   "@main.oldMacos.gotIt": {
     "sourceHash": "5ad3dbd"
   },
@@ -159,7 +159,7 @@
   "@main.escapeFullScreenHint.settingsLine": {
     "sourceHash": "a7fc48a"
   },
-  "main.escapeFullScreenHint.onceNote": "Vous ne verrez ce message qu''une seule fois.",
+  "main.escapeFullScreenHint.onceNote": "Vous ne verrez ce message qu’une seule fois.",
   "@main.escapeFullScreenHint.onceNote": {
     "sourceHash": "c76cb6c"
   }

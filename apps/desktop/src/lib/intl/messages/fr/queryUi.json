@@ -3,11 +3,11 @@
   "@queryUi.bar.placeholder.ai": {
     "sourceHash": "fbfb9a8"
   },
-  "queryUi.bar.placeholder.regex": "Motif d''expression régulière",
+  "queryUi.bar.placeholder.regex": "Motif d’expression régulière",
   "@queryUi.bar.placeholder.regex": {
     "sourceHash": "342a120"
   },
-  "queryUi.bar.placeholder.filename": "Motif de nom de fichier (utilisez * et ? comme caractères génériques)",
+  "queryUi.bar.placeholder.filename": "Motif de nom de fichier (utilisez * et ? comme caractères génériques)",
   "@queryUi.bar.placeholder.filename": {
     "sourceHash": "bafb340"
   },
@@ -43,7 +43,7 @@
   "@queryUi.mode.ai.label": {
     "sourceHash": "4aff15d"
   },
-  "queryUi.mode.ai.aria": "Mode IA : tout demander (Alt+A)",
+  "queryUi.mode.ai.aria": "Mode IA : tout demander (Alt+A)",
   "@queryUi.mode.ai.aria": {
     "sourceHash": "1708462"
   },
@@ -59,7 +59,7 @@
   "@queryUi.mode.content.label": {
     "sourceHash": "47bd290"
   },
-  "queryUi.mode.content.tooltip": "Bientôt disponible : recherche plein texte dans les fichiers",
+  "queryUi.mode.content.tooltip": "Bientôt disponible : recherche plein texte dans les fichiers",
   "@queryUi.mode.content.tooltip": {
     "sourceHash": "ff69d7a"
   },
@@ -84,19 +84,19 @@
   "@queryUi.empty.tryLine": {
     "sourceHash": "469fb7f"
   },
-  "queryUi.empty.tip": "Astuce : <newKey>⌘N</newKey> repart à zéro, <historyKey>⌘H</historyKey> affiche les recherches récentes.",
+  "queryUi.empty.tip": "Astuce : <newKey>⌘N</newKey> repart à zéro, <historyKey>⌘H</historyKey> affiche les recherches récentes.",
   "@queryUi.empty.tip": {
     "sourceHash": "6d00976"
   },
-  "queryUi.empty.tipAi": "Astuce : <newKey>⌘N</newKey> repart à zéro, <historyKey>⌘H</historyKey> affiche les recherches récentes, <aiKey>⌘Enter</aiKey> lance une recherche IA.",
+  "queryUi.empty.tipAi": "Astuce : <newKey>⌘N</newKey> repart à zéro, <historyKey>⌘H</historyKey> affiche les recherches récentes, <aiKey>⌘Enter</aiKey> lance une recherche IA.",
   "@queryUi.empty.tipAi": {
     "sourceHash": "e83a0d6"
   },
-  "queryUi.ai.cloudOff.body": "L''IA dans le cloud est désactivée. Autorisez-la dans Réglages > IA pour utiliser cette fonction.",
+  "queryUi.ai.cloudOff.body": "L’IA dans le cloud est désactivée. Autorisez-la dans Réglages > IA pour utiliser cette fonction.",
   "@queryUi.ai.cloudOff.body": {
     "sourceHash": "9b76c6f"
   },
-  "queryUi.ai.openSettings": "Ouvrir les réglages d''IA",
+  "queryUi.ai.openSettings": "Ouvrir les réglages d’IA",
   "@queryUi.ai.openSettings": {
     "sourceHash": "edcc53b"
   },
@@ -104,11 +104,11 @@
   "@queryUi.empty.indexReady": {
     "sourceHash": "838fcf8"
   },
-  "queryUi.ai.lead": "Voici ce que l''agent a fait :",
+  "queryUi.ai.lead": "Voici ce que l’agent a fait :",
   "@queryUi.ai.lead": {
     "sourceHash": "bf7c5a2"
   },
-  "queryUi.ai.empty": "Rien à filtrer pour l''instant. Reformuler ?",
+  "queryUi.ai.empty": "Rien à filtrer pour l’instant. Reformuler ?",
   "@queryUi.ai.empty": {
     "sourceHash": "df836a8"
   },
@@ -120,11 +120,11 @@
   "@queryUi.ai.refineAria": {
     "sourceHash": "fc95971"
   },
-  "queryUi.ai.refineTooltip": "Bientôt disponible : dialoguer avec l''agent",
+  "queryUi.ai.refineTooltip": "Bientôt disponible : dialoguer avec l’agent",
   "@queryUi.ai.refineTooltip": {
     "sourceHash": "4846194"
   },
-  "queryUi.ai.stripAria": "Ce que l''agent a fait avec votre dernière recherche IA",
+  "queryUi.ai.stripAria": "Ce que l’agent a fait avec votre dernière recherche IA",
   "@queryUi.ai.stripAria": {
     "sourceHash": "53ffa17"
   },
@@ -211,7 +211,7 @@
   "@queryUi.results.countOnly.showResults": {
     "sourceHash": "90efa19"
   },
-  "queryUi.results.criteria.query": "Requête : {query}",
+  "queryUi.results.criteria.query": "Requête : {query}",
   "@queryUi.results.criteria.query": {
     "sourceHash": "4877824"
   },
@@ -231,7 +231,7 @@
   "@queryUi.results.widenToVolume": {
     "sourceHash": "7dfc278"
   },
-  "queryUi.results.indexNotReady": "Index du disque pas encore prêt. La recherche sera disponible une fois l''analyse initiale terminée.",
+  "queryUi.results.indexNotReady": "Index du disque pas encore prêt. La recherche sera disponible une fois l’analyse initiale terminée.",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
@@ -243,7 +243,7 @@
   "@queryUi.results.scanProgress": {
     "sourceHash": "c19b8ea"
   },
-  "queryUi.results.loadingIndex": "Chargement de l''index du disque…",
+  "queryUi.results.loadingIndex": "Chargement de l’index du disque…",
   "@queryUi.results.loadingIndex": {
     "sourceHash": "e9a7368"
   },
@@ -251,7 +251,7 @@
   "@queryUi.results.searching": {
     "sourceHash": "c31723a"
   },
-  "queryUi.results.noMatchHeading": "Aucun fichier ne correspond à ces critères :",
+  "queryUi.results.noMatchHeading": "Aucun fichier ne correspond à ces critères :",
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
@@ -259,7 +259,7 @@
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "524487d"
   },
-  "queryUi.results.live.waitingForAnotherWalk": "En attente d'un autre parcours de ces dossiers…",
+  "queryUi.results.live.waitingForAnotherWalk": "En attente d’un autre parcours de ces dossiers…",
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "4a3b061"
   },
@@ -275,7 +275,7 @@
   "@queryUi.results.live.walking": {
     "sourceHash": "3829650"
   },
-  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {résultat} many {résultats} other {résultats}} pour l''instant",
+  "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {résultat} many {résultats} other {résultats}} pour l’instant",
   "@queryUi.results.live.matchesSoFar": {
     "sourceHash": "5c09eb4"
   },
@@ -283,11 +283,11 @@
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
-  "queryUi.results.live.incomplete": "{shownText} sur {totalText} résultats. Cmdr n''a pas fini de chercher.",
+  "queryUi.results.live.incomplete": "{shownText} sur {totalText} résultats. Cmdr n’a pas fini de chercher.",
   "@queryUi.results.live.incomplete": {
     "sourceHash": "7dccf6e"
   },
-  "queryUi.results.live.incompleteEmpty": "Rien trouvé avant l''arrêt de la recherche. Cmdr n''a pas fini de chercher.",
+  "queryUi.results.live.incompleteEmpty": "Rien trouvé avant l’arrêt de la recherche. Cmdr n’a pas fini de chercher.",
   "@queryUi.results.live.incompleteEmpty": {
     "sourceHash": "bfa15df"
   },
@@ -307,11 +307,11 @@
   "@queryUi.results.live.scanningAria": {
     "sourceHash": "0071028"
   },
-  "queryUi.results.countOnly.soFar": "{count, plural, one {Cette recherche donne <total>{countText}</total> résultat pour l''instant} many {Cette recherche donne <total>{countText}</total> résultats pour l''instant} other {Cette recherche donne <total>{countText}</total> résultats pour l''instant}}",
+  "queryUi.results.countOnly.soFar": "{count, plural, one {Cette recherche donne <total>{countText}</total> résultat pour l’instant} many {Cette recherche donne <total>{countText}</total> résultats pour l’instant} other {Cette recherche donne <total>{countText}</total> résultats pour l’instant}}",
   "@queryUi.results.countOnly.soFar": {
     "sourceHash": "dbdb208"
   },
-  "queryUi.pathPills.hiddenAria": "Segments de chemin masqués : {segments}",
+  "queryUi.pathPills.hiddenAria": "Segments de chemin masqués : {segments}",
   "@queryUi.pathPills.hiddenAria": {
     "sourceHash": "f62e273"
   },
@@ -356,7 +356,7 @@
   "@queryUi.recent.mode.filename": {
     "sourceHash": "971b974"
   },
-  "queryUi.age.justNow": "à l''instant",
+  "queryUi.age.justNow": "à l’instant",
   "@queryUi.age.justNow": {
     "sourceHash": "7ddb44d"
   },
@@ -384,7 +384,7 @@
   "@queryUi.age.years": {
     "sourceHash": "e0d32e9"
   },
-  "queryUi.recent.scopeSummary": "portée : {scope}",
+  "queryUi.recent.scopeSummary": "portée : {scope}",
   "@queryUi.recent.scopeSummary": {
     "sourceHash": "e5e6dff"
   },
@@ -437,15 +437,15 @@
   "@queryUi.dialog.actionsAria": {
     "sourceHash": "62d23d5"
   },
-  "queryUi.dialog.aiTranslateFailedToast": "Impossible de lancer la recherche IA pour le moment. Réessayer ?",
+  "queryUi.dialog.aiTranslateFailedToast": "Impossible de lancer la recherche IA pour le moment. Réessayer ?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
   },
-  "queryUi.dialog.runQueryToast": "Cette recherche n''a pas pu aboutir. {message}",
+  "queryUi.dialog.runQueryToast": "Cette recherche n’a pas pu aboutir. {message}",
   "@queryUi.dialog.runQueryToast": {
     "sourceHash": "02a3bba"
   },
-  "queryUi.dialog.runQueryUnknownReason": "La raison n''est pas claire. Essayez une recherche plus ciblée ?",
+  "queryUi.dialog.runQueryUnknownReason": "La raison n’est pas claire. Essayez une recherche plus ciblée ?",
   "@queryUi.dialog.runQueryUnknownReason": {
     "sourceHash": "4f79b0f"
   },
@@ -628,7 +628,7 @@
   "@queryUi.date.aria.customMax": {
     "sourceHash": "fae3317"
   },
-  "queryUi.date.preset.today": "aujourd''hui {time}",
+  "queryUi.date.preset.today": "aujourd’hui {time}",
   "@queryUi.date.preset.today": {
     "sourceHash": "171a27d"
   },
@@ -664,7 +664,7 @@
   "@queryUi.scope.popover.aria": {
     "sourceHash": "989db5d"
   },
-  "queryUi.scope.hint": "Chemins séparés par des virgules. Préfixez avec <bang>!</bang> pour exclure. Les caractères génériques <star>*</star> et <question>?</question> fonctionnent.",
+  "queryUi.scope.hint": "Chemins séparés par des virgules. Préfixez avec <bang>!</bang> pour exclure. Les caractères génériques <star>*</star> et <question>?</question> fonctionnent.",
   "@queryUi.scope.hint": {
     "sourceHash": "3335512"
   },

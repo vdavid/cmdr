@@ -11,19 +11,19 @@
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "Dans l''app : appuyez sur <chip>{key}</chip> pour venir ici",
+  "downloads.toast.inAppHint": "Dans l’app : appuyez sur <chip>{key}</chip> pour venir ici",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
-  "downloads.toast.globalHint": "Dans <em>n''importe quelle</em> app (raccourci global), appuyez sur <chip>{key}</chip>",
+  "downloads.toast.globalHint": "Dans <em>n’importe quelle</em> app (raccourci global), appuyez sur <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
-  "downloads.toast.summaryBoth": "Accédez-y avec <inApp>{inAppKey}</inApp> dans l''app, <global>{globalKey}</global> globalement.",
+  "downloads.toast.summaryBoth": "Accédez-y avec <inApp>{inAppKey}</inApp> dans l’app, <global>{globalKey}</global> globalement.",
   "@downloads.toast.summaryBoth": {
     "sourceHash": "59c4131"
   },
-  "downloads.toast.summaryInApp": "Accédez-y avec <inApp>{inAppKey}</inApp> dans l''app.",
+  "downloads.toast.summaryInApp": "Accédez-y avec <inApp>{inAppKey}</inApp> dans l’app.",
   "@downloads.toast.summaryInApp": {
     "sourceHash": "2c0fd22"
   },
@@ -31,7 +31,7 @@
   "@downloads.toast.summaryGlobal": {
     "sourceHash": "1bd00be"
   },
-  "downloads.toast.expandTip": "Afficher l''astuce de raccourci",
+  "downloads.toast.expandTip": "Afficher l’astuce de raccourci",
   "@downloads.toast.expandTip": {
     "sourceHash": "9dfbe32"
   },
@@ -55,11 +55,11 @@
   "@downloads.notification.titleMultiple": {
     "sourceHash": "f52e460"
   },
-  "downloads.notification.mostRecent": "Le plus récent : {fileName}",
+  "downloads.notification.mostRecent": "Le plus récent : {fileName}",
   "@downloads.notification.mostRecent": {
     "sourceHash": "4aa3b6e"
   },
-  "downloads.empty.message": "Votre dossier Téléchargements est vide. Y aller quand même ?",
+  "downloads.empty.message": "Votre dossier Téléchargements est vide. Y aller quand même ?",
   "@downloads.empty.message": {
     "sourceHash": "83e7e07"
   },
@@ -71,7 +71,7 @@
   "@downloads.empty.goToDownloads": {
     "sourceHash": "5c72aeb"
   },
-  "downloads.fda.message": "Cmdr a besoin de l''accès complet au disque pour surveiller votre dossier Téléchargements.",
+  "downloads.fda.message": "Cmdr a besoin de l’accès complet au disque pour surveiller votre dossier Téléchargements.",
   "@downloads.fda.message": {
     "sourceHash": "82c82c6"
   },
@@ -83,7 +83,7 @@
   "@downloads.fda.openSystemSettings": {
     "sourceHash": "18196b3"
   },
-  "downloads.warnToast.message": "Le raccourci {binding} vous amène à votre dernier téléchargement depuis n''importe où. Le garder activé ?",
+  "downloads.warnToast.message": "Le raccourci {binding} vous amène à votre dernier téléchargement depuis n’importe où. Le garder activé ?",
   "@downloads.warnToast.message": {
     "sourceHash": "b174604"
   },
@@ -124,11 +124,11 @@
   "@downloads.shortcutRow.notRegistered": {
     "sourceHash": "ca374c2"
   },
-  "downloads.shortcutRow.invalidCombo": "Enregistrement impossible : combinaison non valide",
+  "downloads.shortcutRow.invalidCombo": "Enregistrement impossible : combinaison non valide",
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "32c3532"
   },
-  "downloads.shortcutRow.registerFailed": "Enregistrement impossible : {reason}",
+  "downloads.shortcutRow.registerFailed": "Enregistrement impossible : {reason}",
   "@downloads.shortcutRow.registerFailed": {
     "sourceHash": "2e6fb97"
   },
@@ -136,11 +136,11 @@
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "28a5ba2"
   },
-  "downloads.toggleDescription.bound": "Appuyez sur {binding} depuis n''importe quelle app pour aller à votre téléchargement le plus récent.",
+  "downloads.toggleDescription.bound": "Appuyez sur {binding} depuis n’importe quelle app pour aller à votre téléchargement le plus récent.",
   "@downloads.toggleDescription.bound": {
     "sourceHash": "be43b35"
   },
-  "downloads.toggleDescription.unbound": "Allez à votre téléchargement le plus récent depuis n''importe quelle app.",
+  "downloads.toggleDescription.unbound": "Allez à votre téléchargement le plus récent depuis n’importe quelle app.",
   "@downloads.toggleDescription.unbound": {
     "sourceHash": "187cdec"
   }

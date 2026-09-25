@@ -92,7 +92,7 @@
   "@menu.file.view": {
     "sourceHash": "dcc839a"
   },
-  "menu.file.edit": "Modifier dans l'éditeur",
+  "menu.file.edit": "Modifier dans l’éditeur",
   "@menu.file.edit": {
     "sourceHash": "691ca0f"
   },
@@ -148,7 +148,7 @@
   "@menu.file.getInfo": {
     "sourceHash": "91c64ca"
   },
-  "menu.file.quickLook": "Coup d'œil",
+  "menu.file.quickLook": "Coup d’œil",
   "@menu.file.quickLook": {
     "sourceHash": "f5616ce"
   },
@@ -204,7 +204,7 @@
   "@menu.select.allFolders": {
     "sourceHash": "5351f8b"
   },
-  "menu.select.sameExtension": "Sélectionner tous les fichiers d'extension *.{extension}",
+  "menu.select.sameExtension": "Sélectionner tous les fichiers d’extension *.{extension}",
   "@menu.select.sameExtension": {
     "sourceHash": "7809a58"
   },
@@ -265,7 +265,7 @@
   "@menu.view.commandPalette": {
     "sourceHash": "6b1c93d"
   },
-  "menu.view.operationQueue": "File d'attente des opérations",
+  "menu.view.operationQueue": "File d’attente des opérations",
   "@menu.view.operationQueue": {
     "sourceHash": "fa91417"
   },
@@ -311,19 +311,19 @@
   "@menu.sort.descending": {
     "sourceHash": "79479a6"
   },
-  "menu.zoom.percent75": "75 %",
+  "menu.zoom.percent75": "75 %",
   "@menu.zoom.percent75": {
     "sourceHash": "10963ac"
   },
-  "menu.zoom.percent100": "100 %",
+  "menu.zoom.percent100": "100 %",
   "@menu.zoom.percent100": {
     "sourceHash": "32e4899"
   },
-  "menu.zoom.percent125": "125 %",
+  "menu.zoom.percent125": "125 %",
   "@menu.zoom.percent125": {
     "sourceHash": "38cb31c"
   },
-  "menu.zoom.percent150": "150 %",
+  "menu.zoom.percent150": "150 %",
   "@menu.zoom.percent150": {
     "sourceHash": "00a4e80"
   },
@@ -379,11 +379,11 @@
   "@menu.tab.newTab": {
     "sourceHash": "1e08fda"
   },
-  "menu.tab.closeTab": "Fermer l'onglet",
+  "menu.tab.closeTab": "Fermer l’onglet",
   "@menu.tab.closeTab": {
     "sourceHash": "50a3f95"
   },
-  "menu.tab.reopenClosedTab": "Rouvrir l'onglet fermé",
+  "menu.tab.reopenClosedTab": "Rouvrir l’onglet fermé",
   "@menu.tab.reopenClosedTab": {
     "sourceHash": "5ca5397"
   },
@@ -395,11 +395,11 @@
   "@menu.tab.previousTab": {
     "sourceHash": "c88d5e7"
   },
-  "menu.tab.pinTab": "Épingler l'onglet",
+  "menu.tab.pinTab": "Épingler l’onglet",
   "@menu.tab.pinTab": {
     "sourceHash": "bf5083a"
   },
-  "menu.tab.unpinTab": "Désépingler l'onglet",
+  "menu.tab.unpinTab": "Désépingler l’onglet",
   "@menu.tab.unpinTab": {
     "sourceHash": "20553dd"
   },
@@ -427,7 +427,7 @@
   "@menu.help.sendFeedback": {
     "sourceHash": "60e1072"
   },
-  "menu.help.sendErrorReport": "Envoyer un rapport d'incident…",
+  "menu.help.sendErrorReport": "Envoyer un rapport d’incident…",
   "@menu.help.sendErrorReport": {
     "sourceHash": "063c94e"
   },
@@ -443,9 +443,9 @@
   "@menu.context.toggleSelection": {
     "sourceHash": "6cb5515"
   },
-  "menu.context.copyNamed": "Copier « {name} »",
+  "menu.context.copyNamed": "Copier « {name} »",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "Ajouter aux favoris",
   "@menu.context.addToFavorites": {
@@ -479,7 +479,7 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
-  "menu.context.shareLoading": "Recherche d'options de partage…",
+  "menu.context.shareLoading": "Recherche d’options de partage…",
   "@menu.context.shareLoading": {
     "sourceHash": "1db46ae"
   },
@@ -491,7 +491,7 @@
   "@menu.context.editExtensions": {
     "sourceHash": "c1d99c8"
   },
-  "menu.context.openWithLoading": "Recherche d'apps…",
+  "menu.context.openWithLoading": "Recherche d’apps…",
   "@menu.context.openWithLoading": {
     "sourceHash": "5bcff61"
   },
@@ -541,13 +541,13 @@
     "sourceHash": "1331275",
     "sameAsSourceJustification": "'Tags' is the word French macOS Finder itself shows for its tag row and menu (Finder LocalizableMerged N169.37 and MenuBar 300893 = 'Tags'), and the catalog already uses it (settings.listing.showTags.label 'Afficher les tags')."
   },
-  "menu.tag.addNamed": "Ajouter « {color} »",
+  "menu.tag.addNamed": "Ajouter « {color} »",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
-  "menu.tag.removeNamed": "Retirer « {color} »",
+  "menu.tag.removeNamed": "Retirer « {color} »",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "Ajouter aux dossiers indexés",
   "@menu.mediaIndex.addFolder": {

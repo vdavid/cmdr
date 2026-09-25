@@ -1,0 +1,41 @@
+{
+  "$comment": "French typography as macOS fr writes it (pile fr/macOS, Finder + AppKit + System Settings values, counted 2026-09-25): «…» primary with a U+00A0 no-break space inside (630 pairs, for example « ^0 », and 1 with an ASCII space), “…” nested (Mise de “^1” dans la corbeille), the curly ’ apostrophe (1,247 against 3 ASCII), and a U+00A0 before ? (172), : (181), ! and % (never U+202F, never an ASCII space). Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["«", "»"], "nested": ["“", "”"] },
+  "apostrophes": ["’"],
+  "spacing": [
+    { "pattern": "«(?!\\u00a0)", "why": "a no-break space (U+00A0) follows «" },
+    { "pattern": "(?<!\\u00a0)»", "why": "a no-break space (U+00A0) precedes »" },
+    {
+      "pattern": "(?<=[^\\u00a0])[;!?]",
+      "why": "a no-break space (U+00A0) precedes ; ! and ? (a value that is only the mark stays out)"
+    },
+    {
+      "pattern": "(?<!\\u00a0):(?=\\s|$)",
+      "why": "a no-break space (U+00A0) precedes a colon (times, URLs, and ratios keep theirs tight)"
+    },
+    { "pattern": "[\\d\\uFFFC] ?%", "why": "a no-break space (U+00A0) goes between a number and % (42 %)" },
+    { "pattern": "\\b\\d+x\\b", "why": "a multiplier spells out fois (4 fois), never 4x" }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\p{L}\\((?:e|s|es|x|le|ne|les|nes)\\)",
+      "why": "a bracketed gender or plural ending (fichier(s), connecté(e)); use ICU plural/select, or rephrase"
+    },
+    {
+      "pattern": "\\p{Ll}/(?:e|es|ne|nes)\\b",
+      "why": "a slashed gender ending (connecté/e; /s is the per-second unit, and /le starts an article, so both stay out); name the object, not the person"
+    },
+    {
+      "pattern": "\\p{L}[·.](?:e|es|ne|nes|rice|rices)\\b",
+      "why": "a midpoint or dot inclusive ending (connecté·e, utilisateur.rice.s); restructure to vous or a neutral noun"
+    },
+    {
+      "pattern": "\\b(?:[Ll]e|[Ll]a|[Ll]es|[Uu]n|[Uu]ne|[Ii]l|[Ee]lle|[Ii]ls|[Ee]lles|[Cc]e|[Cc]et|[Cc]ette|[Dd]u|[Aa]u)/(?:le|la|les|un|une|il|elle|ils|elles|ce|cet|cette|du|de la|au|à la)\\b",
+      "why": "a slashed article, pronoun, or contraction hedging an unknown gender; name the noun (le dossier {name}) or rephrase"
+    },
+    {
+      "pattern": "\\b(?:[Dd]e|[Ll]e|[Ll]a|[Qq]ue|[Nn]e|[Jj]e|[Ss]e)\\s?/\\s?\\p{L}?[’']|\\b\\p{L}[’']\\s?/\\s?(?:de|le|la|que|ne|je|se)\\b",
+      "why": "a slashed elision (de/d’, le/l’) hedging a vowel-initial insert; put the insert after a preposition that never elides (dans, sur, pour, vers) or name its type"
+    }
+  ]
+}

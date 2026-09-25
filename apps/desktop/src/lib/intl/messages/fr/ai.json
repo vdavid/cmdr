@@ -1,5 +1,5 @@
 {
-  "ai.toast.downloadingTitle": "Téléchargement du modèle d''IA…",
+  "ai.toast.downloadingTitle": "Téléchargement du modèle d’IA…",
   "@ai.toast.downloadingTitle": {
     "sourceHash": "85d48ae"
   },
@@ -15,7 +15,7 @@
   "@ai.toast.cancel": {
     "sourceHash": "19766ed"
   },
-  "ai.toast.installingTitle": "Configuration de l''IA…",
+  "ai.toast.installingTitle": "Configuration de l’IA…",
   "@ai.toast.installingTitle": {
     "sourceHash": "85f7001"
   },
@@ -27,15 +27,15 @@
   "@ai.toast.readyTitle": {
     "sourceHash": "276c384"
   },
-  "ai.toast.readyDescription": "Essayez de créer un nouveau dossier (F7) pour voir les suggestions de noms par l''IA.",
+  "ai.toast.readyDescription": "Essayez de créer un nouveau dossier (F7) pour voir les suggestions de noms par l’IA.",
   "@ai.toast.readyDescription": {
     "sourceHash": "b3ae1b2"
   },
-  "ai.toast.gotIt": "D''accord",
+  "ai.toast.gotIt": "D’accord",
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "ai.toast.startingTitle": "Démarrage de l''IA…",
+  "ai.toast.startingTitle": "Démarrage de l’IA…",
   "@ai.toast.startingTitle": {
     "sourceHash": "d0a6a15"
   },
@@ -43,11 +43,11 @@
   "@ai.toast.startingDescription": {
     "sourceHash": "94ecf6d"
   },
-  "ai.toast.downloadCloseTooltip": "Fermer cette notification ; le téléchargement continuera en arrière-plan",
+  "ai.toast.downloadCloseTooltip": "Fermer cette notification ; le téléchargement continuera en arrière-plan",
   "@ai.toast.downloadCloseTooltip": {
     "sourceHash": "16db2bd"
   },
-  "ai.translateError.off.title": "L''IA est désactivée",
+  "ai.translateError.off.title": "L’IA est désactivée",
   "@ai.translateError.off.title": {
     "sourceHash": "99ce709"
   },
@@ -55,11 +55,11 @@
   "@ai.translateError.off.body": {
     "sourceHash": "d8d6368"
   },
-  "ai.cloudConsent.label": "Autoriser l''IA dans le cloud",
+  "ai.cloudConsent.label": "Autoriser l’IA dans le cloud",
   "@ai.cloudConsent.label": {
     "sourceHash": "9947821"
   },
-  "ai.cloudConsent.description": "Cmdr n''envoie rien à un service d''IA dans le cloud tant que vous n''activez pas cette option.",
+  "ai.cloudConsent.description": "Cmdr n’envoie rien à un service d’IA dans le cloud tant que vous n’activez pas cette option.",
   "@ai.cloudConsent.description": {
     "sourceHash": "2f568e5"
   },
@@ -67,27 +67,27 @@
   "@ai.cloudConsent.disclosureTitle": {
     "sourceHash": "6907e64"
   },
-  "ai.cloudConsent.intro": "Une fois cette option activée, Cmdr envoie ceci au service d''IA que vous configurez ci-dessous :",
+  "ai.cloudConsent.intro": "Une fois cette option activée, Cmdr envoie ceci au service d’IA que vous configurez ci-dessous :",
   "@ai.cloudConsent.intro": {
     "sourceHash": "9462a5a"
   },
-  "ai.cloudConsent.whereItGoes": "L''endroit où vont vos données, et ce qu''il en advient, dépend du service que vous choisissez et de votre accord avec lui. Cela vaut aussi pour Ollama, LM Studio et les points de terminaison personnalisés : les données vont là où ce serveur tourne. Les serveurs de Cmdr n''en voient jamais rien.",
+  "ai.cloudConsent.whereItGoes": "L’endroit où vont vos données, et ce qu’il en advient, dépend du service que vous choisissez et de votre accord avec lui. Cela vaut aussi pour Ollama, LM Studio et les points de terminaison personnalisés : les données vont là où ce serveur tourne. Les serveurs de Cmdr n’en voient jamais rien.",
   "@ai.cloudConsent.whereItGoes": {
     "sourceHash": "f80daf9"
   },
-  "ai.cloudConsent.folderSuggestions": "<b>Suggestions de noms pour un nouveau dossier</b> : le chemin du dossier actuel et jusqu''à 100 noms qu''il contient",
+  "ai.cloudConsent.folderSuggestions": "<b>Suggestions de noms pour un nouveau dossier</b> : le chemin du dossier actuel et jusqu’à 100 noms qu’il contient",
   "@ai.cloudConsent.folderSuggestions": {
     "sourceHash": "02790c2"
   },
-  "ai.cloudConsent.search": "<b>Recherche en langage courant</b> : le texte que vous tapez",
+  "ai.cloudConsent.search": "<b>Recherche en langage courant</b> : le texte que vous tapez",
   "@ai.cloudConsent.search": {
     "sourceHash": "e6d4ef9"
   },
-  "ai.cloudConsent.selection": "<b>Sélection par description</b> : ce que vous tapez, plus jusqu''à 240 noms du dossier actuel",
+  "ai.cloudConsent.selection": "<b>Sélection par description</b> : ce que vous tapez, plus jusqu’à 240 noms du dossier actuel",
   "@ai.cloudConsent.selection": {
     "sourceHash": "1e1c3c3"
   },
-  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, quand vous discutez ou quand il lance une conversation de sa propre initiative :",
+  "ai.cloudConsent.askCmdr.title": "<b>Ask Cmdr</b>, quand vous discutez ou quand il lance une conversation de sa propre initiative :",
   "@ai.cloudConsent.askCmdr.title": {
     "sourceHash": "26e139c"
   },
@@ -103,11 +103,11 @@
   "@ai.cloudConsent.askCmdr.item.sizes": {
     "sourceHash": "2484530"
   },
-  "ai.cloudConsent.askCmdr.item.contents": "Des parties des fichiers que Cmdr ouvre pour vous répondre : un peu de texte, des pages de PDF, ce que contient une archive, et, pour une photo, les détails de l''appareil photo et la localisation",
+  "ai.cloudConsent.askCmdr.item.contents": "Des parties des fichiers que Cmdr ouvre pour vous répondre : un peu de texte, des pages de PDF, ce que contient une archive, et, pour une photo, les détails de l’appareil photo et la localisation",
   "@ai.cloudConsent.askCmdr.item.contents": {
     "sourceHash": "fcd0b73"
   },
-  "ai.cloudConsent.askCmdr.item.envelope": "Ce que vous regardez en ce moment : votre dossier actuel, le curseur, la sélection et les disques connectés",
+  "ai.cloudConsent.askCmdr.item.envelope": "Ce que vous regardez en ce moment : votre dossier actuel, le curseur, la sélection et les disques connectés",
   "@ai.cloudConsent.askCmdr.item.envelope": {
     "sourceHash": "2e5a0ef"
   },
@@ -119,15 +119,15 @@
   "@ai.cloudConsent.askCmdr.item.memory": {
     "sourceHash": "7779513"
   },
-  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr n''envoie jamais de fichiers entiers, de photos ni de vignettes. Quand vous lui posez une question sur un fichier, il peut en lire une partie limitée : quelques lignes de texte, quelques pages d''un PDF avec son titre et son auteur, la liste des fichiers contenus dans une archive, ou, pour une photo, les détails de l''appareil photo, y compris l''endroit où elle a été prise. La recherche de photos fonctionne de la même façon : le texte que Cmdr a reconnu dans les photos correspondantes et leurs tags sont envoyés à votre fournisseur pour qu''il puisse les trouver. Cmdr peut suggérer des renommages, des déplacements et des rangements, et rien n''arrive à un fichier tant que vous ne l''avez pas approuvé.",
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr n’envoie jamais de fichiers entiers, de photos ni de vignettes. Quand vous lui posez une question sur un fichier, il peut en lire une partie limitée : quelques lignes de texte, quelques pages d’un PDF avec son titre et son auteur, la liste des fichiers contenus dans une archive, ou, pour une photo, les détails de l’appareil photo, y compris l’endroit où elle a été prise. La recherche de photos fonctionne de la même façon : le texte que Cmdr a reconnu dans les photos correspondantes et leurs tags sont envoyés à votre fournisseur pour qu’il puisse les trouver. Cmdr peut suggérer des renommages, des déplacements et des rangements, et rien n’arrive à un fichier tant que vous ne l’avez pas approuvé.",
   "@ai.cloudConsent.askCmdr.contentsRule": {
     "sourceHash": "5a378c1"
   },
-  "ai.cloudConsent.askCmdr.memory": "Cmdr se rédige des notes sur vous : comment vous aimez ranger les choses, ce que vous avez refusé auparavant, tout ce que vous lui demandez de retenir. Ces notes accompagnent chaque message que vous envoyez, tant qu''elles existent, et elles peuvent contenir du texte que Cmdr a reconnu dans vos photos. Vous pouvez les lire, ou les effacer, à tout moment dans les réglages d''Ask Cmdr.",
+  "ai.cloudConsent.askCmdr.memory": "Cmdr se rédige des notes sur vous : comment vous aimez ranger les choses, ce que vous avez refusé avant, tout ce que vous lui demandez de retenir. Ces notes accompagnent chaque message que vous envoyez, tant qu’elles existent, et elles peuvent contenir du texte que Cmdr a reconnu dans vos photos. Vous pouvez les lire, ou les effacer, à tout moment dans les réglages d’Ask Cmdr.",
   "@ai.cloudConsent.askCmdr.memory": {
     "sourceHash": "496c78d"
   },
-  "ai.cloudConsent.askCmdr.proactive": "Cmdr surveille aussi les dossiers que vous utilisez et lance une conversation quand il a quelque chose à suggérer : des messages peuvent donc partir vers votre fournisseur sans que vous ayez rien demandé. Vous pouvez désactiver cela dans les réglages d''Ask Cmdr, sous « De sa propre initiative ».",
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr surveille aussi les dossiers que vous utilisez et lance une conversation quand il a quelque chose à suggérer : des messages peuvent donc partir vers votre fournisseur sans que vous ayez rien demandé. Vous pouvez désactiver cela dans les réglages d’Ask Cmdr, sous « De sa propre initiative ».",
   "@ai.cloudConsent.askCmdr.proactive": {
     "sourceHash": "abfa80b"
   },
@@ -135,19 +135,19 @@
   "@ai.cloudConsent.askCmdr.chatsStayLocal": {
     "sourceHash": "283cdd7"
   },
-  "ai.cloudConsent.logsNote": "Si vous activez la journalisation des appels au modèle d''IA dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre Mac. Ces journaux restent eux aussi en local, jamais envoyés nulle part.",
+  "ai.cloudConsent.logsNote": "Si vous activez la journalisation des appels au modèle d’IA dans les réglages avancés, Cmdr enregistre aussi chaque requête et réponse dans un dossier sur votre Mac. Ces journaux restent eux aussi en local, jamais envoyés nulle part.",
   "@ai.cloudConsent.logsNote": {
     "sourceHash": "7e211fc"
   },
-  "ai.cloudConsent.turnOffAnyTime": "Désactivez cette option à tout moment et Cmdr cesse aussitôt d''envoyer. Votre service, votre clé et vos conversations restent tels quels.",
+  "ai.cloudConsent.turnOffAnyTime": "Désactivez cette option à tout moment et Cmdr cesse aussitôt d’envoyer. Votre service, votre clé et vos conversations restent tels quels.",
   "@ai.cloudConsent.turnOffAnyTime": {
     "sourceHash": "464c39f"
   },
-  "ai.cloudConsent.notSaved": "Cmdr n''a pas pu enregistrer votre choix. Réessayer ?",
+  "ai.cloudConsent.notSaved": "Cmdr n’a pas pu enregistrer votre choix. Réessayer ?",
   "@ai.cloudConsent.notSaved": {
     "sourceHash": "6bd80e9"
   },
-  "ai.translateError.notConfigured.title": "L''IA a besoin d''un peu plus de configuration",
+  "ai.translateError.notConfigured.title": "L’IA a besoin d’un peu plus de configuration",
   "@ai.translateError.notConfigured.title": {
     "sourceHash": "bf5688a"
   },
@@ -155,7 +155,7 @@
   "@ai.translateError.notConfigured.body": {
     "sourceHash": "65133a8"
   },
-  "ai.translateError.noCloudConsent.title": "L''IA dans le cloud est désactivée",
+  "ai.translateError.noCloudConsent.title": "L’IA dans le cloud est désactivée",
   "@ai.translateError.noCloudConsent.title": {
     "sourceHash": "2e56781"
   },
@@ -163,7 +163,7 @@
   "@ai.translateError.noCloudConsent.body": {
     "sourceHash": "fde3eb5"
   },
-  "ai.translateError.authFailed.title": "Cette clé d''API a été refusée",
+  "ai.translateError.authFailed.title": "Cette clé d’API a été refusée",
   "@ai.translateError.authFailed.title": {
     "sourceHash": "93e6261"
   },
@@ -171,15 +171,15 @@
   "@ai.translateError.authFailed.body": {
     "sourceHash": "2159d5e"
   },
-  "ai.translateError.rateLimited.title": "Votre fournisseur d''IA n''a plus de place",
+  "ai.translateError.rateLimited.title": "Votre fournisseur d’IA n’a plus de place",
   "@ai.translateError.rateLimited.title": {
     "sourceHash": "26e286e"
   },
-  "ai.translateError.rateLimited.body": "Il limite le débit des requêtes ou votre forfait n''a plus de quota. Vérifiez votre forfait et votre facturation, puis réessayez.",
+  "ai.translateError.rateLimited.body": "Il limite le débit des requêtes ou votre forfait n’a plus de quota. Vérifiez votre forfait et votre facturation, puis réessayez.",
   "@ai.translateError.rateLimited.body": {
     "sourceHash": "9b296d7"
   },
-  "ai.translateError.timeout.title": "L''IA a mis trop de temps",
+  "ai.translateError.timeout.title": "L’IA a mis trop de temps",
   "@ai.translateError.timeout.title": {
     "sourceHash": "d684e3f"
   },
@@ -187,31 +187,31 @@
   "@ai.translateError.timeout.body": {
     "sourceHash": "249b720"
   },
-  "ai.translateError.unavailable.title": "Impossible de joindre votre fournisseur d''IA",
+  "ai.translateError.unavailable.title": "Impossible de joindre votre fournisseur d’IA",
   "@ai.translateError.unavailable.title": {
     "sourceHash": "e684bc4"
   },
-  "ai.translateError.unavailable.body": "Vérifiez votre connexion internet ou l''état du fournisseur, puis réessayez.",
+  "ai.translateError.unavailable.body": "Vérifiez votre connexion internet ou l’état du fournisseur, puis réessayez.",
   "@ai.translateError.unavailable.body": {
     "sourceHash": "ba30402"
   },
-  "ai.translateError.emptyResponse.title": "L''IA est revenue vide",
+  "ai.translateError.emptyResponse.title": "L’IA est revenue vide",
   "@ai.translateError.emptyResponse.title": {
     "sourceHash": "61afc33"
   },
-  "ai.translateError.emptyResponse.body": "Votre modèle a peut-être besoin d''un budget plus élevé pour cela. Essayez un modèle plus rapide comme gpt-4.1-mini dans Réglages > IA.",
+  "ai.translateError.emptyResponse.body": "Votre modèle a peut-être besoin d’un budget plus élevé pour cela. Essayez un modèle plus rapide comme gpt-4.1-mini dans Réglages > IA.",
   "@ai.translateError.emptyResponse.body": {
     "sourceHash": "f1704cc"
   },
-  "ai.translateError.serverError.title": "Votre fournisseur d''IA a rencontré un souci",
+  "ai.translateError.serverError.title": "Votre fournisseur d’IA a rencontré un souci",
   "@ai.translateError.serverError.title": {
     "sourceHash": "1b98f6a"
   },
-  "ai.translateError.serverError.body": "Il a renvoyé quelque chose d''inattendu. Réessayez dans un instant.",
+  "ai.translateError.serverError.body": "Il a renvoyé quelque chose d’inattendu. Réessayez dans un instant.",
   "@ai.translateError.serverError.body": {
     "sourceHash": "3f4af5c"
   },
-  "ai.translateError.parseError.title": "Lecture de la réponse de l''IA impossible",
+  "ai.translateError.parseError.title": "Lecture de la réponse de l’IA impossible",
   "@ai.translateError.parseError.title": {
     "sourceHash": "a509880"
   },
@@ -219,7 +219,7 @@
   "@ai.translateError.parseError.body": {
     "sourceHash": "c299ec6"
   },
-  "ai.translateError.unknownProvider.title": "Ce fournisseur d''IA n''est pas reconnu",
+  "ai.translateError.unknownProvider.title": "Ce fournisseur d’IA n’est pas reconnu",
   "@ai.translateError.unknownProvider.title": {
     "sourceHash": "3b70b46"
   },
@@ -227,11 +227,11 @@
   "@ai.translateError.unknownProvider.body": {
     "sourceHash": "7042a75"
   },
-  "ai.cloud.serviceAria": "Service d''IA dans le cloud",
+  "ai.cloud.serviceAria": "Service d’IA dans le cloud",
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.apiKeyPlaceholderAnthropic": "Exemple : sk-ant-abc123…",
+  "ai.cloud.apiKeyPlaceholderAnthropic": "Exemple : sk-ant-abc123…",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "89347d5"
   },
@@ -239,7 +239,7 @@
   "@ai.cloud.askCmdrOverrideHint": {
     "sourceHash": "5a5539a"
   },
-  "ai.cloud.modelPlaceholderExample": "Exemple : {model}",
+  "ai.cloud.modelPlaceholderExample": "Exemple : {model}",
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },
@@ -259,7 +259,7 @@
   "@ai.cloud.recheck": {
     "sourceHash": "1f47d83"
   },
-  "ai.cloud.authError": "La clé d''API n''est pas valable",
+  "ai.cloud.authError": "La clé d’API n’est pas valable",
   "@ai.cloud.authError": {
     "sourceHash": "74a88e4"
   },
@@ -283,7 +283,7 @@
   "@ai.local.warningDanger": {
     "sourceHash": "dd5c518"
   },
-  "ai.local.warningCaution": "Cela utilise la majeure partie de votre mémoire disponible. D''autres applications risquent de ralentir.",
+  "ai.local.warningCaution": "Cela utilise la majeure partie de votre mémoire disponible. D’autres applications risquent de ralentir.",
   "@ai.local.warningCaution": {
     "sourceHash": "f8070e9"
   },
@@ -295,7 +295,7 @@
   "@ai.local.statusStarting": {
     "sourceHash": "bbe5fc3"
   },
-  "ai.local.statusRunning": "En cours d''exécution",
+  "ai.local.statusRunning": "En cours d’exécution",
   "@ai.local.statusRunning": {
     "sourceHash": "f4ccae2"
   },
@@ -303,19 +303,19 @@
   "@ai.local.statusStopped": {
     "sourceHash": "1a4f630"
   },
-  "ai.local.installStepExtracting": "Étape 1 sur 4 : extraction de l''environnement d''exécution…",
+  "ai.local.installStepExtracting": "Étape 1 sur 4 : extraction de l’environnement d’exécution…",
   "@ai.local.installStepExtracting": {
     "sourceHash": "44fc84b"
   },
-  "ai.local.installStepDownloading": "Étape 2 sur 4 : téléchargement du modèle…",
+  "ai.local.installStepDownloading": "Étape 2 sur 4 : téléchargement du modèle…",
   "@ai.local.installStepDownloading": {
     "sourceHash": "99d712f"
   },
-  "ai.local.installStepVerifying": "Étape 3 sur 4 : vérification du téléchargement…",
+  "ai.local.installStepVerifying": "Étape 3 sur 4 : vérification du téléchargement…",
   "@ai.local.installStepVerifying": {
     "sourceHash": "302f79a"
   },
-  "ai.local.installStepStarting": "Étape 4 sur 4 : démarrage du serveur…",
+  "ai.local.installStepStarting": "Étape 4 sur 4 : démarrage du serveur…",
   "@ai.local.installStepStarting": {
     "sourceHash": "696bd5e"
   },
@@ -352,7 +352,7 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "Placeholder-only string: a single '?' inside parentheses, no translatable text."
   },
-  "ai.local.notInstalled": "Non installé. Le modèle local ({modelName}, {modelSize}) s''exécute entièrement sur votre appareil pour une confidentialité maximale. Nécessite Apple Silicon.",
+  "ai.local.notInstalled": "Non installé. Le modèle local ({modelName}, {modelSize}) s’exécute entièrement sur votre appareil pour une confidentialité maximale. Nécessite Apple Silicon.",
   "@ai.local.notInstalled": {
     "sourceHash": "c865b94"
   },
@@ -360,7 +360,7 @@
   "@ai.local.applyContextSize": {
     "sourceHash": "31e392d"
   },
-  "ai.local.ramGaugeAria": "Jauge d''utilisation de la mémoire",
+  "ai.local.ramGaugeAria": "Jauge d’utilisation de la mémoire",
   "@ai.local.ramGaugeAria": {
     "sourceHash": "d6d09e9"
   },
@@ -412,7 +412,7 @@
   "@ai.local.deleteDialogTitleDeleting": {
     "sourceHash": "d3a7e58"
   },
-  "ai.local.deleteDialogTitle": "Supprimer le modèle d''IA ?",
+  "ai.local.deleteDialogTitle": "Supprimer le modèle d’IA ?",
   "@ai.local.deleteDialogTitle": {
     "sourceHash": "c486f0c"
   },
@@ -420,7 +420,7 @@
   "@ai.local.deletingStatus": {
     "sourceHash": "e9de1ca"
   },
-  "ai.local.deleteConfirmMessage": "Cela libère {modelSize} d''espace disque. Vous devrez le retélécharger pour réutiliser l''IA locale.",
+  "ai.local.deleteConfirmMessage": "Cela libère {modelSize} d’espace disque. Vous devrez le retélécharger pour réutiliser l’IA locale.",
   "@ai.local.deleteConfirmMessage": {
     "sourceHash": "1a6ca0d"
   },
@@ -432,15 +432,15 @@
   "@ai.local.deleteButton": {
     "sourceHash": "e2d0a54"
   },
-  "ai.secretError.keychainTitle": "{op, select, save {Impossible d''enregistrer votre clé d''API : le Trousseau macOS a refusé l''accès} other {Impossible de lire votre clé d''API enregistrée : le Trousseau macOS a refusé l''accès}}",
+  "ai.secretError.keychainTitle": "{op, select, save {Impossible d’enregistrer votre clé d’API : le Trousseau macOS a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le Trousseau macOS a refusé l’accès}}",
   "@ai.secretError.keychainTitle": {
     "sourceHash": "ec77588"
   },
-  "ai.secretError.keychainBody": "{op, select, save {Ouvrez Trousseaux d''accès et vérifiez l''entrée « Cmdr », ou supprimez-la puis réessayez d''enregistrer.} other {Ouvrez Trousseaux d''accès, trouvez l''entrée « Cmdr », autorisez l''accès, ou supprimez-la puis saisissez de nouveau votre clé.}}",
+  "ai.secretError.keychainBody": "{op, select, save {Ouvrez Trousseaux d’accès et vérifiez l’entrée « Cmdr », ou supprimez-la puis réessayez d’enregistrer.} other {Ouvrez Trousseaux d’accès, trouvez l’entrée « Cmdr », autorisez l’accès, ou supprimez-la puis saisissez de nouveau votre clé.}}",
   "@ai.secretError.keychainBody": {
-    "sourceHash": "2a0fe5e"
+    "sourceHash": "8f1380e"
   },
-  "ai.secretError.keyringTitle": "{op, select, save {Impossible d''enregistrer votre clé d''API : le trousseau du système a refusé l''accès} other {Impossible de lire votre clé d''API enregistrée : le trousseau du système a refusé l''accès}}",
+  "ai.secretError.keyringTitle": "{op, select, save {Impossible d’enregistrer votre clé d’API : le trousseau du système a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le trousseau du système a refusé l’accès}}",
   "@ai.secretError.keyringTitle": {
     "sourceHash": "8c9df45"
   },
@@ -448,11 +448,11 @@
   "@ai.secretError.keyringBody": {
     "sourceHash": "023bde3"
   },
-  "ai.secretError.genericTitle": "{op, select, save {Impossible d''enregistrer votre clé d''API.} other {Impossible de lire votre clé d''API enregistrée.}}",
+  "ai.secretError.genericTitle": "{op, select, save {Impossible d’enregistrer votre clé d’API.} other {Impossible de lire votre clé d’API enregistrée.}}",
   "@ai.secretError.genericTitle": {
     "sourceHash": "a93c4f0"
   },
-  "ai.secretError.genericBody": "Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l''application.",
+  "ai.secretError.genericBody": "Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l’application.",
   "@ai.secretError.genericBody": {
     "sourceHash": "2ee417d"
   }

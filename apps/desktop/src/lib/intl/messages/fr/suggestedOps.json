@@ -3,7 +3,7 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "L''IA a suggéré ceci. Rien ne s''exécute tant que vous ne l''avez pas approuvé.",
+  "suggestedOps.description": "L’IA a suggéré ceci. Rien ne s’exécute tant que vous ne l’avez pas approuvé.",
   "@suggestedOps.description": {
     "sourceHash": "73255a0"
   },
@@ -11,11 +11,11 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "Cmdr n''a pas pu lire les suggestions. Fermez cette fenêtre et rouvrez-la.",
+  "suggestedOps.loadFailed": "Cmdr n’a pas pu lire les suggestions. Fermez cette fenêtre et rouvrez-la.",
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
-  "suggestedOps.agentReason": "Raison donnée par l''IA",
+  "suggestedOps.agentReason": "Raison donnée par l’IA",
   "@suggestedOps.agentReason": {
     "sourceHash": "e3acab8"
   },
@@ -63,11 +63,11 @@
   "@suggestedOps.folderWillBeCreated": {
     "sourceHash": "26243e5"
   },
-  "suggestedOps.folderWillBeCreatedTooltip": "Le dossier de destination n''existe pas encore. En approuvant, Cmdr le crée, exactement comme si vous lanciez le déplacement vous-même.",
+  "suggestedOps.folderWillBeCreatedTooltip": "Le dossier de destination n’existe pas encore. En approuvant, Cmdr le crée, exactement comme si vous lanciez le déplacement vous-même.",
   "@suggestedOps.folderWillBeCreatedTooltip": {
     "sourceHash": "2d28b7c"
   },
-  "suggestedOps.destinationUnknown": "Cmdr n''a pas pu vérifier le dossier de destination",
+  "suggestedOps.destinationUnknown": "Cmdr n’a pas pu vérifier le dossier de destination",
   "@suggestedOps.destinationUnknown": {
     "sourceHash": "e1293c5"
   },
@@ -75,7 +75,7 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "L''IA a modifié cette suggestion pendant votre lecture.",
+  "suggestedOps.changedUnderReview": "L’IA a modifié cette suggestion pendant votre lecture.",
   "@suggestedOps.changedUnderReview": {
     "sourceHash": "5d07c7c"
   },
@@ -99,7 +99,7 @@
   "@suggestedOps.columnChanged": {
     "sourceHash": "d8c5670"
   },
-  "suggestedOps.noIndexData": "Absent de l''index",
+  "suggestedOps.noIndexData": "Absent de l’index",
   "@suggestedOps.noIndexData": {
     "sourceHash": "104d8cb"
   },
@@ -111,7 +111,7 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.filesLoadFailed": "Cmdr n''a pas pu charger ces fichiers.",
+  "suggestedOps.filesLoadFailed": "Cmdr n’a pas pu charger ces fichiers.",
   "@suggestedOps.filesLoadFailed": {
     "sourceHash": "c61d214"
   },
@@ -119,15 +119,15 @@
   "@suggestedOps.retryFiles": {
     "sourceHash": "d8b8392"
   },
-  "suggestedOps.decisionNotRecorded": "Cmdr n''a pas pu enregistrer votre réponse. Réessayez.",
+  "suggestedOps.decisionNotRecorded": "Cmdr n’a pas pu enregistrer votre réponse. Réessayez.",
   "@suggestedOps.decisionNotRecorded": {
     "sourceHash": "d4ee9cf"
   },
-  "suggestedOps.approvalUnsure": "Cmdr ne sait pas si l''approbation a abouti. Vérifiez la file d''attente des opérations avant de l''approuver à nouveau.",
+  "suggestedOps.approvalUnsure": "Cmdr ne sait pas si l’approbation a abouti. Vérifiez la file d’attente des opérations avant de l’approuver à nouveau.",
   "@suggestedOps.approvalUnsure": {
     "sourceHash": "0cd408c"
   },
-  "suggestedOps.indicatorTooltip": "Des suggestions de l''IA vous attendent. Cliquez pour les examiner.",
+  "suggestedOps.indicatorTooltip": "Des suggestions de l’IA vous attendent. Cliquez pour les examiner.",
   "@suggestedOps.indicatorTooltip": {
     "sourceHash": "4508b0b"
   }

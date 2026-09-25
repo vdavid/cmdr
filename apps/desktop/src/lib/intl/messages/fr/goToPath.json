@@ -27,11 +27,11 @@
   "@goToPath.dialog.confirm": {
     "sourceHash": "fb65702"
   },
-  "goToPath.dialog.ancestorHint": "Ce chemin n''existe pas. L''emplacement le plus proche où aller est {dir}.",
+  "goToPath.dialog.ancestorHint": "Ce chemin n’existe pas. L’emplacement le plus proche où aller est {dir}.",
   "@goToPath.dialog.ancestorHint": {
     "sourceHash": "43db9f4"
   },
-  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> n''existe pas, nous vous avons donc amené à <land>{landed}</land>.",
+  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> n’existe pas, nous vous avons donc amené à <land>{landed}</land>.",
   "@goToPath.toast.landedOnAncestor": {
     "sourceHash": "4ffc1e4"
   },

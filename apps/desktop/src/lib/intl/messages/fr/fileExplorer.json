@@ -1,5 +1,5 @@
 {
-  "fileExplorer.archiveEnterMenu.ariaLabel": "Ouvrir l''archive ou le paquet",
+  "fileExplorer.archiveEnterMenu.ariaLabel": "Ouvrir l’archive ou le paquet",
   "@fileExplorer.archiveEnterMenu.ariaLabel": {
     "sourceHash": "df385c5"
   },
@@ -7,7 +7,7 @@
   "@fileExplorer.archiveEnterMenu.browse": {
     "sourceHash": "8da5c95"
   },
-  "fileExplorer.archiveEnterMenu.open": "Ouvrir avec l''application par défaut",
+  "fileExplorer.archiveEnterMenu.open": "Ouvrir avec l’application par défaut",
   "@fileExplorer.archiveEnterMenu.open": {
     "sourceHash": "d3d5d6e"
   },
@@ -19,15 +19,15 @@
   "@fileExplorer.breadcrumb.navigateTooltip": {
     "sourceHash": "9d08428"
   },
-  "fileExplorer.doubleClickHint.title": "Que s''est-il passé ?",
+  "fileExplorer.doubleClickHint.title": "Que s’est-il passé ?",
   "@fileExplorer.doubleClickHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.doubleClickHint.body": "Vous avez double-cliqué sur l''arrière-plan du panneau. Cela remonte au dossier parent.",
+  "fileExplorer.doubleClickHint.body": "Vous avez double-cliqué sur l’arrière-plan du panneau. Cela remonte au dossier parent.",
   "@fileExplorer.doubleClickHint.body": {
     "sourceHash": "cfbc7d3"
   },
-  "fileExplorer.doubleClickHint.dontLikeIt": "Vous n''aimez pas ?",
+  "fileExplorer.doubleClickHint.dontLikeIt": "Vous n’aimez pas ?",
   "@fileExplorer.doubleClickHint.dontLikeIt": {
     "sourceHash": "2049722"
   },
@@ -35,7 +35,7 @@
   "@fileExplorer.doubleClickHint.neverAgain": {
     "sourceHash": "5026f4a"
   },
-  "fileExplorer.doubleClickHint.iLikeIt": "J''aime bien",
+  "fileExplorer.doubleClickHint.iLikeIt": "J’aime bien",
   "@fileExplorer.doubleClickHint.iLikeIt": {
     "sourceHash": "6859406"
   },
@@ -47,7 +47,7 @@
   "@fileExplorer.pane.diskUsageAriaLabel": {
     "sourceHash": "4fe60c1"
   },
-  "fileExplorer.restrictedFolder.tooltip": "L''accès à ce dossier est limité. Accordez à Cmdr l''{fullDiskAccess} dans {systemSettings} → {privacyAndSecurity} → {fullDiskAccess} pour lever toutes ces limites. Ou accordez l''accès à ce seul dossier dans {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
+  "fileExplorer.restrictedFolder.tooltip": "L’accès à ce dossier est limité. Accordez à Cmdr l’{fullDiskAccess} dans {systemSettings} → {privacyAndSecurity} → {fullDiskAccess} pour lever toutes ces limites. Ou accordez l’accès à ce seul dossier dans {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
   "@fileExplorer.restrictedFolder.tooltip": {
     "sourceHash": "27b86a9"
   },
@@ -55,7 +55,7 @@
   "@fileExplorer.restrictedFolder.label": {
     "sourceHash": "bbcf72f"
   },
-  "fileExplorer.diskSpace.free": "{freeText} libres sur {totalText} ({percentText} %)",
+  "fileExplorer.diskSpace.free": "{freeText} libres sur {totalText} ({percentText} %)",
   "@fileExplorer.diskSpace.free": {
     "sourceHash": "97781f4"
   },
@@ -67,15 +67,15 @@
   "@fileExplorer.diskSpace.used": {
     "sourceHash": "6285805"
   },
-  "fileExplorer.diskSpace.noLimitNote": "Ce stockage n''a pas de limite de taille, il n''y a donc pas de barre à remplir.",
+  "fileExplorer.diskSpace.noLimitNote": "Ce stockage n’a pas de limite de taille, il n’y a donc pas de barre à remplir.",
   "@fileExplorer.diskSpace.noLimitNote": {
     "sourceHash": "0c363c5"
   },
-  "fileExplorer.diskSpace.lowNote": "Cette barre est rouge car l''espace libre de ce volume est faible.",
+  "fileExplorer.diskSpace.lowNote": "Cette barre est rouge car l’espace libre de ce volume est faible.",
   "@fileExplorer.diskSpace.lowNote": {
     "sourceHash": "4f558cd"
   },
-  "fileExplorer.diskSpace.somewhatLowNote": "Cette barre est jaune car l''espace libre de ce volume commence à être faible.",
+  "fileExplorer.diskSpace.somewhatLowNote": "Cette barre est jaune car l’espace libre de ce volume commence à être faible.",
   "@fileExplorer.diskSpace.somewhatLowNote": {
     "sourceHash": "4f24bbf"
   },
@@ -92,7 +92,7 @@
   "@fileExplorer.pane.fileExplorerAriaLabel": {
     "sourceHash": "bfd3c67"
   },
-  "fileExplorer.pane.disconnectFailedToast": "Impossible de se déconnecter : {message}",
+  "fileExplorer.pane.disconnectFailedToast": "Impossible de se déconnecter : {message}",
   "@fileExplorer.pane.disconnectFailedToast": {
     "sourceHash": "ac9e8e0"
   },
@@ -108,7 +108,7 @@
   "@fileExplorer.pane.directConnectionTooSlowToast": {
     "sourceHash": "bb5baea"
   },
-  "fileExplorer.pane.directConnectionUnexpectedToast": "La connexion directe à {server} n''a pas pu être établie, ce partage reste donc sur la connexion système.",
+  "fileExplorer.pane.directConnectionUnexpectedToast": "La connexion directe à {server} n’a pas pu être établie, ce partage reste donc sur la connexion système.",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
     "sourceHash": "cce5742"
   },
@@ -116,19 +116,19 @@
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
     "sourceHash": "a746d6c"
   },
-  "fileExplorer.pane.directConnectionUnavailableToast": "La connexion directe n''a pas pu être établie pour le moment, ce partage reste donc sur la connexion système.",
+  "fileExplorer.pane.directConnectionUnavailableToast": "La connexion directe n’a pas pu être établie pour le moment, ce partage reste donc sur la connexion système.",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "sourceHash": "0440df9"
   },
-  "fileExplorer.pane.directConnectionShareGoneToast": "{share} n''est plus connecté, il n''y a donc rien à accélérer.",
+  "fileExplorer.pane.directConnectionShareGoneToast": "{share} n’est plus connecté, il n’y a donc rien à accélérer.",
   "@fileExplorer.pane.directConnectionShareGoneToast": {
     "sourceHash": "8a4b5ae"
   },
-  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} ne répond pas pour le moment, Cmdr ne peut donc pas s''y connecter directement. Réessayez dans un instant.",
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} ne répond pas pour le moment, Cmdr ne peut donc pas s’y connecter directement. Réessayez dans un instant.",
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
     "sourceHash": "6c29cca"
   },
-  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} n''est pas un partage réseau, il n''y a donc rien à accélérer.",
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} n’est pas un partage réseau, il n’y a donc rien à accélérer.",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "sourceHash": "193a804"
   },
@@ -136,15 +136,15 @@
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "sourceHash": "844ccc1"
   },
-  "fileExplorer.pane.refreshStillRunningToast": "Ce dossier est encore en cours de lecture. La liste se met à jour dès qu''il arrive.",
+  "fileExplorer.pane.refreshStillRunningToast": "Ce dossier est encore en cours de lecture. La liste se met à jour dès qu’il arrive.",
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "Cette boîte de dialogue n''a pas pu s''ouvrir. Nous l''avons fermée et vous avez récupéré le clavier. Veuillez réessayer.",
+  "fileExplorer.pane.dialogRenderFailedToast": "Cette boîte de dialogue n’a pas pu s’ouvrir. Nous l’avons fermée et vous avez récupéré le clavier. Réessayez.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "sourceHash": "059dfbd"
   },
-  "fileExplorer.pane.ejectFailedToast": "Impossible d''éjecter {volumeName} : {message}",
+  "fileExplorer.pane.ejectFailedToast": "Impossible d’éjecter {volumeName} : {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "sourceHash": "b22501d"
   },
@@ -285,7 +285,7 @@
   "@fileExplorer.typeToJump.ariaLabel": {
     "sourceHash": "da879a5"
   },
-  "fileExplorer.typeToJump.prefix": "Aller à : ",
+  "fileExplorer.typeToJump.prefix": "Aller à : ",
   "@fileExplorer.typeToJump.prefix": {
     "sourceHash": "e9e3412"
   },
@@ -293,7 +293,7 @@
   "@fileExplorer.searchResults.unavailableTitle": {
     "sourceHash": "ebcc5a7"
   },
-  "fileExplorer.searchResults.unavailableBody": "L''ensemble des résultats de cette recherche a été effacé. Lancez une nouvelle recherche pour recommencer.",
+  "fileExplorer.searchResults.unavailableBody": "L’ensemble des résultats de cette recherche a été effacé. Lancez une nouvelle recherche pour recommencer.",
   "@fileExplorer.searchResults.unavailableBody": {
     "sourceHash": "3e4cfa2"
   },
@@ -313,15 +313,15 @@
   "@fileExplorer.network.retry": {
     "sourceHash": "942087c"
   },
-  "fileExplorer.network.signIn": "S''identifier",
+  "fileExplorer.network.signIn": "S’identifier",
   "@fileExplorer.network.signIn": {
     "sourceHash": "bfd402b"
   },
-  "fileExplorer.network.osMountFallback.message": "La connexion directe à <shareName>{share}</shareName> n''a pas pu être établie. Vous y avez bien accès, mais uniquement via la connexion réseau SMB native de macOS, qui est 4 fois plus lente que la connexion directe de Cmdr dans la plupart des cas (parfois 100 fois). Cliquez sur le bouton ci-dessous pour réessayer.",
+  "fileExplorer.network.osMountFallback.message": "La connexion directe à <shareName>{share}</shareName> n’a pas pu être établie. Vous y avez bien accès, mais uniquement via la connexion réseau SMB native de macOS, qui est 4 fois plus lente que la connexion directe de Cmdr dans la plupart des cas (parfois 100 fois). Cliquez sur le bouton ci-dessous pour réessayer.",
   "@fileExplorer.network.osMountFallback.message": {
     "sourceHash": "368f523"
   },
-  "fileExplorer.network.osMountFallback.shareNotOnServer": "La connexion directe à <shareName>{share}</shareName> n''a pas pu être établie, car le serveur indique qu''il n''a aucun partage de ce nom. Vous y avez toujours accès, mais via la connexion réseau SMB native de macOS, qui est bien plus lente. Cette situation ne se réglera pas d''elle-même : le partage a peut-être été renommé ou supprimé sur le serveur, il vaut donc la peine d''y jeter un œil.",
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "La connexion directe à <shareName>{share}</shareName> n’a pas pu être établie, car le serveur indique qu’il n’a aucun partage de ce nom. Vous y avez toujours accès, mais via la connexion réseau SMB native de macOS, qui est bien plus lente. Cette situation ne se réglera pas d’elle-même : le partage a peut-être été renommé ou supprimé sur le serveur, il vaut donc la peine d’y jeter un œil.",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
     "sourceHash": "e26082d"
   },
@@ -397,7 +397,7 @@
   "@fileExplorer.network.browser.status.connected": {
     "sourceHash": "2296556"
   },
-  "fileExplorer.network.browser.tooltip.resolving": "Résolution du nom d''hôte et de l''adresse IP…",
+  "fileExplorer.network.browser.tooltip.resolving": "Résolution du nom d’hôte et de l’adresse IP…",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "sourceHash": "cac249d"
   },
@@ -429,7 +429,7 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "03fabd6"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "Retirer {hostName} de la liste des serveurs ?",
+  "fileExplorer.network.browser.removeHostConfirm": "Retirer {hostName} de la liste des serveurs ?",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "8ecdf1a"
   },
@@ -461,7 +461,7 @@
   "@fileExplorer.network.browser.noMountedShares": {
     "sourceHash": "913c7e6"
   },
-  "fileExplorer.network.browser.disconnectFailed": "Impossible de se déconnecter : {message}",
+  "fileExplorer.network.browser.disconnectFailed": "Impossible de se déconnecter : {message}",
   "@fileExplorer.network.browser.disconnectFailed": {
     "sourceHash": "ac9e8e0"
   },
@@ -469,7 +469,7 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "Le partage « {shareName} » est introuvable sur {hostName}",
+  "fileExplorer.network.share.notFound": "Le partage « {shareName} » est introuvable sur {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
@@ -485,7 +485,7 @@
   "@fileExplorer.network.share.noSharesTitle": {
     "sourceHash": "56890aa"
   },
-  "fileExplorer.network.share.noSharesMessage": "Cet hôte n''a aucun partage accessible, ou une authentification est nécessaire.",
+  "fileExplorer.network.share.noSharesMessage": "Cet hôte n’a aucun partage accessible, ou une authentification est nécessaire.",
   "@fileExplorer.network.share.noSharesMessage": {
     "sourceHash": "6633416"
   },
@@ -517,7 +517,7 @@
   "@fileExplorer.network.reconnect.times": {
     "sourceHash": "bf5fc9c"
   },
-  "fileExplorer.network.reconnect.finalAttempt": "Réessayé {retried}, c''est la dernière tentative. La connexion sera abandonnée si elle n''aboutit pas.",
+  "fileExplorer.network.reconnect.finalAttempt": "Réessayé {retried}, c’est la dernière tentative. La connexion sera abandonnée si elle n’aboutit pas.",
   "@fileExplorer.network.reconnect.finalAttempt": {
     "sourceHash": "7418a78"
   },
@@ -525,7 +525,7 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "Délai de connexion dépassé. L''appareil est peut-être lent ou ne répond pas.",
+  "fileExplorer.mtp.connectTimedOut": "Délai de connexion dépassé. L’appareil est peut-être lent ou ne répond pas.",
   "@fileExplorer.mtp.connectTimedOut": {
     "sourceHash": "cc01ae7"
   },
@@ -537,19 +537,19 @@
   "@fileExplorer.mtp.deviceNotFound": {
     "sourceHash": "15d2382"
   },
-  "fileExplorer.mtp.disconnected": "L''appareil a été déconnecté.",
+  "fileExplorer.mtp.disconnected": "L’appareil a été déconnecté.",
   "@fileExplorer.mtp.disconnected": {
     "sourceHash": "57e823a"
   },
-  "fileExplorer.mtp.deviceBusy": "L''appareil est occupé. Réessayez.",
+  "fileExplorer.mtp.deviceBusy": "L’appareil est occupé. Réessayez.",
   "@fileExplorer.mtp.deviceBusy": {
     "sourceHash": "7199b1d"
   },
-  "fileExplorer.mtp.noStorage": "L''appareil n''a aucun stockage accessible",
+  "fileExplorer.mtp.noStorage": "L’appareil n’a aucun stockage accessible",
   "@fileExplorer.mtp.noStorage": {
     "sourceHash": "ff30402"
   },
-  "fileExplorer.mtp.connecting": "Connexion à l''appareil…",
+  "fileExplorer.mtp.connecting": "Connexion à l’appareil…",
   "@fileExplorer.mtp.connecting": {
     "sourceHash": "860bb9b"
   },
@@ -577,15 +577,15 @@
   "@fileExplorer.networkMount.back": {
     "sourceHash": "76900f1"
   },
-  "fileExplorer.unreachable.title": "Impossible d''accéder à {path}",
+  "fileExplorer.unreachable.title": "Impossible d’accéder à {path}",
   "@fileExplorer.unreachable.title": {
     "sourceHash": "586e44c"
   },
-  "fileExplorer.unreachable.detailGaveUp": "Cmdr a tenté de se reconnecter plusieurs fois, mais le serveur n''est pas revenu. La connexion reste disponible pour l''instant. Réessayez, ou déconnectez-vous pour l''abandonner.",
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr a tenté de se reconnecter plusieurs fois, mais le serveur n’est pas revenu. La connexion reste disponible pour l’instant. Réessayez, ou déconnectez-vous pour l’abandonner.",
   "@fileExplorer.unreachable.detailGaveUp": {
     "sourceHash": "7d8c5fc"
   },
-  "fileExplorer.unreachable.detailTimeout": "Le volume de ce chemin n''a pas répondu à temps. Il s''agit peut-être d''un disque réseau actuellement indisponible.",
+  "fileExplorer.unreachable.detailTimeout": "Le volume de ce chemin n’a pas répondu à temps. Il s’agit peut-être d’un disque réseau actuellement indisponible.",
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
@@ -637,15 +637,15 @@
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "6ae2091"
   },
-  "fileExplorer.edit.notOnThisMac": "Cmdr ne peut pas encore modifier ce fichier dans l''éditeur, car ce n''est pas un fichier ordinaire de votre Mac. Appuyez sur F3 pour le visualiser.",
+  "fileExplorer.edit.notOnThisMac": "Cmdr ne peut pas encore modifier ce fichier dans l’éditeur, car ce n’est pas un fichier ordinaire de votre Mac. Appuyez sur F3 pour le visualiser.",
   "@fileExplorer.edit.notOnThisMac": {
     "sourceHash": "99b6f61"
   },
-  "fileExplorer.edit.hint": "Fichier ouvert dans {app}. Vous voulez un autre éditeur la prochaine fois ? Choisissez-le dans les réglages.",
+  "fileExplorer.edit.hint": "Fichier ouvert dans {app}. Vous voulez un autre éditeur la prochaine fois ? Choisissez-le dans les réglages.",
   "@fileExplorer.edit.hint": {
     "sourceHash": "3632f06"
   },
-  "fileExplorer.edit.hintUnnamed": "Fichier ouvert dans votre éditeur de texte par défaut. Vous en voulez un autre la prochaine fois ? Choisissez-le dans les réglages.",
+  "fileExplorer.edit.hintUnnamed": "Fichier ouvert dans votre éditeur de texte par défaut. Vous en voulez un autre la prochaine fois ? Choisissez-le dans les réglages.",
   "@fileExplorer.edit.hintUnnamed": {
     "sourceHash": "6216471"
   },
@@ -657,19 +657,19 @@
   "@fileExplorer.edit.openSettings": {
     "sourceHash": "ca381c1"
   },
-  "fileExplorer.edit.appMissing": "Cmdr ne trouve pas l''éditeur que vous avez choisi, donc ce fichier s''est ouvert dans {app}.",
+  "fileExplorer.edit.appMissing": "Cmdr ne trouve pas l’éditeur que vous avez choisi, donc ce fichier s’est ouvert dans {app}.",
   "@fileExplorer.edit.appMissing": {
     "sourceHash": "e063ef8"
   },
-  "fileExplorer.edit.appMissingUnnamed": "Cmdr ne trouve pas l''éditeur que vous avez choisi, donc ce fichier s''est ouvert dans votre éditeur de texte par défaut.",
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr ne trouve pas l’éditeur que vous avez choisi, donc ce fichier s’est ouvert dans votre éditeur de texte par défaut.",
   "@fileExplorer.edit.appMissingUnnamed": {
     "sourceHash": "421e9d9"
   },
-  "fileExplorer.edit.launchRefused": "Cmdr n''a pas pu lancer votre éditeur de texte. Ouvrez-le une fois vous-même, puis réessayez.",
+  "fileExplorer.edit.launchRefused": "Cmdr n’a pas pu lancer votre éditeur de texte. Ouvrez-le une fois vous-même, puis réessayez.",
   "@fileExplorer.edit.launchRefused": {
     "sourceHash": "741e049"
   },
-  "fileExplorer.edit.timedOut": "Votre éditeur de texte met du temps à démarrer. Il va peut-être encore s''ouvrir.",
+  "fileExplorer.edit.timedOut": "Votre éditeur de texte met du temps à démarrer. Il va peut-être encore s’ouvrir.",
   "@fileExplorer.edit.timedOut": {
     "sourceHash": "70d283f"
   },
@@ -681,7 +681,7 @@
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
-  "fileExplorer.clipboard.empty": "Aucun fichier dans le presse-papiers. Copiez d''abord des fichiers avec ⌘C.",
+  "fileExplorer.clipboard.empty": "Aucun fichier dans le presse-papiers. Copiez d’abord des fichiers avec ⌘C.",
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
@@ -693,19 +693,19 @@
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "sourceHash": "74a883a"
   },
-  "fileExplorer.clipboard.copiedPath": "Chemin copié, il est maintenant dans le presse-papiers :",
+  "fileExplorer.clipboard.copiedPath": "Chemin copié, il est maintenant dans le presse-papiers :",
   "@fileExplorer.clipboard.copiedPath": {
     "sourceHash": "afb1cc2"
   },
-  "fileExplorer.tabs.limitReached": "Limite d''onglets atteinte",
+  "fileExplorer.tabs.limitReached": "Limite d’onglets atteinte",
   "@fileExplorer.tabs.limitReached": {
     "sourceHash": "2d4205a"
   },
-  "fileExplorer.tabs.closePinnedConfirm": "Cet onglet est épinglé. Le fermer quand même ?",
+  "fileExplorer.tabs.closePinnedConfirm": "Cet onglet est épinglé. Le fermer quand même ?",
   "@fileExplorer.tabs.closePinnedConfirm": {
     "sourceHash": "d5757f9"
   },
-  "fileExplorer.tabs.closePinnedTitle": "Fermer l''onglet épinglé",
+  "fileExplorer.tabs.closePinnedTitle": "Fermer l’onglet épinglé",
   "@fileExplorer.tabs.closePinnedTitle": {
     "sourceHash": "5d22e58"
   },
@@ -713,19 +713,19 @@
   "@fileExplorer.readOnly.volumeTitle": {
     "sourceHash": "e2d3bf1"
   },
-  "fileExplorer.readOnly.renameMessage": "Ce volume est en lecture seule. Renommer n''est pas possible ici.",
+  "fileExplorer.readOnly.renameMessage": "Ce volume est en lecture seule. Renommer n’est pas possible ici.",
   "@fileExplorer.readOnly.renameMessage": {
     "sourceHash": "2f68994"
   },
-  "fileExplorer.readOnly.mkdirMessage": "Ce volume est en lecture seule. Créer des dossiers n''est pas possible ici.",
+  "fileExplorer.readOnly.mkdirMessage": "Ce volume est en lecture seule. Créer des dossiers n’est pas possible ici.",
   "@fileExplorer.readOnly.mkdirMessage": {
     "sourceHash": "01957f0"
   },
-  "fileExplorer.readOnly.mkfileMessage": "Ce volume est en lecture seule. Créer des fichiers n''est pas possible ici.",
+  "fileExplorer.readOnly.mkfileMessage": "Ce volume est en lecture seule. Créer des fichiers n’est pas possible ici.",
   "@fileExplorer.readOnly.mkfileMessage": {
     "sourceHash": "c5c28e2"
   },
-  "fileExplorer.readOnly.deleteMessage": "Ce volume est en lecture seule. Supprimer des fichiers n''est pas possible ici.",
+  "fileExplorer.readOnly.deleteMessage": "Ce volume est en lecture seule. Supprimer des fichiers n’est pas possible ici.",
   "@fileExplorer.readOnly.deleteMessage": {
     "sourceHash": "965a635"
   },
@@ -741,23 +741,23 @@
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
   },
-  "fileExplorer.readOnly.deviceMessage": "« {name} » est en lecture seule. Vous pouvez en copier des fichiers, mais pas en copier vers lui.",
+  "fileExplorer.readOnly.deviceMessage": "« {name} » est en lecture seule. Vous pouvez en copier des fichiers, mais pas en copier vers lui.",
   "@fileExplorer.readOnly.deviceMessage": {
-    "sourceHash": "039488f"
+    "sourceHash": "5582a47"
   },
   "fileExplorer.readOnly.gitPortalTitle": "Portail git en lecture seule",
   "@fileExplorer.readOnly.gitPortalTitle": {
     "sourceHash": "d4bd9c1"
   },
-  "fileExplorer.readOnly.gitPortalMessage": "Les branches, tags et commits sont des instantanés de votre historique git : vous pouvez les parcourir et en copier des fichiers, mais pas les modifier.",
+  "fileExplorer.readOnly.gitPortalMessage": "Les branches, tags et commits sont des instantanés de votre historique git : vous pouvez les parcourir et en copier des fichiers, mais pas les modifier.",
   "@fileExplorer.readOnly.gitPortalMessage": {
     "sourceHash": "87bc79d"
   },
-  "fileExplorer.archive.useTransferToCopyOut": "Pour copier des fichiers hors d''une archive, utilisez F5 pour copier ou F6 pour déplacer.",
+  "fileExplorer.archive.useTransferToCopyOut": "Pour copier des fichiers hors d’une archive, utilisez F5 pour copier ou F6 pour déplacer.",
   "@fileExplorer.archive.useTransferToCopyOut": {
     "sourceHash": "3edbc36"
   },
-  "fileExplorer.git.useTransferToCopyOut": "Pour copier des fichiers hors d''un instantané git, utilisez F5 pour copier ou F6 pour déplacer.",
+  "fileExplorer.git.useTransferToCopyOut": "Pour copier des fichiers hors d’un instantané git, utilisez F5 pour copier ou F6 pour déplacer.",
   "@fileExplorer.git.useTransferToCopyOut": {
     "sourceHash": "a0d65fe"
   },
@@ -765,25 +765,25 @@
   "@fileExplorer.rename.hiddenAfterRename": {
     "sourceHash": "445d02a"
   },
-  "fileExplorer.rename.keptOriginalName": "{reason}. Le nom d''origine est conservé.",
+  "fileExplorer.rename.keptOriginalName": "{reason}. Le nom d’origine est conservé.",
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. « {name} » a gardé son nom.",
+  "fileExplorer.rename.chainKeptOriginalName": "{reason}. « {name} » a gardé son nom.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "5b5e6ce"
+    "sourceHash": "638394d"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. « {name} » a gardé son nom, {others, plural, one {ainsi qu''un autre fichier} many {ainsi que {othersText} autres fichiers} other {ainsi que {othersText} autres fichiers}}.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. « {name} » a gardé son nom, {others, plural, one {ainsi qu’un autre fichier} many {ainsi que {othersText} autres fichiers} other {ainsi que {othersText} autres fichiers}}.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "7b23e8e"
+    "sourceHash": "be35bc8"
   },
-  "fileExplorer.rename.unconfirmed": "Impossible de confirmer le renommage de « {name} ». Le volume est peut-être lent, donc le fichier a peut-être quand même été renommé.",
+  "fileExplorer.rename.unconfirmed": "Impossible de confirmer le renommage de « {name} ». Le volume est peut-être lent, donc le fichier a peut-être quand même été renommé.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d43e419"
+    "sourceHash": "bcea9d0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Impossible de confirmer les renommages de « {name} » et {others, plural, one {d''un autre fichier} many {de {othersText} autres fichiers} other {de {othersText} autres fichiers}}. Le volume est peut-être lent, donc les fichiers ont peut-être quand même été renommés.",
+  "fileExplorer.rename.unconfirmedAndOthers": "Impossible de confirmer les renommages de « {name} » et {others, plural, one {d’un autre fichier} many {de {othersText} autres fichiers} other {de {othersText} autres fichiers}}. Le volume est peut-être lent, donc les fichiers ont peut-être quand même été renommés.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "1258eb3"
+    "sourceHash": "c64e665"
   },
   "fileExplorer.columns.name": "Nom",
   "@fileExplorer.columns.name": {
@@ -831,11 +831,11 @@
   "@fileExplorer.list.sortColumnsAriaLabel": {
     "sourceHash": "21f76f8"
   },
-  "fileExplorer.dirSize.updatingIndexTooltip": "Mise à jour de l''index : la taille peut changer.",
+  "fileExplorer.dirSize.updatingIndexTooltip": "Mise à jour de l’index : la taille peut changer.",
   "@fileExplorer.dirSize.updatingIndexTooltip": {
     "sourceHash": "2689358"
   },
-  "fileExplorer.dirSize.scanProgressTooltip": "Les tailles apparaissent au fur et à mesure de l''analyse",
+  "fileExplorer.dirSize.scanProgressTooltip": "Les tailles apparaissent au fur et à mesure de l’analyse",
   "@fileExplorer.dirSize.scanProgressTooltip": {
     "sourceHash": "8151629"
   },
@@ -851,7 +851,7 @@
   "@fileExplorer.dirSize.noPerms": {
     "sourceHash": "bf8fb9d"
   },
-  "fileExplorer.dirSize.noPermsTooltip": "Cmdr n''a pas l''autorisation de lire ce dossier",
+  "fileExplorer.dirSize.noPermsTooltip": "Cmdr n’a pas l’autorisation de lire ce dossier",
   "@fileExplorer.dirSize.noPermsTooltip": {
     "sourceHash": "4920b4f"
   },
@@ -871,7 +871,7 @@
   "@fileExplorer.dirSize.folderCount": {
     "sourceHash": "3c46f04"
   },
-  "fileExplorer.dirSize.updatingIndexLine": "Mise à jour de l''index, la taille peut donc changer.",
+  "fileExplorer.dirSize.updatingIndexLine": "Mise à jour de l’index, la taille peut donc changer.",
   "@fileExplorer.dirSize.updatingIndexLine": {
     "sourceHash": "ddb01a2"
   },
@@ -883,15 +883,15 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "sourceHash": "3ff9147"
   },
-  "fileExplorer.dirSize.lowerBoundLine": "Au moins ceci : certains sous-dossiers n''ont pas encore été analysés, le total réel peut donc être plus grand.",
+  "fileExplorer.dirSize.lowerBoundLine": "Au moins ceci : certains sous-dossiers n’ont pas encore été analysés, le total réel peut donc être plus grand.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "sourceHash": "03803e8"
   },
-  "fileExplorer.dirSize.unknownTooltip": "Taille inconnue : ce dossier n''a pas encore été analysé.",
+  "fileExplorer.dirSize.unknownTooltip": "Taille inconnue : ce dossier n’a pas encore été analysé.",
   "@fileExplorer.dirSize.unknownTooltip": {
     "sourceHash": "0207a3d"
   },
-  "fileExplorer.dirSize.staleLine": "Ces tailles proviennent d''une analyse antérieure et peuvent être obsolètes.",
+  "fileExplorer.dirSize.staleLine": "Ces tailles proviennent d’une analyse antérieure et peuvent être obsolètes.",
   "@fileExplorer.dirSize.staleLine": {
     "sourceHash": "4d6d21c"
   },
@@ -950,9 +950,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} d''avance, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} de retard sur « {vs} »",
+  "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} many {{aheadText} commits} other {{aheadText} commits}} d’avance, {behind, plural, one {{behindText} commit} many {{behindText} commits} other {{behindText} commits}} de retard sur « {vs} »",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "2eba558"
+    "sourceHash": "6a24049"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Commit taggé {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -962,13 +962,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Créé sur la branche « {branch} »",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Créé sur la branche « {branch} »",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "770565f"
+    "sourceHash": "5a1ad8d"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "La branche « {branch} » est active",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "La branche « {branch} » est active",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "5036eb7"
+    "sourceHash": "4941fa5"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Détaché sur {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
@@ -982,7 +982,7 @@
   "@fileExplorer.selectionTooltip.ofTotal": {
     "sourceHash": "1269b5a"
   },
-  "fileExplorer.selectionTooltip.onDiskHeader": "Sur le disque :",
+  "fileExplorer.selectionTooltip.onDiskHeader": "Sur le disque :",
   "@fileExplorer.selectionTooltip.onDiskHeader": {
     "sourceHash": "9795f99"
   },
@@ -998,19 +998,19 @@
   "@fileExplorer.dateTooltip.lastOpened": {
     "sourceHash": "e300685"
   },
-  "fileExplorer.dateTooltip.lastMoved": "Dernier déplacement (« ajouté »)",
+  "fileExplorer.dateTooltip.lastMoved": "Dernier déplacement (« ajouté »)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "sourceHash": "450ebc0"
+    "sourceHash": "1366405"
   },
   "fileExplorer.dateTooltip.lastModified": "Dernière modification",
   "@fileExplorer.dateTooltip.lastModified": {
     "sourceHash": "0fe1058"
   },
-  "fileExplorer.imageIndex.file.indexed": "Indexée pour la recherche d''images",
+  "fileExplorer.imageIndex.file.indexed": "Indexée pour la recherche d’images",
   "@fileExplorer.imageIndex.file.indexed": {
     "sourceHash": "9b72aa0"
   },
-  "fileExplorer.imageIndex.file.pending": "En attente d''indexation",
+  "fileExplorer.imageIndex.file.pending": "En attente d’indexation",
   "@fileExplorer.imageIndex.file.pending": {
     "sourceHash": "73eb99a"
   },
@@ -1018,7 +1018,7 @@
   "@fileExplorer.imageIndex.file.indexing": {
     "sourceHash": "44501db"
   },
-  "fileExplorer.imageIndex.file.stale": "Modifiée depuis l''indexation ; sera réindexée",
+  "fileExplorer.imageIndex.file.stale": "Modifiée depuis l’indexation ; sera réindexée",
   "@fileExplorer.imageIndex.file.stale": {
     "sourceHash": "1766bc3"
   },
@@ -1026,7 +1026,7 @@
   "@fileExplorer.imageIndex.file.failed": {
     "sourceHash": "a88edd6"
   },
-  "fileExplorer.imageIndex.file.excluded": "Non incluse dans la recherche d''images",
+  "fileExplorer.imageIndex.file.excluded": "Non incluse dans la recherche d’images",
   "@fileExplorer.imageIndex.file.excluded": {
     "sourceHash": "1f68cee"
   },
@@ -1038,15 +1038,15 @@
   "@fileExplorer.imageIndex.folder.someIndexed": {
     "sourceHash": "c7fd5ca"
   },
-  "fileExplorer.imageIndex.drive.ariaLabel": "État de la recherche d''images pour ce disque",
+  "fileExplorer.imageIndex.drive.ariaLabel": "État de la recherche d’images pour ce disque",
   "@fileExplorer.imageIndex.drive.ariaLabel": {
     "sourceHash": "bea5d87"
   },
-  "fileExplorer.imageIndex.drive.off": "La recherche d''images est désactivée pour ce disque.",
+  "fileExplorer.imageIndex.drive.off": "La recherche d’images est désactivée pour ce disque.",
   "@fileExplorer.imageIndex.drive.off": {
     "sourceHash": "a7f3c42"
   },
-  "fileExplorer.imageIndex.drive.indexing": "Sur ce disque, {doneText} sur {totalText} {total, plural, one {image indexée} many {images indexées} other {images indexées}} ; indexation en cours.",
+  "fileExplorer.imageIndex.drive.indexing": "Sur ce disque, {doneText} sur {totalText} {total, plural, one {image indexée} many {images indexées} other {images indexées}} ; indexation en cours.",
   "@fileExplorer.imageIndex.drive.indexing": {
     "sourceHash": "23d351d"
   },
@@ -1070,11 +1070,11 @@
   "@fileExplorer.selectionInfo.sizeUpdatingAriaLabel": {
     "sourceHash": "f237144"
   },
-  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Mise à jour de l''index, la taille peut changer.",
+  "fileExplorer.selectionInfo.indexUpdatingTooltip": "Mise à jour de l’index, la taille peut changer.",
   "@fileExplorer.selectionInfo.indexUpdatingTooltip": {
     "sourceHash": "2f69a1b"
   },
-  "fileExplorer.selectionInfo.symlinkHint": "Ce dossier contient des liens symboliques. Le contenu lié n''est pas compté dans le total pour éviter de le compter deux fois.",
+  "fileExplorer.selectionInfo.symlinkHint": "Ce dossier contient des liens symboliques. Le contenu lié n’est pas compté dans le total pour éviter de le compter deux fois.",
   "@fileExplorer.selectionInfo.symlinkHint": {
     "sourceHash": "414ed75"
   },
@@ -1106,7 +1106,7 @@
   "@fileExplorer.tabBar.pinnedAriaLabel": {
     "sourceHash": "f20c879"
   },
-  "fileExplorer.tabBar.closeTabTooltip": "Fermer l''onglet",
+  "fileExplorer.tabBar.closeTabTooltip": "Fermer l’onglet",
   "@fileExplorer.tabBar.closeTabTooltip": {
     "sourceHash": "50a3f95"
   },
@@ -1126,7 +1126,7 @@
   "@fileExplorer.summary.of": {
     "sourceHash": "28391d3"
   },
-  "fileExplorer.summary.percentSelectedIn": "({percent} %) sélectionnés dans",
+  "fileExplorer.summary.percentSelectedIn": "({percent} %) sélectionnés dans",
   "@fileExplorer.summary.percentSelectedIn": {
     "sourceHash": "7e01a02"
   },
@@ -1146,9 +1146,9 @@
   "@fileExplorer.renameConflict.title": {
     "sourceHash": "92ae292"
   },
-  "fileExplorer.renameConflict.description": "« {name} » existe déjà dans ce dossier. Que souhaitez-vous faire ?",
+  "fileExplorer.renameConflict.description": "« {name} » existe déjà dans ce dossier. Que souhaitez-vous faire ?",
   "@fileExplorer.renameConflict.description": {
-    "sourceHash": "ded53e8"
+    "sourceHash": "e3f2532"
   },
   "fileExplorer.renameConflict.yours": "{name} (le vôtre)",
   "@fileExplorer.renameConflict.yours": {
@@ -1166,11 +1166,11 @@
   "@fileExplorer.renameConflict.modified": {
     "sourceHash": "e8ce5dc"
   },
-  "fileExplorer.renameConflict.overwriteTrash": "Écraser et mettre l''ancien fichier à la corbeille",
+  "fileExplorer.renameConflict.overwriteTrash": "Écraser et mettre l’ancien fichier à la corbeille",
   "@fileExplorer.renameConflict.overwriteTrash": {
     "sourceHash": "e0192f6"
   },
-  "fileExplorer.renameConflict.overwriteDelete": "Écraser et supprimer l''ancien fichier",
+  "fileExplorer.renameConflict.overwriteDelete": "Écraser et supprimer l’ancien fichier",
   "@fileExplorer.renameConflict.overwriteDelete": {
     "sourceHash": "02093d5"
   },
@@ -1182,15 +1182,15 @@
   "@fileExplorer.renameConflict.continueRenaming": {
     "sourceHash": "96480ec"
   },
-  "fileExplorer.extensionChange.title": "Changer l''extension du fichier ?",
+  "fileExplorer.extensionChange.title": "Changer l’extension du fichier ?",
   "@fileExplorer.extensionChange.title": {
     "sourceHash": "799828d"
   },
-  "fileExplorer.extensionChange.description": "Voulez-vous vraiment changer l''extension de « .{oldExt} » en « .{newExt} » ? Votre fichier pourrait s''ouvrir dans une autre app la prochaine fois.",
+  "fileExplorer.extensionChange.description": "Voulez-vous vraiment changer l’extension de « .{oldExt} » en « .{newExt} » ? Votre fichier pourrait s’ouvrir dans une autre app la prochaine fois.",
   "@fileExplorer.extensionChange.description": {
-    "sourceHash": "d0f428b"
+    "sourceHash": "ef7ac59"
   },
-  "fileExplorer.extensionChange.alwaysAllow": "Toujours autoriser les changements d''extension",
+  "fileExplorer.extensionChange.alwaysAllow": "Toujours autoriser les changements d’extension",
   "@fileExplorer.extensionChange.alwaysAllow": {
     "sourceHash": "52a5c5e"
   },
@@ -1206,15 +1206,15 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Si vous venez de Finder, cela peut surprendre, car Finder déclenche une action « Coup d''œil » avec <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Si vous venez de Finder, cela peut surprendre, car Finder déclenche une action « Coup d’œil » avec <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "2089192"
+    "sourceHash": "56d3119"
   },
-  "fileExplorer.quickLookHint.quickView": "Dans Cmdr, vous pouvez déclencher l''aperçu rapide avec <key></key>. (<key></key> fonctionne aussi dans Finder, au passage !)",
+  "fileExplorer.quickLookHint.quickView": "Dans Cmdr, vous pouvez déclencher l’aperçu rapide avec <key></key>. (<key></key> fonctionne aussi dans le Finder, au passage !)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "7e4cf33"
   },
-  "fileExplorer.quickLookHint.enterOpens": "Vous pouvez aussi utiliser <enter></enter> pour ouvrir les fichiers dans l''app par défaut.",
+  "fileExplorer.quickLookHint.enterOpens": "Vous pouvez aussi utiliser <enter></enter> pour ouvrir les fichiers dans l’app par défaut.",
   "@fileExplorer.quickLookHint.enterOpens": {
     "sourceHash": "5c1f2a3"
   },
@@ -1262,7 +1262,7 @@
     "sourceHash": "b10fb96",
     "sameAsSourceJustification": "'Volume' is the macOS French term for a mounted disk volume (per the glossary 'volume -> volume'); identical to English."
   },
-  "fileExplorer.navigation.favoritesEmpty": "(Vos favoris s''afficheront ici)",
+  "fileExplorer.navigation.favoritesEmpty": "(Vos favoris s’afficheront ici)",
   "@fileExplorer.navigation.favoritesEmpty": {
     "sourceHash": "b4f099e"
   },
@@ -1274,7 +1274,7 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "Ce dossier ne peut pas rejoindre vos favoris : les favoris ne fonctionnent que sur un disque ou un partage monté",
+  "fileExplorer.navigation.favoritesCantAddHere": "Ce dossier ne peut pas rejoindre vos favoris : les favoris ne fonctionnent que sur un disque ou un partage monté",
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "sourceHash": "10c98b3"
   },
@@ -1294,27 +1294,27 @@
   "@fileExplorer.navigation.favoriteShortcutPrompt": {
     "sourceHash": "51f3d7d"
   },
-  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Raccourci pour {name}. Appuyez sur A–Z ou sur Suppr pour l''effacer.",
+  "fileExplorer.navigation.favoriteShortcutAriaLabel": "Raccourci pour {name}. Appuyez sur A–Z ou sur Suppr pour l’effacer.",
   "@fileExplorer.navigation.favoriteShortcutAriaLabel": {
     "sourceHash": "31515c1"
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Impossible d''enregistrer ce raccourci. Réessayer ?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Impossible d’enregistrer ce raccourci. Réessayer ?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
     "sourceHash": "dc8e408"
   },
-  "fileExplorer.navigation.removeFavoriteFailed": "Impossible de retirer ce favori. Réessayer ?",
+  "fileExplorer.navigation.removeFavoriteFailed": "Impossible de retirer ce favori. Réessayer ?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
     "sourceHash": "181bf36"
   },
-  "fileExplorer.navigation.renameFavoriteFailed": "Impossible de renommer ce favori. Réessayer ?",
+  "fileExplorer.navigation.renameFavoriteFailed": "Impossible de renommer ce favori. Réessayer ?",
   "@fileExplorer.navigation.renameFavoriteFailed": {
     "sourceHash": "33e06cd"
   },
-  "fileExplorer.navigation.reorderFavoritesFailed": "Impossible de réordonner les favoris. Réessayer ?",
+  "fileExplorer.navigation.reorderFavoritesFailed": "Impossible de réordonner les favoris. Réessayer ?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "sourceHash": "1b16941"
   },
-  "fileExplorer.navigation.locationUnreachableToast": "Impossible d''accéder au disque de cet emplacement. Il est peut-être déconnecté.",
+  "fileExplorer.navigation.locationUnreachableToast": "Impossible d’accéder au disque de cet emplacement. Il est peut-être déconnecté.",
   "@fileExplorer.navigation.locationUnreachableToast": {
     "sourceHash": "20126a6"
   },
@@ -1322,9 +1322,9 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
-  "fileExplorer.navigation.connectionTooltipSystem": "Connexion via le système. Utilisez l''élément de menu « Se connecter directement pour un accès plus rapide » pour un accès plus rapide.",
+  "fileExplorer.navigation.connectionTooltipSystem": "Connexion via le système. Utilisez l’élément de menu « Se connecter directement pour un accès plus rapide » pour un accès plus rapide.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "sourceHash": "0cbfa05"
+    "sourceHash": "e4ac697"
   },
   "fileExplorer.navigation.connectDirectly": "Se connecter directement pour un accès plus rapide",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1350,11 +1350,11 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "0fb0ca3"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr peut réutiliser le mot de passe que macOS a déjà enregistré pour « {displayName} ». Vous verrez une invite système demandant d''autoriser l''accès au trousseau. C''est normal, alors cliquez sur Autoriser.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr peut réutiliser le mot de passe que macOS a déjà enregistré pour « {displayName} ». Vous verrez une invite système demandant d’autoriser l’accès au trousseau. C’est normal, alors cliquez sur Autoriser.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "6bb2c1d"
+    "sourceHash": "334f7de"
   },
-  "fileExplorer.navigation.useSavedPasswordTitle": "Utiliser le mot de passe enregistré ?",
+  "fileExplorer.navigation.useSavedPasswordTitle": "Utiliser le mot de passe enregistré ?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
     "sourceHash": "44b60f6"
   },
@@ -1374,7 +1374,7 @@
   "@fileExplorer.navigation.volumeOptionsTooltip": {
     "sourceHash": "570fb94"
   },
-  "fileExplorer.navigation.connectionTooltipDisconnected": "La connexion s''est interrompue. Cmdr essaie de la rétablir.",
+  "fileExplorer.navigation.connectionTooltipDisconnected": "La connexion s’est interrompue. Cmdr essaie de la rétablir.",
   "@fileExplorer.navigation.connectionTooltipDisconnected": {
     "sourceHash": "58af304"
   },
@@ -1406,11 +1406,11 @@
   "@fileExplorer.navigation.serverUnpinnedToast": {
     "sourceHash": "3367b4d"
   },
-  "fileExplorer.navigation.pinRefusedToast": "Cmdr n''a pas pu changer l''endroit où {name} s''affiche.",
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr n’a pas pu changer l’endroit où {name} s’affiche.",
   "@fileExplorer.navigation.pinRefusedToast": {
     "sourceHash": "14230e4"
   },
-  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr n''a pas pu se déconnecter de {name}.",
+  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr n’a pas pu se déconnecter de {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
     "sourceHash": "7cd7fd2"
   },
@@ -1418,11 +1418,11 @@
   "@fileExplorer.navigation.forgetServerConfirmTitle": {
     "sourceHash": "e43c85d"
   },
-  "fileExplorer.navigation.forgetServerConfirm": "Oublier {name} ? Cmdr ferme la connexion et ne l''affiche plus. Vos fichiers restent sur le serveur.",
+  "fileExplorer.navigation.forgetServerConfirm": "Oublier {name} ? Cmdr ferme la connexion et ne l’affiche plus. Vos fichiers restent sur le serveur.",
   "@fileExplorer.navigation.forgetServerConfirm": {
     "sourceHash": "6a43f67"
   },
-  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr n''a pas pu oublier {name}.",
+  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr n’a pas pu oublier {name}.",
   "@fileExplorer.navigation.forgetServerRefusedToast": {
     "sourceHash": "0603090"
   },
@@ -1430,15 +1430,15 @@
   "@fileExplorer.navigation.forgetSecretConfirmTitle": {
     "sourceHash": "ed68566"
   },
-  "fileExplorer.navigation.forgetSecretConfirm": "Oublier le mot de passe enregistré pour {name} ? Cmdr vous le demandera à la prochaine connexion.",
+  "fileExplorer.navigation.forgetSecretConfirm": "Oublier le mot de passe enregistré pour {name} ? Cmdr vous le demandera à la prochaine connexion.",
   "@fileExplorer.navigation.forgetSecretConfirm": {
     "sourceHash": "300d043"
   },
-  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr n''a pas pu oublier le mot de passe enregistré pour {name}.",
+  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr n’a pas pu oublier le mot de passe enregistré pour {name}.",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "sourceHash": "940eb59"
   },
-  "fileExplorer.navigation.forgetSecretNoneToast": "Aucun mot de passe n''était enregistré pour {name}.",
+  "fileExplorer.navigation.forgetSecretNoneToast": "Aucun mot de passe n’était enregistré pour {name}.",
   "@fileExplorer.navigation.forgetSecretNoneToast": {
     "sourceHash": "3d40a09"
   },
@@ -1446,7 +1446,7 @@
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
     "sourceHash": "61db18b"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Impossible d''éjecter tant que des opérations sont en cours sur cet appareil",
+  "fileExplorer.navigation.ejectBusyTooltip": "Impossible d’éjecter tant que des opérations sont en cours sur cet appareil",
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "sourceHash": "7165c58"
   },
@@ -1478,7 +1478,7 @@
   "@fileExplorer.navigation.spaceStillUnavailable": {
     "sourceHash": "1c37064"
   },
-  "fileExplorer.navigation.spaceFetchFailed": "Impossible d''obtenir l''espace disque. Cliquez pour réessayer",
+  "fileExplorer.navigation.spaceFetchFailed": "Impossible d’obtenir l’espace disque. Cliquez pour réessayer",
   "@fileExplorer.navigation.spaceFetchFailed": {
     "sourceHash": "6fe88d7"
   },
@@ -1486,7 +1486,7 @@
   "@fileExplorer.navigation.spaceUnavailableText": {
     "sourceHash": "ca18449"
   },
-  "fileExplorer.navigation.spaceMtpHint": "Sur un téléphone, cela compte aussi les apps et les fichiers système. En USB, Cmdr n''accède qu''à vos fichiers partagés, donc les dossiers affichés ici totalisent moins que l''espace utilisé.",
+  "fileExplorer.navigation.spaceMtpHint": "Sur un téléphone, cela compte aussi les apps et les fichiers système. En USB, Cmdr n’accède qu’à vos fichiers partagés, donc les dossiers affichés ici totalisent moins que l’espace utilisé.",
   "@fileExplorer.navigation.spaceMtpHint": {
     "sourceHash": "43ec861"
   },
@@ -1502,11 +1502,11 @@
   "@fileExplorer.navigation.refreshVolumeList": {
     "sourceHash": "f668a8c"
   },
-  "fileExplorer.navigation.driveIndex.ariaLabel": "État de l''index du disque",
+  "fileExplorer.navigation.driveIndex.ariaLabel": "État de l’index du disque",
   "@fileExplorer.navigation.driveIndex.ariaLabel": {
     "sourceHash": "ff831be"
   },
-  "fileExplorer.navigation.driveIndex.tooltipDisabled": "L''indexation est désactivée pour ce disque. Activez-la pour voir les tailles des dossiers et faire des recherches ici.",
+  "fileExplorer.navigation.driveIndex.tooltipDisabled": "L’indexation est désactivée pour ce disque. Activez-la pour voir les tailles des dossiers et faire des recherches ici.",
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "sourceHash": "61d11e9"
   },
@@ -1518,23 +1518,23 @@
   "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
     "sourceHash": "fedc5ae"
   },
-  "fileExplorer.navigation.driveIndex.tooltipStale": "Ce disque a peut-être changé pendant qu''il était déconnecté. Les tailles et la recherche peuvent être un peu inexactes. Relancez l''analyse pour actualiser.",
+  "fileExplorer.navigation.driveIndex.tooltipStale": "Ce disque a peut-être changé pendant qu’il était déconnecté. Les tailles et la recherche peuvent être un peu inexactes. Relancez l’analyse pour actualiser.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
     "sourceHash": "0d85b0b"
   },
-  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr met cet index à jour avec les changements qu''il effectue. Les changements faits directement sur le téléphone sont pris en compte après une nouvelle analyse.",
+  "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr met cet index à jour avec les changements qu’il fait. Les changements faits directement sur le téléphone sont pris en compte après une nouvelle analyse.",
   "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
     "sourceHash": "d5a58a7"
   },
-  "fileExplorer.navigation.driveIndex.tooltipFailed": "L''indexation s''est arrêtée à cause d''un problème d''enregistrement de l''index de ce disque. Relancez l''analyse pour le reconstruire.",
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "L’indexation s’est arrêtée à cause d’un problème d’enregistrement de l’index de ce disque. Relancez l’analyse pour le reconstruire.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "sourceHash": "7386b54"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS a perdu le fil des changements du système de fichiers {count, plural, one {une fois} many {{countText} fois} other {{countText} fois}} {hours, plural, one {au cours de la dernière heure} many {au cours des {hoursText} dernières heures} other {au cours des {hoursText} dernières heures}}, donc la taille de quelques dossiers peut être un peu décalée. Ce sont en général des caches pleins de petits fichiers, et la prochaine analyse complète de Cmdr, {remaining, plural, one {dans une heure} many {dans {remainingText} heures} other {dans {remainingText} heures}}, remettra tout d''aplomb.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS a perdu le fil des changements du système de fichiers {count, plural, one {une fois} many {{countText} fois} other {{countText} fois}} {hours, plural, one {au cours de la dernière heure} many {au cours des {hoursText} dernières heures} other {au cours des {hoursText} dernières heures}}, donc la taille de quelques dossiers peut être un peu décalée. Ce sont en général des caches pleins de petits fichiers, et la prochaine analyse complète de Cmdr, {remaining, plural, one {dans une heure} many {dans {remainingText} heures} other {dans {remainingText} heures}}, remettra tout d’aplomb.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "sourceHash": "2b593c3"
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS a perdu le fil des changements du système de fichiers {count, plural, one {une fois} many {{countText} fois} other {{countText} fois}}, donc la taille de quelques dossiers peut être un peu décalée. Ce sont en général des caches pleins de petits fichiers, et l''analyse en cours va remettre tout d''aplomb.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS a perdu le fil des changements du système de fichiers {count, plural, one {une fois} many {{countText} fois} other {{countText} fois}}, donc la taille de quelques dossiers peut être un peu décalée. Ce sont en général des caches pleins de petits fichiers, et l’analyse en cours va remettre tout d’aplomb.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
     "sourceHash": "9cbf743"
   },
@@ -1542,35 +1542,35 @@
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "sourceHash": "428975f"
   },
-  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr n''a pas pu lire {count, plural, one {un endroit} many {{countText} endroits} other {{countText} endroits}} de ce disque, donc une recherche ici sera peut-être un peu incomplète.",
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr n’a pas pu lire {count, plural, one {un endroit} many {{countText} endroits} other {{countText} endroits}} de ce disque, donc une recherche ici sera peut-être un peu incomplète.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
     "sourceHash": "5369ab3"
   },
-  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr n''a pas pu lire {count, plural, one {un endroit} many {{countText} endroits} other {{countText} endroits}} de ce disque, donc une recherche ici sera peut-être un peu incomplète. Il y revient tout seul.",
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr n’a pas pu lire {count, plural, one {un endroit} many {{countText} endroits} other {{countText} endroits}} de ce disque, donc une recherche ici sera peut-être un peu incomplète. Il y revient tout seul.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
     "sourceHash": "a74a60f"
   },
-  "fileExplorer.navigation.driveIndex.menuEnable": "Activer l''indexation pour ce disque",
+  "fileExplorer.navigation.driveIndex.menuEnable": "Activer l’indexation pour ce disque",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
     "sourceHash": "4e06151"
   },
-  "fileExplorer.navigation.driveIndex.menuRescan": "Relancer l''analyse maintenant",
+  "fileExplorer.navigation.driveIndex.menuRescan": "Relancer l’analyse maintenant",
   "@fileExplorer.navigation.driveIndex.menuRescan": {
     "sourceHash": "c07d16a"
   },
-  "fileExplorer.navigation.driveIndex.menuDisable": "Désactiver l''indexation pour ce disque",
+  "fileExplorer.navigation.driveIndex.menuDisable": "Désactiver l’indexation pour ce disque",
   "@fileExplorer.navigation.driveIndex.menuDisable": {
     "sourceHash": "d14cf11"
   },
-  "fileExplorer.navigation.driveIndex.menuStop": "Arrêter l''indexation",
+  "fileExplorer.navigation.driveIndex.menuStop": "Arrêter l’indexation",
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "sourceHash": "70ae907"
   },
-  "fileExplorer.navigation.driveIndex.menuForget": "Oublier l''index de ce disque",
+  "fileExplorer.navigation.driveIndex.menuForget": "Oublier l’index de ce disque",
   "@fileExplorer.navigation.driveIndex.menuForget": {
     "sourceHash": "a553f83"
   },
-  "fileExplorer.navigation.driveIndex.footer": "Dernière indexation : {date} · a pris {duration}",
+  "fileExplorer.navigation.driveIndex.footer": "Dernière indexation : {date} · a pris {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
     "sourceHash": "9877397"
   },
@@ -1584,23 +1584,23 @@
     "sourceHash": "fde82d3",
     "sameAsSourceJustification": "Placeholder + unit symbol ('{seconds} s'); 's' is the SI abbreviation for seconds, identical in French."
   },
-  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr n''a pas pu se connecter directement à {name}, ce qui est nécessaire pour indexer ce partage. Vérifiez que le partage est accessible et réessayez.",
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr n’a pas pu se connecter directement à {name}, ce qui est nécessaire pour indexer ce partage. Vérifiez que le partage est accessible et réessayez.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "e7ac9b4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} est déconnecté. Reconnectez-le, puis activez l''indexation.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} est déconnecté. Reconnectez-le, puis activez l’indexation.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
-  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr effectue une recherche sur {name}. La nouvelle analyse démarrera dès la fin de cette recherche.",
+  "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr cherche dans {name} en ce moment. La nouvelle analyse démarrera dès la fin de cette recherche.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {
     "sourceHash": "4e0f748"
   },
-  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr effectue une recherche sur {name}. L''indexation démarrera dès la fin de cette recherche.",
+  "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr cherche dans {name} en ce moment. L’indexation démarrera dès la fin de cette recherche.",
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
     "sourceHash": "b27d24c"
   },
-  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr est en train d''indexer {name}. L''analyse demandée démarrera dès que ce sera terminé.",
+  "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr est en train d’indexer {name}. L’analyse demandée démarrera dès que ce sera terminé.",
   "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
     "sourceHash": "09106ce"
   },
@@ -1608,11 +1608,11 @@
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "sourceHash": "ac46209"
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr a rencontré un souci en activant l''indexation de {name}. Cela ne devrait pas arriver. Redémarrer Cmdr règle généralement le problème.",
+  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr a rencontré un souci en activant l’indexation de {name}. Cela ne devrait pas arriver. Redémarrer Cmdr règle généralement le problème.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "L''indexation est désactivée dans les Réglages, donc Cmdr n''indexe pas {name}. Activez-la dans Indexation > Indexation du disque.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "L’indexation est désactivée dans les Réglages, donc Cmdr n’indexe pas {name}. Activez-la dans Indexation > Indexation du disque.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
     "sourceHash": "ce0d45c"
   },
@@ -1620,11 +1620,11 @@
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
     "sourceHash": "99f19f9"
   },
-  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "L''indexation est désactivée dans les Réglages, donc aucun disque n''est indexé pour le moment.",
+  "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "L’indexation est désactivée dans les Réglages, donc aucun disque n’est indexé pour le moment.",
   "@fileExplorer.navigation.driveIndex.tooltipIndexingOff": {
     "sourceHash": "6ebf6f4"
   },
-  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "L''indexation est désactivée dans les Réglages. Activez-la dans Indexation > Indexation du disque, et ce disque reprendra là où il s''était arrêté.",
+  "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "L’indexation est désactivée dans les Réglages. Activez-la dans Indexation > Indexation du disque, et ce disque reprendra là où il s’était arrêté.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   }

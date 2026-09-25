@@ -51,7 +51,7 @@
   "@commands.cmdrOpenOnboarding.label": {
     "sourceHash": "c4cc4aa"
   },
-  "commands.cmdrOpenOnboarding.description": "Rouvrir l''assistant de prise en main pour revoir ou modifier les options de configuration initiale",
+  "commands.cmdrOpenOnboarding.description": "Rouvrir l’assistant de prise en main pour revoir ou modifier les options de configuration initiale",
   "@commands.cmdrOpenOnboarding.description": {
     "sourceHash": "a45c542"
   },
@@ -63,15 +63,15 @@
   "@commands.helpOpenShortcuts.description": {
     "sourceHash": "a9a1e0d"
   },
-  "commands.helpSendErrorReport.label": "Envoyer un rapport d''incident…",
+  "commands.helpSendErrorReport.label": "Envoyer un rapport d’incident…",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
-  "commands.helpSendErrorReport.description": "Envoyer les journaux de Cmdr à l''équipe pour aider à corriger un souci",
+  "commands.helpSendErrorReport.description": "Envoyer les journaux de Cmdr à l’équipe pour aider à corriger un souci",
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
-  "commands.queueShow.label": "File d''attente des opérations",
+  "commands.queueShow.label": "File d’attente des opérations",
   "@commands.queueShow.label": {
     "sourceHash": "fa91417"
   },
@@ -91,7 +91,7 @@
   "@commands.logOperationLog.label": {
     "sourceHash": "2c97965"
   },
-  "commands.logOperationLog.description": "Consultez l''historique de vos opérations sur les fichiers et revenez en arrière",
+  "commands.logOperationLog.description": "Consultez l’historique de vos opérations sur les fichiers et revenez en arrière",
   "@commands.logOperationLog.description": {
     "sourceHash": "ea2d082"
   },
@@ -108,7 +108,7 @@
   "@commands.feedbackSend.label": {
     "sourceHash": "8235980"
   },
-  "commands.feedbackSend.description": "Dites au créateur de Cmdr ce que vous en pensez : idées, envies, peu importe",
+  "commands.feedbackSend.description": "Dites au créateur de Cmdr ce que vous en pensez : idées, envies, peu importe",
   "@commands.feedbackSend.description": {
     "sourceHash": "89d08a8"
   },
@@ -168,19 +168,19 @@
   "@commands.viewSetMode.label": {
     "sourceHash": "1e050a6"
   },
-  "commands.viewZoomSet75.label": "Zoom à 75 %",
+  "commands.viewZoomSet75.label": "Zoom à 75 %",
   "@commands.viewZoomSet75.label": {
     "sourceHash": "70ac915"
   },
-  "commands.viewZoomSet100.label": "Zoom à 100 %",
+  "commands.viewZoomSet100.label": "Zoom à 100 %",
   "@commands.viewZoomSet100.label": {
     "sourceHash": "c23bdb4"
   },
-  "commands.viewZoomSet125.label": "Zoom à 125 %",
+  "commands.viewZoomSet125.label": "Zoom à 125 %",
   "@commands.viewZoomSet125.label": {
     "sourceHash": "9191980"
   },
-  "commands.viewZoomSet150.label": "Zoom à 150 %",
+  "commands.viewZoomSet150.label": "Zoom à 150 %",
   "@commands.viewZoomSet150.label": {
     "sourceHash": "2e247da"
   },
@@ -220,7 +220,7 @@
   "@commands.sortDescending.label": {
     "sourceHash": "8993b78"
   },
-  "commands.sortToggleOrder.label": "Inverser l''ordre de tri",
+  "commands.sortToggleOrder.label": "Inverser l’ordre de tri",
   "@commands.sortToggleOrder.label": {
     "sourceHash": "e0eb85f"
   },
@@ -248,7 +248,7 @@
   "@commands.paneCopyPathLeftToRight.label": {
     "sourceHash": "d1376f6"
   },
-  "commands.paneCopyPathLeftToRight.description": "Ouvrir l''emplacement du panneau gauche à droite. Quand le panneau gauche est actif et que le curseur est sur un dossier, c''est ce dossier qui s''ouvre à droite.",
+  "commands.paneCopyPathLeftToRight.description": "Ouvrir l’emplacement du panneau gauche à droite. Quand le panneau gauche est actif et que le curseur est sur un dossier, c’est ce dossier qui s’ouvre à droite.",
   "@commands.paneCopyPathLeftToRight.description": {
     "sourceHash": "07ac6a1"
   },
@@ -256,7 +256,7 @@
   "@commands.paneCopyPathRightToLeft.label": {
     "sourceHash": "266a30d"
   },
-  "commands.paneCopyPathRightToLeft.description": "Ouvrir l''emplacement du panneau droit à gauche. Quand le panneau droit est actif et que le curseur est sur un dossier, c''est ce dossier qui s''ouvre à gauche.",
+  "commands.paneCopyPathRightToLeft.description": "Ouvrir l’emplacement du panneau droit à gauche. Quand le panneau droit est actif et que le curseur est sur un dossier, c’est ce dossier qui s’ouvre à gauche.",
   "@commands.paneCopyPathRightToLeft.description": {
     "sourceHash": "95c566f"
   },
@@ -268,11 +268,11 @@
   "@commands.tabNew.label": {
     "sourceHash": "1e08fda"
   },
-  "commands.tabClose.label": "Fermer l''onglet",
+  "commands.tabClose.label": "Fermer l’onglet",
   "@commands.tabClose.label": {
     "sourceHash": "50a3f95"
   },
-  "commands.tabReopen.label": "Rouvrir l''onglet fermé",
+  "commands.tabReopen.label": "Rouvrir l’onglet fermé",
   "@commands.tabReopen.label": {
     "sourceHash": "5ca5397"
   },
@@ -284,7 +284,7 @@
   "@commands.tabPrev.label": {
     "sourceHash": "c88d5e7"
   },
-  "commands.tabTogglePin.label": "Épingler ou désépingler l''onglet",
+  "commands.tabTogglePin.label": "Épingler ou désépingler l’onglet",
   "@commands.tabTogglePin.label": {
     "sourceHash": "3fdfcd1"
   },
@@ -292,7 +292,7 @@
   "@commands.tabCloseOthers.label": {
     "sourceHash": "0ddc2c5"
   },
-  "commands.tabMcpAction.label": "Action d''onglet de panneau",
+  "commands.tabMcpAction.label": "Action d’onglet de panneau",
   "@commands.tabMcpAction.label": {
     "sourceHash": "405ed9c"
   },
@@ -344,7 +344,7 @@
   "@commands.errorPaneToggleTechnicalDetails.label": {
     "sourceHash": "bde0de8"
   },
-  "commands.navOpenUnderCursor.label": "Ouvrir l''élément sous le curseur",
+  "commands.navOpenUnderCursor.label": "Ouvrir l’élément sous le curseur",
   "@commands.navOpenUnderCursor.label": {
     "sourceHash": "6b54df9"
   },
@@ -352,7 +352,7 @@
   "@commands.cursorMoveTo.label": {
     "sourceHash": "4c196ef"
   },
-  "commands.cursorScrollTo.label": "Faire défiler le panneau jusqu''à l''index",
+  "commands.cursorScrollTo.label": "Faire défiler le panneau jusqu’à l’index",
   "@commands.cursorScrollTo.label": {
     "sourceHash": "98ca70c"
   },
@@ -380,7 +380,7 @@
   "@commands.fileView.label": {
     "sourceHash": "dcc839a"
   },
-  "commands.fileEdit.label": "Modifier dans l''éditeur par défaut",
+  "commands.fileEdit.label": "Modifier dans l’éditeur par défaut",
   "@commands.fileEdit.label": {
     "sourceHash": "badc768"
   },
@@ -460,7 +460,7 @@
   "@commands.fileGoToTrash.description": {
     "sourceHash": "45df2c4"
   },
-  "commands.dialogConfirm.label": "Confirmer la boîte de dialogue d''ouverture",
+  "commands.dialogConfirm.label": "Confirmer la boîte de dialogue d’ouverture",
   "@commands.dialogConfirm.label": {
     "sourceHash": "b58a959"
   },
@@ -500,7 +500,7 @@
   "@commands.fileGetInfo.other.label": {
     "sourceHash": "5d9ebf2"
   },
-  "commands.fileQuickLook.mac.label": "Coup d''œil",
+  "commands.fileQuickLook.mac.label": "Coup d’œil",
   "@commands.fileQuickLook.mac.label": {
     "sourceHash": "f5616ce"
   },
@@ -520,7 +520,7 @@
   "@commands.cloudMakeOffline.label": {
     "sourceHash": "b75c09f"
   },
-  "commands.cloudMakeOffline.description": "Télécharge un fichier stocké dans le cloud pour qu''il reste disponible sans connexion Internet",
+  "commands.cloudMakeOffline.description": "Télécharge un fichier stocké dans le cloud pour qu’il reste disponible sans connexion Internet",
   "@commands.cloudMakeOffline.description": {
     "sourceHash": "d5cd793"
   },
@@ -528,7 +528,7 @@
   "@commands.cloudRemoveDownload.label": {
     "sourceHash": "5dfc369"
   },
-  "commands.cloudRemoveDownload.description": "Retire la copie locale d''un fichier cloud, le laissant disponible en ligne uniquement",
+  "commands.cloudRemoveDownload.description": "Retire la copie locale d’un fichier cloud, le laissant disponible en ligne uniquement",
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
@@ -536,7 +536,7 @@
   "@commands.cloudOpenInGoogleDrive.label": {
     "sourceHash": "98c7516"
   },
-  "commands.cloudOpenInGoogleDrive.description": "Ouvre l''élément sélectionné sur le site de Google Drive, où se gère le partage",
+  "commands.cloudOpenInGoogleDrive.description": "Ouvre l’élément sélectionné sur le site de Google Drive, où se gère le partage",
   "@commands.cloudOpenInGoogleDrive.description": {
     "sourceHash": "0328e04"
   },
@@ -544,7 +544,7 @@
   "@commands.cloudCopyGoogleDriveLink.label": {
     "sourceHash": "070b383"
   },
-  "commands.cloudCopyGoogleDriveLink.description": "Copie l''adresse web de l''élément sélectionné, prête à coller dans un message",
+  "commands.cloudCopyGoogleDriveLink.description": "Copie l’adresse web de l’élément sélectionné, prête à coller dans un message",
   "@commands.cloudCopyGoogleDriveLink.description": {
     "sourceHash": "920f0d4"
   },
@@ -552,7 +552,7 @@
   "@commands.cloudAskGemini.label": {
     "sourceHash": "7eec77f"
   },
-  "commands.cloudAskGemini.description": "Ouvre l''assistant Gemini de Google Drive avec le fichier sélectionné comme sujet",
+  "commands.cloudAskGemini.description": "Ouvre l’assistant Gemini de Google Drive avec le fichier sélectionné comme sujet",
   "@commands.cloudAskGemini.description": {
     "sourceHash": "3b425f6"
   },
@@ -652,7 +652,7 @@
   "@commands.selectionSelectSameKind.allFolders": {
     "sourceHash": "5351f8b"
   },
-  "commands.selectionSelectSameKind.sameExtension": "Sélectionner tous les fichiers d''extension *.{extension}",
+  "commands.selectionSelectSameKind.sameExtension": "Sélectionner tous les fichiers d’extension *.{extension}",
   "@commands.selectionSelectSameKind.sameExtension": {
     "sourceHash": "7809a58"
   },
@@ -764,15 +764,15 @@
   "@commands.paletteClose.label": {
     "sourceHash": "2e75050"
   },
-  "commands.handler.favoriteAdded": "« {name} » ajouté aux favoris",
+  "commands.handler.favoriteAdded": "« {name} » ajouté aux favoris",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
-  "commands.handler.favoriteAddFailed": "Impossible d''ajouter ce dossier aux favoris. Réessayer ?",
+  "commands.handler.favoriteAddFailed": "Impossible d’ajouter ce dossier aux favoris. Réessayer ?",
   "@commands.handler.favoriteAddFailed": {
     "sourceHash": "3f85e99"
   },
-  "commands.handler.tabLimitReached": "Limite d''onglets atteinte",
+  "commands.handler.tabLimitReached": "Limite d’onglets atteinte",
   "@commands.handler.tabLimitReached": {
     "sourceHash": "2d4205a"
   },
@@ -788,11 +788,11 @@
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
   },
-  "commands.handler.googleDriveLinkMissing": "Cet élément n''a pas de lien Google Drive.",
+  "commands.handler.googleDriveLinkMissing": "Cet élément n’a pas de lien Google Drive.",
   "@commands.handler.googleDriveLinkMissing": {
     "sourceHash": "af21508"
   },
-  "commands.handler.googleDriveOpenFailed": "Impossible d''ouvrir ceci dans Google Drive. {detail}",
+  "commands.handler.googleDriveOpenFailed": "Impossible d’ouvrir ceci dans Google Drive. {detail}",
   "@commands.handler.googleDriveOpenFailed": {
     "sourceHash": "71dc94a"
   },
@@ -804,7 +804,7 @@
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "dd970ec"
   },
-  "commands.handler.openTerminalHere.hint": "Dossier ouvert dans votre app de terminal. Vous voulez que Cmdr ouvre une autre app la prochaine fois ? Choisissez-la dans les réglages, sous « Navigation et opérations ».",
+  "commands.handler.openTerminalHere.hint": "Dossier ouvert dans votre app de terminal. Vous voulez que Cmdr ouvre une autre app la prochaine fois ? Choisissez-la dans les réglages, sous « Navigation et opérations ».",
   "@commands.handler.openTerminalHere.hint": {
     "sourceHash": "b29b744"
   },
@@ -816,43 +816,43 @@
   "@commands.handler.openTerminalHere.openSettings": {
     "sourceHash": "ca381c1"
   },
-  "commands.handler.openTerminalHere.appMissing": "{app} n''est plus installée, donc l''ouverture s''est faite dans Terminal.",
+  "commands.handler.openTerminalHere.appMissing": "{app} n’est plus installée, donc l’ouverture s’est faite dans Terminal.",
   "@commands.handler.openTerminalHere.appMissing": {
     "sourceHash": "70726d6"
   },
-  "commands.handler.openTerminalHere.appMissingUnnamed": "Votre app de terminal n''est plus installée, donc l''ouverture s''est faite dans Terminal.",
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Votre app de terminal n’est plus installée, donc l’ouverture s’est faite dans Terminal.",
   "@commands.handler.openTerminalHere.appMissingUnnamed": {
     "sourceHash": "29e9be5"
   },
-  "commands.handler.openTerminalHere.noPath": "Ce dossier n''a pas de chemin qu''un terminal puisse ouvrir.",
+  "commands.handler.openTerminalHere.noPath": "Ce dossier n’a pas de chemin qu’un terminal puisse ouvrir.",
   "@commands.handler.openTerminalHere.noPath": {
     "sourceHash": "d6520b7"
   },
-  "commands.handler.openTerminalHere.launchRefused": "Cmdr n''a pas pu lancer votre app de terminal. Ouvrez-la une fois vous-même, puis réessayez.",
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr n’a pas pu lancer votre app de terminal. Ouvrez-la une fois vous-même, puis réessayez.",
   "@commands.handler.openTerminalHere.launchRefused": {
     "sourceHash": "ffd6b3a"
   },
-  "commands.handler.openTerminalHere.timedOut": "Votre app de terminal met du temps à démarrer. Elle va peut-être encore s''ouvrir.",
+  "commands.handler.openTerminalHere.timedOut": "Votre app de terminal met du temps à démarrer. Elle va peut-être encore s’ouvrir.",
   "@commands.handler.openTerminalHere.timedOut": {
     "sourceHash": "ed36313"
   },
-  "commands.handler.zoomResetHintShortcut": "Vous pouvez réinitialiser le zoom à 100 % avec {shortcut}.",
+  "commands.handler.zoomResetHintShortcut": "Vous pouvez réinitialiser le zoom à 100 % avec {shortcut}.",
   "@commands.handler.zoomResetHintShortcut": {
     "sourceHash": "efdd715"
   },
-  "commands.handler.zoomResetHintMenu": "Vous pouvez réinitialiser le zoom à 100 % via Présentation > Zoom > 100 %.",
+  "commands.handler.zoomResetHintMenu": "Vous pouvez réinitialiser le zoom à 100 % via Présentation > Zoom > 100 %.",
   "@commands.handler.zoomResetHintMenu": {
     "sourceHash": "f10315d"
   },
-  "commands.handler.zoomReset": "Zoom réinitialisé à 100 %.",
+  "commands.handler.zoomReset": "Zoom réinitialisé à 100 %.",
   "@commands.handler.zoomReset": {
     "sourceHash": "8c6bf82"
   },
-  "commands.handler.zoomIncreased": "Zoom augmenté à {size} %. {hint}",
+  "commands.handler.zoomIncreased": "Zoom augmenté à {size} %. {hint}",
   "@commands.handler.zoomIncreased": {
     "sourceHash": "39fea10"
   },
-  "commands.handler.zoomDecreased": "Zoom réduit à {size} %. {hint}",
+  "commands.handler.zoomDecreased": "Zoom réduit à {size} %. {hint}",
   "@commands.handler.zoomDecreased": {
     "sourceHash": "71404cb"
   },
@@ -860,7 +860,7 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "Examinez les opérations sur les fichiers suggérées par l''IA et décidez de ce qui s''exécute",
+  "commands.suggestedOpsShow.description": "Examinez les opérations sur les fichiers suggérées par l’IA et décidez de ce qui s’exécute",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
   }

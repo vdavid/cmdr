@@ -11,7 +11,7 @@
   "@operationLog.dialog.loadError": {
     "sourceHash": "cf26c51"
   },
-  "operationLog.dialog.empty": "Aucune opération pour le moment. Copiez, déplacez, renommez ou supprimez un élément et l''opération apparaîtra ici.",
+  "operationLog.dialog.empty": "Aucune opération pour le moment. Copiez, déplacez, renommez ou supprimez un élément et l’opération apparaîtra ici.",
   "@operationLog.dialog.empty": {
     "sourceHash": "2dea414"
   },
@@ -19,7 +19,7 @@
   "@operationLog.dialog.itemsError": {
     "sourceHash": "596819e"
   },
-  "operationLog.dialog.noItems": "Cette opération n''a aucun élément enregistré.",
+  "operationLog.dialog.noItems": "Cette opération n’a aucun élément enregistré.",
   "@operationLog.dialog.noItems": {
     "sourceHash": "c7d7bfb"
   },
@@ -140,19 +140,19 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr est revenu en arrière sur ce qu''il a pu et a laissé le reste tel quel. Terminer le retour en arrière demande un nouveau passage, et Cmdr laisse de côté tout ce dont il n''est toujours pas sûr.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr est revenu en arrière sur ce qu’il a pu et a laissé le reste tel quel. Terminer le retour en arrière demande un nouveau passage, et Cmdr laisse de côté tout ce dont il n’est toujours pas sûr.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "77e6f25"
   },
-  "operationLog.rollback.refusalAlreadyRollingBack": "Un retour en arrière est déjà en cours pour celle-ci. Suivez-le dans la file d''attente.",
+  "operationLog.rollback.refusalAlreadyRollingBack": "Un retour en arrière est déjà en cours pour celle-ci. Suivez-le dans la file d’attente.",
   "@operationLog.rollback.refusalAlreadyRollingBack": {
     "sourceHash": "282a49a"
   },
-  "operationLog.rollback.refusalAlreadyRolledBack": "Celle-ci est déjà revenue à son état d''origine.",
+  "operationLog.rollback.refusalAlreadyRolledBack": "Celle-ci est déjà revenue à son état d’origine.",
   "@operationLog.rollback.refusalAlreadyRolledBack": {
     "sourceHash": "36844e7"
   },
-  "operationLog.rollback.refusalOverwrote": "Cette opération a remplacé des fichiers qui étaient déjà là. Cmdr ne garde aucune copie de ce qu''il remplace, donc les originaux ne peuvent pas revenir.",
+  "operationLog.rollback.refusalOverwrote": "Cette opération a remplacé des fichiers qui étaient déjà là. Cmdr ne garde aucune copie de ce qu’il remplace, donc les originaux ne peuvent pas revenir.",
   "@operationLog.rollback.refusalOverwrote": {
     "sourceHash": "c4fb3c4"
   },
@@ -160,23 +160,23 @@
   "@operationLog.rollback.refusalPermanentDelete": {
     "sourceHash": "5073539"
   },
-  "operationLog.rollback.refusalArchiveOverwrite": "Cette archive a remplacé une archive plus ancienne portant le même nom. Cmdr ne garde aucune copie de ce qu''il remplace, donc l''ancienne ne peut pas revenir.",
+  "operationLog.rollback.refusalArchiveOverwrite": "Cette archive a remplacé une archive plus ancienne portant le même nom. Cmdr ne garde aucune copie de ce qu’il remplace, donc l’ancienne ne peut pas revenir.",
   "@operationLog.rollback.refusalArchiveOverwrite": {
     "sourceHash": "86a374d"
   },
-  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr ne sait pas encore annuler les modifications faites à l''intérieur d''une archive.",
+  "operationLog.rollback.refusalZipEditUnsupported": "Cmdr ne sait pas encore annuler les modifications faites à l’intérieur d’une archive.",
   "@operationLog.rollback.refusalZipEditUnsupported": {
     "sourceHash": "e0892dd"
   },
-  "operationLog.rollback.refusalJournalIncomplete": "Cmdr n''a pas gardé une trace complète de cette opération, donc un retour en arrière risquerait de toucher les mauvais fichiers.",
+  "operationLog.rollback.refusalJournalIncomplete": "Cmdr n’a pas gardé une trace complète de cette opération, donc un retour en arrière risquerait de toucher les mauvais fichiers.",
   "@operationLog.rollback.refusalJournalIncomplete": {
     "sourceHash": "4176739"
   },
-  "operationLog.rollback.refusalDirectoryMerge": "Ce déplacement a fusionné le dossier avec un dossier qui existait déjà. Cmdr ne peut pas distinguer les fichiers arrivés de ceux qui étaient déjà à l''intérieur, donc il n''y a pas de retour possible en toute sécurité.",
+  "operationLog.rollback.refusalDirectoryMerge": "Ce déplacement a fusionné le dossier avec un dossier qui existait déjà. Cmdr ne peut pas distinguer les fichiers arrivés de ceux qui étaient déjà à l’intérieur, donc il n’y a pas de retour possible en toute sécurité.",
   "@operationLog.rollback.refusalDirectoryMerge": {
     "sourceHash": "2dad38d"
   },
-  "operationLog.rollback.refusalStagedConflictResolved": "Pendant ce déplacement, un nom était déjà pris à destination et Cmdr a demandé quoi en faire. Cette réponse fait maintenant partie du résultat, donc aucun retour en arrière n''est possible sans deviner.",
+  "operationLog.rollback.refusalStagedConflictResolved": "Pendant ce déplacement, un nom était déjà pris à destination et Cmdr a demandé quoi en faire. Cette réponse fait maintenant partie du résultat, donc aucun retour en arrière n’est possible sans deviner.",
   "@operationLog.rollback.refusalStagedConflictResolved": {
     "sourceHash": "03ddd6e"
   },
@@ -188,7 +188,7 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalUnexpected": "Cmdr n''a pas pu lancer le retour en arrière. Réessayez dans un instant.",
+  "operationLog.rollback.refusalUnexpected": "Cmdr n’a pas pu lancer le retour en arrière. Réessayez dans un instant.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
   },

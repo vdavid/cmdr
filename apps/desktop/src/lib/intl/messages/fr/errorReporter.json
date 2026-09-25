@@ -1,13 +1,13 @@
 {
-  "errorReporter.dialog.title": "Envoyer un rapport d''incident",
+  "errorReporter.dialog.title": "Envoyer un rapport d’incident",
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "Ceci envoie les fichiers journaux récents de Cmdr à l''équipe pour que nous puissions corriger ce qui a mal tourné. Les journaux sont expurgés côté client : chemins de fichiers, noms d''hôte, adresses IP et e-mails sont tous effacés avant l''envoi.",
+  "errorReporter.dialog.description": "Ceci envoie les fichiers journaux récents de Cmdr à l’équipe pour que nous puissions corriger ce qui a mal tourné. Les journaux sont expurgés côté client : chemins de fichiers, noms d’hôte, adresses IP et e-mails sont tous effacés avant l’envoi.",
   "@errorReporter.dialog.description": {
     "sourceHash": "dd11284"
   },
-  "errorReporter.dialog.referenceIdLabel": "Identifiant de référence :",
+  "errorReporter.dialog.referenceIdLabel": "Identifiant de référence :",
   "@errorReporter.dialog.referenceIdLabel": {
     "sourceHash": "ef8c421"
   },
@@ -28,7 +28,7 @@
     "sourceHash": "36ca789",
     "sameAsSourceJustification": "Placeholder-only string ('{currentText} / {maxText}'), no translatable text; same as the feedback counter."
   },
-  "errorReporter.dialog.notePlaceholder": "Qu''essayiez-vous de faire ? À quoi vous attendiez-vous ?",
+  "errorReporter.dialog.notePlaceholder": "Qu’essayiez-vous de faire ? À quoi vous attendiez-vous ?",
   "@errorReporter.dialog.notePlaceholder": {
     "sourceHash": "003300b"
   },
@@ -56,15 +56,15 @@
   "@errorReporter.dialog.noLogLines": {
     "sourceHash": "a2d54fd"
   },
-  "errorReporter.dialog.totalLines": "Total des lignes de journal (après expurgation) : {countText}",
+  "errorReporter.dialog.totalLines": "Total des lignes de journal (après expurgation) : {countText}",
   "@errorReporter.dialog.totalLines": {
     "sourceHash": "9c5cab7"
   },
-  "errorReporter.dialog.preparing": "Préparation de l''aperçu…",
+  "errorReporter.dialog.preparing": "Préparation de l’aperçu…",
   "@errorReporter.dialog.preparing": {
     "sourceHash": "11e66e1"
   },
-  "errorReporter.dialog.prepareFailed": "Préparation de l''aperçu impossible.",
+  "errorReporter.dialog.prepareFailed": "Préparation de l’aperçu impossible.",
   "@errorReporter.dialog.prepareFailed": {
     "sourceHash": "3729966"
   },
@@ -72,7 +72,7 @@
   "@errorReporter.dialog.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "errorReporter.dialog.bundleUnavailable": "Cmdr n''a pas pu rassembler ses fichiers journaux pour le rapport. Réessayez dans un instant.",
+  "errorReporter.dialog.bundleUnavailable": "Cmdr n’a pas pu rassembler ses fichiers journaux pour le rapport. Réessayez dans un instant.",
   "@errorReporter.dialog.bundleUnavailable": {
     "sourceHash": "3743aba"
   },
@@ -92,19 +92,19 @@
   "@errorReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },
-  "errorReporter.dialog.sendFailedToast": "Envoi du rapport d''incident impossible. {reason}",
+  "errorReporter.dialog.sendFailedToast": "Envoi du rapport d’incident impossible. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
     "sourceHash": "75337c1"
   },
-  "errorReporter.dialog.saveFailedToast": "Enregistrement du lot impossible : {error}",
+  "errorReporter.dialog.saveFailedToast": "Enregistrement du lot impossible : {error}",
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
-  "errorReporter.amend.title": "Ajouter à votre rapport d''incident",
+  "errorReporter.amend.title": "Ajouter à votre rapport d’incident",
   "@errorReporter.amend.title": {
     "sourceHash": "b19796b"
   },
-  "errorReporter.amend.description": "Cmdr a déjà envoyé ce rapport. Écrivez une note ou joignez votre e-mail : cela rejoindra ce que l''équipe a déjà reçu.",
+  "errorReporter.amend.description": "Cmdr a déjà envoyé ce rapport. Écrivez une note ou joignez votre e-mail : cela rejoindra ce que l’équipe a déjà reçu.",
   "@errorReporter.amend.description": {
     "sourceHash": "276771e"
   },
@@ -124,7 +124,7 @@
   "@errorReporter.amend.submitting": {
     "sourceHash": "c6de6f4"
   },
-  "errorReporter.amend.unavailable": "Ce rapport n''accepte plus de note. Pour transmettre vos notes à l''équipe, envoyez un nouveau rapport depuis le menu Aide.",
+  "errorReporter.amend.unavailable": "Ce rapport n’accepte plus de note. Pour transmettre vos notes à l’équipe, envoyez un nouveau rapport depuis le menu Aide.",
   "@errorReporter.amend.unavailable": {
     "sourceHash": "cbb7a33"
   },
@@ -136,7 +136,7 @@
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "0b67749"
   },
-  "errorReporter.sentToast.message": "Rapport d''incident envoyé. Votre identifiant de référence est",
+  "errorReporter.sentToast.message": "Rapport d’incident envoyé. Votre identifiant de référence est",
   "@errorReporter.sentToast.message": {
     "sourceHash": "75be6ba"
   },
@@ -144,7 +144,7 @@
   "@errorReporter.sentToast.dismiss": {
     "sourceHash": "48845bf"
   },
-  "errorReporter.sentToast.copyId": "Copier l''identifiant",
+  "errorReporter.sentToast.copyId": "Copier l’identifiant",
   "@errorReporter.sentToast.copyId": {
     "sourceHash": "72ac0d5"
   },
@@ -168,11 +168,11 @@
   "@errorReporter.bundleSavedToast.reveal": {
     "sourceHash": "cc84938"
   },
-  "errorReporter.autoSentToast.title": "Rapport d''incident envoyé",
+  "errorReporter.autoSentToast.title": "Rapport d’incident envoyé",
   "@errorReporter.autoSentToast.title": {
     "sourceHash": "b69ee37"
   },
-  "errorReporter.autoSentToast.referenceIdLabel": "Identifiant de référence :",
+  "errorReporter.autoSentToast.referenceIdLabel": "Identifiant de référence :",
   "@errorReporter.autoSentToast.referenceIdLabel": {
     "sourceHash": "ef8c421"
   },

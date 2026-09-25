@@ -55,7 +55,7 @@
   "@selection.recent.listboxAria": {
     "sourceHash": "94c77ad"
   },
-  "selection.recent.applyAria": "Appliquer la sélection {mode} récente : {query}",
+  "selection.recent.applyAria": "Appliquer la sélection {mode} récente : {query}",
   "@selection.recent.applyAria": {
     "sourceHash": "717317a"
   }

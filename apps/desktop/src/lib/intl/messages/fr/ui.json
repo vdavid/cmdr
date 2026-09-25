@@ -41,7 +41,7 @@
   "@ui.copyBox.copy": {
     "sourceHash": "e21f935"
   },
-  "ui.copyBox.copied": "Copié !",
+  "ui.copyBox.copied": "Copié !",
   "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
@@ -53,7 +53,7 @@
   "@ui.shortcutChip.customizeTooltip": {
     "sourceHash": "9a7817d"
   },
-  "ui.toast.sendErrorReport": "Envoyer un rapport d''incident…",
+  "ui.toast.sendErrorReport": "Envoyer un rapport d’incident…",
   "@ui.toast.sendErrorReport": {
     "sourceHash": "063c94e"
   },
@@ -65,7 +65,7 @@
   "@ui.toast.age": {
     "sourceHash": "6dcfed0"
   },
-  "ui.loadingIcon.finalizing": "Les {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}} sont chargés. Tri de vos fichiers, préparation de l''affichage…",
+  "ui.loadingIcon.finalizing": "Les {countText} {count, plural, one {fichier} many {fichiers} other {fichiers}} sont chargés. Tri de vos fichiers, préparation de l’affichage…",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "0de5a42"
   },

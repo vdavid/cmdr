@@ -8,7 +8,7 @@
     "sourceHash": "565339b",
     "sameAsSourceJustification": "'OK' is the standard confirm-button label in French macOS (kept verbatim, as in the rest of the catalog)."
   },
-  "fileOperations.delete.fromPath": "De : {path}",
+  "fileOperations.delete.fromPath": "De : {path}",
   "@fileOperations.delete.fromPath": {
     "sourceHash": "12851d4"
   },
@@ -20,19 +20,19 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Une partie de votre sélection est disponible en ligne uniquement. Les placer dans la corbeille les <strong>téléchargerait d''abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d''abord tous les fichiers disponibles hors connexion, ou désélectionnez tous les fichiers disponibles en ligne uniquement.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Une partie de votre sélection est disponible en ligne uniquement. Les placer dans la corbeille les <strong>téléchargerait d’abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d’abord tous les fichiers disponibles hors connexion, ou désélectionnez tous les fichiers disponibles en ligne uniquement.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Tout ce que vous avez sélectionné est disponible en ligne uniquement. Le placer dans la corbeille le <strong>téléchargerait d''abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d''abord ces fichiers disponibles hors connexion.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Tout ce que vous avez sélectionné est disponible en ligne uniquement. Le placer dans la corbeille le <strong>téléchargerait d’abord</strong>. Dans ce cas, Cmdr propose seulement de <strong>supprimer</strong> toute la sélection. Aucune copie ne restera dans la corbeille, mais les services cloud gardent en général leur propre corbeille pendant environ 30 jours. Cliquez sur « Supprimer » si la suppression vous convient, sinon annulez cette fenêtre et rendez d’abord ces fichiers disponibles hors connexion.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Votre sélection contient finalement du contenu disponible en ligne uniquement : le bouton ci-dessous propose maintenant « Supprimer ». Lisez la note ci-dessus, puis appuyez à nouveau si cela vous convient.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Votre sélection contient finalement du contenu disponible en ligne uniquement : le bouton ci-dessous propose maintenant « Supprimer ». Lisez la note ci-dessus, puis appuyez à nouveau si cela vous convient.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "623e7e0"
   },
-  "fileOperations.delete.archiveWarningStrong": "Il n''y a pas de corbeille dans une archive.",
+  "fileOperations.delete.archiveWarningStrong": "Il n’y a pas de corbeille dans une archive.",
   "@fileOperations.delete.archiveWarningStrong": {
     "sourceHash": "29efc59"
   },
@@ -56,15 +56,15 @@
   "@fileOperations.trash.undone": {
     "sourceHash": "a76ffee"
   },
-  "fileOperations.trash.undonePartial": "{restoredText} {restored, plural, one {fichier remis en place} many {fichiers remis en place} other {fichiers remis en place}} ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other {éléments sont restés}} dans la corbeille.",
+  "fileOperations.trash.undonePartial": "{restoredText} {restored, plural, one {fichier remis en place} many {fichiers remis en place} other {fichiers remis en place}} ; {skippedText} {skipped, plural, one {élément est resté} many {éléments sont restés} other {éléments sont restés}} dans la corbeille.",
   "@fileOperations.trash.undonePartial": {
     "sourceHash": "371413d"
   },
-  "fileOperations.trash.undoUnavailable": "Rien à remettre en place. Ces éléments sont peut-être déjà de retour, ou leur disque n''est pas connecté.",
+  "fileOperations.trash.undoUnavailable": "Rien à remettre en place. Ces éléments sont peut-être déjà de retour, ou leur disque n’est pas connecté.",
   "@fileOperations.trash.undoUnavailable": {
     "sourceHash": "2acefae"
   },
-  "fileOperations.trash.noTrashHere": "Ce disque n''a pas de corbeille.",
+  "fileOperations.trash.noTrashHere": "Ce disque n’a pas de corbeille.",
   "@fileOperations.trash.noTrashHere": {
     "sourceHash": "91d7462"
   },
@@ -136,7 +136,7 @@
   "@fileOperations.mkfile.nameAria": {
     "sourceHash": "3efed3d"
   },
-  "fileOperations.mkfile.placeholder": "Exemple : notes.txt",
+  "fileOperations.mkfile.placeholder": "Exemple : notes.txt",
   "@fileOperations.mkfile.placeholder": {
     "sourceHash": "f6b4613"
   },
@@ -152,7 +152,7 @@
   "@fileOperations.mkdir.nameAria": {
     "sourceHash": "14d34ed"
   },
-  "fileOperations.mkdir.placeholder": "Exemple : mon-projet",
+  "fileOperations.mkdir.placeholder": "Exemple : mon-projet",
   "@fileOperations.mkdir.placeholder": {
     "sourceHash": "7612b56"
   },
@@ -168,11 +168,11 @@
   "@fileOperations.mkdir.timeoutDismiss": {
     "sourceHash": "48845bf"
   },
-  "fileOperations.mkdir.aiSuggestionsAria": "Suggestions de l''IA",
+  "fileOperations.mkdir.aiSuggestionsAria": "Suggestions de l’IA",
   "@fileOperations.mkdir.aiSuggestionsAria": {
     "sourceHash": "1a1f5b9"
   },
-  "fileOperations.mkdir.aiSuggestionsHeader": "Suggestions de l''IA :",
+  "fileOperations.mkdir.aiSuggestionsHeader": "Suggestions de l’IA :",
   "@fileOperations.mkdir.aiSuggestionsHeader": {
     "sourceHash": "5232616"
   },
@@ -242,27 +242,27 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Ce partage utilise la connexion système. L''annulation peut être retardée. Utilisez « Se connecter directement » dans le sélecteur de volume pour des transferts plus rapides et une annulation fiable.",
+  "fileOperations.transferDialog.smbNativeNote": "Ce partage utilise la connexion système. L’annulation peut être retardée. Utilisez « Se connecter directement » dans le sélecteur de volume pour des transferts plus rapides et une annulation fiable.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "cfec439"
+    "sourceHash": "60af535"
   },
-  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Ce dossier n''existe pas encore. Cmdr le créera lors de la copie.",
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "Ce dossier n’existe pas encore. Cmdr le créera lors de la copie.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "sourceHash": "025f3dc"
   },
-  "fileOperations.transferDialog.targetWillBeCreatedMove": "Ce dossier n''existe pas encore. Cmdr le créera lors du déplacement.",
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "Ce dossier n’existe pas encore. Cmdr le créera lors du déplacement.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "sourceHash": "976edd2"
   },
-  "fileOperations.transferDialog.destinationReadOnly": "Ce dossier est en lecture seule : rien ne peut y être placé.",
+  "fileOperations.transferDialog.destinationReadOnly": "Ce dossier est en lecture seule : rien ne peut y être placé.",
   "@fileOperations.transferDialog.destinationReadOnly": {
     "sourceHash": "f30522f"
   },
-  "fileOperations.transferDialog.destinationNoPermission": "Vous n''avez pas l''autorisation d''ajouter des fichiers à ce dossier.",
+  "fileOperations.transferDialog.destinationNoPermission": "Vous n’avez pas l’autorisation d’ajouter des fichiers à ce dossier.",
   "@fileOperations.transferDialog.destinationNoPermission": {
     "sourceHash": "728b1ed"
   },
-  "fileOperations.transferDialog.destinationNotWritable": "Ce dossier n''accepte pas de nouveaux fichiers.",
+  "fileOperations.transferDialog.destinationNotWritable": "Ce dossier n’accepte pas de nouveaux fichiers.",
   "@fileOperations.transferDialog.destinationNotWritable": {
     "sourceHash": "d7cd278"
   },
@@ -278,7 +278,7 @@
   "@fileOperations.transferDialog.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.transferDialog.hardlinkNote": "<written></written> seront écrits. La source occupe <ondisk></ondisk> sur le disque – le surplus correspond aux fichiers à liens physiques, qui ne peuvent pas rester liés d''un disque à l''autre.",
+  "fileOperations.transferDialog.hardlinkNote": "<written></written> seront écrits. La source occupe <ondisk></ondisk> sur le disque – le surplus correspond aux fichiers à liens physiques, qui ne peuvent pas rester liés d’un disque à l’autre.",
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
@@ -298,7 +298,7 @@
   "@fileOperations.transferDialog.scanUnresponsive": {
     "sourceHash": "03d95e0"
   },
-  "fileOperations.transferDialog.scanStopped": "Nous n''avons pas pu finir de mesurer la source, cette taille est donc tout ce que nous avons pu compter.",
+  "fileOperations.transferDialog.scanStopped": "Nous n’avons pas pu finir de mesurer la source, cette taille est donc tout ce que nous avons pu compter.",
   "@fileOperations.transferDialog.scanStopped": {
     "sourceHash": "aac156c"
   },
@@ -306,7 +306,7 @@
   "@fileOperations.transferDialog.scanRetry": {
     "sourceHash": "d8b8392"
   },
-  "fileOperations.transferDialog.conflictsUnknown": "Nous n''avons pas pu vérifier ce qui se trouve déjà à destination. Nous vous demanderons quoi faire à chaque conflit.",
+  "fileOperations.transferDialog.conflictsUnknown": "Nous n’avons pas pu vérifier ce qui se trouve déjà à destination. Nous vous demanderons quoi faire à chaque conflit.",
   "@fileOperations.transferDialog.conflictsUnknown": {
     "sourceHash": "1bc997a"
   },
@@ -322,7 +322,7 @@
   "@fileOperations.transferDialog.mergeInfoMany": {
     "sourceHash": "6d734ce"
   },
-  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fichier existe déjà. Que voulez-vous en faire ?} many {fichiers existent déjà. Que voulez-vous en faire ?} other {fichiers existent déjà. Que voulez-vous en faire ?}}",
+  "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fichier existe déjà. Que voulez-vous en faire ?} many {fichiers existent déjà. Que voulez-vous en faire ?} other {fichiers existent déjà. Que voulez-vous en faire ?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
     "sourceHash": "f93d158"
   },
@@ -346,7 +346,7 @@
   "@fileOperations.transferDialog.policyStop": {
     "sourceHash": "61a6295"
   },
-  "fileOperations.transferDialog.typeMismatchWarning": "Certains conflits associent un fichier et un dossier portant le même nom. L''écrasement remplacera des éléments d''un type différent, y compris tout le contenu d''un dossier.",
+  "fileOperations.transferDialog.typeMismatchWarning": "Certains conflits associent un fichier et un dossier portant le même nom. L’écrasement remplacera des éléments d’un type différent, y compris tout le contenu d’un dossier.",
   "@fileOperations.transferDialog.typeMismatchWarning": {
     "sourceHash": "76f1ab1"
   },
@@ -366,17 +366,17 @@
   "@fileOperations.transferDialog.foldersPart": {
     "sourceHash": "9bd56b2"
   },
-  "fileOperations.transferDialog.pathErrorSubfolder": "Impossible de {verb, select, copy {copier} other {déplacer}} « {name} » dans son propre sous-dossier",
+  "fileOperations.transferDialog.pathErrorSubfolder": "Impossible de {verb, select, copy {copier} other {déplacer}} « {name} » dans son propre sous-dossier",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "4ad1eaf"
+    "sourceHash": "815204a"
   },
-  "fileOperations.transferDialog.pathErrorAlreadyThere": "« {name} » se trouve déjà à cet emplacement",
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "« {name} » se trouve déjà à cet emplacement",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
-    "sourceHash": "1030a7a"
+    "sourceHash": "1bf762e"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "Le nom de l''archive doit se terminer par \".zip\".",
+  "fileOperations.transferDialog.pathErrorNotZip": "Le nom de l’archive doit se terminer par « .zip ».",
   "@fileOperations.transferDialog.pathErrorNotZip": {
-    "sourceHash": "c85c6f8"
+    "sourceHash": "7700864"
   },
   "fileOperations.transferDialog.confirmCopy": "Copier",
   "@fileOperations.transferDialog.confirmCopy": {
@@ -390,7 +390,7 @@
   "@fileOperations.transferDialog.confirmCompress": {
     "sourceHash": "033fc04"
   },
-  "fileOperations.scanPhase.fromLabel": "De :",
+  "fileOperations.scanPhase.fromLabel": "De :",
   "@fileOperations.scanPhase.fromLabel": {
     "sourceHash": "dc45d36"
   },
@@ -422,7 +422,7 @@
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "6df6c7f"
   },
-  "fileOperations.transferProgress.rollbackUnavailableTooltip": "Le retour en arrière n''est pas disponible pour les déplacements au sein d''un même volume",
+  "fileOperations.transferProgress.rollbackUnavailableTooltip": "Le retour en arrière n’est pas disponible pour les déplacements au sein d’un même volume",
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "sourceHash": "da6af1f"
   },
@@ -438,7 +438,7 @@
   "@fileOperations.transferProgress.titleReversalDeleting": {
     "sourceHash": "587f4a3"
   },
-  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Restauration des anciens noms} one {Restauration de l''ancien nom} many {Restauration de {countText} anciens noms} other {Restauration de {countText} anciens noms}}…",
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {Restauration des anciens noms} one {Restauration de l’ancien nom} many {Restauration de {countText} anciens noms} other {Restauration de {countText} anciens noms}}…",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "sourceHash": "2ad8510"
   },
@@ -466,15 +466,15 @@
   "@fileOperations.transferProgress.stallNotice": {
     "sourceHash": "4b3c8e6"
   },
-  "fileOperations.transferProgress.stallWaitingDestination": "En attente d''une réponse de la destination.",
+  "fileOperations.transferProgress.stallWaitingDestination": "En attente d’une réponse de la destination.",
   "@fileOperations.transferProgress.stallWaitingDestination": {
     "sourceHash": "1cb8f39"
   },
-  "fileOperations.transferProgress.stallWaitingSource": "En attente d''une réponse de la source.",
+  "fileOperations.transferProgress.stallWaitingSource": "En attente d’une réponse de la source.",
   "@fileOperations.transferProgress.stallWaitingSource": {
     "sourceHash": "efb8d93"
   },
-  "fileOperations.transferProgress.stallUnknown": "Le transfert n''avance plus. Annulez-le ou laissez-le continuer en arrière-plan.",
+  "fileOperations.transferProgress.stallUnknown": "Le transfert n’avance plus. Annulez-le ou laissez-le continuer en arrière-plan.",
   "@fileOperations.transferProgress.stallUnknown": {
     "sourceHash": "37e23a5"
   },
@@ -506,35 +506,35 @@
   "@fileOperations.transferProgress.stageScanning": {
     "sourceHash": "474ad81"
   },
-  "fileOperations.transferProgress.warningFileOverFolder": "La cible existe et c''est un <strong>dossier</strong>. Vous êtes sur le point de l''écraser avec un <strong>fichier</strong> portant le même nom. Tout le contenu du dossier cible serait supprimé et remplacé par le fichier. Que faire ?",
+  "fileOperations.transferProgress.warningFileOverFolder": "La cible existe et c’est un <strong>dossier</strong>. Vous êtes sur le point de l’écraser avec un <strong>fichier</strong> portant le même nom. Tout le contenu du dossier cible serait supprimé et remplacé par le fichier. Que faire ?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "sourceHash": "c560c0f"
   },
-  "fileOperations.transferProgress.lookAlikeHint": "Ces noms semblent identiques, mais le serveur les écrit différemment. « Écraser » remplace l''élément déjà présent.",
+  "fileOperations.transferProgress.lookAlikeHint": "Ces noms semblent identiques, mais le serveur les écrit différemment. « Écraser » remplace l’élément déjà présent.",
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "2d35ddf"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Existant (dossier) :",
+  "fileOperations.transferProgress.existingFolderLabel": "Existant (dossier) :",
   "@fileOperations.transferProgress.existingFolderLabel": {
     "sourceHash": "44cab6d"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Existant (fichier) :",
+  "fileOperations.transferProgress.existingFileLabel": "Existant (fichier) :",
   "@fileOperations.transferProgress.existingFileLabel": {
     "sourceHash": "64142a0"
   },
-  "fileOperations.transferProgress.existingLabel": "Existant :",
+  "fileOperations.transferProgress.existingLabel": "Existant :",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Nouveau (dossier) :",
+  "fileOperations.transferProgress.newFolderLabel": "Nouveau (dossier) :",
   "@fileOperations.transferProgress.newFolderLabel": {
     "sourceHash": "aa1efc0"
   },
-  "fileOperations.transferProgress.newFileLabel": "Nouveau (fichier) :",
+  "fileOperations.transferProgress.newFileLabel": "Nouveau (fichier) :",
   "@fileOperations.transferProgress.newFileLabel": {
     "sourceHash": "a0c9782"
   },
-  "fileOperations.transferProgress.newLabel": "Nouveau :",
+  "fileOperations.transferProgress.newLabel": "Nouveau :",
   "@fileOperations.transferProgress.newLabel": {
     "sourceHash": "46dafc1"
   },
@@ -550,7 +550,7 @@
   "@fileOperations.transferProgress.annotationNewer": {
     "sourceHash": "92afdbd"
   },
-  "fileOperations.transferProgress.smallerDisabledTooltip": "Comparaison impossible : la taille du dossier cible est inconnue.",
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Comparaison impossible : la taille du dossier cible est inconnue.",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
     "sourceHash": "3bb25be"
   },
@@ -602,11 +602,11 @@
   "@fileOperations.transferProgress.conflictRollback": {
     "sourceHash": "c591f55"
   },
-  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Copie vers {destination}} move {Déplacement vers {destination}} archive_edit {Modification de l''archive {destination}} other {Opération en cours dans {destination}}}} other {{type, select, copy {Copie en cours} move {Déplacement en cours} archive_edit {Modification de l''archive} other {Opération en cours}}}}",
+  "fileOperations.operationConflict.context": "{hasDestination, select, yes {{type, select, copy {Copie vers {destination}} move {Déplacement vers {destination}} archive_edit {Modification de l’archive {destination}} other {Opération en cours dans {destination}}}} other {{type, select, copy {Copie en cours} move {Déplacement en cours} archive_edit {Modification de l’archive} other {Opération en cours}}}}",
   "@fileOperations.operationConflict.context": {
     "sourceHash": "ff68b4d"
   },
-  "fileOperations.operationConflict.pausedNote": "Tout le reste est en pause tant que vous n''avez pas répondu.",
+  "fileOperations.operationConflict.pausedNote": "Tout le reste est en pause tant que vous n’avez pas répondu.",
   "@fileOperations.operationConflict.pausedNote": {
     "sourceHash": "1f6444b"
   },
@@ -634,19 +634,19 @@
   "@fileOperations.transferProgress.etaRemaining": {
     "sourceHash": "a6b154c"
   },
-  "fileOperations.transferProgress.smbNativeNote": "Ce partage utilise la connexion système. L''annulation et le retour en arrière peuvent être retardés.",
+  "fileOperations.transferProgress.smbNativeNote": "Ce partage utilise la connexion système. L’annulation et le retour en arrière peuvent être retardés.",
   "@fileOperations.transferProgress.smbNativeNote": {
     "sourceHash": "5344d07"
   },
-  "fileOperations.transferProgress.rollbackTooltip": "Arrêter et supprimer tous les fichiers écrits jusqu''à présent",
+  "fileOperations.transferProgress.rollbackTooltip": "Arrêter et supprimer tous les fichiers écrits jusqu’à présent",
   "@fileOperations.transferProgress.rollbackTooltip": {
     "sourceHash": "fa64117"
   },
-  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Arrêter et remettre en place tous les fichiers déplacés jusqu''à présent",
+  "fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": "Arrêter et remettre en place tous les fichiers déplacés jusqu’à présent",
   "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
     "sourceHash": "193c682"
   },
-  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Tous les fichiers sont déjà arrivés à destination, le retour en arrière n''est donc plus possible. Annuler arrête tout de même Cmdr avant qu''il ne supprime le reste des originaux.",
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Tous les fichiers sont déjà arrivés à destination, le retour en arrière n’est donc plus possible. Annuler arrête tout de même Cmdr avant qu’il ne supprime le reste des originaux.",
   "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
     "sourceHash": "5f8b044"
   },
@@ -679,19 +679,19 @@
   "@fileOperations.transferProgress.backgroundAria": {
     "sourceHash": "bd71d60"
   },
-  "fileOperations.transferProgress.queue": "File d''attente",
+  "fileOperations.transferProgress.queue": "File d’attente",
   "@fileOperations.transferProgress.queue": {
     "sourceHash": "3b2fe03"
   },
-  "fileOperations.transferProgress.queueAria": "Envoyer dans la file d''attente des opérations",
+  "fileOperations.transferProgress.queueAria": "Envoyer dans la file d’attente des opérations",
   "@fileOperations.transferProgress.queueAria": {
     "sourceHash": "2bc3bd9"
   },
-  "fileOperations.transferProgress.queueTooltip": "Garder ce transfert en cours en arrière-plan et le gérer dans la file d''attente des opérations (F2)",
+  "fileOperations.transferProgress.queueTooltip": "Garder ce transfert en cours en arrière-plan et le gérer dans la file d’attente des opérations (F2)",
   "@fileOperations.transferProgress.queueTooltip": {
     "sourceHash": "89ce770"
   },
-  "fileOperations.transferProgress.queuedToast": "{countText} devant celle-ci, elle attend donc son tour. Retrouvez-la dans la file d''attente des opérations.",
+  "fileOperations.transferProgress.queuedToast": "{countText} devant celle-ci, elle attend donc son tour. Retrouvez-la dans la file d’attente des opérations.",
   "@fileOperations.transferProgress.queuedToast": {
     "sourceHash": "60a251d"
   },
@@ -699,43 +699,43 @@
   "@fileOperations.transferProgress.queuedToastCount": {
     "sourceHash": "85023e6"
   },
-  "fileOperations.transferProgress.backgroundedToast": "Toujours en cours en arrière-plan. Retrouvez-la dans la file d''attente des opérations.",
+  "fileOperations.transferProgress.backgroundedToast": "Toujours en cours en arrière-plan. Retrouvez-la dans la file d’attente des opérations.",
   "@fileOperations.transferProgress.backgroundedToast": {
     "sourceHash": "7c79c9a"
   },
-  "fileOperations.transferProgress.foregroundBusyToast": "Quelque chose d''autre est ouvert ici. Fermez-le, puis affichez cette opération.",
+  "fileOperations.transferProgress.foregroundBusyToast": "Quelque chose d’autre est ouvert ici. Fermez-le, puis affichez cette opération.",
   "@fileOperations.transferProgress.foregroundBusyToast": {
     "sourceHash": "80d4d61"
   },
-  "fileOperations.transferProgress.operationBlockedToast": "Quelque chose d''autre est ouvert ici. Fermez-le, puis réessayez.",
+  "fileOperations.transferProgress.operationBlockedToast": "Quelque chose d’autre est ouvert ici. Fermez-le, puis réessayez.",
   "@fileOperations.transferProgress.operationBlockedToast": {
     "sourceHash": "bc6efa8"
   },
-  "fileOperations.rollbackConfirm.title": "Revenir en arrière sur cette opération ?",
+  "fileOperations.rollbackConfirm.title": "Revenir en arrière sur cette opération ?",
   "@fileOperations.rollbackConfirm.title": {
     "sourceHash": "13ff3ea"
   },
-  "fileOperations.rollbackConfirm.body": "Cela supprime tous les fichiers que l''opération a écrits jusqu''à présent, et les fichiers qu''elle a remplacés ne reviendront pas. Cmdr laisse de côté tout ce dont il n''est pas sûr, il peut donc en rester quelques-uns.",
+  "fileOperations.rollbackConfirm.body": "Cela supprime tous les fichiers que l’opération a écrits jusqu’à présent, et les fichiers qu’elle a remplacés ne reviendront pas. Cmdr laisse de côté tout ce dont il n’est pas sûr, il peut donc en rester quelques-uns.",
   "@fileOperations.rollbackConfirm.body": {
     "sourceHash": "740e974"
   },
-  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Cela replace tout ce que l''opération a déplacé jusqu''à présent, et les fichiers qu''elle a remplacés ne reviendront pas. Cmdr laisse de côté tout ce dont il n''est pas sûr, certains peuvent donc rester où ils sont.",
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Cela replace tout ce que l’opération a déplacé jusqu’à présent, et les fichiers qu’elle a remplacés ne reviendront pas. Cmdr laisse de côté tout ce dont il n’est pas sûr, certains peuvent donc rester où ils sont.",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "sourceHash": "a489eb2"
   },
-  "fileOperations.rollbackConfirm.titleFinish": "Terminer le retour en arrière sur cette opération ?",
+  "fileOperations.rollbackConfirm.titleFinish": "Terminer le retour en arrière sur cette opération ?",
   "@fileOperations.rollbackConfirm.titleFinish": {
     "sourceHash": "cfc998a"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Cela supprime les fichiers et dossiers que l''opération a créés. Cmdr laisse de côté tout ce dont il n''est pas sûr, il peut donc en rester quelques-uns.",
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Cela supprime les fichiers et dossiers que l’opération a créés. Cmdr laisse de côté tout ce dont il n’est pas sûr, il peut donc en rester quelques-uns.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "88584f4"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Cela replace les fichiers là d''où ils viennent. Cmdr laisse de côté tout ce dont il n''est pas sûr, certains peuvent donc rester où ils sont.",
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Cela replace les fichiers là d’où ils viennent. Cmdr laisse de côté tout ce dont il n’est pas sûr, certains peuvent donc rester où ils sont.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
     "sourceHash": "7d55114"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Cela redonne aux fichiers leurs anciens noms. Cmdr laisse de côté tout ce dont il n''est pas sûr, certains peuvent donc garder leur nom actuel.",
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Cela redonne aux fichiers leurs anciens noms. Cmdr laisse de côté tout ce dont il n’est pas sûr, certains peuvent donc garder leur nom actuel.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "sourceHash": "819690f"
   },
@@ -755,11 +755,11 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "Cmdr a supprimé tout ce qu''il avait écrit : {countText} {count, plural, one {élément} many {éléments} other {éléments}}.",
+  "fileOperations.cancelRollback.doneDeleting": "Cmdr a supprimé tout ce qu’il avait écrit : {countText} {count, plural, one {élément} many {éléments} other {éléments}}.",
   "@fileOperations.cancelRollback.doneDeleting": {
     "sourceHash": "ff786b9"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "Cmdr a tout remis en place : {countText} {count, plural, one {élément} many {éléments} other {éléments}}.",
+  "fileOperations.cancelRollback.doneMovingBack": "Cmdr a tout remis en place : {countText} {count, plural, one {élément} many {éléments} other {éléments}}.",
   "@fileOperations.cancelRollback.doneMovingBack": {
     "sourceHash": "c5e329e"
   },
@@ -779,63 +779,63 @@
   "@fileOperations.cancelRollback.stoppedMovingBack": {
     "sourceHash": "f536342"
   },
-  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr s''est arrêté pendant la suppression des originaux, mais tout ce qu''il a déplacé est déjà arrivé à destination et y reste. {count, plural, one {Un original est toujours à sa place d''origine.} many {{countText} originaux sont toujours à leur place d''origine.} other {{countText} originaux sont toujours à leur place d''origine.}}",
+  "fileOperations.cancelRollback.moveAlreadyLanded": "Cmdr s’est arrêté pendant la suppression des originaux, mais tout ce qu’il a déplacé est déjà arrivé à destination et y reste. {count, plural, one {Un original est toujours à sa place d’origine.} many {{countText} originaux sont toujours à leur place d’origine.} other {{countText} originaux sont toujours à leur place d’origine.}}",
   "@fileOperations.cancelRollback.moveAlreadyLanded": {
     "sourceHash": "88dcf83"
   },
-  "fileOperations.cancelRollback.leftBehind": "Cmdr laisse de côté tout ce dont il n''est pas sûr, donc voici ce qui n''a pas bougé :",
+  "fileOperations.cancelRollback.leftBehind": "Cmdr laisse de côté tout ce dont il n’est pas sûr, donc voici ce qui n’a pas bougé :",
   "@fileOperations.cancelRollback.leftBehind": {
     "sourceHash": "fb28a31"
   },
-  "fileOperations.cancelRollback.reason.drift.named": "{name} laissé tel quel : il a changé depuis que Cmdr l''a mis là.",
+  "fileOperations.cancelRollback.reason.drift.named": "{name} laissé tel quel : il a changé depuis que Cmdr l’a mis là.",
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
-  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : ils ont changé depuis que Cmdr les a mis là.",
+  "fileOperations.cancelRollback.reason.drift.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : ils ont changé depuis que Cmdr les a mis là.",
   "@fileOperations.cancelRollback.reason.drift.counted": {
     "sourceHash": "233b2f5"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} laissé tel quel : Cmdr n''a pas pu vérifier s''il avait changé.",
+  "fileOperations.cancelRollback.reason.unverifiable.named": "{name} laissé tel quel : Cmdr n’a pas pu vérifier s’il avait changé.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "29c32b9"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : Cmdr n''a pas pu vérifier s''ils avaient changé.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} tels quels : Cmdr n’a pas pu vérifier s’ils avaient changé.",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
     "sourceHash": "e40696b"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} laissé sur place : quelque chose d''autre occupe maintenant sa place d''origine.",
+  "fileOperations.cancelRollback.reason.spotTaken.named": "{name} laissé sur place : quelque chose d’autre occupe maintenant sa place d’origine.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} sur place : quelque chose d''autre occupe maintenant leur place d''origine.",
+  "fileOperations.cancelRollback.reason.spotTaken.counted": "{countText} {count, plural, one {élément laissé} many {éléments laissés} other {éléments laissés}} sur place : quelque chose d’autre occupe maintenant leur place d’origine.",
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
     "sourceHash": "a55ac9a"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Dossier {name} laissé tel quel : il contient maintenant quelque chose.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "Dossier {name} laissé tel quel : il contient maintenant quelque chose.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {dossier laissé} many {dossiers laissés} other {dossiers laissés}} tels quels : ils contiennent maintenant quelque chose.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.counted": "{countText} {count, plural, one {dossier laissé} many {dossiers laissés} other {dossiers laissés}} tels quels : ils contiennent maintenant quelque chose.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
     "sourceHash": "d2c9f56"
   },
-  "fileOperations.cancelRollback.reason.failed.named": "Cmdr n''a pas pu revenir en arrière sur {name}. Son disque est peut-être déconnecté ou en lecture seule.",
+  "fileOperations.cancelRollback.reason.failed.named": "Cmdr n’a pas pu revenir en arrière sur {name}. Son disque est peut-être déconnecté ou en lecture seule.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "5c9d51d"
   },
-  "fileOperations.cancelRollback.reason.failed.counted": "Cmdr n''a pas pu revenir en arrière sur {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Leur disque est peut-être déconnecté ou en lecture seule.",
+  "fileOperations.cancelRollback.reason.failed.counted": "Cmdr n’a pas pu revenir en arrière sur {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Leur disque est peut-être déconnecté ou en lecture seule.",
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
-  "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr n''a pas pu supprimer {name}, une copie incomplète restée à destination. Vous pouvez la supprimer sans risque, et Cmdr s''en chargera lors d''un transfert ultérieur vers cet endroit.",
+  "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr n’a pas pu supprimer {name}, une copie incomplète restée à destination. Vous pouvez la supprimer sans risque, et Cmdr s’en chargera lors d’un transfert ultérieur vers cet endroit.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
     "sourceHash": "4aeaddc"
   },
-  "fileOperations.cancelRollback.stagedLeftover.counted": "Cmdr n''a pas pu supprimer {countText} {count, plural, one {copie incomplète restée} many {copies incomplètes restées} other {copies incomplètes restées}} à destination. Vous pouvez les supprimer sans risque, et Cmdr s''en chargera lors d''un transfert ultérieur vers cet endroit.",
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Cmdr n’a pas pu supprimer {countText} {count, plural, one {copie incomplète restée} many {copies incomplètes restées} other {copies incomplètes restées}} à destination. Vous pouvez les supprimer sans risque, et Cmdr s’en chargera lors d’un transfert ultérieur vers cet endroit.",
   "@fileOperations.cancelRollback.stagedLeftover.counted": {
     "sourceHash": "becfef5"
   },
-  "fileOperations.leftovers.stagingFolderKept": "Cmdr a trouvé sur {volumeName} des fichiers issus d''un déplacement incomplet et les a laissés là où ils sont, dans un dossier caché nommé {folderName}.",
+  "fileOperations.leftovers.stagingFolderKept": "Cmdr a trouvé sur {volumeName} des fichiers issus d’un déplacement incomplet et les a laissés là où ils sont, dans un dossier caché nommé {folderName}.",
   "@fileOperations.leftovers.stagingFolderKept": {
     "sourceHash": "fd848b8"
   },
@@ -863,19 +863,19 @@
   "@fileOperations.archivePassword.title": {
     "sourceHash": "54fd670"
   },
-  "fileOperations.archivePassword.retryTitle": "Ça n''a pas marché",
+  "fileOperations.archivePassword.retryTitle": "Ça n’a pas marché",
   "@fileOperations.archivePassword.retryTitle": {
     "sourceHash": "dd30abb"
   },
-  "fileOperations.archivePassword.message": "L''archive <archive>{name}</archive> est protégée par un mot de passe. Saisissez le mot de passe pour la déverrouiller.",
+  "fileOperations.archivePassword.message": "L’archive <archive>{name}</archive> est protégée par un mot de passe. Saisissez le mot de passe pour la déverrouiller.",
   "@fileOperations.archivePassword.message": {
     "sourceHash": "ba28841"
   },
-  "fileOperations.archivePassword.retryMessage": "Ce mot de passe n''a pas déverrouillé <archive>{name}</archive>. Réessayez.",
+  "fileOperations.archivePassword.retryMessage": "Ce mot de passe n’a pas déverrouillé <archive>{name}</archive>. Réessayez.",
   "@fileOperations.archivePassword.retryMessage": {
     "sourceHash": "88ef11a"
   },
-  "fileOperations.archivePassword.inputAria": "Mot de passe de l''archive",
+  "fileOperations.archivePassword.inputAria": "Mot de passe de l’archive",
   "@fileOperations.archivePassword.inputAria": {
     "sourceHash": "3c652b7"
   },
@@ -887,9 +887,9 @@
   "@fileOperations.archivePassword.unlock": {
     "sourceHash": "4ac709a"
   },
-  "fileOperations.validation.disallowedChars": "{kind, select, folder {Le nom du dossier ne peut pas contenir « / » ni de caractère null} other {Le nom du fichier ne peut pas contenir « / » ni de caractère null}}",
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Le nom du dossier ne peut pas contenir « / » ni de caractère null} other {Le nom du fichier ne peut pas contenir « / » ni de caractère null}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "d84512c"
+    "sourceHash": "4fa16ce"
   },
   "fileOperations.validation.empty": "{kind, select, folder {Le nom du dossier ne peut pas être vide} other {Le nom du fichier ne peut pas être vide}}",
   "@fileOperations.validation.empty": {
@@ -899,39 +899,39 @@
   "@fileOperations.validation.nameTooLong": {
     "sourceHash": "76a85fd"
   },
-  "fileOperations.validation.pathTooLong": "Le chemin d''accès complet est trop long ({byteCount}/{maxBytes} octets)",
+  "fileOperations.validation.pathTooLong": "Le chemin d’accès complet est trop long ({byteCount}/{maxBytes} octets)",
   "@fileOperations.validation.pathTooLong": {
     "sourceHash": "1658c7a"
   },
-  "fileOperations.validation.extensionChangeBlocked": "La modification de l''extension du fichier n''est pas autorisée (elle était « {oldExt} »)",
+  "fileOperations.validation.extensionChangeBlocked": "La modification de l’extension du fichier n’est pas autorisée (elle était « {oldExt} »)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "43c2dc1"
+    "sourceHash": "0b2df1e"
   },
-  "fileOperations.validation.conflict": "« {name} » existe déjà dans ce dossier",
+  "fileOperations.validation.conflict": "« {name} » existe déjà dans ce dossier",
   "@fileOperations.validation.conflict": {
-    "sourceHash": "ba13237"
+    "sourceHash": "842d02d"
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {Le nom du dossier ne peut pas être utilisé} other {Le nom du fichier ne peut pas être utilisé}}",
   "@fileOperations.validation.nameNotUsable": {
     "sourceHash": "8482a7b"
   },
-  "fileOperations.validation.pathEmpty": "Le chemin d''accès ne peut pas être vide",
+  "fileOperations.validation.pathEmpty": "Le chemin d’accès ne peut pas être vide",
   "@fileOperations.validation.pathEmpty": {
     "sourceHash": "348eb60"
   },
-  "fileOperations.validation.pathNotAbsolute": "Le chemin d''accès doit être absolu (commencer par /)",
+  "fileOperations.validation.pathNotAbsolute": "Le chemin d’accès doit être absolu (commencer par /)",
   "@fileOperations.validation.pathNotAbsolute": {
     "sourceHash": "3c08374"
   },
-  "fileOperations.validation.pathNullChar": "Le chemin d''accès contient un caractère null",
+  "fileOperations.validation.pathNullChar": "Le chemin d’accès contient un caractère null",
   "@fileOperations.validation.pathNullChar": {
     "sourceHash": "271149f"
   },
-  "fileOperations.validation.pathTotalTooLong": "Le chemin d''accès est trop long ({byteCount}/{maxBytes} octets)",
+  "fileOperations.validation.pathTotalTooLong": "Le chemin d’accès est trop long ({byteCount}/{maxBytes} octets)",
   "@fileOperations.validation.pathTotalTooLong": {
     "sourceHash": "30aca7d"
   },
-  "fileOperations.validation.pathSegmentTooLong": "Un nom de dossier dans le chemin d''accès est trop long ({byteCount}/{maxBytes} octets)",
+  "fileOperations.validation.pathSegmentTooLong": "Un nom de dossier dans le chemin d’accès est trop long ({byteCount}/{maxBytes} octets)",
   "@fileOperations.validation.pathSegmentTooLong": {
     "sourceHash": "75b2602"
   }

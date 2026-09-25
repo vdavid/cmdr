@@ -1,13 +1,13 @@
 {
-  "onboarding.fdaBadge.label": "Pas d''accès complet au disque",
+  "onboarding.fdaBadge.label": "Pas d’accès complet au disque",
   "@onboarding.fdaBadge.label": {
     "sourceHash": "0aa10cf"
   },
-  "onboarding.fdaBadge.tooltip": "Ce n''est pas obligatoire, mais Cmdr fonctionne bien mieux avec : la recherche dans tout votre disque, la lecture des dossiers cloud et la modification des fichiers que macOS garde pour lui. Cliquez pour revoir ce choix.",
+  "onboarding.fdaBadge.tooltip": "Ce n’est pas obligatoire, mais Cmdr fonctionne bien mieux avec : la recherche dans tout votre disque, la lecture des dossiers cloud et la modification des fichiers que macOS garde pour lui. Cliquez pour revoir ce choix.",
   "@onboarding.fdaBadge.tooltip": {
     "sourceHash": "00f408a"
   },
-  "onboarding.fdaBadge.ariaLabel": "Pas d''accès complet au disque. Ouvrir l''étape Accès complet au disque de la prise en main.",
+  "onboarding.fdaBadge.ariaLabel": "Pas d’accès complet au disque. Ouvrir l’étape Accès complet au disque de la prise en main.",
   "@onboarding.fdaBadge.ariaLabel": {
     "sourceHash": "60ee833"
   },
@@ -27,7 +27,7 @@
   "@onboarding.moreAbout": {
     "sourceHash": "b4d183a"
   },
-  "onboarding.wizard.stepTooltip": "Étape {step} sur {mandatory}+1{note, select, remaining {, il reste une étape facultative} last {, c''est la dernière étape, facultative} other {}}",
+  "onboarding.wizard.stepTooltip": "Étape {step} sur {mandatory}+1{note, select, remaining {, il reste une étape facultative} last {, c’est la dernière étape, facultative} other {}}",
   "@onboarding.wizard.stepTooltip": {
     "sourceHash": "53f848a"
   },
@@ -35,7 +35,7 @@
   "@onboarding.wizard.back": {
     "sourceHash": "76900f1"
   },
-  "onboarding.wizard.backAria": "Revenir à l''étape précédente",
+  "onboarding.wizard.backAria": "Revenir à l’étape précédente",
   "@onboarding.wizard.backAria": {
     "sourceHash": "a729451"
   },
@@ -51,11 +51,11 @@
   "@onboarding.wizard.restart": {
     "sourceHash": "e62c550"
   },
-  "onboarding.stepFda.granted.title": "Vous avez accordé l''accès complet au disque !",
+  "onboarding.stepFda.granted.title": "Vous avez accordé l’accès complet au disque !",
   "@onboarding.stepFda.granted.title": {
     "sourceHash": "6740141"
   },
-  "onboarding.stepFda.granted.body": "Parfait, c''est tout ce dont Cmdr a besoin. Redémarrez-le maintenant pour profiter de tout.",
+  "onboarding.stepFda.granted.body": "Parfait, c’est tout ce dont Cmdr a besoin. Redémarrez-le maintenant pour profiter de tout.",
   "@onboarding.stepFda.granted.body": {
     "sourceHash": "32acf9d"
   },
@@ -63,7 +63,7 @@
   "@onboarding.stepFda.granted.hint": {
     "sourceHash": "e0e33a3"
   },
-  "onboarding.stepFda.alreadyGranted.title": "Cmdr dispose actuellement de l''accès complet au disque",
+  "onboarding.stepFda.alreadyGranted.title": "Cmdr dispose actuellement de l’accès complet au disque",
   "@onboarding.stepFda.alreadyGranted.title": {
     "sourceHash": "403273d"
   },
@@ -71,59 +71,59 @@
   "@onboarding.stepFda.alreadyGranted.body": {
     "sourceHash": "98fb9f4"
   },
-  "onboarding.stepFda.welcome.title": "Bienvenue dans Cmdr !",
+  "onboarding.stepFda.welcome.title": "Bienvenue dans Cmdr !",
   "@onboarding.stepFda.welcome.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepFda.revoked.intro": "Il semble que vous ayez accepté l''accès complet au disque auparavant, puis que vous l''ayez révoqué.",
+  "onboarding.stepFda.revoked.intro": "On dirait que vous aviez accepté l’accès complet au disque, puis que vous l’avez révoqué.",
   "@onboarding.stepFda.revoked.intro": {
     "sourceHash": "9087914"
   },
-  "onboarding.stepFda.revoked.noAccess": "L''app ne dispose actuellement d''aucun accès complet au disque.",
+  "onboarding.stepFda.revoked.noAccess": "L’app ne dispose actuellement d’aucun accès complet au disque.",
   "@onboarding.stepFda.revoked.noAccess": {
     "sourceHash": "415a3f3"
   },
-  "onboarding.stepFda.revoked.ifIntentional": "Si c''était intentionnel, cliquez sur <deny>Refuser</deny> et l''app ne vous embêtera plus.",
+  "onboarding.stepFda.revoked.ifIntentional": "Si c’était intentionnel, cliquez sur <deny>Refuser</deny> et l’app ne vous embêtera plus.",
   "@onboarding.stepFda.revoked.ifIntentional": {
     "sourceHash": "9709b73"
   },
-  "onboarding.stepFda.revoked.ifNot": "Si ce <em>n''était pas</em> intentionnel, envisagez d''autoriser à nouveau l''accès complet au disque. Voici les avantages et les inconvénients :",
+  "onboarding.stepFda.revoked.ifNot": "Si ce <em>n’était pas</em> intentionnel, envisagez d’autoriser à nouveau l’accès complet au disque. Voici les avantages et les inconvénients :",
   "@onboarding.stepFda.revoked.ifNot": {
     "sourceHash": "24667ee"
   },
-  "onboarding.stepFda.firstAsk.lede": "<strong>Vous voulez probablement commencer à utiliser l''app tout de suite.</strong> Désolé de vous embêter avec ça d''abord, mais c''est nécessaire.",
+  "onboarding.stepFda.firstAsk.lede": "<strong>Vous voulez probablement commencer à utiliser l’app tout de suite.</strong> Désolé de vous embêter avec ça d’abord, mais c’est nécessaire.",
   "@onboarding.stepFda.firstAsk.lede": {
     "sourceHash": "7f19b2a"
   },
-  "onboarding.stepFda.firstAsk.explain": "En fait, Cmdr est un gestionnaire de fichiers, et il a besoin d''accéder à votre disque pour voir tous vos fichiers. macOS n''accorde pas automatiquement cette autorisation.",
+  "onboarding.stepFda.firstAsk.explain": "En fait, Cmdr est un gestionnaire de fichiers, et il a besoin d’accéder à votre disque pour voir tous vos fichiers. macOS n’accorde pas automatiquement cette autorisation.",
   "@onboarding.stepFda.firstAsk.explain": {
     "sourceHash": "f60c41b"
   },
-  "onboarding.stepFda.firstAsk.askPermission": "Souhaitez-vous donner à cette app l''accès complet au disque ? Voici ce que cela signifie :",
+  "onboarding.stepFda.firstAsk.askPermission": "Souhaitez-vous donner à cette app l’accès complet au disque ? Voici ce que cela signifie :",
   "@onboarding.stepFda.firstAsk.askPermission": {
     "sourceHash": "94e5db7"
   },
-  "onboarding.stepFda.why": "Pourquoi ?",
+  "onboarding.stepFda.why": "Pourquoi ?",
   "@onboarding.stepFda.why": {
     "sourceHash": "5d8a995"
   },
-  "onboarding.stepFda.pro.label": "Avantage :",
+  "onboarding.stepFda.pro.label": "Avantage :",
   "@onboarding.stepFda.pro.label": {
     "sourceHash": "4fc6650"
   },
-  "onboarding.stepFda.pro.body": "L''app accédera à l''intégralité de votre disque sans vous réclamer une autorisation pour chaque dossier comme Téléchargements, Documents et Bureau.",
+  "onboarding.stepFda.pro.body": "L’app accédera à l’intégralité de votre disque sans vous réclamer une autorisation pour chaque dossier comme Téléchargements, Documents et Bureau.",
   "@onboarding.stepFda.pro.body": {
     "sourceHash": "c624227"
   },
-  "onboarding.stepFda.con.label": "Inconvénient :",
+  "onboarding.stepFda.con.label": "Inconvénient :",
   "@onboarding.stepFda.con.label": {
     "sourceHash": "ebfc77d"
   },
-  "onboarding.stepFda.con.body": "L''accès complet au disque est plutôt puissant. Il permet à l''app de lire n''importe quel fichier de votre Mac. N''accordez ceci que si vous faites confiance à Cmdr. Cmdr utilise ce droit avec respect, et son code est <sourceLink>consultable publiquement</sourceLink> si vous avez un doute.",
+  "onboarding.stepFda.con.body": "L’accès complet au disque est plutôt puissant. Il permet à l’app de lire n’importe quel fichier de votre Mac. N’accordez ceci que si vous faites confiance à Cmdr. Cmdr utilise ce droit avec respect, et son code est <sourceLink>consultable publiquement</sourceLink> si vous avez un doute.",
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
-  "onboarding.stepFda.ifAllow": "Trois étapes :",
+  "onboarding.stepFda.ifAllow": "Trois étapes :",
   "@onboarding.stepFda.ifAllow": {
     "sourceHash": "2e6fb66"
   },
@@ -143,9 +143,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Cmdr n''est pas dans la liste ? Cliquez sur le bouton « + » en bas, et choisissez <strong>Cmdr</strong> dans votre dossier <strong>Applications</strong>.",
+  "onboarding.stepFda.step2.tip": "Cmdr n’est pas dans la liste ? Cliquez sur le bouton « + » en bas, et choisissez <strong>Cmdr</strong> dans votre dossier <strong>Applications</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "30d0299"
+    "sourceHash": "ffc4289"
   },
   "onboarding.stepFda.step3": "Confirmez et cliquez sur <strong>Quitter et rouvrir</strong>",
   "@onboarding.stepFda.step3": {
@@ -159,11 +159,11 @@
   "@onboarding.stepFda.postAction.intro": {
     "sourceHash": "cac5247"
   },
-  "onboarding.stepFda.postAction.body": "Quand vous êtes prêt, cliquez sur <restart>Redémarrer Cmdr</restart> ci-dessous. Si vous changez d''avis, cliquez plutôt sur <deny>Refuser</deny> ci-dessus.",
+  "onboarding.stepFda.postAction.body": "Quand vous êtes prêt, cliquez sur <restart>Redémarrer Cmdr</restart> ci-dessous. Si vous changez d’avis, cliquez plutôt sur <deny>Refuser</deny> ci-dessus.",
   "@onboarding.stepFda.postAction.body": {
     "sourceHash": "f87a5fc"
   },
-  "onboarding.stepFda.openSettingsFailed": "Cmdr n''a pas pu ouvrir {systemSettings}. Ouvrez-le vous-même, allez dans <strong>{privacyAndSecurity}</strong>, puis <strong>{fullDiskAccess}</strong>, et activez <strong>Cmdr</strong>.",
+  "onboarding.stepFda.openSettingsFailed": "Cmdr n’a pas pu ouvrir {systemSettings}. Ouvrez-le vous-même, allez dans <strong>{privacyAndSecurity}</strong>, puis <strong>{fullDiskAccess}</strong>, et activez <strong>Cmdr</strong>.",
   "@onboarding.stepFda.openSettingsFailed": {
     "sourceHash": "8cfce29"
   },
@@ -171,31 +171,31 @@
   "@onboarding.stepAi.bannerTitle.granted": {
     "sourceHash": "f5872be"
   },
-  "onboarding.stepAi.bannerBody.granted": "Merci d''avoir accordé l''accès complet au disque ! L''app peut désormais accéder à votre disque. Super !",
+  "onboarding.stepAi.bannerBody.granted": "Merci d’avoir accordé l’accès complet au disque ! L’app peut maintenant accéder à votre disque. Super !",
   "@onboarding.stepAi.bannerBody.granted": {
     "sourceHash": "236f3f5"
   },
-  "onboarding.stepAi.bannerTitle.denied": "Pas d''accès complet au disque",
+  "onboarding.stepAi.bannerTitle.denied": "Pas d’accès complet au disque",
   "@onboarding.stepAi.bannerTitle.denied": {
     "sourceHash": "0aa10cf"
   },
-  "onboarding.stepAi.bannerBody.denied": "Vous avez choisi de ne pas activer l''accès complet au disque. Nous le respectons. Vous recevrez alors sous peu quelques demandes d''autorisation de macOS pour que Cmdr accède à votre Bureau, à vos Téléchargements et à des dossiers similaires. Acceptez-les ou refusez-les à votre guise. Vous pouvez modifier tout cela plus tard dans vos {systemSettings}.",
+  "onboarding.stepAi.bannerBody.denied": "Vous avez choisi de ne pas activer l’accès complet au disque. Nous le respectons. Vous recevrez alors sous peu quelques demandes d’autorisation de macOS pour que Cmdr accède à votre Bureau, à vos Téléchargements et à des dossiers similaires. Acceptez-les ou refusez-les à votre guise. Vous pouvez modifier tout cela plus tard dans vos {systemSettings}.",
   "@onboarding.stepAi.bannerBody.denied": {
     "sourceHash": "ccb4ae5"
   },
-  "onboarding.stepAi.bannerTitle.stuck": "Cmdr ne semble pas encore disposer de l''accès complet au disque",
+  "onboarding.stepAi.bannerTitle.stuck": "Cmdr ne semble pas encore disposer de l’accès complet au disque",
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Vous avez dit vouloir activer l''accès complet au disque, mais Cmdr ne semble pas l''avoir obtenu. Vous devrez peut-être redémarrer l''app (faites-le maintenant, nous continuerons d''ici !), ou aller dans vos <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> et trouver Cmdr, ou l''ajouter manuellement avec le petit bouton « + » en bas.",
+  "onboarding.stepAi.bannerBody.stuck": "Vous avez dit vouloir activer l’accès complet au disque, mais Cmdr ne semble pas l’avoir obtenu. Vous devrez peut-être redémarrer l’app (faites-le maintenant, nous continuerons d’ici !), ou aller dans vos <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> et trouver Cmdr, ou l’ajouter manuellement avec le petit bouton « + » en bas.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "79d5765"
+    "sourceHash": "fcdff85"
   },
-  "onboarding.stepAi.welcomeLinux.title": "Bienvenue dans Cmdr !",
+  "onboarding.stepAi.welcomeLinux.title": "Bienvenue dans Cmdr !",
   "@onboarding.stepAi.welcomeLinux.title": {
     "sourceHash": "504b1bb"
   },
-  "onboarding.stepAi.welcomeLinux.subtitle": "Configurons l''IA.",
+  "onboarding.stepAi.welcomeLinux.subtitle": "Configurons l’IA.",
   "@onboarding.stepAi.welcomeLinux.subtitle": {
     "sourceHash": "a96e109"
   },
@@ -203,11 +203,11 @@
   "@onboarding.stepAi.title": {
     "sourceHash": "a580449"
   },
-  "onboarding.stepAi.intro": "Cmdr propose tout un ensemble de fonctionnalités d''IA dont vous <em>pourriez</em> avoir envie, ou pas. L''IA est un sujet qui divise ces temps-ci.",
+  "onboarding.stepAi.intro": "Cmdr propose tout un ensemble de fonctionnalités d’IA dont vous <em>pourriez</em> avoir envie, ou pas. L’IA est un sujet qui divise ces temps-ci.",
   "@onboarding.stepAi.intro": {
     "sourceHash": "3b6b6c6"
   },
-  "onboarding.stepAi.comparisonIntro": "Voici comment réaliser des actions courantes avec et sans IA :",
+  "onboarding.stepAi.comparisonIntro": "Voici comment réaliser des actions courantes avec et sans IA :",
   "@onboarding.stepAi.comparisonIntro": {
     "sourceHash": "440ea64"
   },
@@ -227,25 +227,25 @@
   "@onboarding.stepAi.table.rowSearch": {
     "sourceHash": "49c266b"
   },
-  "onboarding.stepAi.table.searchWithout": "Vous tapez quelque chose comme <code>*fish*.ppt</code>, et vous sélectionnez le filtre « après le 1er de ce mois ».",
+  "onboarding.stepAi.table.searchWithout": "Vous tapez quelque chose comme <code>*fish*.ppt</code>, et vous sélectionnez le filtre « après le 1er de ce mois ».",
   "@onboarding.stepAi.table.searchWithout": {
-    "sourceHash": "872cb1e"
+    "sourceHash": "ebd8f45"
   },
-  "onboarding.stepAi.table.searchWith": "Vous dites « mes présentations récentes sur les poissons », et l''agent règle vos filtres.",
+  "onboarding.stepAi.table.searchWith": "Vous dites « mes présentations récentes sur les poissons », et l’agent règle vos filtres.",
   "@onboarding.stepAi.table.searchWith": {
-    "sourceHash": "b69cd82"
+    "sourceHash": "457e19a"
   },
   "onboarding.stepAi.table.rowRename": "Renommage en masse",
   "@onboarding.stepAi.table.rowRename": {
     "sourceHash": "9246b56"
   },
-  "onboarding.stepAi.table.renameWithout": "Vous utilisez l''interface de renommage par lot pour définir manuellement le modèle de renommage, vérifier et appliquer.",
+  "onboarding.stepAi.table.renameWithout": "Vous utilisez l’interface de renommage par lot pour définir manuellement le modèle de renommage, vérifier et appliquer.",
   "@onboarding.stepAi.table.renameWithout": {
     "sourceHash": "b12d997"
   },
-  "onboarding.stepAi.table.renameWith": "Vous dites « ajouter un préfixe de date ISO », l''agent règle votre modèle de renommage, vous vérifiez et appliquez à votre guise.",
+  "onboarding.stepAi.table.renameWith": "Vous dites « ajouter un préfixe de date ISO », l’agent règle votre modèle de renommage, vous vérifiez et appliquez à votre guise.",
   "@onboarding.stepAi.table.renameWith": {
-    "sourceHash": "7fba3f5"
+    "sourceHash": "5287ae3"
   },
   "onboarding.stepAi.table.rowSelect": "Sélectionner",
   "@onboarding.stepAi.table.rowSelect": {
@@ -255,23 +255,23 @@
   "@onboarding.stepAi.table.selectWithoutBound": {
     "sourceHash": "83f83b9"
   },
-  "onboarding.stepAi.table.selectWithoutUnbound": "Vous ouvrez « Sélectionner des fichiers… » et tapez quelque chose comme <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, vous vérifiez et appliquez.",
+  "onboarding.stepAi.table.selectWithoutUnbound": "Vous ouvrez « Sélectionner des fichiers… » et tapez quelque chose comme <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, vous vérifiez et appliquez.",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "sourceHash": "4cdc972"
+    "sourceHash": "bf9239a"
   },
-  "onboarding.stepAi.table.selectWith": "Vous dites « sélectionner tous les fichiers image », l''agent propose une sélection, vous vérifiez et appliquez à votre guise.",
+  "onboarding.stepAi.table.selectWith": "Vous dites « sélectionner tous les fichiers image », l’agent propose une sélection, vous vérifiez et appliquez à votre guise.",
   "@onboarding.stepAi.table.selectWith": {
-    "sourceHash": "07f1063"
+    "sourceHash": "c1cc90b"
   },
   "onboarding.stepAi.resumeCue": "Vous aviez choisi ceci la dernière fois. Confirmez ou modifiez ci-dessous.",
   "@onboarding.stepAi.resumeCue": {
     "sourceHash": "586e2ae"
   },
-  "onboarding.stepAi.choiceGroupAria": "Choix de l''IA",
+  "onboarding.stepAi.choiceGroupAria": "Choix de l’IA",
   "@onboarding.stepAi.choiceGroupAria": {
     "sourceHash": "9083caa"
   },
-  "onboarding.stepAi.cloud.label": "Oui, je veux l''IA",
+  "onboarding.stepAi.cloud.label": "Oui, je veux l’IA",
   "@onboarding.stepAi.cloud.label": {
     "sourceHash": "ba08450"
   },
@@ -279,7 +279,7 @@
   "@onboarding.stepAi.cloud.recommended": {
     "sourceHash": "d70604e"
   },
-  "onboarding.stepAi.cloud.help": "Utilisez n''importe quel fournisseur cloud avec votre propre clé d''API, ou votre propre ollama/LLM personnalisé. Configurez cela ci-dessous.",
+  "onboarding.stepAi.cloud.help": "Utilisez n’importe quel fournisseur cloud avec votre propre clé d’API, ou votre propre ollama/LLM personnalisé. Configurez cela ci-dessous.",
   "@onboarding.stepAi.cloud.help": {
     "sourceHash": "0841a0d"
   },
@@ -287,15 +287,15 @@
   "@onboarding.stepAi.cloud.pickerTitle": {
     "sourceHash": "71e2ca7"
   },
-  "onboarding.stepAi.local.label": "Oui, je veux l''IA, mais je la veux ultra confidentielle, avec un simple modèle local.",
+  "onboarding.stepAi.local.label": "Oui, je veux l’IA, mais je la veux ultra confidentielle, avec un simple modèle local.",
   "@onboarding.stepAi.local.label": {
     "sourceHash": "2ee5605"
   },
-  "onboarding.stepAi.local.tooltip": "Le modèle local est nettement plus bête que les modèles cloud, et il occupe environ 2 Go d''espace, plus un peu de RAM et de CPU à chaque utilisation.\nEn échange, aucune donnée ne quitte votre machine.\nCmdr s''efforce de livrer des mises à jour pour que vous puissiez utiliser le meilleur petit modèle disponible. Mais si vous voulez à la fois la confidentialité <em>et</em> un modèle correct, le mieux est de faire tourner votre propre serveur ollama et de le configurer avec l''option <strong>Oui, je veux l''IA</strong> ci-dessous.",
+  "onboarding.stepAi.local.tooltip": "Le modèle local est nettement plus bête que les modèles cloud, et il occupe environ 2 Go d’espace, plus un peu de RAM et de CPU à chaque utilisation.\nEn échange, aucune donnée ne quitte votre machine.\nCmdr s’efforce de livrer des mises à jour pour que vous puissiez utiliser le meilleur petit modèle disponible. Mais si vous voulez à la fois la confidentialité <em>et</em> un modèle correct, le mieux est de faire tourner votre propre serveur ollama et de le configurer avec l’option <strong>Oui, je veux l’IA</strong> ci-dessous.",
   "@onboarding.stepAi.local.tooltip": {
     "sourceHash": "c3fa36a"
   },
-  "onboarding.stepAi.local.note": "Le téléchargement du modèle local a démarré en arrière-plan. Vous pouvez terminer la prise en main maintenant ; la notification dans le coin vous tiendra au courant.",
+  "onboarding.stepAi.local.note": "Le téléchargement du modèle local a démarré en arrière-plan. Vous pouvez terminer la prise en main maintenant ; la notification dans le coin vous tiendra au courant.",
   "@onboarding.stepAi.local.note": {
     "sourceHash": "af89d60"
   },
@@ -303,23 +303,23 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "75c6d48"
   },
-  "onboarding.stepAi.missingKeyWarning": "Vous avez activé l''IA mais vous n''avez pas saisi de clé d''API. L''IA ne fonctionnera pas et vous verrez un avertissement. Corrigez cela ci-dessus.\n\n<strong>Cliquez à nouveau sur « {nextLabel} » pour ignorer ceci et continuer.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "Vous avez activé l’IA mais vous n’avez pas saisi de clé d’API. L’IA ne fonctionnera pas et vous verrez un avertissement. Corrigez cela ci-dessus.\n\n<strong>Cliquez à nouveau sur « {nextLabel} » pour ignorer ceci et continuer.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "3d66d11"
+    "sourceHash": "bdb8a08"
   },
-  "onboarding.stepAi.cloudConsentOffNote": "L''IA dans le cloud reste désactivée tant que vous ne l''autorisez pas. Vous pourrez le faire plus tard dans Réglages > IA.",
+  "onboarding.stepAi.cloudConsentOffNote": "L’IA dans le cloud reste désactivée tant que vous ne l’autorisez pas. Vous pourrez le faire plus tard dans Réglages > IA.",
   "@onboarding.stepAi.cloudConsentOffNote": {
     "sourceHash": "82d27b6"
   },
-  "onboarding.stepAi.off.label": "Merci, mais sans façon, pas d''IA pour moi",
+  "onboarding.stepAi.off.label": "Merci, mais sans façon, pas d’IA pour moi",
   "@onboarding.stepAi.off.label": {
     "sourceHash": "c2a8322"
   },
-  "onboarding.stepAi.off.help": "Cmdr fonctionne entièrement sans IA. Vous pourrez l''activer plus tard dans les Réglages.",
+  "onboarding.stepAi.off.help": "Cmdr fonctionne entièrement sans IA. Vous pourrez l’activer plus tard dans les Réglages.",
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
-  "onboarding.stepBeta.footer.start": "Commencer à utiliser Cmdr !",
+  "onboarding.stepBeta.footer.start": "Commencer à utiliser Cmdr !",
   "@onboarding.stepBeta.footer.start": {
     "sourceHash": "e29bbc7"
   },
@@ -327,19 +327,19 @@
   "@onboarding.stepBeta.footer.continue": {
     "sourceHash": "4024130"
   },
-  "onboarding.stepBeta.title": "Aidez à améliorer Cmdr !",
+  "onboarding.stepBeta.title": "Aidez à améliorer Cmdr !",
   "@onboarding.stepBeta.title": {
     "sourceHash": "6e8be73"
   },
-  "onboarding.stepBeta.greeting": "Bonjour, je suis <david>David</david> ! Je conçois Cmdr, et vous faites partie des toutes premières personnes à l''utiliser. Merci pour votre confiance ! ❤️",
+  "onboarding.stepBeta.greeting": "Bonjour, je suis <david>David</david> ! Je conçois Cmdr, et vous faites partie des toutes premières personnes à l’utiliser. Merci pour votre confiance ! ❤️",
   "@onboarding.stepBeta.greeting": {
     "sourceHash": "f7ade14"
   },
-  "onboarding.stepBeta.openBeta": "Cmdr est en bêta ouverte : il est globalement solide et utilisable, mais certaines parties sont encore brutes. Les badges <alpha></alpha> marquent les zones les plus en cours de développement. Vos retours m''aident à corriger les bugs et à prioriser les fonctionnalités.",
+  "onboarding.stepBeta.openBeta": "Cmdr est en bêta ouverte : il est globalement solide et utilisable, mais certaines parties sont encore brutes. Les badges <alpha></alpha> marquent les zones les plus en cours de développement. Vos retours m’aident à corriger les bugs et à prioriser les fonctionnalités.",
   "@onboarding.stepBeta.openBeta": {
     "sourceHash": "0dba196"
   },
-  "onboarding.stepBeta.checklist.title": "Liste de contrôle de la prise en main, 30 secondes par point :",
+  "onboarding.stepBeta.checklist.title": "Liste de contrôle de la prise en main, 30 secondes par point :",
   "@onboarding.stepBeta.checklist.title": {
     "sourceHash": "6c0fc62"
   },
@@ -355,9 +355,9 @@
   "@onboarding.stepBeta.checklist.alternativeTo": {
     "sourceHash": "c9b1e1e"
   },
-  "onboarding.stepBeta.checklist.alternativeToNote": "Tout en haut de la page, à côté du titre « Cmdr ». Ça aide les gens et Google à remarquer Cmdr !",
+  "onboarding.stepBeta.checklist.alternativeToNote": "Tout en haut de la page, à côté du titre « Cmdr ». Ça aide les gens et Google à remarquer Cmdr !",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "sourceHash": "ea4903a"
+    "sourceHash": "ee4aed4"
   },
   "onboarding.stepBeta.checklist.email": "Saisissez votre adresse e-mail <field></field> pour recevoir, très occasionnellement, des nouvelles et des questions",
   "@onboarding.stepBeta.checklist.email": {
@@ -371,19 +371,19 @@
   "@onboarding.stepBeta.checklist.emailMark": {
     "sourceHash": "1bf8647"
   },
-  "onboarding.stepBeta.analyticsLede": "Pour savoir ce qui fonctionne et ce qui ne fonctionne pas, pendant la bêta ouverte Cmdr envoie des statistiques d''usage : quelles fonctionnalités sont utilisées et à quelle fréquence, jamais rien provenant de vos fichiers.\nElles sont reliées à un identifiant aléatoire, pas à votre nom ni à votre e-mail.\nC''est activé pour le moment, et vous pouvez le désactiver à tout moment.",
+  "onboarding.stepBeta.analyticsLede": "Pour savoir ce qui fonctionne et ce qui ne fonctionne pas, pendant la bêta ouverte Cmdr envoie des statistiques d’usage : quelles fonctionnalités sont utilisées et à quelle fréquence, jamais rien provenant de vos fichiers.\nElles sont reliées à un identifiant aléatoire, pas à votre nom ni à votre e-mail.\nC’est activé pour le moment, et vous pouvez le désactiver à tout moment.",
   "@onboarding.stepBeta.analyticsLede": {
     "sourceHash": "edd95b4"
   },
-  "onboarding.stepBeta.analyticsTitle": "Envoyer des statistiques d''usage",
+  "onboarding.stepBeta.analyticsTitle": "Envoyer des statistiques d’usage",
   "@onboarding.stepBeta.analyticsTitle": {
     "sourceHash": "89b309e"
   },
-  "onboarding.stepBeta.analyticsCaption": "Notez que c''est ACTIVÉ par défaut pour encourager les gens à m''envoyer des données pendant la bêta.\nVous pouvez modifier ceci à tout moment dans les Réglages.",
+  "onboarding.stepBeta.analyticsCaption": "Notez que c’est ACTIVÉ par défaut pour encourager les gens à m’envoyer des données pendant la bêta.\nVous pouvez modifier ceci à tout moment dans les Réglages.",
   "@onboarding.stepBeta.analyticsCaption": {
     "sourceHash": "cfd1e86"
   },
-  "onboarding.stepBeta.crashReportsNote": "Les rapports d''incident sont eux aussi activés : si Cmdr s''arrête brutalement, il envoie la version de l''app, votre version de macOS et l''endroit où le code s''est arrêté.\nJamais vos fichiers.\nVous pouvez désactiver les deux dans les réglages quand vous voulez.",
+  "onboarding.stepBeta.crashReportsNote": "Les rapports d’incident sont eux aussi activés : si Cmdr s’arrête brutalement, il envoie la version de l’app, votre version de macOS et l’endroit où le code s’est arrêté.\nJamais vos fichiers.\nVous pouvez désactiver les deux dans les réglages quand vous voulez.",
   "@onboarding.stepBeta.crashReportsNote": {
     "sourceHash": "9be0be1"
   },
@@ -395,35 +395,35 @@
   "@onboarding.stepBeta.emailPlaceholder": {
     "sourceHash": "53e6cdc"
   },
-  "onboarding.stepBeta.signup.success": "Consultez votre boîte de réception pour confirmer votre adresse e-mail. Merci de votre aide !",
+  "onboarding.stepBeta.signup.success": "Consultez votre boîte de réception pour confirmer votre adresse e-mail. Merci de votre aide !",
   "@onboarding.stepBeta.signup.success": {
     "sourceHash": "b96010e"
   },
-  "onboarding.stepBeta.signup.failure": "Désolé, nous n''avons pas pu vous inscrire pour le moment. Réessayer ?",
+  "onboarding.stepBeta.signup.failure": "Désolé, nous n’avons pas pu vous inscrire pour le moment. Réessayer ?",
   "@onboarding.stepBeta.signup.failure": {
     "sourceHash": "0aac3a9"
   },
-  "onboarding.stepBeta.signup.rejected": "La liste de diffusion n''a pas accepté cette adresse. Vérifiez qu''il n''y a pas de faute de frappe, puis cliquez à nouveau sur Enregistrer.",
+  "onboarding.stepBeta.signup.rejected": "La liste de diffusion n’a pas accepté cette adresse. Vérifiez qu’il n’y a pas de faute de frappe, puis cliquez à nouveau sur Enregistrer.",
   "@onboarding.stepBeta.signup.rejected": {
     "sourceHash": "05ccee5"
   },
-  "onboarding.stepBeta.signup.unreachable": "Impossible de joindre le serveur d''inscription pour l''instant, vous n''êtes donc pas encore sur la liste. Votre adresse est enregistrée sur ce Mac : cliquez à nouveau sur Enregistrer dans une minute, ou à tout moment depuis Réglages › Mises à jour et confidentialité.",
+  "onboarding.stepBeta.signup.unreachable": "Impossible de joindre le serveur d’inscription pour l’instant, vous n’êtes donc pas encore sur la liste. Votre adresse est enregistrée sur ce Mac : cliquez à nouveau sur Enregistrer dans une minute, ou à tout moment depuis Réglages › Mises à jour et confidentialité.",
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "8036aad"
   },
-  "onboarding.stepBeta.emailNote": "Laissez votre adresse e-mail et je vous contacterai à l''occasion pour une question ou une mise à jour.\nL''adresse e-mail que vous saisissez ici est stockée uniquement sur votre Mac et n''est jamais reliée à vos statistiques d''usage : ce sont volontairement deux sous-systèmes distincts.",
+  "onboarding.stepBeta.emailNote": "Laissez votre adresse e-mail et je vous contacterai à l’occasion pour une question ou une mise à jour.\nL’adresse e-mail que vous saisissez ici est stockée uniquement sur votre Mac et n’est jamais reliée à vos statistiques d’usage : ce sont volontairement deux sous-systèmes distincts.",
   "@onboarding.stepBeta.emailNote": {
     "sourceHash": "f256066"
   },
-  "onboarding.stepBeta.terms.title": "Ah, et ceci aussi, s''il vous plaît",
+  "onboarding.stepBeta.terms.title": "Ah, et ceci aussi, s’il vous plaît",
   "@onboarding.stepBeta.terms.title": {
     "sourceHash": "f2a6e08"
   },
-  "onboarding.stepBeta.terms.lede": "C''est une obligation légale de l''avoir ici.",
+  "onboarding.stepBeta.terms.lede": "C’est une obligation légale de l’avoir ici.",
   "@onboarding.stepBeta.terms.lede": {
     "sourceHash": "c59e47e"
   },
-  "onboarding.stepBeta.terms.consent": "J''ai lu et j''accepte les <terms>conditions générales</terms>.",
+  "onboarding.stepBeta.terms.consent": "J’ai lu et j’accepte les <terms>conditions générales</terms>.",
   "@onboarding.stepBeta.terms.consent": {
     "sourceHash": "620a4b6"
   },
@@ -443,7 +443,7 @@
   "@onboarding.stepOptional.lede": {
     "sourceHash": "b1242c9"
   },
-  "onboarding.stepOptional.recommendedOn": "Recommandé : activé",
+  "onboarding.stepOptional.recommendedOn": "Recommandé : activé",
   "@onboarding.stepOptional.recommendedOn": {
     "sourceHash": "d91a6df"
   },
@@ -455,13 +455,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Demande d''accepter une fois le « Réseau local »",
+  "onboarding.stepOptional.networking.summary": "Demande d’accepter une fois le « Réseau local »",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "5006f53"
+    "sourceHash": "f49fbc6"
   },
-  "onboarding.stepOptional.networking.desc": "Avoir ceci <em>activé</em> vous permet de vous connecter à des serveurs SMB comme les partages réseau d''entreprise, un NAS domestique et autres.\nLe seul coût est une fenêtre d''autorisation macOS qui apparaît et vous demande d''autoriser le « Réseau local », et une autre pour « accepter les connexions entrantes ».\nLes deux fenêtres sont inoffensives, mais si vous ne savez pas ce que c''est, elles peuvent faire peur ou être agaçantes.",
+  "onboarding.stepOptional.networking.desc": "Quand c’est <em>activé</em>, vous pouvez vous connecter à des serveurs SMB comme les partages réseau d’entreprise, un NAS domestique et autres.\nLe seul coût est une fenêtre d’autorisation macOS qui apparaît et vous demande d’autoriser le « Réseau local », et une autre pour « accepter les connexions entrantes ».\nLes deux fenêtres sont inoffensives, mais si vous ne savez pas ce que c’est, elles peuvent faire peur ou être agaçantes.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "089707f"
+    "sourceHash": "c03c7df"
   },
   "onboarding.stepOptional.indexing.title": "Indexation du disque",
   "@onboarding.stepOptional.indexing.title": {
@@ -471,7 +471,7 @@
   "@onboarding.stepOptional.indexing.summary": {
     "sourceHash": "6413c6f"
   },
-  "onboarding.stepOptional.indexing.descIntro": "L''indexation du disque, c''est vraiment génial ! Elle vous apporte deux choses principales :",
+  "onboarding.stepOptional.indexing.descIntro": "L’indexation du disque, c’est vraiment génial ! Elle vous apporte deux choses principales :",
   "@onboarding.stepOptional.indexing.descIntro": {
     "sourceHash": "6b86a1f"
   },
@@ -483,7 +483,7 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Si vous désactivez ceci, vous n''obtenez que <code>{dirPlaceholder}</code> à la place des tailles.\nLe coût est d''environ 1 Go d''index sur votre disque pour quelques millions de fichiers, mais aucune utilisation supplémentaire de CPU ou de mémoire après les 2–3 premières minutes du premier démarrage de l''app, ou d''un démarrage après une longue période.\nC''est une fonctionnalité peu coûteuse au vu des bénéfices.",
+  "onboarding.stepOptional.indexing.descCost": "Si vous désactivez ceci, vous n’obtenez que <code>{dirPlaceholder}</code> à la place des tailles.\nLe coût est d’environ 1 Go d’index sur votre disque pour quelques millions de fichiers, mais aucune utilisation supplémentaire de CPU ou de mémoire après les 2–3 premières minutes du premier démarrage de l’app, ou d’un démarrage après une longue période.\nC’est une fonctionnalité peu coûteuse au vu des bénéfices.",
   "@onboarding.stepOptional.indexing.descCost": {
     "sourceHash": "0b60064"
   },
@@ -495,7 +495,7 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Si vous activez ceci, Cmdr effectue une toute petite requête réseau vers un serveur de licences central à chaque démarrage de l''app, plus une fois toutes les 24 heures, et vous obtenez toujours les dernières mises à jour.\nSi désactivé, vous conservez votre version actuelle, et zéro requête réseau automatisée (à l''exception des vérifications de licence périodiques, si vous disposez d''une licence commerciale).",
+  "onboarding.stepOptional.updates.desc": "Si vous activez ceci, Cmdr envoie une toute petite requête réseau vers un serveur de licences central à chaque démarrage de l’app, plus une fois toutes les 24 heures, et vous obtenez toujours les dernières mises à jour.\nSinon, vous gardez votre version actuelle, sans aucune requête réseau automatique (sauf les vérifications de licence périodiques, si vous avez une licence commerciale).",
   "@onboarding.stepOptional.updates.desc": {
     "sourceHash": "12b7f08"
   },
@@ -507,11 +507,11 @@
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Si vous activez ceci, Cmdr peut <strong>se connecter aux téléphones Android, Kindles, appareils photo</strong>, à certains lecteurs de musique et à tout autre appareil prenant en charge les protocoles appelés MTP ou PTP.\nLe coût, c''est que macOS veut <em>lui aussi</em> se connecter à ces appareils (et il n''y arrive généralement pas, c''est pourquoi vous ne pouvez pas simplement utiliser le Finder pour copier des photos depuis des téléphones Android), donc Cmdr doit suspendre ce processus macOS pendant son exécution.\nQuand vous quittez Cmdr, ce processus est poliment rétabli.",
+  "onboarding.stepOptional.mtp.desc": "Si vous activez ceci, Cmdr peut <strong>se connecter aux téléphones Android, Kindles, appareils photo</strong>, à certains lecteurs de musique et à tout autre appareil prenant en charge les protocoles appelés MTP ou PTP.\nLe coût, c’est que macOS veut <em>lui aussi</em> se connecter à ces appareils (et il n’y arrive généralement pas, c’est pourquoi vous ne pouvez pas simplement utiliser le Finder pour copier des photos depuis des téléphones Android), donc Cmdr doit suspendre ce processus macOS pendant son exécution.\nQuand vous quittez Cmdr, ce processus est poliment rétabli.",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },
-  "onboarding.cloudPicker.listAria": "Fournisseurs d''IA dans le cloud",
+  "onboarding.cloudPicker.listAria": "Fournisseurs d’IA dans le cloud",
   "@onboarding.cloudPicker.listAria": {
     "sourceHash": "9494a49"
   },
@@ -519,11 +519,11 @@
   "@onboarding.cloudSetup.title": {
     "sourceHash": "c10333a"
   },
-  "onboarding.cloudSetup.step.signup": "Inscrivez-vous sur <signupLink>{provider}</signupLink> (si vous n''avez pas de compte)",
+  "onboarding.cloudSetup.step.signup": "Inscrivez-vous sur <signupLink>{provider}</signupLink> (si vous n’avez pas de compte)",
   "@onboarding.cloudSetup.step.signup": {
     "sourceHash": "d89f1e1"
   },
-  "onboarding.cloudSetup.step.createKey": "Créez une clé d''API <keyLink>ici</keyLink>",
+  "onboarding.cloudSetup.step.createKey": "Créez une clé d’API <keyLink>ici</keyLink>",
   "@onboarding.cloudSetup.step.createKey": {
     "sourceHash": "5705da6"
   },
@@ -539,11 +539,11 @@
   "@onboarding.cloudSetup.step.lmStudioServer": {
     "sourceHash": "447957a"
   },
-  "onboarding.cloudSetup.hint.azureEndpoint": "Remplacez l''espace réservé dans l''adresse par le nom de votre ressource Azure OpenAI. Ce point de terminaison n''a pas besoin du paramètre api-version.",
+  "onboarding.cloudSetup.hint.azureEndpoint": "Remplacez l’espace réservé dans l’adresse par le nom de votre ressource Azure OpenAI. Ce point de terminaison n’a pas besoin du paramètre api-version.",
   "@onboarding.cloudSetup.hint.azureEndpoint": {
     "sourceHash": "b1d408e"
   },
-  "onboarding.cloudSetup.hint.azureModel": "Sur Azure, il s''agit du nom de votre déploiement, qui peut différer de celui du modèle qu''il exécute.",
+  "onboarding.cloudSetup.hint.azureModel": "Sur Azure, il s’agit du nom de votre déploiement, qui peut différer de celui du modèle qu’il exécute.",
   "@onboarding.cloudSetup.hint.azureModel": {
     "sourceHash": "e856224"
   },
@@ -551,27 +551,27 @@
   "@onboarding.cloudSetup.step.endpoint": {
     "sourceHash": "2578179"
   },
-  "onboarding.cloudSetup.step.endpointPlaceholder": "Exemple : https://api.example.com/v1",
+  "onboarding.cloudSetup.step.endpointPlaceholder": "Exemple : https://api.example.com/v1",
   "@onboarding.cloudSetup.step.endpointPlaceholder": {
     "sourceHash": "dbc7343"
   },
-  "onboarding.cloudSetup.step.pasteKey": "Collez votre clé d''API",
+  "onboarding.cloudSetup.step.pasteKey": "Collez votre clé d’API",
   "@onboarding.cloudSetup.step.pasteKey": {
     "sourceHash": "e35b296"
   },
-  "onboarding.cloudSetup.apiKeyAria": "Clé d''API",
+  "onboarding.cloudSetup.apiKeyAria": "Clé d’API",
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Exemple : sk-abc123…",
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "Exemple : sk-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
     "sourceHash": "9352883"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Exemple : sk-ant-abc123…",
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "Exemple : sk-ant-abc123…",
   "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
     "sourceHash": "89347d5"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "Clé d''API",
+  "onboarding.cloudSetup.apiKeyPlaceholder.generic": "Clé d’API",
   "@onboarding.cloudSetup.apiKeyPlaceholder.generic": {
     "sourceHash": "16f0ee4"
   },
@@ -583,7 +583,7 @@
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"
   },
-  "onboarding.cloudSetup.status.authError": "Cette clé n''a pas fonctionné",
+  "onboarding.cloudSetup.status.authError": "Cette clé n’a pas fonctionné",
   "@onboarding.cloudSetup.status.authError": {
     "sourceHash": "2f23f3b"
   },
@@ -595,7 +595,7 @@
   "@onboarding.cloudSetup.status.genericError": {
     "sourceHash": "ab827e3"
   },
-  "onboarding.cloudSetup.status.connected": "Connecté !",
+  "onboarding.cloudSetup.status.connected": "Connecté !",
   "@onboarding.cloudSetup.status.connected": {
     "sourceHash": "78ae377"
   },
@@ -607,7 +607,7 @@
   "@onboarding.cloudSetup.modelAria": {
     "sourceHash": "5e2c614"
   },
-  "onboarding.cloudSetup.modelPlaceholderExample": "Exemple : {model}",
+  "onboarding.cloudSetup.modelPlaceholderExample": "Exemple : {model}",
   "@onboarding.cloudSetup.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },
