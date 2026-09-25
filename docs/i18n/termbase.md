@@ -148,8 +148,8 @@ and allows `proseAccept` in prose. `isNameKey` in `apps/desktop/scripts/i18n-ter
 its visible English, first rule wins:
 
 1. `menu.*` is a name: it's the native menu.
-2. A sentence is prose: the visible English ends in `.` `!` `?` (closing quotes and brackets allowed after it), or
-   holds a sentence break (`. ` before a capital).
+2. A sentence is prose: the visible English ends in `.` `!` `?` (closing quotes and brackets allowed after it), or holds
+   a sentence break (`. ` before a capital).
 3. A fragment of at most four words is a name, wherever it sits: a tooltip reading "Close" names its button.
 4. A longer fragment is a name when the key's last segment is label-typed (`label`, `title`, `name`, `button`,
    `heading`, `tab`, `badge`, `aria`, or a camelCase `…Label`, `…Title`, `…Aria`, and so on), and prose otherwise.
@@ -231,10 +231,10 @@ Sections, each selected by the batch:
    leaving out generic English, brand words, and words fewer than three English keys use (a concept recurs). That line
    is how a missing concept ("offline") shows up as work instead of passing for settled.
 6. Terms in play: every concept whose `match` hits (and `notMatch` doesn't) a batch key's English. The sense, note, and
-   hit keys print once; then one line per language with chosen / accept / prose only / forms / avoid / note / confidence, the
-   `exceptions` for batch keys, and the `decision` heading, or "no ruling". Then up to eight `distinct` neighbors no key
-   hits, one line each (sense plus each language's chosen form), and only those whose `match` head word appears
-   somewhere in the batch's English: a neighbor the batch never mentions can't be confused with anything in it.
+   hit keys print once; then one line per language with chosen / accept / prose only / forms / avoid / note /
+   confidence, the `exceptions` for batch keys, and the `decision` heading, or "no ruling". Then up to eight `distinct`
+   neighbors no key hits, one line each (sense plus each language's chosen form), and only those whose `match` head word
+   appears somewhere in the batch's English: a neighbor the batch never mentions can't be confused with anything in it.
 7. Translation memory: per key, the nearest SHIPPED keys (at least one target has them), never batch keys. Same-parent
    siblings take up to half the slots (they share a dialog, so they share its voice), ranked by word overlap then
    catalog distance. The rest must share two content words with the key, or be a short label whose every word the key
@@ -259,8 +259,8 @@ Deterministic (no time, RNG, or model), about 0.3 s for a 40-key batch.
 - **Coverage drift is a WARN** (exit 1): for each ruling, every shipped key whose English matches the concept while its
   translation contains none of `chosen` / `accept` (plus `proseAccept` when the key is prose, § Name keys) and isn't in
   `exceptions`. Held to a per-locale count baseline in `apps/desktop/scripts/i18n-termbase-baseline.json` (`drift`): at
-  or under it, one line; past it, every drifting key. Local runs ratchet the number down and drop a locale that lost
-  its `terms.json`; a locale not listed is strict from its first `terms.json`. Same design as
+  or under it, one line; past it, every drifting key. Local runs ratchet the number down and drop a locale that lost its
+  `terms.json`; a locale not listed is strict from its first `terms.json`. Same design as
   `i18n-check-term-consistency.ts`'s `notYetReviewed`.
 - **`decisions.md` growth is a WARN** (exit 1): the same baseline file records each locale's `decisions.md` byte size
   (`decisionsBytes`), and a file past its number warns. Local runs ratchet it down to the current size, record a
@@ -273,15 +273,15 @@ Deterministic (no time, RNG, or model), about 0.3 s for a 40-key batch.
 
 ### `pnpm i18n:check-mechanics` (`apps/desktop/scripts/i18n-check-mechanics.ts`, Go check `desktop-i18n-mechanics`)
 
-- **Schema problems are an ERROR** (exit 3): a malformed `mechanics.json` (§ `<tag>/mechanics.json` schema). That
-  locale isn't scanned until it's fixed.
+- **Schema problems are an ERROR** (exit 3): a malformed `mechanics.json` (§ `<tag>/mechanics.json` schema). That locale
+  isn't scanned until it's fixed.
 - **Typography findings are a WARN** (exit 1), one per key and rule, in catalog VALUES: a straight `"` (every declared
   locale), a quotation mark outside the declared pairs and apostrophes, `...`, and a hit of a `spacing` or `hedges`
   pattern.
 - It reads what the reader sees: ICU values through the runtime's parser (a doubled `''` is one apostrophe; a
   placeholder, `#`, or plural/select category is never text; each branch is scanned on its own), a raw family
-  (`errors.*`, `menu.*`) literally with each `{token}` an insert. Markdown code spans (a command typed verbatim) and link
-  targets are skipped.
+  (`errors.*`, `menu.*`) literally with each `{token}` an insert. Markdown code spans (a command typed verbatim) and
+  link targets are skipped.
 - Held to a per-locale count baseline in `apps/desktop/scripts/i18n-mechanics-baseline.json`, the same ratchet-down
   design as termbase drift. A locale not listed is strict; `node scripts/i18n-check-mechanics.ts --adopt <tag>` records
   a newly declared locale at its current count, once (it refuses a locale that already has a number), so a locale can

@@ -18,8 +18,8 @@ launch boundary, the llama-server fetch, and the type-drift check.
   already-running alert), read by `menu_t`. `pnpm intl:native-strings`, guarded by `native-strings-fresh`
 - **`gen-boot-guard-lib.ts`**: the old-WebKit block screen's translated strings, spliced into the app shell by
   `svelte.config.js` at config-load time (no CLI, nothing committed). `src/lib/utils/DETAILS.md` § Old-WebKit boot guard
-- **`i18n-*.ts`**: catalog lib, locale checks, pseudolocale/skeleton generators, key sync, and `pnpm i18n:brief`
-  (`docs/i18n/termbase.md`)
+- **`i18n-*.ts`**: catalog lib, locale checks, generators, key sync, `pnpm i18n:brief`, and the termbase/mechanics
+  checks (`docs/i18n/termbase.md`)
 - **`gen-analytics-defaults.ts`** (+ `-lib.ts`): the per-version settings-defaults manifest the dashboard resolves
   absent config keys against (`pnpm analytics:defaults`, guarded by `settings-defaults`); DETAILS § "The defaults
   manifest"

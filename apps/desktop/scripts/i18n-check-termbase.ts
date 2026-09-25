@@ -532,7 +532,11 @@ function ratchet(
  * @returns the locales whose baseline moved
  */
 export function shrinkWrap(outcome: TermbaseOutcome, baseline: Baseline, path: string): string[] {
-  const drift = ratchet(baseline.drift, new Map(outcome.locales.map(({ locale, drift }) => [locale, drift.length])), false)
+  const drift = ratchet(
+    baseline.drift,
+    new Map(outcome.locales.map(({ locale, drift }) => [locale, drift.length])),
+    false,
+  )
   const sizes = new Map(
     outcome.locales.flatMap(({ locale, decisionsBytes }) =>
       decisionsBytes === undefined ? [] : [[locale, decisionsBytes] as const],

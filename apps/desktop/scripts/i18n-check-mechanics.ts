@@ -65,8 +65,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
 // Code points on purpose: a quote mark is one, and none is a multi-code-point grapheme.
-const isOneCharacter = (value: unknown): value is string =>
-  typeof value === 'string' && Array.from(value).length === 1
+const isOneCharacter = (value: unknown): value is string => typeof value === 'string' && Array.from(value).length === 1
 
 /** Schema-checks one locale's `mechanics.json`. Returns one line per problem. */
 export function validateMechanics(raw: unknown, tag: string): string[] {

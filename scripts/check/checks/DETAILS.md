@@ -1901,26 +1901,27 @@ doubles as production code.
   `apps/desktop/scripts/i18n-mechanics-baseline.json` on catalog values breaking the locale's declared typography: a
   straight `"`, an undeclared quote mark, `...`, or a hit of its spacing or hedge patterns. A locale with no file is
   skipped, an overlay inherits its base's, and `--adopt <tag>` records a newly declared locale once. Same exit contract
-  and `hygiene` CI step as i18n-termbase; `docs/i18n/termbase.md`). Those locale checks share one classification of every locale as a full translation or
-  an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`; rule table in `docs/guides/i18n.md` §
-  Overlay catalogs). The Go side deliberately doesn't mirror it: `nonEnLocaleCount` counts catalog dirs for the success
-  lines and nothing more, because classifying needs CLDR script data (`zh-Hant` is NOT an overlay of Simplified `zh`)
-  that Node's `Intl` has and Go doesn't, and an approximate second copy would drift exactly where it matters. i18n-terms
-  goes one step further and echoes the script's own last line as its success message, so the untriaged-divergence total
-  is stated once, by the layer that computed it. Then i18n-citations (ERROR, desktop-i18n-doc-citations; the only check
-  pointed at the translator GUIDES rather than the catalogs: the per-locale guides and termbase files justify a term by
-  citing a message key as evidence, and a citation orphaned by a rename hands the next translator false authority, so
-  every backticked dotted token whose first segment is a real catalog namespace must name part of a real English key. §
-  "The doc-citation check" for the namespace gate, the matcher, and the two allowlist sections), bundle-size (warn-only;
-  builds a production-shaped frontend into a private dir and compares its total against a committed baseline, since the
-  app embeds this output so every byte ships in each silent update and is parsed before first paint), vite-build-target
-  (ERROR; `apps/desktop/vite.config.js` must pin `build.target` to a `safari<major>`, because Vite's default is a MOVING
-  "widely available" baseline: leave it unset and a routine Vite major bump raises the browser floor above the
-  `minimumSystemVersion` the bundle claims, silently, with a green build. It parses the config structurally (comments
-  blanked, string literals masked, then brace-matched) so the comment explaining the pin can neither fake one nor hide
-  one, and so a `target` under `server` or `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER
-  bound against the plist: mapping a macOS version to "the WebKit we must assume" is a product call, not a fact), knip,
-  type-drift, tests, e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
+  and `hygiene` CI step as i18n-termbase; `docs/i18n/termbase.md`). Those locale checks share one classification of
+  every locale as a full translation or an overlay (`resolveLocaleSource` in `apps/desktop/scripts/i18n-catalog-lib.ts`;
+  rule table in `docs/guides/i18n.md` § Overlay catalogs). The Go side deliberately doesn't mirror it:
+  `nonEnLocaleCount` counts catalog dirs for the success lines and nothing more, because classifying needs CLDR script
+  data (`zh-Hant` is NOT an overlay of Simplified `zh`) that Node's `Intl` has and Go doesn't, and an approximate second
+  copy would drift exactly where it matters. i18n-terms goes one step further and echoes the script's own last line as
+  its success message, so the untriaged-divergence total is stated once, by the layer that computed it. Then
+  i18n-citations (ERROR, desktop-i18n-doc-citations; the only check pointed at the translator GUIDES rather than the
+  catalogs: the per-locale guides and termbase files justify a term by citing a message key as evidence, and a citation
+  orphaned by a rename hands the next translator false authority, so every backticked dotted token whose first segment
+  is a real catalog namespace must name part of a real English key. § "The doc-citation check" for the namespace gate,
+  the matcher, and the two allowlist sections), bundle-size (warn-only; builds a production-shaped frontend into a
+  private dir and compares its total against a committed baseline, since the app embeds this output so every byte ships
+  in each silent update and is parsed before first paint), vite-build-target (ERROR; `apps/desktop/vite.config.js` must
+  pin `build.target` to a `safari<major>`, because Vite's default is a MOVING "widely available" baseline: leave it
+  unset and a routine Vite major bump raises the browser floor above the `minimumSystemVersion` the bundle claims,
+  silently, with a green build. It parses the config structurally (comments blanked, string literals masked, then
+  brace-matched) so the comment explaining the pin can neither fake one nor hide one, and so a `target` under `server`
+  or `optimizeDeps` doesn't answer for `build`. It deliberately enforces no UPPER bound against the plist: mapping a
+  macOS version to "the WebKit we must assume" is a product call, not a fact), knip, type-drift, tests,
+  e2e-linux-typecheck, e2e-linux (slow), e2e-playwright (slow)
 - **Desktop / Docs**: pluralize-noun, third-party-notices (regenerate-and-diff `THIRD-PARTY-NOTICES.md` from
   `Cargo.lock` + `pnpm-lock.yaml` via cargo-about and `pnpm licenses list`, plus the hand-kept vendored credits of §
   "Vendored credits"; the accepted-license list is derived from `deny.toml` rather than duplicated, the output is pinned

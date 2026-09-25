@@ -193,4 +193,5 @@ worked example; `en-AU/style.md` shows how a second overlay points at a sibling 
 
 Copy the whole `_template/` folder to `<tag>/` (`style.md`, an empty `terms.json`, a `mechanics.json` stub, and the
 `decisions.md` and `review-queue.md` stubs) and fill in [`style.md`](_template/style.md), digest included, and
-`mechanics.json` before the first translation pass. These files are working notes, not catalog data: they are never loaded by the app and never affect the build.
+`mechanics.json` before the first translation pass. These files are working notes, not catalog data: they are never
+loaded by the app and never affect the build.
