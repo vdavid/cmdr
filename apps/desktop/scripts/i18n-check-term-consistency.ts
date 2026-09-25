@@ -112,7 +112,8 @@ const EDGE_RUN = new RegExp(`^[${EDGE_PUNCTUATION}]+|[${EDGE_PUNCTUATION}]+$`, '
  *
  * ICU keys double their apostrophes (`doesn''t`) and the raw `errors.*` family
  * does not, so the same sentence in the two families is byte-different and would
- * otherwise read as a divergence. Punctuation WRAPPING the term is noise for this
+ * otherwise read as a divergence. The straight and the curly apostrophe are one
+ * too (`couldn't` and `couldn’t`), read as the curly one English writes. Punctuation WRAPPING the term is noise for this
  * question too: a label and the same label with a colon are one term, and so are
  * `Copied`, `Copié !`, and `¡Copiado!`. It's stripped from BOTH ends, since where
  * a script puts its marks is a property of the script, not of the term. CASE is
@@ -128,7 +129,7 @@ const EDGE_RUN = new RegExp(`^[${EDGE_PUNCTUATION}]+|[${EDGE_PUNCTUATION}]+$`, '
  */
 export function normalizeForComparison(value: string, key: string): string {
   const unescaped = isRawKey(key) ? value : value.replace(/''/g, "'")
-  return unescaped.replace(/\s+/gu, ' ').replace(EDGE_RUN, '')
+  return unescaped.replace(/'/g, '’').replace(/\s+/gu, ' ').replace(EDGE_RUN, '')
 }
 
 /**

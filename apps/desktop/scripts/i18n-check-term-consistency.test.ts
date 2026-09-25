@@ -21,10 +21,14 @@ const cat = (messages: Record<string, string>): Catalog => ({ messages, metadata
 
 describe('normalizeForComparison', () => {
   it('unescapes the ICU doubled apostrophe so an ICU key and a raw key compare equal', () => {
-    expect(normalizeForComparison("doesn''t", 'fileOperations.a')).toBe("doesn't")
+    expect(normalizeForComparison("doesn''t", 'fileOperations.a')).toBe('doesn’t')
+  })
+  it('reads the straight and the curly apostrophe as one, so the two spellings group together', () => {
+    expect(normalizeForComparison("couldn''t", 'a.b')).toBe(normalizeForComparison('couldn’t', 'a.c'))
+    expect(normalizeForComparison("couldn't", 'errors.a')).toBe(normalizeForComparison('couldn’t', 'a.c'))
   })
   it('leaves a raw errors.* value alone (raw keys never double their apostrophes)', () => {
-    expect(normalizeForComparison("doesn't", 'errors.a')).toBe("doesn't")
+    expect(normalizeForComparison("doesn''t", 'errors.a')).toBe('doesn’’t')
   })
   it('ignores a trailing ellipsis, in either shape', () => {
     expect(normalizeForComparison('Loading…', 'a.b')).toBe(normalizeForComparison('Loading...', 'a.b'))
