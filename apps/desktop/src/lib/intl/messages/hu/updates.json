@@ -80,7 +80,7 @@
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },
-  "updates.status.ready": "A(z) v{next} frissítés kész. Az életbe léptetéshez indítsd újra.",
+  "updates.status.ready": "A v{next} frissítés kész. Az életbe léptetéshez indítsd újra.",
   "@updates.status.ready": {
     "sourceHash": "2c226ff"
   }

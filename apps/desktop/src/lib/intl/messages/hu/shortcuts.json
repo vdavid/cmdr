@@ -64,15 +64,15 @@
   "@shortcuts.scope.onboarding": {
     "sourceHash": "a2198f4"
   },
-  "shortcuts.conflict.reservedByMacOs": "A(z) {combo} kombinációt a macOS foglalja ({command}), így nem jut el a Cmdrhez. Válassz másik kombinációt.",
+  "shortcuts.conflict.reservedByMacOs": "{combo}: ezt a macOS foglalja ({command}), így nem jut el a Cmdrhez. Válassz másik kombinációt.",
   "@shortcuts.conflict.reservedByMacOs": {
     "sourceHash": "4aad26f"
   },
-  "shortcuts.conflict.fixedKey": "A(z) {combo} egy rögzített billentyű a Cmdrben ({command}), és nem rendelhető át. Válassz másik kombinációt.",
+  "shortcuts.conflict.fixedKey": "{combo}: ez rögzített billentyű a Cmdrben ({command}), és nem rendelhető át. Válassz másik kombinációt.",
   "@shortcuts.conflict.fixedKey": {
     "sourceHash": "2c2c76f"
   },
-  "shortcuts.conflict.systemShortcut": "A(z) {combo} kombinációt általában a macOS használja ({label}), ezért lehet, hogy soha nem jut el a Cmdrhez. Itt szabadíthatod fel: Rendszerbeállítások > Billentyűzet.",
+  "shortcuts.conflict.systemShortcut": "{combo}: ezt általában a macOS használja ({label}), ezért lehet, hogy soha nem jut el a Cmdrhez. Itt szabadíthatod fel: Rendszerbeállítások > Billentyűzet.",
   "@shortcuts.conflict.systemShortcut": {
     "sourceHash": "9ef197f"
   },
@@ -175,7 +175,7 @@
   "@shortcuts.section.removeFromOther": {
     "sourceHash": "f154164"
   },
-  "shortcuts.section.alreadyBound": "A(z) <b>{combo}</b> már ehhez van rendelve: „{command}”",
+  "shortcuts.section.alreadyBound": "<b>{combo}</b> már ehhez van rendelve: „{command}”",
   "@shortcuts.section.alreadyBound": {
     "sourceHash": "5c29fcb"
   },

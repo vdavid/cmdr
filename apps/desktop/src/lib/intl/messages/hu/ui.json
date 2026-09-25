@@ -44,7 +44,7 @@
   "@ui.copyBox.copied": {
     "sourceHash": "ea61bc1"
   },
-  "ui.shortcutChip.customizeAria": "A(z) {commandName} billentyűparancs testreszabása",
+  "ui.shortcutChip.customizeAria": "Billentyűparancs testreszabása: {commandName}",
   "@ui.shortcutChip.customizeAria": {
     "sourceHash": "a1d00b2"
   },
@@ -64,7 +64,7 @@
   "@ui.toast.age": {
     "sourceHash": "6dcfed0"
   },
-  "ui.loadingIcon.finalizing": "Mind a(z) {countText} {count, plural, one {fájl} other {fájl}} betöltve. Rendezés, nézet előkészítése…",
+  "ui.loadingIcon.finalizing": "Az összes {count, plural, one {fájl} other {fájl}} ({countText}) betöltve. Rendezés, nézet előkészítése…",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "0de5a42"
   },
@@ -80,7 +80,7 @@
   "@ui.loadingIcon.loading": {
     "sourceHash": "ba3bbbe"
   },
-  "ui.loadingIcon.cancelHint": "Nyomd meg a(z) <key></key> billentyűt a megszakításhoz és visszalépéshez",
+  "ui.loadingIcon.cancelHint": "A megszakításhoz és visszalépéshez nyomd meg: <key></key>",
   "@ui.loadingIcon.cancelHint": {
     "sourceHash": "400dd28"
   },

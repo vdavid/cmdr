@@ -56,7 +56,7 @@
   "@mtp.ptpcameradDialog.inUseBy": {
     "sourceHash": "5b97c25"
   },
-  "mtp.ptpcameradDialog.inUseGeneric": "Egy másik folyamat kizárólagos hozzáféréssel rendelkezik az eszközhöz.",
+  "mtp.ptpcameradDialog.inUseGeneric": "Egy másik folyamat kizárólagosan használja az eszközt.",
   "@mtp.ptpcameradDialog.inUseGeneric": {
     "sourceHash": "cfba635"
   },
@@ -64,7 +64,7 @@
   "@mtp.ptpcameradDialog.explanation": {
     "sourceHash": "65b6ee3"
   },
-  "mtp.ptpcameradDialog.helpText": "Ez a parancs futás közben folyamatosan leállítja a ptpcameradot. Ha végeztél, nyomd meg a(z) <key>Ctrl+C</key> billentyűkombinációt a Terminalban a leállításához.",
+  "mtp.ptpcameradDialog.helpText": "Ez a parancs futás közben folyamatosan leállítja a ptpcameradot. Ha végeztél, nyomd meg a <key>Ctrl+C</key> billentyűkombinációt a Terminalban a leállításához.",
   "@mtp.ptpcameradDialog.helpText": {
     "sourceHash": "85b5060"
   },
@@ -80,7 +80,7 @@
   "@mtp.deviceFallbackName": {
     "sourceHash": "8ba7a69"
   },
-  "mtp.error.exclusiveAccess": "Egy másik folyamat kizárólagos hozzáféréssel rendelkezik{blocking, select, none {} other { (foglalja: {blocking})}}",
+  "mtp.error.exclusiveAccess": "Egy másik folyamat kizárólagosan használja az eszközt{blocking, select, none {} other { (foglalja: {blocking})}}",
   "@mtp.error.exclusiveAccess": {
     "sourceHash": "a81f306"
   },

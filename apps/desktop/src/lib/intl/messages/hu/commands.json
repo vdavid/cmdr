@@ -764,9 +764,9 @@
   "@commands.paletteClose.label": {
     "sourceHash": "2e75050"
   },
-  "commands.handler.favoriteAdded": "A(z) „{name}” hozzáadva a kedvencekhez",
+  "commands.handler.favoriteAdded": "„{name}” hozzáadva a kedvencekhez",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
   "commands.handler.favoriteAddFailed": "Nem sikerült hozzáadni azt a mappát a kedvencekhez. Megpróbálod újra?",
   "@commands.handler.favoriteAddFailed": {
@@ -816,7 +816,7 @@
   "@commands.handler.openTerminalHere.openSettings": {
     "sourceHash": "ca381c1"
   },
-  "commands.handler.openTerminalHere.appMissing": "A(z) {app} már nincs telepítve, ezért ez a Terminalban nyílt meg.",
+  "commands.handler.openTerminalHere.appMissing": "{app} már nincs telepítve, ezért ez a Terminalban nyílt meg.",
   "@commands.handler.openTerminalHere.appMissing": {
     "sourceHash": "70726d6"
   },

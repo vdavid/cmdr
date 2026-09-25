@@ -31,8 +31,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 
 ## Wording
 
-- **`{verb}` / `{gerund}` in `errors.write.*`** arrive as English words at runtime (`operationVerbMap` isn't localized),
-  so the operation verb shows in English inside a Hungarian sentence until the map is localized.
 - **AI tool chips** (`askCmdr.tool.*`): the verbal-noun / `-va/-ve` pair is a novel construction; `inspectFile`'s
   `Fájlok átnézése` / `Fájlok átnézve` only hints at looking inside. `nothingToSuggest.done`
   (`Nem talált semmi említésre méltót`) is the family's one finite verb: a negative done state has no clean participle.
@@ -43,9 +41,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **`errorReporter.autoSentToast.viewOrAddNotes`** drops the word `jelentés` for width;
   **`errorReporter.amend.description`**'s second clause (`és odakerül a többi mellé, ami már a csapatnál van`) carries
   the English's casual image, and other renderings would do as well.
-- **FDA naming vs prose**: strings that NAME the setting say `Teljes hozzáférés a lemezhez`; the FDA step's running
-  prose (`onboarding.stepFda.revoked.noAccess` and siblings) still says `teljes lemezhozzáférés`. Whether to sweep the
-  prose too.
 - **`fileOperations.delete.cloudOnlineOnly*`**: drafted without a human check.
 - **`mtp.connectedToast.title`** says `Csatlakozva ehhez: {deviceName}` while network states say `Kapcsolódva`; a USB
   device may rightly keep `csatlakoz-`.

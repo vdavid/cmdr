@@ -39,18 +39,20 @@ The must-know rules; the rest of this file elaborates them.
   Acronyms and silent-final names take a hyphen (`AI-t`, `NAS-t`, `adb-t`, `Homebrew-ban`, `USB-kábel`). A name whose
   last letter doesn't spell a Hungarian sound gets a base word instead (`az Android platform tools csomag`,
   `az AlternativeTo oldalán`, `az Escape billentyűvel`).
-- **Placeholders never take a suffix or a guessed article.** Dodges, in order of preference: a colon slot
-  (`itt: {path}`, `ide: {destination}`, `Letöltve: {fileName}`); a postposition (`{duration} óta`, `{name} szerint`,
-  `{secondsText} másodperc múlva`); a base noun that carries the suffix (`a(z) {volumeName} meghajtón`,
-  `a(z) „{name}” szervert`, `{host} kulcsát`); the possessor slot (`{name} szerkesztése`, `{name} fotói`). An article in
-  front of a name is `A(z) „{name}”` (quotes only around a name the user typed or owns; a brand or app name is bare
-  `a(z) {app}`). A value with one possible first sound gets the real article (`az **{name}**` for iCloud Drive). In
-  front of a number prefer `Az összes X ({N})` over `Mind a(z) N X`. A duration before `ideig` takes `-nyi`.
+- **No hedged grammar.** The article (`a`/`az`) and every case ending follow the first sound and vowels of the word they
+  touch, and Cmdr doesn't know an inserted value's. So ❌ never `a(z)`, `-(e)t`, `-ban/-ben`, a suffix on an insert
+  (`{path}-ban`), or a guessed `a {name}`. Dodges: a colon slot (`itt: {path}`, `ehhez: „{name}”`,
+  `Letöltve: {fileName}`); the type first, the name after a colon (`Elfelejted ezt a szervert: „{name}”?`); the name
+  leading its sentence bare (`„{name}” már létezik…`, `{volumeName} leválasztódott`, as GNOME does); a postposition
+  (`{duration} óta`, `{name} szerint`); the possessor slot (`{name} szerkesztése`); a parenthesis
+  (`A port ({port}) foglalt`). Quotes go around a name the user typed or owns, never a brand or app name. A known value
+  gets its real article (`az **{name}**` for iCloud Drive). "All N X" is `Az összes X ({N})`. A duration before `ideig`
+  takes `-nyi`.
 - **Plurals**: CLDR `one` / `other`. The noun after a numeral stays SINGULAR in both branches (`3 fájl`, never
   `3 fájlok`), and a numeral subject takes a singular verb; a later clause may go plural.
-- **Punctuation**: sentence case; quotes `„…”`; the single character `…` everywhere; `%` tight against the number
-  (`42%`); en dash for ranges. Settings paths keep English's separator (`>` or `›`) and follow `itt:`. RAW families
-  (`menu.*`, `errors.*`) use single apostrophes, ICU families double them.
+- **Typography** (`mechanics.json`): quotes `„…”`, nested `»…«`, the rare apostrophe `’`; the single character `…`; `%`
+  tight against the number (`42%`); no space before `! ? : ;`; en dash for ranges; sentence case. Settings paths keep
+  English's separator (`>` or `›`) and follow `itt:`.
 - **Numbers**: multipliers spelled out (`négyszer lassabb`, never `4x`); numbers, sizes, and dates come from the
   formatter; `{duration}` is never localized, so it only stands before a postposition.
 - **Top traps** (details in `terms.json`):
@@ -127,34 +129,12 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **A natív menük a Finder szóhasználatát követik, nem a katalógusét.** Ahol a macOS-nak van megfelelője, az nyer
   (`Nézet`, `Saját`, `Kijelölés törlése`, `Méretezés`), mert a felhasználó a Cmdr menüsorát közvetlenül a Finderé
   mellett látja. Bizonyítékok és kivételek: `decisions.md` § Natív menük.
-- **Agglutination + vowel harmony makes suffixed placeholders dangerous.** Hungarian attaches case suffixes that must
-  harmonize with the word's vowels (`-ban`/`-ben`, `-ról`/`-ről`, `-hoz`/`-hez`/`-höz`) and sometimes double a final
-  consonant. A `{path}` or `{name}` whose value is unknown can't take a correct suffix ("{path}-ban" may be wrong).
-  Restructure so a placeholder isn't suffixed: put it after a postposition or in a neutral slot ("itt: {path}", not
-  "{path}-ban").
-- **Definite vs indefinite conjugation and the `a`/`az` article** depend on the following word, so phrasing around a
-  placeholder needs care; prefer constructions that don't hinge on the inserted value's first sound. **When an article
-  genuinely has to precede a name placeholder, write `A(z) „{name}”`** — the `a(z)` house form plus `„…”` quotes, both
-  macOS Tier 1 (`A(z) „^0” elemet…`) and the catalog's majority. ❌ Never a bare `A {name}`: it renders "A alma.txt" on
-  every vowel-initial name. Nothing is needed after a colon or in a possessive (`Letöltve: {fileName}`). Evidence and
-  the families that were corrected to it: `decisions.md` § A megszakított visszagörgetés eredményértesítése.
-  - **Quotes only around a NAME the user typed or owns.** A brand or provider placeholder takes bare `a(z) {name}`
-    (`a(z) **{name}** kezeli`): the bold or the sentence already delimits it, and `„Dropbox”` reads as scare quotes.
-  - **A placeholder with ONE possible value gets the real article, never the hedge.** `errors.provider.iCloud.*`'s
-    `{name}` is always `iCloud Drive`, so it's `az **{name}**`. The `a(z)` form answers an UNKNOWN first sound; where
-    nothing is unknown it's just noise.
-  - **Read the whole string: one key often has two or three article sites.** The `errors.provider.appBased.*` lines
-    carry `a(z) **{name}**`, `a(z) {app} appot`, and `a(z) {name} állapotoldalát`. Fixing the first and moving on leaves
-    a half-corrected family, which is worse than either end state.
-  - **In front of a NUMBER the article varies too, so ❌ never a bare `a {countText}`.** It follows the numeral's
-    pronunciation: `a három`, `a négy`, but `az öt`, `a száz` but `az ezer`. In running prose the hedge is the answer
-    and two shipped keys use it (`fileExplorer.imageIndex.folder.allIndexed`, `ui.loadingIcon.finalizing`); don't sweep
-    those.
-  - **For the phrase "all N X" specifically, prefer `Az összes X ({N})` over `Mind a(z) N X`.** macOS Hungarian words it
-    that way (`Az összes lemez (^0) kiadásához…`), and it's strictly better: the article now agrees with `összes`, a
-    word we choose, so nothing hinges on the runtime value at all. Worth the swap wherever the count can move to a
-    parenthetical or behind a colon, and near-mandatory in a short button, where the hedge is most visible. Worked case:
-    `decisions.md` § A megszakított visszagörgetés eredményértesítése.
+- **Why no hedge works in Hungarian.** Case suffixes harmonize with the vowels of the word they attach to
+  (`-ban`/`-ben`, `-hoz`/`-hez`/`-höz`) and the article follows its first sound (`a három`, `az öt`; `a beszámoló.pdf`,
+  `az alma.txt`), so neither can be written for a value Cmdr doesn’t know, and `a(z)` or `-ban/-ben` only moves the
+  guess onto the reader. The digest lists the dodges; `mechanics.json` flags the hedges. Read the whole string: one key
+  often has two or three article sites (`errors.provider.appBased.*`), and a half-fixed family reads worse than either
+  end state.
 - **Sentence case is native** (Hungarian doesn't capitalize common nouns, days, or months), so the app's sentence-case
   rule applies cleanly. Don't capitalize the word after a colon unless it's a proper noun.
 - **Suffix the brand WITHOUT a hyphen: `Cmdrt`, `Cmdrben`, `Cmdrrel`, `Cmdrnek`, `Cmdrtől`, `Cmdrre`.** `Cmdr` is
@@ -175,8 +155,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
 - **Neither GitHub nor AlternativeTo ships a Hungarian UI**, so "use the site's own verb" has no Tier-1 answer for
   `star` or `like` — a Hungarian user sees the English buttons. Microsoft terminology decides both (`csillagoz`,
   `kedvel`); evidence in `decisions.md` § A bevezető átírt lépései.
-- **Quotation marks: `„…”`** (low opening, high closing) is the standard Hungarian form. macOS Finder uses it too (e.g.
-  „^0”). Avoid English `"…"`.
+- **Quotation marks: `„…”`**, nested `»…«`: the AkH pair, and macOS Finder quotes with `„^0”`. `mechanics.json` declares
+  them and `i18n-mechanics` checks them.
 - **`{duration}` is NOT locale-formatted**, unlike numbers, sizes, and dates: `formatDuration()` in
   `apps/desktop/src/lib/units/duration.ts` always emits digits plus Latin unit letters (`45s`, `2m 30s`, `1h 5m`). So a
   duration placeholder can never take a Hungarian suffix (there's no reliable harmony for it, and the abbreviation isn't
@@ -201,23 +181,9 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   1. terminológiai alapelv (fordítsd, amit az Apple fordít) érvényes rájuk. A CÍMKÉK az Apple-éi, a MONDAT a miénk:
      tegezünk és köznyelvi maradunk (`vedd ki a „Zárolt” pipát`), nem másoljuk az Apple önöző hivatalnyelvét
      (`szüntesse meg a … kijelöltségét`). Bizonyítékok: `decisions.md` § A macOS-panelnevek magyarul.
-- **Ugyanaz az angol mondat KÉT különböző magyar alakot kaphat, ha a burkoló szöveg eltér.** A `errors.eject.unexpected`
-  és a `errors.mutation.unexpected` angolul betű szerint azonos, magyarul mégsem az: az előbbi a
-  `Nem sikerült kiadni: …` burkoló után áll, ahol a settled `Valami nem sikerült` közvetlen szóismétlés lenne. Ilyenkor
-  a settled alak marad az alapeset, az eltérést pedig a `decisions.md`-ben indokoljuk, forrással.
-- **Ha két angol szöveg csak IGEIDŐBEN tér el, a magyar se hozzon be új szerkezetet.** A
-  `errorReporter.dialog.detailsToggle` (`Mi kerül elküldésre`) és a testvére, a `errorReporter.amend.detailsToggle`
-  (`Mi került elküldésre`) egymás mellett él ugyanabban a funkcióban; a `kerül + -ásra/-ésre` szerkezet megtartása
-  varratmentessé teszi a párt, még ha önmagában szebb lenne is egy `-va/-ve` vagy cselekvő alak. Bizonyíték és a többi
-  amend-döntés: `decisions.md` § A már elküldött jelentés kiegészítése.
 - **Menübe irányításkor a `-ból/-ből` alak a természetes**: `küldj új jelentést a Súgó menüből`. A macOS ugyanezt önöző
   felszólításként írja (`válassza az Apple menü > Rendszerbeállítások elemet`), a menü NEVE onnan jön, a MONDAT a miénk,
   tehát tegező marad.
-- **Ha két funkció ANGOLJA betű szerint azonos, a magyarnak is egynek kell lennie** (`desktop-i18n-term-consistency`),
-  és ilyenkor a szállított alak nyer, még ha egy újabb kulcscsalád szebb keretet találna is. Ha a kényszerített alak
-  csak a család EGY sorát érintené, az egész családot igazítsd hozzá: az olvasó egy felsorolásban látja őket egyszerre,
-  a két funkció eltérését viszont soha. Eset és érvelés: `decisions.md` § A megszakított visszagörgetés
-  eredményértesítése.
 - **Egy PDF oldala `oldal`, soha nem `lap`**: a `lap` a `tab` foglalt szava. Összetételben kötőjellel: `PDF-oldalak`.
   Fotó esetén a hely `hol készült` / `készítési helye`, a gép adatai `kameraadatok`. Forrás: `decisions.md` § Belenézés
   a fájlokba.
@@ -275,12 +241,10 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('hu')`; mat
   mappája csak a Findert, az AppKitet és a System Settingset tartalmazza; a Dock saját menüje a
   `/System/Library/CoreServices/Dock.app/Contents/Resources/hu.lproj/DockMenus.strings` fájlban él
   (`plutil -convert json`), és pontosan az a felület, amelybe a `menu.dock.*` elemek kerülnek. Onnan jön az appnevek
-  mintája: **puszta név + névszói cselekvés, névelő nélkül** (`%@ elrejtése`, `Cmdr megnyitása`); az
-  `A(z) „%@” megnyitása` hedge csak FÁJLNÉVRE való, ahol a kezdőhang ismeretlen. Bizonyítékok: `decisions.md` § A Dock
-  helyi menüje.
+  mintája: **puszta név + névszói cselekvés, névelő nélkül** (`%@ elrejtése`, `Cmdr megnyitása`). Bizonyítékok:
+  `decisions.md` § A Dock helyi menüje.
 - **⚠️ ❌ A `Programok mappa` soha nem jön vissza**: az a régi Mac OS X-es név, nem a mai macOS-é. Semmilyen ellenőrzés
   nem fogja el a visszaesést, mert az érintett kulcsok angolja nem betű szerint azonos.
-- Record case-by-case rulings here so they aren't relitigated.
 
 ## Open terms (resolved by evidence, not by David)
 
@@ -297,7 +261,7 @@ Commander). The rest wait in `review-queue.md`.
 - `../concepts.json`: the shared, language-agnostic concept registry (sense, `match` patterns, confusable neighbors);
   `concepts-proposed.json` holds this locale's proposals until they merge into it.
 - `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
-- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `decisions.md`: distilled rulings ("X over Y because Z"), one section per feature, headings citing their keys.
 - `review-queue.md`: open questions for a native reviewer.
 
 Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section

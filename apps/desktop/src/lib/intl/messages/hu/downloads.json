@@ -11,11 +11,11 @@
   "@downloads.toast.learnIntro": {
     "sourceHash": "3a06888"
   },
-  "downloads.toast.inAppHint": "Az appban: nyomd meg a(z) <chip>{key}</chip> billentyűt az ideugráshoz",
+  "downloads.toast.inAppHint": "Az appban ide ugrasz ezzel: <chip>{key}</chip>",
   "@downloads.toast.inAppHint": {
     "sourceHash": "5b70d9c"
   },
-  "downloads.toast.globalHint": "<em>Bármelyik</em> appban (globális parancs): nyomd meg a(z) <chip>{key}</chip> billentyűt",
+  "downloads.toast.globalHint": "<em>Bármelyik</em> appban (globális parancs) nyomd meg: <chip>{key}</chip>",
   "@downloads.toast.globalHint": {
     "sourceHash": "785e1f3"
   },
@@ -83,7 +83,7 @@
   "@downloads.fda.openSystemSettings": {
     "sourceHash": "18196b3"
   },
-  "downloads.warnToast.message": "A(z) {binding} paranccsal bárhonnan a legutóbbi letöltésedhez ugorhatsz. Bekapcsolva hagyod?",
+  "downloads.warnToast.message": "Ezzel a paranccsal bárhonnan a legutóbbi letöltésedhez ugorhatsz: {binding}. Bekapcsolva hagyod?",
   "@downloads.warnToast.message": {
     "sourceHash": "b174604"
   },
@@ -135,7 +135,7 @@
   "@downloads.shortcutRow.addModifier": {
     "sourceHash": "28a5ba2"
   },
-  "downloads.toggleDescription.bound": "Nyomd meg a(z) {binding} kombinációt bármelyik appból a legutóbbi letöltésedhez ugráshoz.",
+  "downloads.toggleDescription.bound": "Bármelyik appból a legutóbbi letöltésedhez ugrasz ezzel: {binding}.",
   "@downloads.toggleDescription.bound": {
     "sourceHash": "be43b35"
   },

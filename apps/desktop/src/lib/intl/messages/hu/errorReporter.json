@@ -3,7 +3,7 @@
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "Ez elküldi a Cmdr legutóbbi naplófájljait a csapatnak, hogy kijavíthassuk, ami elromlott. A naplók a gépeden lesznek kitakarva: a fájlútvonalak, gépnevek, IP-címek és e-mailek mind eltávolításra kerülnek küldés előtt.",
+  "errorReporter.dialog.description": "Ez elküldi a Cmdr legutóbbi naplófájljait a csapatnak, hogy kijavíthassuk, ami elromlott. A naplókat még a gépeden kitakarjuk: a fájlútvonalakat, gépneveket, IP-címeket és e-maileket küldés előtt mind eltávolítjuk.",
   "@errorReporter.dialog.description": {
     "sourceHash": "dd11284"
   },

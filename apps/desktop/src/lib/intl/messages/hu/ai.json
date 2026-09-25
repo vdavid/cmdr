@@ -439,7 +439,7 @@
   },
   "ai.secretError.keychainBody": "{op, select, save {Nyisd meg a Kulcskarika-elérés appot, és nézd meg a „Cmdr” bejegyzést, vagy töröld, majd próbáld újra a mentést.} other {Nyisd meg a Kulcskarika-elérés appot, keresd meg a „Cmdr” bejegyzést, és adj hozzáférést, vagy töröld, majd add meg újra a kulcsodat.}}",
   "@ai.secretError.keychainBody": {
-    "sourceHash": "2a0fe5e"
+    "sourceHash": "8f1380e"
   },
   "ai.secretError.keyringTitle": "{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést}}",
   "@ai.secretError.keyringTitle": {

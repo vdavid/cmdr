@@ -429,7 +429,7 @@
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "sourceHash": "03fabd6"
   },
-  "fileExplorer.network.browser.removeHostConfirm": "Eltávolítod a(z) {hostName} gépet a szerverlistából?",
+  "fileExplorer.network.browser.removeHostConfirm": "Eltávolítod ezt a gépet a szerverlistából: {hostName}?",
   "@fileExplorer.network.browser.removeHostConfirm": {
     "sourceHash": "8ecdf1a"
   },
@@ -469,7 +469,7 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "A(z) „{shareName}” megosztás nem található itt: {hostName}",
+  "fileExplorer.network.share.notFound": "Nem található „{shareName}” nevű megosztás itt: {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
@@ -613,27 +613,27 @@
   "@fileExplorer.clipboard.cutReady": {
     "sourceHash": "846d8af"
   },
-  "fileExplorer.clipboard.copyFromDevice": "A vágólap nem tud fájlokat átvinni erről az eszközről. A(z) {copyKey} billentyűvel másolhatod őket.",
+  "fileExplorer.clipboard.copyFromDevice": "A vágólap nem tud fájlokat átvinni erről az eszközről. Másold át őket ezzel: {copyKey}.",
   "@fileExplorer.clipboard.copyFromDevice": {
     "sourceHash": "4948031"
   },
-  "fileExplorer.clipboard.moveFromDevice": "A vágólap nem tud fájlokat átvinni erről az eszközről. A(z) {moveKey} billentyűvel helyezheted át őket.",
+  "fileExplorer.clipboard.moveFromDevice": "A vágólap nem tud fájlokat átvinni erről az eszközről. Helyezd át őket ezzel: {moveKey}.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "sourceHash": "e0d12fe"
   },
-  "fileExplorer.clipboard.copyFromServer": "A vágólap nem tud fájlokat átvinni erről a szerverről. A(z) {copyKey} billentyűvel másolhatod őket.",
+  "fileExplorer.clipboard.copyFromServer": "A vágólap nem tud fájlokat átvinni erről a szerverről. Másold át őket ezzel: {copyKey}.",
   "@fileExplorer.clipboard.copyFromServer": {
     "sourceHash": "a1a1dce"
   },
-  "fileExplorer.clipboard.moveFromServer": "A vágólap nem tud fájlokat átvinni erről a szerverről. A(z) {moveKey} billentyűvel helyezheted át őket.",
+  "fileExplorer.clipboard.moveFromServer": "A vágólap nem tud fájlokat átvinni erről a szerverről. Helyezd át őket ezzel: {moveKey}.",
   "@fileExplorer.clipboard.moveFromServer": {
     "sourceHash": "50e6502"
   },
-  "fileExplorer.clipboard.copyFromUnknown": "Ezek a fájlok nem kerülhetnek a vágólapra. A(z) {copyKey} billentyűvel másolhatod őket.",
+  "fileExplorer.clipboard.copyFromUnknown": "Ezek a fájlok nem kerülhetnek a vágólapra. Másold át őket ezzel: {copyKey}.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "sourceHash": "659d6e0"
   },
-  "fileExplorer.clipboard.moveFromUnknown": "Ezek a fájlok nem kerülhetnek a vágólapra. A(z) {moveKey} billentyűvel helyezheted át őket.",
+  "fileExplorer.clipboard.moveFromUnknown": "Ezek a fájlok nem kerülhetnek a vágólapra. Helyezd át őket ezzel: {moveKey}.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "sourceHash": "6ae2091"
   },
@@ -673,11 +673,11 @@
   "@fileExplorer.edit.timedOut": {
     "sourceHash": "70d283f"
   },
-  "fileExplorer.clipboard.copyToDevice": "A(z) {copyKey} billentyűvel másolhatsz fájlokat erre az eszközre.",
+  "fileExplorer.clipboard.copyToDevice": "Erre az eszközre ezzel másolhatsz fájlokat: {copyKey}.",
   "@fileExplorer.clipboard.copyToDevice": {
     "sourceHash": "f56d0c4"
   },
-  "fileExplorer.clipboard.copyToServer": "A(z) {copyKey} billentyűvel másolhatsz fájlokat erre a szerverre.",
+  "fileExplorer.clipboard.copyToServer": "Erre a szerverre ezzel másolhatsz fájlokat: {copyKey}.",
   "@fileExplorer.clipboard.copyToServer": {
     "sourceHash": "f6002a0"
   },
@@ -713,19 +713,19 @@
   "@fileExplorer.readOnly.volumeTitle": {
     "sourceHash": "e2d3bf1"
   },
-  "fileExplorer.readOnly.renameMessage": "Ez egy csak olvasható kötet. Az átnevezés itt nem lehetséges.",
+  "fileExplorer.readOnly.renameMessage": "Ez a kötet csak olvasható. Itt nem tudsz átnevezni.",
   "@fileExplorer.readOnly.renameMessage": {
     "sourceHash": "2f68994"
   },
-  "fileExplorer.readOnly.mkdirMessage": "Ez egy csak olvasható kötet. Mappák létrehozása itt nem lehetséges.",
+  "fileExplorer.readOnly.mkdirMessage": "Ez a kötet csak olvasható. Itt nem tudsz mappát létrehozni.",
   "@fileExplorer.readOnly.mkdirMessage": {
     "sourceHash": "01957f0"
   },
-  "fileExplorer.readOnly.mkfileMessage": "Ez egy csak olvasható kötet. Fájlok létrehozása itt nem lehetséges.",
+  "fileExplorer.readOnly.mkfileMessage": "Ez a kötet csak olvasható. Itt nem tudsz fájlt létrehozni.",
   "@fileExplorer.readOnly.mkfileMessage": {
     "sourceHash": "c5c28e2"
   },
-  "fileExplorer.readOnly.deleteMessage": "Ez egy csak olvasható kötet. Fájlok törlése itt nem lehetséges.",
+  "fileExplorer.readOnly.deleteMessage": "Ez a kötet csak olvasható. Itt nem tudsz fájlokat törölni.",
   "@fileExplorer.readOnly.deleteMessage": {
     "sourceHash": "965a635"
   },
@@ -741,9 +741,9 @@
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
   },
-  "fileExplorer.readOnly.deviceMessage": "A(z) „{name}” csak olvasható. Másolhatsz róla fájlokat, de rá nem.",
+  "fileExplorer.readOnly.deviceMessage": "„{name}” csak olvasható. Másolhatsz róla fájlokat, de rá nem.",
   "@fileExplorer.readOnly.deviceMessage": {
-    "sourceHash": "039488f"
+    "sourceHash": "5582a47"
   },
   "fileExplorer.readOnly.gitPortalTitle": "Csak olvasható git portál",
   "@fileExplorer.readOnly.gitPortalTitle": {
@@ -769,21 +769,21 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. A(z) „{name}” megtartotta a nevét.",
+  "fileExplorer.rename.chainKeptOriginalName": "{reason}. „{name}” megtartotta a nevét.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "5b5e6ce"
+    "sourceHash": "638394d"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. A(z) „{name}” megtartotta a nevét, és még {others, plural, one {egy másik fájl} other {{othersText} másik fájl}} is.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. „{name}” megtartotta a nevét, és még {others, plural, one {egy másik fájl} other {{othersText} másik fájl}} is.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "7b23e8e"
+    "sourceHash": "be35bc8"
   },
-  "fileExplorer.rename.unconfirmed": "Nem sikerült megerősíteni, hogy a(z) „{name}” átneveződött. Lehet, hogy a kötet lassú, így az átnevezés attól még sikerülhetett.",
+  "fileExplorer.rename.unconfirmed": "Nem sikerült megerősíteni, hogy „{name}” átneveződött. Lehet, hogy a kötet lassú, így az átnevezés attól még sikerülhetett.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d43e419"
+    "sourceHash": "bcea9d0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Nem sikerült megerősíteni, hogy a(z) „{name}” és még {others, plural, one {egy másik fájl} other {{othersText} másik fájl}} átneveződött. Lehet, hogy a kötet lassú, így az átnevezések attól még sikerülhettek.",
+  "fileExplorer.rename.unconfirmedAndOthers": "Nem sikerült megerősíteni, hogy „{name}” és még {others, plural, one {egy másik fájl} other {{othersText} másik fájl}} átneveződött. Lehet, hogy a kötet lassú, így az átnevezések attól még sikerülhettek.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "1258eb3"
+    "sourceHash": "c64e665"
   },
   "fileExplorer.columns.name": "Név",
   "@fileExplorer.columns.name": {
@@ -950,7 +950,7 @@
   },
   "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commit}} előrébb, {behind, plural, one {{behindText} commit} other {{behindText} commit}} lemaradva ehhez képest: „{vs}”",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "2eba558"
+    "sourceHash": "6a24049"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Megcímkézett commit: {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -962,11 +962,11 @@
   },
   "fileExplorer.git.tooltip.stashedOnBranch": "Ezen az ágon készült: „{branch}”",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "770565f"
+    "sourceHash": "5a1ad8d"
   },
   "fileExplorer.git.tooltip.worktreeOnBranch": "Ez az ág van kicsekkolva: „{branch}”",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "5036eb7"
+    "sourceHash": "4941fa5"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Levált állapot itt: {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
@@ -998,7 +998,7 @@
   },
   "fileExplorer.dateTooltip.lastMoved": "Utoljára áthelyezve („hozzáadva”)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "sourceHash": "450ebc0"
+    "sourceHash": "1366405"
   },
   "fileExplorer.dateTooltip.lastModified": "Utoljára módosítva",
   "@fileExplorer.dateTooltip.lastModified": {
@@ -1028,7 +1028,7 @@
   "@fileExplorer.imageIndex.file.excluded": {
     "sourceHash": "1f68cee"
   },
-  "fileExplorer.imageIndex.folder.allIndexed": "Mind a(z) {totalText} {total, plural, one {kép} other {kép}} indexelve",
+  "fileExplorer.imageIndex.folder.allIndexed": "Az összes {total, plural, one {kép} other {kép}} ({totalText}) indexelve",
   "@fileExplorer.imageIndex.folder.allIndexed": {
     "sourceHash": "c19fe12"
   },
@@ -1048,7 +1048,7 @@
   "@fileExplorer.imageIndex.drive.indexing": {
     "sourceHash": "23d351d"
   },
-  "fileExplorer.imageIndex.drive.done": "Ezen a meghajtón mind a(z) {totalText} {total, plural, one {kép} other {kép}} indexelve van.",
+  "fileExplorer.imageIndex.drive.done": "Ezen a meghajtón az összes {total, plural, one {kép} other {kép}} ({totalText}) indexelve van.",
   "@fileExplorer.imageIndex.drive.done": {
     "sourceHash": "0f4f795"
   },
@@ -1088,7 +1088,7 @@
   "@fileExplorer.selectionInfo.noSelection": {
     "sourceHash": "beea8ac"
   },
-  "fileExplorer.selectionInfo.noSelectionOfMatches": "Nincs kijelölés, {shownText} a {count, plural, one {{totalText} találatból} other {{totalText} találatból}}.",
+  "fileExplorer.selectionInfo.noSelectionOfMatches": "Nincs kijelölés, {shownText}/{count, plural, one {{totalText} találat} other {{totalText} találat}}.",
   "@fileExplorer.selectionInfo.noSelectionOfMatches": {
     "sourceHash": "4063c2b"
   },
@@ -1144,9 +1144,9 @@
   "@fileExplorer.renameConflict.title": {
     "sourceHash": "92ae292"
   },
-  "fileExplorer.renameConflict.description": "A(z) „{name}” már létezik ebben a mappában. Mit szeretnél tenni?",
+  "fileExplorer.renameConflict.description": "„{name}” már létezik ebben a mappában. Mit szeretnél tenni?",
   "@fileExplorer.renameConflict.description": {
-    "sourceHash": "ded53e8"
+    "sourceHash": "e3f2532"
   },
   "fileExplorer.renameConflict.yours": "{name} (a tiéd)",
   "@fileExplorer.renameConflict.yours": {
@@ -1186,7 +1186,7 @@
   },
   "fileExplorer.extensionChange.description": "Biztosan megváltoztatod a kiterjesztést erről: „.{oldExt}” erre: „.{newExt}”? Lehet, hogy a fájl legközelebb más appban nyílik meg.",
   "@fileExplorer.extensionChange.description": {
-    "sourceHash": "d0f428b"
+    "sourceHash": "ef7ac59"
   },
   "fileExplorer.extensionChange.alwaysAllow": "Mindig engedélyezd a kiterjesztés módosítását",
   "@fileExplorer.extensionChange.alwaysAllow": {
@@ -1206,7 +1206,7 @@
   },
   "fileExplorer.quickLookHint.finderComparison": "Ha a Finderből jössz, ez szokatlan lehet, mert a Finder a <space></space> billentyűre egy „Gyorsnézet” műveletet indít.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "2089192"
+    "sourceHash": "56d3119"
   },
   "fileExplorer.quickLookHint.quickView": "A Cmdrben a gyorsnézetet a <key></key> billentyűvel indíthatod. (A <key></key> egyébként a Finderben is működik!)",
   "@fileExplorer.quickLookHint.quickView": {
@@ -1318,7 +1318,7 @@
   },
   "fileExplorer.navigation.connectionTooltipSystem": "Rendszerkapcsolat használatban. A gyorsabb hozzáférésért használd a „Közvetlen kapcsolat a gyorsabb hozzáférésért” menüpontot.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "sourceHash": "0cbfa05"
+    "sourceHash": "e4ac697"
   },
   "fileExplorer.navigation.connectDirectly": "Közvetlen kapcsolat a gyorsabb hozzáférésért",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1344,9 +1344,9 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "0fb0ca3"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "A Cmdr újra fel tudja használni a macOS által „{displayName}” számára már elmentett jelszót. Megjelenik egy rendszerüzenet, amely a kulcskarikához való hozzáférést kéri. Ez így van rendjén, ezért kattints az Engedélyezésre.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "A Cmdr újra fel tudja használni azt a jelszót, amelyet a macOS már elmentett ehhez: „{displayName}”. Megjelenik egy rendszerüzenet, amely a kulcskarikához való hozzáférést kéri. Ez így van rendjén, ezért kattints az Engedélyezésre.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "6bb2c1d"
+    "sourceHash": "334f7de"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Felhasználod a mentett jelszót?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1412,7 +1412,7 @@
   "@fileExplorer.navigation.forgetServerConfirmTitle": {
     "sourceHash": "e43c85d"
   },
-  "fileExplorer.navigation.forgetServerConfirm": "Elfelejted a(z) „{name}” szervert? A Cmdr bontja a kapcsolatot, és leveszi a listáról. A fájljaid a szerveren maradnak.",
+  "fileExplorer.navigation.forgetServerConfirm": "Elfelejted ezt a szervert: „{name}”? A Cmdr bontja a kapcsolatot, és leveszi a listáról. A fájljaid a szerveren maradnak.",
   "@fileExplorer.navigation.forgetServerConfirm": {
     "sourceHash": "6a43f67"
   },
@@ -1424,15 +1424,15 @@
   "@fileExplorer.navigation.forgetSecretConfirmTitle": {
     "sourceHash": "ed68566"
   },
-  "fileExplorer.navigation.forgetSecretConfirm": "Elfelejted a(z) „{name}” mentett jelszavát? A Cmdr a következő kapcsolódáskor újra elkéri.",
+  "fileExplorer.navigation.forgetSecretConfirm": "Elfelejted a mentett jelszót ehhez: „{name}”? A Cmdr a következő kapcsolódáskor újra elkéri.",
   "@fileExplorer.navigation.forgetSecretConfirm": {
     "sourceHash": "300d043"
   },
-  "fileExplorer.navigation.forgetSecretRefusedToast": "A Cmdr nem tudta elfelejteni a(z) „{name}” mentett jelszavát.",
+  "fileExplorer.navigation.forgetSecretRefusedToast": "A Cmdr nem tudta elfelejteni a mentett jelszót ehhez: „{name}”.",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "sourceHash": "940eb59"
   },
-  "fileExplorer.navigation.forgetSecretNoneToast": "A(z) „{name}” szervernek nem volt mentett jelszava.",
+  "fileExplorer.navigation.forgetSecretNoneToast": "Nem volt mentett jelszó ehhez: „{name}”.",
   "@fileExplorer.navigation.forgetSecretNoneToast": {
     "sourceHash": "3d40a09"
   },
@@ -1580,7 +1580,7 @@
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "sourceHash": "e7ac9b4"
   },
-  "fileExplorer.navigation.driveIndex.refusedDisconnected": "A(z) {name} le van választva. Csatlakoztasd újra, majd kapcsold be az indexelést.",
+  "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} le van választva. Csatlakoztasd újra, majd kapcsold be az indexelést.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "sourceHash": "0cf83a1"
   },
@@ -1604,11 +1604,11 @@
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "sourceHash": "e9adbcc"
   },
-  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "A meghajtó indexelése ki van kapcsolva a Beállításokban, ezért a(z) {name} továbbra sem lesz indexelve. Kapcsold be itt: Indexelés > Meghajtó indexelése.",
+  "fileExplorer.navigation.driveIndex.refusedIndexingOff": "A meghajtó indexelése ki van kapcsolva a Beállításokban, ezért {name} továbbra sem lesz indexelve. Kapcsold be itt: Indexelés > Meghajtó indexelése.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
     "sourceHash": "ce0d45c"
   },
-  "fileExplorer.navigation.driveIndex.driveLeaving": "A(z) {name} leválasztása folyamatban van, ezért a Cmdr úgy hagyta az indexét, ahogy volt. Ha a meghajtó csatlakoztatva marad, próbáld újra egy pillanat múlva.",
+  "fileExplorer.navigation.driveIndex.driveLeaving": "{name} leválasztása folyamatban van, ezért a Cmdr úgy hagyta az indexét, ahogy volt. Ha a meghajtó csatlakoztatva marad, próbáld újra egy pillanat múlva.",
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
     "sourceHash": "99f19f9"
   },

@@ -22,11 +22,11 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "A kijelölésed egy része csak online érhető el. Ha ezek a Kukába kerülnének, előbb <strong>le kellene tölteni őket</strong>. Ezért a Cmdr itt csak a teljes kijelölés <strong>törlését</strong> ajánlja fel. A Kukában nem marad másolat, de a felhőszolgáltatások a sajátjukban általában 30 napig őrzik a törölt fájlokat. Kattints a „Törlés” gombra, ha ez így rendben van, különben zárd be ezt az ablakot, és vagy tedd offline is elérhetővé az összes fájlt, vagy töröld a csak online elérhető fájlok kijelölését.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "Minden, amit kijelöltél, csak online érhető el. Ha a Kukába kerülne, előbb <strong>le kellene tölteni</strong>. Ezért a Cmdr itt csak a teljes kijelölés <strong>törlését</strong> ajánlja fel. A Kukában nem marad másolat, de a felhőszolgáltatások a sajátjukban általában 30 napig őrzik a törölt fájlokat. Kattints a „Törlés” gombra, ha ez így rendben van, különben zárd be ezt az ablakot, és előbb tedd offline is elérhetővé ezeket a fájlokat.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "A kijelölés mégis tartalmaz csak online elérhető tartalmat, ezért a lenti gomb most a „Törlés” műveletet ajánlja fel. Olvasd el a fenti megjegyzést, majd nyomd meg újra, ha ez így rendben van.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
@@ -233,7 +233,7 @@
   "@fileOperations.transferDialog.destPathAria": {
     "sourceHash": "b7c2fd2"
   },
-  "fileOperations.transferDialog.spaceInfo": "{free} szabad a(z) {total} méretből",
+  "fileOperations.transferDialog.spaceInfo": "{free} szabad, összesen {total}",
   "@fileOperations.transferDialog.spaceInfo": {
     "sourceHash": "a46cd4e"
   },
@@ -243,7 +243,7 @@
   },
   "fileOperations.transferDialog.smbNativeNote": "Ez a megosztás a rendszerkapcsolatot használja. A megszakítás késhet. A gyorsabb átvitelhez és a megbízható megszakításhoz használd a kötetválasztóban a „Közvetlen kapcsolat a gyorsabb hozzáférésért” menüpontot.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "cfec439"
+    "sourceHash": "60af535"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Ez a mappa még nem létezik. A Cmdr létrehozza a másolás során.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -277,7 +277,7 @@
   "@fileOperations.transferDialog.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.transferDialog.hardlinkNote": "<written></written> kerül kiírásra. A forrás <ondisk></ondisk> a lemezen – a többlet hardlinkelt fájlokból adódik, amelyek nem maradhatnak összelinkelve a meghajtók között.",
+  "fileOperations.transferDialog.hardlinkNote": "A Cmdr <written></written> adatot ír ki. A forrás <ondisk></ondisk> a lemezen – a többlet hardlinkelt fájlokból adódik, amelyek nem maradhatnak összelinkelve a meghajtók között.",
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
@@ -365,17 +365,17 @@
   "@fileOperations.transferDialog.foldersPart": {
     "sourceHash": "9bd56b2"
   },
-  "fileOperations.transferDialog.pathErrorSubfolder": "A(z) „{name}” nem {verb, select, copy {másolható} other {helyezhető át}} a saját almappájába",
+  "fileOperations.transferDialog.pathErrorSubfolder": "„{name}” nem {verb, select, copy {másolható} other {helyezhető át}} a saját almappájába",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "4ad1eaf"
+    "sourceHash": "815204a"
   },
-  "fileOperations.transferDialog.pathErrorAlreadyThere": "A(z) „{name}” már ezen a helyen van",
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "„{name}” már ezen a helyen van",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
-    "sourceHash": "1030a7a"
+    "sourceHash": "1bf762e"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "Az archívum nevének \".zip\"-re kell végződnie.",
+  "fileOperations.transferDialog.pathErrorNotZip": "Az archívum nevének „.zip” végződésűnek kell lennie.",
   "@fileOperations.transferDialog.pathErrorNotZip": {
-    "sourceHash": "c85c6f8"
+    "sourceHash": "7700864"
   },
   "fileOperations.transferDialog.confirmCopy": "Másolás",
   "@fileOperations.transferDialog.confirmCopy": {
@@ -645,7 +645,7 @@
   "@fileOperations.transferProgress.rollbackTooltipStopAndMoveBack": {
     "sourceHash": "193c682"
   },
-  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Minden fájl már a célhelyen van, így az áthelyezés visszagörgetése már nem lehetséges. A Mégsem viszont még leállítja a Cmdrt, mielőtt eltávolítja a többi eredetit.",
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Minden fájl már a célhelyen van, így a Cmdr már nem tudja visszagörgetni az áthelyezést. A Mégsem viszont még leállítja a Cmdrt, mielőtt eltávolítja a többi eredetit.",
   "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
     "sourceHash": "5f8b044"
   },
@@ -785,7 +785,7 @@
   "@fileOperations.cancelRollback.leftBehind": {
     "sourceHash": "fb28a31"
   },
-  "fileOperations.cancelRollback.reason.drift.named": "A(z) „{name}” változatlan maradt: módosult, miután a Cmdr odatette.",
+  "fileOperations.cancelRollback.reason.drift.named": "„{name}” változatlan maradt: módosult, miután a Cmdr odatette.",
   "@fileOperations.cancelRollback.reason.drift.named": {
     "sourceHash": "e227f3b"
   },
@@ -793,7 +793,7 @@
   "@fileOperations.cancelRollback.reason.drift.counted": {
     "sourceHash": "233b2f5"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.named": "A(z) „{name}” változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.",
+  "fileOperations.cancelRollback.reason.unverifiable.named": "„{name}” változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "29c32b9"
   },
@@ -801,7 +801,7 @@
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
     "sourceHash": "e40696b"
   },
-  "fileOperations.cancelRollback.reason.spotTaken.named": "A(z) „{name}” változatlan maradt: már valami más van ott, ahonnan jött.",
+  "fileOperations.cancelRollback.reason.spotTaken.named": "„{name}” változatlan maradt: már valami más van ott, ahonnan jött.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
     "sourceHash": "5e38d8d"
   },
@@ -809,7 +809,7 @@
   "@fileOperations.cancelRollback.reason.spotTaken.counted": {
     "sourceHash": "a55ac9a"
   },
-  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "A(z) „{name}” mappa változatlan maradt: már van benne valami.",
+  "fileOperations.cancelRollback.reason.folderNotEmpty.named": "„{name}” változatlan maradt: a mappában már van valami.",
   "@fileOperations.cancelRollback.reason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
@@ -817,7 +817,7 @@
   "@fileOperations.cancelRollback.reason.folderNotEmpty.counted": {
     "sourceHash": "d2c9f56"
   },
-  "fileOperations.cancelRollback.reason.failed.named": "A(z) „{name}” visszagörgetése nem sikerült. Lehet, hogy a meghajtója nincs csatlakoztatva, vagy csak olvasható.",
+  "fileOperations.cancelRollback.reason.failed.named": "Nem sikerült visszagörgetni: „{name}”. Lehet, hogy a meghajtója nincs csatlakoztatva, vagy csak olvasható.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "sourceHash": "5c9d51d"
   },
@@ -825,7 +825,7 @@
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "sourceHash": "92c8b00"
   },
-  "fileOperations.cancelRollback.stagedLeftover.named": "A(z) „{name}” eltávolítása nem sikerült: ez egy hiányos másolat, amely a célhelyen maradt. Nyugodtan törölheted, a Cmdr pedig egy későbbi átvitel során eltávolítja onnan.",
+  "fileOperations.cancelRollback.stagedLeftover.named": "Nem sikerült eltávolítani: „{name}”. Ez egy hiányos másolat, amely a célhelyen maradt. Nyugodtan törölheted, a Cmdr pedig egy későbbi átvitel során eltávolítja onnan.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
     "sourceHash": "4aeaddc"
   },
@@ -833,7 +833,7 @@
   "@fileOperations.cancelRollback.stagedLeftover.counted": {
     "sourceHash": "becfef5"
   },
-  "fileOperations.leftovers.stagingFolderKept": "A Cmdr egy félbemaradt áthelyezés fájljait találta a(z) {volumeName} meghajtón, és a helyükön hagyta őket, egy rejtett, „{folderName}” nevű mappában.",
+  "fileOperations.leftovers.stagingFolderKept": "A Cmdr egy félbemaradt áthelyezés fájljait találta ezen a meghajtón: {volumeName}. A helyükön hagyta őket, egy rejtett, „{folderName}” nevű mappában.",
   "@fileOperations.leftovers.stagingFolderKept": {
     "sourceHash": "fd848b8"
   },
@@ -865,11 +865,11 @@
   "@fileOperations.archivePassword.retryTitle": {
     "sourceHash": "dd30abb"
   },
-  "fileOperations.archivePassword.message": "A(z) <archive>{name}</archive> jelszóval védett. Add meg a jelszót a feloldásához.",
+  "fileOperations.archivePassword.message": "<archive>{name}</archive> jelszóval védett. Add meg a jelszót a feloldásához.",
   "@fileOperations.archivePassword.message": {
     "sourceHash": "ba28841"
   },
-  "fileOperations.archivePassword.retryMessage": "Ez a jelszó nem oldotta fel a(z) <archive>{name}</archive> fájlt. Próbáld meg újra.",
+  "fileOperations.archivePassword.retryMessage": "Ez a jelszó nem oldotta fel ezt a fájlt: <archive>{name}</archive>. Próbáld meg újra.",
   "@fileOperations.archivePassword.retryMessage": {
     "sourceHash": "88ef11a"
   },
@@ -887,7 +887,7 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {A mappa neve nem tartalmazhat „/” vagy null karaktert} other {A fájlnév nem tartalmazhat „/” vagy null karaktert}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "d84512c"
+    "sourceHash": "4fa16ce"
   },
   "fileOperations.validation.empty": "{kind, select, folder {A mappa neve nem lehet üres} other {A fájlnév nem lehet üres}}",
   "@fileOperations.validation.empty": {
@@ -903,11 +903,11 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "A fájlkiterjesztés módosítása nem engedélyezett (eredeti: „{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "43c2dc1"
+    "sourceHash": "0b2df1e"
   },
   "fileOperations.validation.conflict": "Már létezik „{name}” nevű elem ebben a mappában",
   "@fileOperations.validation.conflict": {
-    "sourceHash": "ba13237"
+    "sourceHash": "842d02d"
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {A mappa neve nem használható} other {A fájlnév nem használható}}",
   "@fileOperations.validation.nameNotUsable": {

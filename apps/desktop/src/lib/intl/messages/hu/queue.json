@@ -31,7 +31,7 @@
   "@queue.row.reversalRenamingBack": {
     "sourceHash": "3e00fd5"
   },
-  "queue.row.reversalInFolder": "a(z) {folder} mappában",
+  "queue.row.reversalInFolder": "itt: {folder}",
   "@queue.row.reversalInFolder": {
     "sourceHash": "da9d7fa"
   },

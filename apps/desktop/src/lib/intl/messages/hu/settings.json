@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Válaszd ki, milyen nyelvet használjon a Cmdr. A „Rendszer szerinti” a Mac nyelvét követi.",
   "@settings.appearance.language.description": {
-    "sourceHash": "a290add"
+    "sourceHash": "6e36bba"
   },
   "settings.appearance.language.opt.system": "Rendszer szerinti",
   "@settings.appearance.language.opt.system": {
@@ -172,7 +172,7 @@
   },
   "settings.appearance.textSize.description": "Az app egészében méretezi a szöveget és a felületet. A macOS kisegítő lehetőségek szövegméretével együtt hat, ahol a 100% „pontosan a rendszerméretet” jelenti.",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "232df24"
+    "sourceHash": "49a0a6b"
   },
   "settings.appearance.uiDensity.label": "Felület sűrűsége",
   "@settings.appearance.uiDensity.label": {
@@ -461,7 +461,7 @@
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "Találd meg a fotókat a tartalmuk leírásával, például ''naplemente a tengerparton'', egy eszközön futó MI-modellel.",
+  "settings.mediaIndex.clip.description": "Találd meg a fotókat a tartalmuk leírásával, például „naplemente a tengerparton”, egy eszközön futó MI-modellel.",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
@@ -925,7 +925,7 @@
   },
   "settings.ai.cloudConsent.lockedHint": "Szolgáltatás beállításához kapcsold be fent a „Felhő-AI engedélyezése” kapcsolót.",
   "@settings.ai.cloudConsent.lockedHint": {
-    "sourceHash": "6f4097a"
+    "sourceHash": "8a24685"
   },
   "settings.ai.cloudProvider.description": "Melyik felhő-AI-szolgáltatást használja.",
   "@settings.ai.cloudProvider.description": {
@@ -967,7 +967,7 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "Ha be van kapcsolva, a Cmdr közvetlen kapcsolatot létesít az SMB-megosztásokhoz a gyorsabb fájlműveletekért. A rendszercsatolás megmarad a Finder és más appok számára.",
+  "settings.network.directSmbConnection.description": "Ha be van kapcsolva, a Cmdr közvetlenül kapcsolódik az SMB-megosztásokhoz, így gyorsabbak a fájlműveletek. A rendszercsatolás megmarad a Findernek és más appoknak.",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
@@ -1049,7 +1049,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "Android- és más eszközök felismerése és csatlakozás hozzájuk USB-kábelen át fájlböngészéshez és -átvitelhez. Hogy ezt a funkciót Android-telefonon használd, érdemes USB-kábelt használnod, majd a telefonodon nyiss meg valami olyat, mint Beállítások > USB-beállítások, és állítsd a kapcsolatot „Fájlátvitel”, „Android Auto” vagy hasonló módra. (Eszközönként eltérő.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "834ea99"
+    "sourceHash": "37444c2"
   },
   "settings.fileOperations.adbEnabled.label": "Android-fájlok elérése ADB-n át",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1057,7 +1057,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Eléred egy olyan Android-telefon teljes fájlrendszerét, amelyen be van kapcsolva az USB-hibakeresés; az MTP ezt nem mutatja meg. Ehhez kell az Android platform tools csomag (az „adb” parancs) ezen a Macen. Ha nincs telepítve Android-fejlesztőeszköz, nem kerül semmibe, ha bekapcsolva hagyod.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "8577083"
+    "sourceHash": "57cf2aa"
   },
   "settings.fileOperations.adbBinaryPath.label": "Az adb helye",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1162,7 +1162,7 @@
   },
   "settings.whatsNew.lastSeenVersion.description": "Belső: a verzió, amelyet utoljára mutattunk az „Újdonságok” felugró ablakban. Minden indításkor csendben előrelép, hogy a felugró újraengedélyezése sose játsszon le egy hónapokra visszamenő listát. Rejtve a felülettől.",
   "@settings.whatsNew.lastSeenVersion.description": {
-    "sourceHash": "d4f7a52"
+    "sourceHash": "d8677e1"
   },
   "settings.analytics.enabled.label": "Használati statisztika küldése",
   "@settings.analytics.enabled.label": {
@@ -1264,9 +1264,9 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hány nemrég bezárt lapot tartson meg panelenként a „Bezárt lap újranyitása” (⌘⇧T) számára. A nagyobb értékek messzebbre engedik visszanyitni a múltban; a kisebb értékek hamarabb felszabadítják a memóriát. Csak az aktuális munkamenetben bezárt lapokra vonatkozik.",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hány nemrég bezárt lapot őrizzen meg a Cmdr panelenként, hogy a „Bezárt lap újranyitása” (⌘⇧T) visszahozhassa őket. A nagyobb érték messzebbre enged visszanyúlni; a kisebb hamarabb felszabadítja a memóriát. Csak az aktuális munkamenetben bezárt lapokra vonatkozik.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "fe01a43"
+    "sourceHash": "e53df3a"
   },
   "settings.advanced.dragThreshold.label": "Húzási küszöb",
   "@settings.advanced.dragThreshold.label": {
@@ -1338,7 +1338,7 @@
   },
   "settings.advanced.showSafeSaveFiles.description": "Amikor egy alkalmazás, például a Szövegszerkesztő vagy a Megtekintő elment egy fájlt, a macOS az új változatot ideiglenes néven írja ki mellé (a név „.sb-” tagra végződik), majd kicseréli. Kapcsold ki, ha ezeket nem szeretnéd látni a fájllistában.",
   "@settings.advanced.showSafeSaveFiles.description": {
-    "sourceHash": "1749ee6"
+    "sourceHash": "b371701"
   },
   "settings.advanced.showStagingTempFiles.label": "A Cmdr ideiglenes fájljainak megjelenítése",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1394,7 +1394,7 @@
   },
   "settings.onboarding.upgradeNudgeShown.description": "Belső: követi, hogy egy meglévő felhasználónál megjelent-e már a varázsló átalakítása utáni egyszeri „a Bevezető… menüpont mostantól létezik” buborék. Rejtve a felülettől.",
   "@settings.onboarding.upgradeNudgeShown.description": {
-    "sourceHash": "5cfb2b5"
+    "sourceHash": "c877371"
   },
   "settings.askCmdr.consentRevokePending.label": "Ask Cmdr kikapcsolva, mentésre vár",
   "@settings.askCmdr.consentRevokePending.label": {
@@ -1408,7 +1408,7 @@
   "@settings.onboarding.completed.label": {
     "sourceHash": "4730c4f"
   },
-  "settings.onboarding.fullDiskAccessChoice.label": "Teljes lemezhozzáférés választása",
+  "settings.onboarding.fullDiskAccessChoice.label": "Teljes hozzáférés a lemezhez: választás",
   "@settings.onboarding.fullDiskAccessChoice.label": {
     "sourceHash": "4d73a2b"
   },
@@ -1534,23 +1534,23 @@
   },
   "settings.revealHandler.description": "Ha egy másik app a „Megjelenítés a Finderben” parancsot futtatja, a Cmdr megnyitja azt a mappát, és a kurzort a fájlra teszi. Minden másban a Finder marad az alapértelmezett fájlkezelőd.",
   "@settings.revealHandler.description": {
-    "sourceHash": "ebb79ff"
+    "sourceHash": "9522e41"
   },
   "settings.revealHandler.heldByOtherApp": "Jelenleg: {app}. Ha bekapcsolod, a „Megjelenítés a Finderben” a Cmdrhez kerül.",
   "@settings.revealHandler.heldByOtherApp": {
-    "sourceHash": "d0aa283"
+    "sourceHash": "4b956ef"
   },
   "settings.revealHandler.uninstallWarning": "<lead>Mielőtt eltávolítod a Cmdrt, kapcsold ki ezt.</lead> A macOS továbbra is ide küldi a „Megjelenítés a Finderben” parancsot, és Cmdr nélkül ezek a kattintások csendben nem csinálnak semmit.",
   "@settings.revealHandler.uninstallWarning": {
-    "sourceHash": "3c10fd3"
+    "sourceHash": "9464597"
   },
   "settings.revealHandler.notInApplications": "Helyezd át a Cmdr appot az Alkalmazások mappádba, hogy bekapcsolhasd. Onnan, ahol most fut, a Cmdr áthelyezése vagy törlése után minden „Megjelenítés a Finderben” kattintás a semmibe mutatna.",
   "@settings.revealHandler.notInApplications": {
-    "sourceHash": "dc15ebf"
+    "sourceHash": "1a380cf"
   },
   "settings.revealHandler.notProductionBuild": "Csak a Cmdr kiadott verziójában kapcsolhatod be. A fejlesztői és a tesztbuildek jönnek-mennek, és egy ilyen build törlése után minden „Megjelenítés a Finderben” kattintás a semmibe mutatna.",
   "@settings.revealHandler.notProductionBuild": {
-    "sourceHash": "20648ba"
+    "sourceHash": "7195002"
   },
   "settings.behavior.textEditorApp.label": "Szerkesztésre használt app",
   "@settings.behavior.textEditorApp.label": {
@@ -1558,7 +1558,7 @@
   },
   "settings.behavior.textEditorApp.description": "A Cmdr felsorolja a szövegszerkesztőket, amelyeket a macOS ismer ezen a Macen. Ha másik appot használnál, válaszd az „App kiválasztása…” lehetőséget.",
   "@settings.behavior.textEditorApp.description": {
-    "sourceHash": "b062aed"
+    "sourceHash": "4641320"
   },
   "settings.behavior.textEditorApp.systemDefault": "Rendszer szerinti ({app})",
   "@settings.behavior.textEditorApp.systemDefault": {
@@ -1594,7 +1594,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "A Cmdr felsorolja az ezen a Macen megtalált terminálappokat. Ha olyat használnál, amit nem ismer, válaszd az „App kiválasztása…” lehetőséget.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "0df49fc"
+    "sourceHash": "32ccd8f"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "App kiválasztása…",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1658,7 +1658,7 @@
   },
   "settings.behavior.revealNudgeOfferedAt.description": "Mikor jelent meg az egyszeri ajánlat, hogy a „Megjelenítés a Finderben” a Cmdrben nyíljon meg.",
   "@settings.behavior.revealNudgeOfferedAt.description": {
-    "sourceHash": "2b9d5b4"
+    "sourceHash": "b6a8933"
   },
   "settings.behavior.revealActivationNoticeSeen.label": "Az első megjelenítésről szóló értesítés megjelent",
   "@settings.behavior.revealActivationNoticeSeen.label": {
@@ -1666,7 +1666,7 @@
   },
   "settings.behavior.revealActivationNoticeSeen.description": "Megjelent-e már az értesítés az első „Megjelenítés a Finderben” parancsról, amelyik a Cmdrben nyílt meg.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "f2107a5"
+    "sourceHash": "009056a"
   },
   "settings.behavior.adbHintDismissed.label": "Az USB-hibakeresés tippje elvetve",
   "@settings.behavior.adbHintDismissed.label": {
@@ -2361,7 +2361,7 @@
   "@settings.mcp.ephemeral": {
     "sourceHash": "42fb229"
   },
-  "settings.mcp.portInUseFallback": "(a(z) {port} port foglalt volt)",
+  "settings.mcp.portInUseFallback": "(foglalt volt a port: {port})",
   "@settings.mcp.portInUseFallback": {
     "sourceHash": "bf23daa"
   },
@@ -2369,19 +2369,19 @@
   "@settings.mcp.checkingPort": {
     "sourceHash": "6069f12"
   },
-  "settings.mcp.portAvailable": "A(z) {port} port elérhető",
+  "settings.mcp.portAvailable": "A port ({port}) elérhető",
   "@settings.mcp.portAvailable": {
     "sourceHash": "4559f69"
   },
-  "settings.mcp.portInUseStillRunning": "A(z) {port} port foglalt, továbbra is a következő porton fut: {runningPort}",
+  "settings.mcp.portInUseStillRunning": "A port ({port}) foglalt, a szerver továbbra is ezen a porton fut: {runningPort}",
   "@settings.mcp.portInUseStillRunning": {
     "sourceHash": "e188629"
   },
-  "settings.mcp.portInUse": "A(z) {port} port foglalt",
+  "settings.mcp.portInUse": "A port ({port}) foglalt",
   "@settings.mcp.portInUse": {
     "sourceHash": "4f746de"
   },
-  "settings.mcp.usePortInstead": "Használd helyette a(z) {suggestedPort} portot",
+  "settings.mcp.usePortInstead": "Használd inkább ezt a portot: {suggestedPort}",
   "@settings.mcp.usePortInstead": {
     "sourceHash": "a0d7a0d"
   },

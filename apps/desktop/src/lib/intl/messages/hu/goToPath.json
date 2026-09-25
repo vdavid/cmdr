@@ -31,7 +31,7 @@
   "@goToPath.dialog.ancestorHint": {
     "sourceHash": "43db9f4"
   },
-  "goToPath.toast.landedOnAncestor": "A(z) <req>{requested}</req> nem létezik, ezért ide hoztunk: <land>{landed}</land>.",
+  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> nem létezik, ezért ide hoztunk: <land>{landed}</land>.",
   "@goToPath.toast.landedOnAncestor": {
     "sourceHash": "4ffc1e4"
   },

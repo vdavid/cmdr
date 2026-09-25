@@ -186,11 +186,11 @@
   "@indexing.rescan.fallback": {
     "sourceHash": "cd99826"
   },
-  "indexing.needsFreshScan.afterDisconnect": "A(z) {name} leválasztódott, miközben a Cmdr éppen frissítette az indexét. A meghajtó következő átvizsgálása az elejéről indul, így a mappaméretei újra pontosak lesznek.",
+  "indexing.needsFreshScan.afterDisconnect": "{name} leválasztódott, miközben a Cmdr éppen frissítette az indexét. A meghajtó következő átvizsgálása az elejéről indul, így a mappaméretei újra pontosak lesznek.",
   "@indexing.needsFreshScan.afterDisconnect": {
     "sourceHash": "a90dbdf"
   },
-  "indexing.firstConnect.title": "Indexeljük a(z) {name} meghajtót?",
+  "indexing.firstConnect.title": "Indexeljük ezt a meghajtót: {name}?",
   "@indexing.firstConnect.title": {
     "sourceHash": "0734a24"
   },
@@ -214,7 +214,7 @@
   "@indexing.staleDialog.title": {
     "sourceHash": "21a78ee"
   },
-  "indexing.staleDialog.body": "Amíg a(z) {name} le volt választva, a rajta lévő fájlok megváltozhattak. A mappaméretek és a keresési találatok kissé pontatlanok lehetnek, amíg újra nem vizsgálod át. A meghajtó melletti sárga állapot mindig jelzi, ha ez történik, és egy újbóli átvizsgálás frissíti.",
+  "indexing.staleDialog.body": "Amíg {name} le volt választva, a rajta lévő fájlok megváltozhattak. A mappaméretek és a keresési találatok kissé pontatlanok lehetnek, amíg újra nem vizsgálod át. A meghajtó melletti sárga állapot mindig jelzi, ha ez történik, és egy újbóli átvizsgálás frissíti.",
   "@indexing.staleDialog.body": {
     "sourceHash": "c04519a"
   },
@@ -222,7 +222,7 @@
   "@indexing.staleDialog.titlePhone": {
     "sourceHash": "6086bac"
   },
-  "indexing.staleDialog.bodyPhone": "A(z) {name} nem szól a Cmdrnek, amikor megváltoznak rajta a fájlok, ezért az indexét a Cmdr a saját változtatásaival tartja naprakészen. A telefonon végzett változtatások, például az új fotók, egy újbóli átvizsgálás után jelennek meg a mappaméretekben és a keresésben. A telefon melletti sárga állapot emlékeztetőül ott marad.",
+  "indexing.staleDialog.bodyPhone": "{name} nem szól a Cmdrnek, amikor megváltoznak rajta a fájlok, ezért az indexét a Cmdr a saját változtatásaival tartja naprakészen. A telefonon végzett változtatások, például az új fotók, egy újbóli átvizsgálás után jelennek meg a mappaméretekben és a keresésben. A telefon melletti sárga állapot emlékeztetőül ott marad.",
   "@indexing.staleDialog.bodyPhone": {
     "sourceHash": "4ba8463"
   },

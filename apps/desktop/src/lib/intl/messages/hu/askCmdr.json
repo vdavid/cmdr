@@ -609,7 +609,7 @@
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
-  "askCmdr.renameUndo.skipReason.drift.named": "A(z) „{name}” változatlan maradt: az átnevezés után módosult.",
+  "askCmdr.renameUndo.skipReason.drift.named": "„{name}” változatlan maradt: az átnevezés után módosult.",
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
@@ -617,7 +617,7 @@
   "@askCmdr.renameUndo.skipReason.drift.counted": {
     "sourceHash": "217d1e8"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.named": "A(z) „{name}” változatlan maradt: a régi nevét már más használja.",
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "„{name}” változatlan maradt: a régi nevét már más használja.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
@@ -625,7 +625,7 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "sourceHash": "2fd2e7a"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.named": "A(z) „{name}” változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.",
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "„{name}” változatlan maradt: a Cmdr nem tudta ellenőrizni, hogy módosult-e.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
@@ -633,7 +633,7 @@
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
     "sourceHash": "5964166"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "A(z) „{name}” mappa változatlan maradt: már van benne valami.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "„{name}” változatlan maradt: a mappában már van valami.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
@@ -641,7 +641,7 @@
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
     "sourceHash": "d2c9f56"
   },
-  "askCmdr.renameUndo.skipReason.failed.named": "A(z) „{name}” változatlan maradt: a Cmdr nem tudta visszaadni a régi nevét.",
+  "askCmdr.renameUndo.skipReason.failed.named": "„{name}” változatlan maradt: a Cmdr nem tudta visszaadni a régi nevét.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },

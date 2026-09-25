@@ -119,11 +119,11 @@
   "@search.walkHandoff.finished": {
     "sourceHash": "0cbc210"
   },
-  "search.walkHandoff.stoppedShort": "Lehet, hogy a(z) {label} találatai hiányosak: a Cmdr nem jutott át mindenen.",
+  "search.walkHandoff.stoppedShort": "Lehet, hogy hiányosak a keresés találatai ({label}): a Cmdr nem jutott át mindenen.",
   "@search.walkHandoff.stoppedShort": {
     "sourceHash": "3a2a5dd"
   },
-  "search.walkHandoff.superseded": "A Cmdr már nem tesz hozzá a(z) {label} találataihoz, mert az új keresésed vette át a helyét.",
+  "search.walkHandoff.superseded": "A Cmdr már nem ad hozzá újabbat a keresés találataihoz ({label}), mert az új keresésed vette át a helyét.",
   "@search.walkHandoff.superseded": {
     "sourceHash": "83aa5a2"
   },

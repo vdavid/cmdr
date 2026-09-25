@@ -495,7 +495,7 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "1fceff5"
   },
-  "errors.listing.remotePermissionDenied.explanation": "A `{path}` egy hálózati megosztáson van, és annak a fióknak, amellyel csatlakoztál, nincs engedélye megnyitni. A szerver már azelőtt elutasítja a kérést, hogy a macOS egyáltalán szóba kerülne, tehát ez nem a Macen lévő adatvédelmi beállításon múlik.",
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` egy hálózati megosztáson van, és annak a fióknak, amellyel csatlakoztál, nincs engedélye megnyitni. A szerver már azelőtt elutasítja a kérést, hogy a macOS egyáltalán szóba kerülne, tehát ez nem a Macen lévő adatvédelmi beállításon múlik.",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "4e6b9ef"
   },
@@ -531,7 +531,7 @@
   "@errors.listing.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.listing.deviceDisconnected.explanation": "A `{path}` elemet tároló eszközt leválasztották a művelet közben. Ez akkor fordulhat elő, ha egy USB-kábel meglazul, egy telefon elalszik, vagy egy hálózati meghajtó megszakítja a kapcsolatot.",
+  "errors.listing.deviceDisconnected.explanation": "A művelet közben leválasztották az eszközt, amelyen ez volt: `{path}`. Ez akkor fordulhat elő, ha egy USB-kábel meglazul, egy telefon elalszik, vagy egy hálózati meghajtó megszakítja a kapcsolatot.",
   "@errors.listing.deviceDisconnected.explanation": {
     "sourceHash": "c8b7b10"
   },
@@ -555,7 +555,7 @@
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
   },
-  "errors.listing.deviceReconnecting.explanation": "A `{path}` elemet tároló eszközzel megszakadt és újraindult a kapcsolat, ezért ez a művelet nem ment végbe. Az eszköz továbbra is csatlakoztatva van, és a Cmdr éppen újra megnyitja. Ez általában megszakított vagy félbeszakadt átvitel után fordul elő.",
+  "errors.listing.deviceReconnecting.explanation": "Megszakadt és újraindult a kapcsolat az eszközzel, amelyen ez van: `{path}`, így a művelet nem ment végbe. Az eszköz továbbra is csatlakoztatva van, és a Cmdr éppen újra megnyitja. Ez általában megszakított vagy félbeszakadt átvitel után fordul elő.",
   "@errors.listing.deviceReconnecting.explanation": {
     "sourceHash": "6ba7205"
   },
@@ -615,7 +615,7 @@
   "@errors.listing.deletePending.title": {
     "sourceHash": "1e5741a"
   },
-  "errors.listing.deletePending.explanation": "A `{path}` elem épp távozóban van. A szerver törlésre jelölte, de egy másik nyitott leíró addig életben tartja, amíg az a leíró be nem zárul.",
+  "errors.listing.deletePending.explanation": "`{path}` épp távozóban van. A szerver törlésre jelölte, de egy másik nyitott leíró addig életben tartja, amíg az a leíró be nem zárul.",
   "@errors.listing.deletePending.explanation": {
     "sourceHash": "047ad2f"
   },
@@ -627,7 +627,7 @@
   "@errors.listing.invalidName.title": {
     "sourceHash": "69b2aa4"
   },
-  "errors.listing.invalidName.explanation": "A `{path}` elem neve olyan, amit a célhely nem tud tárolni, ezért visszautasította a nevet, anélkül hogy megkereste volna a fájlt.",
+  "errors.listing.invalidName.explanation": "`{path}` neve olyan, amit a célhely nem tud tárolni, ezért visszautasította a nevet, anélkül hogy megkereste volna a fájlt.",
   "@errors.listing.invalidName.explanation": {
     "sourceHash": "7000b52"
   },
@@ -1061,15 +1061,15 @@
   "@errors.provider.genericCloudStorage.nonTransient": {
     "sourceHash": "ce8a112"
   },
-  "errors.provider.appBased.transient": "Ezt a mappát a(z) **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Nyisd meg a(z) {app} appot, és győződj meg róla, hogy fut és szinkronizál\n- Lépj ide újra az ismételt próbához",
+  "errors.provider.appBased.transient": "Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Nyisd meg az appot ({app}), és győződj meg róla, hogy fut és szinkronizál\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.appBased.transient": {
     "sourceHash": "e3ef8b8"
   },
-  "errors.provider.appBased.needsAction": "Ezt a mappát a(z) **{name}** kezeli. Ezeket próbálhatod:\n- Nyisd meg a(z) {app} appot, és ellenőrizd a szinkronizálás állapotát\n- Győződj meg róla, hogy be vagy jelentkezve ide: {app}\n- Ellenőrizd, hogy van hozzáférésed ehhez a mappához itt: {name}",
+  "errors.provider.appBased.needsAction": "Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Nyisd meg az appot ({app}), és ellenőrizd a szinkronizálás állapotát\n- Győződj meg róla, hogy be vagy jelentkezve ide: {app}\n- Ellenőrizd, hogy van hozzáférésed ehhez a mappához itt: {name}",
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "88009fd"
   },
-  "errors.provider.appBased.serious": "Ezt a mappát a(z) **{name}** kezeli. Ezeket próbálhatod:\n- Lépj ki a(z) {app} appból, és nyisd meg újra\n- Jelentkezz ki, majd vissza ide: {app}\n- Nézd meg a(z) {name} állapotoldalát, hátha leállás van",
+  "errors.provider.appBased.serious": "Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Lépj ki az appból ({app}), és nyisd meg újra\n- Jelentkezz ki, majd vissza ide: {app}\n- Nézd meg a szolgáltatás állapotoldalát ({name}), hátha leállás van",
   "@errors.provider.appBased.serious": {
     "sourceHash": "64baea5"
   },
@@ -1237,19 +1237,19 @@
   "@errors.write.deviceDisconnected.suggestion": {
     "sourceHash": "f003d9c"
   },
-  "errors.write.deviceDisconnected.sided.destination.copy": "A(z) {volumeName} leválasztódott, miután a Cmdr {total} fájlból {done} fájlt átmásolt rá. Az eredetiek érintetlenül a helyükön vannak, így semmi sem veszett el.",
+  "errors.write.deviceDisconnected.sided.destination.copy": "{volumeName} leválasztódott, miután a Cmdr {total} fájlból {done} fájlt átmásolt rá. Az eredetiek érintetlenül a helyükön vannak, így semmi sem veszett el.",
   "@errors.write.deviceDisconnected.sided.destination.copy": {
     "sourceHash": "37342c4"
   },
-  "errors.write.deviceDisconnected.sided.destination.move": "A(z) {volumeName} leválasztódott, mielőtt a Cmdr befejezhette volna az áthelyezést, így minden fájlod továbbra is a(z) {counterpart} meghajtón van.",
+  "errors.write.deviceDisconnected.sided.destination.move": "{volumeName} leválasztódott, mielőtt a Cmdr befejezhette volna az áthelyezést, így minden fájlod továbbra is itt van: {counterpart}.",
   "@errors.write.deviceDisconnected.sided.destination.move": {
     "sourceHash": "7da0918"
   },
-  "errors.write.deviceDisconnected.sided.source.copy": "A(z) {volumeName} leválasztódott, miután a Cmdr {total} fájlból {done} fájlt átmásolt ide: {counterpart}. A többi továbbra is a meghajtón van.",
+  "errors.write.deviceDisconnected.sided.source.copy": "{volumeName} leválasztódott, miután a Cmdr {total} fájlból {done} fájlt átmásolt ide: {counterpart}. A többi továbbra is a meghajtón van.",
   "@errors.write.deviceDisconnected.sided.source.copy": {
     "sourceHash": "70d4976"
   },
-  "errors.write.deviceDisconnected.sided.source.move": "A(z) {volumeName} leválasztódott, miután a Cmdr {total} fájlból {done} fájlt áthelyezett ide: {counterpart}. A többi továbbra is a meghajtón van.",
+  "errors.write.deviceDisconnected.sided.source.move": "{volumeName} leválasztódott, miután a Cmdr {total} fájlból {done} fájlt áthelyezett ide: {counterpart}. A többi továbbra is a meghajtón van.",
   "@errors.write.deviceDisconnected.sided.source.move": {
     "sourceHash": "bf2d6e7"
   },
@@ -1257,7 +1257,7 @@
   "@errors.write.moveNotConfirmed.title": {
     "sourceHash": "5d64df8"
   },
-  "errors.write.moveNotConfirmed.message.named": "A Cmdr nem tudta ellenőrizni, hogy az áthelyezett fájlok kiíródtak-e a(z) {volumeName} meghajtóra, ezért az eredetieket a helyükön hagyta.",
+  "errors.write.moveNotConfirmed.message.named": "A Cmdr nem tudta ellenőrizni, hogy az áthelyezett fájlok kiíródtak-e ide: {volumeName}, ezért az eredetieket a helyükön hagyta.",
   "@errors.write.moveNotConfirmed.message.named": {
     "sourceHash": "0c2dfb6"
   },
@@ -1277,7 +1277,7 @@
   "@errors.write.trashNotSupported.message": {
     "sourceHash": "45cf0c6"
   },
-  "errors.write.trashNotSupported.suggestion": "Használd a {deletePermanentlyKey} billentyűt a végleges törléshez helyette.",
+  "errors.write.trashNotSupported.suggestion": "Törölj inkább véglegesen ezzel: {deletePermanentlyKey}.",
   "@errors.write.trashNotSupported.suggestion": {
     "sourceHash": "450dd8f"
   },
@@ -1357,7 +1357,7 @@
   "@errors.write.invalidName.title": {
     "sourceHash": "1fb1e45"
   },
-  "errors.write.invalidName.message": "A(z) {path} elem neve olyan, amit a célhely nem tud tárolni.",
+  "errors.write.invalidName.message": "{path} neve olyan, amit a célhely nem tud tárolni.",
   "@errors.write.invalidName.message": {
     "sourceHash": "0bd3e6a"
   },
@@ -1395,7 +1395,7 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "A Cmdrnek ezen a Macen ráadásul nincs teljes hozzáférése a lemezhez, ami gyakori ok. A címsorban lévő „Nincs teljes hozzáférés a lemezhez” jelvény elvisz ehhez a döntéshez.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "ab20ec5"
+    "sourceHash": "0dbe21b"
   },
   "errors.write.ioError.title.copy": "Nem sikerült a másolás",
   "@errors.write.ioError.title.copy": {
@@ -1517,11 +1517,11 @@
   "@errors.write.filesTooLargeForFilesystem.title.many": {
     "sourceHash": "6b148d5"
   },
-  "errors.write.filesTooLargeForFilesystem.message.one": "A(z) {name} mérete {size}, de ez a meghajtó FAT32 formátumú, amely nem tud {maxSize}-nál nagyobb fájlokat tárolni.",
+  "errors.write.filesTooLargeForFilesystem.message.one": "{name} mérete {size}, de ez a meghajtó FAT32 formátumú, így nem tud {maxSize} méretnél nagyobb fájlokat tárolni.",
   "@errors.write.filesTooLargeForFilesystem.message.one": {
     "sourceHash": "2993e08"
   },
-  "errors.write.filesTooLargeForFilesystem.message.many": "{count} fájl túl nagy ehhez a meghajtóhoz, amely FAT32 formátumú, és nem tud {maxSize}-nál nagyobb fájlokat tárolni.",
+  "errors.write.filesTooLargeForFilesystem.message.many": "{count} fájl túl nagy ehhez a meghajtóhoz: a meghajtó FAT32 formátumú, és nem tud {maxSize} méretnél nagyobb fájlokat tárolni.",
   "@errors.write.filesTooLargeForFilesystem.message.many": {
     "sourceHash": "1aac250"
   },
@@ -1533,7 +1533,7 @@
   "@errors.write.readOnlyDevice.destination.title": {
     "sourceHash": "3f79690"
   },
-  "errors.write.readOnlyDevice.destination.message": "A(z) {deviceName} csak olvasható. Másolhatsz róla fájlokat, de rá nem.",
+  "errors.write.readOnlyDevice.destination.message": "{deviceName} csak olvasható. Másolhatsz róla fájlokat, de rá nem.",
   "@errors.write.readOnlyDevice.destination.message": {
     "sourceHash": "932e2ed"
   },
@@ -1617,7 +1617,7 @@
   "@errors.write.newDataKeptAt.message": {
     "sourceHash": "d1dc96b"
   },
-  "errors.write.newDataKeptAt.suggestion": "Nyisd meg a(z) {keptAt} elemet, nézd át, majd nevezd át. Ha a célhely hálózati megosztás vagy telefon, előbb csatlakoztasd újra, és az átnevezés menni fog.",
+  "errors.write.newDataKeptAt.suggestion": "Nyisd meg és ellenőrizd, majd nevezd át: {keptAt}. Ha a célhely hálózati megosztás vagy telefon, előbb csatlakoztasd újra, és az átnevezés menni fog.",
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
@@ -1625,7 +1625,7 @@
   "@errors.write.originalsKeptAside.title": {
     "sourceHash": "1db5ba0"
   },
-  "errors.write.originalsKeptAside.message.one": "Egy mappa elvette a(z) {path} nevet, így a fájlod most itt van: {keptAt}. Semmi nem veszett el.",
+  "errors.write.originalsKeptAside.message.one": "Egy mappa elvette ezt a nevet: {path}, így a fájlod most itt van: {keptAt}. Semmi nem veszett el.",
   "@errors.write.originalsKeptAside.message.one": {
     "sourceHash": "e3bc267"
   },
@@ -1633,7 +1633,7 @@
   "@errors.write.originalsKeptAside.message.many": {
     "sourceHash": "9430f63"
   },
-  "errors.write.originalsKeptAside.suggestion.one": "Nyisd meg a(z) {keptAt} fájlt, és nézd meg. Ha félretetted a mappát, visszanevezheted a fájlodat.",
+  "errors.write.originalsKeptAside.suggestion.one": "Nyisd meg és ellenőrizd: {keptAt}. Ha félretetted a mappát, visszanevezheted a fájlodat.",
   "@errors.write.originalsKeptAside.suggestion.one": {
     "sourceHash": "6c53394"
   },
@@ -1679,7 +1679,7 @@
   },
   "errors.mutation.notFound": "Már nincs semmi itt: „{path}”.",
   "@errors.mutation.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.mutation.cantRenameVolumeRoot": "Egy kötet legfelső mappája innen nem nevezhető át.",
   "@errors.mutation.cantRenameVolumeRoot": {
@@ -1687,7 +1687,7 @@
   },
   "errors.mutation.parentNotWritable": "A Cmdr nem tud ide írni: „{path}”. Ellenőrizd a mappa engedélyeit a Finderben.",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "902f3a5"
+    "sourceHash": "3659a5a"
   },
   "errors.mutation.fileLocked": "Ez az elem zárolva van. Oldd fel a zárolását a Finder Infó megjelenítése ablakában, majd próbáld újra.",
   "@errors.mutation.fileLocked": {
@@ -1735,15 +1735,15 @@
   },
   "errors.volume.notFound": "Már nincs semmi itt: „{path}”.",
   "@errors.volume.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.volume.permissionDenied": "A Cmdrnek nincs hozzáférése ehhez: „{path}”.",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "1f63dc1"
+    "sourceHash": "fee452b"
   },
   "errors.volume.alreadyExists": "Már van valami itt: „{path}”.",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "e070962"
+    "sourceHash": "de0bbb9"
   },
   "errors.volume.notSupported": "Ez a kötet ezt nem támogatja.",
   "@errors.volume.notSupported": {
@@ -1777,9 +1777,9 @@
   "@errors.volume.cancelled": {
     "sourceHash": "a88c4fc"
   },
-  "errors.volume.isADirectory": "A(z) „{path}” mappa, nem fájl.",
+  "errors.volume.isADirectory": "„{path}” mappa, nem fájl.",
   "@errors.volume.isADirectory": {
-    "sourceHash": "fe76957"
+    "sourceHash": "224ae5e"
   },
   "errors.volume.invalidName": "Ez a név nem használható a célhelyen. Válassz másikat.",
   "@errors.volume.invalidName": {
@@ -1789,9 +1789,9 @@
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
   },
-  "errors.volume.ambiguousName": "Több elem is illik a(z) „{path}” útvonalra a szerveren, ezért a Cmdr nem választott. Válaszd ki inkább a mappájából.",
+  "errors.volume.ambiguousName": "Több elem is illik erre az útvonalra a szerveren: „{path}”, ezért a Cmdr nem választott. Válaszd ki inkább a mappájából.",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "024d1da"
+    "sourceHash": "f866182"
   },
   "errors.volume.staleDestinationHandle": "A Cmdr már nem találja a célmappát az eszközön. Nyisd meg még egyszer, majd próbáld újra.",
   "@errors.volume.staleDestinationHandle": {
@@ -1865,7 +1865,7 @@
   "@errors.eject.unmountRefused": {
     "sourceHash": "1ff7d31"
   },
-  "errors.eject.unmountRefusedByApp": "A(z) {app} még használja ezt a meghajtót. Zárd be, amit ott nyitva tart, majd add ki újra.",
+  "errors.eject.unmountRefusedByApp": "{app} még használja ezt a meghajtót. Zárd be, amit ott nyitva tart, majd add ki újra.",
   "@errors.eject.unmountRefusedByApp": {
     "sourceHash": "bee2660"
   },
@@ -1901,81 +1901,81 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "A Cmdr nem tudta elérni a(z) „{server}” szervert. Ellenőrizd, hogy be van-e kapcsolva, és ugyanazon a hálózaton van-e, mint ez a számítógép.",
+  "errors.mount.hostUnreachable": "A Cmdr nem tudta elérni ezt a szervert: „{server}”. Ellenőrizd, hogy be van-e kapcsolva, és ugyanazon a hálózaton van-e, mint ez a számítógép.",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
-  "errors.mount.timeout": "A Cmdr várt, de a(z) „{server}” szerver nem válaszolt időben. Ellenőrizd, hogy be van-e kapcsolva és elérhető-e, aztán próbáld újra.",
+  "errors.mount.timeout": "A Cmdr várt, de ez a szerver nem válaszolt időben: „{server}”. Ellenőrizd, hogy be van-e kapcsolva és elérhető-e, aztán próbáld újra.",
   "@errors.mount.timeout": {
-    "sourceHash": "bfb786c"
+    "sourceHash": "00d198e"
   },
-  "errors.mount.shareNotFound": "A(z) „{server}” szerveren nincs „{share}” nevű megosztás. Lépj vissza, és válassz egyet a listából.",
+  "errors.mount.shareNotFound": "Nincs „{share}” nevű megosztás ezen a szerveren: „{server}”. Lépj vissza, és válassz egyet a listából.",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "4f930a5"
+    "sourceHash": "08aee2a"
   },
-  "errors.mount.authRequired": "Jelentkezz be a(z) „{server}” szerverre, hogy megnyithasd a(z) „{share}” megosztást.",
+  "errors.mount.authRequired": "„{share}” megnyitásához jelentkezz be ide: „{server}”.",
   "@errors.mount.authRequired": {
-    "sourceHash": "8466652"
+    "sourceHash": "b2af295"
   },
-  "errors.mount.authFailed": "Ez a felhasználónév és jelszó nem jó a(z) „{server}” szerverhez. Ellenőrizd őket, és jelentkezz be újra.",
+  "errors.mount.authFailed": "Ez a felhasználónév és jelszó nem jó ehhez a szerverhez: „{server}”. Ellenőrizd őket, és jelentkezz be újra.",
   "@errors.mount.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
-  "errors.mount.permissionDenied": "Be vagy jelentkezve a(z) „{server}” szerverre „{username}” néven, de ez a fiók nem nyithatja meg a(z) „{share}” megosztást. Jelentkezz be egy másik fiókkal.",
+  "errors.mount.permissionDenied": "„{username}” néven vagy bejelentkezve ide: „{server}”, de ez a fiók nem nyithatja meg ezt a megosztást: „{share}”. Jelentkezz be egy másik fiókkal.",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "12e20d9"
+    "sourceHash": "f8e000b"
   },
-  "errors.mount.cancelled": "A(z) „{share}” megosztáshoz való csatlakozás félbeszakadt. Próbáld újra, amikor készen állsz.",
+  "errors.mount.cancelled": "Félbeszakadt a csatlakozás ehhez a megosztáshoz: „{share}”. Próbáld újra, amikor készen állsz.",
   "@errors.mount.cancelled": {
-    "sourceHash": "0b0ec30"
+    "sourceHash": "4f6ff32"
   },
-  "errors.mount.unsupportedProtocol": "Ennek a számítógépnek és a(z) „{server}” szervernek nincs közös SMB-verziója. Kapcsold be a szerver beállításaiban az SMB 2-es vagy újabb verzióját, aztán próbáld újra.",
+  "errors.mount.unsupportedProtocol": "Ennek a számítógépnek nincs közös SMB-verziója ezzel a szerverrel: „{server}”. Kapcsold be a szerver beállításaiban az SMB 2-es vagy újabb verzióját, aztán próbáld újra.",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "bf9c71e"
+    "sourceHash": "7cb18f6"
   },
-  "errors.mount.mountRefused": "Be vagy jelentkezve a(z) „{server}” szerverre, de a szerver nem engedte megnyitni a(z) „{share}” megosztást. Ellenőrizd a megosztás beállításait a szerveren, aztán próbáld újra.",
+  "errors.mount.mountRefused": "Be vagy jelentkezve ide: „{server}”, de a szerver nem engedte megnyitni ezt a megosztást: „{share}”. Ellenőrizd a megosztás beállításait a szerveren, aztán próbáld újra.",
   "@errors.mount.mountRefused": {
-    "sourceHash": "c354782"
+    "sourceHash": "84344ca"
   },
-  "errors.mount.mountMissing": "A számítógéped azt jelezte, hogy a(z) „{server}” szerveren lévő „{share}” megosztás csatlakoztatva van, de mégsem jelent meg. Próbáld újra.",
+  "errors.mount.mountMissing": "A számítógéped jelezte, hogy „{share}” csatlakoztatva van (szerver: „{server}”), de mégsem jelent meg. Próbáld újra.",
   "@errors.mount.mountMissing": {
-    "sourceHash": "a5f61b5"
+    "sourceHash": "72ab946"
   },
   "errors.mount.gvfsMissing": "Linuxon a GVFS kell ahhoz, hogy hálózati megosztásokhoz csatlakozhass. Telepítsd a disztribúciód gvfs-smb csomagját, aztán próbáld újra.",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Váratlan probléma történt, miközben a Cmdr a(z) „{server}” szerveren lévő „{share}” megosztáshoz csatlakozott. Próbáld újra egy pillanat múlva.",
+  "errors.mount.unexpected": "Valami nem sikerült, miközben a Cmdr ehhez a megosztáshoz csatlakozott: „{share}” (szerver: „{server}”). Próbáld újra egy pillanat múlva.",
   "@errors.mount.unexpected": {
-    "sourceHash": "8daf9ba"
+    "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "A Cmdr nem tudta elérni a(z) „{server}” szervert. Ellenőrizd, hogy be van-e kapcsolva, és ugyanazon a hálózaton van-e, mint ez a számítógép.",
+  "errors.shareList.hostUnreachable": "A Cmdr nem tudta elérni ezt a szervert: „{server}”. Ellenőrizd, hogy be van-e kapcsolva, és ugyanazon a hálózaton van-e, mint ez a számítógép.",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
-  "errors.shareList.timeout": "A Cmdr várt, de a(z) „{server}” szerver nem válaszolt időben. Próbáld újra egy pillanat múlva.",
+  "errors.shareList.timeout": "A Cmdr várt, de ez a szerver nem válaszolt időben: „{server}”. Próbáld újra egy pillanat múlva.",
   "@errors.shareList.timeout": {
-    "sourceHash": "ae84e14"
+    "sourceHash": "a07b7c8"
   },
-  "errors.shareList.authRequired": "Jelentkezz be, hogy lásd a(z) „{server}” szerver megosztásait.",
+  "errors.shareList.authRequired": "Jelentkezz be, hogy lásd ennek a szervernek a megosztásait: „{server}”.",
   "@errors.shareList.authRequired": {
-    "sourceHash": "4268ae9"
+    "sourceHash": "68f86c4"
   },
-  "errors.shareList.signingRequired": "A(z) „{server}” szerver vendégeknek nem mutatja meg a megosztásait. Jelentkezz be, hogy lásd őket.",
+  "errors.shareList.signingRequired": "„{server}” vendégeknek nem mutatja meg a megosztásait. Jelentkezz be, hogy lásd őket.",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "8ae651a"
+    "sourceHash": "ecc570d"
   },
-  "errors.shareList.authFailed": "Ez a felhasználónév és jelszó nem jó a(z) „{server}” szerverhez. Ellenőrizd őket, és jelentkezz be újra.",
+  "errors.shareList.authFailed": "Ez a felhasználónév és jelszó nem jó ehhez a szerverhez: „{server}”. Ellenőrizd őket, és jelentkezz be újra.",
   "@errors.shareList.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
-  "errors.shareList.protocolError": "Váratlan probléma történt, miközben a Cmdr lekérte a(z) „{server}” szerver megosztásait. Próbáld újra egy pillanat múlva.",
+  "errors.shareList.protocolError": "Valami nem sikerült, miközben a Cmdr lekérte ennek a szervernek a megosztásait: „{server}”. Próbáld újra egy pillanat múlva.",
   "@errors.shareList.protocolError": {
-    "sourceHash": "064a773"
+    "sourceHash": "da302ca"
   },
-  "errors.shareList.resolutionFailed": "A Cmdr nem találta meg a(z) „{server}” szervert a hálózaton. Ellenőrizd a nevét, vagy próbáld újra, amint ismét elérhető.",
+  "errors.shareList.resolutionFailed": "A Cmdr nem találta meg ezt a szervert a hálózaton: „{server}”. Ellenőrizd a nevét, vagy próbáld újra, amint ismét elérhető.",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "d2e5b54"
+    "sourceHash": "62e91cf"
   },
   "errors.shareList.missingDependency": "Ezen a számítógépen az smbclient kell a megosztások listázásához, de nincs telepítve. Telepítsd, aztán próbáld újra.",
   "@errors.shareList.missingDependency": {
@@ -1985,7 +1985,7 @@
   "@errors.write.readOnlyDevice.source.title": {
     "sourceHash": "5d77aa4"
   },
-  "errors.write.readOnlyDevice.source.message": "A(z) {deviceName} csak olvasható. Másolhatsz belőle fájlokat, de kimozgatni nem tudod őket.",
+  "errors.write.readOnlyDevice.source.message": "{deviceName} csak olvasható. Másolhatsz belőle fájlokat, de kimozgatni nem tudod őket.",
   "@errors.write.readOnlyDevice.source.message": {
     "sourceHash": "ec7d263"
   },

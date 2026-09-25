@@ -446,7 +446,7 @@
   },
   "menu.context.copyNamed": "„{name}” másolása",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "Hozzáadás a kedvencekhez",
   "@menu.context.addToFavorites": {
@@ -542,11 +542,11 @@
   },
   "menu.tag.addNamed": "„{color}” hozzáadása",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
   "menu.tag.removeNamed": "„{color}” eltávolítása",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "Hozzáadás az indexelt mappákhoz",
   "@menu.mediaIndex.addFolder": {

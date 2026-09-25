@@ -1,0 +1,28 @@
+{
+  "$comment": "Hungarian typography: „…” primary (macOS Finder: „^0”, „%@”), »…« nested (the AkH nested pair, one of macOS NSSpellChecker's quote styles), ’ for the rare apostrophe. Hungarian writes % tight against the number and no space before ! ? : ;. Hedges: every form that hangs on the first sound or the vowels of a value Cmdr doesn't know. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["„", "”"], "nested": ["»", "«"] },
+  "apostrophes": ["’"],
+  "spacing": [
+    { "pattern": "[\\d\\uFFFC] %", "why": "Hungarian writes % tight against the number (42%)" },
+    { "pattern": "\\p{L} [!?;:](?=\\s+\\p{Lu}|$)", "why": "no space before ! ? ; : in Hungarian" }
+  ],
+  "hedges": [
+    {
+      "pattern": "(?<!\\p{L})[aA]\\(z\\)",
+      "why": "the a(z) article hedge; name the object's type first (ezt a fájlt: „{name}”), use a colon slot (itt: {path}), or drop the article in a label"
+    },
+    {
+      "pattern": "\\p{L}{2}\\(\\p{Ll}{1,4}\\)|\\(\\p{Ll}{1,4}\\)\\p{Ll}",
+      "why": "a bracketed ending (fájl(ok), (e)t); counted nouns stay singular, so use ICU plural or rephrase"
+    },
+    { "pattern": "/-\\p{Ll}", "why": "a slashed suffix pair (-ban/-ben); vowel harmony can't be guessed, so rephrase" },
+    {
+      "pattern": "\\uFFFC(?:\\*\\*|”)?-?\\p{Ll}",
+      "why": "a case suffix on an insert ({path}-ban, „{name}”-et) hangs on sounds Cmdr can't know; use a colon slot, a postposition, or a base noun that carries the suffix"
+    },
+    {
+      "pattern": "(?<!\\p{L})[aA]z? „\\uFFFC",
+      "why": "a guessed a/az before a quoted insert (a code span reads as an insert too, so only the quoted form is checked); the article follows the value's first sound, so name the type first or use a colon slot"
+    }
+  ]
+}

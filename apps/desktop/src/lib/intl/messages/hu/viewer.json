@@ -399,15 +399,15 @@
   "@viewer.row.continuesLabel": {
     "sourceHash": "7df69ed"
   },
-  "viewer.selection.toEndOfFile": "Kijelölve a(z) {line}. sortól a fájl végéig",
+  "viewer.selection.toEndOfFile": "Kijelölve: {line}. sortól a fájl végéig",
   "@viewer.selection.toEndOfFile": {
     "sourceHash": "62d95be"
   },
-  "viewer.selection.singleLine": "{chars} karakter kijelölve a(z) {line}. sorban",
+  "viewer.selection.singleLine": "{line}. sor: {chars} karakter kijelölve",
   "@viewer.selection.singleLine": {
     "sourceHash": "bb320d5"
   },
-  "viewer.selection.multiLine": "Kijelölve a(z) {startLine}. sortól a(z) {endLine}. sorig, {chars} karakter",
+  "viewer.selection.multiLine": "Kijelölt sorok: {startLine}–{endLine}, {chars} karakter",
   "@viewer.selection.multiLine": {
     "sourceHash": "074c687"
   },

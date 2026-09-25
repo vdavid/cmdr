@@ -14,7 +14,8 @@
   "access": {
     "chosen": "hozzáférés",
     "accept": ["hozzáfér", "elér", "fér"],
-    "forms": "exclusive access → kizárólagos hozzáférés; Full Disk Access → Teljes hozzáférés a lemezhez (see full-disk-access)",
+    "proseAccept": ["kizárólagosan használ"],
+    "forms": "exclusive access → kizárólagos hozzáférés as a name; in a sentence, a process kizárólagosan használja az eszközt; Full Disk Access → Teljes hozzáférés a lemezhez (see full-disk-access)",
     "confidence": "high",
     "sources": "ms (access → hozzáférés); catalog",
     "exceptions": {
@@ -44,7 +45,7 @@
   "add": {
     "chosen": "hozzáadás",
     "accept": ["hozzáad", "hozzá", "add meg", "adtunk", "bekerül", "kerüljön", "tesz", "ad hozzá"],
-    "forms": "add to X → Hozzáadás a(z) X-hoz/-hez (Hozzáadás a kedvencekhez, Hozzáadás a jelentéshez); command label Szerver hozzáadása…; a title carries the full noun (Hozzáadás a hibajelentésedhez), the button the short one",
+    "forms": "add to a fixed noun → Hozzáadás a kedvencekhez / a jelentéshez; command label Szerver hozzáadása…; a title carries the full noun (Hozzáadás a hibajelentésedhez), the button the short one",
     "avoid": [
       {
         "form": "megjegyzést fűz",
@@ -106,7 +107,7 @@
   "already-exists": {
     "chosen": "már létezik",
     "accept": ["már van"],
-    "forms": "title Már létezik; \"Már létezik egy „^0” nevű elem ezen a helyen\" shape; A(z) „{name}” már létezik ebben a mappában",
+    "forms": "title Már létezik; a runtime name leads bare and quoted: „{name}” már létezik ebben a mappában",
     "confidence": "high",
     "sources": "macOS Finder (PE1: Már létezik egy „^0” nevű elem ezen a helyen.); Nautilus"
   },
@@ -273,7 +274,7 @@
   "back": {
     "chosen": "Vissza",
     "accept": ["vissza"],
-    "forms": "Back to X → Vissza a(z) X-hoz/-hez (Vissza a csevegéshez, Vissza a géplistához, Vissza az előbeállításokhoz)",
+    "forms": "Back to a fixed noun → Vissza a csevegéshez, Vissza a géplistához, Vissza az előbeállításokhoz",
     "confidence": "high",
     "sources": "macOS (Vissza); catalog"
   },
@@ -553,7 +554,7 @@
   },
   "command": {
     "chosen": "parancs",
-    "forms": "run the X command → futtasd a(z) „X” parancsot; a menu item in running text → parancs (válaszd a Fájl > Infó megjelenítése parancsot)",
+    "forms": "run the X command → futtasd ezt a parancsot: „{command}”; a menu item in running text → parancs (válaszd a Fájl > Infó megjelenítése parancsot)",
     "confidence": "high",
     "sources": "macOS Finder (NE18: Válassza a Fájl > Infó megjelenítése parancsot); ms",
     "exceptions": {
@@ -861,7 +862,7 @@
       "le van választva",
       "le volt választva"
     ],
-    "forms": "the user disconnects → Leválasztás, aria {name} leválasztása; being disconnected → A(z) {name} leválasztása folyamatban van; agentless past (a drive went away) → A(z) {name} leválasztódott; the connection dropping on its own → megszakad a kapcsolat / nincs csatlakoztatva",
+    "forms": "the user disconnects → Leválasztás, aria {name} leválasztása; being disconnected → {name} leválasztása folyamatban van; agentless past (a drive went away) → {name} leválasztódott; the connection dropping on its own → megszakad a kapcsolat / nincs csatlakoztatva",
     "avoid": [
       {
         "form": "kiadás",
@@ -930,7 +931,7 @@
   "drive": {
     "chosen": "meghajtó",
     "accept": ["lemez", "meghajtó"],
-    "forms": "network drive → hálózati meghajtó; on this drive → ezen a meghajtón; a runtime name takes the suffix on meghajtó: a(z) {volumeName} meghajtón; where English says disk → lemez",
+    "forms": "network drive → hálózati meghajtó; on this drive → ezen a meghajtón; a runtime name goes in a colon slot: ezen a meghajtón: {volumeName}; where English says disk → lemez",
     "confidence": "high",
     "sources": "macOS; ms",
     "exceptions": {
@@ -1202,7 +1203,7 @@
   "forget": {
     "chosen": "elfelejtés",
     "accept": ["elfelejt", "felejtsd el"],
-    "forms": "button Elfelejtés; Forget server → Szerver elfelejtése; Forget saved password → Mentett jelszó elfelejtése; the question → Elfelejted a(z) „{name}” szervert?",
+    "forms": "button Elfelejtés; Forget server → Szerver elfelejtése; Forget saved password → Mentett jelszó elfelejtése; the question → Elfelejted ezt a szervert: „{name}”?",
     "avoid": [
       {
         "form": "eltávolítás (for forgetting a server)",
@@ -1229,8 +1230,9 @@
   },
   "full-disk-access": {
     "chosen": "Teljes hozzáférés a lemezhez",
-    "accept": ["teljes lemezhozzáférés"],
-    "forms": "where a string NAMES the setting → Teljes hozzáférés a lemezhez (the badge: Nincs teljes hozzáférés a lemezhez); running prose about the concept may keep the compound teljes lemezhozzáférés; the privacy grant → jogosultság",
+    "accept": ["teljes hozzáférése a lemezhez"],
+    "proseAccept": ["teljes lemezhozzáférés"],
+    "forms": "where a string NAMES the setting (titles, labels, the badge) → Teljes hozzáférés a lemezhez; running prose may say teljes lemezhozzáférés (prose only); the privacy grant → jogosultság",
     "avoid": [
       {
         "form": "Teljes lemezhozzáférés (as the setting's name)",
@@ -1870,7 +1872,7 @@
   "navigate": {
     "chosen": "ugrás",
     "accept": ["ugr", "navig", "lép", "visszatér", "ugor"],
-    "forms": "jump to X → Ugrás a(z) X-hoz; Navigation (card) → Navigáció; Navigate here again → Lépj ide újra; Click to navigate to {path} → Kattints ide az ugráshoz: {path}",
+    "forms": "jump to a fixed noun → Ugrás a mappához; Navigation (card) → Navigáció; Navigate here again → Lépj ide újra; Click to navigate to {path} → Kattints ide az ugráshoz: {path}",
     "confidence": "high",
     "sources": "descriptive; catalog"
   },
@@ -1883,7 +1885,7 @@
   "network-share": {
     "chosen": "megosztás",
     "accept": ["megoszt"],
-    "forms": "network share → hálózati megosztás; SMB/Network shares → SMB-/hálózati megosztások; share name as a head noun: a(z) „{share}” megosztás",
+    "forms": "network share → hálózati megosztás; SMB/Network shares → SMB-/hálózati megosztások; a runtime share name → ezt a megosztást: „{share}”, or Nincs „{share}” nevű megosztás",
     "confidence": "high",
     "sources": "ms (network share → hálózati megosztás); macOS NetAuthAgent (EINFO_NO_SHARE)"
   },
@@ -2471,7 +2473,7 @@
   "rename": {
     "chosen": "átnevezés",
     "accept": ["átnevez", "átneveződ", "nevezhető át", "nevezd át", "nevez"],
-    "forms": "label Átnevezés; can't be renamed → nem nevezhető át; the unconfirmed rename (no agent) → a(z) „X” átneveződött; rename cycle → átnevezési ciklus",
+    "forms": "label Átnevezés; can’t be renamed → nem nevezhető át; the unconfirmed rename (no agent) → hogy „{name}” átneveződött; rename cycle → átnevezési ciklus",
     "avoid": [
       {
         "form": "átnevezték (for Cmdr's own rename)",
@@ -2544,7 +2546,7 @@
   "respond": {
     "chosen": "válaszol",
     "accept": ["válasz"],
-    "forms": "didn't answer in time → nem válaszolt időben; isn't responding → nem válaszol; Waiting for X to respond → Várakozás a(z) X válaszára",
+    "forms": "didn’t answer in time → nem válaszolt időben; isn’t responding → nem válaszol; Waiting for a fixed noun to respond → Várakozás a szerver válaszára",
     "avoid": [
       {
         "form": "nem reagál",
@@ -3088,7 +3090,7 @@
   "too-large": {
     "chosen": "túl nagy",
     "accept": ["túl hosszú", "nagyobb"],
-    "forms": "too large for this drive → túl nagy ehhez a meghajtóhoz; larger than {maxSize} → {maxSize}-nál nagyobb (safe: every size unit reads back-vowel)",
+    "forms": "too large for this drive → túl nagy ehhez a meghajtóhoz; larger than {maxSize} → {maxSize} méretnél nagyobb (the base noun takes the suffix)",
     "confidence": "high",
     "sources": "macOS Finder (A fájl túl nagy a célhoz); Total Commander; Double Commander"
   },
@@ -3178,7 +3180,7 @@
   "unreachable": {
     "chosen": "nem érhető el",
     "accept": ["elér", "éri el", "érte el"],
-    "forms": "Can't reach X → Nem érhető el a(z) X; Cmdr couldn't reach → A Cmdr nem tudta elérni; isn't available any more → már nem érhető el",
+    "forms": "Can’t reach a fixed noun → Nem érhető el a szerver; Cmdr couldn’t reach → A Cmdr nem tudta elérni; isn’t available any more → már nem érhető el",
     "confidence": "high",
     "sources": "macOS Finder (NE7 nem érhető el többé)"
   },
@@ -3274,7 +3276,7 @@
   "waiting": {
     "chosen": "Várakozik",
     "accept": ["várakoz", "vár"],
-    "forms": "queued status → Várakozik; badge Waiting to X → Várakozás a(z) X-re (Várakozás az indexelésre)",
+    "forms": "queued status → Várakozik; badge Waiting to X → Várakozás az indexelésre",
     "confidence": "high",
     "sources": "macOS Finder (AXBADGE4/5 Várakozás a feltöltésre); AppKit (Várakozás a lemezmeghajtóra…)"
   },
@@ -3333,7 +3335,7 @@
       "ki van írva",
       "épp ír"
     ],
-    "forms": "flush → Az utolsó darab kiírása…; may already be partly written → lehet, hogy már részben ki van írva; half-written file → félig megírt fájl; were saved on a drive → kiíródtak-e a(z) {volumeName} meghajtóra",
+    "forms": "flush → Az utolsó darab kiírása…; may already be partly written → lehet, hogy már részben ki van írva; half-written file → félig megírt fájl; were saved on a drive → kiíródtak-e ide: {volumeName}",
     "confidence": "high",
     "sources": "catalog (transferProgress.titleFlushing)"
   },
