@@ -1,9 +1,9 @@
 {
-  "ai.toast.downloadingTitle": "KI-Modell wird heruntergeladen …",
+  "ai.toast.downloadingTitle": "KI-Modell wird heruntergeladen …",
   "@ai.toast.downloadingTitle": {
     "sourceHash": "85d48ae"
   },
-  "ai.toast.startingDownload": "Download wird gestartet …",
+  "ai.toast.startingDownload": "Download wird gestartet …",
   "@ai.toast.startingDownload": {
     "sourceHash": "22309b1"
   },
@@ -15,7 +15,7 @@
   "@ai.toast.cancel": {
     "sourceHash": "19766ed"
   },
-  "ai.toast.installingTitle": "KI wird eingerichtet …",
+  "ai.toast.installingTitle": "KI wird eingerichtet …",
   "@ai.toast.installingTitle": {
     "sourceHash": "85f7001"
   },
@@ -35,7 +35,7 @@
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "ai.toast.startingTitle": "KI wird gestartet …",
+  "ai.toast.startingTitle": "KI wird gestartet …",
   "@ai.toast.startingTitle": {
     "sourceHash": "d0a6a15"
   },
@@ -47,7 +47,7 @@
   "@ai.toast.downloadCloseTooltip": {
     "sourceHash": "16db2bd"
   },
-  "ai.translateError.off.title": "KI ist deaktiviert",
+  "ai.translateError.off.title": "KI ist ausgeschaltet",
   "@ai.translateError.off.title": {
     "sourceHash": "99ce709"
   },
@@ -139,7 +139,7 @@
   "@ai.cloudConsent.logsNote": {
     "sourceHash": "7e211fc"
   },
-  "ai.cloudConsent.turnOffAnyTime": "Du kannst das jederzeit deaktivieren, dann hört Cmdr sofort auf zu senden. Dein Dienst, dein Schlüssel und deine Chats bleiben, wie sie sind.",
+  "ai.cloudConsent.turnOffAnyTime": "Du kannst das jederzeit ausschalten, dann hört Cmdr sofort auf zu senden. Dein Dienst, dein Schlüssel und deine Chats bleiben, wie sie sind.",
   "@ai.cloudConsent.turnOffAnyTime": {
     "sourceHash": "464c39f"
   },
@@ -155,7 +155,7 @@
   "@ai.translateError.notConfigured.body": {
     "sourceHash": "65133a8"
   },
-  "ai.translateError.noCloudConsent.title": "Cloud-KI ist deaktiviert",
+  "ai.translateError.noCloudConsent.title": "Cloud-KI ist ausgeschaltet",
   "@ai.translateError.noCloudConsent.title": {
     "sourceHash": "2e56781"
   },
@@ -183,7 +183,7 @@
   "@ai.translateError.timeout.title": {
     "sourceHash": "d684e3f"
   },
-  "ai.translateError.timeout.body": "Bei der Anfrage gab es eine Zeitüberschreitung. Versuche es gleich noch einmal.",
+  "ai.translateError.timeout.body": "Die Anfrage hat zu lange gedauert. Versuche es gleich noch einmal.",
   "@ai.translateError.timeout.body": {
     "sourceHash": "249b720"
   },
@@ -243,7 +243,7 @@
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },
-  "ai.cloud.checking": "Wird geprüft …",
+  "ai.cloud.checking": "Wird geprüft …",
   "@ai.cloud.checking": {
     "sourceHash": "ec963ff"
   },
@@ -287,11 +287,11 @@
   "@ai.local.warningCaution": {
     "sourceHash": "f8070e9"
   },
-  "ai.local.statusRestarting": "Wird neu gestartet …",
+  "ai.local.statusRestarting": "Wird neu gestartet …",
   "@ai.local.statusRestarting": {
     "sourceHash": "75d0f14"
   },
-  "ai.local.statusStarting": "Wird gestartet …",
+  "ai.local.statusStarting": "Wird gestartet …",
   "@ai.local.statusStarting": {
     "sourceHash": "bbe5fc3"
   },
@@ -303,23 +303,23 @@
   "@ai.local.statusStopped": {
     "sourceHash": "1a4f630"
   },
-  "ai.local.installStepExtracting": "Schritt 1 von 4: Runtime wird entpackt …",
+  "ai.local.installStepExtracting": "Schritt 1 von 4: Runtime wird entpackt …",
   "@ai.local.installStepExtracting": {
     "sourceHash": "44fc84b"
   },
-  "ai.local.installStepDownloading": "Schritt 2 von 4: Modell wird heruntergeladen …",
+  "ai.local.installStepDownloading": "Schritt 2 von 4: Modell wird heruntergeladen …",
   "@ai.local.installStepDownloading": {
     "sourceHash": "99d712f"
   },
-  "ai.local.installStepVerifying": "Schritt 3 von 4: Download wird überprüft …",
+  "ai.local.installStepVerifying": "Schritt 3 von 4: Download wird überprüft …",
   "@ai.local.installStepVerifying": {
     "sourceHash": "302f79a"
   },
-  "ai.local.installStepStarting": "Schritt 4 von 4: Server wird gestartet …",
+  "ai.local.installStepStarting": "Schritt 4 von 4: Server wird gestartet …",
   "@ai.local.installStepStarting": {
     "sourceHash": "696bd5e"
   },
-  "ai.local.startingDownload": "Download wird gestartet …",
+  "ai.local.startingDownload": "Download wird gestartet …",
   "@ai.local.startingDownload": {
     "sourceHash": "22309b1"
   },
@@ -411,7 +411,7 @@
   "@ai.local.downloadModel": {
     "sourceHash": "9979bea"
   },
-  "ai.local.deleteDialogTitleDeleting": "Modell wird gelöscht …",
+  "ai.local.deleteDialogTitleDeleting": "Modell wird gelöscht …",
   "@ai.local.deleteDialogTitleDeleting": {
     "sourceHash": "d3a7e58"
   },
@@ -419,7 +419,7 @@
   "@ai.local.deleteDialogTitle": {
     "sourceHash": "c486f0c"
   },
-  "ai.local.deletingStatus": "Server wird gestoppt und Dateien werden entfernt …",
+  "ai.local.deletingStatus": "Server wird gestoppt und Dateien werden entfernt …",
   "@ai.local.deletingStatus": {
     "sourceHash": "e9de1ca"
   },
@@ -427,7 +427,7 @@
   "@ai.local.deleteConfirmMessage": {
     "sourceHash": "1a6ca0d"
   },
-  "ai.local.deleteButtonDeleting": "Wird gelöscht …",
+  "ai.local.deleteButtonDeleting": "Wird gelöscht …",
   "@ai.local.deleteButtonDeleting": {
     "sourceHash": "43b5894"
   },
@@ -441,7 +441,7 @@
   },
   "ai.secretError.keychainBody": "{op, select, save {Öffne die Schlüsselbundverwaltung und prüfe den Eintrag „Cmdr“, oder lösche ihn und speichere noch einmal.} other {Öffne die Schlüsselbundverwaltung, suche den Eintrag „Cmdr“ und gewähre den Zugriff, oder lösche ihn und gib deinen Schlüssel neu ein.}}",
   "@ai.secretError.keychainBody": {
-    "sourceHash": "2a0fe5e"
+    "sourceHash": "8f1380e"
   },
   "ai.secretError.keyringTitle": "{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Dein System-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Dein System-Schlüsselbund hat den Zugriff verweigert}}",
   "@ai.secretError.keyringTitle": {

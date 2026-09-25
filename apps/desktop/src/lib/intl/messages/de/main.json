@@ -7,11 +7,11 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "140c57d"
   },
-  "main.upgradeNudge.mac": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne Cmdr > Einführung…, um sie anzusehen.",
+  "main.upgradeNudge.mac": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne Cmdr > Einführung …, um sie anzusehen.",
   "@main.upgradeNudge.mac": {
     "sourceHash": "477f3a5"
   },
-  "main.upgradeNudge.other": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne die Befehlspalette und führe Einführung… aus, um sie anzusehen.",
+  "main.upgradeNudge.other": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne die Befehlspalette und führe Einführung … aus, um sie anzusehen.",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
@@ -53,11 +53,11 @@
   },
   "main.revealNudge.title": "„Im Finder anzeigen“ in Cmdr öffnen?",
   "@main.revealNudge.title": {
-    "sourceHash": "c92e1b7"
+    "sourceHash": "45a5b47"
   },
   "main.revealNudge.body": "Du benutzt Cmdr jetzt schon eine Weile. Wenn eine andere App „Im Finder anzeigen“ ausführt, kann Cmdr diesen Ordner öffnen, mit dem Cursor direkt auf der Datei.",
   "@main.revealNudge.body": {
-    "sourceHash": "fe4072b"
+    "sourceHash": "1db1d28"
   },
   "main.revealNudge.switchBackNote": "Du kannst das jederzeit in den Einstellungen wieder umstellen.",
   "@main.revealNudge.switchBackNote": {
@@ -73,19 +73,19 @@
   },
   "main.revealNudge.turnedOn": "Cmdr öffnet „Im Finder anzeigen“ jetzt für andere Apps.",
   "@main.revealNudge.turnedOn": {
-    "sourceHash": "8eab42b"
+    "sourceHash": "27c0ea2"
   },
   "main.revealNudge.heldByOtherApp": "„Im Finder anzeigen“ gehört gerade {app}. Du kannst es in den Einstellungen jederzeit an Cmdr übergeben.",
   "@main.revealNudge.heldByOtherApp": {
-    "sourceHash": "3f513b0"
+    "sourceHash": "0893821"
   },
   "main.revealNudge.notTurnedOn": "Cmdr konnte „Im Finder anzeigen“ diesmal nicht übernehmen. Der Schalter dafür ist in den Einstellungen, wenn du es noch einmal versuchen willst.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "4a9920d"
+    "sourceHash": "953a4ee"
   },
   "main.revealActivation.title": "„Im Finder anzeigen“ wurde hier geöffnet",
   "@main.revealActivation.title": {
-    "sourceHash": "23d50e1"
+    "sourceHash": "6bb18bb"
   },
   "main.revealActivation.body": "Cmdr ist so eingestellt, dass es das übernimmt. Deshalb ist die Datei hier im Bereich gelandet statt im Finder. Alles andere öffnet sich weiterhin wie bisher.",
   "@main.revealActivation.body": {

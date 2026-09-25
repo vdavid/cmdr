@@ -20,7 +20,7 @@
   "@askCmdr.empty.hint": {
     "sourceHash": "487071b"
   },
-  "askCmdr.composer.placeholder": "Frag nach deinen Dateien …",
+  "askCmdr.composer.placeholder": "Frag nach deinen Dateien …",
   "@askCmdr.composer.placeholder": {
     "sourceHash": "77e2636"
   },
@@ -32,7 +32,7 @@
   "@askCmdr.composer.stop": {
     "sourceHash": "cae7d57"
   },
-  "askCmdr.thinking": "Denkt nach …",
+  "askCmdr.thinking": "Denkt nach …",
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
@@ -212,11 +212,11 @@
   "@askCmdr.error.notConfigured": {
     "sourceHash": "2d55d2c"
   },
-  "askCmdr.error.askCmdrOff": "Ask Cmdr ist deaktiviert.",
+  "askCmdr.error.askCmdrOff": "Ask Cmdr ist ausgeschaltet.",
   "@askCmdr.error.askCmdrOff": {
     "sourceHash": "6599ee1"
   },
-  "askCmdr.error.noCloudConsent": "Cloud-KI ist deaktiviert. Erlaube sie unter Einstellungen > KI.",
+  "askCmdr.error.noCloudConsent": "Cloud-KI ist ausgeschaltet. Erlaube sie unter Einstellungen > KI.",
   "@askCmdr.error.noCloudConsent": {
     "sourceHash": "cd2af1d"
   },
@@ -286,7 +286,7 @@
   "@askCmdr.sessions.back": {
     "sourceHash": "5978844"
   },
-  "askCmdr.sessions.searchPlaceholder": "In deinen Chats suchen …",
+  "askCmdr.sessions.searchPlaceholder": "In deinen Chats suchen …",
   "@askCmdr.sessions.searchPlaceholder": {
     "sourceHash": "2de9074"
   },
@@ -318,7 +318,7 @@
   "@askCmdr.sessions.loadMore": {
     "sourceHash": "ac8991e"
   },
-  "askCmdr.sessions.searching": "Wird gesucht …",
+  "askCmdr.sessions.searching": "Wird gesucht …",
   "@askCmdr.sessions.searching": {
     "sourceHash": "c31723a"
   },
@@ -358,7 +358,7 @@
   "@askCmdr.attachment.remove": {
     "sourceHash": "595b066"
   },
-  "askCmdr.gate.off.title": "Ask Cmdr ist deaktiviert",
+  "askCmdr.gate.off.title": "Ask Cmdr ist ausgeschaltet",
   "@askCmdr.gate.off.title": {
     "sourceHash": "0420c9a"
   },
@@ -370,7 +370,7 @@
   "@askCmdr.gate.off.turnOn": {
     "sourceHash": "0d656c4"
   },
-  "askCmdr.gate.cloudOff.title": "Cloud-KI ist deaktiviert",
+  "askCmdr.gate.cloudOff.title": "Cloud-KI ist ausgeschaltet",
   "@askCmdr.gate.cloudOff.title": {
     "sourceHash": "2e56781"
   },
@@ -594,7 +594,7 @@
   "@askCmdr.renameUndo.undoJobLabel": {
     "sourceHash": "9d2e84e"
   },
-  "askCmdr.renameUndo.undoing": "Alte Namen werden zurückgesetzt…",
+  "askCmdr.renameUndo.undoing": "Alte Namen werden zurückgesetzt …",
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },

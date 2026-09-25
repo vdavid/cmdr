@@ -145,7 +145,7 @@
   },
   "onboarding.stepFda.step2.tip": "Ist Cmdr nicht in der Liste? Klicke unten auf die Taste „+“ und wähle <strong>Cmdr</strong> aus deinem Ordner <strong>Programme</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "30d0299"
+    "sourceHash": "ffc4289"
   },
   "onboarding.stepFda.step3": "Bestätige und klicke auf <strong>Beenden & erneut öffnen</strong>",
   "@onboarding.stepFda.step3": {
@@ -189,7 +189,7 @@
   },
   "onboarding.stepAi.bannerBody.stuck": "Du wolltest den vollständigen Festplattenzugriff aktivieren, aber Cmdr scheint ihn nicht bekommen zu haben. Vielleicht musst du die App neu starten (mach es jetzt, wir machen von hier aus weiter!), oder gehe zu <settingsLink>{systemSettings} > Datenschutz & Sicherheit > Vollständiger Festplattenzugriff</settingsLink>, finde dort Cmdr oder füge es manuell mit der kleinen Taste „+“ unten hinzu.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "79d5765"
+    "sourceHash": "fcdff85"
   },
   "onboarding.stepAi.welcomeLinux.title": "Willkommen bei Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -229,11 +229,11 @@
   },
   "onboarding.stepAi.table.searchWithout": "Du tippst etwas wie <code>*fish*.ppt</code> und wählst den Filter „nach dem 1. dieses Monats“.",
   "@onboarding.stepAi.table.searchWithout": {
-    "sourceHash": "872cb1e"
+    "sourceHash": "ebd8f45"
   },
   "onboarding.stepAi.table.searchWith": "Du sagst „meine neueren Präsentationen über Fische“, der Agent setzt deine Filter.",
   "@onboarding.stepAi.table.searchWith": {
-    "sourceHash": "b69cd82"
+    "sourceHash": "457e19a"
   },
   "onboarding.stepAi.table.rowRename": "Massenumbenennung",
   "@onboarding.stepAi.table.rowRename": {
@@ -245,7 +245,7 @@
   },
   "onboarding.stepAi.table.renameWith": "Du sagst „ISO-Datum voranstellen“, der Agent setzt dein Umbenennungsmuster, du prüfst und wendest es an, wie du magst.",
   "@onboarding.stepAi.table.renameWith": {
-    "sourceHash": "7fba3f5"
+    "sourceHash": "5287ae3"
   },
   "onboarding.stepAi.table.rowSelect": "Auswählen",
   "@onboarding.stepAi.table.rowSelect": {
@@ -255,13 +255,13 @@
   "@onboarding.stepAi.table.selectWithoutBound": {
     "sourceHash": "83f83b9"
   },
-  "onboarding.stepAi.table.selectWithoutUnbound": "Du öffnest „Dateien auswählen …“ und tippst etwas wie <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, prüfst und wendest es an.",
+  "onboarding.stepAi.table.selectWithoutUnbound": "Du öffnest „Dateien auswählen …“ und tippst etwas wie <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, prüfst und wendest es an.",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "sourceHash": "4cdc972"
+    "sourceHash": "bf9239a"
   },
   "onboarding.stepAi.table.selectWith": "Du sagst „alle Bilddateien auswählen“, der Agent schlägt eine Auswahl vor, du prüfst und wendest sie an, wie du magst.",
   "@onboarding.stepAi.table.selectWith": {
-    "sourceHash": "07f1063"
+    "sourceHash": "c1cc90b"
   },
   "onboarding.stepAi.resumeCue": "Das hast du letztes Mal gewählt. Bestätige es unten oder ändere es.",
   "@onboarding.stepAi.resumeCue": {
@@ -305,9 +305,9 @@
   },
   "onboarding.stepAi.missingKeyWarning": "Du hast KI aktiviert, aber keinen API-Schlüssel eingegeben. Die KI funktioniert dann nicht, und du siehst eine Warnung. Bitte korrigiere das oben.\n\n<strong>Klicke noch einmal auf „{nextLabel}“, um das zu ignorieren und fortzufahren.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "3d66d11"
+    "sourceHash": "bdb8a08"
   },
-  "onboarding.stepAi.cloudConsentOffNote": "Cloud-KI bleibt deaktiviert, bis du sie erlaubst. Das geht auch später unter Einstellungen > KI.",
+  "onboarding.stepAi.cloudConsentOffNote": "Cloud-KI bleibt ausgeschaltet, bis du sie erlaubst. Das geht auch später unter Einstellungen > KI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
     "sourceHash": "82d27b6"
   },
@@ -357,7 +357,7 @@
   },
   "onboarding.stepBeta.checklist.alternativeToNote": "Ganz oben auf der Seite, neben dem Titel „Cmdr“. So werden Leute und Google auf Cmdr aufmerksam!",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "sourceHash": "ea4903a"
+    "sourceHash": "ee4aed4"
   },
   "onboarding.stepBeta.checklist.email": "Gib deine E-Mail-Adresse <field></field> ein, um ganz selten Updates und Fragen zu bekommen",
   "@onboarding.stepBeta.checklist.email": {
@@ -457,11 +457,11 @@
   },
   "onboarding.stepOptional.networking.summary": "Braucht einmal die Berechtigung „Lokales Netzwerk“",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "5006f53"
+    "sourceHash": "f49fbc6"
   },
   "onboarding.stepOptional.networking.desc": "Ist das <em>an</em>, kannst du dich mit SMB-Servern verbinden, etwa mit Firmennetzwerkfreigaben, einem heimischen NAS und Ähnlichem.\nDer einzige Haken ist ein macOS-Berechtigungsdialog, der auftaucht und dich um Erlaubnis für „Lokales Netzwerk“ bittet, sowie einer für „Eingehende Verbindungen annehmen“.\nBeide Dialoge sind harmlos, aber wenn du nicht weißt, was das ist, können sie beängstigend oder lästig wirken.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "089707f"
+    "sourceHash": "c03c7df"
   },
   "onboarding.stepOptional.indexing.title": "Laufwerksindizierung",
   "@onboarding.stepOptional.indexing.title": {
@@ -579,7 +579,7 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
     "sourceHash": "974ffdf"
   },
-  "onboarding.cloudSetup.status.checking": "Dein Schlüssel wird geprüft …",
+  "onboarding.cloudSetup.status.checking": "Dein Schlüssel wird geprüft …",
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"
   },

@@ -1395,7 +1395,7 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr hat auf diesem Mac außerdem keinen Festplattenvollzugriff, was eine häufige Ursache ist. Der Hinweis „Kein Festplattenvollzugriff“ in der Titelleiste bringt dich zu dieser Entscheidung.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "ab20ec5"
+    "sourceHash": "0dbe21b"
   },
   "errors.write.ioError.title.copy": "Kopieren nicht möglich",
   "@errors.write.ioError.title.copy": {
@@ -1679,7 +1679,7 @@
   },
   "errors.mutation.notFound": "Unter „{path}“ gibt es nichts mehr.",
   "@errors.mutation.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.mutation.cantRenameVolumeRoot": "Der oberste Ordner eines Volumes lässt sich hier nicht umbenennen.",
   "@errors.mutation.cantRenameVolumeRoot": {
@@ -1687,7 +1687,7 @@
   },
   "errors.mutation.parentNotWritable": "Cmdr kann nicht in „{path}“ schreiben. Prüfe die Zugriffsrechte des Ordners im Finder.",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "902f3a5"
+    "sourceHash": "3659a5a"
   },
   "errors.mutation.fileLocked": "Dieses Objekt ist geschützt. Hebe den Schutz im Finder unter „Informationen“ auf und versuche es dann erneut.",
   "@errors.mutation.fileLocked": {
@@ -1735,15 +1735,15 @@
   },
   "errors.volume.notFound": "Unter „{path}“ gibt es nichts mehr.",
   "@errors.volume.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.volume.permissionDenied": "Cmdr hat keinen Zugriff auf „{path}“.",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "1f63dc1"
+    "sourceHash": "fee452b"
   },
   "errors.volume.alreadyExists": "Unter „{path}“ gibt es bereits etwas.",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "e070962"
+    "sourceHash": "de0bbb9"
   },
   "errors.volume.notSupported": "Dieses Volume unterstützt das nicht.",
   "@errors.volume.notSupported": {
@@ -1779,7 +1779,7 @@
   },
   "errors.volume.isADirectory": "„{path}“ ist ein Ordner, keine Datei.",
   "@errors.volume.isADirectory": {
-    "sourceHash": "fe76957"
+    "sourceHash": "224ae5e"
   },
   "errors.volume.invalidName": "Das Ziel kann diesen Namen nicht speichern. Wähle einen anderen.",
   "@errors.volume.invalidName": {
@@ -1791,7 +1791,7 @@
   },
   "errors.volume.ambiguousName": "Mehr als ein Objekt auf dem Server passt zu „{path}“, deshalb hat Cmdr keines ausgewählt. Wähle es stattdessen in seinem Ordner aus.",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "024d1da"
+    "sourceHash": "f866182"
   },
   "errors.volume.staleDestinationHandle": "Cmdr hat den Zielordner auf dem Gerät aus den Augen verloren. Öffne ihn noch einmal und versuche es dann erneut.",
   "@errors.volume.staleDestinationHandle": {
@@ -1903,43 +1903,43 @@
   },
   "errors.mount.hostUnreachable": "Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
   "errors.mount.timeout": "Cmdr hat gewartet, aber „{server}“ hat nicht rechtzeitig geantwortet. Prüfe, ob der Server eingeschaltet und erreichbar ist, und versuche es dann erneut.",
   "@errors.mount.timeout": {
-    "sourceHash": "bfb786c"
+    "sourceHash": "00d198e"
   },
   "errors.mount.shareNotFound": "Auf „{server}“ gibt es keine Freigabe namens „{share}“. Geh zurück und wähle eine aus der Liste.",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "4f930a5"
+    "sourceHash": "08aee2a"
   },
   "errors.mount.authRequired": "Melde dich an, um „{share}“ auf „{server}“ zu öffnen.",
   "@errors.mount.authRequired": {
-    "sourceHash": "8466652"
+    "sourceHash": "b2af295"
   },
   "errors.mount.authFailed": "Benutzername und Passwort haben auf „{server}“ nicht geklappt. Prüfe sie und melde dich erneut an.",
   "@errors.mount.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
   "errors.mount.permissionDenied": "Du bist bei „{server}“ als „{username}“ angemeldet, aber dieses Konto kann „{share}“ nicht öffnen. Melde dich mit einem anderen Konto an.",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "12e20d9"
+    "sourceHash": "f8e000b"
   },
   "errors.mount.cancelled": "Der Verbindungsaufbau zu „{share}“ endete, bevor er abgeschlossen war. Versuche es noch einmal, wenn du so weit bist.",
   "@errors.mount.cancelled": {
-    "sourceHash": "0b0ec30"
+    "sourceHash": "4f6ff32"
   },
   "errors.mount.unsupportedProtocol": "Dieser Computer und „{server}“ haben keine gemeinsame SMB-Version. Schalte in den Einstellungen des Servers SMB 2 oder neuer ein und versuche es dann erneut.",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "bf9c71e"
+    "sourceHash": "7cb18f6"
   },
   "errors.mount.mountRefused": "Du bist bei „{server}“ angemeldet, aber der Server hat das Öffnen von „{share}“ abgelehnt. Prüfe die Einstellungen der Freigabe auf dem Server und versuche es dann erneut.",
   "@errors.mount.mountRefused": {
-    "sourceHash": "c354782"
+    "sourceHash": "84344ca"
   },
   "errors.mount.mountMissing": "Dein Computer hat „{share}“ auf „{server}“ als verbunden gemeldet, aber die Freigabe ist nie aufgetaucht. Versuche es erneut.",
   "@errors.mount.mountMissing": {
-    "sourceHash": "a5f61b5"
+    "sourceHash": "72ab946"
   },
   "errors.mount.gvfsMissing": "Zum Verbinden mit Netzwerkfreigaben braucht Linux GVFS. Installiere das Paket gvfs-smb deiner Distribution und versuche es dann erneut.",
   "@errors.mount.gvfsMissing": {
@@ -1947,35 +1947,35 @@
   },
   "errors.mount.unexpected": "Beim Verbinden mit „{share}“ auf „{server}“ ist etwas schiefgelaufen. Versuche es gleich noch einmal.",
   "@errors.mount.unexpected": {
-    "sourceHash": "8daf9ba"
+    "sourceHash": "1ab5cca"
   },
   "errors.shareList.hostUnreachable": "Cmdr konnte „{server}“ nicht erreichen. Prüfe, ob der Server eingeschaltet und im selben Netzwerk wie dieser Computer ist.",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
   "errors.shareList.timeout": "Cmdr hat gewartet, aber „{server}“ hat nicht rechtzeitig geantwortet. Versuche es gleich noch einmal.",
   "@errors.shareList.timeout": {
-    "sourceHash": "ae84e14"
+    "sourceHash": "a07b7c8"
   },
   "errors.shareList.authRequired": "Melde dich an, um die Freigaben auf „{server}“ zu sehen.",
   "@errors.shareList.authRequired": {
-    "sourceHash": "4268ae9"
+    "sourceHash": "68f86c4"
   },
   "errors.shareList.signingRequired": "„{server}“ zeigt Gästen keine Freigaben. Melde dich an, um sie zu sehen.",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "8ae651a"
+    "sourceHash": "ecc570d"
   },
   "errors.shareList.authFailed": "Benutzername und Passwort haben auf „{server}“ nicht geklappt. Prüfe sie und melde dich erneut an.",
   "@errors.shareList.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
   "errors.shareList.protocolError": "Beim Abrufen der Freigaben von „{server}“ ist etwas schiefgelaufen. Versuche es gleich noch einmal.",
   "@errors.shareList.protocolError": {
-    "sourceHash": "064a773"
+    "sourceHash": "da302ca"
   },
   "errors.shareList.resolutionFailed": "Cmdr konnte „{server}“ im Netzwerk nicht finden. Prüfe den Namen oder versuche es erneut, sobald der Server wieder online ist.",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "d2e5b54"
+    "sourceHash": "62e91cf"
   },
   "errors.shareList.missingDependency": "Zum Auflisten von Freigaben braucht dieser Computer das Programm smbclient, das nicht installiert ist. Installiere es und versuche es dann erneut.",
   "@errors.shareList.missingDependency": {

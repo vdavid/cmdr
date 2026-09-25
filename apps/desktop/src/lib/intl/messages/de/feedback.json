@@ -44,7 +44,7 @@
   "@feedback.dialog.send": {
     "sourceHash": "8235980"
   },
-  "feedback.dialog.sending": "Wird gesendet …",
+  "feedback.dialog.sending": "Wird gesendet …",
   "@feedback.dialog.sending": {
     "sourceHash": "b8ed527"
   },

@@ -19,9 +19,8 @@ The must-know rules; the rest of this file elaborates them.
   a deliberate choice; native regret (`Tut mir leid`) over the loanword `Sorry` where one is due.
 - **Register by UI slot**:
   - buttons and menu items: infinitive, like Finder (`Umbenennen`, `Auswerfen`, `Abbrechen`), with the object first
-    (`Server bearbeiten…`, `Zu Favoriten hinzufügen`);
-  - progress lines: passive present with a space before the ellipsis (`Wird kopiert`, `Laufwerk wird durchsucht …`); a
-    menu item or button that opens a dialog attaches the ellipsis with no space (`Einführung…`);
+    (`Server bearbeiten …`, `Zu Favoriten hinzufügen`);
+  - progress lines: passive present (`Wird kopiert`, `Laufwerk wird durchsucht …`);
   - status chips: terse (`Wartet`, `Läuft`, `Angehalten`, `Fertig`, `Nicht abgeschlossen`);
   - a waiting line in body prose is a full sentence with a subject (`Cmdr wartet auf eine Antwort vom Ziel.`);
   - „Click to X“: short `Zum X klicken`, long `Klicken, um … zu …`.
@@ -34,15 +33,17 @@ The must-know rules; the rest of this file elaborates them.
   Apple Account, Apple silicon. On a phone, Android's own German wins (`USB-Debugging`, `Erlauben`, `tippe auf`).
 - **Capitalization**: sentence case, and all nouns capitalized (grammar, not title case). Don't lowercase a noun to
   match English.
-- **Punctuation**: German quotes `„…“` around UI names and file names in running text, never `"…"`. Ellipsis is always
-  the single `…`. A space before `%` and unit symbols (`42 %`, DIN 5008). Multipliers keep the digit with a hyphen
-  (`4-mal`). ICU values double a straight apostrophe; RAW families (`errors.*`, `menu.*`) don't.
+- **Typography** (`mechanics.json`): quotes `„…“`, nested `‚…‘`, apostrophe `’` (`gibt’s`), never `"…"` or `'…'`.
+  Ellipsis is always the single `…`, and one that ends a label or progress line takes a no-break space (U+00A0) before
+  it, as macOS de writes it (`Einführung …`, `Wird geladen …`). A space before `%` and unit symbols (`42 %`, DIN 5008).
+  Multipliers keep the digit with a hyphen (`4-mal`).
+- **No hedged grammar**: German tempts you into `Datei(en)`, `jede(r)`, `ein/e`, `der/die`, and gender stars or colons.
+  Never write one: use ICU `plural` / `select` when Cmdr knows the value, otherwise repeat the noun or rephrase.
 - **Menus and buttons in prose**: a menu is `das Menü „Hilfe“`, never `das Hilfe-Menü`; an on-screen button is
   `die Taste „+“`, never `Schaltfläche`. Quote the label byte-for-byte from the catalog.
 - **Brand**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP` stay verbatim and take NO genitive-s: `die Oberfläche von Cmdr`,
-  never `Cmdrs` (the don't-translate check reads it as a dropped brand). In a subordinate clause Cmdr is `es`.
-  `Ask Cmdr` names only the chat panel; compounds couple through (`Ask-Cmdr-Einstellungen`). Prose about what the AI
-  does says `Cmdr` or `die KI`.
+  never `Cmdrs`. In a subordinate clause Cmdr is `es`. `Ask Cmdr` names only the chat panel; compounds couple through
+  (`Ask-Cmdr-Einstellungen`). Prose about what the AI does says `Cmdr` or `die KI`.
 - **Plurals**: CLDR `one` / `other`. Get case right inside each branch: a bare count phrase is nominative (`12 Ordner`),
   the dative `-n` needs a preposition (`in 3 Ordnern`, `von 12 Bildern`). Text after a plural block must work with both
   `ist` and `sind`.
@@ -51,13 +52,11 @@ The must-know rules; the rest of this file elaborates them.
   article (`am alten Ort`). Keep a placeholder out of case slots: nominative subject, or behind its own preposition
   (`Unter „{path}“ gibt es …`, `auf {volumeName}`, `namens {folderName}`). Two nouns of different gender take a generic
   noun, not a shared pronoun (`das Gerät` for „a Mac or NAS“).
-- **Aria labels**: an `*Aria` value must contain its visible label verbatim; give the label the form the natural aria
-  sentence needs (`Im Hintergrund` inside `Im Hintergrund weiterlaufen lassen`, `Anhalten` inside
-  `Diesen Vorgang anhalten`).
-- **One word per thing**: two keys with the same English get the same German (the term-consistency check enforces it),
-  one control has one German name even where English has two (`Volume-Auswahl`), and one dialog keeps one word family
-  (`hinzufügen` → `Wird hinzugefügt …` → `hinzugefügt`). Name a feature in full once (`Fehlerbericht`), then the short
-  word (`Bericht`).
+- **Aria labels**: German case is what breaks containment, so give the label the aria sentence's case (`Im Hintergrund`
+  inside `Im Hintergrund weiterlaufen lassen`).
+- **One word per thing**: two keys with the same English get the same German, one control has one German name even where
+  English has two (`Volume-Auswahl`), and one dialog keeps one word family (`hinzufügen` → `Wird hinzugefügt …` →
+  `hinzugefügt`). Name a feature in full once (`Fehlerbericht`), then the short word (`Bericht`).
 - **Top traps** (details in `terms.json`):
   - operation → `Vorgang` (m.: `diesen Vorgang`, `ihn`): `Vorgangswarteschlange`, `Vorgangsprotokoll`; `Operation` only
     for the protocol-level request and the Settings titles (`Dateioperationen`); transfer → `Übertragung` only where the
@@ -72,7 +71,7 @@ The must-know rules; the rest of this file elaborates them.
   - dismiss → `Schließen` for a dialog or toast, `Ausblenden` for a row or hint line hidden for good.
   - see/view → `ansehen` (the F3 action `Ansehen`); show → `anzeigen` / `einblenden`.
   - index → `indizieren`, never `indexieren`; scan → `durchsuchen` / `Durchlauf`, never `Scan`; browse into an archive
-    or phone → `durchsehen`, the file-picker button → `Durchsuchen…`.
+    or phone → `durchsehen`, the file-picker button → `Durchsuchen …`.
   - hidden files → `verborgen`; taken out of view → `ausgeblendet`.
   - drive → `Laufwerk` (what the user plugged in), volume → `Volume` (technical); disk image → `Image`.
   - pin → `fixieren` / `lösen` for tabs and servers, `im Dock behalten` / `aus dem Dock entfernen` for the Dock.
@@ -190,10 +189,11 @@ Dateien".
   strings: see Length below.
 - **Quotation marks: `„…“`** (low opening, high closing) is the standard German form, and macOS uses it consistently
   ("Möchtest du „%@“ … bewegen?"). Avoid English `"…"`.
-- **Ellipsis: always the single character `…`, never three ASCII dots (`...`).** Two placements, settled across the
-  catalog: progress / gerund status lines take a SPACE before it ("Wird geladen …", "Laufwerk wird durchsucht …",
-  "Verbindung wird hergestellt …"); menu-item and button labels that open a dialog attach it with NO space, the macOS
-  menu convention ("Einführung…", "Befehle suchen…", "Fehlerbericht senden…").
+- **Ellipsis: always the single character `…`, never three ASCII dots (`...`), with a no-break space (U+00A0) before
+  it** wherever it ends a progress line or a dialog-opening label: „Wird geladen …“, „Einführung …“, „Fehlerbericht
+  senden …“. That's how macOS de writes both (244 of 257 label-ending ellipses in the pile, for example Finder „Gehe zu
+  Ordner …“), and the no-break space keeps the `…` from wrapping onto its own line. A leading `…` („… und 3 weitere“), a
+  range (`{after}…{before}`), and a truncated sample (`sk-abc123…`) stay as they are.
 - **A waiting line in BODY PROSE is a sentence, not a progress label.** macOS's own waiting strings are verbless
   fragments with an ellipsis ("Warten auf das Laufwerk …", "Auf Upload warten"), which is right for a title or a status
   chip. When the English is a full sentence ending in a period and sits next to other sentences, give it a subject
@@ -252,14 +252,6 @@ Dateien".
 - **Metadaten heißen `…angaben`, nicht `…daten` oder `…details`.** Der Katalog nennt Dateimetadaten `Dateiangaben`
   („Dateiangaben, nicht der Inhalt“) und die EXIF-Daten eines Fotos entsprechend `Kameraangaben`. Neue Metadaten-Arten
   folgen dem Muster. Belege: `decisions.md` § Ask Cmdr schaut jetzt in Dateien hinein.
-- **Ist der Referenz-Stapel auf dieser Maschine nicht da, gilt der dokumentierte Ersatz: die installierten macOS-Bundles
-  direkt auslesen.** `_ignored/i18n/de/` liegt nur auf Davids Laptop; auf der M1-Agentenkiste fehlt es komplett, und das
-  ist NICHT die Worktree-Falle (der Hauptklon hat dort gar kein `_ignored/`). Die Tier-1-Belege sind trotzdem
-  erreichbar: `Finder.app/Contents/Resources/{en,de}.lproj/*.strings` über `plutil -convert json` und, seit macOS 26,
-  `*.loctable` in AppKit/TCC/CoreTypes (eine Datei, alle Sprachen, `jq '.de'`). Rezepte:
-  `../reference-pile/how-to-mine.md` § No pile on this machine? Mine the live macOS bundles instead. Fehlt ein Term dort
-  auch, ist der Hersteller des Produkts die nächste Instanz (für Android-Begriffe Googles deutsche Doku), mit Abrufdatum
-  notiert.
 - **Die ausgegraute „busy“-Form eines Menüeintrags hängt ` (in Benutzung)` an den unveränderten Grundeintrag an.** Der
   Marker ist über alle `*Busy`-Schlüssel in `menu.json` derselbe und der Grundwortlaut bleibt zeichengleich, damit beide
   Zustände als ein Eintrag lesbar bleiben: `Auswerfen ({name}) (in Benutzung)`, `Trennen (in Benutzung)`,
@@ -314,8 +306,9 @@ Dateien".
   weiter: die Fläche muss nicht Cmdrs eigene sein.
 - **Das Dock-Menü zählt zu den nativen Menüs und nimmt Apples Wortlaut, auch gegen Cmdrs eigene Menüleiste.** Beim
   Rechtsklick auf Cmdrs Dock-Symbol steht der Eintrag neben Apples Dock-Menü und Finders `Gehe zu`, also gewinnt deren
-  Formulierung: `Go to folder…` → `Gehe zu Ordner…` (Finder), obwohl Cmdrs Menüleiste denselben Dialog `Zu Pfad gehen…`
-  nennt. Das Englische unterscheidet die beiden Flächen genauso. Belege: `decisions.md` § Das Dock-Menü von Cmdr.
+  Formulierung: `Go to folder…` → `Gehe zu Ordner …` (Finder), obwohl Cmdrs Menüleiste denselben Dialog
+  `Zu Pfad gehen …` nennt. Das Englische unterscheidet die beiden Flächen genauso. Belege: `decisions.md` § Das
+  Dock-Menü von Cmdr.
 - **Zwei Schlüssel mit demselben englischen Wert bekommen EIN deutsches Wort.** `desktop-i18n-term-consistency` meldet
   jede Stelle, an der derselbe englische String zweimal verschieden übersetzt ist, und identische Werte tragen denselben
   `sourceHash`, sodass man es beim Übersetzen sofort sieht. Deshalb vor jedem Ein-Wort-Label kurz im `en`-Katalog nach
@@ -328,7 +321,9 @@ Dateien".
 - **Ein leeres Tag mitten im Satz (`<field></field>`) ist ein Bedienelement, kein Text.** Der Satz braucht eine Stelle,
   an der ein Kasten natürlich sitzt; ein trennbares Verb liefert sie („Gib deine E-Mail-Adresse <field></field> ein, um
   …“). Nicht das Tag ans Satzende schieben: das Englische setzt es bewusst in die Mitte.
-- Record case-by-case rulings here.
+- **Im Fließtext darf das Alltagswort stehen, im Namen nie.** „X is off“ heißt `X ist ausgeschaltet`, „turn it on“
+  `schalte … ein`; Tasten und Einstellungsnamen behalten `aktivieren` / `deaktivieren`. Solche Synonyme stehen in
+  `accept` oder `proseAccept` der Termbase-Regel.
 
 ## Open questions
 
@@ -339,7 +334,7 @@ already ships a reasoned value.
 
 - `../concepts.json`: the shared, language-agnostic concept registry (sense, `match` patterns, confusable neighbors).
 - `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
-- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `decisions.md`: distilled rulings ("X over Y because Z"), one section per feature, headings citing their keys.
 - `review-queue.md`: open questions for a native reviewer.
 
 Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section

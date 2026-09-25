@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Wähle die Sprache, die Cmdr verwendet. „Systemstandard“ folgt der Sprache deines Macs.",
   "@settings.appearance.language.description": {
-    "sourceHash": "a290add"
+    "sourceHash": "6e36bba"
   },
   "settings.appearance.language.opt.system": "Systemstandard",
   "@settings.appearance.language.opt.system": {
@@ -123,7 +123,7 @@
   "@settings.appearance.dateTimeFormat.optDesc.short": {
     "sourceHash": "4475197"
   },
-  "settings.appearance.dateTimeFormat.opt.custom": "Eigenes …",
+  "settings.appearance.dateTimeFormat.opt.custom": "Eigenes …",
   "@settings.appearance.dateTimeFormat.opt.custom": {
     "sourceHash": "c4e69d5"
   },
@@ -173,7 +173,7 @@
   },
   "settings.appearance.textSize.description": "Skaliert Text und Oberfläche in der ganzen App. Wirkt zusammen mit der macOS-Textgröße der Bedienungshilfen, wobei 100 % „genau die Systemgröße“ bedeutet.",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "232df24"
+    "sourceHash": "49a0a6b"
   },
   "settings.appearance.uiDensity.label": "Oberflächendichte",
   "@settings.appearance.uiDensity.label": {
@@ -463,7 +463,7 @@
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "Finde Fotos, indem du beschreibst, was darauf zu sehen ist, etwa ''Strand bei Sonnenuntergang'', mit einem KI-Modell auf dem Gerät.",
+  "settings.mediaIndex.clip.description": "Finde Fotos, indem du beschreibst, was darauf zu sehen ist, etwa „Strand bei Sonnenuntergang“, mit einem KI-Modell auf dem Gerät.",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
@@ -479,7 +479,7 @@
   "@settings.mediaIndex.clip.download": {
     "sourceHash": "1eced44"
   },
-  "settings.mediaIndex.clip.downloading": "Wird heruntergeladen…",
+  "settings.mediaIndex.clip.downloading": "Wird heruntergeladen …",
   "@settings.mediaIndex.clip.downloading": {
     "sourceHash": "a778d34"
   },
@@ -491,7 +491,7 @@
   "@settings.mediaIndex.clip.notSupported": {
     "sourceHash": "8ef7848"
   },
-  "settings.mediaIndex.clip.offButInstalled": "Das Modell ist heruntergeladen, aber die Suche per Beschreibung ist deaktiviert.",
+  "settings.mediaIndex.clip.offButInstalled": "Das Modell ist heruntergeladen, aber die Suche per Beschreibung ist ausgeschaltet.",
   "@settings.mediaIndex.clip.offButInstalled": {
     "sourceHash": "d70c2fe"
   },
@@ -499,7 +499,7 @@
   "@settings.mediaIndex.clip.deleteButton": {
     "sourceHash": "1957b82"
   },
-  "settings.mediaIndex.clip.deleting": "Wird gelöscht…",
+  "settings.mediaIndex.clip.deleting": "Wird gelöscht …",
   "@settings.mediaIndex.clip.deleting": {
     "sourceHash": "43b5894"
   },
@@ -671,7 +671,7 @@
   "@settings.mediaIndex.importanceThreshold.previewNone": {
     "sourceHash": "c015ea6"
   },
-  "settings.mediaIndex.importanceThreshold.previewCounting": "Wird berechnet, wie viel das abdeckt …",
+  "settings.mediaIndex.importanceThreshold.previewCounting": "Wird berechnet, wie viel das abdeckt …",
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "sourceHash": "659de34"
   },
@@ -707,7 +707,7 @@
   "@settings.mediaIndex.progress.ofTotal": {
     "sourceHash": "2acda74"
   },
-  "settings.mediaIndex.progress.counting": "Bilder werden gezählt …",
+  "settings.mediaIndex.progress.counting": "Bilder werden gezählt …",
   "@settings.mediaIndex.progress.counting": {
     "sourceHash": "fa08ea7"
   },
@@ -925,9 +925,9 @@
   "@settings.ai.cloudConsent.onSince": {
     "sourceHash": "2f573fd"
   },
-  "settings.ai.cloudConsent.lockedHint": "Aktiviere oben „Cloud-KI erlauben“, um einen Dienst einzurichten.",
+  "settings.ai.cloudConsent.lockedHint": "Schalte oben „Cloud-KI erlauben“ ein, um einen Dienst einzurichten.",
   "@settings.ai.cloudConsent.lockedHint": {
-    "sourceHash": "6f4097a"
+    "sourceHash": "8a24685"
   },
   "settings.ai.cloudProvider.description": "Welcher Cloud-KI-Dienst verwendet wird.",
   "@settings.ai.cloudProvider.description": {
@@ -1052,7 +1052,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "Erkennt und verbindet Android- und andere Geräte über ein USB-Kabel zum Durchsehen und Übertragen von Dateien. Um diese Funktion auf einem Android-Telefon zu nutzen, verwende ein USB-Kabel, geh dann auf dem Telefon zu etwa Einstellungen > USB-Einstellungen und stelle die Verbindung auf „Dateiübertragung“, „Android Auto“ oder Ähnliches. (Variiert je nach Gerät.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "834ea99"
+    "sourceHash": "37444c2"
   },
   "settings.fileOperations.adbEnabled.label": "Dateizugriff auf Android über ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1060,7 +1060,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Zeigt dir das gesamte Dateisystem eines Android-Telefons, auf dem USB-Debugging eingeschaltet ist, also auch das, was über MTP verborgen bleibt. Dafür brauchst du die Android Platform Tools (den Befehl „adb“) auf diesem Mac. Wenn du keine Android-Tools installiert hast, kostet es nichts, die Einstellung anzulassen.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "8577083"
+    "sourceHash": "57cf2aa"
   },
   "settings.fileOperations.adbBinaryPath.label": "Speicherort von adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1165,7 +1165,7 @@
   },
   "settings.whatsNew.lastSeenVersion.description": "Intern: die Version, die wir zuletzt im „Neuigkeiten“-Popup gezeigt haben. Rückt bei jedem Start stillschweigend vor, damit ein erneutes Aktivieren des Popups nie einen monatealten Rückstand abspielt. In der Oberfläche ausgeblendet.",
   "@settings.whatsNew.lastSeenVersion.description": {
-    "sourceHash": "d4f7a52"
+    "sourceHash": "d8677e1"
   },
   "settings.analytics.enabled.label": "Nutzungsstatistiken senden",
   "@settings.analytics.enabled.label": {
@@ -1269,7 +1269,7 @@
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.description": "Wie viele kürzlich geschlossene Tabs pro Bereich für „Geschlossenen Tab wieder öffnen“ (⌘⇧T) behalten werden. Mit höheren Werten kannst du auch länger geschlossene Tabs wieder öffnen; niedrigere Werte geben den Speicher früher frei. Gilt nur für Tabs, die in der aktuellen Sitzung geschlossen wurden.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "fe01a43"
+    "sourceHash": "e53df3a"
   },
   "settings.advanced.dragThreshold.label": "Zieh-Schwelle",
   "@settings.advanced.dragThreshold.label": {
@@ -1341,7 +1341,7 @@
   },
   "settings.advanced.showSafeSaveFiles.description": "Wenn Apps wie TextEdit und Vorschau eine Datei speichern, schreibt macOS die neue Version unter einem temporären Namen daneben (endet auf „.sb-“) und tauscht sie dann aus. Schalte das aus, um diese aus der Dateiliste herauszuhalten.",
   "@settings.advanced.showSafeSaveFiles.description": {
-    "sourceHash": "1749ee6"
+    "sourceHash": "b371701"
   },
   "settings.advanced.showStagingTempFiles.label": "Temporäre Dateien von Cmdr anzeigen",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1397,7 +1397,7 @@
   },
   "settings.onboarding.upgradeNudgeShown.description": "Intern: erfasst, ob der einmalige Hinweis „Den Menüpunkt Einführung gibt es jetzt“ für einen bestehenden Nutzer nach der Überarbeitung des Assistenten ausgelöst wurde. In der Oberfläche ausgeblendet.",
   "@settings.onboarding.upgradeNudgeShown.description": {
-    "sourceHash": "5cfb2b5"
+    "sourceHash": "c877371"
   },
   "settings.askCmdr.consentRevokePending.label": "Ask Cmdr aus, Speichern ausstehend",
   "@settings.askCmdr.consentRevokePending.label": {
@@ -1542,31 +1542,31 @@
   },
   "settings.revealHandler.description": "Wenn eine andere App „Im Finder anzeigen“ ausführt, öffnet Cmdr diesen Ordner mit der Datei unter dem Cursor. Sonst bleibt der Finder dein Standard-Dateimanager.",
   "@settings.revealHandler.description": {
-    "sourceHash": "ebb79ff"
+    "sourceHash": "9522e41"
   },
   "settings.revealHandler.heldByOtherApp": "Aktuell: {app}. Wenn du das aktivierst, übernimmt Cmdr „Im Finder anzeigen“.",
   "@settings.revealHandler.heldByOtherApp": {
-    "sourceHash": "d0aa283"
+    "sourceHash": "4b956ef"
   },
   "settings.revealHandler.uninstallWarning": "<lead>Schalte das aus, bevor du Cmdr deinstallierst.</lead> macOS schickt „Im Finder anzeigen“ weiterhin hierher, und ohne Cmdr passiert bei diesen Klicks stillschweigend nichts.",
   "@settings.revealHandler.uninstallWarning": {
-    "sourceHash": "3c10fd3"
+    "sourceHash": "9464597"
   },
   "settings.revealHandler.notInApplications": "Bewege Cmdr in deinen Ordner „Programme“, um das einzuschalten. Von hier aus würde ein Bewegen oder Löschen von Cmdr jeden Klick auf „Im Finder anzeigen“ ins Leere laufen lassen.",
   "@settings.revealHandler.notInApplications": {
-    "sourceHash": "dc15ebf"
+    "sourceHash": "1a380cf"
   },
   "settings.revealHandler.notProductionBuild": "Einschalten lässt sich das nur in einer veröffentlichten Version von Cmdr. Dev- und Test-Builds kommen und gehen, und das Löschen eines solchen Builds würde jeden Klick auf „Im Finder anzeigen“ ins Leere laufen lassen.",
   "@settings.revealHandler.notProductionBuild": {
-    "sourceHash": "20648ba"
+    "sourceHash": "7195002"
   },
   "settings.behavior.textEditorApp.label": "Dateien bearbeiten mit",
   "@settings.behavior.textEditorApp.label": {
     "sourceHash": "807338f"
   },
-  "settings.behavior.textEditorApp.description": "Cmdr listet die Text-Editoren auf, die macOS auf diesem Mac kennt. Für eine andere App wähle „App auswählen…“.",
+  "settings.behavior.textEditorApp.description": "Cmdr listet die Text-Editoren auf, die macOS auf diesem Mac kennt. Für eine andere App wähle „App auswählen …“.",
   "@settings.behavior.textEditorApp.description": {
-    "sourceHash": "b062aed"
+    "sourceHash": "4641320"
   },
   "settings.behavior.textEditorApp.systemDefault": "Systemstandard ({app})",
   "@settings.behavior.textEditorApp.systemDefault": {
@@ -1576,7 +1576,7 @@
   "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
     "sourceHash": "b045921"
   },
-  "settings.behavior.textEditorApp.chooseApp": "App auswählen…",
+  "settings.behavior.textEditorApp.chooseApp": "App auswählen …",
   "@settings.behavior.textEditorApp.chooseApp": {
     "sourceHash": "26c3b61"
   },
@@ -1584,7 +1584,7 @@
   "@settings.behavior.textEditorApp.chooseAppTitle": {
     "sourceHash": "7a683d5"
   },
-  "settings.behavior.textEditorApp.checking": "Deine Apps werden geprüft…",
+  "settings.behavior.textEditorApp.checking": "Deine Apps werden geprüft …",
   "@settings.behavior.textEditorApp.checking": {
     "sourceHash": "0d6957f"
   },
@@ -1600,11 +1600,11 @@
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"
   },
-  "settings.behavior.openTerminalHereApp.description": "Cmdr listet die Terminal-Apps auf, die es auf diesem Mac findet. Für eine, die es nicht kennt, wähle „App auswählen…“.",
+  "settings.behavior.openTerminalHereApp.description": "Cmdr listet die Terminal-Apps auf, die es auf diesem Mac findet. Für eine, die es nicht kennt, wähle „App auswählen …“.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "0df49fc"
+    "sourceHash": "32ccd8f"
   },
-  "settings.behavior.openTerminalHereApp.chooseApp": "App auswählen…",
+  "settings.behavior.openTerminalHereApp.chooseApp": "App auswählen …",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
     "sourceHash": "26c3b61"
   },
@@ -1612,7 +1612,7 @@
   "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
     "sourceHash": "735e979"
   },
-  "settings.behavior.openTerminalHereApp.checking": "Deine Apps werden geprüft…",
+  "settings.behavior.openTerminalHereApp.checking": "Deine Apps werden geprüft …",
   "@settings.behavior.openTerminalHereApp.checking": {
     "sourceHash": "0d6957f"
   },
@@ -1666,7 +1666,7 @@
   },
   "settings.behavior.revealNudgeOfferedAt.description": "Wann das einmalige Angebot, „Im Finder anzeigen“ in Cmdr zu öffnen, gemacht wurde.",
   "@settings.behavior.revealNudgeOfferedAt.description": {
-    "sourceHash": "2b9d5b4"
+    "sourceHash": "b6a8933"
   },
   "settings.behavior.revealActivationNoticeSeen.label": "Hinweis zur ersten Anzeige gezeigt",
   "@settings.behavior.revealActivationNoticeSeen.label": {
@@ -1674,7 +1674,7 @@
   },
   "settings.behavior.revealActivationNoticeSeen.description": "Ob der Hinweis zur ersten „Im Finder anzeigen“-Aktion gezeigt wurde, die in Cmdr gelandet ist.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "f2107a5"
+    "sourceHash": "009056a"
   },
   "settings.behavior.adbHintDismissed.label": "Hinweis zu USB-Debugging ausgeblendet",
   "@settings.behavior.adbHintDismissed.label": {
@@ -2050,7 +2050,7 @@
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"
   },
-  "settings.control.customOption": "Eigenes …",
+  "settings.control.customOption": "Eigenes …",
   "@settings.control.customOption": {
     "sourceHash": "c4e69d5"
   },
@@ -2062,7 +2062,7 @@
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
   },
-  "settings.sidebar.searchPlaceholder": "Einstellungen durchsuchen …",
+  "settings.sidebar.searchPlaceholder": "Einstellungen durchsuchen …",
   "@settings.sidebar.searchPlaceholder": {
     "sourceHash": "57054c5"
   },
@@ -2155,7 +2155,7 @@
   "@settings.ai.providerAria": {
     "sourceHash": "8791254"
   },
-  "settings.ai.loading": "Wird geladen …",
+  "settings.ai.loading": "Wird geladen …",
   "@settings.ai.loading": {
     "sourceHash": "ba3bbbe"
   },
@@ -2179,7 +2179,7 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.fileSystemWatching.clearing": "Wird gelöscht …",
+  "settings.fileSystemWatching.clearing": "Wird gelöscht …",
   "@settings.fileSystemWatching.clearing": {
     "sourceHash": "9a81378"
   },
@@ -2298,7 +2298,7 @@
   "@settings.network.permissionIntroPrefix": {
     "sourceHash": "4f7f54f"
   },
-  "settings.network.permissionIntroConnectLink": "Mit Server verbinden …",
+  "settings.network.permissionIntroConnectLink": "Mit Server verbinden …",
   "@settings.network.permissionIntroConnectLink": {
     "sourceHash": "6188f47"
   },
@@ -2375,7 +2375,7 @@
   "@settings.mcp.portInUseFallback": {
     "sourceHash": "bf23daa"
   },
-  "settings.mcp.checkingPort": "Portverfügbarkeit wird geprüft …",
+  "settings.mcp.checkingPort": "Portverfügbarkeit wird geprüft …",
   "@settings.mcp.checkingPort": {
     "sourceHash": "6069f12"
   },
@@ -2459,7 +2459,7 @@
   "@settings.mediaIndex.chosenFolders.empty": {
     "sourceHash": "da00cf9"
   },
-  "settings.mediaIndex.chosenFolders.add": "Ordner hinzufügen…",
+  "settings.mediaIndex.chosenFolders.add": "Ordner hinzufügen …",
   "@settings.mediaIndex.chosenFolders.add": {
     "sourceHash": "6505f14"
   },
@@ -2475,7 +2475,7 @@
   "@settings.window.title": {
     "sourceHash": "74a883a"
   },
-  "settings.window.loading": "Einstellungen werden geladen …",
+  "settings.window.loading": "Einstellungen werden geladen …",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
   },
@@ -2540,7 +2540,7 @@
   "@settings.adb.pathPlaceholder": {
     "sourceHash": "e236ef2"
   },
-  "settings.adb.browse": "Durchsuchen…",
+  "settings.adb.browse": "Durchsuchen …",
   "@settings.adb.browse": {
     "sourceHash": "93c6b66"
   },

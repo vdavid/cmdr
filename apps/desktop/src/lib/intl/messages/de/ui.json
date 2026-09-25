@@ -16,7 +16,7 @@
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"
   },
-  "ui.select.placeholder": "Auswählen …",
+  "ui.select.placeholder": "Auswählen …",
   "@ui.select.placeholder": {
     "sourceHash": "731fe04"
   },
@@ -52,7 +52,7 @@
   "@ui.shortcutChip.customizeTooltip": {
     "sourceHash": "9a7817d"
   },
-  "ui.toast.sendErrorReport": "Fehlerbericht senden …",
+  "ui.toast.sendErrorReport": "Fehlerbericht senden …",
   "@ui.toast.sendErrorReport": {
     "sourceHash": "063c94e"
   },
@@ -64,19 +64,19 @@
   "@ui.toast.age": {
     "sourceHash": "6dcfed0"
   },
-  "ui.loadingIcon.finalizing": "Alle {countText} {count, plural, one {Datei} other {Dateien}} geladen. Dateien werden sortiert, Ansicht wird vorbereitet …",
+  "ui.loadingIcon.finalizing": "Alle {countText} {count, plural, one {Datei} other {Dateien}} geladen. Dateien werden sortiert, Ansicht wird vorbereitet …",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "0de5a42"
   },
-  "ui.loadingIcon.loaded": "{countText} {count, plural, one {Datei} other {Dateien}} geladen …",
+  "ui.loadingIcon.loaded": "{countText} {count, plural, one {Datei} other {Dateien}} geladen …",
   "@ui.loadingIcon.loaded": {
     "sourceHash": "69d2b22"
   },
-  "ui.loadingIcon.openingFolder": "Ordner wird geöffnet …",
+  "ui.loadingIcon.openingFolder": "Ordner wird geöffnet …",
   "@ui.loadingIcon.openingFolder": {
     "sourceHash": "c3ab98e"
   },
-  "ui.loadingIcon.loading": "Wird geladen …",
+  "ui.loadingIcon.loading": "Wird geladen …",
   "@ui.loadingIcon.loading": {
     "sourceHash": "ba3bbbe"
   },

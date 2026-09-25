@@ -135,11 +135,11 @@
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "Nach Aktionsname suchen …",
+  "shortcuts.section.searchByNamePlaceholder": "Nach Aktionsname suchen …",
   "@shortcuts.section.searchByNamePlaceholder": {
     "sourceHash": "b20d3e3"
   },
-  "shortcuts.section.filterByKeysPlaceholder": "Nach Tasten filtern …",
+  "shortcuts.section.filterByKeysPlaceholder": "Nach Tasten filtern …",
   "@shortcuts.section.filterByKeysPlaceholder": {
     "sourceHash": "22706d1"
   },
@@ -208,7 +208,7 @@
   "@shortcuts.section.fixedBadge": {
     "sourceHash": "1246fc9"
   },
-  "shortcuts.section.pressKeys": "Tasten drücken …",
+  "shortcuts.section.pressKeys": "Tasten drücken …",
   "@shortcuts.section.pressKeys": {
     "sourceHash": "7f34202"
   },

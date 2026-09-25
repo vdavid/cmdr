@@ -44,7 +44,7 @@
   "@licensing.acknowledgements.fullTexts": {
     "sourceHash": "1760aeb"
   },
-  "licensing.acknowledgements.loading": "Liste wird geladen…",
+  "licensing.acknowledgements.loading": "Liste wird geladen …",
   "@licensing.acknowledgements.loading": {
     "sourceHash": "0b6efaa"
   },
@@ -165,7 +165,7 @@
   "@licensing.expiration.continue": {
     "sourceHash": "b5c90b4"
   },
-  "licensing.dialog.loading": "Wird geladen …",
+  "licensing.dialog.loading": "Wird geladen …",
   "@licensing.dialog.loading": {
     "sourceHash": "ba3bbbe"
   },
@@ -277,7 +277,7 @@
   "@licensing.dialog.cancelButton": {
     "sourceHash": "19766ed"
   },
-  "licensing.dialog.checking": "Wird geprüft …",
+  "licensing.dialog.checking": "Wird geprüft …",
   "@licensing.dialog.checking": {
     "sourceHash": "ec963ff"
   },
@@ -285,7 +285,7 @@
   "@licensing.dialog.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "licensing.dialog.activating": "Wird aktiviert …",
+  "licensing.dialog.activating": "Wird aktiviert …",
   "@licensing.dialog.activating": {
     "sourceHash": "230f6d1"
   },
@@ -381,7 +381,7 @@
   "@licensing.section.title": {
     "sourceHash": "c011d60"
   },
-  "licensing.section.loading": "Wird geladen …",
+  "licensing.section.loading": "Wird geladen …",
   "@licensing.section.loading": {
     "sourceHash": "ba3bbbe"
   },

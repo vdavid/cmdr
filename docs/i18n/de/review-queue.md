@@ -6,12 +6,8 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 
 ## Product-voice calls
 
-- **`Systemintegritätsschutz` vs Apple's on-screen `System-Integrationsschutz`** (`errors.mutation.sipProtected`):
-  shipping Apple's German documentation name. Apple's Finder shows the other word in exactly one string (`ET6`, emptying
-  the Trash), and it's a visible mistranslation (Integration for Integrität). Principle 1 says match what the user sees
-  in Finder, which here would mean shipping Apple's typo; the recommendation is to keep ours, since both share the head
-  `System…schutz` and Apple's German support page (support.apple.com/de-de/102149) uses our form. Evidence:
-  `decisions.md` § Umbenennen und Anlegen.
+- **`Systemintegritätsschutz` vs Apple's on-screen `System-Integrationsschutz`** (`errors.mutation.sipProtected`): we
+  ship Apple's documentation name; Finder's one string (`ET6`) is a visible mistranslation. Confirm.
 - **`…, ist aber weitergelaufen` instead of `und weitergelaufen`** (`crashReporter.dialog.body.keptRunning`): German
   usually wants an adversative particle there and the `aber` form reads warmer; the plain one mirrors the English. A
   one-line swap.
@@ -21,9 +17,6 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   the provider is correct but bald at the end of a tooltip; the alternative repeats `einen Anbieter`.
 - **`Gib Cmdr auf AlternativeTo ein Like`** (`onboarding.stepBeta.checklist.alternativeTo`): Duden has `das Like`, and
   it keeps the parallel with `Vergib dem Repo auf GitHub einen Stern`, but it reads young.
-- **Full disk access in running prose**: the badge and every place that NAMES the pane say `Festplattenvollzugriff`; the
-  FDA step's prose (`onboarding.stepFda.*`, `onboarding.stepAi.bannerBody.*`) still says
-  `vollständiger Festplattenzugriff`. Confirm the split, or sweep the prose onto the pane name.
 
 ## Terms
 

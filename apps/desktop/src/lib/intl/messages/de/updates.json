@@ -68,15 +68,15 @@
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"
   },
-  "updates.status.checking": "Wird gesucht …",
+  "updates.status.checking": "Wird gesucht …",
   "@updates.status.checking": {
     "sourceHash": "ec963ff"
   },
-  "updates.status.downloading": "Update gefunden, v{next} wird geladen (aktuell: v{prev})…",
+  "updates.status.downloading": "Update gefunden, v{next} wird geladen (aktuell: v{prev}) …",
   "@updates.status.downloading": {
     "sourceHash": "480c6da"
   },
-  "updates.status.installing": "v{next} wird installiert (aktuell: v{prev})…",
+  "updates.status.installing": "v{next} wird installiert (aktuell: v{prev}) …",
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },

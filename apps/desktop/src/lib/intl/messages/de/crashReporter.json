@@ -55,7 +55,7 @@
   "@crashReporter.dialog.send": {
     "sourceHash": "a44d353"
   },
-  "crashReporter.dialog.sending": "Wird gesendet …",
+  "crashReporter.dialog.sending": "Wird gesendet …",
   "@crashReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },

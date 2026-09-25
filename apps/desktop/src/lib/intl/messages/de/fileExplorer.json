@@ -11,7 +11,7 @@
   "@fileExplorer.archiveEnterMenu.open": {
     "sourceHash": "d3d5d6e"
   },
-  "fileExplorer.archiveEnterMenu.configure": "Konfigurieren…",
+  "fileExplorer.archiveEnterMenu.configure": "Konfigurieren …",
   "@fileExplorer.archiveEnterMenu.configure": {
     "sourceHash": "37d7822"
   },
@@ -23,7 +23,7 @@
   "@fileExplorer.doubleClickHint.title": {
     "sourceHash": "865b71e"
   },
-  "fileExplorer.doubleClickHint.body": "Du hast auf den Bereichshintergrund doppelgeklickt. Das navigiert zum übergeordneten Ordner.",
+  "fileExplorer.doubleClickHint.body": "Du hast auf den Bereichshintergrund doppelgeklickt. Das bringt dich zum übergeordneten Ordner.",
   "@fileExplorer.doubleClickHint.body": {
     "sourceHash": "cfbc7d3"
   },
@@ -301,7 +301,7 @@
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
   },
-  "fileExplorer.network.connecting": "Verbindung wird hergestellt …",
+  "fileExplorer.network.connecting": "Verbindung wird hergestellt …",
   "@fileExplorer.network.connecting": {
     "sourceHash": "72021eb"
   },
@@ -333,7 +333,7 @@
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "fileExplorer.network.browser.searching": "Wird gesucht …",
+  "fileExplorer.network.browser.searching": "Wird gesucht …",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "c31723a"
   },
@@ -349,11 +349,11 @@
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
   },
-  "fileExplorer.network.browser.status.resolving": "Wird aufgelöst …",
+  "fileExplorer.network.browser.status.resolving": "Wird aufgelöst …",
   "@fileExplorer.network.browser.status.resolving": {
     "sourceHash": "6d2b99e"
   },
-  "fileExplorer.network.browser.status.waitingForNetwork": "Warte auf Netzwerk …",
+  "fileExplorer.network.browser.status.waitingForNetwork": "Warte auf Netzwerk …",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
     "sourceHash": "d1c5574"
   },
@@ -397,7 +397,7 @@
   "@fileExplorer.network.browser.status.connected": {
     "sourceHash": "2296556"
   },
-  "fileExplorer.network.browser.tooltip.resolving": "Hostname und IP-Adresse werden aufgelöst …",
+  "fileExplorer.network.browser.tooltip.resolving": "Hostname und IP-Adresse werden aufgelöst …",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "sourceHash": "cac249d"
   },
@@ -469,11 +469,11 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "Freigabe ''{shareName}'' auf {hostName} nicht gefunden",
+  "fileExplorer.network.share.notFound": "Freigabe „{shareName}“ auf {hostName} nicht gefunden",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
-  "fileExplorer.network.share.connecting": "Verbindung zu {hostName} wird hergestellt …",
+  "fileExplorer.network.share.connecting": "Verbindung zu {hostName} wird hergestellt …",
   "@fileExplorer.network.share.connecting": {
     "sourceHash": "fe38aec"
   },
@@ -525,7 +525,7 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "Zeitüberschreitung bei der Verbindung. Das Gerät ist vielleicht langsam oder reagiert nicht.",
+  "fileExplorer.mtp.connectTimedOut": "Die Verbindung hat zu lange gedauert. Das Gerät ist vielleicht langsam oder reagiert nicht.",
   "@fileExplorer.mtp.connectTimedOut": {
     "sourceHash": "cc01ae7"
   },
@@ -549,7 +549,7 @@
   "@fileExplorer.mtp.noStorage": {
     "sourceHash": "ff30402"
   },
-  "fileExplorer.mtp.connecting": "Verbindung zum Gerät wird hergestellt …",
+  "fileExplorer.mtp.connecting": "Verbindung zum Gerät wird hergestellt …",
   "@fileExplorer.mtp.connecting": {
     "sourceHash": "860bb9b"
   },
@@ -557,7 +557,7 @@
   "@fileExplorer.mtp.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "fileExplorer.networkMount.mounting": "{target} wird eingebunden …",
+  "fileExplorer.networkMount.mounting": "{target} wird eingebunden …",
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
   },
@@ -589,7 +589,7 @@
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
-  "fileExplorer.unreachable.retrying": "Erneuter Versuch …",
+  "fileExplorer.unreachable.retrying": "Erneuter Versuch …",
   "@fileExplorer.unreachable.retrying": {
     "sourceHash": "a16c8b1"
   },
@@ -743,7 +743,7 @@
   },
   "fileExplorer.readOnly.deviceMessage": "„{name}“ ist schreibgeschützt. Du kannst Dateien davon kopieren, aber nicht darauf.",
   "@fileExplorer.readOnly.deviceMessage": {
-    "sourceHash": "039488f"
+    "sourceHash": "5582a47"
   },
   "fileExplorer.readOnly.gitPortalTitle": "Schreibgeschütztes Git-Portal",
   "@fileExplorer.readOnly.gitPortalTitle": {
@@ -771,19 +771,19 @@
   },
   "fileExplorer.rename.chainKeptOriginalName": "{reason}. „{name}“ behält seinen Namen.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "5b5e6ce"
+    "sourceHash": "638394d"
   },
   "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. „{name}“ behält seinen Namen, ebenso {others, plural, one {eine weitere Datei} other {{othersText} weitere Dateien}}.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "7b23e8e"
+    "sourceHash": "be35bc8"
   },
   "fileExplorer.rename.unconfirmed": "Es ließ sich nicht bestätigen, dass „{name}“ umbenannt wurde. Das Volume ist vielleicht langsam, die Umbenennung hat also womöglich trotzdem geklappt.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d43e419"
+    "sourceHash": "bcea9d0"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "Es ließ sich nicht bestätigen, dass „{name}“ und {others, plural, one {eine weitere Datei} other {{othersText} weitere Dateien}} umbenannt wurden. Das Volume ist vielleicht langsam, die Umbenennungen haben also womöglich trotzdem geklappt.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "1258eb3"
+    "sourceHash": "c64e665"
   },
   "fileExplorer.columns.name": "Name",
   "@fileExplorer.columns.name": {
@@ -950,7 +950,7 @@
   },
   "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} Commit} other {{aheadText} Commits}} voraus, {behind, plural, one {{behindText} Commit} other {{behindText} Commits}} zurück gegenüber „{vs}“",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "2eba558"
+    "sourceHash": "6a24049"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Getaggter Commit {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -962,11 +962,11 @@
   },
   "fileExplorer.git.tooltip.stashedOnBranch": "Erstellt auf Branch „{branch}“",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "770565f"
+    "sourceHash": "5a1ad8d"
   },
   "fileExplorer.git.tooltip.worktreeOnBranch": "Branch „{branch}“ ist ausgecheckt",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "5036eb7"
+    "sourceHash": "4941fa5"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Losgelöst bei {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
@@ -998,7 +998,7 @@
   },
   "fileExplorer.dateTooltip.lastMoved": "Zuletzt bewegt („hinzugefügt“)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "sourceHash": "450ebc0"
+    "sourceHash": "1366405"
   },
   "fileExplorer.dateTooltip.lastModified": "Zuletzt geändert",
   "@fileExplorer.dateTooltip.lastModified": {
@@ -1040,7 +1040,7 @@
   "@fileExplorer.imageIndex.drive.ariaLabel": {
     "sourceHash": "bea5d87"
   },
-  "fileExplorer.imageIndex.drive.off": "Die Bildersuche ist für dieses Laufwerk deaktiviert.",
+  "fileExplorer.imageIndex.drive.off": "Die Bildersuche ist für dieses Laufwerk ausgeschaltet.",
   "@fileExplorer.imageIndex.drive.off": {
     "sourceHash": "a7f3c42"
   },
@@ -1146,7 +1146,7 @@
   },
   "fileExplorer.renameConflict.description": "„{name}“ existiert bereits in diesem Ordner. Was möchtest du tun?",
   "@fileExplorer.renameConflict.description": {
-    "sourceHash": "ded53e8"
+    "sourceHash": "e3f2532"
   },
   "fileExplorer.renameConflict.yours": "{name} (deine)",
   "@fileExplorer.renameConflict.yours": {
@@ -1186,7 +1186,7 @@
   },
   "fileExplorer.extensionChange.description": "Möchtest du die Endung wirklich von „.{oldExt}“ zu „.{newExt}“ ändern? Deine Datei wird beim nächsten Öffnen vielleicht in einer anderen App geöffnet.",
   "@fileExplorer.extensionChange.description": {
-    "sourceHash": "d0f428b"
+    "sourceHash": "ef7ac59"
   },
   "fileExplorer.extensionChange.alwaysAllow": "Endungsänderungen immer erlauben",
   "@fileExplorer.extensionChange.alwaysAllow": {
@@ -1206,7 +1206,7 @@
   },
   "fileExplorer.quickLookHint.finderComparison": "Wenn du vom Finder kommst, ist das vielleicht ungewohnt, weil der Finder mit <space></space> eine „Übersicht“ auslöst.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "2089192"
+    "sourceHash": "56d3119"
   },
   "fileExplorer.quickLookHint.quickView": "In Cmdr kannst du die Übersicht mit <key></key> auslösen. (<key></key> funktioniert übrigens auch in Finder!)",
   "@fileExplorer.quickLookHint.quickView": {
@@ -1321,7 +1321,7 @@
   },
   "fileExplorer.navigation.connectionTooltipSystem": "Systemverbindung wird genutzt. Nutze den Menüpunkt „Direkt verbinden für schnelleren Zugriff“ für schnelleren Zugriff.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "sourceHash": "0cbfa05"
+    "sourceHash": "e4ac697"
   },
   "fileExplorer.navigation.connectDirectly": "Direkt verbinden für schnelleren Zugriff",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1339,17 +1339,17 @@
   "@fileExplorer.navigation.connectDirectlyNowTooltip": {
     "sourceHash": "42b6bcc"
   },
-  "fileExplorer.navigation.connectingDirectly": "Direkte Verbindung wird hergestellt …",
+  "fileExplorer.navigation.connectingDirectly": "Direkte Verbindung wird hergestellt …",
   "@fileExplorer.navigation.connectingDirectly": {
     "sourceHash": "1f2d487"
   },
-  "fileExplorer.navigation.connectingWithSavedPassword": "Verbindung mit dem gespeicherten Passwort wird hergestellt …",
+  "fileExplorer.navigation.connectingWithSavedPassword": "Verbindung mit dem gespeicherten Passwort wird hergestellt …",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kann das Passwort wiederverwenden, das macOS bereits für „{displayName}“ gespeichert hat. Du siehst eine Systemabfrage, die um Zugriff auf den Schlüsselbund bittet. Das ist zu erwarten, klicke also auf „Erlauben“.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "6bb2c1d"
+    "sourceHash": "334f7de"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Gespeichertes Passwort verwenden?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1447,7 +1447,7 @@
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "sourceHash": "7165c58"
   },
-  "fileExplorer.navigation.ejectingVolumeAriaLabel": "{name} wird ausgeworfen …",
+  "fileExplorer.navigation.ejectingVolumeAriaLabel": "{name} wird ausgeworfen …",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
     "sourceHash": "e8bca64"
   },
@@ -1460,11 +1460,11 @@
   "@fileExplorer.navigation.usbSpeedNegotiated": {
     "sourceHash": "3731939"
   },
-  "fileExplorer.navigation.spaceRetryingAuto": "Automatischer erneuter Versuch …",
+  "fileExplorer.navigation.spaceRetryingAuto": "Automatischer erneuter Versuch …",
   "@fileExplorer.navigation.spaceRetryingAuto": {
     "sourceHash": "aa9f4b8"
   },
-  "fileExplorer.navigation.spaceRetrying": "Erneuter Versuch …",
+  "fileExplorer.navigation.spaceRetrying": "Erneuter Versuch …",
   "@fileExplorer.navigation.spaceRetrying": {
     "sourceHash": "a16c8b1"
   },

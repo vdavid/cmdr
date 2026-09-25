@@ -18,7 +18,7 @@
       "errors.write.permissionDenied.title": "Couldn’t access this location → Dieser Ort ließ sich nicht öffnen, the settled title pattern"
     },
     "forms": "exclusive access → exklusiver Zugriff; file access in prose → Zugriff auf Dateien, as a switch label → Dateizugriff (settings.fileOperations.adbEnabled.label)",
-    "sources": "macOS TCC (… möchte Zugriff auf Dateien auf einem Wechselmedium); MS terminology"
+    "sources": "macOS TCC ( … möchte Zugriff auf Dateien auf einem Wechselmedium); MS terminology"
   },
   "account": {
     "accept": ["Konten"],
@@ -58,7 +58,7 @@
     "confidence": "high",
     "forms": "AI features → KI-Funktionen; the AI as the acting subject → die KI; AI → KI in every compound (KI-Anbieter, KI-Suchen, KI-Einstellungen)",
     "note": "Where the English says only what the AI does, write Cmdr (the product acts) or die KI (the outside model); never add Ask Cmdr out of habit.",
-    "sources": "catalog (settings.ai.tooltipOff KI-Funktionen sind ausgeschaltet, settings.askCmdr.intro Chatte mit einer KI …)"
+    "sources": "catalog (settings.ai.tooltipOff KI-Funktionen sind ausgeschaltet, settings.askCmdr.intro Chatte mit einer KI …)"
   },
   "ai-provider": {
     "chosen": "Anbieter",
@@ -109,7 +109,7 @@
     "accept": ["gibt es schon", "bereits", "schon"],
     "chosen": "gibt es bereits",
     "confidence": "high",
-    "forms": "existence is the catalog's gibt es idiom (In diesem Ordner gibt es bereits …, Unter „{path}“ gibt es bereits etwas.); Diesen Ordner gibt es noch nicht",
+    "forms": "existence is the catalog's gibt es idiom (In diesem Ordner gibt es bereits …, Unter „{path}“ gibt es bereits etwas.); Diesen Ordner gibt es noch nicht",
     "sources": "catalog (conflictExistsFolder, errors.write.destinationExists.message)"
   },
   "answer": {
@@ -124,7 +124,7 @@
     "confidence": "high",
     "decision": "Conflict-parked queue rows and the rollback confirmation",
     "forms": "Needs your answer (status chip) → Antwort erforderlich, deliberately neutral and terse like its siblings; until you answer → bis du antwortest",
-    "sources": "macOS (Authentifizierung ist erforderlich …)"
+    "sources": "macOS (Authentifizierung ist erforderlich …)"
   },
   "api-key": {
     "chosen": "API-Schlüssel",
@@ -294,7 +294,7 @@
     "avoid": [
       {
         "form": "durchsuchen",
-        "why": "the settled scan/search verb; merging would say the app searches the archive. Only the file-picker button takes Durchsuchen… (browse-file-picker)"
+        "why": "the settled scan/search verb; merging would say the app searches the archive. Only the file-picker button takes Durchsuchen … (browse-file-picker)"
       }
     ],
     "chosen": "durchsehen",
@@ -303,18 +303,18 @@
     "exceptions": {
       "commands.fileGoToTrash.description": "the drive you’re browsing → das Laufwerk, auf dem du gerade bist",
       "errors.listing.archiveNeedsPassword.suggestion": "to browse it → um hineinzuschauen",
-      "servers.sheet.browse": "English sense: the file-picker button is the browse-file-picker concept (proposed notMatch: =browse…, =browse...)",
-      "settings.adb.browse": "English sense: the file-picker button is the browse-file-picker concept (proposed notMatch: =browse…, =browse...)",
+      "servers.sheet.browse": "English sense: the file-picker button is the browse-file-picker concept (proposed notMatch: =browse …, =browse...)",
+      "settings.adb.browse": "English sense: the file-picker button is the browse-file-picker concept (proposed notMatch: =browse …, =browse...)",
       "settings.mediaIndex.networkVolumes.alwaysHelp": "a photo archive you rarely browse → das du selten öffnest"
     },
     "forms": "Browse like a folder → Wie einen Ordner durchsehen; segmented cell Durchsehen; a phone → ein Android-Telefon durchsehen",
     "sources": "KDE Dolphin (Browse through archives → Archive durchsehen)"
   },
   "browse-file-picker": {
-    "chosen": "Durchsuchen…",
+    "chosen": "Durchsuchen …",
     "confidence": "high",
     "decision": "Das Verbindungsblatt, der Hostschlüssel und die zwei Vorschauzeilen",
-    "note": "A deliberate split from browse (Durchsehen), recorded in the term-consistency allowlist; a new file-picker button takes Durchsuchen…, a new archive surface Durchsehen.",
+    "note": "A deliberate split from browse (Durchsehen), recorded in the term-consistency allowlist; a new file-picker button takes Durchsuchen …, a new archive surface Durchsehen.",
     "sources": "macOS Finder (ConnectToWindow.strings 48.title Browse → Durchsuchen)"
   },
   "cable": {
@@ -323,7 +323,7 @@
     "confidence": "high",
     "decision": "Das Telefon über ADB öffnen: Bereichsmeldungen, Zeilen-Tooltips und der Hinweisstreifen",
     "forms": "the verb → anschließen; reseat the cable → schließe das Kabel neu an (tentative: macOS de only knows the two-step unplug and plug in)",
-    "sources": "macOS de Localizable.loctable (Schließe dieses iPad mit einem USB-Kabel an …)"
+    "sources": "macOS de Localizable.loctable (Schließe dieses iPad mit einem USB-Kabel an …)"
   },
   "cache": {
     "accept": ["zwischenspeicher", "zwischengespeichert"],
@@ -352,7 +352,7 @@
     "chosen": "Groß-/Kleinschreibung",
     "confidence": "high",
     "forms": "Groß-/Kleinschreibung beachten (macOS shows the negation … ignorieren); aria wraps the label: Beim Abgleich Groß-/Kleinschreibung beachten; tell apart → zwischen Groß- und Kleinschreibung unterscheiden",
-    "sources": "MS terminology (case-sensitive); macOS Finder (… nicht zwischen Groß- und Kleinschreibung unterscheidet)"
+    "sources": "MS terminology (case-sensitive); macOS Finder ( … nicht zwischen Groß- und Kleinschreibung unterscheidet)"
   },
   "certificate": {
     "chosen": "Zertifikat",
@@ -413,9 +413,9 @@
       "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "the check running now is der gerade laufende Durchlauf, the catalog word for a full check",
       "indexing.step.findFilesChangeCheck": "check against the index → mit dem Index verglichen, deliberately plain vergleichen over database-register abgleichen",
       "onboarding.stepOptional.updates.summary": "a tiny check → eine winzige Anfrage; the one-line summary has no room for a verb",
-      "updates.status.checking": "Checking for updates → Wird gesucht …, the macOS Software Update idiom (Nach Updates suchen)"
+      "updates.status.checking": "Checking for updates → Wird gesucht …, the macOS Software Update idiom (Nach Updates suchen)"
     },
-    "forms": "Checking… (a connection, a key) → Wird geprüft …; Checking for updates → Nach Updates suchen (macOS Software Update idiom); Checking for changes → Prüfung auf Änderungen; Re-check → Erneut prüfen; Verifying before copy → Prüfung vor dem Kopieren",
+    "forms": "Checking … (a connection, a key) → Wird geprüft …; Checking for updates → Nach Updates suchen (macOS Software Update idiom); Checking for changes → Prüfung auf Änderungen; Re-check → Erneut prüfen; Verifying before copy → Prüfung vor dem Kopieren",
     "sources": "macOS Finder (BN9 Inhalt von „^0“ überprüfen); SoftwareUpdate (Check Again → Erneut prüfen)"
   },
   "checklist": {
@@ -435,10 +435,10 @@
     "chosen": "auswählen",
     "confidence": "high",
     "exceptions": {
-      "settings.operationLog.intro": "Choose how long … → Lege fest, wie lange …"
+      "settings.operationLog.intro": "Choose how long … → Lege fest, wie lange …"
     },
-    "forms": "Choose an app… → App auswählen… (App, not Apple's Programm); Choose the adb command → Den Befehl „adb“ auswählen",
-    "sources": "macOS Finder (Choose Application… → Programm auswählen …)"
+    "forms": "Choose an app … → App auswählen … (App, not Apple's Programm); Choose the adb command → Den Befehl „adb“ auswählen",
+    "sources": "macOS Finder (Choose Application … → Programm auswählen …)"
   },
   "clean-up": {
     "accept": ["räumt", "entfernt", "aufräum"],
@@ -468,7 +468,7 @@
   "cloud-ai": {
     "chosen": "Cloud-KI",
     "confidence": "high",
-    "decision": "Der Schalter „Cloud-KI erlauben“ und die Zustände „Cloud-KI ist deaktiviert“",
+    "decision": "Der Schalter „Cloud-KI erlauben“ und die Zustände „Cloud-KI ist ausgeschaltet“",
     "forms": "pronoun sie (die KI); switch Cloud-KI erlauben; X is off → Cloud-KI ist deaktiviert",
     "sources": "catalog (settings.ai.provider.opt.cloud)"
   },
@@ -539,13 +539,13 @@
     "chosen": "kompromittiert",
     "confidence": "high",
     "forms": "marked as compromised → als kompromittiert markiert",
-    "sources": "macOS Wallet Localizable.loctable (… kompromittiert wurde)"
+    "sources": "macOS Wallet Localizable.loctable ( … kompromittiert wurde)"
   },
   "configure": {
     "accept": ["Konfiguration", "konfiguriert", "eingerichtet", "einricht", "richte"],
     "chosen": "konfigurieren",
     "confidence": "high",
-    "forms": "menu item Konfigurieren… (ellipsis attached); configuration profile → Konfigurationsprofil",
+    "forms": "menu item Konfigurieren … (ellipsis attached); configuration profile → Konfigurationsprofil",
     "sources": "MS terminology (configure → konfigurieren); macOS (Configuration Profile → Konfigurationsprofil)"
   },
   "confirm": {
@@ -576,7 +576,7 @@
     "exceptions": {
       "errors.listing.remotePermissionDenied.suggestion": "connect as someone else → dich als jemand anderes anmelden"
     },
-    "forms": "button Verbinden; Connect to server → Mit Server verbinden(…); Connecting… → Verbindung wird hergestellt …; Connecting to {name}… → Verbindung zu {name} wird hergestellt …; Connected → Verbunden; Connect as guest → Als Gast verbinden; reflexive with du: wenn du dich … verbindest",
+    "forms": "button Verbinden; Connect to server → Mit Server verbinden( …); Connecting … → Verbindung wird hergestellt …; Connecting to {name} … → Verbindung zu {name} wird hergestellt …; Connected → Verbunden; Connect as guest → Als Gast verbinden; reflexive with du: wenn du dich … verbindest",
     "sources": "macOS Finder (Mit Server verbinden, Verbinden, Serveradresse); NetAuthAgent (CONNECT)"
   },
   "context-menu": {
@@ -651,7 +651,7 @@
     "accept": ["eigen"],
     "chosen": "Eigene",
     "confidence": "high",
-    "forms": "Eigenes …, Eigene Zeitüberschreitung, eigene Endpunkte",
+    "forms": "Eigenes …, Eigene Zeitüberschreitung, eigene Endpunkte",
     "sources": "macOS (Eigene … pattern)"
   },
   "cut": {
@@ -744,7 +744,7 @@
     "chosen": "trennen",
     "confidence": "high",
     "decision": "Der Server-Hub: Verbindungszustände, Trennen und Vergessen",
-    "forms": "button Trennen; Disconnected from X → Verbindung zu X getrennt; Disconnect server / Disconnect {name} → Verbindung zum Server trennen / Verbindung zu {name} trennen (the connection is cut, not the server); in progress → wird gerade getrennt; Can't disconnect while … → Trennen nicht möglich, während …",
+    "forms": "button Trennen; Disconnected from X → Verbindung zu X getrennt; Disconnect server / Disconnect {name} → Verbindung zum Server trennen / Verbindung zu {name} trennen (the connection is cut, not the server); in progress → wird gerade getrennt; Can't disconnect while … → Trennen nicht möglich, während …",
     "sources": "macOS Finder (Disconnect → Trennen; TL_HELP_EJCT … von Servern trennen); FileProvider (Verbindung zu „%@“ konnte nicht getrennt werden.)"
   },
   "disk-image": {
@@ -761,7 +761,7 @@
     "chosen": "Image",
     "confidence": "high",
     "decision": "Wer das Laufwerk festhält: die sechs benannten Absagen",
-    "sources": "macOS de running text (Image „^0“ auf das Medium brennen …); catalog (errors.listing.readOnlyVolumeErrno.suggestion, updates.moveToApplicationsDialog.readOnlyVolume)"
+    "sources": "macOS de running text (Image „^0“ auf das Medium brennen …); catalog (errors.listing.readOnlyVolumeErrno.suggestion, updates.moveToApplicationsDialog.readOnlyVolume)"
   },
   "disk-usage": {
     "chosen": "Speicherbelegung",
@@ -806,8 +806,8 @@
     "accept": ["doppelklick"],
     "chosen": "Doppelklick",
     "confidence": "high",
-    "forms": "noun Doppelklick; verb doppelklicken, du-imperative Doppelklicke auf …",
-    "sources": "Double Commander (… durch Doppelklick auf den leeren Teil der Dateiansicht …); macOS (Doppelklick)"
+    "forms": "noun Doppelklick; verb doppelklicken, du-imperative Doppelklicke auf …",
+    "sources": "Double Commander ( … durch Doppelklick auf den leeren Teil der Dateiansicht …); macOS (Doppelklick)"
   },
   "download": {
     "accept": ["heruntergeladen", "Download", "geladen", "laden", "lädt", "lade", "herunter"],
@@ -847,7 +847,7 @@
     "exceptions": {
       "operationLog.initiator.agentEdited": "your edits → deine Änderungen"
     },
-    "forms": "Edit server… → Server bearbeiten… (menu and palette byte-identical); editing arm → Archiv wird bearbeitet; archive edit → Archivbearbeitung",
+    "forms": "Edit server … → Server bearbeiten … (menu and palette byte-identical); editing arm → Archiv wird bearbeitet; archive edit → Archivbearbeitung",
     "sources": "standard German + MS terminology"
   },
   "eject": {
@@ -880,7 +880,7 @@
       "onboarding.stepAi.bannerBody.denied": "You chose not to enable → Du hast dich gegen … entschieden"
     },
     "forms": "Turn it on in Settings → In den Einstellungen aktivieren; a switch in prose → ein-/ausschalten (Schalte USB-Debugging ein.)",
-    "sources": "macOS Finder (… aktivieren), MS terminology"
+    "sources": "macOS Finder ( … aktivieren), MS terminology"
   },
   "encoding": {
     "accept": ["Zeichencodierung"],
@@ -911,7 +911,7 @@
     ],
     "chosen": "Eingabetaste",
     "confidence": "high",
-    "forms": "prose → die Eingabetaste (Drücke die Eingabetaste …, Was die Eingabetaste bei X bewirkt); a terse hint names the key cap → Zum Suchen Enter drücken",
+    "forms": "prose → die Eingabetaste (Drücke die Eingabetaste …, Was die Eingabetaste bei X bewirkt); a terse hint names the key cap → Zum Suchen Enter drücken",
     "sources": "catalog (search.json, viewer.json, search.runHint)"
   },
   "entry": {
@@ -1019,7 +1019,7 @@
     "confidence": "high",
     "decision": "Die Vorschau holt eine Datei erst herüber",
     "forms": "{fileName} wird für die Vorschau geladen; so far → {doneText} bisher geladen",
-    "sources": "macOS Finder IN_MD1 (Fetching… → Laden …); System Settings (Fetching Menu Item)"
+    "sources": "macOS Finder IN_MD1 (Fetching … → Laden …); System Settings (Fetching Menu Item)"
   },
   "file": {
     "accept": ["Dateien"],
@@ -1168,10 +1168,10 @@
     "confidence": "high",
     "decision": "Das Dock-Menü von Cmdr",
     "exceptions": {
-      "menu.dock.goToFolder": "Cmdr’s Dock menu names Finder’s own command: Gehe zu Ordner…"
+      "menu.dock.goToFolder": "Cmdr’s Dock menu names Finder’s own command: Gehe zu Ordner …"
     },
-    "forms": "the dialog, its menu item, and the palette command; Cmdr's Dock menu names Finder's command instead: Gehe zu Ordner…",
-    "sources": "derived from macOS (Gehe zu …, Gehe zu Ordner)"
+    "forms": "the dialog, its menu item, and the palette command; Cmdr's Dock menu names Finder's command instead: Gehe zu Ordner …",
+    "sources": "derived from macOS (Gehe zu …, Gehe zu Ordner)"
   },
   "go-to-trash": {
     "chosen": "Zum Papierkorb gehen",
@@ -1285,7 +1285,7 @@
     "chosen": "Stunde",
     "confidence": "high",
     "decision": "Indexing run-kind headers + hour-scale ETA",
-    "forms": "spelled out: noch {n} Stunde(n) {m} Minute(n); sub-hour keys stay compact (noch {n} Min., noch {n} s)",
+    "forms": "spelled out, each unit an ICU plural (noch 1 Stunde 5 Minuten, noch 2 Stunden 1 Minute); sub-hour keys stay compact (noch {n} Min., noch {n} s)",
     "sources": "standard German, CLDR one/other"
   },
   "icon": {
@@ -1345,7 +1345,7 @@
     "confidence": "high",
     "decision": "Auswerfen und Trennen: die neun Absagen",
     "forms": "prose → in Verwendung / wird von … verwendet / {app} verwendet dieses Laufwerk noch; the greyed-out menu marker → (in Benutzung); a network port → belegt",
-    "sources": "macOS Finder (NE66 Das Volume ist gerade in Verwendung …, NE31)"
+    "sources": "macOS Finder (NE66 Das Volume ist gerade in Verwendung …, NE31)"
   },
   "index": {
     "accept": ["Index", "Indizierung", "indiziert"],
@@ -1431,7 +1431,7 @@
     "confidence": "high",
     "decision": "Der Toast nach einem abgebrochenen Vorgang: was die Rücknahme geschafft hat",
     "forms": "Left {name} alone → Habe {name} unverändert gelassen; Left {name} where it is → Habe {name} am neuen Ort gelassen; left them in place → sie an ihrem Platz gelassen",
-    "sources": "macOS AppKit Document.json (… die Datei unverändert lassen …)"
+    "sources": "macOS AppKit Document.json ( … die Datei unverändert lassen …)"
   },
   "license": {
     "accept": ["Gewerblich", "unbefristet", "Lizenzen"],
@@ -1487,7 +1487,7 @@
       "settings.network.firstTriggerDone.description": "discovery → die Suche"
     },
     "forms": "the macOS permission row → Lokales Netzwerk (quoted verbatim); discovery → Suche (Die Suche im lokalen Netzwerk ist deaktiviert.); Found nearby → In der Nähe gefunden",
-    "sources": "SecurityPrivacyExtension.appex LOCAL_NETWORK (live macOS 26.6.2, 2026-09-09); Find My (… wurden in der Nähe gefunden)"
+    "sources": "SecurityPrivacyExtension.appex LOCAL_NETWORK (live macOS 26.6.2, 2026-09-09); Find My ( … wurden in der Nähe gefunden)"
   },
   "location": {
     "accept": ["Orte", "Speicherort", "Aufnahmeort", "Standort"],
@@ -1500,7 +1500,7 @@
     "chosen": "Ort",
     "confidence": "high",
     "forms": "a general place in the file system → Ort (Places → Orte); a location a user picks or enters → Speicherort (Speicherort von adb); where a photo was taken → Aufnahmeort",
-    "sources": "macOS Finder (FI12 Dieser Ort ist schreibgeschützt., SD5/FI9 Orte, BU39 Speicherort wählen …)"
+    "sources": "macOS Finder (FI12 Dieser Ort ist schreibgeschützt., SD5/FI9 Orte, BU39 Speicherort wählen …)"
   },
   "locked": {
     "accept": ["Schutz"],
@@ -1512,7 +1512,7 @@
     ],
     "chosen": "geschützt",
     "confidence": "high",
-    "forms": "unlock the file → Hebe den Schutz im Finder auf …",
+    "forms": "unlock the file → Hebe den Schutz im Finder auf …",
     "sources": "macOS Finder (Get Info checkbox Geschützt; Das Objekt ist … geschützt)"
   },
   "log": {
@@ -1652,10 +1652,11 @@
   },
   "navigate": {
     "accept": ["springen", "wechseln", "gehen", "Navigation", "führt", "navigier", "spring"],
+    "proseAccept": ["bringt dich"],
     "chosen": "navigieren",
     "confidence": "high",
     "forms": "navigate to → zu … navigieren (breadcrumb tooltip zu {path} navigieren); jump to → springen zu / Zur Datei springen; go up a folder → in den übergeordneten Ordner wechseln (Double Commander's wording)",
-    "sources": "macOS Finder (Navigiert zu einem Ort …), verified 2026-06-26; Double Commander de"
+    "sources": "macOS Finder (Navigiert zu einem Ort …), verified 2026-06-26; Double Commander de"
   },
   "network-drive": {
     "accept": ["Netzlaufwerke", "Netzwerk-Volume", "Netzwerkvolume"],
@@ -1747,7 +1748,7 @@
   "onboarding": {
     "chosen": "Einführung",
     "confidence": "high",
-    "forms": "wizard → Einführungsassistent; menu item Einführung…",
+    "forms": "wizard → Einführungsassistent; menu item Einführung …",
     "sources": "standard German UI rendering of guided first-run"
   },
   "open": {
@@ -1856,7 +1857,7 @@
     "chosen": "Paket",
     "confidence": "high",
     "forms": "generic packages (.jar, .apk, Office documents) → Pakete, kept apart from App-Pakete; Linux package → Paket",
-    "sources": "macOS Finder (Paketinhalt zeigen); KDE Dolphin (Das Paket %1 …)"
+    "sources": "macOS Finder (Paketinhalt zeigen); KDE Dolphin (Das Paket %1 …)"
   },
   "page": {
     "accept": ["Seiten"],
@@ -1880,7 +1881,7 @@
     "chosen": "Bereich",
     "confidence": "high",
     "forms": "pane background → Bereichshintergrund; tint X panes → X-Bereiche einfärben; the focused pane → der fokussierte Bereich",
-    "sources": "macOS (Der Bereich „Bewegen“ …, Bereich „Schreibtools“ anzeigen)"
+    "sources": "macOS (Der Bereich „Bewegen“ …, Bereich „Schreibtools“ anzeigen)"
   },
   "parent-folder": {
     "accept": ["übergeordnete Ordner", "übergeordneter Ordner", "Übergeordnete"],
@@ -1958,7 +1959,7 @@
     "accept": ["Berechtigungen", "Zugriffsrechte", "Erlaubnis"],
     "chosen": "Berechtigung",
     "confidence": "high",
-    "forms": "the abstract OS grant → Berechtigung (Cmdr hat keine Berechtigung …); a file's or folder's ACL → Zugriffsrechte; Get Info pane Teilen & Zugriffsrechte",
+    "forms": "the abstract OS grant → Berechtigung (Cmdr hat keine Berechtigung …); a file's or folder's ACL → Zugriffsrechte; Get Info pane Teilen & Zugriffsrechte",
     "sources": "macOS Finder (Berechtigung, Zugriffsrechte); MS terminology"
   },
   "phone": {
@@ -2133,13 +2134,13 @@
     "avoid": [
       {
         "form": "Erneut verbinden … (with a target)",
-        "why": "Apple's label form for a bare Reconnecting…; with {name} attached the syntax breaks"
+        "why": "Apple's label form for a bare Reconnecting …; with {name} attached the syntax breaks"
       }
     ],
     "chosen": "Verbindung wiederherstellen",
     "confidence": "high",
     "decision": "Der Wiederverbindungs-Zyklus und die Anmeldung per Schlüssel",
-    "forms": "Reconnecting to {name}… → Verbindung zu {name} wird wiederhergestellt …; Reconnect automatically → Automatisch erneut verbinden",
+    "forms": "Reconnecting to {name} … → Verbindung zu {name} wird wiederhergestellt …; Reconnect automatically → Automatisch erneut verbinden",
     "sources": "derived from macOS (Verbindung … herstellen); Kerberos menu (Reconnect → Erneut verbinden)"
   },
   "redact": {
@@ -2214,7 +2215,7 @@
     "accept": ["Wechselmedien"],
     "chosen": "Wechselmedium",
     "confidence": "high",
-    "sources": "macOS Finder (NE31, TL_HELP_EJCT Wechselmedien auswerfen …); MS terminology (removable media → Wechselmedien, 177320)"
+    "sources": "macOS Finder (NE31, TL_HELP_EJCT Wechselmedien auswerfen …); MS terminology (removable media → Wechselmedien, 177320)"
   },
   "remove": {
     "accept": ["entfernt", "Entfernen", "entfern", "aufzuheben", "aufheb"],
@@ -2228,7 +2229,7 @@
     "chosen": "umbenennen",
     "confidence": "high",
     "forms": "Rename all → Alle umbenennen; progress Wird umbenannt; noun Umbenennung/Umbenennungen; rename cycle → Umbenennungszyklus",
-    "sources": "macOS Finder (Umbenennen …), Double Commander, Nautilus (wird … umbenannt)"
+    "sources": "macOS Finder (Umbenennen …), Double Commander, Nautilus (wird … umbenannt)"
   },
   "replace": {
     "accept": ["ersetzt", "Ersetzte", "ersetz"],
@@ -2266,7 +2267,7 @@
     "chosen": "antworten",
     "confidence": "high",
     "forms": "a server or share → antwortet nicht; a device on a cable → reagiert nicht; didn't answer in time → hat nicht rechtzeitig geantwortet",
-    "sources": "MS terminology (respond → antworten); NetAuthAgent (… antwortet nicht); HomeKit (… reagiert nicht)"
+    "sources": "MS terminology (respond → antworten); NetAuthAgent ( … antwortet nicht); HomeKit ( … reagiert nicht)"
   },
   "restart": {
     "accept": ["Neustart", "neu gestartet", "startet neu", "starte"],
@@ -2292,7 +2293,7 @@
     "accept": ["noch einmal", "erneuter Versuch", "Erneut", "versuche", "versucht", "versuch"],
     "chosen": "erneut versuchen",
     "confidence": "high",
-    "forms": "button Erneut versuchen; Try again in a moment → Versuche es gleich noch einmal.; Retrying (the narrow space bar) → Erneuter Versuch …",
+    "forms": "button Erneut versuchen; Try again in a moment → Versuche es gleich noch einmal.; Retrying (the narrow space bar) → Erneuter Versuch …",
     "sources": "macOS (Try Again → Erneut versuchen)"
   },
   "review": {
@@ -2321,7 +2322,7 @@
     "confidence": "high",
     "decision": "Stamm- und Startordner eines gespeicherten Servers",
     "forms": "a saved server's ceiling folder → Stammordner (m.); the folder a pane opens in → Startordner; a volume's top folder → der oberste Ordner eines Volumes",
-    "sources": "MS terminology (root folder → Stammordner, 233488); KDE Dolphin (Home URL → Startordner); GNOME Nautilus (… im obersten Ordner …)"
+    "sources": "MS terminology (root folder → Stammordner, 233488); KDE Dolphin (Home URL → Startordner); GNOME Nautilus ( … im obersten Ordner …)"
   },
   "row": {
     "accept": ["Zeilen", "Reihe"],
@@ -2360,7 +2361,7 @@
       "errors.write.moveNotConfirmed.message.unnamed": "saved on a volume means written to disk: geschrieben; Sichern is the Save button"
     },
     "forms": "the Save button → Sichern, and a participle right next to it → gesichert; merely storing data → gespeichert (Anmeldedaten gespeichert, Gespeichert as a server state)",
-    "sources": "macOS Finder (Sichern, Sichern unter …); AppKit Document/SavePanel"
+    "sources": "macOS Finder (Sichern, Sichern unter …); AppKit Document/SavePanel"
   },
   "scan": {
     "accept": ["durchsucht", "Durchlauf", "Durchläufe"],
@@ -2373,8 +2374,8 @@
     "chosen": "durchsuchen",
     "confidence": "high",
     "decision": "Indexing run-kind headers + hour-scale ETA",
-    "forms": "Laufwerk wird durchsucht …; Scanning… → Wird durchsucht …; fresh scan → neuer Durchlauf; rescan → erneuter Durchlauf; the drive scan as an event → Laufwerksdurchlauf; run-kind headers Erster/Erneuter vollständiger Durchlauf",
-    "note": "Indexing this drive… (the drive-node tooltip) is the index sense: Indizierung.",
+    "forms": "Laufwerk wird durchsucht …; Scanning … → Wird durchsucht …; fresh scan → neuer Durchlauf; rescan → erneuter Durchlauf; the drive scan as an event → Laufwerksdurchlauf; run-kind headers Erster/Erneuter vollständiger Durchlauf",
+    "note": "Indexing this drive … (the drive-node tooltip) is the index sense: Indizierung.",
     "sources": "macOS (durchsuchen); Double Commander uses Suche"
   },
   "scope": {
@@ -2396,7 +2397,7 @@
     "chosen": "Suche",
     "confidence": "high",
     "decision": "Ein englisches Wort, ein deutsches Wort: die Drift-Prüfung",
-    "forms": "noun Suche for dialog titles, tabs, Settings sections, task names; button Suchen; in progress → Wird gesucht …",
+    "forms": "noun Suche for dialog titles, tabs, Settings sections, task names; button Suchen; in progress → Wird gesucht …",
     "sources": "macOS (Search → Suchen)"
   },
   "search-match": {
@@ -2440,7 +2441,7 @@
     "accept": ["gesendet", "sende", "sendet", "schick"],
     "chosen": "senden",
     "confidence": "high",
-    "forms": "progress Wird gesendet …; What was sent → Was gesendet wurde",
+    "forms": "progress Wird gesendet …; What was sent → Was gesendet wurde",
     "sources": "macOS Mail (Senden)"
   },
   "server": {
@@ -2531,7 +2532,7 @@
     "chosen": "anmelden",
     "confidence": "high",
     "forms": "button Anmelden; Sign in to {name} → Bei {name} anmelden; noun Anmeldung (also logging in to the Mac: Bei der Anmeldung öffnen); sign-in method → Anmeldemethode",
-    "sources": "macOS Finder (Anmelden …, Die Anmeldung beim Server …); AppSSOKerberos (Sign In → Anmelden); DockMenus (OPEN_AT_LOGIN)"
+    "sources": "macOS Finder (Anmelden …, Die Anmeldung beim Server …); AppSSOKerberos (Sign In → Anmelden); DockMenus (OPEN_AT_LOGIN)"
   },
   "sign-out": {
     "accept": ["Abmelden", "Abmeldung", "abmelden", "melde"],
@@ -2610,7 +2611,7 @@
       "errors.volume.cancelled": "a stop at the user’s request is the cancel status: auf deinen Wunsch abgebrochen",
       "settings.mediaIndex.chosenFolders.help": "Removing a folder stops new indexing → wird nichts Neues mehr indiziert"
     },
-    "forms": "Stop, and … (rollback tooltip) → Stoppen und …; You stopped this search → Du hast diese Suche gestoppt",
+    "forms": "Stop, and … (rollback tooltip) → Stoppen und …; You stopped this search → Du hast diese Suche gestoppt",
     "sources": "macOS Finder (CP5 Kopieren stoppen, NE111.1 den Vorgang stoppen)"
   },
   "streaming": {
@@ -2636,7 +2637,7 @@
     "chosen": "unterstützt",
     "confidence": "high",
     "forms": "not supported yet → unterstützt … noch nicht, active with Cmdr as subject; X and up → X und neuer",
-    "sources": "macOS Finder (… da er nicht unterstützt wird.); SystemSettings (… oder neuer)"
+    "sources": "macOS Finder ( … da er nicht unterstützt wird.); SystemSettings ( … oder neuer)"
   },
   "symlink": {
     "accept": ["Symlink", "symbolischen Verknüpfung", "Verknüpfung"],
@@ -2650,7 +2651,7 @@
     "chosen": "synchronisiert",
     "confidence": "high",
     "forms": "a folder → wird mit … synchronisiert (passive; macOS de has the active form only with the service as subject)",
-    "sources": "macOS Finder (… werden mit „%@“ synchronisiert.)"
+    "sources": "macOS Finder ( … werden mit „%@“ synchronisiert.)"
   },
   "system-integrity-protection": {
     "avoid": [
@@ -2669,7 +2670,7 @@
     "chosen": "Systemeinstellungen",
     "confidence": "high",
     "decision": "Die Bereichsnamen kommen jetzt vom Mac des Nutzers",
-    "note": "Usually a runtime placeholder; a preposition may precede it, an article can't (Öffne {system_settings} und …).",
+    "note": "Usually a runtime placeholder; a preposition may precede it, an article can't (Öffne {system_settings} und …).",
     "sources": "macOS"
   },
   "system-settings-pane": {
@@ -2767,6 +2768,7 @@
   },
   "timeout": {
     "accept": ["rechtzeitig", "nicht geantwortet"],
+    "proseAccept": ["zu lange gedauert"],
     "avoid": [
       {
         "form": "Timeout",
@@ -2795,7 +2797,7 @@
     "chosen": "Token",
     "confidence": "high",
     "forms": "pl. Tokens (the LLM loanword takes -s, unlike native -en nouns)",
-    "sources": "OpenAI's German help center (Was sind Tokens …)"
+    "sources": "OpenAI's German help center (Was sind Tokens …)"
   },
   "too-large": {
     "accept": ["zu lang", "größer als"],
@@ -2846,7 +2848,7 @@
     "exceptions": {
       "fileExplorer.quickLookHint.finderComparison": "triggers a “Quick preview” action → eine „Übersicht“ auslöst"
     },
-    "sources": "macOS (Aktion as a bare label; Diese Aktion …)"
+    "sources": "macOS (Aktion as a bare label; Diese Aktion …)"
   },
   "button": {
     "avoid": [
@@ -2858,7 +2860,7 @@
     "chosen": "Taste",
     "confidence": "high",
     "decision": "SMB-Fallback-Hinweis: die Freigabe hängt an der Systemverbindung",
-    "sources": "macOS de; catalog (Klicke unten auf die Taste „+“ …)"
+    "sources": "macOS de; catalog (Klicke unten auf die Taste „+“ …)"
   },
   "undo": {
     "accept": ["widerrufen", "rückgängig", "zurückgesetzt", "zurückgelegt", "zurückn"],

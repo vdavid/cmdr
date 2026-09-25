@@ -61,7 +61,7 @@
   "@errorReporter.dialog.totalLines": {
     "sourceHash": "9c5cab7"
   },
-  "errorReporter.dialog.preparing": "Vorschau wird vorbereitet …",
+  "errorReporter.dialog.preparing": "Vorschau wird vorbereitet …",
   "@errorReporter.dialog.preparing": {
     "sourceHash": "11e66e1"
   },
@@ -89,7 +89,7 @@
   "@errorReporter.dialog.send": {
     "sourceHash": "a44d353"
   },
-  "errorReporter.dialog.sending": "Wird gesendet …",
+  "errorReporter.dialog.sending": "Wird gesendet …",
   "@errorReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },
@@ -121,7 +121,7 @@
   "@errorReporter.amend.submit": {
     "sourceHash": "e05fdbe"
   },
-  "errorReporter.amend.submitting": "Wird hinzugefügt …",
+  "errorReporter.amend.submitting": "Wird hinzugefügt …",
   "@errorReporter.amend.submitting": {
     "sourceHash": "c6de6f4"
   },

@@ -19,7 +19,7 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "Danksagungen…",
+  "commands.appAcknowledgements.label": "Danksagungen …",
   "@commands.appAcknowledgements.label": {
     "sourceHash": "7d0e506"
   },
@@ -39,7 +39,7 @@
   "@commands.appSettings.label": {
     "sourceHash": "ca381c1"
   },
-  "commands.appCheckForUpdates.label": "Nach Updates suchen…",
+  "commands.appCheckForUpdates.label": "Nach Updates suchen …",
   "@commands.appCheckForUpdates.label": {
     "sourceHash": "52d6f7d"
   },
@@ -47,7 +47,7 @@
   "@commands.appCheckForUpdates.description": {
     "sourceHash": "c53dab0"
   },
-  "commands.cmdrOpenOnboarding.label": "Einführung…",
+  "commands.cmdrOpenOnboarding.label": "Einführung …",
   "@commands.cmdrOpenOnboarding.label": {
     "sourceHash": "c4cc4aa"
   },
@@ -63,7 +63,7 @@
   "@commands.helpOpenShortcuts.description": {
     "sourceHash": "a9a1e0d"
   },
-  "commands.helpSendErrorReport.label": "Fehlerbericht senden…",
+  "commands.helpSendErrorReport.label": "Fehlerbericht senden …",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
@@ -116,7 +116,7 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "Zu Pfad gehen…",
+  "commands.navGoToPath.label": "Zu Pfad gehen …",
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"
   },
@@ -660,7 +660,7 @@
   "@commands.selectionSelectSameKind.noExtension": {
     "sourceHash": "d04751e"
   },
-  "commands.selectionSelectFiles.label": "Dateien auswählen…",
+  "commands.selectionSelectFiles.label": "Dateien auswählen …",
   "@commands.selectionSelectFiles.label": {
     "sourceHash": "b7f202e"
   },
@@ -668,7 +668,7 @@
   "@commands.selectionSelectFiles.description": {
     "sourceHash": "7695f3e"
   },
-  "commands.selectionDeselectFiles.label": "Dateien abwählen…",
+  "commands.selectionDeselectFiles.label": "Dateien abwählen …",
   "@commands.selectionDeselectFiles.label": {
     "sourceHash": "6fb10d5"
   },
@@ -704,11 +704,11 @@
   "@commands.serversForgetSecret.label": {
     "sourceHash": "ed68566"
   },
-  "commands.serversEdit.label": "Server bearbeiten…",
+  "commands.serversEdit.label": "Server bearbeiten …",
   "@commands.serversEdit.label": {
     "sourceHash": "a3282a7"
   },
-  "commands.serversConnect.label": "Mit Server verbinden…",
+  "commands.serversConnect.label": "Mit Server verbinden …",
   "@commands.serversConnect.label": {
     "sourceHash": "6188f47"
   },
@@ -766,7 +766,7 @@
   },
   "commands.handler.favoriteAdded": "„{name}“ zu Favoriten hinzugefügt",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
   "commands.handler.favoriteAddFailed": "Dieser Ordner konnte nicht zu den Favoriten hinzugefügt werden. Erneut versuchen?",
   "@commands.handler.favoriteAddFailed": {

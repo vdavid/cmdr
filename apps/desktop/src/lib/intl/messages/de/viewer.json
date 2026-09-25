@@ -11,7 +11,7 @@
   "@viewer.srHeading": {
     "sourceHash": "b32f632"
   },
-  "viewer.loading": "Wird geladen …",
+  "viewer.loading": "Wird geladen …",
   "@viewer.loading": {
     "sourceHash": "ba3bbbe"
   },
@@ -91,7 +91,7 @@
   "@viewer.binaryWarning.suppressForever": {
     "sourceHash": "b85b92b"
   },
-  "viewer.search.placeholder": "In Datei suchen …",
+  "viewer.search.placeholder": "In Datei suchen …",
   "@viewer.search.placeholder": {
     "sourceHash": "a3268b3"
   },
@@ -112,7 +112,7 @@
   "@viewer.search.matchPosition": {
     "sourceHash": "ec24db4"
   },
-  "viewer.search.searching": "Wird gesucht …",
+  "viewer.search.searching": "Wird gesucht …",
   "@viewer.search.searching": {
     "sourceHash": "c31723a"
   },
@@ -212,7 +212,7 @@
   "@viewer.toolbar.tail.tooltip": {
     "sourceHash": "733e57f"
   },
-  "viewer.toolbar.reindexing": "Neuindizierung …",
+  "viewer.toolbar.reindexing": "Neuindizierung …",
   "@viewer.toolbar.reindexing": {
     "sourceHash": "f668818"
   },
@@ -240,7 +240,7 @@
   "@viewer.statusBar.badge.indexedTooltip": {
     "sourceHash": "2604f1a"
   },
-  "viewer.statusBar.badge.streamingIndexing": "Streaming, Indizierung …",
+  "viewer.statusBar.badge.streamingIndexing": "Streaming, Indizierung …",
   "@viewer.statusBar.badge.streamingIndexing": {
     "sourceHash": "db1718e"
   },
@@ -318,7 +318,7 @@
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "viewer.copyDialog.saveAsFile": "Als Datei sichern …",
+  "viewer.copyDialog.saveAsFile": "Als Datei sichern …",
   "@viewer.copyDialog.saveAsFile": {
     "sourceHash": "7b9b279"
   },

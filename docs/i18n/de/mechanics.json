@@ -1,0 +1,32 @@
+{
+  "$comment": "German typography as macOS de writes it: „…“ primary (806 hits across the pile's Finder/AppKit/System Settings strings, for example „%@“), ‚…‘ nested (AppKit NSSpellChecker 200510.title), the ’ apostrophe (geht’s). Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["„", "“"], "nested": ["‚", "‘"] },
+  "apostrophes": ["’"],
+  "spacing": [
+    { "pattern": "[\\d\\uFFFC]%", "why": "a space goes before the percent sign (42 %, DIN 5008)" },
+    { "pattern": "„\\s|\\s“", "why": "German quotes hug their text: no space inside „…“" },
+    {
+      "pattern": "[^\\s\\u00a0\\d]…(?![\\p{L}\\p{N}\\uFFFC])|(?<=\\S) …(?=$|[“‘,.;:!?)\\]])",
+      "why": "a label-ending ellipsis takes a no-break space before it (Wird geladen …, Einführung …), as macOS de writes it; a leading, range, or truncating … stays as is"
+    },
+    { "pattern": "\\b\\d+x\\b", "why": "a multiplier keeps the digit and takes a hyphen (4-mal), never 4x" }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\p{L}\\((?:e|en|n|r|s|es|er|in|innen)\\)",
+      "why": "a bracketed plural, case, or gender ending (Datei(en), jede(r)); use ICU plural/select, or rephrase"
+    },
+    {
+      "pattern": "\\p{Ll}/(?:e|en|n|r|in|innen)\\b",
+      "why": "a slashed ending (Benutzer/in, ein/e; /s is the per-second unit and stays out); use ICU plural/select, or rephrase"
+    },
+    {
+      "pattern": "\\b(?:[Dd]er|[Dd]ie|[Dd]as|[Dd]en|[Dd]em|[Dd]es|[Ee]in|[Ee]ine|[Ee]inen|[Ee]inem|[Ee]iner|[Ee]ines|[Ss]ein|[Ss]eine|[Ii]hr|[Ii]hre|[Ee]r|[Ss]ie|[Ee]s)/(?:der|die|das|den|dem|des|ein|eine|einen|einem|einer|eines|sein|seine|ihr|ihre|er|sie|es)\\b",
+      "why": "a slashed article or pronoun hedging an unknown gender; repeat the noun (das Objekt) or rephrase"
+    },
+    {
+      "pattern": "\\p{L}[*:_·](?:in|innen)\\b|\\p{Ll}Innen\\b",
+      "why": "a gender star, colon, or Binnen-I; restructure to du or a neutral noun"
+    }
+  ]
+}

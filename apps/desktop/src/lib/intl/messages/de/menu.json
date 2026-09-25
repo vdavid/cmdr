@@ -44,11 +44,11 @@
   "@menu.app.licenseDetails": {
     "sourceHash": "0e660e8"
   },
-  "menu.app.licenseEnter": "Lizenzschlüssel eingeben…",
+  "menu.app.licenseEnter": "Lizenzschlüssel eingeben …",
   "@menu.app.licenseEnter": {
     "sourceHash": "24a8d77"
   },
-  "menu.app.checkForUpdates": "Nach Updates suchen…",
+  "menu.app.checkForUpdates": "Nach Updates suchen …",
   "@menu.app.checkForUpdates": {
     "sourceHash": "52d6f7d"
   },
@@ -56,11 +56,11 @@
   "@menu.app.changelog": {
     "sourceHash": "ead07c8"
   },
-  "menu.app.onboarding": "Einführung…",
+  "menu.app.onboarding": "Einführung …",
   "@menu.app.onboarding": {
     "sourceHash": "c4cc4aa"
   },
-  "menu.app.settings": "Einstellungen…",
+  "menu.app.settings": "Einstellungen …",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -96,11 +96,11 @@
   "@menu.file.edit": {
     "sourceHash": "691ca0f"
   },
-  "menu.file.copy": "Kopieren…",
+  "menu.file.copy": "Kopieren …",
   "@menu.file.copy": {
     "sourceHash": "7f743d4"
   },
-  "menu.file.move": "Bewegen…",
+  "menu.file.move": "Bewegen …",
   "@menu.file.move": {
     "sourceHash": "cd799da"
   },
@@ -108,15 +108,15 @@
   "@menu.file.duplicate": {
     "sourceHash": "02cdaab"
   },
-  "menu.file.compress": "Komprimieren…",
+  "menu.file.compress": "Komprimieren …",
   "@menu.file.compress": {
     "sourceHash": "66b9d2c"
   },
-  "menu.file.newFolder": "Neuer Ordner…",
+  "menu.file.newFolder": "Neuer Ordner …",
   "@menu.file.newFolder": {
     "sourceHash": "6cca529"
   },
-  "menu.file.newFile": "Neue Datei…",
+  "menu.file.newFile": "Neue Datei …",
   "@menu.file.newFile": {
     "sourceHash": "6b2727f"
   },
@@ -184,7 +184,7 @@
   "@menu.edit.copyFilename": {
     "sourceHash": "5cdf7f8"
   },
-  "menu.edit.searchFiles": "Dateien suchen…",
+  "menu.edit.searchFiles": "Dateien suchen …",
   "@menu.edit.searchFiles": {
     "sourceHash": "149a9d1"
   },
@@ -216,11 +216,11 @@
   "@menu.select.invert": {
     "sourceHash": "d2e128a"
   },
-  "menu.select.files": "Dateien auswählen…",
+  "menu.select.files": "Dateien auswählen …",
   "@menu.select.files": {
     "sourceHash": "b7f202e"
   },
-  "menu.select.deselectFiles": "Dateien abwählen…",
+  "menu.select.deselectFiles": "Dateien abwählen …",
   "@menu.select.deselectFiles": {
     "sourceHash": "6fb10d5"
   },
@@ -261,7 +261,7 @@
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
   },
-  "menu.view.commandPalette": "Befehlspalette…",
+  "menu.view.commandPalette": "Befehlspalette …",
   "@menu.view.commandPalette": {
     "sourceHash": "6b1c93d"
   },
@@ -351,7 +351,7 @@
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "Zu Pfad gehen…",
+  "menu.go.goToPath": "Zu Pfad gehen …",
   "@menu.go.goToPath": {
     "sourceHash": "936edc5"
   },
@@ -367,7 +367,7 @@
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
   },
-  "menu.go.connectToServer": "Mit Server verbinden…",
+  "menu.go.connectToServer": "Mit Server verbinden …",
   "@menu.go.connectToServer": {
     "sourceHash": "6188f47"
   },
@@ -423,11 +423,11 @@
   "@menu.help.whatsNew": {
     "sourceHash": "135e912"
   },
-  "menu.help.sendFeedback": "Feedback senden…",
+  "menu.help.sendFeedback": "Feedback senden …",
   "@menu.help.sendFeedback": {
     "sourceHash": "60e1072"
   },
-  "menu.help.sendErrorReport": "Fehlerbericht senden…",
+  "menu.help.sendErrorReport": "Fehlerbericht senden …",
   "@menu.help.sendErrorReport": {
     "sourceHash": "063c94e"
   },
@@ -445,7 +445,7 @@
   },
   "menu.context.copyNamed": "„{name}“ kopieren",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "Zu Favoriten hinzufügen",
   "@menu.context.addToFavorites": {
@@ -479,7 +479,7 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
-  "menu.context.shareLoading": "Optionen zum Teilen werden gesucht …",
+  "menu.context.shareLoading": "Optionen zum Teilen werden gesucht …",
   "@menu.context.shareLoading": {
     "sourceHash": "1db46ae"
   },
@@ -487,11 +487,11 @@
   "@menu.context.shareNone": {
     "sourceHash": "cd12a10"
   },
-  "menu.context.editExtensions": "Erweiterungen bearbeiten…",
+  "menu.context.editExtensions": "Erweiterungen bearbeiten …",
   "@menu.context.editExtensions": {
     "sourceHash": "c1d99c8"
   },
-  "menu.context.openWithLoading": "Apps werden gesucht …",
+  "menu.context.openWithLoading": "Apps werden gesucht …",
   "@menu.context.openWithLoading": {
     "sourceHash": "5bcff61"
   },
@@ -503,7 +503,7 @@
   "@menu.context.openWithDefault": {
     "sourceHash": "32a7cca"
   },
-  "menu.context.openWithOther": "Andere…",
+  "menu.context.openWithOther": "Andere …",
   "@menu.context.openWithOther": {
     "sourceHash": "1e37529"
   },
@@ -543,11 +543,11 @@
   },
   "menu.tag.addNamed": "„{color}“ hinzufügen",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
   "menu.tag.removeNamed": "„{color}“ entfernen",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "Zu indizierten Ordnern hinzufügen",
   "@menu.mediaIndex.addFolder": {
@@ -589,7 +589,7 @@
   "@menu.volume.renameFavorite": {
     "sourceHash": "3064d79"
   },
-  "menu.volume.editFavoriteShortcut": "Kurzbefehl festlegen…",
+  "menu.volume.editFavoriteShortcut": "Kurzbefehl festlegen …",
   "@menu.volume.editFavoriteShortcut": {
     "sourceHash": "be52b50"
   },
@@ -601,7 +601,7 @@
   "@menu.network.open": {
     "sourceHash": "ed077f3"
   },
-  "menu.network.edit": "Server bearbeiten…",
+  "menu.network.edit": "Server bearbeiten …",
   "@menu.network.edit": {
     "sourceHash": "a3282a7"
   },
@@ -649,15 +649,15 @@
   "@menu.dock.openCmdr": {
     "sourceHash": "f898c5b"
   },
-  "menu.dock.searchFiles": "Dateien suchen…",
+  "menu.dock.searchFiles": "Dateien suchen …",
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "Gehe zu Ordner…",
+  "menu.dock.goToFolder": "Gehe zu Ordner …",
   "@menu.dock.goToFolder": {
     "sourceHash": "33de610"
   },
-  "menu.dock.connectToServer": "Mit Server verbinden…",
+  "menu.dock.connectToServer": "Mit Server verbinden …",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
   },

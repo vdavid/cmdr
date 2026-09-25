@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Klicke einen Server mit der rechten Maustaste an und wähle „Lösen“, oder führe „{command}“ in der Befehlspalette aus. Der Server bleibt in der Liste „Server“.",
   "@servers.pinHint.body": {
-    "sourceHash": "0663b02"
+    "sourceHash": "e47522b"
   },
   "servers.pinHint.gotIt": "Alles klar",
   "@servers.pinHint.gotIt": {
@@ -37,7 +37,7 @@
   "@servers.hub.colLastUsed": {
     "sourceHash": "830ec7f"
   },
-  "servers.hub.addServer": "Server hinzufügen…",
+  "servers.hub.addServer": "Server hinzufügen …",
   "@servers.hub.addServer": {
     "sourceHash": "9574f8e"
   },
@@ -65,11 +65,11 @@
   "@servers.hub.neverUsed": {
     "sourceHash": "6300ef8"
   },
-  "servers.hub.discoveryOff": "Die Suche im lokalen Netzwerk ist deaktiviert.",
+  "servers.hub.discoveryOff": "Die Suche im lokalen Netzwerk ist ausgeschaltet.",
   "@servers.hub.discoveryOff": {
     "sourceHash": "cadcceb"
   },
-  "servers.hub.discoveryOffLink": "In den Einstellungen aktivieren",
+  "servers.hub.discoveryOffLink": "In den Einstellungen einschalten",
   "@servers.hub.discoveryOffLink": {
     "sourceHash": "818571b"
   },
@@ -85,7 +85,7 @@
   "@servers.hub.rowCount": {
     "sourceHash": "7ef87d1"
   },
-  "servers.paneState.connecting": "Verbindung zu {name} wird hergestellt …",
+  "servers.paneState.connecting": "Verbindung zu {name} wird hergestellt …",
   "@servers.paneState.connecting": {
     "sourceHash": "7fb114e"
   },
@@ -165,7 +165,7 @@
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "f7bb3a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr konnte dieses Passwort nicht im Schlüsselbund sichern. Versuche es noch einmal oder deaktiviere „Im Schlüsselbund merken“, um dich anzumelden, ohne es zu sichern.",
+  "servers.refusal.secretNotStored": "Cmdr konnte dieses Passwort nicht im Schlüsselbund sichern. Versuche es noch einmal oder schalte „Im Schlüsselbund merken“ aus, um dich anzumelden, ohne es zu sichern.",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "080b475"
   },
@@ -201,7 +201,7 @@
   "@servers.sheet.cancel": {
     "sourceHash": "19766ed"
   },
-  "servers.sheet.connecting": "Verbindung wird hergestellt …",
+  "servers.sheet.connecting": "Verbindung wird hergestellt …",
   "@servers.sheet.connecting": {
     "sourceHash": "72021eb"
   },
@@ -302,7 +302,7 @@
   "@servers.sheet.keyFile": {
     "sourceHash": "33c7999"
   },
-  "servers.sheet.browse": "Durchsuchen…",
+  "servers.sheet.browse": "Durchsuchen …",
   "@servers.sheet.browse": {
     "sourceHash": "93c6b66"
   },
@@ -366,7 +366,7 @@
   "@servers.paneState.signedOut": {
     "sourceHash": "b1d908f"
   },
-  "servers.paneState.signIn": "Anmelden…",
+  "servers.paneState.signIn": "Anmelden …",
   "@servers.paneState.signIn": {
     "sourceHash": "a6a5723"
   },
@@ -378,7 +378,7 @@
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
   },
-  "servers.paneState.reconnecting": "Verbindung zu {name} wird wiederhergestellt …",
+  "servers.paneState.reconnecting": "Verbindung zu {name} wird wiederhergestellt …",
   "@servers.paneState.reconnecting": {
     "sourceHash": "dce8cef"
   },

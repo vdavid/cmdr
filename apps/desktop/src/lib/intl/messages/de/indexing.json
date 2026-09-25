@@ -8,7 +8,7 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Dein Laufwerk wird indiziert …",
+  "indexing.scan.label": "Dein Laufwerk wird indiziert …",
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
@@ -109,19 +109,19 @@
   "@indexing.step.statusPending": {
     "sourceHash": "ba35f0c"
   },
-  "indexing.aggregation.loading": "Ordner werden geladen …",
+  "indexing.aggregation.loading": "Ordner werden geladen …",
   "@indexing.aggregation.loading": {
     "sourceHash": "d0aa0da"
   },
-  "indexing.aggregation.sorting": "Ordner werden sortiert …",
+  "indexing.aggregation.sorting": "Ordner werden sortiert …",
   "@indexing.aggregation.sorting": {
     "sourceHash": "5c5a247"
   },
-  "indexing.aggregation.computing": "Ordnergrößen werden berechnet …",
+  "indexing.aggregation.computing": "Ordnergrößen werden berechnet …",
   "@indexing.aggregation.computing": {
     "sourceHash": "d693bcf"
   },
-  "indexing.aggregation.writing": "Ordnergrößen werden gesichert …",
+  "indexing.aggregation.writing": "Ordnergrößen werden gesichert …",
   "@indexing.aggregation.writing": {
     "sourceHash": "4cec9d8"
   },
