@@ -12,9 +12,9 @@
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
-  "indexing.scan.counters": "{entriesText} 个条目，{dirsText} 个目录",
+  "indexing.scan.counters": "{entriesText} {entries, plural, other {个条目}}，{dirsText} {dirs, plural, other {个目录}}",
   "@indexing.scan.counters": {
-    "sourceHash": "fd4d242"
+    "sourceHash": "f635790"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -125,9 +125,9 @@
   "@indexing.aggregation.writing": {
     "sourceHash": "4cec9d8"
   },
-  "indexing.replay.detail": "已处理 {eventsText} 个事件",
+  "indexing.replay.detail": "已处理 {eventsText} {events, plural, other {个事件}}",
   "@indexing.replay.detail": {
-    "sourceHash": "e80c077"
+    "sourceHash": "1c2a534"
   },
   "indexing.progress.percentEta": "{percent}%，{eta}",
   "@indexing.progress.percentEta": {

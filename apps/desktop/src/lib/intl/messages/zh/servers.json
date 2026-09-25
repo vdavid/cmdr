@@ -141,11 +141,11 @@
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr 还没有信任 {host} 的主机密钥。",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
   "servers.refusal.hostKeyRevoked": "在这台 Mac 的 SSH 设置里，{host} 的主机密钥被标记为已泄露。Cmdr 不会连接到它。",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "起始文件夹必须是根文件夹本身，或者它里面的文件夹。",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -337,7 +337,7 @@
   },
   "servers.hostKey.changedTitle": "{host} 的主机密钥变了",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "这可能是因为服务器重装过，也可能是有东西夹在你和它之间。信任之前，请先和这台服务器的所有者核对指纹。",
   "@servers.hostKey.changedBody": {

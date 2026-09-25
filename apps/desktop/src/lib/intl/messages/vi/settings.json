@@ -711,9 +711,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Bạn đã lập chỉ mục {totalText} ảnh; thiết lập của bạn bao gồm {coveredText}. {doomed, plural, other {{doomedText} mục bổ sung vẫn có thể tìm kiếm cho đến khi bạn xóa chúng}}.",
+  "settings.mediaIndex.reclaim.line": "Bạn đã lập chỉ mục {totalText} {total, plural, other {ảnh}}; thiết lập của bạn bao gồm {coveredText}. {doomed, plural, other {{doomedText} mục bổ sung vẫn tìm kiếm được cho đến khi bạn xóa chúng}}.",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, other {Xóa các mục bổ sung và giải phóng khoảng {size}}}",
   "@settings.mediaIndex.reclaim.button": {
@@ -1157,7 +1157,7 @@
   "@settings.whatsNew.lastSeenVersion.label": {
     "sourceHash": "4790ce6"
   },
-  "settings.whatsNew.lastSeenVersion.description": "Nội bộ: phiên bản chúng tôi hiển thị lần cuối trong cửa sổ “Điểm mới”. Tự lặng lẽ tiến lên mỗi lần khởi chạy nên việc bật lại cửa sổ không bao giờ phát lại tồn đọng sâu nhiều tháng. Ẩn khỏi giao diện.",
+  "settings.whatsNew.lastSeenVersion.description": "Nội bộ: phiên bản chúng tôi hiển thị lần cuối trong cửa sổ “Có gì mới”. Tự lặng lẽ tiến lên mỗi lần khởi chạy nên việc bật lại cửa sổ không bao giờ phát lại tồn đọng sâu nhiều tháng. Ẩn khỏi giao diện.",
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d8677e1"
   },
@@ -1245,7 +1245,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 mở trình xem tệp của Cmdr, vốn hiển thị byte thô (với UTF-8 mất mát cho nội dung phi văn bản). Khi bạn mở ảnh, PDF, tệp nén, hoặc tệp nhị phân khác, trình xem hiển thị biểu ngữ đỏ giải thích rằng ⇧Space (Xem nhanh) hoặc Enter (mở trong ứng dụng liên kết) có lẽ là điều bạn muốn. Bật mục này (hoặc bấm “Đừng bao giờ hiện cảnh báo này nữa” trên biểu ngữ) để ẩn cảnh báo vĩnh viễn.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 mở trình xem tệp của Cmdr, vốn hiển thị byte thô (với UTF-8 mất mát cho nội dung phi văn bản). Khi bạn mở ảnh, PDF, tệp nén, hoặc tệp nhị phân khác, trình xem hiển thị biểu ngữ đỏ giải thích rằng ⇧Space (Xem nhanh) hoặc Enter (mở trong ứng dụng liên kết) có lẽ là điều bạn muốn. Bật mục này (hoặc bấm “Không hiển thị cảnh báo này nữa” trên biểu ngữ) để ẩn cảnh báo vĩnh viễn.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },

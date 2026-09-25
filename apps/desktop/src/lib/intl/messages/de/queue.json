@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "Kopier-, Bewegungs- und Löschvorgänge erscheinen hier, solange sie laufen, sodass du sie anhalten, fortsetzen oder abbrechen kannst.",
+  "queue.empty.body": "Kopier-, Bewegungs- und Löschvorgänge sowie andere Dateivorgänge erscheinen hier, solange sie laufen, damit du sie anhalten, fortsetzen oder abbrechen kannst.",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {Wird kopiert} move {Wird bewegt} delete {Wird gelöscht} trash {Wird in den Papierkorb bewegt} rename {Wird umbenannt} create_folder {Ordner wird erstellt} create_file {Datei wird erstellt} archive_edit {Archiv wird bearbeitet} other {In Arbeit}}",
   "@queue.row.label": {

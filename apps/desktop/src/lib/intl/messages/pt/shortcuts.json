@@ -44,9 +44,9 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "Tela de erro",
+  "shortcuts.scope.errorScreen": "Pasta ilegível",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "Locais",
   "@shortcuts.scope.places": {

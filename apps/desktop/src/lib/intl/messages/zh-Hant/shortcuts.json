@@ -43,9 +43,9 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "錯誤畫面",
+  "shortcuts.scope.errorScreen": "無法讀取的資料夾",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "位置",
   "@shortcuts.scope.places": {

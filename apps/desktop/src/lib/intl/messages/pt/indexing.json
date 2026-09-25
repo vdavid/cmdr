@@ -12,9 +12,9 @@
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
-  "indexing.scan.counters": "{entriesText} itens, {dirsText} pastas",
+  "indexing.scan.counters": "{entriesText} {entries, plural, one {entrada} many {entradas} other {entradas}}, {dirsText} {dirs, plural, one {pasta} many {pastas} other {pastas}}",
   "@indexing.scan.counters": {
-    "sourceHash": "fd4d242"
+    "sourceHash": "f635790"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -125,9 +125,9 @@
   "@indexing.aggregation.writing": {
     "sourceHash": "4cec9d8"
   },
-  "indexing.replay.detail": "{eventsText} eventos processados",
+  "indexing.replay.detail": "{eventsText} {events, plural, one {evento processado} many {eventos processados} other {eventos processados}}",
   "@indexing.replay.detail": {
-    "sourceHash": "e80c077"
+    "sourceHash": "1c2a534"
   },
   "indexing.progress.percentEta": "{percent}%, {eta}",
   "@indexing.progress.percentEta": {

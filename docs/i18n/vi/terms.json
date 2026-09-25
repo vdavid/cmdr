@@ -249,6 +249,12 @@
     "forms": "button Duyệt… keeps the … (U+2026)",
     "sources": "macOS StandardAdditions ChooseApplication (Browse... → Duyệt...), Finder ConnectToWindow (Browse → Duyệt)"
   },
+  "button": {
+    "chosen": "nút",
+    "confidence": "high",
+    "forms": "the + button → nút “+”; the button below → nút bên dưới",
+    "sources": "macOS AppKit (\"the Add (+) button\" → \"nút Thêm (+)\", \"this button\" → \"nút này\"); catalog (8 of 8 keys)"
+  },
   "cache": {
     "chosen": "bộ đệm",
     "confidence": "high",
@@ -365,6 +371,18 @@
     "chosen": "bảng nhớ tạm",
     "confidence": "high",
     "sources": "macOS Finder/AppKit (Clipboard → bảng nhớ tạm)"
+  },
+  "click": {
+    "avoid": [
+      {
+        "form": "nhấp",
+        "why": "MS/Windows usage; macOS says bấm for click"
+      }
+    ],
+    "chosen": "bấm",
+    "confidence": "high",
+    "forms": "click X → bấm X; click the + button → bấm vào nút Thêm (+) / bấm nút “+”; a key is pressed, not clicked → nhấn",
+    "sources": "macOS AppKit (\"click Printers & Scanners, and then click the Add (+) button\" → \"bấm vào Máy in & Máy quét rồi bấm vào nút Thêm (+)\"); catalog (26 keys after the onboarding.stepFda.* sweep)"
   },
   "close": {
     "chosen": "đóng",
@@ -757,6 +775,14 @@
     "confidence": "high",
     "forms": "press Enter → nhấn Enter (Nhấn Enter để tìm kiếm)",
     "sources": "macOS vi keeps Enter"
+  },
+  "entry": {
+    "accept": ["mục nhập"],
+    "chosen": "mục",
+    "confidence": "high",
+    "forms": "a counted noun, no classifier ({countText} mục); a Keychain entry → mục; stash entry → mục stash",
+    "note": "Shares `mục` with the item concept: the two English words never meet in one vi string, and a scan's entries are files and folders anyway.",
+    "sources": "MS terminology (entry → mục nhập / mục); catalog (17 of 17 keys)"
   },
   "error-report": {
     "accept": ["trục trặc"],
@@ -1943,6 +1969,12 @@
     "forms": "EN repo → repo; EN repository → kho (Huy hiệu kho)",
     "sources": "catalog (errors.git.*, onboarding.stepBeta.checklist.star); MS (kho lưu trữ)"
   },
+  "request": {
+    "chosen": "yêu cầu",
+    "confidence": "high",
+    "forms": "a network request → yêu cầu mạng; Request denied → Yêu cầu bị từ chối",
+    "sources": "macOS AppKit (Request denied → Yêu cầu bị từ chối; \"a request for services\" → \"yêu cầu dịch vụ\"); catalog (10 of 10 keys)"
+  },
   "reserved": {
     "accept": ["giữ riêng"],
     "chosen": "dành riêng",
@@ -2625,9 +2657,14 @@
     "forms": "What's new in Cmdr → Có gì mới trong Cmdr",
     "sources": "natural framing",
     "exceptions": {
-      "settings.whatsNew.showOnUpdate.label": "a plain \"show what's new\" phrase, not the dialog title (điểm mới)",
-      "settings.whatsNew.lastSeenVersion.description": "internal setting hidden from the UI; names the popup loosely as điểm mới"
+      "settings.whatsNew.showOnUpdate.label": "a plain \"show what's new\" phrase, not the dialog title (điểm mới)"
     }
+  },
+  "window": {
+    "chosen": "cửa sổ",
+    "confidence": "high",
+    "forms": "the Window menu → Cửa sổ; close this window → đóng cửa sổ này",
+    "sources": "macOS AppKit (\"this button also has an action to zoom the window\" → \"… thu phóng cửa sổ\"), Finder menu bar Cửa sổ; catalog (11 of 11 keys)"
   },
   "word-wrap": {
     "accept": ["ngắt"],

@@ -1069,9 +1069,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "Thư mục này do **{name}** quản lý. Bạn có thể thử:\n- Thoát rồi mở lại {app}\n- Đăng xuất rồi đăng nhập lại vào {app}\n- Xem trang trạng thái của {name} để biết về sự cố",
+  "errors.provider.appBased.serious": "Thư mục này do **{name}** quản lý. Bạn có thể thử:\n- Thoát rồi mở lại {app}\n- Đăng xuất rồi đăng nhập lại vào {app}\n- Xem trang trạng thái của {name} để biết dịch vụ có đang gặp sự cố không",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "347589c"
+    "sourceHash": "5a4e14e"
   },
   "errors.write.sourceNotFound.title": "Không tìm thấy tệp",
   "@errors.write.sourceNotFound.title": {

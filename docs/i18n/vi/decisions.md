@@ -193,8 +193,8 @@ over a pile-ideal form that would fork a term mid-catalog.
 
 ## Đổi tên liên tiếp: thông báo gộp khi nhiều tệp giữ nguyên tên (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
-- "and so did …" → sentence-final `… cũng vậy` over merging the subjects: `{reason}` describes ONE file, and a merge
-  would spread it across all of them. "and N other files" → `và {othersText} tệp khác` (Finder), no `các`.
+- "and so did …" → `“{name}” cũng vậy: {reason}` over merging the subjects: `{reason}` describes ONE file, and a
+  merge would spread it across all of them. "N other files" → `{othersText} tệp khác` (Finder), no `các`.
 
 ## Đổi tên không xác nhận được + tên không dùng được (`fileExplorer.rename.unconfirmed`/`.unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
 

@@ -483,9 +483,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "Corresponde a {matchedText} de {totalText} caracteres",
+  "askCmdr.renameReview.coverage": "Corresponde a {matchedText} de {totalText} {total, plural, one {caractere} many {caracteres} other {caracteres}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "d8845cb"
+    "sourceHash": "222d847"
   },
   "askCmdr.renameReview.coverageThin": "Essa é uma parte pequena do texto que o Cmdr leu aqui. Abra o arquivo para conferir o nome.",
   "@askCmdr.renameReview.coverageThin": {
@@ -663,9 +663,9 @@
   "@askCmdr.context.label": {
     "sourceHash": "8451f61"
   },
-  "askCmdr.context.tooltip": "{usedText} de {budgetText} tokens usados (estimado)",
+  "askCmdr.context.tooltip": "{usedText} de {budgetText} {budget, plural, one {token usado} many {tokens usados} other {tokens usados}} (estimativa)",
   "@askCmdr.context.tooltip": {
-    "sourceHash": "3b4eef0"
+    "sourceHash": "81cc75a"
   },
   "askCmdr.wake.thinking": "O Cmdr está dando uma olhada no que mudou. Abra o chat.",
   "@askCmdr.wake.thinking": {

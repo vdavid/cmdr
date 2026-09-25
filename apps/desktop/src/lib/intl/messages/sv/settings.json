@@ -283,7 +283,7 @@
   "@settings.appearance.showFunctionKeyBar.label": {
     "sourceHash": "e80f18d"
   },
-  "settings.appearance.showFunctionKeyBar.description": "Visa raden med F-tangentskommandon (Byt namn, Visa, Kopiera och så vidare) längst ner i fönstret.",
+  "settings.appearance.showFunctionKeyBar.description": "Visa raden med knappar för F-tangentskommandon (Byt namn, Visa, Kopiera och så vidare) längst ner i fönstret.",
   "@settings.appearance.showFunctionKeyBar.description": {
     "sourceHash": "138b56b"
   },
@@ -715,9 +715,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Du har {totalText} bilder indexerade; din inställning täcker {coveredText}. {doomed, plural, one {Den extra posten är fortfarande sökbar tills du tar bort den} other {De {doomedText} extra posterna är fortfarande sökbara tills du tar bort dem}}.",
+  "settings.mediaIndex.reclaim.line": "Du har {totalText} {total, plural, one {bild indexerad} other {bilder indexerade}}; din inställning täcker {coveredText}. {doomed, plural, one {Den extra posten är fortfarande sökbar tills du tar bort den} other {De {doomedText} extra posterna är fortfarande sökbara tills du tar bort dem}}.",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Ta bort den extra posten och frigör ungefär {size}} other {Ta bort de extra posterna och frigör ungefär {size}}}",
   "@settings.mediaIndex.reclaim.button": {

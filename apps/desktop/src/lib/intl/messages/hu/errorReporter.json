@@ -32,9 +32,9 @@
   "@errorReporter.dialog.notePlaceholder": {
     "sourceHash": "003300b"
   },
-  "errorReporter.dialog.noteTooLong": "A megjegyzés túl hosszú. A maximum {maxText} karakter.",
+  "errorReporter.dialog.noteTooLong": "A megjegyzés túl hosszú. Legfeljebb {maxText} {max, plural, one {karakter} other {karakter}} lehet.",
   "@errorReporter.dialog.noteTooLong": {
-    "sourceHash": "835aa78"
+    "sourceHash": "afcefac"
   },
   "errorReporter.dialog.detailsToggle": "Mi kerül elküldésre",
   "@errorReporter.dialog.detailsToggle": {

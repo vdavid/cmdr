@@ -35,9 +35,9 @@
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopieringen} other {Flytten}} klar: hoppade över alla {skippedText} filer (fanns redan på målet), inget {verb, select, copy {kopierades} other {flyttades}}.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopieringen} other {Flytten}} klar: hoppade över alla {skippedText} {skipped, plural, one {fil} other {filer}} (fanns redan på målet), inget {verb, select, copy {kopierades} other {flyttades}}.",
   "@transfer.fileOnly.allSkippedMany": {
-    "sourceHash": "ae39c4b"
+    "sourceHash": "5b688cf"
   },
   "transfer.fileOnly.mixedCopy": "Kopieringen klar: kopierade {transferredText}, hoppade över {skippedText}. Alla {processedText} {processed, plural, one {fil} other {filer}} du markerade finns nu på målet.",
   "@transfer.fileOnly.mixedCopy": {

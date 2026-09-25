@@ -203,8 +203,7 @@ The stats carry a stable random id, so ❌ never `anónimas`, and ❌ never the 
 
 ## La cadena de renombrados: el aviso que cuenta los archivos que no cambiaron (`fileExplorer.rename.chainKeptOriginalName*`)
 
-"kept its name" → `ha mantenido su nombre`: `conservar` is for a CHOICE, this is a fact. "and so did N others" →
-`y otros {n} archivos también`; `one` is `y otro archivo también`, no numeral.
+`mantener`, not `conservar` (a choice). `Se ha mantenido el nombre “{name}”`: `su nombre` would point at the insert.
 
 ## El renombrado sin confirmar y el nombre que el sistema rechaza (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
 
@@ -349,8 +348,8 @@ Tone: Cmdr did the careful thing; never an apology or alarm.
   `folderNotEmpty` keys match their twins word for word.
 - "it changed after Cmdr put it there" → `cambió después de que Cmdr terminara de escribir ahí`: keeps the brand AND
   agrees with nothing.
-- The definite article is the only thing separating `done*` (`los {countText} elementos`) from `some*`; lose it and the
-  partial notice promises a clean destination. `one` drops the numeral (`el elemento`).
+- `todos los` is what separates `done*` (`todos los {countText} elementos`) from `some*`; lose it and the partial
+  notice promises a clean destination. `one` drops the numeral (`el elemento`).
 - Rolling back a copy `elimina`, a move `devuelve … a su sitio`: never mix them.
 - "Cmdr had written" → `que Cmdr había creado` (folders aren't written).
 - `*.counted` keys only show for two or more: plural verb outside the branches, `one` unused. If one can ever be 1, redo

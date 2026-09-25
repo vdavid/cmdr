@@ -480,9 +480,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "匹配 {totalText} 个字符中的 {matchedText} 个",
+  "askCmdr.renameReview.coverage": "匹配 {totalText} {total, plural, other {个字符}}中的 {matchedText} 个",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "d8845cb"
+    "sourceHash": "222d847"
   },
   "askCmdr.renameReview.coverageThin": "这只是 Cmdr 在这里读到的文字中的一小部分。打开文件核对一下名称。",
   "@askCmdr.renameReview.coverageThin": {
@@ -660,9 +660,9 @@
   "@askCmdr.context.label": {
     "sourceHash": "8451f61"
   },
-  "askCmdr.context.tooltip": "已使用 {usedText} / {budgetText} 个 token（估算）",
+  "askCmdr.context.tooltip": "已使用 {usedText} / {budgetText} {budget, plural, other {个 token}}（估算）",
   "@askCmdr.context.tooltip": {
-    "sourceHash": "3b4eef0"
+    "sourceHash": "81cc75a"
   },
   "askCmdr.wake.thinking": "Cmdr 正在看看有哪些变化。打开聊天。",
   "@askCmdr.wake.thinking": {

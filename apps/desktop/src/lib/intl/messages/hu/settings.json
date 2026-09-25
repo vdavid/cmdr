@@ -713,9 +713,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "{totalText} kép van indexelve; a beállításod {coveredText} képet fed le. {doomed, plural, one {A további bejegyzés kereshető marad, amíg nem törlöd} other {A további {doomedText} bejegyzés kereshető marad, amíg nem törlöd}}.",
+  "settings.mediaIndex.reclaim.line": "{totalText} {total, plural, one {kép} other {kép}} van indexelve; a beállításod {coveredText} képet fed le. {doomed, plural, one {A további bejegyzés kereshető marad, amíg nem törlöd} other {A további {doomedText} bejegyzés kereshető marad, amíg nem törlöd}}.",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, one {A további bejegyzés törlése, és kb. {size} felszabadítása} other {A további bejegyzések törlése, és kb. {size} felszabadítása}}",
   "@settings.mediaIndex.reclaim.button": {
@@ -1248,7 +1248,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "Az F3 megnyitja a Cmdr fájlmegjelenítőjét, amely nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a ⇧Space (Gyorsnézet) vagy az Enter (megnyitás a társított appban) az, amit szerettél volna. Kapcsold ezt be (vagy kattints a sávban a „Soha ne mutasd újra ezt a figyelmeztetést” gombra), hogy végleg elnyomd a figyelmeztetést.",
+  "settings.fileViewer.suppressBinaryWarning.description": "Az F3 megnyitja a Cmdr fájlmegjelenítőjét, amely nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a ⇧Space (Gyorsnézet) vagy az Enter (megnyitás a társított appban) az, amit szerettél volna. Kapcsold ezt be (vagy kattints a sávban a „Ne jelenjen meg többé ez a figyelmeztetés” gombra), hogy végleg elnyomd a figyelmeztetést.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
@@ -1256,7 +1256,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "A Cmdr a Space-szel váltja a fájlkijelölést, és a ⇧Space-szel a Gyorsnézetet (a Finder sima Space-szel hozza a Gyorsnézetet). Valahányszor megnyomod a Space-t a fájllistában, a Cmdr egy bekezdésnyi emlékeztetőt mutat erről a különbségről. Kapcsold ezt be (vagy kattints a buborékban a „Ne mutasd újra” gombra), hogy végleg elnyomd az emlékeztetőt.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "A Cmdr a Space-szel váltja a fájlkijelölést, és a ⇧Space-szel a Gyorsnézetet (a Finder sima Space-szel hozza a Gyorsnézetet). Valahányszor megnyomod a Space-t a fájllistában, a Cmdr egy bekezdésnyi emlékeztetőt mutat erről a különbségről. Kapcsold ezt be (vagy kattints a buborékban a „Ne jelenjen meg többé” gombra), hogy végleg elnyomd az emlékeztetőt.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
   },

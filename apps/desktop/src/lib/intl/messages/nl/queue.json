@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "Kopieer-, verplaats- en verwijderacties verschijnen hier terwijl ze lopen, zodat je ze kunt pauzeren, hervatten of annuleren.",
+  "queue.empty.body": "Kopieer-, verplaats-, verwijder- en andere bestandsbewerkingen verschijnen hier terwijl ze lopen, zodat je ze kunt pauzeren, hervatten of annuleren.",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {Bezig met kopiëren} move {Bezig met verplaatsen} delete {Bezig met verwijderen} trash {Naar prullenmand verplaatsen} rename {Bezig met naam wijzigen} create_folder {Bezig met map aanmaken} create_file {Bezig met bestand aanmaken} archive_edit {Bezig met archief bewerken} other {Bezig}}",
   "@queue.row.label": {

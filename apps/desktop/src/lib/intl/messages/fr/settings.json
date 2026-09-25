@@ -463,7 +463,7 @@
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "Trouvez des photos en décrivant ce qu’elles contiennent, comme ’coucher de soleil sur la plage’, grâce à un modèle d’IA qui fonctionne en local.",
+  "settings.mediaIndex.clip.description": "Trouvez des photos en décrivant ce qu’elles contiennent, comme « coucher de soleil sur la plage », grâce à un modèle d’IA qui fonctionne en local.",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "9a569ba"
   },
@@ -715,9 +715,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Vous avez {totalText} images indexées ; votre réglage couvre {coveredText}. {doomed, plural, one {L’entrée supplémentaire reste consultable jusqu’à ce que vous la supprimiez} other {Les {doomedText} entrées supplémentaires restent consultables jusqu’à ce que vous les supprimiez} many {Les {doomedText} entrées supplémentaires restent consultables jusqu’à ce que vous les supprimiez}}.",
+  "settings.mediaIndex.reclaim.line": "Vous avez {totalText} {total, plural, one {image indexée} many {images indexées} other {images indexées}} ; votre réglage en couvre {coveredText}. {doomed, plural, one {L’entrée supplémentaire reste consultable jusqu’à ce que vous la supprimiez} many {{doomedText} entrées supplémentaires restent consultables jusqu’à ce que vous les supprimiez} other {{doomedText} entrées supplémentaires restent consultables jusqu’à ce que vous les supprimiez}}.",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Supprimer l’entrée supplémentaire et libérer environ {size}} other {Supprimer les entrées supplémentaires et libérer environ {size}} many {Supprimer les entrées supplémentaires et libérer environ {size}}}",
   "@settings.mediaIndex.reclaim.button": {
@@ -1253,7 +1253,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 ouvre la visionneuse de fichiers de Cmdr, qui affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que ⇧Espace (Coup d’œil) ou Entrée (ouvrir dans l’app associée) est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus jamais afficher cet avertissement » dans la bannière) pour masquer l’avertissement définitivement.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 ouvre la visionneuse de fichiers de Cmdr, qui affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que ⇧Espace (Coup d’œil) ou Entrée (ouvrir dans l’app associée) est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus afficher cet avertissement » dans la bannière) pour masquer l’avertissement définitivement.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },

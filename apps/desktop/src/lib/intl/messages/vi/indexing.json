@@ -12,9 +12,9 @@
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
-  "indexing.scan.counters": "{entriesText} mục, {dirsText} thư mục",
+  "indexing.scan.counters": "{entriesText} {entries, plural, other {mục}}, {dirsText} {dirs, plural, other {thư mục}}",
   "@indexing.scan.counters": {
-    "sourceHash": "fd4d242"
+    "sourceHash": "f635790"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -125,9 +125,9 @@
   "@indexing.aggregation.writing": {
     "sourceHash": "4cec9d8"
   },
-  "indexing.replay.detail": "Đã xử lý {eventsText} sự kiện",
+  "indexing.replay.detail": "Đã xử lý {eventsText} {events, plural, other {sự kiện}}",
   "@indexing.replay.detail": {
-    "sourceHash": "e80c077"
+    "sourceHash": "1c2a534"
   },
   "indexing.progress.percentEta": "{percent}%, {eta}",
   "@indexing.progress.percentEta": {

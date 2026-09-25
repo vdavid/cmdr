@@ -45,9 +45,9 @@
     "sourceHash": "68d7beb",
     "sameAsSourceJustification": "Dutch uses the English loanword: macOS nl says \"Servers\" (AppKit Menus.loctable). Same term as the switcher row it names."
   },
-  "shortcuts.scope.errorScreen": "Foutmelding",
+  "shortcuts.scope.errorScreen": "Onleesbare map",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "Locaties",
   "@shortcuts.scope.places": {

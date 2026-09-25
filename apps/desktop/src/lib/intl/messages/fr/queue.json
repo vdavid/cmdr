@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "Les copies, déplacements et suppressions apparaissent ici pendant leur exécution, pour que vous puissiez les mettre en pause, les reprendre ou les annuler.",
+  "queue.empty.body": "Les copies, déplacements, suppressions et autres opérations sur les fichiers apparaissent ici pendant leur exécution, pour que vous puissiez les mettre en pause, les reprendre ou les annuler.",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {Copie} move {Déplacement} delete {Suppression} trash {Placement dans la corbeille} rename {Renommage} create_folder {Création du dossier} create_file {Création du fichier} archive_edit {Modification de l’archive} other {En cours}}",
   "@queue.row.label": {

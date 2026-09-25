@@ -103,13 +103,13 @@
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "sourceHash": "3f13d21"
   },
-  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Se eliminó el elemento que Cmdr había creado.} many {Se eliminaron los {countText} elementos que Cmdr había creado.} other {Se eliminaron los {countText} elementos que Cmdr había creado.}}",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Se eliminó el elemento que Cmdr había creado.} many {Se eliminaron todos los {countText} elementos que Cmdr había creado.} other {Se eliminaron todos los {countText} elementos que Cmdr había creado.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "4cc87af"
+    "sourceHash": "8e11e03"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Se devolvió el elemento a su lugar.} many {Se devolvieron los {countText} elementos a su lugar.} other {Se devolvieron los {countText} elementos a su lugar.}}",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Se devolvió el elemento a su lugar.} many {Se devolvieron todos los {countText} elementos a su lugar.} other {Se devolvieron todos los {countText} elementos a su lugar.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "f625b91"
+    "sourceHash": "030a6e7"
   },
   "fileOperations.cancelRollback.someDeleted": "{count, plural, one {Se eliminó {countText} elemento.} many {Se eliminaron {countText} elementos.} other {Se eliminaron {countText} elementos.}}",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -119,9 +119,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "c48d7de"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "La reversión se detuvo después de eliminar {countText} {count, plural, one {elemento} many {elementos} other {elementos}}. El resto sigue ahí.",
+  "fileOperations.cancelRollback.stoppedDeleting": "La reversión se detuvo después de eliminar {countText} {count, plural, one {elemento} many {elementos} other {elementos}}. El resto se quedó donde lo dejó la copia.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "30c0e9b"
+    "sourceHash": "9f30486"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "La reversión se detuvo después de devolver {countText} {count, plural, one {elemento} many {elementos} other {elementos}} a su lugar. El resto se quedó donde lo dejó el movimiento.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

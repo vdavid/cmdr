@@ -32,9 +32,9 @@
   "@errorReporter.dialog.notePlaceholder": {
     "sourceHash": "003300b"
   },
-  "errorReporter.dialog.noteTooLong": "備註太長了。上限是 {maxText} 個字元。",
+  "errorReporter.dialog.noteTooLong": "備註太長了。上限是 {maxText} 個{max, plural, other {字元}}。",
   "@errorReporter.dialog.noteTooLong": {
-    "sourceHash": "835aa78"
+    "sourceHash": "afcefac"
   },
   "errorReporter.dialog.detailsToggle": "即將傳送的內容",
   "@errorReporter.dialog.detailsToggle": {

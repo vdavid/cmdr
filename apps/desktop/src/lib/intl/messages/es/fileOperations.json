@@ -316,9 +316,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} carpetas se fusionarán con carpetas existentes",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {carpeta se fusionará con carpetas existentes} many {carpetas se fusionarán con carpetas existentes} other {carpetas se fusionarán con carpetas existentes}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {archivo ya existe. ¿Qué quieres hacer con él?} many {archivos ya existen. ¿Qué quieres hacer con ellos?} other {archivos ya existen. ¿Qué quieres hacer con ellos?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -512,25 +512,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Existente (carpeta):",
+  "fileOperations.transferProgress.existingFolderLabel": "Carpeta existente:",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Existente (archivo):",
+  "fileOperations.transferProgress.existingFileLabel": "Archivo existente:",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "Existente:",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Nuevo (carpeta):",
+  "fileOperations.transferProgress.newFolderLabel": "Nueva carpeta:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "Nuevo (archivo):",
+  "fileOperations.transferProgress.newFileLabel": "Nuevo archivo:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "Nuevo:",
   "@fileOperations.transferProgress.newLabel": {
@@ -753,13 +753,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Se ha eliminado el elemento que Cmdr había creado.} many {Se han eliminado los {countText} elementos que Cmdr había creado.} other {Se han eliminado los {countText} elementos que Cmdr había creado.}}",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Se ha eliminado el elemento que Cmdr había creado.} many {Se han eliminado todos los {countText} elementos que Cmdr había creado.} other {Se han eliminado todos los {countText} elementos que Cmdr había creado.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Se ha devuelto el elemento a su sitio.} many {Se han devuelto los {countText} elementos a su sitio.} other {Se han devuelto los {countText} elementos a su sitio.}}",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Se ha devuelto el elemento a su sitio.} many {Se han devuelto todos los {countText} elementos a su sitio.} other {Se han devuelto todos los {countText} elementos a su sitio.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "{count, plural, one {Se ha eliminado {countText} elemento.} many {Se han eliminado {countText} elementos.} other {Se han eliminado {countText} elementos.}}",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -769,9 +769,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "La reversión se ha detenido después de eliminar {countText} {count, plural, one {elemento} many {elementos} other {elementos}}. El resto sigue ahí.",
+  "fileOperations.cancelRollback.stoppedDeleting": "La reversión se ha detenido después de eliminar {countText} {count, plural, one {elemento} many {elementos} other {elementos}}. El resto se ha quedado donde lo ha dejado la copia.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "La reversión se ha detenido después de devolver {countText} {count, plural, one {elemento} many {elementos} other {elementos}} a su sitio. El resto se ha quedado donde lo ha dejado el movimiento.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

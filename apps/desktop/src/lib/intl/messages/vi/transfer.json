@@ -35,9 +35,9 @@
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Sao chép} other {Di chuyển}} hoàn tất: đã bỏ qua toàn bộ {skippedText} tệp (đã có sẵn ở đích), không có gì được {verb, select, copy {sao chép} other {di chuyển}}.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Sao chép} other {Di chuyển}} hoàn tất: đã bỏ qua cả {skippedText} {skipped, plural, other {tệp}} (đã có sẵn ở đích), không có gì được {verb, select, copy {sao chép} other {di chuyển}}.",
   "@transfer.fileOnly.allSkippedMany": {
-    "sourceHash": "ae39c4b"
+    "sourceHash": "5b688cf"
   },
   "transfer.fileOnly.mixedCopy": "Sao chép hoàn tất: đã sao chép {transferredText}, đã bỏ qua {skippedText}. Toàn bộ {processedText} {processed, plural, other {tệp}} bạn chọn giờ đã có ở đích.",
   "@transfer.fileOnly.mixedCopy": {

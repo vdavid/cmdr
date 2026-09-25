@@ -767,13 +767,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}。「{name}」保留了原本的名稱。",
+  "fileExplorer.rename.chainKeptOriginalName": "「{name}」保留了原本的名稱：{reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "638394d"
+    "sourceHash": "174ff14"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}。「{name}」保留了原本的名稱，{others, plural, other {另外 {othersText} 個檔案也是}}。",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, other {另外 {othersText} 個檔案保留了原本的名稱}}，「{name}」也一樣：{reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "be35bc8"
+    "sourceHash": "016797b"
   },
   "fileExplorer.rename.unconfirmed": "無法確認「{name}」是否已重新命名。這個卷宗可能比較慢，所以名稱也許已經改好了。",
   "@fileExplorer.rename.unconfirmed": {
@@ -1617,11 +1617,11 @@
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   },
-  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {無法複製「{name}」。} other {無法複製 {countText} 個項目。}}",
   "@fileExplorer.dragOut.failed": {
     "sourceHash": "73468bd"
   },
-  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.partial": "{summary}{count, plural, =1 {無法複製「{name}」。} other {無法複製 {countText} 個項目。}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   }

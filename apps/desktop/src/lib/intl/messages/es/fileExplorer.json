@@ -769,13 +769,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. “{name}” ha mantenido su nombre.",
+  "fileExplorer.rename.chainKeptOriginalName": "Se ha mantenido el nombre “{name}”: {reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "638394d"
+    "sourceHash": "174ff14"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. “{name}” ha mantenido su nombre, y {others, plural, one {otro archivo también} many {otros {othersText} archivos también} other {otros {othersText} archivos también}}.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, one {Otro archivo ha mantenido su nombre} many {Otros {othersText} archivos han mantenido su nombre} other {Otros {othersText} archivos han mantenido su nombre}}, y también se ha mantenido “{name}”: {reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "be35bc8"
+    "sourceHash": "016797b"
   },
   "fileExplorer.rename.unconfirmed": "No se ha podido confirmar el cambio de nombre de “{name}”. El volumen puede ir lento, así que es posible que el cambio sí se haya aplicado.",
   "@fileExplorer.rename.unconfirmed": {
@@ -1624,11 +1624,11 @@
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   },
-  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {No se ha podido copiar “{name}”.} one {No se ha podido copiar {countText} elemento.} many {No se han podido copiar {countText} elementos.} other {No se han podido copiar {countText} elementos.}}",
   "@fileExplorer.dragOut.failed": {
     "sourceHash": "73468bd"
   },
-  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {No se ha podido copiar “{name}”.} one {No se ha podido copiar {countText} elemento.} many {No se han podido copiar {countText} elementos.} other {No se han podido copiar {countText} elementos.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   }

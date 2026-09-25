@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "Các thao tác sao chép, di chuyển, và xóa xuất hiện ở đây khi đang chạy, để bạn có thể tạm dừng, tiếp tục, hoặc hủy chúng.",
+  "queue.empty.body": "Các thao tác sao chép, di chuyển, xóa và những thao tác tệp khác sẽ xuất hiện ở đây khi đang chạy, để bạn có thể tạm dừng, tiếp tục hoặc hủy chúng.",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {Đang sao chép} move {Đang di chuyển} delete {Đang xóa} trash {Đang chuyển vào thùng rác} rename {Đang đổi tên} create_folder {Đang tạo thư mục} create_file {Đang tạo tệp} archive_edit {Đang chỉnh sửa tệp nén} other {Đang xử lý}}",
   "@queue.row.label": {

@@ -1071,7 +1071,7 @@
   },
   "errors.provider.appBased.serious": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 結束 {app} 再重新開啟\n- 登出 {app} 再重新登入\n- 查看 {name} 的狀態頁面，看看有沒有服務中斷",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "347589c"
+    "sourceHash": "5a4e14e"
   },
   "errors.write.sourceNotFound.title": "找不到這個檔案",
   "@errors.write.sourceNotFound.title": {

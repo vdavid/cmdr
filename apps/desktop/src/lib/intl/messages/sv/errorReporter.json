@@ -32,9 +32,9 @@
   "@errorReporter.dialog.notePlaceholder": {
     "sourceHash": "003300b"
   },
-  "errorReporter.dialog.noteTooLong": "Noteringen är för lång. Högst {maxText} tecken.",
+  "errorReporter.dialog.noteTooLong": "Noteringen är för lång. Högst {maxText} {max, plural, one {tecken} other {tecken}}.",
   "@errorReporter.dialog.noteTooLong": {
-    "sourceHash": "835aa78"
+    "sourceHash": "afcefac"
   },
   "errorReporter.dialog.detailsToggle": "Det här är på väg att skickas",
   "@errorReporter.dialog.detailsToggle": {

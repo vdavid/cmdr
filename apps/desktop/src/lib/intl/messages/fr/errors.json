@@ -1069,9 +1069,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Quittez et rouvrez {app}\n- Déconnectez-vous puis reconnectez-vous à {app}\n- Consultez la page d’état de {name} pour d’éventuelles pannes",
+  "errors.provider.appBased.serious": "Ce dossier est géré par **{name}**. Voici ce que vous pouvez essayer :\n- Quittez et rouvrez {app}\n- Déconnectez-vous puis reconnectez-vous à {app}\n- Consultez la page d’état du service {name} pour d’éventuelles pannes",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "347589c"
+    "sourceHash": "5a4e14e"
   },
   "errors.write.sourceNotFound.title": "Fichier introuvable",
   "@errors.write.sourceNotFound.title": {

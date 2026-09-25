@@ -131,6 +131,16 @@
     "confidence": "high",
     "sources": "standard German compound, API kept; catalog"
   },
+  "app": {
+    "accept": ["Apps", "Programm"],
+    "chosen": "App",
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepFda.firstAsk.lede": "start using the app → loslegen, the everyday idiom; naming the app adds nothing on Cmdr's own onboarding"
+    },
+    "forms": "a pronoun never refers back to {app}: repeat die App (Beende {app} und öffne die App erneut); the associated app → die zugehörige App; app start → App-Start",
+    "sources": "MS terminology (app → App); macOS de (App, the folder Programme); catalog"
+  },
   "app-bundle": {
     "accept": ["App-Pakete"],
     "avoid": [
@@ -372,6 +382,12 @@
     "note": "Kept apart from What's new (Neuigkeiten): one names the document, the other the message.",
     "sources": "MS terminology (change log → Änderungsprotokoll)"
   },
+  "character": {
+    "chosen": "Zeichen",
+    "confidence": "high",
+    "forms": "invariant in the plural and the dative (1 Zeichen, von 12 Zeichen); a limit whose verb agrees with the count sits inside the plural (Maximal ist/sind {maxText} Zeichen erlaubt)",
+    "sources": "macOS Finder (Wähle einen Dateinamen mit höchstens 31 Zeichen.); MS terminology (character → Zeichen); catalog"
+  },
   "character-viewer": {
     "chosen": "Zeichenübersicht",
     "confidence": "high",
@@ -452,6 +468,13 @@
     "confidence": "high",
     "forms": "Cmdr clearing its own leftovers → räumt … weg; clears away what it leaves half-written → entfernt, was dabei halb geschrieben zurückbleibt",
     "sources": "catalog (fileOperations.cancelRollback.stagedLeftover.*, main.quit.body)"
+  },
+  "click": {
+    "accept": ["klicke", "klickst", "geklickt", "Klick", "Klicken"],
+    "chosen": "klicken",
+    "confidence": "high",
+    "forms": "du-imperative Klicke auf die Taste „+“; Click to X → Zum X klicken (short) / Klicken, um … zu … (long); a key is gedrückt, never geklickt",
+    "sources": "macOS AppKit (tt_text_color → Zum Auswählen der Textfarbe klicken); catalog (onboarding.stepFda.step2.tip)"
   },
   "clipboard": {
     "chosen": "Zwischenablage",
@@ -937,6 +960,19 @@
     "note": "Lowercase, like Apple's key cap. shortcuts.section.pressEscToClear still writes ESC.",
     "sources": "macOS AppKit FunctionKeyNames (Escape → esc-Taste)"
   },
+  "estimate": {
+    "accept": ["geschätzt", "Schätzung", "schätz"],
+    "avoid": [
+      {
+        "form": "Angebot",
+        "why": "MS terminology's first sense is the business quote, not a rough figure"
+      }
+    ],
+    "chosen": "geschätzt",
+    "confidence": "high",
+    "forms": "(estimated) after a figure → (geschätzt); estimated cost → geschätzte Kosten",
+    "sources": "MS terminology (estimate → Schätzung, beside the quote sense Angebot); catalog (settings.askCmdr.spend.empty)"
+  },
   "extension": {
     "accept": ["Erw."],
     "chosen": "Endung",
@@ -1388,7 +1424,7 @@
     "accept": ["behält", "gelassen", "bleib"],
     "chosen": "behalten",
     "confidence": "high",
-    "forms": "Keep them (safe answer) → Dateien behalten (with the noun, standalone Behalten would be ambiguous); kept its name → behält seinen Namen",
+    "forms": "Keep them (safe answer) → Dateien behalten (with the noun, standalone Behalten would be ambiguous); kept its name → behält den bisherigen Namen (never seinen: the insert has no known gender)",
     "sources": "macOS de (Behalten, Original behalten, Beide Dateien behalten)"
   },
   "key-combination": {
@@ -1657,6 +1693,13 @@
     "confidence": "high",
     "forms": "navigate to → zu … navigieren (breadcrumb tooltip zu {path} navigieren); jump to → springen zu / Zur Datei springen; go up a folder → in den übergeordneten Ordner wechseln (Double Commander's wording)",
     "sources": "macOS Finder (Navigiert zu einem Ort …), verified 2026-06-26; Double Commander de"
+  },
+  "network": {
+    "accept": ["Netzwerke", "Netzwerk-", "netzwerk", "Netz"],
+    "chosen": "Netzwerk",
+    "confidence": "high",
+    "forms": "compounds close up: Netzwerkanfrage, Netzwerkeinstellungen",
+    "sources": "macOS Finder (Network Settings… → Netzwerkeinstellungen …); MS terminology (network → Netzwerk)"
   },
   "network-drive": {
     "accept": ["Netzlaufwerke", "Netzwerk-Volume", "Netzwerkvolume"],
@@ -2255,6 +2298,19 @@
     "forms": "git stays lowercase verbatim (git-Browser, git-Repo)",
     "sources": "git domain usage"
   },
+  "request": {
+    "accept": ["Anfragen", "anfrage", "Wunsch"],
+    "avoid": [
+      {
+        "form": "Anforderung",
+        "why": "MS terminology's Windows register; macOS de says Anfrage („^0“ hat deine Anfrage abgelehnt.)"
+      }
+    ],
+    "chosen": "Anfrage",
+    "confidence": "high",
+    "forms": "network request → Netzwerkanfrage; at your request (the user asked) → auf deinen Wunsch",
+    "sources": "macOS de (Anfrage abgelehnt); MS terminology (request → Anforderung); catalog (onboarding.stepOptional.*)"
+  },
   "reset": {
     "accept": ["zurückgesetzt", "Zurücksetz", "setzen"],
     "chosen": "zurücksetzen",
@@ -2591,6 +2647,13 @@
     "confidence": "high",
     "sources": "macOS Finder Get Info (Startvolume:, f82-Dg-tGh)"
   },
+  "status": {
+    "accept": ["-status", "Statusseite", "Zustand"],
+    "chosen": "Status",
+    "confidence": "high",
+    "forms": "compounds hyphenate a loan (Sync-Status) and close up a native noun (Statusseite, iCloud-Status)",
+    "sources": "macOS de (iCloud-Status, Statusleiste ausblenden); MS terminology (status → Status)"
+  },
   "stop": {
     "accept": ["gestoppt", "Stoppen", "stoppt", "stopp", "aufhör", "hört"],
     "avoid": [
@@ -2734,6 +2797,13 @@
     "decision": "F4 and its text editor",
     "forms": "default text editor → Standardeditor",
     "sources": "MS terminology (text editor → Text-Editor)"
+  },
+  "this-mac": {
+    "accept": ["diesem Mac", "diesen Mac", "deinem Mac", "dein Mac", "deinen Mac", "deines Macs"],
+    "chosen": "Dieser Mac",
+    "confidence": "high",
+    "forms": "on this Mac → auf diesem Mac; your Mac → dein Mac (inflected: auf deinem Mac, genitive deines Macs: Mac is a common noun here, unlike the brand Cmdr)",
+    "sources": "macOS de (This Mac → Dieser Mac); catalog (settings.mediaIndex.progress.local)"
   },
   "threshold": {
     "chosen": "Schwelle",
@@ -3018,6 +3088,13 @@
     "chosen": "Neuigkeiten",
     "confidence": "high",
     "sources": "macOS (Help > Neuigkeiten); catalog (menu.help.whatsNew, commands.helpWhatsNew.label)"
+  },
+  "window": {
+    "accept": ["Fenstern", "-fenster", "fenster"],
+    "chosen": "Fenster",
+    "confidence": "high",
+    "forms": "invariant in the plural; Close window → Fenster schließen; the Window menu → Fenster",
+    "sources": "macOS AppKit (Close Window → Fenster schließen); MS terminology (window → Fenster)"
   },
   "word-wrap": {
     "accept": ["umbruch", "umbrech", "brech", "bricht"],

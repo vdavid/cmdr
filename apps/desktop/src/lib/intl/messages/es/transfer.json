@@ -35,9 +35,9 @@
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copia completada} other {Movimiento completado}}: se han omitido los {skippedText} archivos (ya en el destino), no se ha {verb, select, copy {copiado} other {movido}} nada.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copia completada} other {Movimiento completado}}: {skipped, plural, one {se ha omitido el archivo} many {se han omitido todos los {skippedText} archivos} other {se han omitido todos los {skippedText} archivos}} (ya en el destino), no se ha {verb, select, copy {copiado} other {movido}} nada.",
   "@transfer.fileOnly.allSkippedMany": {
-    "sourceHash": "ae39c4b"
+    "sourceHash": "5b688cf"
   },
   "transfer.fileOnly.mixedCopy": "Copia completada: se han copiado {transferredText}, se han omitido {skippedText}. {processed, plural, one {Tu {processedText} archivo seleccionado ya está en el destino} many {Tus {processedText} archivos seleccionados ya están en el destino} other {Tus {processedText} archivos seleccionados ya están en el destino}}.",
   "@transfer.fileOnly.mixedCopy": {

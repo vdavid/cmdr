@@ -769,13 +769,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. „{name}” megtartotta a nevét.",
+  "fileExplorer.rename.chainKeptOriginalName": "„{name}” megtartotta a nevét: {reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "638394d"
+    "sourceHash": "174ff14"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. „{name}” megtartotta a nevét, és még {others, plural, one {egy másik fájl} other {{othersText} másik fájl}} is.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, one {Egy másik fájl megtartotta a nevét} other {{othersText} másik fájl megtartotta a nevét}}, és „{name}” is: {reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "be35bc8"
+    "sourceHash": "016797b"
   },
   "fileExplorer.rename.unconfirmed": "Nem sikerült megerősíteni, hogy „{name}” átneveződött. Lehet, hogy a kötet lassú, így az átnevezés attól még sikerülhetett.",
   "@fileExplorer.rename.unconfirmed": {
@@ -1620,11 +1620,11 @@
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   },
-  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Nem sikerült átmásolni: „{name}”.} one {Nem sikerült átmásolni {countText} elemet.} other {Nem sikerült átmásolni {countText} elemet.}}",
   "@fileExplorer.dragOut.failed": {
     "sourceHash": "73468bd"
   },
-  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Nem sikerült átmásolni: „{name}”.} one {Nem sikerült átmásolni {countText} elemet.} other {Nem sikerült átmásolni {countText} elemet.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   }

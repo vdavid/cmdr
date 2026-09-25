@@ -44,9 +44,9 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "Pantalla de error",
+  "shortcuts.scope.errorScreen": "Carpeta ilegible",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "Ubicaciones",
   "@shortcuts.scope.places": {

@@ -141,11 +141,11 @@
   },
   "servers.refusal.hostKeyUntrusted": "A Cmdr még nem tekinti megbízhatónak {host} kulcsát.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a Macen. A Cmdr nem kapcsolódik hozzá.",
+  "servers.refusal.hostKeyRevoked": "{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a Macen. A Cmdr nem kapcsolódik ehhez a szerverhez.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "A kezdőmappa csak a gyökérmappa vagy egy benne lévő mappa lehet.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -337,7 +337,7 @@
   },
   "servers.hostKey.changedTitle": "{host} kulcsa megváltozott",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "Ez jelentheti azt, hogy a szervert újratelepítették, de azt is, hogy valami beékelődött közéd és a szerver közé. Egyeztesd az ujjlenyomatot a szerver tulajdonosával, mielőtt megbízhatóként beállítanád.",
   "@servers.hostKey.changedBody": {

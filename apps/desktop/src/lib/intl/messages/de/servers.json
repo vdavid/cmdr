@@ -143,11 +143,11 @@
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr vertraut dem Schlüssel von {host} noch nicht.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
   "servers.refusal.hostKeyRevoked": "Der Schlüssel von {host} ist in deinen SSH-Einstellungen auf diesem Mac als kompromittiert markiert. Cmdr verbindet sich nicht mit diesem Server.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "Der Startordner muss der Stammordner oder ein Ordner darin sein.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -340,7 +340,7 @@
   },
   "servers.hostKey.changedTitle": "Der Schlüssel von {host} hat sich geändert",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "Das kann bedeuten, dass der Server neu aufgesetzt wurde, oder dass sich etwas zwischen dich und den Server geschaltet hat. Prüfe den Fingerabdruck mit der Person, die den Server betreibt, bevor du dem Schlüssel vertraust.",
   "@servers.hostKey.changedBody": {

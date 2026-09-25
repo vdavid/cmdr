@@ -83,7 +83,7 @@
   "@onboarding.stepFda.revoked.noAccess": {
     "sourceHash": "415a3f3"
   },
-  "onboarding.stepFda.revoked.ifIntentional": "Nếu đó là chủ ý, hãy nhấn <deny>Từ chối</deny> và ứng dụng sẽ không làm phiền bạn nữa.",
+  "onboarding.stepFda.revoked.ifIntentional": "Nếu đó là chủ ý, hãy bấm <deny>Từ chối</deny> và ứng dụng sẽ không làm phiền bạn nữa.",
   "@onboarding.stepFda.revoked.ifIntentional": {
     "sourceHash": "6ab4c94"
   },
@@ -131,7 +131,7 @@
   "@onboarding.stepFda.openSettings": {
     "sourceHash": "f735c5c"
   },
-  "onboarding.stepFda.step1": "Nhấn <strong>Mở {systemSettings}</strong> bên dưới",
+  "onboarding.stepFda.step1": "Bấm <strong>Mở {systemSettings}</strong> bên dưới",
   "@onboarding.stepFda.step1": {
     "sourceHash": "1e462a1"
   },
@@ -143,11 +143,11 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Cmdr không có trong danh sách? Nhấn nút “+” ở dưới cùng, rồi chọn <strong>Cmdr</strong> từ thư mục <strong>Ứng dụng</strong> của bạn.",
+  "onboarding.stepFda.step2.tip": "Cmdr không có trong danh sách? Bấm nút “+” ở dưới cùng, rồi chọn <strong>Cmdr</strong> từ thư mục <strong>Ứng dụng</strong> của bạn.",
   "@onboarding.stepFda.step2.tip": {
     "sourceHash": "ffc4289"
   },
-  "onboarding.stepFda.step3": "Xác nhận và nhấn <strong>Thoát & Mở lại</strong>",
+  "onboarding.stepFda.step3": "Xác nhận và bấm <strong>Thoát & Mở lại</strong>",
   "@onboarding.stepFda.step3": {
     "sourceHash": "cf59f30"
   },
@@ -159,7 +159,7 @@
   "@onboarding.stepFda.postAction.intro": {
     "sourceHash": "cac5247"
   },
-  "onboarding.stepFda.postAction.body": "Khi đã sẵn sàng, hãy nhấn <restart>Khởi động lại Cmdr</restart> bên dưới. Nếu bạn đổi ý, hãy nhấn <deny>Từ chối</deny> ở trên.",
+  "onboarding.stepFda.postAction.body": "Khi đã sẵn sàng, hãy bấm <restart>Khởi động lại Cmdr</restart> bên dưới. Nếu bạn đổi ý, hãy bấm <deny>Từ chối</deny> ở trên.",
   "@onboarding.stepFda.postAction.body": {
     "sourceHash": "7a5c238"
   },
@@ -303,7 +303,7 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "75c6d48"
   },
-  "onboarding.stepAi.missingKeyWarning": "Bạn đã bật AI nhưng chưa nhập khóa API. AI sẽ không hoạt động và bạn sẽ thấy một cảnh báo. Hãy sửa việc này ở phía trên.\n\n<strong>Nhấn “{nextLabel}” lần nữa để bỏ qua và đi tiếp.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "Bạn đã bật AI nhưng chưa nhập khóa API. AI sẽ không hoạt động và bạn sẽ thấy một cảnh báo. Hãy sửa việc này ở phía trên.\n\n<strong>Bấm “{nextLabel}” lần nữa để bỏ qua và đi tiếp.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
     "sourceHash": "b942278"
   },
@@ -439,9 +439,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Bạn đã chọn đi qua phần thiết lập chi tiết, nên đây là vài lựa chọn đơn giản. Nếu bạn không bận tâm lắm, cứ nhấn nút bên dưới. Đây đều là tùy chọn, và các giá trị mặc định được chọn vì lợi ích của bạn.",
+  "onboarding.stepOptional.lede": "Bạn đã chọn đi qua phần thiết lập chi tiết, nên đây là vài lựa chọn nhanh. Nếu không bận tâm lắm, cứ bấm nút bên dưới. Tất cả đều là tùy chọn, và các giá trị mặc định đã được chọn vì lợi ích của bạn.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "Khuyến nghị: bật",
   "@onboarding.stepOptional.recommendedOn": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Nếu bạn bật cái này, Cmdr gửi một yêu cầu mạng nhỏ tới máy chủ giấy phép trung tâm mỗi khi khởi động ứng dụng cộng với một lần mỗi 24 giờ, và bạn luôn nhận được các bản cập nhật mới nhất.\nNếu tắt, bạn sẽ giữ phiên bản hiện tại, và không có yêu cầu mạng tự động nào (trừ các lần kiểm tra giấy phép định kỳ, nếu bạn có giấy phép thương mại).",
+  "onboarding.stepOptional.updates.desc": "Nếu bạn bật mục này, Cmdr gửi một yêu cầu mạng rất nhỏ tới máy chủ giấy phép trung tâm mỗi lần ứng dụng khởi động, cộng thêm một lần mỗi 24 giờ, và bạn luôn nhận được các bản cập nhật mới nhất.\nNếu tắt, bạn giữ nguyên phiên bản hiện tại, và Cmdr không gửi bất kỳ yêu cầu mạng tự động nào (trừ các lần kiểm tra giấy phép định kỳ, nếu bạn có giấy phép thương mại).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP (điện thoại Android, Kindle, máy ảnh)",
   "@onboarding.stepOptional.mtp.title": {

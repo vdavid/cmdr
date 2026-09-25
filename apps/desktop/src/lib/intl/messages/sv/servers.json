@@ -142,11 +142,11 @@
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr litar inte på nyckeln från {host} än.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
   "servers.refusal.hostKeyRevoked": "Nyckeln från {host} är märkt som komprometterad i dina SSH-inställningar på den här Macen. Cmdr ansluter inte till servern.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "Startmappen måste vara rotmappen eller en mapp inuti den.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -338,7 +338,7 @@
   },
   "servers.hostKey.changedTitle": "Nyckeln från {host} har ändrats",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Kontrollera fingeravtrycket med serverns ägare innan du litar på nyckeln.",
   "@servers.hostKey.changedBody": {

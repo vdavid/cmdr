@@ -141,11 +141,11 @@
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr chưa tin cậy khóa của {host}.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
   "servers.refusal.hostKeyRevoked": "Khóa của {host} được đánh dấu là đã bị xâm phạm trong cài đặt SSH của bạn trên máy Mac này. Cmdr sẽ không kết nối tới máy chủ đó.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "Thư mục bắt đầu phải là thư mục gốc hoặc một thư mục bên trong nó.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -337,7 +337,7 @@
   },
   "servers.hostKey.changedTitle": "Khóa của {host} đã thay đổi",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "Có thể máy chủ đã được cài đặt lại, hoặc có gì đó đang nằm giữa bạn và máy chủ. Hãy kiểm tra dấu vân tay với chủ sở hữu máy chủ trước khi tin cậy nó.",
   "@servers.hostKey.changedBody": {

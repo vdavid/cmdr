@@ -32,9 +32,9 @@
   "@errorReporter.dialog.notePlaceholder": {
     "sourceHash": "003300b"
   },
-  "errorReporter.dialog.noteTooLong": "La nota es demasiado larga. El máximo es de {maxText} caracteres.",
+  "errorReporter.dialog.noteTooLong": "La nota es demasiado larga. El máximo es de {maxText} {max, plural, one {carácter} many {caracteres} other {caracteres}}.",
   "@errorReporter.dialog.noteTooLong": {
-    "sourceHash": "835aa78"
+    "sourceHash": "afcefac"
   },
   "errorReporter.dialog.detailsToggle": "Lo que está a punto de enviarse",
   "@errorReporter.dialog.detailsToggle": {

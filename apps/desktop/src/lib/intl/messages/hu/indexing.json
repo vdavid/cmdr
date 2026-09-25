@@ -12,9 +12,9 @@
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
-  "indexing.scan.counters": "{entriesText} bejegyzés, {dirsText} mappa",
+  "indexing.scan.counters": "{entriesText} {entries, plural, one {bejegyzés} other {bejegyzés}}, {dirsText} {dirs, plural, one {mappa} other {mappa}}",
   "@indexing.scan.counters": {
-    "sourceHash": "fd4d242"
+    "sourceHash": "f635790"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -125,9 +125,9 @@
   "@indexing.aggregation.writing": {
     "sourceHash": "4cec9d8"
   },
-  "indexing.replay.detail": "{eventsText} esemény feldolgozva",
+  "indexing.replay.detail": "{eventsText} {events, plural, one {esemény} other {esemény}} feldolgozva",
   "@indexing.replay.detail": {
-    "sourceHash": "e80c077"
+    "sourceHash": "1c2a534"
   },
   "indexing.progress.percentEta": "{percent}%, {eta}",
   "@indexing.progress.percentEta": {

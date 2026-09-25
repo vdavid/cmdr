@@ -144,11 +144,11 @@
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr vertrouwt de sleutel van {host} nog niet.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
   "servers.refusal.hostKeyRevoked": "De sleutel van {host} is in je SSH-instellingen op deze Mac gemarkeerd als gecompromitteerd. Cmdr maakt er geen verbinding mee.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "De beginmap moet de hoofdmap zijn of een map daarbinnen.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -341,7 +341,7 @@
   },
   "servers.hostKey.changedTitle": "De sleutel van {host} is gewijzigd",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Controleer de vingerafdruk bij de servereigenaar voordat je de sleutel vertrouwt.",
   "@servers.hostKey.changedBody": {

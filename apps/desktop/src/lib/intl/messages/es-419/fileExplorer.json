@@ -175,13 +175,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "a6a5865"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. “{name}” mantuvo su nombre.",
+  "fileExplorer.rename.chainKeptOriginalName": "Se mantuvo el nombre “{name}”: {reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "b4796bd"
+    "sourceHash": "2aa680a"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. “{name}” mantuvo su nombre, y {others, plural, one {otro archivo también} many {otros {othersText} archivos también} other {otros {othersText} archivos también}}.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, one {Otro archivo mantuvo su nombre} many {Otros {othersText} archivos mantuvieron su nombre} other {Otros {othersText} archivos mantuvieron su nombre}}, y también se mantuvo “{name}”: {reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "c3f70db"
+    "sourceHash": "0953523"
   },
   "fileExplorer.rename.unconfirmed": "No se pudo confirmar el cambio de nombre de “{name}”. El volumen puede ir lento, así que es posible que el cambio sí se haya aplicado.",
   "@fileExplorer.rename.unconfirmed": {
@@ -334,5 +334,13 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "La indexación de unidades está desactivada en Configuración. Actívala en Indexación > Indexación de unidades, y esta unidad continuará donde lo dejó.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "b725d81"
+  },
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {No se pudo copiar “{name}”.} one {No se pudo copiar {countText} elemento.} many {No se pudieron copiar {countText} elementos.} other {No se pudieron copiar {countText} elementos.}}",
+  "@fileExplorer.dragOut.failed": {
+    "sourceHash": "87b817e"
+  },
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {No se pudo copiar “{name}”.} one {No se pudo copiar {countText} elemento.} many {No se pudieron copiar {countText} elementos.} other {No se pudieron copiar {countText} elementos.}}",
+  "@fileExplorer.dragOut.partial": {
+    "sourceHash": "9de914d"
   }
 }

@@ -80,6 +80,13 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR; shipped pt catalog"
   },
+  "app": {
+    "chosen": "app",
+    "accept": ["apps", "aplicativo"],
+    "forms": "masculine (o app, do app); the associated app → o app associado; default app → aplicativo padrão (the default ruling); the Applications folder → pasta Aplicativos",
+    "confidence": "high",
+    "sources": "shipped pt catalog (app ~40 values vs aplicativo ~10); macOS Finder pt-BR uses both (aplicativo ~80, app ~18), so the catalog decides which of two correct forms"
+  },
   "app-bundle": {
     "chosen": "pacote de aplicativo",
     "accept": ["pacote"],
@@ -258,6 +265,13 @@
     "confidence": "high",
     "sources": "MS terminology pt-BR (kept verbatim)"
   },
+  "button": {
+    "chosen": "botão",
+    "accept": ["botões"],
+    "forms": "click the X button → clique no botão X",
+    "confidence": "high",
+    "sources": "macOS Finder pt-BR (botão); shipped pt catalog (15 values)"
+  },
   "cache": {
     "chosen": "cache",
     "confidence": "high",
@@ -368,6 +382,13 @@
     "exceptions": {
       "settings.mediaIndex.reclaim.alreadyCleared": "The reclaim family deletes these entries, so apagadas matches its Apagar buttons."
     }
+  },
+  "click": {
+    "chosen": "clicar",
+    "accept": ["clique", "cliqu"],
+    "forms": "running text imperative Clique em / clique no botão; pressing a key is pressionar, never clicar",
+    "confidence": "high",
+    "sources": "macOS Finder pt-BR (Clique em, 14 hits); shipped pt catalog"
   },
   "clipboard": {
     "chosen": "área de transferência",
@@ -830,6 +851,13 @@
     "forms": "Pressione Enter para …",
     "confidence": "confirmed",
     "sources": "shipped pt catalog"
+  },
+  "entry": {
+    "chosen": "entrada",
+    "accept": ["entradas", "item", "itens"],
+    "forms": "feminine; index or scan entries → entradas (Índice pronto · 12 mil entradas, the scan counter line); a Keychain entry → item (Acesso às Chaves' own word); list rows selected by kind → itens",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (entry → entrada); shipped pt catalog (about 30 values)"
   },
   "error-report": {
     "chosen": "relatório de problema",
@@ -1950,6 +1978,19 @@
     "confidence": "confirmed",
     "sources": "shipped pt catalog"
   },
+  "request": {
+    "chosen": "solicitação",
+    "accept": ["solicitações", "pedido"],
+    "forms": "feminine; a network or AI request → solicitação (de rede); a person's request or a macOS permission prompt in prose → pedido (a seu pedido, pedidos de permissão)",
+    "confidence": "high",
+    "sources": "MS terminology pt-BR (request → solicitação, BRA); shipped pt catalog (5 values vs 2 requisição)",
+    "avoid": [
+      {
+        "form": "requisição",
+        "why": "the catalog's minority form; MS pt-BR says solicitação"
+      }
+    ]
+  },
   "reserved": {
     "chosen": "reservado",
     "accept": ["reservad"],
@@ -2429,6 +2470,13 @@
     "chosen": "Pensando",
     "confidence": "high",
     "sources": "shipped pt catalog"
+  },
+  "this-mac": {
+    "chosen": "este Mac",
+    "accept": ["neste Mac", "Este Mac", "seu Mac"],
+    "forms": "on this Mac → neste Mac; Mac stays verbatim, no classifier",
+    "confidence": "high",
+    "sources": "macOS Finder pt-BR (neste Mac, 5 hits); shipped pt catalog (settings.mediaIndex.progress.local Este Mac)"
   },
   "threshold": {
     "chosen": "limite",

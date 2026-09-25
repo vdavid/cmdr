@@ -12,9 +12,9 @@
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
-  "indexing.scan.counters": "{entriesText} Einträge, {dirsText} Ordner",
+  "indexing.scan.counters": "{entriesText} {entries, plural, one {Eintrag} other {Einträge}}, {dirsText} {dirs, plural, one {Ordner} other {Ordner}}",
   "@indexing.scan.counters": {
-    "sourceHash": "fd4d242"
+    "sourceHash": "f635790"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -125,9 +125,9 @@
   "@indexing.aggregation.writing": {
     "sourceHash": "4cec9d8"
   },
-  "indexing.replay.detail": "{eventsText} Ereignisse verarbeitet",
+  "indexing.replay.detail": "{eventsText} {events, plural, one {Ereignis} other {Ereignisse}} verarbeitet",
   "@indexing.replay.detail": {
-    "sourceHash": "e80c077"
+    "sourceHash": "1c2a534"
   },
   "indexing.progress.percentEta": "{percent} %, {eta}",
   "@indexing.progress.percentEta": {

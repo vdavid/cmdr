@@ -49,7 +49,8 @@ The must-know rules; the rest of this file elaborates them.
   pronoun.
 - **Plurals**: CLDR `one` / `other`. Keep `en`/`ett` agreement inside each branch (`en markerad fil`,
   `ett markerat objekt`); pull a tail that agrees with the counted noun into both branches; a counted `*Text` with no
-  selector takes the invariant `objekt`; "the {countText} items" becomes `allt …: {countText} objekt`.
+  selector takes the invariant `objekt`; "all {countText} items" becomes `alla {countText} objekt`, and a "the
+  {countText} items" that must keep the number in both branches becomes `allt …: {countText} objekt`.
 - **Numbers**: one through nine as words, 10+ as digits, also in multipliers (`fyra gånger`, `100 gånger`, never `4x`).
   Separators and decimals come from the formatter layer.
 - **Top traps** (details in `terms.json`):
@@ -154,7 +155,8 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
   `de 1 objekt` blir fel i `one`-grenen, och `det enda objektet` tappar `{countText}`, som måste stå i båda grenarna.
   Skriv i stället `allt` plus kolon och antalet: `Raderade allt Cmdr hade skrivit: {countText} objekt` mot den partiella
   systersträngens `Raderade {countText} objekt`. Kontrasten mellan hel och delvis ångring överlever, och båda grenarna
-  blir grammatiska (`fileOperations.cancelRollback.doneDeleting`/`.someDeleted` är det utskrivna exemplet).
+  blir grammatiska. När engelskan i stället lägger hela meningen i pluralen och säger "all" tappar `one` talet och
+  `other` får kvantorn `alla` (`Raderade alla {countText} objekt …`, `fileOperations.cancelRollback.doneDeleting`).
 
 ## Notes and decisions
 

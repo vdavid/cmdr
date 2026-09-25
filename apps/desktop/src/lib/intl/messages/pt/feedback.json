@@ -20,9 +20,9 @@
     "sourceHash": "36ca789",
     "sameAsSourceJustification": "Placeholder-only ICU value '{currentText} / {maxText}' rendering a numeric fraction; both inserts are preformatted numbers and there is no translatable text."
   },
-  "feedback.dialog.tooLong": "Desculpe, isso é longo demais. O máximo é {maxText} caracteres.",
+  "feedback.dialog.tooLong": "Desculpe, isso é longo demais. O máximo é {maxText} {max, plural, one {caractere} many {caracteres} other {caracteres}}.",
   "@feedback.dialog.tooLong": {
-    "sourceHash": "b9a0cef"
+    "sourceHash": "b6e0abf"
   },
   "feedback.dialog.moreWays": "Você também pode <github>ver e votar no GitHub</github> ou <call>agendar uma conversa</call> com o David.",
   "@feedback.dialog.moreWays": {

@@ -20,9 +20,9 @@
     "sourceHash": "36ca789",
     "sameAsSourceJustification": "Placeholder-only value '{currentText} / {maxText}': two preformatted numbers joined by a slash, no translatable text."
   },
-  "feedback.dialog.tooLong": "Sorry, dat is te lang. Maximaal {maxText} tekens.",
+  "feedback.dialog.tooLong": "Sorry, dat is te lang. Maximaal {maxText} {max, plural, one {teken} other {tekens}}.",
   "@feedback.dialog.tooLong": {
-    "sourceHash": "b9a0cef"
+    "sourceHash": "b6e0abf"
   },
   "feedback.dialog.moreWays": "Je kunt ook <github>bladeren en stemmen op GitHub</github> of <call>een gesprek boeken</call> met David.",
   "@feedback.dialog.moreWays": {

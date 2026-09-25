@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "Kopieringar, flyttar och raderingar visas här medan de pågår, så att du kan pausa, återuppta eller avbryta dem.",
+  "queue.empty.body": "Kopieringar, flyttar, raderingar och andra filåtgärder visas här medan de pågår, så att du kan pausa, återuppta eller avbryta dem.",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {Kopierar} move {Flyttar} delete {Raderar} trash {Flyttar till papperskorgen} rename {Byter namn} create_folder {Skapar mapp} create_file {Skapar fil} archive_edit {Redigerar arkiv} other {Arbetar}}",
   "@queue.row.label": {

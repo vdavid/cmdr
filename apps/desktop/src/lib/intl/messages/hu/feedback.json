@@ -20,9 +20,9 @@
     "sourceHash": "36ca789",
     "sameAsSourceJustification": "Pure placeholder fraction '{currentText} / {maxText}'. Both preformatted numbers, slash is neutral. Explicitly listed as kept-verbatim in glossary (transfer/feedback wave)."
   },
-  "feedback.dialog.tooLong": "Bocs, ez túl hosszú. A maximum {maxText} karakter.",
+  "feedback.dialog.tooLong": "Bocs, ez túl hosszú. Legfeljebb {maxText} {max, plural, one {karakter} other {karakter}} lehet.",
   "@feedback.dialog.tooLong": {
-    "sourceHash": "b9a0cef"
+    "sourceHash": "b6e0abf"
   },
   "feedback.dialog.moreWays": "<github>Böngészhetsz és szavazhatsz a GitHubon</github>, vagy <call>foglalhatsz egy hívást</call> Daviddel.",
   "@feedback.dialog.moreWays": {

@@ -317,9 +317,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} mappen worden samengevoegd met bestaande mappen",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {map wordt} other {mappen worden}} samengevoegd met bestaande mappen",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {bestand bestaat al. Wat wil je ermee doen?} other {bestanden bestaan al. Wat wil je ermee doen?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -513,25 +513,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Bestaand (map):",
+  "fileOperations.transferProgress.existingFolderLabel": "Bestaande map:",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Bestaand (bestand):",
+  "fileOperations.transferProgress.existingFileLabel": "Bestaand bestand:",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "Bestaand:",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Nieuw (map):",
+  "fileOperations.transferProgress.newFolderLabel": "Nieuwe map:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "Nieuw (bestand):",
+  "fileOperations.transferProgress.newFileLabel": "Nieuw bestand:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "Nieuw:",
   "@fileOperations.transferProgress.newLabel": {
@@ -754,13 +754,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "Alles wat Cmdr had geschreven, is verwijderd: {countText} {count, plural, one {onderdeel} other {onderdelen}}.",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Het onderdeel dat Cmdr had geschreven, is verwijderd.} other {Alles wat Cmdr had geschreven, is verwijderd: {countText} onderdelen.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "Alles is teruggezet: {countText} {count, plural, one {onderdeel} other {onderdelen}}.",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Het onderdeel is teruggezet.} other {Alles is teruggezet: {countText} onderdelen.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} verwijderd.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -770,9 +770,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "Gestopt na het verwijderen van {countText} {count, plural, one {onderdeel} other {onderdelen}}. De rest staat er nog.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Gestopt na het verwijderen van {countText} {count, plural, one {onderdeel} other {onderdelen}}. De rest staat nog op de plek waar Cmdr ze naartoe kopieerde.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "Gestopt na het terugzetten van {countText} {count, plural, one {onderdeel} other {onderdelen}}. De rest staat nog op de nieuwe plek.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

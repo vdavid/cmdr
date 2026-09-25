@@ -3016,8 +3016,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
   `spotTaken` switches frame with the English (`lämnades där den ligger`), and says
   `något annat finns nu där den kom ifrån` so it can't sound like the neighbouring name-taken reason.
 - Removed → `Raderade` (files off disk), ❌ never `Tog bort`.
-- "the {countText} items" can't take a definite article before a formatted number, so whole vs partial contrast uses
-  `allt …: {countText} objekt` (`Raderade allt Cmdr hade skrivit: …` vs `Raderade {countText} objekt`).
+- "all {countText} items" → `alla {countText} objekt` (a quantifier, no article), and `one` drops the number
+  (`Raderade objektet som Cmdr hade skrivit`). `stoppedDeleting` mirrors `stoppedMovingBack`: `där kopieringen lade dem`.
 - `stagedLeftover.*` is Cmdr's own work file: `ofullständig kopia`, `rensar bort`, and `vid en senare överföring`, ❌
   never "nästa gång": cleanup skips anything younger than an hour, so the next try may clear nothing.
 
@@ -3025,8 +3025,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 - The two families mean opposite things (definitely kept vs unknown) and must never blur.
 - "kept its name" → present `behåller sitt namn` (Total Commander's `Behåll namnet`): the state the file is in.
-- "and so did …" → `, liksom …`: the elided verb keeps the reflexive `sitt namn` from needing `sina namn`. ❌ Not
-  `och det gör …` (no comma before `och` makes it unreadable) nor bureaucratic `och detsamma gäller`.
+- "and so did …" → `, liksom …`. ❌ Not `och det gör …` (unreadable without a comma) nor bureaucratic
+  `och detsamma gäller`.
 - Unconfirmed follows `fileOperations.mkdir.timeoutMessage`: `så filen kan ändå ha bytt namn`. ❌ Not `gått igenom` or
   `lyckats` (the house voice avoids that status word). Several renames take the definite plural `namnbytena av`.
 - `Det här mappnamnet / filnamnet kan inte användas` (Finder's `Namnet … kan inte användas`), no final period.

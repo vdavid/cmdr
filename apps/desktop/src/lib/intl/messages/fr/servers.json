@@ -140,13 +140,13 @@
   "@servers.refusal.unreachable": {
     "sourceHash": "6fcba90"
   },
-  "servers.refusal.hostKeyUntrusted": "Cmdr n’a pas encore approuvé la clé de {host}.",
+  "servers.refusal.hostKeyUntrusted": "Cmdr n’a pas encore approuvé la clé du serveur {host}.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "La clé de {host} est marquée comme compromise dans vos réglages SSH sur ce Mac. Cmdr ne s’y connectera pas.",
+  "servers.refusal.hostKeyRevoked": "La clé du serveur {host} est marquée comme compromise dans vos réglages SSH sur ce Mac. Cmdr ne se connectera pas à ce serveur.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "Le dossier initial doit être le dossier racine ou un dossier à l’intérieur de celui-ci.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -336,9 +336,9 @@
   "@servers.hostKey.firstContactBody": {
     "sourceHash": "f207466"
   },
-  "servers.hostKey.changedTitle": "La clé de {host} a changé",
+  "servers.hostKey.changedTitle": "La clé du serveur {host} a changé",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "Cela peut signifier que le serveur a été réinstallé, ou que quelque chose s’est interposé entre vous et lui. Vérifiez l’empreinte auprès du propriétaire du serveur avant d’approuver la clé.",
   "@servers.hostKey.changedBody": {

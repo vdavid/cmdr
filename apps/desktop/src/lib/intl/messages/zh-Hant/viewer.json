@@ -71,9 +71,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "這是這個檔案的原始內容檢視。你可能會想看實際的<kindName>{kind}</kindName>。如果要這樣做，請關閉這個視窗，按 <quickLookKey></quickLookKey> 開啟快速查看，或按 <openKey></openKey>（或連按兩下檔案）用對應的 App 開啟。",
+  "viewer.binaryWarning.body": "這是這個檔案的原始內容檢視。你可能會想看實際的<kindName>{category, select, image {影像} document {文件} other { {ext} 檔案}}</kindName>。如果要這樣做，請關閉這個視窗，按 <quickLookKey></quickLookKey> 開啟快速查看，或按 <openKey></openKey>（或按兩下檔案）用對應的 App 開啟。",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "8c6fcd6"
+    "sourceHash": "da099be"
   },
   "viewer.binaryWarning.dismiss": "關閉",
   "@viewer.binaryWarning.dismiss": {

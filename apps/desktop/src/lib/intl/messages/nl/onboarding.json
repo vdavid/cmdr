@@ -441,9 +441,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Je koos voor een uitgebreide setup, dus hier zijn een paar eenvoudige keuzes. Als het je niet zoveel uitmaakt, klik dan gewoon op de knop hieronder. Dit zijn allemaal opties, en de standaardwaarden zijn in jouw voordeel gekozen.",
+  "onboarding.stepOptional.lede": "Je koos voor een uitgebreide setup, dus hier zijn een paar snelle keuzes. Als het je niet zoveel uitmaakt, klik dan op de knop hieronder. Dit is allemaal optioneel, en de standaardwaarden zijn in je voordeel gekozen.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "Aanbevolen: aan",
   "@onboarding.stepOptional.recommendedOn": {
@@ -497,9 +497,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Als je dit inschakelt, doet Cmdr bij elke start van de app plus eenmaal per 24 uur een piepklein netwerkverzoek aan een centrale licentieserver, en krijg je altijd de nieuwste updates.\nSchakel je het uit, dan houd je je huidige versie en zijn er nul geautomatiseerde netwerkverzoeken (op periodieke licentiecontroles na, als je een commerciële licentie hebt).",
+  "onboarding.stepOptional.updates.desc": "Als je dit inschakelt, doet Cmdr bij elke start van de app plus eenmaal per 24 uur een piepklein netwerkverzoek aan een centrale licentieserver, en krijg je altijd de nieuwste updates.\nSchakel je het uit, dan houd je je huidige versie en doet Cmdr helemaal geen automatische netwerkverzoeken (op periodieke licentiecontroles na, als je een commerciële licentie hebt).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-telefoons, Kindles, camera''s)",
   "@onboarding.stepOptional.mtp.title": {

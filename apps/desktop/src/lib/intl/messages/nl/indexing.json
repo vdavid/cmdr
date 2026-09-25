@@ -12,9 +12,9 @@
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
-  "indexing.scan.counters": "{entriesText} onderdelen, {dirsText} mappen",
+  "indexing.scan.counters": "{entriesText} {entries, plural, one {onderdeel} other {onderdelen}}, {dirsText} {dirs, plural, one {map} other {mappen}}",
   "@indexing.scan.counters": {
-    "sourceHash": "fd4d242"
+    "sourceHash": "f635790"
   },
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
@@ -125,9 +125,9 @@
   "@indexing.aggregation.writing": {
     "sourceHash": "4cec9d8"
   },
-  "indexing.replay.detail": "{eventsText} wijzigingen verwerkt",
+  "indexing.replay.detail": "{eventsText} {events, plural, one {wijziging} other {wijzigingen}} verwerkt",
   "@indexing.replay.detail": {
-    "sourceHash": "e80c077"
+    "sourceHash": "1c2a534"
   },
   "indexing.progress.percentEta": "{percent}%, {eta}",
   "@indexing.progress.percentEta": {

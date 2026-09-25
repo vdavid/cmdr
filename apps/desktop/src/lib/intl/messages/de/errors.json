@@ -1061,7 +1061,7 @@
   "@errors.provider.genericCloudStorage.nonTransient": {
     "sourceHash": "3b8d2a6"
   },
-  "errors.provider.appBased.transient": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Prüfe deine Internetverbindung\n- Öffne {app} und stelle sicher, dass es läuft und synchronisiert ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen",
+  "errors.provider.appBased.transient": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Prüfe deine Internetverbindung\n- Öffne {app} und stelle sicher, dass die App läuft und synchronisiert ist\n- Navigiere erneut hierher, um es noch einmal zu versuchen",
   "@errors.provider.appBased.transient": {
     "sourceHash": "ba634b7"
   },
@@ -1069,9 +1069,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Beende {app} und öffne es erneut\n- Melde dich von {app} ab und wieder an\n- Prüfe die Statusseite von {name} auf Störungen",
+  "errors.provider.appBased.serious": "Dieser Ordner wird von **{name}** verwaltet. Das kannst du versuchen:\n- Beende {app} und öffne die App erneut\n- Melde dich von {app} ab und wieder an\n- Prüfe die Statusseite von {name} auf Störungen",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "347589c"
+    "sourceHash": "5a4e14e"
   },
   "errors.write.sourceNotFound.title": "Datei nicht gefunden",
   "@errors.write.sourceNotFound.title": {

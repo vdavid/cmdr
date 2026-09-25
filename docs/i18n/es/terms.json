@@ -1281,7 +1281,7 @@
   "keep": {
     "chosen": "Conservar",
     "accept": ["conserv", "mantuv", "manten", "mantien"],
-    "forms": "rollback prompt's safe button Conservar los archivos; a rename that kept its name → mantuvo su nombre (nobody chose it); a deliberate protective keep → conservó tus originales",
+    "forms": "rollback prompt's safe button Conservar los archivos; a rename that kept its name → Se ha mantenido el nombre “{name}” / otro archivo ha mantenido su nombre (nobody chose it, and no possessive points back at the inserted name); a deliberate protective keep → conservó tus originales",
     "confidence": "high",
     "sources": "macOS es (Conservar, Conservar original, Conservar copia parcial)",
     "decision": "Filas en cola a la espera de respuesta y la confirmación de reversión"
@@ -2791,5 +2791,72 @@
     "chosen": "Spaces",
     "confidence": "high",
     "sources": "macOS es"
+  },
+  "app": {
+    "chosen": "app",
+    "accept": ["apps"],
+    "forms": "la app (feminine): la app asociada, otra app, las apps; Cmdr itself in prose → la app (cada inicio de la app)",
+    "avoid": [
+      {
+        "form": "aplicación",
+        "why": "correct, but the catalog says app about 60 times against once, and current macOS es names the category Apps (Finder: Apps, otras apps)"
+      }
+    ],
+    "confidence": "high",
+    "sources": "macOS Finder (Apps, otras apps, App que admite documentos); catalog (la app ×34)"
+  },
+  "button": {
+    "chosen": "botón",
+    "accept": ["botones"],
+    "forms": "the X button → el botón X / el botón “+”; click the button below → haz clic en el botón de abajo",
+    "confidence": "high",
+    "sources": "macOS es (botón); MS terminology (button → botón); catalog (onboarding.stepFda.step2.tip)"
+  },
+  "entry": {
+    "chosen": "entrada",
+    "accept": ["entradas"],
+    "forms": "an indexed file or a scan tally → entrada (12.345 entradas); a Keychain entry → la entrada “Cmdr”",
+    "confidence": "high",
+    "sources": "MS terminology (entry → entrada); catalog (queryUi.empty.indexReady, indexing.scan.counters, ai.secretError.keychainBody)",
+    "exceptions": {
+      "commands.selectionSelectSameKind.description": "The entry is a row of the file list (a file or folder), which the catalog calls elemento, like every other selection command."
+    }
+  },
+  "network": {
+    "chosen": "red",
+    "accept": ["redes"],
+    "forms": "network request → solicitud de red; network drive → unidad de red",
+    "confidence": "high",
+    "sources": "macOS es (Red); MS terminology (network → red)"
+  },
+  "request": {
+    "chosen": "solicitud",
+    "accept": ["solicitudes"],
+    "forms": "network request → solicitud de red; permission request → solicitud de permiso; an AI request and its response → solicitud y respuesta",
+    "avoid": [
+      {
+        "form": "petición",
+        "why": "macOS es writes solicitud (AppKit: la solicitud de servicios, ha rechazado tu solicitud) and petición once (Petición denegada); the catalog says solicitud 7 times against 2"
+      }
+    ],
+    "confidence": "high",
+    "sources": "macOS AppKit (solicitud de servicios); MS terminology (request → solicitud)",
+    "exceptions": {
+      "errors.volume.cancelled": "“at your request” is an idiom for “because you asked” (porque se lo has pedido), not a request sent anywhere."
+    }
+  },
+  "this-mac": {
+    "chosen": "este Mac",
+    "accept": ["tu Mac", "Este Mac"],
+    "forms": "masculine, as macOS es-ES writes it: este Mac, tu Mac, quien administre este Mac; ❌ esta Mac",
+    "confidence": "high",
+    "sources": "macOS es (este Mac ×15, esta Mac ×0 in the pile); catalog (settings.mediaIndex.progress.local Este Mac)"
+  },
+  "window": {
+    "chosen": "ventana",
+    "accept": ["ventanas", "Ventana"],
+    "forms": "the Window menu → Ventana; close this window → cierra esta ventana; the About window → la ventana Acerca de",
+    "confidence": "high",
+    "sources": "macOS es (the Ventana menu; ventana ×72 in the pile); MS terminology (window → ventana)"
   }
 }

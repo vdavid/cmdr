@@ -482,9 +482,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "{matchedText} von {totalText} Zeichen getroffen",
+  "askCmdr.renameReview.coverage": "Übereinstimmung bei {matchedText} von {totalText} {total, plural, one {Zeichen} other {Zeichen}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "d8845cb"
+    "sourceHash": "222d847"
   },
   "askCmdr.renameReview.coverageThin": "Das ist nur ein kleiner Teil des Texts, den Cmdr hier gelesen hat. Öffne die Datei, um den Namen zu prüfen.",
   "@askCmdr.renameReview.coverageThin": {
@@ -626,7 +626,7 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "sourceHash": "2fd2e7a"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.named": "Habe {name} unverändert gelassen: Cmdr konnte nicht prüfen, ob sich die Datei geändert hat.",
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "Habe {name} unverändert gelassen: Cmdr konnte nicht prüfen, ob sich das Objekt geändert hat.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
@@ -662,9 +662,9 @@
   "@askCmdr.context.label": {
     "sourceHash": "8451f61"
   },
-  "askCmdr.context.tooltip": "{usedText} von {budgetText} Tokens genutzt (geschätzt)",
+  "askCmdr.context.tooltip": "{usedText} von {budgetText} {budget, plural, one {Token} other {Tokens}} genutzt (geschätzt)",
   "@askCmdr.context.tooltip": {
-    "sourceHash": "3b4eef0"
+    "sourceHash": "81cc75a"
   },
   "askCmdr.wake.thinking": "Cmdr schaut sich gerade an, was sich geändert hat. Chat öffnen.",
   "@askCmdr.wake.thinking": {

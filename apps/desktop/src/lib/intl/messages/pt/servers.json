@@ -142,11 +142,11 @@
   },
   "servers.refusal.hostKeyUntrusted": "O Cmdr ainda não confia na chave de {host}.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
   "servers.refusal.hostKeyRevoked": "A chave de {host} está marcada como comprometida nos seus ajustes de SSH neste Mac. O Cmdr não vai se conectar a esse servidor.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "A pasta inicial precisa ser a pasta raiz ou uma pasta dentro dela.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -338,7 +338,7 @@
   },
   "servers.hostKey.changedTitle": "A chave de {host} mudou",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "Isso pode significar que o servidor foi reinstalado, ou que algo está entre você e ele. Confira a impressão digital com quem cuida do servidor antes de confiar na chave.",
   "@servers.hostKey.changedBody": {

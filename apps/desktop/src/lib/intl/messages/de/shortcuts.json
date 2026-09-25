@@ -44,9 +44,9 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "Fehlerbildschirm",
+  "shortcuts.scope.errorScreen": "Nicht lesbarer Ordner",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "Orte",
   "@shortcuts.scope.places": {

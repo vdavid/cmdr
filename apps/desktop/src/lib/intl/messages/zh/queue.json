@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "拷贝、移动和删除在进行时会显示在这里，你可以暂停、继续或取消它们。",
+  "queue.empty.body": "拷贝、移动、删除和其他文件操作在进行时会显示在这里，你可以暂停、继续或取消它们。",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {正在拷贝} move {正在移动} delete {正在删除} trash {正在移到废纸篓} rename {正在重命名} create_folder {正在创建文件夹} create_file {正在创建文件} archive_edit {正在编辑压缩文件} other {正在处理}}",
   "@queue.row.label": {

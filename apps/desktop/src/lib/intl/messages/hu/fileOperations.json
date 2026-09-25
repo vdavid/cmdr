@@ -317,9 +317,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} mappa egyesül meglévő mappákkal",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {mappa} other {mappa}} egyesül meglévő mappákkal",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fájl már létezik. Mit szeretnél tenni vele?} other {fájl már létezik. Mit szeretnél tenni velük?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -513,25 +513,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Meglévő (mappa):",
+  "fileOperations.transferProgress.existingFolderLabel": "Meglévő mappa:",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Meglévő (fájl):",
+  "fileOperations.transferProgress.existingFileLabel": "Meglévő fájl:",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "Meglévő:",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Új (mappa):",
+  "fileOperations.transferProgress.newFolderLabel": "Új mappa:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "Új (fájl):",
+  "fileOperations.transferProgress.newFileLabel": "Új fájl:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "Új:",
   "@fileOperations.transferProgress.newLabel": {
@@ -753,13 +753,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "A Cmdr mindent eltávolított, amit létrehozott: {countText} {count, plural, one {elem} other {elem}}.",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {A Cmdr eltávolította az elemet, amelyet létrehozott.} other {A Cmdr mindent eltávolított, amit létrehozott: {countText} elem.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "A Cmdr mindent visszahelyezett: {countText} {count, plural, one {elem} other {elem}}.",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {A Cmdr visszahelyezte az elemet.} other {A Cmdr mindent visszahelyezett: {countText} elem.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {elem} other {elem}} eltávolítva.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -769,9 +769,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "{countText} {count, plural, one {elem} other {elem}} eltávolítása után leállítva. A többi ott maradt.",
+  "fileOperations.cancelRollback.stoppedDeleting": "{countText} {count, plural, one {elem} other {elem}} eltávolítása után leállítva. A többi ott maradt, ahová a másolás tette.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "{countText} {count, plural, one {elem} other {elem}} visszahelyezése után leállítva. A többi ott maradt, ahová az áthelyezés vitte.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

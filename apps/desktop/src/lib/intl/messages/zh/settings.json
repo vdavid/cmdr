@@ -713,9 +713,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "你已为 {totalText} 张图像建立索引；当前设置覆盖 {coveredText} 张。{doomed, plural, one {其余 {doomedText} 个条目在你删除之前仍可搜索} other {其余 {doomedText} 个条目在你删除之前仍可搜索}}。",
+  "settings.mediaIndex.reclaim.line": "你已为 {totalText} {total, plural, other {张图像}}建立索引；当前设置覆盖 {coveredText} 张。{doomed, plural, other {多余的 {doomedText} 个条目在你删除之前仍可搜索}}。",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, one {删除多余条目并释放约 {size}} other {删除多余条目并释放约 {size}}}",
   "@settings.mediaIndex.reclaim.button": {
@@ -1159,7 +1159,7 @@
   "@settings.whatsNew.lastSeenVersion.label": {
     "sourceHash": "4790ce6"
   },
-  "settings.whatsNew.lastSeenVersion.description": "内部：我们在“新增内容”弹窗中上次展示的版本。每次启动都会静默推进，因此重新启用弹窗时绝不会回放积压数月的内容。对界面隐藏。",
+  "settings.whatsNew.lastSeenVersion.description": "内部：我们在“新增功能”弹窗中上次展示的版本。每次启动都会静默推进，因此重新启用弹窗时绝不会回放积压数月的内容。对界面隐藏。",
   "@settings.whatsNew.lastSeenVersion.description": {
     "sourceHash": "d8677e1"
   },
@@ -1263,7 +1263,7 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "为“重新打开已关闭标签页”（⌘⇧T）每个窗格保留多少个最近关闭的标签页。数值越高，可往回重新打开的历史越多；数值越低，越早释放内存。仅适用于在当前会话中关闭的标签页。",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "为“重新打开关闭的标签页”（⌘⇧T）每个窗格保留多少个最近关闭的标签页。数值越高，可往回重新打开的历史越多；数值越低，越早释放内存。仅适用于在当前会话中关闭的标签页。",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "e53df3a"
   },

@@ -439,9 +439,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Úgy döntöttél, hogy végigmész a részletes beállításon, így íme néhány egyszerű választás. Ha nem nagyon érdekel, csak kattints lent a gombra. Ezek mind opciók, és az alapértékek a te érdekedben lettek megválasztva.",
+  "onboarding.stepOptional.lede": "Úgy döntöttél, hogy végigmész a részletes beállításon, így íme néhány gyors választás. Ha nem nagyon érdekel, kattints lent a gombra. Egyik sem kötelező, és az alapértékek a te érdekedet szolgálják.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "Ajánlott: bekapcsolva",
   "@onboarding.stepOptional.recommendedOn": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Ha ezt engedélyezed, a Cmdr minden appindításkor, plusz 24 óránként egyszer egy apró hálózati kérést küld egy központi licencszervernek, és mindig megkapod a legfrissebb frissítéseket.\nHa letiltod, megtartod a jelenlegi verziódat, és nulla automatikus hálózati kérés indul (kivéve az időszakos licencellenőrzéseket, ha van kereskedelmi licenced).",
+  "onboarding.stepOptional.updates.desc": "Ha ezt bekapcsolod, a Cmdr minden appindításkor, plusz 24 óránként egyszer egy apró hálózati kérést küld egy központi licencszervernek, és mindig megkapod a legújabb frissítéseket.\nHa kikapcsolod, megmarad a jelenlegi verziód, és a Cmdr egyetlen automatikus hálózati kérést sem küld (kivéve az időszakos licencellenőrzéseket, ha kereskedelmi licenced van).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-telefonok, Kindle-ök, kamerák)",
   "@onboarding.stepOptional.mtp.title": {

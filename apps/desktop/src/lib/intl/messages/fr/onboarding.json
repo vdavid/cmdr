@@ -439,9 +439,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Vous avez choisi de suivre une configuration détaillée, voici donc quelques choix simples. Si cela vous est égal, cliquez simplement sur le bouton ci-dessous. Ce sont toutes des options, et les valeurs par défaut sont choisies dans votre intérêt.",
+  "onboarding.stepOptional.lede": "Vous avez choisi de suivre une configuration détaillée, voici donc quelques choix rapides. Si vous n’y tenez pas particulièrement, cliquez sur le bouton ci-dessous. Tous ces choix sont facultatifs, et les valeurs par défaut sont choisies dans votre intérêt.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "Recommandé : activé",
   "@onboarding.stepOptional.recommendedOn": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Si vous activez ceci, Cmdr envoie une toute petite requête réseau vers un serveur de licences central à chaque démarrage de l’app, plus une fois toutes les 24 heures, et vous obtenez toujours les dernières mises à jour.\nSinon, vous gardez votre version actuelle, sans aucune requête réseau automatique (sauf les vérifications de licence périodiques, si vous avez une licence commerciale).",
+  "onboarding.stepOptional.updates.desc": "Si vous activez ceci, Cmdr envoie une toute petite requête réseau vers un serveur de licences central à chaque démarrage de l’app, plus une fois toutes les 24 heures, et vous obtenez toujours les dernières mises à jour.\nSi vous le désactivez, vous gardez votre version actuelle, et Cmdr n’envoie aucune requête réseau automatique (sauf les vérifications de licence périodiques, si vous avez une licence commerciale).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP (téléphones Android, Kindles, appareils photo)",
   "@onboarding.stepOptional.mtp.title": {

@@ -35,9 +35,9 @@
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {複製} other {移動}}完成：已略過全部 {skippedText} 個檔案（已在目標位置），未{verb, select, copy {複製} other {移動}}任何項目。",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {複製} other {移動}}完成：已略過全部 {skippedText} 個{skipped, plural, other {檔案}}（已在目標位置），未{verb, select, copy {複製} other {移動}}任何項目。",
   "@transfer.fileOnly.allSkippedMany": {
-    "sourceHash": "ae39c4b"
+    "sourceHash": "5b688cf"
   },
   "transfer.fileOnly.mixedCopy": "複製完成：已複製 {transferredText}，略過 {skippedText}。你所選的全部 {processedText} {processed, plural, other {個檔案}}現在都在目標位置。",
   "@transfer.fileOnly.mixedCopy": {

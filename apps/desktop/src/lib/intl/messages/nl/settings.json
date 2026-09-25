@@ -716,9 +716,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Je hebt {totalText} afbeeldingen geïndexeerd; je instelling dekt {coveredText}. {doomed, plural, one {De extra vermelding blijft doorzoekbaar totdat je die verwijdert} other {De {doomedText} extra vermeldingen blijven doorzoekbaar totdat je ze verwijdert}}.",
+  "settings.mediaIndex.reclaim.line": "Je hebt {totalText} {total, plural, one {afbeelding} other {afbeeldingen}} geïndexeerd; je instelling dekt {coveredText}. {doomed, plural, one {De extra vermelding blijft doorzoekbaar totdat je die verwijdert} other {{doomedText} extra vermeldingen blijven doorzoekbaar totdat je ze verwijdert}}.",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Extra vermelding verwijderen en ongeveer {size} vrijmaken} other {Extra vermeldingen verwijderen en ongeveer {size} vrijmaken}}",
   "@settings.mediaIndex.reclaim.button": {
@@ -1251,7 +1251,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 opent het weergavevenster van Cmdr, dat ruwe bytes toont (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat ⇧Spatie (snelle weergave) of Enter (openen in de bijbehorende app) waarschijnlijk is wat je wilde. Zet dit aan (of klik op ‘Deze waarschuwing nooit meer tonen’ in de banner) om de waarschuwing voorgoed te onderdrukken.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 opent het weergavevenster van Cmdr, dat ruwe bytes toont (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat ⇧Spatie (snelle weergave) of Enter (openen in de bijbehorende app) waarschijnlijk is wat je wilde. Zet dit aan (of klik op ‘Toon deze waarschuwing niet meer’ in de banner) om de waarschuwing voorgoed te onderdrukken.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
@@ -1267,7 +1267,7 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hoeveel recent gesloten tabbladen per paneel bewaard worden voor ‘Gesloten tabblad heropenen’ (⌘⇧T). Hogere waarden laten je verder terug in de geschiedenis heropenen; lagere waarden maken sneller geheugen vrij. Geldt alleen voor tabbladen die in de huidige sessie zijn gesloten.",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hoeveel recent gesloten tabbladen per paneel bewaard worden voor ‘Heropen gesloten tabblad’ (⌘⇧T). Hogere waarden laten je verder terug in de geschiedenis heropenen; lagere waarden maken sneller geheugen vrij. Geldt alleen voor tabbladen die in de huidige sessie zijn gesloten.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "e53df3a"
   },

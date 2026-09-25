@@ -714,9 +714,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Você tem {totalText} imagens indexadas; seu ajuste cobre {coveredText}. {doomed, plural, one {A entrada extra continua pesquisável até você apagá-la} other {As {doomedText} entradas extras continuam pesquisáveis até você apagá-las} many {As {doomedText} entradas extras continuam pesquisáveis até você apagá-las}}.",
+  "settings.mediaIndex.reclaim.line": "Você tem {total, plural, one {{totalText} imagem indexada} many {{totalText} imagens indexadas} other {{totalText} imagens indexadas}}; seu ajuste cobre {coveredText}. {doomed, plural, one {A entrada extra continua aparecendo nas buscas até você apagá-la} many {As {doomedText} entradas extras continuam aparecendo nas buscas até você apagá-las} other {As {doomedText} entradas extras continuam aparecendo nas buscas até você apagá-las}}.",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Apagar a entrada extra e liberar cerca de {size}} other {Apagar as entradas extras e liberar cerca de {size}} many {Apagar as entradas extras e liberar cerca de {size}}}",
   "@settings.mediaIndex.reclaim.button": {
@@ -1249,7 +1249,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "O F3 abre o visualizador de arquivos do Cmdr, que mostra os bytes brutos (com UTF-8 com perdas para conteúdo não textual). Ao abrir uma imagem, PDF, arquivo compactado ou outro arquivo binário, o visualizador mostra um banner vermelho explicando que ⇧Espaço (Visualização rápida) ou Enter (abrir no app associado) provavelmente é o que você queria. Ative isto (ou clique em “Nunca mostrar este aviso novamente” no banner) para ocultar o aviso de vez.",
+  "settings.fileViewer.suppressBinaryWarning.description": "O F3 abre o visualizador de arquivos do Cmdr, que mostra os bytes brutos (com UTF-8 com perdas para conteúdo não textual). Ao abrir uma imagem, PDF, arquivo compactado ou outro arquivo binário, o visualizador mostra um banner vermelho explicando que ⇧Espaço (Visualização rápida) ou Enter (abrir no app associado) provavelmente é o que você queria. Ative isto (ou clique em “Não mostrar este aviso novamente” no banner) para ocultar o aviso de vez.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },

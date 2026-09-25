@@ -20,9 +20,9 @@
     "sourceHash": "36ca789",
     "sameAsSourceJustification": "Placeholder-only fraction '{currentText} / {maxText}'; both values are preformatted numbers and the ' / ' separator is locale-neutral. Nothing to translate."
   },
-  "feedback.dialog.tooLong": "Xin lỗi, nội dung này quá dài. Tối đa là {maxText} ký tự.",
+  "feedback.dialog.tooLong": "Xin lỗi, nội dung này quá dài. Tối đa là {maxText} {max, plural, other {ký tự}}.",
   "@feedback.dialog.tooLong": {
-    "sourceHash": "b9a0cef"
+    "sourceHash": "b6e0abf"
   },
   "feedback.dialog.moreWays": "Bạn cũng có thể <github>xem và bình chọn trên GitHub</github> hoặc <call>đặt một cuộc gọi</call> với David.",
   "@feedback.dialog.moreWays": {

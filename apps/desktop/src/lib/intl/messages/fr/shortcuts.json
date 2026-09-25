@@ -43,9 +43,9 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "Écran d’erreur",
+  "shortcuts.scope.errorScreen": "Dossier illisible",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "Emplacements",
   "@shortcuts.scope.places": {

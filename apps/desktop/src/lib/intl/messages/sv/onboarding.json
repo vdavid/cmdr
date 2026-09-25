@@ -439,9 +439,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Du valde att gå igenom en detaljerad inställning, så här är några enkla val. Om du inte bryr dig så mycket, klicka bara på knappen nedan. Allt det här är valfritt, och standardvärdena är valda för din skull.",
+  "onboarding.stepOptional.lede": "Du valde att gå igenom en detaljerad inställning, så här är några snabba val. Om du inte bryr dig så mycket, klicka på knappen nedan. Allt det här är valfritt, och standardvärdena är valda för din skull.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "Rekommenderas: på",
   "@onboarding.stepOptional.recommendedOn": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Om du aktiverar det här gör Cmdr en liten nätverksförfrågan till en central licensserver vid varje appstart plus en gång var 24:e timme, och du får alltid de senaste uppdateringarna.\nOm det är avstängt behåller du din nuvarande version, och Cmdr gör noll automatiska nätverksförfrågningar (förutom periodiska licenskontroller, om du har en kommersiell licens).",
+  "onboarding.stepOptional.updates.desc": "Om du aktiverar det här gör Cmdr en liten nätverksförfrågan till en central licensserver vid varje appstart plus en gång var 24:e timme, och du får alltid de senaste uppdateringarna.\nOm du stänger av det behåller du din nuvarande version, och Cmdr gör noll automatiska nätverksförfrågningar (förutom periodiska licenskontroller, om du har en kommersiell licens).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-telefoner, Kindles, kameror)",
   "@onboarding.stepOptional.mtp.title": {

@@ -71,9 +71,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Đây là chế độ xem thô của tệp. Bạn có thể muốn xem <kindName>{kind}</kindName> thực tế thay vì vậy. Để làm điều đó, hãy đóng cửa sổ này và nhấn <quickLookKey></quickLookKey> để mở chế độ xem nhanh, hoặc nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở bằng ứng dụng liên kết.",
+  "viewer.binaryWarning.body": "Đây là chế độ xem thô của tệp. Có lẽ bạn muốn xem chính <kindName>{category, select, image {hình ảnh} document {tài liệu} other {tệp {ext}}}</kindName> đó hơn. Để làm vậy, hãy đóng cửa sổ này và nhấn <quickLookKey></quickLookKey> để mở Xem nhanh, hoặc nhấn <openKey></openKey> (hoặc bấm đúp vào tệp) để mở tệp bằng ứng dụng liên kết.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "8c6fcd6"
+    "sourceHash": "da099be"
   },
   "viewer.binaryWarning.dismiss": "Đóng",
   "@viewer.binaryWarning.dismiss": {

@@ -439,9 +439,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Du hast dich für eine ausführliche Einrichtung entschieden, hier also ein paar einfache Entscheidungen. Wenn dir das nicht so wichtig ist, klicke einfach auf die Taste unten. Das sind alles Optionen, und die Standardwerte sind zu deinem Vorteil gewählt.",
+  "onboarding.stepOptional.lede": "Du hast dich für eine ausführliche Einrichtung entschieden, hier also ein paar schnelle Entscheidungen. Wenn dir das nicht so wichtig ist, klicke auf die Taste unten. All das ist optional, und die Standardwerte sind zu deinem Vorteil gewählt.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "Empfohlen: an",
   "@onboarding.stepOptional.recommendedOn": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Wenn du das aktivierst, sendet Cmdr bei jedem App-Start sowie einmal alle 24 Stunden eine winzige Netzwerkanfrage an einen zentralen Lizenzserver, und du erhältst immer die neuesten Updates.\nIst es deaktiviert, behältst du deine aktuelle Version und null automatische Netzwerkanfragen (bis auf regelmäßige Lizenzprüfungen, falls du eine kommerzielle Lizenz hast).",
+  "onboarding.stepOptional.updates.desc": "Wenn du das aktivierst, sendet Cmdr bei jedem App-Start sowie einmal alle 24 Stunden eine winzige Netzwerkanfrage an einen zentralen Lizenzserver, und du erhältst immer die neuesten Updates.\nWenn du das deaktivierst, behältst du deine aktuelle Version, und Cmdr sendet überhaupt keine automatischen Netzwerkanfragen (bis auf regelmäßige Lizenzprüfungen, falls du eine gewerbliche Lizenz hast).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-Handys, Kindles, Kameras)",
   "@onboarding.stepOptional.mtp.title": {

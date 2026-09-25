@@ -480,9 +480,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "在 {totalText} 個字元中對上了 {matchedText} 個",
+  "askCmdr.renameReview.coverage": "在 {totalText} 個{total, plural, other {字元}}中對上了 {matchedText} 個",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "d8845cb"
+    "sourceHash": "222d847"
   },
   "askCmdr.renameReview.coverageThin": "這只是 Cmdr 在這裡讀到的文字裡的一小部分。開啟檔案核對一下名稱。",
   "@askCmdr.renameReview.coverageThin": {
@@ -660,9 +660,9 @@
   "@askCmdr.context.label": {
     "sourceHash": "8451f61"
   },
-  "askCmdr.context.tooltip": "已用 {usedText} / {budgetText} 個 token（估算）",
+  "askCmdr.context.tooltip": "已用 {usedText} / {budgetText} 個 {budget, plural, other {token}}（估算）",
   "@askCmdr.context.tooltip": {
-    "sourceHash": "3b4eef0"
+    "sourceHash": "81cc75a"
   },
   "askCmdr.wake.thinking": "Cmdr 正在看看有什麼變化。開啟對話。",
   "@askCmdr.wake.thinking": {

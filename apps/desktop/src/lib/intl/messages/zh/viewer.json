@@ -71,9 +71,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "这是文件的原始视图。你可能更想查看实际的<kindName>{kind}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "viewer.binaryWarning.body": "这是文件的原始视图。你可能更想查看实际的<kindName>{category, select, image {图像} document {文稿} other { {ext} 文件}}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "8c6fcd6"
+    "sourceHash": "da099be"
   },
   "viewer.binaryWarning.dismiss": "关闭",
   "@viewer.binaryWarning.dismiss": {

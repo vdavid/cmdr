@@ -43,9 +43,9 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "Màn hình lỗi",
+  "shortcuts.scope.errorScreen": "Thư mục không đọc được",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "Vị trí",
   "@shortcuts.scope.places": {

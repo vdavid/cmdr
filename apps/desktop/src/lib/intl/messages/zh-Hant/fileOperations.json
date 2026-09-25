@@ -315,9 +315,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "有 {countText} 個資料夾會和現有的資料夾合併",
+  "fileOperations.transferDialog.mergeInfoMany": "有 {countText} 個{count, plural, other {資料夾}}會和現有的資料夾合併",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} 個{count, plural, other {檔案已經存在。你想怎麼處理？}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -511,25 +511,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "現有（資料夾）：",
+  "fileOperations.transferProgress.existingFolderLabel": "現有的資料夾：",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "現有（檔案）：",
+  "fileOperations.transferProgress.existingFileLabel": "現有的檔案：",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "現有：",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "新的（資料夾）：",
+  "fileOperations.transferProgress.newFolderLabel": "新的資料夾：",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "新的（檔案）：",
+  "fileOperations.transferProgress.newFileLabel": "新的檔案：",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "新的：",
   "@fileOperations.transferProgress.newLabel": {
@@ -751,13 +751,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "已刪除 Cmdr 寫入的 {countText} 個{count, plural, other {項目}}。",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, =1 {已刪除 Cmdr 寫入的那個項目。} other {已刪除 Cmdr 寫入的全部 {countText} 個項目。}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "已把 Cmdr 移動過的 {countText} 個{count, plural, other {項目}}放回原處。",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, =1 {已把 Cmdr 移動過的那個項目放回原處。} other {已把 Cmdr 移動過的全部 {countText} 個項目放回原處。}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "已刪除 {countText} 個{count, plural, other {項目}}。",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -767,9 +767,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "刪除 {countText} 個{count, plural, other {項目}}之後停止了。其餘的還留在目標位置。",
+  "fileOperations.cancelRollback.stoppedDeleting": "刪除 {countText} 個{count, plural, other {項目}}之後停止了。其餘的還留在複製過去的地方。",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "把 {countText} 個{count, plural, other {項目}}放回原處之後停止了。其餘的還留在移動過去的地方。",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

@@ -440,9 +440,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "你选择了走一遍详细设置，所以这里有几个简单的选项。如果你不太在意，点按一下下面的按钮就行。这些全都是可选项，默认值是为你着想而选的。",
+  "onboarding.stepOptional.lede": "你选择了走一遍详细设置，所以这里有几个很快就能选好的选项。如果你不太在意，点按下面的按钮就行。这些全都是可选的，默认值是为你着想而选的。",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "推荐：开启",
   "@onboarding.stepOptional.recommendedOn": {
@@ -496,9 +496,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "如果你开启这一项，Cmdr 会在每次应用启动时、以及每 24 小时一次，向一台中心许可证服务器发起一个很小的网络请求，这样你总能拿到最新更新。\n如果关闭，你会保留当前版本，且零自动网络请求（如果你持有商业许可证，则定期的许可证检查除外）。",
+  "onboarding.stepOptional.updates.desc": "如果你开启这一项，Cmdr 会在每次应用启动时、以及每 24 小时一次，向一台中心许可证服务器发起一个很小的网络请求，这样你总能拿到最新更新。\n如果你关闭它，你会保留当前版本，Cmdr 也不会发起任何自动网络请求（如果你持有商业许可证，则定期的许可证检查除外）。",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP（Android 手机、Kindle、相机）",
   "@onboarding.stepOptional.mtp.title": {

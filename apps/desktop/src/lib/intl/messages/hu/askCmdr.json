@@ -481,9 +481,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "{totalText} karakterből {matchedText} egyezik",
+  "askCmdr.renameReview.coverage": "{totalText} {total, plural, one {karakterből} other {karakterből}} {matchedText} egyezik",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "d8845cb"
+    "sourceHash": "222d847"
   },
   "askCmdr.renameReview.coverageThin": "Ez csak kis része annak a szövegnek, amit a Cmdr itt elolvasott. Nyisd meg a fájlt a név ellenőrzéséhez.",
   "@askCmdr.renameReview.coverageThin": {
@@ -661,9 +661,9 @@
   "@askCmdr.context.label": {
     "sourceHash": "8451f61"
   },
-  "askCmdr.context.tooltip": "{usedText} / {budgetText} token felhasználva (becsült)",
+  "askCmdr.context.tooltip": "{usedText} / {budgetText} {budget, plural, one {token} other {token}} felhasználva (becsült)",
   "@askCmdr.context.tooltip": {
-    "sourceHash": "3b4eef0"
+    "sourceHash": "81cc75a"
   },
   "askCmdr.wake.thinking": "A Cmdr épp megnézi, mi változott. Nyisd meg a csevegést.",
   "@askCmdr.wake.thinking": {

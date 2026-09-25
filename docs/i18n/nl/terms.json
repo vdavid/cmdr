@@ -2903,5 +2903,77 @@
     ],
     "confidence": "tentative",
     "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
+  },
+  "app": {
+    "chosen": "app",
+    "accept": ["apps", "standaardapp", "appversie"],
+    "confidence": "high",
+    "exceptions": {
+      "onboarding.stepOptional.updates.summary": "A summary line that mustn't wrap: \"at app start\" → bij het starten, the app implied."
+    },
+    "forms": "de app; the Applications folder is the separate concept (Apps); compounds close up (standaardapp, synchronisatie-app keeps the hyphen after the vowel clash)",
+    "sources": "macOS (260 hits of app in nl.lproj, 1 of programma); MS terminology lists app first; catalog (192 hits)"
+  },
+  "button": {
+    "chosen": "knop",
+    "accept": ["knoppen"],
+    "confidence": "high",
+    "forms": "in running text de knop ‘+’, de knop hieronder",
+    "sources": "macOS (27 hits in nl.lproj); MS terminology (button → knop); catalog (25 hits)"
+  },
+  "click": {
+    "chosen": "klik op",
+    "accept": ["klikken", "klik", "geklikt"],
+    "confidence": "high",
+    "forms": "imperative klik op de knop; distinct from dubbelklik and druk op (a key)",
+    "sources": "macOS (23 hits of klik op in nl.lproj); MS terminology (click → klikken); catalog (12 hits)"
+  },
+  "entry": {
+    "chosen": "onderdeel",
+    "accept": ["onderdelen", "vermelding", "vermeldingen", "item", "items"],
+    "confidence": "high",
+    "forms": "a scanned or indexed file or folder → onderdeel (indexing.scan.counters, queryUi.results.*); an image-index record → vermelding (settings.mediaIndex.reclaim.*); a stash or recent-list entry → item",
+    "sources": "catalog (queryUi.empty.indexReady, settings.mediaIndex.reclaim.*, fileExplorer.git.size.stashEntries); MS terminology (entry → vermelding); macOS has no vermelding, and says onderdelen for Finder items"
+  },
+  "network": {
+    "chosen": "netwerk",
+    "accept": ["netwerken", "netwerkverzoek", "netwerkverzoeken", "netwerkschijf", "netwerkverbinding"],
+    "confidence": "high",
+    "forms": "compounds close up (netwerkverzoek, netwerkverbinding)",
+    "sources": "macOS (15 hits in nl.lproj); MS terminology (network → netwerk); catalog (84 hits)"
+  },
+  "request": {
+    "chosen": "verzoek",
+    "accept": ["verzoeken", "netwerkverzoek", "netwerkverzoeken"],
+    "confidence": "high",
+    "forms": "a network or API call → (netwerk)verzoek",
+    "avoid": [
+      {
+        "form": "aanvraag",
+        "why": "MS's HTTP word; macOS uses verzoek (5 hits, 0 aanvraag) and so does the catalog (10 against 1)"
+      }
+    ],
+    "sources": "macOS nl.lproj (verzoek 5, aanvraag 0); catalog (verzoek 10)"
+  },
+  "status": {
+    "chosen": "status",
+    "accept": ["statussen", "statuspagina", "synchronisatiestatus", "systeemstatuspagina"],
+    "confidence": "high",
+    "forms": "compounds close up (statuspagina, synchronisatiestatus); a service's status page → de statuspagina van {name}",
+    "sources": "macOS (23 hits in nl.lproj); MS terminology (status → status); catalog (183 hits)"
+  },
+  "this-mac": {
+    "chosen": "deze Mac",
+    "accept": ["op deze Mac", "je Mac"],
+    "confidence": "high",
+    "forms": "on this Mac → op deze Mac; your Mac → je Mac; Mac stays verbatim",
+    "sources": "macOS (15 hits of deze Mac, 11 of op deze Mac in nl.lproj); catalog (settings.mediaIndex.progress.local Deze Mac)"
+  },
+  "window": {
+    "chosen": "venster",
+    "accept": ["vensters", "Venster"],
+    "confidence": "high",
+    "forms": "the Window menu is Venster; compounds close up (Over-venster keeps its hyphen after a capitalized name)",
+    "sources": "macOS (83 hits in nl.lproj, menu Venster); MS terminology (window → venster); catalog (38 hits)"
   }
 }

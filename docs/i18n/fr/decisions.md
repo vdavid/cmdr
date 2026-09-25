@@ -273,10 +273,10 @@ values write the catalog's `’`.
 - The pills: `Retour en arrière possible` / `impossible` / `en cours` / `effectué` / `partiel`; the button fits the
   button-row budget.
 
-## Renommage en chaîne : « et N autres » se rend par `ainsi que …` (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
+## Renommage en chaîne : « et N autres » se rend par `ainsi que …` (`fileExplorer.rename.chainKeptOriginalName*`)
 
-- "and so did N other files" → `ainsi que … autres fichiers` (Finder’s "X et N autres" shape, Dolphin), inside the
-  branches because the `one` arm elides (`ainsi qu’un autre fichier`). `fichier` because the English says file.
+- "and so did “{name}”: {reason}" → `ainsi que « {name} » : {reason}` (Finder’s "X et N autres"): the name stays
+  next to the colon, since `{reason}` is about it alone.
 
 ## Renommage non confirmé : le volume ne répond pas (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
 
@@ -485,7 +485,7 @@ values write the catalog's `’`.
 ## Le hub des serveurs : panneau de connexion, refus et oubli (`servers.refusal.*`, `servers.paneState.*`, `fileExplorer.navigation.forget*`, `fileExplorer.navigation.disconnect*`, `menu.network.forgetServer`, `.forgetSavedPassword`)
 
 - Keychain Access (the app) → `Trousseaux d’accès` (Apple’s plural); the store → `le trousseau`.
-- trust → `approuver` (Security.framework) over `faire confiance à`. Host key → `la clé de {host}` (tentative).
+- trust → `approuver` (Security.framework) over `faire confiance à`. Host key → `la clé du serveur {host}` (`de` would elide; tentative).
 - Signed out → `Session fermée`: the session carries the agreement, never `Déconnecté(e)`.
 - Confirm titles repeat the menu labels verbatim (`Oublier le serveur`, `Oublier le mot de passe enregistré`).
 - `disconnectPlaceAriaLabel` → `Se déconnecter de {name}`, containing the visible `Se déconnecter`, never Finder’s

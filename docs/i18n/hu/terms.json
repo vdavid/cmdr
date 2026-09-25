@@ -164,6 +164,16 @@
     "confidence": "high",
     "sources": "ms (API key → API-kulcs)"
   },
+  "app": {
+    "chosen": "app",
+    "accept": ["alkalmazás", "appindítás"],
+    "forms": "the associated app → a társított app (a társított appban); Apps (the Finder group) → Appok; lowercase in prose, a suffix attaches without a hyphen (appból, appot)",
+    "confidence": "high",
+    "sources": "macOS Finder (App → App, Apps → Appok); catalog (85 keys say app, 12 alkalmazás)",
+    "exceptions": {
+      "onboarding.stepOptional.updates.summary": "at app start → indításkor: the short summary line leaves the app implied"
+    }
+  },
   "app-bundle": {
     "chosen": "alkalmazáscsomag",
     "accept": ["csomag"],
@@ -358,6 +368,12 @@
     "sources": "ms (foglalt, the line-busy sense); catalog (menu.volume.*Busy)",
     "decision": "busy: a kiszürkített menüpontok jelölője"
   },
+  "button": {
+    "chosen": "gomb",
+    "forms": "click the X button → kattints a … gombra, the label quoted byte for byte (kattints a „Ne jelenjen meg többé” gombra); the button below → lent a gombra",
+    "confidence": "high",
+    "sources": "macOS AppKit Printing (kattintson a Hozzáadás (+) gombra); ms (button → gomb); catalog (29 keys)"
+  },
   "cache": {
     "chosen": "gyorsítótár",
     "forms": "share cache → megosztásgyorsítótár; system caches → rendszer-gyorsítótárak",
@@ -517,6 +533,13 @@
     "forms": "Clear search → Keresés törlése; Clear index → Index törlése; the result set was cleared → a találatok törlődtek",
     "confidence": "high",
     "sources": "catalog; macOS Finder (Kijelölés törlése)"
+  },
+  "click": {
+    "chosen": "kattintás",
+    "accept": ["kattint"],
+    "forms": "imperative Kattints …; onto a control → kattints a … gombra (-ra/-re); pressing a key is a different verb (nyomd meg)",
+    "confidence": "high",
+    "sources": "macOS AppKit Printing (kattintson … gombra, here in te form); ms (click → kattint); catalog (38 keys)"
   },
   "clipboard": {
     "chosen": "vágólap",
@@ -1011,6 +1034,15 @@
     "forms": "accusative az Entert (Nyomd meg az Entert a kereséshez); with a base word: az Enter billentyűvel",
     "confidence": "high",
     "sources": "catalog"
+  },
+  "entry": {
+    "chosen": "bejegyzés",
+    "forms": "singular after a numeral in both plural branches ({countText} bejegyzés); stash entry → stash-bejegyzés",
+    "confidence": "high",
+    "sources": "ms (entry, the registry sense → bejegyzés); catalog (14 keys: queryUi.empty.indexReady, settings.mediaIndex.reclaim.*)",
+    "exceptions": {
+      "commands.selectionSelectSameKind.description": "an entry in the file list is a file or folder there, so it takes the item word elem"
+    }
   },
   "error-report": {
     "chosen": "hibajelentés",
@@ -1876,6 +1908,13 @@
     "confidence": "high",
     "sources": "descriptive; catalog"
   },
+  "network": {
+    "chosen": "hálózat",
+    "accept": ["hálózati"],
+    "forms": "the Network group → Hálózat; network request → hálózati kérés",
+    "confidence": "high",
+    "sources": "macOS Finder and System Settings (Network → Hálózat); catalog (56 keys)"
+  },
   "network-drive": {
     "chosen": "hálózati meghajtó",
     "forms": "Network drive image indexing → Hálózati meghajtók képindexelése",
@@ -2536,6 +2575,13 @@
     "confidence": "high",
     "sources": "macOS Finder (… mert a rendszer számára van fenntartva.)"
   },
+  "request": {
+    "chosen": "kérés",
+    "forms": "network request → hálózati kérés; sending one → kérést küld",
+    "avoid": [{ "form": "kérelem", "why": "Microsoft's administrative sense (a provisioning or application request), not a call to a server" }],
+    "confidence": "high",
+    "sources": "ms (request, the web-content sense → kérés); catalog (13 keys)"
+  },
   "reset": {
     "chosen": "visszaállítás",
     "accept": ["visszaállít", "állíthatod vissza", "visszaáll"],
@@ -3102,6 +3148,13 @@
     "sources": "macOS; ms",
     "note": "Narrower than művelet: the queue window is Műveleti sor because it holds deletes and renames too."
   },
+  "this-mac": {
+    "chosen": "Ez a Mac",
+    "accept": ["Mac"],
+    "forms": "the label This Mac → Ez a Mac; on this Mac → ezen a Macen (no hyphen, see style.md); your Mac → a Mac-eden; in prose the bare Mac with its case ending carries the sense",
+    "confidence": "high",
+    "sources": "macOS Finder and AppKit (This Mac → Ez a Mac); catalog (settings.mediaIndex.progress.local; ezen a Macen 8 keys)"
+  },
   "trash": {
     "chosen": "Kuka",
     "accept": ["kuká"],
@@ -3317,6 +3370,12 @@
     "forms": "working directory (the separate cwd sense) → munkakönyvtár",
     "confidence": "tentative",
     "sources": "literal"
+  },
+  "window": {
+    "chosen": "ablak",
+    "forms": "the Window menu → Ablak; close this window → zárd be ezt az ablakot; the About window → Névjegyablak",
+    "confidence": "high",
+    "sources": "macOS AppKit MenuCommands (Window → Ablak); catalog (24 keys)"
   },
   "write": {
     "chosen": "kiírás",

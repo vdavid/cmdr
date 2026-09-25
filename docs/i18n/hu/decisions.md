@@ -208,11 +208,11 @@ usage stats → `használati statisztika`, a random id → `egy véletlenszerű 
   not read as a plain Cancel.
 - `foregroundBusyToast` says `Itt valami más van nyitva`: the blocker may not be an operation.
 
-## Az átnevezés-láncban nevüket megtartó fájlok számláló buboréka (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
+## Az átnevezés-láncban nevüket megtartó fájlok számláló buboréka (`fileExplorer.rename.chainKeptOriginalName`/`AndOthers`)
 
-The bubble rewrites itself in place, so only its tail grows:
-`„{name}” megtartotta a nevét, és még {othersText} másik fájl is.` The gapped `is` carries "and so did". Not a merged
-subject: the `@key` says `{reason}` covers only the named file. `one` spells out `egy másik fájl`.
+`{reason}` stands last after a colon (it may end in its own punctuation): `„{name}” megtartotta a nevét: {reason}`, and
+`{othersText} másik fájl megtartotta a nevét, és „{name}” is: {reason}`. The gapped `is` carries "and so did" and puts
+the named file right before its colon, since `{reason}` covers only that file. `one` spells out `Egy másik fájl`.
 
 ## A meg nem erősített átnevezés buboréka és a fel nem használható név (`fileExplorer.rename.unconfirmed`/`unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
 
@@ -389,7 +389,7 @@ Connect to server → `Kapcsolódás szerverre` (Finder `N84`, over `szerverhez`
   `visszavíve` doesn't read.
 - Removed → `eltávolítva`, never `törölve`: the notice reassures.
 - Full vs partial lives in the sentence: `A Cmdr mindent eltávolított, amit létrehozott: {countText} elem.` vs
-  `{countText} elem eltávolítva.`
+  `{countText} elem eltávolítva.` The full notice's `one` branch drops the count: `A Cmdr eltávolította az elemet, …`.
 - it changed → `módosult` (macOS) over `megváltozott`; check → `ellenőriz`, apart from the `megerősít` (confirm) family.
 - Couldn't undo {name} → `Nem sikerült visszagörgetni: „{name}”.`: the per-item outcome word is `visszagörgetés`, and
   `visszavonás` is for an operation.
@@ -553,12 +553,7 @@ function key bar → `funkcióbillentyű-sáv`, as `settings.appearance.showFunc
 
 ## A Dockba kerülés egyszeri ajánlata (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 
-### A három macOS-felületnév
-
-- `Dock` and `Finder` stay English and take suffixes without a hyphen (`a Dockban`, `a Dockodban`, `a Finderben`), since
-  their last letter spells the sound; compounds take one (`Finder-ablak`, `Dock-ajánlat`).
-- Applications → `Alkalmazások` (Finder). ⚠️ ❌ `Programok` is the old Mac OS X name, and no check catches it coming
-  back, because the affected keys' English differs.
+The `Dock` / `Finder` suffixes and `Alkalmazások` (never `Programok`) live in `style.md`.
 
 ### A többi eldöntött szó
 

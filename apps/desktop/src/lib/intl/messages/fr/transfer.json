@@ -35,9 +35,9 @@
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copie terminée : les {skippedText} fichiers ont été ignorés (déjà à destination), rien n’a été copié.} other {Déplacement terminé : les {skippedText} fichiers ont été ignorés (déjà à destination), rien n’a été déplacé.}}",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copie terminée} other {Déplacement terminé}} : {skippedText} {skipped, plural, one {fichier ignoré} many {fichiers ignorés} other {fichiers ignorés}} (déjà à destination), rien n’a été {verb, select, copy {copié} other {déplacé}}.",
   "@transfer.fileOnly.allSkippedMany": {
-    "sourceHash": "ae39c4b"
+    "sourceHash": "5b688cf"
   },
   "transfer.fileOnly.mixedCopy": "Copie terminée : {transferredText} copiés, {skippedText} ignorés. Vos {processedText} {processed, plural, one {fichier sélectionné est maintenant} many {fichiers sélectionnés sont maintenant} other {fichiers sélectionnés sont maintenant}} à destination.",
   "@transfer.fileOnly.mixedCopy": {

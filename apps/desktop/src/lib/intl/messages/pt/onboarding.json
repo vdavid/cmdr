@@ -439,9 +439,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Você optou por passar por uma configuração detalhada, então aqui estão algumas escolhas fáceis. Se você não se importa muito, basta clicar no botão abaixo. Tudo isto são opções, e os padrões foram escolhidos pensando em você.",
+  "onboarding.stepOptional.lede": "Você optou por passar por uma configuração detalhada, então aqui estão algumas escolhas rápidas. Se você não se importa muito, clique no botão abaixo. Todas elas são opcionais, e os padrões foram escolhidos pensando em você.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "Recomendado: ativado",
   "@onboarding.stepOptional.recommendedOn": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Se você ativar isto, o Cmdr faz uma pequena requisição de rede a um servidor de licenças central a cada início do app e uma vez a cada 24 horas, e você sempre recebe as últimas atualizações.\nSe desativado, você mantém sua versão atual e zero requisições de rede automáticas (exceto verificações de licença periódicas, se você tiver uma licença comercial).",
+  "onboarding.stepOptional.updates.desc": "Se você ativar isto, o Cmdr faz uma pequena solicitação de rede a um servidor de licenças central a cada início do app e uma vez a cada 24 horas, e você sempre recebe as últimas atualizações.\nSe você desativar isto, mantém sua versão atual, e o Cmdr não faz nenhuma solicitação de rede automática (exceto verificações periódicas de licença, se você tiver uma licença comercial).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP (celulares Android, Kindles, câmeras)",
   "@onboarding.stepOptional.mtp.title": {

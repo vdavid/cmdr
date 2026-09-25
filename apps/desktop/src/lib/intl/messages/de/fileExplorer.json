@@ -769,13 +769,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. „{name}“ behält seinen Namen.",
+  "fileExplorer.rename.chainKeptOriginalName": "„{name}“ behält den bisherigen Namen: {reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "638394d"
+    "sourceHash": "174ff14"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. „{name}“ behält seinen Namen, ebenso {others, plural, one {eine weitere Datei} other {{othersText} weitere Dateien}}.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, one {Eine weitere Datei behält ihren bisherigen Namen} other {{othersText} weitere Dateien behalten ihre bisherigen Namen}}, ebenso „{name}“: {reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "be35bc8"
+    "sourceHash": "016797b"
   },
   "fileExplorer.rename.unconfirmed": "Es ließ sich nicht bestätigen, dass „{name}“ umbenannt wurde. Das Volume ist vielleicht langsam, die Umbenennung hat also womöglich trotzdem geklappt.",
   "@fileExplorer.rename.unconfirmed": {
@@ -1625,11 +1625,11 @@
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   },
-  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {„{name}“ ließ sich nicht kopieren.} one {{countText} Objekt ließ sich nicht kopieren.} other {{countText} Objekte ließen sich nicht kopieren.}}",
   "@fileExplorer.dragOut.failed": {
     "sourceHash": "73468bd"
   },
-  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {„{name}“ ließ sich nicht kopieren.} one {{countText} Objekt ließ sich nicht kopieren.} other {{countText} Objekte ließen sich nicht kopieren.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   }

@@ -43,9 +43,9 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "错误屏幕",
+  "shortcuts.scope.errorScreen": "无法读取的文件夹",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "共享位置",
   "@shortcuts.scope.places": {

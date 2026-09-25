@@ -1071,7 +1071,7 @@
   },
   "errors.provider.appBased.serious": "Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Lépj ki az appból ({app}), és nyisd meg újra\n- Jelentkezz ki, majd vissza ide: {app}\n- Nézd meg a szolgáltatás állapotoldalát ({name}), hátha leállás van",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "347589c"
+    "sourceHash": "5a4e14e"
   },
   "errors.write.sourceNotFound.title": "Nem sikerült megtalálni a fájlt",
   "@errors.write.sourceNotFound.title": {

@@ -91,9 +91,9 @@
   "@onboarding.stepBeta.signup.unreachable": {
     "sourceHash": "18378ab"
   },
-  "onboarding.stepOptional.lede": "Has elegido pasar por una configuración detallada, así que aquí tienes unas cuantas decisiones sencillas. Si no te importan demasiado, basta con que hagas clic en el botón de abajo. Todo esto son opciones, y los valores predeterminados están elegidos pensando en ti.",
+  "onboarding.stepOptional.lede": "Elegiste pasar por una configuración detallada, así que aquí tienes unas cuantas decisiones rápidas. Si no te importan demasiado, haz clic en el botón de abajo. Todas son opcionales, y los valores predeterminados están elegidos pensando en ti.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "a188958"
+    "sourceHash": "1648c26"
   },
   "onboarding.stepOptional.changeAnytime": "Puedes cambiarlo cuando quieras en Configuración.",
   "@onboarding.stepOptional.changeAnytime": {

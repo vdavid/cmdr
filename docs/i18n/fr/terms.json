@@ -107,6 +107,16 @@
     "confidence": "high",
     "sources": "standard FR"
   },
+  "app": {
+    "accept": ["application", "apps"],
+    "chosen": "app",
+    "confidence": "high",
+    "forms": "Cmdr itself or another app in prose → l’app (au démarrage de l’app); the app that opens a file → l’application associée, l’application par défaut (the default ruling)",
+    "sources": "macOS Finder (Afficher dans l’app, Une app qui prend en charge les documents) and AppKit (l’application); catalog (124 app, 13 application)",
+    "exceptions": {
+      "onboarding.stepOptional.updates.summary": "at app start → au démarrage: the short summary line leaves whose start it is implicit"
+    }
+  },
   "app-bundle": {
     "chosen": "paquet",
     "confidence": "high",
@@ -310,6 +320,12 @@
     "forms": "the greyed menu marker: the base label word for word, then (occupé), invariable (Oublier le mot de passe enregistré (occupé)); idle → quand il n’est plus occupé",
     "sources": "MS terminology FRA (busy → occupé)"
   },
+  "button": {
+    "chosen": "bouton",
+    "confidence": "high",
+    "forms": "click the + button → cliquez sur le bouton « + »",
+    "sources": "macOS System Settings (puis sur le bouton Ajouter (+)); catalog"
+  },
   "cache": {
     "chosen": "cache",
     "confidence": "high",
@@ -446,6 +462,13 @@
       "settings.mediaIndex.reclaim.alreadyCleared": "Index entries cleared are deleted from the index; supprimer, as in the sibling reclaim.couldNotDelete."
     },
     "sources": "macOS; catalog"
+  },
+  "click": {
+    "accept": ["cliquez", "cliqu", "clic"],
+    "chosen": "cliquer",
+    "confidence": "high",
+    "forms": "click X → cliquez sur X; pressing a key is appuyer sur, never cliquer",
+    "sources": "macOS AppKit (Cliquez sur Enregistrer quand même, cliquez sur Rétablir); catalog"
   },
   "clipboard": {
     "chosen": "presse-papiers",
@@ -764,10 +787,7 @@
     "chosen": "désactiver",
     "confidence": "high",
     "forms": "X is off → X est désactivé or X est désactivée, agreeing with the feature; the badge Off with drive indexing → Désactivé avec l’indexation",
-    "sources": "macOS; catalog",
-    "exceptions": {
-      "onboarding.stepOptional.updates.desc": "its \"If disabled\" follows \"Si vous activez ceci\", where plain French says Sinon"
-    }
+    "sources": "macOS; catalog"
   },
   "disconnect": {
     "accept": ["déconnecte", "déconnecté", "déconnexion"],
@@ -1270,7 +1290,7 @@
     "accept": ["clé"],
     "chosen": "clé d’hôte",
     "confidence": "tentative",
-    "forms": "{host}'s key → la clé de {host}; SSH key → clé SSH; public / private key → clé publique / clé privée",
+    "forms": "the key for {host} → la clé du serveur {host} (de would elide before a vowel-initial host); SSH key → clé SSH; public / private key → clé publique / clé privée",
     "sources": "built on clé (no macOS bundle exposes host key); ActionKitUI (Clé SSH)"
   },
   "hostname": {
@@ -1604,6 +1624,12 @@
     },
     "forms": "Click to navigate to {path} → Cliquez pour accéder à {path}; jump to → aller à; go up a folder → remonter au dossier parent; Navigate here again → Revenez ici",
     "sources": "macOS Finder (Accéder au dossier parent)"
+  },
+  "network": {
+    "chosen": "réseau",
+    "confidence": "high",
+    "forms": "masculine; network request → requête réseau; network connection → connexion réseau",
+    "sources": "macOS AppKit (NSNetwork → réseau); catalog (69 uses)"
   },
   "network-drive": {
     "accept": ["disques réseau"],
@@ -2171,6 +2197,13 @@
     "forms": "a report with no crash → rapport plain; send a report → envoyez un rapport (never envoyez un retour, the feedback surface)",
     "sources": "MS terminology FRA (report → rapport)"
   },
+  "request": {
+    "accept": ["demande"],
+    "chosen": "requête",
+    "confidence": "high",
+    "forms": "a call to a server or an API → requête (requête réseau); a permission request someone answers → demande",
+    "sources": "MS terminology FRA (request → requête HTTP; demande); macOS Finder (La requête à formuler dans le Finder); catalog"
+  },
   "reserved": {
     "chosen": "réservé",
     "confidence": "high",
@@ -2688,6 +2721,13 @@
     "forms": "single … character, as the EN source",
     "sources": "descriptive FR noun-status"
   },
+  "this-mac": {
+    "accept": ["votre Mac"],
+    "chosen": "ce Mac",
+    "confidence": "high",
+    "forms": "on this Mac → sur ce Mac; About This Mac → À propos de ce Mac; English your Mac → votre Mac (Finder: Astuces pour votre Mac)",
+    "sources": "macOS Finder (Rechercher sur ce Mac, À propos de ce Mac, de ce Mac vers iCloud)"
+  },
   "threshold": {
     "chosen": "seuil",
     "confidence": "high",
@@ -2974,6 +3014,12 @@
     "confidence": "high",
     "forms": "the * and ? glyphs stay literal",
     "sources": "standard FR UI term"
+  },
+  "window": {
+    "chosen": "fenêtre",
+    "confidence": "high",
+    "forms": "feminine (cette fenêtre); the Window menu → Fenêtre; a settings pane of Réglages Système is a sous-fenêtre",
+    "sources": "macOS AppKit (réduire/agrandir la fenêtre) and Finder; catalog"
   },
   "word-wrap": {
     "accept": ["retour ligne", "renvoie"],

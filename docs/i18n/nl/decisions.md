@@ -178,8 +178,8 @@ line.
 
 ## De keten-hernoemtoast die meetelt (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
-- `net als {othersText} andere bestanden` / `één ander bestand` (no `-e` on a neuter noun after `één`, as Finder's
-  `MR101_V2`; its `PE106_V3` "andere onderdeel" is Apple's slip).
+- `Eén ander bestand` (no `-e` on a neuter noun after `één`, as Finder's `MR101_V2`), then `net als ‘{name}’: {reason}`,
+  so the reason follows the name it explains.
 - Keeps the verb and tense of `chainKeptOriginalName`.
 
 ## De onbevestigde naamwijziging en de onbruikbare naam (`fileExplorer.rename.unconfirmed`/`unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
@@ -320,11 +320,10 @@ The boundaries that look like drift and aren't:
   Skipped). ⚠️ `reason.folderNotEmpty.named`/`.counted` stay byte-identical to the `skipReason` twins.
 - `{name}` may be a file or a folder, so no reason line uses a pronoun: `daar is iets aan gewijzigd`,
   `nadat Cmdr er klaar mee was`. `.named` and `.counted` share one reason sentence.
-- ⚠️ `Cmdr kon niet controleren of …` in both this family and `skipReason.unverifiable.*`, never `nagaan`; no check
-  guards it, since the two English sources differ only in the apostrophe glyph.
-- A full rollback leads with `Alles` and puts the count after a colon (`Alles is teruggezet: {countText} …`): Dutch
-  can't put `de` before a numeral.
-- `verwijderen` (remove) and `terugzetten` (put back) never mix; `De rest staat er nog.`
+- `Cmdr kon niet controleren of …`, never `nagaan`, here and in `skipReason.unverifiable.*`.
+- A full rollback leads with `Alles` and puts the count after a colon: Dutch can't put `de` before a numeral. The `one`
+  branch drops the count (`Het onderdeel is teruggezet.`).
+- `verwijderen` (remove) and `terugzetten` (put back) never mix.
 - `stagedLeftover.*`: `onvolledig exemplaar`, `Cmdr ruimt het op`, and `bij een latere overdracht`, ❌ never "de
   volgende keer": cleanup skips anything younger than an hour.
 

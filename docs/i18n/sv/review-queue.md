@@ -42,6 +42,8 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **`Inget har hänt på {duration}`** (the stall notice) and **`står stilla`**: composed; macOS has no stall wording.
 - **`tills du svarar`** (`fileOperations.operationConflict.pausedNote`): composed.
 - **`, liksom …`** for "and so did …" (`fileExplorer.rename.chainKeptOriginalNameAndOthers`): composed.
+- **`Mapp som inte kan läsas`** (`shortcuts.scope.errorScreen`, a section title): composed; `Oläsbar mapp` is shorter
+  but `oläslig` / `oläsbar` lean toward illegible handwriting.
 - **`förra gången`** in the crash dialog's three variants: Apple writes `När du senast …`; if `.ended` is ever reworded,
   `När Cmdr senast kördes …` is the attested alternative for all three at once.
 - **`I bakgrunden`** on the empty-queue button: `Kör i bakgrunden` is the fuller alternative if it reads too elliptical.

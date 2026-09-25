@@ -240,8 +240,8 @@ The header `检查更改` has no `正在` (a header, not live status), like its 
   rename, folder creation, and trash.
 - `名称也许已经改好了` mirrors `保留了原来的名称` (the opposite outcome) on the same noun; `重命名` is a verb and reads
   badly as a subject. ❌ The unconfirmed toast never says the file kept its name.
-- The chain tail is its own clause, `，其他 {othersText} 个文件也是如此`: macOS's merged `“X”和其他 N 个文件都…` would
-  bind `{reason}` to every file, and the reason describes one.
+- Chain toast: `{reason}` stays last after `：`, hung on `“{name}”…也一样` alone; macOS's merged `“X”和其他 N 个文件都…`
+  would bind it to every file.
 - `这个文件名不能使用` / `这个文件夹名不能使用` (Finder `不能使用名称`), no `。`: it's composed into `{reason}。`
 
 ## 建议的操作：Ask Cmdr 提议内容的对话框（`suggestedOps.*`、`commands.suggestedOpsShow.*`）
@@ -383,8 +383,8 @@ One English word, two correct Chinese renderings. Don't merge them:
 - Count `个项目` here (the rollback also removes created folders); renameUndo counts `个文件`.
 - Remove what it wrote `删除` (the whole rollback family); `移除` is for taking something out of a list or zip. Moving
   back is `放回`, never `挪回`.
-- The English `the` in `doneDeleting` / `doneMovingBack` becomes `全部`; ⚠️ never on `some*`, where it would lie.
-- `其余的都还在。` names no place (it serves copy and compress); `其余的还留在这次移动把它们放到的地方。` must.
+- `all` in `done*` is `全部`, plus a `=1` arm `这一项` (never `全部 1 个`); ⚠️ never `全部` on `some*`: it would lie.
+- `stopped*` share one frame: `其余的还留在这次拷贝/移动把它们放到的地方。`
 - Stopped after N `…N 个项目后停止了。` (clause first). `leftBehind` repeats `跳过没有把握的部分` exactly, then `：`.
 - Occupied `它原来的位置现在被别的东西占用了。`, the `位置` twin of renameUndo's `名称`.
 - The staged leftover is Cmdr's own file: `不完整副本`, cleared with `清掉`. ⚠️ `之后往那里传输时`, never `下次`: the

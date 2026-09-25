@@ -35,9 +35,9 @@
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopieren} other {Bewegen}} abgeschlossen: alle {skippedText} Dateien übersprungen (bereits am Ziel), nichts {verb, select, copy {kopiert} other {bewegt}}.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopieren} other {Bewegen}} abgeschlossen: alle {skippedText} {skipped, plural, one {Datei} other {Dateien}} übersprungen (bereits am Ziel), nichts {verb, select, copy {kopiert} other {bewegt}}.",
   "@transfer.fileOnly.allSkippedMany": {
-    "sourceHash": "ae39c4b"
+    "sourceHash": "5b688cf"
   },
   "transfer.fileOnly.mixedCopy": "Kopieren abgeschlossen: {transferredText} kopiert, {skippedText} übersprungen. Alle {processedText} deiner ausgewählten {processed, plural, one {Datei} other {Dateien}} sind jetzt am Ziel.",
   "@transfer.fileOnly.mixedCopy": {

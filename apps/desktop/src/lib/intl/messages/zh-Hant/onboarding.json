@@ -440,9 +440,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "你選了走一遍詳細設定，所以這裡有幾個好決定的選項。如果你沒那麼在意，按下面的按鈕就行。這些全都是可選的，預設值是為你著想挑的。",
+  "onboarding.stepOptional.lede": "你選了走一遍詳細設定，所以這裡有幾個很快就能決定的選項。如果你沒那麼在意，按一下下方的按鈕就好。這些全都是可選的，預設值都是為你著想挑的。",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "建議：開啟",
   "@onboarding.stepOptional.recommendedOn": {
@@ -496,9 +496,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "開啟這一項，Cmdr 會在每次 App 啟動時、外加每 24 小時一次，向中央授權伺服器發一個很小的網路請求，這樣你總能拿到最新的更新。\n關掉的話，你會停在目前的版本，而且零自動網路請求（如果你有商業授權，定期的授權檢查除外）。",
+  "onboarding.stepOptional.updates.desc": "開啟這一項，Cmdr 會在每次 App 啟動時、外加每 24 小時一次，向中央授權伺服器發一個很小的網路請求，這樣你總能拿到最新的更新。\n關掉的話，你會停在目前的版本，而且 Cmdr 完全不會自動發出任何網路請求（如果你有商業授權，定期的授權檢查除外）。",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP（Android 手機、Kindle、相機）",
   "@onboarding.stepOptional.mtp.title": {

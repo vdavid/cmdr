@@ -1070,7 +1070,7 @@
   },
   "errors.provider.appBased.serious": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 退出并重新打开 {app}\n- 退出 {app} 再重新登录\n- 查看 {name} 的状态页，看有没有服务中断",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "347589c"
+    "sourceHash": "5a4e14e"
   },
   "errors.write.sourceNotFound.title": "找不到这个文件",
   "@errors.write.sourceNotFound.title": {

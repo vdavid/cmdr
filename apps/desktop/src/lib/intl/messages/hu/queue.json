@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "A másolások, áthelyezések és törlések itt jelennek meg, amíg futnak, így szüneteltetheted, folytathatod vagy megszakíthatod őket.",
+  "queue.empty.body": "A másolások, áthelyezések, törlések és más fájlműveletek itt jelennek meg, amíg futnak, így szüneteltetheted, folytathatod vagy megszakíthatod őket.",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {Másolás} move {Áthelyezés} delete {Törlés} trash {Áthelyezés a Kukába} rename {Átnevezés} create_folder {Mappa létrehozása} create_file {Fájl létrehozása} archive_edit {Archívum szerkesztése} other {Folyamatban}}",
   "@queue.row.label": {

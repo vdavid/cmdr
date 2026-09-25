@@ -135,9 +135,9 @@
   "@errors.listing.notFound.explanation": {
     "sourceHash": "c11be9a"
   },
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la petición antes de que macOS intervenga, así que no es una opción de privacidad de tu Mac.",
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la solicitud antes de que macOS intervenga, así que no es una opción de privacidad de tu Mac.",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "7874634"
+    "sourceHash": "c91fb65"
   },
   "errors.listing.remotePermissionDenied.suggestion": "Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta montaste el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, expulsa el recurso compartido y vuelve a montarlo con esas credenciales",
   "@errors.listing.remotePermissionDenied.suggestion": {

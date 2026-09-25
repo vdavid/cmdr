@@ -770,13 +770,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. ‘{name}’ behoudt zijn naam.",
+  "fileExplorer.rename.chainKeptOriginalName": "‘{name}’ behoudt zijn naam: {reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "638394d"
+    "sourceHash": "174ff14"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. ‘{name}’ behoudt zijn naam, net als {others, plural, one {één ander bestand} other {{othersText} andere bestanden}}.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, one {Eén ander bestand behoudt zijn naam} other {{othersText} andere bestanden behouden hun naam}}, net als ‘{name}’: {reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "be35bc8"
+    "sourceHash": "016797b"
   },
   "fileExplorer.rename.unconfirmed": "We konden de naamwijziging van ‘{name}’ niet bevestigen. Het volume is mogelijk traag, dus de naam is misschien toch gewijzigd.",
   "@fileExplorer.rename.unconfirmed": {
@@ -1632,11 +1632,11 @@
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   },
-  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Kon ‘{name}’ niet kopiëren.} one {Kon {countText} onderdeel niet kopiëren.} other {Kon {countText} onderdelen niet kopiëren.}}",
   "@fileExplorer.dragOut.failed": {
     "sourceHash": "73468bd"
   },
-  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Kon ‘{name}’ niet kopiëren.} one {Kon {countText} onderdeel niet kopiëren.} other {Kon {countText} onderdelen niet kopiëren.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   }

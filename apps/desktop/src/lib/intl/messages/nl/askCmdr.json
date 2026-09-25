@@ -201,7 +201,7 @@
   "@askCmdr.tool.unknown.done": {
     "sourceHash": "05cc2be"
   },
-  "askCmdr.tool.refused": "Die aanvraag was niet beschikbaar",
+  "askCmdr.tool.refused": "Dat verzoek was niet beschikbaar",
   "@askCmdr.tool.refused": {
     "sourceHash": "f5e6dcc"
   },
@@ -484,9 +484,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "{matchedText} van {totalText} tekens komen overeen",
+  "askCmdr.renameReview.coverage": "Komt overeen: {matchedText} van {totalText} {total, plural, one {teken} other {tekens}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "d8845cb"
+    "sourceHash": "222d847"
   },
   "askCmdr.renameReview.coverageThin": "Dat is een klein deel van de tekst die Cmdr hier heeft gelezen. Open het bestand om de naam te controleren.",
   "@askCmdr.renameReview.coverageThin": {
@@ -628,7 +628,7 @@
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "sourceHash": "2fd2e7a"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet controleren of het bestand gewijzigd is.",
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
@@ -664,9 +664,9 @@
   "@askCmdr.context.label": {
     "sourceHash": "8451f61"
   },
-  "askCmdr.context.tooltip": "{usedText} van {budgetText} tokens gebruikt (geschat)",
+  "askCmdr.context.tooltip": "{usedText} van {budgetText} {budget, plural, one {token} other {tokens}} gebruikt (geschat)",
   "@askCmdr.context.tooltip": {
-    "sourceHash": "3b4eef0"
+    "sourceHash": "81cc75a"
   },
   "askCmdr.wake.thinking": "Cmdr kijkt even naar wat er is veranderd. Open de chat.",
   "@askCmdr.wake.thinking": {

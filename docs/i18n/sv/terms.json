@@ -113,6 +113,13 @@
     "confidence": "high",
     "sources": "MS terminology (key → nyckel), hyphenated after the acronym"
   },
+  "app": {
+    "accept": ["appen", "appar", "appstart"],
+    "chosen": "app",
+    "confidence": "high",
+    "forms": "the associated app → tillhörande app; the default app → standardappen",
+    "sources": "macOS AppKit (Appen ”%@” kunde inte öppnas)"
+  },
   "app-bundle": {
     "chosen": "appaket",
     "confidence": "tentative",
@@ -290,6 +297,13 @@
     "forms": "the disabled-menu marker ` (upptagen)` stays uninflected at the end of the item; a volume someone holds open is används, not upptagen",
     "sources": "MS terminology (busy → upptagen)"
   },
+  "button": {
+    "accept": ["knappen", "knappar"],
+    "chosen": "knapp",
+    "confidence": "high",
+    "forms": "the + button → ”+”-knappen; the button below → knappen nedan",
+    "sources": "macOS AppKit (den här knappen, plusknappen (+))"
+  },
   "byte": {
     "chosen": "byte",
     "confidence": "high",
@@ -421,6 +435,13 @@
     },
     "forms": "Rensa sökning; emptying the trash → Töm papperskorgen",
     "sources": "macOS (Rensa, Töm papperskorgen)"
+  },
+  "click": {
+    "accept": ["klickar", "klickade", "klick"],
+    "chosen": "klicka",
+    "confidence": "high",
+    "forms": "click X → klicka på X; pressing a key is tryck på",
+    "sources": "macOS AppKit (Klicka på ”Fortsätt” om du vill …)"
   },
   "clipboard": {
     "chosen": "urklipp",
@@ -2403,6 +2424,13 @@
     "confidence": "high",
     "sources": "macOS Finder (Startskiva)"
   },
+  "status": {
+    "accept": ["statusen"],
+    "chosen": "status",
+    "confidence": "high",
+    "forms": "compounds close up: synkstatus, statussida, statusfält",
+    "sources": "macOS System Settings (Status)"
+  },
   "stop": {
     "accept": ["stannar", "slutar", "sluta", "stanna", "stoppades"],
     "chosen": "stoppa",
@@ -2767,6 +2795,13 @@
     "chosen": "jokertecken",
     "confidence": "high",
     "sources": "standard Swedish IT"
+  },
+  "window": {
+    "accept": ["fönstret", "fönster"],
+    "chosen": "fönster",
+    "confidence": "high",
+    "forms": "the Window menu → Fönster; the About window → Om-fönstret",
+    "sources": "macOS AppKit (Flytta fönstret till skrivbordet)"
   },
   "word-wrap": {
     "accept": ["radbyte", "bryt"],

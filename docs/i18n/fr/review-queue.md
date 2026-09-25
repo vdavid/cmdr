@@ -12,7 +12,7 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **listing → `liste des fichiers` vs plain `liste`**: the well-sourced orthodox term may be too long for a tight label.
   Confirm where plain `liste` reads best.
 - **badge → `pastille`** (`pastille d’état`): no reference-pile hit for an icon-overlay status marker.
-- **host key → `clé d’hôte`** and `la clé de {host}`: no macOS bundle exposes the term; built on the catalog’s `clé`.
+- **host key → `clé d’hôte`** and `la clé du serveur {host}`: no macOS bundle exposes the term; built on the catalog’s `clé`.
 - **start folder → `dossier initial`**: coined; `dossier de départ` is Finder’s home folder and `démarrage` is the app’s
   or the Mac’s launch.
 - **`compromise`** for a revoked SSH key (`servers.refusal.hostKeyRevoked`): catalog-only evidence.

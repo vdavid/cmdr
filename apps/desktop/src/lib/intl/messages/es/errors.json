@@ -495,7 +495,7 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "f9cb7bd"
   },
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` está en un recurso compartido de red, y la cuenta con la que te has conectado no tiene permiso para abrirla. El servidor rechaza la petición antes de que macOS intervenga, así que no es un ajuste de privacidad de tu Mac.",
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` está en un recurso compartido de red, y la cuenta con la que te has conectado no tiene permiso para abrirla. El servidor rechaza la solicitud antes de que macOS intervenga, así que no es un ajuste de privacidad de tu Mac.",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "d8463b0"
   },
@@ -1071,7 +1071,7 @@
   },
   "errors.provider.appBased.serious": "Esta carpeta la gestiona **{name}**. Esto es lo que puedes probar:\n- Sal de {app} y vuelve a abrirlo\n- Cierra sesión y vuelve a iniciarla en {app}\n- Consulta la página de estado de {name} por si hay caídas",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "347589c"
+    "sourceHash": "5a4e14e"
   },
   "errors.write.sourceNotFound.title": "No se ha podido encontrar el archivo",
   "@errors.write.sourceNotFound.title": {

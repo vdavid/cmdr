@@ -221,8 +221,8 @@ backticks. Term rulings live in `terms.json`, open questions in `review-queue.md
 
 ## Rename chaining: the counted "and so did N others" toast (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
-- Gapping `„A“ behält seinen Namen, ebenso 3 weitere Dateien.` (Finder's `ebenso`) avoids verb agreement; `weitere` over
-  `andere` like every counted tail; the `one` branch spells out `eine weitere Datei`.
+- `3 weitere Dateien behalten ihre bisherigen Namen, ebenso „A“: …` (Finder's `ebenso`); `„A“ behält den bisherigen
+  Namen`, never `seinen` (gender bet on the insert).
 
 ## Unconfirmed rename + the catch-all name rejection (`fileExplorer.rename.unconfirmed`/`.unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
 
@@ -417,12 +417,11 @@ Deliberate splits (don't unify):
 
 - Tone: Cmdr did the careful thing; never apologetic, never alarming. `Habe {name} unverändert gelassen` shares its
   voice with `askCmdr.renameUndo.skipReason.*`.
-- `Objekt` even where the rename family says `Datei`: the undo also removes created folders.
+- `Objekt` over the rename family's `Datei` (folders too); shared English: `Objekt` in both.
 - Three verbs stay apart like the English: `entfernt` (removed), `zurückgelegt` (put back), `löschen` (delete, in the
   confirmations).
-- „the N items“ becomes a colon appendix (`1.234 Objekte entfernt: alles, was Cmdr geschrieben hatte.`): an article
-  would give `Das 1 Objekt`.
-- `Gestoppt, nachdem Cmdr … entfernt hat`, verbal over a noun pile.
+- Subjectless English gets Cmdr as subject (`Cmdr hat alle 1.234 Objekte entfernt, die es geschrieben hatte.`,
+  `Gestoppt, nachdem Cmdr … entfernt hat`); a `one` branch drops the count, as `Das 1 Objekt` would read wrong.
 - `am neuen Ort` / `am alten Ort`: `Ort`, because `Platz` is storage space; no possessive, so no gender bet on `{name}`.
 - `seit Cmdr es dort abgelegt hat` (`seit`, like `askCmdr.renameUndo.skipReason.drift.*`).
 - Both `folderNotEmpty` values equal `askCmdr.renameUndo.skipReason.folderNotEmpty.named` / `.counted`: change both or
@@ -430,7 +429,6 @@ Deliberate splits (don't unify):
 - `leftBehind` says `überspringt alles`, the same promise as the confirmation it follows.
 - `rollbackConfirm.body` drops `davon` from its last sentence: right after „ersetzte Dateien kommen nicht zurück“ it
   would promise the opposite.
-- `Cmdr konnte {name} nicht rückgängig machen` gives English's subjectless line a subject.
 
 ### `cancelRollback.stagedLeftover.*` (Cmdrs eigene Reste am Ziel)
 

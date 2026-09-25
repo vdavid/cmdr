@@ -44,9 +44,9 @@
   "@shortcuts.scope.servers": {
     "sourceHash": "68d7beb"
   },
-  "shortcuts.scope.errorScreen": "Hibaképernyő",
+  "shortcuts.scope.errorScreen": "Nem olvasható mappa",
   "@shortcuts.scope.errorScreen": {
-    "sourceHash": "d3da94a"
+    "sourceHash": "79fc383"
   },
   "shortcuts.scope.places": "Helyek",
   "@shortcuts.scope.places": {

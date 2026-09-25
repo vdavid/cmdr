@@ -713,9 +713,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "你已為 {totalText} 張影像建立索引，目前的設定涵蓋 {coveredText} 張。{doomed, plural, other {其餘 {doomedText} 個項目在你刪除之前仍可搜尋}}。",
+  "settings.mediaIndex.reclaim.line": "你已為 {totalText} 張{total, plural, other {影像}}建立索引，目前的設定涵蓋 {coveredText} 張。{doomed, plural, other {多餘的 {doomedText} 個項目在你刪除之前仍然可以搜尋}}。",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, other {刪除多餘的項目並釋出約 {size}}}",
   "@settings.mediaIndex.reclaim.button": {
@@ -1247,7 +1247,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 會開啟 Cmdr 的檔案檢視器，它顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、壓縮檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明 ⇧Space（快速查看）或 Enter（在關聯的 App 中開啟）很可能才是你想要的。開啟這一項（或按一下橫幅中的「不再顯示這個警告」）就能永久關閉這個警告。",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 會開啟 Cmdr 的檔案檢視器，它顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、壓縮檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明 ⇧Space（快速查看）或 Enter（在關聯的 App 中開啟）很可能才是你想要的。開啟這一項（或按一下橫幅中的「不要再顯示這個警告」）就能永久關閉這個警告。",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "a93b4cb"
   },
@@ -1255,7 +1255,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切換檔案選取，用 ⇧Space 觸發快速查看（Finder 用單獨的 Space 觸發快速查看）。每次你在檔案列表中按 Space，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或按一下提示中的「不再顯示」）就能永久關閉這個提醒。",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切換檔案選取，用 ⇧Space 觸發快速查看（Finder 用單獨的 Space 觸發快速查看）。每次你在檔案列表中按 Space，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或按一下提示中的「不要再顯示」）就能永久關閉這個提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "10357b4"
   },
@@ -1619,7 +1619,7 @@
   "@settings.section.archives": {
     "sourceHash": "e404aa8"
   },
-  "settings.behavior.doubleClickPaneNavigatesToParent.label": "點兩下窗格背景前往上層資料夾",
+  "settings.behavior.doubleClickPaneNavigatesToParent.label": "按兩下窗格背景前往上層資料夾",
   "@settings.behavior.doubleClickPaneNavigatesToParent.label": {
     "sourceHash": "57563c9"
   },
@@ -1627,11 +1627,11 @@
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "sourceHash": "cae047d"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "已顯示點兩下前往上層資料夾的提示",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.label": "已顯示按兩下前往上層資料夾的提示",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
     "sourceHash": "e830535"
   },
-  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "是否已顯示過一次性的點兩下前往上層資料夾提示。",
+  "settings.behavior.doubleClickOnPaneNotificationSeen.description": "是否已顯示過一次性的按兩下前往上層資料夾提示。",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.description": {
     "sourceHash": "56238d4"
   },
@@ -1969,7 +1969,7 @@
   "@settings.summary.listing": {
     "sourceHash": "7756e95"
   },
-  "settings.summary.navigationAndFileOps": "點兩下前往上層資料夾，以及重新命名檔案時的行為。",
+  "settings.summary.navigationAndFileOps": "按兩下前往上層資料夾，以及重新命名檔案時的行為。",
   "@settings.summary.navigationAndFileOps": {
     "sourceHash": "68e38d0"
   },

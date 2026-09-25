@@ -13,8 +13,9 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   "resume the operations".
 - **`dọn dẹp`** for "clears away" a leftover partial file (`main.quit.*`): chosen over `xóa` so a quit-dialog
   reassurance doesn't read as deleting the user's file; confirm the register.
-- **`… cũng vậy`** (`fileExplorer.rename.chainKeptOriginalNameAndOthers`): the sentence-final "likewise" keeps English's
-  two-clause scoping. Fallback if it reads thin: `và {othersText} tệp khác cũng giữ nguyên tên`.
+- **`… cũng vậy`** (`fileExplorer.rename.chainKeptOriginalNameAndOthers`): `“{name}” cũng vậy: {reason}` keeps
+  English's two-clause scoping with the reason bound to the one file; confirm the "likewise" before a colon reads
+  natural.
 - **`và nó sẽ được thêm vào chính báo cáo mà nhóm đã có`** (`errorReporter.amend.*`): `chính … mà` stresses "the same
   report, not a second one"; no pile sentence to lean on.
 - **`có gì đó đang nằm giữa bạn và máy chủ`** (`servers.hostKey.changedBody`, `servers.paneState.hostKeyChangedHint`):

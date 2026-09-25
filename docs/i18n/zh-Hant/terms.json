@@ -371,6 +371,12 @@
     "forms": "fix bugs → 修正問題",
     "sources": "catalog onboarding.stepBeta.openBeta"
   },
+  "button": {
+    "chosen": "按鈕",
+    "confidence": "high",
+    "forms": "the button below → 下方的按鈕; the + button → 「+」按鈕",
+    "sources": "MS (button → 按鈕, the on-screen sense); catalog (8 values)"
+  },
   "button-bar": {
     "chosen": "按鈕列",
     "confidence": "high",
@@ -479,6 +485,19 @@
     "confidence": "high",
     "forms": "choose one thing → 選擇 (選擇 App⋯, 選擇 adb 指令); casual pick → 選一個 / 挑一個; pick a different X → 換一個 X / 換個 X; picking items out of a list is select → 選取",
     "sources": "AP-TW (選擇啟動磁碟; Choose Application… → 選擇應用程式⋯)"
+  },
+  "click": {
+    "accept": ["按", "點擊"],
+    "avoid": [
+      {
+        "form": "點按",
+        "why": "macOS zh-CN's form; AP-TW has 0 (see style.md § Notes and decisions)"
+      }
+    ],
+    "chosen": "按一下",
+    "confidence": "high",
+    "forms": "Click to … → 按一下就能…; a bare press in prose (請按「允許」, 按這裡) → 按; clicks as a noun → 點擊",
+    "sources": "MS (click → 按一下); AP-TW 按一下 50 vs 點一下 4; catalog (21 values)"
   },
   "client": {
     "chosen": "用戶端",
@@ -918,6 +937,21 @@
     "confidence": "confirmed",
     "sources": "AP-TW = AP-HK = AP-CN, MS"
   },
+  "double-click": {
+    "avoid": [
+      {
+        "form": "連按兩下",
+        "why": "the lone viewer.binaryWarning.body value; realigned to the catalog form"
+      },
+      {
+        "form": "點兩下",
+        "why": "had drifted into four settings.behavior.doubleClick* / settings.summary values; 按兩下 pairs with the 按一下 click ruling"
+      }
+    ],
+    "chosen": "按兩下",
+    "confidence": "high",
+    "sources": "MS (double-click → 按兩下); catalog fileExplorer.doubleClickHint.body, fileExplorer.network.browser.tooltip.* (5 values); AP pile silent"
+  },
   "download": {
     "chosen": "下載",
     "confidence": "high",
@@ -1005,6 +1039,13 @@
     "forms": "in prose → 按 Enter 鍵",
     "sources": "catalog (search.runHint, queryUi.bar.runHint, five settings.*)"
   },
+  "entry": {
+    "accept": ["項"],
+    "chosen": "項目",
+    "confidence": "high",
+    "forms": "an index or scan entry → {n} 個項目 (same word as item); a stash entry → 項 (項貯藏)",
+    "sources": "MS (entry → 項目, the inputting sense aside); catalog queryUi.empty.indexReady, settings.mediaIndex.reclaim.*"
+  },
   "error-report": {
     "avoid": [
       {
@@ -1021,6 +1062,19 @@
     "confidence": "high",
     "forms": "in prose → 按 Esc 鍵…",
     "sources": "AP keyboard names Escape → Esc; catalog shortcuts.section.pressEscToClear"
+  },
+  "estimate": {
+    "accept": ["預估"],
+    "avoid": [
+      {
+        "form": "報價",
+        "why": "MS's business-quote sense"
+      }
+    ],
+    "chosen": "估算",
+    "confidence": "high",
+    "forms": "a note after a number → （估算）; an estimated cost or size → 預估費用 / 預估大小",
+    "sources": "AP-TW = AP-HK (Estimating time remaining… → 正在估計剩餘時間⋯); catalog askCmdr.context.tooltip, viewer.statusBar.badge.*"
   },
   "exposure": {
     "accept": ["ISO 感光度", "光圈值"],
@@ -1142,6 +1196,11 @@
     "chosen": "檔案列表",
     "confidence": "high",
     "sources": "follows the list ruling (AP 列表)"
+  },
+  "file-operations": {
+    "chosen": "檔案操作",
+    "confidence": "high",
+    "sources": "TC menu root (檔案操作); catalog settings.*.card.fileOperations and 10 values"
   },
   "file-system": {
     "chosen": "檔案系統",
@@ -1348,12 +1407,12 @@
   "hide": {
     "chosen": "隱藏",
     "confidence": "high",
-    "forms": "Hide others → 隱藏其他; Hide Cmdr → 隱藏 Cmdr",
-    "sources": "AP Finder MenuBar 300729.title, TextEdit, Preview",
     "exceptions": {
       "settings.indexing.masterOffNote": "sizes that stay hidden read as not shown (不顯示)",
       "settings.ai.tooltipOff": "features that are simply hidden read as not shown (不顯示)"
-    }
+    },
+    "forms": "Hide others → 隱藏其他; Hide Cmdr → 隱藏 Cmdr",
+    "sources": "AP Finder MenuBar 300729.title, TextEdit, Preview"
   },
   "history": {
     "accept": ["記錄", "歷史"],
@@ -1369,11 +1428,11 @@
     "sources": "TC (歷史記錄, 資料夾歷史記錄)"
   },
   "home-folder": {
+    "accept": ["個人專屬"],
     "chosen": "個人專屬資料夾",
     "confidence": "high",
     "forms": "Home alone → 個人專屬",
-    "sources": "AP-HK (AP-TW 個人專屬 for Home)",
-    "accept": ["個人專屬"]
+    "sources": "AP-HK (AP-TW 個人專屬 for Home)"
   },
   "host": {
     "chosen": "主機",
@@ -1397,6 +1456,13 @@
     "chosen": "主機名稱",
     "confidence": "confirmed",
     "sources": "AP-TW = AP-HK (AirPortSettings wbHN, Host Name: → 主機名稱：)"
+  },
+  "hour": {
+    "accept": ["分", "秒"],
+    "chosen": "小時",
+    "confidence": "high",
+    "forms": "a count → 24 小時 (spaced against the numeral); minutes → 分鐘; seconds → 秒 (幾秒鐘 for a few seconds)",
+    "sources": "AP-TW = AP-HK (About ^0 hours → 大約^0小時)"
   },
   "icloud-drive": {
     "avoid": [
@@ -1502,6 +1568,12 @@
     },
     "forms": "an index entry is also 項目",
     "sources": "AP-TW/HK (Items), MS"
+  },
+  "keep": {
+    "chosen": "保留",
+    "confidence": "high",
+    "forms": "kept its name → 保留了原本的名稱",
+    "sources": "AP-TW = AP-HK (Would you like to keep it? → 你要保留它嗎？); catalog fileExplorer.rename.keptOriginalName"
   },
   "key-file": {
     "accept": ["密語"],
@@ -1794,6 +1866,11 @@
     "forms": "menu names in prose take corner brackets: 「說明」選單",
     "sources": "AP-HK, TC, DOL"
   },
+  "merge": {
+    "chosen": "合併",
+    "confidence": "high",
+    "sources": "AP-TW = AP-HK (Finder PE106 進行合併…; Merge All Windows → 合併所有視窗); MS"
+  },
   "message": {
     "accept": ["信"],
     "chosen": "訊息",
@@ -1912,17 +1989,47 @@
     "forms": "mounted share → 已裝載的共享資料夾; a share named X → 名為「X」的共享資料夾",
     "sources": "derived from Apple Shared → 已共享 + folder; NetAuthAgent EINFO_NO_SHARE says bare 共享"
   },
+  "new-file": {
+    "accept": ["新檔案"],
+    "chosen": "新增檔案",
+    "confidence": "high",
+    "exceptions": {
+      "fileOperations.transferProgress.newFileLabel": "The incoming file in the conflict comparison, not the command: 新的檔案, paired with existingFileLabel 現有的檔案.",
+      "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Create file is a paste option (make a file from the clipboard), not the New file command: 建立檔案."
+    },
+    "sources": "mirrors new-folder 新增資料夾 (AP-HK, TC); catalog menu.file.newFile, fileOperations.mkfile.title"
+  },
   "new-folder": {
     "accept": ["新資料夾", "新增一個資料夾"],
     "chosen": "新增資料夾",
     "confidence": "high",
+    "exceptions": {
+      "fileOperations.transferProgress.newFolderLabel": "The incoming folder in the conflict comparison, not the command: 新的資料夾, paired with existingFolderLabel 現有的資料夾."
+    },
     "sources": "AP-HK, TC"
+  },
+  "not-finished": {
+    "accept": ["沒有完成", "沒能", "沒有找完", "沒有跑完", "沒有寫完", "未完成"],
+    "chosen": "無法完成",
+    "confidence": "high",
+    "forms": "a status or failure toast → 無法完成; Cmdr didn’t finish looking → 沒有找完; the log status → 未完成",
+    "sources": "catalog queue.row.status, queue.failureToast.*; style.md 無法 + verb"
   },
   "not-found": {
     "accept": ["沒能找到"],
     "chosen": "找不到",
     "confidence": "confirmed",
     "sources": "AP-TW = AP-HK (AirPortSettings placeholder.notfound, MainMenu 100386.title)"
+  },
+  "note": {
+    "accept": ["筆記", "留言", "記下"],
+    "chosen": "備註",
+    "confidence": "high",
+    "exceptions": {
+      "feedback.sentToast": "We read every note → 我們每一則都會讀: the classifier 則 carries the note, and 留言 is named in feedback.dialog.description."
+    },
+    "forms": "a note on an error report → 備註; Ask Cmdr’s saved notes → 筆記; the feedback message → 留言",
+    "sources": "MS (note → 備註, user-entered text); catalog errorReporter.dialog.noteLabel"
   },
   "notification": {
     "accept": ["提示"],
@@ -2387,6 +2494,13 @@
     "decision": "Repository",
     "sources": "MS repository / repo → 存放庫 (source-control definition)"
   },
+  "request": {
+    "accept": ["要求"],
+    "chosen": "請求",
+    "confidence": "high",
+    "forms": "a network or API request → 請求; what the user asked for (as you requested, a refused tool request) → 要求",
+    "sources": "catalog (請求 in 9 values); MS (request → 要求)"
+  },
   "reset": {
     "avoid": [
       {
@@ -2805,6 +2919,12 @@
     "confidence": "confirmed",
     "sources": "AP-TW (選擇啟動磁碟)"
   },
+  "status": {
+    "chosen": "狀態",
+    "confidence": "high",
+    "forms": "a status page → 狀態頁面",
+    "sources": "AP-TW = AP-HK (iCloud Status → iCloud狀態); MS"
+  },
   "status-bar": {
     "chosen": "狀態列",
     "confidence": "confirmed",
@@ -2990,6 +3110,13 @@
     "confidence": "tentative",
     "forms": "always spaced: 1,234 個 token",
     "sources": "unattested in every Traditional source; catalog askCmdr.error.localWindowTooSmall"
+  },
+  "too-large": {
+    "accept": ["太長", "過長", "放不下", "大於", "超過"],
+    "chosen": "太大",
+    "confidence": "high",
+    "forms": "a file → 太大; a name or typed text → 太長",
+    "sources": "AP-TW = AP-HK (名稱太長 / 過長); catalog errors.write.filesTooLargeForFilesystem.*"
   },
   "toolbar": {
     "chosen": "工具列",
@@ -3253,11 +3380,11 @@
     "sources": "Google zh-TW docs (developer.android.com/studio/intro/update?hl=zh-tw)"
   },
   "search-walk": {
-    "chosen": "掃描",
     "accept": ["掃"],
+    "chosen": "掃描",
     "confidence": "high",
-    "sources": "AP-TW = AP-HK (Preview Scan; 161/160 live), MS",
-    "note": "Carried over from scan when search-walk split off: this locale names both with one word."
+    "note": "Carried over from scan when search-walk split off: this locale names both with one word.",
+    "sources": "AP-TW = AP-HK (Preview Scan; 161/160 live), MS"
   },
   "disk-utility": {
     "chosen": "磁碟工具程式",
@@ -3290,7 +3417,6 @@
     "sources": "AP-TW = AP-HK (NSTouchBarControlStripSpotlightTemplate = Spotlight); catalog"
   },
   "source-available": {
-    "chosen": "原始碼是公開的",
     "accept": ["公開"],
     "avoid": [
       {
@@ -3302,6 +3428,7 @@
         "why": "same"
       }
     ],
+    "chosen": "原始碼是公開的",
     "confidence": "tentative",
     "sources": "Cmdr's license is the BSL (docs/business/README.md); catalog (onboarding.stepFda.con.body)"
   }

@@ -316,9 +316,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} thư mục sẽ hòa trộn với các thư mục hiện có",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, other {thư mục}} sẽ hòa trộn với các thư mục hiện có",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, other {tệp đã tồn tại. Bạn muốn làm gì với chúng?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -512,25 +512,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Hiện có (thư mục):",
+  "fileOperations.transferProgress.existingFolderLabel": "Thư mục hiện có:",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Hiện có (tệp):",
+  "fileOperations.transferProgress.existingFileLabel": "Tệp hiện có:",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "Hiện có:",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Mới (thư mục):",
+  "fileOperations.transferProgress.newFolderLabel": "Thư mục mới:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "Mới (tệp):",
+  "fileOperations.transferProgress.newFileLabel": "Tệp mới:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "Mới:",
   "@fileOperations.transferProgress.newLabel": {
@@ -752,13 +752,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "Đã xóa cả {countText} {count, plural, other {mục}} mà Cmdr đã ghi.",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, =1 {Đã xóa mục mà Cmdr đã ghi.} other {Đã xóa cả {countText} mục mà Cmdr đã ghi.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "Đã đưa trở lại cả {countText} {count, plural, other {mục}}.",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, =1 {Đã đưa trở lại mục đó.} other {Đã đưa trở lại cả {countText} mục.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "Đã xóa {countText} {count, plural, other {mục}}.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -768,9 +768,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "Đã dừng sau khi xóa {countText} {count, plural, other {mục}}. Các mục còn lại vẫn nằm ở đó.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Đã dừng sau khi xóa {countText} {count, plural, other {mục}}. Các mục còn lại vẫn ở nơi thao tác sao chép đã đưa chúng tới.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "Đã dừng sau khi đưa trở lại {countText} {count, plural, other {mục}}. Các mục còn lại vẫn ở nơi thao tác di chuyển đã đưa chúng tới.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {
@@ -792,7 +792,7 @@
   "@fileOperations.cancelRollback.reason.drift.counted": {
     "sourceHash": "233b2f5"
   },
-  "fileOperations.cancelRollback.reason.unverifiable.named": "Giữ nguyên {name}: Cmdr không kiểm tra được mục này có thay đổi hay không.",
+  "fileOperations.cancelRollback.reason.unverifiable.named": "Giữ nguyên {name}: Cmdr không kiểm tra được liệu có gì thay đổi hay không.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },

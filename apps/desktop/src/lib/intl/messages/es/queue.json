@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "Las copias, los movimientos y las eliminaciones aparecen aquí mientras se ejecutan, así puedes pausarlos, reanudarlos o cancelarlos.",
+  "queue.empty.body": "Las copias, los movimientos, las eliminaciones y otras operaciones de archivos aparecen aquí mientras se ejecutan, así puedes pausarlos, reanudarlos o cancelarlos.",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {Copiando} move {Moviendo} delete {Eliminando} trash {Moviendo a la papelera} rename {Renombrando} create_folder {Creando carpeta} create_file {Creando archivo} archive_edit {Editando archivo comprimido} other {Trabajando}}",
   "@queue.row.label": {

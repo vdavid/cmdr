@@ -317,6 +317,12 @@
     "note": "Ellipsis is the single U+2026 character.",
     "sources": "AppleAccountUI PROFILE_BROWSE_PHOTO"
   },
+  "button": {
+    "chosen": "按钮",
+    "confidence": "high",
+    "forms": "a quoted button in prose: 点按“+”按钮 / 点按下面的按钮",
+    "sources": "macOS Finder + AppKit; MS TBX; Nautilus, Thunar, Dolphin, Total/Double Commander; 8 catalog keys"
+  },
   "cache": {
     "chosen": "缓存",
     "confidence": "confirmed",
@@ -888,6 +894,18 @@
     "confidence": "confirmed",
     "forms": "按 Enter 键 + verb (按 Enter 键搜索, 按 Enter 键筛选, 按 Enter 键时的行为)",
     "sources": "AppKit FunctionKeyNames.json keeps key names Latin (macOS 26.6.2, 2026-08-30); catalog usage"
+  },
+  "entry": {
+    "accept": ["这一项"],
+    "chosen": "条目",
+    "confidence": "high",
+    "exceptions": {
+      "commands.selectionSelectSameKind.description": "The entry under the cursor is a file or folder, so it's the item word 项目.",
+      "fileExplorer.git.size.stashEntries": "A git stash entry is counted with 项 on Git's own noun: 项贮藏."
+    },
+    "forms": "counted {countText} 个条目; extra indexed entries 多余的条目; a Keychain entry named in prose “Cmdr”这一项",
+    "note": "macOS zh-CN has no hit; 条目 is the consensus of MS TBX, Nautilus, Thunar, Dolphin, and Double Commander, and the catalog's 14 keys.",
+    "sources": "MS TBX; Nautilus, Thunar, Dolphin, Double Commander; catalog"
   },
   "error-report": {
     "chosen": "错误报告",
@@ -1630,6 +1648,12 @@
     "forms": "go to a place → 前往 (with an object); a breadcrumb tooltip 点按前往 {path}; the settings section 导航; jump to 跳转到 / 跳到; error suggestions \"navigate here again\" → 再次进入这里",
     "sources": "macOS Finder"
   },
+  "network": {
+    "chosen": "网络",
+    "confidence": "high",
+    "forms": "the volume-switcher group 网络 (its server row is 服务器); network request 网络请求",
+    "sources": "macOS Finder + AppKit + SystemSettings; MS TBX; Nautilus, Thunar, Dolphin, Total/Double Commander; 80 catalog keys"
+  },
   "network-drive": {
     "chosen": "网络驱动器",
     "confidence": "confirmed",
@@ -1646,6 +1670,9 @@
     "accept": ["创建文件"],
     "chosen": "新建文件",
     "confidence": "high",
+    "exceptions": {
+      "fileOperations.transferProgress.newFileLabel": "The conflict row names the INCOMING file, not the create command, so it's 新文件：, paired with 现有文件：."
+    },
     "sources": "catalog"
   },
   "new-folder": {
@@ -1653,7 +1680,8 @@
     "chosen": "新建文件夹",
     "confidence": "high",
     "exceptions": {
-      "ai.toast.readyDescription": "\"Try creating a new folder\" reads naturally as 新建一个文件夹, with the measure word splitting the command name."
+      "ai.toast.readyDescription": "\"Try creating a new folder\" reads naturally as 新建一个文件夹, with the measure word splitting the command name.",
+      "fileOperations.transferProgress.newFolderLabel": "The conflict row names the INCOMING folder, not the create command, so it's 新文件夹：, paired with 现有文件夹：."
     },
     "note": "The menu label is 新建文件夹; the act of making one is 创建文件夹 (正在创建文件夹).",
     "sources": "macOS"
@@ -2185,6 +2213,15 @@
     "confidence": "high",
     "sources": "GitHub zh docs"
   },
+  "request": {
+    "chosen": "请求",
+    "confidence": "high",
+    "exceptions": {
+      "errors.volume.cancelled": "\"as you requested\" is the user asking, not an API call: 按你的要求."
+    },
+    "forms": "a network request 网络请求, made with 发起 (发起一个很小的网络请求)",
+    "sources": "macOS AppKit + Finder; MS TBX; Nautilus, Dolphin; 14 catalog keys"
+  },
   "reserved": {
     "chosen": "保留",
     "confidence": "high",
@@ -2647,6 +2684,14 @@
     "confidence": "high",
     "sources": "standard"
   },
+  "this-mac": {
+    "accept": ["此 Mac", "你的 Mac", "你 Mac"],
+    "chosen": "这台 Mac",
+    "confidence": "high",
+    "forms": "\"this Mac\" in prose 这台 Mac (在这台 Mac 的 SSH 设置里); \"your Mac\" 你的 Mac (你 Mac 上的… when a possessive follows); the terse progress label 此 Mac",
+    "note": "Apple writes 这台Mac unspaced; Cmdr's mechanics add the space before the Latin word.",
+    "sources": "macOS Finder (10) + AppKit (3) 这台Mac; 11 catalog keys"
+  },
   "threshold": {
     "chosen": "阈值",
     "confidence": "confirmed",
@@ -2882,6 +2927,17 @@
     "chosen": "通配符",
     "confidence": "confirmed",
     "sources": "macOS/MS"
+  },
+  "window": {
+    "avoid": [
+      {
+        "form": "视窗",
+        "why": "only two MS TBX hits; macOS and every file manager say 窗口"
+      }
+    ],
+    "chosen": "窗口",
+    "confidence": "high",
+    "sources": "macOS Finder (48) + AppKit (27); MS TBX; Nautilus, Thunar, Dolphin, Total/Double Commander; 20 catalog keys"
   },
   "word-wrap": {
     "chosen": "换行",

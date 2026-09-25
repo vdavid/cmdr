@@ -317,9 +317,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} pastas serão mescladas com pastas existentes",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {pasta será mesclada} many {pastas serão mescladas} other {pastas serão mescladas}} com pastas existentes",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {arquivo já existe. O que você quer fazer com ele?} many {arquivos já existem. O que você quer fazer com eles?} other {arquivos já existem. O que você quer fazer com eles?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -513,25 +513,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Existente (pasta):",
+  "fileOperations.transferProgress.existingFolderLabel": "Pasta existente:",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Existente (arquivo):",
+  "fileOperations.transferProgress.existingFileLabel": "Arquivo existente:",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "Existente:",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Nova (pasta):",
+  "fileOperations.transferProgress.newFolderLabel": "Nova pasta:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "Novo (arquivo):",
+  "fileOperations.transferProgress.newFileLabel": "Novo arquivo:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "Novo:",
   "@fileOperations.transferProgress.newLabel": {
@@ -754,13 +754,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {O Cmdr apagou o item que tinha gravado} many {O Cmdr apagou os {countText} itens que tinha gravado} other {O Cmdr apagou os {countText} itens que tinha gravado}}.",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {O Cmdr apagou o item que tinha gravado} many {O Cmdr apagou todos os {countText} itens que tinha gravado} other {O Cmdr apagou todos os {countText} itens que tinha gravado}}.",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {O Cmdr levou o item de volta} many {O Cmdr levou os {countText} itens de volta} other {O Cmdr levou os {countText} itens de volta}}.",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {O Cmdr levou o item de volta} many {O Cmdr levou todos os {countText} itens de volta} other {O Cmdr levou todos os {countText} itens de volta}}.",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "O Cmdr apagou {countText} {count, plural, one {item} many {itens} other {itens}}.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -770,9 +770,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "A reversão parou depois de apagar {countText} {count, plural, one {item} many {itens} other {itens}}. O resto continua no destino.",
+  "fileOperations.cancelRollback.stoppedDeleting": "A reversão parou depois de apagar {countText} {count, plural, one {item} many {itens} other {itens}}. O resto ficou onde a cópia deixou.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "A reversão parou depois de levar {countText} {count, plural, one {item} many {itens} other {itens}} de volta. O resto ficou onde a movimentação deixou.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

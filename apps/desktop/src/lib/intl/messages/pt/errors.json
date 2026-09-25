@@ -1069,9 +1069,9 @@
   "@errors.provider.appBased.needsAction": {
     "sourceHash": "f69fe61"
   },
-  "errors.provider.appBased.serious": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Encerre e reabra o {app}\n- Saia e entre de novo no {app}\n- Veja a página de status do {name} para conferir interrupções",
+  "errors.provider.appBased.serious": "Esta pasta é gerenciada pelo **{name}**. Veja o que tentar:\n- Encerre e reabra o {app}\n- Saia e entre de novo no {app}\n- Veja a página de status de {name} para conferir interrupções",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "347589c"
+    "sourceHash": "5a4e14e"
   },
   "errors.write.sourceNotFound.title": "Não foi possível encontrar o arquivo",
   "@errors.write.sourceNotFound.title": {

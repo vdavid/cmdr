@@ -769,13 +769,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. ”{name}” behåller sitt namn.",
+  "fileExplorer.rename.chainKeptOriginalName": "”{name}” behåller sitt namn: {reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "638394d"
+    "sourceHash": "174ff14"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. ”{name}” behåller sitt namn, liksom {others, plural, one {en annan fil} other {{othersText} andra filer}}.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, one {En annan fil behåller sitt namn} other {{othersText} andra filer behåller sina namn}}, liksom ”{name}”: {reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "be35bc8"
+    "sourceHash": "016797b"
   },
   "fileExplorer.rename.unconfirmed": "Det gick inte att bekräfta namnbytet av ”{name}”. Volymen kan vara långsam, så filen kan ändå ha bytt namn.",
   "@fileExplorer.rename.unconfirmed": {
@@ -1207,7 +1207,7 @@
   "@fileExplorer.quickLookHint.finderComparison": {
     "sourceHash": "56d3119"
   },
-  "fileExplorer.quickLookHint.quickView": "I Cmdr kan du utlösa snabbtitt med <key></key>. (<key></key> funkar förresten i Finder också!)",
+  "fileExplorer.quickLookHint.quickView": "I Cmdr kan du öppna Överblick med <key></key>. (<key></key> funkar förresten i Finder också!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "7e4cf33"
   },
@@ -1622,11 +1622,11 @@
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   },
-  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Det gick inte att kopiera ”{name}”.} one {Det gick inte att kopiera {countText} objekt.} other {Det gick inte att kopiera {countText} objekt.}}",
   "@fileExplorer.dragOut.failed": {
     "sourceHash": "73468bd"
   },
-  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Det gick inte att kopiera ”{name}”.} one {Det gick inte att kopiera {countText} objekt.} other {Det gick inte att kopiera {countText} objekt.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   }

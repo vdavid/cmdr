@@ -11,9 +11,9 @@
   "@queue.empty.title": {
     "sourceHash": "ef2b1ef"
   },
-  "queue.empty.body": "As cópias, movimentações e apagamentos aparecem aqui enquanto rodam, para você pausar, retomar ou cancelar.",
+  "queue.empty.body": "As cópias, movimentações, apagamentos e outras operações de arquivo aparecem aqui enquanto rodam, para você pausar, retomar ou cancelar.",
   "@queue.empty.body": {
-    "sourceHash": "c24a288"
+    "sourceHash": "89e6045"
   },
   "queue.row.label": "{type, select, copy {Copiando} move {Movendo} delete {Apagando} trash {Movendo para o Lixo} rename {Renomeando} create_folder {Criando pasta} create_file {Criando arquivo} archive_edit {Editando arquivo compactado} other {Em andamento}}",
   "@queue.row.label": {

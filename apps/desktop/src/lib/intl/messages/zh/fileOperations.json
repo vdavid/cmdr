@@ -315,9 +315,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} 个文件夹将与现有文件夹合并",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, other {个文件夹}}将与现有文件夹合并",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} 个{count, plural, other {文件已存在。你想怎么处理？}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -511,25 +511,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "现有（文件夹）：",
+  "fileOperations.transferProgress.existingFolderLabel": "现有文件夹：",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "现有（文件）：",
+  "fileOperations.transferProgress.existingFileLabel": "现有文件：",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "现有：",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "新（文件夹）：",
+  "fileOperations.transferProgress.newFolderLabel": "新文件夹：",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "新（文件）：",
+  "fileOperations.transferProgress.newFileLabel": "新文件：",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "新：",
   "@fileOperations.transferProgress.newLabel": {
@@ -751,13 +751,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "已删除 Cmdr 写入的全部 {countText} {count, plural, other {个项目}}。",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, =1 {已删除 Cmdr 写入的这一项。} other {已删除 Cmdr 写入的全部 {countText} 个项目。}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "已将全部 {countText} {count, plural, other {个项目}}放回原处。",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, =1 {已将这一项放回原处。} other {已将全部 {countText} 个项目放回原处。}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "已删除 {countText} {count, plural, other {个项目}}。",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -767,9 +767,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "删除 {countText} {count, plural, other {个项目}}后停止了。其余的都还在。",
+  "fileOperations.cancelRollback.stoppedDeleting": "删除 {countText} {count, plural, other {个项目}}后停止了。其余的还留在这次拷贝把它们放到的地方。",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "把 {countText} {count, plural, other {个项目}}放回原处后停止了。其余的还留在这次移动把它们放到的地方。",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

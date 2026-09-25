@@ -87,9 +87,9 @@
   "@settings.mediaIndex.importanceThreshold.deltaAdd": {
     "sourceHash": "7c4b83c"
   },
-  "settings.mediaIndex.reclaim.line": "Tienes {totalText} imágenes indexadas; tu configuración cubre {coveredText}. {doomed, plural, one {La entrada adicional sigue disponible para búsquedas hasta que la elimines} other {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines} many {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines}}.",
+  "settings.mediaIndex.reclaim.line": "Tienes {totalText} {total, plural, one {imagen indexada} many {imágenes indexadas} other {imágenes indexadas}}; tu configuración cubre {coveredText}. {doomed, plural, one {La entrada adicional sigue disponible para búsquedas hasta que la elimines} many {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines} other {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines}}.",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "f5e38ab"
+    "sourceHash": "9e51a0f"
   },
   "settings.mediaIndex.reclaim.freed": "Se liberaron unos {size}",
   "@settings.mediaIndex.reclaim.freed": {

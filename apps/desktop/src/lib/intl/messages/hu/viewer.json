@@ -71,9 +71,9 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{kind}</kindName> nézetét szeretnéd. Ehhez zárd be ezt az ablakot, és nyomd meg a <quickLookKey></quickLookKey> gombot a gyors nézethez, vagy az <openKey></openKey> gombot (vagy kattints duplán a fájlra), hogy a társított alkalmazásban nyisd meg.",
+  "viewer.binaryWarning.body": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{category, select, image {képet} document {dokumentumot} other {{ext} formátumú fájlt}}</kindName> szeretnéd megnézni. Ehhez zárd be ezt az ablakot, és nyisd meg a Gyorsnézetet (<quickLookKey></quickLookKey>), vagy nyisd meg a fájlt a társított appban (<openKey></openKey>, vagy kattints duplán a fájlra).",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "8c6fcd6"
+    "sourceHash": "da099be"
   },
   "viewer.binaryWarning.dismiss": "Bezárás",
   "@viewer.binaryWarning.dismiss": {

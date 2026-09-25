@@ -141,11 +141,11 @@
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr 還沒有信任 {host} 的主機金鑰。",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "343f48b"
+    "sourceHash": "83dc719"
   },
-  "servers.refusal.hostKeyRevoked": "在這部 Mac 的 SSH 設定裡，{host} 的主機金鑰被標記為已遭洩漏。Cmdr 不會連線到它。",
+  "servers.refusal.hostKeyRevoked": "在這部 Mac 的 SSH 設定裡，{host} 的主機金鑰被標記為已遭洩漏。Cmdr 不會連線到 {host}。",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "e23d585"
+    "sourceHash": "7a25d93"
   },
   "servers.refusal.startFolderOutsideRoot": "起始資料夾只能是根資料夾，或是它裡面的資料夾。",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -337,7 +337,7 @@
   },
   "servers.hostKey.changedTitle": "{host} 的主機金鑰變了",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "a63a050"
+    "sourceHash": "2613248"
   },
   "servers.hostKey.changedBody": "這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。信任之前，請先和伺服器擁有者核對指紋。",
   "@servers.hostKey.changedBody": {

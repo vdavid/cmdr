@@ -481,9 +481,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "Matchar {matchedText} av {totalText} tecken",
+  "askCmdr.renameReview.coverage": "Matchar {matchedText} av {totalText} {total, plural, one {tecken} other {tecken}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "d8845cb"
+    "sourceHash": "222d847"
   },
   "askCmdr.renameReview.coverageThin": "Det är en liten del av texten som Cmdr läste här. Öppna filen för att kontrollera namnet.",
   "@askCmdr.renameReview.coverageThin": {
@@ -661,9 +661,9 @@
   "@askCmdr.context.label": {
     "sourceHash": "8451f61"
   },
-  "askCmdr.context.tooltip": "{usedText} av {budgetText} tokens använda (uppskattat)",
+  "askCmdr.context.tooltip": "{usedText} av {budgetText} {budget, plural, one {token} other {tokens}} använda (uppskattat)",
   "@askCmdr.context.tooltip": {
-    "sourceHash": "3b4eef0"
+    "sourceHash": "81cc75a"
   },
   "askCmdr.wake.thinking": "Cmdr tar en titt på vad som har ändrats. Öppna chatten.",
   "@askCmdr.wake.thinking": {

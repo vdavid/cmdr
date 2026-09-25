@@ -683,7 +683,7 @@
   "@fileExplorer.clipboard.empty": {
     "sourceHash": "0cbe304"
   },
-  "fileExplorer.clipboard.pastedAsFile": "已将剪贴板{kind, select, image {图像} pdf {PDF} other {文本}}粘贴为 {filename}",
+  "fileExplorer.clipboard.pastedAsFile": "已将剪贴板{kind, select, image {图像} pdf { PDF } other {文本}}粘贴为 {filename}",
   "@fileExplorer.clipboard.pastedAsFile": {
     "sourceHash": "d61d4b5"
   },
@@ -767,13 +767,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}。“{name}”保留了原来的名称。",
+  "fileExplorer.rename.chainKeptOriginalName": "“{name}”保留了原来的名称：{reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "638394d"
+    "sourceHash": "174ff14"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}。“{name}”保留了原来的名称，{others, plural, other {其他 {othersText} 个文件也是如此}}。",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, other {其他 {othersText} 个文件保留了原来的名称}}，“{name}”也一样：{reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "be35bc8"
+    "sourceHash": "016797b"
   },
   "fileExplorer.rename.unconfirmed": "无法确认“{name}”是否已重命名。这个宗卷可能比较慢，所以名称也许已经改好了。",
   "@fileExplorer.rename.unconfirmed": {
@@ -1617,11 +1617,11 @@
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   },
-  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {无法拷贝“{name}”。} other {无法拷贝 {countText} 个项目。}}",
   "@fileExplorer.dragOut.failed": {
     "sourceHash": "73468bd"
   },
-  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.partial": "{summary}{count, plural, =1 {无法拷贝“{name}”。} other {无法拷贝 {countText} 个项目。}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   }

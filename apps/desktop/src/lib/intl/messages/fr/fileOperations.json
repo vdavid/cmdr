@@ -318,9 +318,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} dossiers seront fusionnés avec des dossiers existants",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {dossier sera fusionné avec un dossier existant} many {dossiers seront fusionnés avec des dossiers existants} other {dossiers seront fusionnés avec des dossiers existants}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fichier existe déjà. Que voulez-vous en faire ?} many {fichiers existent déjà. Que voulez-vous en faire ?} other {fichiers existent déjà. Que voulez-vous en faire ?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -514,25 +514,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Existant (dossier) :",
+  "fileOperations.transferProgress.existingFolderLabel": "Dossier existant :",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Existant (fichier) :",
+  "fileOperations.transferProgress.existingFileLabel": "Fichier existant :",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "Existant :",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Nouveau (dossier) :",
+  "fileOperations.transferProgress.newFolderLabel": "Nouveau dossier :",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "Nouveau (fichier) :",
+  "fileOperations.transferProgress.newFileLabel": "Nouveau fichier :",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "Nouveau :",
   "@fileOperations.transferProgress.newLabel": {
@@ -755,13 +755,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "Cmdr a supprimé tout ce qu’il avait écrit : {countText} {count, plural, one {élément} many {éléments} other {éléments}}.",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Cmdr a supprimé l’élément qu’il avait écrit.} many {Cmdr a supprimé tout ce qu’il avait écrit : {countText} éléments.} other {Cmdr a supprimé tout ce qu’il avait écrit : {countText} éléments.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "Cmdr a tout remis en place : {countText} {count, plural, one {élément} many {éléments} other {éléments}}.",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Cmdr a remis l’élément en place.} many {Cmdr a tout remis en place : {countText} éléments.} other {Cmdr a tout remis en place : {countText} éléments.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {élément supprimé} many {éléments supprimés} other {éléments supprimés}}.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -771,9 +771,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "Retour en arrière arrêté après la suppression de {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Les autres sont toujours là.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Retour en arrière arrêté après la suppression de {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Les autres sont restés là où la copie les avait mis.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "Retour en arrière arrêté après la remise en place de {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Les autres sont restés là où le déplacement les avait mis.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

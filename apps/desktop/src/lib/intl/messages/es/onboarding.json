@@ -439,9 +439,9 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "a7bb760"
   },
-  "onboarding.stepOptional.lede": "Has elegido pasar por una configuración detallada, así que aquí tienes unas cuantas decisiones sencillas. Si no te importan demasiado, basta con que hagas clic en el botón de abajo. Todo esto son opciones, y los valores por omisión están elegidos pensando en ti.",
+  "onboarding.stepOptional.lede": "Has elegido pasar por una configuración detallada, así que aquí tienes unas cuantas decisiones rápidas. Si no te importan demasiado, haz clic en el botón de abajo. Todas son opcionales, y los valores por omisión están elegidos pensando en ti.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "278452e"
+    "sourceHash": "94c3a5a"
   },
   "onboarding.stepOptional.recommendedOn": "Recomendado: activado",
   "@onboarding.stepOptional.recommendedOn": {
@@ -495,9 +495,9 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Si activas esto, Cmdr hace una pequeña petición de red a un servidor central de licencias en cada inicio de la app y una vez cada 24 horas, y siempre recibes las últimas actualizaciones.\nSi lo desactivas, mantendrás tu versión actual y cero peticiones de red automáticas (salvo las comprobaciones periódicas de licencia, si tienes una licencia comercial).",
+  "onboarding.stepOptional.updates.desc": "Si activas esto, Cmdr hace una pequeña solicitud de red a un servidor central de licencias en cada inicio de la app y una vez cada 24 horas, y siempre recibes las últimas actualizaciones.\nSi lo desactivas, mantienes tu versión actual y Cmdr no hace ninguna solicitud de red automática (salvo las comprobaciones periódicas de licencia, si tienes una licencia comercial).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "bfd8d7e"
+    "sourceHash": "e1a0582"
   },
   "onboarding.stepOptional.mtp.title": "MTP (teléfonos Android, Kindles, cámaras)",
   "@onboarding.stepOptional.mtp.title": {

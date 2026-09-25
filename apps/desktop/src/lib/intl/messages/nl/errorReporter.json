@@ -32,9 +32,9 @@
   "@errorReporter.dialog.notePlaceholder": {
     "sourceHash": "003300b"
   },
-  "errorReporter.dialog.noteTooLong": "De notitie is te lang. Het maximum is {maxText} tekens.",
+  "errorReporter.dialog.noteTooLong": "De notitie is te lang. Het maximum is {maxText} {max, plural, one {teken} other {tekens}}.",
   "@errorReporter.dialog.noteTooLong": {
-    "sourceHash": "835aa78"
+    "sourceHash": "afcefac"
   },
   "errorReporter.dialog.detailsToggle": "Wat er verstuurd gaat worden",
   "@errorReporter.dialog.detailsToggle": {

@@ -35,9 +35,9 @@
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopiëren} other {Verplaatsen}} voltooid: alle {skippedText} bestanden overgeslagen (al op de bestemming), er werd niets {verb, select, copy {gekopieerd} other {verplaatst}}.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopiëren} other {Verplaatsen}} voltooid: alle {skippedText} {skipped, plural, one {bestand} other {bestanden}} overgeslagen (al op de bestemming), er werd niets {verb, select, copy {gekopieerd} other {verplaatst}}.",
   "@transfer.fileOnly.allSkippedMany": {
-    "sourceHash": "ae39c4b"
+    "sourceHash": "5b688cf"
   },
   "transfer.fileOnly.mixedCopy": "Kopiëren voltooid: {transferredText} gekopieerd, {skippedText} overgeslagen. Alle {processedText} geselecteerde {processed, plural, one {bestand staat} other {bestanden staan}} nu op de bestemming.",
   "@transfer.fileOnly.mixedCopy": {

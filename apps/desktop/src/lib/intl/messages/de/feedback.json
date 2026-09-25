@@ -20,9 +20,9 @@
     "sourceHash": "36ca789",
     "sameAsSourceJustification": "Placeholder-only fraction ('{currentText} / {maxText}'); both values are preformatted numbers, no translatable text."
   },
-  "feedback.dialog.tooLong": "Das ist leider zu lang. Maximal sind {maxText} Zeichen erlaubt.",
+  "feedback.dialog.tooLong": "Das ist leider zu lang. {max, plural, one {Maximal ist {maxText} Zeichen erlaubt.} other {Maximal sind {maxText} Zeichen erlaubt.}}",
   "@feedback.dialog.tooLong": {
-    "sourceHash": "b9a0cef"
+    "sourceHash": "b6e0abf"
   },
   "feedback.dialog.moreWays": "Du kannst auch <github>auf GitHub stöbern und abstimmen</github> oder einen <call>Anruf mit David buchen</call>.",
   "@feedback.dialog.moreWays": {

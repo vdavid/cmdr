@@ -182,9 +182,9 @@
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
   },
-  "queryUi.results.scanningWithCount": "Análisis en curso ({countText} entradas)…",
+  "queryUi.results.scanningWithCount": "Análisis en curso ({countText} {count, plural, one {entrada} many {entradas} other {entradas}})…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "67fb5ac"
+    "sourceHash": "530c0ee"
   },
   "queryUi.results.scanning": "Análisis en curso…",
   "@queryUi.results.scanning": {
@@ -194,13 +194,13 @@
   "@queryUi.results.indexUnavailable": {
     "sourceHash": "80e98d0"
   },
-  "queryUi.results.indexReadyStatus": "Índice listo ({countText} entradas)",
+  "queryUi.results.indexReadyStatus": "Índice listo ({countText} {count, plural, one {entrada} many {entradas} other {entradas}})",
   "@queryUi.results.indexReadyStatus": {
-    "sourceHash": "b8febe6"
+    "sourceHash": "b5eca65"
   },
-  "queryUi.results.resultCount": "{shownText} de {totalText} resultados",
+  "queryUi.results.resultCount": "{shownText} de {totalText} {total, plural, one {resultado} many {resultados} other {resultados}}",
   "@queryUi.results.resultCount": {
-    "sourceHash": "8725496"
+    "sourceHash": "7e17d4b"
   },
   "queryUi.results.countOnly.sentence": "{count, plural, one {Esta búsqueda arroja <total>{countText}</total> resultado} many {Esta búsqueda arroja <total>{countText}</total> resultados} other {Esta búsqueda arroja <total>{countText}</total> resultados}}",
   "@queryUi.results.countOnly.sentence": {
@@ -234,9 +234,9 @@
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
-  "queryUi.results.scanProgressWithCount": "Análisis en curso ({countText} entradas)…",
+  "queryUi.results.scanProgressWithCount": "Análisis en curso ({countText} {count, plural, one {entrada} many {entradas} other {entradas}})…",
   "@queryUi.results.scanProgressWithCount": {
-    "sourceHash": "563387d"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanProgress": "Análisis en curso…",
   "@queryUi.results.scanProgress": {
@@ -282,17 +282,17 @@
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
-  "queryUi.results.live.incomplete": "{shownText} de {totalText} resultados. Cmdr no ha terminado de buscar.",
+  "queryUi.results.live.incomplete": "{shownText} de {totalText} {total, plural, one {resultado} many {resultados} other {resultados}}. Cmdr no ha terminado de buscar.",
   "@queryUi.results.live.incomplete": {
-    "sourceHash": "737d12c"
+    "sourceHash": "e83cf63"
   },
   "queryUi.results.live.incompleteEmpty": "No se ha encontrado nada antes de que la búsqueda se detuviera. Cmdr no ha terminado de buscar.",
   "@queryUi.results.live.incompleteEmpty": {
     "sourceHash": "6910921"
   },
-  "queryUi.results.live.capped": "Mostrando las primeras {shownText} de {totalText} coincidencias.",
+  "queryUi.results.live.capped": "Mostrando las primeras {shownText} de {totalText} {total, plural, one {coincidencia} many {coincidencias} other {coincidencias}}.",
   "@queryUi.results.live.capped": {
-    "sourceHash": "7c0475d"
+    "sourceHash": "d4a7d12"
   },
   "queryUi.results.live.stop": "Detener",
   "@queryUi.results.live.stop": {
@@ -395,9 +395,9 @@
   "@queryUi.recent.systemDirsIncluded": {
     "sourceHash": "b7996cc"
   },
-  "queryUi.recent.resultCount": "{countText} resultados la última vez",
+  "queryUi.recent.resultCount": "{countText} {count, plural, one {resultado} many {resultados} other {resultados}} la última vez",
   "@queryUi.recent.resultCount": {
-    "sourceHash": "d048174"
+    "sourceHash": "daa7f19"
   },
   "queryUi.recent.rowResultCount": "{countText} {count, plural, one {resultado} many {resultados} other {resultados}}",
   "@queryUi.recent.rowResultCount": {

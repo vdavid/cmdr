@@ -26,10 +26,10 @@ evidence of that weight.
 - `spotTaken` `原本的位置已經被別的東西佔走了` mirrors `nameTaken` `原本的名稱又被佔走了` (a taken place vs a taken
   name). `drift` `在 Cmdr 放好之後` because `放好` covers both a copy and a move.
 - Removed is `刪除`, never `移除` (Apple: `移除` takes out of a list, `刪除` destroys), matching the dialog's promise.
-- `doneDeleting` / `doneMovingBack` differ from `someDeleted` / `someMovedBack` only by English "the": the `done*` pair
-  names the set (`Cmdr 寫入的`, `Cmdr 移動過的`), the `some*` pair only counts. ❌ Don't collapse them.
-- "The rest are still there" names the place (`目標位置`, `移動過去的地方`): a bare "still there" reads as `原處`, the
-  opposite of what happened. `leftBehind` repeats `會略過沒有把握的部分` from `bodyUndoByDeleting`.
+- `done*` names the set (`Cmdr 寫入的全部`), `some*` only counts: ❌ don't collapse them. `done*` has an `=1` arm
+  (`那個項目`): `全部 1 個` reads wrong.
+- The rest names its place (`複製過去的地方` / `移動過去的地方`): a bare "still there" reads as `原處`, the opposite.
+  `leftBehind` repeats `會略過沒有把握的部分`.
 - `stagedLeftover.*`: `不完整副本`, cleared with `清掉` (Cmdr's own files, not the user's), and ❌ never `下次`: the
   cleanup skips files under an hour old, so an immediate retry doesn't clear them.
 - `in {folder}` is a trailing, unquoted `位於 {folder}` (as `downloads.toast.inSubdir`): the row renders after

@@ -35,9 +35,9 @@
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Másolás} other {Áthelyezés}} kész: az összes fájl kihagyva ({skippedText}, már a célhelyen volt), semmi sem lett {verb, select, copy {másolva} other {áthelyezve}}.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Másolás} other {Áthelyezés}} kész: az összes {skipped, plural, one {fájl} other {fájl}} kihagyva ({skippedText}, már a célhelyen volt), semmi sem lett {verb, select, copy {másolva} other {áthelyezve}}.",
   "@transfer.fileOnly.allSkippedMany": {
-    "sourceHash": "ae39c4b"
+    "sourceHash": "5b688cf"
   },
   "transfer.fileOnly.mixedCopy": "Másolás kész: {transferredText} másolva, {skippedText} kihagyva. A kiválasztott {processedText} {processed, plural, one {fájl} other {fájl}} mind a célhelyen van.",
   "@transfer.fileOnly.mixedCopy": {

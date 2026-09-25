@@ -458,11 +458,9 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   form ("unplug it and reconnect the iPhone"); a STATE is always `重新連線`. Evidence: `decisions.md` § Reconnecting and
   the nothing-to-ask line.
 
-- **English "easy" / "simple" is dodged, not rendered as `簡單`.** The house voice bans trivializing words, and the
-  English onboarding copy uses them anyway ("a few easy choices", "Three easy steps"). This catalog resolves the clash
-  by naming what's actually true instead: `onboarding.stepOptional.lede` renders "a few easy choices" as
-  `幾個好決定的選項`, and `onboarding.stepFda.ifAllow` renders "Three easy steps:" as `三個步驟就好：`. Keep dodging;
-  don't "restore" `簡單`.
+- **English "easy" / "simple" is dodged, not rendered as `簡單`.** The house voice bans trivializing words. If an
+  English string still says them, name what's actually true instead (`幾個很快就能決定的選項`, `三個步驟就好`). Keep
+  dodging; don't "restore" `簡單`.
 
 - **A tag that renders an inline CONTROL takes a space before it and a comma after.**
   `onboarding.stepBeta.checklist.email` wraps a text field plus its Save button in an empty `<field></field>` sitting

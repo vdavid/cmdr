@@ -317,9 +317,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} mappar slås samman med befintliga mappar",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {mapp slås samman med en befintlig mapp} other {mappar slås samman med befintliga mappar}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {fil finns redan. Vad vill du göra med den?} other {filer finns redan. Vad vill du göra med dem?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -513,25 +513,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Befintlig (mapp):",
+  "fileOperations.transferProgress.existingFolderLabel": "Befintlig mapp:",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Befintlig (fil):",
+  "fileOperations.transferProgress.existingFileLabel": "Befintlig fil:",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "Befintlig:",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Ny (mapp):",
+  "fileOperations.transferProgress.newFolderLabel": "Ny mapp:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "Ny (fil):",
+  "fileOperations.transferProgress.newFileLabel": "Ny fil:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "Ny:",
   "@fileOperations.transferProgress.newLabel": {
@@ -753,13 +753,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "Raderade allt Cmdr hade skrivit: {countText} {count, plural, one {objekt} other {objekt}}.",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Raderade objektet som Cmdr hade skrivit.} other {Raderade alla {countText} objekt som Cmdr hade skrivit.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "Lade tillbaka allt: {countText} {count, plural, one {objekt} other {objekt}}.",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Lade tillbaka objektet.} other {Lade tillbaka alla {countText} objekt.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "Raderade {countText} {count, plural, one {objekt} other {objekt}}.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -769,9 +769,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "Stoppade efter att ha raderat {countText} {count, plural, one {objekt} other {objekt}}. Resten ligger kvar.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Stoppade efter att ha raderat {countText} {count, plural, one {objekt} other {objekt}}. Resten ligger kvar där kopieringen lade dem.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "Stoppade efter att ha lagt tillbaka {countText} {count, plural, one {objekt} other {objekt}}. Resten ligger kvar där flytten lade dem.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

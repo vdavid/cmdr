@@ -769,13 +769,13 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. “{name}” vẫn giữ nguyên tên.",
+  "fileExplorer.rename.chainKeptOriginalName": "“{name}” vẫn giữ nguyên tên: {reason}",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "638394d"
+    "sourceHash": "174ff14"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. “{name}” vẫn giữ nguyên tên, và {others, plural, other {{othersText} tệp khác}} cũng vậy.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{others, plural, other {{othersText} tệp khác vẫn giữ nguyên tên}}, “{name}” cũng vậy: {reason}",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "be35bc8"
+    "sourceHash": "016797b"
   },
   "fileExplorer.rename.unconfirmed": "Chưa xác nhận được việc đổi tên “{name}”. Ổ đĩa có thể chậm, nên việc đổi tên vẫn có thể đã hoàn tất.",
   "@fileExplorer.rename.unconfirmed": {
@@ -1620,11 +1620,11 @@
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
   },
-  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Không thể sao chép “{name}”.} other {Không thể sao chép {countText} mục.}}",
   "@fileExplorer.dragOut.failed": {
     "sourceHash": "73468bd"
   },
-  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Không thể sao chép “{name}”.} other {Không thể sao chép {countText} mục.}}",
   "@fileExplorer.dragOut.partial": {
     "sourceHash": "9215226"
   }

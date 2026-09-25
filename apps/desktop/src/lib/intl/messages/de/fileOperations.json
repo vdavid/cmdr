@@ -317,9 +317,9 @@
   "@fileOperations.transferDialog.mergeInfoSingle": {
     "sourceHash": "c8cff01"
   },
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} Ordner werden mit bestehenden Ordnern zusammengeführt",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {Ordner wird mit einem bestehenden Ordner zusammengeführt} other {Ordner werden mit bestehenden Ordnern zusammengeführt}}",
   "@fileOperations.transferDialog.mergeInfoMany": {
-    "sourceHash": "6d734ce"
+    "sourceHash": "73c4dfd"
   },
   "fileOperations.transferDialog.conflictsSummary": "{countText} {count, plural, one {Datei existiert bereits. Was möchtest du damit machen?} other {Dateien existieren bereits. Was möchtest du damit machen?}}",
   "@fileOperations.transferDialog.conflictsSummary": {
@@ -513,25 +513,25 @@
   "@fileOperations.transferProgress.lookAlikeHint": {
     "sourceHash": "01ed9ad"
   },
-  "fileOperations.transferProgress.existingFolderLabel": "Bestehend (Ordner):",
+  "fileOperations.transferProgress.existingFolderLabel": "Bestehender Ordner:",
   "@fileOperations.transferProgress.existingFolderLabel": {
-    "sourceHash": "44cab6d"
+    "sourceHash": "4d8ade6"
   },
-  "fileOperations.transferProgress.existingFileLabel": "Bestehend (Datei):",
+  "fileOperations.transferProgress.existingFileLabel": "Bestehende Datei:",
   "@fileOperations.transferProgress.existingFileLabel": {
-    "sourceHash": "64142a0"
+    "sourceHash": "38ee239"
   },
   "fileOperations.transferProgress.existingLabel": "Bestehend:",
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Neu (Ordner):",
+  "fileOperations.transferProgress.newFolderLabel": "Neuer Ordner:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "aa1efc0"
+    "sourceHash": "e138bdb"
   },
-  "fileOperations.transferProgress.newFileLabel": "Neu (Datei):",
+  "fileOperations.transferProgress.newFileLabel": "Neue Datei:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "a0c9782"
+    "sourceHash": "5b5ad51"
   },
   "fileOperations.transferProgress.newLabel": "Neu:",
   "@fileOperations.transferProgress.newLabel": {
@@ -756,13 +756,13 @@
   "@fileOperations.rollbackConfirm.finishRollBack": {
     "sourceHash": "dbe3771"
   },
-  "fileOperations.cancelRollback.doneDeleting": "{countText} {count, plural, one {Objekt} other {Objekte}} entfernt: alles, was Cmdr geschrieben hatte.",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Cmdr hat das Objekt entfernt, das es geschrieben hatte.} other {Cmdr hat alle {countText} Objekte entfernt, die es geschrieben hatte.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
-    "sourceHash": "ff786b9"
+    "sourceHash": "e9aa918"
   },
-  "fileOperations.cancelRollback.doneMovingBack": "{countText} {count, plural, one {Objekt} other {Objekte}} zurückgelegt: alles ist wieder da, wo es war.",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Cmdr hat das Objekt zurückgelegt.} other {Cmdr hat alle {countText} Objekte zurückgelegt.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
-    "sourceHash": "c5e329e"
+    "sourceHash": "5c4f4f3"
   },
   "fileOperations.cancelRollback.someDeleted": "{countText} {count, plural, one {Objekt} other {Objekte}} entfernt.",
   "@fileOperations.cancelRollback.someDeleted": {
@@ -772,9 +772,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "Gestoppt, nachdem Cmdr {countText} {count, plural, one {Objekt} other {Objekte}} entfernt hat. Der Rest ist noch da.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Gestoppt, nachdem Cmdr {countText} {count, plural, one {Objekt} other {Objekte}} entfernt hat. Der Rest liegt noch dort, wohin der Vorgang ihn kopiert hat.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "d624541"
+    "sourceHash": "cc69228"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "Gestoppt, nachdem Cmdr {countText} {count, plural, one {Objekt} other {Objekte}} zurückgelegt hat. Der Rest liegt noch dort, wohin der Vorgang ihn bewegt hat.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

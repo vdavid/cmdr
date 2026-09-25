@@ -714,9 +714,9 @@
   "@settings.mediaIndex.progress.done": {
     "sourceHash": "104b27a"
   },
-  "settings.mediaIndex.reclaim.line": "Tienes {totalText} imágenes indexadas; tu ajuste cubre {coveredText}. {doomed, plural, one {La entrada adicional sigue disponible para búsquedas hasta que la elimines} other {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines} many {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines}}.",
+  "settings.mediaIndex.reclaim.line": "Tienes {totalText} {total, plural, one {imagen indexada} many {imágenes indexadas} other {imágenes indexadas}}; tu ajuste cubre {coveredText}. {doomed, plural, one {La entrada adicional sigue disponible para búsquedas hasta que la elimines} many {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines} other {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines}}.",
   "@settings.mediaIndex.reclaim.line": {
-    "sourceHash": "aaef941"
+    "sourceHash": "26e1c7a"
   },
   "settings.mediaIndex.reclaim.button": "{doomed, plural, one {Eliminar la entrada adicional y liberar unos {size}} other {Eliminar las entradas adicionales y liberar unos {size}} many {Eliminar las entradas adicionales y liberar unos {size}}}",
   "@settings.mediaIndex.reclaim.button": {
@@ -1265,7 +1265,7 @@
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
     "sourceHash": "726894f"
   },
-  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Cuántas pestañas cerradas recientemente conservar por panel para “Reabrir pestaña cerrada” (⌘⇧T). Los valores más altos te dejan reabrir más atrás en el historial; los más bajos liberan memoria antes. Solo se aplica a las pestañas cerradas en la sesión actual.",
+  "settings.fileExplorer.tabs.closedTabHistorySize.description": "Cuántas pestañas cerradas recientemente conservar por panel para “Reabrir la pestaña cerrada” (⌘⇧T). Los valores más altos te dejan reabrir más atrás en el historial; los más bajos liberan memoria antes. Solo se aplica a las pestañas cerradas en la sesión actual.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
     "sourceHash": "e53df3a"
   },
