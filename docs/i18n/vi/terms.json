@@ -939,7 +939,7 @@
     "sources": "macOS PhotosUI (Low Disk Space → Sắp hết dung lượng ổ đĩa); catalog"
   },
   "full-disk-access": {
-    "accept": ["truy cập toàn bộ đĩa"],
+    "proseAccept": ["truy cập toàn bộ đĩa"],
     "avoid": [
       {
         "form": "Full Disk Access",
@@ -949,7 +949,11 @@
     "chosen": "quyền truy cập đầy đủ vào ổ đĩa",
     "confidence": "high",
     "decision": "The title-bar full-disk-access badge",
-    "forms": "where a string NAMES the setting → Quyền truy cập đầy đủ vào ổ đĩa (Apple's pane name); the FDA step's running prose still says truy cập toàn bộ đĩa",
+    "exceptions": {
+      "onboarding.stepAi.bannerTitle.granted": "a sentence-shaped status title in the FDA step, whose body says the everyday form; English lowercases it as prose too",
+      "onboarding.stepFda.alreadyGranted.title": "a sentence-shaped status title in the FDA step, whose body says the everyday form; English lowercases it as prose too"
+    },
+    "forms": "a NAME of the setting (badge, button, settings label) → Quyền truy cập đầy đủ vào ổ đĩa, Apple's pane name; running prose may use the everyday quyền truy cập toàn bộ đĩa",
     "sources": "macOS SecurityPrivacyExtension Localizable.loctable ALL_FILES (macOS 27.0 build 26A428, 2026-09-16)"
   },
   "full-screen": {

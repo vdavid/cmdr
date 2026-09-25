@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Bấm chuột phải vào một máy chủ rồi chọn Bỏ ghim, hoặc dùng “{command}” trong bảng lệnh. Máy chủ vẫn nằm trong danh sách Máy chủ.",
   "@servers.pinHint.body": {
-    "sourceHash": "0663b02"
+    "sourceHash": "e47522b"
   },
   "servers.pinHint.gotIt": "Đã hiểu",
   "@servers.pinHint.gotIt": {

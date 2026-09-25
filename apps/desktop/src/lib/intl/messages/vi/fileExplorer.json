@@ -140,7 +140,7 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "sourceHash": "0636af4"
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "Không thể mở hộp thoại đó, nên chúng tôi đã đóng nó và trả lại bàn phím cho bạn. Vui lòng thử lại.",
+  "fileExplorer.pane.dialogRenderFailedToast": "Không thể mở hộp thoại đó, nên chúng tôi đã đóng nó và trả lại bàn phím cho bạn. Hãy thử lại nhé.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "sourceHash": "059dfbd"
   },
@@ -469,7 +469,7 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "Không tìm thấy mục chia sẻ ''{shareName}'' trên {hostName}",
+  "fileExplorer.network.share.notFound": "Không tìm thấy mục chia sẻ “{shareName}” trên {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
@@ -529,7 +529,7 @@
   "@fileExplorer.mtp.connectTimedOut": {
     "sourceHash": "cc01ae7"
   },
-  "fileExplorer.mtp.exclusiveAccess": "Một ứng dụng khác đang sử dụng thiết bị này. Hãy chạy cách khắc phục ptpcamerad.",
+  "fileExplorer.mtp.exclusiveAccess": "Một ứng dụng khác đang dùng thiết bị này. Hãy chạy cách khắc phục ptpcamerad.",
   "@fileExplorer.mtp.exclusiveAccess": {
     "sourceHash": "1fac18c"
   },
@@ -741,9 +741,9 @@
   "@fileExplorer.readOnly.deviceTitle": {
     "sourceHash": "3f79690"
   },
-  "fileExplorer.readOnly.deviceMessage": "\"{name}\" ở chế độ chỉ đọc. Bạn có thể sao chép tệp từ nó, nhưng không thể sao chép vào nó.",
+  "fileExplorer.readOnly.deviceMessage": "“{name}” ở chế độ chỉ đọc. Bạn có thể sao chép tệp từ nó, nhưng không thể sao chép vào nó.",
   "@fileExplorer.readOnly.deviceMessage": {
-    "sourceHash": "039488f"
+    "sourceHash": "5582a47"
   },
   "fileExplorer.readOnly.gitPortalTitle": "Cổng git chỉ đọc",
   "@fileExplorer.readOnly.gitPortalTitle": {
@@ -769,21 +769,21 @@
   "@fileExplorer.rename.keptOriginalName": {
     "sourceHash": "27acd0a"
   },
-  "fileExplorer.rename.chainKeptOriginalName": "{reason}. \"{name}\" vẫn giữ nguyên tên.",
+  "fileExplorer.rename.chainKeptOriginalName": "{reason}. “{name}” vẫn giữ nguyên tên.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "5b5e6ce"
+    "sourceHash": "638394d"
   },
-  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. \"{name}\" vẫn giữ nguyên tên, và {others, plural, other {{othersText} tệp khác}} cũng vậy.",
+  "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. “{name}” vẫn giữ nguyên tên, và {others, plural, other {{othersText} tệp khác}} cũng vậy.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "7b23e8e"
+    "sourceHash": "be35bc8"
   },
-  "fileExplorer.rename.unconfirmed": "Chưa xác nhận được việc đổi tên \"{name}\". Ổ đĩa có thể chậm, nên việc đổi tên vẫn có thể đã hoàn tất.",
+  "fileExplorer.rename.unconfirmed": "Chưa xác nhận được việc đổi tên “{name}”. Ổ đĩa có thể chậm, nên việc đổi tên vẫn có thể đã hoàn tất.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d43e419"
+    "sourceHash": "bcea9d0"
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Chưa xác nhận được việc đổi tên \"{name}\" và {others, plural, other {{othersText} tệp khác}}. Ổ đĩa có thể chậm, nên các lần đổi tên vẫn có thể đã hoàn tất.",
+  "fileExplorer.rename.unconfirmedAndOthers": "Chưa xác nhận được việc đổi tên “{name}” và {others, plural, other {{othersText} tệp khác}}. Ổ đĩa có thể chậm, nên các lần đổi tên vẫn có thể đã hoàn tất.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "1258eb3"
+    "sourceHash": "c64e665"
   },
   "fileExplorer.columns.name": "Tên",
   "@fileExplorer.columns.name": {
@@ -948,9 +948,9 @@
   "@fileExplorer.git.tooltip.filesChanged": {
     "sourceHash": "9808044"
   },
-  "fileExplorer.git.tooltip.aheadBehind": "Vượt trước {ahead, plural, other {{aheadText} commit}}, tụt sau {behind, plural, other {{behindText} commit}} so với \"{vs}\"",
+  "fileExplorer.git.tooltip.aheadBehind": "Vượt trước {ahead, plural, other {{aheadText} commit}}, tụt sau {behind, plural, other {{behindText} commit}} so với “{vs}”",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "2eba558"
+    "sourceHash": "6a24049"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Commit được gắn thẻ {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -960,13 +960,13 @@
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "sourceHash": "f80ccba"
   },
-  "fileExplorer.git.tooltip.stashedOnBranch": "Được tạo trên nhánh \"{branch}\"",
+  "fileExplorer.git.tooltip.stashedOnBranch": "Được tạo trên nhánh “{branch}”",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "770565f"
+    "sourceHash": "5a1ad8d"
   },
-  "fileExplorer.git.tooltip.worktreeOnBranch": "Nhánh \"{branch}\" đang được mở",
+  "fileExplorer.git.tooltip.worktreeOnBranch": "Nhánh “{branch}” đang được mở",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "5036eb7"
+    "sourceHash": "4941fa5"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Tách rời tại {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
@@ -996,9 +996,9 @@
   "@fileExplorer.dateTooltip.lastOpened": {
     "sourceHash": "e300685"
   },
-  "fileExplorer.dateTooltip.lastMoved": "Lần di chuyển gần nhất (\"đã thêm\")",
+  "fileExplorer.dateTooltip.lastMoved": "Lần di chuyển gần nhất (“đã thêm”)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "sourceHash": "450ebc0"
+    "sourceHash": "1366405"
   },
   "fileExplorer.dateTooltip.lastModified": "Lần sửa đổi gần nhất",
   "@fileExplorer.dateTooltip.lastModified": {
@@ -1144,9 +1144,9 @@
   "@fileExplorer.renameConflict.title": {
     "sourceHash": "92ae292"
   },
-  "fileExplorer.renameConflict.description": "\"{name}\" đã tồn tại trong thư mục này. Bạn muốn làm gì?",
+  "fileExplorer.renameConflict.description": "“{name}” đã tồn tại trong thư mục này. Bạn muốn làm gì?",
   "@fileExplorer.renameConflict.description": {
-    "sourceHash": "ded53e8"
+    "sourceHash": "e3f2532"
   },
   "fileExplorer.renameConflict.yours": "{name} (của bạn)",
   "@fileExplorer.renameConflict.yours": {
@@ -1184,9 +1184,9 @@
   "@fileExplorer.extensionChange.title": {
     "sourceHash": "799828d"
   },
-  "fileExplorer.extensionChange.description": "Bạn có chắc muốn đổi đuôi từ \".{oldExt}\" sang \".{newExt}\"? Tệp của bạn có thể mở bằng một ứng dụng khác trong lần mở tới.",
+  "fileExplorer.extensionChange.description": "Bạn có chắc muốn đổi đuôi từ “.{oldExt}” sang “.{newExt}”? Tệp của bạn có thể mở bằng một ứng dụng khác trong lần mở tới.",
   "@fileExplorer.extensionChange.description": {
-    "sourceHash": "d0f428b"
+    "sourceHash": "ef7ac59"
   },
   "fileExplorer.extensionChange.alwaysAllow": "Luôn cho phép đổi đuôi tệp",
   "@fileExplorer.extensionChange.alwaysAllow": {
@@ -1204,11 +1204,11 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Nếu bạn đến từ Finder, điều này có thể lạ vì Finder kích hoạt tác vụ \"Xem nhanh\" khi nhấn <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Nếu bạn đến từ Finder, điều này có thể lạ vì Finder mở “Xem nhanh” khi bạn nhấn <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "2089192"
+    "sourceHash": "56d3119"
   },
-  "fileExplorer.quickLookHint.quickView": "Trong Cmdr, bạn có thể kích hoạt xem nhanh qua <key></key>. (<key></key> cũng hoạt động trong Finder nhé!)",
+  "fileExplorer.quickLookHint.quickView": "Trong Cmdr, bạn có thể mở xem nhanh bằng <key></key>. (<key></key> cũng hoạt động trong Finder nhé!)",
   "@fileExplorer.quickLookHint.quickView": {
     "sourceHash": "7e4cf33"
   },
@@ -1316,9 +1316,9 @@
   "@fileExplorer.navigation.connectionTooltipDirect": {
     "sourceHash": "a69a3ad"
   },
-  "fileExplorer.navigation.connectionTooltipSystem": "Đang dùng kết nối hệ thống. Hãy dùng mục menu \"Kết nối trực tiếp để truy cập nhanh hơn\" để truy cập nhanh hơn.",
+  "fileExplorer.navigation.connectionTooltipSystem": "Đang dùng kết nối hệ thống. Hãy dùng mục menu “Kết nối trực tiếp để truy cập nhanh hơn” để truy cập nhanh hơn.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "sourceHash": "0cbfa05"
+    "sourceHash": "e4ac697"
   },
   "fileExplorer.navigation.connectDirectly": "Kết nối trực tiếp để truy cập nhanh hơn",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1344,9 +1344,9 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "0fb0ca3"
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr có thể dùng lại mật khẩu mà macOS đã lưu cho \"{displayName}\". Bạn sẽ thấy một lời nhắc hệ thống xin phép truy cập chuỗi khóa. Điều đó là bình thường, nên hãy bấm Cho phép.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr có thể dùng lại mật khẩu mà macOS đã lưu cho “{displayName}”. Bạn sẽ thấy một lời nhắc hệ thống xin phép truy cập chuỗi khóa. Điều đó là bình thường, nên hãy bấm Cho phép.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "6bb2c1d"
+    "sourceHash": "334f7de"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Dùng mật khẩu đã lưu?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {

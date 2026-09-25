@@ -143,9 +143,9 @@
   "@onboarding.stepFda.step2.older": {
     "sourceHash": "0dd40f1"
   },
-  "onboarding.stepFda.step2.tip": "Cmdr không có trong danh sách? Nhấn nút \"+\" ở dưới cùng, rồi chọn <strong>Cmdr</strong> từ thư mục <strong>Ứng dụng</strong> của bạn.",
+  "onboarding.stepFda.step2.tip": "Cmdr không có trong danh sách? Nhấn nút “+” ở dưới cùng, rồi chọn <strong>Cmdr</strong> từ thư mục <strong>Ứng dụng</strong> của bạn.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "30d0299"
+    "sourceHash": "ffc4289"
   },
   "onboarding.stepFda.step3": "Xác nhận và nhấn <strong>Thoát & Mở lại</strong>",
   "@onboarding.stepFda.step3": {
@@ -187,9 +187,9 @@
   "@onboarding.stepAi.bannerTitle.stuck": {
     "sourceHash": "88c9c19"
   },
-  "onboarding.stepAi.bannerBody.stuck": "Bạn nói rằng muốn bật quyền truy cập toàn bộ đĩa, nhưng Cmdr có vẻ chưa nhận được. Bạn có thể cần khởi động lại ứng dụng (làm ngay đi, chúng ta sẽ tiếp tục từ đây!), hoặc vào <settingsLink>{systemSettings} > Quyền riêng tư & Bảo mật > Truy cập toàn bộ đĩa</settingsLink> và tìm Cmdr, hoặc thêm thủ công bằng nút \"+\" nhỏ ở dưới cùng.",
+  "onboarding.stepAi.bannerBody.stuck": "Bạn nói rằng muốn bật quyền truy cập toàn bộ đĩa, nhưng Cmdr có vẻ chưa nhận được. Bạn có thể cần khởi động lại ứng dụng (làm ngay đi, chúng ta sẽ tiếp tục từ đây!), hoặc vào <settingsLink>{systemSettings} > Quyền riêng tư & Bảo mật > Truy cập toàn bộ đĩa</settingsLink> và tìm Cmdr, hoặc thêm thủ công bằng nút “+” nhỏ ở dưới cùng.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "79d5765"
+    "sourceHash": "fcdff85"
   },
   "onboarding.stepAi.welcomeLinux.title": "Chào mừng bạn đến với Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -227,13 +227,13 @@
   "@onboarding.stepAi.table.rowSearch": {
     "sourceHash": "49c266b"
   },
-  "onboarding.stepAi.table.searchWithout": "Bạn gõ kiểu như <code>*fish*.ppt</code>, và chọn bộ lọc \"sau ngày 1 của tháng này\".",
+  "onboarding.stepAi.table.searchWithout": "Bạn gõ kiểu như <code>*fish*.ppt</code>, và chọn bộ lọc “sau ngày 1 của tháng này”.",
   "@onboarding.stepAi.table.searchWithout": {
-    "sourceHash": "872cb1e"
+    "sourceHash": "ebd8f45"
   },
-  "onboarding.stepAi.table.searchWith": "Bạn nói \"các bài trình bày gần đây về cá của tôi\", tác nhân đặt bộ lọc cho bạn.",
+  "onboarding.stepAi.table.searchWith": "Bạn nói “các bài trình bày gần đây về cá của tôi”, tác nhân đặt bộ lọc cho bạn.",
   "@onboarding.stepAi.table.searchWith": {
-    "sourceHash": "b69cd82"
+    "sourceHash": "457e19a"
   },
   "onboarding.stepAi.table.rowRename": "Đổi tên hàng loạt",
   "@onboarding.stepAi.table.rowRename": {
@@ -243,9 +243,9 @@
   "@onboarding.stepAi.table.renameWithout": {
     "sourceHash": "b12d997"
   },
-  "onboarding.stepAi.table.renameWith": "Bạn nói \"thêm tiền tố ngày kiểu ISO\", tác nhân đặt mẫu đổi tên cho bạn, bạn xem lại rồi áp dụng tùy ý.",
+  "onboarding.stepAi.table.renameWith": "Bạn nói “thêm tiền tố ngày kiểu ISO”, tác nhân đặt mẫu đổi tên cho bạn, bạn xem lại rồi áp dụng tùy ý.",
   "@onboarding.stepAi.table.renameWith": {
-    "sourceHash": "7fba3f5"
+    "sourceHash": "5287ae3"
   },
   "onboarding.stepAi.table.rowSelect": "Chọn",
   "@onboarding.stepAi.table.rowSelect": {
@@ -255,13 +255,13 @@
   "@onboarding.stepAi.table.selectWithoutBound": {
     "sourceHash": "83f83b9"
   },
-  "onboarding.stepAi.table.selectWithoutUnbound": "Bạn mở \"Chọn tệp…\" rồi gõ kiểu như <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, xem lại rồi áp dụng.",
+  "onboarding.stepAi.table.selectWithoutUnbound": "Bạn mở “Chọn tệp…” rồi gõ kiểu như <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, xem lại rồi áp dụng.",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "sourceHash": "4cdc972"
+    "sourceHash": "bf9239a"
   },
-  "onboarding.stepAi.table.selectWith": "Bạn nói \"chọn tất cả tệp hình ảnh\", tác nhân gợi ý một lựa chọn, bạn xem lại rồi áp dụng tùy ý.",
+  "onboarding.stepAi.table.selectWith": "Bạn nói “chọn tất cả tệp hình ảnh”, tác nhân gợi ý một lựa chọn, bạn xem lại rồi áp dụng tùy ý.",
   "@onboarding.stepAi.table.selectWith": {
-    "sourceHash": "07f1063"
+    "sourceHash": "c1cc90b"
   },
   "onboarding.stepAi.resumeCue": "Lần trước bạn đã chọn cái này. Xác nhận hoặc thay đổi bên dưới.",
   "@onboarding.stepAi.resumeCue": {
@@ -303,9 +303,9 @@
   "@onboarding.stepAi.localTooltip": {
     "sourceHash": "75c6d48"
   },
-  "onboarding.stepAi.missingKeyWarning": "Bạn đã bật AI nhưng chưa nhập khóa API. AI sẽ không hoạt động và bạn sẽ thấy một cảnh báo. Hãy sửa việc này ở phía trên.\n\n<strong>Nhấn \"{nextLabel}\" lần nữa để bỏ qua và đi tiếp.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "Bạn đã bật AI nhưng chưa nhập khóa API. AI sẽ không hoạt động và bạn sẽ thấy một cảnh báo. Hãy sửa việc này ở phía trên.\n\n<strong>Nhấn “{nextLabel}” lần nữa để bỏ qua và đi tiếp.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "3d66d11"
+    "sourceHash": "bdb8a08"
   },
   "onboarding.stepAi.cloudConsentOffNote": "AI đám mây sẽ tắt cho đến khi bạn cho phép. Bạn có thể làm việc đó sau trong Cài đặt > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -355,9 +355,9 @@
   "@onboarding.stepBeta.checklist.alternativeTo": {
     "sourceHash": "c9b1e1e"
   },
-  "onboarding.stepBeta.checklist.alternativeToNote": "Ở ngay trên cùng của trang, cạnh tiêu đề \"Cmdr\". Việc này giúp mọi người và Google chú ý tới Cmdr!",
+  "onboarding.stepBeta.checklist.alternativeToNote": "Ở ngay trên cùng của trang, cạnh tiêu đề “Cmdr”. Việc này giúp mọi người và Google chú ý tới Cmdr!",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "sourceHash": "ea4903a"
+    "sourceHash": "ee4aed4"
   },
   "onboarding.stepBeta.checklist.email": "Nhập địa chỉ email của bạn <field></field> để nhận cập nhật và câu hỏi, rất thi thoảng thôi",
   "@onboarding.stepBeta.checklist.email": {
@@ -455,13 +455,13 @@
   "@onboarding.stepOptional.networking.title": {
     "sourceHash": "204de4b"
   },
-  "onboarding.stepOptional.networking.summary": "Cần chấp nhận \"Mạng cục bộ\" một lần",
+  "onboarding.stepOptional.networking.summary": "Cần chấp nhận “Mạng cục bộ” một lần",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "5006f53"
+    "sourceHash": "f49fbc6"
   },
-  "onboarding.stepOptional.networking.desc": "Để cái này <em>bật</em> nghĩa là bạn có thể kết nối tới các máy chủ SMB như thư mục chia sẻ của công ty, một NAS ở nhà, và những thứ tương tự.\nCái giá duy nhất là một hộp thoại cấp quyền của macOS bật lên và yêu cầu bạn cho phép \"Mạng cục bộ\", và một hộp thoại cho \"Chấp nhận kết nối đến\".\nCả hai hộp thoại đều vô hại, nhưng nếu bạn không biết chúng là gì, chúng có thể đáng sợ hoặc gây phiền.",
+  "onboarding.stepOptional.networking.desc": "Để cái này <em>bật</em> nghĩa là bạn có thể kết nối tới các máy chủ SMB như thư mục chia sẻ của công ty, một NAS ở nhà, và những thứ tương tự.\nCái giá duy nhất là một hộp thoại cấp quyền của macOS bật lên và yêu cầu bạn cho phép “Mạng cục bộ”, và một hộp thoại cho “Chấp nhận kết nối đến”.\nCả hai hộp thoại đều vô hại, nhưng nếu bạn không biết chúng là gì, chúng có thể đáng sợ hoặc gây phiền.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "089707f"
+    "sourceHash": "c03c7df"
   },
   "onboarding.stepOptional.indexing.title": "Lập chỉ mục ổ đĩa",
   "@onboarding.stepOptional.indexing.title": {

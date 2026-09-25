@@ -764,9 +764,9 @@
   "@commands.paletteClose.label": {
     "sourceHash": "2e75050"
   },
-  "commands.handler.favoriteAdded": "Đã thêm \"{name}\" vào mục ưa thích",
+  "commands.handler.favoriteAdded": "Đã thêm “{name}” vào mục ưa thích",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
   "commands.handler.favoriteAddFailed": "Chưa thêm được thư mục đó vào mục ưa thích. Thử lại nhé?",
   "@commands.handler.favoriteAddFailed": {

@@ -22,11 +22,11 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Một phần lựa chọn của bạn chỉ có trực tuyến. Chuyển chúng vào thùng rác sẽ <strong>tải chúng về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy bấm “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải về tất cả tệp để dùng ngoại tuyến trước, hoặc bỏ chọn tất cả tệp chỉ có trực tuyến.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "Mọi thứ bạn đã chọn đều chỉ có trực tuyến. Chuyển nó vào thùng rác sẽ <strong>tải nó về trước</strong>. Vì vậy ở đây Cmdr chỉ đề nghị <strong>xóa</strong> toàn bộ lựa chọn. Sẽ không có bản sao nào trong thùng rác, nhưng các dịch vụ đám mây thường giữ thùng rác riêng của họ khoảng 30 ngày. Hãy bấm “Xóa” nếu bạn đồng ý xóa, nếu không hãy hủy hộp thoại này rồi tải về các tệp này để dùng ngoại tuyến trước.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "Lựa chọn của bạn hóa ra có nội dung chỉ có trực tuyến, nên nút bên dưới giờ đề nghị “Xóa”. Hãy đọc ghi chú ở trên rồi nhấn lại nếu bạn đồng ý.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
@@ -240,9 +240,9 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Mục chia sẻ này dùng kết nối hệ thống. Việc hủy có thể bị trễ. Dùng \"Kết nối trực tiếp\" trong bộ chọn ổ đĩa để truyền nhanh hơn và hủy đáng tin cậy.",
+  "fileOperations.transferDialog.smbNativeNote": "Mục chia sẻ này dùng kết nối hệ thống. Việc hủy có thể bị trễ. Dùng “Kết nối trực tiếp” trong bộ chọn ổ đĩa để truyền nhanh hơn và hủy đáng tin cậy.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "cfec439"
+    "sourceHash": "60af535"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Thư mục này chưa tồn tại. Cmdr sẽ tạo nó khi sao chép.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -364,17 +364,17 @@
   "@fileOperations.transferDialog.foldersPart": {
     "sourceHash": "9bd56b2"
   },
-  "fileOperations.transferDialog.pathErrorSubfolder": "Không thể {verb, select, copy {sao chép} other {di chuyển}} \"{name}\" vào thư mục con của chính nó",
+  "fileOperations.transferDialog.pathErrorSubfolder": "Không thể {verb, select, copy {sao chép} other {di chuyển}} “{name}” vào thư mục con của chính nó",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "4ad1eaf"
+    "sourceHash": "815204a"
   },
-  "fileOperations.transferDialog.pathErrorAlreadyThere": "\"{name}\" đã ở vị trí này rồi",
+  "fileOperations.transferDialog.pathErrorAlreadyThere": "“{name}” đã ở vị trí này rồi",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
-    "sourceHash": "1030a7a"
+    "sourceHash": "1bf762e"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "Tên tệp lưu trữ phải kết thúc bằng \".zip\".",
+  "fileOperations.transferDialog.pathErrorNotZip": "Tên tệp lưu trữ phải kết thúc bằng “.zip”.",
   "@fileOperations.transferDialog.pathErrorNotZip": {
-    "sourceHash": "c85c6f8"
+    "sourceHash": "7700864"
   },
   "fileOperations.transferDialog.confirmCopy": "Sao chép",
   "@fileOperations.transferDialog.confirmCopy": {
@@ -884,9 +884,9 @@
   "@fileOperations.archivePassword.unlock": {
     "sourceHash": "4ac709a"
   },
-  "fileOperations.validation.disallowedChars": "{kind, select, folder {Tên thư mục không được chứa \"/\" hoặc ký tự null} other {Tên tệp không được chứa \"/\" hoặc ký tự null}}",
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Tên thư mục không được chứa “/” hoặc ký tự null} other {Tên tệp không được chứa “/” hoặc ký tự null}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "d84512c"
+    "sourceHash": "4fa16ce"
   },
   "fileOperations.validation.empty": "{kind, select, folder {Tên thư mục không được để trống} other {Tên tệp không được để trống}}",
   "@fileOperations.validation.empty": {
@@ -900,13 +900,13 @@
   "@fileOperations.validation.pathTooLong": {
     "sourceHash": "1658c7a"
   },
-  "fileOperations.validation.extensionChangeBlocked": "Không được phép thay đổi đuôi tệp (trước là \"{oldExt}\")",
+  "fileOperations.validation.extensionChangeBlocked": "Không được phép thay đổi đuôi tệp (trước là “{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "43c2dc1"
+    "sourceHash": "0b2df1e"
   },
-  "fileOperations.validation.conflict": "\"{name}\" đã tồn tại trong thư mục này",
+  "fileOperations.validation.conflict": "“{name}” đã tồn tại trong thư mục này",
   "@fileOperations.validation.conflict": {
-    "sourceHash": "ba13237"
+    "sourceHash": "842d02d"
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {Không thể dùng tên thư mục đó} other {Không thể dùng tên tệp đó}}",
   "@fileOperations.validation.nameNotUsable": {

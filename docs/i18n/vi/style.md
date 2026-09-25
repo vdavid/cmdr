@@ -17,8 +17,9 @@ The must-know rules; the rest of this file elaborates them.
   reads fine without it. Buttons and menu items are the bare verb with no pronoun (`Sao chép`, `Hủy`, `Mở`). David
   speaking in the first person is `mình` (onboarding step 3, `openBeta`); the USER speaking, as on a radio option, is
   `tôi` (`Có, tôi muốn AI`).
-- **Voice**: friendly, concise, calm. Error copy states the problem and the next step and never uses `lỗi` or `thất bại`
-  as a label: "Couldn't X" → `Không thể X` / `Không X được`; a gentle failed status → `Chưa hoàn tất được`; an outcome
+- **Voice**: friendly, concise, calm, everyday. In prose pick the everyday word over the Sino-Vietnamese formal one
+  (`dùng` over `sử dụng`, `Hãy` over `Vui lòng`, `Có gì đó không ổn` over `Đã xảy ra sự cố không mong muốn`); names stay as ruled. Error copy states the
+  problem and the next step and never uses `lỗi` or `thất bại` as a label: "Couldn't X" → `Không thể X` / `Không X được`; a gentle failed status → `Chưa hoàn tất được`; an outcome
   not yet proven → `Chưa xác nhận được`; "Something went wrong" → `Có gì đó không ổn`; "Here's what to try:" →
   `Bạn có thể thử:`. A flat present state takes `không`, "not yet" takes `chưa`; a thing that WILL happen (the Dock
   redraws next login, a retry will save) takes `chưa`, never a verdict of failure.
@@ -33,10 +34,12 @@ The must-know rules; the rest of this file elaborates them.
   Disk Access pane → `Quyền truy cập đầy đủ vào ổ đĩa`. Kept English: Finder, Dock, Terminal, Spotlight, Mission
   Control, TextEdit, Safari, `Ask Cmdr`. Localize whatever Apple localizes, whatever a `@key` description says; on a
   phone, Android's own vi wins (`Gỡ lỗi qua USB`, `Cho phép`, `nhấn vào`).
-- **Punctuation**: follow the quoting style of the file you're in (most of the catalog mirrors EN's straight `"`; the
-  curly `“…”` is for prose with no quoting neighbours, and a quoted Apple UI name keeps Apple's curly quotes); no space
-  before `%`; a Settings path is `Cài đặt › <mục>` except where EN writes `>`. No comma before `và` / `hoặc` in new
-  lists. ICU values double a straight apostrophe; RAW families (`errors.*`, `menu.*`) don't.
+- **Typography** (`mechanics.json`): quotes are curly `“…”`, nested `‘…’`, as macOS vi writes them (Finder `“^0”`,
+  AppKit `‘%@’`); ❌ never a straight `"`. Ellipsis is `…`. No space before `:` `;` `?` `!` or `%`. A Settings path is
+  `Cài đặt › <mục>` except where EN writes `>`. No comma before `và` / `hoặc` in new lists.
+- **No hedged grammar**: Vietnamese nouns never inflect, so there's nothing to bracket. ❌ No `(các) tệp` / `(những)`, no
+  bracketed classifier (`(cái)`, `(chiếc)`), no slashed pronoun (`anh/chị`): write the plain noun (or one ICU `other`
+  arm) and address the user as `bạn`.
 - **Plurals**: CLDR `other` only. One `other` arm, the noun uninflected (`{countText} tệp`); ❌ never an English-shaped
   `one` / `=1` arm. `=0 {…}` is fine where the zero case says something different. A counted noun takes no `các`.
 - **Placeholders**: `{name}`, `{path}`, `{volumeName}`, `{app}` stand bare, with no classifier before them (the value
@@ -241,14 +244,8 @@ Vietnamese has no grammatical number, so one form covers all counts.
   looking for the phone toggle finds `Gỡ lỗi qua USB`. What stays verbatim is the command (`adb`), the acronym (`ADB`),
   and the packaged product names (`Android SDK`, `Homebrew`), matching how the sibling MTP strings keep quoted on-phone
   menu labels English while translating the prose around them.
-- **The reference pile can be missing on the machine you're translating from.** The M1 agent box has no
-  `_ignored/i18n/vi/` at all (it lives only on David's laptop). The fallback in
-  `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?" works and is Tier 1 all the same: mine the
-  installed macOS bundles directly. On macOS 26 most strings sit in `.loctable` files that carry every language at once,
-  so a scan is:
-  `find /System/Library/{Frameworks,PrivateFrameworks,ExtensionKit} /System/Applications /Applications -name '*.loctable'`,
-  then in Python `plistlib.load(f)['vi']` against `['en']` for the same keys. That's how the six terms above were
-  sourced.
+- **No pile on this machine?** Mine the installed macOS bundles instead (Tier 1 all the same):
+  `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
 - **Dạng "(busy)" của một mục menu: giữ nguyên chữ của mục gốc rồi thêm ` (đang bận)`.** Bốn khóa dùng chung một dấu
   hiệu: `menu.volume.ejectBusy` (`Tháo ({name}) (đang bận)`), `menu.volume.disconnectBusy` (`Ngắt kết nối (đang bận)`),
   `menu.volume.forgetSavedPasswordBusy` (`Quên mật khẩu đã lưu (đang bận)`), `menu.volume.forgetServerBusy`
@@ -282,7 +279,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `servers.paneState.signedOutNothingToAsk`.
 - **"rather than" / "instead of" là `thay vì`, và "type/enter vào một ô" là `nhập`.** Cả hai đã ship nhiều chỗ trong
   catalog; đừng nghĩ ra `chứ không phải` hay `gõ` cho chuỗi mới (`gõ ký tự` của macOS dành cho việc gõ trên bàn phím).
-  Bằng chứng: `decisions.md` § Trung tâm máy chủ: khung đang kết nối lại.
+  Bằng chứng: `decisions.md` § Trung tâm máy chủ.
 - **`Ask Cmdr` names the chat panel only; prose about what the assistant DOES says `Cmdr`, and prose about the model
   says `AI`.** English draws the same line: `Ask Cmdr` survives in the panel title, the View menu, the palette command,
   the settings section, and the on/off switch, and is gone from every sentence that merely described the behavior. So a
@@ -314,11 +311,6 @@ Vietnamese has no grammatical number, so one form covers all counts.
   ngoặc (`menu.dock.locationInParent`).
 - **Một lệnh xuất hiện ở hai menu thì hai nhãn phải khớp từng chữ.** `menu.dock.searchFiles` và `menu.edit.searchFiles`
   đều là `Tìm kiếm tệp…`; một biến thể "hay hơn" ở một chỗ sẽ đọc thành hai chức năng khác nhau.
-- **Quotation marks: the catalog uses STRAIGHT `"`, not the curly `“…”` this guide recommends.** Every quoted phrase
-  shipped in `onboarding.json` (`onboarding.stepFda.step2.tip`, `onboarding.stepOptional.networking.desc`,
-  `onboarding.stepAi.table.searchWithout`) mirrors the English's straight quotes, and there are only 12 curly quotes in
-  the whole `vi/` catalog against 136 straight ones. Follow the file you're in: a new key beside straight-quoted
-  siblings uses straight quotes. The curly preference stands for prose that has no quoting neighbours.
 - **Two first persons, and they're not interchangeable.** David speaking is `mình` (`onboarding.stepBeta.greeting`,
   `.feedback.call`, `.star`, `.openBeta`); the USER speaking, as on a radio option, is `tôi`
   (`onboarding.stepAi.cloud.label` = `Có, tôi muốn AI`). Picking the wrong one flips who is talking.
@@ -329,7 +321,7 @@ Vietnamese has no grammatical number, so one form covers all counts.
   `docs/i18n/reference-pile/how-to-mine.md` (walk `/System/**`, `plutil -convert json` each `.loctable`, filter the `en`
   side, read the `vi` side by the same key) takes ~2 minutes and is what sourced `Tại sao?` and `Mạng cục bộ`. Reach for
   it before recording a term as `tentative`.
-- Record any case-by-case rulings here so they aren't relitigated.
+- A ruling that needs more than a line goes to `decisions.md` as a distilled "X over Y because Z" entry, never here.
 
 ## Open questions
 
@@ -341,7 +333,7 @@ each already ships a reasoned value.
 - `../concepts.json`: the shared, language-agnostic concept registry (sense, `match` patterns, confusable neighbors).
 - `concepts-proposed.json`: concepts this locale needed that the registry lacks, staged for the lead to merge.
 - `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
-- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `decisions.md`: distilled rulings ("X over Y because Z"), one section per feature, headings citing their keys.
 - `review-queue.md`: open questions for a native reviewer.
 
 Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section

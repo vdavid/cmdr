@@ -301,7 +301,7 @@
   "@licensing.dialog.activatedToastNamed": {
     "sourceHash": "d0c136a"
   },
-  "licensing.dialog.networkFallbackError": "Không thể xác minh giấy phép của bạn với máy chủ. Vui lòng thử lại sau.",
+  "licensing.dialog.networkFallbackError": "Không thể xác minh giấy phép của bạn với máy chủ. Hãy thử lại sau nhé.",
   "@licensing.dialog.networkFallbackError": {
     "sourceHash": "cb2b8e0"
   },
@@ -317,7 +317,7 @@
   "@licensing.dialog.serverInvalidError": {
     "sourceHash": "4beeef1"
   },
-  "licensing.dialog.emptyKeyError": "Vui lòng nhập khóa giấy phép",
+  "licensing.dialog.emptyKeyError": "Hãy nhập khóa giấy phép",
   "@licensing.dialog.emptyKeyError": {
     "sourceHash": "2b36779"
   },
@@ -365,7 +365,7 @@
   "@licensing.error.server": {
     "sourceHash": "6ca76c0"
   },
-  "licensing.error.serverHint": "Vui lòng thử lại sau.",
+  "licensing.error.serverHint": "Hãy thử lại sau nhé.",
   "@licensing.error.serverHint": {
     "sourceHash": "386b914"
   },
@@ -373,7 +373,7 @@
   "@licensing.error.generic": {
     "sourceHash": "436e264"
   },
-  "licensing.error.genericHint": "Vui lòng thử lại. Nếu vấn đề vẫn còn, hãy gửi email cho chúng tôi và chúng tôi sẽ giúp.",
+  "licensing.error.genericHint": "Hãy thử lại. Nếu vấn đề vẫn còn, hãy gửi email cho chúng tôi và chúng tôi sẽ giúp.",
   "@licensing.error.genericHint": {
     "sourceHash": "9108b68"
   },

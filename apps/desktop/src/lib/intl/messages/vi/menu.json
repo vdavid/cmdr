@@ -447,7 +447,7 @@
   },
   "menu.context.copyNamed": "Sao chép “{name}”",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "Thêm vào mục ưa thích",
   "@menu.context.addToFavorites": {
@@ -543,11 +543,11 @@
   },
   "menu.tag.addNamed": "Thêm “{color}”",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
   "menu.tag.removeNamed": "Gỡ bỏ “{color}”",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "Thêm vào thư mục được lập chỉ mục",
   "@menu.mediaIndex.addFolder": {

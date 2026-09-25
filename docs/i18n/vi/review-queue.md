@@ -33,9 +33,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `commands.favoritesAdd.description`, `commands.favoritesOpen.description`), the dialog tooltips say
   `khung đang hoạt động` (`search.action.*.tooltip`, `selection.action.*.tooltip`). The one Tier-1-sourced option is
   `khung có tiêu điểm` (Finder "Đặt tiêu điểm vào trường tìm kiếm", MS focus → `tiêu điểm`). Pick one and sweep.
-- **Full Disk Access in running prose**: a string that NAMES the setting says `quyền truy cập đầy đủ vào ổ đĩa` (Apple's
-  pane name); the FDA step's prose (`onboarding.stepFda.*`, `askCmdr.wake.needsFullDiskAccess`) still says
-  `truy cập toàn bộ đĩa`. Decide whether the prose moves onto the pane name too.
 - **Deferred whole-catalog migrations to pile-ideal forms**: `bấm đúp` → `bấm kép` (MS and macOS `kép`), `thư mục cha` →
   `thư mục chứa` (Finder's Enclosing Folder), `đuôi tệp` → `phần mở rộng tệp` (macOS). Each is catalog-consistent today;
   switching is one sweep, never a partial split.

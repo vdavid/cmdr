@@ -352,7 +352,7 @@
     "sourceHash": "8a8de82",
     "sameAsSourceJustification": "Punctuation-only placeholder value: a single question mark shown when the backend reports no model size. No translatable text; '?' is locale-neutral."
   },
-  "ai.local.notInstalled": "Chưa cài đặt. Mô hình cục bộ ({modelName}, {modelSize}) chạy hoàn toàn trên thiết bị của bạn để bảo mật tối đa. Yêu cầu Apple silicon.",
+  "ai.local.notInstalled": "Chưa cài đặt. Mô hình cục bộ ({modelName}, {modelSize}) chạy hoàn toàn trên thiết bị của bạn để bảo mật tối đa. Cần Apple silicon.",
   "@ai.local.notInstalled": {
     "sourceHash": "c865b94"
   },
@@ -437,9 +437,9 @@
   "@ai.secretError.keychainTitle": {
     "sourceHash": "ec77588"
   },
-  "ai.secretError.keychainBody": "{op, select, save {Mở Truy cập chuỗi khóa và kiểm tra mục \"Cmdr\", hoặc xóa mục đó rồi thử lưu lại.} other {Mở Truy cập chuỗi khóa, tìm mục \"Cmdr\", cấp quyền truy cập, hoặc xóa mục đó rồi nhập lại khóa của bạn.}}",
+  "ai.secretError.keychainBody": "{op, select, save {Mở Truy cập chuỗi khóa và kiểm tra mục “Cmdr”, hoặc xóa mục đó rồi thử lưu lại.} other {Mở Truy cập chuỗi khóa, tìm mục “Cmdr”, cấp quyền truy cập, hoặc xóa mục đó rồi nhập lại khóa của bạn.}}",
   "@ai.secretError.keychainBody": {
-    "sourceHash": "2a0fe5e"
+    "sourceHash": "8f1380e"
   },
   "ai.secretError.keyringTitle": "{op, select, save {Không thể lưu khóa API của bạn: kho khóa hệ thống đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: kho khóa hệ thống đã từ chối quyền truy cập}}",
   "@ai.secretError.keyringTitle": {

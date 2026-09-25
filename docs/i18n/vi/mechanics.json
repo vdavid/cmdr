@@ -1,0 +1,29 @@
+{
+  "$comment": "Vietnamese typography as macOS vi writes it: curly “…” primary (Finder “^0”, ~620 pairs in the pile), curly ‘…’ nested (AppKit ‘%@’ inside a sentence), no native apostrophe beyond ’ in a kept English name. Spacing is English-like: nothing before : ; ? ! or %. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "apostrophes": ["’"],
+  "spacing": [
+    {
+      "pattern": "[\\p{L}\\p{N}\\uFFFC)”][ \\u00a0\\u202f]+(?:[?!](?=\\s*(?:$|[\\p{Lu}\\uFFFC”)]))|[:;](?=[\\s\\uFFFC]))",
+      "why": "no space before : ; ? ! in Vietnamese (French-style spacing is wrong here); a literal ? or ! mid-sentence, like a wildcard, is fine"
+    },
+    {
+      "pattern": "[\\p{N}\\uFFFC][ \\u00a0\\u202f]%",
+      "why": "no space before % (macOS vi writes 50%)"
+    }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\((?:các|những|mọi|cái|chiếc)\\)",
+      "why": "a bracketed plural marker or classifier (\"(các) tệp\"); vi nouns don't inflect, so write the plain noun or use ICU plural"
+    },
+    {
+      "pattern": "(?<!\\p{L})(?:[Aa]nh|[Cc]hị|[Ôô]ng|[Bb]à|[Ee]m)\\s?/\\s?(?:anh|chị|ông|bà|em)(?!\\p{L})",
+      "why": "a slashed gendered pronoun (\"anh/chị\"); address the user as bạn or drop the pronoun"
+    },
+    {
+      "pattern": "\\p{L}\\((?:s|es)\\)",
+      "why": "an English bracketed plural left in the Vietnamese; vi nouns don't inflect"
+    }
+  ]
+}

@@ -53,11 +53,11 @@
   },
   "main.revealNudge.title": "Mở “Hiển thị trong Finder” trong Cmdr?",
   "@main.revealNudge.title": {
-    "sourceHash": "c92e1b7"
+    "sourceHash": "45a5b47"
   },
   "main.revealNudge.body": "Bạn đã dùng Cmdr một thời gian rồi. Khi một ứng dụng khác chạy “Hiển thị trong Finder”, Cmdr có thể mở thư mục đó thay cho Finder, với con trỏ sẵn ở tệp.",
   "@main.revealNudge.body": {
-    "sourceHash": "fe4072b"
+    "sourceHash": "1db1d28"
   },
   "main.revealNudge.switchBackNote": "Bạn có thể đổi lại bất cứ lúc nào trong Cài đặt.",
   "@main.revealNudge.switchBackNote": {
@@ -73,19 +73,19 @@
   },
   "main.revealNudge.turnedOn": "Cmdr giờ sẽ mở “Hiển thị trong Finder” từ các ứng dụng khác.",
   "@main.revealNudge.turnedOn": {
-    "sourceHash": "8eab42b"
+    "sourceHash": "27c0ea2"
   },
   "main.revealNudge.heldByOtherApp": "Hiện “Hiển thị trong Finder” đang thuộc về {app}. Bạn có thể chuyển nó sang Cmdr trong Cài đặt bất cứ lúc nào.",
   "@main.revealNudge.heldByOtherApp": {
-    "sourceHash": "3f513b0"
+    "sourceHash": "0893821"
   },
   "main.revealNudge.notTurnedOn": "Lần này Cmdr chưa nhận được “Hiển thị trong Finder”. Công tắc nằm trong Cài đặt nếu bạn muốn thử lại.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "4a9920d"
+    "sourceHash": "953a4ee"
   },
   "main.revealActivation.title": "“Hiển thị trong Finder” vừa mở ở đây",
   "@main.revealActivation.title": {
-    "sourceHash": "23d50e1"
+    "sourceHash": "6bb18bb"
   },
   "main.revealActivation.body": "Cmdr được đặt để nhận những lệnh này, nên tệp hiện ra trong một khung thay vì trong Finder. Mọi thứ khác vẫn mở như trước.",
   "@main.revealActivation.body": {
