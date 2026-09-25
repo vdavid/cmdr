@@ -5,9 +5,8 @@ app-wide `docs/style-guide.md` for the English voice these notes carry into Span
 (keyed by the shared `../concepts.json`, plus `concepts-proposed.json`), their rationale in `decisions.md`, and open
 questions in `review-queue.md`.
 
-`es` is the base (European-Spanish-leaning, because macOS base Spanish is es-ES). A region variant (`es-419`, `es-MX`,
-…) would only carry overrides where Latin American usage diverges; the reference pile has `es-419`/`es-MX`/ `es-US`
-folders if one is ever added.
+`es` is the full translation, written for Spain (es-ES), like macOS's base Spanish. The `es-419` overlay carries only
+the keys where Latin American usage differs; the reference pile has `es-419` / `es-MX` / `es-US` folders for it.
 
 ## Digest
 
@@ -19,29 +18,33 @@ The must-know rules; the rest of this file elaborates them.
   titles and yes/no questions too (`¿Revertir esta operación?`, `Añadir a tu informe de error`). Settings descriptions
   take a form that reads as both imperative and third person (`Accede a todo el sistema de archivos …`). Progress lines:
   a gerund with no subject (`Analizando…`, `Haciendo un análisis nuevo …`); with a named target the gerund is reflexive
-  (`Conectándose a {name}…`). Tool-call "done" lines: impersonal `Se` + preterite (`Se buscó en tus fotos`).
-- **One pan-regional base**: `archivo` (never `fichero`), no `vosotros`, `vale la pena` over `merece la pena`,
-  `tomar una foto`, `coste` (catalog-settled). **A just-finished action takes the preterite**
-  (`Cmdr ya envió este informe`, `Algo salió mal`, `No funcionó`), never the peninsular compound perfect; an operation
-  still running keeps `ha escrito`. `ordenador` vs `equipo` is an open decision (`review-queue.md`); new copy says
-  `tu equipo`.
+  (`Conectándose a {name}…`). Tool-call "done" lines: impersonal `Se` + compound perfect (`Se ha buscado en tus fotos`).
+- **Spain Spanish**: `ordenador`, `merece la pena`, `hacer una foto`, `coste`, `pulsar` a key, `archivo` (never
+  `fichero`, which macOS es doesn't use either). No `vosotros`: Cmdr talks to one person. **Tense follows macOS es-ES**:
+  a result in the current time frame takes the compound perfect (`Cmdr ya ha enviado este informe`, `Algo ha ido mal`,
+  `No se ha podido X`); a past event with a finished frame keeps the preterite (`la última vez … se cerró`,
+  `caducó el {date}`, the operation log's history rows).
 - **Voice**: friendly, concise, calm, a verb over a verbal noun. Never the bare labels `error`, `fallo`, `falló`: say
-  what happened and what to do. `X failed` / `Couldn't X` → `No se pudo X`; a stopped queue row →
-  `No se pudo completar`; `Something went wrong` → `Algo salió mal`. A stalled transfer `ha dejado de avanzar` (❌
+  what happened and what to do. `X failed` / `Couldn't X` → `No se ha podido X`; a stopped queue row →
+  `No se ha podido completar`; `Something went wrong` → `Algo ha ido mal`. A stalled transfer `ha dejado de avanzar` (❌
   `se ha detenido`, which reads as paused). "for {duration}" still running → `desde hace {duration}`.
 - **Gender**: nothing may agree with an uncontrolled `{name}`, `{path}`, `{app}`, `{volumeName}`: put it in subject slot
-  with a genderless verb (`{name} se quedó como está`), use a dative, `ahí`, `sin` + infinitive (`sigue sin indexar`),
-  or say the noun (`la unidad`, `el archivo {fileName}`). Never gender the reader: no `listo/a`, `seguro/a`,
-  `ocupado/a`, `conectado/a`, `tú mismo`; restructure (`Tienes acceso`, `cuando tengas conexión`,
-  `Elige tú las carpetas`). People by role: `quien administre este Mac`, `quien posee el servidor`. No `@`/`x`/`-e`
-  endings.
+  with a genderless verb (`{name} se ha quedado como está`), use a dative, `ahí`, `sin` + infinitive
+  (`sigue sin indexar`), or say the noun (`la unidad`, `el archivo {fileName}`). An inserted word Cmdr fills itself
+  (`{kind}` = imagen / documento) gets no article either: `verlo como {kind}`. Never gender the reader with an agreeing
+  adjective (listo, seguro, ocupado, conectado, `tú mismo`); restructure (`Tienes acceso`, `cuando tengas conexión`,
+  `Elige tú las carpetas`). People by role: `quien administre este Mac`, `quien posee el servidor`.
+- **No hedges**: Spanish tempts a slashed or bracketed gender or plural ending (`listo/a`, `archivo(s)`, `el/la`) and
+  inclusive `@` / `x` / `-e` endings. Never write one: ICU `plural` / `select` when Cmdr knows the value, otherwise
+  restructure as above.
 - **Capitalization**: sentence case. `Ajustes` is capitalized even for a lowercase English "settings" (`en Ajustes`);
   `papelera` is lowercase inside a sentence; the view modes are `la vista breve` / `la vista completa`. License tiers
   follow the English capital (`licencia Comercial` vs `suscripción comercial`).
-- **Punctuation**: `¿…?` and `¡…!`. Quote a label Cmdr shows in curly `“…”` (`haz clic en “Eliminar”`), never `«…»`; a
-  literal token the English already quotes (a command, a value, a foreign page title) keeps its straight `"…"`.
-  `{percentText}%` with no space. `4x` → `4 veces`. Menu paths mirror the English separator (`>`, `›`). ICU families
-  double a straight apostrophe; RAW families (`menu.*`, `errors.*`) don't.
+- **Typography** (`mechanics.json`): quotes `“…”`, nested `‘…’`, as macOS es writes them; never `«…»`, never a straight
+  `"`, and never a straight `''…''` pair in ICU. Quotes hug their text. Every `?` / `!` sentence opens with `¿` / `¡`.
+  Spanish has no apostrophe. `…` (one character). `{percentText}%` with no space. `4x` → `4 veces`. Menu paths mirror
+  the English separator (`>`, `›`). ICU families double a straight apostrophe; RAW families (`menu.*`, `errors.*`)
+  don't.
 - **Plurals**: CLDR `one` / `many` / `other`, all three written (`many` repeats `other`). When the sentence continues
   past the counted noun, pull the WHOLE sentence into the branches (the tail agrees). A definite "the {countText} items"
   drops the numeral in `one` (`el elemento`, never `el 1 elemento`).
@@ -102,23 +105,13 @@ copy that pattern.
 
 ## Decision points
 
-Formality is settled above (`tú`). The big remaining Spanish call is the regional variant.
+Formality is settled above (`tú`).
 
-- **Regional variant: target a neutral peninsular `es` base, defer a `es-419` Latin American variant.** Spanish splits
-  into European/peninsular (`es-ES`) and Latin American (`es-419`, with `es-MX`, `es-AR`, etc. under it). All five
-  majors maintain both: Apple ships "Español (España)" and "Español (Latinoamérica)"; Microsoft, Google, Netflix, and
-  Spotify all offer a Spain Spanish and a Latin American Spanish. The differences that surface in a file-manager UI are
-  narrow but real:
-  - **Second-person plural**: Spain uses "vosotros" (informal plural); Latin America uses "ustedes" for both registers.
-    Cmdr addresses one user as singular `tú`, so this rarely surfaces, but any "you all" phrasing must avoid "vosotros"
-    if a single neutral string is the goal.
-  - **A few core verbs/terms differ**: "ordenador" (Spain) vs "computadora"/"computador" (LatAm); "fichero" (Spain,
-    older) vs the now-universal "archivo" (use "archivo" everywhere); "papelera" (trash) is shared. Picking LatAm-safe
-    vocabulary keeps one base usable for most of the Spanish-speaking world.
-  - Recommendation: write the `es` base in a neutral peninsular register that avoids Spain-only vocabulary and
-    "vosotros", so it reads acceptably across regions; add a dedicated `es-419` variant only when a Latin American user
-    flags something. Confidence: high. The single David-only call: whether Cmdr's primary Spanish audience is Spain or
-    Latin America, which decides which way the neutral base leans (`review-queue.md`).
+- **Regional variant: `es` is Spain Spanish, `es-419` overrides it.** Apple, Microsoft, and Google all ship both. `es`
+  follows macOS es-ES vocabulary (`ordenador`, `merece la pena`, `hacer una foto`, `coste`); the `es-419` overlay forks
+  only the keys where Latin America differs (`computadora`, `vale la pena`, `tomar una foto`, `costo`,
+  `Acceso completo al disco`, `presionar` a key). Cmdr addresses one person as `tú`, so `vosotros` / `ustedes` rarely
+  surfaces.
 - **Gendered grammar: prefer direct `tú`-address and neutral nouns; no "@"/"x"/"e" inclusive endings in UI.** Spanish
   agent nouns are gendered ("el usuario" / "la usuaria"). macOS and Microsoft Spanish both avoid gendering the user by
   using direct address ("Selecciona…", "¿Quieres…?") and neutral nouns ("la cuenta", "la persona"), and neither ships
@@ -137,15 +130,8 @@ rulings with no concept of their own are in `decisions.md` § Rulings that have 
 term: mine the reference pile (`_ignored/i18n/es/`; recipes in `../reference-pile/how-to-mine.md`) and add the ruling to
 `terms.json` as you settle it.
 
-Two mining traps this locale hit, worth knowing before the next one:
-
-- **The first TBX hit is often the wrong sense.** `endpoint` has seven senses in the Microsoft TBX, and the first bare
-  hit by id order is `extremo` (the handle at the end of a line, id 51058), which the catalog carried for a while. Ours
-  (id 535789, "the logical representation of a location, typically expressed in URL form") is `punto de conexión`, like
-  five of the seven. Disambiguate by reading `<descrip type="definition">`, never by taking the top match.
-- **A regional split can hide in a gender.** `terminal` (a shell window) is masculine in the explorer-family corpora
-  (`del terminal` ×9, no feminine hit, 2026-09-09); parts of Latin America say `la terminal`. The pan-regional base
-  ships the sourced masculine.
+A regional split can hide in a gender: `terminal` (a shell window) is masculine in the explorer-family corpora
+(`del terminal` ×9, no feminine hit, 2026-09-09), as in Spain; parts of Latin America say `la terminal`.
 
 ## Brand and do-not-translate
 
@@ -166,10 +152,10 @@ grammatical gender; article and adjective must agree with the counted noun in ev
 - **A counted tail with NO plural param has nothing to agree with.** A message that passes only the formatted
   `{somethingText}` for a second count gives you no integer to select on. English gets away with it ("stayed" fits 1 and
   12); Spanish doesn't. The fallback is to drop the conjugated verb and let the first half's noun carry the clause ("Se
-  devolvieron 12 archivos a su sitio; 3 todavía en la papelera."). Ask for an integer partner instead where you can:
+  han devuelto 12 archivos a su sitio; 3 todavía en la papelera."). Ask for an integer partner instead where you can:
   `fileOperations.trash.undonePartial` gained a `{skipped}` driver for exactly this reason, so its second half now
-  conjugates normally ("…; {skippedText} {skipped, plural, one {elemento se quedó} many {elementos se quedaron} other
-  {elementos se quedaron}} en la papelera.").
+  conjugates normally ("…; {skippedText} {skipped, plural, one {elemento se ha quedado} many {elementos se han quedado}
+  other {elementos se han quedado}} en la papelera.").
 - **A definite "the {countText} items" drops the numeral in the `one` branch.** `el 1 elemento` is ungrammatical in
   Spanish, so write `Se eliminó el elemento que Cmdr había creado.` for `one` and keep `{countText}` in `many`/`other`
   (`fileOperations.cancelRollback.doneDeleting`). The catalog already does it where English itself drops the count
@@ -198,27 +184,14 @@ grammatical gender; article and adjective must agree with the counted noun in ev
   (`Expulsar ({name}) (ocupado)`), que fijó la convención. `ocupado` aquí concuerda con el volumen o el servidor, no con
   quien lee, así que la trampa de género de "busy" (más abajo) no se aplica; queda invariable en masculino singular en
   los cuatro ítems.
-- Roster: Cmdr ships one pan-regional Spanish (archivo not fichero, avoid ordenador, ustedes-safe); a Spain variant
-  (es-ES) is deferred. See `../language-selection-decisions.md`.
-- **Quotation marks: macOS Spanish uses `“…”`** (curly), not `«…»`, in its UI strings (verified in `es/macOS/Finder/`,
-  2026-06-19). Match macOS.
-- **Inverted opening marks.** Questions open with `¿` and exclamations with `¡`.
-- **Ellipsis: copy the shape of the en value, character for character.** The in-progress button labels
-  (`errorReporter.dialog.sending` = `Sending…`, `errorReporter.amend.submitting` = `Adding…`) use ONE Unicode `…`, and
-  their `@key` descriptions say so, so the Spanish values do too: "Enviando…", "Añadiendo…". This also matches macOS,
-  which writes "Enviando…". Check the actual en value before assuming: an older note here claimed three ASCII dots.
-- **A just-finished action takes the preterite, not the peninsular compound perfect.** "Cmdr already sent this report" →
-  `Cmdr ya envió este informe`, matching `fileExplorer.navigation.useSavedPasswordMessage` ("la contraseña que macOS ya
-  guardó") and `crashReporter.dialog.body.ended` ("se cerró inesperadamente"). Spain would say "ya ha enviado"; the
-  preterite is the form that reads right on both sides of the Atlantic, which is what the pan-regional base wants. A
-  future `es-ES` variant is where the compound perfect belongs. The rule covers the AI copy too
-  (`suggestedOps.description` `sugirió`, `askCmdr.wake.thinking` `lo que cambió`) and the catch-all `Algo salió mal`.
-- **Numbers and dates come from the formatter layer.** Never hardcode separators.
-- **Two kinds of quotation mark, and they don't mix.** Curly `“…”` quotes a label Cmdr itself shows on screen
-  (`settings.behavior.openTerminalHereApp.label` = "“Abrir terminal aquí” usa"). A literal token the English source
-  already quotes (a command name, a value you type, an OS menu choice) keeps the source's straight `\"` so the two
-  catalogs stay diffable: `settings.fileOperations.mtpEnabled.description` quotes \"Transferencia de archivos\", and
-  `settings.fileOperations.adbEnabled.description` quotes \"adb\" the same way.
+- **Quotation marks: `“…”`, nested `‘…’`**, as macOS es writes them (641 opening `“` in the pile's Spanish values, no
+  `«…»`). One kind for everything: a label Cmdr shows (`“Abrir terminal aquí” usa`), a command (`el comando “adb”`), an
+  OS choice (`“Transferencia de archivos”`), a foreign page title (`“Cmdr”`).
+- **Tense: compound perfect for the current time frame, as macOS es-ES writes it** (`No se ha podido crear la carpeta`):
+  `Cmdr ya ha enviado este informe`, `Algo ha ido mal`, `Se han movido 12 archivos`, AI copy (`ha sugerido`,
+  `lo que ha cambiado`). The preterite stays for a finished past frame: `se cerró inesperadamente la última vez`,
+  `caducó el {date}`, `tardó {duration}` beside a date, `Lo que elegiste la última vez`, and the operation log's history
+  rows (`Se copiaron 3 elementos`), which can be days old.
 - **"Leave this empty and X happens" takes an imperative plus the future.** `Déjalo vacío y Cmdr buscará …`
   (`settings.fileOperations.adbBinaryPath.description`). The present (`y Cmdr busca`) reads as a statement of fact
   rather than a consequence; the imperative-plus-future is the idiomatic Spanish pairing.
@@ -237,17 +210,17 @@ grammatical gender; article and adjective must agree with the counted noun in ev
   without the verdict; `se ha detenido` / `se ha quedado parada` are also off-limits for a different reason (they read
   as "paused", which the queue labels `En pausa`). That second ban covers a PROGRESS line only: when the user really did
   stop something and the line reports the finished result, `detener` is the right verb and the one macOS uses ("Detener
-  copia"), so `La reversión se detuvo después de …` (`fileOperations.cancelRollback.stopped*`) is fine. Naming the
+  copia"), so `La reversión se ha detenido después de …` (`fileOperations.cancelRollback.stopped*`) is fine. Naming the
   subject is what keeps it from reading as a pause.
 - **Nothing may agree with a `{name}`.** The name comes off the disk and can be a file (`archivo`, masculine) or a
   folder (`carpeta`, feminine), so any clitic, article, or participle that agrees with it is wrong half the time. Put
-  the item in the SUBJECT slot and use a verb that carries no gender ("{name} se quedó como está"), reach for a dative
-  ("Cmdr no pudo devolverle su nombre anterior"), or say the noun outright when the key is folder-only ("La carpeta
-  {name}"). The `askCmdr.renameUndo.skipReason.*` and `fileOperations.cancelRollback.reason.*` families are the worked
-  examples. Watch the second constraint that usually rides along: a brand word in the English (`Cmdr`) has to survive
-  the restructuring too (`desktop-i18n-dont-translate`), so "after Cmdr put it there" can drop neither the agreement nor
-  the brand; it became `cambió después de que Cmdr terminara de escribir ahí`, with Cmdr as the subject of a subordinate
-  clause and a place instead of an object pronoun.
+  the item in the SUBJECT slot and use a verb that carries no gender ("{name} se ha quedado como está"), reach for a
+  dative ("Cmdr no ha podido devolverle su nombre anterior"), or say the noun outright when the key is folder-only ("La
+  carpeta {name}"). The `askCmdr.renameUndo.skipReason.*` and `fileOperations.cancelRollback.reason.*` families are the
+  worked examples. Watch the second constraint that usually rides along: a brand word in the English (`Cmdr`) has to
+  survive the restructuring too (`desktop-i18n-dont-translate`), so "after Cmdr put it there" can drop neither the
+  agreement nor the brand; it became `cambió después de que Cmdr terminara de escribir ahí`, with Cmdr as the subject of
+  a subordinate clause and a place instead of an object pronoun.
 - **Watch the quiet gendered words in emphatic English.** "yourself", "busy", "sure", "ready" all reach for a `-o`/`-a`
   adjective in Spanish and silently gender the reader. Restructure with the pronoun instead of the adjective: "Pick the
   folders yourself" → "Elige tú las carpetas" (not "Elige las carpetas tú mismo"); "while you're not busy" → "mientras
@@ -258,10 +231,8 @@ grammatical gender; article and adjective must agree with the counted noun in ev
   progreso desde hace 45 s" runs ~40% longer than the English, and the one key renders on two surfaces, the progress
   dialog and the narrow ETA slot of a queue row. Fit the narrow one; the dialog then shows the same short text, and
   there is no separate row string to trim on its own.
-- **Photos are "taken" with `tomar`, never `hacer` or `sacar`.** "where it was taken" → `el lugar donde se tomó`
-  (`ai.cloudConsent.askCmdr.contentsRule`). Spain says `hacer una foto` and Latin America `tomar una foto`; `tomar`
-  reads fine on both sides, which is what the pan-regional base wants, and `sacar` is the colloquial one. Same shape as
-  the `coste` / preterite decisions above. Evidence: `decisions.md` § Mirar dentro de un archivo.
+- **Photos are taken with `hacer`**: `el lugar donde se hizo` (`ai.cloudConsent.askCmdr.contentsRule`), Spain's
+  `hacer una foto`; `tomar` is the `es-419` form.
 - **A "last X" column takes a NOUN phrase, not a participle.** macOS `es` names its date columns `Última apertura` (Last
   Opened) and `Fecha de modificación`, and the catalog already settled `Modified` → `Modificación`. So `Last used` →
   `Último uso`, not `Usado por última vez`. Evidence: `decisions.md` § La tabla del hub de servidores.
@@ -286,10 +257,6 @@ grammatical gender; article and adjective must agree with the counted noun in ev
   (`fileExplorer.breadcrumb.navigateTooltip`). Un inglés coloquial tipo «hit Save again» se traduce igual:
   `vuelve a hacer clic en Guardar` (`onboarding.stepBeta.signup.rejected`). `pulsar` queda para las TECLAS
   (`Pulsa Intro para buscar`).
-- **Un nombre de botón que llega por marcador (`{nextLabel}`) va entre comillas curvas.** Es una etiqueta que Cmdr pinta
-  en pantalla, así que cae del lado curvo de la frontera de comillas de más arriba, aunque el inglés use las rectas.
-  Worked example: `onboarding.stepAi.missingKeyWarning`. Un literal ajeno (el título `"Cmdr"` de una página de
-  AlternativeTo, la etiqueta `"Red local"` del panel de privacidad de macOS) conserva las rectas del inglés.
 - **Un resumen de una línea junto a un interruptor no puede envolver, así que se recorta antes que alargarse.** Las
   cuatro claves `onboarding.stepOptional.*.summary` son telegráficas en inglés y lo siguen siendo en español: verbo en
   tercera persona, lista con comas, sin subordinadas («Ocupa 1 GB, acelera las búsquedas y muestra tamaños de carpeta»).

@@ -175,7 +175,7 @@
   "@shortcuts.section.removeFromOther": {
     "sourceHash": "f154164"
   },
-  "shortcuts.section.alreadyBound": "<b>{combo}</b> ya está asignado a ''{command}''",
+  "shortcuts.section.alreadyBound": "<b>{combo}</b> ya está asignado a “{command}”",
   "@shortcuts.section.alreadyBound": {
     "sourceHash": "5c29fcb"
   },

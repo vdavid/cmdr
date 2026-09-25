@@ -15,15 +15,15 @@
   "@viewer.loading": {
     "sourceHash": "ba3bbbe"
   },
-  "viewer.error.noPath": "No se especificó ninguna ruta de archivo",
+  "viewer.error.noPath": "No se ha especificado ninguna ruta de archivo",
   "@viewer.error.noPath": {
     "sourceHash": "2b069fc"
   },
-  "viewer.error.readFailed": "No se pudo leer el archivo",
+  "viewer.error.readFailed": "No se ha podido leer el archivo",
   "@viewer.error.readFailed": {
     "sourceHash": "ea7d976"
   },
-  "viewer.error.notFound": "No se pudo encontrar este archivo. Puede que se haya movido, renombrado o eliminado.",
+  "viewer.error.notFound": "No se ha podido encontrar este archivo. Puede que se haya movido, renombrado o eliminado.",
   "@viewer.error.notFound": {
     "sourceHash": "580b83c"
   },
@@ -31,7 +31,7 @@
   "@viewer.error.isDirectory": {
     "sourceHash": "b29fe2e"
   },
-  "viewer.error.timeout": "No se pudo cargar el archivo. El volumen puede estar lento o no responder.",
+  "viewer.error.timeout": "No se ha podido cargar el archivo. El volumen puede estar lento o no responder.",
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
@@ -39,7 +39,7 @@
   "@viewer.error.tooLargeToPreview": {
     "sourceHash": "8696039"
   },
-  "viewer.error.archiveUnreadable": "No se pudo abrir este archivo desde el archivo comprimido. Puede que esté cifrado, dañado o use un formato que Cmdr no puede leer.",
+  "viewer.error.archiveUnreadable": "No se ha podido abrir este archivo desde el archivo comprimido. Puede que esté cifrado, dañado o use un formato que Cmdr no puede leer.",
   "@viewer.error.archiveUnreadable": {
     "sourceHash": "01490a6"
   },
@@ -71,7 +71,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "Esta es la vista en bruto del archivo. Quizá prefieras ver el <kindName>{kind}</kindName> en su lugar. Para hacerlo, cierra esta ventana y pulsa <quickLookKey></quickLookKey> para abrir la vista rápida, o pulsa <openKey></openKey> (o haz doble clic en el archivo) para abrirlo en la app asociada.",
+  "viewer.binaryWarning.body": "Esta es la vista en bruto del archivo. Quizá prefieras verlo como <kindName>{kind}</kindName>. Para hacerlo, cierra esta ventana y pulsa <quickLookKey></quickLookKey> para abrir la vista rápida, o pulsa <openKey></openKey> (o haz doble clic en el archivo) para abrirlo en la app asociada.",
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
@@ -250,7 +250,7 @@
   "@viewer.statusBar.badge.streaming": {
     "sourceHash": "b304adc"
   },
-  "viewer.statusBar.badge.streamingTooltip": "Este es un archivo grande en modo de transmisión. Indexarlo habría tardado más de {seconds} s, así que no lo hicimos. Los números de línea son estimaciones.",
+  "viewer.statusBar.badge.streamingTooltip": "Este es un archivo grande en modo de transmisión. Indexarlo habría tardado más de {seconds} s, así que no lo hemos hecho. Los números de línea son estimaciones.",
   "@viewer.statusBar.badge.streamingTooltip": {
     "sourceHash": "1752e59"
   },
@@ -279,7 +279,7 @@
   "@viewer.image.loading": {
     "sourceHash": "65999b8"
   },
-  "viewer.image.error": "Lo sentimos, no pudimos mostrar esta imagen. El archivo puede estar dañado o tener un formato que no podemos mostrar.",
+  "viewer.image.error": "Lo sentimos, no hemos podido mostrar esta imagen. El archivo puede estar dañado o tener un formato que no podemos mostrar.",
   "@viewer.image.error": {
     "sourceHash": "9a24fe8"
   },
@@ -327,11 +327,11 @@
   "@viewer.copyDialog.refuseBody": {
     "sourceHash": "75f3043"
   },
-  "viewer.reloadToast.grew": "El archivo cambió en el disco. ¿Recargar?",
+  "viewer.reloadToast.grew": "El archivo ha cambiado en el disco. ¿Recargar?",
   "@viewer.reloadToast.grew": {
     "sourceHash": "d66b013"
   },
-  "viewer.reloadToast.rotated": "El archivo se reemplazó en el disco. Recarga para ver el nuevo contenido.",
+  "viewer.reloadToast.rotated": "El archivo se ha reemplazado en el disco. Recarga para ver el nuevo contenido.",
   "@viewer.reloadToast.rotated": {
     "sourceHash": "50804c2"
   },
@@ -347,19 +347,19 @@
   "@viewer.copy.onClipboard": {
     "sourceHash": "45934ed"
   },
-  "viewer.copy.clipboardUnreachable": "No se pudo acceder al portapapeles. ¿Reintentar?",
+  "viewer.copy.clipboardUnreachable": "No se ha podido acceder al portapapeles. ¿Reintentar?",
   "@viewer.copy.clipboardUnreachable": {
     "sourceHash": "c0382ba"
   },
-  "viewer.copy.readTooLong": "La lectura tardó demasiado. ¿Probar con una selección más pequeña?",
+  "viewer.copy.readTooLong": "La lectura ha tardado demasiado. ¿Probar con una selección más pequeña?",
   "@viewer.copy.readTooLong": {
     "sourceHash": "2275e83"
   },
-  "viewer.copy.copyFailed": "No se pudo copiar la selección. ¿Reintentar?",
+  "viewer.copy.copyFailed": "No se ha podido copiar la selección. ¿Reintentar?",
   "@viewer.copy.copyFailed": {
     "sourceHash": "6a1ab41"
   },
-  "viewer.copy.readFailed": "No se pudo leer la selección. ¿Reintentar?",
+  "viewer.copy.readFailed": "No se ha podido leer la selección. ¿Reintentar?",
   "@viewer.copy.readFailed": {
     "sourceHash": "bde5f85"
   },
@@ -371,7 +371,7 @@
   "@viewer.saveAs.defaultName": {
     "sourceHash": "6504513"
   },
-  "viewer.saveAs.panelFailed": "No se pudo abrir el panel de guardado. ¿Reintentar?",
+  "viewer.saveAs.panelFailed": "No se ha podido abrir el panel de guardado. ¿Reintentar?",
   "@viewer.saveAs.panelFailed": {
     "sourceHash": "70c3f76"
   },
@@ -379,11 +379,11 @@
   "@viewer.saveAs.saved": {
     "sourceHash": "5083c12"
   },
-  "viewer.saveAs.tooLong": "Guardar tardó demasiado. ¿Probar con una selección más pequeña?",
+  "viewer.saveAs.tooLong": "Guardar ha tardado demasiado. ¿Probar con una selección más pequeña?",
   "@viewer.saveAs.tooLong": {
     "sourceHash": "f31d7f4"
   },
-  "viewer.saveAs.saveFailed": "No se pudo guardar la selección. ¿Reintentar?",
+  "viewer.saveAs.saveFailed": "No se ha podido guardar la selección. ¿Reintentar?",
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },

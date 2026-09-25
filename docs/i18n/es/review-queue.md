@@ -6,13 +6,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 
 ## For David
 
-- **Primary audience: Spain or Latin America?** The base is neutral peninsular-leaning (`style.md` § Decision points).
-  The answer decides `coste` vs `costo`, `ordenador` vs `equipo` vs `computadora`, `añadir` vs `agregar` (LatAm macOS
-  says Agregar), and whether an `es-419` variant is worth opening.
-- **"your computer/machine" → `tu equipo` vs `ordenador`**: macOS `es` writes `ordenador` (43 against 1 `equipo` in
-  Finder + AppKit + SystemSettings, 2026-09-09), but it's Spain-only; new copy says `tu equipo` (Microsoft's word,
-  already in `errors.json`). Still on `ordenador`: `settings.mediaIndex.privacyNote`, `settings.ai.tooltipLocal`,
-  `errors.listing.hostDown.explanation`, `errors.listing.deviceProblem.suggestion`. One word, one sweep once decided.
 - **crash report → `informe de fallos`** (tentative): no canonical source. `fallos` is the gentlest fit for the
   non-alarmist voice; alternatives are `informe de bloqueos` (matches MS/macOS `bloqueo`) or the generic
   `informe del problema`.
@@ -20,10 +13,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `Herramientas de la plataforma del SDK de Android`, too long for a settings row. Used in
   `settings.fileOperations.adbEnabled.description`, `settings.fileOperations.adbBinaryPath.description`,
   `settings.adb.install.intro`, and `adb.connect.adbNotInstalled`; all move together.
-- **full disk access in running prose**: the name is now Apple's `acceso total al disco`, but the FDA onboarding step's
-  prose (`onboarding.stepFda.revoked.noAccess` and siblings, `askCmdr.wake.needsFullDiskAccess`,
-  `search.coverage.setUpFullDiskAccess`) still says `acceso a todo el disco`. Sweep it onto the pane name, or keep the
-  split between naming and describing?
 
 ## Terms
 
@@ -47,9 +36,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **`typo` → `errata`**, **`dumber` → `más torpe`**, **`signup server` → `servidor de altas`**: unsourced.
 - **Terminal's article**: the catalog writes `En la Terminal` 24 times and `en Terminal` five; Apple's Spanish help says
   `Abrir en Terminal` with no article. Settle one form.
-- **The beta signup lines** (`onboarding.stepBeta.signup.failure`, `settings.updates.emailSignupError`) say
-  `no hemos podido darte de alta ahora mismo`, a peninsular compound perfect in David's voice; `no pudimos` would follow
-  the preterite rule but reads odd beside `ahora mismo`.
 
 ## Surfaces
 

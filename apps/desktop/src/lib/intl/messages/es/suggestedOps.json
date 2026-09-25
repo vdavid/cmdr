@@ -3,7 +3,7 @@
   "@suggestedOps.title": {
     "sourceHash": "4f24ca6"
   },
-  "suggestedOps.description": "La IA sugirió esto. No se ejecuta nada hasta que lo apruebes.",
+  "suggestedOps.description": "La IA ha sugerido esto. No se ejecuta nada hasta que lo apruebes.",
   "@suggestedOps.description": {
     "sourceHash": "73255a0"
   },
@@ -11,7 +11,7 @@
   "@suggestedOps.empty": {
     "sourceHash": "b93eccd"
   },
-  "suggestedOps.loadFailed": "Cmdr no pudo leer las sugerencias. Cierra esto y vuelve a abrirlo.",
+  "suggestedOps.loadFailed": "Cmdr no ha podido leer las sugerencias. Cierra esto y vuelve a abrirlo.",
   "@suggestedOps.loadFailed": {
     "sourceHash": "3d3af5a"
   },
@@ -67,7 +67,7 @@
   "@suggestedOps.folderWillBeCreatedTooltip": {
     "sourceHash": "2d28b7c"
   },
-  "suggestedOps.destinationUnknown": "Cmdr no pudo comprobar la carpeta de destino",
+  "suggestedOps.destinationUnknown": "Cmdr no ha podido comprobar la carpeta de destino",
   "@suggestedOps.destinationUnknown": {
     "sourceHash": "e1293c5"
   },
@@ -75,7 +75,7 @@
   "@suggestedOps.fromPattern": {
     "sourceHash": "20e88a9"
   },
-  "suggestedOps.changedUnderReview": "La IA cambió esta sugerencia mientras la leías.",
+  "suggestedOps.changedUnderReview": "La IA ha cambiado esta sugerencia mientras la leías.",
   "@suggestedOps.changedUnderReview": {
     "sourceHash": "5d07c7c"
   },
@@ -111,7 +111,7 @@
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },
-  "suggestedOps.filesLoadFailed": "Cmdr no pudo cargar estos archivos.",
+  "suggestedOps.filesLoadFailed": "Cmdr no ha podido cargar estos archivos.",
   "@suggestedOps.filesLoadFailed": {
     "sourceHash": "c61d214"
   },
@@ -119,7 +119,7 @@
   "@suggestedOps.retryFiles": {
     "sourceHash": "d8b8392"
   },
-  "suggestedOps.decisionNotRecorded": "Cmdr no pudo guardar tu respuesta. Vuelve a intentarlo.",
+  "suggestedOps.decisionNotRecorded": "Cmdr no ha podido guardar tu respuesta. Vuelve a intentarlo.",
   "@suggestedOps.decisionNotRecorded": {
     "sourceHash": "d4ee9cf"
   },

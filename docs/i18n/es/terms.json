@@ -243,7 +243,7 @@
     ],
     "confidence": "tentative",
     "sources": "Cmdr's own view-mode name; catalog (menu.view.briefView)",
-    "decision": "La migración al termbase: arreglos de coherencia"
+    "decision": "Coherencia del termbase"
   },
   "browse": {
     "chosen": "explorar",
@@ -535,11 +535,11 @@
     "avoid": [
       {
         "form": "costo",
-        "why": "the catalog says coste throughout; switch only if a LatAm-primary audience is confirmed"
+        "why": "Latin American (es-419); es is written for Spain"
       }
     ],
     "confidence": "tentative",
-    "sources": "catalog (onboarding.json descCost); peninsular spelling kept for consistency",
+    "sources": "catalog (onboarding.json descCost); Spain's form",
     "decision": "Ask Cmdr: el panel del chat"
   },
   "crash-report": {
@@ -895,9 +895,18 @@
     "decision": "Archivos comprimidos: explorar, extraer, eliminar"
   },
   "failed": {
-    "chosen": "No se pudo",
-    "accept": ["no se pudieron", "no pudo", "no pudieron", "no se completó", "salió mal", "sin completar", "no super"],
-    "forms": "X failed / Couldn't X → No se pudo X; {Verb} failed with a runtime English verb → No se pudo completar la acción {Verb}; Something went wrong → Algo salió mal",
+    "chosen": "No se ha podido",
+    "accept": [
+      "no se han podido",
+      "no ha podido",
+      "no han podido",
+      "no se completó",
+      "ha ido mal",
+      "sin completar",
+      "no super",
+      "hemos podido"
+    ],
+    "forms": "X failed / Couldn't X → No se ha podido X (macOS es-ES: No se ha podido crear la carpeta); {Verb} failed with a runtime English verb → No se ha podido completar la acción {Verb}; Something went wrong → Algo ha ido mal",
     "avoid": [
       {
         "form": "Error",
@@ -913,7 +922,7 @@
     "exceptions": {
       "fileExplorer.network.reconnect.finalAttempt": "Voice rule: \"if it fails\" → si tampoco funciona."
     },
-    "decision": "La migración al termbase: arreglos de coherencia"
+    "decision": "Coherencia del termbase"
   },
   "favorites": {
     "chosen": "favoritos",
@@ -989,7 +998,7 @@
     "forms": "with the article: el Finder, del Finder, junto al Finder",
     "confidence": "high",
     "sources": "macOS Finder (Mostrar en el Finder)",
-    "decision": "La migración al termbase: arreglos de coherencia"
+    "decision": "Coherencia del termbase"
   },
   "fingerprint": {
     "chosen": "huella digital",
@@ -1046,11 +1055,11 @@
   },
   "full-disk-access": {
     "chosen": "acceso total al disco",
-    "accept": ["acceso a todo el disco"],
-    "forms": "where a string NAMES the setting: acceso total al disco (the badge Sin acceso total al disco); the FDA step's running prose still says acceso a todo el disco",
+    "forms": "a NAME (the badge, the System Settings path) is acceso total al disco; running prose may say acceso a todo el disco",
     "confidence": "high",
     "sources": "SecurityPrivacyExtension.appex Localizable.loctable ALL_FILES = Acceso total al disco (macOS 27.0 26A428, 2026-09-16)",
-    "decision": "La insignia de acceso total al disco en la barra de título"
+    "decision": "La insignia de acceso total al disco en la barra de título",
+    "proseAccept": ["acceso a todo el disco"]
   },
   "full-screen": {
     "chosen": "pantalla completa",
@@ -1075,7 +1084,7 @@
     ],
     "confidence": "tentative",
     "sources": "Cmdr's own view-mode name; catalog (menu.view.fullView)",
-    "decision": "La migración al termbase: arreglos de coherencia"
+    "decision": "Coherencia del termbase"
   },
   "function-key-bar": {
     "chosen": "barra de teclas de función",
@@ -1267,7 +1276,7 @@
     "forms": "one other file → otro archivo; N other items → otros N elementos",
     "confidence": "high",
     "sources": "catalog (44 to 8 over macOS ítem)",
-    "decision": "La migración al termbase: arreglos de coherencia"
+    "decision": "Coherencia del termbase"
   },
   "keep": {
     "chosen": "Conservar",
@@ -1305,9 +1314,9 @@
     "sources": "macOS standard defer button"
   },
   "leave-alone": {
-    "chosen": "se quedó como está",
-    "accept": ["se quedó", "se quedaron", "quedan", "conservó", "como estaba"],
-    "forms": "Left {name} alone → {name} se quedó como está; Left {name} where it is → {name} se quedó donde está; left them in place → los conservó donde estaban",
+    "chosen": "se ha quedado como está",
+    "accept": ["se ha quedado", "se han quedado", "quedan", "ha conservado", "como estaba"],
+    "forms": "Left {name} alone → {name} se ha quedado como está; Left {name} where it is → {name} se ha quedado donde está; left them in place → los ha conservado donde estaban",
     "confidence": "high",
     "sources": "catalog (askCmdr.renameUndo.skipReason.*)",
     "decision": "El aviso de una reversión que no lo pudo todo"
@@ -1530,9 +1539,17 @@
     "sources": "standard"
   },
   "not-finished": {
-    "chosen": "No se pudo completar",
-    "accept": ["no se completó", "no se pudieron completar", "sin terminar", "no pudo completar", "no terminó"],
-    "forms": "queue status No se pudo completar; the toast title's arms No se pudo completar + the operation noun (la copia, el movimiento, la eliminación, el cambio de nombre…); operation log status No se completó",
+    "chosen": "No se ha podido completar",
+    "accept": [
+      "no se completó",
+      "no se han podido completar",
+      "sin terminar",
+      "no ha podido completar",
+      "no ha terminado",
+      "no se ha completado",
+      "no terminó"
+    ],
+    "forms": "queue status No se ha podido completar; the toast title arms No se ha podido completar + the operation noun (la copia, el movimiento, la eliminación, el cambio de nombre…); operation log status No se completó (a history row)",
     "avoid": [
       {
         "form": "No se pudo terminar de copiar",
@@ -2301,7 +2318,7 @@
     ],
     "confidence": "high",
     "sources": "Cmdr's license (BSL)",
-    "decision": "La migración al termbase: arreglos de coherencia"
+    "decision": "Coherencia del termbase"
   },
   "start-up": {
     "chosen": "iniciar",
@@ -2443,13 +2460,22 @@
     "sources": "catalog"
   },
   "this-computer": {
-    "chosen": "equipo",
-    "accept": ["ordenador"],
-    "forms": "your machine → tu equipo; this computer → este equipo (never Mac, where the sentence also runs on Linux)",
-    "confidence": "tentative",
-    "sources": "MS (equipo); catalog (errors.json, onboarding.stepAi.local.tooltip)",
-    "note": "macOS es says ordenador (43 against 1), but it's Spain-only vocabulary; the pan-regional base takes Microsoft's equipo. Open decision in review-queue.md.",
-    "decision": "Las 23 claves del rediseño de la introducción"
+    "chosen": "ordenador",
+    "accept": ["ordenadores"],
+    "forms": "your machine → tu ordenador; this computer → este ordenador (never Mac, where the sentence also runs on Linux)",
+    "confidence": "high",
+    "sources": "macOS es (Ordenador; ordenador 43 against 1 equipo in Finder + AppKit + SystemSettings)",
+    "decision": "Las 23 claves del rediseño de la introducción",
+    "avoid": [
+      {
+        "form": "equipo",
+        "why": "Microsoft's word; es is written for Spain, where macOS says ordenador"
+      },
+      {
+        "form": "computadora",
+        "why": "Latin American (es-419)"
+      }
+    ]
   },
   "threshold": {
     "chosen": "umbral",
@@ -2561,17 +2587,17 @@
   },
   "unexpected": {
     "chosen": "inesperado",
-    "accept": ["inesperad", "salió mal"],
-    "forms": "Something went wrong → Algo salió mal; the catch-all Algo salió mal y Cmdr no pudo saber qué.",
+    "accept": ["inesperad", "ha ido mal"],
+    "forms": "Something went wrong → Algo ha ido mal; the catch-all Algo ha ido mal y Cmdr no ha podido saber qué.",
     "avoid": [
       {
-        "form": "Algo ha ido mal",
-        "why": "peninsular compound perfect; the pan-regional preterite rule says Algo salió mal (nine keys)"
+        "form": "Algo salió mal",
+        "why": "the preterite reads Latin American for something that just happened; es follows macOS es-ES (es-419 keeps it)"
       }
     ],
     "confidence": "high",
     "sources": "macOS AppKit (se cerró inesperadamente)",
-    "decision": "La migración al termbase: arreglos de coherencia"
+    "decision": "Coherencia del termbase"
   },
   "unlock": {
     "chosen": "Desbloquear",
@@ -2694,7 +2720,7 @@
     "accept": ["vigil", "evento"],
     "confidence": "tentative",
     "sources": "catalog (File system watching → Vigilancia del sistema de archivos)",
-    "decision": "La migración al termbase: arreglos de coherencia"
+    "decision": "Coherencia del termbase"
   },
   "whats-new": {
     "chosen": "Novedades",

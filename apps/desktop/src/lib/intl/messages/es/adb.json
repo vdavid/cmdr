@@ -1,5 +1,5 @@
 {
-  "adb.connect.adbNotInstalled": "Cmdr no pudo encontrar las herramientas de plataforma de Android.",
+  "adb.connect.adbNotInstalled": "Cmdr no ha podido encontrar las herramientas de plataforma de Android.",
   "@adb.connect.adbNotInstalled": {
     "sourceHash": "4d83ac5"
   },
@@ -7,7 +7,7 @@
   "@adb.connect.openSettings": {
     "sourceHash": "3f94010"
   },
-  "adb.connect.serverUnreachable": "Las herramientas de Android en este Mac no respondieron.",
+  "adb.connect.serverUnreachable": "Las herramientas de Android en este Mac no han respondido.",
   "@adb.connect.serverUnreachable": {
     "sourceHash": "154d824"
   },
@@ -23,11 +23,11 @@
   "@adb.connect.deviceTooOld": {
     "sourceHash": "2e1b0c1"
   },
-  "adb.connect.timedOut": "Tu teléfono no respondió a tiempo.",
+  "adb.connect.timedOut": "Tu teléfono no ha respondido a tiempo.",
   "@adb.connect.timedOut": {
     "sourceHash": "5a90cf8"
   },
-  "adb.connect.transport": "Cmdr perdió la conexión con tu teléfono.",
+  "adb.connect.transport": "Cmdr ha perdido la conexión con tu teléfono.",
   "@adb.connect.transport": {
     "sourceHash": "d90c37c"
   },

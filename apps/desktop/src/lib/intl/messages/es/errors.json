@@ -3,7 +3,7 @@
   "@errors.listing.interrupted.title": {
     "sourceHash": "132d124"
   },
-  "errors.listing.interrupted.explanation": "Una operación del sistema se interrumpió antes de poder terminar. Casi siempre es algo puntual, provocado por una señal o por un proceso en segundo plano que se cruzó un instante.",
+  "errors.listing.interrupted.explanation": "Una operación del sistema se ha interrumpido antes de poder terminar. Casi siempre es algo puntual, provocado por una señal o por un proceso en segundo plano que se ha cruzado un instante.",
   "@errors.listing.interrupted.explanation": {
     "sourceHash": "7f88a37"
   },
@@ -15,7 +15,7 @@
   "@errors.listing.notEnoughMemory.title": {
     "sourceHash": "96dc194"
   },
-  "errors.listing.notEnoughMemory.explanation": "El sistema se quedó sin memoria disponible (RAM) al leer esta carpeta. Esto puede pasar cuando hay muchas apps abiertas a la vez, o cuando una carpeta contiene un número muy grande de archivos.",
+  "errors.listing.notEnoughMemory.explanation": "El sistema se ha quedado sin memoria disponible (RAM) al leer esta carpeta. Esto puede pasar cuando hay muchas apps abiertas a la vez, o cuando una carpeta contiene un número muy grande de archivos.",
   "@errors.listing.notEnoughMemory.explanation": {
     "sourceHash": "ff103cd"
   },
@@ -27,7 +27,7 @@
   "@errors.listing.resourceBusy.title": {
     "sourceHash": "3ad6486"
   },
-  "errors.listing.resourceBusy.explanation": "Cmdr no pudo acceder a `{path}` porque otra app o proceso lo está usando en exclusiva ahora mismo. Suele ser algo temporal.",
+  "errors.listing.resourceBusy.explanation": "Cmdr no ha podido acceder a `{path}` porque otra app o proceso lo está usando en exclusiva ahora mismo. Suele ser algo temporal.",
   "@errors.listing.resourceBusy.explanation": {
     "sourceHash": "8c7bdd4"
   },
@@ -59,11 +59,11 @@
   "@errors.listing.networkDown.suggestion": {
     "sourceHash": "3fe671d"
   },
-  "errors.listing.networkConnectionDropped.title": "Se cortó la conexión de red",
+  "errors.listing.networkConnectionDropped.title": "Se ha cortado la conexión de red",
   "@errors.listing.networkConnectionDropped.title": {
     "sourceHash": "5654be9"
   },
-  "errors.listing.networkConnectionDropped.explanation": "La conexión de red se reinició de forma inesperada mientras Cmdr leía esta carpeta. Esto puede pasar cuando un router se reinicia, una VPN se reconecta o la red está inestable un momento.",
+  "errors.listing.networkConnectionDropped.explanation": "La conexión de red se ha reiniciado de forma inesperada mientras Cmdr leía esta carpeta. Esto puede pasar cuando un router se reinicia, una VPN se reconecta o la red está inestable un momento.",
   "@errors.listing.networkConnectionDropped.explanation": {
     "sourceHash": "b155930"
   },
@@ -71,11 +71,11 @@
   "@errors.listing.networkConnectionDropped.suggestion": {
     "sourceHash": "17c6bb8"
   },
-  "errors.listing.connectionDropped.title": "Se cortó la conexión",
+  "errors.listing.connectionDropped.title": "Se ha cortado la conexión",
   "@errors.listing.connectionDropped.title": {
     "sourceHash": "9049f3d"
   },
-  "errors.listing.connectionDropped.explanation": "El servidor o la red cortaron la conexión antes de que Cmdr pudiera terminar de leer. A menudo significa que el servidor está sobrecargado o reiniciándose.",
+  "errors.listing.connectionDropped.explanation": "El servidor o la red han cortado la conexión antes de que Cmdr pudiera terminar de leer. A menudo significa que el servidor está sobrecargado o reiniciándose.",
   "@errors.listing.connectionDropped.explanation": {
     "sourceHash": "2d447c3"
   },
@@ -87,7 +87,7 @@
   "@errors.listing.connectionReset.title": {
     "sourceHash": "6346f08"
   },
-  "errors.listing.connectionReset.explanation": "El servidor remoto cerró la conexión de forma inesperada. Esto puede pasar cuando el servidor se reinicia, agota un tiempo de espera o tiene un problema interno.",
+  "errors.listing.connectionReset.explanation": "El servidor remoto ha cerrado la conexión de forma inesperada. Esto puede pasar cuando el servidor se reinicia, agota un tiempo de espera o tiene un problema interno.",
   "@errors.listing.connectionReset.explanation": {
     "sourceHash": "3ccfa1c"
   },
@@ -95,11 +95,11 @@
   "@errors.listing.connectionReset.suggestion": {
     "sourceHash": "0ee3d15"
   },
-  "errors.listing.connectionTimedOutErrno.title": "Se agotó el tiempo de espera de la conexión",
+  "errors.listing.connectionTimedOutErrno.title": "Se ha agotado el tiempo de espera de la conexión",
   "@errors.listing.connectionTimedOutErrno.title": {
     "sourceHash": "2e0b4a7"
   },
-  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr intentó leer esta carpeta pero la conexión no respondió a tiempo. Normalmente significa que el servidor o el dispositivo van lentos, no son accesibles, o que la red entre tú y ellos está congestionada.",
+  "errors.listing.connectionTimedOutErrno.explanation": "Cmdr ha intentado leer esta carpeta pero la conexión no ha respondido a tiempo. Normalmente significa que el servidor o el dispositivo van lentos, no son accesibles, o que la red entre tú y ellos está congestionada.",
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "33612d4"
   },
@@ -135,7 +135,7 @@
   "@errors.listing.lockUnavailable.title": {
     "sourceHash": "3123ad5"
   },
-  "errors.listing.lockUnavailable.explanation": "El sistema se quedó sin bloqueos de archivos. Los bloqueos de archivos son la forma en que las apps coordinan el acceso a archivos compartidos (para evitar que dos apps escriban en el mismo archivo a la vez). Quedarse sin ellos suele significar que demasiadas apps acceden a archivos a la vez.",
+  "errors.listing.lockUnavailable.explanation": "El sistema se ha quedado sin bloqueos de archivos. Los bloqueos de archivos son la forma en que las apps coordinan el acceso a archivos compartidos (para evitar que dos apps escriban en el mismo archivo a la vez). Quedarse sin ellos suele significar que demasiadas apps acceden a archivos a la vez.",
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
@@ -147,7 +147,7 @@
   "@errors.listing.cancelledErrno.title": {
     "sourceHash": "13ca2ee"
   },
-  "errors.listing.cancelledErrno.explanation": "La operación se canceló antes de poder terminar.",
+  "errors.listing.cancelledErrno.explanation": "La operación se ha cancelado antes de poder terminar.",
   "@errors.listing.cancelledErrno.explanation": {
     "sourceHash": "da19c15"
   },
@@ -159,7 +159,7 @@
   "@errors.listing.notPermitted.title": {
     "sourceHash": "8ec5f4b"
   },
-  "errors.listing.notPermitted.explanation": "macOS impidió a Cmdr acceder a `{path}`. Normalmente significa que la carpeta está protegida por las políticas de seguridad de macOS, o que Cmdr aún no tiene los permisos necesarios.",
+  "errors.listing.notPermitted.explanation": "macOS ha impedido a Cmdr acceder a `{path}`. Normalmente significa que la carpeta está protegida por las políticas de seguridad de macOS, o que Cmdr aún no tiene los permisos necesarios.",
   "@errors.listing.notPermitted.explanation": {
     "sourceHash": "ddf8a5d"
   },
@@ -171,7 +171,7 @@
   "@errors.listing.pathNotFoundErrno.title": {
     "sourceHash": "cce25f6"
   },
-  "errors.listing.pathNotFoundErrno.explanation": "Cmdr no pudo encontrar `{path}`. Puede que se haya movido, renombrado o eliminado mientras Cmdr intentaba acceder a ella.",
+  "errors.listing.pathNotFoundErrno.explanation": "Cmdr no ha podido encontrar `{path}`. Puede que se haya movido, renombrado o eliminado mientras Cmdr intentaba acceder a ella.",
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "0c4bb13"
   },
@@ -219,7 +219,7 @@
   "@errors.listing.notAFolder.title": {
     "sourceHash": "78a92a5"
   },
-  "errors.listing.notAFolder.explanation": "Cmdr esperaba que `{path}` fuera una carpeta, pero es un archivo. Esto puede pasar si algo se renombró o reemplazó hace poco.",
+  "errors.listing.notAFolder.explanation": "Cmdr esperaba que `{path}` fuera una carpeta, pero es un archivo. Esto puede pasar si algo se ha renombrado o reemplazado hace poco.",
   "@errors.listing.notAFolder.explanation": {
     "sourceHash": "45d8f76"
   },
@@ -231,7 +231,7 @@
   "@errors.listing.isAFolderErrno.title": {
     "sourceHash": "6deee63"
   },
-  "errors.listing.isAFolderErrno.explanation": "Cmdr esperaba que `{path}` fuera un archivo, pero es una carpeta. Esto puede pasar si algo se renombró o reemplazó hace poco.",
+  "errors.listing.isAFolderErrno.explanation": "Cmdr esperaba que `{path}` fuera un archivo, pero es una carpeta. Esto puede pasar si algo se ha renombrado o reemplazado hace poco.",
   "@errors.listing.isAFolderErrno.explanation": {
     "sourceHash": "009d220"
   },
@@ -255,7 +255,7 @@
   "@errors.listing.readOnlyVolumeErrno.title": {
     "sourceHash": "e2d3bf1"
   },
-  "errors.listing.readOnlyVolumeErrno.explanation": "Este volumen está montado como de solo lectura, así que Cmdr no puede hacer cambios en él. Puede ser porque el dispositivo tiene un interruptor físico de protección contra escritura, porque la imagen de disco se montó como solo lectura, o porque el sistema de archivos no admite escritura.",
+  "errors.listing.readOnlyVolumeErrno.explanation": "Este volumen está montado como de solo lectura, así que Cmdr no puede hacer cambios en él. Puede ser porque el dispositivo tiene un interruptor físico de protección contra escritura, porque la imagen de disco se ha montado como solo lectura, o porque el sistema de archivos no admite escritura.",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
     "sourceHash": "cb19e8c"
   },
@@ -291,7 +291,7 @@
   "@errors.listing.connectionRefused.title": {
     "sourceHash": "1a28032"
   },
-  "errors.listing.connectionRefused.explanation": "El servidor rechazó la conexión de forma activa. Normalmente significa que el software del servidor (por ejemplo, un servicio SMB o NFS) no está en marcha, o que está configurado para rechazar conexiones desde este Mac.",
+  "errors.listing.connectionRefused.explanation": "El servidor ha rechazado la conexión de forma activa. Normalmente significa que el software del servidor (por ejemplo, un servicio SMB o NFS) no está en marcha, o que está configurado para rechazar conexiones desde este Mac.",
   "@errors.listing.connectionRefused.explanation": {
     "sourceHash": "537cf4e"
   },
@@ -303,7 +303,7 @@
   "@errors.listing.symlinkLoopErrno.title": {
     "sourceHash": "3d41981"
   },
-  "errors.listing.symlinkLoopErrno.explanation": "Cmdr encontró una cadena circular de enlaces simbólicos (accesos directos que apuntan a otros accesos directos) en `{path}`. Seguir estos enlaces lleva en círculo, así que Cmdr no puede llegar al archivo o la carpeta reales.",
+  "errors.listing.symlinkLoopErrno.explanation": "Cmdr ha encontrado una cadena circular de enlaces simbólicos (accesos directos que apuntan a otros accesos directos) en `{path}`. Seguir estos enlaces lleva en círculo, así que Cmdr no puede llegar al archivo o la carpeta reales.",
   "@errors.listing.symlinkLoopErrno.explanation": {
     "sourceHash": "cb728c1"
   },
@@ -363,7 +363,7 @@
   "@errors.listing.authRequiredEauth.title": {
     "sourceHash": "0fcfb12"
   },
-  "errors.listing.authRequiredEauth.explanation": "Cmdr no pudo autenticarse con este volumen. Puede que tus credenciales guardadas hayan caducado, o que el servidor esté rechazando el inicio de sesión actual.",
+  "errors.listing.authRequiredEauth.explanation": "Cmdr no ha podido autenticarse con este volumen. Puede que tus credenciales guardadas hayan caducado, o que el servidor esté rechazando el inicio de sesión actual.",
   "@errors.listing.authRequiredEauth.explanation": {
     "sourceHash": "7b51115"
   },
@@ -399,7 +399,7 @@
   "@errors.listing.attributeNotFound.title": {
     "sourceHash": "e12f4be"
   },
-  "errors.listing.attributeNotFound.explanation": "Cmdr intentó leer un atributo de archivo (metadatos adicionales como etiquetas o permisos) que no existe en este elemento. Esto puede pasar cuando el sistema de archivos no admite atributos extendidos, o cuando se eliminó el atributo.",
+  "errors.listing.attributeNotFound.explanation": "Cmdr ha intentado leer un atributo de archivo (metadatos adicionales como etiquetas o permisos) que no existe en este elemento. Esto puede pasar cuando el sistema de archivos no admite atributos extendidos, o cuando se ha eliminado el atributo.",
   "@errors.listing.attributeNotFound.explanation": {
     "sourceHash": "ee5c696"
   },
@@ -411,7 +411,7 @@
   "@errors.listing.diskReadProblem.title": {
     "sourceHash": "b953ef4"
   },
-  "errors.listing.diskReadProblem.explanation": "Cmdr se topó con un problema de lectura a nivel de hardware en `{path}`. Significa que el disco o el dispositivo tuvieron problemas para leer los datos, lo que puede ser un problema pasajero o una señal de un disco que está empezando a fallar.",
+  "errors.listing.diskReadProblem.explanation": "Cmdr se ha topado con un problema de lectura a nivel de hardware en `{path}`. Significa que el disco o el dispositivo han tenido problemas para leer los datos, lo que puede ser un problema pasajero o una señal de un disco que está empezando a fallar.",
   "@errors.listing.diskReadProblem.explanation": {
     "sourceHash": "9e9cd43"
   },
@@ -423,7 +423,7 @@
   "@errors.listing.unexpectedSystemResponse.title": {
     "sourceHash": "e854b77"
   },
-  "errors.listing.unexpectedSystemResponse.explanation": "El sistema devolvió una respuesta inesperada para esta operación. Esto puede pasar cuando el sistema de archivos de un volumen tiene inconsistencias, o cuando el volumen está en un estado inusual.",
+  "errors.listing.unexpectedSystemResponse.explanation": "El sistema ha devuelto una respuesta inesperada para esta operación. Esto puede pasar cuando el sistema de archivos de un volumen tiene inconsistencias, o cuando el volumen está en un estado inusual.",
   "@errors.listing.unexpectedSystemResponse.explanation": {
     "sourceHash": "eeddaa7"
   },
@@ -435,7 +435,7 @@
   "@errors.listing.deviceProblem.title": {
     "sourceHash": "3febba2"
   },
-  "errors.listing.deviceProblem.explanation": "El dispositivo informó de un problema a nivel de hardware. Puede ser una conexión suelta, un cable desgastado o un problema del propio dispositivo.",
+  "errors.listing.deviceProblem.explanation": "El dispositivo ha informado de un problema a nivel de hardware. Puede ser una conexión suelta, un cable desgastado o un problema del propio dispositivo.",
   "@errors.listing.deviceProblem.explanation": {
     "sourceHash": "a809613"
   },
@@ -443,11 +443,11 @@
   "@errors.listing.deviceProblem.suggestion": {
     "sourceHash": "2cbb1cf"
   },
-  "errors.listing.couldntReadUnknown.title": "No se pudo leer esta carpeta",
+  "errors.listing.couldntReadUnknown.title": "No se ha podido leer esta carpeta",
   "@errors.listing.couldntReadUnknown.title": {
     "sourceHash": "1334729"
   },
-  "errors.listing.couldntReadUnknown.explanation": "Cmdr se topó con un problema inesperado al leer `{path}`. Revisa los detalles técnicos de abajo para ver el código de sistema concreto, que puede ayudar con la resolución de problemas.",
+  "errors.listing.couldntReadUnknown.explanation": "Cmdr se ha topado con un problema inesperado al leer `{path}`. Revisa los detalles técnicos de abajo para ver el código de sistema concreto, que puede ayudar con la resolución de problemas.",
   "@errors.listing.couldntReadUnknown.explanation": {
     "sourceHash": "80b9ff5"
   },
@@ -459,7 +459,7 @@
   "@errors.listing.notFound.title": {
     "sourceHash": "cce25f6"
   },
-  "errors.listing.notFound.explanation": "Cmdr no pudo encontrar `{path}`. Puede que se haya movido, renombrado o eliminado mientras Cmdr intentaba acceder a ella.",
+  "errors.listing.notFound.explanation": "Cmdr no ha podido encontrar `{path}`. Puede que se haya movido, renombrado o eliminado mientras Cmdr intentaba acceder a ella.",
   "@errors.listing.notFound.explanation": {
     "sourceHash": "0c4bb13"
   },
@@ -495,11 +495,11 @@
   "@errors.listing.remotePermissionDenied.title": {
     "sourceHash": "1fceff5"
   },
-  "errors.listing.remotePermissionDenied.explanation": "`{path}` está en un recurso compartido de red, y la cuenta con la que te conectaste no tiene permiso para abrirla. El servidor rechaza la petición antes de que macOS intervenga, así que no es un ajuste de privacidad de tu Mac.",
+  "errors.listing.remotePermissionDenied.explanation": "`{path}` está en un recurso compartido de red, y la cuenta con la que te has conectado no tiene permiso para abrirla. El servidor rechaza la petición antes de que macOS intervenga, así que no es un ajuste de privacidad de tu Mac.",
   "@errors.listing.remotePermissionDenied.explanation": {
     "sourceHash": "4e6b9ef"
   },
-  "errors.listing.remotePermissionDenied.suggestion": "Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta montaste el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, expulsa el recurso compartido y vuelve a montarlo con esas credenciales",
+  "errors.listing.remotePermissionDenied.suggestion": "Esto es lo que puedes probar:\n- Revisa los permisos de la carpeta en el servidor, y con qué cuenta has montado el recurso compartido\n- Algunas carpetas pertenecen a la cuenta de sistema del propio servidor (`lost+found` en un recurso compartido de Linux, por ejemplo) y siguen cerradas para todos los demás\n- Para conectarte como otra persona, expulsa el recurso compartido y vuelve a montarlo con esas credenciales",
   "@errors.listing.remotePermissionDenied.suggestion": {
     "sourceHash": "506e57a"
   },
@@ -519,7 +519,7 @@
   "@errors.listing.cancelled.title": {
     "sourceHash": "13ca2ee"
   },
-  "errors.listing.cancelled.explanation": "La operación se canceló antes de poder terminar.",
+  "errors.listing.cancelled.explanation": "La operación se ha cancelado antes de poder terminar.",
   "@errors.listing.cancelled.explanation": {
     "sourceHash": "da19c15"
   },
@@ -531,7 +531,7 @@
   "@errors.listing.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.listing.deviceDisconnected.explanation": "El dispositivo que contiene `{path}` se desconectó durante la operación. Esto puede pasar si un cable USB se afloja, un teléfono entra en reposo o una unidad de red pierde la conexión.",
+  "errors.listing.deviceDisconnected.explanation": "El dispositivo que contiene `{path}` se ha desconectado durante la operación. Esto puede pasar si un cable USB se afloja, un teléfono entra en reposo o una unidad de red pierde la conexión.",
   "@errors.listing.deviceDisconnected.explanation": {
     "sourceHash": "c8b7b10"
   },
@@ -543,7 +543,7 @@
   "@errors.listing.notConnected.title": {
     "sourceHash": "8985693"
   },
-  "errors.listing.notConnected.explanation": "Cmdr todavía no se ha conectado al teléfono o servidor que contiene `{path}`, así que aquí no hay nada que mostrar. No se desconectó nada y no se eliminó nada.",
+  "errors.listing.notConnected.explanation": "Cmdr todavía no se ha conectado al teléfono o servidor que contiene `{path}`, así que aquí no hay nada que mostrar. No se ha desconectado nada y no se ha eliminado nada.",
   "@errors.listing.notConnected.explanation": {
     "sourceHash": "4c508d7"
   },
@@ -555,7 +555,7 @@
   "@errors.listing.deviceReconnecting.title": {
     "sourceHash": "6157c60"
   },
-  "errors.listing.deviceReconnecting.explanation": "La conexión con el dispositivo que contiene `{path}` se reinició, así que esta acción no se completó. El dispositivo sigue conectado y Cmdr lo está reabriendo ahora mismo. Suele ocurrir después de una transferencia cancelada o interrumpida.",
+  "errors.listing.deviceReconnecting.explanation": "La conexión con el dispositivo que contiene `{path}` se ha reiniciado, así que esta acción no se ha completado. El dispositivo sigue conectado y Cmdr lo está reabriendo ahora mismo. Suele ocurrir después de una transferencia cancelada o interrumpida.",
   "@errors.listing.deviceReconnecting.explanation": {
     "sourceHash": "6ba7205"
   },
@@ -567,7 +567,7 @@
   "@errors.listing.readOnly.title": {
     "sourceHash": "72bb908"
   },
-  "errors.listing.readOnly.explanation": "Este volumen es de solo lectura, así que Cmdr no puede hacer cambios en él. Puede ser porque el dispositivo tiene un interruptor físico de protección contra escritura, porque la imagen de disco se montó como solo lectura, o porque el sistema de archivos no admite escritura.",
+  "errors.listing.readOnly.explanation": "Este volumen es de solo lectura, así que Cmdr no puede hacer cambios en él. Puede ser porque el dispositivo tiene un interruptor físico de protección contra escritura, porque la imagen de disco se ha montado como solo lectura, o porque el sistema de archivos no admite escritura.",
   "@errors.listing.readOnly.explanation": {
     "sourceHash": "99924c3"
   },
@@ -587,11 +587,11 @@
   "@errors.listing.storageFull.suggestion": {
     "sourceHash": "fcdd42d"
   },
-  "errors.listing.connectionTimedOut.title": "Se agotó el tiempo de espera de la conexión",
+  "errors.listing.connectionTimedOut.title": "Se ha agotado el tiempo de espera de la conexión",
   "@errors.listing.connectionTimedOut.title": {
     "sourceHash": "2e0b4a7"
   },
-  "errors.listing.connectionTimedOut.explanation": "Cmdr intentó acceder a este recurso pero la conexión no respondió a tiempo. Normalmente significa que el servidor o el dispositivo tardan en responder, o que la conexión de red es inestable.",
+  "errors.listing.connectionTimedOut.explanation": "Cmdr ha intentado acceder a este recurso pero la conexión no ha respondido a tiempo. Normalmente significa que el servidor o el dispositivo tardan en responder, o que la conexión de red es inestable.",
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "5b3f8b2"
   },
@@ -615,7 +615,7 @@
   "@errors.listing.deletePending.title": {
     "sourceHash": "1e5741a"
   },
-  "errors.listing.deletePending.explanation": "`{path}` está de salida. El servidor lo marcó para eliminarlo, pero otro identificador abierto lo mantiene mientras ese identificador no se cierre.",
+  "errors.listing.deletePending.explanation": "`{path}` está de salida. El servidor lo ha marcado para eliminarlo, pero otro identificador abierto lo mantiene mientras ese identificador no se cierre.",
   "@errors.listing.deletePending.explanation": {
     "sourceHash": "047ad2f"
   },
@@ -627,7 +627,7 @@
   "@errors.listing.invalidName.title": {
     "sourceHash": "69b2aa4"
   },
-  "errors.listing.invalidName.explanation": "`{path}` tiene un nombre que el destino no puede guardar, así que lo rechazó sin llegar a buscar el archivo.",
+  "errors.listing.invalidName.explanation": "`{path}` tiene un nombre que el destino no puede guardar, así que lo ha rechazado sin llegar a buscar el archivo.",
   "@errors.listing.invalidName.explanation": {
     "sourceHash": "7000b52"
   },
@@ -639,7 +639,7 @@
   "@errors.listing.ambiguousName.title": {
     "sourceHash": "b72d687"
   },
-  "errors.listing.ambiguousName.explanation": "`{path}` coincide con más de un elemento del servidor. Sus nombres se ven iguales, pero el servidor los guarda escritos de forma distinta (una letra con tilde se puede guardar de dos maneras, y algunos servidores distinguen mayúsculas y minúsculas), así que Cmdr no eligió ninguno por ti.",
+  "errors.listing.ambiguousName.explanation": "`{path}` coincide con más de un elemento del servidor. Sus nombres se ven iguales, pero el servidor los guarda escritos de forma distinta (una letra con tilde se puede guardar de dos maneras, y algunos servidores distinguen mayúsculas y minúsculas), así que Cmdr no ha elegido ninguno por ti.",
   "@errors.listing.ambiguousName.explanation": {
     "sourceHash": "0d964db"
   },
@@ -647,11 +647,11 @@
   "@errors.listing.ambiguousName.suggestion": {
     "sourceHash": "8334ece"
   },
-  "errors.listing.ioSerious.title": "No se pudo leer esta carpeta",
+  "errors.listing.ioSerious.title": "No se ha podido leer esta carpeta",
   "@errors.listing.ioSerious.title": {
     "sourceHash": "1334729"
   },
-  "errors.listing.ioSerious.explanation": "Cmdr se topó con un problema con `{path}`: {osMessage}. Puede ser un problema pasajero o una señal de que el disco o el dispositivo necesitan atención.",
+  "errors.listing.ioSerious.explanation": "Cmdr se ha topado con un problema con `{path}`: {osMessage}. Puede ser un problema pasajero o una señal de que el disco o el dispositivo necesitan atención.",
   "@errors.listing.ioSerious.explanation": {
     "sourceHash": "6c3b625"
   },
@@ -663,7 +663,7 @@
   "@errors.listing.isADirectory.title": {
     "sourceHash": "7ca2cdd"
   },
-  "errors.listing.isADirectory.explanation": "Cmdr intentó abrir `{path}` como un archivo, pero es una carpeta.",
+  "errors.listing.isADirectory.explanation": "Cmdr ha intentado abrir `{path}` como un archivo, pero es una carpeta.",
   "@errors.listing.isADirectory.explanation": {
     "sourceHash": "61f5ddb"
   },
@@ -675,7 +675,7 @@
   "@errors.listing.archiveUnreadable.title": {
     "sourceHash": "6b34ae6"
   },
-  "errors.listing.archiveUnreadable.explanation": "Este archivo parece un archivo comprimido, pero Cmdr no pudo leer su contenido. Puede que esté dañado, cifrado o en un formato de archivo comprimido que Cmdr aún no puede abrir.",
+  "errors.listing.archiveUnreadable.explanation": "Este archivo parece un archivo comprimido, pero Cmdr no ha podido leer su contenido. Puede que esté dañado, cifrado o en un formato de archivo comprimido que Cmdr aún no puede abrir.",
   "@errors.listing.archiveUnreadable.explanation": {
     "sourceHash": "e413580"
   },
@@ -699,7 +699,7 @@
   "@errors.listing.emptyRootICloud.title": {
     "sourceHash": "413a7d1"
   },
-  "errors.listing.emptyRootICloud.explanation": "Cmdr abrió iCloud Drive pero no devolvió ningún archivo. macOS oculta el contenido de iCloud Drive a las apps que no tienen **{full_disk_access}**, así que conceder ese permiso a Cmdr es la solución más probable.\n\nSi tu iCloud Drive de verdad está vacío, puedes ignorar este aviso.",
+  "errors.listing.emptyRootICloud.explanation": "Cmdr ha abierto iCloud Drive pero no ha devuelto ningún archivo. macOS oculta el contenido de iCloud Drive a las apps que no tienen **{full_disk_access}**, así que conceder ese permiso a Cmdr es la solución más probable.\n\nSi tu iCloud Drive de verdad está vacío, puedes ignorar este aviso.",
   "@errors.listing.emptyRootICloud.explanation": {
     "sourceHash": "d095f83"
   },
@@ -711,7 +711,7 @@
   "@errors.git.notARepo.title": {
     "sourceHash": "e2b31ec"
   },
-  "errors.git.notARepo.message": "Cmdr recorrió el árbol de carpetas hacia arriba y no encontró un `.git` aquí.",
+  "errors.git.notARepo.message": "Cmdr ha recorrido el árbol de carpetas hacia arriba y no ha encontrado un `.git` aquí.",
   "@errors.git.notARepo.message": {
     "sourceHash": "f5b0d17"
   },
@@ -819,7 +819,7 @@
   "@errors.git.gitDirPermissionDenied.title": {
     "sourceHash": "f6e2595"
   },
-  "errors.git.gitDirPermissionDenied.message": "El sistema operativo denegó el acceso a la carpeta `.git`, aunque el árbol de trabajo sí se puede leer.",
+  "errors.git.gitDirPermissionDenied.message": "El sistema operativo ha denegado el acceso a la carpeta `.git`, aunque el árbol de trabajo sí se puede leer.",
   "@errors.git.gitDirPermissionDenied.message": {
     "sourceHash": "2db5cf0"
   },
@@ -1073,23 +1073,23 @@
   "@errors.provider.appBased.serious": {
     "sourceHash": "64baea5"
   },
-  "errors.write.sourceNotFound.title": "No se pudo encontrar el archivo",
+  "errors.write.sourceNotFound.title": "No se ha podido encontrar el archivo",
   "@errors.write.sourceNotFound.title": {
     "sourceHash": "2003305"
   },
-  "errors.write.sourceNotFound.message.copy": "El archivo o la carpeta que intentaste copiar ya no existe.",
+  "errors.write.sourceNotFound.message.copy": "El archivo o la carpeta que has intentado copiar ya no existe.",
   "@errors.write.sourceNotFound.message.copy": {
     "sourceHash": "e572507"
   },
-  "errors.write.sourceNotFound.message.move": "El archivo o la carpeta que intentaste mover ya no existe.",
+  "errors.write.sourceNotFound.message.move": "El archivo o la carpeta que has intentado mover ya no existe.",
   "@errors.write.sourceNotFound.message.move": {
     "sourceHash": "4c07735"
   },
-  "errors.write.sourceNotFound.message.delete": "El archivo o la carpeta que intentaste eliminar ya no existe.",
+  "errors.write.sourceNotFound.message.delete": "El archivo o la carpeta que has intentado eliminar ya no existe.",
   "@errors.write.sourceNotFound.message.delete": {
     "sourceHash": "cb0ab8f"
   },
-  "errors.write.sourceNotFound.message.trash": "El archivo o la carpeta que intentaste mover a la papelera ya no existe.",
+  "errors.write.sourceNotFound.message.trash": "El archivo o la carpeta que has intentado mover a la papelera ya no existe.",
   "@errors.write.sourceNotFound.message.trash": {
     "sourceHash": "dbc0bbe"
   },
@@ -1097,7 +1097,7 @@
   "@errors.write.sourceNotFound.suggestion": {
     "sourceHash": "1a6cd17"
   },
-  "errors.write.destinationNotFound.title": "No se pudo encontrar la carpeta de destino",
+  "errors.write.destinationNotFound.title": "No se ha podido encontrar la carpeta de destino",
   "@errors.write.destinationNotFound.title": {
     "sourceHash": "215ddfe"
   },
@@ -1165,7 +1165,7 @@
   "@errors.write.destinationInsideSource.suggestion.move": {
     "sourceHash": "ab985a6"
   },
-  "errors.write.symlinkLoop.title": "Se detectó un bucle de enlaces",
+  "errors.write.symlinkLoop.title": "Se ha detectado un bucle de enlaces",
   "@errors.write.symlinkLoop.title": {
     "sourceHash": "0bbdc9c"
   },
@@ -1193,19 +1193,19 @@
   "@errors.write.cancelled.title.trash": {
     "sourceHash": "52a8954"
   },
-  "errors.write.cancelled.message.copy": "Se canceló la operación de copia.",
+  "errors.write.cancelled.message.copy": "Se ha cancelado la operación de copia.",
   "@errors.write.cancelled.message.copy": {
     "sourceHash": "da308bc"
   },
-  "errors.write.cancelled.message.move": "Se canceló la operación de movimiento.",
+  "errors.write.cancelled.message.move": "Se ha cancelado la operación de movimiento.",
   "@errors.write.cancelled.message.move": {
     "sourceHash": "6369672"
   },
-  "errors.write.cancelled.message.delete": "Se canceló la operación de eliminación.",
+  "errors.write.cancelled.message.delete": "Se ha cancelado la operación de eliminación.",
   "@errors.write.cancelled.message.delete": {
     "sourceHash": "8e573dc"
   },
-  "errors.write.cancelled.message.trash": "Se canceló el movimiento a la papelera.",
+  "errors.write.cancelled.message.trash": "Se ha cancelado el movimiento a la papelera.",
   "@errors.write.cancelled.message.trash": {
     "sourceHash": "9585f1b"
   },
@@ -1217,19 +1217,19 @@
   "@errors.write.deviceDisconnected.title": {
     "sourceHash": "f0acd34"
   },
-  "errors.write.deviceDisconnected.message.copy": "Se desconectó el dispositivo durante la copia.",
+  "errors.write.deviceDisconnected.message.copy": "Se ha desconectado el dispositivo durante la copia.",
   "@errors.write.deviceDisconnected.message.copy": {
     "sourceHash": "828908f"
   },
-  "errors.write.deviceDisconnected.message.move": "Se desconectó el dispositivo durante el movimiento.",
+  "errors.write.deviceDisconnected.message.move": "Se ha desconectado el dispositivo durante el movimiento.",
   "@errors.write.deviceDisconnected.message.move": {
     "sourceHash": "4177ee9"
   },
-  "errors.write.deviceDisconnected.message.delete": "Se desconectó el dispositivo durante la eliminación.",
+  "errors.write.deviceDisconnected.message.delete": "Se ha desconectado el dispositivo durante la eliminación.",
   "@errors.write.deviceDisconnected.message.delete": {
     "sourceHash": "195562e"
   },
-  "errors.write.deviceDisconnected.message.trash": "Se desconectó el dispositivo durante el movimiento a la papelera.",
+  "errors.write.deviceDisconnected.message.trash": "Se ha desconectado el dispositivo durante el movimiento a la papelera.",
   "@errors.write.deviceDisconnected.message.trash": {
     "sourceHash": "9d5a47a"
   },
@@ -1237,31 +1237,31 @@
   "@errors.write.deviceDisconnected.suggestion": {
     "sourceHash": "f003d9c"
   },
-  "errors.write.deviceDisconnected.sided.destination.copy": "{volumeName} se desconectó después de que Cmdr copiara {done} de {total} archivos ahí. Tus originales siguen intactos donde estaban, así que no has perdido nada.",
+  "errors.write.deviceDisconnected.sided.destination.copy": "{volumeName} se ha desconectado después de que Cmdr copiara {done} de {total} archivos ahí. Tus originales siguen intactos donde estaban, así que no has perdido nada.",
   "@errors.write.deviceDisconnected.sided.destination.copy": {
     "sourceHash": "37342c4"
   },
-  "errors.write.deviceDisconnected.sided.destination.move": "{volumeName} se desconectó antes de que Cmdr pudiera terminar el movimiento, así que todos tus archivos siguen en {counterpart}.",
+  "errors.write.deviceDisconnected.sided.destination.move": "{volumeName} se ha desconectado antes de que Cmdr pudiera terminar el movimiento, así que todos tus archivos siguen en {counterpart}.",
   "@errors.write.deviceDisconnected.sided.destination.move": {
     "sourceHash": "7da0918"
   },
-  "errors.write.deviceDisconnected.sided.source.copy": "{volumeName} se desconectó después de que Cmdr copiara {done} de {total} archivos a {counterpart}. El resto sigue en la unidad.",
+  "errors.write.deviceDisconnected.sided.source.copy": "{volumeName} se ha desconectado después de que Cmdr copiara {done} de {total} archivos a {counterpart}. El resto sigue en la unidad.",
   "@errors.write.deviceDisconnected.sided.source.copy": {
     "sourceHash": "70d4976"
   },
-  "errors.write.deviceDisconnected.sided.source.move": "{volumeName} se desconectó después de que Cmdr moviera {done} de {total} archivos a {counterpart}. El resto sigue en la unidad.",
+  "errors.write.deviceDisconnected.sided.source.move": "{volumeName} se ha desconectado después de que Cmdr moviera {done} de {total} archivos a {counterpart}. El resto sigue en la unidad.",
   "@errors.write.deviceDisconnected.sided.source.move": {
     "sourceHash": "bf2d6e7"
   },
-  "errors.write.moveNotConfirmed.title": "No se pudo confirmar el movimiento",
+  "errors.write.moveNotConfirmed.title": "No se ha podido confirmar el movimiento",
   "@errors.write.moveNotConfirmed.title": {
     "sourceHash": "5d64df8"
   },
-  "errors.write.moveNotConfirmed.message.named": "Cmdr no pudo confirmar que los archivos movidos se guardaran en {volumeName}, así que conservó tus originales donde estaban.",
+  "errors.write.moveNotConfirmed.message.named": "Cmdr no ha podido confirmar que los archivos movidos se guardaran en {volumeName}, así que ha conservado tus originales donde estaban.",
   "@errors.write.moveNotConfirmed.message.named": {
     "sourceHash": "0c2dfb6"
   },
-  "errors.write.moveNotConfirmed.message.unnamed": "Cmdr no pudo confirmar que los archivos movidos se guardaran en el destino, así que conservó tus originales donde estaban.",
+  "errors.write.moveNotConfirmed.message.unnamed": "Cmdr no ha podido confirmar que los archivos movidos se guardaran en el destino, así que ha conservado tus originales donde estaban.",
   "@errors.write.moveNotConfirmed.message.unnamed": {
     "sourceHash": "fefb520"
   },
@@ -1285,7 +1285,7 @@
   "@errors.write.connectionInterrupted.title": {
     "sourceHash": "183383d"
   },
-  "errors.write.connectionInterrupted.message": "La conexión se interrumpió.",
+  "errors.write.connectionInterrupted.message": "La conexión se ha interrumpido.",
   "@errors.write.connectionInterrupted.message": {
     "sourceHash": "286af83"
   },
@@ -1293,23 +1293,23 @@
   "@errors.write.connectionInterrupted.suggestion": {
     "sourceHash": "d8d3c79"
   },
-  "errors.write.readError.title.copy": "No se pudo copiar",
+  "errors.write.readError.title.copy": "No se ha podido copiar",
   "@errors.write.readError.title.copy": {
     "sourceHash": "53b17a4"
   },
-  "errors.write.readError.title.move": "No se pudo mover",
+  "errors.write.readError.title.move": "No se ha podido mover",
   "@errors.write.readError.title.move": {
     "sourceHash": "3f6c20e"
   },
-  "errors.write.readError.title.delete": "No se pudo eliminar",
+  "errors.write.readError.title.delete": "No se ha podido eliminar",
   "@errors.write.readError.title.delete": {
     "sourceHash": "f73bc6b"
   },
-  "errors.write.readError.title.trash": "No se pudo mover a la papelera",
+  "errors.write.readError.title.trash": "No se ha podido mover a la papelera",
   "@errors.write.readError.title.trash": {
     "sourceHash": "c2d75cc"
   },
-  "errors.write.readError.message": "No se pudo leer del origen.",
+  "errors.write.readError.message": "No se ha podido leer del origen.",
   "@errors.write.readError.message": {
     "sourceHash": "b3b10d6"
   },
@@ -1317,23 +1317,23 @@
   "@errors.write.readError.suggestion": {
     "sourceHash": "791f737"
   },
-  "errors.write.writeError.title.copy": "No se pudo copiar",
+  "errors.write.writeError.title.copy": "No se ha podido copiar",
   "@errors.write.writeError.title.copy": {
     "sourceHash": "53b17a4"
   },
-  "errors.write.writeError.title.move": "No se pudo mover",
+  "errors.write.writeError.title.move": "No se ha podido mover",
   "@errors.write.writeError.title.move": {
     "sourceHash": "3f6c20e"
   },
-  "errors.write.writeError.title.delete": "No se pudo eliminar",
+  "errors.write.writeError.title.delete": "No se ha podido eliminar",
   "@errors.write.writeError.title.delete": {
     "sourceHash": "f73bc6b"
   },
-  "errors.write.writeError.title.trash": "No se pudo mover a la papelera",
+  "errors.write.writeError.title.trash": "No se ha podido mover a la papelera",
   "@errors.write.writeError.title.trash": {
     "sourceHash": "c2d75cc"
   },
-  "errors.write.writeError.message": "No se pudo escribir en el destino.",
+  "errors.write.writeError.message": "No se ha podido escribir en el destino.",
   "@errors.write.writeError.message": {
     "sourceHash": "cb458f0"
   },
@@ -1365,19 +1365,19 @@
   "@errors.write.invalidName.suggestion": {
     "sourceHash": "3721c3d"
   },
-  "errors.write.trashRefused.title": "No se pudo mover a la papelera",
+  "errors.write.trashRefused.title": "No se ha podido mover a la papelera",
   "@errors.write.trashRefused.title": {
     "sourceHash": "c2d75cc"
   },
-  "errors.write.trashRefused.message.notPermitted": "macOS no dejó que Cmdr tocara {count} de los elementos que elegiste.",
+  "errors.write.trashRefused.message.notPermitted": "macOS no ha dejado que Cmdr tocara {count} de los elementos que has elegido.",
   "@errors.write.trashRefused.message.notPermitted": {
     "sourceHash": "e11fc50"
   },
-  "errors.write.trashRefused.message.noTrashForVolume": "macOS no encontró una papelera para {count} de los elementos que elegiste.",
+  "errors.write.trashRefused.message.noTrashForVolume": "macOS no ha encontrado una papelera para {count} de los elementos que has elegido.",
   "@errors.write.trashRefused.message.noTrashForVolume": {
     "sourceHash": "d86a66d"
   },
-  "errors.write.trashRefused.message.other": "macOS no movió a la papelera {count} de los elementos que elegiste.",
+  "errors.write.trashRefused.message.other": "macOS no ha movido a la papelera {count} de los elementos que has elegido.",
   "@errors.write.trashRefused.message.other": {
     "sourceHash": "5c73490"
   },
@@ -1389,43 +1389,43 @@
   "@errors.write.trashRefused.suggestion.noTrashForVolume": {
     "sourceHash": "b6d08fa"
   },
-  "errors.write.trashRefused.suggestion.other": "Revisa los detalles técnicos de abajo para ver lo que informó macOS.",
+  "errors.write.trashRefused.suggestion.other": "Revisa los detalles técnicos de abajo para ver lo que ha informado macOS.",
   "@errors.write.trashRefused.suggestion.other": {
     "sourceHash": "b61b3c1"
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr tampoco tiene acceso total al disco en este Mac, que es una causa habitual. El aviso “Sin acceso total al disco” de la barra de título te lleva a esa decisión.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "ab20ec5"
+    "sourceHash": "0dbe21b"
   },
-  "errors.write.ioError.title.copy": "No se pudo copiar",
+  "errors.write.ioError.title.copy": "No se ha podido copiar",
   "@errors.write.ioError.title.copy": {
     "sourceHash": "53b17a4"
   },
-  "errors.write.ioError.title.move": "No se pudo mover",
+  "errors.write.ioError.title.move": "No se ha podido mover",
   "@errors.write.ioError.title.move": {
     "sourceHash": "3f6c20e"
   },
-  "errors.write.ioError.title.delete": "No se pudo eliminar",
+  "errors.write.ioError.title.delete": "No se ha podido eliminar",
   "@errors.write.ioError.title.delete": {
     "sourceHash": "f73bc6b"
   },
-  "errors.write.ioError.title.trash": "No se pudo mover a la papelera",
+  "errors.write.ioError.title.trash": "No se ha podido mover a la papelera",
   "@errors.write.ioError.title.trash": {
     "sourceHash": "c2d75cc"
   },
-  "errors.write.ioError.message.copy": "No se pudo copiar el archivo.",
+  "errors.write.ioError.message.copy": "No se ha podido copiar el archivo.",
   "@errors.write.ioError.message.copy": {
     "sourceHash": "93d27d8"
   },
-  "errors.write.ioError.message.move": "No se pudo mover el archivo.",
+  "errors.write.ioError.message.move": "No se ha podido mover el archivo.",
   "@errors.write.ioError.message.move": {
     "sourceHash": "d2f8eea"
   },
-  "errors.write.ioError.message.delete": "No se pudo eliminar el archivo.",
+  "errors.write.ioError.message.delete": "No se ha podido eliminar el archivo.",
   "@errors.write.ioError.message.delete": {
     "sourceHash": "87cc29a"
   },
-  "errors.write.ioError.message.trash": "No se pudo mover el archivo a la papelera.",
+  "errors.write.ioError.message.trash": "No se ha podido mover el archivo a la papelera.",
   "@errors.write.ioError.message.trash": {
     "sourceHash": "db053da"
   },
@@ -1433,7 +1433,7 @@
   "@errors.write.ioError.suggestion": {
     "sourceHash": "791f737"
   },
-  "errors.write.permissionDenied.title": "No se pudo acceder a esta ubicación",
+  "errors.write.permissionDenied.title": "No se ha podido acceder a esta ubicación",
   "@errors.write.permissionDenied.title": {
     "sourceHash": "be62ad2"
   },
@@ -1501,7 +1501,7 @@
   "@errors.write.destinationFull.title": {
     "sourceHash": "1a2382d"
   },
-  "errors.write.destinationFull.message": "El destino se quedó sin espacio antes de que se escribiera todo.",
+  "errors.write.destinationFull.message": "El destino se ha quedado sin espacio antes de que se escribiera todo.",
   "@errors.write.destinationFull.message": {
     "sourceHash": "1271eab"
   },
@@ -1601,7 +1601,7 @@
   "@errors.write.deletePending.title": {
     "sourceHash": "1e5741a"
   },
-  "errors.write.deletePending.message": "Este archivo está de salida. El servidor lo marcó para eliminarlo, pero otro identificador abierto lo mantiene mientras ese identificador no se cierre.",
+  "errors.write.deletePending.message": "Este archivo está de salida. El servidor lo ha marcado para eliminarlo, pero otro identificador abierto lo mantiene mientras ese identificador no se cierre.",
   "@errors.write.deletePending.message": {
     "sourceHash": "e580e20"
   },
@@ -1609,11 +1609,11 @@
   "@errors.write.deletePending.suggestion": {
     "sourceHash": "39e64a9"
   },
-  "errors.write.newDataKeptAt.title": "Tu archivo nuevo quedó con otro nombre",
+  "errors.write.newDataKeptAt.title": "Tu archivo nuevo ha quedado con otro nombre",
   "@errors.write.newDataKeptAt.title": {
     "sourceHash": "06bc297"
   },
-  "errors.write.newDataKeptAt.message": "El nuevo {path} está escrito y completo, pero el destino no le dejó tomar ese nombre, y el archivo al que iba a reemplazar ya no está. El nuevo está en {keptAt}.",
+  "errors.write.newDataKeptAt.message": "El archivo nuevo {path} está escrito y completo, pero el destino no le ha dejado tomar ese nombre, y el archivo al que iba a reemplazar ya no está. El nuevo está en {keptAt}.",
   "@errors.write.newDataKeptAt.message": {
     "sourceHash": "d1dc96b"
   },
@@ -1621,15 +1621,15 @@
   "@errors.write.newDataKeptAt.suggestion": {
     "sourceHash": "54c279d"
   },
-  "errors.write.originalsKeptAside.title": "Tu archivo quedó con un nombre nuevo",
+  "errors.write.originalsKeptAside.title": "Tu archivo ha quedado con un nombre nuevo",
   "@errors.write.originalsKeptAside.title": {
     "sourceHash": "1db5ba0"
   },
-  "errors.write.originalsKeptAside.message.one": "Una carpeta se quedó con el nombre {path}, así que tu archivo ahora está en {keptAt}. No se descartó nada.",
+  "errors.write.originalsKeptAside.message.one": "Una carpeta se ha quedado con el nombre {path}, así que tu archivo ahora está en {keptAt}. No se ha descartado nada.",
   "@errors.write.originalsKeptAside.message.one": {
     "sourceHash": "e3bc267"
   },
-  "errors.write.originalsKeptAside.message.many": "Varias carpetas se quedaron con los nombres de {count} de tus archivos, así que ahora esos archivos tienen nombres nuevos. No se descartó nada; los detalles técnicos de abajo los enumeran todos.",
+  "errors.write.originalsKeptAside.message.many": "Varias carpetas se han quedado con los nombres de {count} de tus archivos, así que ahora esos archivos tienen nombres nuevos. No se ha descartado nada; los detalles técnicos de abajo los enumeran todos.",
   "@errors.write.originalsKeptAside.message.many": {
     "sourceHash": "9430f63"
   },
@@ -1641,35 +1641,35 @@
   "@errors.write.originalsKeptAside.suggestion.many": {
     "sourceHash": "7934c84"
   },
-  "errors.write.fallback.title.copy": "No se pudo copiar",
+  "errors.write.fallback.title.copy": "No se ha podido copiar",
   "@errors.write.fallback.title.copy": {
     "sourceHash": "53b17a4"
   },
-  "errors.write.fallback.title.move": "No se pudo mover",
+  "errors.write.fallback.title.move": "No se ha podido mover",
   "@errors.write.fallback.title.move": {
     "sourceHash": "3f6c20e"
   },
-  "errors.write.fallback.title.delete": "No se pudo eliminar",
+  "errors.write.fallback.title.delete": "No se ha podido eliminar",
   "@errors.write.fallback.title.delete": {
     "sourceHash": "f73bc6b"
   },
-  "errors.write.fallback.title.trash": "No se pudo mover a la papelera",
+  "errors.write.fallback.title.trash": "No se ha podido mover a la papelera",
   "@errors.write.fallback.title.trash": {
     "sourceHash": "c2d75cc"
   },
-  "errors.write.fallback.message.copy": "Algo salió mal al copiar.",
+  "errors.write.fallback.message.copy": "Algo ha ido mal al copiar.",
   "@errors.write.fallback.message.copy": {
     "sourceHash": "271fa92"
   },
-  "errors.write.fallback.message.move": "Algo salió mal al mover.",
+  "errors.write.fallback.message.move": "Algo ha ido mal al mover.",
   "@errors.write.fallback.message.move": {
     "sourceHash": "a2cf93f"
   },
-  "errors.write.fallback.message.delete": "Algo salió mal al eliminar.",
+  "errors.write.fallback.message.delete": "Algo ha ido mal al eliminar.",
   "@errors.write.fallback.message.delete": {
     "sourceHash": "9a08b89"
   },
-  "errors.write.fallback.message.trash": "Algo salió mal al mover a la papelera.",
+  "errors.write.fallback.message.trash": "Algo ha ido mal al mover a la papelera.",
   "@errors.write.fallback.message.trash": {
     "sourceHash": "63f8393"
   },
@@ -1679,7 +1679,7 @@
   },
   "errors.mutation.notFound": "Ya no hay nada en “{path}”.",
   "@errors.mutation.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.mutation.cantRenameVolumeRoot": "No se puede renombrar la carpeta raíz de un volumen desde aquí.",
   "@errors.mutation.cantRenameVolumeRoot": {
@@ -1687,17 +1687,17 @@
   },
   "errors.mutation.parentNotWritable": "Cmdr no puede escribir en “{path}”. Revisa los permisos de la carpeta en el Finder.",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "902f3a5"
+    "sourceHash": "3659a5a"
   },
   "errors.mutation.fileLocked": "Este elemento está bloqueado. Desbloquéalo en el panel Obtener información del Finder y vuelve a intentarlo.",
   "@errors.mutation.fileLocked": {
     "sourceHash": "d1d127c"
   },
-  "errors.mutation.sipProtected": "No se puede renombrar este elemento debido a la protección de la integridad del sistema de macOS.",
+  "errors.mutation.sipProtected": "Este elemento está bajo la protección de la integridad del sistema de macOS, así que no se puede renombrar.",
   "@errors.mutation.sipProtected": {
     "sourceHash": "1865724"
   },
-  "errors.mutation.volumeGone": "Ese volumen ya no está disponible, así que no cambió nada.",
+  "errors.mutation.volumeGone": "Ese volumen ya no está disponible, así que no ha cambiado nada.",
   "@errors.mutation.volumeGone": {
     "sourceHash": "604aad5"
   },
@@ -1721,7 +1721,7 @@
   "@errors.mutation.archiveEditNotReady": {
     "sourceHash": "21a4fcf"
   },
-  "errors.mutation.archiveEditCouldntStart": "La edición del archivo comprimido no llegó a empezar.",
+  "errors.mutation.archiveEditCouldntStart": "La edición del archivo comprimido no ha llegado a empezar.",
   "@errors.mutation.archiveEditCouldntStart": {
     "sourceHash": "3a5322f"
   },
@@ -1729,27 +1729,27 @@
   "@errors.mutation.timedOut": {
     "sourceHash": "27d6a2f"
   },
-  "errors.mutation.unexpected": "Algo salió mal y Cmdr no pudo saber qué.",
+  "errors.mutation.unexpected": "Algo ha ido mal y Cmdr no ha podido saber qué.",
   "@errors.mutation.unexpected": {
     "sourceHash": "0c9d9f5"
   },
   "errors.volume.notFound": "Ya no hay nada en “{path}”.",
   "@errors.volume.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.volume.permissionDenied": "Cmdr no tiene acceso a “{path}”.",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "1f63dc1"
+    "sourceHash": "fee452b"
   },
   "errors.volume.alreadyExists": "Ya hay algo en “{path}”.",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "e070962"
+    "sourceHash": "de0bbb9"
   },
   "errors.volume.notSupported": "Este volumen no admite eso.",
   "@errors.volume.notSupported": {
     "sourceHash": "f57ad5a"
   },
-  "errors.volume.deviceDisconnected": "Se desconectó el dispositivo antes de que el cambio se aplicara.",
+  "errors.volume.deviceDisconnected": "Se ha desconectado el dispositivo antes de que el cambio se aplicara.",
   "@errors.volume.deviceDisconnected": {
     "sourceHash": "50b46bf"
   },
@@ -1757,7 +1757,7 @@
   "@errors.volume.notConnected": {
     "sourceHash": "094dc49"
   },
-  "errors.volume.deviceSessionReset": "El dispositivo reinició su conexión. Espera unos segundos y vuelve a intentarlo.",
+  "errors.volume.deviceSessionReset": "El dispositivo ha reiniciado su conexión. Espera unos segundos y vuelve a intentarlo.",
   "@errors.volume.deviceSessionReset": {
     "sourceHash": "e5ad77d"
   },
@@ -1769,17 +1769,17 @@
   "@errors.volume.storageFull": {
     "sourceHash": "f2f33dc"
   },
-  "errors.volume.connectionTimeout": "La conexión no respondió a tiempo.",
+  "errors.volume.connectionTimeout": "La conexión no ha respondido a tiempo.",
   "@errors.volume.connectionTimeout": {
     "sourceHash": "857ed01"
   },
-  "errors.volume.cancelled": "Cmdr detuvo esto porque se lo pediste.",
+  "errors.volume.cancelled": "Cmdr ha detenido esto porque se lo has pedido.",
   "@errors.volume.cancelled": {
     "sourceHash": "a88c4fc"
   },
   "errors.volume.isADirectory": "“{path}” es una carpeta, no un archivo.",
   "@errors.volume.isADirectory": {
-    "sourceHash": "fe76957"
+    "sourceHash": "224ae5e"
   },
   "errors.volume.invalidName": "El destino no puede guardar ese nombre. Elige otro.",
   "@errors.volume.invalidName": {
@@ -1789,15 +1789,15 @@
   "@errors.volume.deletePending": {
     "sourceHash": "f7d0ab7"
   },
-  "errors.volume.ambiguousName": "Más de un elemento del servidor coincide con “{path}”, así que Cmdr no eligió ninguno. Elígelo desde su carpeta.",
+  "errors.volume.ambiguousName": "Más de un elemento del servidor coincide con “{path}”, así que Cmdr no ha elegido ninguno. Elígelo desde su carpeta.",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "024d1da"
+    "sourceHash": "f866182"
   },
-  "errors.volume.staleDestinationHandle": "Cmdr perdió la pista de la carpeta de destino en el dispositivo. Ábrela de nuevo y vuelve a intentarlo.",
+  "errors.volume.staleDestinationHandle": "Cmdr ha perdido la pista de la carpeta de destino en el dispositivo. Ábrela de nuevo y vuelve a intentarlo.",
   "@errors.volume.staleDestinationHandle": {
     "sourceHash": "b31958a"
   },
-  "errors.volume.ioError": "El volumen no pudo completarlo.",
+  "errors.volume.ioError": "El volumen no ha podido completarlo.",
   "@errors.volume.ioError": {
     "sourceHash": "c82a0e1"
   },
@@ -1805,7 +1805,7 @@
   "@errors.volume.needsPassword": {
     "sourceHash": "8d9f648"
   },
-  "errors.volume.passwordRejected": "Esa contraseña no funcionó.",
+  "errors.volume.passwordRejected": "Esa contraseña no ha funcionado.",
   "@errors.volume.passwordRejected": {
     "sourceHash": "33ba224"
   },
@@ -1813,15 +1813,15 @@
   "@errors.mutation.trashNotSupported": {
     "sourceHash": "525ef25"
   },
-  "errors.mutation.trashRefused": "macOS no permitió mover esto a la papelera.",
+  "errors.mutation.trashRefused": "macOS no ha permitido mover esto a la papelera.",
   "@errors.mutation.trashRefused": {
     "sourceHash": "6d8a1b6"
   },
-  "errors.serverRequest.unreachable": "Cmdr no pudo conectar con su servidor. Comprueba tu conexión a internet e inténtalo de nuevo.",
+  "errors.serverRequest.unreachable": "Cmdr no ha podido conectar con su servidor. Comprueba tu conexión a internet e inténtalo de nuevo.",
   "@errors.serverRequest.unreachable": {
     "sourceHash": "7f2a23e"
   },
-  "errors.serverRequest.timedOut": "El servidor de Cmdr no respondió a tiempo. Inténtalo de nuevo en un momento.",
+  "errors.serverRequest.timedOut": "El servidor de Cmdr no ha respondido a tiempo. Inténtalo de nuevo en un momento.",
   "@errors.serverRequest.timedOut": {
     "sourceHash": "14b0dcd"
   },
@@ -1829,11 +1829,11 @@
   "@errors.serverRequest.serverBusy": {
     "sourceHash": "2df1f8d"
   },
-  "errors.serverRequest.refused": "El servidor de Cmdr lo rechazó. Si sigue pasando, descarga la versión más reciente de Cmdr desde getcmdr.com.",
+  "errors.serverRequest.refused": "El servidor de Cmdr lo ha rechazado. Si sigue pasando, descarga la versión más reciente de Cmdr desde getcmdr.com.",
   "@errors.serverRequest.refused": {
     "sourceHash": "f36d8f8"
   },
-  "errors.serverRequest.unexpected": "Cmdr tuvo un problema interno. Inténtalo de nuevo y, si sigue pasando, reinicia Cmdr.",
+  "errors.serverRequest.unexpected": "Cmdr ha tenido un problema interno. Inténtalo de nuevo y, si sigue pasando, reinicia Cmdr.",
   "@errors.serverRequest.unexpected": {
     "sourceHash": "5be7ebd"
   },
@@ -1857,7 +1857,7 @@
   "@errors.eject.remoteNotConnected": {
     "sourceHash": "a0ed630"
   },
-  "errors.eject.deviceDisconnectRefused": "El dispositivo no cerró su conexión. Desconecta el cable cuando esté inactivo.",
+  "errors.eject.deviceDisconnectRefused": "El dispositivo no ha cerrado su conexión. Desconecta el cable cuando esté inactivo.",
   "@errors.eject.deviceDisconnectRefused": {
     "sourceHash": "d49861f"
   },
@@ -1897,87 +1897,87 @@
   "@errors.eject.notResponding": {
     "sourceHash": "742a732"
   },
-  "errors.eject.unexpected": "Algo salió mal y Cmdr no pudo saber qué.",
+  "errors.eject.unexpected": "Algo ha ido mal y Cmdr no ha podido saber qué.",
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que este equipo.",
+  "errors.mount.hostUnreachable": "Cmdr no ha podido acceder a “{server}”. Comprueba que esté encendido y en la misma red que este ordenador.",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
-  "errors.mount.timeout": "Cmdr esperó, pero “{server}” no respondió a tiempo. Comprueba que esté encendido y accesible, y vuelve a intentarlo.",
+  "errors.mount.timeout": "Cmdr ha esperado, pero “{server}” no ha respondido a tiempo. Comprueba que esté encendido y accesible, y vuelve a intentarlo.",
   "@errors.mount.timeout": {
-    "sourceHash": "bfb786c"
+    "sourceHash": "00d198e"
   },
   "errors.mount.shareNotFound": "No hay ningún recurso compartido llamado “{share}” en “{server}”. Vuelve atrás y elige uno de la lista.",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "4f930a5"
+    "sourceHash": "08aee2a"
   },
   "errors.mount.authRequired": "Inicia sesión para abrir “{share}” en “{server}”.",
   "@errors.mount.authRequired": {
-    "sourceHash": "8466652"
+    "sourceHash": "b2af295"
   },
-  "errors.mount.authFailed": "Ese nombre de usuario y esa contraseña no funcionaron en “{server}”. Revísalos y vuelve a iniciar sesión.",
+  "errors.mount.authFailed": "Ese nombre de usuario y esa contraseña no han funcionado en “{server}”. Revísalos y vuelve a iniciar sesión.",
   "@errors.mount.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
   "errors.mount.permissionDenied": "Tienes la sesión iniciada en “{server}” como “{username}”, pero esa cuenta no puede abrir “{share}”. Inicia sesión con otra cuenta.",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "12e20d9"
+    "sourceHash": "f8e000b"
   },
-  "errors.mount.cancelled": "La conexión con “{share}” se detuvo antes de terminar. Vuelve a intentarlo cuando quieras.",
+  "errors.mount.cancelled": "La conexión con “{share}” se ha detenido antes de terminar. Vuelve a intentarlo cuando quieras.",
   "@errors.mount.cancelled": {
-    "sourceHash": "0b0ec30"
+    "sourceHash": "4f6ff32"
   },
-  "errors.mount.unsupportedProtocol": "Este equipo y “{server}” no tienen ninguna versión de SMB en común. Activa SMB 2 o posterior en los ajustes del servidor y vuelve a intentarlo.",
+  "errors.mount.unsupportedProtocol": "Este ordenador y “{server}” no tienen ninguna versión de SMB en común. Activa SMB 2 o posterior en los ajustes del servidor y vuelve a intentarlo.",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "bf9c71e"
+    "sourceHash": "7cb18f6"
   },
-  "errors.mount.mountRefused": "Tienes la sesión iniciada en “{server}”, pero el servidor no permitió abrir “{share}”. Revisa los ajustes del recurso compartido en el servidor y vuelve a intentarlo.",
+  "errors.mount.mountRefused": "Tienes la sesión iniciada en “{server}”, pero el servidor no ha permitido abrir “{share}”. Revisa los ajustes del recurso compartido en el servidor y vuelve a intentarlo.",
   "@errors.mount.mountRefused": {
-    "sourceHash": "c354782"
+    "sourceHash": "84344ca"
   },
-  "errors.mount.mountMissing": "Tu equipo indicó que “{share}” en “{server}” estaba conectado, pero nunca apareció. Vuelve a intentarlo.",
+  "errors.mount.mountMissing": "Tu ordenador ha indicado que “{share}” en “{server}” estaba conectado, pero no ha llegado a aparecer. Vuelve a intentarlo.",
   "@errors.mount.mountMissing": {
-    "sourceHash": "a5f61b5"
+    "sourceHash": "72ab946"
   },
   "errors.mount.gvfsMissing": "Para conectarse a recursos compartidos de red en Linux se necesita GVFS. Instala el paquete gvfs-smb de tu distribución y vuelve a intentarlo.",
   "@errors.mount.gvfsMissing": {
     "sourceHash": "068da95"
   },
-  "errors.mount.unexpected": "Algo salió mal al conectar con “{share}” en “{server}”. Vuelve a intentarlo en un momento.",
+  "errors.mount.unexpected": "Algo ha ido mal al conectar con “{share}” en “{server}”. Vuelve a intentarlo en un momento.",
   "@errors.mount.unexpected": {
-    "sourceHash": "8daf9ba"
+    "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "Cmdr no pudo acceder a “{server}”. Comprueba que esté encendido y en la misma red que este equipo.",
+  "errors.shareList.hostUnreachable": "Cmdr no ha podido acceder a “{server}”. Comprueba que esté encendido y en la misma red que este ordenador.",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
-  "errors.shareList.timeout": "Cmdr esperó, pero “{server}” no respondió a tiempo. Vuelve a intentarlo en un momento.",
+  "errors.shareList.timeout": "Cmdr ha esperado, pero “{server}” no ha respondido a tiempo. Vuelve a intentarlo en un momento.",
   "@errors.shareList.timeout": {
-    "sourceHash": "ae84e14"
+    "sourceHash": "a07b7c8"
   },
   "errors.shareList.authRequired": "Inicia sesión para ver los recursos compartidos de “{server}”.",
   "@errors.shareList.authRequired": {
-    "sourceHash": "4268ae9"
+    "sourceHash": "68f86c4"
   },
   "errors.shareList.signingRequired": "“{server}” no muestra sus recursos compartidos con acceso como invitado. Inicia sesión para verlos.",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "8ae651a"
+    "sourceHash": "ecc570d"
   },
-  "errors.shareList.authFailed": "Ese nombre de usuario y esa contraseña no funcionaron en “{server}”. Revísalos y vuelve a iniciar sesión.",
+  "errors.shareList.authFailed": "Ese nombre de usuario y esa contraseña no han funcionado en “{server}”. Revísalos y vuelve a iniciar sesión.",
   "@errors.shareList.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
-  "errors.shareList.protocolError": "Algo salió mal al pedirle a “{server}” sus recursos compartidos. Vuelve a intentarlo en un momento.",
+  "errors.shareList.protocolError": "Algo ha ido mal al pedirle a “{server}” sus recursos compartidos. Vuelve a intentarlo en un momento.",
   "@errors.shareList.protocolError": {
-    "sourceHash": "064a773"
+    "sourceHash": "da302ca"
   },
-  "errors.shareList.resolutionFailed": "Cmdr no pudo encontrar “{server}” en la red. Comprueba el nombre o inténtalo de nuevo cuando esté en línea otra vez.",
+  "errors.shareList.resolutionFailed": "Cmdr no ha podido encontrar “{server}” en la red. Comprueba el nombre o inténtalo de nuevo cuando esté en línea otra vez.",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "d2e5b54"
+    "sourceHash": "62e91cf"
   },
-  "errors.shareList.missingDependency": "Para ver la lista de recursos compartidos, este equipo necesita smbclient, que no está instalado. Instálalo y vuelve a intentarlo.",
+  "errors.shareList.missingDependency": "Para ver la lista de recursos compartidos, este ordenador necesita smbclient, que no está instalado. Instálalo y vuelve a intentarlo.",
   "@errors.shareList.missingDependency": {
     "sourceHash": "810b06a"
   },

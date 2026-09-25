@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Haz clic derecho en un servidor y elige Desfijar, o usa “{command}” en la paleta de comandos. Seguirá en la lista Servidores.",
   "@servers.pinHint.body": {
-    "sourceHash": "0663b02"
+    "sourceHash": "e47522b"
   },
   "servers.pinHint.gotIt": "Entendido",
   "@servers.pinHint.gotIt": {
@@ -103,7 +103,7 @@
   "@servers.paneState.disconnect": {
     "sourceHash": "acfc5be"
   },
-  "servers.refusal.authenticationRejected": "Esa contraseña no funcionó para {username}.",
+  "servers.refusal.authenticationRejected": "Esa contraseña no ha funcionado para {username}.",
   "@servers.refusal.authenticationRejected": {
     "sourceHash": "b2c42b0"
   },
@@ -131,11 +131,11 @@
   "@servers.refusal.invalidUrl": {
     "sourceHash": "9a121ac"
   },
-  "servers.refusal.timedOut": "{host} no respondió a tiempo.",
+  "servers.refusal.timedOut": "{host} no ha respondido a tiempo.",
   "@servers.refusal.timedOut": {
     "sourceHash": "7662825"
   },
-  "servers.refusal.unreachable": "Cmdr no pudo acceder a {host}.",
+  "servers.refusal.unreachable": "Cmdr no ha podido acceder a {host}.",
   "@servers.refusal.unreachable": {
     "sourceHash": "ae716c3"
   },
@@ -159,15 +159,15 @@
   "@servers.refusal.startFolderNotFound": {
     "sourceHash": "f1df16e"
   },
-  "servers.refusal.saveUnconfirmed": "{host} no respondió a tiempo, así que no se guardó nada. Inténtalo de nuevo en un momento.",
+  "servers.refusal.saveUnconfirmed": "{host} no ha respondido a tiempo, así que no se ha guardado nada. Inténtalo de nuevo en un momento.",
   "@servers.refusal.saveUnconfirmed": {
     "sourceHash": "f7bb3a6"
   },
-  "servers.refusal.secretNotStored": "Cmdr no pudo guardar esta contraseña en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.",
+  "servers.refusal.secretNotStored": "Cmdr no ha podido guardar esta contraseña en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.",
   "@servers.refusal.secretNotStored": {
     "sourceHash": "080b475"
   },
-  "servers.refusal.savedSecretNotUpdated": "Cmdr guardó tus cambios, pero no pudo actualizar la contraseña en el Llavero. Vuelve a guardar para intentarlo otra vez.",
+  "servers.refusal.savedSecretNotUpdated": "Cmdr ha guardado tus cambios, pero no ha podido actualizar la contraseña en el Llavero. Vuelve a guardar para intentarlo otra vez.",
   "@servers.refusal.savedSecretNotUpdated": {
     "sourceHash": "471a6d8"
   },
@@ -335,15 +335,15 @@
   "@servers.hostKey.firstContactBody": {
     "sourceHash": "befd6c3"
   },
-  "servers.hostKey.changedTitle": "La clave de {host} cambió",
+  "servers.hostKey.changedTitle": "La clave de {host} ha cambiado",
   "@servers.hostKey.changedTitle": {
     "sourceHash": "dde14d6"
   },
-  "servers.hostKey.changedBody": "Esto puede significar que el servidor se reinstaló, o que hay algo entre tú y él. Comprueba la huella digital con quien posee el servidor antes de confiar en ella.",
+  "servers.hostKey.changedBody": "Esto puede significar que el servidor se ha reinstalado, o que hay algo entre tú y él. Comprueba la huella digital con quien posee el servidor antes de confiar en ella.",
   "@servers.hostKey.changedBody": {
     "sourceHash": "34552a6"
   },
-  "servers.hostKey.changedDisclosure": "Ya la comprobé",
+  "servers.hostKey.changedDisclosure": "Ya la he comprobado",
   "@servers.hostKey.changedDisclosure": {
     "sourceHash": "29d1f63"
   },
@@ -371,7 +371,7 @@
   "@servers.paneState.hostKeyChanged": {
     "sourceHash": "123ff4f"
   },
-  "servers.paneState.hostKeyChangedHint": "Su clave cambió. Esto puede significar que el servidor se reinstaló, o que hay algo entre tú y él. Desconecta y vuelve a abrirlo para comprobar la huella digital.",
+  "servers.paneState.hostKeyChangedHint": "Su clave ha cambiado. Esto puede significar que el servidor se ha reinstalado, o que hay algo entre tú y él. Desconecta y vuelve a abrirlo para comprobar la huella digital.",
   "@servers.paneState.hostKeyChangedHint": {
     "sourceHash": "923de62"
   },

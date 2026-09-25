@@ -47,17 +47,17 @@
   "@main.dockPinNudge.managedDock": {
     "sourceHash": "dae0836"
   },
-  "main.dockPinNudge.notAdded": "Cmdr no pudo entrar en el Dock esta vez. Puedes arrastrarlo ahí desde la carpeta Aplicaciones cuando quieras.",
+  "main.dockPinNudge.notAdded": "Cmdr no ha podido entrar en el Dock esta vez. Puedes arrastrarlo ahí desde la carpeta Aplicaciones cuando quieras.",
   "@main.dockPinNudge.notAdded": {
     "sourceHash": "0d122cb"
   },
   "main.revealNudge.title": "¿Abrir “Mostrar en el Finder” en Cmdr?",
   "@main.revealNudge.title": {
-    "sourceHash": "c92e1b7"
+    "sourceHash": "45a5b47"
   },
   "main.revealNudge.body": "Llevas un tiempo usando Cmdr. Cuando otra app ejecute “Mostrar en el Finder”, Cmdr puede abrir esa carpeta con el archivo ya bajo el cursor.",
   "@main.revealNudge.body": {
-    "sourceHash": "fe4072b"
+    "sourceHash": "1db1d28"
   },
   "main.revealNudge.switchBackNote": "Puedes volver a cambiarlo cuando quieras en los Ajustes.",
   "@main.revealNudge.switchBackNote": {
@@ -73,21 +73,21 @@
   },
   "main.revealNudge.turnedOn": "Cmdr ya abre “Mostrar en el Finder” desde otras apps.",
   "@main.revealNudge.turnedOn": {
-    "sourceHash": "8eab42b"
+    "sourceHash": "27c0ea2"
   },
   "main.revealNudge.heldByOtherApp": "Ahora mismo “Mostrar en el Finder” lo tiene {app}. Puedes pasárselo a Cmdr en los Ajustes cuando quieras.",
   "@main.revealNudge.heldByOtherApp": {
-    "sourceHash": "3f513b0"
+    "sourceHash": "0893821"
   },
-  "main.revealNudge.notTurnedOn": "Cmdr no pudo quedarse con “Mostrar en el Finder” esta vez. El interruptor está en los Ajustes cuando quieras volver a intentarlo.",
+  "main.revealNudge.notTurnedOn": "Cmdr no ha podido quedarse con “Mostrar en el Finder” esta vez. El interruptor está en los Ajustes cuando quieras volver a intentarlo.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "4a9920d"
+    "sourceHash": "953a4ee"
   },
-  "main.revealActivation.title": "“Mostrar en el Finder” se abrió aquí",
+  "main.revealActivation.title": "“Mostrar en el Finder” se ha abierto aquí",
   "@main.revealActivation.title": {
-    "sourceHash": "23d50e1"
+    "sourceHash": "6bb18bb"
   },
-  "main.revealActivation.body": "Cmdr está configurado para recogerlos, así que el archivo apareció en un panel en vez de en el Finder. Todo lo demás se sigue abriendo igual que antes.",
+  "main.revealActivation.body": "Cmdr está configurado para recogerlos, así que el archivo ha aparecido en un panel en vez de en el Finder. Todo lo demás se sigue abriendo igual que antes.",
   "@main.revealActivation.body": {
     "sourceHash": "19ea7d6"
   },
@@ -147,7 +147,7 @@
   "@main.oldWebkit.quit": {
     "sourceHash": "b3eb37a"
   },
-  "main.escapeFullScreenHint.message": "La tecla Esc sacó a Cmdr de la pantalla completa.",
+  "main.escapeFullScreenHint.message": "La tecla Esc ha sacado a Cmdr de la pantalla completa.",
   "@main.escapeFullScreenHint.message": {
     "sourceHash": "f7b4c55"
   },

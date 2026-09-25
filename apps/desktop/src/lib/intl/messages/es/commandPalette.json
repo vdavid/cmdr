@@ -7,7 +7,7 @@
   "@commandPalette.searchAriaLabel": {
     "sourceHash": "00ff739"
   },
-  "commandPalette.noResults": "No se encontraron comandos",
+  "commandPalette.noResults": "No se han encontrado comandos",
   "@commandPalette.noResults": {
     "sourceHash": "eac0d09"
   },

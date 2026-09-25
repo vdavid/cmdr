@@ -67,7 +67,7 @@
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
-  "commands.helpSendErrorReport.description": "Envía los registros de Cmdr al equipo para ayudar a resolver algo que salió mal",
+  "commands.helpSendErrorReport.description": "Envía los registros de Cmdr al equipo para ayudar a resolver algo que ha ido mal",
   "@commands.helpSendErrorReport.description": {
     "sourceHash": "021d333"
   },
@@ -764,11 +764,11 @@
   "@commands.paletteClose.label": {
     "sourceHash": "2e75050"
   },
-  "commands.handler.favoriteAdded": "Se añadió \"{name}\" a favoritos",
+  "commands.handler.favoriteAdded": "Se ha añadido “{name}” a favoritos",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
-  "commands.handler.favoriteAddFailed": "No se pudo añadir esa carpeta a favoritos. ¿Lo intentas de nuevo?",
+  "commands.handler.favoriteAddFailed": "No se ha podido añadir esa carpeta a favoritos. ¿Lo intentas de nuevo?",
   "@commands.handler.favoriteAddFailed": {
     "sourceHash": "3f85e99"
   },
@@ -780,11 +780,11 @@
   "@commands.handler.noRecentlyClosedTabs": {
     "sourceHash": "e560789"
   },
-  "commands.handler.cloudDownloadFailed": "No se pudo descargar desde la nube. {detail}",
+  "commands.handler.cloudDownloadFailed": "No se ha podido descargar desde la nube. {detail}",
   "@commands.handler.cloudDownloadFailed": {
     "sourceHash": "70792cf"
   },
-  "commands.handler.cloudRemoveDownloadFailed": "No se pudo quitar la descarga. {detail}",
+  "commands.handler.cloudRemoveDownloadFailed": "No se ha podido quitar la descarga. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
     "sourceHash": "425280d"
   },
@@ -792,15 +792,15 @@
   "@commands.handler.googleDriveLinkMissing": {
     "sourceHash": "af21508"
   },
-  "commands.handler.googleDriveOpenFailed": "No se pudo abrir esto en Google Drive. {detail}",
+  "commands.handler.googleDriveOpenFailed": "No se ha podido abrir esto en Google Drive. {detail}",
   "@commands.handler.googleDriveOpenFailed": {
     "sourceHash": "71dc94a"
   },
-  "commands.handler.googleDriveLinkCopied": "Se copió el enlace de Google Drive.",
+  "commands.handler.googleDriveLinkCopied": "Se ha copiado el enlace de Google Drive.",
   "@commands.handler.googleDriveLinkCopied": {
     "sourceHash": "0997eb8"
   },
-  "commands.handler.googleDriveCopyFailed": "No se pudo copiar el enlace de Google Drive. {detail}",
+  "commands.handler.googleDriveCopyFailed": "No se ha podido copiar el enlace de Google Drive. {detail}",
   "@commands.handler.googleDriveCopyFailed": {
     "sourceHash": "dd970ec"
   },
@@ -816,11 +816,11 @@
   "@commands.handler.openTerminalHere.openSettings": {
     "sourceHash": "ca381c1"
   },
-  "commands.handler.openTerminalHere.appMissing": "{app} ya no está instalada, así que esto se abrió en Terminal.",
+  "commands.handler.openTerminalHere.appMissing": "{app} ya no está instalada, así que esto se ha abierto en Terminal.",
   "@commands.handler.openTerminalHere.appMissing": {
     "sourceHash": "70726d6"
   },
-  "commands.handler.openTerminalHere.appMissingUnnamed": "Tu app de terminal ya no está instalada, así que esto se abrió en Terminal.",
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Tu app de terminal ya no está instalada, así que esto se ha abierto en Terminal.",
   "@commands.handler.openTerminalHere.appMissingUnnamed": {
     "sourceHash": "29e9be5"
   },
@@ -828,7 +828,7 @@
   "@commands.handler.openTerminalHere.noPath": {
     "sourceHash": "d6520b7"
   },
-  "commands.handler.openTerminalHere.launchRefused": "Cmdr no pudo iniciar tu app de terminal. Ábrela tú una vez y vuelve a intentarlo.",
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr no ha podido iniciar tu app de terminal. Ábrela tú una vez y vuelve a intentarlo.",
   "@commands.handler.openTerminalHere.launchRefused": {
     "sourceHash": "ffd6b3a"
   },
@@ -860,7 +860,7 @@
   "@commands.suggestedOpsShow.label": {
     "sourceHash": "4f24ca6"
   },
-  "commands.suggestedOpsShow.description": "Revisa las operaciones de archivos que sugirió la IA y decide qué se ejecuta",
+  "commands.suggestedOpsShow.description": "Revisa las operaciones de archivos que ha sugerido la IA y decide qué se ejecuta",
   "@commands.suggestedOpsShow.description": {
     "sourceHash": "7efe8c9"
   }

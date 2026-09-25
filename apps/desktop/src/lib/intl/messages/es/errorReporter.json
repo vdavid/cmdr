@@ -3,7 +3,7 @@
   "@errorReporter.dialog.title": {
     "sourceHash": "c327e68"
   },
-  "errorReporter.dialog.description": "Esto envía los archivos de registro recientes de Cmdr al equipo para que podamos arreglar lo que salió mal. Los registros se depuran en tu dispositivo: las rutas de archivos, los nombres de host, las IP y los correos se eliminan antes de enviarlos.",
+  "errorReporter.dialog.description": "Esto envía los archivos de registro recientes de Cmdr al equipo para que podamos arreglar lo que ha ido mal. Los registros se depuran en tu dispositivo: las rutas de archivos, los nombres de host, las IP y los correos se eliminan antes de enviarlos.",
   "@errorReporter.dialog.description": {
     "sourceHash": "dd11284"
   },
@@ -64,7 +64,7 @@
   "@errorReporter.dialog.preparing": {
     "sourceHash": "11e66e1"
   },
-  "errorReporter.dialog.prepareFailed": "No se pudo preparar la vista previa.",
+  "errorReporter.dialog.prepareFailed": "No se ha podido preparar la vista previa.",
   "@errorReporter.dialog.prepareFailed": {
     "sourceHash": "3729966"
   },
@@ -72,7 +72,7 @@
   "@errorReporter.dialog.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "errorReporter.dialog.bundleUnavailable": "Cmdr no pudo reunir sus registros para el informe. Inténtalo de nuevo en un momento.",
+  "errorReporter.dialog.bundleUnavailable": "Cmdr no ha podido reunir sus registros para el informe. Inténtalo de nuevo en un momento.",
   "@errorReporter.dialog.bundleUnavailable": {
     "sourceHash": "3743aba"
   },
@@ -92,11 +92,11 @@
   "@errorReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },
-  "errorReporter.dialog.sendFailedToast": "No se pudo enviar el informe de error. {reason}",
+  "errorReporter.dialog.sendFailedToast": "No se ha podido enviar el informe de error. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
     "sourceHash": "75337c1"
   },
-  "errorReporter.dialog.saveFailedToast": "No se pudo guardar el paquete: {error}",
+  "errorReporter.dialog.saveFailedToast": "No se ha podido guardar el paquete: {error}",
   "@errorReporter.dialog.saveFailedToast": {
     "sourceHash": "34cf2b4"
   },
@@ -104,7 +104,7 @@
   "@errorReporter.amend.title": {
     "sourceHash": "b19796b"
   },
-  "errorReporter.amend.description": "Cmdr ya envió este informe. Escribe una nota o adjunta tu correo, y se sumará a lo que el equipo ya tiene.",
+  "errorReporter.amend.description": "Cmdr ya ha enviado este informe. Escribe una nota o adjunta tu correo, y se sumará a lo que el equipo ya tiene.",
   "@errorReporter.amend.description": {
     "sourceHash": "276771e"
   },
@@ -112,7 +112,7 @@
   "@errorReporter.amend.noteLabel": {
     "sourceHash": "5331e47"
   },
-  "errorReporter.amend.detailsToggle": "Lo que se envió",
+  "errorReporter.amend.detailsToggle": "Lo que se ha enviado",
   "@errorReporter.amend.detailsToggle": {
     "sourceHash": "cb2415e"
   },
@@ -132,7 +132,7 @@
   "@errorReporter.amend.close": {
     "sourceHash": "7d9eb7a"
   },
-  "errorReporter.amend.addFailedToast": "No se pudo añadir tu nota. {reason}",
+  "errorReporter.amend.addFailedToast": "No se ha podido añadir tu nota. {reason}",
   "@errorReporter.amend.addFailedToast": {
     "sourceHash": "0b67749"
   },

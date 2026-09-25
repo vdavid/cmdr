@@ -63,11 +63,11 @@
   "@ui.toast.age": {
     "sourceHash": "6dcfed0"
   },
-  "ui.loadingIcon.finalizing": "{count, plural, one {Se cargó {countText} archivo} many {Se cargaron {countText} archivos} other {Se cargaron {countText} archivos}}. Ordenando tus archivos, preparando la vista…",
+  "ui.loadingIcon.finalizing": "{count, plural, one {Se ha cargado {countText} archivo} many {Se han cargado {countText} archivos} other {Se han cargado {countText} archivos}}. Ordenando tus archivos, preparando la vista…",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "0de5a42"
   },
-  "ui.loadingIcon.loaded": "{count, plural, one {Se cargó {countText} archivo} many {Se cargaron {countText} archivos} other {Se cargaron {countText} archivos}}…",
+  "ui.loadingIcon.loaded": "{count, plural, one {Se ha cargado {countText} archivo} many {Se han cargado {countText} archivos} other {Se han cargado {countText} archivos}}…",
   "@ui.loadingIcon.loaded": {
     "sourceHash": "69d2b22"
   },

@@ -176,7 +176,7 @@
   "@licensing.dialog.enterTitle": {
     "sourceHash": "357d05e"
   },
-  "licensing.dialog.serverInvalidBanner": "No se pudo verificar esta clave con el servidor. Prueba con otra clave o escríbenos a <supportEmail>{email}</supportEmail>.",
+  "licensing.dialog.serverInvalidBanner": "No se ha podido verificar esta clave con el servidor. Prueba con otra clave o escríbenos a <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.serverInvalidBanner": {
     "sourceHash": "616b906"
   },
@@ -260,7 +260,7 @@
   "@licensing.dialog.inputPlaceholder": {
     "sourceHash": "3fb5cf9"
   },
-  "licensing.dialog.retryExhausted": "Lo intentamos {count} veces y no funcionó. Sentimos las molestias. Escríbenos a <supportEmail>{email}</supportEmail> y lo resolveremos.",
+  "licensing.dialog.retryExhausted": "Lo hemos intentado {count} veces y no ha funcionado. Sentimos las molestias. Escríbenos a <supportEmail>{email}</supportEmail> y lo resolveremos.",
   "@licensing.dialog.retryExhausted": {
     "sourceHash": "4f3331b"
   },
@@ -300,7 +300,7 @@
   "@licensing.dialog.activatedToastNamed": {
     "sourceHash": "d0c136a"
   },
-  "licensing.dialog.networkFallbackError": "No se pudo verificar tu licencia con el servidor. Inténtalo de nuevo más tarde.",
+  "licensing.dialog.networkFallbackError": "No se ha podido verificar tu licencia con el servidor. Inténtalo de nuevo más tarde.",
   "@licensing.dialog.networkFallbackError": {
     "sourceHash": "cb2b8e0"
   },
@@ -312,7 +312,7 @@
   "@licensing.dialog.expiredOnHelp": {
     "sourceHash": "036bb88"
   },
-  "licensing.dialog.serverInvalidError": "Conocemos esta clave, pero al comprobarla con nuestro proveedor de pagos, no la reconoció. Esto puede pasar si la compra se reembolsó o no se completó.",
+  "licensing.dialog.serverInvalidError": "Conocemos esta clave, pero al comprobarla con nuestro proveedor de pagos, no la ha reconocido. Esto puede pasar si la compra se reembolsó o no se completó.",
   "@licensing.dialog.serverInvalidError": {
     "sourceHash": "4beeef1"
   },
@@ -328,7 +328,7 @@
   "@licensing.dialog.mailtoBody": {
     "sourceHash": "bcdc2b6"
   },
-  "licensing.error.badSignature": "Esta clave de licencia no superó nuestra verificación de firma, lo que significa que no parece una clave válida.",
+  "licensing.error.badSignature": "Esta clave de licencia no ha superado nuestra verificación de firma, lo que significa que no parece una clave válida.",
   "@licensing.error.badSignature": {
     "sourceHash": "e9842df"
   },
@@ -344,15 +344,15 @@
   "@licensing.error.badFormatHint": {
     "sourceHash": "a62b901"
   },
-  "licensing.error.shortCodeNotFound": "Esta licencia tiene buena pinta, pero buscamos a fondo y no la encontramos en nuestra base de datos.",
+  "licensing.error.shortCodeNotFound": "Esta licencia tiene buena pinta, pero hemos buscado a fondo y no la hemos encontrado en nuestra base de datos.",
   "@licensing.error.shortCodeNotFound": {
     "sourceHash": "c123af8"
   },
-  "licensing.error.shortCodeNotFoundHint": "Verifica que pegaste la clave correcta de tu correo de compra.",
+  "licensing.error.shortCodeNotFoundHint": "Verifica que has pegado la clave correcta de tu correo de compra.",
   "@licensing.error.shortCodeNotFoundHint": {
     "sourceHash": "a2f07d2"
   },
-  "licensing.error.network": "Vaya, esta vez no pudimos conectar con el servidor de licencias.",
+  "licensing.error.network": "Vaya, esta vez no hemos podido conectar con el servidor de licencias.",
   "@licensing.error.network": {
     "sourceHash": "63da44b"
   },
@@ -360,7 +360,7 @@
   "@licensing.error.networkHint": {
     "sourceHash": "67cba62"
   },
-  "licensing.error.server": "Mmm, el servidor de licencias respondió con algo raro. Lo sentimos.",
+  "licensing.error.server": "Mmm, el servidor de licencias ha respondido con algo raro. Lo sentimos.",
   "@licensing.error.server": {
     "sourceHash": "6ca76c0"
   },
@@ -368,7 +368,7 @@
   "@licensing.error.serverHint": {
     "sourceHash": "386b914"
   },
-  "licensing.error.generic": "Algo salió mal al activar esta clave.",
+  "licensing.error.generic": "Algo ha ido mal al activar esta clave.",
   "@licensing.error.generic": {
     "sourceHash": "436e264"
   },

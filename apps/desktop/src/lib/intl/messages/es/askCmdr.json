@@ -52,7 +52,7 @@
   "@askCmdr.tool.appState.doing": {
     "sourceHash": "832e0cc"
   },
-  "askCmdr.tool.appState.done": "Se revisó lo que estás viendo",
+  "askCmdr.tool.appState.done": "Se ha revisado lo que estás viendo",
   "@askCmdr.tool.appState.done": {
     "sourceHash": "155621e"
   },
@@ -60,7 +60,7 @@
   "@askCmdr.tool.listDir.doing": {
     "sourceHash": "64aa697"
   },
-  "askCmdr.tool.listDir.done": "Se listó una carpeta",
+  "askCmdr.tool.listDir.done": "Se ha listado una carpeta",
   "@askCmdr.tool.listDir.done": {
     "sourceHash": "5746fef"
   },
@@ -68,7 +68,7 @@
   "@askCmdr.tool.importantFolders.doing": {
     "sourceHash": "866aa38"
   },
-  "askCmdr.tool.importantFolders.done": "Se encontraron tus carpetas importantes",
+  "askCmdr.tool.importantFolders.done": "Se han encontrado tus carpetas importantes",
   "@askCmdr.tool.importantFolders.done": {
     "sourceHash": "1fd5db6"
   },
@@ -76,7 +76,7 @@
   "@askCmdr.tool.folderImportance.doing": {
     "sourceHash": "594deff"
   },
-  "askCmdr.tool.folderImportance.done": "Se comprobó la importancia de una carpeta",
+  "askCmdr.tool.folderImportance.done": "Se ha comprobado la importancia de una carpeta",
   "@askCmdr.tool.folderImportance.done": {
     "sourceHash": "c7f397f"
   },
@@ -84,7 +84,7 @@
   "@askCmdr.tool.listVolumes.doing": {
     "sourceHash": "2ed1808"
   },
-  "askCmdr.tool.listVolumes.done": "Se comprobaron tus unidades",
+  "askCmdr.tool.listVolumes.done": "Se han comprobado tus unidades",
   "@askCmdr.tool.listVolumes.done": {
     "sourceHash": "b13a0b3"
   },
@@ -92,7 +92,7 @@
   "@askCmdr.tool.operationsList.doing": {
     "sourceHash": "4e8c41a"
   },
-  "askCmdr.tool.operationsList.done": "Se buscó en tu historial de archivos",
+  "askCmdr.tool.operationsList.done": "Se ha buscado en tu historial de archivos",
   "@askCmdr.tool.operationsList.done": {
     "sourceHash": "03021d5"
   },
@@ -100,7 +100,7 @@
   "@askCmdr.tool.operationsGet.doing": {
     "sourceHash": "10be41f"
   },
-  "askCmdr.tool.operationsGet.done": "Se buscó una operación",
+  "askCmdr.tool.operationsGet.done": "Se ha buscado una operación",
   "@askCmdr.tool.operationsGet.done": {
     "sourceHash": "80fe1e9"
   },
@@ -108,7 +108,7 @@
   "@askCmdr.tool.search.doing": {
     "sourceHash": "892be3e"
   },
-  "askCmdr.tool.search.done": "Se buscó en tus archivos",
+  "askCmdr.tool.search.done": "Se ha buscado en tus archivos",
   "@askCmdr.tool.search.done": {
     "sourceHash": "995a356"
   },
@@ -116,7 +116,7 @@
   "@askCmdr.tool.searchPhotos.doing": {
     "sourceHash": "da1265d"
   },
-  "askCmdr.tool.searchPhotos.done": "Se buscó en tus fotos",
+  "askCmdr.tool.searchPhotos.done": "Se ha buscado en tus fotos",
   "@askCmdr.tool.searchPhotos.done": {
     "sourceHash": "cb3dede"
   },
@@ -124,7 +124,7 @@
   "@askCmdr.tool.inspectFile.doing": {
     "sourceHash": "e7ba22a"
   },
-  "askCmdr.tool.inspectFile.done": "Se miró dentro de los archivos",
+  "askCmdr.tool.inspectFile.done": "Se ha mirado dentro de los archivos",
   "@askCmdr.tool.inspectFile.done": {
     "sourceHash": "9b24f57"
   },
@@ -132,7 +132,7 @@
   "@askCmdr.tool.imageFacts.doing": {
     "sourceHash": "b70691b"
   },
-  "askCmdr.tool.imageFacts.done": "Se leyó el contenido de tus fotos",
+  "askCmdr.tool.imageFacts.done": "Se ha leído el contenido de tus fotos",
   "@askCmdr.tool.imageFacts.done": {
     "sourceHash": "fc24aac"
   },
@@ -140,7 +140,7 @@
   "@askCmdr.tool.proposeRenamePlan.doing": {
     "sourceHash": "540f1d9"
   },
-  "askCmdr.tool.proposeRenamePlan.done": "Se preparó un plan de cambio de nombre",
+  "askCmdr.tool.proposeRenamePlan.done": "Se ha preparado un plan de cambio de nombre",
   "@askCmdr.tool.proposeRenamePlan.done": {
     "sourceHash": "a271302"
   },
@@ -148,7 +148,7 @@
   "@askCmdr.tool.listSuggestions.doing": {
     "sourceHash": "8eddcd5"
   },
-  "askCmdr.tool.listSuggestions.done": "Se revisaron las sugerencias",
+  "askCmdr.tool.listSuggestions.done": "Se han revisado las sugerencias",
   "@askCmdr.tool.listSuggestions.done": {
     "sourceHash": "073df6b"
   },
@@ -156,7 +156,7 @@
   "@askCmdr.tool.getSuggestionGroup.doing": {
     "sourceHash": "791e75c"
   },
-  "askCmdr.tool.getSuggestionGroup.done": "Se consultó una sugerencia",
+  "askCmdr.tool.getSuggestionGroup.done": "Se ha consultado una sugerencia",
   "@askCmdr.tool.getSuggestionGroup.done": {
     "sourceHash": "2373235"
   },
@@ -164,15 +164,15 @@
   "@askCmdr.tool.proposeSuggestions.doing": {
     "sourceHash": "aa27c17"
   },
-  "askCmdr.tool.proposeSuggestions.done": "Se prepararon sugerencias",
+  "askCmdr.tool.proposeSuggestions.done": "Se han preparado sugerencias",
   "@askCmdr.tool.proposeSuggestions.done": {
     "sourceHash": "42457d2"
   },
-  "askCmdr.tool.nothingToSuggest.doing": "Decidiendo si vale la pena mencionarlo",
+  "askCmdr.tool.nothingToSuggest.doing": "Decidiendo si merece la pena mencionarlo",
   "@askCmdr.tool.nothingToSuggest.doing": {
     "sourceHash": "51ef519"
   },
-  "askCmdr.tool.nothingToSuggest.done": "No encontró nada que merezca mención",
+  "askCmdr.tool.nothingToSuggest.done": "No se ha encontrado nada que merezca mención",
   "@askCmdr.tool.nothingToSuggest.done": {
     "sourceHash": "2287381"
   },
@@ -196,7 +196,7 @@
   "@askCmdr.tool.unknown.doing": {
     "sourceHash": "a92f044"
   },
-  "askCmdr.tool.unknown.done": "Se usó una herramienta",
+  "askCmdr.tool.unknown.done": "Se ha usado una herramienta",
   "@askCmdr.tool.unknown.done": {
     "sourceHash": "05cc2be"
   },
@@ -224,7 +224,7 @@
   "@askCmdr.error.localWindowTooSmall": {
     "sourceHash": "8ac7452"
   },
-  "askCmdr.error.unavailable": "No se pudo conectar con el proveedor de IA. Revisa tu conexión e inténtalo de nuevo.",
+  "askCmdr.error.unavailable": "No se ha podido conectar con el proveedor de IA. Revisa tu conexión e inténtalo de nuevo.",
   "@askCmdr.error.unavailable": {
     "sourceHash": "eb59e2b"
   },
@@ -232,27 +232,27 @@
   "@askCmdr.error.timeout": {
     "sourceHash": "22cd775"
   },
-  "askCmdr.error.authFailed": "El proveedor no aceptó tu clave de API. Revísala en Ajustes.",
+  "askCmdr.error.authFailed": "El proveedor no ha aceptado tu clave de API. Revísala en Ajustes.",
   "@askCmdr.error.authFailed": {
     "sourceHash": "a2302ca"
   },
-  "askCmdr.error.rateLimited": "El proveedor está ocupado o se te acabó la cuota. Inténtalo de nuevo en un rato.",
+  "askCmdr.error.rateLimited": "El proveedor está ocupado o se te ha acabado la cuota. Inténtalo de nuevo en un rato.",
   "@askCmdr.error.rateLimited": {
     "sourceHash": "7b441e9"
   },
-  "askCmdr.error.budgetExhausted": "Esta respuesta llegó a su límite antes de terminar. Intenta preguntar algo más concreto.",
+  "askCmdr.error.budgetExhausted": "Esta respuesta ha llegado a su límite antes de terminar. Intenta preguntar algo más concreto.",
   "@askCmdr.error.budgetExhausted": {
     "sourceHash": "ea2beb2"
   },
-  "askCmdr.error.repeatedToolCall": "Esta respuesta repitió la misma consulta sin avanzar. Intenta preguntarlo de otra manera.",
+  "askCmdr.error.repeatedToolCall": "Esta respuesta ha repetido la misma consulta sin avanzar. Intenta preguntarlo de otra manera.",
   "@askCmdr.error.repeatedToolCall": {
     "sourceHash": "ea46ed7"
   },
-  "askCmdr.error.unfinishedReply": "La respuesta no terminó. ¿Lo intentas de nuevo?",
+  "askCmdr.error.unfinishedReply": "La respuesta no ha terminado. ¿Lo intentas de nuevo?",
   "@askCmdr.error.unfinishedReply": {
     "sourceHash": "7cc85f5"
   },
-  "askCmdr.error.provider": "Algo salió mal por parte del proveedor. ¿Lo intentas de nuevo?",
+  "askCmdr.error.provider": "Algo ha ido mal por parte del proveedor. ¿Lo intentas de nuevo?",
   "@askCmdr.error.provider": {
     "sourceHash": "d536cce"
   },
@@ -260,7 +260,7 @@
   "@askCmdr.event.chatMemoryChanged": {
     "sourceHash": "7dea8f2"
   },
-  "askCmdr.event.contextTrimmed": "Se {count, plural, one {quitó # consulta anterior} many {quitaron # consultas anteriores} other {quitaron # consultas anteriores}} para que todo entre en el contexto del modelo.",
+  "askCmdr.event.contextTrimmed": "Se {count, plural, one {ha quitado # consulta anterior} many {han quitado # consultas anteriores} other {han quitado # consultas anteriores}} para que todo entre en el contexto del modelo.",
   "@askCmdr.event.contextTrimmed": {
     "sourceHash": "baf10e5"
   },
@@ -374,7 +374,7 @@
   "@askCmdr.gate.cloudOff.title": {
     "sourceHash": "2e56781"
   },
-  "askCmdr.gate.cloudOff.body": "Ask Cmdr habla con el servicio de IA en la nube que configuraste. Permite primero la IA en la nube en Ajustes y ya podrás chatear.",
+  "askCmdr.gate.cloudOff.body": "Ask Cmdr habla con el servicio de IA en la nube que has configurado. Permite primero la IA en la nube en Ajustes y ya podrás chatear.",
   "@askCmdr.gate.cloudOff.body": {
     "sourceHash": "d3d3252"
   },
@@ -475,7 +475,7 @@
   "@askCmdr.renameReview.evidence.metadata": {
     "sourceHash": "8c7b303"
   },
-  "askCmdr.renameReview.evidence.userInstruction": "Lo que pediste",
+  "askCmdr.renameReview.evidence.userInstruction": "Lo que has pedido",
   "@askCmdr.renameReview.evidence.userInstruction": {
     "sourceHash": "c8e3674"
   },
@@ -487,7 +487,7 @@
   "@askCmdr.renameReview.coverage": {
     "sourceHash": "d8845cb"
   },
-  "askCmdr.renameReview.coverageThin": "Es una parte pequeña del texto que Cmdr leyó aquí. Abre el archivo para comprobar el nombre.",
+  "askCmdr.renameReview.coverageThin": "Es una parte pequeña del texto que Cmdr ha leído aquí. Abre el archivo para comprobar el nombre.",
   "@askCmdr.renameReview.coverageThin": {
     "sourceHash": "2b8bec1"
   },
@@ -555,7 +555,7 @@
   "@askCmdr.renameReview.nothingReadBadge": {
     "sourceHash": "6308780"
   },
-  "askCmdr.renameReview.nothingReadTooltip": "Cmdr no leyó nada dentro de este archivo. El nombre viene del nombre anterior, de los datos del archivo o de lo que pediste.",
+  "askCmdr.renameReview.nothingReadTooltip": "Cmdr no ha leído nada dentro de este archivo. El nombre viene del nombre anterior, de los datos del archivo o de lo que has pedido.",
   "@askCmdr.renameReview.nothingReadTooltip": {
     "sourceHash": "850f6ce"
   },
@@ -563,11 +563,11 @@
   "@askCmdr.renameReview.nameKeptBadge": {
     "sourceHash": "08f1bc7"
   },
-  "askCmdr.renameReview.nameKeptTooltip": "Cmdr conservó el nombre actual y no leyó nada dentro de este archivo.",
+  "askCmdr.renameReview.nameKeptTooltip": "Cmdr ha conservado el nombre actual y no ha leído nada dentro de este archivo.",
   "@askCmdr.renameReview.nameKeptTooltip": {
     "sourceHash": "d27a078"
   },
-  "askCmdr.renameReview.expired": "Esta revisión caducó. Pide a Ask Cmdr que la prepare de nuevo.",
+  "askCmdr.renameReview.expired": "Esta revisión ha caducado. Pide a Ask Cmdr que la prepare de nuevo.",
   "@askCmdr.renameReview.expired": {
     "sourceHash": "4e6482a"
   },
@@ -575,7 +575,7 @@
   "@askCmdr.renameReview.status": {
     "sourceHash": "9f70789"
   },
-  "askCmdr.renameUndo.applied": "Se {count, plural, one {renombró} many {renombraron} other {renombraron}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "askCmdr.renameUndo.applied": "Se {count, plural, one {ha renombrado} many {han renombrado} other {han renombrado}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.applied": {
     "sourceHash": "b06c599"
   },
@@ -599,59 +599,59 @@
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },
-  "askCmdr.renameUndo.undone": "Se {count, plural, one {restauró el nombre anterior} many {restauraron los nombres anteriores} other {restauraron los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "askCmdr.renameUndo.undone": "Se {count, plural, one {ha restaurado el nombre anterior} many {han restaurado los nombres anteriores} other {han restaurado los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.undone": {
     "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.partial": "Se {count, plural, one {restauró el nombre anterior} many {restauraron los nombres anteriores} other {restauraron los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "askCmdr.renameUndo.partial": "Se {count, plural, one {ha restaurado el nombre anterior} many {han restaurado los nombres anteriores} other {han restaurado los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
   "@askCmdr.renameUndo.partial": {
     "sourceHash": "d38b563"
   },
-  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {archivo se quedó} many {archivos se quedaron} other {archivos se quedaron}} como {count, plural, one {está} many {están} other {están}}: {count, plural, one {cambió} many {cambiaron} other {cambiaron}} después del cambio de nombre, o el nombre anterior vuelve a estar ocupado.",
+  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {archivo se ha quedado} many {archivos se han quedado} other {archivos se han quedado}} como {count, plural, one {está} many {están} other {están}}: {count, plural, one {ha cambiado} many {han cambiado} other {han cambiado}} después del cambio de nombre, o el nombre anterior vuelve a estar ocupado.",
   "@askCmdr.renameUndo.skipped": {
     "sourceHash": "9a04738"
   },
-  "askCmdr.renameUndo.skipReason.drift.named": "{name} se quedó como está: cambió después del cambio de nombre.",
+  "askCmdr.renameUndo.skipReason.drift.named": "{name} se ha quedado como está: ha cambiado después del cambio de nombre.",
   "@askCmdr.renameUndo.skipReason.drift.named": {
     "sourceHash": "70f663f"
   },
-  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: cambiaron después del cambio de nombre.",
+  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se han quedado como están: han cambiado después del cambio de nombre.",
   "@askCmdr.renameUndo.skipReason.drift.counted": {
     "sourceHash": "217d1e8"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} se quedó como está: su nombre anterior vuelve a estar ocupado.",
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} se ha quedado como está: su nombre anterior vuelve a estar ocupado.",
   "@askCmdr.renameUndo.skipReason.nameTaken.named": {
     "sourceHash": "ed5bd8e"
   },
-  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: sus nombres anteriores vuelven a estar ocupados.",
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se han quedado como están: sus nombres anteriores vuelven a estar ocupados.",
   "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
     "sourceHash": "2fd2e7a"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} se quedó como está: Cmdr no pudo comprobar si cambió.",
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} se ha quedado como está: Cmdr no ha podido comprobar si ha cambiado.",
   "@askCmdr.renameUndo.skipReason.unverifiable.named": {
     "sourceHash": "3e553b2"
   },
-  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: Cmdr no pudo comprobar si cambiaron.",
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se han quedado como están: Cmdr no ha podido comprobar si han cambiado.",
   "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
     "sourceHash": "5964166"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "La carpeta {name} se quedó como está: ahora tiene algo dentro.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "La carpeta {name} se ha quedado como está: ahora tiene algo dentro.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
     "sourceHash": "b487d24"
   },
-  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {carpeta} many {carpetas} other {carpetas}} se quedaron como están: ahora tienen algo dentro.",
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {carpeta} many {carpetas} other {carpetas}} se han quedado como están: ahora tienen algo dentro.",
   "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
     "sourceHash": "d2c9f56"
   },
-  "askCmdr.renameUndo.skipReason.failed.named": "{name} se quedó como está: Cmdr no pudo devolverle su nombre anterior.",
+  "askCmdr.renameUndo.skipReason.failed.named": "{name} se ha quedado como está: Cmdr no ha podido devolverle su nombre anterior.",
   "@askCmdr.renameUndo.skipReason.failed.named": {
     "sourceHash": "35bb622"
   },
-  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: Cmdr no pudo devolverles sus nombres anteriores.",
+  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se han quedado como están: Cmdr no ha podido devolverles sus nombres anteriores.",
   "@askCmdr.renameUndo.skipReason.failed.counted": {
     "sourceHash": "f13c021"
   },
-  "askCmdr.renameUndo.refusedBatches": "Cmdr no pudo deshacer {countText} {count, plural, one {lote} many {lotes} other {lotes}}. El registro de operaciones tiene los detalles.",
+  "askCmdr.renameUndo.refusedBatches": "Cmdr no ha podido deshacer {countText} {count, plural, one {lote} many {lotes} other {lotes}}. El registro de operaciones tiene los detalles.",
   "@askCmdr.renameUndo.refusedBatches": {
     "sourceHash": "16fde72"
   },
@@ -667,7 +667,7 @@
   "@askCmdr.context.tooltip": {
     "sourceHash": "3b4eef0"
   },
-  "askCmdr.wake.thinking": "Cmdr está echando un vistazo a lo que cambió. Abre el chat.",
+  "askCmdr.wake.thinking": "Cmdr está echando un vistazo a lo que ha cambiado. Abre el chat.",
   "@askCmdr.wake.thinking": {
     "sourceHash": "772ca6e"
   },
@@ -683,7 +683,7 @@
   "@askCmdr.wake.needsApiKey": {
     "sourceHash": "0f71f75"
   },
-  "askCmdr.wakeDigest.summary": "Qué cambió en {foldersText} {folders, plural, one {carpeta} many {carpetas} other {carpetas}}",
+  "askCmdr.wakeDigest.summary": "Qué ha cambiado en {foldersText} {folders, plural, one {carpeta} many {carpetas} other {carpetas}}",
   "@askCmdr.wakeDigest.summary": {
     "sourceHash": "07a2ce7"
   },
@@ -711,7 +711,7 @@
   "@askCmdr.wakeDigest.rollup": {
     "sourceHash": "3b8f0dd"
   },
-  "askCmdr.sessions.wakeThread": "Este chat lo empezó Cmdr",
+  "askCmdr.sessions.wakeThread": "Este chat lo ha empezado Cmdr",
   "@askCmdr.sessions.wakeThread": {
     "sourceHash": "5a27703"
   },

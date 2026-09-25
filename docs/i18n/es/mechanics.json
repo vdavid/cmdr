@@ -1,0 +1,29 @@
+{
+  "$comment": "Spanish typography as macOS es writes it: “…” primary (641 opening marks across the pile's Finder/AppKit/System Settings values, for example ¿Borrar “%@”?, and no «…» in any Spanish value), ‘…’ nested (RAE's order inside “…”). Spanish has no apostrophe. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "spacing": [
+    { "pattern": "[¿¡“‘]\\s", "why": "an opening ¿, ¡, or quote hugs the next word" },
+    { "pattern": "\\s[”’]", "why": "a closing quote hugs the previous word" },
+    { "pattern": "^[^¿]*\\p{L}[”’)]?\\?", "why": "a question opens with ¿" },
+    { "pattern": "^[^¡]*\\p{L}[”’)]?!", "why": "an exclamation opens with ¡" },
+    { "pattern": "\\b\\d+x\\b", "why": "a multiplier spells out veces (4 veces), never 4x" }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\p{L}\\((?:a|as|o|os|s|es)\\)",
+      "why": "a bracketed gender or plural ending (archivo(s), listo(a)); use ICU plural/select, or rephrase"
+    },
+    {
+      "pattern": "\\p{Ll}/(?:a|as|o|os|es)\\b",
+      "why": "a slashed gender or plural ending (listo/a, usuarios/as; /s is the per-second unit and stays out); rephrase with tú or a neutral noun"
+    },
+    {
+      "pattern": "\\b(?:[Ee]l|[Ll]a|[Ll]os|[Ll]as|[Uu]n|[Uu]na|[Uu]nos|[Uu]nas|[Éé]l|[Ee]lla|[Ll]o)/(?:el|la|los|las|un|una|unos|unas|él|ella|lo)\\b",
+      "why": "a slashed article or pronoun hedging an unknown gender; name the noun (la carpeta {name}) or rephrase"
+    },
+    {
+      "pattern": "\\p{L}@s?(?![\\p{L}\\d.])|\\b(?:[Tt]od|[Uu]suari|[Nn]uev|[Oo]tr|[Aa]mig|[Cc]ompañer)(?:x|e)s\\b",
+      "why": "an inclusive @, x, or e ending (usuari@s, todxs, todes); restructure to tú or a neutral noun"
+    }
+  ]
+}

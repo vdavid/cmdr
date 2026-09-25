@@ -104,7 +104,7 @@
   "@queryUi.empty.indexReady": {
     "sourceHash": "838fcf8"
   },
-  "queryUi.ai.lead": "Esto es lo que hizo el agente:",
+  "queryUi.ai.lead": "Esto es lo que ha hecho el agente:",
   "@queryUi.ai.lead": {
     "sourceHash": "bf7c5a2"
   },
@@ -124,7 +124,7 @@
   "@queryUi.ai.refineTooltip": {
     "sourceHash": "4846194"
   },
-  "queryUi.ai.stripAria": "Lo que hizo el agente con tu última búsqueda con IA",
+  "queryUi.ai.stripAria": "Lo que ha hecho el agente con tu última búsqueda con IA",
   "@queryUi.ai.stripAria": {
     "sourceHash": "53ffa17"
   },
@@ -222,7 +222,7 @@
   "@queryUi.results.criteria.modified": {
     "sourceHash": "fc2268a"
   },
-  "queryUi.results.criteria.scope": "Se buscó en: {scope}",
+  "queryUi.results.criteria.scope": "Se ha buscado en: {scope}",
   "@queryUi.results.criteria.scope": {
     "sourceHash": "960a4c8"
   },
@@ -282,11 +282,11 @@
   "@queryUi.results.live.foldersScanned": {
     "sourceHash": "5a3247d"
   },
-  "queryUi.results.live.incomplete": "{shownText} de {totalText} resultados. Cmdr no terminó de buscar.",
+  "queryUi.results.live.incomplete": "{shownText} de {totalText} resultados. Cmdr no ha terminado de buscar.",
   "@queryUi.results.live.incomplete": {
     "sourceHash": "7dccf6e"
   },
-  "queryUi.results.live.incompleteEmpty": "No se encontró nada antes de que la búsqueda se detuviera. Cmdr no terminó de buscar.",
+  "queryUi.results.live.incompleteEmpty": "No se ha encontrado nada antes de que la búsqueda se detuviera. Cmdr no ha terminado de buscar.",
   "@queryUi.results.live.incompleteEmpty": {
     "sourceHash": "bfa15df"
   },
@@ -436,11 +436,11 @@
   "@queryUi.dialog.actionsAria": {
     "sourceHash": "62d23d5"
   },
-  "queryUi.dialog.aiTranslateFailedToast": "No se pudo ejecutar la búsqueda con IA ahora mismo. ¿Lo intentas de nuevo?",
+  "queryUi.dialog.aiTranslateFailedToast": "No se ha podido ejecutar la búsqueda con IA ahora mismo. ¿Lo intentas de nuevo?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
   },
-  "queryUi.dialog.runQueryToast": "No se pudo completar esa búsqueda. {message}",
+  "queryUi.dialog.runQueryToast": "No se ha podido completar esa búsqueda. {message}",
   "@queryUi.dialog.runQueryToast": {
     "sourceHash": "02a3bba"
   },

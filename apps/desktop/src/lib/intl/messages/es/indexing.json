@@ -166,11 +166,11 @@
   "@indexing.rescan.replayOverflow": {
     "sourceHash": "70c7481"
   },
-  "indexing.rescan.watcherStartFailed": "No se pudo iniciar la vigilancia de cambios de archivos. Haciendo un análisis nuevo para poner el índice al día.",
+  "indexing.rescan.watcherStartFailed": "No se ha podido iniciar la vigilancia de cambios de archivos. Haciendo un análisis nuevo para poner el índice al día.",
   "@indexing.rescan.watcherStartFailed": {
     "sourceHash": "831e44d"
   },
-  "indexing.rescan.reconcilerBufferOverflow": "Una actividad intensa del sistema de archivos desbordó el búfer de eventos. Haciendo un análisis nuevo para mantener la precisión.",
+  "indexing.rescan.reconcilerBufferOverflow": "Una actividad intensa del sistema de archivos ha desbordado el búfer de eventos. Haciendo un análisis nuevo para mantener la precisión.",
   "@indexing.rescan.reconcilerBufferOverflow": {
     "sourceHash": "d6000e4"
   },
@@ -178,7 +178,7 @@
   "@indexing.rescan.incompletePreviousScan": {
     "sourceHash": "3ca5217"
   },
-  "indexing.rescan.watcherChannelOverflow": "Una ráfaga de actividad del sistema de archivos desbordó el canal de vigilancia. Haciendo un análisis nuevo para mantener la precisión.",
+  "indexing.rescan.watcherChannelOverflow": "Una ráfaga de actividad del sistema de archivos ha desbordado el canal de vigilancia. Haciendo un análisis nuevo para mantener la precisión.",
   "@indexing.rescan.watcherChannelOverflow": {
     "sourceHash": "b7ce086"
   },

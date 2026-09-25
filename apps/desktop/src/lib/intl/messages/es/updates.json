@@ -1,17 +1,17 @@
 {
-  "updates.failure.check": "Cmdr no pudo buscar actualizaciones. {reason}",
+  "updates.failure.check": "Cmdr no ha podido buscar actualizaciones. {reason}",
   "@updates.failure.check": {
     "sourceHash": "66f0ef1"
   },
-  "updates.failure.checkUntyped": "Cmdr no pudo buscar actualizaciones. Comprueba tu conexión a internet e inténtalo de nuevo más tarde.",
+  "updates.failure.checkUntyped": "Cmdr no ha podido buscar actualizaciones. Comprueba tu conexión a internet e inténtalo de nuevo más tarde.",
   "@updates.failure.checkUntyped": {
     "sourceHash": "55dcdd7"
   },
-  "updates.failure.download": "Cmdr no pudo descargar la actualización. Inténtalo de nuevo más tarde.",
+  "updates.failure.download": "Cmdr no ha podido descargar la actualización. Inténtalo de nuevo más tarde.",
   "@updates.failure.download": {
     "sourceHash": "fdd5095"
   },
-  "updates.failure.install": "Cmdr no pudo instalar la actualización. Inténtalo de nuevo más tarde o descarga la versión más reciente de Cmdr desde getcmdr.com.",
+  "updates.failure.install": "Cmdr no ha podido instalar la actualización. Inténtalo de nuevo más tarde o descarga la versión más reciente de Cmdr desde getcmdr.com.",
   "@updates.failure.install": {
     "sourceHash": "c997a13"
   },
@@ -64,7 +64,7 @@
   "@updates.moveToApplicationsDialog.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "updates.status.noUpdates": "No se encontraron actualizaciones. Versión actual: v{version}",
+  "updates.status.noUpdates": "No se han encontrado actualizaciones. Versión actual: v{version}",
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"
   },

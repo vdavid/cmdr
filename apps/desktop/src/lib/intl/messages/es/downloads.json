@@ -1,5 +1,5 @@
 {
-  "downloads.toast.downloaded": "Se descargó <file>{fileName}</file>",
+  "downloads.toast.downloaded": "Se ha descargado <file>{fileName}</file>",
   "@downloads.toast.downloaded": {
     "sourceHash": "7bc4ace"
   },
@@ -47,11 +47,11 @@
   "@downloads.toast.jumpToFile": {
     "sourceHash": "4511f65"
   },
-  "downloads.notification.title": "Se descargó {fileName}",
+  "downloads.notification.title": "Se ha descargado {fileName}",
   "@downloads.notification.title": {
     "sourceHash": "a2b74bc"
   },
-  "downloads.notification.titleMultiple": "{count, plural, one {Se descargó {countText} archivo} many {Se descargaron {countText} archivos} other {Se descargaron {countText} archivos}}",
+  "downloads.notification.titleMultiple": "{count, plural, one {Se ha descargado {countText} archivo} many {Se han descargado {countText} archivos} other {Se han descargado {countText} archivos}}",
   "@downloads.notification.titleMultiple": {
     "sourceHash": "f52e460"
   },
@@ -124,11 +124,11 @@
   "@downloads.shortcutRow.notRegistered": {
     "sourceHash": "ca374c2"
   },
-  "downloads.shortcutRow.invalidCombo": "No se pudo registrar: combinación no válida",
+  "downloads.shortcutRow.invalidCombo": "No se ha podido registrar: combinación no válida",
   "@downloads.shortcutRow.invalidCombo": {
     "sourceHash": "32c3532"
   },
-  "downloads.shortcutRow.registerFailed": "No se pudo registrar: {reason}",
+  "downloads.shortcutRow.registerFailed": "No se ha podido registrar: {reason}",
   "@downloads.shortcutRow.registerFailed": {
     "sourceHash": "2e6fb97"
   },

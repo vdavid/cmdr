@@ -28,11 +28,11 @@
   "@feedback.dialog.moreWays": {
     "sourceHash": "5a26a7c"
   },
-  "feedback.dialog.invalid": "Esa nota no se envió. ¿La acortas y la vuelves a enviar?",
+  "feedback.dialog.invalid": "Esa nota no se ha enviado. ¿La acortas y la vuelves a enviar?",
   "@feedback.dialog.invalid": {
     "sourceHash": "c379ff8"
   },
-  "feedback.dialog.softFailure": "Lo sentimos, no pudimos enviar tus comentarios ahora mismo. ¿Lo intentas de nuevo?",
+  "feedback.dialog.softFailure": "Lo sentimos, no hemos podido enviar tus comentarios ahora mismo. ¿Lo intentas de nuevo?",
   "@feedback.dialog.softFailure": {
     "sourceHash": "21012f3"
   },

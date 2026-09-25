@@ -59,7 +59,7 @@
   "@crashReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },
-  "crashReporter.dialog.notSent": "El informe no se envió. {reason}",
+  "crashReporter.dialog.notSent": "El informe no se ha enviado. {reason}",
   "@crashReporter.dialog.notSent": {
     "sourceHash": "71ae809"
   },
@@ -87,7 +87,7 @@
   "@crashReporter.sentToast.logSent": {
     "sourceHash": "9a0dc9e"
   },
-  "crashReporter.sentToast.logNotSent": "El registro no se envió. {reason}",
+  "crashReporter.sentToast.logNotSent": "El registro no se ha enviado. {reason}",
   "@crashReporter.sentToast.logNotSent": {
     "sourceHash": "617245e"
   }

@@ -7,7 +7,7 @@
   "@operationLog.dialog.loading": {
     "sourceHash": "ba3bbbe"
   },
-  "operationLog.dialog.loadError": "No se pudo cargar tu historial de operaciones. Inténtalo de nuevo en un momento.",
+  "operationLog.dialog.loadError": "No se ha podido cargar tu historial de operaciones. Inténtalo de nuevo en un momento.",
   "@operationLog.dialog.loadError": {
     "sourceHash": "cf26c51"
   },
@@ -15,7 +15,7 @@
   "@operationLog.dialog.empty": {
     "sourceHash": "2dea414"
   },
-  "operationLog.dialog.itemsError": "No se pudieron cargar estos elementos.",
+  "operationLog.dialog.itemsError": "No se han podido cargar estos elementos.",
   "@operationLog.dialog.itemsError": {
     "sourceHash": "596819e"
   },
@@ -139,7 +139,7 @@
   "@operationLog.rollback.partiallyRolledBack": {
     "sourceHash": "ea54c83"
   },
-  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr revirtió lo que pudo y dejó el resto como estaba. Si terminas la reversión, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr ha revertido lo que ha podido y ha dejado el resto como estaba. Si terminas la reversión, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
   "@operationLog.rollback.partiallyRolledBackNotice": {
     "sourceHash": "77e6f25"
   },
@@ -187,7 +187,7 @@
   "@operationLog.rollback.refusalUnknown": {
     "sourceHash": "f94c33d"
   },
-  "operationLog.rollback.refusalUnexpected": "Cmdr no pudo iniciar la reversión. Inténtalo de nuevo en un momento.",
+  "operationLog.rollback.refusalUnexpected": "Cmdr no ha podido iniciar la reversión. Inténtalo de nuevo en un momento.",
   "@operationLog.rollback.refusalUnexpected": {
     "sourceHash": "bef54f1"
   },
