@@ -1,0 +1,138 @@
+{
+  "commands.appLicenseKey.enterKey.label": "Ingresar clave de licencia",
+  "@commands.appLicenseKey.enterKey.label": {
+    "sourceHash": "d8f5129"
+  },
+  "commands.appSettings.label": "Abrir la configuración",
+  "@commands.appSettings.label": {
+    "sourceHash": "3e708b0"
+  },
+  "commands.helpSendErrorReport.label": "Enviar reporte de error…",
+  "@commands.helpSendErrorReport.label": {
+    "sourceHash": "1fb27bf"
+  },
+  "commands.helpSendErrorReport.description": "Envía los registros de Cmdr al equipo para ayudar a resolver algo que salió mal",
+  "@commands.helpSendErrorReport.description": {
+    "sourceHash": "a77dc57"
+  },
+  "commands.helpWhatsNew.description": "Mira qué cambió en las últimas versiones de Cmdr",
+  "@commands.helpWhatsNew.description": {
+    "sourceHash": "6cf89fd"
+  },
+  "commands.favoritesAdd.label": "Agregar a favoritos",
+  "@commands.favoritesAdd.label": {
+    "sourceHash": "cd2319d"
+  },
+  "commands.favoritesAdd.description": "Agrega la carpeta actual del panel activo a favoritos, para volver ahí después desde el menú de favoritos.",
+  "@commands.favoritesAdd.description": {
+    "sourceHash": "161aa45"
+  },
+  "commands.favoritesOpen.description": "Abre el menú de favoritos en el panel activo y presiona un número para ir a ese favorito.",
+  "@commands.favoritesOpen.description": {
+    "sourceHash": "e554df5"
+  },
+  "commands.fileEdit.label": "Editar en el editor predeterminado",
+  "@commands.fileEdit.label": {
+    "sourceHash": "012941c"
+  },
+  "commands.fileGoToTrash.label": "Ir al basurero",
+  "@commands.fileGoToTrash.label": {
+    "sourceHash": "9c15ead"
+  },
+  "commands.fileGoToTrash.description": "Abre el basurero de la unidad que estás explorando",
+  "@commands.fileGoToTrash.description": {
+    "sourceHash": "42d98bb"
+  },
+  "commands.fileShowInFinder.other.label": "Mostrar en el administrador de archivos",
+  "@commands.fileShowInFinder.other.label": {
+    "sourceHash": "f887b5e"
+  },
+  "commands.tagsToggleGrey.description": "Agrega o quita la etiqueta Gris del Finder en los archivos seleccionados",
+  "@commands.tagsToggleGrey.description": {
+    "sourceHash": "3c82cb8"
+  },
+  "commands.tagsToggleGreen.description": "Agrega o quita la etiqueta Verde del Finder en los archivos seleccionados",
+  "@commands.tagsToggleGreen.description": {
+    "sourceHash": "ee45e4c"
+  },
+  "commands.tagsTogglePurple.description": "Agrega o quita la etiqueta Morado del Finder en los archivos seleccionados",
+  "@commands.tagsTogglePurple.description": {
+    "sourceHash": "5fca0a7"
+  },
+  "commands.tagsToggleBlue.description": "Agrega o quita la etiqueta Azul del Finder en los archivos seleccionados",
+  "@commands.tagsToggleBlue.description": {
+    "sourceHash": "1c158da"
+  },
+  "commands.tagsToggleYellow.description": "Agrega o quita la etiqueta Amarillo del Finder en los archivos seleccionados",
+  "@commands.tagsToggleYellow.description": {
+    "sourceHash": "1a91b59"
+  },
+  "commands.tagsToggleRed.description": "Agrega o quita la etiqueta Rojo del Finder en los archivos seleccionados",
+  "@commands.tagsToggleRed.description": {
+    "sourceHash": "15b46ec"
+  },
+  "commands.tagsToggleOrange.description": "Agrega o quita la etiqueta Naranja del Finder en los archivos seleccionados",
+  "@commands.tagsToggleOrange.description": {
+    "sourceHash": "a1f22bf"
+  },
+  "commands.selectionSelectSameKind.description": "Agrega a la selección todos los elementos de la misma clase que el que está bajo el cursor, sin vaciar la selección actual",
+  "@commands.selectionSelectSameKind.description": {
+    "sourceHash": "3e633b3"
+  },
+  "commands.selectionSelectFiles.description": "Abre el diálogo Seleccionar archivos para agregar a la selección los archivos coincidentes",
+  "@commands.selectionSelectFiles.description": {
+    "sourceHash": "de26864"
+  },
+  "commands.handler.favoriteAdded": "Se agregó “{name}” a favoritos",
+  "@commands.handler.favoriteAdded": {
+    "sourceHash": "792e2b9"
+  },
+  "commands.handler.favoriteAddFailed": "No se pudo agregar esa carpeta a favoritos. ¿Lo intentas de nuevo?",
+  "@commands.handler.favoriteAddFailed": {
+    "sourceHash": "eabbbdb"
+  },
+  "commands.handler.cloudDownloadFailed": "No se pudo descargar desde la nube. {detail}",
+  "@commands.handler.cloudDownloadFailed": {
+    "sourceHash": "82d8691"
+  },
+  "commands.handler.cloudRemoveDownloadFailed": "No se pudo quitar la descarga. {detail}",
+  "@commands.handler.cloudRemoveDownloadFailed": {
+    "sourceHash": "726b365"
+  },
+  "commands.handler.googleDriveOpenFailed": "No se pudo abrir esto en Google Drive. {detail}",
+  "@commands.handler.googleDriveOpenFailed": {
+    "sourceHash": "07316c0"
+  },
+  "commands.handler.googleDriveLinkCopied": "Se copió el enlace de Google Drive.",
+  "@commands.handler.googleDriveLinkCopied": {
+    "sourceHash": "2b319d5"
+  },
+  "commands.handler.googleDriveCopyFailed": "No se pudo copiar el enlace de Google Drive. {detail}",
+  "@commands.handler.googleDriveCopyFailed": {
+    "sourceHash": "a4bd00b"
+  },
+  "commands.handler.openTerminalHere.hint": "Carpeta abierta en tu app de terminal. ¿Quieres que Cmdr abra otra app la próxima vez? Elígela en Configuración, en “Navegación y operaciones de archivos”.",
+  "@commands.handler.openTerminalHere.hint": {
+    "sourceHash": "1942df6"
+  },
+  "commands.handler.openTerminalHere.openSettings": "Abrir la configuración",
+  "@commands.handler.openTerminalHere.openSettings": {
+    "sourceHash": "3e708b0"
+  },
+  "commands.handler.openTerminalHere.appMissing": "{app} ya no está instalada, así que esto se abrió en Terminal.",
+  "@commands.handler.openTerminalHere.appMissing": {
+    "sourceHash": "425f4ad"
+  },
+  "commands.handler.openTerminalHere.appMissingUnnamed": "Tu app de terminal ya no está instalada, así que esto se abrió en Terminal.",
+  "@commands.handler.openTerminalHere.appMissingUnnamed": {
+    "sourceHash": "fe814a7"
+  },
+  "commands.handler.openTerminalHere.launchRefused": "Cmdr no pudo iniciar tu app de terminal. Ábrela tú una vez y vuelve a intentarlo.",
+  "@commands.handler.openTerminalHere.launchRefused": {
+    "sourceHash": "e217de0"
+  },
+  "commands.suggestedOpsShow.description": "Revisa las operaciones de archivos que sugirió la IA y decide qué se ejecuta",
+  "@commands.suggestedOpsShow.description": {
+    "sourceHash": "7864be0"
+  }
+}

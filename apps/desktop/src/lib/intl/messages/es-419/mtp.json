@@ -1,0 +1,18 @@
+{
+  "mtp.connectedToast.bodyMac": "Cmdr pausó el daemon de cámara de macOS (ptpcamerad) para acceder a este dispositivo. Para usarlo en otra app, desactiva la compatibilidad con MTP en la configuración.",
+  "@mtp.connectedToast.bodyMac": {
+    "sourceHash": "087e4c4"
+  },
+  "mtp.connectedToast.bodyOther": "Para usar este dispositivo en otra app, desactiva la compatibilidad con MTP en la configuración.",
+  "@mtp.connectedToast.bodyOther": {
+    "sourceHash": "69f3f7b"
+  },
+  "mtp.connectedToast.ok": "OK",
+  "@mtp.connectedToast.ok": {
+    "sourceHash": "640d676"
+  },
+  "mtp.ptpcameradDialog.helpText": "Este comando detiene ptpcamerad de forma continua mientras se ejecuta. Presiona <key>Ctrl+C</key> en Terminal para detenerlo cuando termines.",
+  "@mtp.ptpcameradDialog.helpText": {
+    "sourceHash": "07da7a3"
+  }
+}

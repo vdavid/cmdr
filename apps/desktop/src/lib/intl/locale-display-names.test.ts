@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest'
 import { localeDisplayName } from './locale-display-names'
 import { availableLocales } from './messages.svelte'
 
-const SHIPPED = ['de', 'en', 'en-AU', 'en-GB', 'es', 'fr', 'hu', 'nl', 'pt', 'sv', 'vi', 'zh', 'zh-Hant']
+const SHIPPED = ['de', 'en', 'en-AU', 'en-GB', 'es', 'es-419', 'fr', 'hu', 'nl', 'pt', 'sv', 'vi', 'zh', 'zh-Hant']
 
 describe('localeDisplayName', () => {
   it('names a language in its own language', () => {
@@ -26,9 +26,8 @@ describe('localeDisplayName', () => {
     expect(localeDisplayName('en-GB', SHIPPED)).toBe('British English')
     expect(localeDisplayName('en-AU', SHIPPED)).toBe('Australian English')
     // The Spanish split lands the same way, with no edit to the labeller.
-    const withLatinAmerica = [...SHIPPED, 'es-419']
-    expect(localeDisplayName('es', withLatinAmerica)).toBe('Español')
-    expect(localeDisplayName('es-419', withLatinAmerica)).toBe('Español latinoamericano')
+    expect(localeDisplayName('es', SHIPPED)).toBe('Español')
+    expect(localeDisplayName('es-419', SHIPPED)).toBe('Español latinoamericano')
   })
 
   it('names the script when a sibling is written in a different one', () => {

@@ -1,0 +1,42 @@
+{
+  "shortcuts.list.addedTooltip": "Agregado",
+  "@shortcuts.list.addedTooltip": {
+    "sourceHash": "f52c88f"
+  },
+  "shortcuts.conflict.systemShortcut": "macOS suele usar {combo} ({label}), así que puede que nunca llegue a Cmdr. Puedes liberarla en Configuración del Sistema > Teclado.",
+  "@shortcuts.conflict.systemShortcut": {
+    "sourceHash": "3c00012"
+  },
+  "shortcuts.section.pressEscToClear": "Presiona ESC para borrar",
+  "@shortcuts.section.pressEscToClear": {
+    "sourceHash": "18868d3"
+  },
+  "shortcuts.section.modifiedTooltip": "Modificado respecto al valor predeterminado",
+  "@shortcuts.section.modifiedTooltip": {
+    "sourceHash": "94e6003"
+  },
+  "shortcuts.section.macOsTooltip": "macOS administra este atajo. Cmdr no puede cambiarlo.",
+  "@shortcuts.section.macOsTooltip": {
+    "sourceHash": "b0cf64f"
+  },
+  "shortcuts.section.pressKeys": "Presiona las teclas…",
+  "@shortcuts.section.pressKeys": {
+    "sourceHash": "b263f2c"
+  },
+  "shortcuts.section.addShortcutTooltip": "Agregar atajo",
+  "@shortcuts.section.addShortcutTooltip": {
+    "sourceHash": "29b222c"
+  },
+  "shortcuts.section.resetToDefaultTooltip": "Restablecer al valor predeterminado",
+  "@shortcuts.section.resetToDefaultTooltip": {
+    "sourceHash": "82bbff8"
+  },
+  "shortcuts.section.resetAll": "Restablecer todo a los valores predeterminados",
+  "@shortcuts.section.resetAll": {
+    "sourceHash": "6580e10"
+  },
+  "shortcuts.window.editInSettings": "Editar atajos en Configuración",
+  "@shortcuts.window.editInSettings": {
+    "sourceHash": "faa5b37"
+  }
+}

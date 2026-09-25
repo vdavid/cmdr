@@ -1,0 +1,6 @@
+{
+  "common.downloadsFdaHint": "Cmdr necesita acceso a todo el disco para vigilar tu carpeta Descargas. <settingsLink>Abrir Configuración del Sistema</settingsLink>",
+  "@common.downloadsFdaHint": {
+    "sourceHash": "e1122b8"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "search.runHint": "Presiona Intro para buscar",
+  "@search.runHint": {
+    "sourceHash": "e8a44b1"
+  },
+  "search.imageResults.networkOff": "Activa la indexación de imágenes para esta unidad de red en Configuración para buscar el texto dentro de sus fotos.",
+  "@search.imageResults.networkOff": {
+    "sourceHash": "b5f509b"
+  },
+  "search.imageResults.similarEmpty": "No se encontraron imágenes similares.",
+  "@search.imageResults.similarEmpty": {
+    "sourceHash": "b36548a"
+  },
+  "search.walkHandoff.finished": "{count, plural, one {Se encontró # coincidencia} many {Se encontraron # coincidencias} other {Se encontraron # coincidencias}} de {label}.",
+  "@search.walkHandoff.finished": {
+    "sourceHash": "231e73e"
+  },
+  "search.walkHandoff.stoppedShort": "Puede que los resultados de {label} se queden cortos: Cmdr no llegó a recorrerlo todo.",
+  "@search.walkHandoff.stoppedShort": {
+    "sourceHash": "c774d10"
+  },
+  "search.walkHandoff.superseded": "Cmdr dejó de agregar a los resultados de {label}, porque tu nueva búsqueda tomó el relevo.",
+  "@search.walkHandoff.superseded": {
+    "sourceHash": "4f8589b"
+  },
+  "search.coverage.uncovered.local": "Cmdr aún no ha indexado {drive}, así que esta búsqueda omitió:",
+  "@search.coverage.uncovered.local": {
+    "sourceHash": "99838ac"
+  },
+  "search.coverage.uncovered.network": "Cmdr no indexa las unidades de red a menos que se lo pidas, así que esta búsqueda omitió:",
+  "@search.coverage.uncovered.network": {
+    "sourceHash": "9f66dec"
+  },
+  "search.coverage.uncovered.unavailable": "Cmdr aún no puede buscar en {drive}, así que esta búsqueda omitió:",
+  "@search.coverage.uncovered.unavailable": {
+    "sourceHash": "8e7c1a8"
+  },
+  "search.coverage.uncovered.indexing": "Cmdr todavía está indexando {drive} y aún no ha llegado a estas carpetas, así que la búsqueda las omitió:",
+  "@search.coverage.uncovered.indexing": {
+    "sourceHash": "d91d0f3"
+  },
+  "search.coverage.unresolved": "{count, plural, one {El índice de Cmdr aún no cubre esta carpeta, así que la búsqueda la omitió:} many {El índice de Cmdr aún no cubre estas carpetas, así que la búsqueda las omitió:} other {El índice de Cmdr aún no cubre estas carpetas, así que la búsqueda las omitió:}}",
+  "@search.coverage.unresolved": {
+    "sourceHash": "d28b2dd"
+  },
+  "search.coverage.walk.cancelled": "Detuviste esta búsqueda, así que ves lo que Cmdr había encontrado hasta ese momento. Todo lo que leyó por el camino queda guardado, y una nueva búsqueda continúa desde ahí.",
+  "@search.coverage.walk.cancelled": {
+    "sourceHash": "c36aaac"
+  },
+  "search.coverage.walk.interrupted": "Esta búsqueda terminó antes de tiempo, así que puede haber más en {drive}. Buscar de nuevo continúa donde se quedó.",
+  "@search.coverage.walk.interrupted": {
+    "sourceHash": "687c515"
+  },
+  "search.coverage.walk.abandoned": "Algunas carpetas dejaron de responder, así que Cmdr siguió sin ellas y puede que esta lista se quede corta. Buscar de nuevo les da otra oportunidad.",
+  "@search.coverage.walk.abandoned": {
+    "sourceHash": "520d899"
+  },
+  "search.coverage.walk.abandonedCount": "{count, plural, one {Un punto de esta unidad dejó de responder, así que Cmdr siguió sin él y esta lista puede quedarse corta. Cmdr vuelve a él más tarde, y buscar otra vez le da otra oportunidad.} many {{countText} puntos de esta unidad dejaron de responder, así que Cmdr siguió sin ellos y esta lista puede quedarse corta. Cmdr vuelve a ellos más tarde, y buscar otra vez les da otra oportunidad.} other {{countText} puntos de esta unidad dejaron de responder, así que Cmdr siguió sin ellos y esta lista puede quedarse corta. Cmdr vuelve a ellos más tarde, y buscar otra vez les da otra oportunidad.}}",
+  "@search.coverage.walk.abandonedCount": {
+    "sourceHash": "76750dd"
+  },
+  "search.coverage.denied": "{count, plural, one {Cmdr no tuvo permiso para mirar dentro de esta carpeta, así que no hay nada suyo en los resultados:} many {Cmdr no tuvo permiso para mirar dentro de estas carpetas, así que no hay nada suyo en los resultados:} other {Cmdr no tuvo permiso para mirar dentro de estas carpetas, así que no hay nada suyo en los resultados:}}",
+  "@search.coverage.denied": {
+    "sourceHash": "a564c43"
+  },
+  "search.coverage.toast.indexingOff": "La indexación de unidades está desactivada en Configuración, así que no se indexa nada. Actívala en Indexación > Indexación de unidades.",
+  "@search.coverage.toast.indexingOff": {
+    "sourceHash": "63e9d8d"
+  },
+  "search.coverage.pressEnter": "Presiona Intro y Cmdr las recorrerá ahora.",
+  "@search.coverage.pressEnter": {
+    "sourceHash": "abc0cf4"
+  }
+}

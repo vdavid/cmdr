@@ -1,0 +1,58 @@
+{
+  "downloads.toast.downloaded": "Se descargó <file>{fileName}</file>",
+  "@downloads.toast.downloaded": {
+    "sourceHash": "0c2a678"
+  },
+  "downloads.toast.inAppHint": "En la app: presiona <chip>{key}</chip> para saltar aquí",
+  "@downloads.toast.inAppHint": {
+    "sourceHash": "2cebdb7"
+  },
+  "downloads.toast.globalHint": "En <em>cualquier</em> app (atajo global), presiona <chip>{key}</chip>",
+  "@downloads.toast.globalHint": {
+    "sourceHash": "9038d3b"
+  },
+  "downloads.notification.title": "Se descargó {fileName}",
+  "@downloads.notification.title": {
+    "sourceHash": "f2c79d9"
+  },
+  "downloads.notification.titleMultiple": "{count, plural, one {Se descargó {countText} archivo} many {Se descargaron {countText} archivos} other {Se descargaron {countText} archivos}}",
+  "@downloads.notification.titleMultiple": {
+    "sourceHash": "5d66d07"
+  },
+  "downloads.fda.openSystemSettings": "Abrir Configuración del Sistema",
+  "@downloads.fda.openSystemSettings": {
+    "sourceHash": "a805a71"
+  },
+  "downloads.warnToast.message": "El atajo {binding} salta a tu última descarga desde cualquier lugar. ¿Mantenerlo activado?",
+  "@downloads.warnToast.message": {
+    "sourceHash": "378a5cc"
+  },
+  "downloads.shortcutRow.modifiedTooltip": "Modificado respecto al valor predeterminado",
+  "@downloads.shortcutRow.modifiedTooltip": {
+    "sourceHash": "94e6003"
+  },
+  "downloads.shortcutRow.resetTooltip": "Restablecer al valor predeterminado",
+  "@downloads.shortcutRow.resetTooltip": {
+    "sourceHash": "82bbff8"
+  },
+  "downloads.shortcutRow.pressKeys": "Presiona las teclas…",
+  "@downloads.shortcutRow.pressKeys": {
+    "sourceHash": "b263f2c"
+  },
+  "downloads.shortcutRow.invalidCombo": "No se pudo registrar: combinación no válida",
+  "@downloads.shortcutRow.invalidCombo": {
+    "sourceHash": "0f41b13"
+  },
+  "downloads.shortcutRow.registerFailed": "No se pudo registrar: {reason}",
+  "@downloads.shortcutRow.registerFailed": {
+    "sourceHash": "e783852"
+  },
+  "downloads.shortcutRow.addModifier": "Agrega un modificador (⌘, ⌃, ⌥ o ⇧)",
+  "@downloads.shortcutRow.addModifier": {
+    "sourceHash": "1336fa6"
+  },
+  "downloads.toggleDescription.bound": "Presiona {binding} desde cualquier app para saltar a tu descarga más reciente.",
+  "@downloads.toggleDescription.bound": {
+    "sourceHash": "348359f"
+  }
+}

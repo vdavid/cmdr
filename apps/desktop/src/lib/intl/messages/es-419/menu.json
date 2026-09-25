@@ -1,0 +1,42 @@
+{
+  "menu.app.licenseEnter": "Ingresar clave de licencia…",
+  "@menu.app.licenseEnter": {
+    "sourceHash": "e5dac0a"
+  },
+  "menu.app.settings": "Configuración…",
+  "@menu.app.settings": {
+    "sourceHash": "4184f3c"
+  },
+  "menu.file.showInFileManager": "Mostrar en el administrador de archivos",
+  "@menu.file.showInFileManager": {
+    "sourceHash": "f887b5e"
+  },
+  "menu.go.addToFavorites": "Agregar a favoritos",
+  "@menu.go.addToFavorites": {
+    "sourceHash": "cd2319d"
+  },
+  "menu.help.sendErrorReport": "Enviar reporte de error…",
+  "@menu.help.sendErrorReport": {
+    "sourceHash": "1fb27bf"
+  },
+  "menu.context.addToFavorites": "Agregar a favoritos",
+  "@menu.context.addToFavorites": {
+    "sourceHash": "cd2319d"
+  },
+  "menu.context.openWithDefault": "{app} (predeterminado)",
+  "@menu.context.openWithDefault": {
+    "sourceHash": "f3a45a2"
+  },
+  "menu.tag.addNamed": "Agregar “{color}”",
+  "@menu.tag.addNamed": {
+    "sourceHash": "2cfa325"
+  },
+  "menu.mediaIndex.addFolder": "Agregar a las carpetas indexadas",
+  "@menu.mediaIndex.addFolder": {
+    "sourceHash": "de94267"
+  },
+  "menu.mediaIndex.addFolderExcluded": "Agregar a las carpetas indexadas (excluida)",
+  "@menu.mediaIndex.addFolderExcluded": {
+    "sourceHash": "cfc08b1"
+  }
+}

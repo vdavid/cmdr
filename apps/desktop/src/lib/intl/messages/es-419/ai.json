@@ -1,0 +1,98 @@
+{
+  "ai.translateError.off.body": "Activa un proveedor en Configuración > IA para usar la búsqueda con IA.",
+  "@ai.translateError.off.body": {
+    "sourceHash": "f566ad2"
+  },
+  "ai.cloudConsent.askCmdr.contentsRule": "Cmdr nunca envía archivos completos, fotos ni miniaturas. Cuando preguntas por un archivo, puede leer una parte limitada de su contenido: algunas líneas de texto, unas pocas páginas de un PDF junto con su título y su autor, la lista de archivos que contiene un archivo comprimido o los datos de la cámara de una foto, incluido el lugar donde se tomó. La búsqueda de fotos funciona igual: el texto que Cmdr reconoció dentro de las fotos coincidentes y sus etiquetas se envían a tu proveedor para que pueda encontrarlas. Cmdr puede sugerir cambios de nombre, movimientos y limpiezas, y no le pasa nada a ningún archivo hasta que tú lo apruebas.",
+  "@ai.cloudConsent.askCmdr.contentsRule": {
+    "sourceHash": "39d92b4"
+  },
+  "ai.cloudConsent.askCmdr.memory": "Cmdr se escribe notas sobre ti: cómo te gusta tener las cosas organizadas, qué rechazaste antes, todo lo que le pidas que recuerde. Esas notas viajan con cada mensaje que envías, mientras existan, y pueden incluir texto que Cmdr reconoció dentro de tus fotos. Puedes leerlas, o borrarlas, cuando quieras en la configuración de Ask Cmdr.",
+  "@ai.cloudConsent.askCmdr.memory": {
+    "sourceHash": "79b1f07"
+  },
+  "ai.cloudConsent.askCmdr.proactive": "Cmdr también observa las carpetas que usas y abre una conversación cuando tiene algo que sugerir, así que pueden salir mensajes hacia tu proveedor sin que tú lo pidas. Puedes desactivarlo en la configuración de Ask Cmdr, en “Por su cuenta”.",
+  "@ai.cloudConsent.askCmdr.proactive": {
+    "sourceHash": "2cf155d"
+  },
+  "ai.cloudConsent.logsNote": "Si activas el registro de llamadas al modelo de IA en Configuración avanzada, Cmdr también guarda cada solicitud y respuesta en una carpeta de tu Mac. Esos registros también son locales y nunca se envían a ningún lado.",
+  "@ai.cloudConsent.logsNote": {
+    "sourceHash": "f73c665"
+  },
+  "ai.cloudConsent.notSaved": "Cmdr no pudo guardar tu elección. ¿Lo intentas de nuevo?",
+  "@ai.cloudConsent.notSaved": {
+    "sourceHash": "ba70ae3"
+  },
+  "ai.translateError.notConfigured.body": "Termina de configurar tu proveedor en Configuración > IA y vuelve a intentarlo.",
+  "@ai.translateError.notConfigured.body": {
+    "sourceHash": "4fdbfed"
+  },
+  "ai.translateError.noCloudConsent.body": "Permítela en Configuración > IA y vuelve a intentarlo.",
+  "@ai.translateError.noCloudConsent.body": {
+    "sourceHash": "2dc432d"
+  },
+  "ai.translateError.authFailed.title": "Se rechazó esa clave de API",
+  "@ai.translateError.authFailed.title": {
+    "sourceHash": "a536b77"
+  },
+  "ai.translateError.authFailed.body": "Revisa tu clave en Configuración > IA: puede estar mal o revocada.",
+  "@ai.translateError.authFailed.body": {
+    "sourceHash": "745aa36"
+  },
+  "ai.translateError.rateLimited.body": "Está limitando las solicitudes o tu plan se quedó sin cuota. Revisa tu plan y tu facturación, y vuelve a intentarlo.",
+  "@ai.translateError.rateLimited.body": {
+    "sourceHash": "9d4b45e"
+  },
+  "ai.translateError.timeout.title": "La IA tardó demasiado",
+  "@ai.translateError.timeout.title": {
+    "sourceHash": "6f0ee72"
+  },
+  "ai.translateError.timeout.body": "La solicitud agotó el tiempo de espera. Inténtalo de nuevo en un momento.",
+  "@ai.translateError.timeout.body": {
+    "sourceHash": "5bec7a2"
+  },
+  "ai.translateError.emptyResponse.title": "La IA devolvió una respuesta vacía",
+  "@ai.translateError.emptyResponse.title": {
+    "sourceHash": "0a7dd7e"
+  },
+  "ai.translateError.emptyResponse.body": "Puede que tu modelo necesite un presupuesto mayor para esto. Prueba un modelo más rápido como gpt-4.1-mini en Configuración > IA.",
+  "@ai.translateError.emptyResponse.body": {
+    "sourceHash": "29fe732"
+  },
+  "ai.translateError.serverError.title": "Tu proveedor de IA tuvo un contratiempo",
+  "@ai.translateError.serverError.title": {
+    "sourceHash": "03954fb"
+  },
+  "ai.translateError.parseError.title": "No se pudo leer la respuesta de la IA",
+  "@ai.translateError.parseError.title": {
+    "sourceHash": "a481e2c"
+  },
+  "ai.translateError.parseError.body": "Inténtalo de nuevo o elige otro modelo en Configuración > IA.",
+  "@ai.translateError.parseError.body": {
+    "sourceHash": "ca8bb33"
+  },
+  "ai.translateError.unknownProvider.body": "Elige un proveedor en Configuración > IA.",
+  "@ai.translateError.unknownProvider.body": {
+    "sourceHash": "288f27c"
+  },
+  "ai.cloud.genericError": "Algo salió mal",
+  "@ai.cloud.genericError": {
+    "sourceHash": "9a2d67e"
+  },
+  "ai.secretError.keychainTitle": "{op, select, save {No se pudo guardar tu clave de API: el Llavero de macOS denegó el acceso} other {No se pudo leer tu clave de API guardada: el Llavero de macOS denegó el acceso}}",
+  "@ai.secretError.keychainTitle": {
+    "sourceHash": "5560d64"
+  },
+  "ai.secretError.keychainBody": "{op, select, save {Abre Acceso a Llaveros y revisa la entrada “Cmdr”, o elimínala e intenta guardar de nuevo.} other {Abre Acceso a Llaveros, busca la entrada “Cmdr”, concede el acceso o elimínala y vuelve a ingresar tu clave.}}",
+  "@ai.secretError.keychainBody": {
+    "sourceHash": "f29e433"
+  },
+  "ai.secretError.keyringTitle": "{op, select, save {No se pudo guardar tu clave de API: el llavero del sistema denegó el acceso} other {No se pudo leer tu clave de API guardada: el llavero del sistema denegó el acceso}}",
+  "@ai.secretError.keyringTitle": {
+    "sourceHash": "fd344ea"
+  },
+  "ai.secretError.genericTitle": "{op, select, save {No se pudo guardar tu clave de API.} other {No se pudo leer tu clave de API guardada.}}",
+  "@ai.secretError.genericTitle": {
+    "sourceHash": "0ec5772"
+  }
+}

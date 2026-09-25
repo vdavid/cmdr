@@ -1,0 +1,22 @@
+{
+  "operationLog.dialog.loadError": "No se pudo cargar tu historial de operaciones. Inténtalo de nuevo en un momento.",
+  "@operationLog.dialog.loadError": {
+    "sourceHash": "e8f023d"
+  },
+  "operationLog.dialog.itemsError": "No se pudieron cargar estos elementos.",
+  "@operationLog.dialog.itemsError": {
+    "sourceHash": "b1d6b1b"
+  },
+  "operationLog.summary.trash": "{count, plural, one {Se movió {countText} elemento al basurero} many {Se movieron {countText} elementos al basurero} other {Se movieron {countText} elementos al basurero}}",
+  "@operationLog.summary.trash": {
+    "sourceHash": "dc94479"
+  },
+  "operationLog.rollback.partiallyRolledBackNotice": "Cmdr revirtió lo que pudo y dejó el resto como estaba. Si terminas la reversión, Cmdr repasa la operación otra vez y vuelve a omitir todo aquello de lo que sigue sin estar seguro.",
+  "@operationLog.rollback.partiallyRolledBackNotice": {
+    "sourceHash": "aae9762"
+  },
+  "operationLog.rollback.refusalUnexpected": "Cmdr no pudo iniciar la reversión. Inténtalo de nuevo en un momento.",
+  "@operationLog.rollback.refusalUnexpected": {
+    "sourceHash": "80d3906"
+  }
+}

@@ -100,7 +100,7 @@ fn build(locale: &str) -> Option<CollatorBorrowed<'static>> {
 /// the new language. Listings already sorted keep their order until something
 /// re-reads them, the same way they do when the sort column changes.
 ///
-/// Locales are a bounded set (13 catalogs ship), so the cache never grows past
+/// Locales are a bounded set (14 catalogs ship), so the cache never grows past
 /// a handful of entries.
 pub fn active_collator() -> Arc<NameCollator> {
     static CACHE: RwLock<Option<HashMap<String, Arc<NameCollator>>>> = RwLock::new(None);

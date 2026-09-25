@@ -473,7 +473,7 @@ mod tests {
         assert_eq!(resolve_ui_locale(&prefs(&["pt-PT"]), SHIPPED), Some("pt".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["en-CA"]), SHIPPED), Some("en".to_string()));
         assert_eq!(resolve_ui_locale(&prefs(&["de-AT"]), SHIPPED), Some("de".to_string()));
-        assert_eq!(resolve_ui_locale(&prefs(&["es-419"]), SHIPPED), Some("es".to_string()));
+        assert_eq!(resolve_ui_locale(&prefs(&["nl-BE"]), SHIPPED), Some("nl".to_string()));
         assert_eq!(
             resolve_ui_locale(&prefs(&["fr-Latn-CA"]), SHIPPED),
             Some("fr".to_string())
@@ -585,40 +585,24 @@ mod tests {
     }
 
     #[test]
-    fn every_spanish_reader_opens_the_one_spanish_catalog_we_ship_today() {
-        for tag in latin_american_spanish_tags()
-            .iter()
-            .map(String::as_str)
-            .chain(["es-419", "es-ES", "es", "es-GQ"])
-        {
-            assert_eq!(
-                resolve_ui_locale(&prefs(&[tag]), SHIPPED),
-                Some("es".to_string()),
-                "{tag} should read the Spanish catalog"
-            );
-        }
-    }
-
-    #[test]
-    fn a_latin_american_overlay_catches_every_region_cldr_parents_to_it() {
-        // The day `es-419` ships as an overlay, CLDR's parent data routes every
-        // Latin American and US Spanish to it with no region table of ours,
-        // while Spain and the rest of the Spanish-speaking world keep `es`.
-        const SPANISH: &[ShippedLocale] = &[latin("en"), latin("es"), latin("es-419")];
+    fn the_latin_american_overlay_catches_every_region_cldr_parents_to_it() {
+        // CLDR's parent data routes every Latin American and US Spanish to the
+        // shipped `es-419` overlay with no region table of ours, while Spain and
+        // the rest of the Spanish-speaking world keep `es`.
         for tag in latin_american_spanish_tags()
             .iter()
             .map(String::as_str)
             .chain(["es-419"])
         {
             assert_eq!(
-                resolve_ui_locale(&prefs(&[tag]), SPANISH),
+                resolve_ui_locale(&prefs(&[tag]), SHIPPED),
                 Some("es-419".to_string()),
                 "{tag} should reach the Latin American overlay"
             );
         }
         for tag in ["es", "es-ES", "es-GQ", "es-EA", "es-IC", "es-PH"] {
             assert_eq!(
-                resolve_ui_locale(&prefs(&[tag]), SPANISH),
+                resolve_ui_locale(&prefs(&[tag]), SHIPPED),
                 Some("es".to_string()),
                 "{tag} should stay on Spain's Spanish"
             );

@@ -1,0 +1,10 @@
+{
+  "goToPath.toast.pressToGoBack": "Presiona <chip></chip> para volver.",
+  "@goToPath.toast.pressToGoBack": {
+    "sourceHash": "9fefa36"
+  },
+  "goToPath.dialog.addsServer": "Agrega un servidor",
+  "@goToPath.dialog.addsServer": {
+    "sourceHash": "65eb418"
+  }
+}

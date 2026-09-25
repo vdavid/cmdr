@@ -1,0 +1,30 @@
+{
+  "updates.failure.check": "Cmdr no pudo buscar actualizaciones. {reason}",
+  "@updates.failure.check": {
+    "sourceHash": "2b36f32"
+  },
+  "updates.failure.checkUntyped": "Cmdr no pudo buscar actualizaciones. Comprueba tu conexión a internet e inténtalo de nuevo más tarde.",
+  "@updates.failure.checkUntyped": {
+    "sourceHash": "a2b6373"
+  },
+  "updates.failure.download": "Cmdr no pudo descargar la actualización. Inténtalo de nuevo más tarde.",
+  "@updates.failure.download": {
+    "sourceHash": "d36084b"
+  },
+  "updates.failure.install": "Cmdr no pudo instalar la actualización. Inténtalo de nuevo más tarde o descarga la versión más reciente de Cmdr desde getcmdr.com.",
+  "@updates.failure.install": {
+    "sourceHash": "2d9f8fb"
+  },
+  "updates.checkToast.sendErrorReport": "Enviar reporte de error",
+  "@updates.checkToast.sendErrorReport": {
+    "sourceHash": "4494574"
+  },
+  "updates.moveToApplicationsDialog.readOnlyVolume": "Hay una versión nueva lista, pero Cmdr se está ejecutando desde un lugar de solo lectura, normalmente una imagen de disco que sigue montada. Las actualizaciones no tienen dónde instalarse.",
+  "@updates.moveToApplicationsDialog.readOnlyVolume": {
+    "sourceHash": "7fa8cf5"
+  },
+  "updates.status.noUpdates": "No se encontraron actualizaciones. Versión actual: v{version}",
+  "@updates.status.noUpdates": {
+    "sourceHash": "b77b683"
+  }
+}

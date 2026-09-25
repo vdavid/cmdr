@@ -91,7 +91,7 @@ code side is:
 3. Update the one hardcoded expectation: `the_overlays_are_the_only_locales_held_to_the_overlay_contract` in
    `src-tauri/src/intl/native_strings.rs` lists the overlays by name. `every_shipped_locale_speaks_its_own_menu_bar`
    then holds the overlay's `menu.*` forks against `es`, and `menu_t` inherits the rest from `es`.
-4. Refresh the docs that count catalogs (`apps/desktop/CLAUDE.md`'s "13 catalogs ship", `docs/guides/i18n.md` § Overlay
+4. Refresh the docs that count catalogs (`apps/desktop/CLAUDE.md`'s catalog count, `docs/guides/i18n.md` § Overlay
    catalogs) and the `SHIPPED` list in `locale-display-names.test.ts`.
 
 Nothing outside the desktop app changes: the analytics language events carry `availableLocales()` tags, so the new tag

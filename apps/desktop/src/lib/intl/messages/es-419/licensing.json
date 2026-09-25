@@ -1,0 +1,94 @@
+{
+  "licensing.acknowledgements.thanks": "¡Gracias a todos por sus contribuciones al mundo OSS! ❤️",
+  "@licensing.acknowledgements.thanks": {
+    "sourceHash": "07419af"
+  },
+  "licensing.acknowledgements.vendoredHeading": "Íconos y otros archivos ({count, number})",
+  "@licensing.acknowledgements.vendoredHeading": {
+    "sourceHash": "b33acb9"
+  },
+  "licensing.about.tagline": "Administrador de archivos controlado por teclado",
+  "@licensing.about.tagline": {
+    "sourceHash": "1a76d07"
+  },
+  "licensing.about.betaNote": "¿Encontraste algo raro? Cuéntamelo en <github>GitHub</github>. ¡Leo todos los reportes!",
+  "@licensing.about.betaNote": {
+    "sourceHash": "5c873e5"
+  },
+  "licensing.expiration.title": "Tu licencia comercial venció",
+  "@licensing.expiration.title": {
+    "sourceHash": "973084b"
+  },
+  "licensing.expiration.message": "Tu suscripción comercial venció el <strong>{date}</strong>.",
+  "@licensing.expiration.message": {
+    "sourceHash": "400dbca"
+  },
+  "licensing.dialog.enterTitle": "Ingresar clave de licencia",
+  "@licensing.dialog.enterTitle": {
+    "sourceHash": "d8f5129"
+  },
+  "licensing.dialog.serverInvalidBanner": "No se pudo verificar esta clave con el servidor. Prueba con otra clave o escríbenos a <supportEmail>{email}</supportEmail>.",
+  "@licensing.dialog.serverInvalidBanner": {
+    "sourceHash": "dd7c3aa"
+  },
+  "licensing.dialog.validityExpiredOn": "Venció el {date}",
+  "@licensing.dialog.validityExpiredOn": {
+    "sourceHash": "0d214a6"
+  },
+  "licensing.dialog.retryExhausted": "Lo intentamos {count} veces y no funcionó. Sentimos las molestias. Escríbenos a <supportEmail>{email}</supportEmail> y lo resolveremos.",
+  "@licensing.dialog.retryExhausted": {
+    "sourceHash": "f100502"
+  },
+  "licensing.dialog.networkFallbackError": "No se pudo verificar tu licencia con el servidor. Inténtalo de nuevo más tarde.",
+  "@licensing.dialog.networkFallbackError": {
+    "sourceHash": "8390585"
+  },
+  "licensing.dialog.expiredOnError": "Esta licencia venció el {date}.",
+  "@licensing.dialog.expiredOnError": {
+    "sourceHash": "bea46f1"
+  },
+  "licensing.dialog.serverInvalidError": "Conocemos esta clave, pero al comprobarla con nuestro proveedor de pagos, no la reconoció. Esto puede pasar si la compra se reembolsó o no se completó.",
+  "@licensing.dialog.serverInvalidError": {
+    "sourceHash": "62fe92c"
+  },
+  "licensing.dialog.emptyKeyError": "Ingresa una clave de licencia",
+  "@licensing.dialog.emptyKeyError": {
+    "sourceHash": "bc95594"
+  },
+  "licensing.error.badSignature": "Esta clave de licencia no superó nuestra verificación de firma, lo que significa que no parece una clave válida.",
+  "@licensing.error.badSignature": {
+    "sourceHash": "8e5e3b6"
+  },
+  "licensing.error.shortCodeNotFound": "Esta licencia tiene buena pinta, pero buscamos a fondo y no la encontramos en nuestra base de datos.",
+  "@licensing.error.shortCodeNotFound": {
+    "sourceHash": "5d3951a"
+  },
+  "licensing.error.shortCodeNotFoundHint": "Verifica que pegaste la clave correcta de tu correo de compra.",
+  "@licensing.error.shortCodeNotFoundHint": {
+    "sourceHash": "709b779"
+  },
+  "licensing.error.network": "Vaya, esta vez no pudimos conectar con el servidor de licencias.",
+  "@licensing.error.network": {
+    "sourceHash": "c2690ee"
+  },
+  "licensing.error.server": "Mmm, el servidor de licencias respondió con algo raro. Lo sentimos.",
+  "@licensing.error.server": {
+    "sourceHash": "1cad7a8"
+  },
+  "licensing.error.generic": "Algo salió mal al activar esta clave.",
+  "@licensing.error.generic": {
+    "sourceHash": "bb6e0f3"
+  },
+  "licensing.section.manageKey": "Administrar clave de licencia",
+  "@licensing.section.manageKey": {
+    "sourceHash": "2d01ddb"
+  },
+  "licensing.section.enterKey": "Ingresar clave de licencia",
+  "@licensing.section.enterKey": {
+    "sourceHash": "d8f5129"
+  },
+  "licensing.section.statusExpiredOn": "Venció el {date}",
+  "@licensing.section.statusExpiredOn": {
+    "sourceHash": "0d214a6"
+  }
+}

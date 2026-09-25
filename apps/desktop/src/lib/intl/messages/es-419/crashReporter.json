@@ -1,0 +1,58 @@
+{
+  "crashReporter.dialog.title.crash": "¿Enviar reporte de fallos?",
+  "@crashReporter.dialog.title.crash": {
+    "sourceHash": "315ccdf"
+  },
+  "crashReporter.dialog.title.report": "¿Enviar reporte?",
+  "@crashReporter.dialog.title.report": {
+    "sourceHash": "b939ee6"
+  },
+  "crashReporter.dialog.body.ended": "Cmdr se cerró inesperadamente la última vez. Aquí tienes un reporte de fallos con detalles que pueden ayudar a solucionarlo.",
+  "@crashReporter.dialog.body.ended": {
+    "sourceHash": "1dab601"
+  },
+  "crashReporter.dialog.body.keptRunning": "La última vez, Cmdr tuvo un problema en segundo plano y siguió funcionando. Aquí tienes un reporte con detalles que pueden ayudar a solucionarlo.",
+  "@crashReporter.dialog.body.keptRunning": {
+    "sourceHash": "5ddc31f"
+  },
+  "crashReporter.dialog.body.unknown": "Cmdr tuvo un problema la última vez. Aquí tienes un reporte con detalles que pueden ayudar a solucionarlo.",
+  "@crashReporter.dialog.body.unknown": {
+    "sourceHash": "267af17"
+  },
+  "crashReporter.dialog.reportIdLabel": "ID del reporte:",
+  "@crashReporter.dialog.reportIdLabel": {
+    "sourceHash": "3ba6aaf"
+  },
+  "crashReporter.dialog.showDetails": "Mostrar detalles del reporte",
+  "@crashReporter.dialog.showDetails": {
+    "sourceHash": "613114d"
+  },
+  "crashReporter.dialog.alwaysSend": "Enviar siempre reportes de fallos",
+  "@crashReporter.dialog.alwaysSend": {
+    "sourceHash": "78bec34"
+  },
+  "crashReporter.dialog.send": "Enviar reporte",
+  "@crashReporter.dialog.send": {
+    "sourceHash": "e53e68d"
+  },
+  "crashReporter.dialog.notSent": "El reporte no se envió. {reason}",
+  "@crashReporter.dialog.notSent": {
+    "sourceHash": "b6e1d97"
+  },
+  "crashReporter.sentToast.message.crash": "Reporte de fallos enviado. Gracias por ayudar a mejorar Cmdr.",
+  "@crashReporter.sentToast.message.crash": {
+    "sourceHash": "3649867"
+  },
+  "crashReporter.sentToast.message.report": "Reporte enviado. Gracias por ayudar a mejorar Cmdr.",
+  "@crashReporter.sentToast.message.report": {
+    "sourceHash": "e75d7fb"
+  },
+  "crashReporter.sentToast.changeSettings": "Cambiar en Configuración > Actualizaciones",
+  "@crashReporter.sentToast.changeSettings": {
+    "sourceHash": "99d1377"
+  },
+  "crashReporter.sentToast.logNotSent": "El registro no se envió. {reason}",
+  "@crashReporter.sentToast.logNotSent": {
+    "sourceHash": "175a540"
+  }
+}

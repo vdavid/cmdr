@@ -1,0 +1,238 @@
+{
+  "askCmdr.tool.appState.done": "Se revisó lo que estás viendo",
+  "@askCmdr.tool.appState.done": {
+    "sourceHash": "0ce5683"
+  },
+  "askCmdr.tool.listDir.done": "Se listó una carpeta",
+  "@askCmdr.tool.listDir.done": {
+    "sourceHash": "228413a"
+  },
+  "askCmdr.tool.importantFolders.done": "Se encontraron tus carpetas importantes",
+  "@askCmdr.tool.importantFolders.done": {
+    "sourceHash": "1b28220"
+  },
+  "askCmdr.tool.folderImportance.done": "Se comprobó la importancia de una carpeta",
+  "@askCmdr.tool.folderImportance.done": {
+    "sourceHash": "1e61426"
+  },
+  "askCmdr.tool.listVolumes.done": "Se comprobaron tus unidades",
+  "@askCmdr.tool.listVolumes.done": {
+    "sourceHash": "1bcd741"
+  },
+  "askCmdr.tool.operationsList.done": "Se buscó en tu historial de archivos",
+  "@askCmdr.tool.operationsList.done": {
+    "sourceHash": "cca03ba"
+  },
+  "askCmdr.tool.operationsGet.done": "Se buscó una operación",
+  "@askCmdr.tool.operationsGet.done": {
+    "sourceHash": "fc6e28f"
+  },
+  "askCmdr.tool.search.done": "Se buscó en tus archivos",
+  "@askCmdr.tool.search.done": {
+    "sourceHash": "edae846"
+  },
+  "askCmdr.tool.searchPhotos.done": "Se buscó en tus fotos",
+  "@askCmdr.tool.searchPhotos.done": {
+    "sourceHash": "c7a9b54"
+  },
+  "askCmdr.tool.inspectFile.done": "Se miró dentro de los archivos",
+  "@askCmdr.tool.inspectFile.done": {
+    "sourceHash": "ec8291e"
+  },
+  "askCmdr.tool.imageFacts.done": "Se leyó el contenido de tus fotos",
+  "@askCmdr.tool.imageFacts.done": {
+    "sourceHash": "a718422"
+  },
+  "askCmdr.tool.proposeRenamePlan.done": "Se preparó un plan de cambio de nombre",
+  "@askCmdr.tool.proposeRenamePlan.done": {
+    "sourceHash": "3b39a92"
+  },
+  "askCmdr.tool.listSuggestions.done": "Se revisaron las sugerencias",
+  "@askCmdr.tool.listSuggestions.done": {
+    "sourceHash": "d57b51c"
+  },
+  "askCmdr.tool.getSuggestionGroup.done": "Se consultó una sugerencia",
+  "@askCmdr.tool.getSuggestionGroup.done": {
+    "sourceHash": "5e1d6b3"
+  },
+  "askCmdr.tool.proposeSuggestions.done": "Se prepararon sugerencias",
+  "@askCmdr.tool.proposeSuggestions.done": {
+    "sourceHash": "2cd77cc"
+  },
+  "askCmdr.tool.nothingToSuggest.doing": "Decidiendo si vale la pena mencionarlo",
+  "@askCmdr.tool.nothingToSuggest.doing": {
+    "sourceHash": "ba04dc4"
+  },
+  "askCmdr.tool.nothingToSuggest.done": "No se encontró nada que merezca mención",
+  "@askCmdr.tool.nothingToSuggest.done": {
+    "sourceHash": "da11bf5"
+  },
+  "askCmdr.tool.unknown.done": "Se usó una herramienta",
+  "@askCmdr.tool.unknown.done": {
+    "sourceHash": "52c9278"
+  },
+  "askCmdr.error.noKey": "Agrega tu clave de API en Configuración para empezar a chatear.",
+  "@askCmdr.error.noKey": {
+    "sourceHash": "8b4a1d0"
+  },
+  "askCmdr.error.notConfigured": "Para chatear necesitas un proveedor de IA. Activa uno en Configuración.",
+  "@askCmdr.error.notConfigured": {
+    "sourceHash": "1e70c7b"
+  },
+  "askCmdr.error.noCloudConsent": "La IA en la nube está desactivada. Permítela en Configuración > IA.",
+  "@askCmdr.error.noCloudConsent": {
+    "sourceHash": "e5be5d2"
+  },
+  "askCmdr.error.localWindowTooSmall": "Cmdr necesita una ventana de contexto más grande que la de tu modelo local. Elige 32 768 tokens o más en Configuración, en IA.",
+  "@askCmdr.error.localWindowTooSmall": {
+    "sourceHash": "bb1fbf7"
+  },
+  "askCmdr.error.unavailable": "No se pudo conectar con el proveedor de IA. Revisa tu conexión e inténtalo de nuevo.",
+  "@askCmdr.error.unavailable": {
+    "sourceHash": "0d5701d"
+  },
+  "askCmdr.error.authFailed": "El proveedor no aceptó tu clave de API. Revísala en Configuración.",
+  "@askCmdr.error.authFailed": {
+    "sourceHash": "ce0f802"
+  },
+  "askCmdr.error.rateLimited": "El proveedor está ocupado o se te acabó la cuota. Inténtalo de nuevo en un rato.",
+  "@askCmdr.error.rateLimited": {
+    "sourceHash": "f376ed1"
+  },
+  "askCmdr.error.budgetExhausted": "Esta respuesta llegó a su límite antes de terminar. Intenta preguntar algo más concreto.",
+  "@askCmdr.error.budgetExhausted": {
+    "sourceHash": "93788fe"
+  },
+  "askCmdr.error.repeatedToolCall": "Esta respuesta repitió la misma consulta sin avanzar. Intenta preguntarlo de otra manera.",
+  "@askCmdr.error.repeatedToolCall": {
+    "sourceHash": "a781749"
+  },
+  "askCmdr.error.unfinishedReply": "La respuesta no terminó. ¿Lo intentas de nuevo?",
+  "@askCmdr.error.unfinishedReply": {
+    "sourceHash": "fe6b11a"
+  },
+  "askCmdr.error.provider": "Algo salió mal por parte del proveedor. ¿Lo intentas de nuevo?",
+  "@askCmdr.error.provider": {
+    "sourceHash": "91438b7"
+  },
+  "askCmdr.event.contextTrimmed": "Se {count, plural, one {quitó # consulta anterior} many {quitaron # consultas anteriores} other {quitaron # consultas anteriores}} para que todo entre en el contexto del modelo.",
+  "@askCmdr.event.contextTrimmed": {
+    "sourceHash": "4262e70"
+  },
+  "askCmdr.composer.providerOff": "Activa un proveedor de IA en Configuración para empezar a chatear.",
+  "@askCmdr.composer.providerOff": {
+    "sourceHash": "f72de54"
+  },
+  "askCmdr.gate.cloudOff.body": "Ask Cmdr habla con el servicio de IA en la nube que configuraste. Permite primero la IA en la nube en Configuración y ya podrás chatear.",
+  "@askCmdr.gate.cloudOff.body": {
+    "sourceHash": "0e65edc"
+  },
+  "askCmdr.gate.cloudOff.openSettings": "Abrir la configuración de IA",
+  "@askCmdr.gate.cloudOff.openSettings": {
+    "sourceHash": "1994c72"
+  },
+  "askCmdr.cost.unknown": "costo desconocido",
+  "@askCmdr.cost.unknown": {
+    "sourceHash": "73604fe"
+  },
+  "askCmdr.renameReview.evidence.userInstruction": "Lo que pediste",
+  "@askCmdr.renameReview.evidence.userInstruction": {
+    "sourceHash": "5bf34a5"
+  },
+  "askCmdr.renameReview.coverageThin": "Es una parte pequeña del texto que Cmdr leyó aquí. Abre el archivo para comprobar el nombre.",
+  "@askCmdr.renameReview.coverageThin": {
+    "sourceHash": "02ab7b4"
+  },
+  "askCmdr.renameReview.nothingReadTooltip": "Cmdr no leyó nada dentro de este archivo. El nombre viene del nombre anterior, de los datos del archivo o de lo que pediste.",
+  "@askCmdr.renameReview.nothingReadTooltip": {
+    "sourceHash": "5ccf698"
+  },
+  "askCmdr.renameReview.nameKeptTooltip": "Cmdr conservó el nombre actual y no leyó nada dentro de este archivo.",
+  "@askCmdr.renameReview.nameKeptTooltip": {
+    "sourceHash": "9921a02"
+  },
+  "askCmdr.renameReview.expired": "Esta revisión venció. Pide a Ask Cmdr que la prepare de nuevo.",
+  "@askCmdr.renameReview.expired": {
+    "sourceHash": "1244be6"
+  },
+  "askCmdr.renameUndo.applied": "Se {count, plural, one {renombró} many {renombraron} other {renombraron}} {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "@askCmdr.renameUndo.applied": {
+    "sourceHash": "7093b77"
+  },
+  "askCmdr.renameUndo.undone": "Se {count, plural, one {restauró el nombre anterior} many {restauraron los nombres anteriores} other {restauraron los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "@askCmdr.renameUndo.undone": {
+    "sourceHash": "11fdbdd"
+  },
+  "askCmdr.renameUndo.partial": "Se {count, plural, one {restauró el nombre anterior} many {restauraron los nombres anteriores} other {restauraron los nombres anteriores}} de {countText} {count, plural, one {archivo} many {archivos} other {archivos}}.",
+  "@askCmdr.renameUndo.partial": {
+    "sourceHash": "11fdbdd"
+  },
+  "askCmdr.renameUndo.skipped": "{countText} {count, plural, one {archivo se quedó} many {archivos se quedaron} other {archivos se quedaron}} como {count, plural, one {está} many {están} other {están}}: {count, plural, one {cambió} many {cambiaron} other {cambiaron}} después del cambio de nombre, o el nombre anterior vuelve a estar ocupado.",
+  "@askCmdr.renameUndo.skipped": {
+    "sourceHash": "2e3ea28"
+  },
+  "askCmdr.renameUndo.skipReason.drift.named": "{name} se quedó como está: cambió después del cambio de nombre.",
+  "@askCmdr.renameUndo.skipReason.drift.named": {
+    "sourceHash": "f623e67"
+  },
+  "askCmdr.renameUndo.skipReason.drift.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: cambiaron después del cambio de nombre.",
+  "@askCmdr.renameUndo.skipReason.drift.counted": {
+    "sourceHash": "2bdf5f0"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.named": "{name} se quedó como está: su nombre anterior vuelve a estar ocupado.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.named": {
+    "sourceHash": "c74d22e"
+  },
+  "askCmdr.renameUndo.skipReason.nameTaken.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: sus nombres anteriores vuelven a estar ocupados.",
+  "@askCmdr.renameUndo.skipReason.nameTaken.counted": {
+    "sourceHash": "81703ab"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.named": "{name} se quedó como está: Cmdr no pudo comprobar si cambió.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.named": {
+    "sourceHash": "afec204"
+  },
+  "askCmdr.renameUndo.skipReason.unverifiable.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: Cmdr no pudo comprobar si cambiaron.",
+  "@askCmdr.renameUndo.skipReason.unverifiable.counted": {
+    "sourceHash": "cd53f36"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.named": "La carpeta {name} se quedó como está: ahora tiene algo dentro.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.named": {
+    "sourceHash": "5c24a41"
+  },
+  "askCmdr.renameUndo.skipReason.folderNotEmpty.counted": "{countText} {count, plural, one {carpeta} many {carpetas} other {carpetas}} se quedaron como están: ahora tienen algo dentro.",
+  "@askCmdr.renameUndo.skipReason.folderNotEmpty.counted": {
+    "sourceHash": "e59c18e"
+  },
+  "askCmdr.renameUndo.skipReason.failed.named": "{name} se quedó como está: Cmdr no pudo devolverle su nombre anterior.",
+  "@askCmdr.renameUndo.skipReason.failed.named": {
+    "sourceHash": "47ccf29"
+  },
+  "askCmdr.renameUndo.skipReason.failed.counted": "{countText} {count, plural, one {archivo} many {archivos} other {archivos}} se quedaron como están: Cmdr no pudo devolverles sus nombres anteriores.",
+  "@askCmdr.renameUndo.skipReason.failed.counted": {
+    "sourceHash": "86be654"
+  },
+  "askCmdr.renameUndo.refusedBatches": "Cmdr no pudo deshacer {countText} {count, plural, one {lote} many {lotes} other {lotes}}. El registro de operaciones tiene los detalles.",
+  "@askCmdr.renameUndo.refusedBatches": {
+    "sourceHash": "7e9182d"
+  },
+  "askCmdr.wake.thinking": "Cmdr está echando un vistazo a lo que cambió. Abre el chat.",
+  "@askCmdr.wake.thinking": {
+    "sourceHash": "fb0553c"
+  },
+  "askCmdr.wake.needsApiKey": "Las funciones de IA están activadas, pero necesitan un proveedor para funcionar. Haz clic para configurar uno en Configuración.",
+  "@askCmdr.wake.needsApiKey": {
+    "sourceHash": "826c784"
+  },
+  "askCmdr.wakeDigest.summary": "Qué cambió en {foldersText} {folders, plural, one {carpeta} many {carpetas} other {carpetas}}",
+  "@askCmdr.wakeDigest.summary": {
+    "sourceHash": "ccbc7cb"
+  },
+  "askCmdr.sessions.wakeThread": "Este chat lo empezó Cmdr",
+  "@askCmdr.sessions.wakeThread": {
+    "sourceHash": "ef7c3be"
+  },
+  "askCmdr.decision.verbTrash": "mover al basurero",
+  "@askCmdr.decision.verbTrash": {
+    "sourceHash": "1ea1d0e"
+  }
+}

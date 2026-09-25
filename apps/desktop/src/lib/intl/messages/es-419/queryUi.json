@@ -1,0 +1,42 @@
+{
+  "queryUi.bar.runHint": "Presiona Intro para buscar",
+  "@queryUi.bar.runHint": {
+    "sourceHash": "e8a44b1"
+  },
+  "queryUi.ai.cloudOff.body": "La IA en la nube está desactivada. Permítela en Configuración > IA para usar esto.",
+  "@queryUi.ai.cloudOff.body": {
+    "sourceHash": "d32a9e0"
+  },
+  "queryUi.ai.openSettings": "Abrir la configuración de IA",
+  "@queryUi.ai.openSettings": {
+    "sourceHash": "1994c72"
+  },
+  "queryUi.ai.lead": "Esto es lo que hizo el agente:",
+  "@queryUi.ai.lead": {
+    "sourceHash": "f81ab12"
+  },
+  "queryUi.ai.stripAria": "Lo que hizo el agente con tu última búsqueda con IA",
+  "@queryUi.ai.stripAria": {
+    "sourceHash": "66a3711"
+  },
+  "queryUi.results.criteria.scope": "Se buscó en: {scope}",
+  "@queryUi.results.criteria.scope": {
+    "sourceHash": "415a7ac"
+  },
+  "queryUi.results.live.incomplete": "{shownText} de {totalText} resultados. Cmdr no terminó de buscar.",
+  "@queryUi.results.live.incomplete": {
+    "sourceHash": "d0e87f5"
+  },
+  "queryUi.results.live.incompleteEmpty": "No se encontró nada antes de que la búsqueda se detuviera. Cmdr no terminó de buscar.",
+  "@queryUi.results.live.incompleteEmpty": {
+    "sourceHash": "886811b"
+  },
+  "queryUi.dialog.aiTranslateFailedToast": "No se pudo ejecutar la búsqueda con IA ahora mismo. ¿Lo intentas de nuevo?",
+  "@queryUi.dialog.aiTranslateFailedToast": {
+    "sourceHash": "bf9c2dc"
+  },
+  "queryUi.dialog.runQueryToast": "No se pudo completar esa búsqueda. {message}",
+  "@queryUi.dialog.runQueryToast": {
+    "sourceHash": "784a38f"
+  }
+}

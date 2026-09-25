@@ -81,7 +81,7 @@ impl From<AiError> for AiTranslateError {
             AiError::RateLimited(_) => K::RateLimited,
             // No dedicated kind: a 404 reads to a user as "the provider misbehaved", and the
             // detail line already carries its sentence. Give it its own `AiTranslateErrorKind`
-            // (and toast copy, in 13 catalogs) only if we decide a wrong model id deserves a
+            // (and toast copy, in every catalog) only if we decide a wrong model id deserves a
             // headline of its own.
             AiError::NotFound(_) => K::ServerError,
             AiError::EmptyResponse => K::EmptyResponse,

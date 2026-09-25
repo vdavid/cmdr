@@ -1,0 +1,70 @@
+{
+  "servers.hub.addServer": "Agregar servidor…",
+  "@servers.hub.addServer": {
+    "sourceHash": "a4578b9"
+  },
+  "servers.hub.discoveryOffLink": "Actívala en Configuración",
+  "@servers.hub.discoveryOffLink": {
+    "sourceHash": "6e46321"
+  },
+  "servers.hub.emptyMessage": "Agrega uno aquí abajo, o enciende un Mac o un NAS de tu red y Cmdr lo encontrará.",
+  "@servers.hub.emptyMessage": {
+    "sourceHash": "e6c6362"
+  },
+  "servers.refusal.authenticationRejected": "Esa contraseña no funcionó para {username}.",
+  "@servers.refusal.authenticationRejected": {
+    "sourceHash": "e9cdb01"
+  },
+  "servers.refusal.certificateUntrusted": "macOS no confía en el certificado de este servidor. Agrégalo en Acceso a Llaveros y vuelve a intentarlo.",
+  "@servers.refusal.certificateUntrusted": {
+    "sourceHash": "e29c1d6"
+  },
+  "servers.refusal.timedOut": "{host} no respondió a tiempo.",
+  "@servers.refusal.timedOut": {
+    "sourceHash": "49b8ebb"
+  },
+  "servers.refusal.unreachable": "Cmdr no pudo acceder a {host}.",
+  "@servers.refusal.unreachable": {
+    "sourceHash": "50b8e0a"
+  },
+  "servers.refusal.hostKeyRevoked": "Tu configuración de SSH en este Mac marca la clave de {host} como comprometida. Cmdr no se conectará a ese servidor.",
+  "@servers.refusal.hostKeyRevoked": {
+    "sourceHash": "ac070e7"
+  },
+  "servers.refusal.saveUnconfirmed": "{host} no respondió a tiempo, así que no se guardó nada. Inténtalo de nuevo en un momento.",
+  "@servers.refusal.saveUnconfirmed": {
+    "sourceHash": "ec80872"
+  },
+  "servers.refusal.secretNotStored": "Cmdr no pudo guardar esta contraseña en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.",
+  "@servers.refusal.secretNotStored": {
+    "sourceHash": "197b8bb"
+  },
+  "servers.refusal.savedSecretNotUpdated": "Cmdr guardó tus cambios, pero no pudo actualizar la contraseña en el Llavero. Vuelve a guardar para intentarlo otra vez.",
+  "@servers.refusal.savedSecretNotUpdated": {
+    "sourceHash": "292d105"
+  },
+  "servers.sheet.addTitle": "Agregar servidor",
+  "@servers.sheet.addTitle": {
+    "sourceHash": "edc745a"
+  },
+  "servers.sheet.identityLocked": "La dirección y la cuenta son las que identifican este servidor. Para cambiarlas, olvida el servidor y vuelve a agregarlo.",
+  "@servers.sheet.identityLocked": {
+    "sourceHash": "c3f5837"
+  },
+  "servers.hostKey.changedTitle": "La clave de {host} cambió",
+  "@servers.hostKey.changedTitle": {
+    "sourceHash": "31e72ea"
+  },
+  "servers.hostKey.changedBody": "Esto puede significar que el servidor se reinstaló, o que hay algo entre tú y él. Comprueba la huella digital con quien posee el servidor antes de confiar en ella.",
+  "@servers.hostKey.changedBody": {
+    "sourceHash": "488f40b"
+  },
+  "servers.hostKey.changedDisclosure": "Ya la comprobé",
+  "@servers.hostKey.changedDisclosure": {
+    "sourceHash": "14de108"
+  },
+  "servers.paneState.hostKeyChangedHint": "Su clave cambió. Esto puede significar que el servidor se reinstaló, o que hay algo entre tú y él. Desconecta y vuelve a abrirlo para comprobar la huella digital.",
+  "@servers.paneState.hostKeyChangedHint": {
+    "sourceHash": "5b20396"
+  }
+}

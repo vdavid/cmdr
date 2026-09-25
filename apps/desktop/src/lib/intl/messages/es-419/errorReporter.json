@@ -1,0 +1,82 @@
+{
+  "errorReporter.dialog.title": "Enviar reporte de error",
+  "@errorReporter.dialog.title": {
+    "sourceHash": "4494574"
+  },
+  "errorReporter.dialog.description": "Esto envía los archivos de registro recientes de Cmdr al equipo para que podamos arreglar lo que salió mal. Los registros se depuran en tu dispositivo: las rutas de archivos, los nombres de host, las IP y los correos se eliminan antes de enviarlos.",
+  "@errorReporter.dialog.description": {
+    "sourceHash": "4b5b99b"
+  },
+  "errorReporter.dialog.noteLabel": "Agrega una nota (opcional)",
+  "@errorReporter.dialog.noteLabel": {
+    "sourceHash": "4d49f91"
+  },
+  "errorReporter.dialog.prepareFailed": "No se pudo preparar la vista previa.",
+  "@errorReporter.dialog.prepareFailed": {
+    "sourceHash": "2dec12e"
+  },
+  "errorReporter.dialog.bundleUnavailable": "Cmdr no pudo reunir sus registros para el reporte. Inténtalo de nuevo en un momento.",
+  "@errorReporter.dialog.bundleUnavailable": {
+    "sourceHash": "6bcd0e9"
+  },
+  "errorReporter.dialog.send": "Enviar reporte",
+  "@errorReporter.dialog.send": {
+    "sourceHash": "e53e68d"
+  },
+  "errorReporter.dialog.sendFailedToast": "No se pudo enviar el reporte de error. {reason}",
+  "@errorReporter.dialog.sendFailedToast": {
+    "sourceHash": "6852241"
+  },
+  "errorReporter.dialog.saveFailedToast": "No se pudo guardar el paquete: {error}",
+  "@errorReporter.dialog.saveFailedToast": {
+    "sourceHash": "4543574"
+  },
+  "errorReporter.amend.title": "Agregar a tu reporte de error",
+  "@errorReporter.amend.title": {
+    "sourceHash": "deab7b7"
+  },
+  "errorReporter.amend.description": "Cmdr ya envió este reporte. Escribe una nota o adjunta tu correo, y se sumará a lo que el equipo ya tiene.",
+  "@errorReporter.amend.description": {
+    "sourceHash": "c79777c"
+  },
+  "errorReporter.amend.detailsToggle": "Lo que se envió",
+  "@errorReporter.amend.detailsToggle": {
+    "sourceHash": "3b7bd0a"
+  },
+  "errorReporter.amend.submit": "Agregar al reporte",
+  "@errorReporter.amend.submit": {
+    "sourceHash": "eb5d7e2"
+  },
+  "errorReporter.amend.submitting": "Agregando…",
+  "@errorReporter.amend.submitting": {
+    "sourceHash": "b09368c"
+  },
+  "errorReporter.amend.unavailable": "Ya no se pueden agregar notas a ese reporte. Para hacer llegar tus notas al equipo, envía un reporte nuevo desde el menú Ayuda.",
+  "@errorReporter.amend.unavailable": {
+    "sourceHash": "0ab503f"
+  },
+  "errorReporter.amend.addFailedToast": "No se pudo agregar tu nota. {reason}",
+  "@errorReporter.amend.addFailedToast": {
+    "sourceHash": "875be50"
+  },
+  "errorReporter.sentToast.message": "Reporte de error enviado. Tu ID de referencia es",
+  "@errorReporter.sentToast.message": {
+    "sourceHash": "12a8761"
+  },
+  "errorReporter.amendedToast.message": "Nota agregada a tu reporte. Tu ID de referencia es",
+  "@errorReporter.amendedToast.message": {
+    "sourceHash": "e4d9633"
+  },
+  "errorReporter.autoSentToast.title": "Reporte de error enviado",
+  "@errorReporter.autoSentToast.title": {
+    "sourceHash": "4dd8345"
+  },
+  "errorReporter.autoSentToast.changeSettings": "Cambiar configuración",
+  "@errorReporter.autoSentToast.changeSettings": {
+    "sourceHash": "810a33e"
+  },
+  "errorReporter.autoSentToast.viewOrAddNotes": "Ver o agregar notas al reporte",
+  "@errorReporter.autoSentToast.viewOrAddNotes": {
+    "sourceHash": "9b2702f"
+  }
+}

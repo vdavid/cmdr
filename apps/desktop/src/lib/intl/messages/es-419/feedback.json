@@ -1,0 +1,10 @@
+{
+  "feedback.dialog.invalid": "Esa nota no se envió. ¿La acortas y la vuelves a enviar?",
+  "@feedback.dialog.invalid": {
+    "sourceHash": "396cae6"
+  },
+  "feedback.dialog.softFailure": "Lo sentimos, no pudimos enviar tus comentarios ahora mismo. ¿Lo intentas de nuevo?",
+  "@feedback.dialog.softFailure": {
+    "sourceHash": "4be2620"
+  }
+}

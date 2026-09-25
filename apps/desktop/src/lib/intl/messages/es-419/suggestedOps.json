@@ -1,0 +1,26 @@
+{
+  "suggestedOps.description": "La IA sugirió esto. No se ejecuta nada hasta que lo apruebes.",
+  "@suggestedOps.description": {
+    "sourceHash": "4bb754a"
+  },
+  "suggestedOps.loadFailed": "Cmdr no pudo leer las sugerencias. Cierra esto y vuelve a abrirlo.",
+  "@suggestedOps.loadFailed": {
+    "sourceHash": "c9467ea"
+  },
+  "suggestedOps.destinationUnknown": "Cmdr no pudo comprobar la carpeta de destino",
+  "@suggestedOps.destinationUnknown": {
+    "sourceHash": "e048769"
+  },
+  "suggestedOps.changedUnderReview": "La IA cambió esta sugerencia mientras la leías.",
+  "@suggestedOps.changedUnderReview": {
+    "sourceHash": "0dbcbc7"
+  },
+  "suggestedOps.filesLoadFailed": "Cmdr no pudo cargar estos archivos.",
+  "@suggestedOps.filesLoadFailed": {
+    "sourceHash": "d5e9663"
+  },
+  "suggestedOps.decisionNotRecorded": "Cmdr no pudo guardar tu respuesta. Vuelve a intentarlo.",
+  "@suggestedOps.decisionNotRecorded": {
+    "sourceHash": "f3ae80c"
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "onboarding.fdaBadge.label": "Sin acceso completo al disco",
+  "@onboarding.fdaBadge.label": {
+    "sourceHash": "932d417"
+  },
+  "onboarding.fdaBadge.ariaLabel": "Sin acceso completo al disco. Abrir el paso de acceso completo al disco de la introducción.",
+  "@onboarding.fdaBadge.ariaLabel": {
+    "sourceHash": "b716faa"
+  },
+  "onboarding.stepFda.alreadyGranted.title": "Cmdr ya tiene acceso completo al disco",
+  "@onboarding.stepFda.alreadyGranted.title": {
+    "sourceHash": "247ddc7"
+  },
+  "onboarding.stepFda.revoked.ifIntentional": "Si fue a propósito, haz clic en <deny>Denegar</deny> y la app no volverá a molestarte.",
+  "@onboarding.stepFda.revoked.ifIntentional": {
+    "sourceHash": "1cdc7f3"
+  },
+  "onboarding.stepFda.revoked.ifNot": "Si <em>no</em> fue a propósito, considera volver a permitir el acceso a todo el disco. Estos son los pros y los contras:",
+  "@onboarding.stepFda.revoked.ifNot": {
+    "sourceHash": "5d69d77"
+  },
+  "onboarding.stepFda.firstAsk.explain": "Verás, Cmdr es un administrador de archivos, y necesita acceder a tu disco para ver todos tus archivos. macOS no concede este permiso de forma automática.",
+  "@onboarding.stepFda.firstAsk.explain": {
+    "sourceHash": "7ab9c3c"
+  },
+  "onboarding.stepFda.openSettingsFailed": "Cmdr no pudo abrir {systemSettings}. Ábrelo tú, ve a <strong>{privacyAndSecurity}</strong>, luego a <strong>{fullDiskAccess}</strong>, y activa <strong>Cmdr</strong>.",
+  "@onboarding.stepFda.openSettingsFailed": {
+    "sourceHash": "4775a45"
+  },
+  "onboarding.stepAi.bannerTitle.granted": "Acceso completo al disco concedido",
+  "@onboarding.stepAi.bannerTitle.granted": {
+    "sourceHash": "55615f4"
+  },
+  "onboarding.stepAi.bannerTitle.denied": "Sin acceso completo al disco",
+  "@onboarding.stepAi.bannerTitle.denied": {
+    "sourceHash": "932d417"
+  },
+  "onboarding.stepAi.bannerBody.stuck": "Dijiste que querías activar el acceso a todo el disco, pero parece que Cmdr no lo consiguió. Puede que tengas que reiniciar la app (hazlo ahora, ¡seguiremos desde aquí!), o ir a <settingsLink>{systemSettings} > Privacidad y seguridad > Acceso completo al disco</settingsLink> y encontrar Cmdr, o agregarlo a mano con el pequeño botón “+” de abajo.",
+  "@onboarding.stepAi.bannerBody.stuck": {
+    "sourceHash": "4c7e905"
+  },
+  "onboarding.stepAi.table.renameWith": "Dices “agrega un prefijo de fecha ISO”, el agente define tu patrón de renombrado y tú revisas y aplicas a tu gusto.",
+  "@onboarding.stepAi.table.renameWith": {
+    "sourceHash": "2dd9f9b"
+  },
+  "onboarding.stepAi.table.selectWithoutBound": "Presionas la tecla <chip></chip> y escribes algo como <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, revisas y aplicas.",
+  "@onboarding.stepAi.table.selectWithoutBound": {
+    "sourceHash": "ad0d88d"
+  },
+  "onboarding.stepAi.local.tooltip": "El modelo local es bastante más torpe que los modelos en la nube, y ocupa unos 2 GB de espacio y algo de RAM y CPU cada vez que se usa.\nA cambio, ningún dato sale de tu computadora.\nCmdr intenta publicar actualizaciones para que puedas usar el mejor modelo pequeño disponible. Pero si quieres privacidad <em>y</em> un modelo decente, lo mejor es que montes tu propio servidor de ollama y lo configures con la opción <strong>Sí, quiero IA</strong> de abajo.",
+  "@onboarding.stepAi.local.tooltip": {
+    "sourceHash": "924b7df"
+  },
+  "onboarding.stepAi.local.note": "Se empezó a descargar el modelo local en segundo plano. Ya puedes terminar la introducción; el aviso de la esquina te mantendrá al tanto.",
+  "@onboarding.stepAi.local.note": {
+    "sourceHash": "11042b5"
+  },
+  "onboarding.stepAi.missingKeyWarning": "Activaste la IA pero no ingresaste ninguna clave de API. La IA no funcionará y verás un aviso. Corrígelo arriba.\n\n<strong>Haz clic en “{nextLabel}” otra vez para ignorarlo y continuar.</strong>",
+  "@onboarding.stepAi.missingKeyWarning": {
+    "sourceHash": "9fa39ca"
+  },
+  "onboarding.stepAi.cloudConsentOffNote": "La IA en la nube seguirá desactivada hasta que la permitas. Puedes hacerlo más tarde en Configuración > IA.",
+  "@onboarding.stepAi.cloudConsentOffNote": {
+    "sourceHash": "5990dc1"
+  },
+  "onboarding.stepAi.off.help": "Cmdr funciona perfectamente sin IA. Puedes activarla más tarde en Configuración.",
+  "@onboarding.stepAi.off.help": {
+    "sourceHash": "61642f9"
+  },
+  "onboarding.stepBeta.checklist.email": "Ingresa tu correo <field></field> para recibir novedades y preguntas muy de vez en cuando",
+  "@onboarding.stepBeta.checklist.email": {
+    "sourceHash": "06602a7"
+  },
+  "onboarding.stepBeta.analyticsCaption": "Ten en cuenta que está ACTIVADO de forma predeterminada para animar a la gente a enviarme datos durante la beta.\nPuedes cambiarlo cuando quieras en Configuración.",
+  "@onboarding.stepBeta.analyticsCaption": {
+    "sourceHash": "eea1d1d"
+  },
+  "onboarding.stepBeta.crashReportsNote": "Los reportes de fallos también están activados: si Cmdr se cierra de golpe, envía la versión de la app, tu versión de macOS y el punto del código donde se detuvo.\nNunca tus archivos.\nPuedes desactivar ambas cosas en Configuración cuando quieras.",
+  "@onboarding.stepBeta.crashReportsNote": {
+    "sourceHash": "7d25210"
+  },
+  "onboarding.stepBeta.signup.failure": "Vaya, no pudimos darte de alta ahora mismo. ¿Lo intentas de nuevo?",
+  "@onboarding.stepBeta.signup.failure": {
+    "sourceHash": "bc7778c"
+  },
+  "onboarding.stepBeta.signup.rejected": "La lista de correo no aceptó esa dirección. Revísala por si hay alguna errata y vuelve a hacer clic en Guardar.",
+  "@onboarding.stepBeta.signup.rejected": {
+    "sourceHash": "7aed43d"
+  },
+  "onboarding.stepBeta.signup.unreachable": "No se pudo acceder al servidor de altas ahora mismo, así que todavía no estás en la lista. Tu dirección está guardada en este Mac: vuelve a hacer clic en Guardar dentro de un minuto, o cuando quieras desde Configuración › Actualizaciones y privacidad.",
+  "@onboarding.stepBeta.signup.unreachable": {
+    "sourceHash": "18378ab"
+  },
+  "onboarding.stepOptional.lede": "Has elegido pasar por una configuración detallada, así que aquí tienes unas cuantas decisiones sencillas. Si no te importan demasiado, basta con que hagas clic en el botón de abajo. Todo esto son opciones, y los valores predeterminados están elegidos pensando en ti.",
+  "@onboarding.stepOptional.lede": {
+    "sourceHash": "a188958"
+  },
+  "onboarding.stepOptional.changeAnytime": "Puedes cambiarlo cuando quieras en Configuración.",
+  "@onboarding.stepOptional.changeAnytime": {
+    "sourceHash": "cf9851e"
+  },
+  "onboarding.stepOptional.networking.desc": "Tener esto <em>activado</em> significa que puedes conectarte a servidores SMB como recursos compartidos de una empresa, un NAS doméstico y similares.\nEl único costo es un diálogo de permiso de macOS que aparece y te pide permitir la “Red local”, y otro para “Aceptar conexiones entrantes”.\nAmbos diálogos son inofensivos, pero si no sabes qué son, pueden dar miedo o resultar molestos.",
+  "@onboarding.stepOptional.networking.desc": {
+    "sourceHash": "a709d41"
+  },
+  "onboarding.stepOptional.indexing.descCost": "Si lo desactivas, solo obtienes <code>{dirPlaceholder}</code> en lugar de los tamaños.\nEl costo es alrededor de 1 GB de índice en tu unidad para unos pocos millones de archivos, pero ningún uso extra de CPU ni de memoria tras los primeros 2–3 minutos al iniciar la app por primera vez, o al iniciarla después de mucho tiempo.\nEs una función barata teniendo en cuenta las ventajas.",
+  "@onboarding.stepOptional.indexing.descCost": {
+    "sourceHash": "882c73b"
+  },
+  "onboarding.stepOptional.mtp.desc": "Si activas esto, Cmdr puede <strong>conectarse a teléfonos Android, Kindles, cámaras</strong>, algunos reproductores de música y cualquier otro dispositivo compatible con los protocolos llamados MTP o PTP.\nEl costo es que macOS <em>también</em> quiere conectarse a estos (y no suele conseguirlo, por eso no puedes usar simplemente el Finder para copiar fotos de teléfonos Android), así que Cmdr tiene que suprimir ese proceso de macOS mientras se ejecuta.\nCuando sales de Cmdr, se restaura con cuidado.",
+  "@onboarding.stepOptional.mtp.desc": {
+    "sourceHash": "a9124a0"
+  },
+  "onboarding.cloudSetup.status.authError": "Esa clave no funcionó",
+  "@onboarding.cloudSetup.status.authError": {
+    "sourceHash": "577d37e"
+  },
+  "onboarding.cloudSetup.status.genericError": "Algo salió mal",
+  "@onboarding.cloudSetup.status.genericError": {
+    "sourceHash": "9a2d67e"
+  }
+}

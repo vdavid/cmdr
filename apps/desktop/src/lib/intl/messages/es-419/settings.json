@@ -1,0 +1,370 @@
+{
+  "settings.appearance.language.description": "Elige el idioma que usa Cmdr. “Predeterminado del sistema” sigue el idioma de tu Mac.",
+  "@settings.appearance.language.description": {
+    "sourceHash": "56460f0"
+  },
+  "settings.appearance.language.opt.system": "Predeterminado del sistema",
+  "@settings.appearance.language.opt.system": {
+    "sourceHash": "c8aa231"
+  },
+  "settings.appearance.language.opt.systemWithLanguage": "Predeterminado del sistema ({language})",
+  "@settings.appearance.language.opt.systemWithLanguage": {
+    "sourceHash": "6542719"
+  },
+  "settings.appearance.appColor.description": "Para cambiar el color del tema del sistema, ve a Configuración del Sistema > Apariencia.",
+  "@settings.appearance.appColor.description": {
+    "sourceHash": "a9c6dac"
+  },
+  "settings.appearance.dateColors.description": "Colorea las fechas de modificación en la lista por antigüedad. App atenúa las fechas más antiguas hacia el color de texto predeterminado. Marchitamiento va de verde para archivos recientes a amarillo para los que envejecen y marrón para los antiguos.",
+  "@settings.appearance.dateColors.description": {
+    "sourceHash": "eb695de"
+  },
+  "settings.appearance.dateTimeFormat.opt.system": "Predeterminado del sistema",
+  "@settings.appearance.dateTimeFormat.opt.system": {
+    "sourceHash": "c8aa231"
+  },
+  "settings.listing.sizeMismatchWarning.description": "Muestra un ícono de aviso en las carpetas donde el tamaño del contenido y el tamaño en disco difieren en más de un 50% y 200 MB.",
+  "@settings.listing.sizeMismatchWarning.description": {
+    "sourceHash": "7f26644"
+  },
+  "settings.appearance.useAppIconsForDocuments.label": "Usar íconos de apps para los documentos",
+  "@settings.appearance.useAppIconsForDocuments.label": {
+    "sourceHash": "b5cef5e"
+  },
+  "settings.appearance.useAppIconsForDocuments.description": "Muestra el ícono de la app para los documentos en lugar de íconos genéricos por tipo de archivo. Más colorido, pero un poco más lento.",
+  "@settings.appearance.useAppIconsForDocuments.description": {
+    "sourceHash": "9353728"
+  },
+  "settings.archives.zip.description": "Qué hace presionar Intro en un archivo zip.",
+  "@settings.archives.zip.description": {
+    "sourceHash": "e33a325"
+  },
+  "settings.archives.ooxml.description": "Qué hace presionar Intro en un .docx, .xlsx, .pptx, .jar o .apk.",
+  "@settings.archives.ooxml.description": {
+    "sourceHash": "f14c5f8"
+  },
+  "settings.archives.bundle.description": "Qué hace presionar Intro en un .app, .bundle o .framework.",
+  "@settings.archives.bundle.description": {
+    "sourceHash": "c69721a"
+  },
+  "settings.mediaIndex.privacyNote": "Esto se ejecuta por completo en tu Mac usando el framework Vision integrado de Apple. Tus imágenes nunca salen de tu computadora y no interviene ningún proveedor de IA ni clave de API.",
+  "@settings.mediaIndex.privacyNote": {
+    "sourceHash": "98b937a"
+  },
+  "settings.mediaIndex.clip.failed": "La descarga no se completó. Comprueba tu conexión e inténtalo de nuevo.",
+  "@settings.mediaIndex.clip.failed": {
+    "sourceHash": "b0238f0"
+  },
+  "settings.mediaIndex.clip.deleteFailed": "No se pudo eliminar el modelo ahora mismo. Inténtalo de nuevo en un momento.",
+  "@settings.mediaIndex.clip.deleteFailed": {
+    "sourceHash": "946a4f8"
+  },
+  "settings.mediaIndex.showFileStatusIcons.description": "Agrega una pequeña insignia a cada imagen de la lista de archivos que indica si se ha indexado para la búsqueda.",
+  "@settings.mediaIndex.showFileStatusIcons.description": {
+    "sourceHash": "5b078ea"
+  },
+  "settings.mediaIndex.showInSearch.description": "Buscar agrega una fila de imágenes coincidentes encima de tus archivos. Las coincidencias todavía son imprecisas, así que la opción está desactivada hasta que la quieras.",
+  "@settings.mediaIndex.showInSearch.description": {
+    "sourceHash": "2293645"
+  },
+  "settings.mediaIndex.networkVolumes.description": "Interno: unidades de red (SMB) para las que el usuario activó la indexación de imágenes en segundo plano.",
+  "@settings.mediaIndex.networkVolumes.description": {
+    "sourceHash": "4323342"
+  },
+  "settings.mediaIndex.alwaysIndexVolumes.description": "Interno: unidades que el usuario marcó para indexar siempre sus fotos.",
+  "@settings.mediaIndex.alwaysIndexVolumes.description": {
+    "sourceHash": "11ffcba"
+  },
+  "settings.mediaIndex.alwaysIndexFolders.description": "Interno: carpetas que el usuario marcó para indexar siempre sus fotos.",
+  "@settings.mediaIndex.alwaysIndexFolders.description": {
+    "sourceHash": "67c537f"
+  },
+  "settings.mediaIndex.excludedFolders.description": "Interno: carpetas que el usuario excluyó de la indexación de imágenes.",
+  "@settings.mediaIndex.excludedFolders.description": {
+    "sourceHash": "94e09af"
+  },
+  "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, one {Agrega alrededor de {imagesText} imagen} other {Agrega alrededor de {imagesText} imágenes} many {Agrega alrededor de {imagesText} imágenes}}",
+  "@settings.mediaIndex.importanceThreshold.deltaAdd": {
+    "sourceHash": "7c4b83c"
+  },
+  "settings.mediaIndex.reclaim.line": "Tienes {totalText} imágenes indexadas; tu configuración cubre {coveredText}. {doomed, plural, one {La entrada adicional sigue disponible para búsquedas hasta que la elimines} other {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines} many {Las {doomedText} entradas adicionales siguen disponibles para búsquedas hasta que las elimines}}.",
+  "@settings.mediaIndex.reclaim.line": {
+    "sourceHash": "f5e38ab"
+  },
+  "settings.mediaIndex.reclaim.freed": "Se liberaron unos {size}",
+  "@settings.mediaIndex.reclaim.freed": {
+    "sourceHash": "6d7cb8b"
+  },
+  "settings.mediaIndex.reclaim.alreadyCleared": "Esas entradas ya se borraron",
+  "@settings.mediaIndex.reclaim.alreadyCleared": {
+    "sourceHash": "efeeb53"
+  },
+  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr no pudo eliminar las entradas adicionales. Inténtalo de nuevo.",
+  "@settings.mediaIndex.reclaim.couldNotDelete": {
+    "sourceHash": "9518f7e"
+  },
+  "settings.mediaIndex.reclaim.deletedSpaceLater": "Se eliminaron las entradas adicionales. Cmdr liberará el espacio en disco más tarde.",
+  "@settings.mediaIndex.reclaim.deletedSpaceLater": {
+    "sourceHash": "ce5d351"
+  },
+  "settings.indexing.reEnableNotifications.description": "Vuelve a preguntar sobre la indexación de cada unidad para la que desactivaste el aviso.",
+  "@settings.indexing.reEnableNotifications.description": {
+    "sourceHash": "0ffb8bc"
+  },
+  "settings.indexing.silencedDrives.description": "Interno: unidades para las que el usuario silenció el aviso de indexación.",
+  "@settings.indexing.silencedDrives.description": {
+    "sourceHash": "ed73a6c"
+  },
+  "settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": "Presiona ⌃⌥⌘J desde cualquier app para ir a tu descarga más reciente. Requiere acceso completo al disco.",
+  "@settings.behavior.fileSystemWatching.globalGoToLatestShortcut.enabled.description": {
+    "sourceHash": "655a07d"
+  },
+  "settings.search.autoApply.description": "Ejecuta las búsquedas por nombre de archivo y por regex automáticamente mientras escribes (1 segundo después de que dejes de escribir). Las búsquedas con IA siempre esperan a que presiones Intro, ya que cuestan dinero. Cuando está desactivado, presiona Intro o haz clic en el botón de ejecutar para buscar.",
+  "@settings.search.autoApply.description": {
+    "sourceHash": "edb367e"
+  },
+  "settings.ai.cloudProviderConfigs.description": "Claves de API y configuración de modelo por proveedor.",
+  "@settings.ai.cloudProviderConfigs.description": {
+    "sourceHash": "6dbd153"
+  },
+  "settings.network.smbConcurrency.description": "Cuántas transferencias de archivos ejecuta Cmdr en paralelo en una sola conexión SMB. Los valores más altos aceleran las copias por lotes de muchos archivos (sobre todo de muchos archivos pequeños), pero usan más recursos del servidor. El valor predeterminado de 10 es seguro para la mayoría de los NAS domésticos. Los cambios se aplican en la siguiente copia por lotes.",
+  "@settings.network.smbConcurrency.description": {
+    "sourceHash": "048a82b"
+  },
+  "settings.fileOperations.mtpEnabled.description": "Detecta y conecta con dispositivos Android y otros a través de un cable USB para explorar archivos y transferirlos. Para usar esta función en un teléfono Android, conviene que uses un cable USB y luego, en el teléfono, vayas a algo como Configuración > Preferencias de USB y configures la conexión como “Transferencia de archivos”, “Android Auto” o similar. (Varía según el dispositivo).",
+  "@settings.fileOperations.mtpEnabled.description": {
+    "sourceHash": "9aa0651"
+  },
+  "settings.fileOperations.adbBinaryPath.description": "Déjalo vacío y Cmdr buscará adb en los lugares habituales, incluidos el Android SDK y Homebrew. Indica otra ruta si guardas las herramientas de plataforma en un lugar aparte.",
+  "@settings.fileOperations.adbBinaryPath.description": {
+    "sourceHash": "d45ea29"
+  },
+  "settings.fileExplorer.git.showStatusColumn.description": "Agrega una columna que muestra el estado de git por archivo (modificado, sin seguimiento, etc.) en la vista completa.",
+  "@settings.fileExplorer.git.showStatusColumn.description": {
+    "sourceHash": "f685271"
+  },
+  "settings.developer.verboseLogging.description": "Sube la consola del terminal de desarrollo y las herramientas de desarrollador del navegador al nivel de depuración. El archivo de registro en disco siempre captura el detalle de depuración de todos modos, así que los reportes de errores no se ven afectados por este control. RUST_LOG siempre tiene prioridad para el terminal.",
+  "@settings.developer.verboseLogging.description": {
+    "sourceHash": "7f21a93"
+  },
+  "settings.whatsNew.showOnUpdate.description": "Después de que Cmdr se actualice, muestra un breve resumen de lo que cambió.",
+  "@settings.whatsNew.showOnUpdate.description": {
+    "sourceHash": "4a26d72"
+  },
+  "settings.updates.crashReports.label": "Enviar reportes de fallos",
+  "@settings.updates.crashReports.label": {
+    "sourceHash": "af85c28"
+  },
+  "settings.updates.crashReports.description": "Envía automáticamente un reporte cuando Cmdr se cierra inesperadamente o tiene un problema en segundo plano. Incluye la versión de la app, la versión de macOS y qué parte del código tuvo el problema. Nunca nombres de archivo ni datos personales.",
+  "@settings.updates.crashReports.description": {
+    "sourceHash": "41305b0"
+  },
+  "settings.updates.errorReports.label": "Enviar reportes de error automáticamente",
+  "@settings.updates.errorReports.label": {
+    "sourceHash": "b504392"
+  },
+  "settings.updates.errorReports.description": "Envía un pequeño fragmento del registro al desarrollador cuando ocurre un problema. Ayuda a corregir errores más rápido. Desactivado de forma predeterminada. Siempre puedes enviar un reporte manual desde el menú Ayuda.",
+  "@settings.updates.errorReports.description": {
+    "sourceHash": "15332ff"
+  },
+  "settings.updates.attachEmailToReports.label": "Adjuntar mi correo a los reportes de forma predeterminada",
+  "@settings.updates.attachEmailToReports.label": {
+    "sourceHash": "c04e8ff"
+  },
+  "settings.updates.attachEmailToReports.description": "Cuando envíes un reporte de fallos o de error, incluye tu correo de contacto de la beta para que podamos responderte. Puedes cambiarlo en cada reporte.",
+  "@settings.updates.attachEmailToReports.description": {
+    "sourceHash": "9681c19"
+  },
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr usa Espacio para activar o desactivar la selección de archivos y ⇧Espacio para Vista rápida (el Finder usa Espacio a secas para Vista rápida). Cada vez que presionas Espacio en la lista de archivos, Cmdr muestra un recordatorio de un párrafo sobre esta diferencia. Activa esto (o haz clic en “No volver a mostrar” en el aviso) para ocultar el recordatorio definitivamente.",
+  "@settings.fileExplorer.suppressQuickLookHint.description": {
+    "sourceHash": "379e733"
+  },
+  "settings.fileExplorer.typeToJump.resetDelay.description": "Cuánto tiempo sigue activo el búfer de escribir para saltar tras la última tecla presionada. Los valores más bajos lo reinician más rápido entre búsquedas; los más altos son más indulgentes para quien escribe despacio.",
+  "@settings.fileExplorer.typeToJump.resetDelay.description": {
+    "sourceHash": "d33fa4a"
+  },
+  "settings.advanced.maxLogStorageMb.description": "Espacio máximo en disco para los archivos de registro. Ponlo en 0 para desactivar el almacenamiento de registros; los reportes de error no se pueden enviar sin registros. Los cambios a un valor distinto de cero surten efecto en el próximo inicio de la app.",
+  "@settings.advanced.maxLogStorageMb.description": {
+    "sourceHash": "103732f"
+  },
+  "settings.onboarding.fullDiskAccessChoice.label": "Elección de acceso completo al disco",
+  "@settings.onboarding.fullDiskAccessChoice.label": {
+    "sourceHash": "1cf6c6c"
+  },
+  "settings.revealHandler.description": "Cuando otra app ejecuta “Mostrar en el Finder”, Cmdr abre esa carpeta con el archivo bajo el cursor. Para todo lo demás, el Finder sigue siendo tu administrador de archivos predeterminado.",
+  "@settings.revealHandler.description": {
+    "sourceHash": "d46bf80"
+  },
+  "settings.behavior.textEditorApp.systemDefault": "Predeterminado del sistema ({app})",
+  "@settings.behavior.textEditorApp.systemDefault": {
+    "sourceHash": "d2bb44a"
+  },
+  "settings.behavior.textEditorApp.systemDefaultUnnamed": "Predeterminado del sistema",
+  "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
+    "sourceHash": "c8aa231"
+  },
+  "settings.behavior.textEditorHintSeen.description": "Si ya se mostró el aviso único sobre elegir un editor de texto.",
+  "@settings.behavior.textEditorHintSeen.description": {
+    "sourceHash": "78a2c80"
+  },
+  "settings.behavior.openTerminalHereToastSeen.description": "Si ya se mostró el aviso único sobre elegir una app de terminal.",
+  "@settings.behavior.openTerminalHereToastSeen.description": {
+    "sourceHash": "0d9ebb1"
+  },
+  "settings.behavior.serversPinHintSeen.description": "Si ya se mostró el aviso único sobre desfijar servidores.",
+  "@settings.behavior.serversPinHintSeen.description": {
+    "sourceHash": "b43c20e"
+  },
+  "settings.behavior.dockPinNudgeOfferedAt.description": "Cuándo se hizo la oferta única de agregar Cmdr al Dock.",
+  "@settings.behavior.dockPinNudgeOfferedAt.description": {
+    "sourceHash": "ff66693"
+  },
+  "settings.behavior.revealActivationNoticeSeen.description": "Si ya se mostró el aviso sobre el primer “Mostrar en el Finder” que se abrió en Cmdr.",
+  "@settings.behavior.revealActivationNoticeSeen.description": {
+    "sourceHash": "38c4ea2"
+  },
+  "settings.behavior.adbHintDismissed.description": "Si ya se descartó el aviso único que propone activar la depuración por USB.",
+  "@settings.behavior.adbHintDismissed.description": {
+    "sourceHash": "2738d0e"
+  },
+  "settings.askCmdr.cloudOffHint": "Ask Cmdr usa tu servicio de IA en la nube. Permite la IA en la nube en la configuración de IA para empezar a chatear.",
+  "@settings.askCmdr.cloudOffHint": {
+    "sourceHash": "9c8cd51"
+  },
+  "settings.askCmdr.openAiSettings": "Abrir la configuración de IA",
+  "@settings.askCmdr.openAiSettings": {
+    "sourceHash": "1994c72"
+  },
+  "settings.askCmdr.provider.shared": "Cmdr usa el proveedor de IA y la clave que configuraste en Configuración › IA ({provider}).",
+  "@settings.askCmdr.provider.shared": {
+    "sourceHash": "ecabbab"
+  },
+  "settings.askCmdr.provider.off": "Activa un proveedor de IA en Configuración › IA para empezar a chatear.",
+  "@settings.askCmdr.provider.off": {
+    "sourceHash": "638b859"
+  },
+  "settings.askCmdr.chatMemorySize.overWindow": "Tu modelo puede rechazar un mensaje tan largo. Cmdr mantiene el valor que elegiste.",
+  "@settings.askCmdr.chatMemorySize.overWindow": {
+    "sourceHash": "1fb74fc"
+  },
+  "settings.askCmdr.memory.notAllForgotten": "Cmdr no pudo eliminar todas las notas. Abre la carpeta de notas para eliminar el resto.",
+  "@settings.askCmdr.memory.notAllForgotten": {
+    "sourceHash": "e7830d6"
+  },
+  "settings.askCmdr.spend.empty": "Aún no hay uso. Tu consumo de tokens y el costo estimado aparecerán aquí.",
+  "@settings.askCmdr.spend.empty": {
+    "sourceHash": "6f48a1d"
+  },
+  "settings.summary.listing": "Íconos de documentos, ordenación de carpetas y ancho de columna en la vista breve.",
+  "@settings.summary.listing": {
+    "sourceHash": "f632baf"
+  },
+  "settings.summary.archives": "Qué hace presionar Intro en archivos comprimidos y paquetes de apps: explorar, abrir o preguntar.",
+  "@settings.summary.archives": {
+    "sourceHash": "072f6ec"
+  },
+  "settings.summary.servers": "Las claves de host SSH en las que confiaste.",
+  "@settings.summary.servers": {
+    "sourceHash": "fa43caa"
+  },
+  "settings.control.resetToDefault": "Restablecer al valor predeterminado",
+  "@settings.control.resetToDefault": {
+    "sourceHash": "82bbff8"
+  },
+  "settings.control.customValuePlaceholder": "Ingresa un valor personalizado",
+  "@settings.control.customValuePlaceholder": {
+    "sourceHash": "0a5f99e"
+  },
+  "settings.sidebar.searchPlaceholder": "Buscar en la configuración…",
+  "@settings.sidebar.searchPlaceholder": {
+    "sourceHash": "cd34ad0"
+  },
+  "settings.sidebar.sections": "Secciones de configuración",
+  "@settings.sidebar.sections": {
+    "sourceHash": "c503baa"
+  },
+  "settings.appearance.themeColorSwatchAria": "Abrir Configuración del Sistema para cambiar el color del tema del sistema",
+  "@settings.appearance.themeColorSwatchAria": {
+    "sourceHash": "b98017c"
+  },
+  "settings.appearance.appColorHintLinkOther": "la configuración de apariencia de tu sistema",
+  "@settings.appearance.appColorHintLinkOther": {
+    "sourceHash": "308af6e"
+  },
+  "settings.appearance.tintGroupDescription": "Agrega un tinte de fondo tenue a los paneles para que puedas distinguir los tipos de volumen de un vistazo.",
+  "@settings.appearance.tintGroupDescription": {
+    "sourceHash": "25e3480"
+  },
+  "settings.ai.tooltipLocal": "Ejecuta un modelo de lenguaje pequeño completamente en tu dispositivo. Privacidad máxima: nada sale de tu computadora. Funciona sin conexión. Usa ~2 GB de espacio en disco y ~400 MB de memoria (varía según el tamaño del contexto). Requiere Apple silicon (M1 o posterior).",
+  "@settings.ai.tooltipLocal": {
+    "sourceHash": "0093baa"
+  },
+  "settings.appearance.card.namesAndIcons": "Nombres e íconos",
+  "@settings.appearance.card.namesAndIcons": {
+    "sourceHash": "fefdc5c"
+  },
+  "settings.network.manageAnytimePrefix": "Administra esto cuando quieras en",
+  "@settings.network.manageAnytimePrefix": {
+    "sourceHash": "fe4da5e"
+  },
+  "settings.updates.sendErrorReport": "Enviar reporte de error",
+  "@settings.updates.sendErrorReport": {
+    "sourceHash": "4494574"
+  },
+  "settings.updates.emailSignupError": "Vaya, no pudimos darte de alta ahora mismo. ¿Lo intentas de nuevo?",
+  "@settings.updates.emailSignupError": {
+    "sourceHash": "bc7778c"
+  },
+  "settings.updates.emailPrivacyNote": "Se guarda solo en tu Mac. Nunca lo enviamos junto con tus estadísticas de uso, así que estas no pueden vincularse contigo. Se usa solo para ponernos en contacto y, opcionalmente, para adjuntarlo a un reporte que envíes. Para dejar de recibir correos, usa el enlace de baja en cualquier mensaje que te enviemos.",
+  "@settings.updates.emailPrivacyNote": {
+    "sourceHash": "e87941a"
+  },
+  "settings.advanced.warningBanner": "Estas opciones son para usuarios avanzados. Los valores incorrectos pueden causar problemas de rendimiento o un comportamiento inesperado.",
+  "@settings.advanced.warningBanner": {
+    "sourceHash": "e674112"
+  },
+  "settings.advanced.resetAll": "Restablecer todo a los valores predeterminados",
+  "@settings.advanced.resetAll": {
+    "sourceHash": "6580e10"
+  },
+  "settings.advanced.resetAllConfirm": "¿Restablecer toda la configuración avanzada a sus valores predeterminados? Esto no se puede deshacer.",
+  "@settings.advanced.resetAllConfirm": {
+    "sourceHash": "bad4d86"
+  },
+  "settings.advanced.resetAllConfirmTitle": "Restablecer la configuración avanzada",
+  "@settings.advanced.resetAllConfirmTitle": {
+    "sourceHash": "3032f28"
+  },
+  "settings.advanced.defaultPrefix": "Predeterminado:",
+  "@settings.advanced.defaultPrefix": {
+    "sourceHash": "d6a7764"
+  },
+  "settings.mediaIndex.progress.kept": "{kept, plural, one {{keptText} imagen más indexada por una configuración más amplia, todavía se puede buscar} other {{keptText} imágenes más indexadas por una configuración más amplia, todavía se pueden buscar} many {{keptText} imágenes más indexadas por una configuración más amplia, todavía se pueden buscar}}",
+  "@settings.mediaIndex.progress.kept": {
+    "sourceHash": "dd6f011"
+  },
+  "settings.mediaIndex.chosenFolders.empty": "Todavía no hay carpetas. Agrega una para empezar a indexar sus fotos.",
+  "@settings.mediaIndex.chosenFolders.empty": {
+    "sourceHash": "c04e6ad"
+  },
+  "settings.mediaIndex.chosenFolders.add": "Agregar carpeta…",
+  "@settings.mediaIndex.chosenFolders.add": {
+    "sourceHash": "f90956f"
+  },
+  "settings.window.title": "Configuración",
+  "@settings.window.title": {
+    "sourceHash": "4f2debb"
+  },
+  "settings.window.loading": "Cargando configuración…",
+  "@settings.window.loading": {
+    "sourceHash": "229d202"
+  },
+  "settings.adb.install.intro": "Instala las herramientas de plataforma de Android y después presiona Comprobar de nuevo:",
+  "@settings.adb.install.intro": {
+    "sourceHash": "add9e91"
+  },
+  "settings.adb.pathPlaceholder": "Buscar adb en los lugares habituales",
+  "@settings.adb.pathPlaceholder": {
+    "sourceHash": "ba15cb8"
+  }
+}

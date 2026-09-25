@@ -55,6 +55,13 @@ pub(crate) const SHIPPED_LOCALES: &[ShippedLocale] = &[
         covers: &[],
     },
     ShippedLocale {
+        tag: "es-419",
+        script: "latn",
+        default_script: "latn",
+        region_scripts: &[],
+        covers: &[],
+    },
+    ShippedLocale {
         tag: "fr",
         script: "latn",
         default_script: "latn",

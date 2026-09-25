@@ -1,0 +1,22 @@
+{
+  "ui.alertDialog.defaultButton": "OK",
+  "@ui.alertDialog.defaultButton": {
+    "sourceHash": "640d676"
+  },
+  "ui.toast.sendErrorReport": "Enviar reporte de error…",
+  "@ui.toast.sendErrorReport": {
+    "sourceHash": "1fb27bf"
+  },
+  "ui.loadingIcon.finalizing": "{count, plural, one {Se cargó {countText} archivo} many {Se cargaron {countText} archivos} other {Se cargaron {countText} archivos}}. Ordenando tus archivos, preparando la vista…",
+  "@ui.loadingIcon.finalizing": {
+    "sourceHash": "e11f66e"
+  },
+  "ui.loadingIcon.loaded": "{count, plural, one {Se cargó {countText} archivo} many {Se cargaron {countText} archivos} other {Se cargaron {countText} archivos}}…",
+  "@ui.loadingIcon.loaded": {
+    "sourceHash": "2058b43"
+  },
+  "ui.loadingIcon.cancelHint": "Presiona <key></key> para cancelar y volver",
+  "@ui.loadingIcon.cancelHint": {
+    "sourceHash": "d3b5941"
+  }
+}

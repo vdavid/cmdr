@@ -440,10 +440,14 @@ mod tests {
             .map(|locale| locale.tag)
             .filter(|tag| super::super::overlay_base(tag, super::super::SHIPPED_LOCALES).is_some())
             .collect();
-        assert_eq!(overlays, vec!["en-AU", "en-GB"]);
+        assert_eq!(overlays, vec!["en-AU", "en-GB", "es-419"]);
         assert_eq!(
             super::super::overlay_base("en-GB", super::super::SHIPPED_LOCALES),
             Some("en")
+        );
+        assert_eq!(
+            super::super::overlay_base("es-419", super::super::SHIPPED_LOCALES),
+            Some("es")
         );
         assert_eq!(
             super::super::overlay_base("zh-Hant", super::super::SHIPPED_LOCALES),

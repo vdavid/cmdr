@@ -1,0 +1,58 @@
+{
+  "main.upgradeNudge.mac": "Hemos agregado nuevas opciones de introducción. Abre Cmdr > Introducción… para revisarlas.",
+  "@main.upgradeNudge.mac": {
+    "sourceHash": "d982b5c"
+  },
+  "main.upgradeNudge.other": "Hemos agregado nuevas opciones de introducción. Abre la paleta de comandos y ejecuta Introducción… para revisarlas.",
+  "@main.upgradeNudge.other": {
+    "sourceHash": "bd057b8"
+  },
+  "main.dockPinNudge.accept": "Sí, agregar a mi Dock",
+  "@main.dockPinNudge.accept": {
+    "sourceHash": "f07c533"
+  },
+  "main.dockPinNudge.addedButDockDidNotRestart": "El ícono de Cmdr ya está en su lugar, pero el Dock todavía no lo muestra. Aparecerá la próxima vez que inicies sesión.",
+  "@main.dockPinNudge.addedButDockDidNotRestart": {
+    "sourceHash": "41d2f6b"
+  },
+  "main.dockPinNudge.managedDock": "Tu Dock lo controla un perfil de configuración, así que Cmdr no puede agregarse por su cuenta. Quien administre este Mac puede cambiarlo.",
+  "@main.dockPinNudge.managedDock": {
+    "sourceHash": "abd4bde"
+  },
+  "main.dockPinNudge.notAdded": "Cmdr no pudo entrar en el Dock esta vez. Puedes arrastrarlo ahí desde la carpeta Aplicaciones cuando quieras.",
+  "@main.dockPinNudge.notAdded": {
+    "sourceHash": "e463ed3"
+  },
+  "main.revealNudge.switchBackNote": "Puedes volver a cambiarlo cuando quieras en Configuración.",
+  "@main.revealNudge.switchBackNote": {
+    "sourceHash": "7513732"
+  },
+  "main.revealNudge.heldByOtherApp": "Ahora mismo “Mostrar en el Finder” lo tiene {app}. Puedes pasárselo a Cmdr en Configuración cuando quieras.",
+  "@main.revealNudge.heldByOtherApp": {
+    "sourceHash": "25ac1db"
+  },
+  "main.revealNudge.notTurnedOn": "Cmdr no pudo quedarse con “Mostrar en el Finder” esta vez. El interruptor está en Configuración cuando quieras volver a intentarlo.",
+  "@main.revealNudge.notTurnedOn": {
+    "sourceHash": "85a9dae"
+  },
+  "main.revealActivation.title": "“Mostrar en el Finder” se abrió aquí",
+  "@main.revealActivation.title": {
+    "sourceHash": "7e03659"
+  },
+  "main.revealActivation.body": "Cmdr está configurado para recogerlos, así que el archivo apareció en un panel en vez de en el Finder. Todo lo demás se sigue abriendo igual que antes.",
+  "@main.revealActivation.body": {
+    "sourceHash": "97b7f7d"
+  },
+  "main.revealActivation.openSettings": "Cambiarlo en Configuración",
+  "@main.revealActivation.openSettings": {
+    "sourceHash": "84f0924"
+  },
+  "main.escapeFullScreenHint.message": "La tecla Esc sacó a Cmdr de la pantalla completa.",
+  "@main.escapeFullScreenHint.message": {
+    "sourceHash": "55bb848"
+  },
+  "main.escapeFullScreenHint.settingsLine": "También puedes cambiarlo en <settingsLink>Configuración > Avanzado</settingsLink>.",
+  "@main.escapeFullScreenHint.settingsLine": {
+    "sourceHash": "e30e537"
+  }
+}

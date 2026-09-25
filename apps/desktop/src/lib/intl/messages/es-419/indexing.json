@@ -1,0 +1,14 @@
+{
+  "indexing.rescan.watcherStartFailed": "No se pudo iniciar la vigilancia de cambios de archivos. Haciendo un análisis nuevo para poner el índice al día.",
+  "@indexing.rescan.watcherStartFailed": {
+    "sourceHash": "5ad001c"
+  },
+  "indexing.rescan.reconcilerBufferOverflow": "Una actividad intensa del sistema de archivos desbordó el búfer de eventos. Haciendo un análisis nuevo para mantener la precisión.",
+  "@indexing.rescan.reconcilerBufferOverflow": {
+    "sourceHash": "d3881c9"
+  },
+  "indexing.rescan.watcherChannelOverflow": "Una ráfaga de actividad del sistema de archivos desbordó el canal de vigilancia. Haciendo un análisis nuevo para mantener la precisión.",
+  "@indexing.rescan.watcherChannelOverflow": {
+    "sourceHash": "6c1c538"
+  }
+}

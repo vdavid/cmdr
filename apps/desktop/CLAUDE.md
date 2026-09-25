@@ -38,9 +38,10 @@ in `DETAILS.md`. Feature must-knows in the colocated `CLAUDE.md`s.
   `docs/notes/performance/README.md` (baseline, method rules, open follow-ups).
 - **The frontend is i18n-ized: user-facing strings live in the message catalog, not in components.** Resolve copy via
   `t()` / `getMessage()` / `<Trans>` from `$lib/intl`, with keys in `src/lib/intl/messages/en/<area>.json` carrying a
-  translator `@key` description. Hardcoding a string in a known sink fails `cmdr/no-raw-user-facing-string`. 13 catalogs
-  ship today: source `en`, 10 full translations, and the `en-GB` / `en-AU` overlays. How it all works + adding
-  strings/locales + leading translator agents: `docs/guides/i18n.md`; runtime must-knows: `src/lib/intl/CLAUDE.md`.
+  translator `@key` description. Hardcoding a string in a known sink fails `cmdr/no-raw-user-facing-string`. 14 catalogs
+  ship today: source `en`, 10 full translations, and the `en-GB` / `en-AU` / `es-419` overlays. How it all works +
+  adding strings/locales + leading translator agents: `docs/guides/i18n.md`; runtime must-knows:
+  `src/lib/intl/CLAUDE.md`.
 
 ## Structure
 

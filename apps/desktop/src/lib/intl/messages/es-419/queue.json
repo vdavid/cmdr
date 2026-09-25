@@ -1,0 +1,22 @@
+{
+  "queue.row.label": "{type, select, copy {Copiando} move {Moviendo} delete {Eliminando} trash {Moviendo al basurero} rename {Renombrando} create_folder {Creando carpeta} create_file {Creando archivo} archive_edit {Editando archivo comprimido} other {Trabajando}}",
+  "@queue.row.label": {
+    "sourceHash": "605f175"
+  },
+  "queue.row.status": "{status, select, queued {Esperando} running {En ejecución} paused {En pausa} done {Hecho} cancelled {Cancelado} failed {No se pudo completar} other {En ejecución}}",
+  "@queue.row.status": {
+    "sourceHash": "186b0e5"
+  },
+  "queue.failureToast.title": "{type, select, copy {No se pudo completar la copia} move {No se pudo completar el movimiento} delete {No se pudo completar la eliminación} trash {No se pudo completar el movimiento al basurero} rename {No se pudo completar el cambio de nombre} create_folder {No se pudo completar la creación de la carpeta} create_file {No se pudo completar la creación del archivo} archive_edit {No se pudo completar la edición del archivo comprimido} other {No se pudo completar}}",
+  "@queue.failureToast.title": {
+    "sourceHash": "611b756"
+  },
+  "queue.failureToast.summary": "{count, plural, one {No se pudo completar {countText} operación} many {No se pudieron completar {countText} operaciones} other {No se pudieron completar {countText} operaciones}}",
+  "@queue.failureToast.summary": {
+    "sourceHash": "f2ac826"
+  },
+  "queue.chip.failed": "{count, plural, one {No se pudo completar {countText} operación} many {No se pudieron completar {countText} operaciones} other {No se pudieron completar {countText} operaciones}}. Abre la cola de operaciones para ver por qué.",
+  "@queue.chip.failed": {
+    "sourceHash": "026bdd7"
+  }
+}

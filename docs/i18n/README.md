@@ -41,10 +41,11 @@ translation, never an overlay, so it needs its own terminology and its own guide
 carry a "Decisions to confirm with David" section and a "Decision points" section; its sourced term rulings live in the
 sibling `terms.json`.
 
-A regional overlay (`en-GB`, `en-AU`, `pt-PT`) gets one too, but a different kind: it forks only a handful of keys, so
-its guide is about WHAT FORKS AND WHY, not tone or formality. It records the rulings behind each fork, the forks it
-considered and deliberately skipped, and the evidence for both, so nobody re-litigates them. `en-GB/style.md` is the
-worked example; `en-AU/style.md` shows how a second overlay points at a sibling instead of restating it.
+A regional overlay (`en-GB`, `en-AU`, `es-419`, `pt-PT`) gets one too, but a different kind: it forks only the keys that
+differ from its base, so its guide is about WHAT FORKS AND WHY, not tone or formality. It records the rulings behind
+each fork, the forks it considered and deliberately skipped, and the evidence for both, so nobody re-litigates them.
+`en-GB/style.md` is the worked example; `en-AU/style.md` shows how a second overlay points at a sibling instead of
+restating it.
 
 - [`ab`](ab/style.md)
 - [`af`](af/style.md)
@@ -77,6 +78,7 @@ worked example; `en-AU/style.md` shows how a second overlay points at a sibling 
 - [`en-GB`](en-GB/style.md)
 - [`eo`](eo/style.md)
 - [`es`](es/style.md)
+- [`es-419`](es-419/style.md)
 - [`et`](et/style.md)
 - [`eu`](eu/style.md)
 - [`fa`](fa/style.md)

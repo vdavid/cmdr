@@ -176,12 +176,12 @@ distribution, pinned like any other dependency. `Intl` exposes likely subtags bu
 way to learn that `en-NZ`'s parent is `en-001`. What the resolver does with them: § The ancestor chain.
 
 Filtered to the base languages we ship a catalog for. That's safe because the resolver rejects another language's
-catalog before it ever consults this table, and it keeps the entries that go live later on their own: `es-MX` →
-`es-419` and `pt-AO` → `pt-PT` are inert while only the base catalogs ship. Shipping `messages/es-419/` and
-regenerating is the whole change: every Latin American and US Spanish tag CLDR parents to `es-419` (`es-MX`, `es-AR`,
-`es-CO`, `es-CL`, `es-US`, ...) opens it, while `es`, `es-ES`, `es-GQ`, `es-EA`, `es-IC`, and `es-PH` stay on `es`. No
-`covers` entry is needed, because `es-419` is itself the CLDR node. Pinned on fixtures by
-`a_latin_american_overlay_catches_every_region_cldr_parents_to_it` and
+catalog before it ever consults this table, and it keeps the entries that go live later on their own: `pt-AO` →
+`pt-PT` is inert while only `pt` ships. Shipping an overlay's catalog and regenerating is the whole change: every
+Latin American and US Spanish tag CLDR parents to `es-419` (`es-MX`, `es-AR`, `es-CO`, `es-CL`, `es-US`, ...) opens
+it, while `es`, `es-ES`, `es-GQ`, `es-EA`, `es-IC`, and `es-PH` stay on `es`. No `covers` entry is needed, because
+`es-419` is itself the CLDR node. Pinned by `the_latin_american_overlay_catches_every_region_cldr_parents_to_it` (on
+the shipped table) and, on a fixture,
 `a_european_portuguese_overlay_catches_the_lusophone_world_and_leaves_brazil_alone`.
 
 ### Guards
