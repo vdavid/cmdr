@@ -674,6 +674,21 @@ var AllChecks = []CheckDefinition{
 		Run:       RunDesktopI18nDontTranslate,
 	},
 	{
+		ID:          "desktop-i18n-quoted-labels",
+		Nickname:    "i18n-quoted-labels",
+		DisplayName: "i18n-quoted-labels",
+		App:         AppDesktop,
+		Tech:        "🎨 Svelte",
+		// Warn-only metric (text quoting a button or setting in words the label
+		// itself doesn't use). A reviewer judges each one, since a label is
+		// sometimes bent to fit its sentence on purpose, so it can never fail.
+		NotInCI:   "warn-only metric; it can never fail, so a CI step would be noise",
+		DependsOn: nil,
+		IsFast:    true,
+		Inputs:    inputs([]string{"apps/desktop/src/lib/intl/messages/**", "apps/desktop/scripts/i18n-*.ts"}),
+		Run:       RunDesktopI18nQuotedLabels,
+	},
+	{
 		ID:          "desktop-rust-tests",
 		CpuWeight:   6,
 		Exclusive:   ResourceCargoBuildDir,

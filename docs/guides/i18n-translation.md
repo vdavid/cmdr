@@ -252,7 +252,7 @@ Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` me
    `pnpm i18n:brief --lang <tag>` brief. The first batches will mostly say "no ruling": each term you settle becomes a
    `terms.json` entry the next batch inherits.
 5. **Run the checks**:
-   `pnpm check i18n-parity i18n-icu i18n-plural i18n-stale i18n-coverage i18n-dont-translate i18n-aria i18n-terms i18n-termbase i18n-mechanics i18n-citations`.
+   `pnpm check i18n-parity i18n-icu i18n-plural i18n-stale i18n-coverage i18n-dont-translate i18n-quoted-labels i18n-aria i18n-terms i18n-termbase i18n-mechanics i18n-citations`.
    Parity (placeholder/tag/token sets), ICU validity, plural coverage, translation coverage, aria containment,
    citations, and the termbase and mechanics schemas are ERROR class, so a locale can't ship half-translated; stale,
    don't-translate, term consistency, termbase drift, `decisions.md` growth, and typography findings are WARN class.
