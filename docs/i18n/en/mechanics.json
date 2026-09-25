@@ -1,8 +1,8 @@
 {
-  "$comment": "English typography: curly double quotes, curly single quotes nested, and the apostrophe written either way. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "$comment": "English typography: curly double quotes, curly single quotes nested, and the curly ’ apostrophe, as Apple writes it. So a straight ' anywhere is a slip, and in an ICU value a doubled '' pair around a word is a pseudo-quote. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
   "ellipsis": { "glyph": "…" },
-  "apostrophes": ["'", "’"],
+  "apostrophes": ["’"],
   "hedges": [
     {
       "pattern": "\\p{L}\\((?:s|es)\\)",

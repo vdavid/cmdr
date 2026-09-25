@@ -19,7 +19,7 @@ import {
 } from './i18n-check-mechanics.ts'
 import type { MechanicsBaseline } from './i18n-check-mechanics.ts'
 import { EXIT_CLEAN, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
-import { mechanicsSummary } from './i18n-mechanics-lib.ts'
+import { loadMechanicsRaw, mechanicsSummary } from './i18n-mechanics-lib.ts'
 import type { Mechanics } from './i18n-mechanics-lib.ts'
 
 const guillemets: Mechanics = {
@@ -195,6 +195,14 @@ describe('findMechanicsIssues', () => {
     }
     expect(findMechanicsIssues({ tag: 'hu', mechanics: hu, messages: { 'a.b': 'A {path}ban' } })).toEqual([
       { key: 'a.b', kind: 'hedge', detail: 'a suffix on an unknown name: "{path}b"' },
+    ])
+  })
+
+  it('holds English to ’: an ICU pseudo-quote (two doubled apostrophes) is a finding', () => {
+    const en = loadMechanicsRaw('en') as Mechanics
+    expect(validateMechanics(en, 'en')).toEqual([])
+    expect(kinds('en', { 'a.pseudo': "Click ''Don’t show again''", 'a.ok': 'Click “Don’t show again”' }, en)).toEqual([
+      'a.pseudo:quote-mark',
     ])
   })
 
