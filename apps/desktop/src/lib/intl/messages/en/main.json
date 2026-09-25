@@ -103,7 +103,7 @@
     "description": "Title of the dialog that appears when the user quits Cmdr (⌘Q, the menu, or closing the main window) while copies, moves, deletes, or trash operations are still going. It asks whether to go ahead. \"Operation\" is the category word covering all of them, the same one the operation queue window uses; keep the two consistent in your language. Near-instant things like renaming never reach this dialog.",
     "placeholders": {
       "count": "how many operations are still running (drives the singular/plural form)",
-      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)"
+      "countText": "the same count, already formatted with the locale’s digit grouping (for example 1,024)"
     },
     "screenshot": "quit-confirmation-one-copy.png"
   },
@@ -114,7 +114,7 @@
   },
   "main.quit.countdown": "{seconds, plural, one {Quitting in {secondsText} second, so a restart or logout never waits on Cmdr.} other {Quitting in {secondsText} seconds, so a restart or logout never waits on Cmdr.}}",
   "@main.quit.countdown": {
-    "description": "Live line under the body of the quit-while-running dialog, counting down out loud. It explains WHY Cmdr quits on its own instead of waiting forever: an app that holds up a system restart or logout is worse than one that stops. The number ticks down once a second and reaches zero, at which point Cmdr quits. \"Restart\" and \"logout\" are the operating system''s, not Cmdr''s.",
+    "description": "Live line under the body of the quit-while-running dialog, counting down out loud. It explains WHY Cmdr quits on its own instead of waiting forever: an app that holds up a system restart or logout is worse than one that stops. The number ticks down once a second and reaches zero, at which point Cmdr quits. \"Restart\" and \"logout\" are the operating system’s, not Cmdr’s.",
     "placeholders": {
       "seconds": "how many seconds are left (drives the singular/plural form)",
       "secondsText": "the same number of seconds, already formatted for display"

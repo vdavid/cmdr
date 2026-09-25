@@ -7,21 +7,21 @@
 
   "indexing.drive.heading": "{name}",
   "@indexing.drive.heading": {
-    "description": "Heading naming which drive a block in the indexing tooltip is about, always shown above that drive''s status so the user can tell which drive is indexing (e.g. 'Macintosh HD', 'Backups', a phone''s name). {name} is the drive''s display name; this is just the name on its own line, styled as a heading.",
+    "description": "Heading naming which drive a block in the indexing tooltip is about, always shown above that drive’s status so the user can tell which drive is indexing (e.g. 'Macintosh HD', 'Backups', a phone’s name). {name} is the drive’s display name; this is just the name on its own line, styled as a heading.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Macintosh HD, Backups)"
+      "name": "the drive’s display name (e.g. Macintosh HD, Backups)"
     },
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.scan.label": "Indexing your drive…",
   "@indexing.scan.label": {
-    "description": "Generic fallback shown on the drive''s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says ''indexing'' rather than ''scanning'' because a first index no longer makes one pass over the drive. The trailing '…' signals ongoing work; keep it."
+    "description": "Generic fallback shown on the drive’s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says “indexing” rather than “scanning” because a first index no longer makes one pass over the drive. The trailing '…' signals ongoing work; keep it."
   },
 
   "indexing.scan.counters": "{entriesText} entries, {dirsText} dirs",
   "@indexing.scan.counters": {
-    "description": "Standalone running tally detail line shown under the scan heading, e.g. '12,345 entries, 678 dirs'. No leading space (it''s its own line, not joined to the heading); 'dirs' is short for directories/folders (keep it terse, this is a compact status line).",
+    "description": "Standalone running tally detail line shown under the scan heading, e.g. '12,345 entries, 678 dirs'. No leading space (it’s its own line, not joined to the heading); 'dirs' is short for directories/folders (keep it terse, this is a compact status line).",
     "placeholders": {
       "entriesText": "number of files and folders scanned so far, already formatted (e.g. 12,345)",
       "dirsText": "number of folders found so far, already formatted (e.g. 678)"
@@ -31,7 +31,7 @@
 
   "indexing.scan.countersElapsed": "{counters} · {elapsed}",
   "@indexing.scan.countersElapsed": {
-    "description": "Detail line under the heading during a drive''s FIRST scan, joining the running entry/dir tally with how long the scan has been running, e.g. '12,345 entries, 678 dirs · 2:34'. There''s no trustworthy percent on a first scan, so this count + elapsed clock is the honest progress signal instead of a bar. The middle dot (·) is a separator; keep it. {counters} and {elapsed} are already formatted (don''t translate inside them); place the separator idiomatically for your language.",
+    "description": "Detail line under the heading during a drive’s FIRST scan, joining the running entry/dir tally with how long the scan has been running, e.g. '12,345 entries, 678 dirs · 2:34'. There’s no trustworthy percent on a first scan, so this count + elapsed clock is the honest progress signal instead of a bar. The middle dot (·) is a separator; keep it. {counters} and {elapsed} are already formatted (don’t translate inside them); place the separator idiomatically for your language.",
     "placeholders": {
       "counters": "the already-formatted entry/dir tally (e.g. '12,345 entries, 678 dirs')",
       "elapsed": "how long the scan has been running, as a clock (minutes:seconds, e.g. 2:34)"
@@ -49,28 +49,28 @@
 
   "indexing.phase.priorityFolders": "Indexing the folders you use most",
   "@indexing.phase.priorityFolders": {
-    "description": "Header at the top of the drive-indexing checklist during the FIRST phase of a drive''s first index, while Cmdr covers the folders this person is most likely to want first (their downloads, documents, desktop, and anything they just opened). The three phase headers are read in sequence, so each one says what is still to come rather than what is included: ''your folders'' followed by ''your home folder'' would read as the scope widening and then narrowing. Short phrase, sentence case, no trailing period.",
+    "description": "Header at the top of the drive-indexing checklist during the FIRST phase of a drive’s first index, while Cmdr covers the folders this person is most likely to want first (their downloads, documents, desktop, and anything they just opened). The three phase headers are read in sequence, so each one says what is still to come rather than what is included: “your folders” followed by “your home folder” would read as the scope widening and then narrowing. Short phrase, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png",
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string is the header it shows during one phase of a drive’s first index."
   },
 
   "indexing.phase.home": "Indexing the rest of your home folder",
   "@indexing.phase.home": {
-    "description": "Header at the top of the drive-indexing checklist during the SECOND phase of a drive''s first index, once the folders from the first phase are done and Cmdr moves on to everything else in the user''s home folder. ''The rest of'' is load-bearing: it tells the reader the earlier folders are already finished. Short phrase, sentence case, no trailing period.",
+    "description": "Header at the top of the drive-indexing checklist during the SECOND phase of a drive’s first index, once the folders from the first phase are done and Cmdr moves on to everything else in the user’s home folder. “The rest of” is load-bearing: it tells the reader the earlier folders are already finished. Short phrase, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png",
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string is the header it shows during one phase of a drive’s first index."
   },
 
   "indexing.phase.wholeDrive": "Indexing the rest of the drive",
   "@indexing.phase.wholeDrive": {
-    "description": "Header at the top of the drive-indexing checklist during the LAST phase of a drive''s first index, once home is done and Cmdr covers everything else on the drive (applications, system folders, anything outside the home folder). ''The rest of'' again says the earlier phases are finished. Short phrase, sentence case, no trailing period.",
+    "description": "Header at the top of the drive-indexing checklist during the LAST phase of a drive’s first index, once home is done and Cmdr covers everything else on the drive (applications, system folders, anything outside the home folder). “The rest of” again says the earlier phases are finished. Short phrase, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png",
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string is the header it shows during one phase of a drive’s first index."
   },
 
   "indexing.run.firstIndex": "First index",
   "@indexing.run.firstIndex": {
-    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr is building this drive''s first index by covering it folder by folder, in the order their owner is likely to care about, rather than in one pass. Deliberately not called a scan: it hands the drive back in pieces as it goes, so ''First full scan'' would promise the one thing it never does. Short noun phrase, sentence case, no trailing period.",
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr is building this drive’s first index by covering it folder by folder, in the order their owner is likely to care about, rather than in one pass. Deliberately not called a scan: it hands the drive back in pieces as it goes, so “First full scan” would promise the one thing it never does. Short noun phrase, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
 
@@ -82,13 +82,13 @@
   },
   "indexing.run.rescan": "Full rescan",
   "@indexing.run.rescan": {
-    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr clears this drive''s existing index and rebuilds it from scratch (for example after a scan that never finished). Folder sizes stay blank until it''s done, which is what sets it apart from ''Checking for changes''. Short noun phrase, sentence case, no trailing period.",
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr clears this drive’s existing index and rebuilds it from scratch (for example after a scan that never finished). Folder sizes stay blank until it’s done, which is what sets it apart from “Checking for changes”. Short noun phrase, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png",
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string is the header naming the kind of run in progress, for a run this screenshot doesn’t show."
   },
   "indexing.run.changeCheck": "Checking for changes",
   "@indexing.run.changeCheck": {
-    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr re-walks an already-indexed drive WITHOUT clearing it: it compares every folder against the index and writes only what changed, so the user''s folder sizes stay on screen the whole time. Distinguishes this gentler pass from the ''Full rescan'' that rebuilds from scratch. Avoid the jargon ''reconcile''. Short noun phrase, sentence case, no trailing period.",
+    "description": "Run-kind header at the top of the drive-indexing checklist when Cmdr re-walks an already-indexed drive WITHOUT clearing it: it compares every folder against the index and writes only what changed, so the user’s folder sizes stay on screen the whole time. Distinguishes this gentler pass from the “Full rescan” that rebuilds from scratch. Avoid the jargon “reconcile”. Short noun phrase, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.run.update": "Quick update",
@@ -104,33 +104,33 @@
   },
   "indexing.step.saveFileList": "Save the file list",
   "@indexing.step.saveFileList": {
-    "description": "Checklist step label in the drive-indexing tooltip for writing the scanned file list into Cmdr''s index. Shown only for a local drive (network drives save as they scan, so this step doesn''t appear), and only for a run that writes a whole fresh list; a ''Checking for changes'' run shows ''indexing.step.updateFileList'' instead. Avoid the word ''entries'' (a database term) and ''build the index'' (the whole operation is indexing). Short, sentence case, no trailing period.",
+    "description": "Checklist step label in the drive-indexing tooltip for writing the scanned file list into Cmdr’s index. Shown only for a local drive (network drives save as they scan, so this step doesn’t appear), and only for a run that writes a whole fresh list; a “Checking for changes” run shows “indexing.step.updateFileList” instead. Avoid the word “entries” (a database term) and “build the index” (the whole operation is indexing). Short, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.step.updateFileList": "Update the file list",
   "@indexing.step.updateFileList": {
-    "description": "Checklist step label in the drive-indexing tooltip for the ''Checking for changes'' run, where Cmdr writes only the files that changed into its index instead of saving a whole fresh list (that variant is ''indexing.step.saveFileList''). Shown only for a local drive. Avoid the word ''entries'' (a database term) and ''build the index'' (the whole operation is indexing). Short, sentence case, no trailing period.",
+    "description": "Checklist step label in the drive-indexing tooltip for the “Checking for changes” run, where Cmdr writes only the files that changed into its index instead of saving a whole fresh list (that variant is “indexing.step.saveFileList”). Shown only for a local drive. Avoid the word “entries” (a database term) and “build the index” (the whole operation is indexing). Short, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.step.computeFolderSizes": "Compute folder sizes",
   "@indexing.step.computeFolderSizes": {
-    "description": "Checklist step label in the drive-indexing tooltip for working out the total size of every folder from the index. Use ''folders'' (not ''directories'') to match the sub-phase lines under it. Short, sentence case, no trailing period.",
+    "description": "Checklist step label in the drive-indexing tooltip for working out the total size of every folder from the index. Use “folders” (not “directories”) to match the sub-phase lines under it. Short, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.step.catchUp": "Catch up on recent changes",
   "@indexing.step.catchUp": {
-    "description": "Checklist step label in the drive-indexing tooltip for the final pass that applies file changes that happened while the scan was running. Shown only for a local drive. Avoid the jargon ''reconcile''. Short, friendly, sentence case, no trailing period.",
+    "description": "Checklist step label in the drive-indexing tooltip for the final pass that applies file changes that happened while the scan was running. Shown only for a local drive. Avoid the jargon “reconcile”. Short, friendly, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.step.updateIndex": "Update index",
   "@indexing.step.updateIndex": {
-    "description": "Checklist step label in the drive-indexing tooltip when Cmdr is replaying recorded file changes to bring its index up to date (the lighter alternative to a full scan). This is the only step shown for that quicker update. ''index'' is established Cmdr vocabulary here. Short, sentence case, no trailing period.",
+    "description": "Checklist step label in the drive-indexing tooltip when Cmdr is replaying recorded file changes to bring its index up to date (the lighter alternative to a full scan). This is the only step shown for that quicker update. “index” is established Cmdr vocabulary here. Short, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.summary.found": "{countText} found",
   "@indexing.summary.found": {
-    "description": "Compact progress metric for a SECONDARY drive in the indexing tooltip when several drives index at once (the primary drive shows the full checklist; the others collapse to one line: drive name + current step + this metric). Shown during a first scan that has no trustworthy percent yet, so it leads with the honest running count of files and folders found, e.g. ''171,607 found''. {countText} is already formatted; keep it terse.",
+    "description": "Compact progress metric for a SECONDARY drive in the indexing tooltip when several drives index at once (the primary drive shows the full checklist; the others collapse to one line: drive name + current step + this metric). Shown during a first scan that has no trustworthy percent yet, so it leads with the honest running count of files and folders found, e.g. “171,607 found”. {countText} is already formatted; keep it terse.",
     "placeholders": {
       "countText": "number of files and folders found so far, already formatted (e.g. 171,607)"
     },
@@ -139,59 +139,59 @@
 
   "indexing.step.findFilesPhased": "First time through, so this takes a while. Your folders become searchable as Cmdr reaches them.",
   "@indexing.step.findFilesPhased": {
-    "description": "Reassuring sub-line under the active ''Find files'' checklist step while Cmdr builds a drive''s first index folder by folder. Two short sentences: the first sets the expectation that it is slow, the second says the payoff that makes the wait different from a plain first scan — the drive comes back in pieces, so searching and folder sizes start working before the whole thing is done. Calm and friendly; sentence case; no trailing period on the second sentence. ''Cmdr'' is the product name and stays as-is.",
+    "description": "Reassuring sub-line under the active “Find files” checklist step while Cmdr builds a drive’s first index folder by folder. Two short sentences: the first sets the expectation that it is slow, the second says the payoff that makes the wait different from a plain first scan — the drive comes back in pieces, so searching and folder sizes start working before the whole thing is done. Calm and friendly; sentence case; no trailing period on the second sentence. “Cmdr” is the product name and stays as-is.",
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.step.findFilesFirstScan": "First scan, so this can take a while",
   "@indexing.step.findFilesFirstScan": {
-    "description": "Reassuring sub-line under the active ''Find files'' checklist step the very FIRST time Cmdr scans a drive (no prior scan, so there''s no trustworthy time estimate). Sets the expectation that a first scan is slow, so the climbing count and clock don''t read as stuck. Calm and friendly; sentence case; no trailing period.",
+    "description": "Reassuring sub-line under the active “Find files” checklist step the very FIRST time Cmdr scans a drive (no prior scan, so there’s no trustworthy time estimate). Sets the expectation that a first scan is slow, so the climbing count and clock don’t read as stuck. Calm and friendly; sentence case; no trailing period.",
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.step.findFilesChangeCheck": "Checking every folder against the index. Your folder sizes stay visible while this runs.",
   "@indexing.step.findFilesChangeCheck": {
-    "description": "Reassuring sub-line under the active ''Find files'' checklist step during a ''Checking for changes'' run. That run takes far longer than a rebuild (it compares every folder one by one), so this says what''s taking the time AND the payoff: unlike a full rescan, folder sizes don''t go blank, so the user can ignore the progress bar and keep working. Two short sentences, calm and friendly, sentence case. Avoid the jargon ''reconcile''.",
+    "description": "Reassuring sub-line under the active “Find files” checklist step during a “Checking for changes” run. That run takes far longer than a rebuild (it compares every folder one by one), so this says what’s taking the time AND the payoff: unlike a full rescan, folder sizes don’t go blank, so the user can ignore the progress bar and keep working. Two short sentences, calm and friendly, sentence case. Avoid the jargon “reconcile”.",
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.step.statusDone": "Done",
   "@indexing.step.statusDone": {
-    "description": "Visually-hidden status word a screen reader announces after a finished checklist step (e.g. ''Find files. Done.''). It conveys the checkmark to non-sighted users. Very short; sentence case; no period.",
+    "description": "Visually-hidden status word a screen reader announces after a finished checklist step (e.g. “Find files. Done.”). It conveys the checkmark to non-sighted users. Very short; sentence case; no period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.step.statusActive": "In progress",
   "@indexing.step.statusActive": {
-    "description": "Visually-hidden status phrase a screen reader announces after the checklist step that''s currently running (e.g. ''Compute folder sizes. In progress.''). It conveys the spinner to non-sighted users. Very short; sentence case; no period.",
+    "description": "Visually-hidden status phrase a screen reader announces after the checklist step that’s currently running (e.g. “Compute folder sizes. In progress.”). It conveys the spinner to non-sighted users. Very short; sentence case; no period.",
     "screenshot": "indexing-checklist.png"
   },
   "indexing.step.statusPending": "Not started",
   "@indexing.step.statusPending": {
-    "description": "Visually-hidden status phrase a screen reader announces after a checklist step that hasn''t started yet (e.g. ''Catch up on recent changes. Not started.''). It conveys the empty marker to non-sighted users. Very short; sentence case; no period.",
+    "description": "Visually-hidden status phrase a screen reader announces after a checklist step that hasn’t started yet (e.g. “Catch up on recent changes. Not started.”). It conveys the empty marker to non-sighted users. Very short; sentence case; no period.",
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.aggregation.loading": "Loading folders…",
   "@indexing.aggregation.loading": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr loads folders from the index before sizing them. Use ''folders'' (not ''directories''). Trailing '…' signals ongoing work; keep it.",
+    "description": "Sub-line under the active “Compute folder sizes” checklist step while Cmdr loads folders from the index before sizing them. Use “folders” (not “directories”). Trailing '…' signals ongoing work; keep it.",
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.aggregation.sorting": "Sorting folders…",
   "@indexing.aggregation.sorting": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr sorts folders before sizing them. Use ''folders'' (not ''directories''). Trailing '…' signals ongoing work; keep it.",
+    "description": "Sub-line under the active “Compute folder sizes” checklist step while Cmdr sorts folders before sizing them. Use “folders” (not “directories”). Trailing '…' signals ongoing work; keep it.",
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.aggregation.computing": "Computing folder sizes…",
   "@indexing.aggregation.computing": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr adds up each folder''s total size. Also the fallback for any unrecognized compute sub-phase. Use ''folders'' (not ''directories''). Trailing '…' signals ongoing work; keep it.",
+    "description": "Sub-line under the active “Compute folder sizes” checklist step while Cmdr adds up each folder’s total size. Also the fallback for any unrecognized compute sub-phase. Use “folders” (not “directories”). Trailing '…' signals ongoing work; keep it.",
     "screenshot": "indexing-checklist.png"
   },
 
   "indexing.aggregation.writing": "Saving folder sizes…",
   "@indexing.aggregation.writing": {
-    "description": "Sub-line under the active ''Compute folder sizes'' checklist step while Cmdr writes the computed folder sizes back into its index. Use ''folders'' (not ''directories''). Trailing '…' signals ongoing work; keep it.",
+    "description": "Sub-line under the active “Compute folder sizes” checklist step while Cmdr writes the computed folder sizes back into its index. Use “folders” (not “directories”). Trailing '…' signals ongoing work; keep it.",
     "screenshot": "indexing-checklist.png"
   },
 
@@ -306,7 +306,7 @@
   "@indexing.needsFreshScan.afterDisconnect": {
     "description": "Info toast shown once when a drive was unplugged, or otherwise went away, while Cmdr was writing to its index, so that index is thrown away and rebuilt next time the drive is connected. Nothing is asked of the person and nothing of theirs is at risk: the index is Cmdr's own cache of what's on the drive, and the only consequence is that folder sizes are recomputed. Reassuring and matter-of-fact.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
 
@@ -314,7 +314,7 @@
   "@indexing.firstConnect.title": {
     "description": "Heading of the notification shown the first time the user opens a new external drive (a network share or device). Asks whether to index it for folder sizes and search.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "indexing.firstConnect.body": "Cmdr can index this drive in the background so folder sizes and search work here. It only runs while the drive is connected.",
@@ -336,26 +336,26 @@
 
   "indexing.staleDialog.title": "This drive’s index may be out of date",
   "@indexing.staleDialog.title": {
-    "description": "Title of the one-time dialog shown the first time any external drive''s index goes stale (the drive was disconnected, so changes may have been missed). Never use the words ''error'' or ''failed''.",
+    "description": "Title of the one-time dialog shown the first time any external drive’s index goes stale (the drive was disconnected, so changes may have been missed). Never use the words “error” or “failed”.",
     "screenshot": "drive-index-stale-default.png"
   },
   "indexing.staleDialog.body": "While {name} was disconnected, files on it may have changed. Folder sizes and search results might be a bit off until you rescan. The yellow status next to the drive always shows when this happens, and a rescan refreshes it.",
   "@indexing.staleDialog.body": {
     "description": "Body of the one-time stale-drive dialog, explaining that the drive may have changed while disconnected, that the yellow status flags it, and that a rescan refreshes it. Calm and reassuring; active voice.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     },
     "screenshot": "drive-index-stale-default.png"
   },
   "indexing.staleDialog.titlePhone": "This phone’s index may be out of date",
   "@indexing.staleDialog.titlePhone": {
-    "description": "Title of the one-time stale-index dialog when the first index to go stale belongs to an Android phone connected over USB debugging (ADB), which never reports its own file changes. The phone version of indexing.staleDialog.title. Never use the words ''error'' or ''failed''."
+    "description": "Title of the one-time stale-index dialog when the first index to go stale belongs to an Android phone connected over USB debugging (ADB), which never reports its own file changes. The phone version of indexing.staleDialog.title. Never use the words “error” or “failed”."
   },
   "indexing.staleDialog.bodyPhone": "{name} doesn’t tell Cmdr when its files change, so Cmdr keeps its index current with the changes Cmdr makes itself. Changes made on the phone, like new photos, show up in folder sizes and search after a rescan. The yellow status next to the phone stays as a reminder.",
   "@indexing.staleDialog.bodyPhone": {
     "description": "Body of the one-time stale-index dialog for an Android phone connected over USB debugging (ADB). The phone is still plugged in: its index reads as possibly out of date because the phone never reports changes made on it. Cmdr keeps the index current for the copies, moves, and deletes Cmdr does itself; anything changed on the phone appears after a rescan. The yellow dot beside the phone stays on for this reason. The phone version of indexing.staleDialog.body; it must not mention disconnecting. Calm and reassuring.",
     "placeholders": {
-      "name": "the phone''s display name (e.g. Pixel 9 Pro XL)"
+      "name": "the phone’s display name (e.g. Pixel 9 Pro XL)"
     }
   },
   "indexing.staleDialog.neverShowAgain": "Never show again",
@@ -420,7 +420,7 @@
   },
   "indexing.enrich.queued": "Image indexing starts after the drive scan",
   "@indexing.enrich.queued": {
-    "description": "Quiet one-liner at the bottom of the drive-indexing tooltip when image indexing is turned on but its pass is waiting for the drive scan above it to finish (it starts automatically right after). Gives the ''Index image contents'' toggle immediate visible feedback. Calm, sentence case, no trailing period.",
+    "description": "Quiet one-liner at the bottom of the drive-indexing tooltip when image indexing is turned on but its pass is waiting for the drive scan above it to finish (it starts automatically right after). Gives the “Index image contents” toggle immediate visible feedback. Calm, sentence case, no trailing period.",
     "screenshot": "indexing-checklist.png",
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string belongs to the image-indexing row that appears beside these drive rows while Cmdr reads image contents: its title, progress, speed, or a paused or waiting state."
   },

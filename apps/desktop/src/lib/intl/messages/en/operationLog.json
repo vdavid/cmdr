@@ -224,7 +224,7 @@
   },
   "operationLog.rollback.refusalPermanentDelete": "A permanent delete leaves nothing to put back.",
   "@operationLog.rollback.refusalPermanentDelete": {
-    "description": "Shown on a row of the Operation log when the user presses Roll back on a permanent delete (not a move to the trash, which Cmdr can undo). Nothing was kept, so there’s no next step to offer. Keep it short and matter-of-fact; don’t hint at a recovery that doesn’t exist.",
+    "description": "Shown on a row of the Operation log when the user presses Roll back on a permanent delete (not a move to the trash, which Cmdr can undo). Nothing was kept, so there’s no next step to offer. Keep it short and matter-of-fact; don’t hint at a recovery that doesn’t exist. “put back” is general here (restore anything at all), so pick a verb that isn’t tied to the Trash.",
     "screenshot": "operation-log-more-pages.png"
   },
   "operationLog.rollback.refusalArchiveOverwrite": "This archive replaced an older one with the same name. Cmdr doesn’t keep copies of what it replaces, so the older one can’t come back.",

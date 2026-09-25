@@ -1,7 +1,7 @@
 {
   "queue.windowTitle": "Operation queue",
   "@queue.windowTitle": {
-    "description": "Title of the standalone window that lists every running and queued copy, move, delete, trash, rename, and folder- or file-creation operation, with controls to pause, resume, and cancel them. It''s the operating-system window title (shown in the window list and app switcher) and the screen-reader heading for the page. It matches the View menu item and the command palette entry that open the window, so keep those three identical. \"Operation\" is the category word covering all of them; the window is not limited to transfers.",
+    "description": "Title of the standalone window that lists every running and queued copy, move, delete, trash, rename, and folder- or file-creation operation, with controls to pause, resume, and cancel them. It’s the operating-system window title (shown in the window list and app switcher) and the screen-reader heading for the page. It matches the View menu item and the command palette entry that open the window, so keep those three identical. \"Operation\" is the category word covering all of them; the window is not limited to transfers.",
     "screenshot": "queue-empty.png"
   },
 
@@ -19,7 +19,7 @@
 
   "queue.empty.body": "Copies, moves, and deletes show up here while they run, so you can pause, resume, or cancel them.",
   "@queue.empty.body": {
-    "description": "Supporting line under the empty-state title, explaining what will appear in the operation queue window and why. It deliberately names the concrete actions rather than the category word \"operations\": the window title carries the category, this line tells the user what they''ll actually see.",
+    "description": "Supporting line under the empty-state title, explaining what will appear in the operation queue window and why. It deliberately names the concrete actions rather than the category word \"operations\": the window title carries the category, this line tells the user what they’ll actually see.",
     "screenshot": "queue-empty.png"
   },
 
@@ -34,7 +34,7 @@
 
   "queue.row.reversalMovingBack": "Putting files back",
   "@queue.row.reversalMovingBack": {
-    "description": "Names an operation row that is UNDOING a finished move or a finished move-to-trash: the files are traveling back to where they came from, and nothing is being deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack), so use the same verb family: nothing here may sound like a deletion.",
+    "description": "Names an operation row that is UNDOING a finished move or a finished move-to-trash: the files are traveling back to where they came from, and nothing is being deleted. Replaces the plain action word (queue.row.label) on that row, which sits next to an undo arrow icon and the source-to-destination summary. Reads as a present-continuous action, like the other row labels. Keep it short and count-free: the progress readout under the row already carries the numbers. It must agree with the confirmation the user answered a moment earlier (fileOperations.rollbackConfirm.bodyUndoByMovingBack), so use the same verb family: nothing here may sound like a deletion. This is a MOVE home, which your language may name with a different verb than restoring from the Trash (fileOperations.trash.undone) or restoring a file’s old name (askCmdr.renameUndo.undone).",
     "screenshot": "queue.png",
     "screenshotNote": "The operations queue window, pictured here. Your string belongs to a row state this screenshot doesn’t show: an undo in progress, an operation waiting for your answer, or a paused one with its Resume button."
   },
@@ -67,7 +67,7 @@
 
   "queue.row.status": "{status, select, queued {Waiting} running {Running} paused {Paused} done {Done} cancelled {Canceled} failed {Couldn’t finish} other {Running}}",
   "@queue.row.status": {
-    "description": "Short status word for an operation row in the operation queue. \"Waiting\" means it''s queued behind another operation on the same drive; \"Paused\" means the user paused it; \"Couldn''t finish\" is the gentle wording for a failed operation (avoid the words error/failed).",
+    "description": "Short status word for an operation row in the operation queue. \"Waiting\" means it’s queued behind another operation on the same drive; \"Paused\" means the user paused it; \"Couldn’t finish\" is the gentle wording for a failed operation (avoid the words error/failed).",
     "placeholders": {
       "status": "the lifecycle status: queued, running, paused, done, cancelled, or failed"
     },
@@ -140,13 +140,13 @@
 
   "queue.row.dismiss": "Dismiss",
   "@queue.row.dismiss": {
-    "description": "Button on an operation row that couldn''t finish, removing that row from the list. It only stops showing the row: nothing is undone, retried, or deleted. It''s the only way a row like that goes away, so the reason stays readable until the user is done with it.",
+    "description": "Button on an operation row that couldn’t finish, removing that row from the list. It only stops showing the row: nothing is undone, retried, or deleted. It’s the only way a row like that goes away, so the reason stays readable until the user is done with it.",
     "screenshot": "queue-failed.png"
   },
 
   "queue.row.dismissAria": "Dismiss this operation",
   "@queue.row.dismissAria": {
-    "description": "Screen-reader label for the per-row Dismiss button on an operation that couldn''t finish (the visible button shows only \"Dismiss\").",
+    "description": "Screen-reader label for the per-row Dismiss button on an operation that couldn’t finish (the visible button shows only \"Dismiss\").",
     "screenshot": "queue-failed.png"
   },
 
@@ -182,7 +182,7 @@
 
   "queue.toolbar.dismissAll": "Dismiss all",
   "@queue.toolbar.dismissAll": {
-    "description": "Toolbar button that removes every row for an operation that couldn''t finish, in one go. It appears only when more than one such row is listed. Like the per-row Dismiss, it only stops showing them; nothing is undone or retried.",
+    "description": "Toolbar button that removes every row for an operation that couldn’t finish, in one go. It appears only when more than one such row is listed. Like the per-row Dismiss, it only stops showing them; nothing is undone or retried.",
     "screenshot": "queue-failed.png"
   },
 
@@ -196,7 +196,7 @@
 
   "queue.failureToast.title": "{type, select, copy {Couldn’t finish copying} move {Couldn’t finish moving} delete {Couldn’t finish deleting} trash {Couldn’t finish moving to trash} rename {Couldn’t finish renaming} create_folder {Couldn’t finish creating the folder} create_file {Couldn’t finish creating the file} archive_edit {Couldn’t finish editing the archive} other {Couldn’t finish}}",
   "@queue.failureToast.title": {
-    "description": "Headline of the notice that pops up in the main window when an operation running in the background stops before it''s done. The explanation underneath says why; this line only says what was interrupted. Avoid the words \"error\" and \"failed\": \"couldn''t finish\" is the house wording, and it matches the status word on the operation''s row in the queue window.",
+    "description": "Headline of the notice that pops up in the main window when an operation running in the background stops before it’s done. The explanation underneath says why; this line only says what was interrupted. Avoid the words \"error\" and \"failed\": \"couldn’t finish\" is the house wording, and it matches the status word on the operation’s row in the queue window.",
     "placeholders": {
       "type": "the kind of operation: copy, move, delete, trash, rename, create_folder, create_file, or archive_edit"
     },
@@ -205,7 +205,7 @@
 
   "queue.failureToast.action": "Show in operation queue",
   "@queue.failureToast.action": {
-    "description": "Button on the failure notice that opens the operation queue window, where the operation''s row carries the full reason and what to do about it. \"Operation queue\" is the window''s name; keep it identical to the window title.",
+    "description": "Button on the failure notice that opens the operation queue window, where the operation’s row carries the full reason and what to do about it. \"Operation queue\" is the window’s name; keep it identical to the window title.",
     "screenshot": "operation-failure.png"
   },
 
@@ -213,8 +213,8 @@
   "@queue.failureToast.summary": {
     "description": "Headline of the single notice that replaces the individual ones when several operations stop in a row (more than three). It names only how many; the operation queue window lists each one with its own reason, which the button underneath opens. The count updates as more come in and as the user clears them.",
     "placeholders": {
-      "count": "how many operations couldn''t finish",
-      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)"
+      "count": "how many operations couldn’t finish",
+      "countText": "the same count, already formatted with the locale’s digit grouping (for example 1,024)"
     },
     "screenshot": "operation-failure.png",
     "screenshotNote": "The notice the main window raises when a backgrounded operation stops early, pictured here with one failure. Your string is the summary that replaces these when several stop at once, in the same place, with a count instead of a name."
@@ -222,17 +222,17 @@
 
   "queue.chip.failed": "{count, plural, one {{countText} operation couldn’t finish} other {{countText} operations couldn’t finish}}. Open the operation queue to see why.",
   "@queue.chip.failed": {
-    "description": "Screen-reader label and hover tooltip for the main window''s corner chip when it''s marking operations that stopped before they were done. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. It shows this only when nothing is running; anything in flight takes the corner instead.",
+    "description": "Screen-reader label and hover tooltip for the main window’s corner chip when it’s marking operations that stopped before they were done. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. It shows this only when nothing is running; anything in flight takes the corner instead.",
     "placeholders": {
-      "count": "how many operations couldn''t finish",
-      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)"
+      "count": "how many operations couldn’t finish",
+      "countText": "the same count, already formatted with the locale’s digit grouping (for example 1,024)"
     },
     "screenshot": "operation-failure.png"
   },
 
   "queue.chip.ariaLabel": "{label}, {percentText} percent. Open the operation queue.",
   "@queue.chip.ariaLabel": {
-    "description": "Screen-reader label for the small progress chip in the main window''s top-right corner, which previews the operation currently running in the background. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. Spell \"percent\" as a word rather than the % sign, so screen readers say it naturally.",
+    "description": "Screen-reader label for the small progress chip in the main window’s top-right corner, which previews the operation currently running in the background. The chip is a button: pressing it opens the operation queue window, which the second sentence promises. Spell \"percent\" as a word rather than the % sign, so screen readers say it naturally.",
     "placeholders": {
       "label": "what the chip shows: the action word from queue.row.label (\"Copying\"), or the status word \"Paused\" when the operation is paused",
       "percentText": "how far along the operation is, a whole number already formatted (for example 42)"
@@ -242,7 +242,7 @@
 
   "queue.chip.scanningAriaLabel": "{label}, scanning. Open the operation queue.",
   "@queue.chip.scanningAriaLabel": {
-    "description": "Screen-reader label for the same corner chip as queue.chip.ariaLabel, while the operation is still counting up what it has to do. It is the same sentence with the progress figure replaced by the state word, because a percentage can only read 0 for the whole count and saying so would be dishonest. Keep both other parts: the label, because voice-control users press the chip by saying the word they can see on it, and the closing promise that pressing it opens the operation queue window. Use the same scanning wording as fileOperations.shared.scanningTooltip, in whatever ongoing form reads naturally after the label in your language, and drop that string''s trailing ellipsis: this one is spoken, not seen.",
+    "description": "Screen-reader label for the same corner chip as queue.chip.ariaLabel, while the operation is still counting up what it has to do. It is the same sentence with the progress figure replaced by the state word, because a percentage can only read 0 for the whole count and saying so would be dishonest. Keep both other parts: the label, because voice-control users press the chip by saying the word they can see on it, and the closing promise that pressing it opens the operation queue window. Use the same scanning wording as fileOperations.shared.scanningTooltip, in whatever ongoing form reads naturally after the label in your language, and drop that string’s trailing ellipsis: this one is spoken, not seen.",
     "placeholders": {
       "label": "what the chip shows: the action word from queue.row.label (\"Copying\"), or the status word \"Paused\" when the operation is paused"
     },
@@ -252,15 +252,15 @@
 
   "queue.chip.tooltip": "{label}{count, plural, =0 {} one { · {countText} item} other { · {countText} items}}{hasDestination, select, yes { · to {destination}} other {}} · {percentText}%{hasDetail, select, yes { · {detail}} other {}}",
   "@queue.chip.tooltip": {
-    "description": "Hover tooltip on the main window''s corner progress chip, giving the detail the chip itself has no room for. Reads as one line of facts separated by middle dots, for example \"Copying · 214 items · to Backup · 42% · 1m 20s left\". Three parts can be missing: the item count before the first progress arrives, the destination for a delete (nothing is moving anywhere), and the trailing detail while the estimate is still warming up or the operation is paused. Every clause carries its OWN leading middle dot, and none of them may be glued to the label: the label is a whole fact by itself and can be a state word (\"Paused\") rather than a verb, so a clause that reads as its continuation would break. Keep the whole thing to one line. \"items\" covers files and folders alike, since a copy carries both.",
+    "description": "Hover tooltip on the main window’s corner progress chip, giving the detail the chip itself has no room for. Reads as one line of facts separated by middle dots, for example \"Copying · 214 items · to Backup · 42% · 1m 20s left\". Three parts can be missing: the item count before the first progress arrives, the destination for a delete (nothing is moving anywhere), and the trailing detail while the estimate is still warming up or the operation is paused. Every clause carries its OWN leading middle dot, and none of them may be glued to the label: the label is a whole fact by itself and can be a state word (\"Paused\") rather than a verb, so a clause that reads as its continuation would break. Keep the whole thing to one line. \"items\" covers files and folders alike, since a copy carries both.",
     "placeholders": {
       "label": "what the chip itself shows: the action word from queue.row.label (\"Copying\"), or the status word \"Paused\" when the operation is paused; it starts the line as its own fact",
-      "count": "how many items the operation covers in total; 0 means the count isn''t known yet and that clause disappears",
-      "countText": "the same count, already formatted with the locale''s digit grouping (for example 1,024)",
-      "hasDestination": "\"yes\" when the operation has a destination folder to name, anything else when it doesn''t",
-      "destination": "the destination folder''s name (not its full path), for example \"Backup\"",
+      "count": "how many items the operation covers in total; 0 means the count isn’t known yet and that clause disappears",
+      "countText": "the same count, already formatted with the locale’s digit grouping (for example 1,024)",
+      "hasDestination": "\"yes\" when the operation has a destination folder to name, anything else when it doesn’t",
+      "destination": "the destination folder’s name (not its full path), for example \"Backup\"",
       "percentText": "how far along the operation is, a whole number already formatted (for example 42)",
-      "hasDetail": "\"yes\" when there''s a trailing detail to show, anything else when there isn''t",
+      "hasDetail": "\"yes\" when there’s a trailing detail to show, anything else when there isn’t",
       "detail": "the trailing detail: the time left, already formatted (for example \"1m 20s left\")"
     },
     "screenshot": "operation-chip.png"

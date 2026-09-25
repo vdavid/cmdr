@@ -21,7 +21,7 @@
   },
   "servers.hub.colName": "Name",
   "@servers.hub.colName": {
-    "description": "Column heading in the servers hub: the server''s own name. One or two words; the column is narrow.",
+    "description": "Column heading in the servers hub: the server’s own name. One or two words; the column is narrow.",
     "screenshot": "servers-hub.png"
   },
   "servers.hub.colType": "Type",
@@ -55,7 +55,7 @@
   },
   "servers.hub.status.saved": "Saved",
   "@servers.hub.status.saved": {
-    "description": "Status of a server the user has saved but isn''t connected to. Nothing is wrong; it''s simply idle. One word, ADJECTIVE."
+    "description": "Status of a server the user has saved but isn’t connected to. Nothing is wrong; it’s simply idle. One word, ADJECTIVE."
   },
   "servers.hub.status.foundNearby": "Found nearby",
   "@servers.hub.status.foundNearby": {
@@ -64,15 +64,15 @@
   },
   "servers.hub.status.signedOut": "Signed out",
   "@servers.hub.status.signedOut": {
-    "description": "Status of a saved server whose session ended because a password is what''s missing. ❗ NOT a rejection and not a fault: the user simply has to sign in again."
+    "description": "Status of a saved server whose session ended because a password is what’s missing. ❗ NOT a rejection and not a fault: the user simply has to sign in again."
   },
   "servers.hub.status.waitingForKey": "Waiting for you to check the key",
   "@servers.hub.status.waitingForKey": {
-    "description": "Status of an SSH server whose identity key the user hasn''t approved yet. \"The key\" is the server''s SSH host key, a fingerprint a person compares before trusting the server. Address the user directly."
+    "description": "Status of an SSH server whose identity key the user hasn’t approved yet. \"The key\" is the server’s SSH host key, a fingerprint a person compares before trusting the server. Address the user directly."
   },
   "servers.hub.neverUsed": "Never",
   "@servers.hub.neverUsed": {
-    "description": "Shown in the servers hub''s \"Last used\" column for a server the user has never connected to. One word.",
+    "description": "Shown in the servers hub’s \"Last used\" column for a server the user has never connected to. One word.",
     "screenshot": "servers-hub.png"
   },
   "servers.hub.discoveryOff": "Local network discovery is off.",
@@ -81,7 +81,7 @@
   },
   "servers.hub.discoveryOffLink": "Turn it on in Settings",
   "@servers.hub.discoveryOffLink": {
-    "description": "Link beside the discovery-off line; it opens Settings at the switch that turns local network discovery back on. VERB phrase, imperative. \"Settings\" is the app''s own Settings window; use the word your language''s macOS uses for it."
+    "description": "Link beside the discovery-off line; it opens Settings at the switch that turns local network discovery back on. VERB phrase, imperative. \"Settings\" is the app’s own Settings window; use the word your language’s macOS uses for it."
   },
   "servers.hub.emptyTitle": "No servers yet",
   "@servers.hub.emptyTitle": {
@@ -98,13 +98,13 @@
     "description": "The count in the status bar under the servers hub. Counts saved servers and nearby ones together, and excludes the \"Add server…\" row.",
     "placeholders": {
       "count": "the number, for choosing the plural form",
-      "countText": "the number as the user''s locale writes it, like \"1,024\""
+      "countText": "the number as the user’s locale writes it, like \"1,024\""
     },
     "screenshot": "servers-hub.png"
   },
   "servers.paneState.connecting": "Connecting to {name}…",
   "@servers.paneState.connecting": {
-    "description": "Heading of the pane view shown while Cmdr opens a connection to a server. {name} is the server''s display name. The ellipsis is the single character … (U+2026).",
+    "description": "Heading of the pane view shown while Cmdr opens a connection to a server. {name} is the server’s display name. The ellipsis is the single character … (U+2026).",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
@@ -128,7 +128,7 @@
   },
   "servers.paneState.disconnect": "Disconnect",
   "@servers.paneState.disconnect": {
-    "description": "Button that drops the server''s session and leaves the pane. VERB, imperative. A server has nothing to unplug, so it says Disconnect rather than Eject.",
+    "description": "Button that drops the server’s session and leaves the pane. VERB, imperative. A server has nothing to unplug, so it says Disconnect rather than Eject.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
@@ -141,57 +141,57 @@
   },
   "servers.refusal.needsCredentials": "This server asks for a password.",
   "@servers.refusal.needsCredentials": {
-    "description": "Shown in the pane when the server wants a credential and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don''t word it as a wrong password."
+    "description": "Shown in the pane when the server wants a credential and Cmdr has none stored. ❗ NOT a rejection: nothing was ever offered, so don’t word it as a wrong password."
   },
   "servers.refusal.accountNotPermitted": "{username} doesn’t have access here. Try a different account.",
   "@servers.refusal.accountNotPermitted": {
-    "description": "Shown in the sign-in sheet when the server accepted the account, but the place being opened (for example a network share) doesn''t let that account in. ❗ NOT a wrong password: the sign-in worked, so don''t word it as a rejected credential. \"Here\" is the place named in the sheet''s header.",
+    "description": "Shown in the sign-in sheet when the server accepted the account, but the place being opened (for example a network share) doesn’t let that account in. ❗ NOT a wrong password: the sign-in worked, so don’t word it as a rejected credential. \"Here\" is the place named in the sheet’s header.",
     "placeholders": {
       "username": "the account name on the server, like \"ada\""
     }
   },
   "servers.refusal.authMethodUnsupported": "This server uses a sign-in method Cmdr doesn’t support yet.",
   "@servers.refusal.authMethodUnsupported": {
-    "description": "Shown in the pane when the server challenged with an authentication scheme Cmdr doesn''t speak. The secret was never sent, so nothing about it is known to be wrong. ❌ Don''t name the scheme: it means nothing to the reader."
+    "description": "Shown in the pane when the server challenged with an authentication scheme Cmdr doesn’t speak. The secret was never sent, so nothing about it is known to be wrong. ❌ Don’t name the scheme: it means nothing to the reader."
   },
   "servers.refusal.certificateUntrusted": "macOS doesn’t trust this server’s certificate. Add it in Keychain Access, then try again.",
   "@servers.refusal.certificateUntrusted": {
-    "description": "Shown in the pane when a WebDAV server''s TLS certificate isn''t trusted by the operating system. \"Keychain Access\" is the macOS app name, which the OS ships translated; use the name your language''s macOS uses."
+    "description": "Shown in the pane when a WebDAV server’s TLS certificate isn’t trusted by the operating system. \"Keychain Access\" is the macOS app name, which the OS ships translated; use the name your language’s macOS uses."
   },
   "servers.refusal.notAWebdavServer": "Nothing at this address answers WebDAV.",
   "@servers.refusal.notAWebdavServer": {
-    "description": "Shown in the pane when the address answers as a web server but doesn''t speak WebDAV. \"WebDAV\" is a protocol name; don''t translate it."
+    "description": "Shown in the pane when the address answers as a web server but doesn’t speak WebDAV. \"WebDAV\" is a protocol name; don’t translate it."
   },
   "servers.refusal.invalidUrl": "That doesn’t look like a server address.",
   "@servers.refusal.invalidUrl": {
-    "description": "Shown in the pane when the saved address isn''t a usable web address at all."
+    "description": "Shown in the pane when the saved address isn’t a usable web address at all."
   },
   "servers.refusal.timedOut": "{host} didn’t answer in time.",
   "@servers.refusal.timedOut": {
-    "description": "Shown in the pane when the server didn''t finish the handshake inside Cmdr''s budget.",
+    "description": "Shown in the pane when the server didn’t finish the handshake inside Cmdr’s budget.",
     "placeholders": {
-      "host": "the server''s hostname or address, like \"nas.local\""
+      "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
   "servers.refusal.unreachable": "Cmdr couldn’t reach {host}.",
   "@servers.refusal.unreachable": {
-    "description": "Shown in the pane when there was no route to the server at all: it''s off, the name doesn''t resolve, or the network is down. \"Cmdr\" is the product name.",
+    "description": "Shown in the pane when there was no route to the server at all: it’s off, the name doesn’t resolve, or the network is down. \"Cmdr\" is the product name.",
     "placeholders": {
-      "host": "the server''s hostname or address, like \"nas.local\""
+      "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr hasn’t trusted {host}’s key yet.",
   "@servers.refusal.hostKeyUntrusted": {
-    "description": "Shown in the pane when an SSH server presents a host key this Mac hasn''t approved. \"Key\" is the server''s SSH host key, the fingerprint a person checks before trusting the server.",
+    "description": "Shown in the pane when an SSH server presents a host key this Mac hasn’t approved. \"Key\" is the server’s SSH host key, the fingerprint a person checks before trusting the server.",
     "placeholders": {
-      "host": "the server''s hostname or address, like \"nas.local\""
+      "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
   "servers.refusal.hostKeyRevoked": "{host}’s key is marked as compromised in your SSH settings on this Mac. Cmdr won’t connect to it.",
   "@servers.refusal.hostKeyRevoked": {
-    "description": "Shown in the pane when the server''s SSH host key is listed as revoked in the user''s own known_hosts file. This one is deliberately final: there is no button that can safely undo it. \"SSH\" is a protocol name; don''t translate it.",
+    "description": "Shown in the pane when the server’s SSH host key is listed as revoked in the user’s own known_hosts file. This one is deliberately final: there is no button that can safely undo it. \"SSH\" is a protocol name; don’t translate it.",
     "placeholders": {
-      "host": "the server''s hostname or address, like \"nas.local\""
+      "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
   "servers.refusal.startFolderOutsideRoot": "The start folder has to be the root folder or a folder inside it.",
@@ -202,30 +202,30 @@
   "@servers.refusal.rootNotFound": {
     "description": "Shown under the Root folder field when the user saves an edit to a server that is connected right now, and the server has no folder at that path this account can open: it is missing, it is a file, or access is refused. Nothing was saved. \"Cmdr\" is the product name.",
     "placeholders": {
-      "host": "the server''s hostname or address, like \"nas.local\""
+      "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
   "servers.refusal.startFolderNotFound": "Cmdr can’t open this start folder on {host}. Check that it exists and that your account can read it.",
   "@servers.refusal.startFolderNotFound": {
     "description": "Shown under the Start folder field when the user saves an edit to a server that is connected right now, and the server has no folder at the start folder path this account can open: it is missing, it is a file, or access is refused. Nothing was saved. \"start folder\" must match the servers.sheet.startFolder label. \"Cmdr\" is the product name.",
     "placeholders": {
-      "host": "the server''s hostname or address, like \"nas.local\""
+      "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
   "servers.refusal.saveUnconfirmed": "{host} didn’t answer in time, so nothing was saved. Try again in a moment.",
   "@servers.refusal.saveUnconfirmed": {
     "description": "Shown above the buttons of the edit server sheet when saving needed the connected server to confirm a folder and it did not answer within a few seconds. Nothing was saved, and trying again is safe.",
     "placeholders": {
-      "host": "the server''s hostname or address, like \"nas.local\""
+      "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
   "servers.refusal.secretNotStored": "Cmdr couldn’t store this password in your Keychain. Try again, or turn off “Remember in Keychain” to sign in without storing it.",
   "@servers.refusal.secretNotStored": {
-    "description": "Shown under the password field of the sign-in sheet when the user turned on “Remember in Keychain” and the system''s password store refused to keep the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. Cmdr hasn''t tried to sign in yet, and nothing else changed. “Remember in Keychain” must match the servers.sheet.remember checkbox label word for word, inside the quotation marks your language uses. “Keychain” is Apple''s name for the password store; use the name your language''s macOS uses."
+    "description": "Shown under the password field of the sign-in sheet when the user turned on “Remember in Keychain” and the system’s password store refused to keep the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. Cmdr hasn’t tried to sign in yet, and nothing else changed. “Remember in Keychain” must match the servers.sheet.remember checkbox label word for word, inside the quotation marks your language uses. “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
   },
   "servers.refusal.savedSecretNotUpdated": "Cmdr saved your changes but couldn’t update the password in your Keychain. Save again to try once more.",
   "@servers.refusal.savedSecretNotUpdated": {
-    "description": "Shown under the password field of the edit server sheet when the server''s other settings were saved, but the system''s password store refused to keep or remove the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. ❗ The other changes DID save, so don''t word it as if nothing was saved. Pressing Save again is safe and only retries the password. “Save” is the sheet''s button (servers.sheet.save). “Keychain” is Apple''s name for the password store; use the name your language''s macOS uses."
+    "description": "Shown under the password field of the edit server sheet when the server’s other settings were saved, but the system’s password store refused to keep or remove the password: the user clicked Deny on the system prompt, the keychain is locked, or no password store is available. ❗ The other changes DID save, so don’t word it as if nothing was saved. Pressing Save again is safe and only retries the password. “Save” is the sheet’s button (servers.sheet.save). “Keychain” is Apple’s name for the password store; use the name your language’s macOS uses."
   },
   "servers.sheet.addTitle": "Add server",
   "@servers.sheet.addTitle": {
@@ -236,7 +236,7 @@
   "@servers.sheet.signInTitle": {
     "description": "Title of the sheet when a server is asking for a credential. VERB phrase, imperative.",
     "placeholders": {
-      "name": "the server''s display name, like “Naspolya”"
+      "name": "the server’s display name, like “Naspolya”"
     },
     "screenshot": "server-sign-in-sign-in.png"
   },
@@ -244,7 +244,7 @@
   "@servers.sheet.editTitle": {
     "description": "Title of the sheet when the user is changing a server they already saved. VERB phrase, imperative.",
     "placeholders": {
-      "name": "the server''s display name, like “Naspolya”"
+      "name": "the server’s display name, like “Naspolya”"
     },
     "screenshot": "server-sign-in-edit.png"
   },
@@ -417,7 +417,7 @@
   "@servers.hostKey.firstContactTitle": {
     "description": "Heading of the step where the user approves a server's SSH identity key the first time. Routine, not alarming.",
     "placeholders": {
-      "host": "the server''s hostname or address, like “nas.local”"
+      "host": "the server’s hostname or address, like “nas.local”"
     },
     "screenshot": "server-sign-in-host-key-first-contact.png"
   },
@@ -430,7 +430,7 @@
   "@servers.hostKey.changedTitle": {
     "description": "Heading of the same step when the server presents a DIFFERENT key than the one already trusted. This one is serious: it can mean someone is in the middle.",
     "placeholders": {
-      "host": "the server''s hostname or address, like “nas.local”"
+      "host": "the server’s hostname or address, like “nas.local”"
     },
     "screenshot": "server-sign-in-host-key-changed.png"
   },
@@ -463,7 +463,7 @@
   "@servers.paneState.signedOut": {
     "description": "Heading of the pane view shown when a server's session ended because a password is what's missing. ❗ NOT a rejection and not a fault: the user simply has to sign in again.",
     "placeholders": {
-      "name": "the server''s display name, like “Naspolya”"
+      "name": "the server’s display name, like “Naspolya”"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
@@ -478,22 +478,22 @@
   "@servers.paneState.hostKeyChanged": {
     "description": "Heading of the pane view shown when an SSH server presents a different identity key than the one this Mac trusts. Serious: it can mean someone is in the middle. “Cmdr” is the product name.",
     "placeholders": {
-      "name": "the server''s display name, like “Naspolya”"
+      "name": "the server’s display name, like “Naspolya”"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.hostKeyChangedHint": "Its key changed. That can mean the server was reinstalled, or that something is sitting between you and it. Disconnect, then open it again to check the fingerprint.",
   "@servers.paneState.hostKeyChangedHint": {
-    "description": "One line under that heading, saying both innocent and serious causes and what to do. “Key” is the server''s SSH host key; “fingerprint” is the short string a person compares before trusting it.",
+    "description": "One line under that heading, saying both innocent and serious causes and what to do. “Key” is the server’s SSH host key; “fingerprint” is the short string a person compares before trusting it.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."
   },
   "servers.paneState.reconnecting": "Reconnecting to {name}…",
   "@servers.paneState.reconnecting": {
-    "description": "Heading of the pane view shown while Cmdr keeps trying to bring back a server connection that dropped. ❗ NOT a first connection: the session existed and Cmdr is getting it back on its own. {name} is the server''s display name. The ellipsis is the single character … (U+2026).",
+    "description": "Heading of the pane view shown while Cmdr keeps trying to bring back a server connection that dropped. ❗ NOT a first connection: the session existed and Cmdr is getting it back on its own. {name} is the server’s display name. The ellipsis is the single character … (U+2026).",
     "placeholders": {
-      "name": "the server''s display name"
+      "name": "the server’s display name"
     },
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown inside a file pane while it connects to a server: \"Connecting…\", \"Signed out\", a changed host key, or a \"Reconnecting…\" state with a countdown and Retry/Cancel controls. This shows the servers list those connections start from; your string appears in the pane, in the same network context."

@@ -28,7 +28,7 @@
   "@downloads.toast.inAppHint": {
     "description": "Tip in the download toast teaching the in-app shortcut to jump to the latest download. <chip> wraps the shortcut key, shown as a styled key cap; do not translate the key glyphs themselves. 'In-app' means while Cmdr is the active app.",
     "placeholders": {
-      "key": "the shortcut keys to show in the chip (e.g. ⌘J)"
+      "key": "the shortcut keys to show in the chip (e.g. ⌘J) (always key glyphs, never a word, so it reads as a key name in the sentence)"
     },
     "screenshot": "toast-download.png"
   },
@@ -37,7 +37,7 @@
   "@downloads.toast.globalHint": {
     "description": "Tip in the download toast teaching the system-wide (global) shortcut that jumps to the latest download from any app. <em> emphasizes 'any'; <chip> wraps the shortcut key as a styled key cap (don't translate the key glyphs). 'global shortcut' is the macOS term for a system-wide hotkey.",
     "placeholders": {
-      "key": "the shortcut keys to show in the chip (e.g. ⌃⌥⌘J)"
+      "key": "the shortcut keys to show in the chip (e.g. ⌃⌥⌘J) (always key glyphs, never a word, so it reads as a key name in the sentence)"
     },
     "screenshot": "toast-download.png"
   },

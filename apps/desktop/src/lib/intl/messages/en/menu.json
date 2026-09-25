@@ -756,7 +756,7 @@
 
   "menu.network.open": "Open",
   "@menu.network.open": {
-    "description": "VERB (imperative). First right-click item on a SERVER row in the volume switcher: it puts the pane inside that server, connecting first if it isn''t open yet. ❗ Not \"open\" as in unlocking, and not the adjective. This is the same sense as menu.file.open used on a folder (entering it), rather than the sense of handing a file to an app."
+    "description": "VERB (imperative). First right-click item on a SERVER row in the volume switcher: it puts the pane inside that server, connecting first if it isn’t open yet. ❗ Not \"open\" as in unlocking, and not the adjective. This is the same sense as menu.file.open used on a folder (entering it), rather than the sense of handing a file to an app."
   },
   "menu.network.edit": "Edit server…",
   "@menu.network.edit": {

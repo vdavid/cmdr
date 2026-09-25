@@ -62,7 +62,7 @@
   "@goToPath.dialog.opensServer": {
     "description": "Preview line under the Go to path box when what the user typed is an address Cmdr can open right now: a saved server, or a phone. Present tense, third person.",
     "placeholders": {
-      "name": "the server''s or device''s name, like “Naspolya”"
+      "name": "the server’s or device’s name, like “Naspolya”"
     },
     "screenshot": "go-to-path.png",
     "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."

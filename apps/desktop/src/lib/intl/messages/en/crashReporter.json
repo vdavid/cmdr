@@ -118,7 +118,7 @@
   },
   "crashReporter.sentToast.logSent": "Log sent as {id}. That makes this much easier to track down.",
   "@crashReporter.sentToast.logSent": {
-    "description": "Replaces the toast message once the log has been sent, naming the new report''s identifier so the user can quote it.",
+    "description": "Replaces the toast message once the log has been sent, naming the new report’s identifier so the user can quote it.",
     "placeholders": {
       "id": "the short report identifier, like ERR-8RFN4; never translated"
     },
@@ -127,9 +127,9 @@
   },
   "crashReporter.sentToast.logNotSent": "The log didn’t go out. {reason}",
   "@crashReporter.sentToast.logNotSent": {
-    "description": "Line shown on the toast when sending the log didn''t reach Cmdr''s server. The button stays, so pressing it again retries.",
+    "description": "Line shown on the toast when sending the log didn’t reach Cmdr’s server. The button stays, so pressing it again retries.",
     "placeholders": {
-      "reason": "one or two already-translated sentences saying why it didn''t go out and what to do; Cmdr controls the wording"
+      "reason": "one or two already-translated sentences saying why it didn’t go out and what to do; Cmdr controls the wording"
     },
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."

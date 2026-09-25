@@ -548,7 +548,7 @@
   },
   "ai.local.notInstalled": "Not installed. The local model ({modelName}, {modelSize}) runs entirely on your device for maximum privacy. Requires Apple silicon.",
   "@ai.local.notInstalled": {
-    "description": "Explainer in the local AI card when no model is installed yet, naming the default model and its size and noting it runs on-device. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages.",
+    "description": "Explainer in the local AI card when no model is installed yet, naming the default model and its size and noting it runs on-device. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages.",
     "placeholders": {
       "modelName": "the default local model name (for example Ministral 3B; a literal identifier)",
       "modelSize": "the default model's download size, already formatted (for example 2.0 GB)"
@@ -696,7 +696,7 @@
   },
   "ai.secretError.keychainBody": "{op, select, save {Open Keychain Access and check the “Cmdr” entry, or delete it and try saving again.} other {Open Keychain Access, find the “Cmdr” entry, grant access, or delete it and re-enter your key.}}",
   "@ai.secretError.keychainBody": {
-    "description": "Guidance shown below the macOS-Keychain-denied error in the cloud-AI provider settings, telling the user how to fix it via Apple''s Keychain Access app. \"Keychain Access\" is the proper name of the macOS app (Apple ships it localized; use that localized name). “Cmdr” is the app name (a Keychain entry label) and must NOT be translated. Write each branch as a natural full sentence.",
+    "description": "Guidance shown below the macOS-Keychain-denied error in the cloud-AI provider settings, telling the user how to fix it via Apple’s Keychain Access app. \"Keychain Access\" is the proper name of the macOS app (Apple ships it localized; use that localized name). “Cmdr” is the app name (a Keychain entry label) and must NOT be translated. Write each branch as a natural full sentence.",
     "placeholders": {
       "op": "which action failed: \"save\" when storing a new key, anything else when reading the stored key"
     },
@@ -720,7 +720,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {Couldn’t save your API key.} other {Couldn’t read your saved API key.}}",
   "@ai.secretError.genericTitle": {
-    "description": "Title of a fall-back error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when saving or reading the API key fails for a reason that isn''t an explicit access denial. Write each branch as a complete, natural sentence.",
+    "description": "Title of a fall-back error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when saving or reading the API key fails for a reason that isn’t an explicit access denial. Write each branch as a complete, natural sentence.",
     "placeholders": {
       "op": "which action failed: \"save\" when storing a new key, anything else when reading the stored key"
     },

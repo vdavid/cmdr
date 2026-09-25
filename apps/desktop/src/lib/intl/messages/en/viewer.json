@@ -63,7 +63,7 @@
   },
   "viewer.error.archiveUnreadable": "Couldn’t open this file from the archive. It may be encrypted, damaged, or use a format Cmdr can’t read.",
   "@viewer.error.archiveUnreadable": {
-    "description": "Shown when a file inside an archive (zip) can''t be previewed because the archive entry is encrypted, corrupt, or uses an unsupported compression method. \"archive\" means a zip file being browsed like a folder.",
+    "description": "Shown when a file inside an archive (zip) can’t be previewed because the archive entry is encrypted, corrupt, or uses an unsupported compression method. \"archive\" means a zip file being browsed like a folder.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
@@ -645,7 +645,7 @@
   },
   "viewer.selection.charsOnly": "Selected {chars} characters",
   "@viewer.selection.charsOnly": {
-    "description": "Screen-reader announcement for a selection whose line number the viewer can''t work out yet, so it names the character count alone. Happens inside a very long line whose beginning has scrolled far out of view. \"characters\" counts text characters.",
+    "description": "Screen-reader announcement for a selection whose line number the viewer can’t work out yet, so it names the character count alone. Happens inside a very long line whose beginning has scrolled far out of view. \"characters\" counts text characters.",
     "placeholders": {
       "chars": "total number of selected characters (e.g. 16)"
     },
@@ -654,7 +654,7 @@
   },
   "viewer.selection.toEndOfFileNoLine": "Selected to the end of the file",
   "@viewer.selection.toEndOfFileNoLine": {
-    "description": "Screen-reader announcement for a very large selection that reaches the end of the file when the viewer can''t work out which line it starts on, so no line number is named. Sibling of viewer.selection.toEndOfFile, which does name one.",
+    "description": "Screen-reader announcement for a very large selection that reaches the end of the file when the viewer can’t work out which line it starts on, so no line number is named. Sibling of viewer.selection.toEndOfFile, which does name one.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   }

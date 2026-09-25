@@ -25,7 +25,7 @@
   },
   "fileExplorer.doubleClickHint.title": "What just happened?",
   "@fileExplorer.doubleClickHint.title": {
-    "description": "Title of the one-time notification shown the first time a double-click on a pane''s empty background navigates up to the parent folder."
+    "description": "Title of the one-time notification shown the first time a double-click on a pane’s empty background navigates up to the parent folder."
   },
   "fileExplorer.doubleClickHint.body": "You double-clicked the pane background. This navigates to the parent folder.",
   "@fileExplorer.doubleClickHint.body": {
@@ -58,7 +58,7 @@
   },
   "fileExplorer.restrictedFolder.tooltip": "Access to this folder is limited. Grant Cmdr {fullDiskAccess} in {systemSettings} → {privacyAndSecurity} → {fullDiskAccess} to remove all such limits. Or grant per-folder access in {systemSettings} → {privacyAndSecurity} → {filesAndFolders} → Cmdr.",
   "@fileExplorer.restrictedFolder.tooltip": {
-    "description": "Hover tooltip on a folder macOS won''t let Cmdr read fully (a TCC-protected one like Desktop or Documents), shown on its row in the file list and on its breadcrumb. Says what''s wrong, then offers two ways out: the blanket permission, or a per-folder one. Every placeholder is a macOS pane or permission name that the OS itself hands us already translated, so ❌ don''t translate them and don''t reorder the two breadcrumb paths, which the user is about to follow click by click. \"Cmdr\" is the product name; it appears twice, once as the app being granted access and once as the app''s row inside the Files & Folders pane. The arrows are → (U+2192) and separate the steps of a path.",
+    "description": "Hover tooltip on a folder macOS won’t let Cmdr read fully (a TCC-protected one like Desktop or Documents), shown on its row in the file list and on its breadcrumb. Says what’s wrong, then offers two ways out: the blanket permission, or a per-folder one. Every placeholder is a macOS pane or permission name that the OS itself hands us already translated, so ❌ don’t translate them and don’t reorder the two breadcrumb paths, which the user is about to follow click by click. \"Cmdr\" is the product name; it appears twice, once as the app being granted access and once as the app’s row inside the Files & Folders pane. The arrows are → (U+2192) and separate the steps of a path.",
     "placeholders": {
       "systemSettings": "the localized OS name of the System Settings app (comes from the OS; do not translate)",
       "privacyAndSecurity": "the localized OS name of the Privacy & Security pane (comes from the OS; do not translate)",
@@ -196,7 +196,7 @@
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Couldn’t confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can''t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."
+    "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can’t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."
   },
   "fileExplorer.pane.refreshStillRunningToast": "Still reading this folder. The list updates the moment it lands.",
   "@fileExplorer.pane.refreshStillRunningToast": {
@@ -208,7 +208,7 @@
   },
   "fileExplorer.pane.ejectFailedToast": "Couldn’t eject {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
-    "description": "Error toast when ejecting a drive or volume did not work. {volumeName} is the drive''s display name; {message} is the underlying reason text.",
+    "description": "Error toast when ejecting a drive or volume did not work. {volumeName} is the drive’s display name; {message} is the underlying reason text.",
     "placeholders": {
       "volumeName": "the display name of the drive or volume being ejected",
       "message": "the underlying failure reason, already worded for the user"
@@ -222,7 +222,7 @@
   "@fileExplorer.errorPane.openSystemSettings": {
     "description": "Button on the folder error screen that opens the macOS System Settings app (so the user can grant access). {systemSettings} is the OS name for that app.",
     "placeholders": {
-      "systemSettings": "the localized OS name of the System Settings app (do not translate; comes from the OS)"
+      "systemSettings": "the localized OS name of the System Settings app (do not translate; comes from the OS) (always the System Settings app’s name, nothing else, so the sentence can be built around that one noun)"
     },
     "screenshot": "error-message-example.png"
   },
@@ -243,7 +243,7 @@
   },
   "fileExplorer.errorPane.aMomentAgo": "a moment ago",
   "@fileExplorer.errorPane.aMomentAgo": {
-    "description": "Relative time shown in the folder error screen''s diagnostic details, for something that happened within the last few seconds."
+    "description": "Relative time shown in the folder error screen’s diagnostic details, for something that happened within the last few seconds."
   },
   "fileExplorer.errorPane.secondsAgo": "{seconds}s ago",
   "@fileExplorer.errorPane.secondsAgo": {
@@ -276,7 +276,7 @@
   },
   "fileExplorer.errorPane.retryInfoWithLast": "Retry #{count} · first try {firstAgo} · last try {lastAgo}",
   "@fileExplorer.errorPane.retryInfoWithLast": {
-    "description": "Same as the retry-info diagnostic line, but also including the most recent attempt''s relative time. The dots (·) are separators.",
+    "description": "Same as the retry-info diagnostic line, but also including the most recent attempt’s relative time. The dots (·) are separators.",
     "placeholders": {
       "count": "how many times opening this folder has been retried",
       "firstAgo": "relative time of the first attempt, e.g. 5m ago",
@@ -416,7 +416,7 @@
   },
   "fileExplorer.searchResults.unavailableBody": "The result set for this search was cleared. Open a new search to start again.",
   "@fileExplorer.searchResults.unavailableBody": {
-    "description": "Body of the empty-state message shown when a saved search-results view''s data was cleared, telling the user to run a new search."
+    "description": "Body of the empty-state message shown when a saved search-results view’s data was cleared, telling the user to run a new search."
   },
   "fileExplorer.network.connect": "Connect",
   "@fileExplorer.network.connect": {
@@ -432,7 +432,7 @@
   },
   "fileExplorer.network.back": "Back",
   "@fileExplorer.network.back": {
-    "description": "Button that returns to the previous network screen (for example from a host''s shares back to the host list).",
+    "description": "Button that returns to the previous network screen (for example from a host’s shares back to the host list).",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
@@ -450,7 +450,7 @@
   },
   "fileExplorer.network.osMountFallback.message": "Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via macOS’s native SMB network connection, which is 4x slower for most connections (sometimes 100x) than Cmdr’s direct connection. Click the button below to try again.",
   "@fileExplorer.network.osMountFallback.message": {
-    "description": "Body of the notification that appears when Cmdr couldn''t open its own faster connection to a network share, so the share is running on the connection macOS provides. It explains the speed cost and points at the button below it (the \"osMountFallback.retry\" key). <shareName> wraps the share''s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"4x\" and \"100x\" are speed multipliers; write them the way your language writes multipliers. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
+    "description": "Body of the notification that appears when Cmdr couldn’t open its own faster connection to a network share, so the share is running on the connection macOS provides. It explains the speed cost and points at the button below it (the \"osMountFallback.retry\" key). <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"4x\" and \"100x\" are speed multipliers; write them the way your language writes multipliers. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
       "share": "the name of the network share, for example archive or Photos"
     },
@@ -459,7 +459,7 @@
   },
   "fileExplorer.network.osMountFallback.shareNotOnServer": "Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through macOS’s native SMB network connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
-    "description": "Body of the same notification as \"osMountFallback.message\", for the one case where retrying cannot help: the server answered that no share by this name exists, so Cmdr shows no retry button here. It tells the reader where to look instead (the server). <shareName> wraps the share''s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
+    "description": "Body of the same notification as \"osMountFallback.message\", for the one case where retrying cannot help: the server answered that no share by this name exists, so Cmdr shows no retry button here. It tells the reader where to look instead (the server). <shareName> wraps the share’s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
       "share": "the name of the network share, for example archive or Photos"
     },
@@ -468,13 +468,13 @@
   },
   "fileExplorer.network.osMountFallback.retry": "Try connecting directly",
   "@fileExplorer.network.osMountFallback.retry": {
-    "description": "Button inside that notification. Pressing it retries Cmdr''s own faster connection to the share. Matches the \"connectDirectly\" wording used in the volume menu; keep the two consistent in your language.",
+    "description": "Button inside that notification. Pressing it retries Cmdr’s own faster connection to the share. Matches the \"connectDirectly\" wording used in the volume menu; keep the two consistent in your language.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.osMountFallback.closeTooltip": "Dismiss",
   "@fileExplorer.network.osMountFallback.closeTooltip": {
-    "description": "Hover tooltip on the X that closes that notification. Named separately from the retry button so it''s clear which control does what.",
+    "description": "Hover tooltip on the X that closes that notification. Named separately from the retry button so it’s clear which control does what.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
@@ -503,7 +503,7 @@
   },
   "fileExplorer.network.browser.status.resolving": "Resolving…",
   "@fileExplorer.network.browser.status.resolving": {
-    "description": "Status cell in the network host list while the host''s name and IP are still being resolved.",
+    "description": "Status cell in the network host list while the host’s name and IP are still being resolved.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
@@ -653,7 +653,7 @@
   },
   "fileExplorer.network.forgotPassword": "Forgot saved password for {hostName}",
   "@fileExplorer.network.forgotPassword": {
-    "description": "Success toast after deleting a host''s saved password from the Keychain. \"Keychain\" is the macOS credential store.",
+    "description": "Success toast after deleting a host’s saved password from the Keychain. \"Keychain\" is the macOS credential store.",
     "placeholders": {
       "hostName": "the display name of the host whose password was removed"
     },
@@ -662,7 +662,7 @@
   },
   "fileExplorer.network.deletePasswordFailed": "Couldn’t delete saved password",
   "@fileExplorer.network.deletePasswordFailed": {
-    "description": "Error toast when deleting a host''s saved password from the Keychain did not work.",
+    "description": "Error toast when deleting a host’s saved password from the Keychain did not work.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
@@ -711,7 +711,7 @@
   },
   "fileExplorer.network.share.connecting": "Connecting to {hostName}…",
   "@fileExplorer.network.share.connecting": {
-    "description": "Loading status while opening a host''s share list.",
+    "description": "Loading status while opening a host’s share list.",
     "placeholders": {
       "hostName": "the display name of the host being connected to"
     },
@@ -720,7 +720,7 @@
   },
   "fileExplorer.network.share.connectFailedTitle": "Couldn’t connect to {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
-    "description": "Error title shown when opening a host''s share list failed.",
+    "description": "Error title shown when opening a host’s share list failed.",
     "placeholders": {
       "hostName": "the display name of the host"
     },
@@ -747,13 +747,13 @@
   },
   "fileExplorer.network.share.forgetPasswordTooltip": "Remove saved password from Keychain",
   "@fileExplorer.network.share.forgetPasswordTooltip": {
-    "description": "Hover tooltip for the button that deletes this host''s saved password. \"Keychain\" is the macOS credential store.",
+    "description": "Hover tooltip for the button that deletes this host’s saved password. \"Keychain\" is the macOS credential store.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
   "fileExplorer.network.share.forgetPassword": "Forget saved password",
   "@fileExplorer.network.share.forgetPassword": {
-    "description": "Button in the share-list header that deletes this host''s saved password from the Keychain. The UI renders a key icon before this label; the label itself is text-only.",
+    "description": "Button in the share-list header that deletes this host’s saved password from the Keychain. The UI renders a key icon before this label; the label itself is text-only.",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
@@ -816,7 +816,7 @@
   },
   "fileExplorer.mtp.exclusiveAccess": "Another app is using this device. Run the ptpcamerad workaround.",
   "@fileExplorer.mtp.exclusiveAccess": {
-    "description": "Message when another app holds the phone/camera so Cmdr can''t connect. \"ptpcamerad\" is a macOS process name; keep it as-is (it points to a known fix).",
+    "description": "Message when another app holds the phone/camera so Cmdr can’t connect. \"ptpcamerad\" is a macOS process name; keep it as-is (it points to a known fix).",
     "screenshot": "mtp-browse.png",
     "screenshotNote": "MTP (phone/camera) connection status shown in the device pane. This shows the MTP browse surface; your string appears as a status message in this same device context (connecting, busy, disconnected, etc.)."
   },
@@ -867,7 +867,7 @@
   },
   "fileExplorer.networkMount.shareFallback": "share",
   "@fileExplorer.networkMount.shareFallback": {
-    "description": "Generic word used in the mounting text when the share''s name is not known yet (e.g. \"Mounting share…\").",
+    "description": "Generic word used in the mounting text when the share’s name is not known yet (e.g. \"Mounting share…\").",
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
@@ -891,7 +891,7 @@
   },
   "fileExplorer.unreachable.title": "Couldn’t reach {path}",
   "@fileExplorer.unreachable.title": {
-    "description": "Banner heading shown when a folder''s volume can''t be reached. {path} is the path the user tried to open.",
+    "description": "Banner heading shown when a folder’s volume can’t be reached. {path} is the path the user tried to open.",
     "placeholders": {
       "path": "the file-system path that could not be reached"
     }
@@ -918,7 +918,7 @@
   },
   "fileExplorer.unreachable.openHome": "Open home folder",
   "@fileExplorer.unreachable.openHome": {
-    "description": "Button on the unreachable banner that navigates to the user''s home folder instead."
+    "description": "Button on the unreachable banner that navigates to the user’s home folder instead."
   },
   "fileExplorer.clipboard.copied": "Copied {countText} {count, plural, one {item} other {items}}",
   "@fileExplorer.clipboard.copied": {
@@ -1100,14 +1100,14 @@
   },
   "fileExplorer.readOnly.deviceMessage": "“{name}” is read-only. You can copy files from it, but not to it.",
   "@fileExplorer.readOnly.deviceMessage": {
-    "description": "Alert body explaining a device is read-only, so files can be copied off it but not onto it. {name} is the device''s display name, shown in quotes.",
+    "description": "Alert body explaining a device is read-only, so files can be copied off it but not onto it. {name} is the device’s display name, shown in quotes.",
     "placeholders": {
       "name": "the display name of the read-only device"
     }
   },
   "fileExplorer.readOnly.gitPortalTitle": "Read-only git portal",
   "@fileExplorer.readOnly.gitPortalTitle": {
-    "description": "Alert dialog title shown when the user tries a write action (rename, create, delete, paste) inside the virtual `.git` portal, where Cmdr shows a repository''s branches, tags, and commits as browsable folders. \"git\" is the version-control tool name; keep it. \"portal\" is Cmdr''s name for that virtual-folder view, matching the Settings > File systems > Git toggle."
+    "description": "Alert dialog title shown when the user tries a write action (rename, create, delete, paste) inside the virtual `.git` portal, where Cmdr shows a repository’s branches, tags, and commits as browsable folders. \"git\" is the version-control tool name; keep it. \"portal\" is Cmdr’s name for that virtual-folder view, matching the Settings > File systems > Git toggle."
   },
   "fileExplorer.readOnly.gitPortalMessage": "Branches, tags, and commits are snapshots of your git history, so you can browse and copy from them, but not change them.",
   "@fileExplorer.readOnly.gitPortalMessage": {
@@ -1115,36 +1115,36 @@
   },
   "fileExplorer.archive.useTransferToCopyOut": "To copy files out of an archive, use F5 to copy or F6 to move.",
   "@fileExplorer.archive.useTransferToCopyOut": {
-    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside an archive. The system clipboard can''t carry archive-inner paths, so it points them at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is."
+    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside an archive. The system clipboard can’t carry archive-inner paths, so it points them at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is."
   },
   "fileExplorer.git.useTransferToCopyOut": "To copy files out of a git snapshot, use F5 to copy or F6 to move.",
   "@fileExplorer.git.useTransferToCopyOut": {
-    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside the virtual `.git` portal, where Cmdr shows a repository''s branches, tags, and commits as browsable folders. Those entries are reconstructed from git history and have no path the system clipboard can carry, so it points the user at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is. \"git\" is the version-control tool name; keep it."
+    "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside the virtual `.git` portal, where Cmdr shows a repository’s branches, tags, and commits as browsable folders. Those entries are reconstructed from git history and have no path the system clipboard can carry, so it points the user at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is. \"git\" is the version-control tool name; keep it."
   },
   "fileExplorer.rename.hiddenAfterRename": "Your file disappeared from view because hidden files aren’t shown.",
   "@fileExplorer.rename.hiddenAfterRename": {
-    "description": "Info toast after renaming a file to a name starting with a dot, which hides it because hidden files aren''t currently shown. Reassures the user the file still exists."
+    "description": "Info toast after renaming a file to a name starting with a dot, which hides it because hidden files aren’t currently shown. Reassures the user the file still exists."
   },
   "fileExplorer.rename.keptOriginalName": "{reason}. Kept the original name.",
   "@fileExplorer.rename.keptOriginalName": {
-    "description": "Warning toast shown when the user clicks away from the inline rename editor while the typed name is unusable. Clicking away normally saves, so this explains why nothing changed. {reason} is the validation message, a full sentence without a closing period (for example \"Filename can''t contain \"/\" or null characters\").",
+    "description": "Warning toast shown when the user clicks away from the inline rename editor while the typed name is unusable. Clicking away normally saves, so this explains why nothing changed. {reason} is the validation message, a full sentence without a closing period (for example \"Filename can’t contain \"/\" or null characters\").",
     "placeholders": {
       "reason": "the validation message explaining what is wrong with the typed name"
     }
   },
   "fileExplorer.rename.chainKeptOriginalName": "{reason}. “{name}” kept its name.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and ONE of those renames didn''t apply (the typed name was unusable, or the name was already taken). The editor has already moved on to another file, so the toast names the file that kept its original name. {reason} is the reason, a full sentence without a closing period (for example \"Changing the file extension isn''t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"). {name} is the filename, shown in quotes. As soon as a second file keeps its name, this same toast is rewritten with fileExplorer.rename.chainKeptOriginalNameAndOthers, so the two read as one message that grows.",
+    "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and ONE of those renames didn’t apply (the typed name was unusable, or the name was already taken). The editor has already moved on to another file, so the toast names the file that kept its original name. {reason} is the reason, a full sentence without a closing period (for example \"Changing the file extension isn’t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"). {name} is the filename, shown in quotes. As soon as a second file keeps its name, this same toast is rewritten with fileExplorer.rename.chainKeptOriginalNameAndOthers, so the two read as one message that grows.",
     "placeholders": {
-      "reason": "why the rename didn''t apply",
+      "reason": "why the rename didn’t apply",
       "name": "the name the file still has"
     }
   },
   "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. “{name}” kept its name, and so did {others, plural, one {one other file} other {{othersText} other files}}.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and SEVERAL of those renames didn''t apply. It is the same single toast as fileExplorer.rename.chainKeptOriginalName, rewritten each time another file keeps its name: it names the most recent one and counts the earlier ones, so a long run can''t bury the user in toasts. {reason} is why the most recent rename didn''t apply, a full sentence without a closing period (for example \"Changing the file extension isn''t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"); it describes that one file only. {name} is that file''s name, shown in quotes. {othersText} is how many OTHER files kept their names, already formatted for display; it is always 1 or more.",
+    "description": "Warning toast shown when the user renames a run of files by pressing the up/down arrow inside the inline rename editor, and SEVERAL of those renames didn’t apply. It is the same single toast as fileExplorer.rename.chainKeptOriginalName, rewritten each time another file keeps its name: it names the most recent one and counts the earlier ones, so a long run can’t bury the user in toasts. {reason} is why the most recent rename didn’t apply, a full sentence without a closing period (for example \"Changing the file extension isn’t allowed (was \".txt\")\" or \"\"notes.txt\" already exists in this folder\"); it describes that one file only. {name} is that file’s name, shown in quotes. {othersText} is how many OTHER files kept their names, already formatted for display; it is always 1 or more.",
     "placeholders": {
-      "reason": "why the most recent rename didn''t apply",
+      "reason": "why the most recent rename didn’t apply",
       "name": "the name the most recent file still has",
       "othersText": "how many other files kept their names, already formatted for display",
       "others": "the same number of other files (drives the singular/plural form)"
@@ -1152,14 +1152,14 @@
   },
   "fileExplorer.rename.unconfirmed": "Couldn’t confirm the rename of “{name}”. The volume may be slow, so the rename may still have gone through.",
   "@fileExplorer.rename.unconfirmed": {
-    "description": "Warning toast shown when a rename gets no answer from the volume in time (a slow network share or phone). The rename may well have succeeded on disk, so the message must never say the file kept its name; it says Cmdr couldn''t tell. Cmdr re-reads the folder right after, so the user will see which it was. {name} is the name the file had before the rename, shown in quotes. As soon as a second rename goes unanswered, this same toast is rewritten with fileExplorer.rename.unconfirmedAndOthers, so the two read as one message that grows.",
+    "description": "Warning toast shown when a rename gets no answer from the volume in time (a slow network share or phone). The rename may well have succeeded on disk, so the message must never say the file kept its name; it says Cmdr couldn’t tell. Cmdr re-reads the folder right after, so the user will see which it was. {name} is the name the file had before the rename, shown in quotes. As soon as a second rename goes unanswered, this same toast is rewritten with fileExplorer.rename.unconfirmedAndOthers, so the two read as one message that grows.",
     "placeholders": {
       "name": "the name the file had before the rename"
     }
   },
   "fileExplorer.rename.unconfirmedAndOthers": "Couldn’t confirm the rename of “{name}” and {others, plural, one {one other file} other {{othersText} other files}}. The volume may be slow, so the renames may still have gone through.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "description": "Warning toast shown when SEVERAL renames get no answer from the volume in time, which happens when the user renames a run of files by pressing the up/down arrow inside the inline rename editor and each rename is still waiting on a slow network share or phone. It is the same single toast as fileExplorer.rename.unconfirmed, rewritten each time another rename goes unanswered, so a long run can''t bury the user in toasts. The renames may well have succeeded on disk, so the message must never say the files kept their names. {name} is the name the most recent file had before its rename, shown in quotes. {othersText} is how many OTHER renames went unanswered, already formatted for display; it is always 1 or more.",
+    "description": "Warning toast shown when SEVERAL renames get no answer from the volume in time, which happens when the user renames a run of files by pressing the up/down arrow inside the inline rename editor and each rename is still waiting on a slow network share or phone. It is the same single toast as fileExplorer.rename.unconfirmed, rewritten each time another rename goes unanswered, so a long run can’t bury the user in toasts. The renames may well have succeeded on disk, so the message must never say the files kept their names. {name} is the name the most recent file had before its rename, shown in quotes. {othersText} is how many OTHER renames went unanswered, already formatted for display; it is always 1 or more.",
     "placeholders": {
       "name": "the name the most recent file had before its rename",
       "othersText": "how many other renames went unanswered, already formatted for display",
@@ -1194,7 +1194,7 @@
   },
   "fileExplorer.columns.sortByRelevance": "Sort by relevance",
   "@fileExplorer.columns.sortByRelevance": {
-    "description": "Hover tooltip on the active column header of a search-results pane, where the next click puts the rows back in the search engine''s own best-match-first order. \"Relevance\" is how well a result matches the search."
+    "description": "Hover tooltip on the active column header of a search-results pane, where the next click puts the rows back in the search engine’s own best-match-first order. \"Relevance\" is how well a result matches the search."
   },
   "fileExplorer.columns.git": "Git",
   "@fileExplorer.columns.git": {
@@ -1202,7 +1202,7 @@
   },
   "fileExplorer.columns.gitTitle": "Git status of each file",
   "@fileExplorer.columns.gitTitle": {
-    "description": "Hover tooltip on the Git column header explaining it shows each file''s git status. \"Git\" is the version-control tool name; keep it."
+    "description": "Hover tooltip on the Git column header explaining it shows each file’s git status. \"Git\" is the version-control tool name; keep it."
   },
   "fileExplorer.list.empty": "Empty folder",
   "@fileExplorer.list.empty": {
@@ -1222,7 +1222,7 @@
   },
   "fileExplorer.dirSize.updatingIndexTooltip": "Updating index: size may change.",
   "@fileExplorer.dirSize.updatingIndexTooltip": {
-    "description": "Hover tooltip on a folder''s size while indexing is in progress, warning that the figure may still change. Note the colon."
+    "description": "Hover tooltip on a folder’s size while indexing is in progress, warning that the figure may still change. Note the colon."
   },
   "fileExplorer.dirSize.scanProgressTooltip": "Sizes appear as the scan progresses",
   "@fileExplorer.dirSize.scanProgressTooltip": {
@@ -1240,25 +1240,25 @@
   },
   "fileExplorer.dirSize.noPerms": "'<'no perms>",
   "@fileExplorer.dirSize.noPerms": {
-    "description": "Placeholder shown in the Size column for a folder Cmdr can''t read (no permission). Rendered literally as <no perms> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <no perms> intact."
+    "description": "Placeholder shown in the Size column for a folder Cmdr can’t read (no permission). Rendered literally as <no perms> (with the angle brackets). The leading apostrophe-quote ICU-escapes the < so it is not parsed as a markup tag; keep the literal text <no perms> intact."
   },
   "fileExplorer.dirSize.noPermsTooltip": "Cmdr lacks permission to read this folder",
   "@fileExplorer.dirSize.noPermsTooltip": {
-    "description": "Hover tooltip on the no-permission size placeholder, explaining why the folder''s size is unavailable."
+    "description": "Hover tooltip on the no-permission size placeholder, explaining why the folder’s size is unavailable."
   },
   "fileExplorer.dirSize.noFiles": "No files",
   "@fileExplorer.dirSize.noFiles": {
-    "description": "Phrase in a folder''s size tooltip for the file count when the folder contains zero files. Leads the count line, e.g. \"No files, no folders\". Capitalized as the start of the line.",
+    "description": "Phrase in a folder’s size tooltip for the file count when the folder contains zero files. Leads the count line, e.g. \"No files, no folders\". Capitalized as the start of the line.",
     "screenshot": "main-window.png"
   },
   "fileExplorer.dirSize.noFolders": "no folders",
   "@fileExplorer.dirSize.noFolders": {
-    "description": "Phrase in a folder''s size tooltip for the folder count when there are zero subfolders. Follows the file count, e.g. \"3 files, no folders\". Lowercase since it follows a comma.",
+    "description": "Phrase in a folder’s size tooltip for the folder count when there are zero subfolders. Follows the file count, e.g. \"3 files, no folders\". Lowercase since it follows a comma.",
     "screenshot": "main-window.png"
   },
   "fileExplorer.dirSize.fileCount": "{count, plural, one {{countText} file} other {{countText} files}}",
   "@fileExplorer.dirSize.fileCount": {
-    "description": "Recursive file count in a folder''s size tooltip, e.g. \"1,234 files\". Combined with the folder count into a line like \"1,234 files, 12 folders\".",
+    "description": "Recursive file count in a folder’s size tooltip, e.g. \"1,234 files\". Combined with the folder count into a line like \"1,234 files, 12 folders\".",
     "placeholders": {
       "countText": "the number of files, already formatted for display",
       "count": "the same number of files (drives the singular/plural form)"
@@ -1267,7 +1267,7 @@
   },
   "fileExplorer.dirSize.folderCount": "{count, plural, one {{countText} folder} other {{countText} folders}}",
   "@fileExplorer.dirSize.folderCount": {
-    "description": "Recursive folder count in a folder''s size tooltip, e.g. \"12 folders\". Combined with the file count into a line like \"1,234 files, 12 folders\".",
+    "description": "Recursive folder count in a folder’s size tooltip, e.g. \"12 folders\". Combined with the file count into a line like \"1,234 files, 12 folders\".",
     "placeholders": {
       "countText": "the number of folders, already formatted for display",
       "count": "the same number of folders (drives the singular/plural form)"
@@ -1276,7 +1276,7 @@
   },
   "fileExplorer.dirSize.updatingIndexLine": "Updating index, so size may change.",
   "@fileExplorer.dirSize.updatingIndexLine": {
-    "description": "Last line of a folder''s size tooltip while indexing, warning the figure may change."
+    "description": "Last line of a folder’s size tooltip while indexing, warning the figure may change."
   },
   "fileExplorer.dirSize.dirPlaceholder": "'<'dir>",
   "@fileExplorer.dirSize.dirPlaceholder": {
@@ -1285,11 +1285,11 @@
   },
   "fileExplorer.dirSize.mismatchTooltipPrefix": "Content and on-disk sizes differ significantly.",
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
-    "description": "First line of the warning tooltip shown when a folder''s logical (content) and physical (on-disk) sizes differ a lot; the detailed size breakdown follows below it."
+    "description": "First line of the warning tooltip shown when a folder’s logical (content) and physical (on-disk) sizes differ a lot; the detailed size breakdown follows below it."
   },
   "fileExplorer.dirSize.lowerBoundLine": "At least this much: some subfolders weren’t scanned yet, so the real total may be larger.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "description": "Line in a folder''s size tooltip when the shown size is a lower bound (displayed with a ≥ prefix) because part of the subtree hasn''t been scanned. Explains the number is a floor: the real total is at least this much and may be larger (not necessarily larger — the unscanned parts could be empty).",
+    "description": "Line in a folder’s size tooltip when the shown size is a lower bound (displayed with a ≥ prefix) because part of the subtree hasn’t been scanned. Explains the number is a floor: the real total is at least this much and may be larger (not necessarily larger — the unscanned parts could be empty).",
     "screenshot": "operation-chip.png"
   },
   "fileExplorer.dirSize.unknownTooltip": "Size unknown: this folder hasn’t been scanned yet.",
@@ -1299,11 +1299,11 @@
   },
   "fileExplorer.dirSize.staleLine": "These sizes are from an earlier scan and may be out of date.",
   "@fileExplorer.dirSize.staleLine": {
-    "description": "Line in a folder''s size tooltip when the size is exact but was computed at an older point (the drive hasn''t been re-scanned since reconnecting), so it''s accurate-as-of-then but possibly stale now."
+    "description": "Line in a folder’s size tooltip when the size is exact but was computed at an older point (the drive hasn’t been re-scanned since reconnecting), so it’s accurate-as-of-then but possibly stale now."
   },
   "fileExplorer.git.size.branches": "{count, plural, one {{countText} branch} other {{countText} branches}}",
   "@fileExplorer.git.size.branches": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `branches` row, saying how many branches the repository has.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `branches` row, saying how many branches the repository has.",
     "placeholders": {
       "countText": "the number of branches, already formatted for display",
       "count": "the same number of branches (drives the singular/plural form)"
@@ -1311,7 +1311,7 @@
   },
   "fileExplorer.git.size.tags": "{count, plural, one {{countText} tag} other {{countText} tags}}",
   "@fileExplorer.git.size.tags": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `tags` row, saying how many tags the repository has.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `tags` row, saying how many tags the repository has.",
     "placeholders": {
       "countText": "the number of tags, already formatted for display",
       "count": "the same number of tags (drives the singular/plural form)"
@@ -1319,7 +1319,7 @@
   },
   "fileExplorer.git.size.commits": "{count, plural, one {{countText} commit} other {{countText} commits}}",
   "@fileExplorer.git.size.commits": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `commits` row, saying how many commits the repository has.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `commits` row, saying how many commits the repository has.",
     "placeholders": {
       "countText": "the number of commits, already formatted for display",
       "count": "the same number of commits (drives the singular/plural form)"
@@ -1327,7 +1327,7 @@
   },
   "fileExplorer.git.size.stashEntries": "{count, plural, one {{countText} stash entry} other {{countText} stash entries}}",
   "@fileExplorer.git.size.stashEntries": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `stash` row. A stash is a set of changes git holds aside so you can come back to them later; \"stash\" is the git term for it.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `stash` row. A stash is a set of changes git holds aside so you can come back to them later; \"stash\" is the git term for it.",
     "placeholders": {
       "countText": "the number of stash entries, already formatted for display",
       "count": "the same number of stash entries (drives the singular/plural form)"
@@ -1335,7 +1335,7 @@
   },
   "fileExplorer.git.size.linkedWorktrees": "{count, plural, one {{countText} linked worktree} other {{countText} linked worktrees}}",
   "@fileExplorer.git.size.linkedWorktrees": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `worktrees` row. A linked worktree is a second folder checked out from the same repository, so two branches can be open side by side; \"worktree\" is the git term for it.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `worktrees` row. A linked worktree is a second folder checked out from the same repository, so two branches can be open side by side; \"worktree\" is the git term for it.",
     "placeholders": {
       "countText": "the number of linked worktrees, already formatted for display",
       "count": "the same number of linked worktrees (drives the singular/plural form)"
@@ -1343,7 +1343,7 @@
   },
   "fileExplorer.git.size.submodules": "{count, plural, one {{countText} submodule} other {{countText} submodules}}",
   "@fileExplorer.git.size.submodules": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `submodules` row. A submodule is another repository nested inside this one; \"submodule\" is the git term for it.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on the `submodules` row. A submodule is another repository nested inside this one; \"submodule\" is the git term for it.",
     "placeholders": {
       "countText": "the number of submodules, already formatted for display",
       "count": "the same number of submodules (drives the singular/plural form)"
@@ -1351,7 +1351,7 @@
   },
   "fileExplorer.git.size.filesChanged": "{count, plural, one {{countText} file} other {{countText} files}}",
   "@fileExplorer.git.size.filesChanged": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a single commit''s row, saying how many files that commit changed.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a single commit’s row, saying how many files that commit changed.",
     "placeholders": {
       "countText": "the number of files a commit changed, already formatted for display",
       "count": "the same number of files a commit changed (drives the singular/plural form)"
@@ -1359,22 +1359,22 @@
   },
   "fileExplorer.git.size.aheadBehind": "+{aheadText} / -{behindText}",
   "@fileExplorer.git.size.aheadBehind": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a single branch''s row, a compact tally of how far it has moved apart from the branch it''s compared against. The `+` and `-` signs mean \"has extra\" and \"is missing\" and read the same wherever git is used, so keep the shape unless your language genuinely reads it differently. Very short: the cell is one narrow column.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a single branch’s row, a compact tally of how far it has moved apart from the branch it’s compared against. The `+` and `-` signs mean \"has extra\" and \"is missing\" and read the same wherever git is used, so keep the shape unless your language genuinely reads it differently. Very short: the cell is one narrow column.",
     "placeholders": {
-      "aheadText": "how many commits this branch has that the other one doesn''t, already formatted for display",
-      "behindText": "how many commits the other branch has that this one doesn''t, already formatted for display"
+      "aheadText": "how many commits this branch has that the other one doesn’t, already formatted for display",
+      "behindText": "how many commits the other branch has that this one doesn’t, already formatted for display"
     }
   },
   "fileExplorer.git.size.onBranch": "on {branch}",
   "@fileExplorer.git.size.onBranch": {
-    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository''s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a stash entry''s row or a linked worktree''s row, naming the branch it belongs to. Very short: the cell is one narrow column.",
+    "description": "Size column of the file list while browsing the virtual `.git` portal, which shows a repository’s branches, tags, commits, stashes, linked worktrees, and submodules as browsable folders. This is the cell on a stash entry’s row or a linked worktree’s row, naming the branch it belongs to. Very short: the cell is one narrow column.",
     "placeholders": {
       "branch": "the branch name, for example \"main\" (a name, never translated)"
     }
   },
   "fileExplorer.git.tooltip.branches": "{count, plural, one {{countText} branch} other {{countText} branches}} on this repo",
   "@fileExplorer.git.tooltip.branches": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `branches` row''s count. \"This repo\" is the repository the user is browsing.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `branches` row’s count. \"This repo\" is the repository the user is browsing.",
     "placeholders": {
       "countText": "the number of branches, already formatted for display",
       "count": "the same number of branches (drives the singular/plural form)"
@@ -1382,7 +1382,7 @@
   },
   "fileExplorer.git.tooltip.tags": "{count, plural, one {{countText} tag} other {{countText} tags}} on this repo",
   "@fileExplorer.git.tooltip.tags": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `tags` row''s count. \"This repo\" is the repository the user is browsing.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `tags` row’s count. \"This repo\" is the repository the user is browsing.",
     "placeholders": {
       "countText": "the number of tags, already formatted for display",
       "count": "the same number of tags (drives the singular/plural form)"
@@ -1390,7 +1390,7 @@
   },
   "fileExplorer.git.tooltip.commits": "{count, plural, one {{countText} commit} other {{countText} commits}} reachable from HEAD",
   "@fileExplorer.git.tooltip.commits": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `commits` row''s count. HEAD is git''s name for the commit currently checked out: keep it in capitals and untranslated. \"Reachable from HEAD\" means the commits in the history behind it.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains the `commits` row’s count. HEAD is git’s name for the commit currently checked out: keep it in capitals and untranslated. \"Reachable from HEAD\" means the commits in the history behind it.",
     "placeholders": {
       "countText": "the number of commits, already formatted for display",
       "count": "the same number of commits (drives the singular/plural form)"
@@ -1398,7 +1398,7 @@
   },
   "fileExplorer.git.tooltip.filesChanged": "{count, plural, one {{countText} file} other {{countText} files}} changed compared to the parent commit",
   "@fileExplorer.git.tooltip.filesChanged": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a single commit row''s count. The parent commit is the one immediately before it in the history.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a single commit row’s count. The parent commit is the one immediately before it in the history.",
     "placeholders": {
       "countText": "the number of files a commit changed, already formatted for display",
       "count": "the same number of files a commit changed (drives the singular/plural form)"
@@ -1406,7 +1406,7 @@
   },
   "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} ahead, {behind, plural, one {{behindText} commit} other {{behindText} commits}} behind “{vs}”",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a branch row''s `+n / -n` cell in words. \"Ahead\" means this branch has commits the other one doesn''t; \"behind\" means the other one has commits this branch doesn''t. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a branch row’s `+n / -n` cell in words. \"Ahead\" means this branch has commits the other one doesn’t; \"behind\" means the other one has commits this branch doesn’t. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
       "aheadText": "how many commits this branch is ahead by, already formatted for display",
       "ahead": "the same number (drives the singular/plural form)",
@@ -1419,35 +1419,35 @@
   "@fileExplorer.git.tooltip.taggedCommit": {
     "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a tag row, whose cell shows a shortened commit identifier. Names the full identifier of the commit the tag points at.",
     "placeholders": {
-      "id": "the commit''s full identifier, a 40-character hexadecimal string"
+      "id": "the commit’s full identifier, a 40-character hexadecimal string"
     }
   },
   "fileExplorer.git.tooltip.pinnedCommit": "Pinned at commit {id}",
   "@fileExplorer.git.tooltip.pinnedCommit": {
     "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a submodule row, whose cell shows a shortened commit identifier. A submodule is held at one exact commit, which is what \"pinned\" says.",
     "placeholders": {
-      "id": "the commit''s full identifier, a 40-character hexadecimal string"
+      "id": "the commit’s full identifier, a 40-character hexadecimal string"
     }
   },
   "fileExplorer.git.tooltip.stashedOnBranch": "Created on branch “{branch}”",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a stash entry''s row: which branch the user was on when they set those changes aside. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a stash entry’s row: which branch the user was on when they set those changes aside. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
       "branch": "the branch name, for example \"main\" (a name, never translated)"
     }
   },
   "fileExplorer.git.tooltip.worktreeOnBranch": "Branch “{branch}” is checked out",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree''s row: which branch that worktree currently has open. \"Checked out\" is the git term for the branch a folder is showing. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree’s row: which branch that worktree currently has open. \"Checked out\" is the git term for the branch a folder is showing. The branch name is quoted to set it apart; use whatever quotation marks your language writes a quoted name with.",
     "placeholders": {
       "branch": "the branch name, for example \"main\" (a name, never translated)"
     }
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Detached at {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
-    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree''s row when no branch is open there, only one exact commit. \"Detached\" is git''s own word for that state (a detached HEAD), so carry the concept rather than the literal word if your language words it differently.",
+    "description": "Hover tooltip (and screen-reader label) for the Size cell of a row in the virtual `.git` portal. Explains a linked worktree’s row when no branch is open there, only one exact commit. \"Detached\" is git’s own word for that state (a detached HEAD), so carry the concept rather than the literal word if your language words it differently.",
     "placeholders": {
-      "id": "the commit''s full identifier, a 40-character hexadecimal string"
+      "id": "the commit’s full identifier, a 40-character hexadecimal string"
     }
   },
   "fileExplorer.selectionTooltip.selected": "Selected",
@@ -1471,47 +1471,47 @@
   },
   "fileExplorer.dateTooltip.created": "Created",
   "@fileExplorer.dateTooltip.created": {
-    "description": "Label in a file''s date tooltip for its creation time."
+    "description": "Label in a file’s date tooltip for its creation time."
   },
   "fileExplorer.dateTooltip.lastOpened": "Last opened",
   "@fileExplorer.dateTooltip.lastOpened": {
-    "description": "Label in a file''s date tooltip for when it was last opened."
+    "description": "Label in a file’s date tooltip for when it was last opened."
   },
   "fileExplorer.dateTooltip.lastMoved": "Last moved (“added”)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "description": "Label in a file''s date tooltip for when it was last moved into its folder. The parenthetical “added” is the macOS Finder term for the same timestamp; keep both."
+    "description": "Label in a file’s date tooltip for when it was last moved into its folder. The parenthetical “added” is the macOS Finder term for the same timestamp; keep both."
   },
   "fileExplorer.dateTooltip.lastModified": "Last modified",
   "@fileExplorer.dateTooltip.lastModified": {
-    "description": "Label in a file''s date tooltip for when its contents were last changed."
+    "description": "Label in a file’s date tooltip for when its contents were last changed."
   },
   "fileExplorer.imageIndex.file.indexed": "Indexed for image search",
   "@fileExplorer.imageIndex.file.indexed": {
-    "description": "Hover tooltip on a small badge over an image file''s icon in the file list. Means this image is fully indexed, so image search can find it by the text inside it."
+    "description": "Hover tooltip on a small badge over an image file’s icon in the file list. Means this image is fully indexed, so image search can find it by the text inside it."
   },
   "fileExplorer.imageIndex.file.pending": "Waiting to be indexed",
   "@fileExplorer.imageIndex.file.pending": {
-    "description": "Hover tooltip on the badge over an image file''s icon. Means the image is queued for image-search indexing but hasn''t been processed yet."
+    "description": "Hover tooltip on the badge over an image file’s icon. Means the image is queued for image-search indexing but hasn’t been processed yet."
   },
   "fileExplorer.imageIndex.file.indexing": "Indexing now",
   "@fileExplorer.imageIndex.file.indexing": {
-    "description": "Hover tooltip on the badge over an image file''s icon. Means an indexing pass is running right now and this image is being processed (as opposed to \"pending\", which is queued with no active pass). Shown for example on a just-moved image whose new location is being re-indexed."
+    "description": "Hover tooltip on the badge over an image file’s icon. Means an indexing pass is running right now and this image is being processed (as opposed to \"pending\", which is queued with no active pass). Shown for example on a just-moved image whose new location is being re-indexed."
   },
   "fileExplorer.imageIndex.file.stale": "Changed since indexing; will be re-indexed",
   "@fileExplorer.imageIndex.file.stale": {
-    "description": "Hover tooltip on the badge over an image file''s icon. Means the file changed after it was indexed, so it''s scheduled to be indexed again."
+    "description": "Hover tooltip on the badge over an image file’s icon. Means the file changed after it was indexed, so it’s scheduled to be indexed again."
   },
   "fileExplorer.imageIndex.file.failed": "Couldn’t be indexed",
   "@fileExplorer.imageIndex.file.failed": {
-    "description": "Hover tooltip on the badge over an image file''s icon. Means indexing this image didn''t work. Keep it gentle; do not use the words \"error\" or \"failed\" in the visible copy."
+    "description": "Hover tooltip on the badge over an image file’s icon. Means indexing this image didn’t work. Keep it gentle; do not use the words \"error\" or \"failed\" in the visible copy."
   },
   "fileExplorer.imageIndex.file.excluded": "Not included in image search",
   "@fileExplorer.imageIndex.file.excluded": {
-    "description": "Hover tooltip on the badge over an image file''s icon. Means this image is outside what image search covers (excluded folder, out of scope, unsupported type, or too big), so it won''t be indexed."
+    "description": "Hover tooltip on the badge over an image file’s icon. Means this image is outside what image search covers (excluded folder, out of scope, unsupported type, or too big), so it won’t be indexed."
   },
   "fileExplorer.imageIndex.folder.allIndexed": "All {totalText} {total, plural, one {image} other {images}} indexed",
   "@fileExplorer.imageIndex.folder.allIndexed": {
-    "description": "Hover tooltip on a small badge over a folder''s icon in the file list. Means every image under this folder (and its subfolders) is indexed for image search. {totalText} is the preformatted image count; {total} is the raw number, used only to choose the singular/plural of ''image''.",
+    "description": "Hover tooltip on a small badge over a folder’s icon in the file list. Means every image under this folder (and its subfolders) is indexed for image search. {totalText} is the preformatted image count; {total} is the raw number, used only to choose the singular/plural of “image”.",
     "placeholders": {
       "totalText": "preformatted count of images under the folder, e.g. \"50\"",
       "total": "the same count as a raw number, for singular/plural selection only"
@@ -1519,7 +1519,7 @@
   },
   "fileExplorer.imageIndex.folder.someIndexed": "{doneText} of {totalText} {total, plural, one {image} other {images}} indexed",
   "@fileExplorer.imageIndex.folder.someIndexed": {
-    "description": "Hover tooltip on a small badge over a folder''s icon in the file list. Shows how many images under this folder (and its subfolders) are indexed so far, e.g. \"12 of 50 images indexed\". {doneText}/{totalText} are the preformatted counts; {done}/{total} are the raw numbers, used only for singular/plural selection.",
+    "description": "Hover tooltip on a small badge over a folder’s icon in the file list. Shows how many images under this folder (and its subfolders) are indexed so far, e.g. \"12 of 50 images indexed\". {doneText}/{totalText} are the preformatted counts; {done}/{total} are the raw numbers, used only for singular/plural selection.",
     "placeholders": {
       "doneText": "preformatted count of images already indexed, e.g. \"12\"",
       "totalText": "preformatted count of images eligible under the folder, e.g. \"50\"",
@@ -1529,15 +1529,15 @@
   },
   "fileExplorer.imageIndex.drive.ariaLabel": "Image search status for this drive",
   "@fileExplorer.imageIndex.drive.ariaLabel": {
-    "description": "Accessible label for the small colored dot next to a drive in the volume breadcrumb that shows the drive''s image-search indexing status."
+    "description": "Accessible label for the small colored dot next to a drive in the volume breadcrumb that shows the drive’s image-search indexing status."
   },
   "fileExplorer.imageIndex.drive.off": "Image search is off for this drive.",
   "@fileExplorer.imageIndex.drive.off": {
-    "description": "Tooltip on the drive''s image-search dot when image search is turned off, so none of this drive''s images are indexed."
+    "description": "Tooltip on the drive’s image-search dot when image search is turned off, so none of this drive’s images are indexed."
   },
   "fileExplorer.imageIndex.drive.indexing": "{doneText} of {totalText} {total, plural, one {image} other {images}} on this drive indexed; still working.",
   "@fileExplorer.imageIndex.drive.indexing": {
-    "description": "Tooltip on the drive''s image-search dot while a pass is running or images are still pending. Shows drive-wide progress, e.g. \"1,200 of 3,800 images on this drive indexed; still working.\" {doneText}/{totalText} are preformatted counts; {done}/{total} are raw numbers for singular/plural selection.",
+    "description": "Tooltip on the drive’s image-search dot while a pass is running or images are still pending. Shows drive-wide progress, e.g. \"1,200 of 3,800 images on this drive indexed; still working.\" {doneText}/{totalText} are preformatted counts; {done}/{total} are raw numbers for singular/plural selection.",
     "placeholders": {
       "doneText": "preformatted count of images already indexed on the drive",
       "totalText": "preformatted count of images to be indexed on the drive",
@@ -1547,7 +1547,7 @@
   },
   "fileExplorer.imageIndex.drive.done": "All {totalText} {total, plural, one {image} other {images}} on this drive are indexed.",
   "@fileExplorer.imageIndex.drive.done": {
-    "description": "Tooltip on the drive''s image-search dot when every in-scope image on the drive is indexed, e.g. \"All 3,800 images on this drive are indexed.\" {totalText} is the preformatted count; {total} is the raw number for singular/plural selection.",
+    "description": "Tooltip on the drive’s image-search dot when every in-scope image on the drive is indexed, e.g. \"All 3,800 images on this drive are indexed.\" {totalText} is the preformatted count; {total} is the raw number for singular/plural selection.",
     "placeholders": {
       "totalText": "preformatted count of images indexed on the drive",
       "total": "the same count as a raw number, for singular/plural selection"
@@ -1576,7 +1576,7 @@
   },
   "fileExplorer.selectionInfo.symlinkHint": "This folder contains symlinks. Symlinked content is not counted in the total to avoid double counting.",
   "@fileExplorer.selectionInfo.symlinkHint": {
-    "description": "Hover tooltip on the info icon next to a folder''s size, explaining that symlinked content is excluded from the total. A symlink is a file-system shortcut/alias."
+    "description": "Hover tooltip on the info icon next to a folder’s size, explaining that symlinked content is excluded from the total. A symlink is a file-system shortcut/alias."
   },
   "fileExplorer.selectionInfo.noSelectionFiles": "{count, plural, one {{countText} file} other {{countText} files}}",
   "@fileExplorer.selectionInfo.noSelectionFiles": {
@@ -1616,15 +1616,15 @@
   },
   "fileExplorer.tabBar.paneTabsAriaLabel": "{paneId} pane tabs",
   "@fileExplorer.tabBar.paneTabsAriaLabel": {
-    "description": "Accessibility label for one pane''s tab strip. {paneId} is the side, \"left\" or \"right\".",
+    "description": "Accessibility label for one pane’s tab strip. {paneId} is the side, \"left\" or \"right\".",
     "placeholders": {
-      "paneId": "which pane''s tabs these are: the value is left or right"
+      "paneId": "which pane’s tabs these are: the value is left or right"
     },
     "screenshot": "main-window.png"
   },
   "fileExplorer.tabBar.unreachableAriaLabel": "Unreachable",
   "@fileExplorer.tabBar.unreachableAriaLabel": {
-    "description": "Accessibility label and tooltip for a tab whose folder/volume can''t currently be reached.",
+    "description": "Accessibility label and tooltip for a tab whose folder/volume can’t currently be reached.",
     "screenshot": "main-window.png",
     "screenshotNote": "The main window, pictured here. Your string belongs to the tab bar above a file pane: the tooltip or spoken name of a tab in a state this screenshot doesn’t show, such as a pinned tab or one pointing at a place that can’t be reached."
   },
@@ -1698,7 +1698,7 @@
   },
   "fileExplorer.renameConflict.description": "“{name}” already exists in this folder. What would you like to do?",
   "@fileExplorer.renameConflict.description": {
-    "description": "Body of the rename-conflict dialog, naming the existing file and asking how to proceed. {name} is the existing file''s name, shown in quotes.",
+    "description": "Body of the rename-conflict dialog, naming the existing file and asking how to proceed. {name} is the existing file’s name, shown in quotes.",
     "placeholders": {
       "name": "the name of the existing file that would be overwritten"
     },
@@ -1706,9 +1706,9 @@
   },
   "fileExplorer.renameConflict.yours": "{name} (yours)",
   "@fileExplorer.renameConflict.yours": {
-    "description": "Header of the card showing the file the user is renaming (the new one) in the rename-conflict comparison. {name} is the file name; \"(yours)\" marks it as the user''s incoming file.",
+    "description": "Header of the card showing the file the user is renaming (the new one) in the rename-conflict comparison. {name} is the file name; \"(yours)\" marks it as the user’s incoming file.",
     "placeholders": {
-      "name": "the name of the file being renamed (the user''s file)"
+      "name": "the name of the file being renamed (the user’s file)"
     },
     "screenshot": "rename-conflict-newer-and-larger.png"
   },
@@ -1722,12 +1722,12 @@
   },
   "fileExplorer.renameConflict.size": "Size",
   "@fileExplorer.renameConflict.size": {
-    "description": "Metadata label for a file''s size in the rename-conflict comparison cards.",
+    "description": "Metadata label for a file’s size in the rename-conflict comparison cards.",
     "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.modified": "Modified",
   "@fileExplorer.renameConflict.modified": {
-    "description": "Metadata label for a file''s last-modified date in the rename-conflict comparison cards.",
+    "description": "Metadata label for a file’s last-modified date in the rename-conflict comparison cards.",
     "screenshot": "rename-conflict-newer-and-larger.png"
   },
   "fileExplorer.renameConflict.overwriteTrash": "Overwrite and trash old file",
@@ -1752,7 +1752,7 @@
   },
   "fileExplorer.extensionChange.title": "Change file extension?",
   "@fileExplorer.extensionChange.title": {
-    "description": "Title of the dialog confirming a change to a file''s extension during rename.",
+    "description": "Title of the dialog confirming a change to a file’s extension during rename.",
     "screenshot": "extension-change.png"
   },
   "fileExplorer.extensionChange.description": "Are you sure you want to change the extension from “.{oldExt}” to “.{newExt}”? Your file may open in a different app next time you open it.",
@@ -1857,16 +1857,16 @@
   },
   "fileExplorer.navigation.networkVolume": "Servers",
   "@fileExplorer.navigation.networkVolume": {
-    "description": "Name of the row in the volume switcher that opens the servers hub: the list of every server the user has saved or Cmdr found nearby. Also the current volume''s name in the breadcrumb while the hub is open. The GROUP this row sits in is still called \"Network\" (fileExplorer.navigation.groupNetwork); this is one row inside it.",
+    "description": "Name of the row in the volume switcher that opens the servers hub: the list of every server the user has saved or Cmdr found nearby. Also the current volume’s name in the breadcrumb while the hub is open. The GROUP this row sits in is still called \"Network\" (fileExplorer.navigation.groupNetwork); this is one row inside it.",
     "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.searchResultsVolume": "Search results",
   "@fileExplorer.navigation.searchResultsVolume": {
-    "description": "The volume-slot label in the breadcrumb when viewing a saved search-results listing. A generic noun matching every other volume''s slot; the search-specific title appears separately in the path."
+    "description": "The volume-slot label in the breadcrumb when viewing a saved search-results listing. A generic noun matching every other volume’s slot; the search-specific title appears separately in the path."
   },
   "fileExplorer.navigation.volumeFallback": "Volume",
   "@fileExplorer.navigation.volumeFallback": {
-    "description": "Generic fallback shown as the current volume''s name in the breadcrumb when the real volume can''t be determined yet."
+    "description": "Generic fallback shown as the current volume’s name in the breadcrumb when the real volume can’t be determined yet."
   },
   "fileExplorer.navigation.favoritesEmpty": "(Your favorites will show here)",
   "@fileExplorer.navigation.favoritesEmpty": {
@@ -1972,14 +1972,14 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for “{displayName}”. You’ll see a system prompt asking to allow Keychain access. That’s expected, so click Allow.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "description": "Body of the confirmation dialog offering to reuse a network share''s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can''t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt — localize both to the terms your macOS uses (Apple localizes Keychain Access and the Allow button), per the Term-choice principles.",
+    "description": "Body of the confirmation dialog offering to reuse a network share’s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can’t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt — localize both to the terms your macOS uses (Apple localizes Keychain Access and the Allow button), per the Term-choice principles.",
     "placeholders": {
       "displayName": "the display name of the network share whose saved password would be reused"
     }
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Use the saved password?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
-    "description": "Title of the confirmation dialog offering to reuse a network share''s saved macOS password."
+    "description": "Title of the confirmation dialog offering to reuse a network share’s saved macOS password."
   },
   "fileExplorer.navigation.useSavedPasswordConfirm": "Use saved password",
   "@fileExplorer.navigation.useSavedPasswordConfirm": {
@@ -2029,21 +2029,21 @@
   "@fileExplorer.navigation.serverPinnedToast": {
     "description": "Toast confirming that a server now shows in the volume switcher, the list a person picks a disk from.",
     "placeholders": {
-      "name": "the server''s display name, like \"Naspolya\""
+      "name": "the server’s display name, like \"Naspolya\""
     }
   },
   "fileExplorer.navigation.serverUnpinnedToast": "{name} is out of your volume switcher. It’s still saved.",
   "@fileExplorer.navigation.serverUnpinnedToast": {
     "description": "Toast confirming that a server no longer shows in the volume switcher. The second sentence matters: nothing was deleted, and the server is still in the servers hub.",
     "placeholders": {
-      "name": "the server''s display name, like \"Naspolya\""
+      "name": "the server’s display name, like \"Naspolya\""
     }
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr couldn’t change where {name} shows.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "description": "Toast shown when moving a server in or out of the volume switcher didn''t go through.",
+    "description": "Toast shown when moving a server in or out of the volume switcher didn’t go through.",
     "placeholders": {
-      "name": "the server''s display name, like \"Naspolya\""
+      "name": "the server’s display name, like \"Naspolya\""
     }
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr couldn’t disconnect from {name}.",
@@ -2098,7 +2098,7 @@
   },
   "fileExplorer.navigation.ejectVolumeAriaLabel": "Eject {name}",
   "@fileExplorer.navigation.ejectVolumeAriaLabel": {
-    "description": "Accessibility label and tooltip for the eject button on a volume in the breadcrumb and switcher. {name} is the volume''s display name.",
+    "description": "Accessibility label and tooltip for the eject button on a volume in the breadcrumb and switcher. {name} is the volume’s display name.",
     "placeholders": {
       "name": "the display name of the volume to eject"
     },
@@ -2106,7 +2106,7 @@
   },
   "fileExplorer.navigation.ejectBusyTooltip": "Can’t eject while operations are in progress on this device",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume can''t be ejected because a file operation is running on it."
+    "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume can’t be ejected because a file operation is running on it."
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Ejecting {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -2129,31 +2129,31 @@
   },
   "fileExplorer.navigation.spaceRetryingAuto": "Retrying automatically…",
   "@fileExplorer.navigation.spaceRetryingAuto": {
-    "description": "Hover tooltip on a volume''s disk-space bar while the app automatically retries fetching its free space. Ends with an ellipsis character (…)."
+    "description": "Hover tooltip on a volume’s disk-space bar while the app automatically retries fetching its free space. Ends with an ellipsis character (…)."
   },
   "fileExplorer.navigation.spaceRetrying": "Retrying…",
   "@fileExplorer.navigation.spaceRetrying": {
-    "description": "Hover tooltip on a volume''s disk-space bar while a manual retry of fetching its free space is in progress. Ends with an ellipsis character (…)."
+    "description": "Hover tooltip on a volume’s disk-space bar while a manual retry of fetching its free space is in progress. Ends with an ellipsis character (…)."
   },
   "fileExplorer.navigation.spaceRetryingText": "Retrying",
   "@fileExplorer.navigation.spaceRetryingText": {
-    "description": "Short inline text shown in place of a volume''s disk-space figure while a retry is in progress. Tight space; keep it short."
+    "description": "Short inline text shown in place of a volume’s disk-space figure while a retry is in progress. Tight space; keep it short."
   },
   "fileExplorer.navigation.spaceStillUnavailable": "Still unavailable. Click to retry",
   "@fileExplorer.navigation.spaceStillUnavailable": {
-    "description": "Hover tooltip on a volume''s disk-space bar after a retry to fetch free space also failed, inviting another click to retry."
+    "description": "Hover tooltip on a volume’s disk-space bar after a retry to fetch free space also failed, inviting another click to retry."
   },
   "fileExplorer.navigation.spaceFetchFailed": "Couldn’t fetch disk space. Click to retry",
   "@fileExplorer.navigation.spaceFetchFailed": {
-    "description": "Hover tooltip on a volume''s disk-space bar when fetching free space failed (first time), inviting a click to retry."
+    "description": "Hover tooltip on a volume’s disk-space bar when fetching free space failed (first time), inviting a click to retry."
   },
   "fileExplorer.navigation.spaceUnavailableText": "Unavailable",
   "@fileExplorer.navigation.spaceUnavailableText": {
-    "description": "Short inline text shown in place of a volume''s disk-space figure when its free space couldn''t be fetched. Tight space; keep it short."
+    "description": "Short inline text shown in place of a volume’s disk-space figure when its free space couldn’t be fetched. Tight space; keep it short."
   },
   "fileExplorer.navigation.spaceMtpHint": "On a phone, this also counts apps and system files. Over USB, Cmdr can reach only your shared files, so the folders here add up to less than the used space.",
   "@fileExplorer.navigation.spaceMtpHint": {
-    "description": "Hover tooltip on a connected phone''s disk-space readout (the free/total figure and its usage bar), shown only for phones reached over USB (MTP). Explains why the visible folders add up to far less than the space reported as used: a phone''s apps and system data count toward usage but can''t be browsed over USB. \"USB\" is the cable connection; \"Cmdr\" is the app name (do not translate).",
+    "description": "Hover tooltip on a connected phone’s disk-space readout (the free/total figure and its usage bar), shown only for phones reached over USB (MTP). Explains why the visible folders add up to far less than the space reported as used: a phone’s apps and system data count toward usage but can’t be browsed over USB. \"USB\" is the cable connection; \"Cmdr\" is the app name (do not translate).",
     "screenshot": "mtp-browse.png"
   },
   "fileExplorer.navigation.volumesStillUnreachable": "Still unreachable. Try again later",
@@ -2166,7 +2166,7 @@
   },
   "fileExplorer.navigation.refreshVolumeList": "Refresh volume list",
   "@fileExplorer.navigation.refreshVolumeList": {
-    "description": "Hover tooltip on the retry button in the volume switcher''s missing-volumes warning row, which reloads the volume list."
+    "description": "Hover tooltip on the retry button in the volume switcher’s missing-volumes warning row, which reloads the volume list."
   },
   "fileExplorer.navigation.driveIndex.ariaLabel": "Drive index status",
   "@fileExplorer.navigation.driveIndex.ariaLabel": {
@@ -2175,12 +2175,12 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipDisabled": "Indexing is off for this drive. Turn it on to see folder sizes and search here.",
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
-    "description": "Hover tooltip on the gray drive-index dot, shown when a drive isn''t indexed. Invites the user to turn indexing on for folder sizes and search.",
+    "description": "Hover tooltip on the gray drive-index dot, shown when a drive isn’t indexed. Invites the user to turn indexing on for folder sizes and search.",
     "screenshot": "pane-volume-chooser.png"
   },
   "fileExplorer.navigation.driveIndex.tooltipFresh": "Indexed and up to date. Last indexed {date}, took {duration}.",
   "@fileExplorer.navigation.driveIndex.tooltipFresh": {
-    "description": "Hover tooltip on the green drive-index dot when the drive''s index is current. Names when it was last indexed and how long that scan took.",
+    "description": "Hover tooltip on the green drive-index dot when the drive’s index is current. Names when it was last indexed and how long that scan took.",
     "placeholders": {
       "date": "ISO date of the last completed scan, already formatted (e.g. 2026-06-19)",
       "duration": "how long the last scan took, already formatted (e.g. 2 min, 14 s)"
@@ -2189,11 +2189,11 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipFreshNoScan": "Indexed and up to date.",
   "@fileExplorer.navigation.driveIndex.tooltipFreshNoScan": {
-    "description": "Hover tooltip on the green drive-index dot when the index is current but the last scan''s date and duration aren''t known (no completed scan recorded). Shorter variant of the fresh tooltip."
+    "description": "Hover tooltip on the green drive-index dot when the index is current but the last scan’s date and duration aren’t known (no completed scan recorded). Shorter variant of the fresh tooltip."
   },
   "fileExplorer.navigation.driveIndex.tooltipStale": "This drive may have changed while it was disconnected. Sizes and search might be a bit off. Rescan to refresh.",
   "@fileExplorer.navigation.driveIndex.tooltipStale": {
-    "description": "Hover tooltip on the yellow drive-index dot, shown when the drive''s index may be out of date because the drive was disconnected. Active voice; never use the words ''error'' or ''failed''."
+    "description": "Hover tooltip on the yellow drive-index dot, shown when the drive’s index may be out of date because the drive was disconnected. Active voice; never use the words “error” or “failed”."
   },
   "fileExplorer.navigation.driveIndex.tooltipStalePhone": "Cmdr keeps this index current with the changes it makes. Changes made on the phone itself show up after a rescan.",
   "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
@@ -2201,15 +2201,15 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexing stopped because of a problem saving this drive’s index. Rescan to rebuild it.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
-    "description": "Hover tooltip on the RED drive-index dot, shown when the drive''s index database hit a fatal storage problem (a disk I/O failure, a full or read-only disk, corruption) and indexing stopped for this drive. The index is a rebuildable cache, so the fix is to rescan. Keep it calm and actionable; active voice; never use the words ''error'' or ''failed''."
+    "description": "Hover tooltip on the RED drive-index dot, shown when the drive’s index database hit a fatal storage problem (a disk I/O failure, a full or read-only disk, corruption) and indexing stopped for this drive. The index is a rebuildable cache, so the fix is to rescan. Keep it calm and actionable; active voice; never use the words “error” or “failed”."
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
-    "description": "Extra paragraph appended to the drive-index dot''s hover tooltip when macOS reported it had lost track of file system changes on this drive since the last full check, and Cmdr deliberately waited instead of rescanning right away. Reassuring, not alarming: the dot stays green because waiting is the intended behavior, and the next scheduled full check will bring folder sizes back in line. Keep the plural branches for all three numbers. Never use the words ''error'' or ''failed''.",
+    "description": "Extra paragraph appended to the drive-index dot’s hover tooltip when macOS reported it had lost track of file system changes on this drive since the last full check, and Cmdr deliberately waited instead of rescanning right away. Reassuring, not alarming: the dot stays green because waiting is the intended behavior, and the next scheduled full check will bring folder sizes back in line. Keep the plural branches for all three numbers. Never use the words “error” or “failed”.",
     "placeholders": {
       "count": "how many times macOS lost track since the last full check, as a raw number, used only to pick the plural branch",
       "countText": "the same count, already formatted for the reader (e.g. 12)",
-      "hours": "whole hours since the drive''s last completed full check, as a raw number, used only to pick the plural branch (never below 1)",
+      "hours": "whole hours since the drive’s last completed full check, as a raw number, used only to pick the plural branch (never below 1)",
       "hoursText": "the same hour count, already formatted for the reader (e.g. 18)",
       "remaining": "whole hours until the next scheduled full check, as a raw number, used only to pick the plural branch (never below 1)",
       "remainingText": "the same remaining-hour count, already formatted for the reader (e.g. 6)"
@@ -2217,7 +2217,7 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, and the check running right now will put them right.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
-    "description": "The variant of the coalesced-changes tooltip paragraph shown while Cmdr is actually running the full check on this drive (the dot is blue). The other variants promise a check later; this one points at the one in progress, so don''t reintroduce a time. It also drops the ''in the last N hours'' window the others open with: the running scan cleared the last-completed-scan marker, so there''s no honest window to name. Reassuring, not alarming. Never use the words ''error'' or ''failed''.",
+    "description": "The variant of the coalesced-changes tooltip paragraph shown while Cmdr is actually running the full check on this drive (the dot is blue). The other variants promise a check later; this one points at the one in progress, so don’t reintroduce a time. It also drops the “in the last N hours” window the others open with: the running scan cleared the last-completed-scan marker, so there’s no honest window to name. Reassuring, not alarming. Never use the words “error” or “failed”.",
     "placeholders": {
       "count": "how many times macOS lost track since the last full check, as a raw number, used only to pick the plural branch",
       "countText": "the same count, already formatted for the reader (e.g. 12)"
@@ -2225,27 +2225,27 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, so it’s no big deal.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
-    "description": "The variant of the tooltip paragraph above for a drive with no scheduled full check to promise (an external drive, or one whose check is already due). Same first sentence; the closing reassurance replaces the ''next full check in N hours'' promise, so don''t reintroduce a time here. Never use the words ''error'' or ''failed''.",
+    "description": "The variant of the tooltip paragraph above for a drive with no scheduled full check to promise (an external drive, or one whose check is already due). Same first sentence; the closing reassurance replaces the “next full check in N hours” promise, so don’t reintroduce a time here. Never use the words “error” or “failed”.",
     "placeholders": {
       "count": "how many times macOS lost track since the last full check, as a raw number, used only to pick the plural branch",
       "countText": "the same count, already formatted for the reader (e.g. 12)",
-      "hours": "whole hours since the drive''s last completed full check, as a raw number, used only to pick the plural branch (never below 1)",
+      "hours": "whole hours since the drive’s last completed full check, as a raw number, used only to pick the plural branch (never below 1)",
       "hoursText": "the same hour count, already formatted for the reader (e.g. 18)"
     }
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr couldn’t read {count, plural, one {one spot} other {{countText} spots}} on this drive, so a search here may come back a little short.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
-    "description": "Footnote paragraph under a finished drive''s index tooltip, when some folders hold no rows because Cmdr was refused access or skips them on purpose. A ''spot'' is a group of folders that share a parent, not a folder count: one unreadable place can hold thousands of folders, and the number a reader recognizes is the place. It''s a footnote, not a warning: nothing is styled as a problem and nothing is asked of them, since the badge is not where someone grants a permission (search''s coverage note does that). Never use the words ''error'' or ''failed''.",
+    "description": "Footnote paragraph under a finished drive’s index tooltip, when some folders hold no rows because Cmdr was refused access or skips them on purpose. A “spot” is a group of folders that share a parent, not a folder count: one unreadable place can hold thousands of folders, and the number a reader recognizes is the place. It’s a footnote, not a warning: nothing is styled as a problem and nothing is asked of them, since the badge is not where someone grants a permission (search’s coverage note does that). Never use the words “error” or “failed”.",
     "placeholders": {
-      "count": "how many places couldn''t be read, as a raw number, used only to pick the plural branch",
+      "count": "how many places couldn’t be read, as a raw number, used only to pick the plural branch",
       "countText": "the same count, already formatted for the reader (e.g. 1,497)"
     }
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr couldn’t read {count, plural, one {one spot} other {{countText} spots}} on this drive, so a search here may come back a little short. It comes back to them on its own.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
-    "description": "The variant of the footnote above for when at least one of those places stopped answering rather than being refused or deliberately skipped, which is the kind Cmdr retries by itself. Same first sentence; the second says so, which is what keeps the line from reading as something the user has to fix. Never use the words ''error'' or ''failed''.",
+    "description": "The variant of the footnote above for when at least one of those places stopped answering rather than being refused or deliberately skipped, which is the kind Cmdr retries by itself. Same first sentence; the second says so, which is what keeps the line from reading as something the user has to fix. Never use the words “error” or “failed”.",
     "placeholders": {
-      "count": "how many places couldn''t be read, as a raw number, used only to pick the plural branch",
+      "count": "how many places couldn’t be read, as a raw number, used only to pick the plural branch",
       "countText": "the same count, already formatted for the reader (e.g. 1,497)"
     }
   },
@@ -2255,7 +2255,7 @@
   },
   "fileExplorer.navigation.driveIndex.menuRescan": "Rescan now",
   "@fileExplorer.navigation.driveIndex.menuRescan": {
-    "description": "Menu item to rebuild the drive''s index from scratch (shown when the drive is already indexed). Sentence case."
+    "description": "Menu item to rebuild the drive’s index from scratch (shown when the drive is already indexed). Sentence case."
   },
   "fileExplorer.navigation.driveIndex.menuDisable": "Turn off indexing for this drive",
   "@fileExplorer.navigation.driveIndex.menuDisable": {
@@ -2267,7 +2267,7 @@
   },
   "fileExplorer.navigation.driveIndex.menuForget": "Forget this drive’s index",
   "@fileExplorer.navigation.driveIndex.menuForget": {
-    "description": "Menu item that deletes the drive''s index entirely (removes its database from disk), so a fresh full scan starts next time the user turns indexing on. The recovery action when an index is stuck. More destructive than ''Turn off indexing'', which keeps the index to resume. Sentence case."
+    "description": "Menu item that deletes the drive’s index entirely (removes its database from disk), so a fresh full scan starts next time the user turns indexing on. The recovery action when an index is stuck. More destructive than “Turn off indexing”, which keeps the index to resume. Sentence case."
   },
   "fileExplorer.navigation.driveIndex.footer": "Last indexed: {date} · took {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
@@ -2279,7 +2279,7 @@
   },
   "fileExplorer.navigation.driveIndex.durationMinSec": "{minutes} min, {seconds} s",
   "@fileExplorer.navigation.driveIndex.durationMinSec": {
-    "description": "A scan duration of a minute or more, e.g. ''2 min, 14 s''. ''min'' and ''s'' abbreviate minutes and seconds.",
+    "description": "A scan duration of a minute or more, e.g. “2 min, 14 s”. “min” and “s” abbreviate minutes and seconds.",
     "placeholders": {
       "minutes": "whole minutes, already formatted (e.g. 2)",
       "seconds": "whole seconds, already formatted (e.g. 14)"
@@ -2287,7 +2287,7 @@
   },
   "fileExplorer.navigation.driveIndex.durationSec": "{seconds} s",
   "@fileExplorer.navigation.driveIndex.durationSec": {
-    "description": "A scan duration under a minute, e.g. ''14 s''. ''s'' abbreviates seconds.",
+    "description": "A scan duration under a minute, e.g. “14 s”. “s” abbreviates seconds.",
     "placeholders": {
       "seconds": "whole seconds, already formatted (e.g. 14)"
     },
@@ -2295,65 +2295,65 @@
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr couldn’t connect to {name} directly, which it needs to index this share. Check the share is reachable and try again.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
-    "description": "Toast shown when turning on indexing for an SMB share doesn''t go through because the direct connection couldn''t be established. Active voice; avoid the words ''error'' and ''failed''.",
+    "description": "Toast shown when turning on indexing for an SMB share doesn’t go through because the direct connection couldn’t be established. Active voice; avoid the words “error” and “failed”.",
     "placeholders": {
-      "name": "the share''s display name (e.g. Backups)"
+      "name": "the share’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} is disconnected. Reconnect it, then turn on indexing.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
     "description": "Toast shown when turning on indexing for an SMB share is refused because the share is currently disconnected.",
     "placeholders": {
-      "name": "the share''s display name (e.g. Backups)"
+      "name": "the share’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.deferredRescan": "Cmdr is searching {name} right now. The rescan starts as soon as that finishes.",
   "@fileExplorer.navigation.driveIndex.deferredRescan": {
-    "description": "Toast shown when the drive menu''s \"Rescan now\" can''t start yet because a search is walking the same drive. Cmdr remembers the request and runs it when the search finishes, so this is a promise, not a refusal. Avoid the words ''error'' and ''failed''.",
+    "description": "Toast shown when the drive menu’s \"Rescan now\" can’t start yet because a search is walking the same drive. Cmdr remembers the request and runs it when the search finishes, so this is a promise, not a refusal. Avoid the words “error” and “failed”.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.deferredEnable": "Cmdr is searching {name} right now. Indexing starts as soon as that finishes.",
   "@fileExplorer.navigation.driveIndex.deferredEnable": {
-    "description": "The same promise as deferredRescan, for the drive menu''s \"Turn on indexing for this drive\": a search is walking the drive, so the first full scan runs when that search finishes.",
+    "description": "The same promise as deferredRescan, for the drive menu’s \"Turn on indexing for this drive\": a search is walking the drive, so the first full scan runs when that search finishes.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.queuedBehindScan": "Cmdr is indexing {name} right now. The scan you asked for starts as soon as that finishes.",
   "@fileExplorer.navigation.driveIndex.queuedBehindScan": {
-    "description": "Toast shown when the drive menu''s \"Rescan now\" (or \"Turn on indexing\") can''t start yet because a full walk of the same drive is already running. Cmdr remembers the request and runs it when that walk finishes, so this is a promise, not a refusal. Avoid the words ''error'' and ''failed''.",
+    "description": "Toast shown when the drive menu’s \"Rescan now\" (or \"Turn on indexing\") can’t start yet because a full walk of the same drive is already running. Cmdr remembers the request and runs it when that walk finishes, so this is a promise, not a refusal. Avoid the words “error” and “failed”.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr can’t index {name} right now. Reconnect the drive and try again.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
-    "description": "Fallback toast when turning on indexing for a drive doesn''t go through because the per-drive command threw an unexpected exception (not one of the typed refusal reasons).",
+    "description": "Fallback toast when turning on indexing for a drive doesn’t go through because the per-drive command threw an unexpected exception (not one of the typed refusal reasons).",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr hit a snag turning on indexing for {name}. This shouldn’t happen. Restarting Cmdr usually clears it.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "description": "Toast shown when turning on indexing for a drive is refused for a reason that signals an internal problem rather than something the user can fix by reconnecting (the drive isn''t registered, or it''s classified as a non-SMB volume when it shouldn''t be). Reassuring and conversational; avoid the words ''error'' and ''failed''.",
+    "description": "Toast shown when turning on indexing for a drive is refused for a reason that signals an internal problem rather than something the user can fix by reconnecting (the drive isn’t registered, or it’s classified as a non-SMB volume when it shouldn’t be). Reassuring and conversational; avoid the words “error” and “failed”.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Drive indexing is off in Settings, so {name} stays unindexed. Turn it on under Indexing > Drive indexing.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {
-    "description": "Toast shown when a per-drive \"turn on indexing\" request is refused because the master drive-indexing switch is off. Points at the settings page that owns the switch. Sentence case; avoid the words ''error'' and ''failed''.",
+    "description": "Toast shown when a per-drive \"turn on indexing\" request is refused because the master drive-indexing switch is off. Points at the settings page that owns the switch. Sentence case; avoid the words “error” and “failed”.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.driveLeaving": "{name} is being disconnected, so Cmdr left its index as it was. If the drive stays connected, try again in a moment.",
   "@fileExplorer.navigation.driveIndex.driveLeaving": {
-    "description": "Toast shown when a per-drive \"turn on indexing\" or \"rescan now\" request arrives while the drive is being ejected or unmounted (from Finder, another app, or Cmdr itself), so nothing started. The drive may already be gone, or the unmount may still be refused. Sentence case; avoid the words ''error'' and ''failed''.",
+    "description": "Toast shown when a per-drive \"turn on indexing\" or \"rescan now\" request arrives while the drive is being ejected or unmounted (from Finder, another app, or Cmdr itself), so nothing started. The drive may already be gone, or the unmount may still be refused. Sentence case; avoid the words “error” and “failed”.",
     "placeholders": {
-      "name": "the drive''s display name (e.g. Backups)"
+      "name": "the drive’s display name (e.g. Backups)"
     }
   },
   "fileExplorer.navigation.driveIndex.tooltipIndexingOff": "Drive indexing is off in Settings, so no drive is indexed right now.",
@@ -2362,6 +2362,6 @@
   },
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Drive indexing is off in Settings. Turn it on under Indexing > Drive indexing, and this drive picks up where it left off.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
-    "description": "Note replacing the per-drive index menu''s actions while the master drive-indexing switch is off. Says where to turn the switch back on and reassures that the drive''s own on/off choice is remembered. Sentence case."
+    "description": "Note replacing the per-drive index menu’s actions while the master drive-indexing switch is off. Says where to turn the switch back on and reassures that the drive’s own on/off choice is remembered. Sentence case."
   }
 }

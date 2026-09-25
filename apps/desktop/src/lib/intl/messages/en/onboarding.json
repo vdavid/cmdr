@@ -216,7 +216,7 @@
   "@onboarding.stepFda.openSettingsFailed": {
     "description": "Shown on the Full Disk Access step right after the user clicks the Open System Settings button, when System Settings didn't actually open. It gives the manual path instead, so the user can still grant access by hand; the restart hint below stays true. The three placeholders are macOS names already localized by the OS: keep each one exactly as supplied, and keep the <strong> wraps around the pane names and the product name. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\".",
     "placeholders": {
-      "systemSettings": "the macOS System Settings app name, already localized by the OS (for example \"System Settings\")",
+      "systemSettings": "the macOS System Settings app name, already localized by the OS (for example \"System Settings\") (always this one app name)",
       "privacyAndSecurity": "the name of the Privacy & Security section in System Settings, already localized by the OS",
       "fullDiskAccess": "the name of the Full Disk Access list inside that section, already localized by the OS"
     }
@@ -342,7 +342,7 @@
   },
   "onboarding.stepAi.table.selectWithoutBound": "You press the <chip></chip> key and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
   "@onboarding.stepAi.table.selectWithoutBound": {
-    "description": "Comparison cell: how you select files without AI, when the select-files shortcut is bound to a key. <chip> wraps the visual key-shortcut chip (it has no inner text; leave it empty). Worded \"the ... key\" so the chip reads as a key. <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated.",
+    "description": "Comparison cell: how you select files without AI, when the select-files shortcut is bound to a key. <chip> wraps the visual key-shortcut chip (it has no inner text; leave it empty). Worded \"the ... key\" so the chip reads as a key. <code> wraps a literal comma-separated list of file extension patterns that must NOT be translated. The empty chip shows the user’s select-files shortcut as key glyphs, never a word.",
     "screenshot": "onboarding-ai.png"
   },
   "onboarding.stepAi.table.selectWithoutUnbound": "You open “Select files…” and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.",
@@ -406,7 +406,7 @@
   },
   "onboarding.stepAi.localTooltip": "Local LLM requires Apple silicon. Cloud works on Intel.",
   "@onboarding.stepAi.localTooltip": {
-    "description": "Tooltip on the disabled local-AI option, explaining it needs a Mac with Apple silicon while cloud AI works on Intel Macs too. \"LLM\" is the AI model type (large language model) and \"Intel\" is a Mac processor family; both stay untranslated. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages.",
+    "description": "Tooltip on the disabled local-AI option, explaining it needs a Mac with Apple silicon while cloud AI works on Intel Macs too. \"LLM\" is the AI model type (large language model) and \"Intel\" is a Mac processor family; both stay untranslated. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages.",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
@@ -414,7 +414,7 @@
   "@onboarding.stepAi.missingKeyWarning": {
     "description": "Warning shown on the Next button on the AI step when the user picked a cloud provider but stored no API key. The press doesn't advance; the next one does. Matter-of-fact, not scolding. <strong> bolds the way out, which is the sentence the user acts on. {nextLabel} is that button's own label, supplied from onboarding.wizard.next so the two can't drift; keep the quotes around it. \"API key\" is a technical credential term. \"above\" points at the provider setup higher up the same page. The blank line is a real paragraph break in the tooltip; keep it.",
     "placeholders": {
-      "nextLabel": "the forward button's label, already translated (for example \"Next\")"
+      "nextLabel": "the forward button's label, already translated (for example \"Next\") (always that one button label, never anything else)"
     },
     "screenshot": "onboarding-ai.png"
   },

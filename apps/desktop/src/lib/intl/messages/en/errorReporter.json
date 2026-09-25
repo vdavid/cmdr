@@ -170,7 +170,7 @@
 
   "errorReporter.amend.noteLabel": "Your note",
   "@errorReporter.amend.noteLabel": {
-    "description": "Label above the free-text box in the add-a-note dialog. Unlike the send dialog''s label, this one is not marked optional: a note or an email address is needed before the button works.",
+    "description": "Label above the free-text box in the add-a-note dialog. Unlike the send dialog’s label, this one is not marked optional: a note or an email address is needed before the button works.",
     "screenshot": "error-report-amend.png"
   },
 
@@ -182,7 +182,7 @@
 
   "errorReporter.amend.submit": "Add to report",
   "@errorReporter.amend.submit": {
-    "description": "Primary button that attaches the user''s note to the report that was already sent. Keep it short (a tight button).",
+    "description": "Primary button that attaches the user’s note to the report that was already sent. Keep it short (a tight button).",
     "screenshot": "error-report-amend.png"
   },
 
@@ -193,7 +193,7 @@
 
   "errorReporter.amend.unavailable": "That report can’t take a note any more. To get your notes to the team, send a new report from the Help menu.",
   "@errorReporter.amend.unavailable": {
-    "description": "Shown instead of the note box when the report can no longer be added to, either because Cmdr restarted since it was sent or because the server left no way to add to it. Points the user at Help > Send error report instead. \"Help\" is the name of the app''s Help menu; use the wording macOS uses for that menu in your language. Avoid the words \"error\" and \"failed\" in the translated wording.",
+    "description": "Shown instead of the note box when the report can no longer be added to, either because Cmdr restarted since it was sent or because the server left no way to add to it. Points the user at Help > Send error report instead. \"Help\" is the name of the app’s Help menu; use the wording macOS uses for that menu in your language. Avoid the words \"error\" and \"failed\" in the translated wording.",
     "screenshot": "error-report-amend.png"
   },
 
@@ -205,9 +205,9 @@
 
   "errorReporter.amend.addFailedToast": "Couldn’t add your note. {reason}",
   "@errorReporter.amend.addFailedToast": {
-    "description": "Toast shown when attaching the note to the already-sent report didn''t work. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn''t reach its server. Check your internet connection and try again.\"), so end your lead as its own sentence and let the reason follow it. Avoid the words \"error\" and \"failed\" in the translated wording.",
+    "description": "Toast shown when attaching the note to the already-sent report didn’t work. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn’t reach its server. Check your internet connection and try again.\"), so end your lead as its own sentence and let the reason follow it. Avoid the words \"error\" and \"failed\" in the translated wording.",
     "placeholders": {
-      "reason": "one or two already-translated sentences saying why the note didn''t get attached and what to do; Cmdr controls the wording but the length varies"
+      "reason": "one or two already-translated sentences saying why the note didn’t get attached and what to do; Cmdr controls the wording but the length varies"
     }
   },
 
@@ -233,7 +233,7 @@
 
   "errorReporter.amendedToast.message": "Note added to your report. Your reference ID is",
   "@errorReporter.amendedToast.message": {
-    "description": "Lead text of the toast confirming the user''s note was attached to the report that had already been sent. The reference ID itself follows immediately in a badge, so this string ends right before it (no trailing punctuation)."
+    "description": "Lead text of the toast confirming the user’s note was attached to the report that had already been sent. The reference ID itself follows immediately in a badge, so this string ends right before it (no trailing punctuation)."
   },
 
   "errorReporter.bundleSavedToast.message": "Saved bundle to disk",

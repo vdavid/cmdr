@@ -88,25 +88,25 @@
   },
   "search.imageResults.indexing": "Still indexing images, so results may be incomplete.",
   "@search.imageResults.indexing": {
-    "description": "Shown while a background pass is still reading text from this drive''s images, warning the user the image results aren''t complete yet.",
+    "description": "Shown while a background pass is still reading text from this drive’s images, warning the user the image results aren’t complete yet.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
   "search.imageResults.notIndexed": "This drive’s images aren’t indexed yet. They’ll become searchable once indexing runs.",
   "@search.imageResults.notIndexed": {
-    "description": "Shown when image indexing is on but no images on this drive have been read yet, so there''s nothing to search. Distinct from a genuine no-match.",
+    "description": "Shown when image indexing is on but no images on this drive have been read yet, so there’s nothing to search. Distinct from a genuine no-match.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
   "search.imageResults.empty": "No images contain this text.",
   "@search.imageResults.empty": {
-    "description": "Shown when this drive''s images have been indexed but none of them contain the searched text (a genuine no-match, not \"not indexed yet\").",
+    "description": "Shown when this drive’s images have been indexed but none of them contain the searched text (a genuine no-match, not \"not indexed yet\").",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
   "search.imageResults.networkOff": "Turn on image indexing for this network drive in Settings to search the text inside its photos.",
   "@search.imageResults.networkOff": {
-    "description": "Shown in the \"Text in images\" section when searching a network (SMB) drive that hasn''t been opted into image indexing. Points the user to the per-drive opt-in in Settings > Behavior > File system watching > Image search.",
+    "description": "Shown in the \"Text in images\" section when searching a network (SMB) drive that hasn’t been opted into image indexing. Points the user to the per-drive opt-in in Settings > Behavior > File system watching > Image search.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."
   },
@@ -151,7 +151,7 @@
   },
   "search.walkHandoff.running": "Still searching for {label}",
   "@search.walkHandoff.running": {
-    "description": "Headline of the toast shown in the main window when a search kept running after the user sent its results to a pane. A spinner sits next to it. {label} is the short name of the search (the query text, or the AI-generated title).",
+    "description": "Headline of the toast shown in the main window when a search kept running after the user sent its results to a pane. A spinner sits next to it. {label} is the short name of the search (the query text, or the AI-generated title). The label is uncontrolled: whatever the user typed, or a title the AI wrote, in any language, length, or casing. Build the sentence so it reads right around any text, without inflecting it.",
     "placeholders": {
       "label": "the search's short name, e.g. \"*.pdf\" or \"tax paperwork\""
     },
@@ -193,7 +193,7 @@
   },
   "search.walkHandoff.finished": "{count, plural, one {Found # match} other {Found # matches}} for {label}.",
   "@search.walkHandoff.finished": {
-    "description": "Toast that replaces the still-searching one when the search finishes having covered everything. It fades on its own. Use countText for the digits if your language needs them grouped.",
+    "description": "Toast that replaces the still-searching one when the search finishes having covered everything. It fades on its own. Use countText for the digits if your language needs them grouped. The label is uncontrolled (the user’s query text or an AI-written title); build the sentence so it reads right around any text, without inflecting it.",
     "placeholders": {
       "count": "the final number of matches, for plural selection",
       "countText": "the same number, already formatted with thousands separators",
@@ -204,7 +204,7 @@
   },
   "search.walkHandoff.stoppedShort": "The results for {label} may be short: Cmdr didn’t get through everything.",
   "@search.walkHandoff.stoppedShort": {
-    "description": "Toast that replaces the still-searching one when the search ended without covering everything (stopped, the drive went away, or folders it had to give up on). It fades on its own. Reopening the search shows the detail. Avoid the words 'error' and 'failed'.",
+    "description": "Toast that replaces the still-searching one when the search ended without covering everything (stopped, the drive went away, or folders it had to give up on). It fades on its own. Reopening the search shows the detail. Avoid the words 'error' and 'failed'. The label is uncontrolled (the user’s query text or an AI-written title); build the sentence so it reads right around any text, without inflecting it.",
     "placeholders": {
       "label": "the search's short name, e.g. \"*.pdf\" or \"tax paperwork\""
     },
@@ -213,7 +213,7 @@
   },
   "search.walkHandoff.superseded": "Cmdr stopped adding to the results for {label}, because your new search took over.",
   "@search.walkHandoff.superseded": {
-    "description": "Toast shown when the user starts a new search while an older one was still filling a pane. The pane keeps what it has; only the additions stop. It fades on its own.",
+    "description": "Toast shown when the user starts a new search while an older one was still filling a pane. The pane keeps what it has; only the additions stop. It fades on its own. The label is uncontrolled (the user’s query text or an AI-written title); build the sentence so it reads right around any text, without inflecting it.",
     "placeholders": {
       "label": "the older search's short name, e.g. \"*.pdf\" or \"tax paperwork\""
     },
@@ -249,7 +249,7 @@
   },
   "search.coverage.uncovered.indexing": "Cmdr is still indexing {drive} and hasn’t reached these folders yet, so this search skipped:",
   "@search.coverage.uncovered.indexing": {
-    "description": "The still-being-indexed version of search.coverage.uncovered.local, shown when the drive's very first index is running right now and hasn't got to the folder searched in. It replaces the ''this drive isn''t indexed'' wording, which would read as nothing happening while indexing is under way, and no ''Index this drive'' offer appears with it. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Conversational; avoid the words 'error' and 'failed'.",
+    "description": "The still-being-indexed version of search.coverage.uncovered.local, shown when the drive's very first index is running right now and hasn't got to the folder searched in. It replaces the “this drive isn’t indexed” wording, which would read as nothing happening while indexing is under way, and no “Index this drive” offer appears with it. A list of the skipped folder paths follows the colon, which is why the sentence ends open. Conversational; avoid the words 'error' and 'failed'.",
     "placeholders": {
       "drive": "the drive's display name (e.g. Macintosh HD), or the generic phrase from search.coverage.unnamedDrive"
     },
@@ -290,7 +290,7 @@
   },
   "search.coverage.walk.abandonedCount": "{count, plural, one {One spot on this drive stopped answering, so Cmdr moved on without it and this list may be short. Cmdr comes back to it later, and searching again gives it another try.} other {{countText} spots on this drive stopped answering, so Cmdr moved on without them and this list may be short. Cmdr comes back to them later, and searching again gives them another try.}}",
   "@search.coverage.walk.abandonedCount": {
-    "description": "The counted version of search.coverage.walk.abandoned, shown when Cmdr knows how many places it gave up on. A ''spot'' is a group of folders that share a parent, not a folder count: a drive that goes to sleep can leave thousands of folders unread in one place, and the number the user recognizes is the place. It''s a footnote, not a warning: nothing is wrong and nothing is asked of them, which is why it says Cmdr retries on its own. Avoid the words 'error' and 'failed'.",
+    "description": "The counted version of search.coverage.walk.abandoned, shown when Cmdr knows how many places it gave up on. A “spot” is a group of folders that share a parent, not a folder count: a drive that goes to sleep can leave thousands of folders unread in one place, and the number the user recognizes is the place. It’s a footnote, not a warning: nothing is wrong and nothing is asked of them, which is why it says Cmdr retries on its own. Avoid the words 'error' and 'failed'.",
     "placeholders": {
       "count": "how many places stopped answering, driving the singular/plural choice",
       "countText": "the same number, already formatted with thousands separators (e.g. 1,497)"
@@ -378,9 +378,9 @@
   },
   "search.coverage.toast.deferredUntilSearchEnds": "Cmdr is already searching {drive}. Indexing starts as soon as that finishes.",
   "@search.coverage.toast.deferredUntilSearchEnds": {
-    "description": "Toast shown when the coverage note''s Index this drive button can''t start the scan yet because a search is walking the same drive. Cmdr remembers the request and runs it when the search finishes, so this is a promise, not a refusal. Avoid the words ''error'' and ''failed''.",
+    "description": "Toast shown when the coverage note’s Index this drive button can’t start the scan yet because a search is walking the same drive. Cmdr remembers the request and runs it when the search finishes, so this is a promise, not a refusal. Avoid the words “error” and “failed”.",
     "placeholders": {
-      "drive": "the drive''s display name (e.g. Backups)"
+      "drive": "the drive’s display name (e.g. Backups)"
     },
     "screenshot": "search-dialog.png",
     "screenshotNote": "Search results and the messages around them (image-text matches, index coverage, and the toasts search raises). This shows the search dialog where the query is typed and the results appear."

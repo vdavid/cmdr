@@ -554,7 +554,7 @@
   "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple’s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
   "settings.mediaIndex.clip.title": "Semantic search",
   "@settings.mediaIndex.clip.title": {
-    "description": "Title of the control (inside the Image search settings card) for the natural-language photo search feature, where you find a photo by describing what''s in it."
+    "description": "Title of the control (inside the Image search settings card) for the natural-language photo search feature, where you find a photo by describing what’s in it."
   },
   "settings.mediaIndex.clip.description": "Find photos by describing what’s in them, like “beach sunset”, using an on-device AI model.",
   "@settings.mediaIndex.clip.description": {
@@ -566,13 +566,13 @@
   },
   "settings.mediaIndex.clip.comingSoon": "Coming soon.",
   "@settings.mediaIndex.clip.comingSoon": {
-    "description": "Shown when the semantic-search model isn''t published for download yet, so the feature can''t be enabled right now."
+    "description": "Shown when the semantic-search model isn’t published for download yet, so the feature can’t be enabled right now."
   },
   "settings.mediaIndex.clip.download": "Download model (~{sizeText} MB)",
   "@settings.mediaIndex.clip.download": {
-    "description": "Label for the button that downloads the on-device semantic-search AI model. The ~ means ''about''; MB is the megabytes unit (leave as ''MB'').",
+    "description": "Label for the button that downloads the on-device semantic-search AI model. The ~ means “about”; MB is the megabytes unit (leave as “MB”).",
     "placeholders": {
-      "sizeText": "the download size in whole megabytes, locale-formatted (for example ''276''); the unit MB follows it in the message"
+      "sizeText": "the download size in whole megabytes, locale-formatted (for example “276”); the unit MB follows it in the message"
     }
   },
   "settings.mediaIndex.clip.downloading": "Downloading…",
@@ -581,11 +581,11 @@
   },
   "settings.mediaIndex.clip.failed": "The download didn’t finish. Check your connection and try again.",
   "@settings.mediaIndex.clip.failed": {
-    "description": "Shown when the semantic-search model download didn''t complete. Avoid the words ''error'' and ''failed'' per the app''s copy style."
+    "description": "Shown when the semantic-search model download didn’t complete. Avoid the words “error” and “failed” per the app’s copy style."
   },
   "settings.mediaIndex.clip.notSupported": "Search by description needs a Mac with Apple silicon.",
   "@settings.mediaIndex.clip.notSupported": {
-    "description": "Shown when the semantic-search toggle is disabled because the Mac isn''t Apple silicon (the on-device model only runs on Apple''s own chips). \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages."
+    "description": "Shown when the semantic-search toggle is disabled because the Mac isn’t Apple silicon (the on-device model only runs on Apple’s own chips). \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages."
   },
   "settings.mediaIndex.clip.offButInstalled": "The model is downloaded, but search by description is off.",
   "@settings.mediaIndex.clip.offButInstalled": {
@@ -615,7 +615,7 @@
   },
   "settings.mediaIndex.clip.deleteFailed": "The model couldn’t be removed just now. Try again in a moment.",
   "@settings.mediaIndex.clip.deleteFailed": {
-    "description": "Shown when deleting the semantic-search model didn''t complete. Avoid the words ''error'' and ''failed'' per the app''s copy style."
+    "description": "Shown when deleting the semantic-search model didn’t complete. Avoid the words “error” and “failed” per the app’s copy style."
   },
   "settings.mediaIndex.cards.enable": "Enable indexing",
   "@settings.mediaIndex.cards.enable": {
@@ -628,14 +628,14 @@
   },
   "settings.mediaIndex.semanticSearch.label": "Search photos by description",
   "@settings.mediaIndex.semanticSearch.label": {
-    "description": "Label for the on/off toggle that enables semantic search: finding a photo by describing what''s in it. In the Semantic search card, Settings > Indexing > Image indexing."
+    "description": "Label for the on/off toggle that enables semantic search: finding a photo by describing what’s in it. In the Semantic search card, Settings > Indexing > Image indexing."
   },
   "settings.mediaIndex.progressSummary.title": "Indexing now",
   "@settings.mediaIndex.progressSummary.title": {
     "description": "Heading above the live per-drive image-indexing progress shown in the Enable indexing card while a pass is running (each drive lists how many images are done, plus a rate and time estimate)."
   },
   "@settings.mediaIndex.privacyNote": {
-    "description": "Privacy reassurance shown in Settings > Indexing > Image indexing, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple''s framework name (do not translate); \"API key\" is a credential for a cloud AI provider.",
+    "description": "Privacy reassurance shown in Settings > Indexing > Image indexing, under the master toggle. Clarifies that this AI feature is on-device only, unlike the provider-backed AI features. \"Mac\" is the Apple computer; \"Vision\" is Apple’s framework name (do not translate); \"API key\" is a credential for a cloud AI provider.",
     "screenshot": "settings-indexing-image-indexing.png"
   },
   "settings.mediaIndex.enabled.label": "Index image contents",
@@ -650,19 +650,19 @@
   },
   "settings.mediaIndex.showFileStatusIcons.label": "Show status badges on image files",
   "@settings.mediaIndex.showFileStatusIcons.label": {
-    "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it''s indexed for image search. On by default. In Settings > Indexing > Image indexing, under the \"Index image contents\" toggle."
+    "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it’s indexed for image search. On by default. In Settings > Indexing > Image indexing, under the \"Index image contents\" toggle."
   },
   "settings.mediaIndex.showFileStatusIcons.description": "Add a small badge to each image in the file list showing whether it’s been indexed for search.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
-    "description": "Help text under the \"Show status badges on image files\" toggle. Explains the badge marks each image''s indexing state (indexed, waiting, and so on) right in the file list."
+    "description": "Help text under the \"Show status badges on image files\" toggle. Explains the badge marks each image’s indexing state (indexed, waiting, and so on) right in the file list."
   },
   "settings.mediaIndex.showInSearch.label": "Show image results in Search",
   "@settings.mediaIndex.showInSearch.label": {
-    "description": "Label for the toggle that lets the Search dialog show a row of matching images above the file results. Off by default. In Settings > Indexing > Image indexing, under the \"Show status badges on image files\" toggle. \"Search\" names Cmdr''s Search dialog, so use the same word your translation gives that dialog."
+    "description": "Label for the toggle that lets the Search dialog show a row of matching images above the file results. Off by default. In Settings > Indexing > Image indexing, under the \"Show status badges on image files\" toggle. \"Search\" names Cmdr’s Search dialog, so use the same word your translation gives that dialog."
   },
   "settings.mediaIndex.showInSearch.description": "Search adds a row of matching images above your files. Matching is still rough, so it’s off until you want it.",
   "@settings.mediaIndex.showInSearch.description": {
-    "description": "Help text under the \"Show image results in Search\" toggle. Says what turning it on does (a row of matching images sits above the file results) and admits image matching isn''t accurate yet, which is why it starts off. The tone is candid and relaxed, owning the limitation without apologizing for it. \"Search\" names Cmdr''s Search dialog; keep it consistent with the label above."
+    "description": "Help text under the \"Show image results in Search\" toggle. Says what turning it on does (a row of matching images sits above the file results) and admits image matching isn’t accurate yet, which is why it starts off. The tone is candid and relaxed, owning the limitation without apologizing for it. \"Search\" names Cmdr’s Search dialog; keep it consistent with the label above."
   },
   "settings.mediaIndex.networkVolumes.label": "Network drive image indexing",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -674,7 +674,7 @@
   },
   "settings.mediaIndex.alwaysIndexVolumes.label": "Always-index drives",
   "@settings.mediaIndex.alwaysIndexVolumes.label": {
-    "description": "Internal (hidden setting): label for the list of drives marked to index regardless of how often they''re browsed."
+    "description": "Internal (hidden setting): label for the list of drives marked to index regardless of how often they’re browsed."
   },
   "settings.mediaIndex.alwaysIndexVolumes.description": "Internal: drives the user marked to always index their photos.",
   "@settings.mediaIndex.alwaysIndexVolumes.description": {
@@ -682,7 +682,7 @@
   },
   "settings.mediaIndex.alwaysIndexFolders.label": "Always-index folders",
   "@settings.mediaIndex.alwaysIndexFolders.label": {
-    "description": "Internal (hidden setting): label for the list of folders marked to index regardless of how often they''re browsed."
+    "description": "Internal (hidden setting): label for the list of folders marked to index regardless of how often they’re browsed."
   },
   "settings.mediaIndex.alwaysIndexFolders.description": "Internal: folders the user marked to always index their photos.",
   "@settings.mediaIndex.alwaysIndexFolders.description": {
@@ -709,7 +709,7 @@
     "description": "Accessible label for the on/off switch that opts a network drive into background image indexing.",
     "placeholders": {
       "name": {
-        "content": "The network drive''s name, like \"naspi\"."
+        "content": "The network drive’s name, like \"naspi\"."
       }
     }
   },
@@ -719,7 +719,7 @@
   },
   "settings.mediaIndex.networkVolumes.alwaysLabel": "Always index this drive",
   "@settings.mediaIndex.networkVolumes.alwaysLabel": {
-    "description": "Label for the switch that indexes a drive''s photos even if you rarely open it (the NAS-archive case)."
+    "description": "Label for the switch that indexes a drive’s photos even if you rarely open it (the NAS-archive case)."
   },
   "settings.mediaIndex.networkVolumes.alwaysHelp": "Turn this on for a photo archive you rarely browse, so its photos get indexed anyway.",
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
@@ -730,17 +730,17 @@
     "description": "Accessible label for the \"Always index this drive\" switch.",
     "placeholders": {
       "name": {
-        "content": "The network drive''s name, like \"naspi\"."
+        "content": "The network drive’s name, like \"naspi\"."
       }
     }
   },
   "settings.mediaIndex.networkVolumes.paused": "Paused, resumes when this drive reconnects",
   "@settings.mediaIndex.networkVolumes.paused": {
-    "description": "Status line for a network drive whose indexing paused because the drive disconnected mid-pass. What''s already indexed stays searchable."
+    "description": "Status line for a network drive whose indexing paused because the drive disconnected mid-pass. What’s already indexed stays searchable."
   },
   "settings.mediaIndex.networkVolumes.indexed": "{count, plural, one {{countText} photo indexed} other {{countText} photos indexed}}",
   "@settings.mediaIndex.networkVolumes.indexed": {
-    "description": "Status line showing how many of a drive''s photos are already indexed and searchable.",
+    "description": "Status line showing how many of a drive’s photos are already indexed and searchable.",
     "placeholders": {
       "count": {
         "content": "The number of indexed photos, used to choose singular or plural wording."
@@ -752,7 +752,7 @@
   },
   "settings.mediaIndex.networkVolumes.notIndexedYet": "Not indexed yet",
   "@settings.mediaIndex.networkVolumes.notIndexedYet": {
-    "description": "Status line for a drive that''s opted in but hasn''t indexed any photos yet (the pass hasn''t run or found images)."
+    "description": "Status line for a drive that’s opted in but hasn’t indexed any photos yet (the pass hasn’t run or found images)."
   },
   "settings.mediaIndex.importanceThreshold.label": "How much to index",
   "@settings.mediaIndex.importanceThreshold.label": {
@@ -768,7 +768,7 @@
   },
   "settings.mediaIndex.parallelism.description": "How many workers image indexing runs at once. More can be faster, but on Apple silicon the gain flattens out past two, and higher settings back off on their own when your Mac heats up.",
   "@settings.mediaIndex.parallelism.description": {
-    "description": "Help text under the \"Parallel workers\" slider. Sets expectations honestly: parallelism helps only modestly on Apple silicon (the Neural Engine serializes the work), and the app reduces workers automatically under thermal pressure. Keep \"Mac\" as-is. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages."
+    "description": "Help text under the \"Parallel workers\" slider. Sets expectations honestly: parallelism helps only modestly on Apple silicon (the Neural Engine serializes the work), and the app reduces workers automatically under thermal pressure. Keep \"Mac\" as-is. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages."
   },
   "settings.mediaIndex.importanceThreshold.bucket.mostUsed": "Only my most-used folders",
   "@settings.mediaIndex.importanceThreshold.bucket.mostUsed": {
@@ -818,15 +818,15 @@
   },
   "settings.mediaIndex.importanceThreshold.waitingForImportance": "Working out which folders matter. Image indexing starts right after.",
   "@settings.mediaIndex.importanceThreshold.waitingForImportance": {
-    "description": "Shown under the slider when image indexing is enabled and the drive is scanned, but Cmdr hasn''t yet worked out which folders the user relies on most (the ranking that decides indexing order). It replaces the generic covered-count placeholder so there''s one honest line, not two spinners. Indexing starts as soon as that ranking finishes."
+    "description": "Shown under the slider when image indexing is enabled and the drive is scanned, but Cmdr hasn’t yet worked out which folders the user relies on most (the ranking that decides indexing order). It replaces the generic covered-count placeholder so there’s one honest line, not two spinners. Indexing starts as soon as that ranking finishes."
   },
   "settings.mediaIndex.importanceThreshold.waitingForDriveIndex": "The drive scan is still running. Image indexing starts as soon as it finishes.",
   "@settings.mediaIndex.importanceThreshold.waitingForDriveIndex": {
-    "description": "Shown under the slider when image indexing was just turned on but the drive index isn''t ready yet (the full drive scan is still running), so no images can be indexed yet. Answers the ''I flipped the switch and nothing happened'' moment honestly: the pass starts by itself right after the scan. Replaces the generic covered-count placeholder so there''s one honest line, not two spinners."
+    "description": "Shown under the slider when image indexing was just turned on but the drive index isn’t ready yet (the full drive scan is still running), so no images can be indexed yet. Answers the “I flipped the switch and nothing happened” moment honestly: the pass starts by itself right after the scan. Replaces the generic covered-count placeholder so there’s one honest line, not two spinners."
   },
   "settings.mediaIndex.importanceThreshold.pending": "Some drives are still scanning, so these numbers will grow.",
   "@settings.mediaIndex.importanceThreshold.pending": {
-    "description": "Caveat appended under the covered-count preview when at least one drive being indexed hasn''t finished scanning, so the shown totals are a lower bound."
+    "description": "Caveat appended under the covered-count preview when at least one drive being indexed hasn’t finished scanning, so the shown totals are a lower bound."
   },
   "settings.mediaIndex.importanceThreshold.deltaAdd": "{images, plural, one {Adds about {imagesText} image} other {Adds about {imagesText} images}}",
   "@settings.mediaIndex.importanceThreshold.deltaAdd": {
@@ -877,7 +877,7 @@
   },
   "settings.mediaIndex.progress.counting": "Counting images…",
   "@settings.mediaIndex.progress.counting": {
-    "description": "Progress line shown for a drive while Cmdr is still counting how many images qualify (the honest total isn''t known yet)."
+    "description": "Progress line shown for a drive while Cmdr is still counting how many images qualify (the honest total isn’t known yet)."
   },
   "settings.mediaIndex.progress.done": "{total, plural, one {{totalText} image indexed} other {{totalText} images indexed}}",
   "@settings.mediaIndex.progress.done": {
@@ -963,7 +963,7 @@
   },
   "settings.indexing.askForEachDrive.label": "Ask for each drive",
   "@settings.indexing.askForEachDrive.label": {
-    "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you''d like to index it. In Settings > Behavior > File system watching.",
+    "description": "Label for the toggle that controls whether Cmdr asks, the first time you open a network share or USB device, if you’d like to index it. In Settings > Behavior > File system watching.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.askForEachDrive.description": "When you first open a network share or device, ask whether to index it.",
@@ -973,7 +973,7 @@
   },
   "settings.indexing.staleNotify.label": "Notify me if any external drive index goes stale",
   "@settings.indexing.staleNotify.label": {
-    "description": "Label for the toggle that controls whether Cmdr shows a one-time explanation the first time an external drive''s index may be out of date (because the drive was disconnected). In Settings > Behavior > File system watching.",
+    "description": "Label for the toggle that controls whether Cmdr shows a one-time explanation the first time an external drive’s index may be out of date (because the drive was disconnected). In Settings > Behavior > File system watching.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.staleNotify.description": "You’ll still see the yellow status if you turn this off.",
@@ -983,7 +983,7 @@
   },
   "settings.indexing.masterOffNote": "Drive indexing is off, so no drive is indexed and folder sizes stay hidden. Each drive keeps its own on or off choice, ready for when you turn this back on.",
   "@settings.indexing.masterOffNote": {
-    "description": "Note under the master drive-indexing toggle, shown only while it''s off. States what stops happening and reassures that the per-drive choices survive the master switch. Sentence case.",
+    "description": "Note under the master drive-indexing toggle, shown only while it’s off. States what stops happening and reassures that the per-drive choices survive the master switch. Sentence case.",
     "screenshot": "settings-indexing-drive-indexing.png",
     "screenshotNote": "Settings > Indexing > Drive indexing, pictured here. Your string is the note under the main switch that appears only while that switch is off."
   },
@@ -995,22 +995,22 @@
   },
   "settings.indexing.reEnableNotifications.label": "Re-enable notifications for all drives",
   "@settings.indexing.reEnableNotifications.label": {
-    "description": "Label for the row holding the button that clears every per-drive \"Don''t ask again\" silence, so Cmdr will ask about indexing each drive again.",
+    "description": "Label for the row holding the button that clears every per-drive \"Don’t ask again\" silence, so Cmdr will ask about indexing each drive again.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.reEnableNotifications.button": "Re-enable",
   "@settings.indexing.reEnableNotifications.button": {
-    "description": "Button that clears every per-drive \"Don''t ask again\" silence. Short label; sits in a row next to its description.",
+    "description": "Button that clears every per-drive \"Don’t ask again\" silence. Short label; sits in a row next to its description.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.reEnableNotifications.description": "Ask again about indexing each drive you turned the prompt off for.",
   "@settings.indexing.reEnableNotifications.description": {
-    "description": "Help text under the \"Re-enable notifications for all drives\" button, explaining it undoes the per-drive \"Don''t ask again\" choices.",
+    "description": "Help text under the \"Re-enable notifications for all drives\" button, explaining it undoes the per-drive \"Don’t ask again\" choices.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "You haven’t turned off the prompt for any drive yet.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
-    "description": "Tooltip on the disabled \"Re-enable\" button, shown when the user hasn''t silenced the first-connect prompt for any drive (so there''s nothing to re-enable).",
+    "description": "Tooltip on the disabled \"Re-enable\" button, shown when the user hasn’t silenced the first-connect prompt for any drive (so there’s nothing to re-enable).",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
   "settings.indexing.silencedDrives.label": "Silenced drive prompts",
@@ -1677,7 +1677,7 @@
   },
   "settings.advanced.showSafeSaveFiles.description": "When apps like TextEdit and Preview save a file, macOS writes the new version alongside it under a temporary name (ending in “.sb-”) and swaps it in. Turn this off to keep those out of the file list.",
   "@settings.advanced.showSafeSaveFiles.description": {
-    "description": "Help text for the show-safe-save-files toggle (advanced). \"macOS\" is a brand name (keep it), and \".sb-\" is a literal filename fragment (keep it exactly). \"TextEdit\" and \"Preview\" are Apple''s apps, and macOS localizes their names (for example fr \"Aperçu\", zh \"文本编辑\" and \"预览\"): use the names your language''s macOS shows (check the reference pile or the app bundle).",
+    "description": "Help text for the show-safe-save-files toggle (advanced). \"macOS\" is a brand name (keep it), and \".sb-\" is a literal filename fragment (keep it exactly). \"TextEdit\" and \"Preview\" are Apple’s apps, and macOS localizes their names (for example fr \"Aperçu\", zh \"文本编辑\" and \"预览\"): use the names your language’s macOS shows (check the reference pile or the app bundle).",
     "screenshot": "settings-advanced.png"
   },
   "settings.advanced.showStagingTempFiles.label": "Show Cmdr’s temporary files",
@@ -1762,7 +1762,7 @@
   },
   "settings.onboarding.fullDiskAccessChoice.label": "Full Disk Access choice",
   "@settings.onboarding.fullDiskAccessChoice.label": {
-    "description": "Internal, hidden-from-UI label for the stored answer to the Full Disk Access step. Surfaces only in settings search. \"Full Disk Access\" is the macOS System Settings permission name; keep it as macOS names it in the target language."
+    "description": "Internal, hidden-from-UI label for the stored answer to the Full Disk Access step. Surfaces only in settings search. \"Full Disk Access\" is the macOS System Settings permission name; keep it as macOS names it in the target language. Capitalized “Full Disk Access” always names that macOS permission (its list in Privacy & Security); where Cmdr’s prose writes lowercase “full disk access” (onboarding, search, Ask Cmdr), it means the access itself, in plain words."
   },
   "settings.onboarding.termsAcceptedVersion.label": "Accepted terms version",
   "@settings.onboarding.termsAcceptedVersion.label": {
@@ -2040,7 +2040,7 @@
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "That’s the empty space around the file list, not a file row.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
-    "description": "Helper text under the double-click-to-parent switch in Settings > Behavior > Navigation & file ops. Clarifies what \"pane background\" (named in the switch label just above) means: the blank area around the file list, as opposed to a row representing a file. \"That''s\" refers back to \"the pane background\" in the label.",
+    "description": "Helper text under the double-click-to-parent switch in Settings > Behavior > Navigation & file ops. Clarifies what \"pane background\" (named in the switch label just above) means: the blank area around the file list, as opposed to a row representing a file. \"That’s\" refers back to \"the pane background\" in the label.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Double-click-to-parent hint shown",
@@ -2475,7 +2475,7 @@
   },
   "settings.summary.notifications": "Downloads notifications, the global go-to-latest-download shortcut, and low-disk-space warnings.",
   "@settings.summary.notifications": {
-    "description": "One-line summary shown under the \"Notifications\" subsection heading. \"Downloads\" is the macOS folder name (use the OS''s localized name)."
+    "description": "One-line summary shown under the \"Notifications\" subsection heading. \"Downloads\" is the macOS folder name (use the OS’s localized name)."
   },
   "settings.summary.search": "Live-applied filename and regex searches, and the recent-searches cap.",
   "@settings.summary.search": {
@@ -2679,11 +2679,11 @@
   },
   "settings.ai.tooltipLocal": "Runs a small language model entirely on your device. Maximum privacy: nothing leaves your computer. Works offline. Uses ~2 GB disk space and ~400 MB memory (varies with context size). Requires Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
-    "description": "Tooltip for the AI \"Local LLM\" provider option. \"~2 GB\" and \"~400 MB\" are approximate literal sizes (keep the unit symbols and tilde). \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages. \"M1+\" means M1 or later. \"context size\" ties to the local context-window setting."
+    "description": "Tooltip for the AI \"Local LLM\" provider option. \"~2 GB\" and \"~400 MB\" are approximate literal sizes (keep the unit symbols and tilde). \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages. \"M1+\" means M1 or later. \"context size\" ties to the local context-window setting."
   },
   "settings.ai.tooltipLocalDisabled": "Local AI requires Apple silicon (M1 or later). Use Cloud AI instead.",
   "@settings.ai.tooltipLocalDisabled": {
-    "description": "Tooltip shown when the Local LLM option is disabled because the hardware is unsupported. \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple''s name for its own M-series Mac chips: use the form your language''s termbase settles, since Apple frames it in its own words in some languages. \"Cloud AI\" is this section's own option name; translate consistently with settings.ai.provider.opt.cloud."
+    "description": "Tooltip shown when the Local LLM option is disabled because the hardware is unsupported. \"M1\" is an Apple chip name; keep it. \"Apple silicon\" is Apple’s name for its own M-series Mac chips: use the form your language’s termbase settles, since Apple frames it in its own words in some languages. \"Cloud AI\" is this section's own option name; translate consistently with settings.ai.provider.opt.cloud."
   },
   "settings.fileSystemWatching.indexSize": "Index size",
   "@settings.fileSystemWatching.indexSize": {
@@ -2801,7 +2801,7 @@
   },
   "settings.updates.card.updates": "Updates",
   "@settings.updates.card.updates": {
-    "description": "Heading of the updates card (auto-check for updates, show what''s new on update) in Settings > Updates & privacy.",
+    "description": "Heading of the updates card (auto-check for updates, show what’s new on update) in Settings > Updates & privacy.",
     "screenshot": "settings-updates.png"
   },
   "settings.updates.card.privacyAndDataSharing": "Privacy and data sharing",
@@ -2826,7 +2826,7 @@
   "@settings.network.permissionIntroPrefix": {
     "description": "First part of the Local Network permission explainer. It ends mid-sentence (note the trailing space) so a clickable \"Connect to server…\" chip and then the suffix follow inline. Keep the trailing space and the unfinished sentence. \"Cmdr\" is the product name and \"SMB\" a protocol name (keep both); \"Network\" is the Cmdr section the user opens.",
     "placeholders": {
-      "localNetwork": "the OS-localized macOS \"Local Network\" permission name, injected at runtime"
+      "localNetwork": "the OS-localized macOS \"Local Network\" permission name, injected at runtime (it follows the Mac’s system language, which can differ from Cmdr’s, so it may arrive in English: in a language written without spaces between words, such as Chinese, put a space on each side of it)"
     },
     "screenshot": "settings-file-systems-smb.png"
   },
@@ -3073,7 +3073,7 @@
   },
   "settings.servers.trustedHostKeys.description": "Cmdr asks before it trusts a server’s key the first time you connect, and remembers your answer here. Saved servers live in the Servers list, not on this page.",
   "@settings.servers.trustedHostKeys.description": {
-    "description": "Help text under the \"Trusted host keys\" card title. \"Servers\" (capital S) is the name of the row in Cmdr''s volume switcher that lists saved servers; translate it the same way as servers.hub keys. \"Cmdr\" is the app name; keep it."
+    "description": "Help text under the \"Trusted host keys\" card title. \"Servers\" (capital S) is the name of the row in Cmdr’s volume switcher that lists saved servers; translate it the same way as servers.hub keys. \"Cmdr\" is the app name; keep it."
   },
   "settings.servers.trustedHostKeys.empty": "Nothing trusted yet. The first time you connect to an SFTP server, Cmdr shows you its fingerprint and asks.",
   "@settings.servers.trustedHostKeys.empty": {
@@ -3095,7 +3095,7 @@
   "@settings.servers.trustedHostKeys.confirm": {
     "description": "Body of that confirmation: what changes if they go ahead. States a consequence rather than warning; nothing is lost. \"Cmdr\" is the app name; keep it.",
     "placeholders": {
-      "host": "the server''s address, as the user typed it, for example nas.local"
+      "host": "the server’s address, as the user typed it, for example nas.local"
     }
   },
   "settings.adb.status.label": "Status",
@@ -3127,7 +3127,7 @@
   },
   "settings.adb.install.intro": "Install the Android platform tools, then press Re-check:",
   "@settings.adb.install.intro": {
-    "description": "Line introducing a copyable terminal command, shown only when \"adb\" was not found. \"Re-check\" must match the button label settings.adb.recheck word for word. \"Android platform tools\" is the name of the download; use the wording Google''s own localized docs use. The command itself is never translated."
+    "description": "Line introducing a copyable terminal command, shown only when \"adb\" was not found. \"Re-check\" must match the button label settings.adb.recheck word for word. \"Android platform tools\" is the name of the download; use the wording Google’s own localized docs use. The command itself is never translated."
   },
   "settings.adb.pathPlaceholder": "Look for adb the usual way",
   "@settings.adb.pathPlaceholder": {

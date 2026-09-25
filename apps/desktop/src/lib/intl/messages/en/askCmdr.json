@@ -169,7 +169,7 @@
   },
   "askCmdr.tool.proposeSuggestions.doing": "Preparing suggestions",
   "@askCmdr.tool.proposeSuggestions.doing": {
-    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant prepares file operations (moving, copying, trashing, deleting, renaming, compressing, extracting) for the user to review. Nothing happens to any file: the user decides. Say ''preparing'', never ''doing'' or ''applying''. Pairs with askCmdr.tool.proposeSuggestions.done."
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant prepares file operations (moving, copying, trashing, deleting, renaming, compressing, extracting) for the user to review. Nothing happens to any file: the user decides. Say “preparing”, never “doing” or “applying”. Pairs with askCmdr.tool.proposeSuggestions.done."
   },
   "askCmdr.tool.proposeSuggestions.done": "Prepared suggestions",
   "@askCmdr.tool.proposeSuggestions.done": {
@@ -185,7 +185,7 @@
   },
   "askCmdr.tool.memoryWrite.doing": "Saving a note about you",
   "@askCmdr.tool.memoryWrite.doing": {
-    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant saves something it learned about this person into its own small notes folder, so it doesn''t have to ask again next time. Notes are facts and preferences about the person, and they stay on this computer until a message is sent. Nothing about the person''s files changes. Pairs with askCmdr.tool.memoryWrite.done."
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant saves something it learned about this person into its own small notes folder, so it doesn’t have to ask again next time. Notes are facts and preferences about the person, and they stay on this computer until a message is sent. Nothing about the person’s files changes. Pairs with askCmdr.tool.memoryWrite.done."
   },
   "askCmdr.tool.memoryWrite.done": "Saved a note about you",
   "@askCmdr.tool.memoryWrite.done": {
@@ -193,7 +193,7 @@
   },
   "askCmdr.tool.memoryEdit.doing": "Updating its notes",
   "@askCmdr.tool.memoryEdit.doing": {
-    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant changes or removes one part of the notes it keeps about this person, usually to drop something that has gone out of date. ''Its'' refers to the assistant, so use whatever form your language uses for a thing''s own possessions. Pairs with askCmdr.tool.memoryEdit.done."
+    "description": "Present-tense label on a tool line in the Ask Cmdr chat rail, shown while the assistant changes or removes one part of the notes it keeps about this person, usually to drop something that has gone out of date. “Its” refers to the assistant, so use whatever form your language uses for a thing’s own possessions. Pairs with askCmdr.tool.memoryEdit.done."
   },
   "askCmdr.tool.memoryEdit.done": "Updated its notes",
   "@askCmdr.tool.memoryEdit.done": {
@@ -894,7 +894,7 @@
   },
   "askCmdr.renameUndo.unavailable": "Nothing to put back. This batch may already be undone, or its drive isn’t connected.",
   "@askCmdr.renameUndo.unavailable": {
-    "description": "Result line shown when an undo reversed nothing at all: the batch had already been undone, or a drive it needs is not connected. Says what is true without guessing which of the two it was. Sentence case; the apostrophe is U+2019."
+    "description": "Result line shown when an undo reversed nothing at all: the batch had already been undone, or a drive it needs is not connected. Says what is true without guessing which of the two it was. Sentence case; the apostrophe is U+2019. “put back” here means the old names, so use the verb from askCmdr.renameUndo.undone."
   },
   "askCmdr.context.label": "How full this chat is",
   "@askCmdr.context.label": {
