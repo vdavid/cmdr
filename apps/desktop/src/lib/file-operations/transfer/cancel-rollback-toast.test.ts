@@ -48,7 +48,7 @@ describe('readCancelRollback', () => {
     it('names the deletion for a copy', () => {
       const readout = readCancelRollback(rollback({ outcome: 'rolledBack', reversed: 1240 }), 'copy')
       expect(readout).toEqual({
-        headline: 'Removed the 1,240 items Cmdr had written.',
+        headline: 'Removed all 1,240 items Cmdr had written.',
         leftBehind: null,
         reasons: [],
         staged: null,
@@ -60,11 +60,11 @@ describe('readCancelRollback', () => {
       // Undoing a move carries files home. Wording it as a delete would be a
       // data-safety lie in copy.
       const readout = readCancelRollback(rollback({ outcome: 'rolledBack', reversed: 3 }), 'move')
-      expect(readout?.headline).toBe('Put the 3 items back.')
+      expect(readout?.headline).toBe('Put all 3 items back.')
     })
 
     it('drops the number when there was only one item, on both verbs', () => {
-      // "Removed the 1 item" / "Put the 1 item back" is the shape the whole
+      // "Removed all 1 item" / "Put all 1 item back" is the shape the whole
       // sentence sits inside the plural to avoid.
       expect(readCancelRollback(rollback({ outcome: 'rolledBack', reversed: 1 }), 'copy')?.headline).toBe(
         'Removed the item Cmdr had written.',
@@ -82,10 +82,10 @@ describe('readCancelRollback', () => {
   describe('a reversal the user stopped partway', () => {
     // Told apart by its EMPTY skips: a full pass that skipped nothing lands
     // `rolledBack`, so `partiallyRolledBack` with no groups can only be a stop.
-    it('says the rest are still there, for a copy', () => {
+    it('says the rest stayed where the copy put them, for a copy', () => {
       const readout = readCancelRollback(rollback({ outcome: 'partiallyRolledBack', reversed: 12 }), 'copy')
       expect(readout).toEqual({
-        headline: 'Stopped after removing 12 items. The rest are still there.',
+        headline: 'Stopped after removing 12 items. The rest stayed where the copy put them.',
         leftBehind: null,
         reasons: [],
         staged: null,
@@ -216,7 +216,7 @@ describe('readCancelRollback', () => {
         'copy',
       )
       expect(readout).toEqual({
-        headline: 'Stopped after removing 5 items. The rest are still there.',
+        headline: 'Stopped after removing 5 items. The rest stayed where the copy put them.',
         leftBehind: null,
         reasons: [],
         staged: null,
@@ -276,7 +276,7 @@ describe('readCancelRollback', () => {
         rollback({ outcome: 'rolledBack', reversed: 4, stagedLeftovers: null }),
         'copy',
       )
-      expect(readout?.headline).toBe('Removed the 4 items Cmdr had written.')
+      expect(readout?.headline).toBe('Removed all 4 items Cmdr had written.')
       expect(readout?.staged).toBeNull()
       expect(readout?.level).toBe('success')
     })

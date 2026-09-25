@@ -113,6 +113,7 @@
         <p class="mi-reclaim-line">
             {tString('settings.mediaIndex.reclaim.line', {
                 totalText: formatInteger(preview.totalStored),
+                total: preview.totalStored,
                 coveredText: formatInteger(preview.coveredStored),
                 doomed: preview.doomedCount,
                 doomedText: formatInteger(preview.doomedCount),

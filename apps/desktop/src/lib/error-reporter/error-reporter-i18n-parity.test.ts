@@ -49,7 +49,7 @@ describe('error-reporter dialog copy parity (en)', () => {
 
   it('resolves the interpolated dialog strings', () => {
     expect(t('errorReporter.dialog.counter', { currentText: '52,000', maxText: '100,000' })).toBe('52,000 / 100,000')
-    expect(t('errorReporter.dialog.noteTooLong', { maxText: '100,000' })).toBe(
+    expect(t('errorReporter.dialog.noteTooLong', { maxText: '100,000', max: 100_000 })).toBe(
       'Note is too long. Maximum is 100,000 characters.',
     )
     expect(t('errorReporter.dialog.totalLines', { countText: '1,234' })).toBe(

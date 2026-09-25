@@ -34,10 +34,11 @@
     "screenshotNote": "The feedback dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its character counter, the note that a message is too long, the Send button while sending, or the line shown when a message couldn’t be sent."
   },
 
-  "feedback.dialog.tooLong": "Sorry, that’s too long. Maximum is {maxText} characters.",
+  "feedback.dialog.tooLong": "Sorry, that’s too long. Maximum is {maxText} {max, plural, one {character} other {characters}}.",
   "@feedback.dialog.tooLong": {
     "description": "Warning shown below the feedback box when the typed text exceeds the maximum length. Apologetic and brief.",
     "placeholders": {
+      "max": "the same maximum (drives the singular/plural form of the noun)",
       "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
     },
     "screenshot": "feedback.png",

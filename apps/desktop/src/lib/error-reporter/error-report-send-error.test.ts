@@ -61,7 +61,7 @@ describe('errorReportSendReason', () => {
 
   it('names the cap for a note over it', () => {
     expect(errorReportSendReason({ type: 'noteTooLong', maxChars: 100_000 })).toBe(
-      tString('errorReporter.dialog.noteTooLong', { maxText: formatInteger(100_000) }),
+      tString('errorReporter.dialog.noteTooLong', { maxText: formatInteger(100_000), max: 100_000 }),
     )
   })
 

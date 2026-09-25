@@ -743,6 +743,7 @@
                             ? tString('fileOperations.transferDialog.mergeInfoSingle')
                             : tString('fileOperations.transferDialog.mergeInfoMany', {
                                   countText: formatNumber(mergeFolderCount),
+                                  count: mergeFolderCount,
                               })}
                     </p>
                 {/if}

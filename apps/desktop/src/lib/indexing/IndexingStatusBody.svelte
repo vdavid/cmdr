@@ -136,7 +136,9 @@
         entriesScanned > 0
             ? tString('indexing.scan.counters', {
                   entriesText: formatNumber(entriesScanned),
+                  entries: entriesScanned,
                   dirsText: formatNumber(dirsFound),
+                  dirs: dirsFound,
               })
             : '',
     )
@@ -176,7 +178,7 @@
     const eventsProcessed = $derived(activity.replayEventsProcessed)
     const estimatedTotal = $derived(activity.replayEstimatedTotal)
     const replayProgress = $derived(estimatedTotal > 0 ? Math.min(1, eventsProcessed / estimatedTotal) : 0)
-    const replayDetail = $derived(tString('indexing.replay.detail', { eventsText: formatNumber(eventsProcessed) }))
+    const replayDetail = $derived(tString('indexing.replay.detail', { eventsText: formatNumber(eventsProcessed), events: eventsProcessed }))
 
     // ── The active step's detail ──────────────────────────────────────
     // Keyed off the ACTIVE step (not a separate "mode"), so the synthetic

@@ -49,10 +49,11 @@
     "screenshot": "error-report.png"
   },
 
-  "errorReporter.dialog.noteTooLong": "Note is too long. Maximum is {maxText} characters.",
+  "errorReporter.dialog.noteTooLong": "Note is too long. Maximum is {maxText} {max, plural, one {character} other {characters}}.",
   "@errorReporter.dialog.noteTooLong": {
     "description": "Warning shown below the note box when the note exceeds the maximum length.",
     "placeholders": {
+      "max": "the same maximum (drives the singular/plural form of the noun)",
       "maxText": "the maximum allowed character count, already formatted (e.g. 100,000)"
     }
   },

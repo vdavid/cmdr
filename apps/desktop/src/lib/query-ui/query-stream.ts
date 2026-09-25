@@ -187,12 +187,14 @@ export function liveStatusLine(view: LiveRunView, shownCount: number): string {
     return tString('queryUi.results.live.incomplete', {
       shownText: formatInteger(shownCount),
       totalText: formatInteger(view.matchCount),
+      total: view.matchCount,
     })
   }
   if (view.capped && shownCount < view.matchCount) {
     return tString('queryUi.results.live.capped', {
       shownText: formatInteger(shownCount),
       totalText: formatInteger(view.matchCount),
+      total: view.matchCount,
     })
   }
   return ''

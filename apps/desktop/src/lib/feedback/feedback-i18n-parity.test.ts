@@ -42,7 +42,7 @@ describe('feedback dialog copy parity (en)', () => {
 
   it('resolves the interpolated dialog strings', () => {
     expect(t('feedback.dialog.counter', { currentText: '52,000', maxText: '100,000' })).toBe('52,000 / 100,000')
-    expect(t('feedback.dialog.tooLong', { maxText: '100,000' })).toBe(
+    expect(t('feedback.dialog.tooLong', { maxText: '100,000', max: 100_000 })).toBe(
       'Sorry, that’s too long. Maximum is 100,000 characters.',
     )
   })

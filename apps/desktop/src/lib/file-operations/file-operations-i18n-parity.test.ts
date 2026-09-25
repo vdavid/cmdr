@@ -124,7 +124,7 @@ describe('transfer dialog chrome (en)', () => {
 
   it('resolves merge info and the conflict summary with agreement', () => {
     expect(tString('fileOperations.transferDialog.mergeInfoSingle')).toBe('1 folder will merge with an existing folder')
-    expect(t('fileOperations.transferDialog.mergeInfoMany', { countText: '1,234' })).toBe(
+    expect(t('fileOperations.transferDialog.mergeInfoMany', { countText: '1,234', count: 1234 })).toBe(
       '1,234 folders will merge with existing folders',
     )
     expect(t('fileOperations.transferDialog.conflictsSummary', { countText: '1', count: 1 })).toBe(
@@ -197,11 +197,11 @@ describe('transfer progress dialog chrome (en)', () => {
   })
 
   it('resolves the conflict comparison labels and annotations', () => {
-    expect(tString('fileOperations.transferProgress.existingFolderLabel')).toBe('Existing (folder):')
-    expect(tString('fileOperations.transferProgress.existingFileLabel')).toBe('Existing (file):')
+    expect(tString('fileOperations.transferProgress.existingFolderLabel')).toBe('Existing folder:')
+    expect(tString('fileOperations.transferProgress.existingFileLabel')).toBe('Existing file:')
     expect(tString('fileOperations.transferProgress.existingLabel')).toBe('Existing:')
-    expect(tString('fileOperations.transferProgress.newFolderLabel')).toBe('New (folder):')
-    expect(tString('fileOperations.transferProgress.newFileLabel')).toBe('New (file):')
+    expect(tString('fileOperations.transferProgress.newFolderLabel')).toBe('New folder:')
+    expect(tString('fileOperations.transferProgress.newFileLabel')).toBe('New file:')
     expect(tString('fileOperations.transferProgress.newLabel')).toBe('New:')
     expect(tString('fileOperations.transferProgress.sizeUnknown')).toBe('(unknown)')
     expect(tString('fileOperations.transferProgress.annotationLarger')).toBe('(larger)')

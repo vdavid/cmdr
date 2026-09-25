@@ -189,7 +189,10 @@
     function getStatusText(): string {
         if (!isIndexAvailable) {
             if (scanning && entriesScanned > 0) {
-                return tString('queryUi.results.scanningWithCount', { countText: formatEntryCount(entriesScanned) })
+                return tString('queryUi.results.scanningWithCount', {
+                    countText: formatEntryCount(entriesScanned),
+                    count: entriesScanned,
+                })
             }
             if (scanning) return tString('queryUi.results.scanning')
             return tString('queryUi.results.indexUnavailable')
@@ -211,12 +214,16 @@
             // bar stays empty (same content-is-source-of-truth rule as the spinner states).
             if (showingCount) return ''
             if (!hasSearched || (!query.trim() && sizeFilter === 'any' && dateFilter === 'any')) {
-                return tString('queryUi.results.indexReadyStatus', { countText: formatEntryCount(indexEntryCount) })
+                return tString('queryUi.results.indexReadyStatus', {
+                    countText: formatEntryCount(indexEntryCount),
+                    count: indexEntryCount,
+                })
             }
             if (totalCount === 0) return ''
             return tString('queryUi.results.resultCount', {
                 shownText: String(results.length),
                 totalText: formatInteger(totalCount),
+                total: totalCount,
             })
         }
         // Index loading: the content area shows the "Loading drive index…" spinner,
@@ -509,6 +516,7 @@
                         {entriesScanned > 0
                             ? tString('queryUi.results.scanProgressWithCount', {
                                   countText: formatEntryCount(entriesScanned),
+                                  count: entriesScanned,
                               })
                             : tString('queryUi.results.scanProgress')}
                     </p>

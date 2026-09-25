@@ -128,7 +128,9 @@ export function chipTooltip(entry: HistoryEntry, nowMs: number = Date.now()): st
   const summary = filterSummary(entry)
   if (summary) lines.push(summary)
   if (entry.resultCount > 0) {
-    lines.push(tString('queryUi.recent.resultCount', { countText: String(entry.resultCount) }))
+    lines.push(
+      tString('queryUi.recent.resultCount', { countText: String(entry.resultCount), count: entry.resultCount }),
+    )
   }
   return lines.join('\n')
 }

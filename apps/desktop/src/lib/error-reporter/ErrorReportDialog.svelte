@@ -302,7 +302,7 @@
         />
         {#if noteOverLimit}
             <p class="helper-text">
-                {t('errorReporter.dialog.noteTooLong', { maxText: formatInteger(MAX_NOTE_CHARS) })}
+                {t('errorReporter.dialog.noteTooLong', { maxText: formatInteger(MAX_NOTE_CHARS), max: MAX_NOTE_CHARS })}
             </p>
         {/if}
 

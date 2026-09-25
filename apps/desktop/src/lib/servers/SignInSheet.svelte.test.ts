@@ -208,7 +208,7 @@ describe('SignInSheet: the host-key step', () => {
     // that CHANGED never wears first contact's plain primary button.
     expect(document.body.textContent).toContain('SHA256:THE-REAL-ONE')
     expect(document.body.textContent).not.toContain('SHA256:THE-ONE-ON-SCREEN')
-    expect(document.body.textContent).toContain('nas.local’s key changed')
+    expect(document.body.textContent).toContain('The key for nas.local changed')
   })
 })
 

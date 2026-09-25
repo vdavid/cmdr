@@ -227,8 +227,8 @@ const variants: VariantCase[] = [
     name: 'folder → file',
     sourceIsDirectory: true,
     destinationIsDirectory: false,
-    existingLabel: 'Existing (file):',
-    newLabel: 'New (folder):',
+    existingLabel: 'Existing file:',
+    newLabel: 'New folder:',
     hasWarning: false,
     overwriteLabel: 'Overwrite',
     overwriteAllLabel: 'Overwrite all',
@@ -237,8 +237,8 @@ const variants: VariantCase[] = [
     name: 'file → folder',
     sourceIsDirectory: false,
     destinationIsDirectory: true,
-    existingLabel: 'Existing (folder):',
-    newLabel: 'New (file):',
+    existingLabel: 'Existing folder:',
+    newLabel: 'New file:',
     hasWarning: true,
     overwriteLabel: 'Overwrite folder with file',
     overwriteAllLabel: 'Overwrite folders with files',
@@ -436,7 +436,7 @@ describe('TransferProgressDialog conflict — folder → file, sourceSize null',
   it('renders "(unknown)" in the New slot using the muted color class', async () => {
     const target = await mountDialogWithConflict(event)
     const sizes = target.querySelectorAll('.conflict-file .conflict-file-size')
-    // [0] = Existing (file), [1] = New (folder).
+    // [0] = Existing file, [1] = New folder.
     expect(sizes.length).toBe(2)
     const newSize = sizes[1]
     expect(newSize.textContent.trim()).toBe('(unknown)')

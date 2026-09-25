@@ -100,12 +100,13 @@
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."
   },
 
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copy} other {Move}} complete: skipped all {skippedText} files (already at the target), nothing was {verb, select, copy {copied} other {moved}}.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Copy} other {Move}} complete: skipped all {skippedText} {skipped, plural, one {file} other {files}} (already at the target), nothing was {verb, select, copy {copied} other {moved}}.",
   "@transfer.fileOnly.allSkippedMany": {
     "description": "Success toast after a copy or move where every selected file (two or more) was skipped because identical copies were already at the destination, so nothing actually transferred. Flat-file-count wording (clipboard paste, no folder breakdown). \"the target\" means the destination folder.",
     "placeholders": {
+      "skipped": "the same number of files (drives the singular/plural form; always 2 or more in English, but other languages still inflect by number)",
       "verb": "the action that just finished: \"copy\" picks the copy wording, anything else picks the move wording",
-      "skippedText": "number of files skipped, ready to drop into the sentence (e.g. 1,234). This branch only runs for two or more, so the noun stays plural"
+      "skippedText": "number of files skipped, ready to drop into the sentence (e.g. 1,234)"
     },
     "screenshot": "toast-transfer-complete.png",
     "screenshotNote": "The toast Cmdr shows when an operation finishes, pictured here. Your string is another outcome of the same toast: a move to trash or a delete, a compress, some files skipped, or files that appeared during a move."

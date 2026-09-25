@@ -891,10 +891,13 @@
       }
     }
   },
-  "settings.mediaIndex.reclaim.line": "You have {totalText} images indexed; your setting covers {coveredText}. The extra {doomed, plural, one {{doomedText} entry stays} other {{doomedText} entries stay}} searchable until you delete them.",
+  "settings.mediaIndex.reclaim.line": "You have {totalText} {total, plural, one {image} other {images}} indexed; your setting covers {coveredText}. The extra {doomed, plural, one {{doomedText} entry stays} other {{doomedText} entries stay}} searchable until you delete them.",
   "@settings.mediaIndex.reclaim.line": {
     "description": "Shown under the slider when the drive holds many more indexed images than the current level covers (because lowering the level never deletes anything). Frames the leftover entries as still useful before offering to delete them. Pairs with the reclaim button below it.",
     "placeholders": {
+      "total": {
+        "content": "The same total (decides whether the noun is singular or plural)."
+      },
       "totalText": {
         "content": "The total number of indexed images, preformatted with thousands separators."
       },

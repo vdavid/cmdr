@@ -57,7 +57,10 @@ export function errorReportSendReason(failure: ErrorReportSendError | null): str
     case 'bundleUnavailable':
       return tString('errorReporter.dialog.bundleUnavailable')
     case 'noteTooLong':
-      return tString('errorReporter.dialog.noteTooLong', { maxText: formatInteger(failure.maxChars) })
+      return tString('errorReporter.dialog.noteTooLong', {
+        maxText: formatInteger(failure.maxChars),
+        max: failure.maxChars,
+      })
     case 'notAmendable':
       return tString('errorReporter.amend.unavailable')
   }

@@ -162,7 +162,7 @@
         />
         {#if overLimit}
             <p class="helper-text">
-                {t('feedback.dialog.tooLong', { maxText: formatInteger(MAX_FEEDBACK_CHARS) })}
+                {t('feedback.dialog.tooLong', { maxText: formatInteger(MAX_FEEDBACK_CHARS), max: MAX_FEEDBACK_CHARS })}
             </p>
         {/if}
 

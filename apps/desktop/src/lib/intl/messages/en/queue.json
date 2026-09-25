@@ -17,9 +17,9 @@
     "screenshot": "queue-empty.png"
   },
 
-  "queue.empty.body": "Copies, moves, and deletes show up here while they run, so you can pause, resume, or cancel them.",
+  "queue.empty.body": "Copies, moves, deletes, and other file operations show up here while they run, so you can pause, resume, or cancel them.",
   "@queue.empty.body": {
-    "description": "Supporting line under the empty-state title, explaining what will appear in the operation queue window and why. It deliberately names the concrete actions rather than the category word \"operations\": the window title carries the category, this line tells the user what they’ll actually see.",
+    "description": "Supporting line under the empty-state title, explaining what will appear in the operation queue window and why. It names the most common actions first so the user knows what they’ll actually see, then “other file operations” covers the rest (renames, new folders, archive edits).",
     "screenshot": "queue-empty.png"
   },
 

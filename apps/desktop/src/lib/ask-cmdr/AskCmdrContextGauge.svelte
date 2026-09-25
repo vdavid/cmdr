@@ -25,6 +25,7 @@
             ? tString('askCmdr.context.tooltip', {
                   usedText: formatInteger(usage.estimatedTokens),
                   budgetText: formatInteger(usage.budgetTokens),
+                  budget: usage.budgetTokens,
               })
             : '',
     )

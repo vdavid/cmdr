@@ -340,7 +340,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
     expect(tString('onboarding.stepOptional.footer.start')).toBe('Start using Cmdr')
     expect(tString('onboarding.stepOptional.title')).toBe('You’re almost ready')
     expect(tString('onboarding.stepOptional.lede')).toBe(
-      'You chose to walk through a detailed setup, so here are a few easy choices. If you don’t care too much, just click the button below. These are all options, and the defaults are picked for your benefit.',
+      'You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, click the button below. All of these are optional, and the defaults are picked for your benefit.',
     )
     expect(tString('onboarding.stepOptional.recommendedOn')).toBe('Recommended: on')
     expect(tString('onboarding.stepOptional.changeAnytime')).toBe('You can change this any time in Settings.')
@@ -384,7 +384,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
     )
     expect(tString('onboarding.stepOptional.updates.title')).toBe('Automatic updates')
     expect(tString('onboarding.stepOptional.updates.desc')).toBe(
-      'If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf disabled, you’ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).',
+      'If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you disable it, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).',
     )
     expect(tString('onboarding.stepOptional.mtp.title')).toBe('MTP (Android phones, Kindles, cameras)')
     // The trailing "But it's a bit of a cost, so:" is gone: it used to lead into the

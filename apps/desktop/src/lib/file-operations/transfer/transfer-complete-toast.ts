@@ -210,7 +210,11 @@ function composeFileOnlyToast(
     if (filesSkipped === 1) {
       return tString('transfer.fileOnly.allSkippedSingle', { verb })
     }
-    return tString('transfer.fileOnly.allSkippedMany', { verb, skippedText: formatNumber(filesSkipped) })
+    return tString('transfer.fileOnly.allSkippedMany', {
+      verb,
+      skippedText: formatNumber(filesSkipped),
+      skipped: filesSkipped,
+    })
   }
 
   // Mixed: some transferred, some skipped.

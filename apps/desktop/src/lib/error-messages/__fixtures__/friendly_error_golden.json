@@ -508,7 +508,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Box-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Box**. Here’s what to try:\n- Quit and reopen Box Drive\n- Sign out and back in to Box Drive\n- Check Box’s status page for outages",
+    "suggestion": "This folder is managed by **Box**. Here’s what to try:\n- Quit and reopen Box Drive\n- Sign out and back in to Box Drive\n- Check the Box status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:Box:transient": {
@@ -556,7 +556,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Dropbox/&#95;f&#95;&#42;x`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Dropbox**. Here’s what to try:\n- Quit and reopen Dropbox\n- Sign out and back in to Dropbox\n- Check Dropbox’s status page for outages",
+    "suggestion": "This folder is managed by **Dropbox**. Here’s what to try:\n- Quit and reopen Dropbox\n- Sign out and back in to Dropbox\n- Check the Dropbox status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:Dropbox:transient": {
@@ -580,7 +580,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Egnyte-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Egnyte**. Here’s what to try:\n- Quit and reopen Egnyte Connect\n- Sign out and back in to Egnyte Connect\n- Check Egnyte’s status page for outages",
+    "suggestion": "This folder is managed by **Egnyte**. Here’s what to try:\n- Quit and reopen Egnyte Connect\n- Sign out and back in to Egnyte Connect\n- Check the Egnyte status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:Egnyte:transient": {
@@ -628,7 +628,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/GoogleDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Google Drive**. Here’s what to try:\n- Quit and reopen Google Drive\n- Sign out and back in to Google Drive\n- Check Google Drive’s status page for outages",
+    "suggestion": "This folder is managed by **Google Drive**. Here’s what to try:\n- Quit and reopen Google Drive\n- Sign out and back in to Google Drive\n- Check the Google Drive status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:GoogleDrive:transient": {
@@ -700,7 +700,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Nextcloud-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Nextcloud**. Here’s what to try:\n- Quit and reopen Nextcloud\n- Sign out and back in to Nextcloud\n- Check Nextcloud’s status page for outages",
+    "suggestion": "This folder is managed by **Nextcloud**. Here’s what to try:\n- Quit and reopen Nextcloud\n- Sign out and back in to Nextcloud\n- Check the Nextcloud status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:Nextcloud:transient": {
@@ -724,7 +724,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/OneDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **OneDrive**. Here’s what to try:\n- Quit and reopen OneDrive\n- Sign out and back in to OneDrive\n- Check OneDrive’s status page for outages",
+    "suggestion": "This folder is managed by **OneDrive**. Here’s what to try:\n- Quit and reopen OneDrive\n- Sign out and back in to OneDrive\n- Check the OneDrive status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:OneDrive:transient": {
@@ -748,7 +748,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/pCloud/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **pCloud**. Here’s what to try:\n- Quit and reopen pCloud Drive\n- Sign out and back in to pCloud Drive\n- Check pCloud’s status page for outages",
+    "suggestion": "This folder is managed by **pCloud**. Here’s what to try:\n- Quit and reopen pCloud Drive\n- Sign out and back in to pCloud Drive\n- Check the pCloud status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:PCloud:transient": {
@@ -796,7 +796,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/ProtonDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Proton Drive**. Here’s what to try:\n- Quit and reopen Proton Drive\n- Sign out and back in to Proton Drive\n- Check Proton Drive’s status page for outages",
+    "suggestion": "This folder is managed by **Proton Drive**. Here’s what to try:\n- Quit and reopen Proton Drive\n- Sign out and back in to Proton Drive\n- Check the Proton Drive status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:ProtonDrive:transient": {
@@ -820,7 +820,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Sync-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Sync.com**. Here’s what to try:\n- Quit and reopen Sync.com\n- Sign out and back in to Sync.com\n- Check Sync.com’s status page for outages",
+    "suggestion": "This folder is managed by **Sync.com**. Here’s what to try:\n- Quit and reopen Sync.com\n- Sign out and back in to Sync.com\n- Check the Sync.com status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:Sync:transient": {
@@ -844,7 +844,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/SynologyDrive-x/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Synology Drive**. Here’s what to try:\n- Quit and reopen Synology Drive\n- Sign out and back in to Synology Drive\n- Check Synology Drive’s status page for outages",
+    "suggestion": "This folder is managed by **Synology Drive**. Here’s what to try:\n- Quit and reopen Synology Drive\n- Sign out and back in to Synology Drive\n- Check the Synology Drive status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:SynologyDrive:transient": {
@@ -868,7 +868,7 @@
     "category": "serious",
     "explanation": "Cmdr ran into a problem with `/Users/example/Library/CloudStorage/Tresorit/&#95;f`: x. This could be a temporary glitch or a sign that the disk or device needs attention.",
     "retryHint": true,
-    "suggestion": "This folder is managed by **Tresorit**. Here’s what to try:\n- Quit and reopen Tresorit\n- Sign out and back in to Tresorit\n- Check Tresorit’s status page for outages",
+    "suggestion": "This folder is managed by **Tresorit**. Here’s what to try:\n- Quit and reopen Tresorit\n- Sign out and back in to Tresorit\n- Check the Tresorit status page for outages",
     "title": "Couldn’t read this folder"
   },
   "provider:Tresorit:transient": {

@@ -180,14 +180,14 @@
       "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
-  "servers.refusal.hostKeyUntrusted": "Cmdr hasn’t trusted {host}’s key yet.",
+  "servers.refusal.hostKeyUntrusted": "Cmdr hasn’t trusted the key for {host} yet.",
   "@servers.refusal.hostKeyUntrusted": {
     "description": "Shown in the pane when an SSH server presents a host key this Mac hasn’t approved. \"Key\" is the server’s SSH host key, the fingerprint a person checks before trusting the server.",
     "placeholders": {
       "host": "the server’s hostname or address, like \"nas.local\""
     }
   },
-  "servers.refusal.hostKeyRevoked": "{host}’s key is marked as compromised in your SSH settings on this Mac. Cmdr won’t connect to it.",
+  "servers.refusal.hostKeyRevoked": "The key for {host} is marked as compromised in your SSH settings on this Mac. Cmdr won’t connect to it.",
   "@servers.refusal.hostKeyRevoked": {
     "description": "Shown in the pane when the server’s SSH host key is listed as revoked in the user’s own known_hosts file. This one is deliberately final: there is no button that can safely undo it. \"SSH\" is a protocol name; don’t translate it.",
     "placeholders": {
@@ -426,7 +426,7 @@
     "description": "One line under that heading. “Fingerprint” is the short string that identifies an SSH key; a person compares it character by character.",
     "screenshot": "server-sign-in-host-key-first-contact.png"
   },
-  "servers.hostKey.changedTitle": "{host}’s key changed",
+  "servers.hostKey.changedTitle": "The key for {host} changed",
   "@servers.hostKey.changedTitle": {
     "description": "Heading of the same step when the server presents a DIFFERENT key than the one already trusted. This one is serious: it can mean someone is in the middle.",
     "placeholders": {

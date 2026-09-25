@@ -19,10 +19,12 @@
     "description": "Generic fallback shown on the drive’s badge for ANY indexing run (a first index covered folder by folder, a full scan, or a repeat check) before live progress activity arrives. It says “indexing” rather than “scanning” because a first index no longer makes one pass over the drive. The trailing '…' signals ongoing work; keep it."
   },
 
-  "indexing.scan.counters": "{entriesText} entries, {dirsText} dirs",
+  "indexing.scan.counters": "{entriesText} {entries, plural, one {entry} other {entries}}, {dirsText} {dirs, plural, one {dir} other {dirs}}",
   "@indexing.scan.counters": {
     "description": "Standalone running tally detail line shown under the scan heading, e.g. '12,345 entries, 678 dirs'. No leading space (it’s its own line, not joined to the heading); 'dirs' is short for directories/folders (keep it terse, this is a compact status line).",
     "placeholders": {
+      "entries": "the same number of files and folders (drives the singular/plural form of its noun)",
+      "dirs": "the same number of folders (drives the singular/plural form of its noun)",
       "entriesText": "number of files and folders scanned so far, already formatted (e.g. 12,345)",
       "dirsText": "number of folders found so far, already formatted (e.g. 678)"
     },
@@ -195,10 +197,11 @@
     "screenshot": "indexing-checklist.png"
   },
 
-  "indexing.replay.detail": "{eventsText} events processed",
+  "indexing.replay.detail": "{eventsText} {events, plural, one {event} other {events}} processed",
   "@indexing.replay.detail": {
     "description": "Tooltip detail line under the 'Updating index' heading, e.g. '1,234 events processed'. 'events' means recorded filesystem changes.",
     "placeholders": {
+      "events": "the same number of events (drives the singular/plural form of the noun)",
       "eventsText": "number of change events processed so far, already formatted (e.g. 1,234)"
     },
     "screenshot": "indexing-checklist.png"

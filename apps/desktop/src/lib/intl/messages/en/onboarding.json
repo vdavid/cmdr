@@ -580,7 +580,7 @@
     "description": "Heading of the final optional-setup step, signaling onboarding is nearly done. Encouraging tone.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.lede": "You chose to walk through a detailed setup, so here are a few easy choices. If you don’t care too much, just click the button below. These are all options, and the defaults are picked for your benefit.",
+  "onboarding.stepOptional.lede": "You chose to walk through a detailed setup, so here are a few quick choices. If you don’t care too much, click the button below. All of these are optional, and the defaults are picked for your benefit.",
   "@onboarding.stepOptional.lede": {
     "description": "Intro paragraph for the optional-setup step: a few toggles with sensible defaults the user can ignore. Casual, low-pressure.",
     "screenshot": "onboarding-optional.png"
@@ -653,7 +653,7 @@
     "description": "Half-line summary under the automatic-updates toggle's title, naming what it does and what it costs. The full explanation sits behind the info glyph beside the title. Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf disabled, you’ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
+  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf you disable it, you keep your current version, and Cmdr makes zero automated network requests (except for periodic license checks, if you have a commercial license).",
   "@onboarding.stepOptional.updates.desc": {
     "description": "The long automatic-updates explanation, shown in the tooltip behind the info glyph: the network requests it makes and the trade-off of disabling it. \"Cmdr\" is the product name. \"24 hours\" and \"commercial license\" are factual details. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"

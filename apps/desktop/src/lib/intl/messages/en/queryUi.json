@@ -258,10 +258,11 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.scanningWithCount": "Scanning in progress ({countText} entries)…",
+  "queryUi.results.scanningWithCount": "Scanning in progress ({countText} {count, plural, one {entry} other {entries}})…",
   "@queryUi.results.scanningWithCount": {
     "description": "Status-bar text shown while the drive index is still being built, reporting roughly how many files have been scanned so far. Ends with '…'. Note: this count uses a compact short form, not the locale-grouped form.",
     "placeholders": {
+      "count": "the exact number of entries (drives the singular/plural form of the noun)",
       "countText": "the number of entries scanned so far, in a compact form (for example 12.3K or 1.2M)"
     },
     "screenshot": "search-dialog.png",
@@ -279,18 +280,20 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.indexReadyStatus": "Index ready ({countText} entries)",
+  "queryUi.results.indexReadyStatus": "Index ready ({countText} {count, plural, one {entry} other {entries}})",
   "@queryUi.results.indexReadyStatus": {
     "description": "Status-bar text shown when the drive index is ready and no search has run yet, reporting how many files it holds. Note: this count uses a compact short form, not the locale-grouped form.",
     "placeholders": {
+      "count": "the exact number of entries (drives the singular/plural form of the noun)",
       "countText": "the number of indexed entries, in a compact form (for example 12.3K or 1.2M)"
     },
     "screenshot": "search-dialog.png"
   },
-  "queryUi.results.resultCount": "{shownText} of {totalText} results",
+  "queryUi.results.resultCount": "{shownText} of {totalText} {total, plural, one {result} other {results}}",
   "@queryUi.results.resultCount": {
     "description": "Status-bar text after a search runs, showing how many results are displayed out of the total found (the list is capped, so fewer may be shown than found).",
     "placeholders": {
+      "total": "the same total (drives the singular/plural form of the noun)",
       "shownText": "the number of results currently shown, already formatted for display",
       "totalText": "the total number of matches found, already formatted for display (for example 1,234)"
     },
@@ -355,10 +358,11 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.scanProgressWithCount": "Scan in progress ({countText} entries)…",
+  "queryUi.results.scanProgressWithCount": "Scan in progress ({countText} {count, plural, one {entry} other {entries}})…",
   "@queryUi.results.scanProgressWithCount": {
     "description": "Sub-line under the 'Drive index not ready' message, reporting roughly how many files have been scanned so far. Ends with '…'. Note: this count uses a compact short form, not the locale-grouped form.",
     "placeholders": {
+      "count": "the exact number of entries (drives the singular/plural form of the noun)",
       "countText": "the number of entries scanned so far, in a compact form (for example 12.3K or 1.2M)"
     },
     "screenshot": "search-dialog.png",
@@ -441,10 +445,11 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.incomplete": "{shownText} of {totalText} results. Cmdr didn’t finish looking.",
+  "queryUi.results.live.incomplete": "{shownText} of {totalText} {total, plural, one {result} other {results}}. Cmdr didn’t finish looking.",
   "@queryUi.results.live.incomplete": {
     "description": "Status-bar text after a search ended without covering everything it set out to, because the user stopped it or the drive went away. Says plainly that the list is a lower bound; the note above the results explains why. 'Cmdr' is the product name and stays as-is. Avoid the words 'error' and 'failed'.",
     "placeholders": {
+      "total": "the same total (drives the singular/plural form of the noun)",
       "shownText": "the number of results currently shown, already formatted for display",
       "totalText": "the total number of matches found before the search stopped, already formatted for display"
     },
@@ -458,10 +463,11 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.capped": "Showing the first {shownText} of {totalText} matches.",
+  "queryUi.results.live.capped": "Showing the first {shownText} of {totalText} {total, plural, one {match} other {matches}}.",
   "@queryUi.results.live.capped": {
     "description": "Status-bar text after a search found more matches than the list can hold, so only the first batch is listed while the total counts them all.",
     "placeholders": {
+      "total": "the same total (drives the singular/plural form of the noun)",
       "shownText": "how many results are listed, already formatted for display (for example 1,000)",
       "totalText": "the total number of matches found, already formatted for display (for example 5,432)"
     },
@@ -643,10 +649,11 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.recent.resultCount": "{countText} results last time",
+  "queryUi.recent.resultCount": "{countText} {count, plural, one {result} other {results}} last time",
   "@queryUi.recent.resultCount": {
-    "description": "Last line of a recent-search chip's hover tooltip. Reminds the user how many matches that past search returned when it last ran. This line only renders when the count is at least 1, but it reads 'results' regardless of count.",
+    "description": "Last line of a recent-search chip’s hover tooltip. Reminds the user how many matches that past search returned when it last ran. Only renders when the count is at least 1.",
     "placeholders": {
+      "count": "the same number (drives the singular/plural form of the noun)",
       "countText": "the number of results, shown as a plain integer (no grouping)"
     },
     "screenshot": "search-dialog.png",

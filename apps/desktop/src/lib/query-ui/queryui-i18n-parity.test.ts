@@ -67,9 +67,13 @@ describe('query-ui interpolated-string parity (en)', () => {
   })
 
   it('resolves the results status-bar count line', () => {
-    expect(tString('queryUi.results.resultCount', { shownText: '30', totalText: '1,234' })).toBe('30 of 1,234 results')
-    expect(tString('queryUi.results.indexReadyStatus', { countText: '12.3K' })).toBe('Index ready (12.3K entries)')
-    expect(tString('queryUi.results.scanningWithCount', { countText: '999' })).toBe(
+    expect(tString('queryUi.results.resultCount', { shownText: '30', totalText: '1,234', total: 1234 })).toBe(
+      '30 of 1,234 results',
+    )
+    expect(tString('queryUi.results.indexReadyStatus', { countText: '12.3K', count: 12_300 })).toBe(
+      'Index ready (12.3K entries)',
+    )
+    expect(tString('queryUi.results.scanningWithCount', { countText: '999', count: 999 })).toBe(
       'Scanning in progress (999 entries)…',
     )
   })

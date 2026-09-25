@@ -522,10 +522,11 @@
     "screenshot": "transfer-confirmation-copy-single.png"
   },
 
-  "fileOperations.transferDialog.mergeInfoMany": "{countText} folders will merge with existing folders",
+  "fileOperations.transferDialog.mergeInfoMany": "{countText} {count, plural, one {folder} other {folders}} will merge with existing folders",
   "@fileOperations.transferDialog.mergeInfoMany": {
     "description": "Informational line in the transfer dialog when several same-named folders exist at the destination and will be merged. Neutral, not a warning.",
     "placeholders": {
+      "count": "the same number of folders (drives the singular/plural form; always 2 or more)",
       "countText": "how many folders will merge, formatted for display (e.g. 1,234)"
     },
     "screenshot": "transfer-confirmation-copy.png"
@@ -907,14 +908,14 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.existingFolderLabel": "Existing (folder):",
+  "fileOperations.transferProgress.existingFolderLabel": "Existing folder:",
   "@fileOperations.transferProgress.existingFolderLabel": {
     "description": "Row label in the conflict comparison for the item already at the destination, when it is a folder. Keep the trailing colon.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.existingFileLabel": "Existing (file):",
+  "fileOperations.transferProgress.existingFileLabel": "Existing file:",
   "@fileOperations.transferProgress.existingFileLabel": {
     "description": "Row label in the conflict comparison for the item already at the destination, when it is a file (and the incoming item is a folder). Keep the trailing colon.",
     "screenshot": "transfer-dialog.png",
@@ -927,14 +928,14 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.newFolderLabel": "New (folder):",
+  "fileOperations.transferProgress.newFolderLabel": "New folder:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "description": "Row label in the conflict comparison for the incoming item, when it is a folder. Keep the trailing colon.",
+    "description": "Row label in the conflict comparison for the incoming item, when it is a folder (the incoming folder, not a command to create one). Keep the trailing colon.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.newFileLabel": "New (file):",
+  "fileOperations.transferProgress.newFileLabel": "New file:",
   "@fileOperations.transferProgress.newFileLabel": {
     "description": "Row label in the conflict comparison for the incoming item, when it is a file (and the existing item is a folder). Keep the trailing colon.",
     "screenshot": "transfer-dialog.png",
@@ -1295,7 +1296,7 @@
     "description": "The confirming button on the same dialog when the operation is already PARTLY rolled back: carry on from where the rollback stopped. Word it exactly like the \"Finish rolling back\" button in the Operation log that opened this dialog (operationLog.dialog.finishRollBack), so the two read as the same action."
   },
 
-  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Removed the item Cmdr had written.} other {Removed the {countText} items Cmdr had written.}}",
+  "fileOperations.cancelRollback.doneDeleting": "{count, plural, one {Removed the item Cmdr had written.} other {Removed all {countText} items Cmdr had written.}}",
   "@fileOperations.cancelRollback.doneDeleting": {
     "description": "Toast shown after the user cancels a copy (or a compress) with Rollback and the undo removed everything that operation had written. Reassuring and final: nothing of the cancelled copy is left at the destination. \"Item\" covers both files and folders, because the undo removes the folders it made as well. The whole sentence sits inside the plural because the singular reads better without the number at all (\"the item\", not \"the 1 item\"); write each branch to read naturally in your language, and drop {countText} from any branch that doesn’t want it. Sentence case.",
     "placeholders": {
@@ -1304,7 +1305,7 @@
     }
   },
 
-  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Put the item back.} other {Put the {countText} items back.}}",
+  "fileOperations.cancelRollback.doneMovingBack": "{count, plural, one {Put the item back.} other {Put all {countText} items back.}}",
   "@fileOperations.cancelRollback.doneMovingBack": {
     "description": "Toast shown after the user cancels a MOVE with Rollback and the undo carried everything back to where it started. Nothing was deleted here, so keep the tone calm rather than a warning. Use the verb your language uses for putting a file back where it came from, the same one as fileOperations.trash.undone. \"Item\" covers both files and folders. The whole sentence sits inside the plural because the singular reads better without the number at all (\"the item\", not \"the 1 item\"); write each branch to read naturally in your language, and drop {countText} from any branch that doesn’t want it. Sentence case.",
     "placeholders": {
@@ -1331,9 +1332,9 @@
     }
   },
 
-  "fileOperations.cancelRollback.stoppedDeleting": "Stopped after removing {countText} {count, plural, one {item} other {items}}. The rest are still there.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Stopped after removing {countText} {count, plural, one {item} other {items}}. The rest stayed where the copy put them.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "description": "Toast shown when the user cancels a copy with Rollback and then stops the undo partway through, so some of the copied items were removed and the others are still sitting at the destination. The user chose this, so state it plainly with no hint of a warning. \"The rest are still there\" means still at the place the copy wrote them. Sentence case.",
+    "description": "Toast shown when the user cancels a copy with Rollback and then stops the undo partway through, so some of the copied items were removed and the others are still sitting at the destination. The user chose this, so state it plainly with no hint of a warning. “Where the copy put them” is the destination folder the copy wrote to; it mirrors fileOperations.cancelRollback.stoppedMovingBack. Sentence case.",
     "placeholders": {
       "countText": "how many items the undo removed before it stopped, already formatted for display (e.g. 1,234)",
       "count": "the same number of items (drives the singular/plural form of the noun)"

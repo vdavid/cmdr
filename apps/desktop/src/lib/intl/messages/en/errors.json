@@ -1551,7 +1551,7 @@
   },
   "errors.provider.appBased.transient": "This folder is managed by **{name}**. Here’s what to try:\n- Check your internet connection\n- Open {app} and make sure it’s running and synced\n- Navigate here again to retry",
   "errors.provider.appBased.needsAction": "This folder is managed by **{name}**. Here’s what to try:\n- Open {app} and check your sync status\n- Make sure you’re signed in to {app}\n- Check that you have access to this folder in {name}",
-  "errors.provider.appBased.serious": "This folder is managed by **{name}**. Here’s what to try:\n- Quit and reopen {app}\n- Sign out and back in to {app}\n- Check {name}’s status page for outages",
+  "errors.provider.appBased.serious": "This folder is managed by **{name}**. Here’s what to try:\n- Quit and reopen {app}\n- Sign out and back in to {app}\n- Check the {name} status page for outages",
   "@errors.provider.appBased.transient": {
     "description": "Shared template for app-backed cloud providers (Dropbox, Google Drive, OneDrive, Box, pCloud, Nextcloud, Synology Drive, Tresorit, Proton Drive, Sync.com, Egnyte), transient problem. Markdown bullet list. Two do-not-translate placeholders replaced at runtime: `{name}` (the provider's display name, shown in bold) and `{app}` (the provider's desktop app name). They may be the same word. Keep both placeholders; reorder them to fit your grammar.",
     "screenshot": "error-message-example.png",

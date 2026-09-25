@@ -25,9 +25,9 @@ describe('indexing catalog parity (en)', () => {
   it('resolves the scan labels and counters', () => {
     expect(tString('indexing.status.ariaLabel')).toBe('Drive indexing status')
     expect(tString('indexing.scan.label')).toBe('Indexing your drive…')
-    expect(tString('indexing.scan.counters', { entriesText: '12,345', dirsText: '678' })).toBe(
-      '12,345 entries, 678 dirs',
-    )
+    expect(
+      tString('indexing.scan.counters', { entriesText: '12,345', entries: 12345, dirsText: '678', dirs: 678 }),
+    ).toBe('12,345 entries, 678 dirs')
     expect(tString('indexing.scan.etaRough', { eta: '2m left' })).toBe('roughly 2m left')
     expect(tString('indexing.drive.heading', { name: 'Macintosh HD' })).toBe('Macintosh HD')
   })
@@ -64,7 +64,7 @@ describe('indexing catalog parity (en)', () => {
   })
 
   it('resolves the replay detail', () => {
-    expect(tString('indexing.replay.detail', { eventsText: '1,234' })).toBe('1,234 events processed')
+    expect(tString('indexing.replay.detail', { eventsText: '1,234', events: 1234 })).toBe('1,234 events processed')
   })
 
   it('resolves the ETA phrases (preserving the s/m abbreviations)', () => {

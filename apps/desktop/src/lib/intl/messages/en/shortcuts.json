@@ -67,9 +67,9 @@
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
-  "shortcuts.scope.errorScreen": "Error screen",
+  "shortcuts.scope.errorScreen": "Unreadable folder",
   "@shortcuts.scope.errorScreen": {
-    "description": "Group heading in the Keyboard shortcuts list for commands on the error screen, which replaces the file list when a folder cannot be opened. A short section title.",
+    "description": "Group heading in the Keyboard shortcuts list for commands on the screen that replaces the file list when a folder can’t be opened. Names that situation (a folder Cmdr can’t read), not an error. A short section title.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 

@@ -544,10 +544,13 @@
     "description": "Label shown in the bulk rename review when the user replaced the proposed name with one they typed themselves. The row then carries no evidence at all, and never the model’s.",
     "screenshot": "bulk-rename-review-edited-names.png"
   },
-  "askCmdr.renameReview.coverage": "Matched {matchedText} of {totalText} characters",
+  "askCmdr.renameReview.coverage": "Matched {matchedText} of {totalText} {total, plural, one {character} other {characters}}",
   "@askCmdr.renameReview.coverage": {
     "description": "Caption under the quote in the bulk rename review's evidence column, saying how much of the text Cmdr read in the image the quote covers. Lets the user see that a short match inside a page of recognized text is weak evidence for a name. Both numbers arrive preformatted with thousands separators.",
     "placeholders": {
+      "total": {
+        "content": "The same total number of characters (decides whether the noun is singular or plural)."
+      },
       "matchedText": {
         "content": "How many characters the quote covers, preformatted."
       },
@@ -901,9 +904,14 @@
     "description": "Accessible label for the chat's context-usage gauge in the rail footer.",
     "screenshot": "ask-cmdr-chat.png"
   },
-  "askCmdr.context.tooltip": "{usedText} of {budgetText} tokens used (estimated)",
+  "askCmdr.context.tooltip": "{usedText} of {budgetText} {budget, plural, one {token} other {tokens}} used (estimated)",
   "@askCmdr.context.tooltip": {
     "description": "Tooltip on the context-usage gauge. usedText and budgetText are preformatted numbers (with thousands separators). Both are chars/4 estimates, never a tokenizer's count, so the copy says so.",
+    "placeholders": {
+      "usedText": "how many tokens the conversation uses so far, preformatted (for example 12,345)",
+      "budgetText": "the context budget in tokens, preformatted (for example 200,000)",
+      "budget": "the same budget number (drives the singular/plural form of the noun)"
+    },
     "screenshot": "ask-cmdr-chat.png"
   },
   "askCmdr.wake.thinking": "Cmdr is having a look at what changed. Open the chat.",
