@@ -471,7 +471,7 @@
   },
   "fileExplorer.network.share.notFound": "Le partage « {shareName} » est introuvable sur {hostName}",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "Connexion à {hostName}…",
   "@fileExplorer.network.share.connecting": {

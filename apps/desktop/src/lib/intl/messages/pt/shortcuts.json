@@ -177,7 +177,7 @@
   },
   "shortcuts.section.alreadyBound": "<b>{combo}</b> já está atribuído a “{command}”",
   "@shortcuts.section.alreadyBound": {
-    "sourceHash": "5c29fcb"
+    "sourceHash": "fc3862a"
   },
   "shortcuts.section.modifiedTooltip": "Modificado do padrão",
   "@shortcuts.section.modifiedTooltip": {

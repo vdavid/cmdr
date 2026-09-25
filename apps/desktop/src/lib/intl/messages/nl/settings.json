@@ -466,7 +466,7 @@
   },
   "settings.mediaIndex.clip.description": "Vind foto''s door te beschrijven wat erop staat, zoals ‘strand bij zonsondergang’, met een AI-model op het apparaat.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "d8b25d3"
+    "sourceHash": "e7bece5"
   },
   "settings.mediaIndex.clip.ready": "Klaar – zoek je foto''s op beschrijving.",
   "@settings.mediaIndex.clip.ready": {
@@ -1253,7 +1253,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 opent het weergavevenster van Cmdr, dat ruwe bytes toont (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat ⇧Spatie (snelle weergave) of Enter (openen in de bijbehorende app) waarschijnlijk is wat je wilde. Zet dit aan (of klik op ‘Deze waarschuwing nooit meer tonen’ in de banner) om de waarschuwing voorgoed te onderdrukken.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "b3711da"
+    "sourceHash": "5ba5ff7"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "De hint voor snelle weergave bij de spatietoets onderdrukken",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1261,7 +1261,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr gebruikt Spatie om de bestandsselectie te wisselen en ⇧Spatie voor snelle weergave (Finder gebruikt gewone Spatie voor snelle weergave). Telkens als je in de bestandenlijst op Spatie drukt, toont Cmdr een herinnering van één alinea over dit verschil. Zet dit aan (of klik op ‘Niet meer tonen’ in de melding) om de herinnering voorgoed te onderdrukken.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "e78809d"
+    "sourceHash": "be9e1ff"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Aantal gesloten tabbladen om per paneel te onthouden",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {

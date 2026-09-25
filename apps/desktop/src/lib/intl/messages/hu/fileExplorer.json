@@ -471,7 +471,7 @@
   },
   "fileExplorer.network.share.notFound": "Nem található „{shareName}” nevű megosztás itt: {hostName}",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "Csatlakozás ehhez: {hostName}…",
   "@fileExplorer.network.share.connecting": {

@@ -176,7 +176,7 @@
   },
   "shortcuts.section.alreadyBound": "<b>{combo}</b> đã được gán cho “{command}”",
   "@shortcuts.section.alreadyBound": {
-    "sourceHash": "5c29fcb"
+    "sourceHash": "fc3862a"
   },
   "shortcuts.section.modifiedTooltip": "Đã thay đổi so với mặc định",
   "@shortcuts.section.modifiedTooltip": {

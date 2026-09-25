@@ -177,7 +177,7 @@
   },
   "shortcuts.section.alreadyBound": "<b>{combo}</b> már ehhez van rendelve: „{command}”",
   "@shortcuts.section.alreadyBound": {
-    "sourceHash": "5c29fcb"
+    "sourceHash": "fc3862a"
   },
   "shortcuts.section.modifiedTooltip": "Eltér az alapértelmezettől",
   "@shortcuts.section.modifiedTooltip": {

@@ -173,7 +173,7 @@
   },
   "shortcuts.section.alreadyBound": "<b>{combo}</b> 已绑定到“{command}”",
   "@shortcuts.section.alreadyBound": {
-    "sourceHash": "5c29fcb"
+    "sourceHash": "fc3862a"
   },
   "shortcuts.section.modifiedTooltip": "已从默认值更改",
   "@shortcuts.section.modifiedTooltip": {

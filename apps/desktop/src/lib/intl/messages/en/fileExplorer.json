@@ -699,9 +699,9 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.share.notFound": "Share ''{shareName}'' not found on {hostName}",
+  "fileExplorer.network.share.notFound": "Share “{shareName}” not found on {hostName}",
   "@fileExplorer.network.share.notFound": {
-    "description": "Warning toast when the requested share name does not exist on the host. The share name is shown in single quotes.",
+    "description": "Warning toast when the requested share name does not exist on the host. The share name is shown in curly quotes (“”); use your language's quotation marks.",
     "placeholders": {
       "shareName": "the name of the share that was not found",
       "hostName": "the display name of the host"

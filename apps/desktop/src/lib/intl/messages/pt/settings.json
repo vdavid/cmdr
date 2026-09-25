@@ -464,7 +464,7 @@
   },
   "settings.mediaIndex.clip.description": "Encontre fotos descrevendo o que aparece nelas, como “pôr do sol na praia”, com um modelo de IA no dispositivo.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "d8b25d3"
+    "sourceHash": "e7bece5"
   },
   "settings.mediaIndex.clip.ready": "Pronto: busque suas fotos por descrição.",
   "@settings.mediaIndex.clip.ready": {
@@ -1251,7 +1251,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "O F3 abre o visualizador de arquivos do Cmdr, que mostra os bytes brutos (com UTF-8 com perdas para conteúdo não textual). Ao abrir uma imagem, PDF, arquivo compactado ou outro arquivo binário, o visualizador mostra um banner vermelho explicando que ⇧Espaço (Visualização rápida) ou Enter (abrir no app associado) provavelmente é o que você queria. Ative isto (ou clique em “Nunca mostrar este aviso novamente” no banner) para ocultar o aviso de vez.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "b3711da"
+    "sourceHash": "5ba5ff7"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Ocultar a dica da Visualização rápida com a tecla Espaço",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1259,7 +1259,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "O Cmdr usa Espaço para alternar a seleção de arquivos e ⇧Espaço para a Visualização rápida (o Finder usa só Espaço para a Visualização rápida). Cada vez que você pressiona Espaço na lista de arquivos, o Cmdr mostra um lembrete de um parágrafo sobre essa diferença. Ative isto (ou clique em “Não mostrar novamente” na notificação) para ocultar o lembrete de vez.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "e78809d"
+    "sourceHash": "be9e1ff"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Número de abas fechadas a lembrar por painel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {

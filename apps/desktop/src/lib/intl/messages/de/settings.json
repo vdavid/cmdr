@@ -465,7 +465,7 @@
   },
   "settings.mediaIndex.clip.description": "Finde Fotos, indem du beschreibst, was darauf zu sehen ist, etwa „Strand bei Sonnenuntergang“, mit einem KI-Modell auf dem Gerät.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "d8b25d3"
+    "sourceHash": "e7bece5"
   },
   "settings.mediaIndex.clip.ready": "Bereit – suche deine Fotos per Beschreibung.",
   "@settings.mediaIndex.clip.ready": {
@@ -1253,7 +1253,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 öffnet die Vorschau von Cmdr, die rohe Bytes zeigt (mit verlustbehaftetem UTF-8 für nicht-textuelle Inhalte). Wenn du ein Bild, eine PDF, ein Archiv oder eine andere Binärdatei öffnest, zeigt die Vorschau ein rotes Banner, das erklärt, dass ⇧Leertaste (Übersicht) oder die Eingabetaste (Öffnen in der zugehörigen App) wahrscheinlich das war, was du wolltest. Schalte das ein (oder klicke im Banner auf „Diese Warnung nie wieder anzeigen“), um die Warnung dauerhaft zu unterdrücken.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "b3711da"
+    "sourceHash": "5ba5ff7"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Leertasten-Hinweis zur Übersicht unterdrücken",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1261,7 +1261,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr nutzt die Leertaste, um die Dateiauswahl umzuschalten, und ⇧Leertaste für die Übersicht (Finder nutzt die einfache Leertaste für die Übersicht). Jedes Mal, wenn du in der Dateiliste die Leertaste drückst, zeigt Cmdr einen kurzen Hinweis auf diesen Unterschied. Schalte das ein (oder klicke im Hinweis auf „Nicht mehr anzeigen“), um den Hinweis dauerhaft zu unterdrücken.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "e78809d"
+    "sourceHash": "be9e1ff"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Anzahl der pro Bereich gemerkten geschlossenen Tabs",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {

@@ -465,7 +465,7 @@
   },
   "settings.mediaIndex.clip.description": "Hitta bilder genom att beskriva vad de föreställer, som ”solnedgång på stranden”, med en AI-modell på enheten.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "d8b25d3"
+    "sourceHash": "e7bece5"
   },
   "settings.mediaIndex.clip.ready": "Klart – sök bland dina bilder med en beskrivning.",
   "@settings.mediaIndex.clip.ready": {
@@ -1252,7 +1252,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 öppnar Cmdrs förhandsvisning, som visar råa byte (med förlustbringande UTF-8 för icke-textinnehåll). När du öppnar en bild, PDF, ett arkiv eller en annan binärfil visar förhandsvisningen en röd banner som förklarar att ⇧Mellanslag (Överblick) eller Retur (öppna i den tillhörande appen) förmodligen är vad du ville. Aktivera detta (eller klicka på ”Visa aldrig den här varningen igen” i bannern) för att dölja varningen för gott.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "b3711da"
+    "sourceHash": "5ba5ff7"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Dölj tipset om Överblick med mellanslag",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1260,7 +1260,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr använder Mellanslag för att växla filmarkering och ⇧Mellanslag för Överblick (Finder använder vanligt Mellanslag för Överblick). Varje gång du trycker på Mellanslag i fillistan visar Cmdr en kort påminnelse om den här skillnaden. Aktivera detta (eller klicka på ”Visa inte igen” i aviseringen) för att dölja påminnelsen för gott.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "e78809d"
+    "sourceHash": "be9e1ff"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Antal stängda flikar att komma ihåg per panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {

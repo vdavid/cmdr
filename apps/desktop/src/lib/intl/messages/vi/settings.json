@@ -461,7 +461,7 @@
   },
   "settings.mediaIndex.clip.description": "Tìm ảnh bằng cách mô tả nội dung trong ảnh, ví dụ “hoàng hôn trên bãi biển”, bằng mô hình AI chạy trên máy.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "d8b25d3"
+    "sourceHash": "e7bece5"
   },
   "settings.mediaIndex.clip.ready": "Sẵn sàng — tìm kiếm ảnh của bạn bằng mô tả.",
   "@settings.mediaIndex.clip.ready": {
@@ -1247,7 +1247,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 mở trình xem tệp của Cmdr, vốn hiển thị byte thô (với UTF-8 mất mát cho nội dung phi văn bản). Khi bạn mở ảnh, PDF, tệp nén, hoặc tệp nhị phân khác, trình xem hiển thị biểu ngữ đỏ giải thích rằng ⇧Space (Xem nhanh) hoặc Enter (mở trong ứng dụng liên kết) có lẽ là điều bạn muốn. Bật mục này (hoặc bấm “Đừng bao giờ hiện cảnh báo này nữa” trên biểu ngữ) để ẩn cảnh báo vĩnh viễn.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "b3711da"
+    "sourceHash": "5ba5ff7"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Ẩn gợi ý Xem nhanh bằng phím Space",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1255,7 +1255,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr dùng Space để bật/tắt chọn tệp và ⇧Space cho Xem nhanh (Finder dùng Space thường cho Xem nhanh). Mỗi lần bạn nhấn Space trong danh sách tệp, Cmdr hiển thị một đoạn nhắc về khác biệt này. Bật mục này (hoặc bấm “Không hiển thị lại” trên thông báo nhỏ) để ẩn lời nhắc vĩnh viễn.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "e78809d"
+    "sourceHash": "be9e1ff"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Số tab đã đóng cần nhớ cho mỗi khung",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {

@@ -292,9 +292,9 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
-  "shortcuts.section.alreadyBound": "<b>{combo}</b> is already bound to ''{command}''",
+  "shortcuts.section.alreadyBound": "<b>{combo}</b> is already bound to “{command}”",
   "@shortcuts.section.alreadyBound": {
-    "description": "Warning shown when the user assigns a shortcut already used by another command. The combo is wrapped in <b></b> (rendered bold); keep the tags around it. The command name is shown in quotes.",
+    "description": "Warning shown when the user assigns a shortcut already used by another command. The combo is wrapped in <b></b> (rendered bold); keep the tags around it. The command name is shown in curly quotes (“”); use your language's quotation marks.",
     "placeholders": {
       "combo": "the key combination the user pressed, shown as glyphs (e.g. ⌘C)",
       "command": "the name of the command that already uses this combination (e.g. Copy to clipboard)"

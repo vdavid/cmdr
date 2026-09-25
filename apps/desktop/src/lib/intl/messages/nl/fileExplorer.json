@@ -472,7 +472,7 @@
   },
   "fileExplorer.network.share.notFound": "Gedeelde map ‘{shareName}’ niet gevonden op {hostName}",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "Verbinden met {hostName}…",
   "@fileExplorer.network.share.connecting": {

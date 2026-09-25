@@ -556,9 +556,9 @@
   "@settings.mediaIndex.clip.title": {
     "description": "Title of the control (inside the Image search settings card) for the natural-language photo search feature, where you find a photo by describing what''s in it."
   },
-  "settings.mediaIndex.clip.description": "Find photos by describing what''s in them, like ''beach sunset'', using an on-device AI model.",
+  "settings.mediaIndex.clip.description": "Find photos by describing what''s in them, like “beach sunset”, using an on-device AI model.",
   "@settings.mediaIndex.clip.description": {
-    "description": "Explains the semantic-search feature: you search by describing a photo''s contents, and it runs locally on the Mac. Keep ''beach sunset'' as a concrete example of a description."
+    "description": "Explains the semantic-search feature: you search by describing a photo's contents, and it runs locally on the Mac. Keep “beach sunset” as a concrete example of a description."
   },
   "settings.mediaIndex.clip.ready": "Ready — search your photos by description.",
   "@settings.mediaIndex.clip.ready": {
@@ -1569,9 +1569,9 @@
     "description": "Advanced-section label for the toggle that hides the binary-file warning banner in the viewer. \"binary files\" = non-text files (images, PDFs, archives).",
     "screenshot": "settings-advanced.png"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 opens Cmdr''s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click ''Never show this warning again'' in the banner) to suppress the warning for good.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 opens Cmdr''s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "description": "Help text for the suppress-binary-warning toggle. \"F3\", \"⇧Space\" (Shift-Space), and \"Enter\" are keyboard keys/glyphs; keep the glyphs and use the locale's key names. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name (use the OS's localized name). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted 'Never show this warning again' must match the file viewer's actual banner button copy; translate it consistently with that button.",
+    "description": "Help text for the suppress-binary-warning toggle. \"F3\", \"⇧Space\" (Shift-Space), and \"Enter\" are keyboard keys/glyphs; keep the glyphs and use the locale's key names. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name (use the OS's localized name). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button.",
     "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Suppress the Space-key Quick Look hint",
@@ -1579,9 +1579,9 @@
     "description": "Advanced-section label for the toggle that hides the Space-vs-Quick-Look reminder. \"Space-key\" is the keyboard spacebar; \"Quick Look\" is the macOS preview feature (use the OS's localized name).",
     "screenshot": "settings-advanced.png"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click ''Don''t show again'' in the toast) to suppress the reminder for good.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click “Don''t show again” in the toast) to suppress the reminder for good.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "description": "Help text for the suppress-Quick-Look-hint toggle. \"Space\" and \"⇧Space\" (Shift-Space) are keyboard keys/glyphs; keep glyphs, use the locale's key names. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted 'Don't show again' must match the actual toast button copy; translate it consistently with that button.",
+    "description": "Help text for the suppress-Quick-Look-hint toggle. \"Space\" and \"⇧Space\" (Shift-Space) are keyboard keys/glyphs; keep glyphs, use the locale's key names. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted “Don't show again” must match the actual toast button copy; translate it consistently with that button.",
     "screenshot": "settings-advanced.png"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Number of closed tabs to remember per pane",

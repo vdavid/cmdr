@@ -471,7 +471,7 @@
   },
   "fileExplorer.network.share.notFound": "O compartilhamento “{shareName}” não foi encontrado em {hostName}",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "Conectando a {hostName}…",
   "@fileExplorer.network.share.connecting": {

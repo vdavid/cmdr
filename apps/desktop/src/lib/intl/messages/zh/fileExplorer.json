@@ -469,7 +469,7 @@
   },
   "fileExplorer.network.share.notFound": "在 {hostName} 上找不到共享“{shareName}”",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "正在连接到 {hostName}…",
   "@fileExplorer.network.share.connecting": {

@@ -463,7 +463,7 @@
   },
   "settings.mediaIndex.clip.description": "描述照片里有什么就能找到它，比如“海滩日落”。用的是设备本地的 AI 模型。",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "d8b25d3"
+    "sourceHash": "e7bece5"
   },
   "settings.mediaIndex.clip.ready": "已就绪 — 通过描述搜索你的照片。",
   "@settings.mediaIndex.clip.ready": {
@@ -1249,7 +1249,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 会打开 Cmdr 的文件查看器，它显示原始字节（非文本内容按有损的 UTF-8 显示）。当你打开图像、PDF、归档或其他二进制文件时，查看器会显示一条红色横幅，告诉你 ⇧Space（快速查看）或 Enter（在关联 App 中打开）很可能才是你想要的。打开这一项（或点按横幅里的“不再显示此警告”），就能永久关掉这条警告。",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "b3711da"
+    "sourceHash": "5ba5ff7"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "不显示 Space 键的快速查看提示",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1257,7 +1257,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切换文件选择，用 ⇧Space 触发快速查看（Finder 用单独的 Space 触发快速查看）。每次你在文件列表中按 Space，Cmdr 都会显示一段简短的提醒，说明这一差别。打开这一项（或点按提示里的“不再显示”），就能永久关掉这条提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "e78809d"
+    "sourceHash": "be9e1ff"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "每个窗格记住的已关闭标签页数量",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {

@@ -471,7 +471,7 @@
   },
   "fileExplorer.network.share.notFound": "Không tìm thấy mục chia sẻ “{shareName}” trên {hostName}",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "Đang kết nối tới {hostName}…",
   "@fileExplorer.network.share.connecting": {

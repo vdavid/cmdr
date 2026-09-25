@@ -471,7 +471,7 @@
   },
   "fileExplorer.network.share.notFound": "Freigabe „{shareName}“ auf {hostName} nicht gefunden",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "Verbindung zu {hostName} wird hergestellt …",
   "@fileExplorer.network.share.connecting": {

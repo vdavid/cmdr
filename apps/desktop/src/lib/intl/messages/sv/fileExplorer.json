@@ -471,7 +471,7 @@
   },
   "fileExplorer.network.share.notFound": "Den delade mappen ”{shareName}” hittades inte på {hostName}",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "Ansluter till {hostName}…",
   "@fileExplorer.network.share.connecting": {

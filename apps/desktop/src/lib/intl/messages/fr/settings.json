@@ -465,7 +465,7 @@
   },
   "settings.mediaIndex.clip.description": "Trouvez des photos en décrivant ce qu’elles contiennent, comme ’coucher de soleil sur la plage’, grâce à un modèle d’IA qui fonctionne en local.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "d8b25d3"
+    "sourceHash": "e7bece5"
   },
   "settings.mediaIndex.clip.ready": "Prêt : recherchez vos photos par description.",
   "@settings.mediaIndex.clip.ready": {
@@ -1255,7 +1255,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 ouvre la visionneuse de fichiers de Cmdr, qui affiche les octets bruts (avec un UTF-8 avec perte pour le contenu non textuel). Quand vous ouvrez une image, un PDF, une archive ou un autre fichier binaire, la visionneuse affiche une bannière rouge expliquant que ⇧Espace (Coup d’œil) ou Entrée (ouvrir dans l’app associée) est probablement ce que vous vouliez. Activez ceci (ou cliquez sur « Ne plus jamais afficher cet avertissement » dans la bannière) pour masquer l’avertissement définitivement.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "b3711da"
+    "sourceHash": "5ba5ff7"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Masquer l’astuce Coup d’œil de la touche Espace",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1263,7 +1263,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr utilise Espace pour basculer la sélection de fichiers et ⇧Espace pour Coup d’œil (le Finder utilise Espace seul pour Coup d’œil). Chaque fois que vous appuyez sur Espace dans la liste des fichiers, Cmdr affiche un rappel d’un paragraphe de cette différence. Activez ceci (ou cliquez sur « Ne plus afficher » dans la notification) pour masquer le rappel définitivement.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "e78809d"
+    "sourceHash": "be9e1ff"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Nombre d’onglets fermés à mémoriser par panneau",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {

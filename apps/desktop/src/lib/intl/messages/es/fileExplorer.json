@@ -471,7 +471,7 @@
   },
   "fileExplorer.network.share.notFound": "El recurso compartido “{shareName}” no se ha encontrado en {hostName}",
   "@fileExplorer.network.share.notFound": {
-    "sourceHash": "bc3d29a"
+    "sourceHash": "afdd472"
   },
   "fileExplorer.network.share.connecting": "Conectando con {hostName}…",
   "@fileExplorer.network.share.connecting": {
