@@ -1,330 +1,117 @@
 # Translation learnings (shared, cross-language)
 
-A running log of process learnings discovered WHILE translating, so each batch inherits what the last one learned
-instead of rediscovering it. The split (per `i18n-translation.md`): per-LANGUAGE findings (a term, a formality call) go
-in that language's `style.md` / `terms.json` / `decisions.md`; CROSS-language learnings (an ICU mechanic, a tooling
-gotcha, a pile trap) go HERE or in the guide. When a learning becomes a hard rule, promote it into the guide or
-`how-to-mine.md`.
+Cross-language know-how for whoever leads or audits a translation pass: failure shapes, evidence shortcuts, and
+orchestration gotchas that aren't rules. Where the rest lives:
 
-## Pipeline (how a wave-1 locale gets made)
+- Rules every translator follows: `translator-instructions.md` (mechanics) and `translation-principles.md` (judgment
+  calls), both embedded in every brief. Proposals to add one go to `source-queue.md`.
+- Process: `docs/guides/i18n-translation.md`. Termbase and tooling: `termbase.md`. Mining recipes and source traps:
+  `reference-pile/how-to-mine.md`.
+- Per-language findings: that language's `style.md`, `terms.json`, and `decisions.md`.
 
-1. **Scaffold the skeleton**: `node apps/desktop/scripts/gen-locale-skeleton.ts <tag>` writes `messages/<tag>/*.json`
-   with the English values in place and each `@key.sourceHash` already stamped. Translators EDIT values in place and
-   never touch the hash.
-2. **Build the termbase first**: mine the pile for the recurring core terms and record them in `<tag>/terms.json`
-   against the shared `concepts.json` (`chosen`, `sources`, `confidence`; `termbase.md`) BEFORE translating strings, so
-   term choices stay consistent.
-3. **Translate values in place**, batch by batch, each from a `pnpm i18n:brief` brief (the style digest, each key's
-   `@key` context, the rulings in play) plus the full style guide; the brief embeds the ICU rules
-   (`translator-instructions.md`).
-4. **Check**:
-   `pnpm check desktop-i18n-parity desktop-i18n-icu desktop-i18n-plural desktop-i18n-stale desktop-i18n-coverage desktop-i18n-dont-translate`.
-   Parity/ICU/plural/coverage are all ERROR (must pass). Coverage lists every key still missing or byte-identical to
-   English, which is the honest "what's left untranslated" signal; drive it to only the legitimately-identical keys,
-   each carrying a `@key.sameAsSourceJustification`.
-5. **Overflow-check** later against the pseudolocale (`en-XA`) per the guide.
+## Failure shapes the checks can't see
 
-## Catalog mechanics (verified 2026-06-21)
+Parity, ICU, plural, stale, coverage, and don't-translate are structural, so these pass them all:
 
-- A non-`en` catalog file is interleaved `"key": "value"` + `"@key": { "sourceHash": "<7 hex>" }`, keys in `en` source
-  order, NO `description` (that's `en`-only per-string context). The pseudolocale generator (`gen-pseudolocale.ts`) is
-  the canonical shape; the skeleton generator emits the same shape with English values.
-- `sourceHash(englishValue)` = first 7 hex of SHA-256 (in `i18n-catalog-lib.ts`). The skeleton stamps it; the stale
-  check (`desktop-i18n-stale`) compares it. Editing only the VALUE keeps the hash valid (it hashes the English source,
-  which didn't change).
-- ICU vs raw split: every `errors.*` key renders RAW (normal apostrophes, literal `<…>`, `{token}` as a literal
-  replacement target, markdown passed through). Every other key is ICU (double apostrophes `''`, real `<tag>`, ICU
-  plural/select). `isRawKey()` is the single source of that split. The translator instructions
-  (`translator-instructions.md`) state both.
+- **Mid-feature drift.** Keys an implementation agent adds in passing are fluent but drift from what the locale settled:
+  the agent copies neighboring keys and can't see that the feature's Settings pane already ships another word. The drift
+  is per FEATURE (one wrong head term everywhere) and a batch drifts against itself too (pt `alteração de nome` vs
+  `renomeação`). `grep -oh '"<variant>"' <tag>/*.json | sort | uniq -c` shows the settled term at 15–60 hits and the
+  drifted one at exactly the batch size.
+- **Wrong regional variant.** A fully pt-PT string is structurally perfect. Pluricentric languages need a grep-list of
+  variant tells in their style guide (vocabulary plus one grammatical construction); a recorded variant decision alone
+  doesn't reach an implementation agent's defaults.
+- **Formality regression.** One `tu` in an otherwise `vous` catalog. Spot-check new keys in any T/V language against
+  `formal-informal-decisions.md`.
+- **An elided verb in an uninflected language.** vi rendered "may or may not be covered" as "may have or not", still
+  fluent. It bites on transparency surfaces, where the elided word was the point.
+- **A stranded clause after editing a variant.** Languages front adverbials English keeps medial, so dropping a clause
+  from a sibling copy can strand the rest (de "macOS hat **in den letzten X Stunden** einmal …"). Re-read the remainder
+  as a standalone sentence.
 
-## Source-quality traps
+## Copy shapes that drift
 
-The full, durable list lives in `reference-pile/how-to-mine.md` § "Source-quality traps" (sibling/variant splits,
-no-macOS languages, English-valued Siri-intent files in macOS bundles, Microsoft's wrong-sense first hit, per-language
-formality, catalog-tag ≠ pile-folder). Read that section before mining any language.
+- **A warning badge is a state label, not an action.** "(overwrite!)" is noun/verb ambiguous in English; a language with
+  a distinct imperative produces a badge telling the user to do what the row blocks. Keep a badge family one part of
+  speech.
+- **A doing/done pair needs a grammatical contract.** In pro-drop languages a bare finite past reads as "he/she did it"
+  (es "Preparó"), so the done arm is impersonal, passive, or participial. In case-marking languages, state the contract
+  in the style guide (de: "done = doing minus the auxiliary, subject in the nominative").
+- **Composed one-line strings keep separators inside the branches.** In a fact list
+  (`{label}{count, plural, =0 {} other { {countText} items}}… · {percentText}%`) each optional clause carries its own
+  leading space and separator. Verify by assembling every present/absent combination. Moving the count out of the label
+  into its own `·` fact is a legitimate restructure (de, nl, zh, and hu all did it, each for a grammatical reason).
+- **A verb that doubles as a field label on the same screen takes its sense-verb.** "are what name this server", on a
+  sheet with a `Name` field (`servers.sheet.identityLocked`), became IDENTIFY or DETERMINE in every locale.
+- **A near-synonym pair only English keeps apart** (row/line, folder/directory, item/entry): drop the second noun and
+  say WHERE ("the line continues directly below") before minting a new term per locale.
+- **Don't fuse the subjects of "X did this, and so did N others"** when a `{reason}` describes only X: merging widens
+  the reason to all N+1 files (`fileExplorer.rename.chainKeptOriginalNameAndOthers`). Keep the tail its own clause.
 
-## Reviewing keys a feature added in passing
+## Renaming a product noun every locale already translated
 
-Keys added mid-feature by an implementation agent (rather than by a translator following this process) fail in a
-characteristic way, found across all nine locales in the 2026-07 quality pass. The defect is almost never a
-mistranslation: the string is fluent and the checks pass. It is drift away from what the locale had already settled.
+A rename isn't a copy edit, and `--restamp` is the wrong tool: the hash catches up while every catalog keeps the old,
+narrower meaning.
 
-- **The strongest evidence is the target locale's own catalog, not the pile.** A mid-feature agent pattern-matches its
-  neighbouring keys, so it can't see that the same feature's Settings pane already ships a different word for the same
-  concept. Before mining, grep the locale for the feature's other surfaces: a term the app already ships for the SAME
-  concept outranks a pile term for a merely similar one. The pile settles what a term is; the catalog settles which of
-  two correct renderings this app uses. (Found this way: de `indexieren`→`indizieren`, hu `kihagyva`→`kizárva`, sv
-  `foton`→`bilder`, vi `ảnh`→`hình ảnh`, zh `图片`→`图像`, nl `hernoemen`→`naam wijzigen`, pt `análise`→`varredura`.)
-- **A frequency count finds the fork instantly.** `grep -oh '"<variant>"' <tag>/*.json | sort | uniq -c` over the locale
-  dir shows the settled term at 15–60 hits and the drifted one at exactly the size of the new batch. Cheaper than
-  re-deriving any key.
-- **A new feature imports one wrong head term everywhere at once.** The drift is per-FEATURE, not per-key, because the
-  feature is named after one verb. Settle the head term first, then translate the family.
-- **A batch also drifts against itself.** Sibling keys ended up with two renderings of their own core noun (pt
-  `alteração de nome` vs `renomeação`). Grepping a new batch for two renderings of its own head noun finds the unsourced
-  one fast.
-
-## Renaming a product noun that every locale already translated
-
-A rename is not a copy edit, and `--restamp` is the wrong tool for it: the stored hash catches up while nine catalogs
-keep promising the old, narrower thing. What a rename pass needs instead:
-
-- **Find the anchor in the locale's OWN catalog, not the pile.** When the app already ships a sibling surface built on
-  the same head noun, that sibling settles the term before any mining starts. Renaming the queue window to "Operation
-  queue" was decided in all nine locales by the shipped **Operation log** window: `Vorgangsprotokoll` → head noun
-  `Vorgang`, `Åtgärdslogg` → `åtgärd`, `Nhật ký thao tác` → `thao tác`, and so on. This is the general form of §
-  "Reviewing keys a feature added in passing": a deliberate English PAIR (present tense vs past tense, here in one View
-  menu block) has to survive as a pair, and it only does if both halves share a head noun.
-- **State the anchor in the brief, don't make each agent rediscover it.** Handing every language its own sibling value
-  up front turned a nine-way research problem into nine confirmations, and all nine independently corroborated it
-  against macOS/Microsoft/the two-pane pair rather than taking it on trust.
-- **A swapped noun drags grammar with it.** Renaming is where agreement breaks, because the checks can't see it: de
-  flipped gender (`die Übertragung` → `der Vorgang`, so four arias and two pronouns changed), fr moved both toasts to
-  the feminine, hu moved five sites from `az átviteli` to `a műveleti` on the article rule. Tell the translator to
-  re-read every article, clitic, pronoun, and case suffix attached to the old noun, not just to swap the word.
-- **The old term is superseded, not retired.** Every glossary here kept the narrow word alive for the narrower concept
-  one level down (`Übertragung`/`överföring`/`传输` still name a copy-or-move). Say so explicitly, or the next pass
-  reads a leftover as drift and "fixes" it.
-- **Mark the old glossary entry superseded IN PLACE, and keep it visible.** A glossary that still prescribes the old
-  term is a standing instruction to the next agent, so the rename silently undoes itself. Deleting the entry is just as
-  bad: the next agent then can't tell the old term from a mistake.
-
-## A distinction English draws that the locale has no word for
-
-The viewer's continuation marker needed to say "this LINE continues on the next ROW", where a row is one line of the
-DISPLAY and a line is what the file contains. None of the ten wave-1 locales has a settled pair for that: the word each
-catalog already ships for "line" (de `Zeile`, sv `rad`, nl `regel`, hu `sor`, zh `行`) is the same word a display row
-would take, so translating both nouns literally produces "the line continues on the next line".
-
-The fix that worked, and the reusable shape: **drop the second noun and say WHERE instead.** "The line continues
-directly below" carries the whole meaning, reads naturally in all ten, and commits the catalog to no new term. Minting
-one per locale would have been ten unsourced coinages for a distinction the user never needs to name.
-
-Reach for this whenever an English string leans on a pair of near-synonyms (row/line, folder/directory, item/entry) that
-only English keeps apart: check whether the sentence still works with one of them replaced by a position, a direction,
-or a demonstrative. If it does, that is the translation, and it is better than the literal one.
-
-## Orchestrating a two-round batch
-
-- **Let the translators write VALUES only, and restamp centrally afterwards.** `sync-locale-keys.ts --restamp <key>`
-  (repeatable) refreshes the hash for every locale in one command, which beats nine agents hand-computing 7-char hashes.
-  Check first that none of the keys carries `reviewed` / `sameAsSourceJustification`, since a restamp drops both. Then
-  `git diff` on the catalogs is pure value lines, which is a cheap, exact audit that no agent went out of scope.
-- **`--restamp` also SYNCS.** It adds every pending new key as an English skeleton on its way past. If the restamp
-  belongs to one commit and the new keys to the next, strip the skeletons back out before committing (round-tripping a
-  locale catalog through `JSON.stringify(…, null, 2) + '\n'` is byte-identical, so this is safe) and let the next
-  round's plain sync re-add them.
-- **Round two inherits round one's glossary**, so the head-noun research is paid for once. Brief the second round with
-  the terms the first settled plus the sibling keys the new strings must compose with (here: the already-translated
-  `queue.row.status` failed arm and `queue.row.label` verbs), and the batch can't invent a second wording for something
-  the app already says.
-
-## Composed one-line strings: the separators live INSIDE the branches
-
-A fact-list string (`{label}{count, plural, =0 {} other { {countText} items}}… · {percentText}%`) puts each optional
-clause's leading space and separator inside its own branch, so an absent clause disappears without leaving a double
-space or a dangling dot. Translators must keep that discipline, and the way to prove it is to ASSEMBLE the string for
-every combination of present/absent parts and read each one, not to eyeball the ICU.
-
-It's also where word order genuinely diverges, because the leading `{label}` arrives pre-composed from another key and
-can't be split. Four locales independently moved the item count out into its own `·` fact rather than gluing it to the
-label, and each for a real grammatical reason: de's label is a passive clause (`Wird kopiert`), nl's and zh's labels
-already carry their own complement (`Naar prullenmand verplaatsen`, `正在移到废纸篓`), hu's is a verbal noun. Expect
-this, and don't treat a restructured fact list as a translator taking liberties.
-
-## Defect classes the checks cannot see
-
-Parity, ICU, plural, stale, coverage, and don't-translate are structural. These passed on 100% of the below, so the
-style guide and a human-shaped review are the only defense:
-
-- **Wrong regional variant.** A fully pt-PT string is structurally perfect. Pluricentric languages need a concrete
-  grep-list of variant tells in their style guide (vocabulary plus one grammatical construction), not just a recorded
-  variant decision: the decision doesn't reach an implementation agent's defaults. Applies to pt/pt-BR, es/es-419,
-  zh-Hans/Hant, fr/fr-CA, nl/nl-BE.
-- **Formality regression.** A single `tu` string sat in an otherwise fully-`vous` fr catalog. Any T/V language needs
-  newly-added keys spot-checked against `formal-informal-decisions.md`.
-- **Typographic U+2019 leaking from the English source** into a locale whose catalog is otherwise ASCII. It isn't an ICU
-  escape, so nothing flags it.
-- **Locale number typography**, above all the space before `%` (de, fr, sv all require it). Tell translators to grep
-  their own catalog for `%` before finishing; these slip in one key at a time.
-- **An elided verb in an uninflected language.** vi rendered "may or may not be covered" as "may have or not" and it
-  still read as fluent text. Only bites on transparency surfaces, where the elided word was the whole point.
-- **A WRONG `@key.description` propagates as a defect and looks deliberate.** Four `errors.*` descriptions said "\"Get
-  Info\", \"Sharing & Permissions\" ... are literal; do NOT translate", which is false: Apple localizes both. Seven
-  locales ignored the instruction and localized; hu and vi obeyed it and shipped English words inside otherwise
-  translated prose. Nothing structural can see this, and the residue reads as a considered do-not-translate call rather
-  than a bug. Two habits fall out of it: when a description tells you to keep a macOS label English, verify it against
-  the OS before obeying, and when you find it wrong, fix the `en` description in the same pass so the next locale
-  doesn't inherit it.
+- **Anchor on the locale's own catalog.** A sibling surface on the same head noun settles the term before mining (the
+  queue window's rename took each locale's head noun from its shipped **Operation log** window). State that anchor in
+  each brief, so every agent confirms it instead of rediscovering it.
+- **A swapped noun drags grammar with it**: gender, articles, clitics, pronouns, and case suffixes around the old noun
+  (de `die Übertragung` → `der Vorgang` changed four arias and two pronouns). The checks can't see it.
+- **The old term is superseded, not retired**: it often still names the narrower concept one level down. Mark its
+  glossary entry superseded in place; deleting it or leaving it prescriptive both undo the rename on the next pass.
 
 ## Quoting a macOS UI label
 
-Any label Cmdr quotes so a user can go find it (a Finder menu command, a checkbox, a pane heading) has to read the way
-that user's own Mac reads. The decision is per LABEL, not per app: Apple keeps `Finder`, `Terminal`, `Spotlight`,
-`AirDrop`, and `Time Machine` English in nearly every locale (zh-Hans is the exception: `访达`, `终端`), and localizes
-`Get Info`, `Locked`, `Sharing & Permissions`, and `Quick Look` everywhere.
-
-The fastest way to settle one, with no guessing, is a direct key match inside the shipped Finder bundle. English lives
-in the compiled `Base.lproj` nibs, so use `en_GB.lproj` as the English side; every localization is a sibling `.lproj`:
+The decision is per LABEL (`docs/guides/i18n-translation.md` § Term-choice principles). Settle one by direct key match
+in the shipped Finder bundle, with `en_GB.lproj` as the English side (`reference-pile/how-to-mine.md` § Menu-bar
+labels):
 
 ```sh
 cd "/System/Library/CoreServices/Finder.app/Contents/Resources"
-plutil -convert json -o - en_GB.lproj/MenuBar.strings              # 300801.title = "Get Info"
-plutil -convert json -o - hu.lproj/MenuBar.strings                 # 300801.title = "Infó megjelenítése"
-plutil -convert json -o - <tag>.lproj/InfoWindowGeneralView.strings # 1073.title  = the Locked checkbox
+plutil -convert json -o - en_GB.lproj/MenuBar.strings                   # 300801.title = "Get Info"
+plutil -convert json -o - <tag>.lproj/InfoWindowGeneralView.strings     # 1073.title = the Locked checkbox
 plutil -convert json -o - <tag>.lproj/InfoWindowPermissionsView.strings # 6.title = Sharing & Permissions
-plutil -convert json -o - <tag>.lproj/LocalizableMerged.strings     # N30/N32/NE43/NE18 = running-text sentences
+plutil -convert json -o - <tag>.lproj/LocalizableMerged.strings         # N30/N32/NE43/NE18 = running-text sentences
 ```
 
-Prefer the RUNNING-TEXT form (`LocalizableMerged`) when our string is a sentence, and the widget form when ours is a
-label: Apple itself shortens headings (hu `Megosztási jogok:` in the panel vs `Megosztás és jogok` in prose). The nib
-object IDs above are undocumented and could be renumbered by a macOS release, so record the macOS version with the term
-(verified on macOS 26.5.2, 2026-08-24).
+Prefer the running-text form (`LocalizableMerged`) when our string is a sentence and the widget form when it's a label:
+Apple shortens headings (hu `Megosztási jogok:` in the panel vs `Megosztás és jogok` in prose). Nib IDs are
+undocumented, so record the macOS version (verified on macOS 26.5.2, 2026-08-24).
 
-⚠️ **These labels follow the SYSTEM language, our catalog follows the APP language, and the two can differ.** A user
-running Cmdr in Spanish on a Hungarian Mac gets Spanish copy quoting a Spanish `Obtener información` that their Finder
-calls `Infó megjelenítése`. Translating the label in the catalog is right for the common case (app language = system
-language) and is what ships today; the architecturally correct fix is to source these from the OS the way the System
-Settings pane names already are. See `apps/desktop/src-tauri/src/system_strings.rs` § "Finder labels: why they're
-catalog strings, not OS-sourced" for what that would take.
+⚠️ **These labels follow the SYSTEM language; our catalog follows the APP language.** A user running Cmdr in Spanish on
+a Hungarian Mac reads a Spanish `Obtener información` their Finder calls `Infó megjelenítése`. Catalog translation is
+right for the common case; the proper fix (sourcing from the OS) is in `apps/desktop/src-tauri/src/system_strings.rs` §
+"Finder labels: why they're catalog strings, not OS-sourced".
 
-## Copy-shape contracts worth stating once
+## Evidence shortcuts
 
-Five recurring string families whose SHAPE is the thing that drifts, so state the contract rather than "keep them
-parallel":
+- **"Review pending changes before applying"**: AppKit's `Review Changes…` / `Review Unsaved` exist in every localized
+  macOS. Microsoft's TBX first hit for "review" is the evaluation sense.
+- **`remove` vs `delete` is a systematic trap.** macOS and Microsoft often use one verb for both, so Tier 1 pushes a
+  "delete" verb onto a button that deletes nothing. Check the pair per locale (es `Quitar`, fr `Retirer`, vi `Gỡ`).
+- **Finder's tag strings** are the `TG*` keys in `LocalizableMerged.strings` (`TG5` / `TG6` add/remove, `TG_COLOR_*`
+  colors, `N169.37` bare "Tags"). `TG6` uses the DELETE verb in fr, es, and vi; those catalogs keep their un-list verb
+  anyway, and their own quote typography. An exact Finder counterpart doesn't override a settled split (verified on
+  macOS 27.0, build 26A428, 2026-09-16).
+- **"…and N other items"**: Finder's `MR101_V2/_V3`, `MR201_V2/_V3`, and `PE106_V3/_V4` ship singular and plural of
+  `“^1” and ^0 other item(s)`, showing how a language counts the followers and whether it repeats the verb.
+- **SMB connection copy**: NetAuthAgent's `Localizable.loctable` keys `EINFO_NO_SHARE`, `EINFO_NO_ACCESS_GUEST`,
+  `EINFO_UNSUPPORTED_VERSION`, `EMSG_INVALID_NAME_PWD`, and `EINFO_NO_SERVER` settle share, guest, and the pattern
+  around a quoted server name (verified on macOS 26.6.2, build 25G83, 2026-09-11). Take the terms, not Apple's formal
+  register.
+- **A Linux "distribution" has no source.** Microsoft's TBX has only the logistics sense; take the community standard
+  (`Distribution`, `disztribúció`, `发行版`) as `tentative`.
 
-- **A warning badge is a state label, not an action.** English hides this because "(overwrite!)" is noun/verb ambiguous;
-  any language with a distinct imperative produces a badge that instructs the user to do the very thing the row is
-  blocking. Translate a badge family together and keep it one part of speech (`(cycle)` / `(extension)` / `(overwrite!)`
-  is noun-noun-noun, not noun-noun-verb).
-- **A doing/done tool pair needs a grammatical contract.** In pro-drop languages a bare finite past reads as "_he/she_
-  did it" (es "Preparó"), so the done arm must be impersonal, passive, or participial. In case-marking languages state
-  it explicitly (de: "done = doing minus the auxiliary, subject in the nominative"), or an agent pattern-matches into a
-  bare infinitive that changes the mood entirely.
-- **When adding a key to an existing parallel FAMILY, match the family's recorded shape, not the adjacent line.** fr had
-  the pattern in its glossary and the new pair still broke it, because the agent copied its neighbour.
-- **A new key that VARIANTS an existing one is an edit of the locale's sibling, not a fresh translation of the
-  English.** Some keys ship as a set of near-identical sentences differing in one clause (the three
-  `driveIndex.tooltipCoalesced*` variants, `step.saveFileList` vs `step.updateFileList`). Translating the new variant
-  from English re-derives clauses the locale already settled, so the variants drift apart in wording even though every
-  one of them is fluent. Instead: copy the locale's nearest sibling verbatim and change only the clause English changed.
-  Two things to check after the edit, both bit us across the nine locales: (1) dropping a clause can strand the
-  sentence, because languages front adverbials English keeps medial (de "macOS hat **in den letzten X Stunden** einmal
-  …", hu "A macOS **az elmúlt X órában** egyszer …", zh "**在过去 X 小时内**，macOS 有 …") — re-read the remainder as a
-  standalone sentence; (2) the placeholder SET must end up exactly English's, so a dropped clause must take its
-  placeholders with it (parity is error-class and will catch it, but after you've written nine).
-- **A string that NAMES another Cmdr surface copies that surface's own catalog value; it never re-translates the English
-  word.** "Show image results in Search" (`settings.mediaIndex.showInSearch.label`) means the Search dialog, so each
-  locale takes the word from `search.dialog.title` (de `Suche`, hu `Keresés`, sv `Sök`, zh-Hant `搜尋`), not a fresh
-  rendering of "search": otherwise the setting sends the reader looking for a dialog by a name it doesn't have. Where
-  that title is an infinitive or imperative (es and pt `Buscar`, fr `Rechercher`), keep it capitalized and let it read
-  as a proper name inside the sentence, the way Apple refers to its own `Buscar` / `Localiser`. The same rule already
-  applies to menu names (`menu.*`) in prose; this is it generalized to dialogs and panes.
+## Orchestration gotchas
 
-- **English's "name" as a verb collides with a `Name` FIELD on the same surface, and only translation exposes it.**
-  `servers.sheet.identityLocked` says the address and the account "are what name this server", on a sheet that also has
-  its own `Name` field (`servers.sheet.name`). English gets away with the pun; a translated "give it a name" /
-  "benennen" / "命名" reads as if the sentence were about that label. Every locale rendered the verb as IDENTIFY or
-  DETERMINE instead (de `machen … aus`, sv `identifierar`, nl `bepalen welke server dit is`, zh `决定了这是哪台服务器`).
-  Generalize: when the English verb doubles as a field label on the same screen, pick the sense-verb, not the cognate.
-
-## Reference-pile notes
-
-- **macOS AppKit's save-changes dialog is the Tier-1 source for any "review pending changes before applying" surface.**
-  `Review Changes…` / `Review Unsaved` exist in every localized macOS, so a whole rename-review family has first-party
-  evidence in every language. Worth knowing because "review" has no Finder hit and Microsoft's TBX first hit
-  (評審/evaluation sense) is wrong for this surface.
-- **Verify a language's pile inventory by `ls`, don't trust a style guide or a task brief.** Both the vi style guide and
-  the 2026-07 batch brief under-listed the available sources; vi and sv both do have `total-commander/`. A brief that
-  says "no orthodox source for this language" is a claim to check, not a constraint to design around.
-- **`remove` vs `delete` is a systematic trap.** macOS and Microsoft render both with one verb in many languages, so
-  Tier-1 evidence actively pushes toward a verb meaning "delete" on a button that doesn't delete. Check this pair
-  explicitly per locale instead of following the pile (es `Quitar`, fr `Retirer`, vi `Gỡ` all diverge deliberately).
-- **Finder's tag UI strings are the `TG*` keys in `LocalizableMerged.strings`, and its "Remove" is still the trap
-  above.** `TG5` / `TG6` are the `Add “^0”` / `Remove “^0”` captions under Finder's context-menu tag row, `TG_COLOR_*`
-  the color names, and `N169.37` (also `MenuBar.strings` `300893.title`) the bare "Tags" without an ellipsis. `TG6` uses
-  the DELETE verb in fr (`Supprimer`), es (`Eliminar`), and vi (`Xóa`), on a surface that matches Cmdr's tag row
-  exactly, and those three still kept their catalog's un-list verb (`Retirer`, `Quitar`, `Gỡ bỏ`): removing a tag
-  deletes nothing, and each catalog already says so in `commands.tagsToggle*`. An exact Finder counterpart doesn't
-  override a locale's settled remove/delete split. Its typography doesn't either: fr `TG5` carries NBSPs inside the
-  guillemets and nl uses straight `'`, while both catalogs keep their own settled quotes (verified on macOS 27.0, build
-  26A428, Finder `.lproj` key match, 2026-09-16).
-- **A counted "…and N other items" tail has first-party evidence in every language: macOS Finder's `MR101_V2/_V3`,
-  `MR201_V2/_V3`, and `PE106_V3/_V4` keys** (`macOS/Finder/LocalizableMerged.json`, English side `en/macOS/`). They ship
-  both the singular and the plural of `“^1” and ^0 other item(s)`, so they show how a language counts the followers AND
-  whether it repeats or elides the verb (`de` elides: "… wie „^1“ und ^0 weitere werden beibehalten."). Grep the English
-  file for `and ^0 other item`, then read the same keys in your locale.
-- **Don't fuse the subjects of a "X did this, and so did N others" string.** The tidier merged form ("X and N other
-  files kept their names") is what the pile attests, so it pulls hard — but when the key also carries a `{reason}`
-  describing only X, merging silently widens that reason to all N+1 files. Keep the tail as its own clause. Hit in
-  `fileExplorer.rename.chainKeptOriginalNameAndOthers` by zh, hu, and nl independently.
-- **SMB connection copy has a Tier-1 source the pile doesn't carry: NetAuthAgent.** Apple's "Connect to Server" errors
-  live in `/System/Library/CoreServices/NetAuthAgent.app/Contents/Resources/Localizable.loctable`, every language in one
-  file, with readable keys: `EINFO_NO_SHARE` (a share that doesn't exist), `EINFO_NO_ACCESS_GUEST` (no guest access),
-  `EINFO_UNSUPPORTED_VERSION` (server version not supported), `EMSG_INVALID_NAME_PWD` (wrong username or password),
-  `EINFO_NO_SERVER` (server missing or unavailable). They settle share, guest, and the article or case pattern around a
-  quoted server name in all ten locales at once (verified on macOS 26.6.2, build 25G83, 2026-09-11). Apple words them
-  formally (hu önözés, "Please …"), so take the terms and the name pattern, not the register.
-- **A Linux "distribution" has no source in any locale.** Microsoft's TBX carries only the logistics sense (de
-  `Verteilung`, hu `elosztás`, zh `分配`), and none of the file-manager catalogs use the word. Every locale took its
-  community standard (`Distribution`, `disztribúció`, `发行版`, …) and recorded it `tentative`. Don't take the TBX hit.
-
-## Orchestration gotchas (for whoever automates this)
-
-- **Give each parallel agent its own scratch directory.** With nine language agents running concurrently, helper scripts
-  written to a shared `/tmp` path overwrote each other mid-run: one agent's `xref.sh` became another's and started
-  returning German for Dutch queries. Use per-agent scratchpad paths, and sanity-check that a mining helper's output is
-  actually in your language.
-- **Don't pass the batch spec via the Workflow `args` global — hardcode it in the script.** A first batch-1 run received
-  `args` as a JSON STRING (not a parsed array); the `args && args.length` guard let the string through, the loop
-  iterated over its CHARACTERS, and every iteration spawned units with `tag = undefined` — ~848 agents, ~36M tokens, all
-  wasted (the translators safely refused to invent an `undefined` locale, so nothing corrupted). Hardcode the tag list,
-  and fail-fast: assert every tag is known AND its locale dir exists BEFORE spawning any agent, so a bad value can't fan
-  out.
-
-## Per-batch notes
-
-### Batch 1 — de, fr, es
-
-**Result (all complete, verified 2026-06-21):** parity/icu/plural/stale all clean for de/fr/es; coverage residuals are
-100% legit short tokens (cloud-provider brand names, units, loanwords, placeholder-only) — a phrase scan found ZERO
-missed sentences. Spot-check passed both paths (ICU `''`; raw `errors.*` normal `'`; fr `vous`, es `tú`; es used the
-prescribed gender-neutral "Te damos la bienvenida"). Cost: 24 unit-agents, ~4M tokens, ≤3 concurrent. Two reusable wins:
-the **shared term file is the cross-file coordination point** (concurrent unit-agents read + append + reconcile term
-clashes mid-run; today that's the locale's `terms.json`), and **the `many` CLDR plural category is the most common
-slip** for fr/es (English has only `one`/`other`; add a `many` branch to every ICU plural for Romance/Slavic locales).
-
-Pilot (de: `feedback.json` + `crashReporter.json`, 2026-06-21) validated the pipeline. Learnings:
-
-- **Read the parallel `en/<file>.json` for each key's `@key.description`** — the skeleton carries no descriptions. This
-  is the per-string context; skipping it loses screenshot/placeholder notes. Mandatory.
-- **One home per term.** Settled terms live in the locale's `terms.json` (`termbase.md`), and `style.md` holds only what
-  cuts across terms. Add each newly-settled term there as you go, so the next batch's brief carries it.
-- **Match the English source faithfully; flag inconsistencies, don't silently fix them.** The en catalog has minor
-  inconsistencies (e.g. `Sending…` single-char ellipsis vs `Sending...` three dots across files). Preserve each value's
-  exact form; note the inconsistency for David rather than normalizing it.
-- **Cross-file term consistency is a real risk** when files are translated independently: a string referencing a UI
-  section by name (e.g. "Change in Settings > Updates") must match how that section is translated in `settings.json`.
-  Capture UI section names in the termbase so independent translators agree. Flag any forward reference.
-- **ICU tag/placeholder preservation works** when stated explicitly: `<github>…</github>`, `<call>…</call>`, and
-  `{email}`/`{maxText}` all survived. The parity + icu checks catch any slip.
-- **Pure-placeholder values stay identical to English** (e.g. `{currentText} / {maxText}`) and correctly remain in the
-  coverage "identical" list — that's not an untranslated miss, it's nothing-to-translate. Expect a few legit identicals.
-- **Validate with the direct node scripts**, not (only) `pnpm check`:
-  `node scripts/i18n-check-{parity,icu,plural,stale,coverage}.js` from `apps/desktop`. The Go check runner's cache can
-  serve a stale "no non-en locales" result on the first run right after a new locale dir appears; the node scripts
-  always resolve the live catalog.
-
-### Quality pass — 54 mid-feature keys, all nine locales
-
-The bulk-rename review, image-index scope, and Ask Cmdr tool-label keys were added by implementation agents mid-feature
-and never went through this process. Re-reviewed against the guide, the style guides, and the pile: **168 of 486 values
-changed** (de 19, es 11, fr 15, hu 12, nl 26, pt 24, sv 21, vi 21, zh 19); the rest were confirmed and kept
-byte-for-byte. All six i18n checks passed BEFORE the pass as well as after, which is exactly why the § "Defect classes
-the checks cannot see" list above exists: every finding was invisible to tooling.
-
-Shape of the findings, in rough order of frequency: term drift against the same feature's other surface in the same
-locale (every language), copy-shape breaks in the badge and doing/done families (six languages), and one regional
-variant contamination (pt shipped European Portuguese in about a third of the batch, the only pt-PT leak in the whole
-30-file catalog). Only two values across all nine locales were legitimately identical to English (fr `(cycle)` and
-`(extension)`), both already carrying a `sameAsSourceJustification`, both rewritten to cite a real source.
+- **Restamp centrally.** Translators write values only; the lead runs `sync-locale-keys.ts --restamp <key>` once for
+  every locale (check first that no key carries `reviewed` / `sameAsSourceJustification`, which it drops). Then
+  `git diff` on the catalogs is pure value lines, an exact scope audit. `--restamp` also SYNCS pending new keys as
+  English skeletons; strip them if they belong to a later commit (a `JSON.stringify(…, null, 2) + '\n'` round-trip is
+  byte-identical).
+- **Give each parallel agent its own scratch directory.** Helper scripts in a shared `/tmp` overwrote each other and one
+  agent got German answers to Dutch queries. Sanity-check that a mining helper answers in your language.
+- **Hardcode a Workflow's batch spec; don't pass it via `args`.** `args` arrived as a JSON string, the loop iterated its
+  characters, and ~848 agents spawned with `tag = undefined` (~36M tokens). Assert every tag is known and its locale dir
+  exists before spawning anything.

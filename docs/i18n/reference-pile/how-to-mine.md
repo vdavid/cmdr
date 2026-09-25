@@ -8,6 +8,11 @@ pile: `README.md` and `inventory.md`.
 First check which sources your language has: `ls <tag>/` (a source is absent if its subdir is missing). Run everything
 below from `_ignored/i18n/`.
 
+> [!IMPORTANT] **No pile on this machine?** It lives only in the main clone (resolve it with
+> `git worktree list | head -1`); a worktree-relative `_ignored/i18n/` never exists. If the main clone has none either,
+> mine the live macOS bundles: § No pile on this machine? Mine the live macOS bundles instead. Tier 1 is on every Mac;
+> Microsoft (Tier 2) has no live equivalent, so a tie only it could break stays `tentative`.
+
 ## Source-quality traps (read before mining ANY language)
 
 These are evidence-quality pitfalls found while preparing wave 1 (2026-06-21). Each has burned a translation pass; check
@@ -31,9 +36,10 @@ for them before trusting a source.
    in `en/macOS/`, then read the SAME key in `<tag>/macOS/` (keys are stable across languages). The macOS recipe below
    does this.
 4. **Microsoft terminology's first hit is often the wrong SENSE.** A `.tbx` term has multiple senses and the first match
-   isn't always the UI one. Seen in fr: item → "article" (publishing sense) where the UI wants macOS "élément"; sidebar
-   → "encadré" (callout) vs macOS "barre latérale"; share → "part" vs macOS "partage". Disambiguate against macOS Tier-1
-   (Cmdr is a macOS app) and record which sense you took.
+   isn't always the UI one: read each entry's `<descrip type="definition">` before taking it. Seen in fr: item →
+   "article" (publishing sense) where the UI wants macOS "élément"; sidebar → "encadré" (callout) vs macOS "barre
+   latérale"; share → "part" vs macOS "partage". Disambiguate against macOS Tier-1 (Cmdr is a macOS app) and record
+   which sense you took.
 5. **Formality is per-language and OS-driven — never carry one language's call to another.** German macOS is informal
    `du` (Microsoft's formal `Sie` is the Windows convention, not Cmdr's); French macOS AND Microsoft are both `vous`.
    Mine the actual native-OS register for each language; don't generalize.
@@ -44,6 +50,8 @@ for them before trusting a source.
    text.** macOS ships SLAs from many vintages side by side, and some were localized off a Simplified base into a
    `zh_TW.lproj`. Mining the wrong one hands you an archaic pronoun and a mainland term set with full confidence. Always
    date the file before quoting it: § Legal register below.
+8. **False friends hide in every source.** A hit that looks like your term can mean something else in context (Total
+   Commander's sv `Skrivfel!` is a write error, not a typo). Read the neighboring entries before citing one.
 
 For WHICH term to pick once you've mined the candidates (localize the Apple feature names Apple localizes; prefer the
 macOS Finder term over the Windows/Microsoft one; let brand names inflect), see `docs/guides/i18n-translation.md` §
@@ -107,17 +115,21 @@ Apple rewords between releases.
 >   | select(.value|test("Mission Control")) | "\(.value)\t=>\t\($t[.key])"'
 > ```
 >
-> `grep -l "<English string>"` works directly on the binary file, so grepping a bundle's `Resources/*.loctable` finds
-> which one holds a term. High-value bundles beyond Finder/AppKit: `KeyboardSettings.appex` (shortcut and key names),
-> `Problem Reporter.app` and `CrashReporterSupport` (crash copy), `Software Update`, `App Store.app`, `CommerceKit` and
-> `AppStoreDaemon` (licensing, purchase, refund), Preview / QuickTime / TextEdit / Photos (viewer and media), and
-> `Keychain Access.app` (`CFBundleDisplayName` gives the localized app name). Verified on macOS 26.6.2, build 25G83,
-> 2026-08-29.
+> ❌ `grep` (even `grep -a`) misses most text inside a `.loctable`; only a plist parser reads it reliably. High-value
+> bundles beyond Finder/AppKit: `KeyboardSettings.appex` (shortcut and key names), `Problem Reporter.app` and
+> `CrashReporterSupport` (crash copy), `Software Update`, `App Store.app`, `CommerceKit` and `AppStoreDaemon`
+> (licensing, purchase, refund), Preview / QuickTime / TextEdit / Photos (viewer and media), and `Keychain Access.app`
+> (`CFBundleDisplayName` gives the localized app name). The pile lacks these, and each has decided a ruling: `Dock.app`
+> (`DockMenus.strings`), `NetAuthAgent.app` (Connect to Server errors), and `SecurityPrivacyExtension.appex` plus
+> `TCC.framework` (privacy and permission prompts). Verified on macOS 26.6.2, build 25G83, 2026-08-29.
 
 **Don't know which bundle holds the term?** Sweep the whole system by ENGLISH VALUE instead of guessing a bundle: walk
 `/System/Library/CoreServices`, `/System/Applications`, `/System/Library/{Private,}Frameworks`, and `/Applications`,
-`plutil -convert json` every `*.loctable` plus every `en.lproj/*.strings`, and filter the English side for the word.
-That is how `relevance` was sourced for all 10 locales at once: the search-sort-order sense lives in
+parse every `*.loctable` plus every `en.lproj/*.strings`, and filter the English side for the word. A `python3` +
+`plistlib` walk over every `.loctable` under `/System` yields ~271k English-to-target pairs in about a minute (the agent
+Mac has no `timeout` binary, so don't wrap it in one). System Settings pane names and Apple feature names come from this
+sweep of the running macOS; record the OS version with the finding, since Apple renames panes between releases. That is
+how `relevance` was sourced for all 10 locales at once: the search-sort-order sense lives in
 `WorkflowKit.framework/…/Localizable.loctable` (key `Relevance (WFSearchSortOrder)`),
 `AppStoreKit.framework/…/<lang>.lproj/Localizable.strings` (`SEARCH_FACET_RELEVANCE`),
 `Automator.framework/…/LibrarySmartGroupsEditor.loctable`, and `Music.app` / `TV.app` (hashed keys). Finder itself has
