@@ -446,7 +446,7 @@
   },
   "menu.context.copyNamed": "拷贝“{name}”",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "加入个人收藏",
   "@menu.context.addToFavorites": {
@@ -542,11 +542,11 @@
   },
   "menu.tag.addNamed": "添加“{color}”",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
   "menu.tag.removeNamed": "移除“{color}”",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "加入索引文件夹",
   "@menu.mediaIndex.addFolder": {

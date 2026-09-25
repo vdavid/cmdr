@@ -55,15 +55,15 @@
   "@suggestedOps.reversibleDeleteWritten": {
     "sourceHash": "997843a"
   },
-  "suggestedOps.irreversible": "此操作无法撤销",
+  "suggestedOps.irreversible": "这项操作无法撤销",
   "@suggestedOps.irreversible": {
     "sourceHash": "485d5a3"
   },
-  "suggestedOps.folderWillBeCreated": "Cmdr 将创建此文件夹",
+  "suggestedOps.folderWillBeCreated": "Cmdr 会创建这个文件夹",
   "@suggestedOps.folderWillBeCreated": {
     "sourceHash": "26243e5"
   },
-  "suggestedOps.folderWillBeCreatedTooltip": "目标文件夹尚不存在。批准后，Cmdr 会创建它，就像你自己发起这次移动一样。",
+  "suggestedOps.folderWillBeCreatedTooltip": "目标文件夹还不存在。批准后，Cmdr 会创建它，就像你自己发起这次移动一样。",
   "@suggestedOps.folderWillBeCreatedTooltip": {
     "sourceHash": "2d28b7c"
   },

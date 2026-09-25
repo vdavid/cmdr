@@ -145,7 +145,7 @@
   },
   "onboarding.stepFda.step2.tip": "列表里没有 Cmdr？点按底部的“+”按钮，从你的<strong>应用程序</strong>文件夹中选择 <strong>Cmdr</strong>。",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "30d0299"
+    "sourceHash": "ffc4289"
   },
   "onboarding.stepFda.step3": "确认并点按 <strong>退出并重新打开</strong>",
   "@onboarding.stepFda.step3": {
@@ -189,7 +189,7 @@
   },
   "onboarding.stepAi.bannerBody.stuck": "你说想开启完全磁盘访问权限，但 Cmdr 似乎还没拿到。你可能需要重启应用（现在就重启吧，我们会从这里继续！），或者前往你的 <settingsLink>{systemSettings} > 隐私与安全性 > 完全磁盘访问权限</settingsLink> 找到 Cmdr，或者用底部那个小小的“+”按钮手动添加它。",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "79d5765"
+    "sourceHash": "fcdff85"
   },
   "onboarding.stepAi.welcomeLinux.title": "欢迎使用 Cmdr！",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -229,11 +229,11 @@
   },
   "onboarding.stepAi.table.searchWithout": "你输入类似 <code>*fish*.ppt</code> 的内容，并选择“本月 1 日之后”筛选条件。",
   "@onboarding.stepAi.table.searchWithout": {
-    "sourceHash": "872cb1e"
+    "sourceHash": "ebd8f45"
   },
   "onboarding.stepAi.table.searchWith": "你说“我最近和鱼有关的演示文稿”，代理就帮你设好筛选条件。",
   "@onboarding.stepAi.table.searchWith": {
-    "sourceHash": "b69cd82"
+    "sourceHash": "457e19a"
   },
   "onboarding.stepAi.table.rowRename": "批量重命名",
   "@onboarding.stepAi.table.rowRename": {
@@ -245,7 +245,7 @@
   },
   "onboarding.stepAi.table.renameWith": "你说“加上 ISO 日期前缀”，代理就帮你设好重命名规则，你检查后随时应用。",
   "@onboarding.stepAi.table.renameWith": {
-    "sourceHash": "7fba3f5"
+    "sourceHash": "5287ae3"
   },
   "onboarding.stepAi.table.rowSelect": "选择",
   "@onboarding.stepAi.table.rowSelect": {
@@ -257,11 +257,11 @@
   },
   "onboarding.stepAi.table.selectWithoutUnbound": "你打开“选择文件…”，输入类似 <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code> 的内容，检查后应用。",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "sourceHash": "4cdc972"
+    "sourceHash": "bf9239a"
   },
   "onboarding.stepAi.table.selectWith": "你说“选中所有图像文件”，代理就给出一个选择建议，你检查后随时应用。",
   "@onboarding.stepAi.table.selectWith": {
-    "sourceHash": "07f1063"
+    "sourceHash": "c1cc90b"
   },
   "onboarding.stepAi.resumeCue": "你上次选了这个。请在下面确认或更改。",
   "@onboarding.stepAi.resumeCue": {
@@ -305,7 +305,7 @@
   },
   "onboarding.stepAi.missingKeyWarning": "你开启了 AI，但还没填写 API 密钥。AI 用不了，而且你会看到一条警告。请在上面补上。\n\n<strong>再点按一次“{nextLabel}”就会忽略这个提示，继续往下。</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "3d66d11"
+    "sourceHash": "bdb8a08"
   },
   "onboarding.stepAi.cloudConsentOffNote": "在你允许之前，云端 AI 会一直保持关闭。之后可以在“设置 > AI”中允许。",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -335,7 +335,7 @@
   "@onboarding.stepBeta.greeting": {
     "sourceHash": "f7ade14"
   },
-  "onboarding.stepBeta.openBeta": "Cmdr 正处于公开测试阶段：它整体上稳定可用，但有些地方还比较粗糙。<alpha></alpha> 徽章标出了最处于开发中的区域。你的反馈能帮我修复 bug、确定功能的优先级。",
+  "onboarding.stepBeta.openBeta": "Cmdr 正处于公开测试阶段：整体上稳定好用，但有些地方还比较粗糙。带 <alpha></alpha> 徽章的地方是最不成熟、还在开发中的部分。你的反馈能帮我修复 bug，也能帮我决定先做哪些功能。",
   "@onboarding.stepBeta.openBeta": {
     "sourceHash": "0dba196"
   },
@@ -357,7 +357,7 @@
   },
   "onboarding.stepBeta.checklist.alternativeToNote": "就在页面最上方，“Cmdr”标题旁边。这能帮更多人和 Google 注意到 Cmdr！",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "sourceHash": "ea4903a"
+    "sourceHash": "ee4aed4"
   },
   "onboarding.stepBeta.checklist.email": "留下你的邮箱 <field></field> 就能偶尔收到一点更新和提问",
   "@onboarding.stepBeta.checklist.email": {
@@ -458,11 +458,11 @@
   },
   "onboarding.stepOptional.networking.summary": "需要同意一次“本地网络”访问",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "5006f53"
+    "sourceHash": "f49fbc6"
   },
   "onboarding.stepOptional.networking.desc": "<em>开启</em>这一项，你就能连接到 SMB 服务器，比如公司的网络共享、家里的 NAS 等等。\n唯一的代价是会弹出一个 macOS 权限对话框，请你允许“本地网络”访问，以及一个请你允许“接受传入连接”的对话框。\n这两个对话框都无害，但如果你不知道它们是什么，可能会觉得吓人或烦人。",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "089707f"
+    "sourceHash": "c03c7df"
   },
   "onboarding.stepOptional.indexing.title": "驱动器索引",
   "@onboarding.stepOptional.indexing.title": {

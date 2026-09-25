@@ -31,7 +31,7 @@
   "@viewer.error.isDirectory": {
     "sourceHash": "b29fe2e"
   },
-  "viewer.error.timeout": "无法加载文件。该宗卷可能很慢或无响应。",
+  "viewer.error.timeout": "无法加载文件。这个宗卷可能很慢或没有响应。",
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },
@@ -71,7 +71,7 @@
   "@viewer.content.ariaLabel": {
     "sourceHash": "57b8613"
   },
-  "viewer.binaryWarning.body": "这是该文件的原始视图。你可能更想查看实际的<kindName>{kind}</kindName>。要这样做，请关闭此窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
+  "viewer.binaryWarning.body": "这是文件的原始视图。你可能更想查看实际的<kindName>{kind}</kindName>。要这样做，请关闭这个窗口，然后按 <quickLookKey></quickLookKey> 打开快速查看，或者按 <openKey></openKey>（或双击文件）用关联的 App 打开它。",
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
@@ -387,7 +387,7 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
-  "viewer.saveAs.destinationReadOnly": "该位置是只读的。换一个文件夹保存吧？",
+  "viewer.saveAs.destinationReadOnly": "那个位置是只读的。换一个文件夹保存吧？",
   "@viewer.saveAs.destinationReadOnly": {
     "sourceHash": "8d627aa"
   },

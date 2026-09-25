@@ -19,8 +19,6 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **Watching for phones → `正在留意接入的手机`** (`settings.adb.status.watching`, `settings.adb.status.notWatching`):
   Apple's nearest wording is `正在等待…`, which reads as blocked waiting; `留意` is passive watching. Confirm it isn't
   odd.
-- **the one-time offer → `邀请`** (`settings.behavior.dockPinNudgeOfferedAt.label`,
-  `settings.behavior.revealNudgeOfferedAt.label`): internal labels, never on screen; descriptive.
 - **"come and go" → `来来去去`** (`settings.revealHandler.notProductionBuild`): a free rendering of dev builds appearing
   and disappearing.
 - **"never goes above this folder" → `不会越过这个文件夹往上走`** (`servers.sheet.rootFolderHelp`): plain wording for
@@ -36,11 +34,6 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
 - **"needs attention" → `需要先处理`** (`askCmdr.renameReview.blocked`): kept as vague as the English about what's
   wrong.
 - **token → `token`** (Latin, counted `个 token`): no settled Chinese UI term; `词元` exists but is rare in consumer UI.
-- **glob → `Glob`** (Latin): no settled Chinese term.
-- **refine (AI search) → `优化`** (`queryUi.ai.refine`, `queryUi.ai.refineAria`): rendered by meaning.
-- **replay (recorded file-system changes) → `重放`** (`indexing.rescan.replayOverflow`): rendered by meaning.
-- **report bundle → `报告包`** (`errorReporter.dialog.saveToDisk`, `errorReporter.bundleSavedToast.message`):
-  descriptive.
 - **Accepting incoming connections → `接受传入连接`** (`onboarding.stepOptional.networking.desc`): describes the
   firewall prompt rather than quoting a label.
 - **"boring folders" → `无聊的文件夹`** (`queryUi.scope.toggle.hideBoring`): kept playful on purpose; confirm it lands.
@@ -58,4 +51,4 @@ settled wording into `terms.json` (and `decisions.md` when the reason is worth k
   as register, not inconsistency.
 - **The cloud-only delete warnings** (`fileOperations.delete.cloudOnlineOnlyMixedWarning`,
   `fileOperations.delete.cloudOnlineOnlyAllWarning`, `fileOperations.delete.cloudOnlineOnlyHandedBack`): long,
-  `medium`-confidence drafts that never had a reading pass; also check they don't overflow the narrow strip.
+  `medium`-confidence drafts (prose now says `只在云端`); check they read well and don't overflow the narrow strip.

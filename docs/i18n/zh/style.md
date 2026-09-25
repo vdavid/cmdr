@@ -23,8 +23,9 @@ The must-know rules; the rest of this file elaborates them.
   X" → `无法 X`, a one-off miss → `没能 X`, a second clause after a wrapper that already said `无法` → `没法`, a stopped
   operation → `无法完成`, "Something went wrong" → `出了点问题`. `错误` survives only in the feature name `错误报告`. No
   apology in a notice that reports a deliberate choice.
-- **Demonstratives**: the spoken `这个` / `这项` / `这次` over the written `此` / `该`; `此` only where a terse label
-  already settled it (`此驱动器` in the drive-index family, `此设备` / `此服务器` busy tooltips).
+- **Demonstratives**: the spoken `这个` / `这项` / `这次` / `这台` over the written `此` / `该`; `此` only where a terse
+  label already settled it (`此驱动器` in the drive-index family, `此设备` / `此服务器` busy tooltips). Prose likewise
+  takes `只` over `仅` and `还没` over `尚未`.
 - **Buttons and menu items**: a bare verb, no politener (`拷贝`, `移动`, `打开`, `删除`, `取消`). Progress lines `正在…`
   (`正在扫描…`, `正在连接到 {name}…`); results and state badges the perfective `已…` (`已拷贝`, `已存档`, `已暂停`),
   except a state the user didn't cause (`在附近发现`). A tool line pairs `正在…` / `已…` on one verb phrase.
@@ -45,8 +46,9 @@ The must-know rules; the rest of this file elaborates them.
   - image indexing → `图像`, never `图片`; the user's pictures → `照片` (classifier `张`); a photo's place `拍摄地点`,
     never `位置` (file-system only).
   - archive (zip) → `压缩文件`; a chat's archive → `存档`; guest → `客人`; native (macOS's own) → `内建`.
-- **Punctuation**: full-width `，。：；？！（）` in Chinese text; quote UI names, file names, and arbitrary runtime
-  names with `“…”`; one ellipsis form, the single `…` (U+2026), even where the English writes `...`; paired verbs hug
+- **Typography** (`mechanics.json`): quotes `“…”`, nested `‘…’` (macOS zh-CN quotes with `“…”` only; `「…」` is
+  Traditional); no apostrophe. Quote UI names, file names, and runtime names in prose with `“…”`, hugging the Han
+  text. Full-width `，。：；？！（）` in Chinese text, never the ASCII ones; one ellipsis form, `…` (U+2026); paired verbs hug
   their slash (`固定/取消固定服务器`), while a spaced `/` is only for numeric fractions. A settings path in a sentence
   is quoted whole, separator mirroring the English: `在“设置 > 更新与隐私”中重新开启`. A menu in prose: `“帮助”菜单`.
 - **Spacing**: no space between Han characters; one ASCII space between Han text and Latin words, digits, or a
@@ -56,12 +58,12 @@ The must-know rules; the rest of this file elaborates them.
 - **Numbers and plurals**: Arabic numerals; the `%` sign with no space (`已完成 {percentText}%`). CLDR `zh` has only
   `other`: write one branch that reads right for 1, and always a measure word (`个文件`, `项操作`, `台服务器`, `部手机`,
   `张照片`, `项个人收藏`). A list-final placeholder takes no measure word (`其他 App`).
+- **No hedged grammar**: Chinese has no plural ending, gender, or article, so the only temptations are a bracketed
+  plural suffix or measure word (`文件（们）`, `（个）`), a pronoun pair (`他/她`), or an English `(s)` left in. Never
+  write one: one measure word already reads right for any count, and a person is `你` or named by role.
 - **Brand and tokens**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, `ADB`, `Safari`, `NAS` verbatim; `Ask Cmdr` names only
   the chat panel, and a sentence about what the AI does says `Cmdr` (or `AI` in `suggestedOps.*`). Never hand-translate
   a `{system_settings}`-style token. The Latin `App` stays in error, cloud, and AI copy; the scope word is `应用`.
-- **ICU**: double every apostrophe in ICU values; the RAW families (`errors.*`, `menu.*`, `licensing.windowTitle.*`,
-  `main.instanceLock.*`) keep single ones. Keys whose English is byte-identical must stay identical in Chinese
-  (`desktop-i18n-term-consistency`), and an `*Aria` key must contain its visible label verbatim.
 
 ## Voice and tone
 
@@ -165,9 +167,8 @@ to a pan-Traditional consensus that serves Taiwan, Hong Kong, and Macau from one
   corner-bracket quotes `「…」` (Traditional) or guillemet-style `“…”` plus `《…》` for titles. macOS Finder quotes
   filenames with `“…”` in Simplified and `「…」` in Traditional. Use full-width marks in Chinese running text; keep
   ASCII punctuation only inside brand words and code-like tokens. `high`.
-- **No spaces between Chinese characters**, but insert a thin/normal space between Chinese text and adjacent Latin brand
-  words or numbers where it aids readability (common house style; follow what reads cleanly against the
-  `{placeholder}`).
+- **No spaces between Chinese characters**, and always one ASCII space between Chinese text and an adjacent Latin word
+  or digit (`mechanics.json` checks it). A placeholder that may arrive Latin gets the space too.
 - **A list-final placeholder item takes no measure word, and the joiner is never in the string.**
   `Intl.ListFormat('zh')` joins with `、` and a trailing `和`, adding no spaces of its own
   (`Preview、Warp、Photos和其他 App`, verified with Node 24, 2026-09-16). So a string that stands in for the tail of
@@ -308,13 +309,6 @@ inflection.
 - **A `…summary` key beside a switch is a HALF-LINE and must not wrap; the long version lives in the sibling `…desc`.**
   Match the desc's terminology exactly, then cut: `占用 1 GB 空间，加快搜索，显示文件夹大小`. Chinese runs short here,
   so the room is real, but a summary that grows past ~24 Han characters starts wrapping in the real layout.
-
-### ICU mechanics (catalog-level, easy to miss)
-
-- Double every apostrophe in a value (`'` becomes `''`); ICU treats a lone `'` as an escape and silently swallows text.
-  Chinese rarely needs apostrophes, but any in a loanword or English fragment must be doubled.
-- Keep every `{placeholder}` and `<tag>` verbatim. Full rules: the agent-handoff block in
-  `docs/guides/i18n-translation.md` and `apps/desktop/src/lib/intl/messages/CLAUDE.md`.
 
 ## Termbase and decisions
 

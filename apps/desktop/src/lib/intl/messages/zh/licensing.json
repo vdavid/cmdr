@@ -132,7 +132,7 @@
   "@licensing.commercialReminder.priceInfo": {
     "sourceHash": "55bd2ed"
   },
-  "licensing.commercialReminder.declinePersonal": "我仅将 Cmdr<break></break>用于个人用途",
+  "licensing.commercialReminder.declinePersonal": "我只把 Cmdr 用在<break></break>个人用途上",
   "@licensing.commercialReminder.declinePersonal": {
     "sourceHash": "49641ff"
   },
@@ -176,7 +176,7 @@
   "@licensing.dialog.enterTitle": {
     "sourceHash": "357d05e"
   },
-  "licensing.dialog.serverInvalidBanner": "无法通过服务器验证此密钥。请尝试其他密钥，或发送电子邮件至 <supportEmail>{email}</supportEmail>。",
+  "licensing.dialog.serverInvalidBanner": "服务器没能验证这个密钥。请换一个密钥试试，或者发邮件到 <supportEmail>{email}</supportEmail> 联系我们。",
   "@licensing.dialog.serverInvalidBanner": {
     "sourceHash": "616b906"
   },
@@ -240,7 +240,7 @@
   "@licensing.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "licensing.dialog.resetConfirm": "这会在此设备上停用你当前的许可证。你可以随时用有效的密钥重新激活。",
+  "licensing.dialog.resetConfirm": "这会停用你在这台设备上的许可证。你可以随时用有效的密钥重新激活。",
   "@licensing.dialog.resetConfirm": {
     "sourceHash": "2d77d69"
   },
@@ -304,7 +304,7 @@
   "@licensing.dialog.networkFallbackError": {
     "sourceHash": "cb2b8e0"
   },
-  "licensing.dialog.expiredOnError": "此许可证已于 {date} 过期。",
+  "licensing.dialog.expiredOnError": "这个许可证已在 {date} 过期。",
   "@licensing.dialog.expiredOnError": {
     "sourceHash": "130a045"
   },
@@ -328,7 +328,7 @@
   "@licensing.dialog.mailtoBody": {
     "sourceHash": "bcdc2b6"
   },
-  "licensing.error.badSignature": "此许可证密钥未通过我们的签名验证，也就是说它看起来不像一个有效的密钥。",
+  "licensing.error.badSignature": "这个许可证密钥没有通过我们的签名验证，看起来不像有效的密钥。",
   "@licensing.error.badSignature": {
     "sourceHash": "e9842df"
   },
@@ -336,7 +336,7 @@
   "@licensing.error.badSignatureHint": {
     "sourceHash": "8734aa5"
   },
-  "licensing.error.badFormat": "我们的许可证密钥格式与此不同。",
+  "licensing.error.badFormat": "我们的许可证密钥格式跟这个不一样。",
   "@licensing.error.badFormat": {
     "sourceHash": "6012f8b"
   },
@@ -360,7 +360,7 @@
   "@licensing.error.networkHint": {
     "sourceHash": "67cba62"
   },
-  "licensing.error.server": "嗯，许可证服务器返回了一些奇怪的内容。我们对此感到抱歉。",
+  "licensing.error.server": "嗯，许可证服务器返回了一些奇怪的内容。真抱歉。",
   "@licensing.error.server": {
     "sourceHash": "6ca76c0"
   },
@@ -368,7 +368,7 @@
   "@licensing.error.serverHint": {
     "sourceHash": "386b914"
   },
-  "licensing.error.generic": "激活此密钥时出了点问题。",
+  "licensing.error.generic": "激活这个密钥时出了点问题。",
   "@licensing.error.generic": {
     "sourceHash": "436e264"
   },

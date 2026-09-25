@@ -766,7 +766,7 @@
   },
   "commands.handler.favoriteAdded": "已将“{name}”加入个人收藏",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
   "commands.handler.favoriteAddFailed": "没能把那个文件夹加入个人收藏。再试一次？",
   "@commands.handler.favoriteAddFailed": {

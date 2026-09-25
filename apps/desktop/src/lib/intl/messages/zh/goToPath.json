@@ -27,7 +27,7 @@
   "@goToPath.dialog.confirm": {
     "sourceHash": "fb65702"
   },
-  "goToPath.dialog.ancestorHint": "此路径不存在。最接近的目标是 {dir}。",
+  "goToPath.dialog.ancestorHint": "这个路径不存在。最接近的位置是 {dir}。",
   "@goToPath.dialog.ancestorHint": {
     "sourceHash": "43db9f4"
   },

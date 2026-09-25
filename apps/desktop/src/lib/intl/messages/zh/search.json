@@ -63,7 +63,7 @@
   "@search.imageResults.notIndexed": {
     "sourceHash": "287b58e"
   },
-  "search.imageResults.empty": "没有图像包含此文字。",
+  "search.imageResults.empty": "没有图像包含这段文字。",
   "@search.imageResults.empty": {
     "sourceHash": "edb6672"
   },

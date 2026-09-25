@@ -1,0 +1,32 @@
+{
+  "$comment": "Simplified Chinese typography, following macOS zh-CN (Finder, AppKit, and System Settings quote names with “…” only; nested ‘…’ per GB/T 15834). No apostrophe: Chinese has none. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "spacing": [
+    {
+      "pattern": "\\p{Script=Han}[A-Za-z0-9]|[A-Za-z0-9]\\p{Script=Han}",
+      "why": "one space between Han text and a Latin word or a digit (`macOS 内建`, `3 个文件`)"
+    },
+    {
+      "pattern": " [，。：；？！、）”]|[（“，。：；？！、] ",
+      "why": "no space against full-width punctuation"
+    },
+    {
+      "pattern": "\\p{Script=Han}[,:;?!()]|[,:;?!()]\\p{Script=Han}",
+      "why": "full-width punctuation in Chinese text (，：；？！（）)"
+    }
+  ],
+  "hedges": [
+    {
+      "pattern": "[（(](?:们|些|个|项|张|台|部)[）)]",
+      "why": "a bracketed plural or measure word; Chinese needs none, one measure word reads right for any count"
+    },
+    {
+      "pattern": "他/她|她/他|他（她）|她（他）",
+      "why": "a gendered pronoun pair; address the user as 你 or name the thing"
+    },
+    {
+      "pattern": "[A-Za-z]\\((?:s|es)\\)",
+      "why": "an English bracketed plural left in; drop it, Chinese has no plural ending"
+    }
+  ]
+}

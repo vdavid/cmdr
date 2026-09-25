@@ -200,7 +200,7 @@
   "@queryUi.results.resultCount": {
     "sourceHash": "8725496"
   },
-  "queryUi.results.countOnly.sentence": "{count, plural, other {此搜索找到 <total>{countText}</total> 个结果}}",
+  "queryUi.results.countOnly.sentence": "{count, plural, other {这次搜索找到 <total>{countText}</total> 个结果}}",
   "@queryUi.results.countOnly.sentence": {
     "sourceHash": "b265ac5"
   },
@@ -228,7 +228,7 @@
   "@queryUi.results.widenToVolume": {
     "sourceHash": "7dfc278"
   },
-  "queryUi.results.indexNotReady": "驱动器索引尚未就绪。首次扫描完成后即可搜索。",
+  "queryUi.results.indexNotReady": "驱动器索引还没准备好。首次扫描完成后就能搜索了。",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
@@ -304,7 +304,7 @@
   "@queryUi.results.live.scanningAria": {
     "sourceHash": "0071028"
   },
-  "queryUi.results.countOnly.soFar": "{count, plural, other {此搜索目前找到 <total>{countText}</total> 个结果}}",
+  "queryUi.results.countOnly.soFar": "{count, plural, other {这次搜索目前找到 <total>{countText}</total> 个结果}}",
   "@queryUi.results.countOnly.soFar": {
     "sourceHash": "dbdb208"
   },
@@ -324,7 +324,7 @@
   "@queryUi.recent.filterPlaceholder": {
     "sourceHash": "37e55fe"
   },
-  "queryUi.recent.emptyMessage": "没有最近的搜索符合该筛选。",
+  "queryUi.recent.emptyMessage": "没有符合这个筛选的最近搜索。",
   "@queryUi.recent.emptyMessage": {
     "sourceHash": "7007fba"
   },
@@ -438,7 +438,7 @@
   "@queryUi.dialog.aiTranslateFailedToast": {
     "sourceHash": "6856c79"
   },
-  "queryUi.dialog.runQueryToast": "无法完成此搜索。{message}",
+  "queryUi.dialog.runQueryToast": "无法完成这次搜索。{message}",
   "@queryUi.dialog.runQueryToast": {
     "sourceHash": "02a3bba"
   },

@@ -585,7 +585,7 @@
     "accept": ["崩溃"],
     "chosen": "崩溃报告",
     "confidence": "high",
-    "decision": "崩溃报告设置项的说明现在对两种结局都成立",
+    "decision": "崩溃对话框与崩溃报告设置",
     "forms": "the setting label 发送崩溃报告; a report that may not be a crash → 一份报告",
     "sources": "macOS/MS"
   },
@@ -1157,7 +1157,7 @@
     ],
     "chosen": "返回",
     "confidence": "confirmed",
-    "decision": "收敛掉的（脚本看不见，但用户看得见）",
+    "decision": "收敛掉的真漂移",
     "forms": "Back / Forward → 返回 / 前进",
     "sources": "macOS Finder (Back/Forward → 返回/前进)"
   },
@@ -1722,6 +1722,7 @@
     "confidence": "high",
     "decision": "仅存云端内容的删除警告条",
     "forms": "仅存在云端",
+    "proseAccept": ["只在云端"],
     "sources": "Finder wording for evicted files"
   },
   "open": {

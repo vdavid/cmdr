@@ -43,7 +43,7 @@
   "@ai.toast.startingDescription": {
     "sourceHash": "94ecf6d"
   },
-  "ai.toast.downloadCloseTooltip": "关闭此通知；下载会在后台继续",
+  "ai.toast.downloadCloseTooltip": "关闭这条通知；下载会在后台继续",
   "@ai.toast.downloadCloseTooltip": {
     "sourceHash": "16db2bd"
   },
@@ -439,7 +439,7 @@
   },
   "ai.secretError.keychainBody": "{op, select, save {打开“钥匙串访问”，检查“Cmdr”这一项，或将它删除后重新保存。} other {打开“钥匙串访问”，找到“Cmdr”这一项并授予访问权限，或将它删除后重新输入密钥。}}",
   "@ai.secretError.keychainBody": {
-    "sourceHash": "2a0fe5e"
+    "sourceHash": "8f1380e"
   },
   "ai.secretError.keyringTitle": "{op, select, save {无法保存你的 API 密钥：系统密钥环拒绝了访问} other {无法读取你保存的 API 密钥：系统密钥环拒绝了访问}}",
   "@ai.secretError.keyringTitle": {

@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "选择 Cmdr 使用的语言。“跟随系统”会采用你 Mac 的语言。",
   "@settings.appearance.language.description": {
-    "sourceHash": "a290add"
+    "sourceHash": "6e36bba"
   },
   "settings.appearance.language.opt.system": "跟随系统",
   "@settings.appearance.language.opt.system": {
@@ -172,7 +172,7 @@
   },
   "settings.appearance.textSize.description": "缩放整个 App 的文本和界面。与 macOS 辅助功能的文本大小叠加，其中 100% 表示“与系统大小完全一致”。",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "232df24"
+    "sourceHash": "49a0a6b"
   },
   "settings.appearance.uiDensity.label": "界面密度",
   "@settings.appearance.uiDensity.label": {
@@ -433,7 +433,7 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
-  "settings.archives.compressionLevel.description": "Cmdr 创建 zip 时的压缩强度。级别越高，文件越小，但打包耗时越长。此设置适用于压缩命令，以及将文件拷贝或移动到 zip 中。",
+  "settings.archives.compressionLevel.description": "Cmdr 创建 zip 时的压缩强度。级别越高，文件越小，但打包耗时越长。这个设置适用于压缩命令，以及把文件拷贝或移动到 zip 中。",
   "@settings.archives.compressionLevel.description": {
     "sourceHash": "0ebedaf"
   },
@@ -461,7 +461,7 @@
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "通过描述照片中的内容来查找照片，例如''海滩日落''，使用设备本地的 AI 模型。",
+  "settings.mediaIndex.clip.description": "描述照片里有什么就能找到它，比如“海滩日落”。用的是设备本地的 AI 模型。",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
@@ -605,7 +605,7 @@
   "@settings.mediaIndex.networkVolumes.alwaysLabel": {
     "sourceHash": "123af5e"
   },
-  "settings.mediaIndex.networkVolumes.alwaysHelp": "如果某个照片归档你很少浏览，可以开启此项，让其中的照片也能被索引。",
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "如果某个照片归档你很少浏览，可以打开这一项，让其中的照片也能被索引。",
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
@@ -665,7 +665,7 @@
   "@settings.mediaIndex.importanceThreshold.preview": {
     "sourceHash": "487dc79"
   },
-  "settings.mediaIndex.importanceThreshold.previewNone": "此级别下暂无匹配内容。向右拖动可索引更多内容。",
+  "settings.mediaIndex.importanceThreshold.previewNone": "这个级别下暂时没有匹配的内容。向右拖动可以索引更多。",
   "@settings.mediaIndex.importanceThreshold.previewNone": {
     "sourceHash": "c015ea6"
   },
@@ -883,7 +883,7 @@
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.label": {
     "sourceHash": "fd1382f"
   },
-  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "当可用空间低于启动磁盘的此百分比时发出警告。",
+  "settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": "可用空间低于启动磁盘的这个百分比时发出警告。",
   "@settings.behavior.fileSystemWatching.lowDiskSpaceThresholdPercent.description": {
     "sourceHash": "9ed41b8"
   },
@@ -925,7 +925,7 @@
   },
   "settings.ai.cloudConsent.lockedHint": "先开启上方的“允许使用云端 AI”，才能设置服务。",
   "@settings.ai.cloudConsent.lockedHint": {
-    "sourceHash": "6f4097a"
+    "sourceHash": "8a24685"
   },
   "settings.ai.cloudProvider.description": "要使用哪个云端 AI 服务。",
   "@settings.ai.cloudProvider.description": {
@@ -1047,9 +1047,9 @@
   "@settings.fileOperations.mtpEnabled.label": {
     "sourceHash": "6a315a8"
   },
-  "settings.fileOperations.mtpEnabled.description": "通过 USB 数据线检测并连接 Android 及其他设备，以浏览和传输文件。要在 Android 手机上使用此功能，你需要用一根 USB 数据线，然后在手机上前往类似“设置 > USB 偏好设置”的位置，并将连接设为“文件传输”、“Android Auto”或类似选项。（因设备而异。）",
+  "settings.fileOperations.mtpEnabled.description": "通过 USB 数据线检测并连接 Android 及其他设备，以浏览和传输文件。要在 Android 手机上用这个功能，你需要用一根 USB 数据线，然后在手机上前往类似“设置 > USB 偏好设置”的位置，并把连接设为“文件传输”、“Android Auto”或类似选项。（因设备而异。）",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "834ea99"
+    "sourceHash": "37444c2"
   },
   "settings.fileOperations.adbEnabled.label": "通过 ADB 访问 Android 文件",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1057,7 +1057,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "只要 Android 手机开启了 USB 调试，就能访问它的整个文件系统，包括 MTP 显示不了的部分。需要在这台 Mac 上安装 Android 平台工具（也就是 adb 命令）。如果你没装任何 Android 工具，开着这一项也不会有任何开销。",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "8577083"
+    "sourceHash": "57cf2aa"
   },
   "settings.fileOperations.adbBinaryPath.label": "adb 的位置",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1161,7 +1161,7 @@
   },
   "settings.whatsNew.lastSeenVersion.description": "内部：我们在“新增内容”弹窗中上次展示的版本。每次启动都会静默推进，因此重新启用弹窗时绝不会回放积压数月的内容。对界面隐藏。",
   "@settings.whatsNew.lastSeenVersion.description": {
-    "sourceHash": "d4f7a52"
+    "sourceHash": "d8677e1"
   },
   "settings.analytics.enabled.label": "发送使用统计",
   "@settings.analytics.enabled.label": {
@@ -1239,7 +1239,7 @@
   "@settings.advanced.diskSpaceChangeThreshold.label": {
     "sourceHash": "1d95fc6"
   },
-  "settings.advanced.diskSpaceChangeThreshold.description": "更新状态栏前可用磁盘空间所需的最小变化量。状态栏每隔几秒轮询一次磁盘空间；低于此阈值的细小变化会被忽略，以减少视觉干扰。",
+  "settings.advanced.diskSpaceChangeThreshold.description": "可用磁盘空间至少变化多少才更新状态栏。状态栏每隔几秒查询一次磁盘空间；低于这个阈值的细小变化会被忽略，免得界面来回跳。",
   "@settings.advanced.diskSpaceChangeThreshold.description": {
     "sourceHash": "f09c3cb"
   },
@@ -1247,7 +1247,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 会打开 Cmdr 的文件查看器，它显示原始字节（非文本内容采用有损的 UTF-8）。当你打开图像、PDF、归档或其他二进制文件时，查看器会显示一条红色横幅，说明 ⇧Space（快速查看）或 Enter（在关联 App 中打开）很可能才是你想要的。打开此项（或点按横幅中的''不再显示此警告''）即可永久关闭该警告。",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 会打开 Cmdr 的文件查看器，它显示原始字节（非文本内容按有损的 UTF-8 显示）。当你打开图像、PDF、归档或其他二进制文件时，查看器会显示一条红色横幅，告诉你 ⇧Space（快速查看）或 Enter（在关联 App 中打开）很可能才是你想要的。打开这一项（或点按横幅里的“不再显示此警告”），就能永久关掉这条警告。",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "b3711da"
   },
@@ -1255,7 +1255,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切换文件选择，用 ⇧Space 触发快速查看（Finder 用单独的 Space 触发快速查看）。每次你在文件列表中按 Space，Cmdr 都会显示一段简短的提醒说明这一差别。打开此项（或点按提示中的''不再显示''）即可永久关闭该提醒。",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切换文件选择，用 ⇧Space 触发快速查看（Finder 用单独的 Space 触发快速查看）。每次你在文件列表中按 Space，Cmdr 都会显示一段简短的提醒，说明这一差别。打开这一项（或点按提示里的“不再显示”），就能永久关掉这条提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },
@@ -1265,7 +1265,7 @@
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.description": "为“重新打开已关闭标签页”（⌘⇧T）每个窗格保留多少个最近关闭的标签页。数值越高，可往回重新打开的历史越多；数值越低，越早释放内存。仅适用于在当前会话中关闭的标签页。",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "fe01a43"
+    "sourceHash": "e53df3a"
   },
   "settings.advanced.dragThreshold.label": "拖移阈值",
   "@settings.advanced.dragThreshold.label": {
@@ -1335,9 +1335,9 @@
   "@settings.advanced.showSafeSaveFiles.label": {
     "sourceHash": "3436491"
   },
-  "settings.advanced.showSafeSaveFiles.description": "“文本编辑”和“预览”等应用保存文件时，macOS 会在旁边用临时名称（以“.sb-”结尾）写入新版本，然后再替换。关闭此项可让它们不出现在文件列表中。",
+  "settings.advanced.showSafeSaveFiles.description": "“文本编辑”和“预览”等应用保存文件时，macOS 会在旁边用临时名称（以“.sb-”结尾）写入新版本，然后再替换。关闭这一项，它们就不会出现在文件列表中。",
   "@settings.advanced.showSafeSaveFiles.description": {
-    "sourceHash": "1749ee6"
+    "sourceHash": "b371701"
   },
   "settings.advanced.showStagingTempFiles.label": "显示 Cmdr 的临时文件",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1393,7 +1393,7 @@
   },
   "settings.onboarding.upgradeNudgeShown.description": "内部：记录向导改版后，是否已为现有用户触发过一次性的“现在有了入门引导菜单项”提示。对界面隐藏。",
   "@settings.onboarding.upgradeNudgeShown.description": {
-    "sourceHash": "5cfb2b5"
+    "sourceHash": "c877371"
   },
   "settings.askCmdr.consentRevokePending.label": "Ask Cmdr 已关闭，等待保存",
   "@settings.askCmdr.consentRevokePending.label": {
@@ -1531,25 +1531,25 @@
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
   },
-  "settings.revealHandler.description": "当其他 App 执行“在 Finder 中显示”时，Cmdr 会打开该文件夹，并把光标停在这个文件上。其余情况下，Finder 仍是你的默认文件管理器。",
+  "settings.revealHandler.description": "当其他 App 执行“在 Finder 中显示”时，Cmdr 会打开那个文件夹，并把光标停在这个文件上。其余情况下，Finder 仍是你的默认文件管理器。",
   "@settings.revealHandler.description": {
-    "sourceHash": "ebb79ff"
+    "sourceHash": "9522e41"
   },
   "settings.revealHandler.heldByOtherApp": "当前：{app}。开启后，“在 Finder 中显示”会交给 Cmdr。",
   "@settings.revealHandler.heldByOtherApp": {
-    "sourceHash": "d0aa283"
+    "sourceHash": "4b956ef"
   },
   "settings.revealHandler.uninstallWarning": "<lead>卸载 Cmdr 之前，请先关闭这一项。</lead>macOS 仍会把“在 Finder 中显示”送到这里，而 Cmdr 一旦不在了，点按它就会悄悄没了反应。",
   "@settings.revealHandler.uninstallWarning": {
-    "sourceHash": "3c10fd3"
+    "sourceHash": "9464597"
   },
   "settings.revealHandler.notInApplications": "把 Cmdr 移到你的“应用程序”文件夹，才能开启这一项。从它现在运行的位置，移动或删除 Cmdr 会让每一次点按“在 Finder 中显示”都指向空处。",
   "@settings.revealHandler.notInApplications": {
-    "sourceHash": "dc15ebf"
+    "sourceHash": "1a380cf"
   },
   "settings.revealHandler.notProductionBuild": "只有正式发布的 Cmdr 版本才能开启这一项。开发版和测试版来来去去，一旦删掉其中一个，每一次点按“在 Finder 中显示”就都会指向空处。",
   "@settings.revealHandler.notProductionBuild": {
-    "sourceHash": "20648ba"
+    "sourceHash": "7195002"
   },
   "settings.behavior.textEditorApp.label": "编辑文件时使用",
   "@settings.behavior.textEditorApp.label": {
@@ -1557,7 +1557,7 @@
   },
   "settings.behavior.textEditorApp.description": "Cmdr 会列出 macOS 在这台 Mac 上认得的文本编辑器。要用别的 App，请选择“选取 App…”。",
   "@settings.behavior.textEditorApp.description": {
-    "sourceHash": "b062aed"
+    "sourceHash": "4641320"
   },
   "settings.behavior.textEditorApp.systemDefault": "跟随系统（{app}）",
   "@settings.behavior.textEditorApp.systemDefault": {
@@ -1593,7 +1593,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "Cmdr 会列出在这台 Mac 上找到的终端 App。要用它不认识的 App，请选择“选取 App…”。",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "0df49fc"
+    "sourceHash": "32ccd8f"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "选取 App…",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1657,7 +1657,7 @@
   },
   "settings.behavior.revealNudgeOfferedAt.description": "在 Cmdr 中打开“在 Finder 中显示”的一次性邀请是什么时候发出的。",
   "@settings.behavior.revealNudgeOfferedAt.description": {
-    "sourceHash": "2b9d5b4"
+    "sourceHash": "b6a8933"
   },
   "settings.behavior.revealActivationNoticeSeen.label": "已显示首次接手提示",
   "@settings.behavior.revealActivationNoticeSeen.label": {
@@ -1665,7 +1665,7 @@
   },
   "settings.behavior.revealActivationNoticeSeen.description": "是否已经显示过关于首次在 Cmdr 中打开“在 Finder 中显示”的提示。",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "f2107a5"
+    "sourceHash": "009056a"
   },
   "settings.behavior.adbHintDismissed.label": "已关闭 USB 调试提示",
   "@settings.behavior.adbHintDismissed.label": {
@@ -2025,7 +2025,7 @@
   "@settings.summary.imageIndexing": {
     "sourceHash": "cbeb785"
   },
-  "settings.summary.noSubsections": "此部分没有子部分。",
+  "settings.summary.noSubsections": "这个部分没有子部分。",
   "@settings.summary.noSubsections": {
     "sourceHash": "ba4b5b5"
   },
@@ -2274,7 +2274,7 @@
   "@settings.updates.card.privacyAndDataSharing": {
     "sourceHash": "ae4aabf"
   },
-  "settings.fileSystemWatching.globalShortcutHint": "在“键盘快捷键 → 前往最新下载（全局）”下更改此快捷键。",
+  "settings.fileSystemWatching.globalShortcutHint": "在“键盘快捷键 → 前往最新下载（全局）”下更改这个快捷键。",
   "@settings.fileSystemWatching.globalShortcutHint": {
     "sourceHash": "1af3da4"
   },
@@ -2392,7 +2392,7 @@
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
-  "settings.advanced.resetAllConfirm": "将所有高级设置重置为默认值？此操作无法撤销。",
+  "settings.advanced.resetAllConfirm": "将所有高级设置重置为默认值？这项操作无法撤销。",
   "@settings.advanced.resetAllConfirm": {
     "sourceHash": "be08f2a"
   },

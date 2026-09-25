@@ -19,13 +19,13 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你选中的内容里有一部分仅存在云端。把它们移到废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则请取消此对话框，先把所有文件设为离线可用，或者取消选择所有仅存在云端的文件。",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你选中的内容里有一部分只在云端。把它们移到废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则就取消这个对话框，先把所有文件设为离线可用，或者取消选择所有只在云端的文件。",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你选中的内容全都仅存在云端。把它移到废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则请取消此对话框，先把这些文件设为离线可用。",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你选中的内容全都只在云端。把它移到废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则就取消这个对话框，先把这些文件设为离线可用。",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "你选中的内容里包含仅存在云端的文件，所以下面的按钮现在提供“删除”。请看一下上面的说明，确认无误后再按一次。",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
@@ -241,7 +241,7 @@
   },
   "fileOperations.transferDialog.smbNativeNote": "这个共享使用系统连接。取消可能会有延迟。在宗卷选择器中选择“直接连接”可获得更快的传输速度和可靠的取消。",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "cfec439"
+    "sourceHash": "60af535"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "这个文件夹还不存在。Cmdr 会在拷贝时自动创建它。",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -275,7 +275,7 @@
   "@fileOperations.transferDialog.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.transferDialog.hardlinkNote": "将写入 <written></written>。源文件在磁盘上占用 <ondisk></ondisk> – 多出的部分是硬链接文件，跨驱动器时无法保持链接关系。",
+  "fileOperations.transferDialog.hardlinkNote": "这次要写入 <written></written> 的数据，而源文件在磁盘上只占 <ondisk></ondisk> 的空间。多出的部分是硬链接文件，跨驱动器后没法保持链接。",
   "@fileOperations.transferDialog.hardlinkNote": {
     "sourceHash": "af8a4c9"
   },
@@ -365,15 +365,15 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "无法将“{name}”{verb, select, copy {拷贝} other {移动}}到它自己的子文件夹中",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "4ad1eaf"
+    "sourceHash": "815204a"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "“{name}”已经在这个位置了",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
-    "sourceHash": "1030a7a"
+    "sourceHash": "1bf762e"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "压缩文件名称必须以 \".zip\" 结尾。",
+  "fileOperations.transferDialog.pathErrorNotZip": "压缩文件名必须以“.zip”结尾。",
   "@fileOperations.transferDialog.pathErrorNotZip": {
-    "sourceHash": "c85c6f8"
+    "sourceHash": "7700864"
   },
   "fileOperations.transferDialog.confirmCopy": "拷贝",
   "@fileOperations.transferDialog.confirmCopy": {
@@ -885,7 +885,7 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {文件夹名中不能包含“/”或空字符} other {文件名中不能包含“/”或空字符}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "d84512c"
+    "sourceHash": "4fa16ce"
   },
   "fileOperations.validation.empty": "{kind, select, folder {文件夹名不能为空} other {文件名不能为空}}",
   "@fileOperations.validation.empty": {
@@ -901,11 +901,11 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "不允许更改文件扩展名（原为“{oldExt}”）",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "43c2dc1"
+    "sourceHash": "0b2df1e"
   },
-  "fileOperations.validation.conflict": "“{name}”已存在于此文件夹中",
+  "fileOperations.validation.conflict": "这个文件夹里已经有“{name}”了",
   "@fileOperations.validation.conflict": {
-    "sourceHash": "ba13237"
+    "sourceHash": "842d02d"
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {这个文件夹名不能使用} other {这个文件名不能使用}}",
   "@fileOperations.validation.nameNotUsable": {
