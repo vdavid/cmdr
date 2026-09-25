@@ -481,9 +481,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "Khớp {matchedText} trên {totalText} {total, plural, other {ký tự}}",
+  "askCmdr.renameReview.coverage": "{matched, plural, other {Khớp}} {matchedText} trên {totalText} {total, plural, other {ký tự}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "222d847"
+    "sourceHash": "9fd2bde"
   },
   "askCmdr.renameReview.coverageThin": "Đó chỉ là một phần nhỏ của văn bản mà Cmdr đọc được ở đây. Hãy mở tệp để kiểm tra tên.",
   "@askCmdr.renameReview.coverageThin": {

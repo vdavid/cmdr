@@ -184,7 +184,7 @@
   },
   "queryUi.results.scanningWithCount": "Átvizsgálás folyamatban ({countText} {count, plural, one {bejegyzés} other {bejegyzés}})…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "Átvizsgálás folyamatban…",
   "@queryUi.results.scanning": {

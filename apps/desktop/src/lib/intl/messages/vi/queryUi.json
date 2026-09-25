@@ -184,7 +184,7 @@
   },
   "queryUi.results.scanningWithCount": "Đang quét ({countText} {count, plural, other {mục}})…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "Đang quét…",
   "@queryUi.results.scanning": {

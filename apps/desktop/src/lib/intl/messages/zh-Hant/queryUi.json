@@ -182,7 +182,7 @@
   },
   "queryUi.results.scanningWithCount": "正在掃描（{countText} 個{count, plural, other {項目}}）⋯",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "正在掃描⋯",
   "@queryUi.results.scanning": {

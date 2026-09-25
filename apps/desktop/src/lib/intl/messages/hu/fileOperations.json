@@ -525,17 +525,17 @@
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Új mappa:",
+  "fileOperations.transferProgress.newFolderLabel": "Bejövő mappa:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "e138bdb"
+    "sourceHash": "5239894"
   },
-  "fileOperations.transferProgress.newFileLabel": "Új fájl:",
+  "fileOperations.transferProgress.newFileLabel": "Bejövő fájl:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "5b5ad51"
+    "sourceHash": "4a8d0b3"
   },
-  "fileOperations.transferProgress.newLabel": "Új:",
+  "fileOperations.transferProgress.newLabel": "Bejövő:",
   "@fileOperations.transferProgress.newLabel": {
-    "sourceHash": "46dafc1"
+    "sourceHash": "161dcd3"
   },
   "fileOperations.transferProgress.sizeUnknown": "(ismeretlen)",
   "@fileOperations.transferProgress.sizeUnknown": {
@@ -769,9 +769,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "{countText} {count, plural, one {elem} other {elem}} eltávolítása után leállítva. A többi ott maradt, ahová a másolás tette.",
+  "fileOperations.cancelRollback.stoppedDeleting": "{countText} {count, plural, one {elem} other {elem}} eltávolítása után leállítva. A többi ott maradt, ahová a Cmdr tette.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "cc69228"
+    "sourceHash": "f9767ae"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "{countText} {count, plural, one {elem} other {elem}} visszahelyezése után leállítva. A többi ott maradt, ahová az áthelyezés vitte.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

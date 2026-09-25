@@ -1206,13 +1206,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Si vous venez de Finder, cela peut surprendre, car Finder déclenche une action « Coup d’œil » avec <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Si vous venez du Finder, cela peut surprendre, car le Finder ouvre Coup d’œil avec <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
-  "fileExplorer.quickLookHint.quickView": "Dans Cmdr, vous pouvez déclencher l’aperçu rapide avec <key></key>. (<key></key> fonctionne aussi dans le Finder, au passage !)",
+  "fileExplorer.quickLookHint.quickView": "Dans Cmdr, vous pouvez ouvrir Coup d’œil avec <key></key>. (<key></key> fonctionne aussi dans le Finder, au passage !)",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "Vous pouvez aussi utiliser <enter></enter> pour ouvrir les fichiers dans l’app par défaut.",
   "@fileExplorer.quickLookHint.enterOpens": {

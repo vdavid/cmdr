@@ -481,9 +481,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "Matchar {matchedText} av {totalText} {total, plural, one {tecken} other {tecken}}",
+  "askCmdr.renameReview.coverage": "{matched, plural, one {Matchar} other {Matchar}} {matchedText} av {totalText} {total, plural, one {tecken} other {tecken}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "222d847"
+    "sourceHash": "9fd2bde"
   },
   "askCmdr.renameReview.coverageThin": "Det är en liten del av texten som Cmdr läste här. Öppna filen för att kontrollera namnet.",
   "@askCmdr.renameReview.coverageThin": {

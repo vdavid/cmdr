@@ -526,17 +526,17 @@
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Nouveau dossier :",
+  "fileOperations.transferProgress.newFolderLabel": "Dossier entrant :",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "e138bdb"
+    "sourceHash": "5239894"
   },
-  "fileOperations.transferProgress.newFileLabel": "Nouveau fichier :",
+  "fileOperations.transferProgress.newFileLabel": "Fichier entrant :",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "5b5ad51"
+    "sourceHash": "4a8d0b3"
   },
-  "fileOperations.transferProgress.newLabel": "Nouveau :",
+  "fileOperations.transferProgress.newLabel": "Entrant :",
   "@fileOperations.transferProgress.newLabel": {
-    "sourceHash": "46dafc1"
+    "sourceHash": "161dcd3"
   },
   "fileOperations.transferProgress.sizeUnknown": "(inconnue)",
   "@fileOperations.transferProgress.sizeUnknown": {
@@ -771,9 +771,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "Retour en arrière arrêté après la suppression de {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Les autres sont restés là où la copie les avait mis.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Retour en arrière arrêté après la suppression de {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Les autres sont restés là où Cmdr les avait mis.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "cc69228"
+    "sourceHash": "f9767ae"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "Retour en arrière arrêté après la remise en place de {countText} {count, plural, one {élément} many {éléments} other {éléments}}. Les autres sont restés là où le déplacement les avait mis.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

@@ -221,8 +221,8 @@ backticks. Term rulings live in `terms.json`, open questions in `review-queue.md
 
 ## Rename chaining: the counted "and so did N others" toast (`fileExplorer.rename.chainKeptOriginalNameAndOthers`)
 
-- `3 weitere Dateien behalten ihre bisherigen Namen, ebenso „A“: …` (Finder's `ebenso`); `„A“ behält den bisherigen
-  Namen`, never `seinen` (gender bet on the insert).
+- `3 weitere Dateien behalten ihre bisherigen Namen, ebenso „A“: …` (Finder's `ebenso`);
+  `„A“ behält den bisherigen Namen`, never `seinen` (gender bet on the insert).
 
 ## Unconfirmed rename + the catch-all name rejection (`fileExplorer.rename.unconfirmed`/`.unconfirmedAndOthers`, `fileOperations.validation.nameNotUsable`)
 

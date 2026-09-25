@@ -1204,13 +1204,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Nếu bạn đến từ Finder, điều này có thể lạ vì Finder mở “Xem nhanh” khi bạn nhấn <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Nếu bạn đến từ Finder, điều này có thể lạ vì Finder mở Xem nhanh khi bạn nhấn <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
-  "fileExplorer.quickLookHint.quickView": "Trong Cmdr, bạn có thể mở xem nhanh bằng <key></key>. (<key></key> cũng hoạt động trong Finder nhé!)",
+  "fileExplorer.quickLookHint.quickView": "Trong Cmdr, bạn có thể mở Xem nhanh bằng <key></key>. (<key></key> cũng hoạt động trong Finder nhé!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "Bạn cũng có thể dùng <enter></enter> để mở tệp trong ứng dụng mặc định.",
   "@fileExplorer.quickLookHint.enterOpens": {

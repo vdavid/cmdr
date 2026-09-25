@@ -73,7 +73,7 @@
   },
   "viewer.binaryWarning.body": "Dit is de ruwe weergave van het bestand. Je wilt waarschijnlijk liever {category, select, image {de} other {het}} eigenlijke <kindName>{category, select, image {afbeelding} document {document} other {{ext}-bestand}}</kindName> bekijken. Sluit hiervoor dit venster en druk op <quickLookKey></quickLookKey> om de snelle weergave te openen, of druk op <openKey></openKey> (of dubbelklik op het bestand) om het in de bijbehorende app te openen.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "da099be"
+    "sourceHash": "fd5cfb7"
   },
   "viewer.binaryWarning.dismiss": "Sluit",
   "@viewer.binaryWarning.dismiss": {

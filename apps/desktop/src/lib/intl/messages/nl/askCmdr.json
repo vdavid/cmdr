@@ -484,9 +484,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "Komt overeen: {matchedText} van {totalText} {total, plural, one {teken} other {tekens}}",
+  "askCmdr.renameReview.coverage": "{matchedText} van {totalText} {total, plural, one {teken} other {tekens}} {matched, plural, one {komt} other {komen}} overeen",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "222d847"
+    "sourceHash": "9fd2bde"
   },
   "askCmdr.renameReview.coverageThin": "Dat is een klein deel van de tekst die Cmdr hier heeft gelezen. Open het bestand om de naam te controleren.",
   "@askCmdr.renameReview.coverageThin": {

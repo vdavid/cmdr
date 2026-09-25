@@ -1203,13 +1203,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Om du kommer från Finder kan det här kännas ovant, eftersom Finder utlöser en ”Snabbtitt”-åtgärd på <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Om du kommer från Finder kan det här kännas ovant, eftersom Finder öppnar Överblick med <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
   "fileExplorer.quickLookHint.quickView": "I Cmdr kan du öppna Överblick med <key></key>. (<key></key> funkar förresten i Finder också!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "Du kan också använda <enter></enter> för att öppna filer i standardappen.",
   "@fileExplorer.quickLookHint.enterOpens": {

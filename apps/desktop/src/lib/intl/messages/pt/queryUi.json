@@ -184,7 +184,7 @@
   },
   "queryUi.results.scanningWithCount": "Varredura em andamento ({countText} {count, plural, one {entrada} many {entradas} other {entradas}})…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "Varredura em andamento…",
   "@queryUi.results.scanning": {

@@ -348,8 +348,8 @@ Tone: Cmdr did the careful thing; never an apology or alarm.
   `folderNotEmpty` keys match their twins word for word.
 - "it changed after Cmdr put it there" → `cambió después de que Cmdr terminara de escribir ahí`: keeps the brand AND
   agrees with nothing.
-- `todos los` is what separates `done*` (`todos los {countText} elementos`) from `some*`; lose it and the partial
-  notice promises a clean destination. `one` drops the numeral (`el elemento`).
+- `todos los` is what separates `done*` (`todos los {countText} elementos`) from `some*`; lose it and the partial notice
+  promises a clean destination. `one` drops the numeral (`el elemento`).
 - Rolling back a copy `elimina`, a move `devuelve … a su sitio`: never mix them.
 - "Cmdr had written" → `que Cmdr había creado` (folders aren't written).
 - `*.counted` keys only show for two or more: plural verb outside the branches, `one` unused. If one can ever be 1, redo

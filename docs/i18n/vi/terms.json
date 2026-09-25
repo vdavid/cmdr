@@ -1177,6 +1177,12 @@
     "forms": "is in use by X → đang được X sử dụng / X vẫn đang sử dụng …; a still-open file → vẫn đang mở",
     "sources": "macOS Finder NE66 (ổ đĩa đang được sử dụng), AppKitErrors"
   },
+  "incoming-item": {
+    "chosen": "đưa vào",
+    "confidence": "tentative",
+    "forms": "Mục đưa vào: / Tệp đưa vào: / Thư mục đưa vào:, paired with hiện có",
+    "sources": "MS terminology (the incoming-call label) says đến (cuộc gọi đến), but a bare Đến: reads as To:; đưa vào matches the rollback family's đưa … tới"
+  },
   "index": {
     "chosen": "chỉ mục",
     "confidence": "high",

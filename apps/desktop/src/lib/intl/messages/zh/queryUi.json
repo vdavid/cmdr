@@ -182,7 +182,7 @@
   },
   "queryUi.results.scanningWithCount": "正在扫描（{countText} {count, plural, other {个条目}}）…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "正在扫描…",
   "@queryUi.results.scanning": {

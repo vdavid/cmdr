@@ -1202,6 +1202,12 @@
     "sources": "macOS Finder pt-BR (está sendo usado, está em uso)",
     "decision": "Eject and disconnect refusals"
   },
+  "incoming-item": {
+    "chosen": "origem",
+    "confidence": "tentative",
+    "forms": "Origem: / Arquivo de origem: / Pasta de origem:, paired with existente",
+    "sources": "MS terminology (the incoming-call label) says recebida, which reads as already received; origem names where the item comes from"
+  },
   "index": {
     "chosen": "índice",
     "accept": ["index"],

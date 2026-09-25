@@ -1209,13 +1209,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Als je van Finder komt, is dit misschien onverwacht, omdat Finder bij <space></space> een ‘Snelle weergave’-actie start.",
+  "fileExplorer.quickLookHint.finderComparison": "Als je van Finder komt, is dit misschien onverwacht, omdat Finder bij <space></space> de snelle weergave opent.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
-  "fileExplorer.quickLookHint.quickView": "In Cmdr start je een snelle weergave via <key></key>. (<key></key> werkt trouwens ook in Finder!)",
+  "fileExplorer.quickLookHint.quickView": "In Cmdr open je de snelle weergave met <key></key>. (<key></key> werkt trouwens ook in Finder!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "Je kunt ook <enter></enter> gebruiken om bestanden in de standaardapp te openen.",
   "@fileExplorer.quickLookHint.enterOpens": {

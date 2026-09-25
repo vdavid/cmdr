@@ -207,9 +207,9 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "f72c0b6"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Si vienes del Finder, esto puede resultarte raro, porque el Finder activa una “Vista rápida” al presionar <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Si vienes del Finder, esto puede resultarte raro, porque el Finder abre la Vista rápida al presionar <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "47795a0"
+    "sourceHash": "69d186c"
   },
   "fileExplorer.quickLookHint.enterOpens": "También puedes usar <enter></enter> para abrir archivos en la app predeterminada.",
   "@fileExplorer.quickLookHint.enterOpens": {

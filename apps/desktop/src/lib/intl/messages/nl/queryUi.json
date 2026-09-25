@@ -185,7 +185,7 @@
   },
   "queryUi.results.scanningWithCount": "Bezig met scannen ({countText} {count, plural, one {onderdeel} other {onderdelen}})…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "Bezig met scannen…",
   "@queryUi.results.scanning": {

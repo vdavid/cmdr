@@ -1535,6 +1535,12 @@
     "confidence": "high",
     "sources": "macOS Finder (NE66 A kötet nem adható ki, mert jelenleg használatban van.), 26.5.2, 2026-08-23"
   },
+  "incoming-item": {
+    "chosen": "bejövő",
+    "confidence": "high",
+    "forms": "Bejövő: / Bejövő fájl: / Bejövő mappa:, paired with Meglévő",
+    "sources": "MS terminology (the incoming-call label): Bejövő"
+  },
   "index": {
     "chosen": "indexelés",
     "accept": ["index"],
@@ -2578,7 +2584,12 @@
   "request": {
     "chosen": "kérés",
     "forms": "network request → hálózati kérés; sending one → kérést küld",
-    "avoid": [{ "form": "kérelem", "why": "Microsoft's administrative sense (a provisioning or application request), not a call to a server" }],
+    "avoid": [
+      {
+        "form": "kérelem",
+        "why": "Microsoft's administrative sense (a provisioning or application request), not a call to a server"
+      }
+    ],
     "confidence": "high",
     "sources": "ms (request, the web-content sense → kérés); catalog (13 keys)"
   },

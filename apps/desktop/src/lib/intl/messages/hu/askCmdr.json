@@ -481,9 +481,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "{totalText} {total, plural, one {karakterből} other {karakterből}} {matchedText} egyezik",
+  "askCmdr.renameReview.coverage": "{totalText} {total, plural, one {karakterből} other {karakterből}} {matchedText} {matched, plural, one {egyezik} other {egyezik}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "222d847"
+    "sourceHash": "9fd2bde"
   },
   "askCmdr.renameReview.coverageThin": "Ez csak kis része annak a szövegnek, amit a Cmdr itt elolvasott. Nyisd meg a fájlt a név ellenőrzéséhez.",
   "@askCmdr.renameReview.coverageThin": {

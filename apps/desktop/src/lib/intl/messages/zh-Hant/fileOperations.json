@@ -523,17 +523,17 @@
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "新的資料夾：",
+  "fileOperations.transferProgress.newFolderLabel": "傳入的資料夾：",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "e138bdb"
+    "sourceHash": "5239894"
   },
-  "fileOperations.transferProgress.newFileLabel": "新的檔案：",
+  "fileOperations.transferProgress.newFileLabel": "傳入的檔案：",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "5b5ad51"
+    "sourceHash": "4a8d0b3"
   },
-  "fileOperations.transferProgress.newLabel": "新的：",
+  "fileOperations.transferProgress.newLabel": "傳入：",
   "@fileOperations.transferProgress.newLabel": {
-    "sourceHash": "46dafc1"
+    "sourceHash": "161dcd3"
   },
   "fileOperations.transferProgress.sizeUnknown": "（未知）",
   "@fileOperations.transferProgress.sizeUnknown": {
@@ -767,9 +767,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "刪除 {countText} 個{count, plural, other {項目}}之後停止了。其餘的還留在複製過去的地方。",
+  "fileOperations.cancelRollback.stoppedDeleting": "刪除 {countText} 個{count, plural, other {項目}}之後停止了。其餘的還留在 Cmdr 放過去的地方。",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "cc69228"
+    "sourceHash": "f9767ae"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "把 {countText} 個{count, plural, other {項目}}放回原處之後停止了。其餘的還留在移動過去的地方。",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

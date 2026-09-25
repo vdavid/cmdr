@@ -185,7 +185,7 @@
   },
   "queryUi.results.scanningWithCount": "Laufwerk wird durchsucht ({countText} {count, plural, one {Eintrag} other {Einträge}}) …",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "Laufwerk wird durchsucht …",
   "@queryUi.results.scanning": {

@@ -275,8 +275,8 @@ values write the catalog's `’`.
 
 ## Renommage en chaîne : « et N autres » se rend par `ainsi que …` (`fileExplorer.rename.chainKeptOriginalName*`)
 
-- "and so did “{name}”: {reason}" → `ainsi que « {name} » : {reason}` (Finder’s "X et N autres"): the name stays
-  next to the colon, since `{reason}` is about it alone.
+- "and so did “{name}”: {reason}" → `ainsi que « {name} » : {reason}` (Finder’s "X et N autres"): the name stays next to
+  the colon, as `{reason}` is about it alone.
 
 ## Renommage non confirmé : le volume ne répond pas (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
 
@@ -485,7 +485,8 @@ values write the catalog's `’`.
 ## Le hub des serveurs : panneau de connexion, refus et oubli (`servers.refusal.*`, `servers.paneState.*`, `fileExplorer.navigation.forget*`, `fileExplorer.navigation.disconnect*`, `menu.network.forgetServer`, `.forgetSavedPassword`)
 
 - Keychain Access (the app) → `Trousseaux d’accès` (Apple’s plural); the store → `le trousseau`.
-- trust → `approuver` (Security.framework) over `faire confiance à`. Host key → `la clé du serveur {host}` (`de` would elide; tentative).
+- trust → `approuver` (Security.framework) over `faire confiance à`. Host key → `la clé du serveur {host}` (`de` would
+  elide; tentative).
 - Signed out → `Session fermée`: the session carries the agreement, never `Déconnecté(e)`.
 - Confirm titles repeat the menu labels verbatim (`Oublier le serveur`, `Oublier le mot de passe enregistré`).
 - `disconnectPlaceAriaLabel` → `Se déconnecter de {name}`, containing the visible `Se déconnecter`, never Finder’s

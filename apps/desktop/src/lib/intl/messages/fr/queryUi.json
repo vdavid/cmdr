@@ -185,7 +185,7 @@
   },
   "queryUi.results.scanningWithCount": "Analyse en cours ({countText} {count, plural, one {entrée} many {entrées} other {entrées}})…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "Analyse en cours…",
   "@queryUi.results.scanning": {

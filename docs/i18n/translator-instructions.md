@@ -33,7 +33,8 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   where your word order goes.
 - **Native menu labels** (`menu.*`): no screenshot exists, so the description is the whole aid (VERB or NOUN, which
   menu, the Finder counterpart). Mine the label from the localized OS menus (docs/i18n/reference-pile/how-to-mine.md §
-  Menu-bar labels). Keep a trailing ellipsis, written the way your mechanics file declares it. Don't write & or _ mnemonics.
+  Menu-bar labels). Keep a trailing ellipsis, written the way your mechanics file declares it. Don't write & or _
+  mnemonics.
 - **Aria labels**: a `*Aria` value must CONTAIN its visible label's words verbatim and in order (WCAG 2.5.3); case may
   differ. Pick the label's form to be the one the natural aria sentence uses, then cut the label from it. Say which
   substring satisfies containment, and record the pair in the term's "note".

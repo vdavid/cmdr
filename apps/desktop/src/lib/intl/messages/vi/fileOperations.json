@@ -524,17 +524,17 @@
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Thư mục mới:",
+  "fileOperations.transferProgress.newFolderLabel": "Thư mục đưa vào:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "e138bdb"
+    "sourceHash": "5239894"
   },
-  "fileOperations.transferProgress.newFileLabel": "Tệp mới:",
+  "fileOperations.transferProgress.newFileLabel": "Tệp đưa vào:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "5b5ad51"
+    "sourceHash": "4a8d0b3"
   },
-  "fileOperations.transferProgress.newLabel": "Mới:",
+  "fileOperations.transferProgress.newLabel": "Mục đưa vào:",
   "@fileOperations.transferProgress.newLabel": {
-    "sourceHash": "46dafc1"
+    "sourceHash": "161dcd3"
   },
   "fileOperations.transferProgress.sizeUnknown": "(không rõ)",
   "@fileOperations.transferProgress.sizeUnknown": {
@@ -768,9 +768,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "Đã dừng sau khi xóa {countText} {count, plural, other {mục}}. Các mục còn lại vẫn ở nơi thao tác sao chép đã đưa chúng tới.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Đã dừng sau khi xóa {countText} {count, plural, other {mục}}. Các mục còn lại vẫn ở nơi Cmdr đã đưa chúng tới.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "cc69228"
+    "sourceHash": "f9767ae"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "Đã dừng sau khi đưa trở lại {countText} {count, plural, other {mục}}. Các mục còn lại vẫn ở nơi thao tác di chuyển đã đưa chúng tới.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

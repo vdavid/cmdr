@@ -1250,6 +1250,12 @@
     "forms": "full sentence is in gebruik; a grayed-out menu item repeats its base label plus (bezet); with a named holder: {app} gebruikt deze schijf nog",
     "sources": "macOS Finder (… is in gebruik), MS (busy → bezet)"
   },
+  "incoming-item": {
+    "chosen": "inkomend",
+    "confidence": "high",
+    "forms": "Inkomend: / Inkomend bestand: / Inkomende map:, paired with Bestaand",
+    "sources": "MS terminology (the incoming-call label): Inkomend"
+  },
   "index": {
     "accept": ["indexeren", "geïndexeerd", "indexering", "Schijfindex"],
     "avoid": [

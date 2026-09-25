@@ -384,7 +384,7 @@ One English word, two correct Chinese renderings. Don't merge them:
 - Remove what it wrote `删除` (the whole rollback family); `移除` is for taking something out of a list or zip. Moving
   back is `放回`, never `挪回`.
 - `all` in `done*` is `全部`, plus a `=1` arm `这一项` (never `全部 1 个`); ⚠️ never `全部` on `some*`: it would lie.
-- `stopped*` share one frame: `其余的还留在这次拷贝/移动把它们放到的地方。`
+- `stopped*` share one frame: `其余的还留在 Cmdr/这次移动把它们放到的地方。`
 - Stopped after N `…N 个项目后停止了。` (clause first). `leftBehind` repeats `跳过没有把握的部分` exactly, then `：`.
 - Occupied `它原来的位置现在被别的东西占用了。`, the `位置` twin of renameUndo's `名称`.
 - The staged leftover is Cmdr's own file: `不完整副本`, cleared with `清掉`. ⚠️ `之后往那里传输时`, never `下次`: the

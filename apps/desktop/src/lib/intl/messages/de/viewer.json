@@ -73,7 +73,7 @@
   },
   "viewer.binaryWarning.body": "Das ist die Rohansicht der Datei. Vielleicht möchtest du stattdessen <kindName>{category, select, image {das eigentliche Bild} document {das eigentliche Dokument} other {die eigentliche {ext}-Datei}}</kindName> ansehen. Schließe dazu dieses Fenster und drücke <quickLookKey></quickLookKey> für die Übersicht, oder drücke <openKey></openKey> (oder doppelklicke auf die Datei), um sie in der zugehörigen App zu öffnen.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "da099be"
+    "sourceHash": "fd5cfb7"
   },
   "viewer.binaryWarning.dismiss": "Schließen",
   "@viewer.binaryWarning.dismiss": {

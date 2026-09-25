@@ -1279,6 +1279,12 @@
     "forms": "Något använder fortfarande den här enheten; när den inte används (idle)",
     "sources": "macOS Finder (Volymen kan inte matas ut eftersom den används)"
   },
+  "incoming-item": {
+    "chosen": "inkommande",
+    "confidence": "high",
+    "forms": "Inkommande: / Inkommande fil: / Inkommande mapp:, paired with Befintlig",
+    "sources": "MS terminology (the incoming-call label): Inkommande"
+  },
   "index": {
     "chosen": "index",
     "confidence": "high",
@@ -1934,11 +1940,9 @@
     "sources": "catalog"
   },
   "quick-look": {
-    "accept": ["snabbtitt"],
     "chosen": "Överblick",
     "confidence": "high",
     "decision": "Apple translates Quick Look and Keychain",
-    "forms": "the feature Överblick; the generic quick-preview hint says snabbtitt",
     "sources": "macOS Finder (TL14 = Överblick)"
   },
   "quit": {

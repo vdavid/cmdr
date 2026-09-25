@@ -525,17 +525,17 @@
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Neuer Ordner:",
+  "fileOperations.transferProgress.newFolderLabel": "Eingehender Ordner:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "e138bdb"
+    "sourceHash": "5239894"
   },
-  "fileOperations.transferProgress.newFileLabel": "Neue Datei:",
+  "fileOperations.transferProgress.newFileLabel": "Eingehende Datei:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "5b5ad51"
+    "sourceHash": "4a8d0b3"
   },
-  "fileOperations.transferProgress.newLabel": "Neu:",
+  "fileOperations.transferProgress.newLabel": "Eingehend:",
   "@fileOperations.transferProgress.newLabel": {
-    "sourceHash": "46dafc1"
+    "sourceHash": "161dcd3"
   },
   "fileOperations.transferProgress.sizeUnknown": "(unbekannt)",
   "@fileOperations.transferProgress.sizeUnknown": {
@@ -772,9 +772,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "Gestoppt, nachdem Cmdr {countText} {count, plural, one {Objekt} other {Objekte}} entfernt hat. Der Rest liegt noch dort, wohin der Vorgang ihn kopiert hat.",
+  "fileOperations.cancelRollback.stoppedDeleting": "Gestoppt, nachdem Cmdr {countText} {count, plural, one {Objekt} other {Objekte}} entfernt hat. Der Rest liegt noch dort, wohin Cmdr ihn gelegt hat.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "cc69228"
+    "sourceHash": "f9767ae"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "Gestoppt, nachdem Cmdr {countText} {count, plural, one {Objekt} other {Objekte}} zurückgelegt hat. Der Rest liegt noch dort, wohin der Vorgang ihn bewegt hat.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

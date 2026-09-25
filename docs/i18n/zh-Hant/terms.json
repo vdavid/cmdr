@@ -62,7 +62,6 @@
     "chosen": "動作",
     "confidence": "high",
     "exceptions": {
-      "fileExplorer.quickLookHint.finderComparison": "Names Finder's action by its label: 「快速預覽」.",
       "onboarding.stepAi.comparisonIntro": "Common actions → 同樣的事情, everyday tasks rather than UI actions."
     },
     "sources": "AP live TW 24/24, HK 23/24 on exact Action keys; MS (HKG, TWN)"
@@ -1515,6 +1514,12 @@
     "forms": "the macOS prompt → 「接受傳入連線」",
     "sources": "composed: 連線 + standard Traditional 傳入"
   },
+  "incoming-item": {
+    "chosen": "傳入",
+    "confidence": "high",
+    "forms": "傳入： / 傳入的檔案： / 傳入的資料夾：, paired with 現有",
+    "sources": "catalog incoming-connections 傳入連線; standard Traditional 傳入"
+  },
   "index": {
     "chosen": "索引",
     "confidence": "high",
@@ -1994,7 +1999,6 @@
     "chosen": "新增檔案",
     "confidence": "high",
     "exceptions": {
-      "fileOperations.transferProgress.newFileLabel": "The incoming file in the conflict comparison, not the command: 新的檔案, paired with existingFileLabel 現有的檔案.",
       "settings.fileOperations.pasteClipboardAsFile.opt.createFile": "Create file is a paste option (make a file from the clipboard), not the New file command: 建立檔案."
     },
     "sources": "mirrors new-folder 新增資料夾 (AP-HK, TC); catalog menu.file.newFile, fileOperations.mkfile.title"
@@ -2003,9 +2007,6 @@
     "accept": ["新資料夾", "新增一個資料夾"],
     "chosen": "新增資料夾",
     "confidence": "high",
-    "exceptions": {
-      "fileOperations.transferProgress.newFolderLabel": "The incoming folder in the conflict comparison, not the command: 新的資料夾, paired with existingFolderLabel 現有的資料夾."
-    },
     "sources": "AP-HK, TC"
   },
   "not-finished": {

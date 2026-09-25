@@ -73,7 +73,7 @@
   },
   "viewer.binaryWarning.body": "Ez a fájl nyers nézete. Lehet, hogy inkább a tényleges <kindName>{category, select, image {képet} document {dokumentumot} other {{ext} formátumú fájlt}}</kindName> szeretnéd megnézni. Ehhez zárd be ezt az ablakot, és nyisd meg a Gyorsnézetet (<quickLookKey></quickLookKey>), vagy nyisd meg a fájlt a társított appban (<openKey></openKey>, vagy kattints duplán a fájlra).",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "da099be"
+    "sourceHash": "fd5cfb7"
   },
   "viewer.binaryWarning.dismiss": "Bezárás",
   "@viewer.binaryWarning.dismiss": {

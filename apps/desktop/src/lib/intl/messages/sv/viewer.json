@@ -73,7 +73,7 @@
   },
   "viewer.binaryWarning.body": "Det här är råvyn av filen. Du vill nog hellre visa själva <kindName>{category, select, image {bilden} document {dokumentet} other {{ext}-filen}}</kindName>. Stäng då det här fönstret och tryck på <quickLookKey></quickLookKey> för att öppna Överblick, eller tryck på <openKey></openKey> (eller dubbelklicka på filen) för att öppna den i tillhörande app.",
   "@viewer.binaryWarning.body": {
-    "sourceHash": "da099be"
+    "sourceHash": "fd5cfb7"
   },
   "viewer.binaryWarning.dismiss": "Stäng",
   "@viewer.binaryWarning.dismiss": {

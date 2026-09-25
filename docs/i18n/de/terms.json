@@ -1383,6 +1383,12 @@
     "forms": "prose → in Verwendung / wird von … verwendet / {app} verwendet dieses Laufwerk noch; the greyed-out menu marker → (in Benutzung); a network port → belegt",
     "sources": "macOS Finder (NE66 Das Volume ist gerade in Verwendung …, NE31)"
   },
+  "incoming-item": {
+    "chosen": "Eingehend",
+    "confidence": "high",
+    "forms": "Eingehend: / Eingehende Datei: / Eingehender Ordner:, paired with Bestehend",
+    "sources": "MS terminology (the incoming-call label): Eingehend"
+  },
   "index": {
     "accept": ["Index", "Indizierung", "indiziert"],
     "avoid": [
@@ -2915,9 +2921,6 @@
     "accept": ["Aktionen"],
     "chosen": "Aktion",
     "confidence": "high",
-    "exceptions": {
-      "fileExplorer.quickLookHint.finderComparison": "triggers a “Quick preview” action → eine „Übersicht“ auslöst"
-    },
     "sources": "macOS (Aktion as a bare label; Diese Aktion …)"
   },
   "button": {

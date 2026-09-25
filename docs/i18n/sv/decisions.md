@@ -8,8 +8,8 @@ catalog.
 
 ## Apple translates Quick Look and Keychain (`commands.fileQuickLook.mac.label`, `menu.file.quickLook`, `ai.secretError.keychainTitle`/`.keychainBody`, `servers.sheet.remember`)
 
-- Quick Look → `Överblick` (Finder `TL14`), so it's not on the don't-translate list. The generic hints in
-  `fileExplorer.quickLookHint.*` stay generic (`snabbtitt`), as the English avoids the feature name there.
+- Quick Look → `Överblick` (Finder `TL14`), so it's not on the don't-translate list, `fileExplorer.quickLookHint.*`
+  included.
 - The store is `nyckelring` (`Kom ihåg i nyckelringen`), the app is `Nyckelhanterare` (its `CFBundleDisplayName`).
   `servers.sheet.needsStoredSecret` quotes the checkbox label verbatim: change both or neither.
 
@@ -3017,7 +3017,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
   `något annat finns nu där den kom ifrån` so it can't sound like the neighbouring name-taken reason.
 - Removed → `Raderade` (files off disk), ❌ never `Tog bort`.
 - "all {countText} items" → `alla {countText} objekt` (a quantifier, no article), and `one` drops the number
-  (`Raderade objektet som Cmdr hade skrivit`). `stoppedDeleting` mirrors `stoppedMovingBack`: `där kopieringen lade dem`.
+  (`Raderade objektet som Cmdr hade skrivit`). `stoppedDeleting` says
+  `där Cmdr lade dem` (it covers copy and compress), `stoppedMovingBack` `där flytten lade dem`.
 - `stagedLeftover.*` is Cmdr's own work file: `ofullständig kopia`, `rensar bort`, and `vid en senare överföring`, ❌
   never "nästa gång": cleanup skips anything younger than an hour, so the next try may clear nothing.
 

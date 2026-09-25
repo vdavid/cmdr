@@ -1204,13 +1204,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Ha a Finderből jössz, ez szokatlan lehet, mert a Finder a <space></space> billentyűre egy „Gyorsnézet” műveletet indít.",
+  "fileExplorer.quickLookHint.finderComparison": "Ha a Finderből jössz, ez szokatlan lehet, mert a Finder a <space></space> billentyűre megnyitja a Gyorsnézetet.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
-  "fileExplorer.quickLookHint.quickView": "A Cmdrben a gyorsnézetet a <key></key> billentyűvel indíthatod. (A <key></key> egyébként a Finderben is működik!)",
+  "fileExplorer.quickLookHint.quickView": "A Cmdrben a Gyorsnézetet a <key></key> billentyűvel nyithatod meg. (A <key></key> egyébként a Finderben is működik!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "Az <enter></enter> billentyűvel is megnyithatod a fájlokat az alapértelmezett appban.",
   "@fileExplorer.quickLookHint.enterOpens": {

@@ -1204,13 +1204,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Wenn du vom Finder kommst, ist das vielleicht ungewohnt, weil der Finder mit <space></space> eine „Übersicht“ auslöst.",
+  "fileExplorer.quickLookHint.finderComparison": "Wenn du vom Finder kommst, ist das vielleicht ungewohnt, weil der Finder mit <space></space> die Übersicht öffnet.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
-  "fileExplorer.quickLookHint.quickView": "In Cmdr kannst du die Übersicht mit <key></key> auslösen. (<key></key> funktioniert übrigens auch in Finder!)",
+  "fileExplorer.quickLookHint.quickView": "In Cmdr kannst du die Übersicht mit <key></key> öffnen. (<key></key> funktioniert übrigens auch im Finder!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "Du kannst auch <enter></enter> verwenden, um Dateien in der Standard-App zu öffnen.",
   "@fileExplorer.quickLookHint.enterOpens": {

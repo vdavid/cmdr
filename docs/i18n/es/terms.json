@@ -1240,6 +1240,12 @@
     "sources": "macOS Finder (NE31 está en uso y no se puede expulsar)",
     "decision": "Quién retiene el disco cuando la expulsión se rechaza"
   },
+  "incoming-item": {
+    "chosen": "entrante",
+    "confidence": "high",
+    "forms": "Entrante: / Archivo entrante: / Carpeta entrante:, paired with existente",
+    "sources": "MS terminology (the incoming-call label): entrante"
+  },
   "index": {
     "chosen": "índice",
     "accept": ["index"],

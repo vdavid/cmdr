@@ -1201,13 +1201,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "如果你是從 Finder 過來的，這可能有點陌生，因為 Finder 按 <space></space> 時會觸發「快速預覽」。",
+  "fileExplorer.quickLookHint.finderComparison": "如果你是從 Finder 過來的，這可能有點陌生，因為 Finder 按 <space></space> 時會開啟快速查看。",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
-  "fileExplorer.quickLookHint.quickView": "在 Cmdr 中，你可以用 <key></key> 觸發快速查看。（順帶一提，<key></key> 在 Finder 裡也能用！）",
+  "fileExplorer.quickLookHint.quickView": "在 Cmdr 中，你可以用 <key></key> 開啟快速查看。（順帶一提，<key></key> 在 Finder 裡也能用！）",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "你也可以用 <enter></enter> 在預設 App 中開啟檔案。",
   "@fileExplorer.quickLookHint.enterOpens": {

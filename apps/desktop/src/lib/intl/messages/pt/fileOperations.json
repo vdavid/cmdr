@@ -525,17 +525,17 @@
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Nova pasta:",
+  "fileOperations.transferProgress.newFolderLabel": "Pasta de origem:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "e138bdb"
+    "sourceHash": "5239894"
   },
-  "fileOperations.transferProgress.newFileLabel": "Novo arquivo:",
+  "fileOperations.transferProgress.newFileLabel": "Arquivo de origem:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "5b5ad51"
+    "sourceHash": "4a8d0b3"
   },
-  "fileOperations.transferProgress.newLabel": "Novo:",
+  "fileOperations.transferProgress.newLabel": "Origem:",
   "@fileOperations.transferProgress.newLabel": {
-    "sourceHash": "46dafc1"
+    "sourceHash": "161dcd3"
   },
   "fileOperations.transferProgress.sizeUnknown": "(desconhecido)",
   "@fileOperations.transferProgress.sizeUnknown": {
@@ -770,9 +770,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "A reversão parou depois de apagar {countText} {count, plural, one {item} many {itens} other {itens}}. O resto ficou onde a cópia deixou.",
+  "fileOperations.cancelRollback.stoppedDeleting": "A reversão parou depois de apagar {countText} {count, plural, one {item} many {itens} other {itens}}. O resto ficou onde o Cmdr colocou.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "cc69228"
+    "sourceHash": "f9767ae"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "A reversão parou depois de levar {countText} {count, plural, one {item} many {itens} other {itens}} de volta. O resto ficou onde a movimentação deixou.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

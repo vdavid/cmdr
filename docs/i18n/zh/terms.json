@@ -1313,6 +1313,12 @@
     "forms": "\"something is still using it\" → 还有东西在使用…; a port in use → 被占用; a busy menu item → base label + （占用中）",
     "sources": "macOS Finder NE31"
   },
+  "incoming-item": {
+    "chosen": "传入",
+    "confidence": "tentative",
+    "forms": "传入： / 传入文件： / 传入文件夹：, paired with 现有",
+    "sources": "composed: standard Simplified 传入 (MS 来电 is phone-only)"
+  },
   "index": {
     "avoid": [
       {
@@ -1670,9 +1676,6 @@
     "accept": ["创建文件"],
     "chosen": "新建文件",
     "confidence": "high",
-    "exceptions": {
-      "fileOperations.transferProgress.newFileLabel": "The conflict row names the INCOMING file, not the create command, so it's 新文件：, paired with 现有文件：."
-    },
     "sources": "catalog"
   },
   "new-folder": {
@@ -1680,8 +1683,7 @@
     "chosen": "新建文件夹",
     "confidence": "high",
     "exceptions": {
-      "ai.toast.readyDescription": "\"Try creating a new folder\" reads naturally as 新建一个文件夹, with the measure word splitting the command name.",
-      "fileOperations.transferProgress.newFolderLabel": "The conflict row names the INCOMING folder, not the create command, so it's 新文件夹：, paired with 现有文件夹：."
+      "ai.toast.readyDescription": "\"Try creating a new folder\" reads naturally as 新建一个文件夹, with the measure word splitting the command name."
     },
     "note": "The menu label is 新建文件夹; the act of making one is 创建文件夹 (正在创建文件夹).",
     "sources": "macOS"
@@ -2337,7 +2339,7 @@
     "decision": "故意保留的分界（英文一词多义，中文必须分开）",
     "exceptions": {
       "queryUi.results.scanning": "\"Scan in progress\" collapses to the progress form 正在扫描.",
-      "queryUi.results.scanningWithCount": "\"Scanning in progress\" collapses to the progress form 正在扫描.",
+      "queryUi.results.scanningWithCount": "\"Scan in progress\" collapses to the progress form 正在扫描.",
       "queryUi.results.scanProgress": "\"Scan in progress\" collapses to the progress form 正在扫描.",
       "queryUi.results.scanProgressWithCount": "\"Scan in progress\" collapses to the progress form 正在扫描."
     },

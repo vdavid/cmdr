@@ -524,17 +524,17 @@
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "Nueva carpeta:",
+  "fileOperations.transferProgress.newFolderLabel": "Carpeta entrante:",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "e138bdb"
+    "sourceHash": "5239894"
   },
-  "fileOperations.transferProgress.newFileLabel": "Nuevo archivo:",
+  "fileOperations.transferProgress.newFileLabel": "Archivo entrante:",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "5b5ad51"
+    "sourceHash": "4a8d0b3"
   },
-  "fileOperations.transferProgress.newLabel": "Nuevo:",
+  "fileOperations.transferProgress.newLabel": "Entrante:",
   "@fileOperations.transferProgress.newLabel": {
-    "sourceHash": "46dafc1"
+    "sourceHash": "161dcd3"
   },
   "fileOperations.transferProgress.sizeUnknown": "(desconocido)",
   "@fileOperations.transferProgress.sizeUnknown": {
@@ -769,9 +769,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "La reversión se ha detenido después de eliminar {countText} {count, plural, one {elemento} many {elementos} other {elementos}}. El resto se ha quedado donde lo ha dejado la copia.",
+  "fileOperations.cancelRollback.stoppedDeleting": "La reversión se ha detenido después de eliminar {countText} {count, plural, one {elemento} many {elementos} other {elementos}}. El resto se ha quedado donde lo ha dejado Cmdr.",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "cc69228"
+    "sourceHash": "f9767ae"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "La reversión se ha detenido después de devolver {countText} {count, plural, one {elemento} many {elementos} other {elementos}} a su sitio. El resto se ha quedado donde lo ha dejado el movimiento.",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

@@ -483,9 +483,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "Coincide con {matchedText} de {totalText} {total, plural, one {carácter} many {caracteres} other {caracteres}}",
+  "askCmdr.renameReview.coverage": "{matched, plural, one {Coincide con} many {Coincide con} other {Coincide con}} {matchedText} de {totalText} {total, plural, one {carácter} many {caracteres} other {caracteres}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "222d847"
+    "sourceHash": "9fd2bde"
   },
   "askCmdr.renameReview.coverageThin": "Es una parte pequeña del texto que Cmdr ha leído aquí. Abre el archivo para comprobar el nombre.",
   "@askCmdr.renameReview.coverageThin": {

@@ -184,7 +184,7 @@
   },
   "queryUi.results.scanningWithCount": "Genomsökning pågår ({countText} {count, plural, one {post} other {poster}})…",
   "@queryUi.results.scanningWithCount": {
-    "sourceHash": "530c0ee"
+    "sourceHash": "a409baf"
   },
   "queryUi.results.scanning": "Genomsökning pågår…",
   "@queryUi.results.scanning": {

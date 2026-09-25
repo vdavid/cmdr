@@ -1334,6 +1334,12 @@
     "forms": "X is still using this drive → X utilise encore ce disque (active voice); a greyed menu item → (occupé); an open file handle → handle (kept, no concise French)",
     "sources": "macOS Finder (« … car il est utilisé par « %@ ». »)"
   },
+  "incoming-item": {
+    "chosen": "entrant",
+    "confidence": "high",
+    "forms": "Entrant : / Fichier entrant : / Dossier entrant :, paired with existant",
+    "sources": "MS terminology (the incoming-call label): Entrant"
+  },
   "index": {
     "chosen": "index",
     "confidence": "high",

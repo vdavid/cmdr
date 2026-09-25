@@ -482,9 +482,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "Übereinstimmung bei {matchedText} von {totalText} {total, plural, one {Zeichen} other {Zeichen}}",
+  "askCmdr.renameReview.coverage": "{matchedText} von {totalText} {total, plural, one {Zeichen} other {Zeichen}} {matched, plural, one {stimmt} other {stimmen}} überein",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "222d847"
+    "sourceHash": "9fd2bde"
   },
   "askCmdr.renameReview.coverageThin": "Das ist nur ein kleiner Teil des Texts, den Cmdr hier gelesen hat. Öffne die Datei, um den Namen zu prüfen.",
   "@askCmdr.renameReview.coverageThin": {

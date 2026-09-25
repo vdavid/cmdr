@@ -1206,13 +1206,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Si vienes del Finder, esto puede resultarte raro, porque el Finder activa una “Vista rápida” al pulsar <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Si vienes del Finder, esto puede resultarte raro, porque el Finder abre la Vista rápida al pulsar <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
-  "fileExplorer.quickLookHint.quickView": "En Cmdr, puedes activar la vista rápida con <key></key>. (¡Y <key></key> también funciona en el Finder, por cierto!)",
+  "fileExplorer.quickLookHint.quickView": "En Cmdr, puedes abrir la Vista rápida con <key></key>. (¡Y <key></key> también funciona en el Finder, por cierto!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "También puedes usar <enter></enter> para abrir archivos en la app por omisión.",
   "@fileExplorer.quickLookHint.enterOpens": {

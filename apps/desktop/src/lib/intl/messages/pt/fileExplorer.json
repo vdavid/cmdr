@@ -1208,13 +1208,13 @@
   "@fileExplorer.quickLookHint.spaceSelects": {
     "sourceHash": "192689a"
   },
-  "fileExplorer.quickLookHint.finderComparison": "Se você vem do Finder, isso pode ser incomum porque o Finder aciona uma ação de “Visualização rápida” com <space></space>.",
+  "fileExplorer.quickLookHint.finderComparison": "Se você vem do Finder, isso pode ser incomum porque o Finder abre a Visualização rápida com <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "56d3119"
+    "sourceHash": "c9d0ac7"
   },
-  "fileExplorer.quickLookHint.quickView": "No Cmdr, você pode acionar a visualização rápida com <key></key>. (<key></key> também funciona no Finder, aliás!)",
+  "fileExplorer.quickLookHint.quickView": "No Cmdr, você pode abrir a Visualização rápida com <key></key>. (<key></key> também funciona no Finder, aliás!)",
   "@fileExplorer.quickLookHint.quickView": {
-    "sourceHash": "7e4cf33"
+    "sourceHash": "5ddbea1"
   },
   "fileExplorer.quickLookHint.enterOpens": "Você também pode usar <enter></enter> para abrir arquivos no aplicativo padrão.",
   "@fileExplorer.quickLookHint.enterOpens": {

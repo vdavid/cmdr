@@ -480,9 +480,9 @@
   "@askCmdr.renameReview.evidence.userEdited": {
     "sourceHash": "3f3a179"
   },
-  "askCmdr.renameReview.coverage": "匹配 {totalText} {total, plural, other {个字符}}中的 {matchedText} 个",
+  "askCmdr.renameReview.coverage": "匹配 {totalText} {total, plural, other {个字符}}中的 {matchedText} {matched, plural, other {个}}",
   "@askCmdr.renameReview.coverage": {
-    "sourceHash": "222d847"
+    "sourceHash": "9fd2bde"
   },
   "askCmdr.renameReview.coverageThin": "这只是 Cmdr 在这里读到的文字中的一小部分。打开文件核对一下名称。",
   "@askCmdr.renameReview.coverageThin": {

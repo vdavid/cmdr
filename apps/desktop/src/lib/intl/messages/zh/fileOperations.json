@@ -523,17 +523,17 @@
   "@fileOperations.transferProgress.existingLabel": {
     "sourceHash": "4dda67f"
   },
-  "fileOperations.transferProgress.newFolderLabel": "新文件夹：",
+  "fileOperations.transferProgress.newFolderLabel": "传入文件夹：",
   "@fileOperations.transferProgress.newFolderLabel": {
-    "sourceHash": "e138bdb"
+    "sourceHash": "5239894"
   },
-  "fileOperations.transferProgress.newFileLabel": "新文件：",
+  "fileOperations.transferProgress.newFileLabel": "传入文件：",
   "@fileOperations.transferProgress.newFileLabel": {
-    "sourceHash": "5b5ad51"
+    "sourceHash": "4a8d0b3"
   },
-  "fileOperations.transferProgress.newLabel": "新：",
+  "fileOperations.transferProgress.newLabel": "传入：",
   "@fileOperations.transferProgress.newLabel": {
-    "sourceHash": "46dafc1"
+    "sourceHash": "161dcd3"
   },
   "fileOperations.transferProgress.sizeUnknown": "（未知）",
   "@fileOperations.transferProgress.sizeUnknown": {
@@ -767,9 +767,9 @@
   "@fileOperations.cancelRollback.someMovedBack": {
     "sourceHash": "0099d44"
   },
-  "fileOperations.cancelRollback.stoppedDeleting": "删除 {countText} {count, plural, other {个项目}}后停止了。其余的还留在这次拷贝把它们放到的地方。",
+  "fileOperations.cancelRollback.stoppedDeleting": "删除 {countText} {count, plural, other {个项目}}后停止了。其余的还留在 Cmdr 把它们放到的地方。",
   "@fileOperations.cancelRollback.stoppedDeleting": {
-    "sourceHash": "cc69228"
+    "sourceHash": "f9767ae"
   },
   "fileOperations.cancelRollback.stoppedMovingBack": "把 {countText} {count, plural, other {个项目}}放回原处后停止了。其余的还留在这次移动把它们放到的地方。",
   "@fileOperations.cancelRollback.stoppedMovingBack": {

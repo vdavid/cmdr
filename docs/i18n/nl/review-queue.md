@@ -133,8 +133,6 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   Dutch macOS.
 - **The inspect-file consent text** (`ai.cloudConsent.askCmdr.contentsRule`): `wat tekst` / `wat regels tekst` vs the
   safer `een deel van de tekst`; `De fotozoekfunctie werkt net zo` vs `op dezelfde manier`.
-- **`Komt overeen: {matchedText} van {totalText} tekens`** (`askCmdr.renameReview.coverage`): the colon form dodges
-  verb agreement with `{matchedText}`, which has no plural driver; `Overeenkomst:` is the alternative.
 - **`Onleesbare map`** (`shortcuts.scope.errorScreen`) as a shortcuts group heading, and `helemaal geen` for "zero"
   (`onboarding.stepOptional.updates.desc`).
 
