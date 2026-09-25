@@ -6,7 +6,8 @@ Rust draws.
 
 ## Module map
 
-- `mod.rs`: `resolve_ui_locale` (the walk, the script guard, `ancestor_chain`), `OsLocales`, `get_os_locales`.
+- `mod.rs`: `OsLocales`, `get_os_locales`, the OS reads. `resolve.rs`: the pure rules (`resolve_ui_locale`,
+  `inheritance_chain`).
 - `macos_fallback_test.rs`: pins our English answers against CFBundle's. macOS-only.
 - `format_locale.rs`: `resolved_format_locale()`, composing `<language>[-Script]-REGION` from `NSLocale`.
 - `live_locale.rs`: `observe_os_locale_changes`, following both answers and emitting `os-locales-changed`. macOS only.

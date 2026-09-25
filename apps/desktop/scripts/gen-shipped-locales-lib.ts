@@ -65,7 +65,7 @@ export interface ShippedLocaleEntry {
  * says which of them speaks for the group. macOS answers the same question the
  * same way (`en_GB.lproj` serves `en-001`'s descendants), and
  * `a_regional_english_never_lands_further_from_home_than_macos_puts_it` in
- * `src-tauri/src/intl/mod.rs` holds us to it.
+ * `src-tauri/src/intl/macos_fallback_test.rs` holds us to it.
  *
  * ❌ Don't grow this into a region table. One entry per catalog that stands in
  * for a CLDR group node is the whole contract; a per-region list would be the

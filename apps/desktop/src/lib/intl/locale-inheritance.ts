@@ -19,7 +19,7 @@
  *  - the i18n check layer (`scripts/i18n-catalog-lib.ts` `resolveLocaleSource`),
  *    which is how it decides whether a catalog is an overlay of its base or a
  *    full translation of `en`;
- *  - Rust's auto-selection (`src-tauri/src/intl/mod.rs` `match_shipped`), which
+ *  - Rust's auto-selection (`src-tauri/src/intl/resolve.rs` `match_shipped`), which
  *    can't call `Intl`, so it reads the same CLDR answers off a generated table
  *    (`pnpm intl:shipped-locales`, built with `likelyScript` from right here).
  *

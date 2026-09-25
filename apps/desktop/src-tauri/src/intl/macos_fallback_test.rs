@@ -16,7 +16,8 @@
 //! macOS-only, because CFBundle is. The rule it guards is cross-platform, and
 //! the plain unit tests in `mod.rs` cover it everywhere.
 
-use super::{SHIPPED_LOCALES, base_language, resolve_ui_locale};
+use super::resolve::base_language;
+use super::{SHIPPED_LOCALES, resolve_ui_locale};
 use objc2_foundation::{NSArray, NSBundle, NSLocale, NSString};
 
 /// Tags where macOS reaches a regional overlay and we stop at base `en`.

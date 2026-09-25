@@ -342,7 +342,7 @@ That's the whole thing. No ICU, no plurals, no formatting:
   an `NSUserDefaults` read each time. `refresh_active_locale()` is the only thing that moves it, and it reports whether
   it moved, which is exactly the signal a rebuild needs.
 
-**`menu_t` walks the same inheritance chain as the frontend** (`inheritance_chain` in `mod.rs` mirrors
+**`menu_t` walks the same inheritance chain as the frontend** (`inheritance_chain` in `resolve.rs` mirrors
 `inheritableAncestors` in `apps/desktop/src/lib/intl/locale-inheritance.ts`: shipped truncation ancestors in the same
 script). For `en-GB` and `en-AU` that chain IS `en`, so a shortcut straight to English would look fine; the first
 overlay with a non-English base (`es-419`, `pt-PT`) would then get an English menu bar for every key it doesn't fork.

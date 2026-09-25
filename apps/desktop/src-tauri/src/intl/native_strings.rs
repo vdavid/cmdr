@@ -413,7 +413,7 @@ mod tests {
         NATIVE_STRINGS
             .iter()
             .find(|locale| locale.tag == tag)
-            .unwrap_or_else(|| panic!("{tag} ships a catalog, so it has a native table"))
+            .unwrap_or_else(|| panic!("no native table was generated for {tag}"))
             .entries
     }
 
