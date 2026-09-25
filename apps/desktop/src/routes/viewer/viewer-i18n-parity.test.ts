@@ -10,14 +10,14 @@
  *
  * The presentational components (`ViewerStatusBar`, `ViewerCopyDialogs`, etc.)
  * each have their own mount tests that pin en-US and assert the rendered text, so
- * this file focuses on the strings those tests don''t already cover: the page''s
+ * this file focuses on the strings those tests don’t already cover: the page’s
  * error states, the search-state composition, the copy/save toasts, the window
  * title, and the ICU-formatted leaves.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { _setLocaleForTests } from '$lib/intl/locale'
-import { tString, getMessage } from '$lib/intl/messages.svelte'
+import { t, tString, getMessage } from '$lib/intl/messages.svelte'
 import { mediaKindLabel, viewAsMediaLabel, formatMediaDimensions } from './media-view'
 
 beforeAll(() => {
@@ -213,10 +213,27 @@ describe('viewer reload toast + copy/save toasts (en)', () => {
   })
 })
 
-describe('viewer binary-warning labels (en)', () => {
-  it('matches the lowercase in-sentence kind words', () => {
-    expect(getMessage('viewer.binaryWarning.kind.image')).toBe('image')
-    expect(getMessage('viewer.binaryWarning.kind.document')).toBe('document')
+describe('viewer binary-warning banner (en)', () => {
+  // Renders the body with plain-text tag handlers, so the sentence reads as one string.
+  const body = (category: string, ext = ''): string => {
+    const wrap = (chunks: unknown[]) => chunks.join('')
+    const parts = t('viewer.binaryWarning.body', {
+      category,
+      ext,
+      kindName: wrap,
+      quickLookKey: () => '⇧Space',
+      openKey: () => 'Enter',
+    })
+    return Array.isArray(parts) ? parts.join('') : String(parts)
+  }
+
+  it('names the kind through a select, so a gendered language can agree with it', () => {
+    expect(body('image')).toContain('You might want to view the actual image instead.')
+    expect(body('document')).toContain('You might want to view the actual document instead.')
+    expect(body('binary', 'ZIP')).toContain('You might want to view the actual ZIP file instead.')
+  })
+
+  it('matches the button labels', () => {
     expect(tString('viewer.binaryWarning.dismiss')).toBe('Close')
     expect(tString('viewer.binaryWarning.suppressForever')).toBe('Never show this warning again')
   })

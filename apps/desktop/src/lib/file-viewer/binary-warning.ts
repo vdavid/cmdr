@@ -14,8 +14,6 @@
  * over-warn on legitimate text files.
  */
 
-import { getMessage } from '$lib/intl/messages.svelte'
-
 const IMAGE_EXTS = new Set([
   'jpg',
   'jpeg',
@@ -126,10 +124,10 @@ const OTHER_BINARY_EXTS = new Set([
  * in-between case (SVG, JSON, CSV), the answer is also "don't warn" because the
  * raw bytes ARE useful there.
  *
- * The display word the banner shows is NOT here: it's the translatable
- * "image"/"document" copy (catalog `viewer.kind.*`) or the uppercased extension
- * for the generic-binary case. Keep this function pure and locale-free so it
- * stays trivially testable; resolve the display word with `viewerWarningLabel`.
+ * The words the banner shows are NOT here: `category` and `ext` go to the
+ * `viewer.binaryWarning.body` message, whose ICU select picks the phrase, so a
+ * language with grammatical gender can make the sentence agree with it. Keep
+ * this function pure and locale-free so it stays trivially testable.
  */
 export interface ViewerWarning {
   shouldWarn: boolean
@@ -154,23 +152,4 @@ export function categorizeForViewerWarning(fileName: string): ViewerWarning {
   if (DOCUMENT_EXTS.has(ext)) return { shouldWarn: true, category: 'document', ext: '' }
   if (OTHER_BINARY_EXTS.has(ext)) return { shouldWarn: true, category: 'binary', ext: ext.toUpperCase() }
   return { shouldWarn: false, category: null, ext: '' }
-}
-
-/**
- * The display word the banner drops into "view the actual <label> instead":
- * the translatable lowercase "image"/"document" copy, or the uppercased
- * extension (e.g. "ZIP") for the generic-binary case. Empty for a non-warning
- * result (never rendered).
- */
-export function viewerWarningLabel(warning: ViewerWarning): string {
-  switch (warning.category) {
-    case 'image':
-      return getMessage('viewer.binaryWarning.kind.image')
-    case 'document':
-      return getMessage('viewer.binaryWarning.kind.document')
-    case 'binary':
-      return warning.ext
-    case null:
-      return ''
-  }
 }

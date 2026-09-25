@@ -11,7 +11,7 @@ lifecycle, and background search. The viewer route shell: `apps/desktop/src/rout
 - `open-viewer.ts`: one `WebviewWindow` per viewer; `open-viewer-for-path.ts` resolves a bare path's volume first (MCP).
 - `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` classifies a file into a `category` (`image` /
   `document` / `binary`, or `null` = "don't warn" for text/source/unknown) plus an uppercased `ext` for the `binary`
-  case. The displayed word comes from `viewerWarningLabel(warning)`, keeping the classifier locale-free. The viewer
+  case, which the `viewer.binaryWarning.body` select turns into words, keeping the classifier locale-free. The viewer
   route renders a red banner whenever `shouldWarn`. Suppressible per-instance (banner **Close**) or forever (**Never
   show this warning again**, flips `fileViewer.suppressBinaryWarning` in Settings > Advanced).
 - Route: `src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar.

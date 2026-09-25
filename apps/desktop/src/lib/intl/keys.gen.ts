@@ -3601,8 +3601,6 @@ export type MessageKey =
   | 'updates.toast.versionChangeAria'
   | 'viewer.binaryWarning.body'
   | 'viewer.binaryWarning.dismiss'
-  | 'viewer.binaryWarning.kind.document'
-  | 'viewer.binaryWarning.kind.image'
   | 'viewer.binaryWarning.suppressForever'
   | 'viewer.content.ariaLabel'
   | 'viewer.contextMenu.ariaLabel'

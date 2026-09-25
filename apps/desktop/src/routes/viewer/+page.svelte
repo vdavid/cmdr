@@ -66,7 +66,7 @@
     import type { EncodingChoice, FileEncoding } from '$lib/ipc/bindings'
     import { viewerSetEncoding, viewerSetTailMode, viewerGetEncodingOptions } from '$lib/tauri-commands'
     import { initAppMode, decorateChildWindowTitle } from '$lib/app-mode'
-    import { categorizeForViewerWarning, viewerWarningLabel } from '$lib/file-viewer/binary-warning'
+    import { categorizeForViewerWarning } from '$lib/file-viewer/binary-warning'
     import { isMediaKind } from './media-view'
     import { createViewerMedia } from './viewer-media.svelte'
     import { tString } from '$lib/intl/messages.svelte'
@@ -1026,7 +1026,7 @@
                 {#snippet openKey(children: import('svelte').Snippet)}<ShortcutChip key="Enter" />{@render children()}{/snippet}
                 <Trans
                     key="viewer.binaryWarning.body"
-                    params={{ kind: viewerWarningLabel(warning) }}
+                    params={{ category: warning.category ?? 'binary', ext: warning.ext }}
                     snippets={{ kindName: kindSnippet, quickLookKey, openKey }}
                 />
             </p>

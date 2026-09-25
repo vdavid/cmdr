@@ -121,24 +121,13 @@
     },
     "screenshot": "viewer-search.png"
   },
-  "viewer.binaryWarning.body": "This is the raw view of the file. You might want to view the actual <kindName>{kind}</kindName> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open the quick view, or press <openKey></openKey> (or double-click the file) to open it in the associated app.",
+  "viewer.binaryWarning.body": "This is the raw view of the file. You might want to view the actual <kindName>{category, select, image {image} document {document} other {{ext} file}}</kindName> instead. To do that, close this window and press <quickLookKey></quickLookKey> to open the quick view, or press <openKey></openKey> (or double-click the file) to open it in the associated app.",
   "@viewer.binaryWarning.body": {
-    "description": "Warning banner shown when the viewer is displaying the raw bytes of a non-text file (an image, PDF, archive, etc.), nudging the user to open it properly instead. <kindName> wraps the file-type word ({kind}, e.g. \"image\", \"document\", \"ZIP\"). <quickLookKey> and <openKey> wrap keyboard-shortcut chips and have NO inner text: leave them empty, keeping both tags and their positions. \"quick view\" refers to the macOS Quick Look preview; \"the associated app\" is the default app for that file type.",
+    "description": "Warning banner shown when the viewer is displaying the raw bytes of a non-text file (an image, PDF, archive, etc.), nudging the user to open it properly instead. <kindName> wraps the file-type phrase (rendered bold), chosen by {category}: an image, a document (PDF, Office file, ebook), or any other binary file named by its uppercased extension ({ext}, for example \"ZIP\" in \"the actual ZIP file\"). Each branch is a whole phrase, so make the words around it agree with it (gender, case, article) as your language needs. <quickLookKey> and <openKey> wrap keyboard-shortcut chips and have NO inner text: leave them empty, keeping both tags and their positions. \"quick view\" refers to the macOS Quick Look preview; \"the associated app\" is the default app for that file type.",
     "placeholders": {
-      "kind": "the file-type word, e.g. \"image\", \"document\", or an uppercased extension like \"ZIP\""
+      "category": "which kind of file it is: image, document, or other (any other binary file)",
+      "ext": "the file’s extension, uppercased, for example \"ZIP\"; used only in the other branch"
     },
-    "screenshot": "viewer-search.png",
-    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
-  },
-  "viewer.binaryWarning.kind.image": "image",
-  "@viewer.binaryWarning.kind.image": {
-    "description": "The file-type word dropped into the raw-view warning sentence \"view the actual <word> instead\" when the file is an image. Lowercase to read naturally inside the sentence.",
-    "screenshot": "viewer-search.png",
-    "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
-  },
-  "viewer.binaryWarning.kind.document": "document",
-  "@viewer.binaryWarning.kind.document": {
-    "description": "The file-type word dropped into the raw-view warning sentence \"view the actual <word> instead\" when the file is a document (PDF, Office file, ebook, etc.). Lowercase to read naturally inside the sentence.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },

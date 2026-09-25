@@ -75,14 +75,6 @@
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
-  "viewer.binaryWarning.kind.image": "imagen",
-  "@viewer.binaryWarning.kind.image": {
-    "sourceHash": "6105d6c"
-  },
-  "viewer.binaryWarning.kind.document": "documento",
-  "@viewer.binaryWarning.kind.document": {
-    "sourceHash": "43cc23f"
-  },
   "viewer.binaryWarning.dismiss": "Cerrar",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"

@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 
-import { categorizeForViewerWarning, viewerWarningLabel } from './binary-warning'
-import { _setLocaleForTests } from '$lib/intl/locale'
+import { categorizeForViewerWarning } from './binary-warning'
 
 describe('categorizeForViewerWarning', () => {
   describe('image extensions → image category', () => {
@@ -99,27 +98,5 @@ describe('categorizeForViewerWarning', () => {
         ext: '',
       })
     })
-  })
-})
-
-describe('viewerWarningLabel (en)', () => {
-  beforeAll(() => {
-    _setLocaleForTests('en-US')
-  })
-  afterAll(() => {
-    _setLocaleForTests(null)
-  })
-
-  it('resolves the translatable lowercase words for image and document', () => {
-    expect(viewerWarningLabel(categorizeForViewerWarning('photo.jpg'))).toBe('image')
-    expect(viewerWarningLabel(categorizeForViewerWarning('report.pdf'))).toBe('document')
-  })
-
-  it('passes the uppercased extension through for the generic-binary case', () => {
-    expect(viewerWarningLabel(categorizeForViewerWarning('archive.zip'))).toBe('ZIP')
-  })
-
-  it('returns an empty string for a non-warning result', () => {
-    expect(viewerWarningLabel(categorizeForViewerWarning('notes.txt'))).toBe('')
   })
 })

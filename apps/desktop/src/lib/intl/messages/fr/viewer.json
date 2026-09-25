@@ -75,16 +75,6 @@
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
-  "viewer.binaryWarning.kind.image": "image",
-  "@viewer.binaryWarning.kind.image": {
-    "sourceHash": "6105d6c",
-    "sameAsSourceJustification": "'image' is the same word in French (macOS uses 'image'); kept lowercase to read naturally inside the warning sentence."
-  },
-  "viewer.binaryWarning.kind.document": "document",
-  "@viewer.binaryWarning.kind.document": {
-    "sourceHash": "43cc23f",
-    "sameAsSourceJustification": "'document' is the same word in French (macOS Finder: 'Document…'); kept lowercase to read naturally inside the warning sentence."
-  },
   "viewer.binaryWarning.dismiss": "Fermer",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"

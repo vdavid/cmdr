@@ -75,14 +75,6 @@
   "@viewer.binaryWarning.body": {
     "sourceHash": "8c6fcd6"
   },
-  "viewer.binaryWarning.kind.image": "图像",
-  "@viewer.binaryWarning.kind.image": {
-    "sourceHash": "6105d6c"
-  },
-  "viewer.binaryWarning.kind.document": "文稿",
-  "@viewer.binaryWarning.kind.document": {
-    "sourceHash": "43cc23f"
-  },
   "viewer.binaryWarning.dismiss": "关闭",
   "@viewer.binaryWarning.dismiss": {
     "sourceHash": "7d9eb7a"
