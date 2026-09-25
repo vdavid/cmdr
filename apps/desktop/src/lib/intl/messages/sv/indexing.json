@@ -8,7 +8,7 @@
     "sourceHash": "5e291d7",
     "sameAsSourceJustification": "Pure placeholder passthrough: the value is just {name} (the drive's display name on its own line) with no translatable words, identical in every locale."
   },
-  "indexing.scan.label": "Indexerar din enhet …",
+  "indexing.scan.label": "Indexerar din enhet…",
   "@indexing.scan.label": {
     "sourceHash": "5b0433c"
   },
@@ -155,11 +155,11 @@
   },
   "indexing.rescan.staleIndex": "Indexet för din enhet är inaktuellt. Det verkar som att appen inte har körts på ett tag. Gör en ny genomsökning för att komma ikapp.",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "Systemets logg över filändringar sträcker sig inte tillräckligt långt tillbaka. Gör en ny genomsökning för att bygga om indexet.",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "Många filändringar har skett sedan förra körningen. Gör en ny genomsökning i stället för att spela upp dem en i taget.",
   "@indexing.rescan.replayOverflow": {
@@ -167,7 +167,7 @@
   },
   "indexing.rescan.watcherStartFailed": "Det gick inte att starta bevakningen av filändringar. Gör en ny genomsökning för att uppdatera indexet.",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "Intensiv filsystemsaktivitet fyllde händelsebufferten. Gör en ny genomsökning för att hålla allt korrekt.",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -175,7 +175,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "Den föregående genomsökningen blev inte klar (appen kan ha stängts). Startar om genomsökningen från början.",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "En skur av filsystemsaktivitet fyllde bevakningens kanal. Gör en ny genomsökning för att hålla allt korrekt.",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -203,15 +203,15 @@
   },
   "indexing.firstConnect.silenceDrive": "Fråga inte igen för den här enheten",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "Fråga inte igen för några enheter",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "Den här enhetens index kan vara inaktuellt",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "Medan {name} var frånkopplad kan filer på den ha ändrats. Mappstorlekar och sökresultat kan vara lite missvisande tills du söker igenom på nytt. Den gula statusen bredvid enheten visar alltid när det här händer, och en ny genomsökning uppdaterar den.",
   "@indexing.staleDialog.body": {
@@ -219,11 +219,11 @@
   },
   "indexing.staleDialog.titlePhone": "Den här telefonens index kan vara inaktuellt",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} talar inte om för Cmdr när filer på den ändras, så Cmdr håller indexet uppdaterat med de ändringar Cmdr själv gör. Ändringar som görs på telefonen, till exempel nya bilder, syns i mappstorlekar och sökresultat efter en ny genomsökning. Den gula statusen bredvid telefonen finns kvar som en påminnelse.",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "Visa aldrig igen",
   "@indexing.staleDialog.neverShowAgain": {
@@ -253,7 +253,7 @@
   },
   "indexing.enrich.pausedIdle": "Väntar tills du inte är upptagen",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "Pausad, återupptas vid återanslutning",
   "@indexing.enrich.pausedDisconnected": {
