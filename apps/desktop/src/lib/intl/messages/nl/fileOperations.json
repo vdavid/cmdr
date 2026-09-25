@@ -22,11 +22,11 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Een deel van je selectie is alleen online beschikbaar. Als je die onderdelen naar de prullenmand verplaatst, worden ze <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak eerst alle bestanden offline beschikbaar, of deselecteer alle bestanden die alleen online beschikbaar zijn.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "Alles wat je hebt geselecteerd, is alleen online beschikbaar. Als je het naar de prullenmand verplaatst, wordt het <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak deze bestanden eerst offline beschikbaar.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "Je selectie bleek inhoud te bevatten die alleen online beschikbaar is, dus de knop hieronder biedt nu ‘Verwijder’ aan. Lees de opmerking hierboven en druk er daarna nog een keer op als dat goed is.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
@@ -243,7 +243,7 @@
   },
   "fileOperations.transferDialog.smbNativeNote": "Deze share gebruikt de systeemverbinding. Annuleren kan vertraagd zijn. Gebruik ‘Verbind direct’ in de volumekiezer voor snellere overdrachten en betrouwbaar annuleren.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "cfec439"
+    "sourceHash": "60af535"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Deze map bestaat nog niet. Cmdr maakt hem aan tijdens het kopiëren.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -367,15 +367,15 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "Kan ‘{name}’ niet {verb, select, copy {kopiëren} other {verplaatsen}} naar een eigen submap",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "4ad1eaf"
+    "sourceHash": "815204a"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "‘{name}’ staat al op deze locatie",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
-    "sourceHash": "1030a7a"
+    "sourceHash": "1bf762e"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "De naam van het archief moet eindigen op \".zip\".",
+  "fileOperations.transferDialog.pathErrorNotZip": "De naam van het archief moet eindigen op ‘.zip’.",
   "@fileOperations.transferDialog.pathErrorNotZip": {
-    "sourceHash": "c85c6f8"
+    "sourceHash": "7700864"
   },
   "fileOperations.transferDialog.confirmCopy": "Kopieer",
   "@fileOperations.transferDialog.confirmCopy": {
@@ -888,7 +888,7 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Een mapnaam mag geen ‘/’ of null-tekens bevatten} other {Een bestandsnaam mag geen ‘/’ of null-tekens bevatten}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "d84512c"
+    "sourceHash": "4fa16ce"
   },
   "fileOperations.validation.empty": "{kind, select, folder {Een mapnaam mag niet leeg zijn} other {Een bestandsnaam mag niet leeg zijn}}",
   "@fileOperations.validation.empty": {
@@ -904,11 +904,11 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "De bestandsextensie wijzigen is niet toegestaan (was ‘{oldExt}’)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "43c2dc1"
+    "sourceHash": "0b2df1e"
   },
   "fileOperations.validation.conflict": "‘{name}’ bestaat al in deze map",
   "@fileOperations.validation.conflict": {
-    "sourceHash": "ba13237"
+    "sourceHash": "842d02d"
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {Deze mapnaam kan niet worden gebruikt} other {Deze bestandsnaam kan niet worden gebruikt}}",
   "@fileOperations.validation.nameNotUsable": {

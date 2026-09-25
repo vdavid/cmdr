@@ -27,7 +27,7 @@
   "@whatsNew.dialog.close": {
     "sourceHash": "7d9eb7a"
   },
-  "whatsNew.optOutToast": "Begrepen, geen updatenotities meer. Schakel ze altijd weer in via Instellingen > Updates en privacy.",
+  "whatsNew.optOutToast": "Begrepen, geen updatenotities meer. Zet ze altijd weer aan via Instellingen > Updates en privacy.",
   "@whatsNew.optOutToast": {
     "sourceHash": "368591b"
   }

@@ -16,12 +16,10 @@
   },
   "access": {
     "accept": ["toegankelijk", "benader"],
+    "proseAccept": ["openen"],
     "chosen": "toegang",
     "confidence": "high",
-    "exceptions": {
-      "errors.listing.resourceBusy.explanation": "The access here is opening a file another app holds exclusively; openen names the act."
-    },
-    "forms": "exclusive access → exclusieve toegang",
+    "forms": "exclusive access → exclusieve toegang; in prose, \"trying to access a folder\" → een map proberen te openen (benaderen reads bookish)",
     "sources": "macOS (\"geen toegang\")"
   },
   "account": {

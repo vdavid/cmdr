@@ -3,11 +3,11 @@
   "@mtp.connectedToast.title": {
     "sourceHash": "562319d"
   },
-  "mtp.connectedToast.bodyMac": "Cmdr heeft de macOS-cameradaemon (ptpcamerad) gepauzeerd om dit apparaat te benaderen. Wil je het in een andere app gebruiken, schakel dan MTP-ondersteuning uit in de instellingen.",
+  "mtp.connectedToast.bodyMac": "Cmdr heeft de macOS-cameradaemon (ptpcamerad) gepauzeerd om toegang te krijgen tot dit apparaat. Wil je het in een andere app gebruiken, zet MTP-ondersteuning dan uit in Instellingen.",
   "@mtp.connectedToast.bodyMac": {
     "sourceHash": "3ace37b"
   },
-  "mtp.connectedToast.bodyOther": "Wil je dit apparaat in een andere app gebruiken, schakel dan MTP-ondersteuning uit in de instellingen.",
+  "mtp.connectedToast.bodyOther": "Wil je dit apparaat in een andere app gebruiken, zet MTP-ondersteuning dan uit in Instellingen.",
   "@mtp.connectedToast.bodyOther": {
     "sourceHash": "6f42620"
   },
@@ -28,7 +28,7 @@
   "@mtp.permissionDialog.title": {
     "sourceHash": "96130bf"
   },
-  "mtp.permissionDialog.description": "Cmdr heeft geen toestemming om dit apparaat te benaderen. Linux heeft udev-regels nodig om toegang tot MTP-apparaten te verlenen.",
+  "mtp.permissionDialog.description": "Cmdr heeft geen toegang tot dit apparaat. Linux heeft udev-regels nodig om toegang tot MTP-apparaten te geven.",
   "@mtp.permissionDialog.description": {
     "sourceHash": "c11f0e8"
   },

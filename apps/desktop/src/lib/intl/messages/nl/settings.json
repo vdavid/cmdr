@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Kies de taal die Cmdr gebruikt. ‘Systeemstandaard’ volgt de taal van je Mac.",
   "@settings.appearance.language.description": {
-    "sourceHash": "a290add"
+    "sourceHash": "6e36bba"
   },
   "settings.appearance.language.opt.system": "Systeemstandaard",
   "@settings.appearance.language.opt.system": {
@@ -170,9 +170,9 @@
   "@settings.appearance.textSize.label": {
     "sourceHash": "d68761c"
   },
-  "settings.appearance.textSize.description": "Schaalt tekst en interface in de hele app. Werkt samen met de macOS-toegankelijkheidstekstgrootte, waarbij 100% precies de systeemgrootte betekent.",
+  "settings.appearance.textSize.description": "Schaalt tekst en interface in de hele app. Werkt samen met de macOS-toegankelijkheidstekstgrootte, waarbij 100% ‘precies de systeemgrootte’ betekent.",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "232df24"
+    "sourceHash": "49a0a6b"
   },
   "settings.appearance.uiDensity.label": "Interfacedichtheid",
   "@settings.appearance.uiDensity.label": {
@@ -464,7 +464,7 @@
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "Vind foto''s door te beschrijven wat erop staat, zoals ''strand bij zonsondergang'', met een AI-model op het apparaat.",
+  "settings.mediaIndex.clip.description": "Vind foto''s door te beschrijven wat erop staat, zoals ‘strand bij zonsondergang’, met een AI-model op het apparaat.",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
@@ -608,7 +608,7 @@
   "@settings.mediaIndex.networkVolumes.alwaysLabel": {
     "sourceHash": "123af5e"
   },
-  "settings.mediaIndex.networkVolumes.alwaysHelp": "Schakel dit in voor een fotoarchief dat je zelden bekijkt, zodat de foto''s toch worden geïndexeerd.",
+  "settings.mediaIndex.networkVolumes.alwaysHelp": "Zet dit aan voor een fotoarchief dat je zelden bekijkt, zodat de foto''s toch worden geïndexeerd.",
   "@settings.mediaIndex.networkVolumes.alwaysHelp": {
     "sourceHash": "47f4a66"
   },
@@ -929,9 +929,9 @@
   },
   "settings.ai.cloudConsent.lockedHint": "Zet ‘Cloud-AI toestaan’ hierboven aan om een service in te stellen.",
   "@settings.ai.cloudConsent.lockedHint": {
-    "sourceHash": "6f4097a"
+    "sourceHash": "8a24685"
   },
-  "settings.ai.cloudProvider.description": "Welke cloud-AI-service moet worden gebruikt.",
+  "settings.ai.cloudProvider.description": "Welke cloud-AI-service Cmdr gebruikt.",
   "@settings.ai.cloudProvider.description": {
     "sourceHash": "3300ce9"
   },
@@ -971,7 +971,7 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "Wanneer ingeschakeld, brengt Cmdr een rechtstreekse verbinding met SMB-shares tot stand voor snellere bestandsbewerkingen. De systeemkoppeling blijft voor Finder en andere apps.",
+  "settings.network.directSmbConnection.description": "Als dit is ingeschakeld, maakt Cmdr rechtstreeks verbinding met SMB-shares voor snellere bestandsbewerkingen. De systeemkoppeling blijft voor Finder en andere apps.",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
@@ -1053,7 +1053,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "Detecteer Android- en andere apparaten via een USB-kabel en maak er verbinding mee om bestanden te bekijken en over te dragen. Om deze functie op een Android-telefoon te gebruiken, gebruik je een USB-kabel en ga je op je telefoon naar zoiets als Instellingen > USB-voorkeuren, waar je de verbinding instelt op ‘Bestandsoverdracht’, ‘Android Auto’ of vergelijkbaar. (Verschilt per apparaat.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "834ea99"
+    "sourceHash": "37444c2"
   },
   "settings.fileOperations.adbEnabled.label": "Toegang tot Android-bestanden via ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1061,7 +1061,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Krijg toegang tot het hele bestandssysteem van een Android-telefoon waarop USB-foutopsporing is ingeschakeld, iets wat MTP je niet kan laten zien. Hiervoor heb je de Android platform tools (de opdracht ‘adb’) op deze Mac nodig. Het kost niets om dit ingeschakeld te laten als je geen Android-tools hebt geïnstalleerd.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "8577083"
+    "sourceHash": "57cf2aa"
   },
   "settings.fileOperations.adbBinaryPath.label": "Locatie van adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1165,7 +1165,7 @@
   },
   "settings.whatsNew.lastSeenVersion.description": "Intern: de versie die we als laatste toonden in de pop-up ‘Wat is er nieuw’. Loopt bij elke start stilletjes vooruit, zodat het opnieuw inschakelen van de pop-up nooit een maandenlange achterstand afspeelt. Verborgen in de interface.",
   "@settings.whatsNew.lastSeenVersion.description": {
-    "sourceHash": "d4f7a52"
+    "sourceHash": "d8677e1"
   },
   "settings.analytics.enabled.label": "Gebruiksstatistieken sturen",
   "@settings.analytics.enabled.label": {
@@ -1251,7 +1251,7 @@
   "@settings.fileViewer.suppressBinaryWarning.label": {
     "sourceHash": "8cdaada"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 opent het weergavevenster van Cmdr, dat ruwe bytes toont (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat ⇧Spatie (snelle weergave) of Enter (openen in de bijbehorende app) waarschijnlijk is wat je wilde. Zet dit aan (of klik op ''Deze waarschuwing nooit meer tonen'' in de banner) om de waarschuwing voorgoed te onderdrukken.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 opent het weergavevenster van Cmdr, dat ruwe bytes toont (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat ⇧Spatie (snelle weergave) of Enter (openen in de bijbehorende app) waarschijnlijk is wat je wilde. Zet dit aan (of klik op ‘Deze waarschuwing nooit meer tonen’ in de banner) om de waarschuwing voorgoed te onderdrukken.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "sourceHash": "b3711da"
   },
@@ -1259,7 +1259,7 @@
   "@settings.fileExplorer.suppressQuickLookHint.label": {
     "sourceHash": "bd9da35"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr gebruikt Spatie om de bestandsselectie te wisselen en ⇧Spatie voor snelle weergave (Finder gebruikt gewone Spatie voor snelle weergave). Telkens als je in de bestandenlijst op Spatie drukt, toont Cmdr een herinnering van één alinea over dit verschil. Zet dit aan (of klik op ''Niet meer tonen'' in de melding) om de herinnering voorgoed te onderdrukken.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr gebruikt Spatie om de bestandsselectie te wisselen en ⇧Spatie voor snelle weergave (Finder gebruikt gewone Spatie voor snelle weergave). Telkens als je in de bestandenlijst op Spatie drukt, toont Cmdr een herinnering van één alinea over dit verschil. Zet dit aan (of klik op ‘Niet meer tonen’ in de melding) om de herinnering voorgoed te onderdrukken.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "sourceHash": "e78809d"
   },
@@ -1269,7 +1269,7 @@
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hoeveel recent gesloten tabbladen per paneel bewaard worden voor ‘Gesloten tabblad heropenen’ (⌘⇧T). Hogere waarden laten je verder terug in de geschiedenis heropenen; lagere waarden maken sneller geheugen vrij. Geldt alleen voor tabbladen die in de huidige sessie zijn gesloten.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "fe01a43"
+    "sourceHash": "e53df3a"
   },
   "settings.advanced.dragThreshold.label": "Sleepdrempel",
   "@settings.advanced.dragThreshold.label": {
@@ -1341,7 +1341,7 @@
   },
   "settings.advanced.showSafeSaveFiles.description": "Wanneer apps als Teksteditor en Voorvertoning een bestand bewaren, schrijft macOS de nieuwe versie ernaast onder een tijdelijke naam (eindigend op ‘.sb-’) en wisselt die daarna om. Zet dit uit om ze uit de bestandenlijst te houden.",
   "@settings.advanced.showSafeSaveFiles.description": {
-    "sourceHash": "1749ee6"
+    "sourceHash": "b371701"
   },
   "settings.advanced.showStagingTempFiles.label": "Cmdrs tijdelijke bestanden tonen",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1397,7 +1397,7 @@
   },
   "settings.onboarding.upgradeNudgeShown.description": "Intern: houdt bij of de eenmalige melding ‘het onderdeel Onboarding bestaat nu in het menu’ is getoond aan een bestaande gebruiker na de vernieuwing van de wizard. Verborgen in de interface.",
   "@settings.onboarding.upgradeNudgeShown.description": {
-    "sourceHash": "5cfb2b5"
+    "sourceHash": "c877371"
   },
   "settings.askCmdr.consentRevokePending.label": "Ask Cmdr uit, wacht op opslaan",
   "@settings.askCmdr.consentRevokePending.label": {
@@ -1540,23 +1540,23 @@
   },
   "settings.revealHandler.description": "Wanneer een andere app ‘Toon in Finder’ uitvoert, opent Cmdr die map met het bestand onder de cursor. Voor al het andere blijft Finder je standaard bestandsbeheer.",
   "@settings.revealHandler.description": {
-    "sourceHash": "ebb79ff"
+    "sourceHash": "9522e41"
   },
   "settings.revealHandler.heldByOtherApp": "Op dit moment: {app}. Als je dit inschakelt, neemt Cmdr ‘Toon in Finder’ over.",
   "@settings.revealHandler.heldByOtherApp": {
-    "sourceHash": "d0aa283"
+    "sourceHash": "4b956ef"
   },
   "settings.revealHandler.uninstallWarning": "<lead>Zet dit uit voordat je Cmdr verwijdert.</lead> macOS blijft ‘Toon in Finder’ hierheen sturen, en zonder Cmdr doen die klikken stilletjes niets.",
   "@settings.revealHandler.uninstallWarning": {
-    "sourceHash": "3c10fd3"
+    "sourceHash": "9464597"
   },
   "settings.revealHandler.notInApplications": "Verplaats Cmdr naar de map ‘Apps’ om dit aan te kunnen zetten. Vanaf de plek waar het nu draait, zou het verplaatsen of verwijderen van Cmdr elke klik op ‘Toon in Finder’ naar niets laten wijzen.",
   "@settings.revealHandler.notInApplications": {
-    "sourceHash": "dc15ebf"
+    "sourceHash": "1a380cf"
   },
   "settings.revealHandler.notProductionBuild": "Je kunt dit alleen aanzetten in een uitgebrachte versie van Cmdr. Dev- en testbuilds komen en gaan, en het verwijderen van zo''n build zou elke klik op ‘Toon in Finder’ naar niets laten wijzen.",
   "@settings.revealHandler.notProductionBuild": {
-    "sourceHash": "20648ba"
+    "sourceHash": "7195002"
   },
   "settings.behavior.textEditorApp.label": "Bewerk bestanden in",
   "@settings.behavior.textEditorApp.label": {
@@ -1564,7 +1564,7 @@
   },
   "settings.behavior.textEditorApp.description": "Cmdr toont de teksteditors die macOS op deze Mac kent. Voor een andere app kies je ‘Kies app…’.",
   "@settings.behavior.textEditorApp.description": {
-    "sourceHash": "b062aed"
+    "sourceHash": "4641320"
   },
   "settings.behavior.textEditorApp.systemDefault": "Systeemstandaard ({app})",
   "@settings.behavior.textEditorApp.systemDefault": {
@@ -1600,7 +1600,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "Cmdr toont de terminal-apps die het op deze Mac vindt. Voor een app die het niet kent, kies je ‘Kies app…’.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "0df49fc"
+    "sourceHash": "32ccd8f"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "Kies app…",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1664,7 +1664,7 @@
   },
   "settings.behavior.revealNudgeOfferedAt.description": "Wanneer het eenmalige aanbod om ‘Toon in Finder’ in Cmdr te openen is gedaan.",
   "@settings.behavior.revealNudgeOfferedAt.description": {
-    "sourceHash": "2b9d5b4"
+    "sourceHash": "b6a8933"
   },
   "settings.behavior.revealActivationNoticeSeen.label": "Melding bij eerste keer getoond",
   "@settings.behavior.revealActivationNoticeSeen.label": {
@@ -1672,7 +1672,7 @@
   },
   "settings.behavior.revealActivationNoticeSeen.description": "Of de melding over de eerste ‘Toon in Finder’ die in Cmdr opende is getoond.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "f2107a5"
+    "sourceHash": "009056a"
   },
   "settings.behavior.adbHintDismissed.label": "Hint voor USB-foutopsporing gesloten",
   "@settings.behavior.adbHintDismissed.label": {

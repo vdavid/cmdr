@@ -147,7 +147,7 @@
   },
   "onboarding.stepFda.step2.tip": "Staat Cmdr niet in de lijst? Klik op de knop ‘+’ onderaan en kies <strong>Cmdr</strong> uit de map <strong>Apps</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "30d0299"
+    "sourceHash": "ffc4289"
   },
   "onboarding.stepFda.step3": "Bevestig en klik op <strong>Stop en open opnieuw</strong>",
   "@onboarding.stepFda.step3": {
@@ -191,7 +191,7 @@
   },
   "onboarding.stepAi.bannerBody.stuck": "Je gaf aan volledige schijftoegang in te willen schakelen, maar Cmdr lijkt die niet te hebben gekregen. Misschien moet je de app opnieuw starten (doe het nu, we gaan hier verder!), of ga naar je <settingsLink>{systemSettings} > Privacy en beveiliging > Volledige schijftoegang</settingsLink> en zoek Cmdr, of voeg het handmatig toe met de kleine knop ‘+’ onderaan.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "79d5765"
+    "sourceHash": "fcdff85"
   },
   "onboarding.stepAi.welcomeLinux.title": "Welkom bij Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -231,11 +231,11 @@
   },
   "onboarding.stepAi.table.searchWithout": "Je typt iets als <code>*fish*.ppt</code> en kiest het filter ‘na de 1e van deze maand’.",
   "@onboarding.stepAi.table.searchWithout": {
-    "sourceHash": "872cb1e"
+    "sourceHash": "ebd8f45"
   },
   "onboarding.stepAi.table.searchWith": "Je zegt ‘mijn recente presentaties over vissen’ en de agent stelt je filters in.",
   "@onboarding.stepAi.table.searchWith": {
-    "sourceHash": "b69cd82"
+    "sourceHash": "457e19a"
   },
   "onboarding.stepAi.table.rowRename": "Massaal namen wijzigen",
   "@onboarding.stepAi.table.rowRename": {
@@ -247,7 +247,7 @@
   },
   "onboarding.stepAi.table.renameWith": "Je zegt ‘zet er een ISO-datum voor’, de agent stelt je naampatroon in, en je kijkt het na en past het naar eigen inzicht toe.",
   "@onboarding.stepAi.table.renameWith": {
-    "sourceHash": "7fba3f5"
+    "sourceHash": "5287ae3"
   },
   "onboarding.stepAi.table.rowSelect": "Selecteren",
   "@onboarding.stepAi.table.rowSelect": {
@@ -259,11 +259,11 @@
   },
   "onboarding.stepAi.table.selectWithoutUnbound": "Je opent ‘Selecteer bestanden…’ en typt iets als <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, kijkt het na en past het toe.",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "sourceHash": "4cdc972"
+    "sourceHash": "bf9239a"
   },
   "onboarding.stepAi.table.selectWith": "Je zegt ‘selecteer alle afbeeldingen’, de agent stelt een selectie voor, en je kijkt het na en past het naar eigen inzicht toe.",
   "@onboarding.stepAi.table.selectWith": {
-    "sourceHash": "07f1063"
+    "sourceHash": "c1cc90b"
   },
   "onboarding.stepAi.resumeCue": "Dit koos je de vorige keer. Bevestig of wijzig het hieronder.",
   "@onboarding.stepAi.resumeCue": {
@@ -307,7 +307,7 @@
   },
   "onboarding.stepAi.missingKeyWarning": "Je hebt AI ingeschakeld, maar geen API-sleutel ingevuld. AI werkt dan niet en je krijgt een waarschuwing te zien. Los dit hierboven op.\n\n<strong>Klik nogmaals op ‘{nextLabel}’ om dit te negeren en verder te gaan.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "3d66d11"
+    "sourceHash": "bdb8a08"
   },
   "onboarding.stepAi.cloudConsentOffNote": "Cloud-AI blijft uit tot je die toestaat. Dat kan later ook bij Instellingen > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -317,7 +317,7 @@
   "@onboarding.stepAi.off.label": {
     "sourceHash": "c2a8322"
   },
-  "onboarding.stepAi.off.help": "Cmdr werkt volledig zonder AI. Je kunt het later inschakelen in Instellingen.",
+  "onboarding.stepAi.off.help": "Cmdr werkt volledig zonder AI. Je kunt het later aanzetten in Instellingen.",
   "@onboarding.stepAi.off.help": {
     "sourceHash": "3f261be"
   },
@@ -359,7 +359,7 @@
   },
   "onboarding.stepBeta.checklist.alternativeToNote": "Helemaal boven aan de pagina, naast de titel ‘Cmdr’. Zo valt Cmdr op bij mensen en bij Google!",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "sourceHash": "ea4903a"
+    "sourceHash": "ee4aed4"
   },
   "onboarding.stepBeta.checklist.email": "Vul je e-mailadres in <field></field> om heel af en toe updates en vragen te krijgen",
   "@onboarding.stepBeta.checklist.email": {
@@ -459,11 +459,11 @@
   },
   "onboarding.stepOptional.networking.summary": "Eén keer ‘Lokaal netwerk’ toestaan",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "5006f53"
+    "sourceHash": "f49fbc6"
   },
   "onboarding.stepOptional.networking.desc": "Met dit <em>aan</em> kun je verbinding maken met SMB-servers zoals bedrijfsnetwerkshares, een thuis-NAS en dergelijke.\nDe enige kostenpost is een macOS-toegangsvenster dat verschijnt en je vraagt ‘Lokaal netwerk’ toe te staan, en nog één voor ‘Inkomende verbindingen accepteren’.\nBeide vensters zijn onschadelijk, maar als je niet weet wat dit is, kunnen ze eng of vervelend overkomen.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "089707f"
+    "sourceHash": "c03c7df"
   },
   "onboarding.stepOptional.indexing.title": "Schijf indexeren",
   "@onboarding.stepOptional.indexing.title": {

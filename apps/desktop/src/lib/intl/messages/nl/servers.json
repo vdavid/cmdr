@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Klik met de rechtermuisknop op een server en kies ‘Maak los’, of gebruik ‘{command}’ in het opdrachtenpalet. De server blijft in de lijst Servers staan.",
   "@servers.pinHint.body": {
-    "sourceHash": "0663b02"
+    "sourceHash": "e47522b"
   },
   "servers.pinHint.gotIt": "Begrepen",
   "@servers.pinHint.gotIt": {

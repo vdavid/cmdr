@@ -31,9 +31,13 @@ The must-know rules; the rest of this file elaborates them.
   Terminal, Disk Utility, First Aid, Activity Monitor, Mission Control, Dock (with `het` in a sentence), Apple silicon,
   System Integrity Protection. On a phone, Android's own Dutch wins (`USB-foutopsporing`, `Toestaan`, `tik op`).
 - **Capitalization**: sentence case; only the first word and proper nouns.
-- **Punctuation**: quote UI strings in running text with single curly quotes `‘…’`, never straight `"…"`. No space
-  before `%`. Menu-path separators (`>`, `→`, `›`) mirror EN per key. ICU values double a straight apostrophe
-  (`foto''s`, `pagina''s`); RAW families (`errors.*`, `menu.*`) don't.
+- **Typography** (`mechanics.json`): quotes `‘…’`, nested `“…”`, as macOS Dutch quotes UI names; never straight `"` or
+  `'…'`. Apostrophe straight or curly (`foto's`, `'s avonds`). `…` for an ellipsis, no space before `%`. Menu-path
+  separators (`>`, `→`, `›`) mirror EN per key. ICU values double a straight apostrophe (`foto''s`); RAW families
+  (`errors.*`, `menu.*`) don't.
+- **No hedged grammar**: never `bestand(en)`, `bestand/en`, `de/het`, `hij/het`, `is/zijn`, or `{name}'s`. Use ICU
+  `plural` when Cmdr knows the count; otherwise name the type first (`de map {name}`), use a colon form, or a pronominal
+  adverb (below). No `de`/`het` directly before an insert that is the whole noun.
 - **Compounds** concatenate (`crashrapport`, `bestandenlijst`); hyphenate before an acronym or English proper name
   (`SMB-share`, `macOS-versie`, `Klembord-PDF`, `het Help-menu`, `Ask Cmdr-model`); format tokens stay lowercase
   (`zip-archief`). A hyphenated first part closes up: `alleen-lezenvolume`.
@@ -154,8 +158,9 @@ second half is now a normal plural with a real verb
   other. Never invent a second marker: if a future base label can't take `(bezet)`, report it.
 - **Sentence case, not title case.** Dutch capitalizes only the first word and proper nouns, which fits the app's
   sentence-case rule directly. "Verstuur crashrapport?" not "Verstuur Crashrapport?".
-- **Quotation marks:** macOS Dutch uses single curly quotes `‘…’` for quoted UI strings ("Klik op 'Ga door' …", and
-  curly `‘%s’` in Nautilus). Prefer `‘…’`; avoid straight English `"…"`.
+- **Quotation marks:** macOS Dutch quotes UI names in single quotes (385 single-quoted values in Finder + AppKit
+  `nl.lproj`, zero double; verified on macOS 26.6.2, `plutil` over `*.strings`, 2026-09-25), so Cmdr writes `‘…’`, with
+  `“…”` nested. `mechanics.json` declares the set and `i18n-mechanics` checks it.
 - **Length:** Dutch runs slightly longer than English (compounds like "crashrapport", "instellingen"), but far less than
   German. Overflow-check the layout against the pseudolocale (`en-XA`); watch buttons and toasts.
 - **Compound nouns concatenate** ("crashrapport", "foutcode"). Correct Dutch; don't space-separate them.
@@ -280,8 +285,9 @@ reasoned value.
 
 - `../concepts.json`: the shared, language-agnostic concept registry (sense, `match` patterns, confusable neighbors).
 - `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
-- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `decisions.md`: distilled rulings, one section per feature, headings citing their keys.
+- `mechanics.json`: quotes, apostrophes, spacing, and the hedge patterns `i18n-mechanics` checks.
 - `review-queue.md`: open questions for a native reviewer.
 
-Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section
-when the reason needs more than a line.
+Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add or edit a `decisions.md`
+section when the reason needs more than a line ("X over Y because Z", at most ~3 lines).

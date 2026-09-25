@@ -106,8 +106,10 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
 - **`De Android-versie van deze telefoon is te oud; Cmdr kan er niet op bladeren.`** (`adb.connect.deviceTooOld`): the
   semicolon splits what EN says in one clause.
 - **`Hoe?`** (`adb.hint.how`): alternatives `Hoe dan?`, `Uitleg`.
-- **`Hint voor USB-foutopsporing gesloten`** vs its sibling's `getoond` (`settings.behavior.adbHintDismissed.label`):
-  internal only.
+- **The online-only delete banners** (`fileOperations.delete.cloudOnlineOnlyMixedWarning`, `.cloudOnlineOnlyAllWarning`,
+  `.cloudOnlineOnlyHandedBack`): drafted, not yet read by a human.
+- **`benaderen` → `openen` in error prose** (`errors.listing.notFound.explanation` and siblings): "access" as `openen`
+  reads casual but slightly narrows the sense; confirm.
 - **`Er staan AI-suggesties klaar.`** (`suggestedOps.indicatorTooltip`) over `Er wachten AI-suggesties`.
 - **`Klik om er een te kiezen in instellingen.`** (`askCmdr.wake.needsApiKey`): "set up" became "kiezen".
 - **`dus het lijkt goed te bevallen`** (`main.dockPinNudge.body`): freer than "it seems to be working for you".
@@ -147,11 +149,3 @@ wording into `terms.json` (and `decisions.md` when the reason is worth keeping).
   `fileOperations.leftovers.stagingFolderKept`.
 - `settings.section.navigationAndFileOps` `Navigatie en bewerkingen`: fallback `Navigatie en bestandsbewerkingen` if the
   clip reads odd.
-
-## Source (`en`) follow-ups
-
-- `queue.empty.body` still names only copies, moves, and deletes (`Kopieer-, verplaats- en verwijderacties`), matching
-  its English; if the English empty state widens to all operations, this key follows with `bewerkingen`.
-- `onboarding.stepFda.ifAllow` "Three easy steps" trivializes, against `docs/style-guide.md`; the translation follows
-  the source.
-- `fileOperations.delete.cloudOnlineOnly*`: drafted, not yet read by a human.

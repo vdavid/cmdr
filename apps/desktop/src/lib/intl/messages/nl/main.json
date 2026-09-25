@@ -53,11 +53,11 @@
   },
   "main.revealNudge.title": "‘Toon in Finder’ in Cmdr openen?",
   "@main.revealNudge.title": {
-    "sourceHash": "c92e1b7"
+    "sourceHash": "45a5b47"
   },
   "main.revealNudge.body": "Je gebruikt Cmdr nu al een tijdje. Wanneer een andere app ‘Toon in Finder’ uitvoert, kan Cmdr die map openen, met het bestand meteen onder de cursor.",
   "@main.revealNudge.body": {
-    "sourceHash": "fe4072b"
+    "sourceHash": "1db1d28"
   },
   "main.revealNudge.switchBackNote": "Je kunt dit altijd terugzetten in Instellingen.",
   "@main.revealNudge.switchBackNote": {
@@ -73,19 +73,19 @@
   },
   "main.revealNudge.turnedOn": "Cmdr opent ‘Toon in Finder’ nu vanuit andere apps.",
   "@main.revealNudge.turnedOn": {
-    "sourceHash": "8eab42b"
+    "sourceHash": "27c0ea2"
   },
   "main.revealNudge.heldByOtherApp": "‘Toon in Finder’ is op dit moment van {app}. Je kunt het in Instellingen aan Cmdr geven wanneer je wilt.",
   "@main.revealNudge.heldByOtherApp": {
-    "sourceHash": "3f513b0"
+    "sourceHash": "0893821"
   },
   "main.revealNudge.notTurnedOn": "Cmdr kon ‘Toon in Finder’ deze keer niet overnemen. De schakelaar staat in Instellingen als je het opnieuw wilt proberen.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "4a9920d"
+    "sourceHash": "953a4ee"
   },
   "main.revealActivation.title": "‘Toon in Finder’ is hier geopend",
   "@main.revealActivation.title": {
-    "sourceHash": "23d50e1"
+    "sourceHash": "6bb18bb"
   },
   "main.revealActivation.body": "Cmdr staat ingesteld om deze op te vangen, dus het bestand kwam in een paneel terecht in plaats van in Finder. Al het andere opent nog steeds zoals eerst.",
   "@main.revealActivation.body": {

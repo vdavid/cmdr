@@ -451,7 +451,7 @@
   },
   "menu.context.copyNamed": "Kopieer ‘{name}’",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "Voeg aan favorieten toe",
   "@menu.context.addToFavorites": {
@@ -548,11 +548,11 @@
   },
   "menu.tag.addNamed": "Voeg ‘{color}’ toe",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
   "menu.tag.removeNamed": "Verwijder ‘{color}’",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "Voeg toe aan geïndexeerde mappen",
   "@menu.mediaIndex.addFolder": {

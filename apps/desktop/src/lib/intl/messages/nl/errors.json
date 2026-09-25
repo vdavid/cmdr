@@ -103,7 +103,7 @@
   "@errors.listing.connectionTimedOutErrno.explanation": {
     "sourceHash": "33612d4"
   },
-  "errors.listing.connectionTimedOutErrno.suggestion": "Dit kun je proberen:\n- Controleer of het apparaat of de server is ingeschakeld en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen om het nog eens te proberen",
+  "errors.listing.connectionTimedOutErrno.suggestion": "Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
     "sourceHash": "4172538"
   },
@@ -111,11 +111,11 @@
   "@errors.listing.hostDown.title": {
     "sourceHash": "a99606a"
   },
-  "errors.listing.hostDown.explanation": "De externe host (de computer of server die dit volume host) reageert niet. Die is misschien uitgeschakeld, in sluimerstand, of tijdelijk onbereikbaar.",
+  "errors.listing.hostDown.explanation": "De externe host (de computer of server die dit volume host) reageert niet. Die staat misschien uit, is in sluimerstand, of is tijdelijk onbereikbaar.",
   "@errors.listing.hostDown.explanation": {
     "sourceHash": "cf59cab"
   },
-  "errors.listing.hostDown.suggestion": "Dit kun je proberen:\n- Controleer of de host is ingeschakeld en met het netwerk is verbonden\n- Probeer in Terminal `ping <hostname>` om te testen of de host bereikbaar is\n- Als het een NAS of server is, controleer dan de beheerinterface ervan\n- Navigeer hier opnieuw heen zodra de host weer terug is",
+  "errors.listing.hostDown.suggestion": "Dit kun je proberen:\n- Controleer of de host aanstaat en met het netwerk is verbonden\n- Probeer in Terminal `ping <hostname>` om te testen of de host bereikbaar is\n- Als het een NAS of server is, controleer dan de beheerinterface ervan\n- Navigeer hier opnieuw heen zodra de host weer terug is",
   "@errors.listing.hostDown.suggestion": {
     "sourceHash": "4a09e8e"
   },
@@ -123,11 +123,11 @@
   "@errors.listing.staleConnection.title": {
     "sourceHash": "f03c43c"
   },
-  "errors.listing.staleConnection.explanation": "Cmdr probeert deze map te benaderen via een oude verwijzing die de server niet meer herkent. Dit gebeurt vaak bij netwerkschijven (NFS, SMB) nadat de server herstart, de share opnieuw is gekoppeld, of de verbinding werd onderbroken.",
+  "errors.listing.staleConnection.explanation": "Cmdr probeert deze map te openen via een oude verwijzing die de server niet meer herkent. Dit gebeurt vaak bij netwerkschijven (NFS, SMB) nadat de server herstart, de share opnieuw is gekoppeld, of de verbinding werd onderbroken.",
   "@errors.listing.staleConnection.explanation": {
     "sourceHash": "3712df2"
   },
-  "errors.listing.staleConnection.suggestion": "Dit kun je proberen:\n- Navigeer weg uit deze map en kom terug\n- Als dit een netwerkschijf is, probeer die dan los te koppelen en opnieuw te koppelen in Finder\n- Controleer of de server die deze map host draait\n- Voer in Terminal `mount` uit om de momenteel gekoppelde volumes te zien",
+  "errors.listing.staleConnection.suggestion": "Dit kun je proberen:\n- Navigeer weg uit deze map en kom terug\n- Als dit een netwerkschijf is, probeer die dan los te koppelen en opnieuw te koppelen in Finder\n- Controleer of de server die deze map host draait\n- Voer in Terminal `mount` uit om te zien welke volumes nu gekoppeld zijn",
   "@errors.listing.staleConnection.suggestion": {
     "sourceHash": "05960c8"
   },
@@ -135,7 +135,7 @@
   "@errors.listing.lockUnavailable.title": {
     "sourceHash": "3123ad5"
   },
-  "errors.listing.lockUnavailable.explanation": "Het systeem had geen bestandsvergrendelingen meer. Met bestandsvergrendelingen stemmen apps de toegang tot gedeelde bestanden op elkaar af (zodat twee apps niet tegelijk naar hetzelfde bestand schrijven). Als ze opraken, betekent dat meestal dat te veel apps tegelijk bestanden benaderen.",
+  "errors.listing.lockUnavailable.explanation": "Het systeem had geen bestandsvergrendelingen meer. Met bestandsvergrendelingen stemmen apps de toegang tot gedeelde bestanden op elkaar af (zodat twee apps niet tegelijk naar hetzelfde bestand schrijven). Als ze opraken, betekent dat meestal dat te veel apps tegelijk bestanden openen.",
   "@errors.listing.lockUnavailable.explanation": {
     "sourceHash": "154df3c"
   },
@@ -171,7 +171,7 @@
   "@errors.listing.pathNotFoundErrno.title": {
     "sourceHash": "cce25f6"
   },
-  "errors.listing.pathNotFoundErrno.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd terwijl Cmdr het probeerde te benaderen.",
+  "errors.listing.pathNotFoundErrno.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd terwijl Cmdr het probeerde te openen.",
   "@errors.listing.pathNotFoundErrno.explanation": {
     "sourceHash": "0c4bb13"
   },
@@ -183,7 +183,7 @@
   "@errors.listing.noPermissionErrno.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.noPermissionErrno.explanation": "Cmdr heeft geen bevoegdheid om `{path}` te benaderen. macOS bepaalt welke apps welke mappen mogen benaderen, en Cmdr heeft voor deze map nog geen toegang gekregen.",
+  "errors.listing.noPermissionErrno.explanation": "Cmdr heeft geen toegang tot `{path}`. macOS bepaalt welke apps bij welke mappen mogen, en Cmdr heeft voor deze map nog geen toegang gekregen.",
   "@errors.listing.noPermissionErrno.explanation": {
     "sourceHash": "a2955dc"
   },
@@ -331,7 +331,7 @@
   "@errors.listing.hostUnreachable.explanation": {
     "sourceHash": "3e5e6f9"
   },
-  "errors.listing.hostUnreachable.suggestion": "Dit kun je proberen:\n- Controleer of de host is ingeschakeld en op hetzelfde netwerk zit\n- Als je een VPN nodig hebt om de host te bereiken, zorg dan dat de VPN verbonden is\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen zodra de host bereikbaar is",
+  "errors.listing.hostUnreachable.suggestion": "Dit kun je proberen:\n- Controleer of de host aanstaat en op hetzelfde netwerk zit\n- Als je een VPN nodig hebt om de host te bereiken, zorg dan dat de VPN verbonden is\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen zodra de host bereikbaar is",
   "@errors.listing.hostUnreachable.suggestion": {
     "sourceHash": "8e7a1cf"
   },
@@ -339,7 +339,7 @@
   "@errors.listing.folderNotEmpty.title": {
     "sourceHash": "a8c9ac6"
   },
-  "errors.listing.folderNotEmpty.explanation": "Cmdr kan `{path}` niet verwijderen omdat de map nog bestanden of submappen bevat. Het systeem vereist dat een map leeg is voordat die op deze manier kan worden verwijderd.",
+  "errors.listing.folderNotEmpty.explanation": "Cmdr kan `{path}` niet verwijderen omdat de map nog bestanden of submappen bevat. Het systeem verwijdert een map op deze manier alleen als die leeg is.",
   "@errors.listing.folderNotEmpty.explanation": {
     "sourceHash": "c16ac41"
   },
@@ -387,11 +387,11 @@
   "@errors.listing.devicePoweredOff.title": {
     "sourceHash": "d0b7a88"
   },
-  "errors.listing.devicePoweredOff.explanation": "Het apparaat is uitgeschakeld of in een diepe sluimerstand, dus Cmdr kan er niet mee communiceren.",
+  "errors.listing.devicePoweredOff.explanation": "Het apparaat staat uit of is in een diepe sluimerstand, dus Cmdr kan er niet mee communiceren.",
   "@errors.listing.devicePoweredOff.explanation": {
     "sourceHash": "ae9c029"
   },
-  "errors.listing.devicePoweredOff.suggestion": "Schakel het apparaat in, wacht tot het volledig is opgestart en navigeer hier dan opnieuw heen.",
+  "errors.listing.devicePoweredOff.suggestion": "Zet het apparaat aan, wacht tot het volledig is opgestart en navigeer hier dan opnieuw heen.",
   "@errors.listing.devicePoweredOff.suggestion": {
     "sourceHash": "39fc3b5"
   },
@@ -459,7 +459,7 @@
   "@errors.listing.notFound.title": {
     "sourceHash": "cce25f6"
   },
-  "errors.listing.notFound.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd terwijl Cmdr het probeerde te benaderen.",
+  "errors.listing.notFound.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd terwijl Cmdr het probeerde te openen.",
   "@errors.listing.notFound.explanation": {
     "sourceHash": "0c4bb13"
   },
@@ -483,7 +483,7 @@
   "@errors.listing.permissionDenied.title": {
     "sourceHash": "201c89b"
   },
-  "errors.listing.permissionDenied.explanation": "Cmdr heeft geen bevoegdheid om `{path}` te benaderen. macOS bepaalt welke apps welke mappen mogen benaderen, en Cmdr heeft voor deze map nog geen toegang gekregen.",
+  "errors.listing.permissionDenied.explanation": "Cmdr heeft geen toegang tot `{path}`. macOS bepaalt welke apps bij welke mappen mogen, en Cmdr heeft voor deze map nog geen toegang gekregen.",
   "@errors.listing.permissionDenied.explanation": {
     "sourceHash": "a2955dc"
   },
@@ -591,11 +591,11 @@
   "@errors.listing.connectionTimedOut.title": {
     "sourceHash": "2e0b4a7"
   },
-  "errors.listing.connectionTimedOut.explanation": "Cmdr probeerde deze bron te benaderen, maar de verbinding reageerde niet op tijd. Dit betekent meestal dat de server of het apparaat traag reageert, of dat de netwerkverbinding instabiel is.",
+  "errors.listing.connectionTimedOut.explanation": "Cmdr probeerde deze bron te openen, maar de verbinding reageerde niet op tijd. Dit betekent meestal dat de server of het apparaat traag reageert, of dat de netwerkverbinding instabiel is.",
   "@errors.listing.connectionTimedOut.explanation": {
     "sourceHash": "5b3f8b2"
   },
-  "errors.listing.connectionTimedOut.suggestion": "Dit kun je proberen:\n- Controleer of het apparaat of de server is ingeschakeld en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Probeer het opnieuw",
+  "errors.listing.connectionTimedOut.suggestion": "Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Probeer het opnieuw",
   "@errors.listing.connectionTimedOut.suggestion": {
     "sourceHash": "f9b8a2d"
   },
@@ -1013,7 +1013,7 @@
   "@errors.provider.macFuse.transient": {
     "sourceHash": "06d9019"
   },
-  "errors.provider.macFuse.needsAction": "Dit is een **macFUSE**-koppeling. Dit kun je proberen:\n- Controleer of het FUSE-proces achter deze koppeling nog draait\n- Forceer indien nodig het loskoppelen en koppel het volume opnieuw\n- Zorg dat macFUSE up-to-date is in **{system_settings} > Algemeen > Inlogonderdelen en extensies**",
+  "errors.provider.macFuse.needsAction": "Dit is een **macFUSE**-koppeling. Dit kun je proberen:\n- Controleer of het FUSE-proces achter deze koppeling nog draait\n- Forceer zo nodig het loskoppelen en koppel het volume opnieuw\n- Zorg dat macFUSE up-to-date is in **{system_settings} > Algemeen > Inlogonderdelen en extensies**",
   "@errors.provider.macFuse.needsAction": {
     "sourceHash": "60e836a"
   },
@@ -1037,7 +1037,7 @@
   "@errors.provider.veraCrypt.transient": {
     "sourceHash": "fe408ae"
   },
-  "errors.provider.veraCrypt.needsAction": "Dit is een versleuteld **{name}**-volume. Dit kun je proberen:\n- Open VeraCrypt en controleer of dit volume gekoppeld is\n- Koppel het volume indien nodig los en opnieuw",
+  "errors.provider.veraCrypt.needsAction": "Dit is een versleuteld **{name}**-volume. Dit kun je proberen:\n- Open VeraCrypt en controleer of dit volume gekoppeld is\n- Koppel het volume zo nodig los en opnieuw",
   "@errors.provider.veraCrypt.needsAction": {
     "sourceHash": "08dec65"
   },
@@ -1395,7 +1395,7 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr heeft op deze Mac ook geen volledige schijftoegang, en dat is een veelvoorkomende oorzaak. De markering ‘Geen volledige schijftoegang’ in de titelbalk brengt je naar die keuze.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "ab20ec5"
+    "sourceHash": "0dbe21b"
   },
   "errors.write.ioError.title.copy": "Kopiëren lukte niet",
   "@errors.write.ioError.title.copy": {
@@ -1679,7 +1679,7 @@
   },
   "errors.mutation.notFound": "Er staat niets meer op ‘{path}’.",
   "@errors.mutation.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.mutation.cantRenameVolumeRoot": "De naam van de hoofdmap van een volume kan hier niet worden gewijzigd.",
   "@errors.mutation.cantRenameVolumeRoot": {
@@ -1687,7 +1687,7 @@
   },
   "errors.mutation.parentNotWritable": "Cmdr kan niet schrijven in ‘{path}’. Controleer de bevoegdheden van de map in Finder.",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "902f3a5"
+    "sourceHash": "3659a5a"
   },
   "errors.mutation.fileLocked": "Dit onderdeel is beveiligd. Hef de beveiliging op via ‘Toon info’ in Finder en probeer het opnieuw.",
   "@errors.mutation.fileLocked": {
@@ -1705,7 +1705,7 @@
   "@errors.mutation.archiveNotEditable": {
     "sourceHash": "eedee11"
   },
-  "errors.mutation.archiveReadOnly": "Alleen zip-archieven kunnen worden gewijzigd, en dit archief is alleen-lezen.",
+  "errors.mutation.archiveReadOnly": "Alleen zip-archieven kun je wijzigen, en dit archief is alleen-lezen.",
   "@errors.mutation.archiveReadOnly": {
     "sourceHash": "a636f2a"
   },
@@ -1735,15 +1735,15 @@
   },
   "errors.volume.notFound": "Er staat niets meer op ‘{path}’.",
   "@errors.volume.notFound": {
-    "sourceHash": "9a7d554"
+    "sourceHash": "45a1f09"
   },
   "errors.volume.permissionDenied": "Cmdr heeft geen toegang tot ‘{path}’.",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "1f63dc1"
+    "sourceHash": "fee452b"
   },
   "errors.volume.alreadyExists": "Er staat al iets op ‘{path}’.",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "e070962"
+    "sourceHash": "de0bbb9"
   },
   "errors.volume.notSupported": "Dit volume ondersteunt dat niet.",
   "@errors.volume.notSupported": {
@@ -1779,7 +1779,7 @@
   },
   "errors.volume.isADirectory": "‘{path}’ is een map, geen bestand.",
   "@errors.volume.isADirectory": {
-    "sourceHash": "fe76957"
+    "sourceHash": "224ae5e"
   },
   "errors.volume.invalidName": "De bestemming kan die naam niet opslaan. Kies een andere.",
   "@errors.volume.invalidName": {
@@ -1791,7 +1791,7 @@
   },
   "errors.volume.ambiguousName": "Meer dan één onderdeel op de server past bij ‘{path}’, dus Cmdr heeft er geen gekozen. Open de map waarin het staat en kies het daar.",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "024d1da"
+    "sourceHash": "f866182"
   },
   "errors.volume.staleDestinationHandle": "Cmdr is de doelmap op het apparaat kwijtgeraakt. Open hem opnieuw en probeer het dan nog eens.",
   "@errors.volume.staleDestinationHandle": {
@@ -1901,45 +1901,45 @@
   "@errors.eject.unexpected": {
     "sourceHash": "0c9d9f5"
   },
-  "errors.mount.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server is ingeschakeld en op hetzelfde netwerk zit als deze computer.",
+  "errors.mount.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
-  "errors.mount.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Controleer of de server is ingeschakeld en bereikbaar is, en probeer het dan opnieuw.",
+  "errors.mount.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Controleer of de server aanstaat en bereikbaar is, en probeer het dan opnieuw.",
   "@errors.mount.timeout": {
-    "sourceHash": "bfb786c"
+    "sourceHash": "00d198e"
   },
   "errors.mount.shareNotFound": "Er is geen gedeelde map met de naam ‘{share}’ op ‘{server}’. Ga terug en kies er een uit de lijst.",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "4f930a5"
+    "sourceHash": "08aee2a"
   },
   "errors.mount.authRequired": "Log in bij ‘{server}’ om ‘{share}’ te openen.",
   "@errors.mount.authRequired": {
-    "sourceHash": "8466652"
+    "sourceHash": "b2af295"
   },
   "errors.mount.authFailed": "Die gebruikersnaam en dat wachtwoord werkten niet op ‘{server}’. Controleer ze en log opnieuw in.",
   "@errors.mount.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
   "errors.mount.permissionDenied": "Je bent bij ‘{server}’ ingelogd als ‘{username}’, maar dat account kan ‘{share}’ niet openen. Log in met een ander account.",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "12e20d9"
+    "sourceHash": "f8e000b"
   },
   "errors.mount.cancelled": "Het verbinden met ‘{share}’ stopte voordat het klaar was. Probeer het opnieuw wanneer je wilt.",
   "@errors.mount.cancelled": {
-    "sourceHash": "0b0ec30"
+    "sourceHash": "4f6ff32"
   },
   "errors.mount.unsupportedProtocol": "Deze computer en ‘{server}’ hebben geen SMB-versie gemeen. Schakel SMB 2 of later in bij de instellingen van de server en probeer het dan opnieuw.",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "bf9c71e"
+    "sourceHash": "7cb18f6"
   },
   "errors.mount.mountRefused": "Je bent ingelogd bij ‘{server}’, maar de server wilde ‘{share}’ niet openen. Controleer de instellingen van de gedeelde map op de server en probeer het dan opnieuw.",
   "@errors.mount.mountRefused": {
-    "sourceHash": "c354782"
+    "sourceHash": "84344ca"
   },
   "errors.mount.mountMissing": "Je computer meldde dat ‘{share}’ op ‘{server}’ verbonden was, maar de gedeelde map verscheen nooit. Probeer het opnieuw.",
   "@errors.mount.mountMissing": {
-    "sourceHash": "a5f61b5"
+    "sourceHash": "72ab946"
   },
   "errors.mount.gvfsMissing": "Om op Linux verbinding te maken met netwerkshares is GVFS nodig. Installeer het pakket gvfs-smb van je distributie en probeer het dan opnieuw.",
   "@errors.mount.gvfsMissing": {
@@ -1947,35 +1947,35 @@
   },
   "errors.mount.unexpected": "Er ging iets mis bij het verbinden met ‘{share}’ op ‘{server}’. Probeer het zo meteen opnieuw.",
   "@errors.mount.unexpected": {
-    "sourceHash": "8daf9ba"
+    "sourceHash": "1ab5cca"
   },
-  "errors.shareList.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server is ingeschakeld en op hetzelfde netwerk zit als deze computer.",
+  "errors.shareList.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "a8a5d87"
+    "sourceHash": "2bbca3c"
   },
   "errors.shareList.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Probeer het zo meteen opnieuw.",
   "@errors.shareList.timeout": {
-    "sourceHash": "ae84e14"
+    "sourceHash": "a07b7c8"
   },
   "errors.shareList.authRequired": "Log in bij ‘{server}’ om de gedeelde mappen te zien.",
   "@errors.shareList.authRequired": {
-    "sourceHash": "4268ae9"
+    "sourceHash": "68f86c4"
   },
   "errors.shareList.signingRequired": "‘{server}’ toont geen gedeelde mappen aan gasten. Log in om ze te zien.",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "8ae651a"
+    "sourceHash": "ecc570d"
   },
   "errors.shareList.authFailed": "Die gebruikersnaam en dat wachtwoord werkten niet op ‘{server}’. Controleer ze en log opnieuw in.",
   "@errors.shareList.authFailed": {
-    "sourceHash": "bb03537"
+    "sourceHash": "6efdcbd"
   },
   "errors.shareList.protocolError": "Er ging iets mis bij het opvragen van de gedeelde mappen van ‘{server}’. Probeer het zo meteen opnieuw.",
   "@errors.shareList.protocolError": {
-    "sourceHash": "064a773"
+    "sourceHash": "da302ca"
   },
   "errors.shareList.resolutionFailed": "Cmdr kon ‘{server}’ niet vinden op het netwerk. Controleer de naam, of probeer het opnieuw zodra de server weer online is.",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "d2e5b54"
+    "sourceHash": "62e91cf"
   },
   "errors.shareList.missingDependency": "Om gedeelde mappen op te sommen heeft deze computer smbclient nodig, en dat is niet geïnstalleerd. Installeer het en probeer het dan opnieuw.",
   "@errors.shareList.missingDependency": {

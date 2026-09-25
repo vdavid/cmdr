@@ -1,0 +1,48 @@
+{
+  "$comment": "Dutch typography. macOS Dutch quotes UI names in single quotes (385 single-quoted values across live Finder + AppKit nl.lproj, one curly ‘^1’ in Finder's LocalizableMerged, zero double; verified on macOS 26.6.2, plutil over *.strings, 2026-09-25), so ‘…’ is primary and “…” nested, per Onze Taal. The apostrophe is written straight (foto's, 's avonds, like Apple's Programma's) or curly. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": {
+    "primary": ["‘", "’"],
+    "nested": ["“", "”"]
+  },
+  "apostrophes": ["'", "’"],
+  "spacing": [
+    {
+      "pattern": "(?:^|[\\s(])'(?!(?:s|t|n|k)\\b)(?=[\\p{L}\\p{N}\\uFFFC])",
+      "why": "a straight ' opening a quotation; quote with ‘…’ (the elided 's, 't, 'n, 'k stay)"
+    },
+    {
+      "pattern": "\\p{N}\\s+%",
+      "why": "no space before % (50%), per the Microsoft Dutch style guide"
+    }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\p{L}\\((?:e|en|n|s|'s|’s|pen|ren|ën)\\)",
+      "why": "a bracketed ending (bestand(en), nieuw(e), foto('s)); use ICU plural, or rephrase"
+    },
+    {
+      "pattern": "\\p{L}/(?:en|e|'s|’s)(?!\\p{L})",
+      "why": "a slashed ending (bestand/en, foto/'s); use ICU plural, or rephrase (a unit like bestanden/s is fine)"
+    },
+    {
+      "pattern": "(?:^|[^\\p{L}])\\(?(?:de|het|een)\\)?\\s*/\\s*\\(?(?:de|het|een)\\b|\\((?:de|het)\\)",
+      "why": "a hedged article (de/het): name the type first (‘de map {name}’) or use a colon form"
+    },
+    {
+      "pattern": "(?:^|[^\\p{L}])(?:[Dd]e|[Hh]et)\\s+\\uFFFC(?![\\s\\p{L}-])",
+      "why": "de/het in front of an insert that is the whole noun guesses its gender (a file is het, a folder de): name the type first (de map {name}) or drop the article"
+    },
+    {
+      "pattern": "\\b(?:hij|zij|ze|het|hem|haar|die|dat|deze|dit|zijn)\\s*/\\s*(?:hij|zij|ze|het|hem|haar|die|dat|deze|dit|zijn)\\b",
+      "why": "a hedged pronoun (hij/het, die/dat) for an insert of unknown gender or number: repeat the noun, or use a pronominal adverb (er, daar … mee)"
+    },
+    {
+      "pattern": "\\b(?:is|wordt|heeft|kan|moet|was|werd)\\s*/\\s*(?:zijn|worden|hebben|kunnen|moeten|waren|werden)\\b",
+      "why": "a hedged verb number (is/zijn): pull the noun and its verb into ICU plural branches"
+    },
+    {
+      "pattern": "\\uFFFC['’]s(?!\\p{L})",
+      "why": "an apostrophe-s on an insert depends on how the value ends (Anna's vs Cmdrs): use van ({name} → de inhoud van {name}) or restructure"
+    }
+  ]
+}

@@ -278,7 +278,7 @@
   "@fileExplorer.functionKeyBar.deleteAction": {
     "sourceHash": "e2d0a54"
   },
-  "fileExplorer.functionKeyBar.hiddenToast": "De functietoetsbalk is nu verborgen. Je kunt hem op elk moment weer inschakelen in <settingsLink>Instellingen</settingsLink>.",
+  "fileExplorer.functionKeyBar.hiddenToast": "De functietoetsbalk is nu verborgen. Zet hem op elk moment weer aan in <settingsLink>Instellingen</settingsLink>.",
   "@fileExplorer.functionKeyBar.hiddenToast": {
     "sourceHash": "f961d3b"
   },
@@ -470,7 +470,7 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "Gedeelde map ''{shareName}'' niet gevonden op {hostName}",
+  "fileExplorer.network.share.notFound": "Gedeelde map ‘{shareName}’ niet gevonden op {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
@@ -586,7 +586,7 @@
   "@fileExplorer.unreachable.detailGaveUp": {
     "sourceHash": "7d8c5fc"
   },
-  "fileExplorer.unreachable.detailTimeout": "Het volume voor dit pad reageerde niet op tijd. Het is mogelijk een netwerkschijf die momenteel niet beschikbaar is.",
+  "fileExplorer.unreachable.detailTimeout": "Het volume voor dit pad reageerde niet op tijd. Het is misschien een netwerkschijf die nu niet beschikbaar is.",
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
@@ -734,7 +734,7 @@
   "@fileExplorer.readOnly.archiveTitle": {
     "sourceHash": "56ff9e9"
   },
-  "fileExplorer.readOnly.archiveMessage": "Cmdr kan tar- en 7z-archieven doorbladeren en uitpakken, maar alleen zip-archieven kunnen worden bewerkt.",
+  "fileExplorer.readOnly.archiveMessage": "Cmdr kan tar- en 7z-archieven doorbladeren en uitpakken, maar bewerken kan alleen bij zip-archieven.",
   "@fileExplorer.readOnly.archiveMessage": {
     "sourceHash": "32a03f0"
   },
@@ -744,7 +744,7 @@
   },
   "fileExplorer.readOnly.deviceMessage": "‘{name}’ is alleen-lezen. Je kunt er bestanden van kopiëren, maar niet naartoe.",
   "@fileExplorer.readOnly.deviceMessage": {
-    "sourceHash": "039488f"
+    "sourceHash": "5582a47"
   },
   "fileExplorer.readOnly.gitPortalTitle": "Alleen-lezen git-portaal",
   "@fileExplorer.readOnly.gitPortalTitle": {
@@ -772,19 +772,19 @@
   },
   "fileExplorer.rename.chainKeptOriginalName": "{reason}. ‘{name}’ behoudt zijn naam.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "5b5e6ce"
+    "sourceHash": "638394d"
   },
   "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. ‘{name}’ behoudt zijn naam, net als {others, plural, one {één ander bestand} other {{othersText} andere bestanden}}.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "7b23e8e"
+    "sourceHash": "be35bc8"
   },
   "fileExplorer.rename.unconfirmed": "We konden de naamwijziging van ‘{name}’ niet bevestigen. Het volume is mogelijk traag, dus de naam is misschien toch gewijzigd.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d43e419"
+    "sourceHash": "bcea9d0"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "We konden de naamwijzigingen van ‘{name}’ en {others, plural, one {één ander bestand} other {{othersText} andere bestanden}} niet bevestigen. Het volume is mogelijk traag, dus de namen zijn misschien toch gewijzigd.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "1258eb3"
+    "sourceHash": "c64e665"
   },
   "fileExplorer.columns.name": "Naam",
   "@fileExplorer.columns.name": {
@@ -955,7 +955,7 @@
   },
   "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} commit} other {{aheadText} commits}} voor, {behind, plural, one {{behindText} commit} other {{behindText} commits}} achter op ‘{vs}’",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "2eba558"
+    "sourceHash": "6a24049"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Getagde commit {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -967,11 +967,11 @@
   },
   "fileExplorer.git.tooltip.stashedOnBranch": "Gemaakt op branch ‘{branch}’",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "770565f"
+    "sourceHash": "5a1ad8d"
   },
   "fileExplorer.git.tooltip.worktreeOnBranch": "Branch ‘{branch}’ is uitgecheckt",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "5036eb7"
+    "sourceHash": "4941fa5"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Losgekoppeld op {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
@@ -1003,7 +1003,7 @@
   },
   "fileExplorer.dateTooltip.lastMoved": "Laatst verplaatst (‘toegevoegd’)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "sourceHash": "450ebc0"
+    "sourceHash": "1366405"
   },
   "fileExplorer.dateTooltip.lastModified": "Laatst gewijzigd",
   "@fileExplorer.dateTooltip.lastModified": {
@@ -1151,7 +1151,7 @@
   },
   "fileExplorer.renameConflict.description": "‘{name}’ bestaat al in deze map. Wat wil je doen?",
   "@fileExplorer.renameConflict.description": {
-    "sourceHash": "ded53e8"
+    "sourceHash": "e3f2532"
   },
   "fileExplorer.renameConflict.yours": "{name} (van jou)",
   "@fileExplorer.renameConflict.yours": {
@@ -1191,7 +1191,7 @@
   },
   "fileExplorer.extensionChange.description": "Weet je zeker dat je de extensie wilt wijzigen van ‘.{oldExt}’ naar ‘.{newExt}’? Je bestand opent de volgende keer mogelijk in een andere app.",
   "@fileExplorer.extensionChange.description": {
-    "sourceHash": "d0f428b"
+    "sourceHash": "ef7ac59"
   },
   "fileExplorer.extensionChange.alwaysAllow": "Sta extensiewijzigingen altijd toe",
   "@fileExplorer.extensionChange.alwaysAllow": {
@@ -1211,7 +1211,7 @@
   },
   "fileExplorer.quickLookHint.finderComparison": "Als je van Finder komt, is dit misschien onverwacht, omdat Finder bij <space></space> een ‘Snelle weergave’-actie start.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "2089192"
+    "sourceHash": "56d3119"
   },
   "fileExplorer.quickLookHint.quickView": "In Cmdr start je een snelle weergave via <key></key>. (<key></key> werkt trouwens ook in Finder!)",
   "@fileExplorer.quickLookHint.quickView": {
@@ -1327,7 +1327,7 @@
   },
   "fileExplorer.navigation.connectionTooltipSystem": "Systeemverbinding in gebruik. Gebruik het menu-item ‘Verbind direct voor snellere toegang’ voor snellere toegang.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "sourceHash": "0cbfa05"
+    "sourceHash": "e4ac697"
   },
   "fileExplorer.navigation.connectDirectly": "Verbind direct voor snellere toegang",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1355,7 +1355,7 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan het wachtwoord hergebruiken dat macOS al voor ‘{displayName}’ heeft opgeslagen. Je krijgt een systeemvenster te zien dat om toegang tot Sleutelhanger vraagt. Dat is normaal, dus klik op Sta toe.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "6bb2c1d"
+    "sourceHash": "334f7de"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Het opgeslagen wachtwoord gebruiken?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {

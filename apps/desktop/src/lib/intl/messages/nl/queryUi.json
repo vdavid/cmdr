@@ -231,7 +231,7 @@
   "@queryUi.results.widenToVolume": {
     "sourceHash": "7dfc278"
   },
-  "queryUi.results.indexNotReady": "Schijfindex nog niet gereed. Zoeken kan zodra de eerste scan klaar is.",
+  "queryUi.results.indexNotReady": "De schijfindex is nog niet klaar. Zoeken kan zodra de eerste scan af is.",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
