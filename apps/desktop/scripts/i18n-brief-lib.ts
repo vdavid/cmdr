@@ -16,8 +16,9 @@
  *    `docs/i18n/translation-principles.md`
  *  - digest: the `## Digest` section of each language's style guide, plus its
  *    declared typography (`mechanics.json`) in one line
- *  - keys: key, English, `@key` description, placeholders/tags, current value(s),
- *    and the content words no concept covers ("No concept yet")
+ *  - keys: key, English, a word diff from the English a stale translation was made
+ *    from, `@key` description, placeholders/tags, current value(s), and the content
+ *    words no concept covers ("No concept yet")
  *  - terms: every concept whose `match` hits a batch key's English, plus those of
  *    its `distinct` neighbors whose words appear in the batch; sense once, then one
  *    ruling line per language
@@ -80,6 +81,11 @@ export interface BriefOptions {
   repoRoot: string
   /** blind run: withhold the batch's current translations and the decision excerpts */
   excludeTargetValues?: boolean
+  /**
+   * For a key a target translated from older English: key → locale → that English
+   * (the CLI finds it in git, `i18n-brief-history.ts`). Shown as a word diff.
+   */
+  previousEnglish?: Record<string, Record<string, string>>
 }
 
 /** One named section of the brief (`--stats` reports each). */
@@ -136,6 +142,44 @@ export function selectKeys({
 /** Keys added, or whose value changed, between `previous` and `current`, in current order. */
 export function changedKeys(current: Record<string, string>, previous: Record<string, string>): string[] {
   return Object.keys(current).filter((key) => previous[key] !== current[key])
+}
+
+/**
+ * A word-level diff, `[-removed-]` and `{+added+}` around the words that changed
+ * (split on whitespace, so a placeholder or a punctuated word is one word).
+ */
+export function wordDiff(before: string, after: string): string {
+  const a = before.split(/\s+/).filter(Boolean)
+  const b = after.split(/\s+/).filter(Boolean)
+  // Longest common subsequence, table from the ends.
+  const lcs = Array.from({ length: a.length + 1 }, () => new Array<number>(b.length + 1).fill(0))
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      lcs[i][j] = a[i] === b[j] ? lcs[i + 1][j + 1] + 1 : Math.max(lcs[i + 1][j], lcs[i][j + 1])
+    }
+  }
+  const out: string[] = []
+  let removed: string[] = []
+  let added: string[] = []
+  const flush = () => {
+    if (removed.length > 0) out.push(`[-${removed.join(' ')}-]`)
+    if (added.length > 0) out.push(`{+${added.join(' ')}+}`)
+    removed = []
+    added = []
+  }
+  let i = 0
+  let j = 0
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i] === b[j]) {
+      flush()
+      out.push(a[i])
+      i++
+      j++
+    } else if (j < b.length && (i === a.length || lcs[i][j + 1] >= lcs[i + 1][j])) added.push(b[j++])
+    else removed.push(a[i++])
+  }
+  flush()
+  return out.join(' ')
 }
 
 /** Renders a path for the brief: repo-relative when it's inside the repo. */
@@ -290,12 +334,23 @@ function digestSection(ctx: BriefContext): BriefSection {
   return { name: 'digest', text: blocks.join('\n\n') }
 }
 
+/** One line per distinct older English the targets translated from: the word diff to today's. */
+function changeLines(previous: Record<string, string> | undefined, current: string): string[] {
+  const byEnglish = new Map<string, string[]>()
+  for (const [tag, english] of Object.entries(previous ?? {}))
+    byEnglish.set(english, [...(byEnglish.get(english) ?? []), tag])
+  return [...byEnglish].map(
+    ([english, tags]) => `  - English changed since ${tags.join(', ')} translated it: ${wordDiff(english, current)}`,
+  )
+}
+
 function keysSection(ctx: BriefContext): BriefSection {
   const lines = [`## Keys (${String(ctx.opts.keys.length)})`, '']
   for (const key of ctx.opts.keys) {
     const value = ctx.en.messages[key]
     const metadata = key in ctx.en.metadata ? ctx.en.metadata[key] : undefined
     lines.push(`- \`${key}\`: ${JSON.stringify(value)}`)
+    lines.push(...changeLines(ctx.opts.previousEnglish?.[key], value))
     if (typeof metadata?.description === 'string') lines.push(`  - Note: ${metadata.description}`)
     const notes = placeholderNotes(key, value, metadata)
     if (notes.length > 0) lines.push(`  - ${notes.join(' · ')}`)

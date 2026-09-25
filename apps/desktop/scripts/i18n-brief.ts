@@ -3,7 +3,8 @@
  * `pnpm i18n:brief`: prints the translation brief for one batch of keys, the only
  * doc a translator agent needs to load up front. Assembly lives in
  * `i18n-brief-lib.ts`; this file parses flags, resolves the repo paths, and reads
- * git for `--changed-since`.
+ * git for `--changed-since` and for the English a stale translation was made from
+ * (`i18n-brief-history.ts`).
  *
  *   --lang nl | nl,de | all          target locales (`all` = every full translation)
  *   --keys a.b.c,servers.sheet.*     exact keys or `*` globs
@@ -34,6 +35,7 @@ import {
 } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR } from './i18n-locale-check-lib.ts'
 import { buildBrief, changedKeys, renderBrief, roughTokens, selectKeys } from './i18n-brief-lib.ts'
+import { previousEnglish } from './i18n-brief-history.ts'
 
 /** The value after a `--flag`, or `undefined`. */
 function flagValue(args: readonly string[], flag: string): string | undefined {
@@ -148,6 +150,7 @@ function main(): void {
     pileRoot: join(mainClone, '_ignored', 'i18n'),
     repoRoot,
     excludeTargetValues: args.includes('--exclude-target-values'),
+    previousEnglish: previousEnglish({ keys, langs, messagesRoot }),
   })
   const text = renderBrief(brief)
 

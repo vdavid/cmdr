@@ -258,6 +258,15 @@ describe('buildBrief (fixture tree)', () => {
     expect(text).not.toContain('Why this file exists.')
   })
 
+  it('shows what changed in English since a stale translation, as a word diff', () => {
+    const keys =
+      buildBrief({ ...opts, previousEnglish: { 'queue.title': { nl: 'Operations queue' } } }).sections.find(
+        (section) => section.name === 'keys',
+      )?.text ?? ''
+    expect(keys).toContain('- English changed since nl translated it: [-Operations-] {+Operation+} queue')
+    expect(keys.match(/English changed/g)).toHaveLength(1)
+  })
+
   it("shows each language's declared mechanics beside its digest, and says when none are declared", () => {
     const digest =
       buildBrief({ ...opts, langs: ['de', 'nl'] }).sections.find((section) => section.name === 'digest')?.text ?? ''

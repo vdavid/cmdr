@@ -241,10 +241,13 @@ Sections, each selected by the batch:
 3. Principles: everything under `## Principles` in `docs/i18n/translation-principles.md`, the same way, once.
 4. Each language's `## Digest`, or a pointer to `style.md` when it has none yet, then one **Mechanics** line from its
    `mechanics.json` (quote pairs, ellipsis, apostrophes, spacing and hedge patterns), or "no mechanics.json yet".
-5. Keys: key, English value, `@key` description, placeholders (described ones from `@key.placeholders`, the rest bare)
-   and tags, each target's current value, and "No concept yet": the key's content words no concept's `match` covers,
-   leaving out generic English, brand words, and words fewer than three English keys use (a concept recurs). That line
-   is how a missing concept ("offline") shows up as work instead of passing for settled.
+5. Keys: key, English value, and for a key a target translated from older English (its `@key.sourceHash` names other
+   English) a word diff from that English, found in git history (`i18n-brief-history.ts`: one `git log` per catalog
+   file, then `git cat-file` newest first until every stamp is found; nothing when none is), then the `@key`
+   description, placeholders (described ones from `@key.placeholders`, the rest bare) and tags, each target's current
+   value, and "No concept yet": the key's content words no concept's `match` covers, leaving out generic English, brand
+   words, and words fewer than three English keys use (a concept recurs). That line is how a missing concept ("offline")
+   shows up as work instead of passing for settled.
 6. Terms in play: every concept whose `match` hits (and `notMatch` doesn't) a batch key's English. The sense, note, and
    hit keys print once; then one line per language with chosen / accept / prose only / forms / avoid / note /
    confidence, the `exceptions` for batch keys, and the `decision` heading, or "no ruling". Then up to eight `distinct`
@@ -260,7 +263,8 @@ Sections, each selected by the batch:
    six sections for one language, 700 chars and three for several) with a `file:line` pointer to the full section; the
    overflow is listed by heading.
 
-Deterministic (no time, RNG, or model), about 0.3 s for a 40-key batch.
+Deterministic (no time, RNG, or model; the change diff reads committed history only): about 4 s for a 36-key batch, plus
+about 2 s when most of the batch is stale (measured on sv, 2026-09-25).
 
 ### `pnpm i18n:check-termbase` (`apps/desktop/scripts/i18n-check-termbase.ts`, Go check `desktop-i18n-termbase`)
 
