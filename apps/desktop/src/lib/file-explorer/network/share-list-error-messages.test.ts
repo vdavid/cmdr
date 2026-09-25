@@ -77,7 +77,7 @@ describe('renderShareListError', () => {
 
   it('names the server for everything but a missing local tool', () => {
     for (const error of ALL.filter((e) => e.type !== 'missing_dependency')) {
-      expect(renderShareListError(error, 'Naspolya'), error.type).toContain('"Naspolya"')
+      expect(renderShareListError(error, 'Naspolya'), error.type).toContain('“Naspolya”')
     }
   })
 })

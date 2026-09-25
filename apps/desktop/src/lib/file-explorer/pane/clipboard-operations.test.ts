@@ -580,7 +580,7 @@ describe('pasteFromClipboard', () => {
 
     expect(dialogsStub.showAlert).toHaveBeenCalledWith(
       'Read-only device',
-      '"Backup" is read-only. You can copy files from it, but not to it.',
+      '“Backup” is read-only. You can copy files from it, but not to it.',
     )
     // The shared guard fires before reading the clipboard or queueing anything.
     expect(readClipboardFilesSpy).not.toHaveBeenCalled()

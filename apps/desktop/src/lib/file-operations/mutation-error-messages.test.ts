@@ -110,7 +110,7 @@ describe('renderMutationError', () => {
   }
 
   it('quotes the name the user typed when it is taken, not the whole path', () => {
-    expect(renderMutationError({ type: 'alreadyExists', name: 'notes.txt' })).toContain('"notes.txt"')
+    expect(renderMutationError({ type: 'alreadyExists', name: 'notes.txt' })).toContain('“notes.txt”')
   })
 
   it('agrees with the live validation, so a turned-down name reads the way the red border read', () => {

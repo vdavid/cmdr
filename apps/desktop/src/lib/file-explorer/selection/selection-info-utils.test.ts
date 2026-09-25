@@ -207,7 +207,7 @@ describe('buildDateTooltip', () => {
     const html = buildDateTooltip(entry, fmt).html
     expect(html).toContain('Created:')
     expect(html).toContain('Last opened:')
-    expect(html).toContain('Last moved ("added"):')
+    expect(html).toContain('Last moved (“added”):')
     expect(html).toContain('Last modified:')
     expect(html).toContain('<br>')
   })

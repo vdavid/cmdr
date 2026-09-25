@@ -702,7 +702,7 @@ describe('drag-drop-controller', () => {
 
       expect(showAlert).toHaveBeenCalledWith(
         'Read-only device',
-        '"Virtual Pixel 9 - SD Card" is read-only. You can copy files from it, but not to it.',
+        '“Virtual Pixel 9 - SD Card” is read-only. You can copy files from it, but not to it.',
       )
       expect(showTransfer).not.toHaveBeenCalled()
       // The guard short-circuits before any stat / volume-resolution work.

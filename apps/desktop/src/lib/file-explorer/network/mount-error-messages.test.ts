@@ -74,16 +74,16 @@ describe('renderMountError', () => {
   it('names the share and the server wherever the variant knows them', () => {
     for (const error of ALL) {
       const message = renderMountError(error)
-      if ('share' in error) expect(message, `the share, in ${error.type}`).toContain(`"${SHARE}"`)
-      if ('server' in error) expect(message, `the server, in ${error.type}`).toContain(`"${ADDRESS}"`)
+      if ('share' in error) expect(message, `the share, in ${error.type}`).toContain(`“${SHARE}”`)
+      if ('server' in error) expect(message, `the server, in ${error.type}`).toContain(`“${ADDRESS}”`)
     }
-    expect(renderMountError(CASES.permission_denied), 'the refused account').toContain('"ada"')
+    expect(renderMountError(CASES.permission_denied), 'the refused account').toContain('“ada”')
   })
 
   it('prefers the name the pane shows for the server over the address the mount used', () => {
     for (const error of ALL.filter((e) => 'server' in e)) {
       const message = renderMountError(error, 'Naspolya')
-      expect(message, error.type).toContain('"Naspolya"')
+      expect(message, error.type).toContain('“Naspolya”')
       expect(message, error.type).not.toContain(ADDRESS)
     }
   })

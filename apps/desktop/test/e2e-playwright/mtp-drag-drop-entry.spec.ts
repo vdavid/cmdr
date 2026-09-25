@@ -135,7 +135,7 @@ test.describe('Programmatic drop entry (MTP)', () => {
     await expect.poll(async () => tauriPage.isVisible(ALERT_DIALOG), { timeout: waitBudget(5000) }).toBeTruthy()
     const alert = await readAlert(tauriPage)
     expect(alert.title).toBe('Read-only device')
-    expect(alert.message).toBe(`"${SD_CARD}" is read-only. You can copy files from it, but not to it.`)
+    expect(alert.message).toBe(`“${SD_CARD}” is read-only. You can copy files from it, but not to it.`)
     expect(await tauriPage.isVisible(TRANSFER_DIALOG)).toBe(false)
 
     await dismissAlert(tauriPage)

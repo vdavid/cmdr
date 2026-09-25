@@ -525,7 +525,7 @@ mod tests {
     #[test]
     fn tokens_are_replaced_literally_with_no_icu_in_sight() {
         let named = lookup(BASE_LOCALE, "menu.context.copyNamed").expect("the key ships");
-        assert_eq!(expand_tokens(named, &[("name", "holiday.jpg")]), "Copy \"holiday.jpg\"");
+        assert_eq!(expand_tokens(named, &[("name", "holiday.jpg")]), "Copy “holiday.jpg”");
 
         // An uncontrolled value goes in verbatim: no escaping, no formatting, and
         // nothing that looks like a token in the VALUE gets a second pass.

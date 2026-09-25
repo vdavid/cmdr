@@ -24,19 +24,19 @@ describe('getPathValidationError', () => {
 
   it('rejects copying a folder into itself', () => {
     expect(getPathValidationError(['/a/photos'], '/a/photos', 'copy')).toBe(
-      `Can't copy "photos" into its own subfolder`,
+      `Can't copy “photos” into its own subfolder`,
     )
   })
 
   it('rejects copying a folder into its own subfolder', () => {
     expect(getPathValidationError(['/a/photos'], '/a/photos/sub', 'copy')).toBe(
-      `Can't copy "photos" into its own subfolder`,
+      `Can't copy “photos” into its own subfolder`,
     )
   })
 
   it('uses the move verb for a move operation', () => {
     expect(getPathValidationError(['/a/photos'], '/a/photos', 'move')).toBe(
-      `Can't move "photos" into its own subfolder`,
+      `Can't move “photos” into its own subfolder`,
     )
   })
 
@@ -45,19 +45,19 @@ describe('getPathValidationError', () => {
   })
 
   it('still rejects moving into the source own parent, which would do nothing', () => {
-    expect(getPathValidationError(['/a/photos'], '/a', 'move')).toBe(`"photos" is already in this location`)
+    expect(getPathValidationError(['/a/photos'], '/a', 'move')).toBe(`“photos” is already in this location`)
   })
 
   it('normalizes trailing slashes on both sides before comparing', () => {
     expect(getPathValidationError(['/a/photos/'], '/a/photos', 'copy')).toBe(
-      `Can't copy "photos" into its own subfolder`,
+      `Can't copy “photos” into its own subfolder`,
     )
-    expect(getPathValidationError(['/a/photos'], '/a/', 'move')).toBe(`"photos" is already in this location`)
+    expect(getPathValidationError(['/a/photos'], '/a/', 'move')).toBe(`“photos” is already in this location`)
   })
 
   it('flags any matching source when several are given', () => {
     expect(getPathValidationError(['/a/notes.txt', '/a/photos'], '/a/photos/sub', 'copy')).toBe(
-      `Can't copy "photos" into its own subfolder`,
+      `Can't copy “photos” into its own subfolder`,
     )
   })
 
@@ -90,12 +90,12 @@ describe('getPathValidationError', () => {
 
     it('rejects a target that does not end in .zip', () => {
       expect(getPathValidationError(['/a/photos'], '/b/photos.tar', 'compress')).toBe(
-        'The archive name must end in ".zip".',
+        'The archive name must end in “.zip”.',
       )
     })
 
     it('rejects a bare ".zip" with no archive name', () => {
-      expect(getPathValidationError(['/a/photos'], '/b/.zip', 'compress')).toBe('The archive name must end in ".zip".')
+      expect(getPathValidationError(['/a/photos'], '/b/.zip', 'compress')).toBe('The archive name must end in “.zip”.')
     })
 
     it('does NOT apply the copy/move subfolder rule (compress makes one new file)', () => {

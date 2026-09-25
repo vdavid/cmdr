@@ -329,7 +329,7 @@ describe('NetworkMountView mount-failure auth loop', () => {
     const errorPane = await vi.waitFor(() => must(target.querySelector('.mount-error-state'), 'the error pane'))
     const message = must(errorPane.querySelector('.error-message'), 'the message').textContent
     expect(message).toBe(renderMountError(notFound, 'Naspolya'))
-    expect(message).toContain('"Naspolya"')
+    expect(message).toContain('“Naspolya”')
     expect(message).not.toContain(ADDRESS)
 
     await unmount(component)

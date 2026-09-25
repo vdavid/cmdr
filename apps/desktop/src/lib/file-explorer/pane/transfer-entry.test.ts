@@ -74,7 +74,7 @@ describe('checkTransferDestinationGuard', () => {
     if (result.ok) throw new Error('expected a block')
     expect(result.alert).toEqual({
       title: 'Read-only device',
-      message: '"Virtual Pixel 9 - SD Card" is read-only. You can copy files from it, but not to it.',
+      message: '“Virtual Pixel 9 - SD Card” is read-only. You can copy files from it, but not to it.',
     })
     expect(result.toast).toBeUndefined()
   })

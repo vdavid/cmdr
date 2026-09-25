@@ -117,7 +117,7 @@ describe('transfer dialog chrome (en)', () => {
 
   it('resolves the SMB note and checking-conflicts status', () => {
     expect(tString('fileOperations.transferDialog.smbNativeNote')).toBe(
-      'This share uses the system connection. Cancellation may be delayed. Use "Connect directly" in the volume picker for faster transfers and reliable cancel.',
+      'This share uses the system connection. Cancellation may be delayed. Use “Connect directly” in the volume picker for faster transfers and reliable cancel.',
     )
     expect(tString('fileOperations.transferDialog.checkingConflicts')).toBe('Checking for conflicts…')
   })
@@ -153,13 +153,13 @@ describe('transfer dialog chrome (en)', () => {
       'Some clashes mix a file and a folder by the same name. Overwriting will replace items of a different type, including the entire contents of a folder.',
     )
     expect(t('fileOperations.transferDialog.pathErrorSubfolder', { verb: 'copy', name: 'photos' })).toBe(
-      'Can\'t copy "photos" into its own subfolder',
+      "Can't copy “photos” into its own subfolder",
     )
     expect(t('fileOperations.transferDialog.pathErrorSubfolder', { verb: 'move', name: 'photos' })).toBe(
-      'Can\'t move "photos" into its own subfolder',
+      "Can't move “photos” into its own subfolder",
     )
     expect(t('fileOperations.transferDialog.pathErrorAlreadyThere', { name: 'photos' })).toBe(
-      '"photos" is already in this location',
+      '“photos” is already in this location',
     )
   })
 })

@@ -412,7 +412,7 @@ describe('openTransferDialog', () => {
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only device',
-      '"Pixel SD card" is read-only. You can copy files from it, but not to it.',
+      '“Pixel SD card” is read-only. You can copy files from it, but not to it.',
     )
     expect(dialogs.showTransfer).not.toHaveBeenCalled()
   })

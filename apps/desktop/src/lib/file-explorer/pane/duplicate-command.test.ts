@@ -145,7 +145,7 @@ describe('duplicateInPlace', () => {
 
     expect(d.spies.showAlert).toHaveBeenCalledWith(
       'Read-only device',
-      '"Macintosh HD" is read-only. You can copy files from it, but not to it.',
+      '“Macintosh HD” is read-only. You can copy files from it, but not to it.',
     )
     expect(d.spies.startTransferProgress).not.toHaveBeenCalled()
   })

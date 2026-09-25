@@ -159,7 +159,7 @@ describe('onboarding step 1 (FDA) parity (en)', () => {
       'Find <strong>Cmdr</strong> at the end of the list and toggle it on',
     )
     expect(renderRich('onboarding.stepFda.step2.tip', ['strong'])).toBe(
-      'Is Cmdr not in the list? Click the "+" button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.',
+      'Is Cmdr not in the list? Click the “+” button at the bottom, and choose <strong>Cmdr</strong> from your <strong>Applications</strong> folder.',
     )
     expect(renderRich('onboarding.stepFda.step3', ['strong'])).toBe('Confirm and click <strong>Quit & Reopen</strong>')
     expect(tString('onboarding.stepFda.deny')).toBe('Deny')
@@ -187,7 +187,7 @@ describe('onboarding step 2 (AI) parity (en)', () => {
     )
     expect(tString('onboarding.stepAi.bannerTitle.stuck')).toBe("Cmdr doesn't seem to have full disk access yet")
     expect(renderRich('onboarding.stepAi.bannerBody.stuck', ['settingsLink'], { systemSettings: SYS_SETTINGS })).toBe(
-      'You said you wanted to enable full disk access, but Cmdr doesn\'t seem to have gotten it. You might need to restart the app (do it now, we\'ll continue from here!), or go to your <settingsLink>System Settings > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little "+" button at the bottom.',
+      "You said you wanted to enable full disk access, but Cmdr doesn't seem to have gotten it. You might need to restart the app (do it now, we'll continue from here!), or go to your <settingsLink>System Settings > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little “+” button at the bottom.",
     )
   })
 
@@ -204,27 +204,27 @@ describe('onboarding step 2 (AI) parity (en)', () => {
     expect(tString('onboarding.stepAi.table.colWith')).toBe('With AI')
     expect(tString('onboarding.stepAi.table.rowSearch')).toBe('Search')
     expect(renderRich('onboarding.stepAi.table.searchWithout', ['code'])).toBe(
-      'You type something like <code>*fish*.ppt</code>, and select the "after 1st of this month" filter.',
+      'You type something like <code>*fish*.ppt</code>, and select the “after 1st of this month” filter.',
     )
     expect(tString('onboarding.stepAi.table.searchWith')).toBe(
-      'You say "my recent fish-related presentations", agent sets your filters.',
+      'You say “my recent fish-related presentations”, agent sets your filters.',
     )
     expect(tString('onboarding.stepAi.table.rowRename')).toBe('Mass-rename')
     expect(tString('onboarding.stepAi.table.renameWithout')).toBe(
       'You use the batch rename UI to manually set the rename pattern, review and apply.',
     )
     expect(tString('onboarding.stepAi.table.renameWith')).toBe(
-      'You say "add ISO date prefix", agent sets your rename pattern, you review and apply at will.',
+      'You say “add ISO date prefix”, agent sets your rename pattern, you review and apply at will.',
     )
     expect(tString('onboarding.stepAi.table.rowSelect')).toBe('Select')
     expect(renderRich('onboarding.stepAi.table.selectWithoutBound', ['chip', 'code'])).toBe(
       'You press the <chip></chip> key and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.',
     )
     expect(renderRich('onboarding.stepAi.table.selectWithoutUnbound', ['code'])).toBe(
-      'You open "Select files…" and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.',
+      'You open “Select files…” and type something like <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, review and apply.',
     )
     expect(tString('onboarding.stepAi.table.selectWith')).toBe(
-      'You say "select all image files", agent suggests a selection, you review and apply at will.',
+      'You say “select all image files”, agent suggests a selection, you review and apply at will.',
     )
   })
 
@@ -280,7 +280,7 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
     )
     expect(tString('onboarding.stepBeta.checklist.alternativeTo')).toBe('Like Cmdr on AlternativeTo')
     expect(tString('onboarding.stepBeta.checklist.alternativeToNote')).toBe(
-      'At the very top of the page, next to the "Cmdr" title. This helps people and Google notice Cmdr!',
+      'At the very top of the page, next to the “Cmdr” title. This helps people and Google notice Cmdr!',
     )
     expect(renderRich('onboarding.stepBeta.checklist.email', ['field'])).toBe(
       'Enter your email address <field></field> to get very occasional updates and questions',
@@ -349,7 +349,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
   it('resolves the four summaries and the info-glyph label', () => {
     // Each card leads with one of these and parks its `desc` behind the info glyph.
     expect(tString('onboarding.moreAbout', { topic: 'Drive indexing' })).toBe('More about Drive indexing')
-    expect(tString('onboarding.stepOptional.networking.summary')).toBe('Needs accepting "Local Network" once')
+    expect(tString('onboarding.stepOptional.networking.summary')).toBe('Needs accepting “Local Network” once')
     expect(tString('onboarding.stepOptional.indexing.summary')).toBe(
       'Takes 1 GB space, speeds up searches, shows folder sizes',
     )
@@ -364,7 +364,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
   it('resolves the four toggle blocks', () => {
     expect(tString('onboarding.stepOptional.networking.title')).toBe('Networking')
     expect(renderRich('onboarding.stepOptional.networking.desc', ['em'])).toBe(
-      'Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow "Local Network", and one for "Accepting incoming connections".\nBoth dialogs are harmless, but if you don\'t know what these are, they might be scary or annoying.',
+      "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don't know what these are, they might be scary or annoying.",
     )
     expect(tString('onboarding.stepOptional.indexing.title')).toBe('Drive indexing')
     expect(tString('onboarding.stepOptional.indexing.descIntro')).toBe(

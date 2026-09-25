@@ -135,7 +135,7 @@ describe('Allow cloud AI in Settings > AI > Provider', () => {
     const target = await mountSection()
 
     expect(cloudSetup(target)?.hasAttribute('inert')).toBe(true)
-    expect(target.textContent).toContain('Turn on "Allow cloud AI" above to set up a service.')
+    expect(target.textContent).toContain('Turn on “Allow cloud AI” above to set up a service.')
     // The locked setup never probes the service: that alone would reach it.
     expect(checkAiConnection).not.toHaveBeenCalled()
   })

@@ -67,7 +67,7 @@ describe('command-handler toast copy parity', () => {
   it('favorites.add success names the folder', async () => {
     vi.mocked(addFavorite).mockResolvedValueOnce(undefined)
     await (miscHandlers['favorites.add'] as (h: CommandHandlerContext) => Promise<void>)(ctxWith(undefined))
-    expect(mockedToast).toHaveBeenCalledWith('Added "Documents" to favorites', { level: 'success' })
+    expect(mockedToast).toHaveBeenCalledWith('Added “Documents” to favorites', { level: 'success' })
   })
 
   it('favorites.add failure', async () => {

@@ -60,7 +60,7 @@ describe('en-US parity: static fileExplorer keys render to their catalog English
 describe('en-US parity: interpolating / plural / select fileExplorer keys (golden)', () => {
   it('dead-wired rename-conflict copy', () => {
     expect(tString('fileExplorer.renameConflict.description', { name: 'report.pdf' })).toBe(
-      '"report.pdf" already exists in this folder. What would you like to do?',
+      '“report.pdf” already exists in this folder. What would you like to do?',
     )
     expect(tString('fileExplorer.renameConflict.yours', { name: 'report.pdf' })).toBe('report.pdf (yours)')
     expect(tString('fileExplorer.renameConflict.existing', { name: 'report.pdf' })).toBe('report.pdf (existing)')
@@ -68,7 +68,7 @@ describe('en-US parity: interpolating / plural / select fileExplorer keys (golde
 
   it('dead-wired extension-change copy', () => {
     expect(tString('fileExplorer.extensionChange.description', { oldExt: 'txt', newExt: 'md' })).toBe(
-      'Are you sure you want to change the extension from ".txt" to ".md"? Your file may open in a different app next time you open it.',
+      'Are you sure you want to change the extension from “.txt” to “.md”? Your file may open in a different app next time you open it.',
     )
     expect(tString('fileExplorer.extensionChange.keepOld', { oldExt: 'txt' })).toBe('Keep .txt')
     expect(tString('fileExplorer.extensionChange.useNew', { newExt: 'md' })).toBe('Use .md')
@@ -104,7 +104,7 @@ describe('en-US parity: interpolating / plural / select fileExplorer keys (golde
 
   it('navigation saved-password dialog body keeps its apostrophes', () => {
     expect(tString('fileExplorer.navigation.useSavedPasswordMessage', { displayName: 'mynas' })).toBe(
-      'Cmdr can reuse the password macOS already saved for "mynas". You\'ll see a system prompt asking to allow Keychain access. That\'s expected, so click Allow.',
+      "Cmdr can reuse the password macOS already saved for “mynas”. You'll see a system prompt asking to allow Keychain access. That's expected, so click Allow.",
     )
   })
 

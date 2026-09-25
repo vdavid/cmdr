@@ -43,12 +43,12 @@ describe('validateDisallowedChars', () => {
 
   it('uses folder label when isDir is true', () => {
     const result = validateDisallowedChars('foo/bar', true)
-    expect(result.message).toBe('Folder name can\'t contain "/" or null characters')
+    expect(result.message).toBe("Folder name can't contain “/” or null characters")
   })
 
   it('uses file label when isDir is false', () => {
     const result = validateDisallowedChars('foo/bar', false)
-    expect(result.message).toBe('Filename can\'t contain "/" or null characters')
+    expect(result.message).toBe("Filename can't contain “/” or null characters")
   })
 })
 
@@ -337,7 +337,7 @@ describe('validateConflict', () => {
   it('warns on case-insensitive match with a different sibling', () => {
     const result = validateConflict('README.md', ['readme.md', 'other.txt'], 'old.txt')
     expect(result.severity).toBe('warning')
-    expect(result.message).toBe('"README.md" already exists in this folder')
+    expect(result.message).toBe('“README.md” already exists in this folder')
   })
 
   it('no warning for case-only rename of same file', () => {
