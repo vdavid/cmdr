@@ -1,6 +1,7 @@
 {
   "$comment": "French typography as macOS fr writes it (pile fr/macOS, Finder + AppKit + System Settings values, counted 2026-09-25): «…» primary with a U+00A0 no-break space inside (630 pairs, for example « ^0 », and 1 with an ASCII space), “…” nested (Mise de “^1” dans la corbeille), the curly ’ apostrophe (1,247 against 3 ASCII), and a U+00A0 before ? (172), : (181), ! and % (never U+202F, never an ASCII space). Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["«", "»"], "nested": ["“", "”"] },
+  "ellipsis": { "glyph": "…" },
   "apostrophes": ["’"],
   "spacing": [
     { "pattern": "«(?!\\u00a0)", "why": "a no-break space (U+00A0) follows «" },

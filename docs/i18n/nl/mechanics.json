@@ -4,6 +4,7 @@
     "primary": ["‘", "’"],
     "nested": ["“", "”"]
   },
+  "ellipsis": { "glyph": "…" },
   "apostrophes": ["'", "’"],
   "spacing": [
     {

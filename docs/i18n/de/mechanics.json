@@ -1,14 +1,11 @@
 {
-  "$comment": "German typography as macOS de writes it: „…“ primary (806 hits across the pile's Finder/AppKit/System Settings strings, for example „%@“), ‚…‘ nested (AppKit NSSpellChecker 200510.title), the ’ apostrophe (geht’s). Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "$comment": "German typography as macOS de writes it: „…“ primary (806 hits across the pile's Finder/AppKit/System Settings strings, for example „%@“), ‚…‘ nested (AppKit NSSpellChecker 200510.title), the ’ apostrophe (geht’s), and a no-break space before a label-ending … (Wird geladen …, Einführung …). Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["„", "“"], "nested": ["‚", "‘"] },
+  "ellipsis": { "glyph": "…", "spaceBefore": "\u00a0" },
   "apostrophes": ["’"],
   "spacing": [
     { "pattern": "[\\d\\uFFFC]%", "why": "a space goes before the percent sign (42 %, DIN 5008)" },
     { "pattern": "„\\s|\\s“", "why": "German quotes hug their text: no space inside „…“" },
-    {
-      "pattern": "[^\\s\\u00a0\\d]…(?![\\p{L}\\p{N}\\uFFFC])|(?<=\\S) …(?=$|[“‘,.;:!?)\\]])",
-      "why": "a label-ending ellipsis takes a no-break space before it (Wird geladen …, Einführung …), as macOS de writes it; a leading, range, or truncating … stays as is"
-    },
     { "pattern": "\\b\\d+x\\b", "why": "a multiplier keeps the digit and takes a hyphen (4-mal), never 4x" }
   ],
   "hedges": [

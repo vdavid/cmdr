@@ -9,7 +9,8 @@
  *  - `straight-quote`: an ASCII `"`, which UI text never uses, whatever the locale.
  *  - `quote-mark`: a quotation mark (`QUOTE_MARKS`) outside the declared pairs and
  *    apostrophes (`„` in a locale that quotes with `«…»`).
- *  - `ellipsis`: three dots where `…` belongs.
+ *  - `ellipsis`: three dots or another language's glyph where the declared one
+ *    belongs, or the wrong space before a label-ending one (`ellipsisRules`).
  *  - `spacing` / `hedge`: a hit of one of the locale's own patterns.
  *
  * It reads what the reader sees: ICU values through the runtime's parser (so a
@@ -34,15 +35,21 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  INSERT_MARK,
-  isRawKey,
-  listLocales,
-  loadCatalog,
-  resolveLocaleSource,
-  visibleTextSegments,
+    INSERT_MARK,
+    isRawKey,
+    listLocales,
+    loadCatalog,
+    resolveLocaleSource,
+    visibleTextSegments,
 } from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
-import { QUOTE_MARKS, SEPARATOR_QUOTES, loadMechanicsRaw } from './i18n-mechanics-lib.ts'
+import {
+    ELLIPSIS_GLYPHS,
+    NO_BREAK_SPACES,
+    QUOTE_MARKS,
+    SEPARATOR_QUOTES,
+    loadMechanicsRaw,
+} from './i18n-mechanics-lib.ts'
 import type { Mechanics, MechanicsRule } from './i18n-mechanics-lib.ts'
 import { readJsonIfPresent } from './i18n-termbase-lib.ts'
 
@@ -54,70 +61,87 @@ export const BASELINE_PATH: string = join(import.meta.dirname, 'i18n-mechanics-b
 
 /** The baseline file's shape: locale → how many findings it may still carry. */
 export interface MechanicsBaseline {
-  $comment?: string
-  findings: Record<string, number>
+    $comment?: string
+    findings: Record<string, number>
 }
 
-const FIELDS = new Set(['quotes', 'apostrophes', 'spacing', 'hedges', '$comment'])
+const FIELDS = new Set(['quotes', 'ellipsis', 'apostrophes', 'spacing', 'hedges', '$comment'])
 const QUOTE_FIELDS = new Set(['primary', 'nested'])
+const ELLIPSIS_FIELDS = new Set(['glyph', 'spaceBefore'])
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
+    typeof value === 'object' && value !== null && !Array.isArray(value)
 const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
 // Code points on purpose: a quote mark is one, and none is a multi-code-point grapheme.
 const isOneCharacter = (value: unknown): value is string => typeof value === 'string' && Array.from(value).length === 1
 
 /** Schema-checks one locale's `mechanics.json`. Returns one line per problem. */
 export function validateMechanics(raw: unknown, tag: string): string[] {
-  const at = `${tag}/mechanics.json`
-  if (!isRecord(raw)) return [`${at}: must be an object`]
-  const errors = unknownFields(at, raw, FIELDS)
-  const quotes = isRecord(raw.quotes) ? raw.quotes : {}
-  errors.push(...unknownFields(`${at}: quotes`, quotes, QUOTE_FIELDS))
-  errors.push(...pairErrors(at, 'primary', quotes.primary))
-  if (quotes.nested !== undefined) errors.push(...pairErrors(at, 'nested', quotes.nested))
-  if (raw.apostrophes !== undefined) {
-    const ok = Array.isArray(raw.apostrophes) && raw.apostrophes.every(isOneCharacter)
-    if (!ok) errors.push(`${at}: "apostrophes" must be a list of single characters`)
-  }
-  errors.push(...ruleErrors(at, 'spacing', raw.spacing), ...ruleErrors(at, 'hedges', raw.hedges))
-  return errors
+    const at = `${tag}/mechanics.json`
+    if (!isRecord(raw)) return [`${at}: must be an object`]
+    const errors = unknownFields(at, raw, FIELDS)
+    const quotes = isRecord(raw.quotes) ? raw.quotes : {}
+    errors.push(...unknownFields(`${at}: quotes`, quotes, QUOTE_FIELDS))
+    errors.push(...pairErrors(at, 'primary', quotes.primary))
+    if (quotes.nested !== undefined) errors.push(...pairErrors(at, 'nested', quotes.nested))
+    errors.push(...ellipsisErrors(at, raw.ellipsis))
+    if (raw.apostrophes !== undefined) {
+        const ok = Array.isArray(raw.apostrophes) && raw.apostrophes.every(isOneCharacter)
+        if (!ok) errors.push(`${at}: "apostrophes" must be a list of single characters`)
+    }
+    errors.push(...ruleErrors(at, 'spacing', raw.spacing), ...ruleErrors(at, 'hedges', raw.hedges))
+    return errors
 }
 
 function unknownFields(at: string, entry: Record<string, unknown>, fields: ReadonlySet<string>): string[] {
-  return Object.keys(entry)
-    .filter((field) => !fields.has(field))
-    .map((field) => `${at}: unknown field "${field}"`)
+    return Object.keys(entry)
+        .filter((field) => !fields.has(field))
+        .map((field) => `${at}: unknown field "${field}"`)
 }
 
 /** A quote pair: two marks from `QUOTE_MARKS`, never the straight double quote. */
 function pairErrors(at: string, which: 'primary' | 'nested', pair: unknown): string[] {
-  if (!Array.isArray(pair) || pair.length !== 2 || !pair.every(isOneCharacter)) {
-    return [`${at}: "quotes.${which}" must be an opening and a closing quote mark`]
-  }
-  return pair.flatMap((mark: string) => {
-    if (mark === '"') return [`${at}: quotes.${which} names the straight ", which UI text never uses`]
-    const known = QUOTE_MARKS.has(mark) || SEPARATOR_QUOTES.has(mark)
-    return known ? [] : [`${at}: "${mark}" isn't a quotation mark (quotes.${which})`]
-  })
+    if (!Array.isArray(pair) || pair.length !== 2 || !pair.every(isOneCharacter)) {
+        return [`${at}: "quotes.${which}" must be an opening and a closing quote mark`]
+    }
+    return pair.flatMap((mark: string) => {
+        if (mark === '"') return [`${at}: quotes.${which} names the straight ", which UI text never uses`]
+        const known = QUOTE_MARKS.has(mark) || SEPARATOR_QUOTES.has(mark)
+        return known ? [] : [`${at}: "${mark}" isn't a quotation mark (quotes.${which})`]
+    })
+}
+
+/** The `ellipsis`: a glyph from `ELLIPSIS_GLYPHS`, and optionally the no-break space a label-ending one takes. */
+function ellipsisErrors(at: string, ellipsis: unknown): string[] {
+    if (!isRecord(ellipsis) || typeof ellipsis.glyph !== 'string') {
+        return [`${at}: "ellipsis" must be an object with a "glyph" (and optionally a "spaceBefore")`]
+    }
+    const errors = unknownFields(`${at}: ellipsis`, ellipsis, ELLIPSIS_FIELDS)
+    if (!ELLIPSIS_GLYPHS.has(ellipsis.glyph)) {
+        errors.push(`${at}: "${ellipsis.glyph}" isn't an ellipsis glyph (${[...ELLIPSIS_GLYPHS].join(' ')})`)
+    }
+    if (ellipsis.spaceBefore !== undefined && !NO_BREAK_SPACES.has(ellipsis.spaceBefore as string)) {
+        errors.push(`${at}: "ellipsis.spaceBefore" must be a no-break space (U+00A0 or U+202F)`)
+    }
+    return errors
 }
 
 /** A `spacing` / `hedges` list: each entry a compiling pattern with a reason. */
 function ruleErrors(at: string, field: 'spacing' | 'hedges', list: unknown): string[] {
-  if (list === undefined) return []
-  if (!Array.isArray(list)) return [`${at}: "${field}" must be a list`]
-  return list.flatMap((rule: unknown, index) => {
-    if (!isRecord(rule) || !isNonEmptyString(rule.pattern) || !isNonEmptyString(rule.why)) {
-      return [`${at}: ${field}[${String(index)}] needs a "pattern" and a "why"`]
-    }
-    try {
-      new RegExp(rule.pattern, 'u')
-      return []
-    } catch (error) {
-      const why = error instanceof Error ? error.message : String(error)
-      return [`${at}: ${field}[${String(index)}] pattern doesn't compile: ${why}`]
-    }
-  })
+    if (list === undefined) return []
+    if (!Array.isArray(list)) return [`${at}: "${field}" must be a list`]
+    return list.flatMap((rule: unknown, index) => {
+        if (!isRecord(rule) || !isNonEmptyString(rule.pattern) || !isNonEmptyString(rule.why)) {
+            return [`${at}: ${field}[${String(index)}] needs a "pattern" and a "why"`]
+        }
+        try {
+            new RegExp(rule.pattern, 'u')
+            return []
+        } catch (error) {
+            const why = error instanceof Error ? error.message : String(error)
+            return [`${at}: ${field}[${String(index)}] pattern doesn't compile: ${why}`]
+        }
+    })
 }
 
 /** What kind of typography slip a finding is. */
@@ -125,9 +149,9 @@ export type MechanicsKind = 'straight-quote' | 'quote-mark' | 'ellipsis' | 'spac
 
 /** One key that breaks its locale's declared typography. */
 export interface MechanicsIssue {
-  key: string
-  kind: MechanicsKind
-  detail: string
+    key: string
+    kind: MechanicsKind
+    detail: string
 }
 
 /**
@@ -136,71 +160,108 @@ export interface MechanicsIssue {
  * `{token}` an insert, and code spans and markdown link targets removed.
  */
 function scannedSegments(key: string, value: string, tag: string): string[] {
-  const unscanned = (text: string) => text.replace(/`[^`\n]*`/g, INSERT_MARK).replace(/\]\([^)\s]*\)/g, ']')
-  const segments = isRawKey(key) ? undefined : visibleTextSegments(value, tag)
-  if (segments) return segments.map(unscanned)
-  const literal = value.replace(/\{[^{}]*\}/g, INSERT_MARK)
-  // Unparseable ICU still means ICU: its doubled apostrophe is one on screen.
-  return [unscanned(isRawKey(key) ? literal : literal.replace(/''/g, "'"))]
+    const unscanned = (text: string) => text.replace(/`[^`\n]*`/g, INSERT_MARK).replace(/\]\([^)\s]*\)/g, ']')
+    const segments = isRawKey(key) ? undefined : visibleTextSegments(value, tag)
+    if (segments) return segments.map(unscanned)
+    const literal = value.replace(/\{[^{}]*\}/g, INSERT_MARK)
+    // Unparseable ICU still means ICU: its doubled apostrophe is one on screen.
+    return [unscanned(isRawKey(key) ? literal : literal.replace(/''/g, "'"))]
 }
 
 /** A locale's rules, compiled once. */
 interface CompiledRule {
-  kind: 'spacing' | 'hedge'
-  re: RegExp
-  why: string
+    kind: 'spacing' | 'hedge' | 'ellipsis'
+    re: RegExp
+    why: string
 }
 
 function compileRules(mechanics: Mechanics): CompiledRule[] {
-  const compile = (kind: CompiledRule['kind'], list: MechanicsRule[] | undefined) =>
-    (list ?? []).map((rule) => ({ kind, re: new RegExp(rule.pattern, 'u'), why: rule.why }))
-  return [...compile('spacing', mechanics.spacing), ...compile('hedge', mechanics.hedges)]
+    const compile = (kind: CompiledRule['kind'], list: MechanicsRule[] | undefined) =>
+        (list ?? []).map((rule) => ({ kind, re: new RegExp(rule.pattern, 'u'), why: rule.why }))
+    return [
+        ...ellipsisRules(mechanics.ellipsis),
+        ...compile('spacing', mechanics.spacing),
+        ...compile('hedge', mechanics.hedges),
+    ]
+}
+
+/**
+ * The space rules for a LABEL-ENDING ellipsis: one after a word, at the end or
+ * before punctuation (`Laden …`, `„Einführung …“`). A leading one (`…und mehr`),
+ * a range (`1…5`), and a truncating one (`Datei…name`) are never touched.
+ */
+function ellipsisRules({ glyph, spaceBefore }: Mechanics['ellipsis']): CompiledRule[] {
+    const g = glyph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const labelEnd = String.raw`(?=$|\n|[^\s\p{L}\p{N}\ufffc])`
+    const spaces = String.raw`[ \u00a0\u202f]`
+    const rule = (pattern: string, why: string): CompiledRule => ({
+        kind: 'ellipsis',
+        re: new RegExp(pattern, 'u'),
+        why,
+    })
+    if (spaceBefore === undefined) {
+        return [rule(String.raw`(?<=\S)${spaces}${g}${labelEnd}`, `a label-ending ${glyph} hugs its word`)]
+    }
+    const space = NO_BREAK_SPACES.get(spaceBefore) ?? 'a no-break space'
+    return [
+        rule(
+            String.raw`(?<=[^\s\u00a0\u202f\d])${g}(?![\p{L}\p{N}\ufffc])`,
+            `a label-ending ${glyph} takes ${space} before it`,
+        ),
+        rule(
+            String.raw`(?<=\S)(?!${spaceBefore})${spaces}${g}${labelEnd}`,
+            `the space before a label-ending ${glyph} is ${space}`,
+        ),
+    ]
 }
 
 /** Every key of `messages` that breaks the declared typography, sorted by key. */
 export function findMechanicsIssues({
-  tag,
-  mechanics,
-  messages,
+    tag,
+    mechanics,
+    messages,
 }: {
-  tag: string
-  mechanics: Mechanics
-  messages: Record<string, string>
+    tag: string
+    mechanics: Mechanics
+    messages: Record<string, string>
 }): MechanicsIssue[] {
-  const { primary, nested } = mechanics.quotes
-  const allowed = new Set([...primary, ...(nested ?? []), ...(mechanics.apostrophes ?? [])])
-  const rules = compileRules(mechanics)
-  const issues: MechanicsIssue[] = []
-  for (const key of Object.keys(messages).sort()) {
-    const segments = scannedSegments(key, messages[key], tag)
-    const text = segments.join('\n')
-    const add = (kind: MechanicsKind, detail: string) => issues.push({ key, kind, detail })
-    if (text.includes('"')) add('straight-quote', 'a straight " where the locale’s quotation marks belong')
-    const foreign = [
-      ...new Set(Array.from(text).filter((char) => char !== '"' && QUOTE_MARKS.has(char) && !allowed.has(char))),
-    ]
-    if (foreign.length > 0) add('quote-mark', `quotation marks outside the declared ones: ${foreign.join(' ')}`)
-    if (text.includes('...')) add('ellipsis', 'three dots where … belongs')
-    for (const rule of rules) {
-      // Per segment, so a pattern never matches across two branches.
-      const hit = segments.map((segment) => rule.re.exec(segment)).find((match) => match !== null)
-      if (hit) add(rule.kind, `${rule.why}: ${JSON.stringify(hit[0].replaceAll(INSERT_MARK, '{…}'))}`)
+    const { primary, nested } = mechanics.quotes
+    const allowed = new Set([...primary, ...(nested ?? []), ...(mechanics.apostrophes ?? [])])
+    const rules = compileRules(mechanics)
+    const issues: MechanicsIssue[] = []
+    for (const key of Object.keys(messages).sort()) {
+        const segments = scannedSegments(key, messages[key], tag)
+        const text = segments.join('\n')
+        const add = (kind: MechanicsKind, detail: string) => issues.push({ key, kind, detail })
+        if (text.includes('"')) add('straight-quote', 'a straight " where the locale’s quotation marks belong')
+        const foreign = [
+            ...new Set(Array.from(text).filter((char) => char !== '"' && QUOTE_MARKS.has(char) && !allowed.has(char))),
+        ]
+        if (foreign.length > 0) add('quote-mark', `quotation marks outside the declared ones: ${foreign.join(' ')}`)
+        const { glyph } = mechanics.ellipsis
+        if (text.includes('...')) add('ellipsis', `three dots where ${glyph} belongs`)
+        const otherGlyphs = [...ELLIPSIS_GLYPHS].filter((other) => other !== glyph && text.includes(other))
+        if (otherGlyphs.length > 0) add('ellipsis', `${otherGlyphs.join(' ')} where ${glyph} belongs`)
+        for (const rule of rules) {
+            // Per segment, so a pattern never matches across two branches.
+            const hit = segments.map((segment) => rule.re.exec(segment)).find((match) => match !== null)
+            if (hit) add(rule.kind, `${rule.why}: ${JSON.stringify(hit[0].replaceAll(INSERT_MARK, '{…}'))}`)
+        }
     }
-  }
-  return issues
+    return issues
 }
 
 /** One declared locale's findings, and the count it may carry. */
 export interface MechanicsLocaleOutcome {
-  locale: string
-  issues: MechanicsIssue[]
-  baseline?: number
+    locale: string
+    issues: MechanicsIssue[]
+    baseline?: number
 }
 
 /** The whole run. */
 export interface MechanicsOutcome {
-  schemaErrors: string[]
-  locales: MechanicsLocaleOutcome[]
+    schemaErrors: string[]
+    locales: MechanicsLocaleOutcome[]
 }
 
 /**
@@ -209,50 +270,50 @@ export interface MechanicsOutcome {
  * scanned: its patterns can't be trusted.
  */
 export function inspectMechanics({
-  messagesRoot,
-  docsRoot,
-  baseline,
+    messagesRoot,
+    docsRoot,
+    baseline,
 }: {
-  messagesRoot?: string
-  docsRoot?: string
-  baseline: MechanicsBaseline
+    messagesRoot?: string
+    docsRoot?: string
+    baseline: MechanicsBaseline
 }): MechanicsOutcome {
-  const schemaErrors: string[] = []
-  const locales: MechanicsLocaleOutcome[] = []
-  const available = listLocales(messagesRoot)
-  const validated = new Map<string, Mechanics | undefined>()
-  const declared = (tag: string): Mechanics | undefined => {
-    if (!validated.has(tag)) {
-      const raw = loadMechanicsRaw(tag, docsRoot)
-      const errors = raw === undefined ? [] : validateMechanics(raw, tag)
-      schemaErrors.push(...errors)
-      validated.set(tag, raw === undefined || errors.length > 0 ? undefined : (raw as Mechanics))
+    const schemaErrors: string[] = []
+    const locales: MechanicsLocaleOutcome[] = []
+    const available = listLocales(messagesRoot)
+    const validated = new Map<string, Mechanics | undefined>()
+    const declared = (tag: string): Mechanics | undefined => {
+        if (!validated.has(tag)) {
+            const raw = loadMechanicsRaw(tag, docsRoot)
+            const errors = raw === undefined ? [] : validateMechanics(raw, tag)
+            schemaErrors.push(...errors)
+            validated.set(tag, raw === undefined || errors.length > 0 ? undefined : (raw as Mechanics))
+        }
+        return validated.get(tag)
     }
-    return validated.get(tag)
-  }
-  for (const tag of available) {
-    const source = resolveLocaleSource(tag, available)
-    const mechanics = declared(tag) ?? (source.isOverlay ? declared(source.overrides) : undefined)
-    if (mechanics === undefined) continue
-    const messages = loadCatalog(tag, messagesRoot).messages
-    locales.push({
-      locale: tag,
-      issues: findMechanicsIssues({ tag, mechanics, messages }),
-      baseline: baseline.findings[tag],
-    })
-  }
-  return { schemaErrors, locales }
+    for (const tag of available) {
+        const source = resolveLocaleSource(tag, available)
+        const mechanics = declared(tag) ?? (source.isOverlay ? declared(source.overrides) : undefined)
+        if (mechanics === undefined) continue
+        const messages = loadCatalog(tag, messagesRoot).messages
+        locales.push({
+            locale: tag,
+            issues: findMechanicsIssues({ tag, mechanics, messages }),
+            baseline: baseline.findings[tag],
+        })
+    }
+    return { schemaErrors, locales }
 }
 
 /** Reads the baseline, tolerating a missing file (every locale is then strict). */
 export function loadBaseline(path: string = BASELINE_PATH): MechanicsBaseline {
-  const raw = readJsonIfPresent(path) as Partial<MechanicsBaseline> | undefined
-  return { ...raw, findings: raw?.findings ?? {} }
+    const raw = readJsonIfPresent(path) as Partial<MechanicsBaseline> | undefined
+    return { ...raw, findings: raw?.findings ?? {} }
 }
 
 /** One finding as a report line. */
 function issueLine({ key, kind, detail }: MechanicsIssue): string {
-  return `  - ${key} (${kind}): ${detail}`
+    return `  - ${key} (${kind}): ${detail}`
 }
 
 /**
@@ -261,60 +322,60 @@ function issueLine({ key, kind, detail }: MechanicsIssue): string {
  * else `EXIT_CLEAN`.
  */
 export function report(outcome: MechanicsOutcome, write?: (line: string) => void, listAll = false): number {
-  const out =
-    write ??
-    ((line: string) => {
-      console.log(line)
-    })
-  if (outcome.schemaErrors.length > 0) {
-    out(`Mechanics: ${String(outcome.schemaErrors.length)} schema problems:`)
-    for (const error of outcome.schemaErrors) out(`  - ${error}`)
-  }
-  if (outcome.locales.length === 0) {
-    out('Mechanics: no locale has a mechanics.json yet.')
-    return outcome.schemaErrors.length > 0 ? EXIT_SCHEMA : EXIT_CLEAN
-  }
-  const grown = outcome.locales.filter((locale) => reportLocale(locale, out, listAll)).length
-  if (outcome.schemaErrors.length > 0) return EXIT_SCHEMA
-  if (grown > 0) return EXIT_ISSUES
-  const carried = outcome.locales.reduce((total, { issues }) => total + issues.length, 0)
-  const n = outcome.locales.length
-  const locales = `${String(n)} ${n === 1 ? 'locale' : 'locales'}`
-  out(
-    carried === 0
-      ? `Mechanics: every value in ${locales} follows its declared typography.`
-      : `Mechanics: schema clean; ${String(carried)} typography findings across ${locales} still wait for cleanup.`,
-  )
-  return EXIT_CLEAN
+    const out =
+        write ??
+        ((line: string) => {
+            console.log(line)
+        })
+    if (outcome.schemaErrors.length > 0) {
+        out(`Mechanics: ${String(outcome.schemaErrors.length)} schema problems:`)
+        for (const error of outcome.schemaErrors) out(`  - ${error}`)
+    }
+    if (outcome.locales.length === 0) {
+        out('Mechanics: no locale has a mechanics.json yet.')
+        return outcome.schemaErrors.length > 0 ? EXIT_SCHEMA : EXIT_CLEAN
+    }
+    const grown = outcome.locales.filter((locale) => reportLocale(locale, out, listAll)).length
+    if (outcome.schemaErrors.length > 0) return EXIT_SCHEMA
+    if (grown > 0) return EXIT_ISSUES
+    const carried = outcome.locales.reduce((total, { issues }) => total + issues.length, 0)
+    const n = outcome.locales.length
+    const locales = `${String(n)} ${n === 1 ? 'locale' : 'locales'}`
+    out(
+        carried === 0
+            ? `Mechanics: every value in ${locales} follows its declared typography.`
+            : `Mechanics: schema clean; ${String(carried)} typography findings across ${locales} still wait for cleanup.`,
+    )
+    return EXIT_CLEAN
 }
 
 /** Prints one locale. Returns whether it grew past its baseline. */
 function reportLocale(
-  { locale, issues, baseline }: MechanicsLocaleOutcome,
-  out: (line: string) => void,
-  listAll: boolean,
+    { locale, issues, baseline }: MechanicsLocaleOutcome,
+    out: (line: string) => void,
+    listAll: boolean,
 ): boolean {
-  const allowed = baseline ?? 0
-  const count = issues.length
-  if (count > allowed) {
-    const from = baseline === undefined ? 'no baseline' : `up from the recorded ${String(baseline)}`
-    out(`${locale}: ${String(count)} typography findings (${from}):`)
-    for (const issue of issues) out(issueLine(issue))
-    out(`  → fix the value, or the locale's mechanics.json if a rule is wrong (docs/i18n/termbase.md)`)
-    return true
-  }
-  const trend = count < allowed ? ` (down from ${String(allowed)}; ratchet the baseline)` : ''
-  out(
-    count === 0
-      ? `${locale}: typography clean.`
-      : `${locale}: ${String(count)} typography findings, within the baseline${trend}.`,
-  )
-  if (listAll) for (const issue of issues) out(issueLine(issue))
-  return false
+    const allowed = baseline ?? 0
+    const count = issues.length
+    if (count > allowed) {
+        const from = baseline === undefined ? 'no baseline' : `up from the recorded ${String(baseline)}`
+        out(`${locale}: ${String(count)} typography findings (${from}):`)
+        for (const issue of issues) out(issueLine(issue))
+        out(`  → fix the value, or the locale's mechanics.json if a rule is wrong (docs/i18n/termbase.md)`)
+        return true
+    }
+    const trend = count < allowed ? ` (down from ${String(allowed)}; ratchet the baseline)` : ''
+    out(
+        count === 0
+            ? `${locale}: typography clean.`
+            : `${locale}: ${String(count)} typography findings, within the baseline${trend}.`,
+    )
+    if (listAll) for (const issue of issues) out(issueLine(issue))
+    return false
 }
 
 function save(baseline: MechanicsBaseline, path: string): void {
-  writeFileSync(path, `${JSON.stringify(baseline, null, 2)}\n`)
+    writeFileSync(path, `${JSON.stringify(baseline, null, 2)}\n`)
 }
 
 /**
@@ -324,17 +385,17 @@ function save(baseline: MechanicsBaseline, path: string): void {
  * @returns the locales whose baseline moved
  */
 export function shrinkWrap(outcome: MechanicsOutcome, baseline: MechanicsBaseline, path: string): string[] {
-  const moved: string[] = []
-  const counts = new Map(outcome.locales.map(({ locale, issues }) => [locale, issues.length]))
-  const kept: Record<string, number> = {}
-  for (const [locale, allowed] of Object.entries(baseline.findings)) {
-    const count = counts.get(locale)
-    if (count === undefined || count < allowed) moved.push(locale)
-    if (count !== undefined) kept[locale] = Math.min(count, allowed)
-  }
-  baseline.findings = kept
-  if (moved.length > 0) save(baseline, path)
-  return moved.sort()
+    const moved: string[] = []
+    const counts = new Map(outcome.locales.map(({ locale, issues }) => [locale, issues.length]))
+    const kept: Record<string, number> = {}
+    for (const [locale, allowed] of Object.entries(baseline.findings)) {
+        const count = counts.get(locale)
+        if (count === undefined || count < allowed) moved.push(locale)
+        if (count !== undefined) kept[locale] = Math.min(count, allowed)
+    }
+    baseline.findings = kept
+    if (moved.length > 0) save(baseline, path)
+    return moved.sort()
 }
 
 /**
@@ -346,49 +407,50 @@ export function shrinkWrap(outcome: MechanicsOutcome, baseline: MechanicsBaselin
  * @throws when the locale has a baseline already, or no mechanics to count against
  */
 export function adopt(outcome: MechanicsOutcome, baseline: MechanicsBaseline, tag: string, path: string): number {
-  if (tag in baseline.findings) {
-    throw new Error(`${tag} already has a baseline (${String(baseline.findings[tag])}); it only ratchets down`)
-  }
-  const locale = outcome.locales.find((entry) => entry.locale === tag)
-  if (!locale) throw new Error(`${tag} has no mechanics.json (or its schema is broken), so there's nothing to adopt`)
-  baseline.findings = Object.fromEntries(
-    Object.entries({ ...baseline.findings, [tag]: locale.issues.length }).sort(([a], [b]) => a.localeCompare(b)),
-  )
-  save(baseline, path)
-  locale.baseline = locale.issues.length
-  return locale.issues.length
+    if (tag in baseline.findings) {
+        throw new Error(`${tag} already has a baseline (${String(baseline.findings[tag])}); it only ratchets down`)
+    }
+    const locale = outcome.locales.find((entry) => entry.locale === tag)
+    if (!locale) throw new Error(`${tag} has no mechanics.json (or its schema is broken), so there's nothing to adopt`)
+    baseline.findings = Object.fromEntries(
+        Object.entries({ ...baseline.findings, [tag]: locale.issues.length }).sort(([a], [b]) => a.localeCompare(b)),
+    )
+    save(baseline, path)
+    locale.baseline = locale.issues.length
+    return locale.issues.length
 }
 
 /** The value after a `--flag`, or `undefined`. */
 function flagValue(args: readonly string[], flag: string): string | undefined {
-  const index = args.indexOf(flag)
-  return index === -1 ? undefined : args[index + 1]
+    const index = args.indexOf(flag)
+    return index === -1 ? undefined : args[index + 1]
 }
 
 function main(): void {
-  const args = process.argv.slice(2)
-  const messagesRoot = flagValue(args, '--messages-root')
-  const docsRoot = flagValue(args, '--docs-root')
-  const baseline = loadBaseline()
-  const outcome = inspectMechanics({ messagesRoot, docsRoot, baseline })
-  const adopting = flagValue(args, '--adopt')
-  if (adopting !== undefined) {
-    const count = adopt(outcome, baseline, adopting, BASELINE_PATH)
-    console.log(`(recorded ${adopting} at ${String(count)} findings; it ratchets down from here)`)
-  }
-  const code = report(outcome, undefined, args.includes('--list'))
-  const fixture = messagesRoot !== undefined || docsRoot !== undefined
-  if (!process.env.CI && !fixture && outcome.schemaErrors.length === 0) {
-    for (const locale of shrinkWrap(outcome, baseline, BASELINE_PATH)) console.log(`(ratcheted the ${locale} baseline)`)
-  }
-  process.exit(code)
+    const args = process.argv.slice(2)
+    const messagesRoot = flagValue(args, '--messages-root')
+    const docsRoot = flagValue(args, '--docs-root')
+    const baseline = loadBaseline()
+    const outcome = inspectMechanics({ messagesRoot, docsRoot, baseline })
+    const adopting = flagValue(args, '--adopt')
+    if (adopting !== undefined) {
+        const count = adopt(outcome, baseline, adopting, BASELINE_PATH)
+        console.log(`(recorded ${adopting} at ${String(count)} findings; it ratchets down from here)`)
+    }
+    const code = report(outcome, undefined, args.includes('--list'))
+    const fixture = messagesRoot !== undefined || docsRoot !== undefined
+    if (!process.env.CI && !fixture && outcome.schemaErrors.length === 0) {
+        for (const locale of shrinkWrap(outcome, baseline, BASELINE_PATH))
+            console.log(`(ratcheted the ${locale} baseline)`)
+    }
+    process.exit(code)
 }
 
 if (process.argv[1] && import.meta.filename === process.argv[1]) {
-  try {
-    main()
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error))
-    process.exit(EXIT_ERROR)
-  }
+    try {
+        main()
+    } catch (error) {
+        console.error(error instanceof Error ? error.message : String(error))
+        process.exit(EXIT_ERROR)
+    }
 }

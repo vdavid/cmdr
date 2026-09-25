@@ -1,6 +1,7 @@
 {
-  "$comment": "Fill before the first translation pass; the empty primary pair fails i18n-mechanics until you do. Schema and examples: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "$comment": "Fill before the first translation pass; the empty primary pair and ellipsis glyph fail i18n-mechanics until you do. Schema and examples: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": [], "nested": [] },
+  "ellipsis": { "glyph": "" },
   "apostrophes": [],
   "spacing": [],
   "hedges": []

@@ -1,6 +1,7 @@
 {
-  "$comment": "Traditional Chinese typography: corner brackets 「」 (Apple zh-TW Finder/AppKit/SystemSettings: 911 「 vs 30 curly quotes, all in sample strings), 『』 nested per the Taiwan MOE standard (unattested in the pile, so restructure before nesting). No apostrophe: Chinese has none. Ellipsis ⋯ (U+22EF), as macOS writes it (pile values: zh-TW 250 ⋯ / 0 …, zh-HK 249 / 0); the schema has no ellipsis field yet, so the last spacing rule holds it. A space between Han and any Latin word or digit, except inside a Chinese date compound (8月1日). The spacing rules skip inserts (U+FFFC): a plural or select node reads as one too, and an insert may render Han ({label}) or Latin ({duration}), so its spacing is judged by hand (style.md § Spacing). Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "$comment": "Traditional Chinese typography: corner brackets 「」 (Apple zh-TW Finder/AppKit/SystemSettings: 911 「 vs 30 curly quotes, all in sample strings), 『』 nested per the Taiwan MOE standard (unattested in the pile, so restructure before nesting). No apostrophe: Chinese has none. Ellipsis ⋯ (U+22EF), as macOS writes it (pile values: zh-TW 250 ⋯ / 0 …, zh-HK 249 / 0). A space between Han and any Latin word or digit, except inside a Chinese date compound (8月1日). The spacing rules skip inserts (U+FFFC): a plural or select node reads as one too, and an insert may render Han ({label}) or Latin ({duration}), so its spacing is judged by hand (style.md § Spacing). Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["「", "」"], "nested": ["『", "』"] },
+  "ellipsis": { "glyph": "⋯" },
   "spacing": [
     {
       "pattern": "(?![年月])\\p{sc=Han}[A-Za-z0-9]",
@@ -13,10 +14,6 @@
     {
       "pattern": "「[ \\u00a0]|[ \\u00a0]」",
       "why": "no space inside corner brackets"
-    },
-    {
-      "pattern": "…",
-      "why": "the ellipsis is ⋯ (U+22EF), as macOS zh-TW and zh-HK write it, never …"
     }
   ],
   "hedges": [

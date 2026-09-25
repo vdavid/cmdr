@@ -1,6 +1,7 @@
 {
   "$comment": "English typography: curly double quotes, curly single quotes nested, and the apostrophe written either way. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "ellipsis": { "glyph": "…" },
   "apostrophes": ["'", "’"],
   "hedges": [
     {

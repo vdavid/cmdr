@@ -1,6 +1,7 @@
 {
   "$comment": "Vietnamese typography as macOS vi writes it: curly “…” primary (Finder “^0”, ~620 pairs in the pile), curly ‘…’ nested (AppKit ‘%@’ inside a sentence), no native apostrophe beyond ’ in a kept English name. Spacing is English-like: nothing before : ; ? ! or %. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "ellipsis": { "glyph": "…" },
   "apostrophes": ["’"],
   "spacing": [
     {

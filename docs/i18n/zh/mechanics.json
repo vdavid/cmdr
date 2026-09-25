@@ -1,6 +1,7 @@
 {
   "$comment": "Simplified Chinese typography, following macOS zh-CN (Finder, AppKit, and System Settings quote names with “…” only; nested ‘…’ per GB/T 15834). No apostrophe: Chinese has none. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "ellipsis": { "glyph": "…" },
   "spacing": [
     {
       "pattern": "\\p{Script=Han}[A-Za-z0-9]|[A-Za-z0-9]\\p{Script=Han}",

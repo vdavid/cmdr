@@ -163,6 +163,7 @@ A locale's typography, which the brief prints beside its digest and `i18n-mechan
 ```json
 {
   "quotes": { "primary": ["«", "»"], "nested": ["“", "”"] },
+  "ellipsis": { "glyph": "…" },
   "apostrophes": ["’"],
   "spacing": [{ "pattern": "«(?![\\u00a0\\u202f])", "why": "a no-break space follows «" }],
   "hedges": [{ "pattern": "\\p{L}\\((?:e|s)\\)", "why": "a bracketed ending; use ICU select or plural, or rephrase" }]
@@ -171,6 +172,11 @@ A locale's typography, which the brief prints beside its digest and `i18n-mechan
 
 - `quotes.primary` (required), `quotes.nested` (optional): each an opening and a closing mark, from the known quotation
   marks (`QUOTE_MARKS` in `apps/desktop/scripts/i18n-mechanics-lib.ts`). The straight `"` is never allowed.
+- `ellipsis` (required): `glyph` is the ellipsis as the language's macOS writes it (`…`, or `⋯` in zh-Hant; the set is
+  `ELLIPSIS_GLYPHS`), and the other glyph and `...` are findings. `spaceBefore` (optional) is the no-break space (U+00A0
+  or U+202F) a LABEL-ENDING ellipsis takes (German `Wird geladen …`); without it, such an ellipsis hugs its word. A
+  label-ending ellipsis follows a word and ends the text or meets punctuation; a leading (`…und mehr`), range (`1…5`),
+  or truncating (`Datei…name`) one is never checked for spacing.
 - `apostrophes` (optional): the characters this language writes as an apostrophe (`’`, or `'` where the straight one is
   the norm). Without it, any `'` or `’` outside the quote pairs is a finding.
 - `spacing` (optional): each required spacing rule, written as the pattern that BREAKS it (a JavaScript regex, `u`
@@ -225,7 +231,7 @@ Sections, each selected by the batch:
    translator's standing instructions, so the guide and every brief can't drift apart.
 3. Principles: everything under `## Principles` in `docs/i18n/translation-principles.md`, the same way, once.
 4. Each language's `## Digest`, or a pointer to `style.md` when it has none yet, then one **Mechanics** line from its
-   `mechanics.json` (quote pairs, apostrophes, spacing and hedge patterns), or "no mechanics.json yet".
+   `mechanics.json` (quote pairs, ellipsis, apostrophes, spacing and hedge patterns), or "no mechanics.json yet".
 5. Keys: key, English value, `@key` description, placeholders (described ones from `@key.placeholders`, the rest bare)
    and tags, each target's current value, and "No concept yet": the key's content words no concept's `match` covers,
    leaving out generic English, brand words, and words fewer than three English keys use (a concept recurs). That line
@@ -276,8 +282,8 @@ Deterministic (no time, RNG, or model), about 0.3 s for a 40-key batch.
 - **Schema problems are an ERROR** (exit 3): a malformed `mechanics.json` (§ `<tag>/mechanics.json` schema). That locale
   isn't scanned until it's fixed.
 - **Typography findings are a WARN** (exit 1), one per key and rule, in catalog VALUES: a straight `"` (every declared
-  locale), a quotation mark outside the declared pairs and apostrophes, `...`, and a hit of a `spacing` or `hedges`
-  pattern.
+  locale), a quotation mark outside the declared pairs and apostrophes, an ellipsis off the declared `ellipsis` (`...`,
+  the other glyph, or the wrong space before a label-ending one), and a hit of a `spacing` or `hedges` pattern.
 - It reads what the reader sees: ICU values through the runtime's parser (a doubled `''` is one apostrophe; a
   placeholder, `#`, or plural/select category is never text; each branch is scanned on its own), a raw family
   (`errors.*`, `menu.*`) literally with each `{token}` an insert. Markdown code spans (a command typed verbatim) and

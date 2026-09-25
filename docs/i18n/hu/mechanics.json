@@ -1,6 +1,7 @@
 {
   "$comment": "Hungarian typography: „…” primary (macOS Finder: „^0”, „%@”), »…« nested (the AkH nested pair, one of macOS NSSpellChecker's quote styles), ’ for the rare apostrophe. Hungarian writes % tight against the number and no space before ! ? : ;. Hedges: every form that hangs on the first sound or the vowels of a value Cmdr doesn't know. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["„", "”"], "nested": ["»", "«"] },
+  "ellipsis": { "glyph": "…" },
   "apostrophes": ["’"],
   "spacing": [
     { "pattern": "[\\d\\uFFFC] %", "why": "Hungarian writes % tight against the number (42%)" },

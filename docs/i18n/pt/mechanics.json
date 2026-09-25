@@ -1,6 +1,7 @@
 {
   "$comment": "Brazilian Portuguese typography: curly double quotes, curly single quotes nested, the curly apostrophe (rare: d’água). macOS pt-BR quotes with “%@” (442 pairs across Finder and System Settings in the reference pile, no guillemets); the pt-PT «» is a variant tell. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "ellipsis": { "glyph": "…" },
   "apostrophes": ["’"],
   "spacing": [
     {

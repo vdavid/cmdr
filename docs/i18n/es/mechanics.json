@@ -1,6 +1,7 @@
 {
   "$comment": "Spanish typography as macOS es writes it: “…” primary (641 opening marks across the pile's Finder/AppKit/System Settings values, for example ¿Borrar “%@”?, and no «…» in any Spanish value), ‘…’ nested (RAE's order inside “…”). Spanish has no apostrophe. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["“", "”"], "nested": ["‘", "’"] },
+  "ellipsis": { "glyph": "…" },
   "spacing": [
     { "pattern": "[¿¡“‘]\\s", "why": "an opening ¿, ¡, or quote hugs the next word" },
     { "pattern": "\\s[”’]", "why": "a closing quote hugs the previous word" },

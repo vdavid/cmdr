@@ -1,6 +1,7 @@
 {
   "$comment": "Swedish typography: ”…” with the closing mark on both sides (macOS sv: Finder `Radera skivan ”%@”`, `Vill du radera ”%@”?`), nested ’…’ likewise (Svenska skrivregler), and ’ as the apostrophe. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
   "quotes": { "primary": ["”", "”"], "nested": ["’", "’"] },
+  "ellipsis": { "glyph": "…" },
   "apostrophes": ["’"],
   "spacing": [
     {
