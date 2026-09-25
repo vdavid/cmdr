@@ -31,6 +31,7 @@
 
 import { BRAND_WORDS, SYSTEM_TOKENS, hasWholeWord, hasBrandPresent } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
+import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 
 export { BRAND_WORDS, SYSTEM_TOKENS }
 
@@ -62,11 +63,12 @@ export function droppedTokens(englishValue: string, localeValue: string): string
  * @param opts.messagesRoot override the `messages/` root (for tests)
  * @param opts.write output sink, one line at a time (for tests)
  */
-export function runDontTranslateCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
+export function runDontTranslateCheck(opts: LocaleCheckOptions = {}): number {
   return runLocaleCheck({
     title: "Don't-translate tokens",
     messagesRoot: opts.messagesRoot,
     write: opts.write,
+    only: opts.only,
     summaryLine: (count) => `${String(count)} key(s) dropped a brand/system token that must stay verbatim:`,
     inspectLocale: ({ source, catalog, findings }) => {
       for (const [key, localeValue] of Object.entries(catalog.messages)) {

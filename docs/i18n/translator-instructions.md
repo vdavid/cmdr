@@ -62,7 +62,8 @@ style guide disagree, the style guide's general rule wins unless the ruling says
   narrative, a dated story, or a second entry beside the old one. The file has a byte budget that only shrinks
   (`i18n-termbase` warns when it grows), so distilling is the job. Anything that applies beyond one language goes to
   docs/i18n/source-queue.md as a proposal to promote, never into this language's files.
-- **Check**: run the i18n checks in docs/guides/i18n-translation.md § Add a new language, step 5.
+- **Check**: run `pnpm i18n:check-locale {{TAG}}` in `apps/desktop` (several tags work too). It prints one line per
+  clean check and the full report only for one that isn't; the batch is done when every line is a ✓.
 - **Report**: your output may ship without human review, so translate only what you're confident in and flag every
   string where the context was insufficient. End with a **Source feedback** section: `@key` descriptions that were
   insufficient, screenshots that were missing or unhelpful, English that was ambiguous or inconsistent, and proposed

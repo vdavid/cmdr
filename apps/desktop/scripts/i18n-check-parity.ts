@@ -87,6 +87,8 @@ export function parityDetail(key: string, englishValue: string, localeValue: str
 
 /** Options for `runParityCheck`. */
 interface RunParityCheckOptions {
+  /** only these locales; every one when absent */
+  only?: readonly string[]
   /** override the `messages/` root (for tests) */
   messagesRoot?: string
   /** output sink, one line at a time (for tests) */
@@ -102,6 +104,7 @@ export function runParityCheck(opts: RunParityCheckOptions = {}): number {
     title: 'Placeholder/tag parity',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
+    only: opts.only,
     summaryLine: (count) => `${String(count)} key(s) with a placeholder/tag mismatch (would crash at runtime):`,
     inspectLocale: ({ source, catalog, findings }) => {
       for (const [key, localeValue] of Object.entries(catalog.messages)) {

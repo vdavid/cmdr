@@ -31,6 +31,7 @@
 
 import { parseMessage, isRawKey } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
+import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 
 /**
  * Returns what's wrong with a value's syntax for ITS family, or `null` if it's
@@ -58,11 +59,12 @@ export function icuError(key: string, localeValue: string): string | null {
  * @param opts.messagesRoot override the `messages/` root (for tests)
  * @param opts.write output sink, one line at a time (for tests)
  */
-export function runIcuCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
+export function runIcuCheck(opts: LocaleCheckOptions = {}): number {
   return runLocaleCheck({
     title: 'Message syntax',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
+    only: opts.only,
     includeBaseLocale: true,
     summaryLine: (count) =>
       `${String(count)} message(s) not written in their family's grammar (invalid ICU, or ICU escaping in a raw value):`,

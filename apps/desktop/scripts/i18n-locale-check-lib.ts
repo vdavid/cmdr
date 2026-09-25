@@ -215,6 +215,18 @@ export interface RunLocaleCheckOptions {
    * handed itself as its source, which is the honest answer for such a rule.
    */
   includeBaseLocale?: boolean
+  /** Only these locales (`pnpm i18n:check-locale`); every one when absent. */
+  only?: readonly string[]
+}
+
+/** The options every `runLocaleCheck`-based check takes from its caller. */
+export interface LocaleCheckOptions {
+  /** override the `messages/` root (for tests) */
+  messagesRoot?: string
+  /** output sink, one line at a time (for tests) */
+  write?: (line: string) => void
+  /** only these locales; every one when absent */
+  only?: readonly string[]
 }
 
 /**
@@ -237,9 +249,12 @@ export function runLocaleCheck({
   messagesRoot,
   write,
   includeBaseLocale = false,
+  only,
 }: RunLocaleCheckOptions): number {
   const available = listLocales(messagesRoot)
-  const locales = includeBaseLocale ? available : nonBaseLocales(available)
+  const locales = (includeBaseLocale ? available : nonBaseLocales(available)).filter(
+    (locale) => only === undefined || only.includes(locale),
+  )
   // One catalog read per tag, however many locales point at it as their source.
   const loaded = new Map<string, Catalog>()
   const load = (tag: string): Catalog => {

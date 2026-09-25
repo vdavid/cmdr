@@ -63,6 +63,7 @@
 import { BASE_LOCALE, TYPE, astOrUndefined, isRawKey, showsOnlySourceText, showsSameText } from './i18n-catalog-lib.ts'
 import type { AstElement } from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
+import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 import type { Issue } from './i18n-locale-check-lib.ts'
 
 /** Exit code when the only findings are warnings (a plural branch left in English): the Go wrapper warns. */
@@ -206,7 +207,7 @@ export function overlayStatus(
  * @param opts.messagesRoot override the `messages/` root (for tests)
  * @param opts.write output sink, one line at a time (for tests)
  */
-export function runCoverageCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
+export function runCoverageCheck(opts: LocaleCheckOptions = {}): number {
   const out =
     opts.write ??
     ((line: string) => {
@@ -217,6 +218,7 @@ export function runCoverageCheck(opts: { messagesRoot?: string; write?: (line: s
     title: 'Translation coverage',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
+    only: opts.only,
     summaryLine: (count, { isOverlay }) =>
       isOverlay
         ? `${String(count)} key(s) an overlay shouldn't carry (identical to what it overrides, or unknown):`

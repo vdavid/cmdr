@@ -251,7 +251,10 @@ Mechanism + schema: `apps/desktop/src/lib/intl/messages/DETAILS.md` § `@key` me
 4. **Translate** with a translator agent (§ The translator-agent context), in batches, each from a
    `pnpm i18n:brief --lang <tag>` brief. The first batches will mostly say "no ruling": each term you settle becomes a
    `terms.json` entry the next batch inherits.
-5. **Run the checks**:
+5. **Run the checks**: `pnpm i18n:check-locale <tag> [<tag>…]` in `apps/desktop` runs every locale-scoped check for
+   those locales (plus the doc citations and the overlay test guarding es / es-419 or en-GB / en-AU): one line per clean
+   check, the full report only for a failing one, exit 1 until all are clean. It never ratchets a baseline; the
+   repo-wide set is
    `pnpm check i18n-parity i18n-icu i18n-plural i18n-stale i18n-coverage i18n-dont-translate i18n-quoted-labels i18n-aria i18n-terms i18n-termbase i18n-mechanics i18n-citations`.
    Parity (placeholder/tag/token sets), ICU validity, plural coverage, translation coverage, aria containment,
    citations, and the termbase and mechanics schemas are ERROR class, so a locale can't ship half-translated; stale,

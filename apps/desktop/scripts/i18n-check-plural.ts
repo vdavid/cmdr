@@ -105,6 +105,8 @@ export function pluralCoverageDetail(
 
 /** Options for `runPluralCheck`. */
 interface RunPluralCheckOptions {
+  /** only these locales; every one when absent */
+  only?: readonly string[]
   /** override the `messages/` root (for tests) */
   messagesRoot?: string
   /** output sink, one line at a time (for tests) */
@@ -119,6 +121,7 @@ export function runPluralCheck(opts: RunPluralCheckOptions = {}): number {
     title: 'Plural-category coverage',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
+    only: opts.only,
     summaryLine: (count) => `${String(count)} plural message(s) missing a required CLDR category for this locale:`,
     inspectLocale: ({ locale, source, catalog, findings }) => {
       for (const [key, localeValue] of Object.entries(catalog.messages)) {

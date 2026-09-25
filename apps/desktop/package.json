@@ -42,6 +42,7 @@
     "i18n:check-coverage": "node scripts/i18n-check-coverage.ts",
     "i18n:check-dont-translate": "node scripts/i18n-check-dont-translate.ts",
     "i18n:check-quoted-labels": "node scripts/i18n-check-quoted-labels.ts",
+    "i18n:check-locale": "node scripts/i18n-check-locale.ts",
     "i18n:check-term-consistency": "node scripts/i18n-check-term-consistency.ts",
     "i18n:check-aria-label": "node scripts/i18n-check-aria-label.ts",
     "i18n:check-termbase": "node scripts/i18n-check-termbase.ts",

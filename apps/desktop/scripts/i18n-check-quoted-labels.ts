@@ -26,6 +26,7 @@
 
 import { BASE_LOCALE, loadCatalog } from './i18n-catalog-lib.ts'
 import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
+import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 import type { Issue } from './i18n-locale-check-lib.ts'
 
 /** A value longer than this is prose, never a label someone quotes. */
@@ -88,12 +89,13 @@ export function mismatchedQuotes(pairs: readonly QuotedLabelPair[], messages: Re
  * @param opts.messagesRoot override the `messages/` root (for tests)
  * @param opts.write output sink, one line at a time (for tests)
  */
-export function runQuotedLabelsCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
+export function runQuotedLabelsCheck(opts: LocaleCheckOptions = {}): number {
   const pairs = quotedLabelPairs(loadCatalog(BASE_LOCALE, opts.messagesRoot).messages)
   return runLocaleCheck({
     title: 'Quoted labels',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
+    only: opts.only,
     summaryLine: (count) => `${String(count)} key(s) quote a label in words the label itself doesn’t use:`,
     inspectLocale: ({ source, isOverlay, catalog, findings }) => {
       // An overlay reads through its base, and answers only for a pair it forks a side of:

@@ -50,6 +50,7 @@ import {
 } from './i18n-catalog-lib.ts'
 import type { Catalog } from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
+import type { LocaleCheckOptions } from './i18n-locale-check-lib.ts'
 
 /** A visible-label key and the accessible-name key that must contain it. */
 export interface AriaPair {
@@ -138,11 +139,13 @@ export function checkLocale(source: Catalog, catalog: Catalog, isOverlay = false
   return findings
 }
 
-function main(): void {
-  const args = process.argv.slice(2)
-  const rootFlag = args.indexOf('--messages-root')
-  const messagesRoot = rootFlag === -1 ? undefined : args[rootFlag + 1]
-
+/** Runs the check and returns the exit code (`EXIT_CLEAN` / `EXIT_ISSUES`). */
+export function runAriaCheck({ messagesRoot, write, only }: LocaleCheckOptions = {}): number {
+  const out =
+    write ??
+    ((line: string) => {
+      console.log(line)
+    })
   const available = listLocales(messagesRoot)
   const loaded = new Map<string, Catalog>()
   const load = (tag: string): Catalog => {
@@ -153,10 +156,10 @@ function main(): void {
     return fresh
   }
 
-  const locales = available.filter((tag) => tag !== BASE_LOCALE)
+  const locales = available.filter((tag) => tag !== BASE_LOCALE && (only === undefined || only.includes(tag)))
   if (locales.length === 0) {
-    console.log(`Aria label containment: no non-${BASE_LOCALE} locales to check.`)
-    process.exit(EXIT_CLEAN)
+    out(`Aria label containment: no non-${BASE_LOCALE} locales to check.`)
+    return EXIT_CLEAN
   }
 
   let total = 0
@@ -166,22 +169,28 @@ function main(): void {
     const source = isOverlay ? layerCatalogs(load(BASE_LOCALE), load(overrides)) : load(BASE_LOCALE)
     const findings = checkLocale(source, load(locale), isOverlay)
     if (findings.length === 0) {
-      console.log(`${locale}: clean.`)
+      out(`${locale}: clean.`)
       continue
     }
     total += findings.length
     const noun = findings.length === 1 ? 'name that no longer contains its' : 'names that no longer contain their'
-    console.log(`${locale}: ${String(findings.length)} accessible ${noun} visible label`)
+    out(`${locale}: ${String(findings.length)} accessible ${noun} visible label`)
     for (const { labelKey, ariaKey, label, aria } of findings) {
-      console.log(`  - ${ariaKey} → ${JSON.stringify(aria)} doesn't contain ${labelKey} = ${JSON.stringify(label)}`)
+      out(`  - ${ariaKey} → ${JSON.stringify(aria)} doesn't contain ${labelKey} = ${JSON.stringify(label)}`)
     }
   }
 
   if (total === 0) {
-    console.log(`Aria label containment: all ${String(pairCount)} label/name pairs hold in every locale.`)
-    process.exit(EXIT_CLEAN)
+    out(`Aria label containment: all ${String(pairCount)} label/name pairs hold in every locale.`)
+    return EXIT_CLEAN
   }
-  process.exit(EXIT_ISSUES)
+  return EXIT_ISSUES
+}
+
+function main(): void {
+  const args = process.argv.slice(2)
+  const rootFlag = args.indexOf('--messages-root')
+  process.exit(runAriaCheck({ messagesRoot: rootFlag === -1 ? undefined : args[rootFlag + 1] }))
 }
 
 if (process.argv[1] && import.meta.filename === process.argv[1]) {
