@@ -1,13 +1,8 @@
 # Source queue
 
-English-side problems translators found: inconsistent or ambiguous English, a weak or wrong `@key` description, a
-missing or unhelpful screenshot, or a rule that should apply to every language (a proposal to promote into
-`translation-principles.md` or `translator-instructions.md`). Shared by every locale, so a problem is logged once.
-
-- **Who writes**: any translator, while translating. One bullet per item, at most two lines: the key (or keys), what's
-  wrong, and the suggested fix, for example
-  ``- `a.b.label`: "Clear" reads as "empty" or "remove"; description should say it removes the filter.``
-- **Who clears it**: the lead agent, with David. It fixes the English, the description, or the shared docs, then DELETES
-  the entry. Resolved items don't stay here; git history holds them.
+Translators log English-side problems here while translating: ambiguous or inconsistent English, a weak `@key`
+description, a missing screenshot, or a rule every language should follow. One bullet per item, at most two lines: the
+key(s), what's wrong, the suggested fix. The lead fixes the English, the description, or the shared docs (promoting a
+rule into `translation-principles.md` or `translator-instructions.md`), then deletes the entry; git keeps the history.
 
 ## Open
