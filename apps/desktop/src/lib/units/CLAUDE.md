@@ -22,8 +22,9 @@ that bakes in the noun: `'files/s'` was a literal once and shipped English to al
   re-exports from the two leaves.
 - `byte-size.ts`: the unit math with the base passed in (`formatFileSizeWithFormat`, `formatDriveFigure`, `unitLabel`,
   `fixedUnitFor`, `dynamicTierIndex`, `baseFor`), plus the `ByteCount` / `BytesPerSecond` brands.
-- `duration.ts`: `formatDuration` (seconds), `formatMilliseconds` (sub-second precision), `formatFilesPerSecond` (the
-  rounding policy plus a locale-formatted `text` and the `value` the catalog pluralizes on), and the `Seconds` brand.
+- `duration.ts`: `formatDuration` (seconds, worded by `$lib/intl/duration-format` in the UI language),
+  `formatMilliseconds` (sub-second precision), `formatFilesPerSecond` (the rounding policy plus a locale-formatted
+  `text` and the `value` the catalog pluralizes on), and the `Seconds` brand.
 
 ## Must-knows
 

@@ -24,6 +24,33 @@ describe('formatDuration', () => {
   })
 })
 
+describe('formatDuration (localized)', () => {
+  afterEach(() => {
+    _setLocaleForTests(null)
+  })
+
+  // Pinned to what the platform's own `Intl.DurationFormat` says (Node has it;
+  // Cmdr's WebKit floor doesn't, which is why the formatter builds the same
+  // string from unit-style number and list formatters).
+  const platform = (locale: string, parts: Record<string, number>) =>
+    new Intl.DurationFormat(locale, { style: 'narrow' }).format(parts)
+
+  it('speaks the UI language, so a French ETA reads “8min 12s”', () => {
+    _setLocaleForTests('fr-FR')
+    expect(formatDuration(seconds(492))).toBe('8min 12s')
+  })
+
+  it('matches the platform’s narrow duration style in every shipped language', () => {
+    for (const locale of ['de', 'es', 'fr', 'hu', 'nl', 'pt', 'sv', 'vi', 'zh', 'zh-Hant']) {
+      _setLocaleForTests(locale)
+      expect(formatDuration(seconds(45)), locale).toBe(platform(locale, { seconds: 45 }))
+      expect(formatDuration(seconds(492)), locale).toBe(platform(locale, { minutes: 8, seconds: 12 }))
+      expect(formatDuration(seconds(3900)), locale).toBe(platform(locale, { hours: 1, minutes: 5 }))
+      expect(formatDuration(seconds(3600)), locale).toBe(platform(locale, { hours: 1 }))
+    }
+  })
+})
+
 describe('formatFilesPerSecond', () => {
   // It returns the NUMBER and the plural selector; the "files/s" marker is
   // user-facing copy and lives in the catalog (`fileOperations.shared.fileRate`),

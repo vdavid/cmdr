@@ -11,6 +11,7 @@
  * surfaces.
  */
 
+import { formatNarrowDuration, type DurationPart } from '$lib/intl/duration-format'
 import { formatInteger, getNumberFormatter } from '$lib/intl/number-format'
 
 /**
@@ -27,7 +28,9 @@ export function seconds(count: number): Seconds {
 }
 
 /**
- * Format seconds as a human-readable duration ("45s", "2m 30s", "1h 5m").
+ * Format seconds as a human-readable duration ("45s", "2m 30s", "1h 5m"), in
+ * the UI language's narrow style ("8min 12s" in French) through
+ * `$lib/intl/duration-format`.
  *
  * The canonical duration formatter for every ETA and elapsed-time readout, so
  * the copy dialog and the operation queue can't phrase the same number two
@@ -35,15 +38,20 @@ export function seconds(count: number): Seconds {
  * so a byte count or a file tally can't arrive here by accident.
  */
 export function formatDuration(totalSeconds: Seconds): string {
-  if (totalSeconds < 60) return `${String(Math.round(totalSeconds))}s`
+  if (totalSeconds < 60) return formatNarrowDuration([{ unit: 'second', value: Math.round(totalSeconds) }])
   if (totalSeconds < 3600) {
     const mins = Math.floor(totalSeconds / 60)
     const secs = Math.round(totalSeconds % 60)
-    return secs > 0 ? `${String(mins)}m ${String(secs)}s` : `${String(mins)}m`
+    return formatNarrowDuration(withTail({ unit: 'minute', value: mins }, { unit: 'second', value: secs }))
   }
   const hours = Math.floor(totalSeconds / 3600)
   const mins = Math.round((totalSeconds % 3600) / 60)
-  return mins > 0 ? `${String(hours)}h ${String(mins)}m` : `${String(hours)}h`
+  return formatNarrowDuration(withTail({ unit: 'hour', value: hours }, { unit: 'minute', value: mins }))
+}
+
+/** The lead component, plus the tail only when it isn't zero ("1h", not "1h 0m"). */
+function withTail(lead: DurationPart, tail: DurationPart): DurationPart[] {
+  return tail.value > 0 ? [lead, tail] : [lead]
 }
 
 /**
