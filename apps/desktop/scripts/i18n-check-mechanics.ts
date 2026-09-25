@@ -13,13 +13,13 @@
  *    belongs, or the wrong space before a label-ending one (`ellipsisRules`).
  *  - `spacing` / `hedge`: a hit of one of the locale's own patterns.
  *
- * It reads what the reader sees: ICU values through the runtime's parser (so a
- * doubled `''` is one apostrophe, and a placeholder or plural category is never
- * text), each plural/select branch on its own, a raw family (`errors.*`, `menu.*`)
- * literally. A placeholder is `INSERT_MARK` in the scanned text, so a spacing rule
- * can require a space next to one. A markdown code span is a command the user
- * types verbatim, so it's never scanned. One finding per key and rule, however
- * many hits.
+ * It reads what the reader sees, rendered by `scanValue` (`i18n-scan-lib.ts`): ICU
+ * through the runtime's parser (a doubled `''` is one apostrophe, a placeholder or
+ * plural category is never text, and each plural/select branch reads in place), a
+ * raw family (`errors.*`, `menu.*`) literally. An insert is `INSERT_MARK` carrying
+ * its name and kind, and a code span or one-symbol tag is `CODE_MARK`, so a rule
+ * can require a space next to an insert or target only unknown names. One finding
+ * per key and rule, however many hits.
  *
  * Findings are held to a per-locale COUNT baseline
  * (`i18n-mechanics-baseline.json`) that only ratchets down, the same design as the
@@ -34,14 +34,7 @@
 
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import {
-  INSERT_MARK,
-  isRawKey,
-  listLocales,
-  loadCatalog,
-  resolveLocaleSource,
-  visibleTextSegments,
-} from './i18n-catalog-lib.ts'
+import { listLocales, loadCatalog, resolveLocaleSource } from './i18n-catalog-lib.ts'
 import { EXIT_CLEAN, EXIT_ERROR, EXIT_ISSUES } from './i18n-locale-check-lib.ts'
 import {
   ELLIPSIS_GLYPHS,
@@ -51,6 +44,8 @@ import {
   loadMechanicsRaw,
 } from './i18n-mechanics-lib.ts'
 import type { Mechanics, MechanicsRule } from './i18n-mechanics-lib.ts'
+import { compileScanPattern, scanPatternError, scanValue } from './i18n-scan-lib.ts'
+import type { ScanRule } from './i18n-scan-lib.ts'
 import { readJsonIfPresent } from './i18n-termbase-lib.ts'
 
 /** Exit code for a schema error: the Go wrapper maps it to a failing check. */
@@ -134,13 +129,8 @@ function ruleErrors(at: string, field: 'spacing' | 'hedges', list: unknown): str
     if (!isRecord(rule) || !isNonEmptyString(rule.pattern) || !isNonEmptyString(rule.why)) {
       return [`${at}: ${field}[${String(index)}] needs a "pattern" and a "why"`]
     }
-    try {
-      new RegExp(rule.pattern, 'u')
-      return []
-    } catch (error) {
-      const why = error instanceof Error ? error.message : String(error)
-      return [`${at}: ${field}[${String(index)}] pattern doesn't compile: ${why}`]
-    }
+    const problem = scanPatternError(rule.pattern)
+    return problem === undefined ? [] : [`${at}: ${field}[${String(index)}] pattern ${problem}`]
   })
 }
 
@@ -154,30 +144,16 @@ export interface MechanicsIssue {
   detail: string
 }
 
-/**
- * The text of a value a reader sees, as segments to scan (see the file comment):
- * ICU through the parser, a raw family or unparseable ICU literally with each
- * `{token}` an insert, and code spans and markdown link targets removed.
- */
-function scannedSegments(key: string, value: string, tag: string): string[] {
-  const unscanned = (text: string) => text.replace(/`[^`\n]*`/g, INSERT_MARK).replace(/\]\([^)\s]*\)/g, ']')
-  const segments = isRawKey(key) ? undefined : visibleTextSegments(value, tag)
-  if (segments) return segments.map(unscanned)
-  const literal = value.replace(/\{[^{}]*\}/g, INSERT_MARK)
-  // Unparseable ICU still means ICU: its doubled apostrophe is one on screen.
-  return [unscanned(isRawKey(key) ? literal : literal.replace(/''/g, "'"))]
-}
-
 /** A locale's rules, compiled once. */
 interface CompiledRule {
   kind: 'spacing' | 'hedge' | 'ellipsis'
-  re: RegExp
+  rule: ScanRule
   why: string
 }
 
 function compileRules(mechanics: Mechanics): CompiledRule[] {
   const compile = (kind: CompiledRule['kind'], list: MechanicsRule[] | undefined) =>
-    (list ?? []).map((rule) => ({ kind, re: new RegExp(rule.pattern, 'u'), why: rule.why }))
+    (list ?? []).map((rule) => ({ kind, rule: compileScanPattern(rule.pattern), why: rule.why }))
   return [
     ...ellipsisRules(mechanics.ellipsis),
     ...compile('spacing', mechanics.spacing),
@@ -192,11 +168,11 @@ function compileRules(mechanics: Mechanics): CompiledRule[] {
  */
 function ellipsisRules({ glyph, spaceBefore }: Mechanics['ellipsis']): CompiledRule[] {
   const g = glyph.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const labelEnd = String.raw`(?=$|\n|[^\s\p{L}\p{N}\ufffc])`
+  const labelEnd = String.raw`(?=$|\n|[^\s\p{L}\p{N}\ufffc\ue000])`
   const spaces = String.raw`[ \u00a0\u202f]`
   const rule = (pattern: string, why: string): CompiledRule => ({
     kind: 'ellipsis',
-    re: new RegExp(pattern, 'u'),
+    rule: compileScanPattern(pattern),
     why,
   })
   if (spaceBefore === undefined) {
@@ -205,7 +181,7 @@ function ellipsisRules({ glyph, spaceBefore }: Mechanics['ellipsis']): CompiledR
   const space = NO_BREAK_SPACES.get(spaceBefore) ?? 'a no-break space'
   return [
     rule(
-      String.raw`(?<=[^\s\u00a0\u202f\d])${g}(?![\p{L}\p{N}\ufffc])`,
+      String.raw`(?<=[^\s\u00a0\u202f\d])${g}(?![\p{L}\p{N}\ufffc\ue000])`,
       `a label-ending ${glyph} takes ${space} before it`,
     ),
     rule(
@@ -230,8 +206,8 @@ export function findMechanicsIssues({
   const rules = compileRules(mechanics)
   const issues: MechanicsIssue[] = []
   for (const key of Object.keys(messages).sort()) {
-    const segments = scannedSegments(key, messages[key], tag)
-    const text = segments.join('\n')
+    const variants = scanValue(key, messages[key], tag)
+    const text = variants.map((variant) => variant.text).join('\n')
     const add = (kind: MechanicsKind, detail: string) => issues.push({ key, kind, detail })
     if (text.includes('"')) add('straight-quote', 'a straight " where the locale’s quotation marks belong')
     const foreign = [
@@ -242,10 +218,10 @@ export function findMechanicsIssues({
     if (text.includes('...')) add('ellipsis', `three dots where ${glyph} belongs`)
     const otherGlyphs = [...ELLIPSIS_GLYPHS].filter((other) => other !== glyph && text.includes(other))
     if (otherGlyphs.length > 0) add('ellipsis', `${otherGlyphs.join(' ')} where ${glyph} belongs`)
-    for (const rule of rules) {
-      // Per segment, so a pattern never matches across two branches.
-      const hit = segments.map((segment) => rule.re.exec(segment)).find((match) => match !== null)
-      if (hit) add(rule.kind, `${rule.why}: ${JSON.stringify(hit[0].replaceAll(INSERT_MARK, '{…}'))}`)
+    for (const { kind, rule, why } of rules) {
+      // Per rendering, so a pattern never matches across two branches.
+      const hit = variants.map((variant) => rule.find(variant)).find((found) => found !== undefined)
+      if (hit !== undefined) add(kind, `${why}: ${JSON.stringify(hit)}`)
     }
   }
   return issues

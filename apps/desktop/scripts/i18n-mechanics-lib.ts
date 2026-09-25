@@ -12,7 +12,7 @@ import { readJsonIfPresent, resolveDocsRoot } from './i18n-termbase-lib.ts'
 
 /** A pattern a locale's catalog values must NOT contain, and why. */
 export interface MechanicsRule {
-  /** a JavaScript regex source, compiled with the `u` flag; `INSERT_MARK` stands in for a placeholder */
+  /** a JavaScript regex source (`u` flag) plus the insert macros of `compileScanPattern` (`i18n-scan-lib.ts`) */
   pattern: string
   why: string
 }

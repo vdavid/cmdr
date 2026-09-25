@@ -180,8 +180,17 @@ A locale's typography, which the brief prints beside its digest and `i18n-mechan
 - `apostrophes` (optional): the characters this language writes as an apostrophe (`’`, or `'` where the straight one is
   the norm). Without it, any `'` or `’` outside the quote pairs is a finding.
 - `spacing` (optional): each required spacing rule, written as the pattern that BREAKS it (a JavaScript regex, `u`
-  flag), with a one-line `why`. A placeholder reads as U+FFFC in the scanned text, so a rule can require a space next to
-  an insert.
+  flag), with a one-line `why`. The pattern runs over the scanned text ("What the scanner reads" under § Tooling), where
+  an insert is U+FFFC, so a rule can require a space next to one. Macros name what a rule wants at an insert (a lone
+  brace is invalid in `u` mode, so no real regex means one):
+  - `{@name}`: a value Cmdr can't know (a file name, a path, a host, a reason): its first sound, gender, and ending are
+    unknown, so this is what an article or suffix hedge targets.
+  - `{@number}`: a count or a quantity Cmdr formats (`#`, `{countText}`, a size, a date, a duration).
+  - `{@token}`: a value from a closed set Cmdr supplies (`{system_settings}`, `{localNetwork}`, a key chip, a verb).
+  - `{@insert}`: any of the three; `{@arg:path}`: that placeholder only; `{@code}`: a code span or one-symbol tag.
+  - `{@name|token}`: any of several. A plain U+FFFC (`\\uFFFC` in the JSON) still means any insert. The kind comes from
+    the placeholder's name (`placeholderKind` in `apps/desktop/scripts/i18n-scan-lib.ts`, a curated table; an unlisted
+    name is `name`, so a misfiled count surfaces as a finding to fix there).
 - `hedges` (optional): the parenthesized or slashed alternatives this language's grammar tempts translators into
   (principles § No hedged grammar), same shape.
 - `$comment` (optional). No other fields.
@@ -284,10 +293,14 @@ Deterministic (no time, RNG, or model), about 0.3 s for a 40-key batch.
 - **Typography findings are a WARN** (exit 1), one per key and rule, in catalog VALUES: a straight `"` (every declared
   locale), a quotation mark outside the declared pairs and apostrophes, an ellipsis off the declared `ellipsis` (`...`,
   the other glyph, or the wrong space before a label-ending one), and a hit of a `spacing` or `hedges` pattern.
-- It reads what the reader sees: ICU values through the runtime's parser (a doubled `''` is one apostrophe; a
-  placeholder, `#`, or plural/select category is never text; each branch is scanned on its own), a raw family
-  (`errors.*`, `menu.*`) literally with each `{token}` an insert. Markdown code spans (a command typed verbatim) and
-  link targets are skipped.
+- **What the scanner reads** (`apps/desktop/scripts/i18n-scan-lib.ts`): what the reader sees. ICU values go through the
+  runtime's parser (a doubled `''` is one apostrophe; a plural/select category is never text), a raw family (`errors.*`,
+  `menu.*`) reads literally. An insert (a placeholder, `#`, a raw `{token}`, an empty tag like `<key></key>`) is U+FFFC
+  carrying its name and kind; `<break></break>` is a line break. A markdown code span (a command typed verbatim) and a
+  tag around one symbol (`<bang>!</bang>`) are U+E000, a mark of their own, so no punctuation rule reads into them; a
+  code span holding only an insert (`` `{path}` ``) stays that insert. Link targets are dropped. A plural or select node
+  is transparent: the value renders once per branch, so the text around the node meets each branch's text
+  (`{count, plural, … {# fájl}}ban` reads `fájlban`).
 - Held to a per-locale count baseline in `apps/desktop/scripts/i18n-mechanics-baseline.json`, the same ratchet-down
   design as termbase drift. A locale not listed is strict; `node scripts/i18n-check-mechanics.ts --adopt <tag>` records
   a newly declared locale at its current count, once (it refuses a locale that already has a number), so a locale can

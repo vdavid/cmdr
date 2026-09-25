@@ -166,6 +166,43 @@ describe('findMechanicsIssues', () => {
     expect(validateMechanics(declared, 'fr')).toEqual([])
   })
 
+  it('reads a plural in place, so a suffix after it meets the branch text, and a symbol in a tag is code', () => {
+    const hu: Mechanics = {
+      quotes: { primary: ['„', '”'] },
+      ellipsis: { glyph: '…' },
+      spacing: [{ pattern: '(?<=[^\\u00a0])[!?]', why: 'a no-break space before ! and ?' }],
+      hedges: [{ pattern: '{@name}-?\\p{Ll}', why: 'a suffix on an unknown name' }],
+    }
+    expect(
+      kinds(
+        'hu',
+        {
+          'a.plural': '{count, plural, one {# fájl} other {# fájl}}ban',
+          'a.name': '{name}ban',
+          'a.count': '{countText}-ban',
+          'a.bang': 'Írj <bang>!</bang> elé',
+        },
+        hu,
+      ),
+    ).toEqual(['a.name:hedge'])
+  })
+
+  it('names the placeholder in a finding', () => {
+    const hu: Mechanics = {
+      quotes: { primary: ['„', '”'] },
+      ellipsis: { glyph: '…' },
+      hedges: [{ pattern: '{@name}-?\\p{Ll}', why: 'a suffix on an unknown name' }],
+    }
+    expect(findMechanicsIssues({ tag: 'hu', mechanics: hu, messages: { 'a.b': 'A {path}ban' } })).toEqual([
+      { key: 'a.b', kind: 'hedge', detail: 'a suffix on an unknown name: "{path}b"' },
+    ])
+  })
+
+  it('schema-checks a rule macro', () => {
+    const bad = { quotes: { primary: ['„', '”'] }, ellipsis: { glyph: '…' }, hedges: [{ pattern: '{@nme}', why: 'w' }] }
+    expect(validateMechanics(bad, 'hu').join('\n')).toMatch(/hedges\[0\] pattern.*unknown insert kind "nme"/)
+  })
+
   it('flags a hedge once per key, whatever the number of hits', () => {
     const found = findMechanicsIssues({
       tag: 'fr',

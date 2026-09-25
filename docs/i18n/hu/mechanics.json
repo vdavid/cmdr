@@ -22,8 +22,8 @@
       "why": "a case suffix on an insert ({path}-ban, „{name}”-et) hangs on sounds Cmdr can't know; use a colon slot, a postposition, or a base noun that carries the suffix"
     },
     {
-      "pattern": "(?<!\\p{L})[aA]z? „\\uFFFC",
-      "why": "a guessed a/az before a quoted insert (a code span reads as an insert too, so only the quoted form is checked); the article follows the value's first sound, so name the type first or use a colon slot"
+      "pattern": "(?<!\\p{L})[aA]z? „?{@name}",
+      "why": "a guessed a/az before a name Cmdr can't know, quoted or bare; the article follows the value's first sound, so name the type first or use a colon slot"
     }
   ]
 }
