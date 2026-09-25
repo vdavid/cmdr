@@ -1616,5 +1616,13 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "驱动器索引已在设置中关闭。可在“索引 > 驱动器索引”中开启，此驱动器会从上次的进度继续。",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.failed": {
+    "sourceHash": "73468bd"
+  },
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.partial": {
+    "sourceHash": "9215226"
   }
 }

@@ -15,10 +15,10 @@ values write the catalog's `’`.
   (agreeing with the feminine `présentation`).
 - A cross-reference quotes the section title verbatim with the source’s separator (`Réglages › IA`).
 
-## Licence, visionneuse : les valeurs identiques à l'anglais (`licensing.dialog.*`, `licensing.section.*`, `viewer.binaryWarning.kind.*`, `viewer.saveAs.defaultName`)
+## Licence, visionneuse : les valeurs identiques à l'anglais (`licensing.dialog.*`, `licensing.section.*`, `viewer.saveAs.defaultName`)
 
-- `Active` (a license) is the feminine of `actif`, agreeing with `licence`; `Image`, `PDF`, `Unicode`, `image`,
-  `document` are French too. All carry `sameAsSourceJustification`.
+- `Active` (a license) is the feminine of `actif`, agreeing with `licence`; `Image`, `PDF`, `Unicode` are French too.
+  All carry `sameAsSourceJustification`.
 - `viewer.saveAs.defaultName` stays `selection`: the `@key` wants a lowercase, unaccented, file-name-safe literal.
 - Tiers: `Commerciale perpétuelle` (agrees with the implied `licence`), `Abonnement commercial`,
   `Personnelle (gratuite)`.

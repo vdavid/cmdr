@@ -1627,5 +1627,13 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "A indexação de disco está desativada nos Ajustes. Ative-a em Indexação > Indexação de disco, e este disco continua de onde parou.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.failed": {
+    "sourceHash": "73468bd"
+  },
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.partial": {
+    "sourceHash": "9215226"
   }
 }

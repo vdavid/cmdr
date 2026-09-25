@@ -1,5 +1,6 @@
 import { composeTransferCompleteToast } from '$lib/file-operations/transfer/transfer-complete-toast'
-import { pluralize } from '$lib/utils/pluralize'
+import { tString } from '$lib/intl/messages.svelte'
+import { formatInteger } from '$lib/intl/number-format'
 import type { ToastLevel } from '$lib/ui/toast'
 
 /**
@@ -29,8 +30,8 @@ export interface DragOutToast {
  * - **Full success** → the standard transfer-complete wording via the shared
  *   `composeTransferCompleteToast` ("Copied 2 files and 1 folder."), level
  *   `success`. Counts are the top-level dragged items the session downloaded.
- * - **Partial success** → the success phrase plus a tail naming what didn't make
- *   it ("…, but couldn't copy video.mov."), level `warn`. Finder shows its OWN
+ * - **Partial success** → the success sentence plus a second one naming what
+ *   didn't make it ("Copied 2 files. Couldn’t copy “video.mov”."), level `warn`. Finder shows its OWN
  *   NSError alert per failed item, so our toast complements rather than
  *   duplicates: it names the file(s) and stays quiet on the technical detail.
  * - **Total failure** → a failure-only line naming the file(s), level `error`.
@@ -47,7 +48,7 @@ export function composeDragOutCompleteToast(payload: DragOutSessionComplete): Dr
 
   // Total failure: nothing landed.
   if (succeededCount === 0) {
-    return { message: `Couldn't copy ${describeFailures(failures)}.`, level: 'error' }
+    return { message: tString('fileExplorer.dragOut.failed', failureParams(failures)), level: 'error' }
   }
 
   // Build the success phrase through the shared composer (selection-split,
@@ -65,21 +66,20 @@ export function composeDragOutCompleteToast(payload: DragOutSessionComplete): Dr
     return { message: successPhrase, level: 'success' }
   }
 
-  // Partial: success phrase + a tail naming the failures. Drop the trailing
-  // period from the success phrase so the tail reads as one sentence.
-  const successBody = successPhrase.replace(/\.$/, '')
+  // Partial: the success sentence whole, then one naming the failures. Two
+  // sentences, so no language has to splice a clause onto a finished one.
   return {
-    message: `${successBody}, but couldn't copy ${describeFailures(failures)}.`,
+    message: tString('fileExplorer.dragOut.partial', { summary: successPhrase, ...failureParams(failures) }),
     level: 'warn',
   }
 }
 
 /**
- * Names the failed items: a single leaf reads in full ("video.mov"); two or
- * more collapse to a count ("3 files") so the toast doesn't grow unbounded on a
- * big multi-select that fails wholesale.
+ * The catalog params that name the failed items: a single leaf reads in full
+ * ("video.mov"); two or more collapse to a count ("3 items") so the toast
+ * doesn't grow unbounded on a big multi-select that fails wholesale. The
+ * `=1` branch in the catalog picks the name.
  */
-function describeFailures(failures: string[]): string {
-  if (failures.length === 1) return failures[0]
-  return `${String(failures.length)} ${pluralize(failures.length, 'file')}`
+function failureParams(failures: string[]): { count: number; countText: string; name: string } {
+  return { count: failures.length, countText: formatInteger(failures.length), name: failures[0] ?? '' }
 }

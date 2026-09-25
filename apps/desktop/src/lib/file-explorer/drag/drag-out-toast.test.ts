@@ -25,7 +25,7 @@ describe('composeDragOutCompleteToast', () => {
 
   it('partial success names a single failed file and warns', () => {
     const { message, level } = composeDragOutCompleteToast(payload({ filesSucceeded: 2, failures: ['video.mov'] }))
-    expect(message).toBe("Copied 2 files, but couldn't copy video.mov.")
+    expect(message).toBe('Copied 2 files. Couldn’t copy “video.mov”.')
     expect(level).toBe('warn')
   })
 
@@ -33,19 +33,19 @@ describe('composeDragOutCompleteToast', () => {
     const { message, level } = composeDragOutCompleteToast(
       payload({ filesSucceeded: 1, failures: ['a.jpg', 'b.jpg', 'c.jpg'] }),
     )
-    expect(message).toBe("Copied 1 file, but couldn't copy 3 files.")
+    expect(message).toBe('Copied 1 file. Couldn’t copy 3 items.')
     expect(level).toBe('warn')
   })
 
   it('total failure of one file names it at error level', () => {
     const { message, level } = composeDragOutCompleteToast(payload({ failures: ['clip.mov'] }))
-    expect(message).toBe("Couldn't copy clip.mov.")
+    expect(message).toBe('Couldn’t copy “clip.mov”.')
     expect(level).toBe('error')
   })
 
   it('total failure of several files reads a count at error level', () => {
     const { message, level } = composeDragOutCompleteToast(payload({ failures: ['a', 'b'] }))
-    expect(message).toBe("Couldn't copy 2 files.")
+    expect(message).toBe('Couldn’t copy 2 items.')
     expect(level).toBe('error')
   })
 })

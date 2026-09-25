@@ -1619,5 +1619,13 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt. Hãy bật trong Lập chỉ mục > Lập chỉ mục ổ đĩa, và ổ đĩa này sẽ tiếp tục từ chỗ đã dừng.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.failed": {
+    "sourceHash": "73468bd"
+  },
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.partial": {
+    "sourceHash": "9215226"
   }
 }

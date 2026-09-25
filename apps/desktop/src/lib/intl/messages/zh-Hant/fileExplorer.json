@@ -1616,5 +1616,13 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "磁碟機索引已在設定中關閉。可以在「索引 > 磁碟機索引」中開啟，這個磁碟機會從上次的進度繼續。",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "sourceHash": "e045664"
+  },
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.failed": {
+    "sourceHash": "73468bd"
+  },
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.partial": {
+    "sourceHash": "9215226"
   }
 }

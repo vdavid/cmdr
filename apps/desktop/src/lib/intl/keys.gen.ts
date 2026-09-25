@@ -1231,6 +1231,8 @@ export type MessageKey =
   | 'fileExplorer.doubleClickHint.iLikeIt'
   | 'fileExplorer.doubleClickHint.neverAgain'
   | 'fileExplorer.doubleClickHint.title'
+  | 'fileExplorer.dragOut.failed'
+  | 'fileExplorer.dragOut.partial'
   | 'fileExplorer.edit.appMissing'
   | 'fileExplorer.edit.appMissingUnnamed'
   | 'fileExplorer.edit.dismiss'

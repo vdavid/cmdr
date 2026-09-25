@@ -2363,5 +2363,24 @@
   "fileExplorer.navigation.driveIndex.menuIndexingOffNote": "Drive indexing is off in Settings. Turn it on under Indexing > Drive indexing, and this drive picks up where it left off.",
   "@fileExplorer.navigation.driveIndex.menuIndexingOffNote": {
     "description": "Note replacing the per-drive index menu’s actions while the master drive-indexing switch is off. Says where to turn the switch back on and reassures that the drive’s own on/off choice is remembered. Sentence case."
+  },
+  "fileExplorer.dragOut.failed": "{count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.failed": {
+    "description": "Error toast after the user dragged items out of Cmdr into another app (Finder, Mail, a browser upload) and none of them arrived. macOS shows its own alert with the technical reason, so this line only says what didn’t make it. With exactly one item it names it in quotes; with more it counts them (“items” covers files and folders). Avoid the words “error” and “failed”.",
+    "placeholders": {
+      "count": "how many items didn’t arrive (picks the named or counted wording and the plural form)",
+      "countText": "the same number, formatted for display (for example 1,234)",
+      "name": "the one item’s file or folder name, uncontrolled (any length, any language); only used when exactly one item didn’t arrive"
+    }
+  },
+  "fileExplorer.dragOut.partial": "{summary} {count, plural, =1 {Couldn’t copy “{name}”.} one {Couldn’t copy {countText} item.} other {Couldn’t copy {countText} items.}}",
+  "@fileExplorer.dragOut.partial": {
+    "description": "Warning toast after a drag out of Cmdr where some items arrived and some didn’t. {summary} is a whole finished sentence about what did arrive, built from the transfer-complete toast wording (for example “Copied 2 files and 1 folder.”); keep it first and let the second sentence stand on its own. Match fileExplorer.dragOut.failed for the second sentence. Avoid the words “error” and “failed”.",
+    "placeholders": {
+      "summary": "a complete sentence saying what arrived, already translated and ending in its own period (for example “Copied 2 files.”)",
+      "count": "how many items didn’t arrive (picks the named or counted wording and the plural form)",
+      "countText": "the same number, formatted for display (for example 1,234)",
+      "name": "the one item’s file or folder name, uncontrolled (any length, any language); only used when exactly one item didn’t arrive"
+    }
   }
 }
