@@ -1,8 +1,18 @@
 {
   "$comment": "Per-locale count of catalog values that break the locale's declared typography (docs/i18n/<tag>/mechanics.json), read by i18n-check-mechanics.ts. A locale may carry up to its number without a warning; local runs ratchet it down and drop a locale that lost its mechanics.json. A locale not listed is strict; `node scripts/i18n-check-mechanics.ts --adopt <tag>` records a newly declared one once. Raising a number needs David's OK (.claude/rules/file-length-allowlist.md).",
   "findings": {
+    "de": 0,
     "en": 0,
     "en-AU": 0,
-    "en-GB": 0
+    "en-GB": 0,
+    "es": 0,
+    "fr": 0,
+    "hu": 0,
+    "nl": 0,
+    "pt": 0,
+    "sv": 0,
+    "vi": 0,
+    "zh": 0,
+    "zh-Hant": 0
   }
 }

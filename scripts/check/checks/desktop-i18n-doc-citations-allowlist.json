@@ -3,21 +3,6 @@
   "retired": {
     "docs/i18n/de/decisions.md": {
       "askCmdr.consent.noContents": "Deliberate: the paragraph records that its translation was carried over verbatim from this retired key, so naming it is the point and no live key can stand in."
-    },
-    "docs/i18n/fr/decisions.md": {
-      "askCmdr.consent.noContents": "Deliberate: the paragraph records that its translation was carried over verbatim from this retired key, so naming it is the point and no live key can stand in."
-    },
-    "docs/i18n/pt/decisions.md": {
-      "askCmdr.consent.noContents": "Deliberate: the paragraph records that its translation was carried over verbatim from this retired key, so naming it is the point and no live key can stand in."
-    },
-    "docs/i18n/vi/decisions.md": {
-      "askCmdr.consent.noContents": "Deliberate: the paragraph records that its translation was carried over verbatim from this retired key, so naming it is the point and no live key can stand in."
-    },
-    "docs/i18n/zh-Hant/decisions.md": {
-      "askCmdr.consent.noContents": "Deliberate: the paragraph records that its translation was carried over verbatim from this retired key, so naming it is the point and no live key can stand in."
-    },
-    "docs/i18n/zh/decisions.md": {
-      "askCmdr.consent.noContents": "Deliberate: the paragraph records that its translation was carried over verbatim from this retired key, so naming it is the point and no live key can stand in."
     }
   },
   "pending": {}
