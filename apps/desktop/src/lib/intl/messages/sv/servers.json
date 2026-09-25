@@ -9,7 +9,7 @@
   },
   "servers.pinHint.body": "Högerklicka på en server och välj Lossa, eller använd ”{command}” från kommandopaletten. Servern ligger kvar i listan Servrar.",
   "@servers.pinHint.body": {
-    "sourceHash": "0663b02"
+    "sourceHash": "e47522b"
   },
   "servers.pinHint.gotIt": "Uppfattat",
   "@servers.pinHint.gotIt": {

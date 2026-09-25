@@ -443,7 +443,7 @@
   },
   "menu.context.copyNamed": "Kopiera ”{name}”",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "Lägg till i favoriter",
   "@menu.context.addToFavorites": {
@@ -540,11 +540,11 @@
   },
   "menu.tag.addNamed": "Lägg till ”{color}”",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
   "menu.tag.removeNamed": "Ta bort ”{color}”",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "Lägg till i indexerade mappar",
   "@menu.mediaIndex.addFolder": {

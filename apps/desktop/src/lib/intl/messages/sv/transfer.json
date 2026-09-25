@@ -27,23 +27,23 @@
   "@transfer.split.skipped": {
     "sourceHash": "5fe3ee2"
   },
-  "transfer.fileOnly.allDone": "{verb, select, copy {Kopiering} other {Flyttning}} klar: {verb, select, copy {kopierade} other {flyttade}} {transferredText} {transferred, plural, one {fil} other {filer}}.",
+  "transfer.fileOnly.allDone": "{verb, select, copy {Kopieringen} other {Flytten}} klar: {verb, select, copy {kopierade} other {flyttade}} {transferredText} {transferred, plural, one {fil} other {filer}}.",
   "@transfer.fileOnly.allDone": {
     "sourceHash": "19c9b7d"
   },
-  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Kopiering} other {Flyttning}} klar: filen fanns redan på målet, {verb, select, copy {kopierades} other {flyttades}} inte.",
+  "transfer.fileOnly.allSkippedSingle": "{verb, select, copy {Kopieringen} other {Flytten}} klar: filen fanns redan på målet, {verb, select, copy {kopierades} other {flyttades}} inte.",
   "@transfer.fileOnly.allSkippedSingle": {
     "sourceHash": "9ed3c9a"
   },
-  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopiering} other {Flyttning}} klar: hoppade över alla {skippedText} filer (fanns redan på målet), inget {verb, select, copy {kopierades} other {flyttades}}.",
+  "transfer.fileOnly.allSkippedMany": "{verb, select, copy {Kopieringen} other {Flytten}} klar: hoppade över alla {skippedText} filer (fanns redan på målet), inget {verb, select, copy {kopierades} other {flyttades}}.",
   "@transfer.fileOnly.allSkippedMany": {
     "sourceHash": "ae39c4b"
   },
-  "transfer.fileOnly.mixedCopy": "Kopiering klar: kopierade {transferredText}, hoppade över {skippedText}. Alla {processedText} {processed, plural, one {fil} other {filer}} du markerade finns nu på målet.",
+  "transfer.fileOnly.mixedCopy": "Kopieringen klar: kopierade {transferredText}, hoppade över {skippedText}. Alla {processedText} {processed, plural, one {fil} other {filer}} du markerade finns nu på målet.",
   "@transfer.fileOnly.mixedCopy": {
     "sourceHash": "b00606b"
   },
-  "transfer.fileOnly.mixedMove": "Flyttning klar: flyttade {transferredText}, hoppade över {skippedText}. {skippedText} {skipped, plural, one {fil} other {filer}} {skipped, plural, one {fanns} other {fanns}} redan på målet.",
+  "transfer.fileOnly.mixedMove": "Flytten klar: flyttade {transferredText}, hoppade över {skippedText}. {skippedText} {skipped, plural, one {fil} other {filer}} {skipped, plural, one {fanns} other {fanns}} redan på målet.",
   "@transfer.fileOnly.mixedMove": {
     "sourceHash": "1457a4f"
   },

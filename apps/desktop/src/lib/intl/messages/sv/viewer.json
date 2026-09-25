@@ -31,7 +31,7 @@
   "@viewer.error.isDirectory": {
     "sourceHash": "b29fe2e"
   },
-  "viewer.error.timeout": "Det gick inte att läsa in filen. Volymen kan vara långsam eller svara inte.",
+  "viewer.error.timeout": "Det gick inte att läsa in filen. Volymen kan vara långsam eller inte svara.",
   "@viewer.error.timeout": {
     "sourceHash": "d163618"
   },

@@ -20,15 +20,15 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "En del av det du har markerat finns endast online. Att flytta dem till papperskorgen skulle <strong>hämta dem först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör antingen alla filer tillgängliga offline först, eller avmarkera alla filer som finns endast online.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "En del av det du har markerat finns bara online. Att flytta dem till papperskorgen skulle <strong>hämta dem först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör antingen alla filer tillgängliga offline först, eller avmarkera alla filer som bara finns online.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Allt du har markerat finns endast online. Att flytta det till papperskorgen skulle <strong>hämta det först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör de här filerna tillgängliga offline först.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Allt du har markerat finns bara online. Att flytta det till papperskorgen skulle <strong>hämta det först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör de här filerna tillgängliga offline först.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Det du markerade visade sig innehålla material som finns endast online, så knappen nedanför erbjuder nu ”Radera”. Läs noteringen ovanför och tryck på den igen om det är okej.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Det du markerade visade sig innehålla material som bara finns online, så knappen nedanför erbjuder nu ”Radera”. Läs noteringen ovanför och tryck på den igen om det är okej.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "623e7e0"
   },
@@ -241,9 +241,9 @@
   "@fileOperations.transferDialog.spaceInfoUnbounded": {
     "sourceHash": "5d74d4d"
   },
-  "fileOperations.transferDialog.smbNativeNote": "Den här delade mappen använder systemanslutningen. Avbrytning kan fördröjas. Använd ”Anslut direkt” i volymväljaren för snabbare överföringar och tillförlitlig avbrytning.",
+  "fileOperations.transferDialog.smbNativeNote": "Den här delade mappen använder systemanslutningen, så det kan dröja innan en avbrytning slår igenom. Använd ”Anslut direkt” i volymväljaren för snabbare överföringar som går att avbryta direkt.",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "cfec439"
+    "sourceHash": "60af535"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Den här mappen finns inte än. Cmdr skapar den under kopieringen.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -367,15 +367,15 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "Det går inte att {verb, select, copy {kopiera} other {flytta}} ”{name}” till en egen undermapp",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "4ad1eaf"
+    "sourceHash": "815204a"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "”{name}” finns redan på den här platsen",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
-    "sourceHash": "1030a7a"
+    "sourceHash": "1bf762e"
   },
-  "fileOperations.transferDialog.pathErrorNotZip": "Arkivets namn måste sluta med \".zip\".",
+  "fileOperations.transferDialog.pathErrorNotZip": "Arkivets namn måste sluta med ”.zip”.",
   "@fileOperations.transferDialog.pathErrorNotZip": {
-    "sourceHash": "c85c6f8"
+    "sourceHash": "7700864"
   },
   "fileOperations.transferDialog.confirmCopy": "Kopiera",
   "@fileOperations.transferDialog.confirmCopy": {
@@ -887,7 +887,7 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Mappnamn får inte innehålla ”/” eller nolltecken} other {Filnamn får inte innehålla ”/” eller nolltecken}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "d84512c"
+    "sourceHash": "4fa16ce"
   },
   "fileOperations.validation.empty": "{kind, select, folder {Mappnamn får inte vara tomt} other {Filnamn får inte vara tomt}}",
   "@fileOperations.validation.empty": {
@@ -903,11 +903,11 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "Det går inte att ändra filtillägget (var ”{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "43c2dc1"
+    "sourceHash": "0b2df1e"
   },
   "fileOperations.validation.conflict": "”{name}” finns redan i den här mappen",
   "@fileOperations.validation.conflict": {
-    "sourceHash": "ba13237"
+    "sourceHash": "842d02d"
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {Det här mappnamnet kan inte användas} other {Det här filnamnet kan inte användas}}",
   "@fileOperations.validation.nameNotUsable": {

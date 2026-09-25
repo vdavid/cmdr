@@ -27,7 +27,7 @@
   "@selection.action.deselect.tooltip": {
     "sourceHash": "bf77e53"
   },
-  "selection.notice.snapshotPane": "Matchningen sker mot det som visas i listan (hela sökvägen).",
+  "selection.notice.snapshotPane": "Matchar det som visas i listan (hela sökvägen).",
   "@selection.notice.snapshotPane": {
     "sourceHash": "aa4306e"
   },

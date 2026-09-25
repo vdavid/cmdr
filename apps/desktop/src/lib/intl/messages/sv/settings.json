@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Välj vilket språk Cmdr använder. ”Systemets standard” följer din Macs språk.",
   "@settings.appearance.language.description": {
-    "sourceHash": "a290add"
+    "sourceHash": "6e36bba"
   },
   "settings.appearance.language.opt.system": "Systemets standard",
   "@settings.appearance.language.opt.system": {
@@ -173,7 +173,7 @@
   },
   "settings.appearance.textSize.description": "Skalar text och gränssnitt i hela appen. Kombineras med macOS textstorlek för hjälpmedel, där 100 % betyder ”exakt systemstorleken”.",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "232df24"
+    "sourceHash": "49a0a6b"
   },
   "settings.appearance.uiDensity.label": "Gränssnittstäthet",
   "@settings.appearance.uiDensity.label": {
@@ -451,7 +451,7 @@
   "@settings.indexing.enabled.label": {
     "sourceHash": "38d916b"
   },
-  "settings.indexing.enabled.description": "Indexera din enhet i bakgrunden för omedelbara mappstorlekar.",
+  "settings.indexing.enabled.description": "Indexera din enhet i bakgrunden, så syns mappstorlekarna direkt.",
   "@settings.indexing.enabled.description": {
     "sourceHash": "32966c5"
   },
@@ -463,7 +463,7 @@
   "@settings.mediaIndex.clip.title": {
     "sourceHash": "e1a8427"
   },
-  "settings.mediaIndex.clip.description": "Hitta bilder genom att beskriva vad de föreställer, som ''solnedgång på stranden'', med en AI-modell på enheten.",
+  "settings.mediaIndex.clip.description": "Hitta bilder genom att beskriva vad de föreställer, som ”solnedgång på stranden”, med en AI-modell på enheten.",
   "@settings.mediaIndex.clip.description": {
     "sourceHash": "d8b25d3"
   },
@@ -927,7 +927,7 @@
   },
   "settings.ai.cloudConsent.lockedHint": "Slå på ”Tillåt moln-AI” ovan för att ställa in en tjänst.",
   "@settings.ai.cloudConsent.lockedHint": {
-    "sourceHash": "6f4097a"
+    "sourceHash": "8a24685"
   },
   "settings.ai.cloudProvider.description": "Vilken moln-AI-tjänst som ska användas.",
   "@settings.ai.cloudProvider.description": {
@@ -969,7 +969,7 @@
   "@settings.network.directSmbConnection.label": {
     "sourceHash": "407c4f1"
   },
-  "settings.network.directSmbConnection.description": "När det är aktiverat upprättar Cmdr en direkt anslutning till SMB-resurser för snabbare filåtgärder. Systemmonteringen finns kvar för Finder och andra appar.",
+  "settings.network.directSmbConnection.description": "När det är aktiverat ansluter Cmdr direkt till SMB-resurser för snabbare filåtgärder. Systemmonteringen finns kvar för Finder och andra appar.",
   "@settings.network.directSmbConnection.description": {
     "sourceHash": "44a5a6d"
   },
@@ -1049,9 +1049,9 @@
   "@settings.fileOperations.mtpEnabled.label": {
     "sourceHash": "6a315a8"
   },
-  "settings.fileOperations.mtpEnabled.description": "Upptäck och anslut till Android och andra enheter via en USB-kabel för att bläddra och överföra filer. För att använda den här funktionen på en Android-telefon vill du använda en USB-kabel, och sedan på telefonen gå till något i stil med Inställningar > USB-inställningar och ställa in anslutningen på ”Filöverföring”, ”Android Auto” eller liknande. (Varierar mellan enheter.)",
+  "settings.fileOperations.mtpEnabled.description": "Upptäck och anslut till Android och andra enheter via en USB-kabel för att bläddra och överföra filer. På en Android-telefon ansluter du USB-kabeln och går sedan på telefonen till något i stil med Inställningar > USB-inställningar och ställer in anslutningen på ”Filöverföring”, ”Android Auto” eller liknande. (Varierar mellan enheter.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "834ea99"
+    "sourceHash": "37444c2"
   },
   "settings.fileOperations.adbEnabled.label": "Åtkomst till Android-filer via ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1059,7 +1059,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Nå hela filsystemet på en Android-telefon som har USB-felsökning aktiverad, något som MTP inte kan visa dig. Kräver Android platform tools (kommandot ”adb”) på den här Macen. Att låta det vara påslaget kostar ingenting om du inte har några Android-verktyg installerade.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "8577083"
+    "sourceHash": "57cf2aa"
   },
   "settings.fileOperations.adbBinaryPath.label": "Sökväg till adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1164,7 +1164,7 @@
   },
   "settings.whatsNew.lastSeenVersion.description": "Internt: versionen vi senast visade i popupen ”Nyheter”. Avancerar tyst vid varje start så att en återaktiverad popup aldrig spelar upp en månadslång eftersläpning. Dold i gränssnittet.",
   "@settings.whatsNew.lastSeenVersion.description": {
-    "sourceHash": "d4f7a52"
+    "sourceHash": "d8677e1"
   },
   "settings.analytics.enabled.label": "Skicka användningsstatistik",
   "@settings.analytics.enabled.label": {
@@ -1202,7 +1202,7 @@
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
-  "settings.updates.attachEmailToReports.description": "När du skickar en krasch- eller felrapport, inkludera din kontakt-e-post för beta så att vi kan svara. Du kan ändra detta per rapport.",
+  "settings.updates.attachEmailToReports.description": "När du skickar en krasch- eller felrapport, ta med din kontakt-e-post för betan så att vi kan svara. Du kan ändra det för varje rapport.",
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
@@ -1268,7 +1268,7 @@
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.description": "Hur många nyligen stängda flikar som behålls per panel för ”Öppna stängd flik igen” (⌘⇧T). Högre värden låter dig öppna längre bak i historiken; lägre värden frigör minne snabbare. Gäller endast flikar som stängts under den aktuella sessionen.",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "fe01a43"
+    "sourceHash": "e53df3a"
   },
   "settings.advanced.dragThreshold.label": "Dragtröskel",
   "@settings.advanced.dragThreshold.label": {
@@ -1340,7 +1340,7 @@
   },
   "settings.advanced.showSafeSaveFiles.description": "När appar som TextEdit och Förhandsvisning sparar en fil skriver macOS den nya versionen bredvid under ett tillfälligt namn (som slutar på ”.sb-”) och byter sedan ut den. Stäng av det här för att hålla dem borta från fillistan.",
   "@settings.advanced.showSafeSaveFiles.description": {
-    "sourceHash": "1749ee6"
+    "sourceHash": "b371701"
   },
   "settings.advanced.showStagingTempFiles.label": "Visa Cmdrs tillfälliga filer",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1396,7 +1396,7 @@
   },
   "settings.onboarding.upgradeNudgeShown.description": "Internt: håller reda på om engångsaviseringen ”menyalternativet Introduktion finns nu” har utlösts för en befintlig användare efter att guiden gjorts om. Dold i gränssnittet.",
   "@settings.onboarding.upgradeNudgeShown.description": {
-    "sourceHash": "5cfb2b5"
+    "sourceHash": "c877371"
   },
   "settings.askCmdr.consentRevokePending.label": "Ask Cmdr av, väntar på att sparas",
   "@settings.askCmdr.consentRevokePending.label": {
@@ -1426,7 +1426,7 @@
   "@settings.advanced.updateCheckInterval.label": {
     "sourceHash": "91912bc"
   },
-  "settings.advanced.updateCheckInterval.description": "Hur ofta det söks efter uppdateringar i bakgrunden.",
+  "settings.advanced.updateCheckInterval.description": "Hur ofta Cmdr söker efter uppdateringar i bakgrunden.",
   "@settings.advanced.updateCheckInterval.description": {
     "sourceHash": "2bdd38a"
   },
@@ -1541,23 +1541,23 @@
   },
   "settings.revealHandler.description": "När en annan app kör ”Visa i Finder” öppnar Cmdr den mappen med filen under markören. I övrigt är Finder fortfarande din förvalda filhanterare.",
   "@settings.revealHandler.description": {
-    "sourceHash": "ebb79ff"
+    "sourceHash": "9522e41"
   },
   "settings.revealHandler.heldByOtherApp": "Just nu: {app}. Slår du på det här tar Cmdr över ”Visa i Finder”.",
   "@settings.revealHandler.heldByOtherApp": {
-    "sourceHash": "d0aa283"
+    "sourceHash": "4b956ef"
   },
   "settings.revealHandler.uninstallWarning": "<lead>Stäng av det här innan du avinstallerar Cmdr.</lead> macOS fortsätter skicka ”Visa i Finder” hit, och utan Cmdr händer det ingenting alls när du klickar.",
   "@settings.revealHandler.uninstallWarning": {
-    "sourceHash": "3c10fd3"
+    "sourceHash": "9464597"
   },
   "settings.revealHandler.notInApplications": "Flytta Cmdr till mappen Appar för att kunna slå på det här. Där appen körs nu skulle en flytt eller radering av Cmdr göra att varje klick på ”Visa i Finder” pekar på ingenting.",
   "@settings.revealHandler.notInApplications": {
-    "sourceHash": "dc15ebf"
+    "sourceHash": "1a380cf"
   },
   "settings.revealHandler.notProductionBuild": "Det här går bara att slå på i en släppt version av Cmdr. Utvecklings- och testversioner kommer och går, och raderar du en av dem skulle varje klick på ”Visa i Finder” peka på ingenting.",
   "@settings.revealHandler.notProductionBuild": {
-    "sourceHash": "20648ba"
+    "sourceHash": "7195002"
   },
   "settings.behavior.textEditorApp.label": "Redigera filer i",
   "@settings.behavior.textEditorApp.label": {
@@ -1565,7 +1565,7 @@
   },
   "settings.behavior.textEditorApp.description": "Cmdr listar de textredigerare som macOS känner till på den här Macen. För en annan app, välj ”Välj app…”.",
   "@settings.behavior.textEditorApp.description": {
-    "sourceHash": "b062aed"
+    "sourceHash": "4641320"
   },
   "settings.behavior.textEditorApp.systemDefault": "Systemets standard ({app})",
   "@settings.behavior.textEditorApp.systemDefault": {
@@ -1601,7 +1601,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "Cmdr listar de terminalappar den hittar på den här Macen. För en som den inte känner till, välj ”Välj app…”.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "0df49fc"
+    "sourceHash": "32ccd8f"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "Välj app…",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1665,7 +1665,7 @@
   },
   "settings.behavior.revealNudgeOfferedAt.description": "När engångserbjudandet att öppna ”Visa i Finder” i Cmdr visades.",
   "@settings.behavior.revealNudgeOfferedAt.description": {
-    "sourceHash": "2b9d5b4"
+    "sourceHash": "b6a8933"
   },
   "settings.behavior.revealActivationNoticeSeen.label": "Avisering om första visningen visad",
   "@settings.behavior.revealActivationNoticeSeen.label": {
@@ -1673,7 +1673,7 @@
   },
   "settings.behavior.revealActivationNoticeSeen.description": "Om aviseringen om den första ”Visa i Finder” som öppnades i Cmdr har visats.",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "f2107a5"
+    "sourceHash": "009056a"
   },
   "settings.behavior.adbHintDismissed.label": "Tips om USB-felsökning avfärdat",
   "@settings.behavior.adbHintDismissed.label": {
@@ -1742,7 +1742,7 @@
   "@settings.askCmdr.provider.title": {
     "sourceHash": "b9fdc88"
   },
-  "settings.askCmdr.provider.shared": "Cmdr använder AI-leverantören och nyckeln du har konfigurerat i Inställningar › AI ({provider}).",
+  "settings.askCmdr.provider.shared": "Cmdr använder AI-leverantören och nyckeln du har ställt in i Inställningar › AI ({provider}).",
   "@settings.askCmdr.provider.shared": {
     "sourceHash": "9442b09"
   },
@@ -2340,7 +2340,7 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "Lagras endast på din Mac. Vi skickar den aldrig tillsammans med din användningsstatistik, så statistiken kan inte kopplas tillbaka till dig. Används endast för att höra av oss och för att frivilligt bifoga till en rapport du skickar. För att sluta få e-post, använd avregistreringslänken i ett valfritt meddelande vi skickar.",
+  "settings.updates.emailPrivacyNote": "Lagras bara på din Mac. Vi skickar den aldrig tillsammans med din användningsstatistik, så statistiken kan inte kopplas tillbaka till dig. Används bara för att höra av oss och, om du vill, för att bifoga till en rapport du skickar. Vill du sluta få e-post använder du avregistreringslänken i något av våra meddelanden.",
   "@settings.updates.emailPrivacyNote": {
     "sourceHash": "f22c213"
   },
@@ -2400,7 +2400,7 @@
   "@settings.advanced.resetAll": {
     "sourceHash": "a04d9be"
   },
-  "settings.advanced.resetAllConfirm": "Återställ alla avancerade inställningar till sina förval? Detta kan inte ångras.",
+  "settings.advanced.resetAllConfirm": "Återställ alla avancerade inställningar till sina förval? Det går inte att ångra.",
   "@settings.advanced.resetAllConfirm": {
     "sourceHash": "be08f2a"
   },

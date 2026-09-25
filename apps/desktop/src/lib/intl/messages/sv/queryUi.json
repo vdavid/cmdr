@@ -230,7 +230,7 @@
   "@queryUi.results.widenToVolume": {
     "sourceHash": "7dfc278"
   },
-  "queryUi.results.indexNotReady": "Enhetsindexet är inte klart. Sökning blir tillgänglig när den första genomsökningen är klar.",
+  "queryUi.results.indexNotReady": "Enhetsindexet är inte klart. Du kan söka när den första genomsökningen är klar.",
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },

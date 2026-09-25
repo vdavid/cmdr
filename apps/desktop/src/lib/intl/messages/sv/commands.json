@@ -528,7 +528,7 @@
   "@commands.cloudRemoveDownload.label": {
     "sourceHash": "5dfc369"
   },
-  "commands.cloudRemoveDownload.description": "Tar bort den lokala kopian av en molnfil och behåller den endast tillgänglig online",
+  "commands.cloudRemoveDownload.description": "Tar bort den lokala kopian av en molnfil, så att den bara finns online",
   "@commands.cloudRemoveDownload.description": {
     "sourceHash": "470afd2"
   },
@@ -766,7 +766,7 @@
   },
   "commands.handler.favoriteAdded": "Lade till ”{name}” i favoriter",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
   "commands.handler.favoriteAddFailed": "Det gick inte att lägga till mappen i favoriter. Försök igen?",
   "@commands.handler.favoriteAddFailed": {

@@ -441,7 +441,7 @@
   },
   "ai.secretError.keychainBody": "{op, select, save {Öppna Nyckelhanterare och kontrollera posten ”Cmdr”, eller radera den och försök spara igen.} other {Öppna Nyckelhanterare, leta upp posten ”Cmdr”, ge åtkomst, eller radera den och ange din nyckel på nytt.}}",
   "@ai.secretError.keychainBody": {
-    "sourceHash": "2a0fe5e"
+    "sourceHash": "8f1380e"
   },
   "ai.secretError.keyringTitle": "{op, select, save {Det gick inte att spara din API-nyckel: systemets nyckelring nekade åtkomst} other {Det gick inte att läsa din sparade API-nyckel: systemets nyckelring nekade åtkomst}}",
   "@ai.secretError.keyringTitle": {

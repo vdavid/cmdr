@@ -1,0 +1,29 @@
+{
+  "$comment": "Swedish typography: ”…” with the closing mark on both sides (macOS sv: Finder `Radera skivan ”%@”`, `Vill du radera ”%@”?`), nested ’…’ likewise (Svenska skrivregler), and ’ as the apostrophe. Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["”", "”"], "nested": ["’", "’"] },
+  "apostrophes": ["’"],
+  "spacing": [
+    {
+      "pattern": "[\\p{N}\\uFFFC]%",
+      "why": "Swedish puts a space between a number and % (`100 %`, `{percent} %`)"
+    }
+  ],
+  "hedges": [
+    {
+      "pattern": "\\p{L}\\((?:e?[nt]|er|ar|or|na|a|e|r|s)\\)",
+      "why": "a bracketed plural or definite ending (`fil(er)`, `mapp(en)`, `objekt(et)`); use ICU plural, or rephrase"
+    },
+    {
+      "pattern": "\\p{L}/-?(?:e?[nt]|er|ar|or|na|a)(?!\\p{L})",
+      "why": "a slashed ending (`markerad/-t`, `fil/er`); use ICU plural or select, or rephrase so nothing agrees"
+    },
+    {
+      "pattern": "(?<!\\p{L})(?:en/ett|ett/en|den/det|det/den|denna/detta|detta/denna|han/hon|hon/han)(?!\\p{L})",
+      "why": "a slashed article or pronoun that dodges en/ett gender; name the noun (`filen`, `objektet`) or rephrase"
+    },
+    {
+      "pattern": "\\uFFFC(?::|’|')?\\p{Ll}",
+      "why": "an ending or genitive glued to an insert (`{name}s`, `{name}:s`, `{system_settings}en`) depends on how the value sounds; use a preposition (`på {name}`, `från {host}`). A hyphenated compound (`{mode}-sökning`, `.git`-mappen) is fine"
+    }
+  ]
+}

@@ -95,7 +95,7 @@
   "@onboarding.stepFda.firstAsk.lede": {
     "sourceHash": "7f19b2a"
   },
-  "onboarding.stepFda.firstAsk.explain": "Du förstår, Cmdr är en filhanterare och behöver komma åt din skiva för att se alla dina filer. macOS ger inte automatiskt behörighet till detta.",
+  "onboarding.stepFda.firstAsk.explain": "Du förstår, Cmdr är en filhanterare och behöver komma åt din skiva för att se alla dina filer. macOS ger inte den behörigheten automatiskt.",
   "@onboarding.stepFda.firstAsk.explain": {
     "sourceHash": "f60c41b"
   },
@@ -119,7 +119,7 @@
   "@onboarding.stepFda.con.label": {
     "sourceHash": "ebfc77d"
   },
-  "onboarding.stepFda.con.body": "Full skivtillgång är ganska kraftfull. Den låter appen läsa vilken fil som helst på din Mac. Ge bara detta om du litar på Cmdr. Cmdr använder den här rätten respektfullt och är <sourceLink>källtillgänglig</sourceLink> om du känner dig osäker.",
+  "onboarding.stepFda.con.body": "Full skivtillgång är ganska kraftfull. Den låter appen läsa vilken fil som helst på din Mac. Ge den bara om du litar på Cmdr. Cmdr använder den här rätten respektfullt och är <sourceLink>källtillgänglig</sourceLink> om du känner dig osäker.",
   "@onboarding.stepFda.con.body": {
     "sourceHash": "af7f0de"
   },
@@ -145,7 +145,7 @@
   },
   "onboarding.stepFda.step2.tip": "Finns inte Cmdr i listan? Klicka på ”+”-knappen längst ner och välj <strong>Cmdr</strong> från mappen <strong>Appar</strong>.",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "30d0299"
+    "sourceHash": "ffc4289"
   },
   "onboarding.stepFda.step3": "Bekräfta och klicka på <strong>Avsluta och öppna igen</strong>",
   "@onboarding.stepFda.step3": {
@@ -189,7 +189,7 @@
   },
   "onboarding.stepAi.bannerBody.stuck": "Du sa att du ville aktivera full skivtillgång, men Cmdr verkar inte ha fått den. Du kan behöva starta om appen (gör det nu, vi fortsätter härifrån!), eller gå till <settingsLink>{systemSettings} > Integritet och säkerhet > Full skivtillgång</settingsLink> och hitta Cmdr, eller lägg till den manuellt med den lilla ”+”-knappen längst ner.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "79d5765"
+    "sourceHash": "fcdff85"
   },
   "onboarding.stepAi.welcomeLinux.title": "Välkommen till Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -229,11 +229,11 @@
   },
   "onboarding.stepAi.table.searchWithout": "Du skriver något i stil med <code>*fish*.ppt</code> och väljer filtret ”efter den 1:a den här månaden”.",
   "@onboarding.stepAi.table.searchWithout": {
-    "sourceHash": "872cb1e"
+    "sourceHash": "ebd8f45"
   },
   "onboarding.stepAi.table.searchWith": "Du säger ”mina senaste fiskrelaterade presentationer”, agenten ställer in dina filter.",
   "@onboarding.stepAi.table.searchWith": {
-    "sourceHash": "b69cd82"
+    "sourceHash": "457e19a"
   },
   "onboarding.stepAi.table.rowRename": "Massbyt namn",
   "@onboarding.stepAi.table.rowRename": {
@@ -245,7 +245,7 @@
   },
   "onboarding.stepAi.table.renameWith": "Du säger ”lägg till ISO-datumprefix”, agenten ställer in ditt namnmönster, du granskar och tillämpar som du vill.",
   "@onboarding.stepAi.table.renameWith": {
-    "sourceHash": "7fba3f5"
+    "sourceHash": "5287ae3"
   },
   "onboarding.stepAi.table.rowSelect": "Markera",
   "@onboarding.stepAi.table.rowSelect": {
@@ -257,11 +257,11 @@
   },
   "onboarding.stepAi.table.selectWithoutUnbound": "Du öppnar ”Markera filer…” och skriver något i stil med <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code>, granskar och tillämpar.",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "sourceHash": "4cdc972"
+    "sourceHash": "bf9239a"
   },
   "onboarding.stepAi.table.selectWith": "Du säger ”markera alla bildfiler”, agenten föreslår en markering, du granskar och tillämpar som du vill.",
   "@onboarding.stepAi.table.selectWith": {
-    "sourceHash": "07f1063"
+    "sourceHash": "c1cc90b"
   },
   "onboarding.stepAi.resumeCue": "Du valde det här förra gången. Bekräfta eller ändra nedan.",
   "@onboarding.stepAi.resumeCue": {
@@ -305,7 +305,7 @@
   },
   "onboarding.stepAi.missingKeyWarning": "Du har aktiverat AI men inte angett någon API-nyckel. AI fungerar inte och du får se en varning. Åtgärda det här ovanför.\n\n<strong>Klicka på ”{nextLabel}” igen för att strunta i det här och gå vidare.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "3d66d11"
+    "sourceHash": "bdb8a08"
   },
   "onboarding.stepAi.cloudConsentOffNote": "Moln-AI förblir avstängt tills du tillåter det. Du kan göra det senare i Inställningar > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -357,7 +357,7 @@
   },
   "onboarding.stepBeta.checklist.alternativeToNote": "Längst upp på sidan, bredvid rubriken ”Cmdr”. Det hjälper både folk och Google att upptäcka Cmdr!",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "sourceHash": "ea4903a"
+    "sourceHash": "ee4aed4"
   },
   "onboarding.stepBeta.checklist.email": "Ange din e-postadress <field></field>, så hör jag av mig väldigt sällan med uppdateringar och frågor",
   "@onboarding.stepBeta.checklist.email": {
@@ -439,7 +439,7 @@
   "@onboarding.stepOptional.title": {
     "sourceHash": "6ad977a"
   },
-  "onboarding.stepOptional.lede": "Du valde att gå igenom en detaljerad inställning, så här är några enkla val. Om du inte bryr dig så mycket, klicka bara på knappen nedan. Det här är alla valfria, och standardvärdena är valda för din skull.",
+  "onboarding.stepOptional.lede": "Du valde att gå igenom en detaljerad inställning, så här är några enkla val. Om du inte bryr dig så mycket, klicka bara på knappen nedan. Allt det här är valfritt, och standardvärdena är valda för din skull.",
   "@onboarding.stepOptional.lede": {
     "sourceHash": "b1242c9"
   },
@@ -457,11 +457,11 @@
   },
   "onboarding.stepOptional.networking.summary": "Kräver att du godkänner ”Lokalt nätverk” en gång",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "5006f53"
+    "sourceHash": "f49fbc6"
   },
-  "onboarding.stepOptional.networking.desc": "Att ha det här <em>på</em> betyder att du kan ansluta till SMB-servrar som delade mappar på företagets nätverk, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokalt nätverk”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.",
+  "onboarding.stepOptional.networking.desc": "Med det här <em>på</em> kan du ansluta till SMB-servrar som delade mappar på företagets nätverk, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokalt nätverk”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "089707f"
+    "sourceHash": "c03c7df"
   },
   "onboarding.stepOptional.indexing.title": "Enhetsindexering",
   "@onboarding.stepOptional.indexing.title": {
@@ -483,7 +483,7 @@
   "@onboarding.stepOptional.indexing.benefit2": {
     "sourceHash": "6fe5223"
   },
-  "onboarding.stepOptional.indexing.descCost": "Om du stänger av det här får du bara <code>{dirPlaceholder}</code> för storlekarna.\nKostnaden är runt 1 GB index på din enhet för ett par miljoner filer, men ingen extra CPU- eller minnesanvändning efter de första 2–3 minuterna av att du först startar appen, eller startar den efter lång tid.\nDet är en billig funktion med tanke på fördelarna.",
+  "onboarding.stepOptional.indexing.descCost": "Om du stänger av det här får du bara <code>{dirPlaceholder}</code> för storlekarna.\nKostnaden är runt 1 GB index på din enhet för ett par miljoner filer, men ingen extra CPU- eller minnesanvändning efter de första 2–3 minuterna när du startar appen första gången, eller startar den efter ett långt uppehåll.\nDet är en billig funktion med tanke på fördelarna.",
   "@onboarding.stepOptional.indexing.descCost": {
     "sourceHash": "0b60064"
   },
@@ -495,7 +495,7 @@
   "@onboarding.stepOptional.updates.summary": {
     "sourceHash": "c44fcd4"
   },
-  "onboarding.stepOptional.updates.desc": "Om du aktiverar det här gör Cmdr en liten nätverksförfrågan till en central licensserver vid varje appstart plus en gång var 24:e timme, och du får alltid de senaste uppdateringarna.\nOm det är avstängt behåller du din nuvarande version, och noll automatiserade nätverksförfrågningar (förutom periodiska licenskontroller, om du har en kommersiell licens).",
+  "onboarding.stepOptional.updates.desc": "Om du aktiverar det här gör Cmdr en liten nätverksförfrågan till en central licensserver vid varje appstart plus en gång var 24:e timme, och du får alltid de senaste uppdateringarna.\nOm det är avstängt behåller du din nuvarande version, och Cmdr gör noll automatiska nätverksförfrågningar (förutom periodiska licenskontroller, om du har en kommersiell licens).",
   "@onboarding.stepOptional.updates.desc": {
     "sourceHash": "12b7f08"
   },
@@ -507,7 +507,7 @@
   "@onboarding.stepOptional.mtp.summary": {
     "sourceHash": "d5b9a6e"
   },
-  "onboarding.stepOptional.mtp.desc": "Om du aktiverar det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.\nKostnaden är att macOS <em>också</em> vill ansluta till dessa (och det går oftast inte, vilket är därför du inte bara kan använda Finder för att kopiera foton från Android-telefoner), så Cmdr måste hålla tillbaka den macOS-processen medan den körs.\nNär du avslutar Cmdr återställs detta artigt.",
+  "onboarding.stepOptional.mtp.desc": "Om du aktiverar det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.\nKostnaden är att macOS <em>också</em> vill ansluta till dem (och det går oftast inte, det är därför du inte bara kan använda Finder för att kopiera foton från Android-telefoner), så Cmdr måste hålla tillbaka den macOS-processen medan den körs.\nNär du avslutar Cmdr får macOS snällt tillbaka processen.",
   "@onboarding.stepOptional.mtp.desc": {
     "sourceHash": "9563b7b"
   },

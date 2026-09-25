@@ -40,7 +40,7 @@
     ],
     "chosen": "lägg till",
     "confidence": "high",
-    "decision": "Komplettera en redan skickad felrapport",
+    "decision": "Amending a sent error report",
     "exceptions": {
       "search.walkHandoff.superseded": "Stopped adding to the results is the idiom slutade fylla på resultaten; lägga till would read as adding a result by hand."
     },
@@ -51,7 +51,7 @@
     "accept": ["AI:n", "AI-"],
     "chosen": "AI-funktioner",
     "confidence": "high",
-    "decision": "Ask Cmdr namnger bara chattpanelen",
+    "decision": "Ask Cmdr names only the chat panel",
     "forms": "AI features → AI-funktioner (indefinite); the AI as subject → AI:n, genitive AI:ns",
     "sources": "catalog (settings.ai.tooltipOff, settings.ai.provider.description, ai.translateError.*)"
   },
@@ -79,7 +79,7 @@
     ],
     "chosen": "tillåt",
     "confidence": "high",
-    "decision": "Android över ADB: panelen, volymväljaren och tipsraden",
+    "decision": "Android over ADB",
     "exceptions": {
       "fileOperations.validation.extensionChangeBlocked": "A rule, not a grant: Det går inte att ändra filtillägget.",
       "search.coverage.denied": "Wasn't allowed to is fick inte in Swedish; tillåta would need a passive construction."
@@ -103,7 +103,7 @@
     ],
     "chosen": "svar",
     "confidence": "high",
-    "decision": "Frågan som stoppar en kö-rad och ångradialogen",
+    "decision": "Awaiting-answer row and rollback confirm",
     "forms": "status Behöver ditt svar; tills du svarar; kommer ihåg ditt svar",
     "sources": "MS terminology (answer/reply → svara); macOS (behöver)"
   },
@@ -116,7 +116,7 @@
   "app-bundle": {
     "chosen": "appaket",
     "confidence": "tentative",
-    "decision": "Archives: browse, open, extract",
+    "decision": "Archives",
     "forms": "card and row Appaket (app + paket, the three-p reduction); a generic bundle is paket",
     "sources": "macOS Finder (Visa paketets innehåll); the compound is conventional"
   },
@@ -153,7 +153,7 @@
     ],
     "chosen": "Appar",
     "confidence": "high",
-    "decision": "Dock-erbjudandet: engångsfrågan om att lägga Cmdr i Dock",
+    "decision": "Dock offer",
     "forms": "mappen Appar; dra … från mappen Appar",
     "sources": "macOS 26 Finder Localizable (Applications/Apps → Appar), AppKit Menus, AppKitErrors"
   },
@@ -174,14 +174,14 @@
     ],
     "chosen": "godkänn",
     "confidence": "high",
-    "decision": "Föreslagna åtgärder: rutan för det Ask Cmdr föreslår",
+    "decision": "Suggested operations",
     "forms": "button Godkänn; förrän du godkänner det",
     "sources": "standard Swedish; macOS Finder (Ta emot/Avböj is the AirDrop pair)"
   },
   "archive": {
     "chosen": "arkiv",
     "confidence": "high",
-    "decision": "Archives: browse, open, extract",
+    "decision": "Archives",
     "forms": "neuter: ett arkiv, arkivet, plural arkiv; zip-arkiv, zip-fil; read-only archive → skrivskyddat arkiv; the menu-bar File menu is also Arkiv, but Apple itself uses arkiv for the compressed file",
     "sources": "macOS Finder (Komprimerar objekt till ett arkiv, Zip-arkiv), Total Commander"
   },
@@ -202,7 +202,7 @@
   "ask-cmdr": {
     "chosen": "Ask Cmdr",
     "confidence": "high",
-    "decision": "Ask Cmdr namnger bara chattpanelen",
+    "decision": "Ask Cmdr names only the chat panel",
     "forms": "verbatim; genitive Ask Cmdrs; names only the chat panel, prose about the AI says Cmdr or AI:n",
     "sources": "product name"
   },
@@ -242,7 +242,7 @@
     ],
     "chosen": "i bakgrunden",
     "confidence": "high",
-    "decision": "Köknappen när kön är tom",
+    "decision": "Queue button with an empty queue",
     "forms": "button I bakgrunden; Håll igång den här i bakgrunden; the pane's backdrop is panelens bakgrund",
     "sources": "Total Commander sv (4004=\"I &bakgrunden\"); MS terminology"
   },
@@ -256,7 +256,7 @@
     ],
     "chosen": "märke",
     "confidence": "high",
-    "decision": "The trash refusal dialog",
+    "decision": "Title-bar full disk access badge",
     "forms": "the title-bar pill → märket; a file row's overlay marker → statussymbol / symbol (Visa statussymboler på bildfiler)",
     "sources": "MS terminology (badge → märke); catalog precedent for overlay symbols (varningssymbol, appsymboler)"
   },
@@ -286,7 +286,7 @@
     "accept": ["upptaget", "upptagna"],
     "chosen": "upptagen",
     "confidence": "high",
-    "decision": "Utmatning och frånkoppling som inte gick igenom",
+    "decision": "Eject and disconnect errors",
     "forms": "the disabled-menu marker ` (upptagen)` stays uninflected at the end of the item; a volume someone holds open is används, not upptagen",
     "sources": "MS terminology (busy → upptagen)"
   },
@@ -312,7 +312,7 @@
     ],
     "chosen": "kamerauppgifter",
     "confidence": "high",
-    "decision": "Ask Cmdr tittar in i filer: samtyckestexten och verktygsraden",
+    "decision": "Ask Cmdr looks inside files",
     "sources": "MS and macOS (kamera); catalog -uppgifter for file metadata (Filuppgifter)"
   },
   "cancel": {
@@ -349,14 +349,14 @@
   "character-viewer": {
     "chosen": "Teckenvisare",
     "confidence": "tentative",
-    "decision": "Shortcut conflicts and the macOS features they name",
+    "decision": "Shortcut conflicts",
     "sources": "Apple-style Swedish, not in the pile"
   },
   "chat": {
     "accept": ["chatta"],
     "chosen": "chatt",
     "confidence": "high",
-    "decision": "Ask Cmdr: chatten, verktygsraderna och kostnaden",
+    "decision": "Ask Cmdr chat",
     "forms": "en chatt, chatten, chattar; verb chatta; conversation → samtal, never interchangeable",
     "sources": "MS terminology (chat → chatt)"
   },
@@ -377,14 +377,14 @@
     ],
     "chosen": "kontrollera",
     "confidence": "high",
-    "decision": "Gränser: båda formerna är rätt, platta inte ut dem",
+    "decision": "Boundaries: both forms are right",
     "forms": "verifying → Kontrollerar / kontrollera; a casual look → kolla / titta (Kolla de tekniska detaljerna nedan, Titta på din telefon); looking for something → Söker efter (Checking for X → Söker efter X); a license or download → verifiera; Re-check → Leta igen; the drive index's full check → genomsökning; run-kind header Kontroll av ändringar",
     "sources": "macOS Finder (Kontrollerar); catalog (Sök efter uppdateringar)"
   },
   "checklist": {
     "chosen": "checklista",
     "confidence": "high",
-    "decision": "Kryssrutelistan i beta-steget",
+    "decision": "Beta-step checklist",
     "forms": "Checklista för att komma igång",
     "sources": "MS terminology (checklist → checklista)"
   },
@@ -443,7 +443,7 @@
   "cloud-ai": {
     "chosen": "moln-AI",
     "confidence": "high",
-    "decision": "Strömbrytaren ”Tillåt moln-AI” och lägena när moln-AI är avstängt",
+    "decision": "Allow cloud AI",
     "forms": "neuter like AI: Moln-AI är avstängt; switch Tillåt moln-AI; service → moln-AI-tjänst",
     "sources": "catalog (settings.ai.provider.opt.cloud)"
   },
@@ -487,7 +487,7 @@
     "accept": ["komprimerar", "komprimerade", "komprimering"],
     "chosen": "komprimera",
     "confidence": "high",
-    "decision": "The archive password and compression",
+    "decision": "Archive password and compression",
     "forms": "button Komprimera; progress Komprimerar; toast Komprimerade; slider Komprimeringsnivå (Snabbare / Mindre)",
     "sources": "macOS Finder (Komprimera); Total Commander (Komprimering)"
   },
@@ -557,7 +557,7 @@
     "accept": ["krasch", "avslutades oväntat"],
     "chosen": "kraschrapport",
     "confidence": "high",
-    "decision": "Kraschdialogens tre varianter: kraschade, fortsatte, eller vet inte",
+    "decision": "Crash dialog variants",
     "forms": "the keptRunning/unknown variants say en rapport (nothing crashed); the Settings label stays Skicka kraschrapporter",
     "sources": "standard Swedish compound; MS (rapport)"
   },
@@ -635,7 +635,7 @@
     ],
     "chosen": "radera",
     "confidence": "high",
-    "decision": "Termdriftsgranskning: en sak, ett namn",
+    "decision": "One thing, one name",
     "exceptions": {
       "settings.mediaIndex.reclaim.button": "Reclaim takes rows out of the image index, not files off the disk, so it keeps ta bort.",
       "settings.mediaIndex.reclaim.confirmBody": "Reclaim takes rows out of the image index, not files off the disk, so it keeps ta bort.",
@@ -690,7 +690,7 @@
     "accept": ["kopplar från", "kopplades från", "frånkoppl", "kopplas från"],
     "chosen": "koppla från",
     "confidence": "high",
-    "decision": "Utmatning och frånkoppling som inte gick igenom",
+    "decision": "Eject and disconnect errors",
     "forms": "Koppla från {name}; in progress håller på att kopplas från; state frånkopplad",
     "note": "Programmatic disconnect only; the device out of the port is koppla ur, the cable out of the socket is dra ur.",
     "sources": "macOS Finder (MR10.1 Koppla från), MS, GNOME"
@@ -705,7 +705,7 @@
     ],
     "chosen": "skivavbild",
     "confidence": "high",
-    "decision": "Utmatningen som vägrades av en namngiven app",
+    "decision": "Eject and disconnect errors",
     "forms": "en skivavbild, short avbilden",
     "sources": "macOS Finder (Skivavbild:, Bränn skivavbilden)"
   },
@@ -722,7 +722,7 @@
     ],
     "chosen": "avfärda",
     "confidence": "high",
-    "decision": "Progress chip + failure notice",
+    "decision": "Progress chip and failure notice",
     "forms": "Avfärda / Avfärda alla; hint flag Tips om … avfärdat",
     "sources": "macOS AppKit TouchBar (Dismiss Popover → Avfärda popover)"
   },
@@ -735,14 +735,14 @@
     ],
     "chosen": "Dock",
     "confidence": "high",
-    "decision": "Dock-erbjudandet: engångsfrågan om att lägga Cmdr i Dock",
+    "decision": "Dock offer",
     "forms": "i Dock, från Dock; compounds hyphenate (Dock-inställningar)",
     "sources": "macOS Dock.app DockMenus.strings (Behåll i Dock, Ta bort från Dock)"
   },
   "documents": {
     "chosen": "dokument",
     "confidence": "high",
-    "decision": "`Documents and packages`: the new OOXML row",
+    "decision": "Archives",
     "sources": "macOS Finder (GROUP_DOCUMENTS → Dokument)"
   },
   "done": {
@@ -767,7 +767,7 @@
     ],
     "chosen": "hämta",
     "confidence": "high",
-    "decision": "Stegen för att sätta upp en AI-leverantör",
+    "decision": "AI provider setup",
     "forms": "verb hämta, noun hämtning; the Downloads folder is Hämtade filer",
     "sources": "macOS Finder (Hämtade filer, Hämtningar)"
   },
@@ -775,14 +775,14 @@
     "accept": ["disk", "skiv"],
     "chosen": "enhet",
     "confidence": "high",
-    "decision": "Enhetsindexeringens huvudreglage",
+    "decision": "Drive indexing's master switch",
     "forms": "English disk → disk (en intern disk); skiva only when mirroring Finder's own disk wording; drive indexing → enhetsindexering",
     "sources": "macOS (anslut en enhet), MS (enhet)"
   },
   "duplicate": {
     "chosen": "duplicera",
     "confidence": "high",
-    "decision": "Duplicera: kommandot som kopierar i samma mapp",
+    "decision": "Duplicate",
     "sources": "macOS Finder (Arkiv > Duplicera, macOS 26.6.1, 2026-08-19)"
   },
   "edit": {
@@ -799,7 +799,7 @@
     "accept": ["matar ut", "matas ut", "matades ut", "utmatning", "mata sedan ut"],
     "chosen": "mata ut",
     "confidence": "high",
-    "decision": "Utmatning och frånkoppling som inte gick igenom",
+    "decision": "Eject and disconnect errors",
     "forms": "Mata ut {name}; the noun utmatningen (tentative)",
     "sources": "macOS Finder, GNOME (Mata ut)"
   },
@@ -843,7 +843,7 @@
     ],
     "chosen": "Retur",
     "confidence": "high",
-    "decision": "Markeringsdialogen: markera och avmarkera filer",
+    "decision": "Selection dialog",
     "forms": "Tryck på Retur för att söka",
     "sources": "macOS; catalog (search.runHint)"
   },
@@ -865,7 +865,7 @@
     "accept": ["ESC"],
     "chosen": "Escape",
     "confidence": "high",
-    "decision": "Escape lämnar helskärmsläge",
+    "decision": "Escape leaves full screen",
     "forms": "the keycap label ESC; in full sentences Escape",
     "sources": "macOS AppKit FunctionKeyNames (Escape)"
   },
@@ -886,7 +886,7 @@
     ],
     "chosen": "utesluta",
     "confidence": "high",
-    "decision": "Namnbyten i klump, bildindexets omfattning och Ask Cmdrs bildverktyg",
+    "decision": "Image indexing",
     "forms": "Uteslutna mappar; a single excluded image → Ingår inte i bildsökningen (a state, not the user's action)",
     "sources": "Total Commander (Uteslut); catalog (settings.mediaIndex.excludedFolders.label)"
   },
@@ -927,14 +927,14 @@
     ],
     "chosen": "gick inte",
     "confidence": "high",
-    "decision": "Progress chip + failure notice",
+    "decision": "Progress chip and failure notice",
     "forms": "headline Gick inte att slutföra …; body Det gick inte att …; Inloggningen gick inte",
     "sources": "macOS Finder (Det gick inte att slutföra …)"
   },
   "favorites": {
     "chosen": "favorit",
     "confidence": "high",
-    "decision": "Favoritmenyn: ⌃D-ytan och dess tio strängar",
+    "decision": "Favorites menu",
     "forms": "favoriter; the menu favoritmeny (heading) / favoritmenyn (prose)",
     "sources": "macOS Finder (Favoriter)"
   },
@@ -953,7 +953,7 @@
     "accept": ["hämtning"],
     "chosen": "hämta",
     "confidence": "high",
-    "decision": "Förhandsvisningen hämtar filen först",
+    "decision": "Viewer fetches first",
     "forms": "Hämtar ”{fileName}” för förhandsvisning",
     "sources": "macOS SystemSettings (Fetching… → Hämtar…)"
   },
@@ -995,7 +995,7 @@
   "fingerprint": {
     "chosen": "fingeravtryck",
     "confidence": "high",
-    "decision": "Serverhubben: anslutningsarket, värdnyckeln och Gå till sökväg",
+    "decision": "Server hub: connect sheet",
     "forms": "neuter; Nyckelns fingeravtryck",
     "sources": "macOS Security.framework Certificate.loctable (Fingeravtryck)"
   },
@@ -1009,7 +1009,7 @@
   "force-quit": {
     "chosen": "Avsluta tvingat",
     "confidence": "tentative",
-    "decision": "Shortcut conflicts and the macOS features they name",
+    "decision": "Shortcut conflicts",
     "sources": "Apple-style Swedish, not in the pile"
   },
   "format": {
@@ -1037,14 +1037,14 @@
     ],
     "chosen": "full skivtillgång",
     "confidence": "high",
-    "decision": "Apples egna namn: kontrollera dem mot det körande systemet, inte mot minnet",
+    "decision": "Apple names are looked up live",
     "forms": "capitalized Full skivtillgång where English capitalizes the setting; en-word: Full skivtillgång är ganska kraftfull; badge Ingen full skivtillgång (never the definite form in its aria)",
     "sources": "macOS Security.prefPane, SecurityPrivacyExtension.appex, Sharing.appex (macOS 26.6.2, 25G83, 2026-08-30; ALL_FILES re-confirmed on macOS 27.0 26A428, 2026-09-16)"
   },
   "full-screen": {
     "chosen": "helskärmsläge",
     "confidence": "high",
-    "decision": "Escape lämnar helskärmsläge",
+    "decision": "Escape leaves full screen",
     "forms": "Lämna helskärmsläge; tog Cmdr ur helskärmsläget",
     "sources": "macOS AppKit MenuCommands (Exit Full Screen → Lämna helskärmsläge)"
   },
@@ -1083,7 +1083,7 @@
     "accept": ["stjärnor"],
     "chosen": "stjärnmärk",
     "confidence": "high",
-    "decision": "Kryssrutelistan i beta-steget",
+    "decision": "Beta-step checklist",
     "forms": "Stjärnmärk repot på GitHub",
     "note": "GitHub dropped its Swedish UI on 2016-11-18, so the verb is translated, not quoted.",
     "sources": "catalog precedent; MS (star → stjärna)"
@@ -1117,7 +1117,7 @@
   "go-to-trash": {
     "chosen": "Gå till papperskorgen",
     "confidence": "high",
-    "decision": "Papperskorgs-toasten: ångra och gå till papperskorgen",
+    "decision": "Trash toast",
     "sources": "catalog Gå till family; macOS (Gå till hemmappen)"
   },
   "got-it": {
@@ -1129,7 +1129,7 @@
     ],
     "chosen": "Uppfattat",
     "confidence": "high",
-    "decision": "Fästa servrar, betrodda värdnycklar och Android-raden i Inställningar",
+    "decision": "Pinned servers",
     "sources": "catalog (ai.toast.gotIt and siblings)"
   },
   "grant": {
@@ -1155,7 +1155,7 @@
     ],
     "chosen": "dold",
     "confidence": "high",
-    "decision": "Samma begrepp med olika engelska",
+    "decision": "Same concept, different English",
     "sources": "Nautilus, Thunar, Total Commander (dolda filer)"
   },
   "hide": {
@@ -1167,7 +1167,7 @@
     ],
     "chosen": "göm",
     "confidence": "high",
-    "decision": "Samma begrepp med olika engelska",
+    "decision": "Same concept, different English",
     "forms": "Göm Cmdr; Göm övriga (never Göm andra)",
     "sources": "macOS Finder (Göm sidofältet, Göm verktygsfältet), AppKit",
     "accept": ["dold"]
@@ -1194,7 +1194,7 @@
     "accept": ["nyckel", "värdnycklar"],
     "chosen": "värdnyckel",
     "confidence": "tentative",
-    "decision": "Serverhubben: anslutningsarket, värdnyckeln och Gå till sökväg",
+    "decision": "Server hub: connect sheet",
     "forms": "only where English writes host key (Betrodda värdnycklar); where English says key, Swedish says nyckel; never a genitive on {host}: nyckeln från {host}",
     "sources": "compound of värd (Certificate Assistant Värdnamn) and nyckel"
   },
@@ -1229,7 +1229,7 @@
     "accept": ["sökning med beskrivning", "med en beskrivning", "nyckelords", "taggsökning", "semantisk sökning"],
     "chosen": "bildsökning",
     "confidence": "high",
-    "decision": "Bildindexeringens förlopp och inställningar",
+    "decision": "Image indexing",
     "forms": "bildsökningen; search by description → sökning med beskrivning; card Semantisk sökning",
     "sources": "catalog (fileExplorer.imageIndex.file.indexed)"
   },
@@ -1249,7 +1249,7 @@
     ],
     "chosen": "används",
     "confidence": "high",
-    "decision": "Utmatning och frånkoppling som inte gick igenom",
+    "decision": "Eject and disconnect errors",
     "exceptions": {
       "settings.mcp.portInUse": "A network port that is taken is upptagen in Swedish; används is for a volume someone holds open.",
       "settings.mcp.portInUseFallback": "A network port that is taken is upptagen in Swedish; används is for a volume someone holds open.",
@@ -1261,7 +1261,7 @@
   "index": {
     "chosen": "index",
     "confidence": "high",
-    "decision": "Enhetsindexeringens huvudreglage",
+    "decision": "Drive indexing's master switch",
     "forms": "indexera, indexering, passive indexeras; re-index → indexera om; drive index → enhetsindex(et), drive indexing → enhetsindexering (never indexering av enhet)",
     "sources": "MS terminology; KDE Dolphin (Filindexering)"
   },
@@ -1298,14 +1298,14 @@
   "keep": {
     "chosen": "behåll",
     "confidence": "high",
-    "decision": "Kedjade namnbyten: toasten som räknar de övriga",
+    "decision": "Rename toasts",
     "forms": "Behåll dem; behåller sitt namn (present tense)",
     "sources": "macOS AppKit (Keep → Behåll), Total Commander (Behåll namnet)"
   },
   "key-combination": {
     "chosen": "kombination",
     "confidence": "high",
-    "decision": "Shortcut conflicts and the macOS features they name",
+    "decision": "Shortcut conflicts",
     "forms": "Välj en annan kombination",
     "sources": "standard Swedish"
   },
@@ -1332,7 +1332,7 @@
     ],
     "chosen": "nyckelring",
     "confidence": "high",
-    "decision": "Apple feature names Apple itself translates: Överblick and Nyckelring",
+    "decision": "Apple translates Quick Look and Keychain",
     "forms": "the store nyckelringen (Kom ihåg i nyckelringen); the app Keychain Access → Nyckelhanterare",
     "sources": "macOS Keychain Access.app InfoPlist.loctable (CFBundleDisplayName = Nyckelhanterare), Localizable (nyckelring)"
   },
@@ -1370,7 +1370,7 @@
   "like": {
     "chosen": "Gilla",
     "confidence": "high",
-    "decision": "Kryssrutelistan i beta-steget",
+    "decision": "Beta-step checklist",
     "note": "AlternativeTo has no Swedish UI, so the verb is translated; AlternativeTo stays verbatim.",
     "sources": "MS terminology (Like → Gilla)"
   },
@@ -1404,7 +1404,7 @@
     ],
     "chosen": "lokalt nätverk",
     "confidence": "high",
-    "decision": "Enradssammanfattningarna i valfria steget",
+    "decision": "Apple names are looked up live",
     "forms": "the permission Lokalt nätverk; nearby → i närheten (Hittad i närheten); discovery → sökning i det lokala nätverket",
     "sources": "macOS SecurityPrivacyExtension.appex (LOCAL_NETWORK = Lokalt nätverk, 2026-08-30); Finder (personer i närheten)"
   },
@@ -1412,7 +1412,7 @@
     "accept": ["platser", "var den togs", "ställe"],
     "chosen": "plats",
     "confidence": "high",
-    "decision": "Ask Cmdr tittar in i filer: samtyckestexten och verktygsraden",
+    "decision": "Ask Cmdr looks inside files",
     "exceptions": {
       "settings.fileOperations.adbBinaryPath.label": "The field holds the path to the adb binary, so Sökväg till adb; Finder's Plats names an enclosing folder."
     },
@@ -1437,7 +1437,7 @@
     "accept": ["tittar in i", "tittade in i"],
     "chosen": "titta in i",
     "confidence": "tentative",
-    "decision": "Ask Cmdr tittar in i filer: samtyckestexten och verktygsraden",
+    "decision": "Ask Cmdr looks inside files",
     "exceptions": {
       "search.coverage.declined": "The negation splits the verb: tittar med flit inte in i."
     },
@@ -1454,7 +1454,7 @@
     ],
     "chosen": "e-postlista",
     "confidence": "tentative",
-    "decision": "Registreringen till e-postlistan",
+    "decision": "Mailing-list signup",
     "forms": "e-postlistan; signup server → registreringsservern",
     "sources": "no first-party source; MS sense rejected"
   },
@@ -1491,14 +1491,14 @@
     "accept": ["ändrade", "ändrat", "ändring"],
     "chosen": "ändrad",
     "confidence": "high",
-    "decision": "Gränser: båda formerna är rätt, platta inte ut dem",
+    "decision": "Boundaries: both forms are right",
     "forms": "column Ändrad; the keyboard-shortcut filter Ändrade (plural, it filters a set); Senast ändrad; Sortera efter ändringsdatum",
     "sources": "macOS Finder"
   },
   "modifier-key": {
     "chosen": "modifierare",
     "confidence": "tentative",
-    "decision": "Shortcut conflicts and the macOS features they name",
+    "decision": "Shortcut conflicts",
     "forms": "Lägg till en modifierare (⌘, ⌃, ⌥ eller ⇧)",
     "sources": "no macOS source; MS låstangent is the lock-key sense"
   },
@@ -1548,7 +1548,7 @@
     ],
     "chosen": "inbyggd",
     "confidence": "high",
-    "decision": "Aviseringen när Cmdr fastnade på systemanslutningen",
+    "decision": "System SMB connection fallback",
     "forms": "macOS inbyggda SMB-anslutning; the path's name → systemanslutningen",
     "sources": "macOS (Inbyggd skärm, Inbyggd kamera)"
   },
@@ -1578,7 +1578,7 @@
     "accept": ["delad", "delade", "delning", "nätverksresurs", "resurscache", "SMB-resurs"],
     "chosen": "delad mapp",
     "confidence": "high",
-    "decision": "Termdriftsgranskning: en sak, ett namn",
+    "decision": "Same concept, different English",
     "forms": "delad mapp / delade mappar; -resurs only inside a compound (SMB-/nätverksresurser); the share counter keeps delning / delningar; network shares → delade mappar på nätverket",
     "note": "Apple's NetAuthAgent says Delningspunkten; the catalog keeps delad mapp.",
     "sources": "macOS Finder (1069.title Delad mapp, Hantera delad mapp)"
@@ -1605,7 +1605,7 @@
     "accept": ["kunde inte slutföra", "blev inte klar", "hann inte klart", "slutfördes inte"],
     "chosen": "gick inte att slutföra",
     "confidence": "high",
-    "decision": "Progress chip + failure notice",
+    "decision": "Progress chip and failure notice",
     "forms": "status and headline Gick inte att slutföra (clipped); body Det gick inte att …",
     "sources": "macOS Finder (Det gick inte att slutföra synkroniseringen)"
   },
@@ -1613,7 +1613,7 @@
     "accept": ["anteckning"],
     "chosen": "notering",
     "confidence": "high",
-    "decision": "Komplettera en redan skickad felrapport",
+    "decision": "Amending a sent error report",
     "forms": "a note on a report → notering; Ask Cmdr's notes about you → anteckningar",
     "sources": "catalog (Lägg till en notering)"
   },
@@ -1643,9 +1643,10 @@
   },
   "online-only": {
     "accept": ["endast tillgänglig online"],
+    "proseAccept": ["bara online", "bara finns online"],
     "chosen": "endast online",
     "confidence": "tentative",
-    "decision": "Varningen om innehåll som bara finns online",
+    "decision": "Online-only warning",
     "forms": "finns endast online",
     "sources": "Finder's wording for an evicted file (per the online-only warning pass); not re-verified in the pile"
   },
@@ -1663,7 +1664,7 @@
   "operation": {
     "chosen": "åtgärd",
     "confidence": "high",
-    "decision": "Operation queue: kön byter huvudord",
+    "decision": "Operation queue",
     "exceptions": {
       "errors.write.cancelled.message.copy": "The verbal noun carries the operation: Kopieringen avbröts.",
       "errors.write.cancelled.message.delete": "The verbal noun carries the operation: Raderingen avbröts.",
@@ -1690,7 +1691,7 @@
     ],
     "chosen": "åtgärdskö",
     "confidence": "high",
-    "decision": "Operation queue: kön byter huvudord",
+    "decision": "Operation queue",
     "forms": "title and menu label Åtgärdskö (indefinite); prose åtgärdskön; the dialog button Kö; queued status Väntar",
     "sources": "MS terminology (kö compounds), Total Commander (4005=\"Kö\")"
   },
@@ -1703,7 +1704,7 @@
   "original": {
     "chosen": "original",
     "confidence": "high",
-    "decision": "A drive pulled mid-transfer",
+    "decision": "Drive disconnected mid-work",
     "forms": "neuter, plural unchanged: originalet, originalen",
     "sources": "macOS Finder (originalet ligger i papperskorgen)"
   },
@@ -1722,7 +1723,7 @@
   "package": {
     "chosen": "paket",
     "confidence": "high",
-    "decision": "`Documents and packages`: the new OOXML row",
+    "decision": "Archives",
     "sources": "macOS Finder (Visa paketets innehåll), KDE Dolphin"
   },
   "page": {
@@ -1747,7 +1748,7 @@
     "accept": ["överordnade mapp"],
     "chosen": "överordnad mapp",
     "confidence": "high",
-    "decision": "The parent folder and the double-click gesture",
+    "decision": "Parent folder",
     "forms": "Öppna överordnad mapp; den överordnade mappen; never mappen ovanför",
     "sources": "macOS Finder (N162, FV10, FV9)"
   },
@@ -1760,7 +1761,7 @@
     "accept": ["lösenordsskyddat"],
     "chosen": "lösenordsskyddad",
     "confidence": "high",
-    "decision": "The archive password and compression",
+    "decision": "Archive password and compression",
     "forms": "agrees with its noun: Det här arkivet är lösenordsskyddat; {name} är lösenordsskyddad",
     "sources": "Total Commander, Double Commander"
   },
@@ -1768,7 +1769,7 @@
     "accept": ["inklistr", "klistrade in"],
     "chosen": "klistra in",
     "confidence": "high",
-    "decision": "Pasting clipboard content as a file",
+    "decision": "Paste clipboard as a file",
     "sources": "macOS AppKit, Nautilus"
   },
   "path": {
@@ -1799,7 +1800,7 @@
   "phone": {
     "chosen": "telefon",
     "confidence": "high",
-    "decision": "Inaktuellt index på en telefon över ADB",
+    "decision": "Android over ADB",
     "sources": "MS terminology; catalog adb.*"
   },
   "photo": {
@@ -1811,7 +1812,7 @@
     ],
     "chosen": "bild",
     "confidence": "high",
-    "decision": "Namnbyten i klump, bildindexets omfattning och Ask Cmdrs bildverktyg",
+    "decision": "Image indexing",
     "exceptions": {
       "onboarding.stepOptional.mtp.desc": "Copying photos off a phone with Finder is foton; the bild rule covers the image-search feature."
     },
@@ -1827,7 +1828,7 @@
     ],
     "chosen": "fäst",
     "confidence": "high",
-    "decision": "Serverhubben: tabellen, statusarna och tomläget",
+    "decision": "Server hub: table and statuses",
     "exceptions": {
       "main.dockPinNudge.body": "The Dock takes Apple's own verbs, not fäst; Vill du ha den kvar … bredvid Finder reads naturally in the question."
     },
@@ -1901,7 +1902,7 @@
     ],
     "chosen": "lägg tillbaka",
     "confidence": "high",
-    "decision": "Papperskorgs-toasten: ångra och gå till papperskorgen",
+    "decision": "Trash toast",
     "forms": "out of the trash: Lade tillbaka …; old names back: De gamla namnen återställdes …",
     "sources": "macOS Finder N153.1 (Put Back → Lägg tillbaka)"
   },
@@ -1915,7 +1916,7 @@
     "accept": ["snabbtitt"],
     "chosen": "Överblick",
     "confidence": "high",
-    "decision": "Apple feature names Apple itself translates: Överblick and Nyckelring",
+    "decision": "Apple translates Quick Look and Keychain",
     "forms": "the feature Överblick; the generic quick-preview hint says snabbtitt",
     "sources": "macOS Finder (TL14 = Överblick)"
   },
@@ -1929,7 +1930,7 @@
     ],
     "chosen": "avsluta",
     "confidence": "high",
-    "decision": "Quit gate: dialogen som stoppar ⌘Q medan något pågår",
+    "decision": "Quit gate",
     "forms": "Avsluta Cmdr; Avsluta nu; Cmdr avslutas om …",
     "sources": "macOS AppKit (Avsluta <app>), Finder (Finder kan inte avslutas)"
   },
@@ -2003,14 +2004,14 @@
     "accept": ["avvisa", "godtog"],
     "chosen": "avböj",
     "confidence": "high",
-    "decision": "Föreslagna åtgärder: rutan för det Ask Cmdr föreslår",
+    "decision": "Suggested operations",
     "forms": "an AI suggestion → Avböj; a server refusing → avvisa",
     "sources": "macOS Finder (AirDrop Ta emot/Avböj)"
   },
   "relevance": {
     "chosen": "relevans",
     "confidence": "high",
-    "decision": "`Sort by relevance`: the search-results column tooltip",
+    "decision": "Sort by relevance",
     "sources": "macOS WorkflowKit, AppStoreKit (Relevans), macOS 26.6.2, 2026-09-06"
   },
   "reload": {
@@ -2039,7 +2040,7 @@
     ],
     "chosen": "borttagbar",
     "confidence": "high",
-    "decision": "Utmatning och frånkoppling som inte gick igenom",
+    "decision": "Eject and disconnect errors",
     "sources": "macOS Finder (Borttagbar volym, KIND_FORMATTER_28_0)"
   },
   "remove": {
@@ -2072,7 +2073,7 @@
     ],
     "chosen": "byt namn",
     "confidence": "high",
-    "decision": "Obekräftade namnbyten och det oanvändbara namnet",
+    "decision": "Rename toasts",
     "forms": "Byt namn på …; noun namnbyte (ett namnbyte, namnbytet, namnbyten), which takes av: namnbytet av ”X”",
     "sources": "macOS Finder (Byt namn på …), Thunar/Dolphin (Namnbyte)"
   },
@@ -2096,7 +2097,7 @@
   "reply": {
     "chosen": "svar",
     "confidence": "high",
-    "decision": "Ask Cmdr: chatten, verktygsraderna och kostnaden",
+    "decision": "Ask Cmdr chat",
     "forms": "neuter ett svar, svaret; names the antecedent where English says it or this one",
     "sources": "MS terminology (reply → svara)"
   },
@@ -2167,7 +2168,7 @@
     ],
     "chosen": "ångra",
     "confidence": "high",
-    "decision": "Rollback-familjen: `ångra`, inte `återställ`",
+    "decision": "Rollback family",
     "forms": "chips Går inte att ångra / Går att ångra / Ångrar / Ångrad / Delvis ångrad; Ångra klart; stopping it → Stoppa",
     "sources": "macOS (Undo → Ångra), Nautilus (_Ångra Kopiera), MS (undo → ångra)"
   },
@@ -2175,7 +2176,7 @@
     "accept": ["startmapp"],
     "chosen": "rotmapp",
     "confidence": "high",
-    "decision": "Rotmapp och startmapp för en sparad server",
+    "decision": "Server hub: connect sheet",
     "forms": "rotmappen; start folder → startmapp (tentative)",
     "sources": "Thunar (Rotmappen har ingen förälder), Total Commander (Gå till rotmappen), MS (root folder → rotmapp)"
   },
@@ -2189,7 +2190,7 @@
     "accept": ["körs", "kör", "igång"],
     "chosen": "pågår",
     "confidence": "high",
-    "decision": "Gränser: båda formerna är rätt, platta inte ut dem",
+    "decision": "Boundaries: both forms are right",
     "forms": "an operation → Pågår (Pågår fortfarande); a process or server → Körs",
     "sources": "macOS Finder (en annan åtgärd pågår; medan Finder körs)"
   },
@@ -2256,7 +2257,7 @@
     "accept": ["markering", "välj"],
     "chosen": "markera",
     "confidence": "high",
-    "decision": "Markeringsdialogen: markera och avmarkera filer",
+    "decision": "Selection dialog",
     "forms": "Markera allt (never alla); the set → markeringen; picking an option → välj",
     "sources": "macOS Finder MenuBar 172.title (Markera allt), Total Commander"
   },
@@ -2269,7 +2270,7 @@
     "accept": ["servrar"],
     "chosen": "server",
     "confidence": "high",
-    "decision": "Serverhubben: tabellen, statusarna och tomläget",
+    "decision": "Server hub: table and statuses",
     "exceptions": {
       "servers.sheet.nameHelp": "The sheet is about this server already; the help line names what Cmdr uses instead (kontot och värden)."
     },
@@ -2305,7 +2306,7 @@
   "shortcut": {
     "chosen": "genväg",
     "confidence": "high",
-    "decision": "Shortcut conflicts and the macOS features they name",
+    "decision": "Shortcut conflicts",
     "forms": "section Tangentbordsgenvägar",
     "sources": "standard Swedish (macOS also kortkommando)"
   },
@@ -2348,7 +2349,7 @@
     "accept": ["registrering"],
     "chosen": "registrera",
     "confidence": "high",
-    "decision": "Registreringen till e-postlistan",
+    "decision": "Mailing-list signup",
     "forms": "signup server → registreringsservern",
     "sources": "MS terminology (sign up → registrera)"
   },
@@ -2490,7 +2491,7 @@
     ],
     "chosen": "tryck på",
     "confidence": "high",
-    "decision": "Android över ADB: panelen, volymväljaren och tipsraden",
+    "decision": "Android over ADB",
     "sources": "Android sv (Tryck på …)"
   },
   "technical-details": {
@@ -2507,7 +2508,7 @@
   "terminal": {
     "chosen": "terminal",
     "confidence": "high",
-    "decision": "”Öppna terminal här” och dess appväljare",
+    "decision": "Open terminal here",
     "forms": "Apple's app stays Terminal; Öppna terminal här; terminalapp",
     "sources": "macOS Finder (Öppna i Terminal)"
   },
@@ -2515,7 +2516,7 @@
     "accept": ["redigerare"],
     "chosen": "textredigerare",
     "confidence": "tentative",
-    "decision": "F4 and its text editor",
+    "decision": "Text editor",
     "forms": "default → standardredigerare",
     "sources": "catalog stem redigerare; MS textredigeringsprogram"
   },
@@ -2539,7 +2540,7 @@
   "thumbnail": {
     "chosen": "miniatyr",
     "confidence": "high",
-    "decision": "Ask Cmdr tittar in i filer: samtyckestexten och verktygsraden",
+    "decision": "Ask Cmdr looks inside files",
     "sources": "MS terminology, macOS AppKit (Miniatyrstorlek), Total Commander"
   },
   "time-left": {
@@ -2558,7 +2559,7 @@
   "title-bar": {
     "chosen": "namnlist",
     "confidence": "high",
-    "decision": "The trash refusal dialog",
+    "decision": "Title-bar full disk access badge",
     "sources": "macOS"
   },
   "token": {
@@ -2571,13 +2572,13 @@
     "accept": ["för lång", "större än"],
     "chosen": "för stor",
     "confidence": "high",
-    "decision": "FAT32 files too large for the drive",
+    "decision": "FAT32 files too large",
     "sources": "macOS (för stor, för stora)"
   },
   "transfer": {
     "chosen": "överföring",
     "confidence": "high",
-    "decision": "Överföringen som står stilla",
+    "decision": "Stalled transfer",
     "forms": "a copy or move in flight (Överföringen står stilla); the queue is no longer named after it",
     "note": "MS's överlåtelse is the legal sense.",
     "sources": "Total Commander (Återuppta avbruten överföring)"
@@ -2592,7 +2593,7 @@
     "accept": ["litar på", "betrodd", "betrott", "förtroende", "litar inte på", "lita sedan på", "litat på"],
     "chosen": "lita på",
     "confidence": "high",
-    "decision": "Serverhubben: anslutningsläget, avvisningarna och glöm-dialogerna",
+    "decision": "Server hub: connection state",
     "forms": "button Lita på nyckeln och anslut; trusted → betrodd / betrott / betrodda",
     "sources": "macOS SecurityInterface.framework (Lita på), Certificate Assistant (Betrodd rot)"
   },
@@ -2605,7 +2606,7 @@
     "accept": ["skrivfel"],
     "chosen": "stavfel",
     "confidence": "high",
-    "decision": "Registreringen till e-postlistan",
+    "decision": "Mailing-list signup",
     "note": "skrivfel reads right for a mistyped code; Total Commander's Skrivfel! means write error and is no evidence either way.",
     "sources": "macOS AppKit (Felstavat)"
   },
@@ -2618,7 +2619,7 @@
   "undo": {
     "chosen": "ångra",
     "confidence": "high",
-    "decision": "Papperskorgs-toasten: ångra och gå till papperskorgen",
+    "decision": "Trash toast",
     "forms": "button Ångra; Det här går inte att ångra",
     "sources": "macOS (ME13 Undo → Ångra)"
   },
@@ -2651,7 +2652,7 @@
     ],
     "chosen": "koppla ur",
     "confidence": "high",
-    "decision": "Utmatning och frånkoppling som inte gick igenom",
+    "decision": "Eject and disconnect errors",
     "forms": "the device out of the port → koppla ur; the cable → dra ur; state → frånkopplad",
     "sources": "catalog (errors.listing.deviceReconnecting.suggestion, fileExplorer.mtp.deviceNotFound)"
   },
@@ -2665,7 +2666,7 @@
   "untouched": {
     "chosen": "orörd",
     "confidence": "high",
-    "decision": "A drive pulled mid-transfer",
+    "decision": "Drive disconnected mid-work",
     "forms": "orörda (plural)",
     "sources": "macOS AppKit Document (lämna filen orörd)"
   },
@@ -2685,14 +2686,14 @@
     "accept": ["utgifter"],
     "chosen": "användning",
     "confidence": "high",
-    "decision": "Användningsstatistik utan \"anonym\", med \"ett slumpmässigt id\"",
+    "decision": "Usage stats",
     "forms": "usage stats → användningsstatistik",
     "sources": "MS terminology (usage → användning, spending → utgift)"
   },
   "usb-debugging": {
     "chosen": "USB-felsökning",
     "confidence": "high",
-    "decision": "Android över ADB: panelen, volymväljaren och tipsraden",
+    "decision": "Android over ADB",
     "forms": "en-word: USB-felsökning aktiverad; Slå på USB-felsökning",
     "sources": "AOSP SettingsLib values-sv enable_adb (read 2026-09-07)"
   },
@@ -2777,21 +2778,21 @@
     ],
     "chosen": "automatiskt radbyte",
     "confidence": "high",
-    "decision": "Samma engelska, ett svenskt ord",
+    "decision": "Native menus",
     "forms": "menu and setting Automatiskt radbyte; short badge radbyte; the description's verb Bryt långa rader",
     "sources": "MS terminology (term-id 134172)"
   },
   "working-tree": {
     "chosen": "arbetsträd",
     "confidence": "high",
-    "decision": "Git terms: worktree kept, working tree translated",
+    "decision": "Git: worktree kept",
     "forms": "working directory stays arbetskatalog",
     "sources": "standard Swedish; kept apart from worktree like English does"
   },
   "worktree": {
     "chosen": "worktree",
     "confidence": "high",
-    "decision": "Git terms: worktree kept, working tree translated",
+    "decision": "Git: worktree kept",
     "forms": "en-word: den här worktree:n, en länkad worktree, plural worktrees",
     "sources": "@key descriptions say keep it"
   },
@@ -2799,14 +2800,14 @@
     "accept": ["skrev"],
     "chosen": "skriv",
     "confidence": "high",
-    "decision": "Överföringen som står stilla",
+    "decision": "Stalled transfer",
     "forms": "partly written → delvis skriven / skrivna",
     "sources": "macOS Finder (Skriver spår)"
   },
   "zoom": {
     "chosen": "zoom",
     "confidence": "high",
-    "decision": "Inbyggda menyer: menyrad, snabbmenyer, fönstertitlar",
+    "decision": "Native menus",
     "forms": "the text-zoom submenu Zoom (noun); Window > Zoom → Zooma (verb); Zooma till 100 %",
     "sources": "macOS Finder 300667.title"
   },

@@ -108,7 +108,7 @@
   "@fileExplorer.pane.directConnectionTooSlowToast": {
     "sourceHash": "bb5baea"
   },
-  "fileExplorer.pane.directConnectionUnexpectedToast": "Det gick inte att upprätta en direktanslutning till {server}, så den här delade mappen ligger kvar på systemanslutningen.",
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Det gick inte att ansluta direkt till {server}, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
     "sourceHash": "cce5742"
   },
@@ -116,7 +116,7 @@
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
     "sourceHash": "a746d6c"
   },
-  "fileExplorer.pane.directConnectionUnavailableToast": "Det gick inte att upprätta en direktanslutning just nu, så den här delade mappen ligger kvar på systemanslutningen.",
+  "fileExplorer.pane.directConnectionUnavailableToast": "Det gick inte att ansluta direkt just nu, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "sourceHash": "0440df9"
   },
@@ -469,7 +469,7 @@
   "@fileExplorer.network.share.credentialsStoredLocally": {
     "sourceHash": "18dd24e"
   },
-  "fileExplorer.network.share.notFound": "Den delade mappen ''{shareName}'' hittades inte på {hostName}",
+  "fileExplorer.network.share.notFound": "Den delade mappen ”{shareName}” hittades inte på {hostName}",
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
@@ -525,7 +525,7 @@
   "@fileExplorer.network.reconnect.willTryMore": {
     "sourceHash": "a7d887a"
   },
-  "fileExplorer.mtp.connectTimedOut": "Anslutningen nådde tidsgränsen. Enheten kan vara långsam eller svara inte.",
+  "fileExplorer.mtp.connectTimedOut": "Anslutningen nådde tidsgränsen. Enheten kan vara långsam eller inte svara.",
   "@fileExplorer.mtp.connectTimedOut": {
     "sourceHash": "cc01ae7"
   },
@@ -743,7 +743,7 @@
   },
   "fileExplorer.readOnly.deviceMessage": "”{name}” är skrivskyddad. Du kan kopiera filer från den, men inte till den.",
   "@fileExplorer.readOnly.deviceMessage": {
-    "sourceHash": "039488f"
+    "sourceHash": "5582a47"
   },
   "fileExplorer.readOnly.gitPortalTitle": "Skrivskyddad git-portal",
   "@fileExplorer.readOnly.gitPortalTitle": {
@@ -771,19 +771,19 @@
   },
   "fileExplorer.rename.chainKeptOriginalName": "{reason}. ”{name}” behåller sitt namn.",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "5b5e6ce"
+    "sourceHash": "638394d"
   },
   "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}. ”{name}” behåller sitt namn, liksom {others, plural, one {en annan fil} other {{othersText} andra filer}}.",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "7b23e8e"
+    "sourceHash": "be35bc8"
   },
   "fileExplorer.rename.unconfirmed": "Det gick inte att bekräfta namnbytet av ”{name}”. Volymen kan vara långsam, så filen kan ändå ha bytt namn.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d43e419"
+    "sourceHash": "bcea9d0"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "Det gick inte att bekräfta namnbytena av ”{name}” och {others, plural, one {en annan fil} other {{othersText} andra filer}}. Volymen kan vara långsam, så filerna kan ändå ha bytt namn.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "1258eb3"
+    "sourceHash": "c64e665"
   },
   "fileExplorer.columns.name": "Namn",
   "@fileExplorer.columns.name": {
@@ -949,7 +949,7 @@
   },
   "fileExplorer.git.tooltip.aheadBehind": "{ahead, plural, one {{aheadText} incheckning} other {{aheadText} incheckningar}} före, {behind, plural, one {{behindText} incheckning} other {{behindText} incheckningar}} efter ”{vs}”",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "2eba558"
+    "sourceHash": "6a24049"
   },
   "fileExplorer.git.tooltip.taggedCommit": "Taggad incheckning {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -961,11 +961,11 @@
   },
   "fileExplorer.git.tooltip.stashedOnBranch": "Skapad på grenen ”{branch}”",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "770565f"
+    "sourceHash": "5a1ad8d"
   },
   "fileExplorer.git.tooltip.worktreeOnBranch": "Grenen ”{branch}” är utcheckad",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "5036eb7"
+    "sourceHash": "4941fa5"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "Frikopplad vid {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
@@ -997,7 +997,7 @@
   },
   "fileExplorer.dateTooltip.lastMoved": "Senast flyttad (”tillagd”)",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "sourceHash": "450ebc0"
+    "sourceHash": "1366405"
   },
   "fileExplorer.dateTooltip.lastModified": "Senast ändrad",
   "@fileExplorer.dateTooltip.lastModified": {
@@ -1145,7 +1145,7 @@
   },
   "fileExplorer.renameConflict.description": "”{name}” finns redan i den här mappen. Vad vill du göra?",
   "@fileExplorer.renameConflict.description": {
-    "sourceHash": "ded53e8"
+    "sourceHash": "e3f2532"
   },
   "fileExplorer.renameConflict.yours": "{name} (din)",
   "@fileExplorer.renameConflict.yours": {
@@ -1185,7 +1185,7 @@
   },
   "fileExplorer.extensionChange.description": "Är du säker på att du vill ändra tillägget från ”.{oldExt}” till ”.{newExt}”? Din fil kan öppnas i en annan app nästa gång du öppnar den.",
   "@fileExplorer.extensionChange.description": {
-    "sourceHash": "d0f428b"
+    "sourceHash": "ef7ac59"
   },
   "fileExplorer.extensionChange.alwaysAllow": "Tillåt alltid ändringar av tillägg",
   "@fileExplorer.extensionChange.alwaysAllow": {
@@ -1205,7 +1205,7 @@
   },
   "fileExplorer.quickLookHint.finderComparison": "Om du kommer från Finder kan det här kännas ovant, eftersom Finder utlöser en ”Snabbtitt”-åtgärd på <space></space>.",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "2089192"
+    "sourceHash": "56d3119"
   },
   "fileExplorer.quickLookHint.quickView": "I Cmdr kan du utlösa snabbtitt med <key></key>. (<key></key> funkar förresten i Finder också!)",
   "@fileExplorer.quickLookHint.quickView": {
@@ -1317,7 +1317,7 @@
   },
   "fileExplorer.navigation.connectionTooltipSystem": "Använder systemanslutning. Använd menyalternativet ”Anslut direkt för snabbare åtkomst” för snabbare åtkomst.",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "sourceHash": "0cbfa05"
+    "sourceHash": "e4ac697"
   },
   "fileExplorer.navigation.connectDirectly": "Anslut direkt för snabbare åtkomst",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1345,7 +1345,7 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan återanvända lösenordet som macOS redan har sparat för ”{displayName}”. Du får en systemfråga om att tillåta åtkomst till nyckelringen. Det är väntat, så klicka på Tillåt.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "6bb2c1d"
+    "sourceHash": "334f7de"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Använda det sparade lösenordet?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {

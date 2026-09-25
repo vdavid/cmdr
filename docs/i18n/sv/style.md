@@ -28,12 +28,17 @@ The must-know rules; the rest of this file elaborates them.
   takes no article, inflection, or possessive (`i Dock`). On a phone, Android's own Swedish wins (`USB-felsökning`,
   `Tillåt`, `tryck på`).
 - **Capitalization**: sentence case; Swedish capitalizes no common nouns, days, or months.
-- **Punctuation**: quote in running text with `”…”` on both sides, never straight `"…"`. A space before `%` (`100 %`,
-  `{percent} %`). No comma before `och` / `eller` joining two short clauses; keep it before a consequence `så`
+- **Typography** (`mechanics.json`): quotes `”…”` with the closing mark on both sides, nested `’…’`, apostrophe `’`;
+  never straight `"` or English `“…”`. Ellipsis `…`. A space before `%` (`100 %`, `{percent} %`). Write any
+  apostrophe as the curly `’`, which needs no ICU doubling in any family.
+- **No hedged grammar**: never `fil(er)`, `mapp(en)`, `markerad/-t`, `en/ett`, `den/det`, or an ending glued to an
+  insert (`{name}s`, `{name}:s`, `{system_settings}en`). Use ICU plural / select when Cmdr knows the value; otherwise
+  name the noun (`filen`, `objektet`), use a preposition (`på {name}`), or put the insert after a colon.
+- **Punctuation**: no comma before `och` / `eller` joining two short clauses; keep it before a consequence `så`
   (`…, så läggs det till`). Use `samt` before a last item that itself contains `och`. A command that toggles both ways
   keeps the slash (`Fäst / lossa server`).
-- **Apostrophes**: ICU values double them (`''`); the RAW families (`errors.*`, `menu.*`, `licensing.windowTitle.*`,
-  `main.instanceLock.*`) keep them single.
+- **Everyday words in prose**: `bara` over `endast`, `det här` over `detta`, `ansluta direkt` over `upprätta en
+  anslutning`, `ställa in` over `konfigurera` in running text. Names keep their ruled form.
 - **Compounds** close up (`fillista`, `åtgärdskö`) and hyphenate after an acronym, a code, or a proper name
   (`API-nyckel`, `zip-arkiv`, `USB-enhet`, `Finder-taggen`, `Dock-inställningar`, `Hjälp-menyn`); a two-word phrase
   can't compound, so use a phrase instead.
@@ -154,128 +159,36 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 
 ## Notes and decisions
 
-- **Inbyggda menyer följer Finders ordval, inte katalogens.** Där macOS har en motsvarighet vinner den, inklusive det
-  överraskande `Innehåll` för View-menyn, som både Finder och Safari använder. Belägg och undantag: `decisions.md` §
-  Inbyggda menyer.
-- **Copy som pekar på en systemyta stavas som macOS stavar den.** Ett menyalternativ, en inställningspanel eller ett
-  Apple-funktionsnamn slås upp i det KÖRANDE systemet innan det skrivs ut, och fyndet dateras. En omskrivning som "låter
-  rätt" skickar användaren att leta efter något som inte finns; det var den dyraste feltypen i 2026-08-30-passet
-  (`Fullständig åtkomst till skivan` mot Apples `Full skivtillgång`, `Visa > Zooma` mot `Innehåll > Zoom`). Belägg och
-  listan: `decisions.md` § Apples egna namn.
-- **Ett naket engelskt `All` blir `allt`, inte `alla`.** macOS `sv` säger `Markera allt` och `Avmarkera allt`; utan
-  utsatt huvudord dinglar `alla` (alla vad?), medan neutrumformen står för sig själv. Gäller `Select all`,
-  `Deselect all`, `Reset all to defaults`. Med huvudord böjs det normalt (`Stäng övriga flikar`). Belägg: `decisions.md`
-  § Termdriftsgranskning.
-- **`Hide` är `Göm`, men `hidden` är `dold`.** Apples svenska verb är `gömma` (elva `Göm …`-strängar i Finder, noll
-  `Dölj`), medan `dolda filer` är den etablerade svenska filsystemtermen som Nautilus, Thunar och Total Commander delar.
-  Microsofts `dölja` är Windows-konventionen och gäller inte här. Engelskans `Suppress` är ett annat verb och behåller
-  `Dölj`. Belägg och nyckellista: `decisions.md` § Termdriftsgranskning.
-- **Sentence case is native.** Swedish doesn't capitalize common nouns, days, or months, so the app's sentence-case rule
-  applies without friction. Don't title-case.
-- **Quotation marks: `”…”`** (right double quote both sides) is the standard Swedish form. Avoid English `"…"`.
-- **Kommat före konsekutivt `så` står kvar.** Regeln nedan gäller `och`/`eller`, inte `så`: när andra satsen är en följd
-  av den första sätter svenskan komma ("Skriv en notering eller bifoga din e-post, så läggs det till i rapporten",
-  "Skicka en ny rapport från Hjälp-menyn, så når dina noteringar teamet"). Samma mening kan alltså sakna komma före
-  `eller` och ha komma före `så`; det är inte inkonsekvent.
-- **No comma before `och`/`eller` joining two short main clauses.** English keeps it ("Cancel it, or leave it running in
-  the background"); Swedish drops it when both clauses are short ("Avbryt den eller låt den fortsätta i bakgrunden").
-  Cmdr's English Oxford-comma rule is an English rule; Swedish punctuation wins here. Keep the comma only when the
-  clauses are long enough that the reader needs the break. A list takes no comma before its last `och`/`eller` either.
-- **Percent sign: always a space before `%`** ("100 %", "{percent} %"). Swedish typography, and what the rest of the sv
-  catalog does. Don't carry English's tight `50%` across, even inside a placeholder-heavy string.
-- **Warning badges are noun-shaped, not imperative.** A compact badge beside a row names a STATE, so it takes a noun
-  ("(överskrivning!)"), never the imperative that would double as a command to the user ("(skriv över!)"). The
-  underlying action verb (`skriv över`) is unchanged on buttons and menu items.
-- **The definite form is what breaks aria containment in Swedish** (the shared rule: `../../guides/i18n-translation.md`
-  § An `*Aria` key must contain its visible label). A bare indefinite label (`Bakgrund`) isn't inside the definite
-  phrase a natural aria uses (`i bakgrunden`), so take the definite form for the label too (`I bakgrunden`). Swedish
-  capitalizes nothing mid-sentence, so containment here is always case-insensitive. Worked example: `decisions.md` §
-  Köknappen när kön är tom.
-- **Numbers and dates come from the formatter layer.** Swedish uses a comma decimal and space thousands separator (1
-  000), but `formatNumber()`/`formatByteSize()` produce these from the locale: never hardcode separators in a string.
-- **Genitive on a brand: pick by the name's final sound.** A name ending in an s-sound (`macOS`, `iOS`) takes no
-  genitive ending and no apostrophe in Swedish: "macOS inbyggda SMB-anslutning", matching the catalog's "macOS
-  textstorlek". A name ending in a consonant takes the plain `-s`: "Cmdrs direktanslutning". Never write `macOS'`, and
-  never the colon genitive (`pCloud:s`), which belongs to abbreviations (`SVT:s`).
-- **Multipliers use `gånger`, not `x`.** English's "4x slower" becomes "fyra gånger långsammare"; the spell-out rule
-  (one through nine as words, 10+ as digits) applies inside the multiplier, so "fyra gånger" but "100 gånger".
-- **Syskonvarianter av samma mening delar ram.** När engelskan delar en nyckel i flera varianter som fyller samma plats
-  i samma dialog (`crashReporter.dialog.body.ended`/`.keptRunning`/`.unknown`), ska den delade delen vara identisk
-  tecken för tecken och subjektet vara detsamma i alla varianter. Det får väga tyngre än en enskild belagd formulering:
-  en variant som byter konstruktion läses som en annan mening, inte som samma mening med ett annat innehåll. Skriv om
-  alla varianter samtidigt eller ingen. Belägg och det avvisade alternativet: `decisions.md` § Kraschdialogens tre
-  varianter.
-- **Ett värde som hamnar efter kolon upprepar inte ramen.** `errors.eject.*` matas in i
-  `fileExplorer.pane.ejectFailedToast` ("Det gick inte att mata ut {volumeName}: …") och `.disconnectFailedToast`. Ramen
-  har redan sagt att det inte hände, så värdet säger bara varför och vad man gör åt det; inget "det gick inte att" en
-  gång till, och ingen inledande versal-mening som läser som en ny rubrik. Belägg och de nio värdena: `decisions.md` §
-  Utmatning och frånkoppling.
-- **`koppla från`, `koppla ur` och `dra ur` är tre olika saker.** Programmässig frånkoppling, enheten ur porten, kabeln
-  ur uttaget. Engelskan har `disconnect` och `unplug`; svenskan skiljer dem tydligare, så välj efter vad som faktiskt
-  händer. Belägg: `decisions.md` § Utmatning och frånkoppling.
-- **`samt` före sista ledet när det ledet själva innehåller `och`.** Engelskans Oxford-komma bär upp ”…, an archive, and
-  a photo’s camera details and location”; svenskan har inget serie-komma, och två `och` i rad med olika räckvidd blir
-  otydligt. Byt det yttre `och` mot `samt`: ”…, vad som finns i ett arkiv samt en bilds kamerauppgifter och var den
-  togs”. Belägg: `decisions.md` § Ask Cmdr tittar in i filer.
-- **`plats` är var en fil ligger; var en bild togs skrivs ut som bisats.** `plats` är det satta ordet för `location` i
-  filsystemsmening, så direkt efter ”en bilds” läses det som filens plats. Skriv `var den togs` när engelskan menar
-  fotots geoposition. Belägg: `decisions.md` § Ask Cmdr tittar in i filer.
-- **Ett `eller` inuti ett led som redan hänger på ett `eller` klaras av kommat, inte av ett nytt ord.** Engelskans ”Add
-  one below, or turn on a Mac or NAS on your network…” har två `or` med olika räckvidd. Svenskan har ingen `samt`-utväg
-  här (den gäller `och`), så det yttre `eller` markeras med komma före sig och det inre lämnas naket: ”Lägg till en
-  nedan, eller slå på en Mac eller NAS i ditt nätverk, så hittar Cmdr den” (`servers.hub.emptyMessage`). Artikeln delas
-  av båda leden, eftersom `Mac` och `NAS` båda är en-genus.
-- **Ett kommando som packar båda riktningarna behåller engelskans snedstreck.** `commands.serversTogglePin.label` (”Pin
-  / unpin server”) blir `Fäst / lossa server`, inte en `eller`-form. Katalogens `eller` hör till de strängar där
-  engelskan själv skriver ”or” (`commands.viewShowHidden.label`), så snedstrecket bär informationen att det är ETT
-  kommando som växlar. Belägg för verben: `decisions.md` § Serverhubben: tabellen.
-- **Statuscellerna i en tabell är particip som böjs efter radens huvudord.** Serverhubbens rader är `en server`, alltså
-  en-genus: `Ansluten`, `Sparad`, `Hittad i närheten`, `Utloggad`. Slår raden om till ett neutrumord någon gång måste
-  hela kolumnen skrivas om, inte bara den nya statusen.
-- **En ”X again to retry”-mening tar `igen` en gång och `på nytt` för retry-ledet.** Engelskan kan upprepa `again`,
-  svenskan blir tramsig på `igen … igen`. Katalogens formel är `<handling> igen för att försöka på nytt` (ett dussin
-  `errors.listing.*.suggestion` säger ”Gå hit igen för att försöka på nytt”), och
-  `servers.paneState.signedOutNothingToAsk` följer den: ”Öppna servern igen för att försöka på nytt.” `Försök igen` står
-  kvar som knapptext för `Try again`, och `prova` hör till `try` i betydelsen testa något.
-- **`Ask Cmdr` står kvar bara där engelskan har kvar det, och där namnger det bara CHATTPANELEN.** I övrigt är subjektet
-  `Cmdr` eller `AI:n`, efter vad nyckelns engelska säger; `AI features` blir `AI-funktioner`. Översätt aldrig efter
-  minnet av hur nyckeln såg ut förut, läs den aktuella engelskan. Termer, belägg och skillnaden mellan `chatt` och
-  `samtal`: `decisions.md` § Ask Cmdr namnger bara chattpanelen.
-- **En engelsk term som katalogen redan har ett settlat ord för vinner över en engångsformulering.**
-  `onboarding.cloudSetup.step.install` var enda stället som sa `Ladda ner` mot 43 `hämta` i resten av katalogen; det var
-  drift, inte ett val. Kolla alltid hur ofta en form redan förekommer innan du skriver en ny. Belägg: `decisions.md` §
-  Stegen för att sätta upp en AI-leverantör.
-- **`Dock` är Apples yta, så `fäst`/`lossa` gäller inte där.** Katalogens pin/unpin-par hör till Cmdrs egna ytor
-  (flikar, servrar); i Dock skriver macOS `Behåll i Dock` / `Ta bort från Dock`, och `Dock` står oböjt utan artikel och
-  utan possessiv (`i Dock`, inte `i Docken` eller `i din Dock`). Belägg: `decisions.md` § Dock-erbjudandet.
-- **Dockmenyns egna ord slås upp i Dock, inte i Finder.** Referenssamlingen bär inte Dock, så
-  `Dock.app/Contents/Resources/sv.lproj/DockMenus.strings` är Tier 1 för högerklicksmenyn på appsymbolen. Den skiljer på
-  APPNAMNSformen (`Göm %@`, `Visa %@`, naket namn) och FILNAMNSformen (`Öppna ”%@”`, svenska citattecken), så
-  `Open Cmdr` blir `Öppna Cmdr` utan citattecken. Belägg: `decisions.md` § Dockmenyn.
-- **Mappen `Applications` heter `Appar` sedan macOS 26, inte `Program`.** Finder, AppKit och Go-menyn säger alla
-  ”Appar”, och dra-meningen skrivs `dra … från mappen Appar`. Belägg: `decisions.md` § Dock-erbjudandet.
-- **En tom tagg som renderar en kontroll mitt i meningen sätts där svenskan vill ha objektet.**
-  `onboarding.stepBeta.checklist.email` har `<field></field>`, som är textfältet plus dess Spara-knapp inuti satsen.
-  Meningen måste läsas som EN rad med en ruta i mitten, alltså placeras taggen efter objektet (”Ange din e-postadress
-  <field></field>, så …”), inte i engelskans position. Samma reflex gäller `<alpha></alpha>` och `<chip></chip>`.
-  Belägg: `decisions.md` § Introduktionsguidens omskrivning.
-- **När en sträng CITERAR en annan nyckels etikett är de två en enhet, precis som ett `*Aria`-par.**
-  `onboarding.stepAi.local.tooltip` säger `<strong>Ja, jag vill ha AI</strong>` och pekar därmed på
-  `onboarding.stepAi.cloud.label`, som måste stå ordagrant likadant; `signup.rejected`/`.unreachable` citerar
-  `checklist.emailSave` (`Spara`) på samma sätt. Skriv om båda samtidigt eller ingen.
-- **En systembehörighets namn hämtas från Apple, ordagrant, aldrig som parafras.** Både sammanfattningen bredvid
-  nätverksströmbrytaren och `…networking.desc` säger `Lokalt nätverk`, Apples egen etikett, inte den beskrivande
-  `Lokal nätverksåtkomst`. Ett namn användaren inte hittar i Systeminställningar är samma feltyp som
-  `fullständig åtkomst till skivan` var. Belägg och den live lästa bunten: `decisions.md` § Introduktionsguidens
-  omskrivning.
-- **Referenssamlingen bär falska vänner; kolla vad strängen sitter bland innan du lånar den.** Total Commanders
-  `Skrivfel!` ser ut som `typo` men är `Write error` (den ligger bland filoperationsfelen). En träff på rätt svenskt ord
-  är inte belägg förrän källans egen betydelse stämmer.
-- **GitHub och AlternativeTo har inget svenskt gränssnitt att kopiera.** GitHub lade ner sin UI-lokalisering 2016-11-18
-  (svenska fanns 2010–2016), och AlternativeTo är helt engelskt. Deras verb översätts alltså som vanliga termer, inte
-  som citerade knappetiketter: `star` → `stjärnmärk` (katalogens egen precedens), `Like` → `Gilla` (Microsoft sv).
-  Belägg: `decisions.md` § Introduktionsguidens omskrivning.
-- Record case-by-case rulings in `terms.json` and `decisions.md` so they aren't relitigated.
+- **Sentence case is native.** Swedish capitalizes no common nouns, days, or months. Don't title-case.
+- **Quotation marks**: `”…”` with the closing mark on both sides, nested `’…’` the same way, apostrophe `’`
+  (`mechanics.json`). Never straight `"…"` or English `“…”`.
+- **Commas**: no comma before `och` / `eller` joining two short main clauses, nor before a list's last item; keep it
+  when the clauses are long enough to need the break, and always before a consequence `så` ("Skriv en notering eller
+  bifoga din e-post, så läggs det till …"). An `eller` inside an item already hanging on an `eller` is marked by a comma
+  before the outer one (`servers.hub.emptyMessage`). Use `samt` before a last item that itself contains `och`.
+- **Percent**: a space before `%` (`100 %`, `{percent} %`), even inside a placeholder-heavy string.
+- **Numbers and dates** come from the formatter layer (comma decimal, space thousands separator); never hardcode them.
+- **Multipliers** use `gånger`, spelled out through nine: `fyra gånger`, `100 gånger`, never `4x`.
+- **Brand genitive by final sound**: `Cmdrs`, `Finders`, `pClouds`; an s-sound takes nothing (`macOS inbyggda …`).
+  Never `macOS'`, never the abbreviation colon form (`pCloud:s`; that's for `SVT:s`).
+- **Warning badges are nouns** (`(överskrivning!)`), never an imperative that doubles as a command (`(skriv över!)`).
+- **The definite form breaks aria containment**: a bare indefinite label (`Bakgrund`) isn't inside the definite phrase
+  a natural aria uses (`i bakgrunden`), so the label takes the definite form too (`I bakgrunden`). Containment is always
+  case-insensitive here, since Swedish capitalizes nothing mid-sentence.
+- **Table status cells are participles agreeing with the row's noun** (`servern` → `Ansluten`, `Sparad`); if the row
+  noun changes gender, rewrite the whole column.
+- **"X again to retry"** takes `igen` once and `på nytt` for the retry (`Gå hit igen för att försöka på nytt`), since
+  `igen … igen` reads silly. `Försök igen` is the Try again button; `prova` is try-out.
+- **Three unplugging verbs**: `koppla från` (software), `koppla ur` (the device out of the port), `dra ur` (the cable).
+- **A toggle command keeps the slash** (`Fäst / lossa server`): it's ONE command; an `eller` form belongs to strings
+  whose English itself says "or".
+- **Look up Apple names in the running macOS**, never paraphrase them: menu items, System Settings panes, the
+  Applications folder (`Appar` since macOS 26), the Dock (`i Dock`, pin / unpin `Behåll i Dock` / `Ta bort från Dock`).
+  `decisions.md` § Apple names are looked up live, § Native menus, § Dock offer.
+- **An empty tag that renders a control mid-sentence** (`<field></field>`, `<alpha></alpha>`, `<chip></chip>`) goes
+  where Swedish wants the object, not where English put it.
+- **GitHub and AlternativeTo have no Swedish UI**, so their verbs translate (`stjärnmärk`, `Gilla`); Android's own
+  Swedish is quoted verbatim (`USB-felsökning`, `Tillåt`).
 
 ## Open questions
 
@@ -288,7 +201,8 @@ reasoned value.
 - `concepts-proposed.json`: concepts this locale needed that the shared registry doesn't have yet, merged into
   `../concepts.json` afterwards.
 - `terms.json`: this locale's ruling per concept, with the catalog keys that legitimately deviate under `exceptions`.
-- `decisions.md`: the rationale journal, one section per feature, headings citing their keys.
+- `decisions.md`: distilled rulings ("X over Y because Z"), headings citing their keys, edited in place.
+- `mechanics.json`: quotes, apostrophe, spacing, and hedge patterns, checked by `i18n-mechanics`.
 - `review-queue.md`: open questions for a native reviewer.
 
 Add or change a ruling in place in `terms.json` (a replaced form moves to `avoid`), and add a `decisions.md` section
