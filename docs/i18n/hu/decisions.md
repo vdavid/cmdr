@@ -192,7 +192,6 @@ Hungarian.
 - Keep working → `Munka folytatása` (tentative), over `Mégsem`, which next to running operations reads as "cancel them",
   and over `Később`, since the countdown is deleted, not deferred.
 - in {n} seconds → `{secondsText} másodperc múlva`: the postposition keeps the placeholder bare.
-- Anything still being written → `Ami éppen íródik`: number-neutral, because one quit may cut many files.
 - clears away → `eltávolít` over `törli`: the sentence reassures, so it must not flash "deletes a file".
 
 ## Usage stats: "névtelen" dropped, "egy véletlenszerű azonosító" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)
@@ -352,11 +351,6 @@ Connect to server → `Kapcsolódás szerverre` (Finder `N84`, over `szerverhez`
 - **memory**: `memória` is RAM, `jegyzet` Ask Cmdr's memory.
 
 ## Az angol önellentmondásainak magyar utóélete
-
-### A példa e-mail-cím: `te@example.com` (`settings.updates.emailPlaceholder`, `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`)
-
-Hungarian local part, `example.com` domain (MS `valaki@example.com`, RFC 2606), the same in all three fields. ❌ Never
-`pelda.hu` / `example.hu`: those are registrable, so they could be someone's real address.
 
 ### A régi NÉV visszaadása mondat megnevezi a tárgyát (`askCmdr.renameUndo.undone`/`.partial`)
 
@@ -575,7 +569,6 @@ function key bar → `funkcióbillentyű-sáv`, as `settings.appearance.showFunc
 ### Mondatszintű döntések
 
 - The title carries macOS's Keep in Dock: `Maradjon a Cmdr a Dockodban?`.
-- a few days → `Néhány napja`, ❌ never a number: the threshold may move.
 - None of the four outcomes is an error message: `A Cmdr most nem került be a Dockba.`
 - `addedButDockDidNotRestart` → `… a helyén van, csak a Dock nem töltődött újra.`: `csak` says one detail is missing,
   where `de` would suggest the pin failed.
@@ -740,8 +733,6 @@ The notice never suggests deleting: these may be the only copies. Its one action
 
 - The title shares its English with four `*.title.trash` keys, so all five stay identical.
 - No plural machinery: `a kiválasztott elemek közül {count} darab…` reads right at 1 and 7.
-- ❌ Never "try again": retrying a permission refusal reproduces it. `suggestion.other` names the `Technikai részletek`
-  control verbatim.
 - `Shift+F8` takes no suffix: `A Shift+F8 billentyűparanccsal viszont …`.
 
 ## A csak online tartalom figyelmeztetése (`fileOperations.delete.cloudOnlineOnlyMixedWarning` / `fileOperations.delete.cloudOnlineOnlyAllWarning` / `fileOperations.delete.cloudOnlineOnlyHandedBack`)

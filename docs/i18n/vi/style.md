@@ -18,11 +18,12 @@ The must-know rules; the rest of this file elaborates them.
   speaking in the first person is `mình` (onboarding step 3, `openBeta`); the USER speaking, as on a radio option, is
   `tôi` (`Có, tôi muốn AI`).
 - **Voice**: friendly, concise, calm, everyday. In prose pick the everyday word over the Sino-Vietnamese formal one
-  (`dùng` over `sử dụng`, `Hãy` over `Vui lòng`, `Có gì đó không ổn` over `Đã xảy ra sự cố không mong muốn`); names stay as ruled. Error copy states the
-  problem and the next step and never uses `lỗi` or `thất bại` as a label: "Couldn't X" → `Không thể X` / `Không X được`; a gentle failed status → `Chưa hoàn tất được`; an outcome
-  not yet proven → `Chưa xác nhận được`; "Something went wrong" → `Có gì đó không ổn`; "Here's what to try:" →
-  `Bạn có thể thử:`. A flat present state takes `không`, "not yet" takes `chưa`; a thing that WILL happen (the Dock
-  redraws next login, a retry will save) takes `chưa`, never a verdict of failure.
+  (`dùng` over `sử dụng`, `Hãy` over `Vui lòng`, `Có gì đó không ổn` over `Đã xảy ra sự cố không mong muốn`); names stay
+  as ruled. Error copy states the problem and the next step and never uses `lỗi` or `thất bại` as a label: "Couldn't X"
+  → `Không thể X` / `Không X được`; a gentle failed status → `Chưa hoàn tất được`; an outcome not yet proven →
+  `Chưa xác nhận được`; "Something went wrong" → `Có gì đó không ổn`; "Here's what to try:" → `Bạn có thể thử:`. A flat
+  present state takes `không`, "not yet" takes `chưa`; a thing that WILL happen (the Dock redraws next login, a retry
+  will save) takes `chưa`, never a verdict of failure.
 - **Diacritics**: always full, NFC. Never strip marks to save space. Tone placement is modern: `hủy`, `xóa`, `khóa`,
   `hòa` (never `huỷ`, `xoá`, `khoá`).
 - **Capitalization**: sentence case in every title, label, and button; proper nouns keep theirs (`Thùng rác` when a
@@ -37,8 +38,8 @@ The must-know rules; the rest of this file elaborates them.
 - **Typography** (`mechanics.json`): quotes are curly `“…”`, nested `‘…’`, as macOS vi writes them (Finder `“^0”`,
   AppKit `‘%@’`); ❌ never a straight `"`. Ellipsis is `…`. No space before `:` `;` `?` `!` or `%`. A Settings path is
   `Cài đặt › <mục>` except where EN writes `>`. No comma before `và` / `hoặc` in new lists.
-- **No hedged grammar**: Vietnamese nouns never inflect, so there's nothing to bracket. ❌ No `(các) tệp` / `(những)`, no
-  bracketed classifier (`(cái)`, `(chiếc)`), no slashed pronoun (`anh/chị`): write the plain noun (or one ICU `other`
+- **No hedged grammar**: Vietnamese nouns never inflect, so there's nothing to bracket. ❌ No `(các) tệp` / `(những)`,
+  no bracketed classifier (`(cái)`, `(chiếc)`), no slashed pronoun (`anh/chị`): write the plain noun (or one ICU `other`
   arm) and address the user as `bạn`.
 - **Plurals**: CLDR `other` only. One `other` arm, the noun uninflected (`{countText} tệp`); ❌ never an English-shaped
   `one` / `=1` arm. `=0 {…}` is fine where the zero case says something different. A counted noun takes no `các`.
@@ -244,8 +245,6 @@ Vietnamese has no grammatical number, so one form covers all counts.
   looking for the phone toggle finds `Gỡ lỗi qua USB`. What stays verbatim is the command (`adb`), the acronym (`ADB`),
   and the packaged product names (`Android SDK`, `Homebrew`), matching how the sibling MTP strings keep quoted on-phone
   menu labels English while translating the prose around them.
-- **No pile on this machine?** Mine the installed macOS bundles instead (Tier 1 all the same):
-  `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
 - **Dạng "(busy)" của một mục menu: giữ nguyên chữ của mục gốc rồi thêm ` (đang bận)`.** Bốn khóa dùng chung một dấu
   hiệu: `menu.volume.ejectBusy` (`Tháo ({name}) (đang bận)`), `menu.volume.disconnectBusy` (`Ngắt kết nối (đang bận)`),
   `menu.volume.forgetSavedPasswordBusy` (`Quên mật khẩu đã lưu (đang bận)`), `menu.volume.forgetServerBusy`

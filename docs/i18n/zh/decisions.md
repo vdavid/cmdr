@@ -7,9 +7,9 @@ file-manager family (Tier 3); the pile is `_ignored/i18n/zh/` in the main clone.
 
 ## Settings vocabulary (`settings.section.*`, `settings.appearance.*`, `settings.summary.*`)
 
-- Section names: `外观`, `行为`, `语言`, `文件系统`, `SMB/网络共享`, `MTP（Android/Kindle/相机）`, `查看器`,
-  `开发者`, `更新与隐私`, `高级`, `键盘快捷键`, `许可证`, `服务器（SFTP、WebDAV）`, `Android（ADB）`: full-width
-  parens and `、` inside a label.
+- Section names: `外观`, `行为`, `语言`, `文件系统`, `SMB/网络共享`, `MTP（Android/Kindle/相机）`, `查看器`, `开发者`,
+  `更新与隐私`, `高级`, `键盘快捷键`, `许可证`, `服务器（SFTP、WebDAV）`, `Android（ADB）`: full-width parens and `、`
+  inside a label.
 - Navigation `导航` (the UI noun; Finder's `导览` is its verb). Theme `浅色` / `深色` / `跟随系统`; tint `着色` (macOS;
   Microsoft's `淡色` is the other sense). A toast is `提示`, never transliterated.
 - Hidden developer strings open with `内部：`.
@@ -26,8 +26,8 @@ file-manager family (Tier 3); the pile is `_ignored/i18n/zh/` in the main clone.
 
 ## macOS names in the reserved-shortcut list (`shortcuts.system.*`)
 
-Reuse macOS's localized names (`聚焦`, `字符检视器`, `调度中心`, `空间`, `强制退出`, `截屏`, `录屏`,
-`系统设置 > 键盘`). Finder stays Latin (`Finder 搜索窗口`): § 原生菜单.
+Reuse macOS's localized names (`聚焦`, `字符检视器`, `调度中心`, `空间`, `强制退出`, `截屏`, `录屏`, `系统设置 > 键盘`).
+Finder stays Latin (`Finder 搜索窗口`): § 原生菜单.
 
 ## Error-copy conventions (`errors.*`)
 
@@ -41,8 +41,8 @@ Reuse macOS's localized names (`聚焦`, `字符检视器`, `调度中心`, `空
   (joined with `；` for an English "or").
 - "Something went wrong" `出了点问题`; "couldn't tell what" `也说不清是什么` (`errors.mutation.unexpected` and
   `errors.eject.unexpected` identical).
-- A runtime app or folder name the English leaves unquoted stays unquoted (`{app} 还在…`, `名为 {folderName} 的`);
-  quote only where the English quotes, or where a Han/Latin name meets Han text with no fixed spacing (a destination).
+- A runtime app or folder name the English leaves unquoted stays unquoted (`{app} 还在…`, `名为 {folderName} 的`); quote
+  only where the English quotes, or where a Han/Latin name meets Han text with no fixed spacing (a destination).
 
 ## Conflict-policy buttons and small dialog words (`fileOperations.transferDialog.policySkip`/`.policyOverwrite`, `fileOperations.transferDialog.operationAria`)
 
@@ -71,13 +71,13 @@ Reuse macOS's localized names (`聚焦`, `字符检视器`, `调度中心`, `空
   copy-or-move in flight. Same head noun as `操作日志`, so the two View-menu items pair.
 - Classifier `项` (`这项操作`, `{count} 项操作`); generic items keep `个项目`.
 - `后台` over `背景` (the visual backdrop). Resume `继续` over `恢复` (restore, as macOS uses it for versions).
-- Status set: `等待中`, `进行中`, `已暂停`, `已完成`, `已取消`, `无法完成`; `Queued` is `等待中`, never `已排队` (it's
-  a status, not the queue noun).
+- Status set: `等待中`, `进行中`, `已暂停`, `已完成`, `已取消`, `无法完成`; `Queued` is `等待中`, never `已排队` (it's a
+  status, not the queue noun).
 
 ## Double-click the pane background (`settings.behavior.doubleClickPaneNavigatesToParent.*`, `fileExplorer.doubleClickHint.*`)
 
-`窗格背景` in the label, `空白区域` in the description (Double Commander uses both); `前往上层文件夹` (Finder).
-Hint buttons `不喜欢？` / `不再这样做` / `我喜欢`.
+`窗格背景` in the label, `空白区域` in the description (Double Commander uses both); `前往上层文件夹` (Finder). Hint
+buttons `不喜欢？` / `不再这样做` / `我喜欢`.
 
 ## FAT32 too-large-file error (`errors.write.filesTooLargeForFilesystem.*`)
 
@@ -107,7 +107,8 @@ Hint buttons `不喜欢？` / `不再这样做` / `我喜欢`.
 ## Archive-password dialog and Compress (`fileOperations.archivePassword.*`, `commands.fileCompress.*`, `settings.archives.compressionLevel.*`)
 
 - `受密码保护`, `解锁`; the password field's aria `压缩文件密码`.
-- Compression slider ends `更快` / `更小` (Total Commander's `最快压缩` / `最大压缩`, as comparatives); label `压缩级别`.
+- Compression slider ends `更快` / `更小` (Total Commander's `最快压缩` / `最大压缩`, as comparatives); label
+  `压缩级别`.
 - The archive name in `fileOperations.transferDialog.pathErrorNotZip` is `压缩文件名`, and `“.zip”` hugs its Han
   neighbours.
 
@@ -187,8 +188,8 @@ The header `检查更改` has no `正在` (a header, not live status), like its 
 
 - Dismiss `关闭` over `清除` / `移除` (both read as deleting, and the row deletes nothing). The aria is
   `关闭这项操作的记录`: `关闭这项操作` would read as stopping the operation.
-- "Couldn't finish X" `无法完成…操作`: `完成` wants a nominal object, so disyllabic verbs compound
-  (`无法完成拷贝操作`) and phrases take `的` (`无法完成移到废纸篓的操作`); `other` is `无法完成这项操作`.
+- "Couldn't finish X" `无法完成…操作`: `完成` wants a nominal object, so disyllabic verbs compound (`无法完成拷贝操作`)
+  and phrases take `的` (`无法完成移到废纸篓的操作`); `other` is `无法完成这项操作`.
 - Percent keeps the sign, `已完成 {percentText}%` (Finder); VoiceOver reads it.
 - The tooltip's `·` keeps a space on both sides: an unspaced `·` joins a transliterated name (`史蒂夫·乔布斯`).
 - The item count is its own fact (` · 共 {countText} 个项目`): four `{label}` arms are verb phrases that can't take an
@@ -215,8 +216,6 @@ The header `检查更改` has no `正在` (a header, not live status), like its 
 
 - Title `有 {countText} 项操作仍在进行，要退出吗？`: `操作仍在进行` from Finder's own quit refusal; the question goes
   last. The heading `仍在进行` repeats it on purpose; `进行中` labels one row.
-- The body stays number-neutral (`正在写入的项目`, `写了一半的文件`): one operation writes several files, so `那个项目`
-  or `半个文件` states something false.
 - `清理掉` over `清除` (reserved for an index or a search) and `删除` (a delete the user asked for).
 - `系统重新启动或退出登录`: `系统` keeps `退出登录` from reading as Cmdr's sign-out; never Windows' `注销`.
 - Buttons `继续工作` (never `稍后`, `取消`, which would cancel the operations, or a cold `不退出`) and `立即退出`
@@ -232,8 +231,8 @@ The header `检查更改` has no `正在` (a header, not live status), like its 
 - `需要你回答`: never opening on `等待`, which is the queued status in the same column.
 - The prompt is `那个问题`: `提示` is the hint banner.
 - Keep button `保留文件`: a bare `保留` beside `回滚` could mean keeping the operation.
-- Stop in the rollback tooltip `停止`, ❌ never `取消` (Cancel keeps the finished files; the tooltip exists to say rollback
-  doesn't).
+- Stop in the rollback tooltip `停止`, ❌ never `取消` (Cancel keeps the finished files; the tooltip exists to say
+  rollback doesn't).
 
 ## 无法确认的重命名 + 名称不可用 + 重命名链计数 (`fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`, `fileExplorer.rename.chainKeptOriginalName*`)
 
@@ -279,8 +278,8 @@ clash. Description `在当前文件夹中为选中的文件创建副本`.
 ## 重命名/新建被拒绝时的一行提示（`errors.mutation.*`、`errors.volume.*`）
 
 - Top folder `顶层文件夹` (the volume's own top), distinct from the user-chosen `根文件夹`.
-- `因为 macOS 的“系统完整性保护”，这个项目无法重命名。`: Apple gives the name no verb; `因为` over Apple's `由于`
-  (the catalog's everyday word).
+- `因为 macOS 的“系统完整性保护”，这个项目无法重命名。`: Apple gives the name no verb; `因为` over Apple's `由于` (the
+  catalog's everyday word).
 - MTP handle lost `跟丢了`; delete pending `正在退场` / `还有东西占着它`; timeout `也许仍会生效` (⚠️ still waiting,
   never a failure); MTP reset `设备的连接已重启` (the connection, never the device, restarted).
 - A password that didn't work `不起作用`, ❌ never `密码错误`.
@@ -297,8 +296,8 @@ clash. Description `在当前文件夹中为选中的文件创建副本`.
   `遇到问题`.
 - `之后一直在运行`, never `仍在后台运行`: `仍在` is present tense, and the user already quit.
 - The second sentence drops `崩溃` (`这是一份报告…`); `.ended` keeps `崩溃报告`.
-- The settings description uses `一份报告` for both outcomes; the label stays `发送崩溃报告`. `应用版本` over
-  `App 版本` (the Latin `App` is for cloud and error copy).
+- The settings description uses `一份报告` for both outcomes; the label stays `发送崩溃报告`. `应用版本` over `App 版本`
+  (the Latin `App` is for cloud and error copy).
 
 ## Eject / disconnect error copy (`errors.eject.*`)
 
@@ -308,11 +307,10 @@ clash. Description `在当前文件夹中为选中的文件创建副本`.
 - A timeout isn't a failure: `可能过一会儿它会自己推出`.
 - The named refusals end like `unmountRefused` (`…，然后再次推出。`). Singular and plural app differ only in `它` /
   `它们`. `其他 App` takes no measure word (`几个` would invent a count); `Intl.ListFormat` supplies the joiner.
-- `请关闭它在上面打开的内容` (`内容`, since "anything" is wider than files; close, not quit). A disk image `还开着`
-  (the English says "open", unlike the "mounted" `挂载着` elsewhere). `macOS 还在处理这个驱动器`: `处理`, since the
-  system's background work isn't an app using it.
-- `请稍等一会儿` / `请稍等片刻` keep the English's two lengths. Cmdr's own bug: `发送一份报告`, never
-  `发送错误报告`.
+- `请关闭它在上面打开的内容` (`内容`, since "anything" is wider than files; close, not quit). A disk image `还开着` (the
+  English says "open", unlike the "mounted" `挂载着` elsewhere). `macOS 还在处理这个驱动器`: `处理`, since the system's
+  background work isn't an app using it.
+- `请稍等一会儿` / `请稍等片刻` keep the English's two lengths. Cmdr's own bug: `发送一份报告`, never `发送错误报告`.
 
 ## 废纸篓提示条：撤销与前往废纸篓（`fileOperations.trash.*` + `commands.fileGoToTrash.*`）
 
@@ -339,8 +337,8 @@ clash. Description `在当前文件夹中为选中的文件创建副本`.
 
 ## 收敛掉的真漂移（`queue.row.dismiss*`、`ui.toast.dismissAria`、`commands.navBack.label`、`fileExplorer.errorPane.goBack`、`askCmdr.decision.verbCopy`、`fileExplorer.summary.fileNoun`）
 
-- Dismiss `关闭`, never `忽略`: macOS keeps `忽略` for real "ignore" (`忽略拼写`), and on a success toast `忽略` told the
-  user to ignore what they just did.
+- Dismiss `关闭`, never `忽略`: macOS keeps `忽略` for real "ignore" (`忽略拼写`), and on a success toast `忽略` told
+  the user to ignore what they just did.
 - `示例：` for the full word "Example:", `例如` only for "e.g.".
 - On disk `占用磁盘` (Double Commander `占用磁盘空间`); `占用空间` is too loose, since logical size also takes space.
 - Back (history) `返回`, never `后退` (zero hits in macOS; the menu and palette had split). Go to home folder
@@ -370,8 +368,8 @@ One English word, two correct Chinese renderings. Don't merge them:
 
 ## 完成中断的回滚（`operationLog.dialog.finishRollBack`、`operationLog.rollback.partiallyRolledBackNotice`、`fileOperations.rollbackConfirm.titleFinish`/`.finishRollBack`、`queue.row.reversalInFolder`、`fileOperations.transferProgress.rollbackTooltipStopAndMoveBack`/`.rollbackAlreadyLandedTooltip`）
 
-- Finish rolling back `完成回滚` over `继续回滚`: the English says Finish, and `继续` is `queue.row.resume` (native review
-  pending).
+- Finish rolling back `完成回滚` over `继续回滚`: the English says Finish, and `继续` is `queue.row.resume` (native
+  review pending).
 - The notice promises nothing more than the confirm dialog: it reuses `保持原样` and `跳过没有把握的部分` verbatim.
 - `in {folder}` is `位于 {folder}`: a trailing locative beside a fixed first element (as `downloads.toast.inSubdir`
   does), so `正在删除新建的内容 位于 Backup` never reads as "this folder gets deleted". The folder name is bare, like
@@ -395,7 +393,8 @@ One English word, two correct Chinese renderings. Don't merge them:
 ## 旧 WebKit 与旧 macOS 提示（`main.oldWebkit.*`、`main.oldMacos.*`）
 
 - Pane name quoted, `“软件更新”`; `Safari`, `Mac`, `15.4` spaced from Han.
-- `X 及更高版本` (System Settings); best effort `尽力而为`; "look off" `不太对`. Frank and light: no apology, no warning.
+- `X 及更高版本` (System Settings); best effort `尽力而为`; "look off" `不太对`. Frank and light: no apology, no
+  warning.
 
 ## Ask Cmdr inspect-file consent + tool labels (`askCmdr.tool.inspectFile.*`, `ai.cloudConsent.askCmdr.item.contents`, `ai.cloudConsent.askCmdr.contentsRule`)
 
@@ -409,8 +408,8 @@ One English word, two correct Chinese renderings. Don't merge them:
 
 ## “在此处打开终端”与它的 App 选择器（`settings.behavior.openTerminalHereApp.*`、`settings.navigationAndFileOps.card.terminal`）
 
-The command `在此处打开终端` is identical in menu, palette, and settings. Choose an app `选取 App…` (Apple's `选取`
-for a picker); a terminal app `终端 App`.
+The command `在此处打开终端` is identical in menu, palette, and settings. Choose an app `选取 App…` (Apple's `选取` for
+a picker); a terminal app `终端 App`.
 
 ## git 的 worktree（`errors.git.orphanedWorktree.*`、`settings.fileExplorer.git.showVirtualGitPortal.description`、`fileExplorer.git.size.linkedWorktrees`）
 
@@ -419,14 +418,14 @@ one name across the error pane, the setting, and the Size column.
 
 ## `Documents and packages`：新增的 OOXML 行（`settings.archives.ooxml.*`）
 
-Documents `文稿` (Apple), never `文档`; packages `软件包`, deliberately wider than the card below's `应用程序包`, as
-the English contrasts packages with app bundles.
+Documents `文稿` (Apple), never `文档`; packages `软件包`, deliberately wider than the card below's `应用程序包`, as the
+English contrasts packages with app bundles.
 
 ## 服务器面板与卷切换器里的服务器行（`servers.*`、`fileExplorer.navigation.connectionTooltip*`/`disconnect*`/`forget*`）
 
 - Classifier `台` (`这台服务器`). Try again `重试`, never `再试一次` (that's `zh-Hant`'s call).
-- Forget saved password `清除保存的密码`, and its dialog body says `清除` too; not Apple's Wi-Fi `忽略此网络`
-  (`忽略` reads as "skip").
+- Forget saved password `清除保存的密码`, and its dialog body says `清除` too; not Apple's Wi-Fi `忽略此网络` (`忽略`
+  reads as "skip").
 - Host key `主机密钥`; a sentence mentioning it twice shortens the second to `密钥`.
 - `servers.refusal.unreachable` `Cmdr 连不上 {host}。`, shorter for a one-line pane.
 - Compromised `已泄露` over `已失陷` (tentative, native review pending).
@@ -437,8 +436,8 @@ the English contrasts packages with app bundles.
 - Type `类型` (protocol), never Finder's `种类` (file kind).
 - Status set `已连接` / `已保存` / `已退出登录`; found nearby `在附近发现` without `已` (the user didn't cause it);
   signed out is never `被拒绝` / `认证失败`.
-- Waiting for you `等你核对主机密钥` over `等待用户确认` (reads like a system log). Never `从未`, not `永不` (a setting's
-  "never again").
+- Waiting for you `等你核对主机密钥` over `等待用户确认` (reads like a system log). Never `从未`, not `永不` (a
+  setting's "never again").
 - Show servers `显示服务器` (English Show → `显示`; `前往` only for Go to). Pin/unpin `固定/取消固定服务器`, slash
   unspaced. Disconnect server `断开服务器连接`, never `推出`.
 - The pin toasts don't say `固定`, like the English; the unpin toast's second sentence answers "was it deleted?".
@@ -446,7 +445,8 @@ the English contrasts packages with app bundles.
 
 ## 添加服务器的模态表单、SSH 主机密钥确认、前往路径的预览行（`servers.sheet.*`、`servers.hostKey.*`、`servers.paneState.signedOut`/`.signIn`/`.hostKeyChanged*`、`goToPath.dialog.opensServer`/`.addsServer`、`commands.serversConnect.label`）
 
-- Save `保存`, never Apple's older `存储`. Sign in to X `登录 {name}`, no preposition; signed out `已从 {name} 退出登录`.
+- Save `保存`, never Apple's older `存储`. Sign in to X `登录 {name}`, no preposition; signed out
+  `已从 {name} 退出登录`.
 - Passphrase `密码短语`, so the key's is `密钥密码短语`: a bare `密码` would read as the account password.
 - Guest `客人` (macOS zh-CN; `来宾` is Microsoft's); `servers.sheet.connectAsGuest`,
   `fileExplorer.network.browser.status.guest`, and `errors.shareList.signingRequired` change together.
@@ -460,8 +460,8 @@ the English contrasts packages with app bundles.
 
 - `正在重新连接到 {name}…`, the shape of `正在连接到 {name}…`, so connecting and reconnecting read as two states.
 - "there's nothing to X" is Apple's `没有要 X 的内容` (`没有要输入的内容`), not a chattier `没什么可…的`.
-- `登录这台服务器用的是密钥，而不是密码`: the subject moves to the sign-in, since "the server signs in" reads as the server
-  logging in. No `认证` / `验证身份`: the English is plain.
+- `登录这台服务器用的是密钥，而不是密码`: the subject moves to the sign-in, since "the server signs in" reads as the
+  server logging in. No `认证` / `验证身份`: the English is plain.
 
 ## 固定/取消固定的右键项与一次性提示、可信主机密钥页、Android（ADB）设置页（`menu.network.pinToSwitcher`/`.unpin`、`servers.pinHint.*`、`settings.servers.*`、`settings.adb.*`、`settings.section.servers`/`.adb`、`settings.appearance.tintSmb.*`）
 
@@ -470,7 +470,8 @@ the English contrasts packages with app bundles.
 - A group in the switcher is `分组`, never Apple's `群组` (people or devices).
 - Trusted host keys `受信任的主机密钥`; the date prefix `已信任`. Not found `未找到` (a bare status); found
   `已找到：{path}`. Re-check `再次检查` (Apple's Check Again).
-- Watching for phones `正在留意接入的手机`: `等待` would read as stuck (tentative). Never mention the ADB server or sockets.
+- Watching for phones `正在留意接入的手机`: `等待` would read as stuck (tentative). Never mention the ADB server or
+  sockets.
 - Choose the adb command `选取 adb 命令` (a file picker says `选取`).
 
 ## Android（ADB）手机的窗格状态、卷切换器提示与那条一行提示（`adb.*`、`settings.behavior.adbHintDismissed.*`）
@@ -513,8 +514,8 @@ the English contrasts packages with app bundles.
 
 ## AI 提供方设置向导的用词（`onboarding.cloudSetup.*`）
 
-Endpoint `端点` over Windows' `终结点`; address `地址` over `网址` (the catalog and macOS agree about 7:1); `ollama pull`
-`拉取`, not `请求` (half of "pull request").
+Endpoint `端点` over Windows' `终结点`; address `地址` over `网址` (the catalog and macOS agree about 7:1);
+`ollama pull` `拉取`, not `请求` (half of "pull request").
 
 ## 程序坞邀请与程序坞菜单（`main.dockPinNudge.*`、`settings.behavior.dockPinNudgeOfferedAt.*`、`menu.dock.*`）
 
@@ -524,8 +525,8 @@ Endpoint `端点` over Windows' `终结点`; address `地址` over `网址` (the
 - `下次登录 Mac 时`: `Mac` separates it from signing in to a server.
 - The Dock didn't reload: `图标已经放好了…只是…还没刷新`, ⚠️ never "not pinned" (the icon is there).
 - `这次没能添加到程序坞` (this time) vs `无法把自己加进去` (a managed Dock, a lasting limit).
-- The Dock menu: `搜索文件…` equals `menu.edit.searchFiles`; `前往文件夹…` (Finder) is not `前往路径…` (another command);
-  `{name}（{parent}）`, full-width, no space.
+- The Dock menu: `搜索文件…` equals `menu.edit.searchFiles`; `前往文件夹…` (Finder) is not `前往路径…` (another
+  command); `{name}（{parent}）`, full-width, no space.
 
 ## “在 Finder 中显示”的邀请与首次接手提示（`main.revealNudge.*`、`main.revealActivation.*`、`settings.behavior.reveal*`）
 
@@ -535,8 +536,8 @@ Endpoint `端点` over Windows' `终结点`; address `地址` over `网址` (the
 
 ## 入门引导改版：清单、步骤提示、可选项摘要 (`onboarding.stepBeta.checklist.*`, `onboarding.stepOptional.*`, `onboarding.wizard.stepTooltip`, `onboarding.stepFda.*`, `onboarding.stepAi.*`)
 
-- GitHub star `加星标` / `星标` (GitHub's zh docs); repository `仓库`, not Microsoft's `存储库`. AlternativeTo like `点赞`
-  (the site has no Chinese UI).
+- GitHub star `加星标` / `星标` (GitHub's zh docs); repository `仓库`, not Microsoft's `存储库`. AlternativeTo like
+  `点赞` (the site has no Chinese UI).
 - Mailing list `邮件列表`, ⚠️ not the TBX's first hit `邮寄列表` (physical mail).
 - Typo hint `看看是不是打错了`, never `错误`.
 - Local Network is quoted as macOS names it, `“本地网络”`, with `访问` outside the quotes.
@@ -575,8 +576,8 @@ sense). Quotes hug Han (`“{server}”上`).
 
 - In progress `正在断开连接`; already happened `断开了连接`.
 - `{done} 个文件（共 {total} 个）` (Finder's `^0项（共^1项）`).
-- Which drive left is carried by the preposition (`往它拷贝` vs `往 {counterpart} 拷贝`), not by the label words
-  `来源` / `目标位置`, which go stiff in a sentence.
+- Which drive left is carried by the preposition (`往它拷贝` vs `往 {counterpart} 拷贝`), not by the label words `来源`
+  / `目标位置`, which go stiff in a sentence.
 - Reassurance keeps `都` (`其余的都还在…`, `你的文件都还在…`, `都留在了原处`): without it the line reads as an aside,
   not "nothing is missing". `所以什么都没丢失` is the point of its message.
 - ❗ `无法确认这次移动`, never "move failed": the files may have arrived, which is why the originals stay.
@@ -598,14 +599,14 @@ sense). Quotes hug Han (`“{server}”上`).
 
 ## Select all of the same kind (`menu.select.sameKind`/`.allFolders`/`.sameExtension`/`.noExtension`, `commands.selectionSelectSameKind.*`, `menu.context.selection`)
 
-- Kind `种类` (Finder's Kind criterion). `选择所有扩展名为 *.{extension} 的文件` (the Commanders' "same extension",
-  with the concrete mask spaced).
+- Kind `种类` (Finder's Kind criterion). `选择所有扩展名为 *.{extension} 的文件` (the Commanders' "same extension", with
+  the concrete mask spaced).
 - `menu.context.selection` is a noun, `选择`, the same as the menu: Chinese doesn't split the noun and verb.
 
 ## The title-bar full-disk-access badge (`onboarding.fdaBadge.*`)
 
-- `没有完全磁盘访问权限`, `没有` over `无`: it must equal `onboarding.stepAi.bannerTitle.denied`, and the aria opens with
-  it.
+- `没有完全磁盘访问权限`, `没有` over `无`: it must equal `onboarding.stepAi.bannerTitle.denied`, and the aria opens
+  with it.
 - "files macOS keeps to itself" `macOS 自己留着的文件`: plain words, name no macOS feature.
 
 ## The trash refusal dialog (`errors.write.trashRefused.title` + its `message.*` / `suggestion.*` siblings)
@@ -656,8 +657,8 @@ like a system fault). "a lot slower" `慢得多` (no ratio here).
 
 ## Apple app and product names Apple localizes (`settings.advanced.showSafeSaveFiles.description`, `errors.provider.iCloud.*`, `errors.listing.emptyRootICloud.*`, `shortcuts.system.finderSearch`)
 
-`iCloud 云盘` (macOS zh-CN, spaced); third-party "Drive" products keep their Latin names. `“文本编辑”` / `“预览”`
-quoted in prose.
+`iCloud 云盘` (macOS zh-CN, spaced); third-party "Drive" products keep their Latin names. `“文本编辑”` / `“预览”` quoted
+in prose.
 
 ## Whole-catalog wording rules (`viewer.saveAs.*`, `viewer.copyDialog.*`, `settings.onboarding.completed.label`, `onboarding.wizard.restart`, `onboarding.stepFda.postAction.body`, `queryUi.results.live.foldersScanned`)
 

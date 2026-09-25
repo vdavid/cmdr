@@ -18,8 +18,7 @@ The must-know rules; the rest of this file elaborates them.
   - titles and yes/no questions: imperative or bare infinitive plus `?` (`Avsluta medan en åtgärd pågår?`);
   - progress and queue rows: finite present tense, no subject (`Kopierar`, `Flyttar`, `Söker igenom…`);
   - status cells and chips: a participle agreeing with the row's noun (`Ansluten`, `Sparad`, `Pausad`, `Ångrad`);
-  - warning badges: noun-shaped, never an imperative (`(överskrivning!)`, not `(skriv över!)`);
-  - a value spliced in after a colon doesn't repeat the frame (`errors.eject.*` after `Det gick inte att mata ut …:`).
+  - warning badges: noun-shaped, never an imperative (`(överskrivning!)`, not `(skriv över!)`).
 - **Menu-bar and Apple names follow the running Swedish macOS**, looked up live and dated, never paraphrased: `Arkiv`
   (File), `Redigera`, `Innehåll` (View), `Gå`, `Fönster`, `Hjälp`, `Visa info` (Get Info), `Överblick` (Quick Look),
   `nyckelringen` / `Nyckelhanterare` (Keychain / Keychain Access), `Skivverktyg > Skivkontroll`, `Full skivtillgång`,
@@ -29,16 +28,16 @@ The must-know rules; the rest of this file elaborates them.
   `Tillåt`, `tryck på`).
 - **Capitalization**: sentence case; Swedish capitalizes no common nouns, days, or months.
 - **Typography** (`mechanics.json`): quotes `”…”` with the closing mark on both sides, nested `’…’`, apostrophe `’`;
-  never straight `"` or English `“…”`. Ellipsis `…`. A space before `%` (`100 %`, `{percent} %`). Write any
-  apostrophe as the curly `’`, which needs no ICU doubling in any family.
+  never straight `"` or English `“…”`. Ellipsis `…`. A space before `%` (`100 %`, `{percent} %`). Write any apostrophe
+  as the curly `’`, which needs no ICU doubling in any family.
 - **No hedged grammar**: never `fil(er)`, `mapp(en)`, `markerad/-t`, `en/ett`, `den/det`, or an ending glued to an
   insert (`{name}s`, `{name}:s`, `{system_settings}en`). Use ICU plural / select when Cmdr knows the value; otherwise
   name the noun (`filen`, `objektet`), use a preposition (`på {name}`), or put the insert after a colon.
 - **Punctuation**: no comma before `och` / `eller` joining two short clauses; keep it before a consequence `så`
   (`…, så läggs det till`). Use `samt` before a last item that itself contains `och`. A command that toggles both ways
   keeps the slash (`Fäst / lossa server`).
-- **Everyday words in prose**: `bara` over `endast`, `det här` over `detta`, `ansluta direkt` over `upprätta en
-  anslutning`, `ställa in` over `konfigurera` in running text. Names keep their ruled form.
+- **Everyday words in prose**: `bara` over `endast`, `det här` over `detta`, `ansluta direkt` over
+  `upprätta en anslutning`, `ställa in` over `konfigurera` in running text. Names keep their ruled form.
 - **Compounds** close up (`fillista`, `åtgärdskö`) and hyphenate after an acronym, a code, or a proper name
   (`API-nyckel`, `zip-arkiv`, `USB-enhet`, `Finder-taggen`, `Dock-inställningar`, `Hjälp-menyn`); a two-word phrase
   can't compound, so use a phrase instead.
@@ -169,11 +168,11 @@ CLDR categories: `one`, `other` (verified with `new Intl.PluralRules('sv')`). Wr
 - **Percent**: a space before `%` (`100 %`, `{percent} %`), even inside a placeholder-heavy string.
 - **Numbers and dates** come from the formatter layer (comma decimal, space thousands separator); never hardcode them.
 - **Multipliers** use `gånger`, spelled out through nine: `fyra gånger`, `100 gånger`, never `4x`.
-- **Brand genitive by final sound**: `Cmdrs`, `Finders`, `pClouds`; an s-sound takes nothing (`macOS inbyggda …`).
-  Never `macOS'`, never the abbreviation colon form (`pCloud:s`; that's for `SVT:s`).
+- **Brand genitive by final sound**: `Cmdrs`, `Finders`, `pClouds`; an s-sound takes nothing (`macOS inbyggda …`). Never
+  `macOS'`, never the abbreviation colon form (`pCloud:s`; that's for `SVT:s`).
 - **Warning badges are nouns** (`(överskrivning!)`), never an imperative that doubles as a command (`(skriv över!)`).
-- **The definite form breaks aria containment**: a bare indefinite label (`Bakgrund`) isn't inside the definite phrase
-  a natural aria uses (`i bakgrunden`), so the label takes the definite form too (`I bakgrunden`). Containment is always
+- **The definite form breaks aria containment**: a bare indefinite label (`Bakgrund`) isn't inside the definite phrase a
+  natural aria uses (`i bakgrunden`), so the label takes the definite form too (`I bakgrunden`). Containment is always
   case-insensitive here, since Swedish capitalizes nothing mid-sentence.
 - **Table status cells are participles agreeing with the row's noun** (`servern` → `Ansluten`, `Sparad`); if the row
   noun changes gender, rewrite the whole column.

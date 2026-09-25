@@ -2698,9 +2698,9 @@ de `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
 
 - `Encerrar` (Finder and `commands.appQuit.label`). `Continuar trabalhando` over `Cancelar`, which would read as
   cancelling the operations, and over any postpone phrase, since the countdown is gone for good.
-- `em andamento` over `em execução` (Finder's own quit sentence). The body stays number-neutral
-  (`O que ainda está sendo gravado`). `é interrompido onde está` over `para onde está`, which garden-paths on `para`.
-  The `encerr-` and `gravado` repetitions are deliberate: each is its concept's sourced term.
+- `em andamento` over `em execução` (Finder's own quit sentence). `é interrompido onde está` over `para onde está`,
+  which garden-paths on `para`. The `encerr-` and `gravado` repetitions are deliberate: each is its concept's sourced
+  term.
 
 ## Operation log (`operationLog.*`, `commands.logOperationLog.*`)
 
@@ -2843,8 +2843,6 @@ de `docs/i18n/reference-pile/how-to-mine.md` § "No pile on this machine?".
   preposition with them (`nos {system_settings}`): use `em {system_settings}`.
 - `Conta Apple` (not `Conta da Apple`), `Geral`, `Itens de Início de Sessão e Extensões` (not the old short name), from
   the macOS bundles.
-- The placeholder email is `voce@example.com`: the local part translates like MS `nome@`, but ❌ never `exemplo.com`, a
-  real registrable domain.
 - `askCmdr.renameUndo.undone` names the object (`O nome anterior de … foi restaurado`), whole sentence inside the
   plural.
 

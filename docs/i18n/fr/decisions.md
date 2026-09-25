@@ -91,6 +91,7 @@ values write the catalog's `’`.
 ## Compresser (`commands.fileCompress.*`, `fileOperations.transferDialog.toggleCompress`, `.confirmCompress`, `fileOperations.transferProgress.scanTitleCompress`, `transfer.compress.*`, `settings.archives.compressionLevel.*`)
 
 - `Compresser` (Finder) over `Comprimer`; the progress noun is `Compression`.
+
 ## L'historique des opérations (`operationLog.*`, `commands.logOperationLog.*`)
 
 - Operation log → `Historique des opérations` over `journal`, which stays the log FILE (`fichier journal`,
@@ -245,7 +246,6 @@ values write the catalog's `’`.
 - Title → `Quitter alors qu’une opération est en cours ?` (elliptical infinitive question, never
   `Voulez-vous vraiment…`); `alors que` for its concessive edge over temporal `pendant que`.
 - "stays done" → `Tout ce qui est déjà terminé le reste.`: the only short form true for deletes and trashes too.
-- The body stays number-neutral (`Ce qui est encore en cours d’écriture`, `tout fichier à moitié écrit`).
 - logout → `une fermeture de session` over `déconnexion` (servers). Countdown → `Cmdr quitte dans …`, one verb root for
   the whole dialog, over `se ferme` (collides with `fermeture`).
 - Keep working → `Continuer à travailler`: bare `Annuler` means cancel the listed operations, and bare `Continuer` is
@@ -401,7 +401,6 @@ values write the catalog's `’`.
   Put back → `restauré` (names) vs `remis en place` (locations).
 - Send feedback: the title says `un retour`, the send button `le retour` (general action vs the object in front of you),
   like `Envoyer un rapport d’incident` / `Envoyer le rapport`.
-- Email placeholder → `vous@example.com` in all three fields, never `exemple.com` (a real domain).
 
 ## Mots qui ont divergé sans qu'aucun check puisse le voir (`settings.appearance.language.opt.system`, `settings.appearance.dateTimeFormat.opt.system`, `indexing.scan.counters`, `commands.viewFullMode.label`, `commands.viewBriefMode.label`)
 
@@ -571,7 +570,7 @@ values write the catalog's `’`.
 ## Le menu contextuel de la ligne serveur : `Ouvrir` et `Modifier le serveur…` (`menu.network.open`, `menu.network.edit`)
 
 - Open (a server row) → `Ouvrir`, like Finder. Edit server… → `Modifier le serveur…`, byte-identical to
-  `commands.serversEdit.label`; rewording one means rewording the other.
+  `commands.serversEdit.label`.
 
 ## La proposition d'ajout au Dock (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 

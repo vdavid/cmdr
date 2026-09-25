@@ -47,8 +47,8 @@ The must-know rules; the rest of this file elaborates them.
     never `位置` (file-system only).
   - archive (zip) → `压缩文件`; a chat's archive → `存档`; guest → `客人`; native (macOS's own) → `内建`.
 - **Typography** (`mechanics.json`): quotes `“…”`, nested `‘…’` (macOS zh-CN quotes with `“…”` only; `「…」` is
-  Traditional); no apostrophe. Quote UI names, file names, and runtime names in prose with `“…”`, hugging the Han
-  text. Full-width `，。：；？！（）` in Chinese text, never the ASCII ones; one ellipsis form, `…` (U+2026); paired verbs hug
+  Traditional); no apostrophe. Quote UI names, file names, and runtime names in prose with `“…”`, hugging the Han text.
+  Full-width `，。：；？！（）` in Chinese text, never the ASCII ones; one ellipsis form, `…` (U+2026); paired verbs hug
   their slash (`固定/取消固定服务器`), while a spaced `/` is only for numeric fractions. A settings path in a sentence
   is quoted whole, separator mirroring the English: `在“设置 > 更新与隐私”中重新开启`. A menu in prose: `“帮助”菜单`.
 - **Spacing**: no space between Han characters; one ASCII space between Han text and Latin words, digits, or a
@@ -253,7 +253,7 @@ inflection.
   (`Ask Cmdr 设置`, `Ask Cmdr 部分`); write bare `Cmdr` when the sentence describes what the AI does; write `AI` in the
   four `suggestedOps.*` strings, which have to stay distinguishable from the neighbouring `Cmdr 掌握的信息`. ❗ Don't
   "restore" `Ask Cmdr` as a sentence subject: that's the exact regression a copy sweep once had to undo. Per-key
-  evidence: `decisions.md` § "AI 文案改写：主语从 “Ask Cmdr” 换成 `Cmdr` / `AI`".
+  evidence: `decisions.md` § "AI 文案改写：主语从 “Ask Cmdr” 换成".
 - **Quotation marks:** this catalog quotes filenames with `“…”`, following macOS zh-CN. Traditional uses corner brackets
   instead, which is one more reason a converted catalog reads wrong; its rule is in `../zh-Hant/style.md`.
 - **Ask Cmdr tool-line labels are a `正在…` / `已…` pair, with `查看` for reading contents.** Every

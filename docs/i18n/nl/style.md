@@ -182,23 +182,9 @@ second half is now a normal plural with a real verb
   `daar is iets aan gewijzigd`, `daar staat nu iets in`, `nadat Cmdr er klaar mee was`. Bonus: with no pronoun left, a
   `.named` and a `.counted` sibling can share one sentence, and the counted one keeps a single `plural` block instead of
   three. Worked example: `decisions.md` § De terugdraaimelding.
-- **No definite article in front of a numeral.** English's "the {countText} items" has no Dutch counterpart
-  (`De 1 onderdeel` is wrong), so put the completeness first and the number in an apposition after a colon:
-  `Alles is teruggezet: {countText} onderdelen.` That reads correctly at every count, 1 included.
-- **No reference pile on the machine? Mine the live macOS bundles, don't guess.** The `_ignored/i18n/nl/` pile lives
-  only on David's laptop, so a pass running elsewhere (the M1 agent box) finds nothing at the main-clone absolute path
-  either, and that is a genuinely absent pile rather than the worktree trap. Tier 1 is still reachable:
-  `Finder.app`/`Safari.app` `nl.lproj/*.strings` and the framework/System Settings `*.loctable` files carry the same
-  Apple Dutch, keyed by the English string or a stable id. Recipes: `docs/i18n/reference-pile/how-to-mine.md` § "No pile
-  on this machine?". Tier 2 (Microsoft terminology and style guide) has no live equivalent, so a term that would have
-  needed Microsoft to break a tie stays `tentative`.
-- **A vendor's own Dutch UI beats a `@key.description` that says "keep it as-is",** the same way term-choice principle 1
-  works for Apple. `settings.fileOperations.adbEnabled.description`'s English description asks to keep "USB debugging"
-  verbatim, but a Dutch Android phone labels that switch `USB-foutopsporing`; keeping English would leave the user
-  hunting for a string their phone never shows. Keep the acronym, localize the rest, and report the clash upward.
-- **The volume switcher is `de volumekiezer`, in every string.** English calls one UI both "volume switcher" and "volume
-  chooser"; the catalog already gives it a single Dutch name (`commands.volumeClose.label`,
-  `shortcuts.scope.volumeChooser`), so a new string about it reuses that word. The old coinage `wisselaar` stays unused.
+- **Totality before a count**: completeness first, the number in an apposition after a colon:
+  `Alles is teruggezet: {countText} onderdelen.`
+- **The volume switcher is `de volumekiezer`** in every string; the old coinage `wisselaar` stays unused.
 - **`Wijzig …` opens a form; `Bewerk …` opens an editor.** macOS renders a standalone `Edit…` as `Wijzig…`
   (`Network.appex`, AppKit, verified on macOS 26.6.2, build 25G83, 2026-09-06), and this catalog reserves `Bewerk` for
   opening a file in an editor (`commands.fileEdit.label`, `menu.file.edit`). Pick by which of the two the string means.
@@ -212,9 +198,6 @@ second half is now a normal plural with a real verb
 - **`Log in bij …` is het voorzetsel, en `Log in met …` de vorm voor de inlogmethode.** `servers.sheet.signInTitle`
   (`Log in bij {name}`) en `servers.sheet.signInWithCredentials` (`Log in met een gebruikersnaam en wachtwoord`) zetten
   het patroon; een nieuwe zin over inloggen hergebruikt beide in plaats van Apples `inloggen op '%@'`.
-- **Een zin die naar de server terugwijst, herhaalt het naamwoord.** `Open de server opnieuw om …`, niet
-  `Open hem opnieuw`: in een paneel waar ook `de sleutel` staat, is `hem` dubbelzinnig. De vorm komt uit
-  `paneState.hostKeyChangedHint` en `fileExplorer.navigation.connectionTooltipNeedsSignIn`.
 - **Android's own Dutch is Tier 1 for anything the user will read on their phone.** The AOSP catalogs are fetchable from
   `android.googlesource.com` (`packages/apps/Settings`, `frameworks/base/packages/SettingsLib`, and
   `frameworks/base/packages/SystemUI`, each `res/values-nl/strings.xml`, base64 via `?format=TEXT`), and they settle

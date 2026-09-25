@@ -54,9 +54,9 @@ The must-know rules; the rest of this file elaborates them.
   noun, not a shared pronoun (`das Gerät` for „a Mac or NAS“).
 - **Aria labels**: German case is what breaks containment, so give the label the aria sentence's case (`Im Hintergrund`
   inside `Im Hintergrund weiterlaufen lassen`).
-- **One word per thing**: two keys with the same English get the same German, one control has one German name even where
-  English has two (`Volume-Auswahl`), and one dialog keeps one word family (`hinzufügen` → `Wird hinzugefügt …` →
-  `hinzugefügt`). Name a feature in full once (`Fehlerbericht`), then the short word (`Bericht`).
+- **One word per thing**: the volume switcher is `Volume-Auswahl` everywhere, and one dialog keeps one word family
+  (`hinzufügen` → `Wird hinzugefügt …` → `hinzugefügt`). Name a feature in full once (`Fehlerbericht`), then the short
+  word (`Bericht`).
 - **Top traps** (details in `terms.json`):
   - operation → `Vorgang` (m.: `diesen Vorgang`, `ihn`): `Vorgangswarteschlange`, `Vorgangsprotokoll`; `Operation` only
     for the protocol-level request and the Settings titles (`Dateioperationen`); transfer → `Übertragung` only where the

@@ -39,8 +39,6 @@ backticks. Term rulings live in `terms.json`, open questions in `review-queue.md
 ## Zeitangaben und Beispiel-Platzhalter (`queryUi.age.*`, `fileOperations.mkdir.placeholder`, `fileOperations.mkfile.placeholder`, `feedback.dialog.placeholder`, `settings.analytics.email.description`)
 
 - „{count}m ago“ → `vor {count} Min.` (abbreviated: a tight tooltip).
-- `du@example.com` over `du@beispiel.de`: `example.com` is reserved for examples (RFC 2606), `beispiel.de` is a real
-  domain.
 
 ## Geteilte Bausteine nach zustimmen/ablehnen (`askCmdr.decision.*`, `askCmdr.wakeDigest.*`)
 
@@ -206,8 +204,7 @@ backticks. Term rulings live in `terms.json`, open questions in `review-queue.md
 - The cancel button is `Weiterarbeiten`, never `Abbrechen` (Cmdr's cancel-the-operation verb, the opposite meaning) nor
   `Später` (nothing is deferred). `Jetzt beenden`, never `Sofort beenden` (Force Quit).
 - `Cmdr beendet sich …` (active reflexive) with a trailing `darauf`, so the sentence says `Cmdr` once.
-- The body stays number-neutral (`Alles, was gerade geschrieben wird`, `was dabei halb geschrieben zurückbleibt`): one
-  operation writes several files. `entfernt`, never `löscht`, on a reassuring dialog.
+- `entfernt`, never `löscht`, on a reassuring dialog.
 
 ## Usage stats: "anonymous" dropped, "a random id" named (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)
 
@@ -623,7 +620,7 @@ For Android's own words, Google's German (AOSP `values-de`) is the authority, no
 ## Das Kontextmenü der Server-Zeile: Öffnen und Server bearbeiten … (`menu.network.open`, `menu.network.edit`)
 
 - `Öffnen` equals `menu.file.open` (Finder uses one verb for both senses); `Server bearbeiten …` copies
-  `commands.serversEdit.label` byte for byte. Change a partner and the other follows.
+  `commands.serversEdit.label` byte for byte.
 
 ## Das Dock-Angebot (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 
@@ -795,7 +792,6 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 - The title shares its English with `errors.write.fallback.title.trash`, `errors.write.ioError.title.trash`,
   `errors.write.readError.title.trash`, and `errors.write.writeError.title.trash`: reword all five or none.
 - No plural param, so `{count} der ausgewählten Objekte` works at 1 and at 7.
-- Never „try again“: retrying a permission refusal reproduces it. Say what the user CAN do.
 - `suggestion.other` reuses `fileOperations.errorDialog.technicalDetails` (`die technischen Details`).
 - `geschützt` like every sibling, not Finder's `Gesperrt`.
 - The title-bar pill is `der Hinweis` (not `Statussymbol`, the file-row marker), and its quoted text is

@@ -56,8 +56,7 @@ The must-know rules; the rest of this file elaborates them.
   article or contraction, never before an agreeing participle. Don’t refer back with `il` / `elle` when the nearest
   masculine noun is something else (`le volume`, `le disque`): repeat the object
   (`donc le fichier a peut-être quand même été renommé`).
-- **Plurals**: CLDR `one` / `many` / `other`; write `many` identical to `other`; French counts 0 as `one`. Pull a
-  trailing clause that agrees INSIDE the branches. Never a definite article before `{countText}` (`les 1 élément`).
+- **Plurals**: CLDR `one` / `many` / `other`; write `many` identical to `other`; French counts 0 as `one`.
 - **Brand**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, `Safari`, `Ask Cmdr` stay verbatim. `Ask Cmdr` names only the chat
   panel; a sentence about what the product does says `Cmdr` or `l’IA`.
 - **Top traps** (details in `terms.json`):
@@ -296,8 +295,6 @@ covers large/compact-notation values (e.g. "2 millions"). Write the branches the
   bouton dit « Like » à tout le monde), il n’y a pas de terme à citer : on prend le verbe français standard de ce geste
   et on marque le choix `tentative`. Preuves : `decisions.md` § La prise en main : l’assistant, l’étape IA et la liste
   de contrôle.
-- **Le placeholder d’e-mail est `vous@example.com`**, identique dans les trois champs qui le portent. ❌ Jamais
-  `exemple.com` : ce domaine est réel, `example.com` est réservé aux exemples (RFC 2606).
 
 ## Open questions
 

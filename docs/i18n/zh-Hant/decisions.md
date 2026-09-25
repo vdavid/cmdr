@@ -93,7 +93,6 @@ Finder's Go menu `返回` / `往前` (TW = HK). System Settings' `前進` is a V
 - A `{system_settings}`-style token follows the Mac's language and can arrive Latin: space both sides. In a bold path, a
   trailing `裡` attaches to the last Han pane name, never to the token.
 - Untokenized panes: `Apple 帳號` (spaced against Apple's tight form), `一般`, `登入項目與延伸功能`.
-- The email placeholder stays `you@example.com`: MS keeps sample addresses verbatim in zh-Hant.
 
 ## Blocking and old-OS notices (`main.oldWebkit.*`, `main.oldMacos.*`)
 
@@ -203,7 +202,7 @@ Placeholder `預留位置`, deployment `部署`, endpoint `端點` (all MS). The
 - On the Dock, pin is `保留在 Dock 上` and unpin `從 Dock 中移除` (Dock.app's own menu items), ❌ not `釘選`: that's
   Cmdr's own UI, and `unpinNote` sends the user to that exact Dock item.
 - The four result messages never say `失敗`; `addedButDockDidNotRestart` is `只是…還沒…` (the icon is placed, only the
-  redraw is pending). "A few days" `好幾天`, ❌ never a number (the threshold moves).
+  redraw is pending).
 - `開啟 Cmdr` over Dock.app zh-TW's `打開` (outlier rule), unquoted like `隱藏 Cmdr`. `前往資料夾⋯` (Finder's Go menu)
   stays distinct from `前往路徑⋯`. `{name}（{parent}）` as the catalog's other disambiguating rows.
 

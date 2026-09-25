@@ -2,8 +2,9 @@
 
 Distilled Swedish rulings that need more than a `terms.json` line: "X over Y because Z", headings citing the keys they
 cover so `pnpm i18n:brief` pulls them into a batch. The term rulings live in `terms.json`, the voice and mechanics in
-`style.md`, open questions in `review-queue.md`. Source tiers: macOS (Finder, AppKit, System Settings, read live when the
-pile lacks a bundle), then Microsoft terminology, then Total Commander / Nautilus / Thunar / Dolphin, then the catalog.
+`style.md`, open questions in `review-queue.md`. Source tiers: macOS (Finder, AppKit, System Settings, read live when
+the pile lacks a bundle), then Microsoft terminology, then Total Commander / Nautilus / Thunar / Dolphin, then the
+catalog.
 
 ## Apple translates Quick Look and Keychain (`commands.fileQuickLook.mac.label`, `menu.file.quickLook`, `ai.secretError.keychainTitle`/`.keychainBody`, `servers.sheet.remember`)
 
@@ -14,8 +15,8 @@ pile lacks a bundle), then Microsoft terminology, then Total Commander / Nautilu
 
 ## Apple names are looked up live, never paraphrased (`commands.handler.zoomResetHintMenu`, `main.upgradeNudge.mac`, `errors.listing.ioSerious.suggestion`, `onboarding.stepOptional.*`)
 
-- A string that names a menu item, System Settings pane, or Apple feature spells it as the running macOS does, looked
-  up and dated: `Full skivtillgång` (never `fullständig åtkomst till skivan`), `Innehåll > Zoom > 100 %` (never
+- A string that names a menu item, System Settings pane, or Apple feature spells it as the running macOS does, looked up
+  and dated: `Full skivtillgång` (never `fullständig åtkomst till skivan`), `Innehåll > Zoom > 100 %` (never
   `Visa > Zooma`), `Cmdr > Introduktion…`, `Skivverktyg > Skivkontroll`, `Lokalt nätverk` (never the descriptive
   `Lokal nätverksåtkomst`), `Startobjekt och tillägg` (never `Inloggningsobjekt och tillägg`).
 - Why: a name that "sounds right" sends the user hunting for a pane that doesn't exist. `{full_disk_access}` in
@@ -46,25 +47,25 @@ pile lacks a bundle), then Microsoft terminology, then Total Commander / Nautilu
 - `arkiv` is neuter; the bare menu title `Arkiv` (File) never meets the zip sense in one string. A generic bundle is
   `paket`, app bundles `Appaket`, mirroring English's own bundle / app-bundle split.
 - Removing from a zip is `ta bort … ur` (out of a container). Settings rows read `Vad Retur gör med en …`.
-- The OOXML row (`settings.archives.ooxml.*`) says `Dokument` and bare `paket`: broader than the `Appaket` card
-  below, as English's `packages` vs `app bundles`.
+- The OOXML row (`settings.archives.ooxml.*`) says `Dokument` and bare `paket`: broader than the `Appaket` card below,
+  as English's `packages` vs `app bundles`.
 
 ## Paste clipboard as a file (`settings.fileOperations.pasteClipboardAsFile.*`, `fileExplorer.clipboard.pastedAsFile*`)
 
 - Active past `Klistrade in … som {filename}` over Nautilus's adjectival `Inklistrad`; `{kind}` arms carry their own
-  article, `från urklipp` modifies all three (an `urklipps-` compound doesn't read on all), and the sentence ends on
-  the uncontrolled `{filename}`.
+  article, `från urklipp` modifies all three (an `urklipps-` compound doesn't read on all), and the sentence ends on the
+  uncontrolled `{filename}`.
 
 ## Archive password and compression (`fileOperations.archivePassword.*`, `commands.fileCompress.*`, `settings.archives.compressionLevel.*`)
 
-- `archivePassword.message` agrees with `{name}` (the file: `lösenordsskyddad`, `låsa upp den`); where the sentence
-  says `arkivet` the neuter wins (`errors.volume.needsPassword`: `lösenordsskyddat`).
+- `archivePassword.message` agrees with `{name}` (the file: `lösenordsskyddad`, `låsa upp den`); where the sentence says
+  `arkivet` the neuter wins (`errors.volume.needsPassword`: `lösenordsskyddat`).
 - Slider ends `Snabbare` / `Mindre` name packing speed and output size (Total Commander), not app speed.
 
 ## Operation log labels (`operationLog.*`, `commands.logOperationLog.*`)
 
-- Status chips reuse `queue.row.status` word for word. Initiators `Du` / `AI-klient` / `Agent` (the last is a
-  justified same-as-source). The skipped chip is `Överhoppad` (review queue).
+- Status chips reuse `queue.row.status` word for word. Initiators `Du` / `AI-klient` / `Agent` (the last is a justified
+  same-as-source). The skipped chip is `Överhoppad` (review queue).
 
 ## Shortcut conflicts and the macOS features they name (`shortcuts.system.*`, `shortcuts.conflict.*`, `downloads.shortcutRow.*`)
 
@@ -2878,8 +2879,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Allow cloud AI (`ai.cloudConsent.*`, `askCmdr.gate.*`)
 
-- `Tillåt moln-AI` (TCC's `Tillåt`, the shipped `Moln-AI` option). `moln-AI` is neuter: `Moln-AI är avstängt`,
-  pronoun `det`. `Ask Cmdr` as a subject takes `den` (`Ask Cmdr är avstängd`).
+- `Tillåt moln-AI` (TCC's `Tillåt`, the shipped `Moln-AI` option). `moln-AI` is neuter: `Moln-AI är avstängt`, pronoun
+  `det`. `Ask Cmdr` as a subject takes `den` (`Ask Cmdr är avstängd`).
 - The imperative doubles as the label, so it's written unquoted where it's an instruction and quoted with `”…”` in
   `settings.ai.cloudConsent.lockedHint` after `Slå på`, as the English.
 - `service` → `tjänst` and `provider` → `leverantör` both stay: the English distinguishes them.
@@ -2900,8 +2901,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
   `foton` is `onboarding.stepOptional.mtp.desc` (copying photos off a phone, not the feature).
 - exclude → `utesluta`, never `undanta` (the pile's `undantag` only means exception). A passive per-image state is
   `Ingår inte i bildsökningen`, distinct from the user action.
-- rename noun `namnbyte` (Thunar / Dolphin; macOS has only the verb), never `filbyte` (reads as swapping files).
-  The warning badge is the noun `(överskrivning!)`: an imperative badge would command the overwrite it blocks.
+- rename noun `namnbyte` (Thunar / Dolphin; macOS has only the verb), never `filbyte` (reads as swapping files). The
+  warning badge is the noun `(överskrivning!)`: an imperative badge would command the overwrite it blocks.
 - needs attention → `behöver ses över` over the calque `kräver uppmärksamhet`.
 - caches → `cachemappar`: Swedish has no settled plural of `cache`, and the sentence means cache folders.
 - "Ask Cmdr to prepare it again" → `Be Cmdr att …`: the English "Ask" is the verb, not the feature.
@@ -2913,8 +2914,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Delete dialog trash switch, transfer From/To (`fileOperations.delete.trashSwitch`/`.confirmDelete`, `fileOperations.transferDialog.sourceGroupTitle`/`.targetGroupTitle`)
 
-- The switch reads `Flytta till papperskorgen`, identical to `transferDialog.titleVerbOnly`'s arm, so switch and
-  button read as one pair. Headings `Från` / `Till` (Total Commander); the controls keep `mål` (`Målvolym`).
+- The switch reads `Flytta till papperskorgen`, identical to `transferDialog.titleVerbOnly`'s arm, so switch and button
+  read as one pair. Headings `Från` / `Till` (Total Commander); the controls keep `mål` (`Målvolym`).
 
 ## Drive indexing's master switch (`fileExplorer.navigation.driveIndex.refusedIndexingOff`/`.tooltipIndexingOff`/`.menuIndexingOffNote`, `settings.indexing.masterOffNote`/`.overriddenBadge`, `settings.indexing.enabled.label`, `settings.section.driveIndexing`, `settings.summary.driveIndexing`)
 
@@ -2936,8 +2937,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
   `står stilla` over `har stannat`, which overclaims that the transfer is over. `förlopp` is the progress indicator,
   `framsteg` the achievement sense; neither fits.
 - "Waiting for X to respond" → `Väntar på att X ska svara` (Finder verbatim).
-- `Stäng` for the button that leaves the transfer running; `Detaljerna finns i loggfilen`, since `åtgärdsloggen` is
-  the other log.
+- `Stäng` for the button that leaves the transfer running; `Detaljerna finns i loggfilen`, since `åtgärdsloggen` is the
+  other log.
 - `stallInFlight` puts the tail inside both branches: `öppen … skriven` vs `öppna … skrivna` agree with the count.
 
 ## Copied path (`fileExplorer.clipboard.copiedPath`)
@@ -2954,11 +2955,11 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Progress chip and failure notice (`queue.row.dismiss*`, `queue.toolbar.dismissAll`, `queue.failureToast.*`, `queue.chip.*`)
 
-- `Avfärda` over MS's `stäng` (AppKit `Avfärda popover`, and `Stäng` is reserved for windows). ❌ Not `Ta bort`: on
-  an operation row it reads as re-deleting the files.
-- Headline family `Gick inte att slutföra` + definite verbal noun (Finder's `Det gick inte att slutföra
-  synkroniseringen`), `skapandet av mappen` over a compound because English points at THE folder. The headline stays
-  clipped, byte-identical to the row's failed arm; body copy keeps `Det gick inte att …`.
+- `Avfärda` over MS's `stäng` (AppKit `Avfärda popover`, and `Stäng` is reserved for windows). ❌ Not `Ta bort`: on an
+  operation row it reads as re-deleting the files.
+- Headline family `Gick inte att slutföra` + definite verbal noun (Finder's
+  `Det gick inte att slutföra synkroniseringen`), `skapandet av mappen` over a compound because English points at THE
+  folder. The headline stays clipped, byte-identical to the row's failed arm; body copy keeps `Det gick inte att …`.
 - The aria spells `procent`; the visible tooltip keeps `{percentText} %`.
 - `{label}` plus the count clause wobbles ("Flyttar till papperskorgen 3 objekt"), as English does; the fix belongs to
   the English key's shape, not one locale.
@@ -2972,8 +2973,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Queue button with an empty queue (`fileOperations.transferProgress.background`/`.backgroundAria`)
 
-- `I bakgrunden` (Total Commander's neighbouring button ID in the same dialog). ❌ Not bare `Bakgrund` (the backdrop,
-  a label not a command, and not contained in the definite `i bakgrunden`). `Kör i bakgrunden` is the fuller reserve.
+- `I bakgrunden` (Total Commander's neighbouring button ID in the same dialog). ❌ Not bare `Bakgrund` (the backdrop, a
+  label not a command, and not contained in the definite `i bakgrunden`). `Kör i bakgrunden` is the fuller reserve.
 - The aria `Håll igång den här i bakgrunden` is byte-identical to `queueTooltip`'s opening; containment is
   case-insensitive (`I` / `i`).
 
@@ -2983,8 +2984,7 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
   Commander's `aktivitet`.
 - The countdown says `Cmdr avslutas om …`: an app quitting itself takes the deponent `-s`, and active `Avslutar`
   collides with Finder's progress stage "Finishing".
-- The body stays number-neutral (`Allt som fortfarande skrivs`, `det som blivit delvis skrivet`): one operation writes
-  several files. `rensar bort` over `raderar`, which is the user's own destructive delete.
+- `rensar bort` over `raderar`, which is the user's own destructive delete.
 - `Fortsätt arbeta` / `Avsluta nu`; ❌ not `Avsluta ändå` ("should I at all?"), since this button skips the wait.
 
 ## Usage stats without "anonymous" (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)
@@ -3000,10 +3000,10 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Rollback family: `ångra`, not `återställ` (`fileOperations.transferProgress.*`, `operationLog.*`, `commands.logOperationLog.*`, `fileOperations.cancelRollback.*`)
 
-- `återställa` is restore, and a rollback deletes what it wrote; MS's `återställa` for roll back is the database
-  sense. The catalog keeps `återställa` for names that really come back (`askCmdr.renameUndo.*`) and resets.
-- `Ångra klart` (Finder's `kopiera klart`) finishes a half rollback; ❌ not `Slutför ångringen` (the noun `ångring`
-  is stilted, and the button sits in a list row). `operationLog.dialog.finishRollBack` and
+- `återställa` is restore, and a rollback deletes what it wrote; MS's `återställa` for roll back is the database sense.
+  The catalog keeps `återställa` for names that really come back (`askCmdr.renameUndo.*`) and resets.
+- `Ångra klart` (Finder's `kopiera klart`) finishes a half rollback; ❌ not `Slutför ångringen` (the noun `ångring` is
+  stilted, and the button sits in a list row). `operationLog.dialog.finishRollBack` and
   `fileOperations.rollbackConfirm.finishRollBack` stay identical; `Ångra klart den här åtgärden?` mirrors the title.
 - `partiallyRolledBackNotice` says `lät resten ligga kvar`, ❌ not `som den var` (reads as "as before the operation").
 - `smbNativeNote` uses the verb (`Det kan ta tid att avbryta eller ångra`) over the noun `ångring`.
@@ -3012,14 +3012,14 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Rollback toast (`fileOperations.cancelRollback.*`, `fileOperations.rollbackConfirm.body`)
 
-- Reason lines copy `askCmdr.renameUndo.skipReason.*` word for word where the English matches (`… lämnades som den
-  är`); `spotTaken` switches frame with the English (`lämnades där den ligger`), and says `något annat finns nu där den
-  kom ifrån` so it can't sound like the neighbouring name-taken reason.
+- Reason lines copy `askCmdr.renameUndo.skipReason.*` word for word where the English matches (`… lämnades som den är`);
+  `spotTaken` switches frame with the English (`lämnades där den ligger`), and says
+  `något annat finns nu där den kom ifrån` so it can't sound like the neighbouring name-taken reason.
 - Removed → `Raderade` (files off disk), ❌ never `Tog bort`.
 - "the {countText} items" can't take a definite article before a formatted number, so whole vs partial contrast uses
   `allt …: {countText} objekt` (`Raderade allt Cmdr hade skrivit: …` vs `Raderade {countText} objekt`).
-- `stagedLeftover.*` is Cmdr's own work file: `ofullständig kopia`, `rensar bort`, and `vid en senare överföring`,
-  ❌ never "nästa gång": cleanup skips anything younger than an hour, so the next try may clear nothing.
+- `stagedLeftover.*` is Cmdr's own work file: `ofullständig kopia`, `rensar bort`, and `vid en senare överföring`, ❌
+  never "nästa gång": cleanup skips anything younger than an hour, so the next try may clear nothing.
 
 ## Rename toasts: chained and unconfirmed (`fileExplorer.rename.chainKeptOriginalNameAndOthers`, `fileExplorer.rename.unconfirmed*`, `fileOperations.validation.nameNotUsable`)
 
@@ -3027,8 +3027,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 - "kept its name" → present `behåller sitt namn` (Total Commander's `Behåll namnet`): the state the file is in.
 - "and so did …" → `, liksom …`: the elided verb keeps the reflexive `sitt namn` from needing `sina namn`. ❌ Not
   `och det gör …` (no comma before `och` makes it unreadable) nor bureaucratic `och detsamma gäller`.
-- Unconfirmed follows `fileOperations.mkdir.timeoutMessage`: `så filen kan ändå ha bytt namn`. ❌ Not `gått igenom`
-  or `lyckats` (the house voice avoids that status word). Several renames take the definite plural `namnbytena av`.
+- Unconfirmed follows `fileOperations.mkdir.timeoutMessage`: `så filen kan ändå ha bytt namn`. ❌ Not `gått igenom` or
+  `lyckats` (the house voice avoids that status word). Several renames take the definite plural `namnbytena av`.
 - `Det här mappnamnet / filnamnet kan inte användas` (Finder's `Namnet … kan inte användas`), no final period.
 
 ## Suggested operations (`suggestedOps.*`, `commands.suggestedOpsShow.*`)
@@ -3067,29 +3067,29 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Mutation and volume errors (`errors.mutation.*`, `errors.volume.*`)
 
-- Raw family. A volume's top folder is `rotmapp` (Thunar, Total Commander; macOS has none). System Integrity
-  Protection stays English (Finder `ET6`).
+- Raw family. A volume's top folder is `rotmapp` (Thunar, Total Commander; macOS has none). System Integrity Protection
+  stays English (Finder `ET6`).
 - No blame on the person: `Ett namnbyte kan inte flytta ut ett objekt ur ett arkiv`, not `Du kan inte …`.
 - `svarade inte i tid` over `tidsgränsen nåddes`: shorter, and names who went quiet. The change "may still land" →
   `kan fortfarande gå igenom`.
 - `notSupported` / `ioError` need a head noun for the English "that": `den åtgärden`.
-- "has no Trash" is indefinite `har ingen papperskorg` (no such thing); `macOS nekade flytten till papperskorgen`
-  names macOS as the refuser, as the English does, ❌ not the impersonal `Det gick inte att …`.
+- "has no Trash" is indefinite `har ingen papperskorg` (no such thing); `macOS nekade flytten till papperskorgen` names
+  macOS as the refuser, as the English does, ❌ not the impersonal `Det gick inte att …`.
 
 ## Crash dialog variants and the reports setting (`crashReporter.dialog.body.keptRunning`/`.unknown`, `settings.updates.crashReports.description`)
 
 - `.keptRunning` and `.unknown` never say Cmdr crashed, quit, or stopped, and say `en rapport`, not `kraschrapport`.
 - `stötte på ett problem` keeps `Cmdr` as subject like `.ended`; every pile phrasing is impersonal. ❌ Not
-  `råkade ut för` (accident tone). kept running → `fortsatte köra` (AppKit's exception dialog); ❌ not `höll igång`
-  (the queue's transitive verb) nor `fortsatte fungera` (a feature working, not a process living on).
+  `råkade ut för` (accident tone). kept running → `fortsatte köra` (AppKit's exception dialog); ❌ not `höll igång` (the
+  queue's transitive verb) nor `fortsatte fungera` (a feature working, not a process living on).
 - The three variants share `förra gången` although Apple says `När du senast …`: siblings must share a frame. If
   `.ended` is ever reworded, `När Cmdr senast kördes …` is the attested alternative for all three.
 - The setting's description covers both outcomes in present tense; its label stays `Skicka kraschrapporter`.
 
 ## Eject and disconnect errors (`errors.eject.*`, `fileExplorer.navigation.ejectBusyTooltip`, `fileExplorer.navigation.disconnectBusyTooltip`)
 
-- Raw family, and every value follows a colon in `fileExplorer.pane.ejectFailedToast` / `.disconnectFailedToast`, so
-  it never repeats the frame's `det gick inte att`; it says why and what to do.
+- Raw family, and every value follows a colon in `fileExplorer.pane.ejectFailedToast` / `.disconnectFailedToast`, so it
+  never repeats the frame's `det gick inte att`; it says why and what to do.
 - in use → `används` (Finder), ❌ not MS's `upptagen`, which is reserved for the menu marker `(upptagen)`. idle →
   `när den inte används`, same thread.
 - removable → `borttagbar` (Finder), over the MS / Thunar / Total Commander `flyttbar` Apple never uses.
@@ -3098,8 +3098,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
   still eject it".
 - Named-app refusals (`unmountRefusedBy*`) keep `unmountRefused`'s frame with `{app}` as a bare subject; active over
   AppKit's passive `används av ”%@”`, and the key forbids quoting the name. `other apps` → indefinite `andra appar`.
-  macOS `arbetar fortfarande med` keeps the English split from an app's `använder`; `Vänta en minut` vs
-  `Vänta en stund` keeps the English split too.
+  macOS `arbetar fortfarande med` keeps the English split from an app's `använder`; `Vänta en minut` vs `Vänta en stund`
+  keeps the English split too.
 - disk image → `skivavbild`, short `avbilden`; ❌ not MS's `avbildning` (Windows side).
 - A disabled button's tooltip says `Det går inte att koppla från medan åtgärder pågår på den här servern`, without the
   menus' `(upptagen)` marker.
@@ -3124,14 +3124,13 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## One thing, one name: the term-drift audit (`menu.file.delete`, `commands.fileDelete.label`, `settings.mediaIndex.clip.*`, `commands.selectionSelectAll.label`, `commands.selectionDeselectAll.label`, `fileExplorer.errorPane.goHome`, `menu.select.all`, `menu.select.deselectAll`)
 
-- F8 is `Radera` in the menu, palette, key bar, and dialog: the pair must differ in strength (`Radera` / `Radera
-  permanent`), which `Ta bort` / `Radera permanent` doesn't. The AI model is `Radera`d like `ai.local.*`;
+- F8 is `Radera` in the menu, palette, key bar, and dialog: the pair must differ in strength (`Radera` /
+  `Radera permanent`), which `Ta bort` / `Radera permanent` doesn't. The AI model is `Radera`d like `ai.local.*`;
   `settings.mediaIndex.reclaim.*` keeps `ta bort` (index rows, not files).
 - A bare English `All` is `allt` (`Markera allt`, `Återställ allt till förval`): `alla` dangles without a head noun.
   With a head noun it inflects normally (`Stäng övriga flikar`, Safari's `övriga` over `andra`).
 - `Kopierat` (supine) for a bare "Copied": it fits whatever was copied, and `ett id` is neuter anyway.
 - `Gå till hemmappen` joins the `Gå till …` family. `mapp` / `mappar` over the abbreviation `kat.`.
-- Placeholder email `du@example.com`: Apple localizes only the local part, and `example.com` is reserved.
 
 ## Same concept, different English (`commands.viewShowHidden.label`, `settings.fileViewer.suppressBinaryWarning.label`, `settings.fileExplorer.suppressQuickLookHint.label`)
 
@@ -3143,8 +3142,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Boundaries: both forms are right, don't flatten them (`updates.status.checking`, `ai.local.statusRunning`, `operationLog.status.running`, `shortcuts.section.filterModified`, `menu.bar.file`, `menu.bar.view`, `menu.bar.select`, `menu.view.zoom`, `menu.window.zoom`)
 
-- Checking: `Checking for X` → `Söker efter X` (looking for something that may exist), `Checking X` →
-  `Kontrollerar X` (verifying something you have).
+- Checking: `Checking for X` → `Söker efter X` (looking for something that may exist), `Checking X` → `Kontrollerar X`
+  (verifying something you have).
 - Running: a process `Körs`, an operation `Pågår` (Finder's minimal pair).
 - `unknown` agrees with the implied head noun: every shipped one is an en-word (`okänd`).
 - Modified: `Ändrad` on one file's attribute, `Ändrade` on the filter chip over a set.
@@ -3165,8 +3164,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Open terminal here (`settings.behavior.openTerminalHereApp.*`, `settings.navigationAndFileOps.card.terminal`)
 
-- `Öppna terminal här` builds on Finder's `Öppna i Terminal`; the card title is a justified same-as-source.
-  `Välj app…` is Finder's `Choose Application…` verbatim.
+- `Öppna terminal här` builds on Finder's `Öppna i Terminal`; the card title is a justified same-as-source. `Välj app…`
+  is Finder's `Choose Application…` verbatim.
 
 ## Sort by relevance (`fileExplorer.columns.sortByRelevance`)
 
@@ -3180,17 +3179,17 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 - Cmdr's reconnect loop `arbetar på att …` (the catalog never says `jobbar`).
 - Forget dialogs inherit the menu labels verbatim; `slutar visa servern i listan` names the noun because both
   `anslutningen` and `servern` are en-words and a lone `den` would point two ways.
-- `Den här servern använder en nyckel …` mirrors `authMethodUnsupported`; ❌ not `loggar in med`, which makes the
-  server the one logging in somewhere.
+- `Den här servern använder en nyckel …` mirrors `authMethodUnsupported`; ❌ not `loggar in med`, which makes the server
+  the one logging in somewhere.
 - Retry lengths (`retryTotalSeconds` / `.retryTotalMinutes`) are bare building blocks for `retryKeepsTrying`: no
   preposition, no period.
 
 ## Server hub: table and statuses (`servers.hub.*`, `commands.servers*`, `fileExplorer.navigation.serverPinnedToast`/`.serverUnpinnedToast`/`.pinRefusedToast`/`.networkVolume`, `shortcuts.scope.servers`/`.places`)
 
-- Status cells are en-word participles agreeing with `servern` (`Ansluten`, `Sparad`, `Hittad i närheten`,
-  `Utloggad`); if the row noun ever changes gender, rewrite the whole column.
-- `Platser` (under a server) is broader than `delade mappar`: buckets will live there too. nearby → `i närheten`,
-  ❌ not `upptäckt` (mDNS finds in the browser); English chose the plain "found".
+- Status cells are en-word participles agreeing with `servern` (`Ansluten`, `Sparad`, `Hittad i närheten`, `Utloggad`);
+  if the row noun ever changes gender, rewrite the whole column.
+- `Platser` (under a server) is broader than `delade mappar`: buckets will live there too. nearby → `i närheten`, ❌ not
+  `upptäckt` (mDNS finds in the browser); English chose the plain "found".
 - `Fäst / lossa server` keeps the slash: ONE command toggling both ways, unlike keys whose English says "or".
 - `Servern är fortfarande sparad` names the noun: `volymväljaren` and `servern` are both en-words.
 
@@ -3222,13 +3221,13 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Android over ADB (`adb.*`, `settings.behavior.adbHintDismissed.*`, `fileExplorer.navigation.driveIndex.tooltipStalePhone`, `indexing.staleDialog.titlePhone`/`.bodyPhone`)
 
-- `USB-felsökning` and `Tillåt` are AOSP's own Swedish, quoted as the names on the phone's screen: ❌ never `Godkänn`
-  or `Acceptera`. A phone takes `tryck på`; the Mac's mouse takes `klicka`.
+- `USB-felsökning` and `Tillåt` are AOSP's own Swedish, quoted as the names on the phone's screen: ❌ never `Godkänn` or
+  `Acceptera`. A phone takes `tryck på`; the Mac's mouse takes `klicka`.
 - reseat the cable → `dra ur och sätt i kabeln igen`: a bare `sätt i` doesn't say it comes out first.
-- `Koppla från {name}` for a phone matches the server's `disconnectPlaceAriaLabel`: English chose Disconnect over
-  Eject on both, and `mata ut` is reserved for ejecting.
-- `Du stoppade öppnandet av din telefon`: `stoppa` like `search.coverage.walk.cancelled`, ❌ not `avbröt`, which
-  reads as a reference to the Cancel button.
+- `Koppla från {name}` for a phone matches the server's `disconnectPlaceAriaLabel`: English chose Disconnect over Eject
+  on both, and `mata ut` is reserved for ejecting.
+- `Du stoppade öppnandet av din telefon`: `stoppa` like `search.coverage.walk.cancelled`, ❌ not `avbröt`, which reads
+  as a reference to the Cancel button.
 - How → `Hur?` (tentative): Apple has no one-word "How" link, and bare `Hur` reads truncated.
 - Turn on a feature in a hint → `Slå på USB-felsökning`; the settings row states `har USB-felsökning aktiverad`.
 - The phone's stale index keeps its siblings' frame with `telefonens`; passive `görs` for changes made on the phone,
@@ -3236,8 +3235,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Dock offer (`main.dockPinNudge.*`, `settings.behavior.dockPinNudgeOfferedAt.*`)
 
-- `Dock` takes no article, inflection, or possessive (`i Dock`), and pin / unpin on Apple's surface are `Behåll i
-  Dock` / `Ta bort från Dock` (Dock's own menu), ❌ not Cmdr's `fäst` / `lossa`.
+- `Dock` takes no article, inflection, or possessive (`i Dock`), and pin / unpin on Apple's surface are `Behåll i Dock`
+  / `Ta bort från Dock` (Dock's own menu), ❌ not Cmdr's `fäst` / `lossa`.
 - The Applications folder is `Appar` since macOS 26: `dra … från mappen Appar` (AppKit's model sentence).
 - managed by → `styrs av` (Apple's MDM formula); `hanterar` stays for the person administering the Mac.
 - `Cmdrs symbol är på plats, men Dock startade inte om`: never claim the pin failed; the icon IS there.
@@ -3247,8 +3246,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 ## Show in Finder offer (`main.revealNudge.*`, `main.revealActivation.*`, `settings.behavior.reveal*`)
 
 - `”Visa i Finder”` quoted as in the settings card; the first-hit notice explains, ❌ never `tyvärr`.
-- `settings.revealHandler.notProductionBuild` says `släppt version` / `utvecklings- och testversioner`: a release,
-  not a second running `kopia` as in `main.instanceLock.alertBody`.
+- `settings.revealHandler.notProductionBuild` says `släppt version` / `utvecklings- och testversioner`: a release, not a
+  second running `kopia` as in `main.instanceLock.alertBody`.
 
 ## AI provider setup (`onboarding.cloudSetup.*`)
 
@@ -3268,8 +3267,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ### Mailing-list signup (`onboarding.stepBeta.signup.*`)
 
-- `e-postlista`, ❌ not MS's `distributionslista` (an Exchange address group). typo → `stavfel`; ❌ Total
-  Commander's `Skrivfel!` is a false friend (Write error).
+- `e-postlista`, ❌ not MS's `distributionslista` (an Exchange address group). typo → `stavfel`; ❌ Total Commander's
+  `Skrivfel!` is a false friend (Write error).
 - `signup.rejected` / `.unreachable` quote `checklist.emailSave` (`Spara`) verbatim: a cited label is a unit.
 
 ### AI step (`onboarding.stepAi.*`)
@@ -3292,8 +3291,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Mount and share-list errors (`errors.mount.*`, `errors.shareList.*`)
 
-- share → `delad mapp`, although NetAuthAgent says `Delningspunkten`. this computer → `den här datorn`: the
-  strings also show on Linux. `igen … igen` is avoided with `försök på nytt när servern är online igen`.
+- share → `delad mapp`, although NetAuthAgent says `Delningspunkten`. this computer → `den här datorn`: the strings also
+  show on Linux. `igen … igen` is avoided with `försök på nytt när servern är online igen`.
 - Identical English, identical Swedish: the `hostUnreachable` and `authFailed` pairs.
 
 ## Text editor (`settings.behavior.textEditorApp.label`, `settings.behavior.textEditorApp.description`, `settings.navigationAndFileOps.card.textEditor`, `fileExplorer.edit.appMissing`, `fileExplorer.edit.launchRefused`)
@@ -3304,15 +3303,15 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 ## Drive disconnected mid-work (`fileExplorer.navigation.driveIndex.driveLeaving`, `indexing.needsFreshScan.afterDisconnect`, `errors.write.deviceDisconnected.sided.*`, `errors.write.moveNotConfirmed.*`, `fileOperations.leftovers.stagingFolderKept`)
 
 - In progress `håller på att kopplas från`; already gone `kopplades från`.
-- Every sided message ends on WHERE the files are. Reassurance in present, place in past: `Dina original är orörda
-  där de låg`; `så ingenting har gått förlorat` (perfect: the state stands).
+- Every sided message ends on WHERE the files are. Reassurance in present, place in past:
+  `Dina original är orörda där de låg`; `så ingenting har gått förlorat` (perfect: the state stands).
 - `dit` and a bare preposition before `{counterpart}` / `{volumeName}` avoid guessing the name's gender.
 - Unconfirmed moves use the house formula `Det gick inte att bekräfta` / `Cmdr kunde inte bekräfta`, `hade sparats på`
-  over `skrevs till` (writing is the in-flight transfer), and present `så dina original ligger kvar där de låg`
-  answers where the files are now. `Titta i målmappen`, since `Titta i målet` doesn't read.
-- The staging folder: unfinished move → `avbruten` (a process ended early) vs `stagedLeftover`'s `ofullständig`
-  (a half-made object). `lät dem ligga kvar` says Cmdr CHOSE to keep them, ❌ not `blev kvar`. ❌ Never suggest
-  deleting the folder: they may be the only copies.
+  over `skrevs till` (writing is the in-flight transfer), and present `så dina original ligger kvar där de låg` answers
+  where the files are now. `Titta i målmappen`, since `Titta i målet` doesn't read.
+- The staging folder: unfinished move → `avbruten` (a process ended early) vs `stagedLeftover`'s `ofullständig` (a
+  half-made object). `lät dem ligga kvar` says Cmdr CHOSE to keep them, ❌ not `blev kvar`. ❌ Never suggest deleting
+  the folder: they may be the only copies.
 
 ## Favorites menu (`commands.favorites*`, `fileExplorer.navigation.favorites*`, `fileExplorer.navigation.seeFavorites`, `menu.go.showFavorites`, `shortcuts.scope.favoritesMenu`)
 
@@ -3323,8 +3322,8 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
   second, definite wording.
 - `a disk` → `disk` (English disk), `enhet` is drive, `skiva` only in Finder's own wording.
 - The number keys are `siffra`, not `nummer` (a running number, as in `radnumren`).
-- `favoritesCantAddHere` states the reason after a colon with `fungerar bara på`, a flat locative that avoids the
-  split `på en disk` / `i en delad mapp`.
+- `favoritesCantAddHere` states the reason after a colon with `fungerar bara på`, a flat locative that avoids the split
+  `på en disk` / `i en delad mapp`.
 
 ## Title-bar full disk access badge and the trash refusal dialog (`onboarding.fdaBadge.*`, `errors.write.trashRefused.*`)
 
@@ -3334,8 +3333,6 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
   keeps to itself" stays plain, ❌ never a macOS feature name.
 - The five trash titles (`errors.write.fallback.title.trash` and its `ioError` / `readError` / `writeError` siblings)
   share one English: reword all or none. With no plural machinery, `{count} av objekten du valde` fits any number.
-- ❌ Never "try again" after a permission refusal: it reproduces the refusal. `suggestion.other` quotes
-  `fileOperations.errorDialog.technicalDetails` verbatim.
 
 ## Online-only warning (`fileOperations.delete.cloudOnlineOnlyMixedWarning` / `fileOperations.delete.cloudOnlineOnlyAllWarning` / `fileOperations.delete.cloudOnlineOnlyHandedBack`)
 
@@ -3346,9 +3343,9 @@ aldrig lova mer än Cmdr gör. Belägg från det installerade macOS (referenssam
 
 ## Look-alike names (`errors.listing.ambiguousName.*`, `errors.volume.ambiguousName`, `fileOperations.transferProgress.lookAlikeHint`)
 
-- Plain `stavar dem olika` / `lagrar dem med olika stavning`, no Unicode jargon as `@key` asks; `stora och små
-  bokstäver` (Finder) over technical `skiftlägeskänslig`. The button label is the subject unquoted: `Skriv över
-  ersätter …`.
+- Plain `stavar dem olika` / `lagrar dem med olika stavning`, no Unicode jargon as `@key` asks;
+  `stora och små bokstäver` (Finder) over technical `skiftlägeskänslig`. The button label is the subject unquoted:
+  `Skriv över ersätter …`.
 
 ## Escape leaves full screen (`main.escapeFullScreenHint.*`, `settings.advanced.exitFullScreenOnEscape*`)
 

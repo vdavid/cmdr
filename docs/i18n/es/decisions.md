@@ -185,7 +185,7 @@ not `Pasar a segundo plano` (too long beside `Cola`). The infinitive-button rule
 - quit, the user → `salir`; the app ending itself → `cerrarse` (`Cmdr se cerrará …`).
 - still running → `en curso` in prose; `En ejecución` is the row badge.
 - "Keep working" → `Seguir trabajando`: ❌ not `Cancelar`, which beside running operations reads as cancelling them.
-- The body stays number-neutral (`Lo que aún se está escribiendo se interrumpe donde esté`); ❌ not `se detiene`.
+- `se interrumpe donde esté`, ❌ not `se detiene`.
 - `al reiniciar el Mac`: `el Mac` so it can't read as restarting Cmdr.
 
 ## Usage stats: fuera "anónimas", dentro "un identificador aleatorio" (`settings.analytics.enabled.label`/`.description`, `settings.updates.emailPrivacyNote`, `onboarding.stepBeta.analyticsLede`/`.analyticsTitle`)
@@ -475,7 +475,6 @@ Both equal their palette twins byte for byte (checked by `i18n-terms`).
 - `el Dock`, `el Finder`: articles, masculine; `Cmdr` is masculine for a pronoun (`fijarlo`), avoiding a clash with
   `la app`.
 - pin in the Dock → `fijar`, not the Dock menu's `Mantener en el Dock`: the family stays on `fijar`.
-- "a few days" → `unos días`, never a number (the threshold may move).
 - Result keys state facts: `El icono de Cmdr ya está en su sitio, pero el Dock todavía no lo muestra`; `managedDock` →
   `Quien administre este Mac`.
 

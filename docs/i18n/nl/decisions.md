@@ -153,9 +153,7 @@ line.
 
 - Title `Stoppen terwijl er nog {countText} bewerkingen worden uitgevoerd?`: Finder's `A17`/`A19` almost word for word;
   the `one` arm says `een bewerking wordt`, since `1 bewerking` reads like a tally.
-- The body stays number-neutral (`Alles wat nog wordt geschreven`,
-  `wat gedeeltelijk geschreven achterblijft, ruimt Cmdr op`): one operation writes many files. `opruimen` over
-  `verwijdert`, which reads as more deleting next to "Bezig met verwijderen" rows.
+- `opruimen` over `verwijdert`, which reads as more deleting next to "Bezig met verwijderen" rows.
 - `Wat al klaar is, blijft klaar.` over `blijft staan`, which promises the opposite for a delete.
 - `Werk door` (tentative) over `Annuleer` (cancels the operations, the opposite outcome), `Later` (the countdown is
   deleted), and `Behoud` (keep-this-file).
@@ -304,8 +302,6 @@ The boundaries that look like drift and aren't:
 
 ## Wat het Engels over zichzelf rechtzette, en wat dat voor `nl` betekende (`settings.updates.emailPlaceholder`, `common.attachEmailPlaceholder`, `onboarding.stepBeta.emailPlaceholder`, `askCmdr.renameUndo.undone`/`.partial`, `menu.app.showAll`, `menu.app.hideOthers`)
 
-- Example address `jij@example.com`: the local part follows `je`/`jij`; never `voorbeeld.com`, a registrable domain (RFC
-  2606 reserves `example.com`).
 - `askCmdr.renameUndo.undone` names its object (`De oude naam van … is teruggezet`), so the whole sentence sits in the
   plural branches (`naam`/`namen` and `is`/`zijn` both agree).
 - Panes without a token use Apple's Dutch: `Algemeen`, `Inlogonderdelen en extensies` (not the older `Inloggen`), and

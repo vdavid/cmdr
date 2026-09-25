@@ -97,9 +97,9 @@ The delta is large and systematic (Simplified → Traditional, all verified in t
 - Punctuation differs too: Simplified quotes filenames with `“…”`, Traditional with `「…」` (see § Punctuation).
 
 Translate each key from the **English** source. The `zh` catalog is useful as a structural precedent (it already solved
-the ICU shapes, the placeholder spacing, and the sentence order for the same key), and `translation-learnings.md` is
-right that a sibling catalog outranks the pile on _which_ rendering this app uses. But every noun and verb gets
-re-decided against `terms.json`.
+the ICU shapes, the placeholder spacing, and the sentence order for the same key), and `translation-principles.md` is
+right that the catalog outranks the pile on _which_ rendering this app uses. But every noun and verb gets re-decided
+against `terms.json`.
 
 ## Decisions to confirm with David
 
