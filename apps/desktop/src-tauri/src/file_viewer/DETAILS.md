@@ -19,7 +19,7 @@ Frontend counterpart: `apps/desktop/src/routes/viewer/CLAUDE.md` for the viewer 
   `rows.rs` for every clause. See § "Rows, not lines"
 - `session.rs`: text-session orchestration, backend switching, search state, per-read cancel registry (`active_reads`),
   encoding-switch (`set_encoding`), drain-and-swap-under-lock protocol via `pending_grew`, the `read_range`,
-  `write_range_to_file` (with its `SaveProgress` reporter), and `cancel_read` entry points. Owns the `ViewerSession` type + its `ViewerSession::new(ViewerSessionInit)` constructor and
+  `write_range_to_file` (with its `SaveProgress` reporter), `get_bytes` (bounded original bytes), and `cancel_read` entry points. Owns the `ViewerSession` type + its `ViewerSession::new(ViewerSessionInit)` constructor and
   the `SESSIONS` / `WINDOW_TO_SESSION` maps, shared with the media-open path. `close_session` is the single teardown
   choke point (drops the media token too)
 - `media_session.rs`: the media-open path. `try_open_media` (classify + dispatch, called by `open_session` before it
@@ -46,6 +46,13 @@ Frontend counterpart: `apps/desktop/src/routes/viewer/CLAUDE.md` for the viewer 
   it, for callers that read a file the viewer's way without a window. See § "Headless reads".
 - `*_test.rs`: unit tests for each backend: UTF-8 edge cases, search highlighting, checkpoint math, range reads,
   cancellation, encoding detection, UTF-16 newline scanning, encoding-switch rebuild + drain-and-swap
+
+## Raw byte reads
+
+`get_bytes(session_id, offset, count)` reads at most 64 KiB directly from the session's path, regardless of text
+encoding or media kind. The path is the shared materialized temp for routed and device files. The command runs in a
+blocking worker behind the viewer's two-second read deadline, so a slow mount cannot block the IPC thread. The caller
+uses the byte offset as its only coordinate; text row numbers and UTF-16 offsets never enter this path.
 
 ## Media rendering (Image / PDF)
 

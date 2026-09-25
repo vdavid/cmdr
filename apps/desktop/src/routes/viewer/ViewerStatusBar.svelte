@@ -13,12 +13,14 @@
     import type { MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
     import { isMediaKind, mediaKindLabel, formatMediaDimensions } from './media-view'
     import { tString } from '$lib/intl/messages.svelte'
+    import type { ViewerDisplayMode } from './viewer-view-mode'
 
     interface Props {
         /** File name shown at the start of the bar. */
         fileName: string
         /** Content kind. Media kinds (image / PDF) show kind + dimensions instead of line / backend info. */
         kind: ViewerContentKind
+        mode: ViewerDisplayMode
         /** Image pixel dimensions, when known (raster only). Shown only in media mode. */
         mediaDimensions: MediaDimensions | null
         /** Total line count, or `null` when not yet known (streaming, no index). */
@@ -38,6 +40,7 @@
     const {
         fileName,
         kind,
+        mode,
         mediaDimensions,
         totalLines,
         totalBytes,
@@ -47,7 +50,7 @@
         indexingTimeoutSecs,
     }: Props = $props()
 
-    const isMedia = $derived(isMediaKind(kind))
+    const isMedia = $derived(mode === 'media' && isMediaKind(kind))
     const dimensionsText = $derived(formatMediaDimensions(mediaDimensions))
 </script>
 
@@ -59,6 +62,9 @@
             <span>{dimensionsText}</span>
         {/if}
         <span><Size bytes={totalBytes} /></span>
+    {:else if mode === 'binary' || mode === 'hex'}
+        <span><Size bytes={totalBytes} /></span>
+        <span class="backend-badge">{tString(mode === 'binary' ? 'viewer.toolbar.viewMode.binary' : 'viewer.toolbar.viewMode.hex')}</span>
     {:else}
         {#if totalLines !== null}
             <span>{tString('viewer.statusBar.lineCount', { count: totalLines })}</span>
@@ -94,9 +100,9 @@
             >
         {/if}
     {/if}
-    {#if kind === 'image'}
+    {#if isMedia && kind === 'image'}
         <span class="shortcut-hint">{tString('viewer.statusBar.hint.image')}</span>
-    {:else if kind === 'text'}
+    {:else if mode === 'text'}
         <span class="shortcut-hint">{tString('viewer.statusBar.hint.text')}</span>
     {/if}
 </div>

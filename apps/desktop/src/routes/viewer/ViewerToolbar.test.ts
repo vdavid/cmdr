@@ -3,6 +3,7 @@ import { mount, tick, unmount } from 'svelte'
 
 import ViewerToolbar from './ViewerToolbar.svelte'
 import type { EncodingChoice, FileEncoding, ViewerContentKind } from '$lib/ipc/bindings'
+import type { ViewerDisplayMode } from './viewer-view-mode'
 
 const choices: EncodingChoice[] = [
   { encoding: 'utf8', label: 'UTF-8', group: 'unicode' },
@@ -42,15 +43,19 @@ async function settle(): Promise<void> {
 interface MountOpts {
   fileName?: string
   kind?: ViewerContentKind
+  mode?: ViewerDisplayMode
   lastMediaKind?: ViewerContentKind | null
   currentEncoding?: FileEncoding
   detectedEncoding?: FileEncoding
   isIndexing?: boolean
   tailMode?: boolean
-  onViewAsText?: () => void
-  onViewAsMedia?: () => void
+  onModeChange?: (mode: ViewerDisplayMode) => void
   onEncodingChange?: (encoding: FileEncoding) => void
   onToggleTail?: () => void
+}
+
+function defaultMode(kind?: ViewerContentKind): ViewerDisplayMode {
+  return kind === 'image' || kind === 'pdf' ? 'media' : 'text'
 }
 
 function mountToolbar(opts: MountOpts = {}) {
@@ -62,14 +67,14 @@ function mountToolbar(opts: MountOpts = {}) {
       fileName: opts.fileName ?? 'example.txt',
       filePath: `/Users/demo/Documents/${opts.fileName ?? 'example.txt'}`,
       kind: opts.kind ?? 'text',
+      mode: opts.mode ?? defaultMode(opts.kind),
       lastMediaKind: opts.lastMediaKind ?? null,
       currentEncoding: opts.currentEncoding ?? 'utf8',
       detectedEncoding: opts.detectedEncoding ?? 'utf8',
       encodingChoices: choices,
       isIndexing: opts.isIndexing ?? false,
       tailMode: opts.tailMode ?? false,
-      onViewAsText: opts.onViewAsText ?? (() => {}),
-      onViewAsMedia: opts.onViewAsMedia ?? (() => {}),
+      onModeChange: opts.onModeChange ?? (() => {}),
       onEncodingChange: opts.onEncodingChange ?? (() => {}),
       onToggleTail: opts.onToggleTail ?? (() => {}),
     },
@@ -173,32 +178,32 @@ describe('ViewerToolbar', () => {
     void unmount(instance)
   })
 
-  it('calls onViewAsText when the user picks "View as text" on a media file', async () => {
-    const onViewAsText = vi.fn()
-    const { target, instance } = mountToolbar({ kind: 'pdf', onViewAsText })
+  it('switches a media file to text', async () => {
+    const onModeChange = vi.fn()
+    const { target, instance } = mountToolbar({ kind: 'pdf', onModeChange })
     await settle()
 
     triggerByLabel(target, 'View mode')?.click()
     await tick()
-    optionByValue(target, 'View mode', 'viewAsText')?.click()
+    optionByValue(target, 'View mode', 'text')?.click()
     await tick()
 
-    expect(onViewAsText).toHaveBeenCalledTimes(1)
+    expect(onModeChange).toHaveBeenCalledWith('text')
 
     void unmount(instance)
   })
 
-  it('calls onViewAsMedia when the user picks "View as image" while reading a media file as text', async () => {
-    const onViewAsMedia = vi.fn()
-    const { target, instance } = mountToolbar({ kind: 'text', lastMediaKind: 'image', onViewAsMedia })
+  it('returns to rendered media from text', async () => {
+    const onModeChange = vi.fn()
+    const { target, instance } = mountToolbar({ kind: 'text', lastMediaKind: 'image', onModeChange })
     await settle()
 
     triggerByLabel(target, 'View mode')?.click()
     await tick()
-    optionByValue(target, 'View mode', 'viewAsMedia')?.click()
+    optionByValue(target, 'View mode', 'media')?.click()
     await tick()
 
-    expect(onViewAsMedia).toHaveBeenCalledTimes(1)
+    expect(onModeChange).toHaveBeenCalledWith('media')
 
     void unmount(instance)
   })

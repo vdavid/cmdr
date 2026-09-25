@@ -4,7 +4,7 @@
 //! API for the frontend. Sessions are cached by ID and cleaned up on close.
 
 use std::collections::HashMap;
-use std::io::Write;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, LazyLock, Mutex, RwLock};
@@ -684,6 +684,24 @@ pub fn get_lines(session_id: &str, target: SeekTarget, count: usize) -> Result<L
     );
 
     backend.get_lines(&target, count)
+}
+
+/// Reads a bounded slice of the session's original bytes, without text decoding.
+/// The session path also points at the shared temp for routed and device files.
+pub fn get_bytes(session_id: &str, offset: u64, count: usize) -> Result<Vec<u8>, ViewerError> {
+    const MAX_BYTES: usize = 64 * 1024;
+    let path = {
+        let sessions = SESSIONS.lock_ignore_poison();
+        let session = sessions.get(session_id).ok_or_else(|| ViewerError::SessionNotFound {
+            session_id: session_id.to_string(),
+        })?;
+        session.path.clone()
+    };
+    let mut file = std::fs::File::open(path)?;
+    file.seek(SeekFrom::Start(offset))?;
+    let mut bytes = Vec::with_capacity(count.min(MAX_BYTES));
+    file.take(count.min(MAX_BYTES) as u64).read_to_end(&mut bytes)?;
+    Ok(bytes)
 }
 
 /// Starts a background search in the given session.

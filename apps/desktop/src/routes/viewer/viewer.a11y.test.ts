@@ -112,12 +112,12 @@ describe('ViewModePicker accessibility', () => {
     document.body.appendChild(target)
     const instance = mount(ViewModePicker, {
       target,
-      props: { kind, lastMediaKind, onViewAsText: () => {}, onViewAsMedia: () => {} },
+      props: { kind, mode: kind === 'text' ? 'text' : 'media', lastMediaKind, onModeChange: () => {} },
     })
     return { target, instance }
   }
 
-  it('has no a11y violations on the closed (disabled) picker', async () => {
+  it('has no a11y violations on the closed picker', async () => {
     const { target, instance } = mountPicker()
     await tick()
     await expectNoA11yViolations(target)
@@ -133,17 +133,13 @@ describe('ViewModePicker accessibility', () => {
     void unmount(instance)
   })
 
-  it('surfaces its disabled state to AT for a genuine text file', async () => {
-    // A genuine text file (no remembered media kind) has nothing to switch to, so
-    // the picker is disabled. Pin the contract so a future "make it look enabled"
-    // refactor can't silently drop the disabled announcement. Ark reflects it as
-    // `data-disabled` plus `disabled` on the trigger button.
+  it('keeps the picker enabled for binary and hex on a genuine text file', async () => {
     const { target, instance } = mountPicker()
     await tick()
 
     const trigger = target.querySelector<HTMLButtonElement>('.select-trigger')
     expect(trigger).not.toBeNull()
-    expect(trigger?.hasAttribute('data-disabled')).toBe(true)
+    expect(trigger?.hasAttribute('data-disabled')).toBe(false)
 
     void unmount(instance)
   })
@@ -265,6 +261,7 @@ describe('ViewerStatusBar a11y', () => {
       props: {
         fileName: 'example.txt',
         kind: props.kind ?? 'text',
+        mode: props.kind === 'image' || props.kind === 'pdf' ? 'media' : 'text',
         mediaDimensions: props.mediaDimensions ?? null,
         totalLines: props.totalLines,
         totalBytes: 2048,
@@ -323,14 +320,14 @@ describe('ViewerToolbar a11y', () => {
         fileName: 'example.txt',
         filePath: '/Users/demo/Documents/example.txt',
         kind: props.kind ?? 'text',
+        mode: props.kind === 'image' || props.kind === 'pdf' ? 'media' : 'text',
         lastMediaKind: props.lastMediaKind ?? null,
         currentEncoding: 'utf8',
         detectedEncoding: 'utf8',
         encodingChoices: choices,
         isIndexing: props.isIndexing,
         tailMode: props.tailMode,
-        onViewAsText: () => {},
-        onViewAsMedia: () => {},
+        onModeChange: () => {},
         onEncodingChange: () => {},
         onToggleTail: () => {},
       },

@@ -15,6 +15,8 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
 - **`+page.svelte`**: top-level component (lifecycle, window management, UI).
 - **`ViewerRow.svelte`**: one rendered ROW: the gutter number (only where a line starts), the text split into
   search-highlight and selection spans, and the continuation marker. See § "Rows, not lines".
+- **`RawByteView.svelte` / `raw-byte-view.ts`**: bounded raw-byte window, fixed-width binary and hex formatting, and a
+  scaled scrollbar for huge files. `viewer-view-mode.ts` maps the unmodified `1` / `2` / `3` keys.
 - Composables: **`viewer-scroll`** (virtual scroll: geometry and the row store), **`viewer-row-fetch`** (the fetch walk
   `viewer-scroll` creates and delegates to), **`viewer-search`** (start/poll/cancel/navigate, regex projection),
   **`viewer-line-heights`** (word-wrap height map via DOM measurement, FullLoad only), **`viewer-text-width`**
@@ -46,8 +48,8 @@ Per-file inventory for the route. Locate symbols via `codegraph_search`; this is
   triggers), **`MediaImageView` / `MediaPdfView`** (inline `<img>` / `<embed>`).
 - Presentational: **`ViewerContextMenu`**, **`ViewerToolbar`** (title-bar overlay, owns `data-tauri-drag-region`,
   disabled-not-hidden in media), **`ViewerStatusBar`** (keeps `user-select: text`), **`ViewerCopyDialogs`**,
-  **`EncodingPicker`**, **`ViewModePicker`** (two-way media↔text switch), **`ViewerReloadToastContent`** (session id and
-  change kind as toast props).
+  **`EncodingPicker`**, **`ViewModePicker`** (text / binary / hex / optional rendered media),
+  **`ViewerReloadToastContent`** (session id and change kind as toast props).
 
 ## Rows, not lines
 
@@ -55,7 +57,7 @@ The viewer renders **rows**. A row ends at a newline or after `SEGMENT_BYTES` (2
 fetch costs more than a bounded read however long a line is. The rule, the wire shape, and the backend side of it:
 `src-tauri/src/file_viewer/DETAILS.md` § "Rows, not lines". What it means on this side:
 
-**The coordinate is a row, everywhere.** `rowCache`, `visibleFrom` / `visibleTo`, `estimatedTotalRows()`, the
+**The text coordinate is a row, everywhere.** `rowCache`, `visibleFrom` / `visibleTo`, `estimatedTotalRows()`, the
 selection's `(row, offset)` endpoints, `EOF_ROW`, the caret motions, and the search jump all count rows. A file whose
 every line is shorter than a segment has rows and lines one-to-one, so nothing about it changed; a minified bundle is
 where the two part company. ❗ `RangeEnd`'s `line` field and `SearchMatch.line` are the WIRE's spelling of that same row
@@ -105,15 +107,16 @@ works in `.svelte` or `.svelte.ts` files at the top level of a component or `cre
 
 `viewer_open` returns `kind` (`text` / `image` / `pdf`) + `mediaToken` / `mediaDimensions` (backend:
 `src-tauri/src/file_viewer/`). The `createViewerMedia` composable (`viewer-media.svelte.ts`) owns this state; the page
-branches on `media.kind`: text uses the line pipeline; `image` / `pdf` render `MediaImageView` / `MediaPdfView` from
-`media.mediaSrc` (`cmdr-media://localhost/<token>`, built ONLY via `mediaUrl(token)` in `media-view.ts`, the single
-source for the origin form). `openViewerSession` hands the result to `media.setFromOpenResult(result)`.
+branches on `viewMode`: text uses the line pipeline; binary and hex use original bytes; `image` / `pdf` render
+`MediaImageView` / `MediaPdfView` from `media.mediaSrc` (`cmdr-media://localhost/<token>`, built ONLY via
+`mediaUrl(token)` in `media-view.ts`, the single source for the origin form). `openViewerSession` hands the result to
+`media.setFromOpenResult(result)`.
 
-- **Text-only paths are data-gated, not just hidden.** Every page `$effect` driving the line machinery early-returns on
-  `isMedia` (derived from `media.isMedia`), `openViewerSession` skips the line/index/tail/encoding setup for media, and
-  the window keydown router only handles Escape in media mode (image keys live on the focused `MediaImageView` stage;
-  the PDF embed owns its own). A media session has empty text fields, so don't undo these guards or the empty line code
-  runs and can throw.
+- **Text-only paths are data-gated, not just hidden.** Every page `$effect` driving the line machinery early-returns
+  unless `viewMode === 'text'`, `openViewerSession` skips the line/index/tail/encoding setup for media, and the window
+  keydown router only handles Escape in media mode (image keys live on the focused `MediaImageView` stage; the PDF embed
+  owns its own). A media session has empty text fields, so don't undo these guards or the empty line code runs and can
+  throw.
 - **Two-way switch between rendered media and raw text.** A viewer window shows exactly one file for its life, so the
   file's natural media kind stays recoverable on the frontend: `media.setFromOpenResult` stamps `lastMediaKind` on any
   media open, and `reset()` PRESERVES it across the switch to text. "View as text" (`media.viewAsText()`) resets the
@@ -123,6 +126,23 @@ source for the origin form). `openViewerSession` hands the result to `media.setF
   `viewer_open_as_text` (text) or `viewer_open` (re-classifies → media), swaps to it, and closes the old session
   EXPLICITLY (different id). The page tears down per-session listeners first because `openViewerSession` re-attaches
   them. No backend change: `viewer_open` re-classification is what re-derives the media kind.
+
+### Binary and hex views
+
+The mode picker and unmodified keys `1` / `2` / `3` select Text / Binary / Hex. Binary is the original byte stream in
+64-byte character rows; Hex uses 16-byte rows with an offset, hexadecimal pairs, and a character column. Control bytes
+and invalid UTF-8 occupy one visible placeholder each, so newline bytes never change the row boundaries. Both modes call
+`viewer_get_bytes` on the current session rather than reopening it. That session path is also the materialized temp for
+archive and device files; an image/PDF media session can therefore show its original bytes and return to rendered media
+without another pull. Switching from rendered media to Text still uses the existing forced-text reopen, and its matching
+teardown.
+
+`RawByteView` reads only the visible rows plus 16 rows on either side. A request carries at most 64 KiB; a newer scroll
+or mode change discards its late answer. The DOM spacer stops at 8 million pixels, then maps the thumb proportionally
+onto the file's byte rows, so even a very large file remains reachable. The top byte offset survives a Binary ↔ Hex
+switch. Text search, decoded selection, encoding, word wrap, and tail controls only run in Text mode. Raw rows allow
+native selection of the currently rendered bytes; the dedicated text selection/copy model does not interpret them.
+
 - **The image stage's checkerboard needs an explicit `background-repeat: repeat`.** The `ress` reset in `app-reset.css`
   sets `background-repeat: no-repeat` on `*`, so the four 20px hard-stop gradients paint ONCE each in the top-left
   corner and the whole rest of the stage stays flat base color. The symptom reads as "transparent pixels render opaque",

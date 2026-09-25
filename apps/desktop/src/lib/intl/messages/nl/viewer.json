@@ -148,6 +148,14 @@
   "@viewer.toolbar.viewMode.text": {
     "sourceHash": "71988c4"
   },
+  "viewer.toolbar.viewMode.binary": "Binair",
+  "@viewer.toolbar.viewMode.binary": {
+    "sourceHash": "ee1c827"
+  },
+  "viewer.toolbar.viewMode.hex": "Hexadecimaal",
+  "@viewer.toolbar.viewMode.hex": {
+    "sourceHash": "69493e6"
+  },
   "viewer.toolbar.viewMode.viewAsText": "Toon als tekst",
   "@viewer.toolbar.viewMode.viewAsText": {
     "sourceHash": "a0059b8"

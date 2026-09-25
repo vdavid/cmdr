@@ -17,7 +17,7 @@
     import EncodingPicker from './EncodingPicker.svelte'
     import ViewModePicker from './ViewModePicker.svelte'
     import type { EncodingChoice, FileEncoding, ViewerContentKind } from '$lib/ipc/bindings'
-    import { isMediaKind } from './media-view'
+    import type { ViewerDisplayMode } from './viewer-view-mode'
     import { tString } from '$lib/intl/messages.svelte'
 
     interface Props {
@@ -27,6 +27,7 @@
         filePath: string
         /** Detected content kind. Media kinds disable the text-only controls (encoding, tail). */
         kind: ViewerContentKind
+        mode: ViewerDisplayMode
         /**
          * The file's natural media kind, remembered across a switch to text. Lets the
          * view-mode picker offer the reverse "View as image / PDF" switch while a media
@@ -44,9 +45,7 @@
         /** Whether tail mode is on. */
         tailMode: boolean
         /** Called when the user picks "View as text" on a media file. */
-        onViewAsText: () => void
-        /** Called when the user picks "View as image / PDF" from the text view of a media file. */
-        onViewAsMedia: () => void
+        onModeChange: (mode: ViewerDisplayMode) => void
         /** Called when the user picks a different encoding. */
         onEncodingChange: (encoding: FileEncoding) => void
         /** Called when the user toggles tail mode. */
@@ -57,19 +56,19 @@
         fileName,
         filePath,
         kind,
+        mode,
         lastMediaKind,
         currentEncoding,
         detectedEncoding,
         encodingChoices,
         isIndexing,
         tailMode,
-        onViewAsText,
-        onViewAsMedia,
+        onModeChange,
         onEncodingChange,
         onToggleTail,
     }: Props = $props()
 
-    const isMedia = $derived(isMediaKind(kind))
+    const isText = $derived(mode === 'text')
 </script>
 
 <header class="viewer-toolbar" data-tauri-drag-region>
@@ -82,12 +81,12 @@
              DISABLED rather than disappearing (no chrome reshuffle when switching
              between rendered media and raw text). The encoding picker shows its
              "Encoding" placeholder there, since a media session has no decoded bytes. -->
-        <ViewModePicker {kind} {lastMediaKind} {onViewAsText} {onViewAsMedia} />
+        <ViewModePicker {kind} {mode} {lastMediaKind} {onModeChange} />
         <EncodingPicker
-            value={isMedia ? '' : currentEncoding}
+            value={isText ? currentEncoding : ''}
             detected={detectedEncoding}
             options={encodingChoices}
-            disabled={isMedia || isIndexing}
+            disabled={!isText || isIndexing}
             onChange={onEncodingChange}
         />
         <!-- eslint-disable-next-line cmdr/prefer-ui-primitive -- Bespoke toolbar toggle: reads as a labelled toolbar button next to its siblings, where the Switch primitive's track-and-thumb would look out of place; aria-checked carries the on/off semantics. -->
@@ -98,7 +97,7 @@
             role="switch"
             aria-checked={tailMode}
             aria-label={tString('viewer.toolbar.tail.ariaLabel')}
-            disabled={isMedia}
+            disabled={!isText}
             onclick={onToggleTail}
             use:tooltip={{ text: tString('viewer.toolbar.tail.tooltip'), shortcut: 'F' }}
         >

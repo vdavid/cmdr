@@ -210,6 +210,13 @@ export async function viewerGetLines(
   return res.data
 }
 
+/** Bounded raw bytes for the binary and hex viewer modes. */
+export async function viewerGetBytes(sessionId: string, offset: number, count: number): Promise<number[]> {
+  const res = await commands.viewerGetBytes(sessionId, offset, count)
+  if (res.status === 'error') throwViewerError(res.error)
+  return res.data
+}
+
 /** Starts a background search in the viewer session. */
 export async function viewerSearchStart(sessionId: string, query: string, mode: ViewerSearchMode): Promise<void> {
   const res = await commands.viewerSearchStart(sessionId, query, mode)

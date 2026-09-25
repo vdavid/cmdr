@@ -99,6 +99,21 @@ fn open_small_file_uses_full_load() {
 }
 
 #[test]
+fn raw_bytes_preserve_controls_and_high_bytes_across_offsets() {
+    let dir = create_test_dir("raw_bytes");
+    let file = dir.join("sample.bin");
+    fs::write(&file, [0, b'\n', 0x80, 0xff, b'A']).unwrap();
+    let opened = session::open_session(file.to_str().unwrap(), "root").unwrap();
+
+    assert_eq!(session::get_bytes(&opened.session_id, 0, 3).unwrap(), [0, b'\n', 0x80]);
+    assert_eq!(session::get_bytes(&opened.session_id, 3, 10).unwrap(), [0xff, b'A']);
+    assert!(session::get_bytes(&opened.session_id, 5, 10).unwrap().is_empty());
+    assert_eq!(session::get_bytes(&opened.session_id, 0, usize::MAX).unwrap().len(), 5);
+
+    session::close_session(&opened.session_id).unwrap();
+}
+
+#[test]
 fn open_large_file_uses_byte_seek() {
     let dir = create_test_dir("large");
     // Create a file larger than FULL_LOAD_THRESHOLD

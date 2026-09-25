@@ -253,6 +253,19 @@ pub async fn viewer_get_lines(
     Ok(result)
 }
 
+/// Reads at most 64 KiB of original file bytes for the binary and hex views.
+#[tauri::command]
+#[specta::specta]
+pub async fn viewer_get_bytes(session_id: String, offset: u64, count: usize) -> Result<Vec<u8>, ViewerError> {
+    blocking_typed_result_with_timeout(
+        VIEWER_TIMEOUT,
+        || ViewerError::TimedOut,
+        |message| ViewerError::Io { message },
+        move || file_viewer::get_bytes(&session_id, offset, count),
+    )
+    .await
+}
+
 /// Starts a background search in the viewer session.
 /// Poll with `viewer_search_poll` to get results.
 ///

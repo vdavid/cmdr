@@ -62,6 +62,7 @@ export {
   viewerOpen,
   viewerOpenAsText,
   viewerGetLines,
+  viewerGetBytes,
   asViewerError,
   viewerSearchStart,
   viewerSearchPoll,

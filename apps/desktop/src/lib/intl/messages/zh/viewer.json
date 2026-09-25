@@ -147,6 +147,14 @@
   "@viewer.toolbar.viewMode.text": {
     "sourceHash": "71988c4"
   },
+  "viewer.toolbar.viewMode.binary": "二进制",
+  "@viewer.toolbar.viewMode.binary": {
+    "sourceHash": "ee1c827"
+  },
+  "viewer.toolbar.viewMode.hex": "十六进制",
+  "@viewer.toolbar.viewMode.hex": {
+    "sourceHash": "69493e6"
+  },
   "viewer.toolbar.viewMode.viewAsText": "以文本查看",
   "@viewer.toolbar.viewMode.viewAsText": {
     "sourceHash": "a0059b8"

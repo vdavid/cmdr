@@ -1288,6 +1288,9 @@ export const commands = {
     typedError<LineChunk, ViewerError>(
       __TAURI_INVOKE('viewer_get_lines', { sessionId, targetType, targetValue, count }),
     ),
+  // Reads at most 64 KiB of original file bytes for the binary and hex views.
+  viewerGetBytes: (sessionId: string, offset: number, count: number) =>
+    typedError<number[], ViewerError>(__TAURI_INVOKE('viewer_get_bytes', { sessionId, offset, count })),
   // Gets the current status of a viewer session (backend type, indexing state).
   viewerGetStatus: (sessionId: string) =>
     typedError<ViewerSessionStatus, string>(__TAURI_INVOKE('viewer_get_status', { sessionId })),

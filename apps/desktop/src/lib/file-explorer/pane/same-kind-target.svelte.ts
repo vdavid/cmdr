@@ -27,6 +27,7 @@
 import { tString } from '$lib/intl/messages.svelte'
 import { updateSelectSameKindMenu } from '$lib/tauri-commands'
 import { createDebounce } from '$lib/utils/timing'
+import { getAppLogger } from '$lib/logging/logger'
 import type { SameKindTarget } from './select-same-kind'
 
 /**
@@ -39,6 +40,7 @@ import type { SameKindTarget } from './select-same-kind'
  * which the mouse trip used to hide, and no longer does.
  */
 const PUSH_DEBOUNCE_MS = 200
+const log = getAppLogger('sameKindTarget')
 
 let target = $state<SameKindTarget | null>(null)
 /** The target the menu bar was last told about, so an unchanged one costs nothing. */
@@ -53,7 +55,7 @@ let pushed: SameKindTarget | null = null
 function push(): void {
   pushed = target
   void updateSelectSameKindMenu(target).catch((error: unknown) => {
-    console.warn('Could not update the Select menu label', error)
+    log.warn('Could not update the Select menu label: {error}', { error: String(error) })
   })
 }
 

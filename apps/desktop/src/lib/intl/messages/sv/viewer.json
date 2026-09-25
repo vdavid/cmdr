@@ -149,6 +149,14 @@
     "sourceHash": "71988c4",
     "sameAsSourceJustification": "text is 'Text' in Swedish (Swedish cognate). Identical to English, matching viewer.kind.text."
   },
+  "viewer.toolbar.viewMode.binary": "Binärt",
+  "@viewer.toolbar.viewMode.binary": {
+    "sourceHash": "ee1c827"
+  },
+  "viewer.toolbar.viewMode.hex": "Hexadecimalt",
+  "@viewer.toolbar.viewMode.hex": {
+    "sourceHash": "69493e6"
+  },
   "viewer.toolbar.viewMode.viewAsText": "Visa som text",
   "@viewer.toolbar.viewMode.viewAsText": {
     "sourceHash": "a0059b8"

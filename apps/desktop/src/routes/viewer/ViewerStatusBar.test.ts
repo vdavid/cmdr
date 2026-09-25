@@ -3,6 +3,7 @@ import { mount, tick, unmount } from 'svelte'
 
 import ViewerStatusBar from './ViewerStatusBar.svelte'
 import type { MediaDimensions, ViewerContentKind } from '$lib/ipc/bindings'
+import type { ViewerDisplayMode } from './viewer-view-mode'
 import { _setLocaleForTests } from '$lib/intl/locale'
 
 vi.mock('$lib/settings/reactive-settings.svelte', () => ({
@@ -22,6 +23,7 @@ afterEach(() => {
 interface MountOpts {
   fileName?: string
   kind?: ViewerContentKind
+  mode?: ViewerDisplayMode
   mediaDimensions?: MediaDimensions | null
   totalLines?: number | null
   totalBytes?: number
@@ -38,6 +40,7 @@ function mountStatusBar(opts: MountOpts = {}) {
     props: {
       fileName: opts.fileName ?? 'example.txt',
       kind: opts.kind ?? 'text',
+      mode: opts.mode ?? (opts.kind === 'image' || opts.kind === 'pdf' ? 'media' : 'text'),
       mediaDimensions: opts.mediaDimensions ?? null,
       totalLines: opts.totalLines === undefined ? 42 : opts.totalLines,
       totalBytes: opts.totalBytes ?? 1024,
@@ -51,6 +54,15 @@ function mountStatusBar(opts: MountOpts = {}) {
 }
 
 describe('ViewerStatusBar', () => {
+  it('shows the byte view mode and size without text line metadata', async () => {
+    const { target, instance } = mountStatusBar({ mode: 'hex', totalLines: 42 })
+    await tick()
+
+    expect(target.querySelector('.backend-badge')?.textContent).toBe('Hex')
+    expect(target.querySelector('.status-bar')?.textContent).not.toContain('42 lines')
+
+    void unmount(instance)
+  })
   it('renders the file name, line count, and the in-memory badge', async () => {
     const { target, instance } = mountStatusBar({ fileName: 'log.txt', totalLines: 3, currentMode: 'fullLoad' })
     await tick()

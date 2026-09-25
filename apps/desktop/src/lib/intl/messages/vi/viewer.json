@@ -148,6 +148,14 @@
   "@viewer.toolbar.viewMode.text": {
     "sourceHash": "71988c4"
   },
+  "viewer.toolbar.viewMode.binary": "Nhị phân",
+  "@viewer.toolbar.viewMode.binary": {
+    "sourceHash": "ee1c827"
+  },
+  "viewer.toolbar.viewMode.hex": "Thập lục phân",
+  "@viewer.toolbar.viewMode.hex": {
+    "sourceHash": "69493e6"
+  },
   "viewer.toolbar.viewMode.viewAsText": "Xem dưới dạng văn bản",
   "@viewer.toolbar.viewMode.viewAsText": {
     "sourceHash": "a0059b8"

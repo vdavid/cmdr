@@ -1,20 +1,20 @@
 # File viewer module (Rust backend)
 
-Three backend strategies for serving file content row by row: instant open, virtual scrolling, background search.
+Backends serve instant open, virtual scrolling, and background search.
 
 Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 [FE primitives](../../../src/lib/file-viewer/CLAUDE.md).
 
 ## Module map
 
-- `mod.rs`: public API, constants, `ViewerError`. `session.rs`: orchestration, backend switching, per-read cancel
-  registry, encoding-switch, drain-and-swap.
+- `mod.rs`: public API, constants, `ViewerError`. `session.rs`: orchestration, backend switching, cancellation,
+  encoding, drain-and-swap, and bounded raw byte reads.
 - `rows.rs` (the row rule, stated once and answered in either direction), `row_walk.rs` (that rule read forward:
   `RowReader`, `collect_rows`, `search_rows`, `content_start`, and the row types a fetch hands back),
   `range_read.rs` (range → one UTF-8 string),
   `encoding.rs` (`FileEncoding` + detection), `full_load.rs` / `byte_seek.rs` / `line_index.rs` (the three backends),
   `search_matcher.rs`, `watcher.rs` (tail-mode watcher).
-- Backend selection: `< 1MB` → `FullLoad`; else `ByteSeek` (instant) + a background `LineIndex` upgrade.
+- Backend selection: `< 1MB` → `FullLoad`; else instant `ByteSeek` + background `LineIndex`.
 - Media (Image/PDF): `content_kind.rs` plus the four `media*.rs` (`media.rs` holds the `cmdr-media://` token map).
   `DETAILS.md` § "Media rendering".
 - `materialize.rs` + `pending_open.rs`: pulling a file the OS can't open (routed, or on a phone) into a bounded temp,
@@ -25,7 +25,7 @@ Frontend counterparts: [route shell](../../../src/routes/viewer/CLAUDE.md) and
 
 ## Must-knows
 
-- **The viewer serves ROWS, not physical lines** (`rows.rs`). ❗ `continues: true` means CMDR ended that row, so
+- **The text viewer serves ROWS, not physical lines** (`rows.rs`). Raw binary/hex reads use byte offsets. ❗ `continues: true` means CMDR ended that row, so
   ❌ never join it to the next with `\n`; walk chunk to chunk by `ChunkEnd` + `end_byte_offset`, ❌ never by row count
   or decoded lengths. `DETAILS.md` § "Rows, not lines".
 - **`viewer_set_encoding`, `viewer_set_tail_mode`, and `viewer_reload` are `async` + `spawn_blocking` + 2 s timeout**

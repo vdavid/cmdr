@@ -122,6 +122,19 @@ test.describe('File viewer', () => {
     const badgeText = await viewer.textContent('.backend-badge')
     expect(badgeText).toBe('in memory')
   })
+
+  test('switches text, binary, and hex with 1, 2, and 3', async () => {
+    await viewer.keyboard.press('2')
+    await expect.poll(() => viewer.isVisible('.raw-byte-view'), { timeout: waitBudget(5000) }).toBe(true)
+    expect((await viewer.textContent('.raw-characters'))?.startsWith('AAAA')).toBe(true)
+
+    await viewer.keyboard.press('3')
+    await expect.poll(() => viewer.isVisible('.raw-hex'), { timeout: waitBudget(5000) }).toBe(true)
+    expect((await viewer.textContent('.raw-hex'))?.startsWith('41 41 41 41')).toBe(true)
+
+    await viewer.keyboard.press('1')
+    await expect.poll(() => viewer.isVisible('.file-content'), { timeout: waitBudget(5000) }).toBe(true)
+  })
 })
 
 test.describe('File viewer search', () => {

@@ -58,6 +58,8 @@
     import ViewerToolbar from './ViewerToolbar.svelte'
     import ViewerStatusBar from './ViewerStatusBar.svelte'
     import ViewerRow from './ViewerRow.svelte'
+    import RawByteView from './RawByteView.svelte'
+    import { modeForKey, type ViewerDisplayMode } from './viewer-view-mode'
     import ViewerCopyDialogs from './ViewerCopyDialogs.svelte'
     import MediaImageView from './MediaImageView.svelte'
     import MediaPdfView from './MediaPdfView.svelte'
@@ -121,7 +123,9 @@
         reopenAsText: () => reopenAsText(),
         reopenNatural: () => reopenNatural(),
     })
-    const isMedia = $derived(media.isMedia)
+    let viewMode = $state<ViewerDisplayMode>('text')
+    let rawByteOffset = $state(0)
+    const isTextView = $derived(viewMode === 'text')
 
     /**
      * Tail mode: when on, the open viewport auto-follows newly appended bytes.
@@ -220,7 +224,7 @@
     // no-warn for images / PDFs, but gate on `isMedia` too so a stray extension
     // mismatch can't surface the raw-bytes banner over a rendered image).
     const showWarningBanner = $derived(
-        !isMedia && warning.shouldWarn && !bannerDismissed && !warningSuppressed && !loading,
+        isTextView && warning.shouldWarn && !bannerDismissed && !warningSuppressed && !loading,
     )
 
     function dismissBanner(): void {
@@ -408,61 +412,61 @@
 
     // Fetch lines when visible range changes (debounced)
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         scroll.runFetchEffect()
     })
 
     // Track horizontal content width so .scroll-spacer can create a scrollbar
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         return scroll.runContentWidthEffect()
     })
 
     // Measure average wrapped line height for virtual scroll approximation
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         return scroll.runWrappedLineHeightEffect()
     })
 
     // Compensate scroll position when scrollLineHeight changes
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         scroll.runScrollCompensationEffect()
     })
 
     // Height map: trigger preparation when word wrap + fullLoad lines + textWidth are available
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         scroll.runHeightMapInitEffect()
     })
 
     // Height map: reflow when textWidth changes
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         scroll.runHeightMapReflowEffect()
     })
 
     // Track available text width for height map calculations via ResizeObserver + visible lines change
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         return textWidthTracker.runResizeEffect()
     })
 
     // Re-measure text width when lines first appear (ResizeObserver won't fire if container size didn't change)
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         textWidthTracker.runVisibleRowsEffect()
     })
 
     // Debounce search input
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         search.runDebounceEffect()
     })
 
     // Re-place the optional text cursor after anything that moves the focus or its row
     $effect(() => {
-        if (isMedia) return
+        if (!isTextView) return
         textCursor.runMeasureEffect()
     })
 
@@ -600,6 +604,23 @@
         if (!search.searchVisible) pushSearchInputFocused(false)
     })
 
+    async function switchViewMode(next: ViewerDisplayMode): Promise<void> {
+        if (loading || !sessionId || next === viewMode) return
+        if (next !== 'text') search.closeSearch()
+        pointerDrag.closeContextMenu()
+        if (next === 'text' && media.kind !== 'text') {
+            await media.viewAsText()
+        } else if (next === 'media' && media.kind === 'text') {
+            await media.viewAsMedia()
+        } else {
+            viewMode = next
+            if (next === 'text') {
+                await tick()
+                scroll.contentRef?.focus()
+            }
+        }
+    }
+
     /**
      * Window-level keydown router. In text mode it delegates to the full viewer
      * keyboard (search, selection, copy, navigation). In media mode the text
@@ -608,7 +629,15 @@
      * the focused `MediaImageView` stage, and the PDF embed owns its own keys.
      */
     function handleWindowKeyDown(e: KeyboardEvent) {
-        if (isMedia) {
+        const mode = modeForKey(e)
+        const target = e.target
+        const editing = target instanceof HTMLElement && target.closest('input, textarea, [contenteditable="true"], [role="combobox"]')
+        if (mode && !editing && !loading && sessionId) {
+            e.preventDefault()
+            void switchViewMode(mode)
+            return
+        }
+        if (!isTextView) {
             if (e.key === 'Escape') {
                 e.preventDefault()
                 closeWindow()
@@ -672,6 +701,7 @@
         media.setFromOpenResult(result)
 
         const openedAsMedia = isMediaKind(result.kind)
+        viewMode = openedAsMedia ? 'media' : 'text'
 
         // Encoding options are text-only; a media session has no decoded bytes to pick
         // an encoding for. Fetch the dropdown options once for text; they don't change.
@@ -767,7 +797,12 @@
         // native ones, because the native selectors would act on the status bar; see
         // `viewer-menu-actions.ts`. Media sessions have no text to select or copy.
         unlistenEditAction = await onViewerEditAction(({ action }) => {
-            if (isMedia) return
+            if ((viewMode === 'binary' || viewMode === 'hex') && action === 'copy') {
+                const selected = window.getSelection()?.toString()
+                if (selected) viewerEditActionDeps.writeClipboardText(selected)
+                return
+            }
+            if (!isTextView) return
             runViewerEditAction(action, viewerEditActionDeps)
         })
 
@@ -969,7 +1004,7 @@
     oncopy={(e: ClipboardEvent) => {
         // Media mode has no custom text selection; let the browser's native copy
         // (e.g. copying the image) run unintercepted.
-        if (isMedia) return
+        if (!isTextView) return
         // Intercept any copy gesture (menu Edit > Copy, ⌘C from anywhere inside the
         // viewer) so the custom selection model wins over the browser's native one.
         const target = e.target as HTMLElement | null
@@ -986,18 +1021,14 @@
         {fileName}
         {filePath}
         kind={media.kind}
+        mode={viewMode}
         lastMediaKind={media.lastMediaKind}
         {currentEncoding}
         {detectedEncoding}
         {encodingChoices}
         {isIndexing}
         {tailMode}
-        onViewAsText={() => {
-            void media.viewAsText()
-        }}
-        onViewAsMedia={() => {
-            void media.viewAsMedia()
-        }}
+        onModeChange={(mode: ViewerDisplayMode) => { void switchViewMode(mode) }}
         onEncodingChange={(enc: FileEncoding) => void handleEncodingChange(enc)}
         onToggleTail={() => {
             void toggleTailMode()
@@ -1178,6 +1209,17 @@
         </div>
     {:else if error}
         <div class="status-message error">{error}</div>
+    {:else if viewMode === 'binary' || viewMode === 'hex'}
+        {#key viewMode}
+            <RawByteView
+                {sessionId}
+                {totalBytes}
+                fileName={fileName}
+                mode={viewMode}
+                initialOffset={rawByteOffset}
+                onOffsetChange={(offset: number) => { rawByteOffset = offset }}
+            />
+        {/key}
     {:else if media.kind === 'image'}
         <MediaImageView src={media.mediaSrc} {fileName} />
     {:else if media.kind === 'pdf'}
@@ -1238,6 +1280,7 @@
     <ViewerStatusBar
         {fileName}
         kind={media.kind}
+        mode={viewMode}
         mediaDimensions={media.mediaDimensions}
         {totalLines}
         {totalBytes}

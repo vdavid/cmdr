@@ -28,6 +28,7 @@ also silences the unrendered ones, which then show raw bytes with no nudge.
 - **Cmd+F / Ctrl+F** opens the search bar (case-insensitive, 100ms debounce); **Enter / Shift+Enter** = next/previous
   match; **Escape** closes the search bar (if open) else the window.
 - **W** toggles word wrap (per-line heights for FullLoad, averaged for others).
+- **1 / 2 / 3** switch the viewer between Text, Binary, and Hex. Binary and Hex use original bytes, not decoded lines.
 
 ## Architecture (summary)
 
@@ -65,5 +66,3 @@ search conversion, `needsFetch()` three-point sampling): `DETAILS.md` § Gotchas
 import { openFileViewer } from '$lib/file-viewer/open-viewer'
 await openFileViewer('/path/to/file.txt')
 ```
-
-Test large files via `dd if=/dev/zero of=large.txt bs=1m count=1000` (1GB file).

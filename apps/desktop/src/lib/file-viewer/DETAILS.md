@@ -45,9 +45,8 @@ Depth and rationale for the frontend file viewer. `CLAUDE.md` holds the must-kno
   window only, and each viewer label is unique (timestamp-based) anyway, so there's no stable identifier to key on (the
   same file can be opened multiple times). Within a session, viewers cascade from the main window's top-left (+24px per
   opened viewer, wrapping at 8) via `lib/window-positioning.ts` so successive opens don't pile up.
-- **Binary files shown with lossy UTF-8** (replacement chars for invalid bytes, no binary mode). The viewer is designed
-  for text/log files; a hex/binary mode would need a completely different rendering pipeline. Lossy display is good
-  enough for quick inspection.
+- **Text mode decodes bytes, while Binary and Hex read originals.** Text/log files still use the three indexed text
+  backends; the route's `RawByteView` reads bounded byte ranges from the same session for byte-accurate inspection.
 - **Search uses byte offsets internally, converted to UTF-16 code units for JS.** Rust searches over raw bytes for
   speed; JS `String.substring()` uses UTF-16 code units. The backend does the conversion so the frontend can highlight
   matches correctly in JavaScript strings.
@@ -66,7 +65,7 @@ Depth and rationale for the frontend file viewer. `CLAUDE.md` holds the must-kno
 ## Binary-warning suppression
 
 `binary-warning.ts` classifies every image / document / binary extension. The viewer page shows the banner only when
-`!isMedia && warning.shouldWarn`, where `isMedia` comes from the authoritative backend `kind` (image/pdf). So a rendered
-image / PDF never shows it, while formats the classifier promotes to neither (RAW like `.cr2`/`.nef`, `.avif`, `.ico`,
-`.docx`, `.epub`, archives, etc.) still warn. Don't trim the image set here to "suppress" rendered formats: that also
-silences the unrendered ones (RAW/AVIF/ICO), which then show raw bytes with no nudge.
+`viewMode === 'text' && warning.shouldWarn`. So a rendered image / PDF never shows it, while formats the classifier
+promotes to neither (RAW like `.cr2`/`.nef`, `.avif`, `.ico`, `.docx`, `.epub`, archives, etc.) still warn. Don't trim
+the image set here to "suppress" rendered formats: that also silences the unrendered ones (RAW/AVIF/ICO), which then
+show raw bytes with no nudge.

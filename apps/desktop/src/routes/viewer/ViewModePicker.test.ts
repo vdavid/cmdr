@@ -3,6 +3,7 @@ import { mount, tick, unmount } from 'svelte'
 
 import ViewModePicker from './ViewModePicker.svelte'
 import type { ViewerContentKind } from '$lib/ipc/bindings'
+import type { ViewerDisplayMode } from './viewer-view-mode'
 
 beforeEach(() => {
   document.body.innerHTML = ''
@@ -10,13 +11,16 @@ beforeEach(() => {
 
 function mountPicker(props: {
   kind: ViewerContentKind
+  mode?: ViewerDisplayMode
   lastMediaKind?: ViewerContentKind | null
-  onViewAsText?: () => void
-  onViewAsMedia?: () => void
+  onModeChange?: (mode: ViewerDisplayMode) => void
 }) {
   const target = document.createElement('div')
   document.body.appendChild(target)
-  const instance = mount(ViewModePicker, { target, props: { lastMediaKind: null, ...props } })
+  const instance = mount(ViewModePicker, {
+    target,
+    props: { lastMediaKind: null, mode: props.kind === 'text' ? 'text' : 'media', onModeChange: () => {}, ...props },
+  })
   return { target, instance }
 }
 
@@ -36,15 +40,16 @@ function itemValues(): (string | null)[] {
 }
 
 describe('ViewModePicker', () => {
-  it('renders a single, disabled "Text" option for a genuine text file', async () => {
+  it('offers text, binary, and hex for a genuine text file', async () => {
     const { target, instance } = mountPicker({ kind: 'text', lastMediaKind: null })
     await settle()
 
     const options = items()
-    expect(options).toHaveLength(1)
+    expect(options).toHaveLength(3)
     expect(options[0].getAttribute('data-value')).toBe('text')
-    expect(options[0].textContent).toContain('Text')
-    expect(target.querySelector<HTMLButtonElement>('.select-trigger')?.hasAttribute('data-disabled')).toBe(true)
+    expect(options[0].textContent).toContain('Text (1)')
+    expect(itemValues()).toEqual(['text', 'binary', 'hex'])
+    expect(target.querySelector<HTMLButtonElement>('.select-trigger')?.hasAttribute('data-disabled')).toBe(false)
 
     void unmount(instance)
   })
@@ -58,14 +63,14 @@ describe('ViewModePicker', () => {
     void unmount(instance)
   })
 
-  it('offers "View as text" for a media file and is enabled', async () => {
+  it('offers all raw modes for a media file', async () => {
     const { target, instance } = mountPicker({ kind: 'pdf' })
     await settle()
 
     const trigger = target.querySelector<HTMLButtonElement>('.select-trigger')
     expect(trigger?.hasAttribute('data-disabled')).toBe(false)
     expect(trigger?.textContent).toContain('PDF')
-    expect(itemValues()).toEqual(['pdf', 'viewAsText'])
+    expect(itemValues()).toEqual(['text', 'binary', 'hex', 'media'])
 
     void unmount(instance)
   })
@@ -78,8 +83,8 @@ describe('ViewModePicker', () => {
     // Not disabled: there's a real switch-back available.
     expect(trigger?.hasAttribute('data-disabled')).toBe(false)
     expect(trigger?.textContent).toContain('Text')
-    expect(itemValues()).toEqual(['text', 'viewAsMedia'])
-    const reverse = items().find((o) => o.getAttribute('data-value') === 'viewAsMedia')
+    expect(itemValues()).toEqual(['text', 'binary', 'hex', 'media'])
+    const reverse = items().find((o) => o.getAttribute('data-value') === 'media')
     expect(reverse?.textContent).toContain('View as image')
 
     void unmount(instance)
@@ -89,40 +94,40 @@ describe('ViewModePicker', () => {
     const { instance } = mountPicker({ kind: 'text', lastMediaKind: 'pdf' })
     await settle()
 
-    const reverse = items().find((o) => o.getAttribute('data-value') === 'viewAsMedia')
+    const reverse = items().find((o) => o.getAttribute('data-value') === 'media')
     expect(reverse?.textContent).toContain('View as PDF')
 
     void unmount(instance)
   })
 
-  it('calls onViewAsText when "View as text" is picked', async () => {
-    const onViewAsText = vi.fn()
-    const { target, instance } = mountPicker({ kind: 'image', onViewAsText })
+  it('reports the selected mode', async () => {
+    const onModeChange = vi.fn()
+    const { target, instance } = mountPicker({ kind: 'image', onModeChange })
     await settle()
 
     target.querySelector<HTMLButtonElement>('.select-trigger')?.click()
     await tick()
-    const item = items().find((o) => o.getAttribute('data-value') === 'viewAsText')
+    const item = items().find((o) => o.getAttribute('data-value') === 'hex')
     item?.click()
     await tick()
 
-    expect(onViewAsText).toHaveBeenCalledTimes(1)
+    expect(onModeChange).toHaveBeenCalledWith('hex')
 
     void unmount(instance)
   })
 
-  it('calls onViewAsMedia when "View as image" is picked from the text view', async () => {
-    const onViewAsMedia = vi.fn()
-    const { target, instance } = mountPicker({ kind: 'text', lastMediaKind: 'image', onViewAsMedia })
+  it('can return to rendered media from text', async () => {
+    const onModeChange = vi.fn()
+    const { target, instance } = mountPicker({ kind: 'text', lastMediaKind: 'image', onModeChange })
     await settle()
 
     target.querySelector<HTMLButtonElement>('.select-trigger')?.click()
     await tick()
-    const item = items().find((o) => o.getAttribute('data-value') === 'viewAsMedia')
+    const item = items().find((o) => o.getAttribute('data-value') === 'media')
     item?.click()
     await tick()
 
-    expect(onViewAsMedia).toHaveBeenCalledTimes(1)
+    expect(onModeChange).toHaveBeenCalledWith('media')
 
     void unmount(instance)
   })

@@ -108,6 +108,27 @@ test.describe('File viewer media rendering', () => {
     }
   })
 
+  test("shows a rendered image's original bytes in hex and returns to the image", async ({ tauriPage }) => {
+    const main = tauriPage as TauriPage
+    const viewer = await openMediaViewer(main, pngPath)
+    const label = viewer.targetWindow
+    if (!label) throw new Error('Scoped viewer page has no targetWindow label')
+
+    try {
+      await viewer.keyboard.press('3')
+      await expect.poll(() => viewer.isVisible('.raw-hex'), { timeout: waitBudget(5000) }).toBe(true)
+      expect((await viewer.textContent('.raw-hex'))?.startsWith('89 50 4E 47')).toBe(true)
+
+      const trigger = `document.querySelector('.viewer-toolbar-pickers .select-trigger')`
+      expect(await pointerClick(viewer, trigger)).toBe('clicked')
+      const mediaOption = `${selectContentExpr(trigger)}.querySelector('[data-value="media"]')`
+      expect(await pointerClick(viewer, mediaOption)).toBe('clicked')
+      await expect.poll(() => viewer.isVisible('.media-image-stage'), { timeout: waitBudget(5000) }).toBe(true)
+    } finally {
+      await closeScopedWindow(main, viewer, label)
+    }
+  })
+
   // The view-mode menu opens OVER its trigger and hangs down across the image. A menu
   // that lost its `--z-dropdown` rung sits at `z-index: auto`, under anything on a real
   // rung: the menu looks open, but its rows are hidden and a click lands elsewhere.
@@ -161,8 +182,14 @@ test.describe('File viewer media rendering', () => {
       // Poll the hit test itself: the menu settles its overlap shift a few frames after
       // opening, and the user only ever clicks the settled menu.
       await expect
-        .poll(async () => selectRowHits(viewer, trigger, '.media-image-stage'), { timeout: waitBudget(5000) })
-        .toEqual({ covered: [], over: ['viewAsText'] })
+        .poll(
+          async () => {
+            const hits = await selectRowHits(viewer, trigger, '.media-image-stage')
+            return hits !== null && hits.covered.length === 0 && hits.over.includes('text')
+          },
+          { timeout: waitBudget(5000) },
+        )
+        .toBe(true)
     } finally {
       await closeScopedWindow(main, viewer, label)
     }

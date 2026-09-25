@@ -226,12 +226,22 @@
   },
   "viewer.toolbar.viewMode.ariaLabel": "View mode",
   "@viewer.toolbar.viewMode.ariaLabel": {
-    "description": "Accessibility label for the toolbar dropdown that switches how the file is shown (rendered image/PDF versus raw text).",
+    "description": "Accessibility label for the toolbar dropdown that switches between text, binary, hex, and rendered media views.",
     "screenshot": "viewer-search.png"
   },
   "viewer.toolbar.viewMode.text": "Text",
   "@viewer.toolbar.viewMode.text": {
-    "description": "Option in the view-mode dropdown for showing the file as plain text. Also the current-mode label when reading a media file as text.",
+    "description": "Option in the view-mode dropdown for showing the file as decoded text. Also the current-mode label when reading a media file as text. Shortcut 1 is appended in the UI.",
+    "screenshot": "viewer-search.png"
+  },
+  "viewer.toolbar.viewMode.binary": "Binary",
+  "@viewer.toolbar.viewMode.binary": {
+    "description": "Viewer mode that shows original file bytes as fixed-width character rows, without treating newlines as line breaks. Shortcut 2 is appended in the dropdown.",
+    "screenshot": "viewer-search.png"
+  },
+  "viewer.toolbar.viewMode.hex": "Hex",
+  "@viewer.toolbar.viewMode.hex": {
+    "description": "Viewer mode that shows original file bytes as hexadecimal pairs alongside their character representation. Shortcut 3 is appended in the dropdown.",
     "screenshot": "viewer-search.png"
   },
   "viewer.toolbar.viewMode.viewAsText": "View as text",
