@@ -92,9 +92,7 @@ describe('delete dialog chrome (en)', () => {
 
   it('resolves the overflow line with plural agreement', () => {
     expect(t('fileOperations.delete.overflowMore', { countText: '1', count: 1 })).toBe('… and 1 more item')
-    expect(t('fileOperations.delete.overflowMore', { countText: '1,234', count: 1234 })).toBe(
-      '… and 1,234 more items',
-    )
+    expect(t('fileOperations.delete.overflowMore', { countText: '1,234', count: 1234 })).toBe('… and 1,234 more items')
   })
 
   it('resolves the scan-stat nouns and throughput', () => {
