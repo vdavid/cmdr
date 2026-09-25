@@ -409,7 +409,7 @@ export function astOrUndefined(value: string, locale: string): readonly AstEleme
  * Compares two element lists for "shows the same text", position by position.
  * See `showsOnlySourceText`.
  */
-function showsSameText(source: readonly AstElement[], locale: readonly AstElement[]): boolean {
+export function showsSameText(source: readonly AstElement[], locale: readonly AstElement[]): boolean {
   return source.length === locale.length && source.every((el, index) => showsSameElement(el, locale[index]))
 }
 

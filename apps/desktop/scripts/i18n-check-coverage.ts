@@ -21,6 +21,10 @@
  *    branch TEXT. Byte comparison alone reads that as translated, which is how
  *    English counters shipped inside a locale this check called fully covered.
  *
+ * And one WARN (exit `EXIT_WARN` when nothing else is wrong): a plural/select
+ * branch left in English while the same English text is translated in a sibling
+ * branch (`englishBranches`), the `many` a translator pasted from English.
+ *
  * A key that legitimately stays identical (a brand name, a unit symbol, a
  * placeholder-only string, or a word the locale genuinely shares with English) is
  * EXEMPTED from the IDENTICAL signal by recording a non-empty
@@ -56,8 +60,13 @@
  * Pass `--messages-root <dir>` to point at a fixture (used by the tests).
  */
 
-import { BASE_LOCALE, isRawKey, showsOnlySourceText } from './i18n-catalog-lib.ts'
-import { EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
+import { BASE_LOCALE, TYPE, astOrUndefined, isRawKey, showsOnlySourceText, showsSameText } from './i18n-catalog-lib.ts'
+import type { AstElement } from './i18n-catalog-lib.ts'
+import { EXIT_CLEAN, EXIT_ERROR, runLocaleCheck } from './i18n-locale-check-lib.ts'
+import type { Issue } from './i18n-locale-check-lib.ts'
+
+/** Exit code when the only findings are warnings (a plural branch left in English): the Go wrapper warns. */
+export const EXIT_WARN = 4
 
 /**
  * Classifies one English key against a locale's catalog: `missing`, `identical`,
@@ -102,6 +111,68 @@ export function coverageStatus(
   return untranslated
 }
 
+/** A plural or select node: its argument and each category's branch. */
+interface BranchNode {
+  arg: string
+  branches: Record<string, readonly AstElement[]>
+}
+
+/** Every plural/select node in an AST, nested ones included. */
+function branchNodes(ast: readonly AstElement[], out: BranchNode[] = []): BranchNode[] {
+  for (const el of ast) {
+    if (el.type === TYPE.plural || el.type === TYPE.select) {
+      const branches = Object.fromEntries(Object.entries(el.options ?? {}).map(([cat, branch]) => [cat, branch.value]))
+      out.push({ arg: el.value, branches })
+      for (const branch of Object.values(branches)) branchNodes(branch, out)
+    } else if (el.type === TYPE.tag) branchNodes(el.children ?? [], out)
+  }
+  return out
+}
+
+/** Whether a branch shows any word (two letters in a row), as opposed to only inserts and symbols. */
+const hasWords = (branch: readonly AstElement[]): boolean =>
+  branch.some(
+    (el) =>
+      (el.type === TYPE.literal && /\p{L}{2}/u.test(el.value)) || (el.type === TYPE.tag && hasWords(el.children ?? [])),
+  )
+
+/**
+ * The WARN signal: plural/select branches the translator left in English while
+ * translating the same English text elsewhere in the node. A branch that repeats
+ * English category `ec`'s text, while the locale's own `ec` branch renders that
+ * text differently, is a copy that never got translated: Portuguese's
+ * `one {pasta} many {dirs} other {pastas}`, where `many` was pasted from English.
+ *
+ * Deliberately narrow. A node whose EVERY branch reads as English (`{# commit}` in
+ * a language that borrows "commit", `{# app}` in Swedish) can't be told from an
+ * untranslated one by structure, so it's left alone; a wholly English value is
+ * `sourceTextOnly`'s business. Exposed for unit tests.
+ *
+ * @returns one line per stale branch, like "count: `many` repeats the English `other` branch"
+ */
+export function englishBranches(englishValue: string, localeValue: string, locale: string): string[] {
+  const englishAst = astOrUndefined(englishValue, BASE_LOCALE)
+  const localeAst = astOrUndefined(localeValue, locale)
+  if (!englishAst || !localeAst) return []
+  const english = branchNodes(englishAst)
+  const found = new Set<string>()
+  for (const node of branchNodes(localeAst)) {
+    for (const source of english.filter((candidate) => candidate.arg === node.arg)) {
+      for (const [category, branch] of Object.entries(node.branches)) {
+        if (!hasWords(branch)) continue
+        for (const [sourceCategory, sourceBranch] of Object.entries(source.branches)) {
+          if (sourceCategory === category || !showsSameText(sourceBranch, branch)) continue
+          const own = node.branches[sourceCategory] as readonly AstElement[] | undefined
+          if (own && !showsSameText(sourceBranch, own)) {
+            found.add(`${node.arg}: \`${category}\` repeats the English \`${sourceCategory}\` branch`)
+          }
+        }
+      }
+    }
+  }
+  return [...found]
+}
+
 /**
  * Classifies one key of an OVERLAY catalog against the catalog it overrides:
  * `redundant` (byte-identical, so it forks nothing), `unknown` (the key exists in
@@ -136,7 +207,13 @@ export function overlayStatus(
  * @param opts.write output sink, one line at a time (for tests)
  */
 export function runCoverageCheck(opts: { messagesRoot?: string; write?: (line: string) => void } = {}): number {
-  return runLocaleCheck({
+  const out =
+    opts.write ??
+    ((line: string) => {
+      console.log(line)
+    })
+  const warnings = new Map<string, Issue[]>()
+  const code = runLocaleCheck({
     title: 'Translation coverage',
     messagesRoot: opts.messagesRoot,
     write: opts.write,
@@ -158,16 +235,28 @@ export function runCoverageCheck(opts: { messagesRoot?: string; write?: (line: s
         }
         return
       }
+      const stale: Issue[] = []
       for (const [key, englishValue] of Object.entries(source.messages)) {
         const status = coverageStatus(key, englishValue, catalog.messages, catalog.metadata)
         if (status === 'missing') findings.add(key, 'missing; renders the English fallback')
         else if (status === 'identical') findings.add(key, 'identical to English; possibly untranslated')
         else if (status === 'sourceTextOnly') {
           findings.add(key, 'every branch reads as English (only the plural categories differ); possibly untranslated')
+        } else if (!isRawKey(key)) {
+          for (const detail of englishBranches(englishValue, catalog.messages[key], findings.locale)) {
+            stale.push({ key, detail })
+          }
         }
       }
+      if (stale.length > 0) warnings.set(findings.locale, stale)
     },
   })
+  if (code !== EXIT_CLEAN || warnings.size === 0) return code
+  for (const [locale, issues] of warnings) {
+    out(`${locale}: ${String(issues.length)} plural branch(es) left in English beside a translated sibling (warn):`)
+    for (const { key, detail } of issues) out(`  - ${key} → ${detail}`)
+  }
+  return EXIT_WARN
 }
 
 // Run as a CLI (not when imported by tests).

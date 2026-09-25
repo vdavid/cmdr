@@ -23,8 +23,9 @@ import (
 // See `apps/desktop/scripts/i18n-check-coverage.ts`.
 //
 // Exit-code contract (mirrored by `i18n-locale-check-lib.js`): 0 = clean / no
-// locales, 1 = at least one coverage gap (→ ERROR), any other code = a genuine
-// script error (→ ERROR). The 12 non-`en` catalogs all pass today, so it stays
+// locales, 1 = at least one coverage gap (→ ERROR), 4 = only plural branches left
+// in English beside a translated sibling (→ WARN, `englishBranches`), any other
+// code = a genuine script error (→ ERROR). The 12 non-`en` catalogs all pass today, so it stays
 // green until a locale regresses or a new key lands untranslated.
 func RunDesktopI18nCoverage(ctx *CheckContext) (CheckResult, error) {
 	desktopDir := filepath.Join(ctx.RootDir, "apps", "desktop")
@@ -43,6 +44,14 @@ func RunDesktopI18nCoverage(ctx *CheckContext) (CheckResult, error) {
 	}
 
 	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 4 {
+		stale := countDriftLines(output)
+		msg := fmt.Sprintf(
+			"%d plural %s left in English beside a translated sibling (warn-only):\n%s",
+			stale, Pluralize(stale, "branch", "branches"), indentOutput(output),
+		)
+		return CheckResult{Code: ResultWarning, Message: msg, Total: -1, Issues: stale, Changes: -1}, nil
+	}
 	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
 		return CheckResult{}, fmt.Errorf("couldn't run the i18n coverage check\n%s", indentOutput(output))
 	}

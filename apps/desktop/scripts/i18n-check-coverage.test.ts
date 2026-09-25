@@ -11,7 +11,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { runCoverageCheck, coverageStatus } from './i18n-check-coverage.ts'
+import { EXIT_WARN, runCoverageCheck, coverageStatus, englishBranches } from './i18n-check-coverage.ts'
 import { EXIT_CLEAN, EXIT_ISSUES, localesToCheck } from './i18n-locale-check-lib.ts'
 
 const FIXTURE_ROOT = join(import.meta.dirname, '..', 'test', 'fixtures', 'i18n-pseudolocale')
@@ -70,6 +70,29 @@ describe('coverageStatus: pure classifier', () => {
   })
 })
 
+describe('englishBranches: a branch left in English beside its translated sibling', () => {
+  const en = '{countText} {count, plural, one {dir} other {dirs}}'
+  it('flags a many branch that copies English while other is translated', () => {
+    const pt = '{countText} {count, plural, one {pasta} many {dirs} other {pastas}}'
+    expect(englishBranches(en, pt, 'pt')).toEqual(['count: `many` repeats the English `other` branch'])
+  })
+  it('flags a branch that repeats another category’s English, inside a nested node too', () => {
+    const enNested = '{kind, select, a {{count, plural, one {file} other {files}}} other {x}}'
+    const fr = '{kind, select, a {{count, plural, one {files} other {fichiers}}} other {y}}'
+    expect(englishBranches(enNested, fr, 'fr')).toEqual(['count: `one` repeats the English `other` branch'])
+  })
+  it('stays quiet on a loanword the language shares, and on a fully translated or fully English value', () => {
+    expect(
+      englishBranches('{n, plural, one {# app} other {# apps}}', '{n, plural, one {# app} other {# appar}}', 'sv'),
+    ).toEqual([])
+    expect(englishBranches(en, '{countText} {count, plural, one {pasta} many {pastas} other {pastas}}', 'pt')).toEqual(
+      [],
+    )
+    expect(englishBranches(en, '{countText} {count, plural, other {commit}}', 'vi')).toEqual([])
+    expect(englishBranches(en, en, 'pt')).toEqual([])
+  })
+})
+
 describe('runCoverageCheck against the committed fixture', () => {
   it('is clean: en-XA has every key and every value differs from English', () => {
     const { lines, write } = capture()
@@ -118,6 +141,15 @@ describe('runCoverageCheck negative cases (temp catalog copies)', () => {
     expect(code).toBe(EXIT_ISSUES)
     expect(text).toMatch(/fixture\.plainLabel → identical to English; possibly untranslated/)
     expect(text.match(/^ {2}- /gm)?.length).toBe(1)
+  })
+
+  it('warns (not errors) on a plural branch left in English beside its translated sibling', () => {
+    const xa = read()
+    xa['fixture.fileCount'] = '{count, plural, one {# ḟíļé⟦áé⟧} few {# files} other {# ḟíļéš⟦áé⟧}}'
+    writeXa(xa)
+    const { code, text } = run()
+    expect(code).toBe(EXIT_WARN)
+    expect(text).toMatch(/fixture\.fileCount → count: `few` repeats the English `other` branch/)
   })
 
   it('does NOT flag an identical value that carries a sameAsSourceJustification', () => {
