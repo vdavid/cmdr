@@ -19,6 +19,9 @@ Writing, code, and design styles.
 - Ellipsis
   - **Cmdr writes every ellipsis as `…` (U+2026), never three periods**: progress text ("Loading…"), placeholders
     ("Example: sk-ant-abc123…"), and truncation (leading or trailing) all use the same character.
+- Quotation marks
+  - **UI copy quotes with curly marks, never straight ones**: “double” for a quoted phrase or label, nested ‘single’ for
+    a quote inside a quote, never `"` or `'`.
 - Specific terms
   - **US English spelling, everywhere**: "color", "canceled", "behavior", "gray", "favorites". The app's `en` message
     catalog is the base the British and Australian overlays fork from, so the register is load-bearing there; the
