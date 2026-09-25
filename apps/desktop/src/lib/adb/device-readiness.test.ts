@@ -33,10 +33,10 @@ describe('deviceRowState', () => {
   })
 
   it.each<[DeviceReadiness, string]>([
-    [{ kind: 'unavailable', reason: 'offline' }, "Your phone isn't responding. Wake its screen, or reseat the cable."],
+    [{ kind: 'unavailable', reason: 'offline' }, 'Your phone isn’t responding. Wake its screen, or reseat the cable.'],
     [
       { kind: 'unavailable', reason: 'no_permissions' },
-      "This Mac can't reach your phone over USB. Try another cable or port.",
+      'This Mac can’t reach your phone over USB. Try another cable or port.',
     ],
   ])('disables an unavailable device and puts the reason in its tooltip', (readiness, tooltip) => {
     expect(deviceRowState(readiness)).toEqual({ openable: false, tooltip })

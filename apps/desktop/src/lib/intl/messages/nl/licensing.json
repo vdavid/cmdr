@@ -123,11 +123,11 @@
   },
   "licensing.commercialReminder.usingPersonal": "Je gebruikt een Personal-licentie.",
   "@licensing.commercialReminder.usingPersonal": {
-    "sourceHash": "508c17d"
+    "sourceHash": "3aa6518"
   },
   "licensing.commercialReminder.askCommercial": "Gebruik je Cmdr op je werk? Koop dan een Commercial-licentie om in orde te blijven.",
   "@licensing.commercialReminder.askCommercial": {
-    "sourceHash": "6bf4031"
+    "sourceHash": "84b372c"
   },
   "licensing.commercialReminder.priceInfo": "Een commerciële licentie kost eenmalig $59 en steunt de verdere ontwikkeling.",
   "@licensing.commercialReminder.priceInfo": {
@@ -155,7 +155,7 @@
   },
   "licensing.expiration.info": "Cmdr draait nu in de modus voor persoonlijk gebruik. Gebruik je het nog steeds voor je werk? Vernieuw dan je licentie.",
   "@licensing.expiration.info": {
-    "sourceHash": "5fcebb5"
+    "sourceHash": "274de6c"
   },
   "licensing.expiration.renew": "Vernieuw licentie",
   "@licensing.expiration.renew": {
@@ -179,7 +179,7 @@
   },
   "licensing.dialog.serverInvalidBanner": "Deze sleutel kon niet bij de server worden geverifieerd. Probeer een andere sleutel of mail ons op <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.serverInvalidBanner": {
-    "sourceHash": "616b906"
+    "sourceHash": "fa68511"
   },
   "licensing.dialog.labelType": "Licentietype",
   "@licensing.dialog.labelType": {
@@ -231,7 +231,7 @@
   },
   "licensing.dialog.pendingHint": "We verifiëren binnen {days} dagen automatisch bij de server.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "8d9801b"
+    "sourceHash": "b4bbb38"
   },
   "licensing.dialog.useDifferentKey": "Gebruik een andere sleutel",
   "@licensing.dialog.useDifferentKey": {
@@ -255,7 +255,7 @@
   },
   "licensing.dialog.enterPrompt": "Plak je licentiesleutel uit de e-mail die je na je aankoop hebt ontvangen. Heb je er nog geen? <getLicense>Koop een licentie</getLicense>.",
   "@licensing.dialog.enterPrompt": {
-    "sourceHash": "f6fb47a"
+    "sourceHash": "4e3a096"
   },
   "licensing.dialog.inputPlaceholder": "Voorbeeld: CMDR-ABCD-EFGH-1234",
   "@licensing.dialog.inputPlaceholder": {
@@ -263,11 +263,11 @@
   },
   "licensing.dialog.retryExhausted": "We hebben het {count} keer geprobeerd en het lukte niet. Onze excuses voor het ongemak. Stuur ons een bericht op <supportEmail>{email}</supportEmail>, dan lossen we het op.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "4f3331b"
+    "sourceHash": "d2aa21a"
   },
   "licensing.dialog.serverInvalidHelp": "Denk je dat dit een vergissing is? Mail ons dan op <supportEmail>{email}</supportEmail>, dan lossen we het op.",
   "@licensing.dialog.serverInvalidHelp": {
-    "sourceHash": "90471d2"
+    "sourceHash": "743cbed"
   },
   "licensing.dialog.genericHelp": "Heb je hulp nodig? Neem contact met ons op via <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.genericHelp": {
@@ -303,7 +303,7 @@
   },
   "licensing.dialog.networkFallbackError": "We konden je licentie niet bij de server verifiëren. Probeer het later opnieuw.",
   "@licensing.dialog.networkFallbackError": {
-    "sourceHash": "cb2b8e0"
+    "sourceHash": "fc7e124"
   },
   "licensing.dialog.expiredOnError": "Deze licentie is verlopen op {date}.",
   "@licensing.dialog.expiredOnError": {
@@ -315,7 +315,7 @@
   },
   "licensing.dialog.serverInvalidError": "We kennen deze sleutel, maar bij de controle bij onze betalingsaanbieder werd hij niet herkend. Dit kan gebeuren als de aankoop is terugbetaald of niet is verwerkt.",
   "@licensing.dialog.serverInvalidError": {
-    "sourceHash": "4beeef1"
+    "sourceHash": "58f1457"
   },
   "licensing.dialog.emptyKeyError": "Voer een licentiesleutel in",
   "@licensing.dialog.emptyKeyError": {
@@ -327,11 +327,11 @@
   },
   "licensing.dialog.mailtoBody": "Hoi,\n\nIk kan mijn licentiesleutel niet activeren:\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
-    "sourceHash": "bcdc2b6"
+    "sourceHash": "c076655"
   },
   "licensing.error.badSignature": "Deze licentiesleutel kwam niet door onze handtekeningverificatie, wat betekent dat hij er niet uitziet als een geldige sleutel.",
   "@licensing.error.badSignature": {
-    "sourceHash": "e9842df"
+    "sourceHash": "3bcac8e"
   },
   "licensing.error.badSignatureHint": "Controleer op typefouten en plak hem opnieuw uit je aankoopmail.",
   "@licensing.error.badSignatureHint": {
@@ -347,7 +347,7 @@
   },
   "licensing.error.shortCodeNotFound": "Deze licentie ziet er goed uit, maar we hebben goed gezocht en konden hem niet in onze database vinden.",
   "@licensing.error.shortCodeNotFound": {
-    "sourceHash": "c123af8"
+    "sourceHash": "0f9ccbf"
   },
   "licensing.error.shortCodeNotFoundHint": "Controleer of je de juiste sleutel uit je aankoopmail hebt geplakt.",
   "@licensing.error.shortCodeNotFoundHint": {
@@ -355,7 +355,7 @@
   },
   "licensing.error.network": "Oei, we konden de licentieserver deze keer niet bereiken.",
   "@licensing.error.network": {
-    "sourceHash": "63da44b"
+    "sourceHash": "d03567c"
   },
   "licensing.error.networkHint": "Controleer je internetverbinding en probeer het opnieuw.",
   "@licensing.error.networkHint": {
@@ -363,7 +363,7 @@
   },
   "licensing.error.server": "Hmm, de licentieserver gaf een vreemd antwoord. Onze excuses daarvoor.",
   "@licensing.error.server": {
-    "sourceHash": "6ca76c0"
+    "sourceHash": "89870f9"
   },
   "licensing.error.serverHint": "Probeer het later opnieuw.",
   "@licensing.error.serverHint": {
@@ -375,7 +375,7 @@
   },
   "licensing.error.genericHint": "Probeer het opnieuw. Blijft het probleem bestaan? Mail ons dan, dan helpen we je.",
   "@licensing.error.genericHint": {
-    "sourceHash": "9108b68"
+    "sourceHash": "be0771c"
   },
   "licensing.section.title": "Licentie",
   "@licensing.section.title": {

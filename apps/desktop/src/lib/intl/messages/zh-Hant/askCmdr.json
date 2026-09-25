@@ -522,11 +522,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "已經有另一個檔案在用這個名稱，而且它不在這次的重新命名計畫裡。為了保護它，這項重新命名被擋下來了。",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "（不存在）",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "這個來源檔案已經不在了。它可能在 Cmdr 之外被刪掉或改了名字。",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -674,7 +674,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "AI 功能還看不到你的資料夾。按一下就能設定「完全取用磁碟」。",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "AI 功能已開啟，但還需要一個提供者才能運作。按一下就能到設定裡選一個。",
   "@askCmdr.wake.needsApiKey": {

@@ -156,11 +156,11 @@
   },
   "indexing.rescan.staleIndex": "Chỉ mục ổ đĩa của bạn đã lỗi thời. Có vẻ như ứng dụng chưa chạy một thời gian. Đang chạy một lần quét mới để bắt kịp.",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "Nhật ký thay đổi tệp của hệ thống không lưu đủ xa về trước. Đang chạy một lần quét mới để dựng lại chỉ mục.",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "Có rất nhiều thay đổi tệp kể từ lần chạy trước. Đang chạy một lần quét mới thay vì phát lại từng thay đổi một.",
   "@indexing.rescan.replayOverflow": {
@@ -168,7 +168,7 @@
   },
   "indexing.rescan.watcherStartFailed": "Không thể khởi động bộ theo dõi thay đổi tệp. Đang chạy một lần quét mới để cập nhật chỉ mục.",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "Hoạt động hệ thống tệp dồn dập đã làm tràn bộ đệm sự kiện. Đang chạy một lần quét mới để giữ độ chính xác.",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -176,7 +176,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "Lần quét trước chưa hoàn tất (ứng dụng có thể đã bị đóng). Đang khởi động lại lần quét từ đầu.",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "Một đợt hoạt động hệ thống tệp dồn dập đã làm tràn kênh của bộ theo dõi. Đang chạy một lần quét mới để giữ độ chính xác.",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -204,15 +204,15 @@
   },
   "indexing.firstConnect.silenceDrive": "Đừng hỏi lại cho ổ đĩa này",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "Đừng hỏi lại cho bất kỳ ổ đĩa nào",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "Chỉ mục của ổ đĩa này có thể đã lỗi thời",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "Trong khi {name} bị ngắt kết nối, các tệp trên đó có thể đã thay đổi. Kích cỡ thư mục và kết quả tìm kiếm có thể hơi lệch cho đến khi bạn quét lại. Trạng thái màu vàng bên cạnh ổ đĩa luôn hiện ra khi điều này xảy ra, và một lần quét lại sẽ làm mới nó.",
   "@indexing.staleDialog.body": {
@@ -220,11 +220,11 @@
   },
   "indexing.staleDialog.titlePhone": "Chỉ mục của điện thoại này có thể đã lỗi thời",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} không báo cho Cmdr biết khi các tệp trên đó thay đổi, nên Cmdr luôn cập nhật chỉ mục của điện thoại theo những thay đổi do chính Cmdr thực hiện. Những thay đổi thực hiện trên điện thoại, như ảnh mới, sẽ xuất hiện trong kích cỡ thư mục và kết quả tìm kiếm sau một lần quét lại. Trạng thái màu vàng bên cạnh điện thoại vẫn hiện ra để nhắc bạn điều này.",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "Không bao giờ hiển thị lại",
   "@indexing.staleDialog.neverShowAgain": {
@@ -253,7 +253,7 @@
   },
   "indexing.enrich.pausedIdle": "Đang chờ đến khi bạn rảnh",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "Đã tạm dừng, sẽ tiếp tục khi kết nối lại",
   "@indexing.enrich.pausedDisconnected": {

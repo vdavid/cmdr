@@ -5,7 +5,7 @@
     "screenshot": "error-report.png"
   },
 
-  "errorReporter.dialog.description": "This sends Cmdr''s recent log files to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.",
+  "errorReporter.dialog.description": "This sends Cmdr’s recent log files to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.",
   "@errorReporter.dialog.description": {
     "description": "Main explanation in the error-report dialog: what is sent and that it is redacted for privacy first. Reassuring. \"Cmdr\" is the product name; \"IPs\" means IP addresses (do not translate \"Cmdr\").",
     "screenshot": "error-report.png"
@@ -57,7 +57,7 @@
     }
   },
 
-  "errorReporter.dialog.detailsToggle": "What''s about to be sent",
+  "errorReporter.dialog.detailsToggle": "What’s about to be sent",
   "@errorReporter.dialog.detailsToggle": {
     "description": "Toggle that expands a panel previewing exactly what will be uploaded (manifest and sample log lines). Preceded by a disclosure triangle; followed by the bundle size in parentheses.",
     "screenshot": "error-report.png"
@@ -103,7 +103,7 @@
     "screenshot": "error-report.png"
   },
 
-  "errorReporter.dialog.prepareFailed": "Couldn''t put the preview together.",
+  "errorReporter.dialog.prepareFailed": "Couldn’t put the preview together.",
   "@errorReporter.dialog.prepareFailed": {
     "description": "Line shown in the error-report dialog when Cmdr couldn't build the preview of what it would send. A small Try again button (errorReporter.dialog.tryAgain) sits right after it, and the send button stays off until a preview builds. Avoid the words \"error\" and \"failed\" in the translated wording."
   },
@@ -113,7 +113,7 @@
     "description": "Small button right after the line saying the report preview couldn't be put together (errorReporter.dialog.prepareFailed). Pressing it builds the preview again. Keep it short (a tight button)."
   },
 
-  "errorReporter.dialog.bundleUnavailable": "Cmdr couldn''t gather its logs for the report. Try again in a moment.",
+  "errorReporter.dialog.bundleUnavailable": "Cmdr couldn’t gather its logs for the report. Try again in a moment.",
   "@errorReporter.dialog.bundleUnavailable": {
     "description": "Sentence explaining why the error report didn't go out: Cmdr couldn't collect its own log files into the report. It's shown right after errorReporter.dialog.sendFailedToast's lead (\"Couldn't send the error report.\"), as a separate sentence in the same toast. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\" in the translated wording."
   },
@@ -140,7 +140,7 @@
     "description": "Label on the send button while the report is being sent (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short."
   },
 
-  "errorReporter.dialog.sendFailedToast": "Couldn''t send the error report. {reason}",
+  "errorReporter.dialog.sendFailedToast": "Couldn’t send the error report. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
     "description": "Toast shown when sending the error report didn't work. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn't reach its server. Check your internet connection and try again.\"), so end your lead as its own sentence and let the reason follow it. Avoid the words \"error\" and \"failed\" in your wording, apart from the feature's own name, \"error report\".",
     "placeholders": {
@@ -148,7 +148,7 @@
     }
   },
 
-  "errorReporter.dialog.saveFailedToast": "Couldn''t save bundle: {error}",
+  "errorReporter.dialog.saveFailedToast": "Couldn’t save bundle: {error}",
   "@errorReporter.dialog.saveFailedToast": {
     "description": "Developer-only toast shown when saving the bundle to disk didn't work. The reason follows the colon. Avoid the words \"error\" and \"failed\" in the translated wording.",
     "placeholders": {
@@ -162,7 +162,7 @@
     "screenshot": "error-report-amend.png"
   },
 
-  "errorReporter.amend.description": "Cmdr already sent this report. Write a note, or attach your email, and it''ll join what the team already has.",
+  "errorReporter.amend.description": "Cmdr already sent this report. Write a note, or attach your email, and it’ll join what the team already has.",
   "@errorReporter.amend.description": {
     "description": "Main explanation in the add-a-note dialog: the report is already with the team, and whatever the user writes here is attached to that same report (no second report is sent). It also tells them why the button stays disabled until they write a note or attach an email. Reassuring. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "error-report-amend.png"
@@ -191,7 +191,7 @@
     "description": "Label on the primary button while the note is being attached (button is disabled meanwhile). Ends with a single-character ellipsis (…). Keep it short."
   },
 
-  "errorReporter.amend.unavailable": "That report can''t take a note any more. To get your notes to the team, send a new report from the Help menu.",
+  "errorReporter.amend.unavailable": "That report can’t take a note any more. To get your notes to the team, send a new report from the Help menu.",
   "@errorReporter.amend.unavailable": {
     "description": "Shown instead of the note box when the report can no longer be added to, either because Cmdr restarted since it was sent or because the server left no way to add to it. Points the user at Help > Send error report instead. \"Help\" is the name of the app''s Help menu; use the wording macOS uses for that menu in your language. Avoid the words \"error\" and \"failed\" in the translated wording.",
     "screenshot": "error-report-amend.png"
@@ -203,7 +203,7 @@
     "screenshot": "error-report-amend.png"
   },
 
-  "errorReporter.amend.addFailedToast": "Couldn''t add your note. {reason}",
+  "errorReporter.amend.addFailedToast": "Couldn’t add your note. {reason}",
   "@errorReporter.amend.addFailedToast": {
     "description": "Toast shown when attaching the note to the already-sent report didn''t work. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn''t reach its server. Check your internet connection and try again.\"), so end your lead as its own sentence and let the reason follow it. Avoid the words \"error\" and \"failed\" in the translated wording.",
     "placeholders": {

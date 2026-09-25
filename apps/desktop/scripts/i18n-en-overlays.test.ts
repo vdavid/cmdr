@@ -361,7 +361,7 @@ describe('the rulings the catalogs are supposed to encode', () => {
       ['en-AU', au],
     ] as const) {
       expect(cat.messages['fileOperations.delete.trashSwitch'], tag).toBe('Move to Bin')
-      expect(cat.messages['errors.mutation.trashRefused'], tag).toBe("macOS wouldn't move this to the Bin.")
+      expect(cat.messages['errors.mutation.trashRefused'], tag).toBe('macOS wouldn’t move this to the Bin.')
       const lowercased = Object.entries(cat.messages).filter(([, v]) => / bin\b/.test(v))
       // "bin" survives only as the verb ("Counting items to bin...", "and bin old file").
       expect(lowercased.map(([k]) => k).sort(), tag).toEqual([

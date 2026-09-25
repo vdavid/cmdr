@@ -9,17 +9,17 @@
     "description": "Title of the same dialog when Cmdr did NOT crash: the problem hit a background task and the app carried on, or the report is from an older version that did not record what happened. It must NOT say \"crash\", which is why this is a separate title from the crash one. A dialog title, so keep it short.",
     "screenshot": "crash-report-survived-panic.png"
   },
-  "crashReporter.dialog.body.ended": "Cmdr quit unexpectedly last time. Here''s a crash report with details that can help fix this.",
+  "crashReporter.dialog.body.ended": "Cmdr quit unexpectedly last time. Here’s a crash report with details that can help fix this.",
   "@crashReporter.dialog.body.ended": {
     "description": "Main explanation in the crash-report dialog, shown on the next launch when Cmdr went down with the crash it is reporting. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "crash-report-panic.png"
   },
-  "crashReporter.dialog.body.keptRunning": "Cmdr ran into a problem in the background last time and kept running. Here''s a report with details that can help fix this.",
+  "crashReporter.dialog.body.keptRunning": "Cmdr ran into a problem in the background last time and kept running. Here’s a report with details that can help fix this.",
   "@crashReporter.dialog.body.keptRunning": {
     "description": "Main explanation in the crash-report dialog, shown on the next launch when the problem hit a background task and Cmdr carried on, so the user quit it themselves. It must NOT say Cmdr crashed or quit, because it did neither. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "crash-report-survived-panic.png"
   },
-  "crashReporter.dialog.body.unknown": "Cmdr ran into a problem last time. Here''s a report with details that can help fix this.",
+  "crashReporter.dialog.body.unknown": "Cmdr ran into a problem last time. Here’s a report with details that can help fix this.",
   "@crashReporter.dialog.body.unknown": {
     "description": "Main explanation in the crash-report dialog, shown on the next launch for a report from an older version of Cmdr that did not record whether the app kept running afterwards. It has to read true whether Cmdr quit or carried on, so it must NOT say either. Reassuring and matter-of-fact. \"Cmdr\" is the product name (do not translate).",
     "screenshot": "crash-report-signal-no-report-id.png"
@@ -77,7 +77,7 @@
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-  "crashReporter.dialog.notSent": "The report didn''t go out. {reason}",
+  "crashReporter.dialog.notSent": "The report didn’t go out. {reason}",
   "@crashReporter.dialog.notSent": {
     "description": "Line shown inside the crash-report dialog when pressing Send didn't get the report to Cmdr's server. The dialog stays open, and the Send button is the retry. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn't reach its server. Check your internet connection and try again.\"), so end your sentence with a period and let the reason follow it. Say \"report\", not \"crash report\": not every report this dialog shows describes a crash. Avoid the words \"error\" and \"failed\".",
     "placeholders": {
@@ -125,7 +125,7 @@
     "screenshot": "error-report.png",
     "screenshotNote": "The crash-report dialog (shown on the next launch after Cmdr hit a problem) uses the same report-form layout as the error-report dialog pictured here: an intro, a privacy note, a copyable report ID, and Send/Cancel buttons."
   },
-  "crashReporter.sentToast.logNotSent": "The log didn''t go out. {reason}",
+  "crashReporter.sentToast.logNotSent": "The log didn’t go out. {reason}",
   "@crashReporter.sentToast.logNotSent": {
     "description": "Line shown on the toast when sending the log didn''t reach Cmdr''s server. The button stays, so pressing it again retries.",
     "placeholders": {

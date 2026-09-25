@@ -106,7 +106,7 @@
   },
   "servers.refusal.authenticationRejected": "Det lösenordet fungerade inte för {username}.",
   "@servers.refusal.authenticationRejected": {
-    "sourceHash": "b2c42b0"
+    "sourceHash": "ac235d2"
   },
   "servers.refusal.needsCredentials": "Den här servern vill ha ett lösenord.",
   "@servers.refusal.needsCredentials": {
@@ -114,15 +114,15 @@
   },
   "servers.refusal.accountNotPermitted": "{username} har inte åtkomst här. Prova ett annat konto.",
   "@servers.refusal.accountNotPermitted": {
-    "sourceHash": "fbd3b7b"
+    "sourceHash": "baa82ef"
   },
   "servers.refusal.authMethodUnsupported": "Den här servern använder en inloggningsmetod som Cmdr inte stöder än.",
   "@servers.refusal.authMethodUnsupported": {
-    "sourceHash": "62b963e"
+    "sourceHash": "48b9b15"
   },
   "servers.refusal.certificateUntrusted": "macOS litar inte på den här serverns certifikat. Lägg till det i Nyckelhanterare och försök sedan igen.",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "6db00c6"
+    "sourceHash": "b8f3b4a"
   },
   "servers.refusal.notAWebdavServer": "Ingenting på den här adressen svarar på WebDAV.",
   "@servers.refusal.notAWebdavServer": {
@@ -130,23 +130,23 @@
   },
   "servers.refusal.invalidUrl": "Det där ser inte ut som en serveradress.",
   "@servers.refusal.invalidUrl": {
-    "sourceHash": "9a121ac"
+    "sourceHash": "d3f5f7d"
   },
   "servers.refusal.timedOut": "{host} svarade inte i tid.",
   "@servers.refusal.timedOut": {
-    "sourceHash": "7662825"
+    "sourceHash": "b2f0e52"
   },
   "servers.refusal.unreachable": "Cmdr kunde inte nå {host}.",
   "@servers.refusal.unreachable": {
-    "sourceHash": "ae716c3"
+    "sourceHash": "6fcba90"
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr litar inte på nyckeln från {host} än.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "40a9d28"
+    "sourceHash": "343f48b"
   },
   "servers.refusal.hostKeyRevoked": "Nyckeln från {host} är märkt som komprometterad i dina SSH-inställningar på den här Macen. Cmdr ansluter inte till servern.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "47aacda"
+    "sourceHash": "e23d585"
   },
   "servers.refusal.startFolderOutsideRoot": "Startmappen måste vara rotmappen eller en mapp inuti den.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -154,23 +154,23 @@
   },
   "servers.refusal.rootNotFound": "Cmdr kan inte öppna den här mappen på {host}. Kontrollera att den finns och att ditt konto får läsa den.",
   "@servers.refusal.rootNotFound": {
-    "sourceHash": "883a0bc"
+    "sourceHash": "aa029f8"
   },
   "servers.refusal.startFolderNotFound": "Cmdr kan inte öppna den här startmappen på {host}. Kontrollera att den finns och att ditt konto får läsa den.",
   "@servers.refusal.startFolderNotFound": {
-    "sourceHash": "f1df16e"
+    "sourceHash": "0997a8d"
   },
   "servers.refusal.saveUnconfirmed": "{host} svarade inte i tid, så Cmdr sparade ingenting. Försök igen om en stund.",
   "@servers.refusal.saveUnconfirmed": {
-    "sourceHash": "f7bb3a6"
+    "sourceHash": "3fb55a6"
   },
   "servers.refusal.secretNotStored": "Cmdr kunde inte spara det här lösenordet i nyckelringen. Försök igen eller stäng av ”Kom ihåg i nyckelringen” för att logga in utan att spara det.",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "080b475"
+    "sourceHash": "20957fe"
   },
   "servers.refusal.savedSecretNotUpdated": "Cmdr sparade dina ändringar men kunde inte uppdatera lösenordet i nyckelringen. Spara igen för att försöka en gång till.",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "471a6d8"
+    "sourceHash": "2ae1e2b"
   },
   "servers.sheet.addTitle": "Lägg till server",
   "@servers.sheet.addTitle": {
@@ -314,7 +314,7 @@
   },
   "servers.sheet.autoReconnectHelp": "Om anslutningen bryts återansluter Cmdr till den här servern på egen hand. Det gör inte att Cmdr ansluter vid start: Cmdr ansluter när du öppnar servern i en panel.",
   "@servers.sheet.autoReconnectHelp": {
-    "sourceHash": "5fc66ee"
+    "sourceHash": "559525d"
   },
   "servers.sheet.autoReconnectInfoLabel": "Mer om ”Återanslut automatiskt”",
   "@servers.sheet.autoReconnectInfoLabel": {
@@ -334,19 +334,19 @@
   },
   "servers.hostKey.firstContactBody": "Jämför fingeravtrycket nedan med det du fått av serverns ägare, och lita sedan på nyckeln.",
   "@servers.hostKey.firstContactBody": {
-    "sourceHash": "befd6c3"
+    "sourceHash": "f207466"
   },
   "servers.hostKey.changedTitle": "Nyckeln från {host} har ändrats",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "dde14d6"
+    "sourceHash": "a63a050"
   },
   "servers.hostKey.changedBody": "Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Kontrollera fingeravtrycket med serverns ägare innan du litar på nyckeln.",
   "@servers.hostKey.changedBody": {
-    "sourceHash": "34552a6"
+    "sourceHash": "42491c4"
   },
   "servers.hostKey.changedDisclosure": "Jag har kontrollerat nyckeln",
   "@servers.hostKey.changedDisclosure": {
-    "sourceHash": "29d1f63"
+    "sourceHash": "4051d39"
   },
   "servers.hostKey.fingerprintLabel": "Nyckelns fingeravtryck",
   "@servers.hostKey.fingerprintLabel": {
@@ -370,7 +370,7 @@
   },
   "servers.paneState.hostKeyChanged": "Cmdr ansluter inte till {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "123ff4f"
+    "sourceHash": "c73ddf3"
   },
   "servers.paneState.hostKeyChangedHint": "Serverns nyckel har ändrats. Det kan betyda att servern har installerats om, eller att något sitter mellan dig och den. Koppla från och öppna servern igen för att kontrollera fingeravtrycket.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -382,7 +382,7 @@
   },
   "servers.paneState.signedOutNothingToAsk": "Den här servern använder en nyckel i stället för ett lösenord, så det finns inget att skriva. Öppna servern igen för att försöka på nytt.",
   "@servers.paneState.signedOutNothingToAsk": {
-    "sourceHash": "71d7eee"
+    "sourceHash": "95e6bd0"
   },
   "servers.paneState.retryProgressAriaLabel": "Tid till nästa återanslutningsförsök",
   "@servers.paneState.retryProgressAriaLabel": {

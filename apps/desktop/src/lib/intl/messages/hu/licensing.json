@@ -122,11 +122,11 @@
   },
   "licensing.commercialReminder.usingPersonal": "Személyes licencet használsz.",
   "@licensing.commercialReminder.usingPersonal": {
-    "sourceHash": "508c17d"
+    "sourceHash": "3aa6518"
   },
   "licensing.commercialReminder.askCommercial": "Ha munkahelyi környezetben használod a Cmdrt, kérlek, szerezz be egy Kereskedelmi licencet, hogy szabályosan használhasd.",
   "@licensing.commercialReminder.askCommercial": {
-    "sourceHash": "6bf4031"
+    "sourceHash": "84b372c"
   },
   "licensing.commercialReminder.priceInfo": "A kereskedelmi licenc egyszeri 59 $, és a folyamatos fejlesztést támogatja.",
   "@licensing.commercialReminder.priceInfo": {
@@ -154,7 +154,7 @@
   },
   "licensing.expiration.info": "A Cmdr mostantól személyes használati módban fut. Ha továbbra is munkára használod, kérlek, újítsd meg a licenced.",
   "@licensing.expiration.info": {
-    "sourceHash": "5fcebb5"
+    "sourceHash": "274de6c"
   },
   "licensing.expiration.renew": "Licenc megújítása",
   "@licensing.expiration.renew": {
@@ -178,7 +178,7 @@
   },
   "licensing.dialog.serverInvalidBanner": "Ezt a kulcsot nem sikerült ellenőrizni a szerverrel. Próbálj egy másik kulcsot, vagy írj nekünk ide: <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.serverInvalidBanner": {
-    "sourceHash": "616b906"
+    "sourceHash": "fa68511"
   },
   "licensing.dialog.labelType": "Licenc típusa",
   "@licensing.dialog.labelType": {
@@ -230,7 +230,7 @@
   },
   "licensing.dialog.pendingHint": "Automatikusan ellenőrizzük a szerverrel {days} napon belül.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "8d9801b"
+    "sourceHash": "b4bbb38"
   },
   "licensing.dialog.useDifferentKey": "Másik kulcs használata",
   "@licensing.dialog.useDifferentKey": {
@@ -254,7 +254,7 @@
   },
   "licensing.dialog.enterPrompt": "Illeszd be a licenckulcsot a vásárlás után kapott e-mailből. Még nincs kulcsod? <getLicense>Licenc beszerzése</getLicense>.",
   "@licensing.dialog.enterPrompt": {
-    "sourceHash": "f6fb47a"
+    "sourceHash": "4e3a096"
   },
   "licensing.dialog.inputPlaceholder": "Példa: CMDR-ABCD-EFGH-1234",
   "@licensing.dialog.inputPlaceholder": {
@@ -262,11 +262,11 @@
   },
   "licensing.dialog.retryExhausted": "{count} alkalommal próbálkoztunk, és nem sikerült. Sajnáljuk a kellemetlenséget. Kérlek, írj nekünk ide: <supportEmail>{email}</supportEmail>, és megoldjuk.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "4f3331b"
+    "sourceHash": "d2aa21a"
   },
   "licensing.dialog.serverInvalidHelp": "Ha úgy gondolod, hogy ez tévedés, írj nekünk ide: <supportEmail>{email}</supportEmail>, és megoldjuk.",
   "@licensing.dialog.serverInvalidHelp": {
-    "sourceHash": "90471d2"
+    "sourceHash": "743cbed"
   },
   "licensing.dialog.genericHelp": "Ha segítségre van szükséged, írj nekünk ide: <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.genericHelp": {
@@ -302,7 +302,7 @@
   },
   "licensing.dialog.networkFallbackError": "Nem sikerült ellenőrizni a licenced a szerverrel. Kérlek, próbáld újra később.",
   "@licensing.dialog.networkFallbackError": {
-    "sourceHash": "cb2b8e0"
+    "sourceHash": "fc7e124"
   },
   "licensing.dialog.expiredOnError": "Ez a licenc ekkor járt le: {date}.",
   "@licensing.dialog.expiredOnError": {
@@ -314,7 +314,7 @@
   },
   "licensing.dialog.serverInvalidError": "Ismerjük ezt a kulcsot, de amikor ellenőriztük a fizetési szolgáltatónknál, ő nem ismerte fel. Ez akkor fordulhat elő, ha a vásárlást visszatérítették, vagy nem teljesült.",
   "@licensing.dialog.serverInvalidError": {
-    "sourceHash": "4beeef1"
+    "sourceHash": "58f1457"
   },
   "licensing.dialog.emptyKeyError": "Kérlek, adj meg egy licenckulcsot",
   "@licensing.dialog.emptyKeyError": {
@@ -326,11 +326,11 @@
   },
   "licensing.dialog.mailtoBody": "Üdv,\n\nProblémám van a licenckulcsom aktiválásával:\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
-    "sourceHash": "bcdc2b6"
+    "sourceHash": "c076655"
   },
   "licensing.error.badSignature": "Ez a licenckulcs nem ment át az aláírás-ellenőrzésünkön, vagyis nem tűnik érvényes kulcsnak.",
   "@licensing.error.badSignature": {
-    "sourceHash": "e9842df"
+    "sourceHash": "3bcac8e"
   },
   "licensing.error.badSignatureHint": "Kérlek, ellenőrizd a gépelési hibákat, és próbáld újra beilleszteni a vásárlási e-mailedből.",
   "@licensing.error.badSignatureHint": {
@@ -346,7 +346,7 @@
   },
   "licensing.error.shortCodeNotFound": "Ez a licenc jól néz ki, de alaposan kerestük, és nem találtuk az adatbázisunkban.",
   "@licensing.error.shortCodeNotFound": {
-    "sourceHash": "c123af8"
+    "sourceHash": "0f9ccbf"
   },
   "licensing.error.shortCodeNotFoundHint": "Kérlek, ellenőrizd, hogy a helyes kulcsot illesztetted be a vásárlási e-mailedből.",
   "@licensing.error.shortCodeNotFoundHint": {
@@ -354,7 +354,7 @@
   },
   "licensing.error.network": "Hoppá, ezúttal nem sikerült elérni a licencszervert.",
   "@licensing.error.network": {
-    "sourceHash": "63da44b"
+    "sourceHash": "d03567c"
   },
   "licensing.error.networkHint": "Kérlek, ellenőrizd az internetkapcsolatod, és próbáld újra.",
   "@licensing.error.networkHint": {
@@ -362,7 +362,7 @@
   },
   "licensing.error.server": "Hmm, a licencszerver valami furcsát válaszolt. Sajnáljuk.",
   "@licensing.error.server": {
-    "sourceHash": "6ca76c0"
+    "sourceHash": "89870f9"
   },
   "licensing.error.serverHint": "Kérlek, próbáld újra később.",
   "@licensing.error.serverHint": {
@@ -374,7 +374,7 @@
   },
   "licensing.error.genericHint": "Kérlek, próbáld újra. Ha a probléma továbbra is fennáll, írj nekünk, és segítünk.",
   "@licensing.error.genericHint": {
-    "sourceHash": "9108b68"
+    "sourceHash": "be0771c"
   },
   "licensing.section.title": "Licenc",
   "@licensing.section.title": {

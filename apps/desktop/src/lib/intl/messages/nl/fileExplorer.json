@@ -29,7 +29,7 @@
   },
   "fileExplorer.doubleClickHint.dontLikeIt": "Bevalt het niet?",
   "@fileExplorer.doubleClickHint.dontLikeIt": {
-    "sourceHash": "2049722"
+    "sourceHash": "4801954"
   },
   "fileExplorer.doubleClickHint.neverAgain": "Doe dit nooit meer",
   "@fileExplorer.doubleClickHint.neverAgain": {
@@ -69,7 +69,7 @@
   },
   "fileExplorer.diskSpace.noLimitNote": "Deze opslag heeft geen groottelimiet, dus er is geen balk om te vullen.",
   "@fileExplorer.diskSpace.noLimitNote": {
-    "sourceHash": "0c363c5"
+    "sourceHash": "7e2a153"
   },
   "fileExplorer.diskSpace.lowNote": "Deze balk is rood omdat de vrije ruimte op dit volume bijna op is.",
   "@fileExplorer.diskSpace.lowNote": {
@@ -94,7 +94,7 @@
   },
   "fileExplorer.pane.disconnectFailedToast": "Verbinding verbreken lukte niet: {message}",
   "@fileExplorer.pane.disconnectFailedToast": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.pane.connectedDirectlyToast": "Direct verbonden voor snellere toegang",
   "@fileExplorer.pane.connectedDirectlyToast": {
@@ -102,7 +102,7 @@
   },
   "fileExplorer.pane.directConnectionUnreachableToast": "{server} is nu niet bereikbaar, dus deze gedeelde map blijft op de systeemverbinding.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
-    "sourceHash": "7f4ea98"
+    "sourceHash": "4a5ca66"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} deed er te lang over om te antwoorden, dus deze gedeelde map blijft op de systeemverbinding.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -110,31 +110,31 @@
   },
   "fileExplorer.pane.directConnectionUnexpectedToast": "Een directe verbinding met {server} kwam niet tot stand, dus deze gedeelde map blijft op de systeemverbinding.",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
-    "sourceHash": "cce5742"
+    "sourceHash": "1b14bd0"
   },
   "fileExplorer.pane.directConnectionShareNotOnServerToast": "{server} zegt deze gedeelde map niet te hebben, dus die blijft op de systeemverbinding.",
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
-    "sourceHash": "a746d6c"
+    "sourceHash": "1936abc"
   },
   "fileExplorer.pane.directConnectionUnavailableToast": "Een directe verbinding kwam nu niet tot stand, dus deze gedeelde map blijft op de systeemverbinding.",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
-    "sourceHash": "0440df9"
+    "sourceHash": "282f96d"
   },
   "fileExplorer.pane.directConnectionShareGoneToast": "{share} is niet meer verbonden, dus er valt niets te versnellen.",
   "@fileExplorer.pane.directConnectionShareGoneToast": {
-    "sourceHash": "8a4b5ae"
+    "sourceHash": "d562549"
   },
   "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} reageert nu niet, dus Cmdr kan er niet direct mee verbinden. Probeer het zo meteen opnieuw.",
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
-    "sourceHash": "6c29cca"
+    "sourceHash": "baa6b1a"
   },
   "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} is geen netwerkshare, dus er valt niets te versnellen.",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
-    "sourceHash": "193a804"
+    "sourceHash": "f634743"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "We konden niet bevestigen dat het bestand naar de prullenmand is verplaatst. Het volume is misschien traag, maar het bestand is mogelijk wel verplaatst. Controleer je prullenmand voor de zekerheid.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "844ccc1"
+    "sourceHash": "6764112"
   },
   "fileExplorer.pane.refreshStillRunningToast": "We lezen deze map nog. De lijst wordt bijgewerkt zodra hij binnen is.",
   "@fileExplorer.pane.refreshStillRunningToast": {
@@ -142,11 +142,11 @@
   },
   "fileExplorer.pane.dialogRenderFailedToast": "Dit dialoogvenster kon niet worden geopend. We hebben het gesloten en je krijgt het toetsenbord terug. Probeer het opnieuw.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "059dfbd"
+    "sourceHash": "1e8ed2d"
   },
   "fileExplorer.pane.ejectFailedToast": "{volumeName} uitwerpen lukte niet: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
-    "sourceHash": "b22501d"
+    "sourceHash": "f4072a7"
   },
   "fileExplorer.errorPane.tryAgain": "Probeer opnieuw",
   "@fileExplorer.errorPane.tryAgain": {
@@ -320,11 +320,11 @@
   },
   "fileExplorer.network.osMountFallback.message": "Direct verbinden met <shareName>{share}</shareName> lukte niet. Je bent verbonden, maar alleen via de systeemeigen SMB-netwerkverbinding van macOS, die voor de meeste verbindingen 4x zo langzaam is als de directe verbinding van Cmdr (soms 100x). Klik op de knop hieronder om het opnieuw te proberen.",
   "@fileExplorer.network.osMountFallback.message": {
-    "sourceHash": "368f523"
+    "sourceHash": "cb53372"
   },
   "fileExplorer.network.osMountFallback.shareNotOnServer": "Direct verbinden met <shareName>{share}</shareName> lukte niet, want de server zegt dat hij geen gedeelde map met die naam heeft. Je bent nog steeds verbonden, maar via de systeemeigen SMB-netwerkverbinding van macOS, die een stuk langzamer is. Dit lost zichzelf niet op: de gedeelde map is misschien van naam veranderd of verwijderd op de server, dus daar kun je het beste even kijken.",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
-    "sourceHash": "e26082d"
+    "sourceHash": "3ae984e"
   },
   "fileExplorer.network.osMountFallback.retry": "Probeer direct te verbinden",
   "@fileExplorer.network.osMountFallback.retry": {
@@ -428,7 +428,7 @@
   },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Ontdekte hosts kun je niet verwijderen",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
-    "sourceHash": "03fabd6"
+    "sourceHash": "bde1b3c"
   },
   "fileExplorer.network.browser.removeHostConfirm": "{hostName} uit de serverlijst verwijderen?",
   "@fileExplorer.network.browser.removeHostConfirm": {
@@ -444,7 +444,7 @@
   },
   "fileExplorer.network.browser.hostRemoveFailed": "{hostName} verwijderen lukte niet",
   "@fileExplorer.network.browser.hostRemoveFailed": {
-    "sourceHash": "9120dd2"
+    "sourceHash": "684e6eb"
   },
   "fileExplorer.network.forgotPassword": "Opgeslagen wachtwoord voor {hostName} vergeten",
   "@fileExplorer.network.forgotPassword": {
@@ -452,7 +452,7 @@
   },
   "fileExplorer.network.deletePasswordFailed": "Opgeslagen wachtwoord verwijderen lukte niet",
   "@fileExplorer.network.deletePasswordFailed": {
-    "sourceHash": "0ff57cb"
+    "sourceHash": "e9c0375"
   },
   "fileExplorer.network.browser.disconnected": "Verbinding met {hostName} verbroken",
   "@fileExplorer.network.browser.disconnected": {
@@ -464,7 +464,7 @@
   },
   "fileExplorer.network.browser.disconnectFailed": "Verbinding verbreken lukte niet: {message}",
   "@fileExplorer.network.browser.disconnectFailed": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.network.share.credentialsStoredLocally": "Inloggegevens lokaal opgeslagen (geen systeemsleutelhanger gevonden)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
@@ -480,7 +480,7 @@
   },
   "fileExplorer.network.share.connectFailedTitle": "Verbinden met {hostName} lukte niet",
   "@fileExplorer.network.share.connectFailedTitle": {
-    "sourceHash": "06f5c62"
+    "sourceHash": "4c3d88d"
   },
   "fileExplorer.network.share.noSharesTitle": "Geen gedeelde mappen beschikbaar",
   "@fileExplorer.network.share.noSharesTitle": {
@@ -568,7 +568,7 @@
   },
   "fileExplorer.networkMount.mountFailedTitle": "Gedeelde map aankoppelen lukte niet",
   "@fileExplorer.networkMount.mountFailedTitle": {
-    "sourceHash": "d59f414"
+    "sourceHash": "d04d142"
   },
   "fileExplorer.networkMount.tryAgain": "Probeer opnieuw",
   "@fileExplorer.networkMount.tryAgain": {
@@ -580,15 +580,15 @@
   },
   "fileExplorer.unreachable.title": "{path} is onbereikbaar",
   "@fileExplorer.unreachable.title": {
-    "sourceHash": "586e44c"
+    "sourceHash": "5fa39ab"
   },
   "fileExplorer.unreachable.detailGaveUp": "Cmdr probeerde meerdere keren opnieuw te verbinden, maar de server kwam niet terug. De verbinding blijft voorlopig beschikbaar. Probeer opnieuw, of verbreek de verbinding om hem los te laten.",
   "@fileExplorer.unreachable.detailGaveUp": {
-    "sourceHash": "7d8c5fc"
+    "sourceHash": "720e642"
   },
   "fileExplorer.unreachable.detailTimeout": "Het volume voor dit pad reageerde niet op tijd. Het is misschien een netwerkschijf die nu niet beschikbaar is.",
   "@fileExplorer.unreachable.detailTimeout": {
-    "sourceHash": "61bf814"
+    "sourceHash": "c68d5d3"
   },
   "fileExplorer.unreachable.retrying": "Opnieuw proberen…",
   "@fileExplorer.unreachable.retrying": {
@@ -616,31 +616,31 @@
   },
   "fileExplorer.clipboard.copyFromDevice": "Bestanden van dit apparaat kunnen niet op het klembord. Gebruik {copyKey} om ze te kopiëren.",
   "@fileExplorer.clipboard.copyFromDevice": {
-    "sourceHash": "4948031"
+    "sourceHash": "ba69ee7"
   },
   "fileExplorer.clipboard.moveFromDevice": "Bestanden van dit apparaat kunnen niet op het klembord. Gebruik {moveKey} om ze te verplaatsen.",
   "@fileExplorer.clipboard.moveFromDevice": {
-    "sourceHash": "e0d12fe"
+    "sourceHash": "e7da049"
   },
   "fileExplorer.clipboard.copyFromServer": "Bestanden van deze server kunnen niet op het klembord. Gebruik {copyKey} om ze te kopiëren.",
   "@fileExplorer.clipboard.copyFromServer": {
-    "sourceHash": "a1a1dce"
+    "sourceHash": "12cb39f"
   },
   "fileExplorer.clipboard.moveFromServer": "Bestanden van deze server kunnen niet op het klembord. Gebruik {moveKey} om ze te verplaatsen.",
   "@fileExplorer.clipboard.moveFromServer": {
-    "sourceHash": "50e6502"
+    "sourceHash": "4ae83d7"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Deze bestanden kunnen niet op het klembord. Gebruik {copyKey} om ze te kopiëren.",
   "@fileExplorer.clipboard.copyFromUnknown": {
-    "sourceHash": "659d6e0"
+    "sourceHash": "7aaabdb"
   },
   "fileExplorer.clipboard.moveFromUnknown": "Deze bestanden kunnen niet op het klembord. Gebruik {moveKey} om ze te verplaatsen.",
   "@fileExplorer.clipboard.moveFromUnknown": {
-    "sourceHash": "6ae2091"
+    "sourceHash": "7fed360"
   },
   "fileExplorer.edit.notOnThisMac": "Cmdr kan dit bestand nog niet in een editor bewerken, omdat het geen gewoon bestand op je Mac is. Druk op F3 om het te tonen.",
   "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "99b6f61"
+    "sourceHash": "710100c"
   },
   "fileExplorer.edit.hint": "Geopend in {app}. Wil je de volgende keer een andere editor? Kies er een in Instellingen.",
   "@fileExplorer.edit.hint": {
@@ -660,15 +660,15 @@
   },
   "fileExplorer.edit.appMissing": "Cmdr kan de editor die je koos niet vinden, dus dit bestand is geopend in {app}.",
   "@fileExplorer.edit.appMissing": {
-    "sourceHash": "e063ef8"
+    "sourceHash": "9a21bc7"
   },
   "fileExplorer.edit.appMissingUnnamed": "Cmdr kan de editor die je koos niet vinden, dus dit bestand is geopend in je standaardeditor.",
   "@fileExplorer.edit.appMissingUnnamed": {
-    "sourceHash": "421e9d9"
+    "sourceHash": "c61458b"
   },
   "fileExplorer.edit.launchRefused": "Cmdr kon je teksteditor niet starten. Open hem zelf een keer en probeer het dan opnieuw.",
   "@fileExplorer.edit.launchRefused": {
-    "sourceHash": "741e049"
+    "sourceHash": "8a18c5c"
   },
   "fileExplorer.edit.timedOut": "Je teksteditor doet er lang over om te starten. Misschien gaat hij zo alsnog open.",
   "@fileExplorer.edit.timedOut": {
@@ -696,7 +696,7 @@
   },
   "fileExplorer.clipboard.copiedPath": "Pad gekopieerd, het staat nu op het klembord:",
   "@fileExplorer.clipboard.copiedPath": {
-    "sourceHash": "afb1cc2"
+    "sourceHash": "a2eec16"
   },
   "fileExplorer.tabs.limitReached": "Tabbladlimiet bereikt",
   "@fileExplorer.tabs.limitReached": {
@@ -716,19 +716,19 @@
   },
   "fileExplorer.readOnly.renameMessage": "Dit is een alleen-lezenvolume. Hier kun je geen naam wijzigen.",
   "@fileExplorer.readOnly.renameMessage": {
-    "sourceHash": "2f68994"
+    "sourceHash": "5806c75"
   },
   "fileExplorer.readOnly.mkdirMessage": "Dit is een alleen-lezenvolume. Hier kun je geen mappen aanmaken.",
   "@fileExplorer.readOnly.mkdirMessage": {
-    "sourceHash": "01957f0"
+    "sourceHash": "6385636"
   },
   "fileExplorer.readOnly.mkfileMessage": "Dit is een alleen-lezenvolume. Hier kun je geen bestanden aanmaken.",
   "@fileExplorer.readOnly.mkfileMessage": {
-    "sourceHash": "c5c28e2"
+    "sourceHash": "32e1afa"
   },
   "fileExplorer.readOnly.deleteMessage": "Dit is een alleen-lezenvolume. Hier kun je geen bestanden verwijderen.",
   "@fileExplorer.readOnly.deleteMessage": {
-    "sourceHash": "965a635"
+    "sourceHash": "a456b51"
   },
   "fileExplorer.readOnly.archiveTitle": "Alleen-lezenarchief",
   "@fileExplorer.readOnly.archiveTitle": {
@@ -764,7 +764,7 @@
   },
   "fileExplorer.rename.hiddenAfterRename": "Je bestand is uit beeld verdwenen omdat verborgen bestanden niet worden getoond.",
   "@fileExplorer.rename.hiddenAfterRename": {
-    "sourceHash": "445d02a"
+    "sourceHash": "6258274"
   },
   "fileExplorer.rename.keptOriginalName": "{reason}. De oorspronkelijke naam blijft behouden.",
   "@fileExplorer.rename.keptOriginalName": {
@@ -780,11 +780,11 @@
   },
   "fileExplorer.rename.unconfirmed": "We konden de naamwijziging van ‘{name}’ niet bevestigen. Het volume is mogelijk traag, dus de naam is misschien toch gewijzigd.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "bcea9d0"
+    "sourceHash": "059ac81"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "We konden de naamwijzigingen van ‘{name}’ en {others, plural, one {één ander bestand} other {{othersText} andere bestanden}} niet bevestigen. Het volume is mogelijk traag, dus de namen zijn misschien toch gewijzigd.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "c64e665"
+    "sourceHash": "f16b15d"
   },
   "fileExplorer.columns.name": "Naam",
   "@fileExplorer.columns.name": {
@@ -886,11 +886,11 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Minstens dit: sommige submappen zijn nog niet doorzocht, dus het echte totaal kan groter zijn.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "03803e8"
+    "sourceHash": "2aaea43"
   },
   "fileExplorer.dirSize.unknownTooltip": "Grootte onbekend: deze map is nog niet doorzocht.",
   "@fileExplorer.dirSize.unknownTooltip": {
-    "sourceHash": "0207a3d"
+    "sourceHash": "f5771e5"
   },
   "fileExplorer.dirSize.staleLine": "Deze groottes komen uit een eerdere scan en zijn mogelijk verouderd.",
   "@fileExplorer.dirSize.staleLine": {
@@ -1027,7 +1027,7 @@
   },
   "fileExplorer.imageIndex.file.failed": "Kon niet worden geïndexeerd",
   "@fileExplorer.imageIndex.file.failed": {
-    "sourceHash": "a88edd6"
+    "sourceHash": "0ca54ae"
   },
   "fileExplorer.imageIndex.file.excluded": "Niet opgenomen in het doorzoeken van afbeeldingen",
   "@fileExplorer.imageIndex.file.excluded": {
@@ -1227,7 +1227,7 @@
   },
   "fileExplorer.quickLookHint.dontShowAgain": "Niet meer tonen",
   "@fileExplorer.quickLookHint.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "fileExplorer.navigation.groupFavorites": "Favorieten",
   "@fileExplorer.navigation.groupFavorites": {
@@ -1279,7 +1279,7 @@
   },
   "fileExplorer.navigation.favoritesCantAddHere": "Deze map kan geen favoriet worden: favorieten werken alleen op schijven en gekoppelde netwerkshares",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "10c98b3"
+    "sourceHash": "86564ea"
   },
   "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {Bekijk favorieten} one {Bekijk {count} favoriet} other {Bekijk {count} favorieten}}",
   "@fileExplorer.navigation.seeFavorites": {
@@ -1303,23 +1303,23 @@
   },
   "fileExplorer.navigation.favoriteShortcutSaveFailed": "Deze sneltoets kon niet worden bewaard. Opnieuw proberen?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "dc8e408"
+    "sourceHash": "38e7225"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "Die favoriet verwijderen lukte niet. Opnieuw proberen?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
-    "sourceHash": "181bf36"
+    "sourceHash": "a3c8665"
   },
   "fileExplorer.navigation.renameFavoriteFailed": "De naam van die favoriet wijzigen lukte niet. Opnieuw proberen?",
   "@fileExplorer.navigation.renameFavoriteFailed": {
-    "sourceHash": "33e06cd"
+    "sourceHash": "cbf60d7"
   },
   "fileExplorer.navigation.reorderFavoritesFailed": "De volgorde van favorieten wijzigen lukte niet. Opnieuw proberen?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
-    "sourceHash": "1b16941"
+    "sourceHash": "875befb"
   },
   "fileExplorer.navigation.locationUnreachableToast": "De schijf van die locatie was niet bereikbaar. Misschien is hij losgekoppeld.",
   "@fileExplorer.navigation.locationUnreachableToast": {
-    "sourceHash": "20126a6"
+    "sourceHash": "61da177"
   },
   "fileExplorer.navigation.connectionTooltipDirect": "Direct verbonden voor snelle bestandsbewerkingen",
   "@fileExplorer.navigation.connectionTooltipDirect": {
@@ -1335,7 +1335,7 @@
   },
   "fileExplorer.navigation.useDirectConnection": "Snelle directe verbinding van Cmdr gebruiken",
   "@fileExplorer.navigation.useDirectConnection": {
-    "sourceHash": "2955143"
+    "sourceHash": "68ff111"
   },
   "fileExplorer.navigation.connectDirectlyNow": "Nu direct verbinden",
   "@fileExplorer.navigation.connectDirectlyNow": {
@@ -1355,7 +1355,7 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan het wachtwoord hergebruiken dat macOS al voor ‘{displayName}’ heeft opgeslagen. Je krijgt een systeemvenster te zien dat om toegang tot Sleutelhanger vraagt. Dat is normaal, dus klik op Sta toe.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "334f7de"
+    "sourceHash": "96fa0b9"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Het opgeslagen wachtwoord gebruiken?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1387,7 +1387,7 @@
   },
   "fileExplorer.navigation.connectionTooltipNeedsHostKey": "De sleutel van deze server is gewijzigd. Open de server om de sleutel te bekijken.",
   "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
-    "sourceHash": "5743c29"
+    "sourceHash": "a657aa4"
   },
   "fileExplorer.navigation.connectionTooltipSaved": "Opgeslagen. Open de server om te verbinden.",
   "@fileExplorer.navigation.connectionTooltipSaved": {
@@ -1399,7 +1399,7 @@
   },
   "fileExplorer.navigation.disconnectBusyTooltip": "Verbinding verbreken kan niet terwijl er bewerkingen op deze server bezig zijn",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "2085de5"
+    "sourceHash": "a659820"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} staat nu in je volumekiezer.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1407,15 +1407,15 @@
   },
   "fileExplorer.navigation.serverUnpinnedToast": "{name} staat niet meer in je volumekiezer. De server is nog steeds opgeslagen.",
   "@fileExplorer.navigation.serverUnpinnedToast": {
-    "sourceHash": "3367b4d"
+    "sourceHash": "7fa97b2"
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr kon niet wijzigen waar {name} te zien is.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "14230e4"
+    "sourceHash": "3ed5f60"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr kon de verbinding met {name} niet verbreken.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
-    "sourceHash": "7cd7fd2"
+    "sourceHash": "375b424"
   },
   "fileExplorer.navigation.forgetServerConfirmTitle": "Vergeet server",
   "@fileExplorer.navigation.forgetServerConfirmTitle": {
@@ -1427,7 +1427,7 @@
   },
   "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr kon {name} niet vergeten.",
   "@fileExplorer.navigation.forgetServerRefusedToast": {
-    "sourceHash": "0603090"
+    "sourceHash": "f7c6c64"
   },
   "fileExplorer.navigation.forgetSecretConfirmTitle": "Vergeet opgeslagen wachtwoord",
   "@fileExplorer.navigation.forgetSecretConfirmTitle": {
@@ -1439,7 +1439,7 @@
   },
   "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr kon het opgeslagen wachtwoord voor {name} niet vergeten.",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
-    "sourceHash": "940eb59"
+    "sourceHash": "b7a15b2"
   },
   "fileExplorer.navigation.forgetSecretNoneToast": "Er was geen opgeslagen wachtwoord voor {name}.",
   "@fileExplorer.navigation.forgetSecretNoneToast": {
@@ -1451,7 +1451,7 @@
   },
   "fileExplorer.navigation.ejectBusyTooltip": "Uitwerpen kan niet terwijl er bewerkingen op dit apparaat bezig zijn",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "7165c58"
+    "sourceHash": "eafd9bd"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "{name} wordt uitgeworpen…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1484,7 +1484,7 @@
   },
   "fileExplorer.navigation.spaceFetchFailed": "Schijfruimte ophalen lukte niet. Klik om opnieuw te proberen",
   "@fileExplorer.navigation.spaceFetchFailed": {
-    "sourceHash": "6fe88d7"
+    "sourceHash": "55f2eab"
   },
   "fileExplorer.navigation.spaceUnavailableText": "Niet beschikbaar",
   "@fileExplorer.navigation.spaceUnavailableText": {
@@ -1532,27 +1532,27 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Het indexeren is gestopt door een probleem bij het opslaan van de index van deze schijf. Scan opnieuw om de index opnieuw op te bouwen.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
-    "sourceHash": "7386b54"
+    "sourceHash": "7c7e776"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de volgende volledige controle van Cmdr {remaining, plural, one {over een uur} other {over {remainingText} uur}} zet dat weer recht.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
-    "sourceHash": "2b593c3"
+    "sourceHash": "eb09aed"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS is {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, en de controle die nu bezig is zet dat weer recht.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
-    "sourceHash": "9cbf743"
+    "sourceHash": "0ff330c"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS is {hours, plural, one {in het afgelopen uur} other {in de afgelopen {hoursText} uur}} {count, plural, one {één keer} other {{countText} keer}} het spoor van wijzigingen in het bestandssysteem kwijtgeraakt, dus een paar mapgroottes kunnen iets afwijken. Meestal gaat het om caches vol kleine bestanden, dus dat is geen probleem.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
-    "sourceHash": "428975f"
+    "sourceHash": "68420b0"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr kon {count, plural, one {één plek} other {{countText} plekken}} op deze schijf niet lezen, dus een zoekopdracht hier komt misschien iets tekort.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
-    "sourceHash": "5369ab3"
+    "sourceHash": "6523d04"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr kon {count, plural, one {één plek} other {{countText} plekken}} op deze schijf niet lezen, dus een zoekopdracht hier komt misschien iets tekort. Cmdr komt er vanzelf op terug.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
-    "sourceHash": "a74a60f"
+    "sourceHash": "f1ea5cb"
   },
   "fileExplorer.navigation.driveIndex.menuEnable": "Zet indexeren aan voor deze schijf",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
@@ -1572,7 +1572,7 @@
   },
   "fileExplorer.navigation.driveIndex.menuForget": "Vergeet de index van deze schijf",
   "@fileExplorer.navigation.driveIndex.menuForget": {
-    "sourceHash": "a553f83"
+    "sourceHash": "90c53ac"
   },
   "fileExplorer.navigation.driveIndex.footer": "Laatst geïndexeerd: {date} · duurde {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
@@ -1590,7 +1590,7 @@
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr kon niet direct met {name} verbinden, wat nodig is om deze gedeelde map te indexeren. Controleer of de gedeelde map bereikbaar is en probeer opnieuw.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
-    "sourceHash": "e7ac9b4"
+    "sourceHash": "79a31a4"
   },
   "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} is losgekoppeld. Verbind opnieuw en zet dan indexeren aan.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
@@ -1610,11 +1610,11 @@
   },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr kan {name} nu niet indexeren. Verbind de schijf opnieuw en probeer het opnieuw.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
-    "sourceHash": "ac46209"
+    "sourceHash": "83bd66e"
   },
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr liep tegen een probleempje aan bij het inschakelen van indexeren voor {name}. Dit zou niet mogen gebeuren. Cmdr opnieuw starten lost het meestal op.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e9adbcc"
+    "sourceHash": "e3841d9"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Het indexeren van schijven staat uit in Instellingen, dus {name} wordt niet geïndexeerd. Zet het aan bij Indexeren > Schijf indexeren.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

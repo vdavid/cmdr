@@ -37,19 +37,19 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.error.notFound": "Couldn''t find this file. It may have been moved, renamed, or deleted.",
+  "viewer.error.notFound": "Couldn’t find this file. It may have been moved, renamed, or deleted.",
   "@viewer.error.notFound": {
     "description": "Shown in the viewer window, in place of content, when the file it was asked to open no longer exists at that path, typically because it was moved, renamed, or deleted after the user picked it. There is no Retry button. Conversational; do not use the words \"error\" or \"failed\".",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.error.isDirectory": "This is a folder, so there''s nothing to view here. Open it in the main window to see what''s inside.",
+  "viewer.error.isDirectory": "This is a folder, so there’s nothing to view here. Open it in the main window to see what’s inside.",
   "@viewer.error.isDirectory": {
     "description": "Shown in the viewer window, in place of content, when the path it was asked to open is a folder rather than a file (the viewer shows file contents only). \"main window\" means Cmdr's two-pane file list, where folders open. There is no Retry button. Conversational; do not use the words \"error\" or \"failed\".",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.error.timeout": "Couldn't load the file. The volume may be slow or unresponsive.",
+  "viewer.error.timeout": "Couldn’t load the file. The volume may be slow or unresponsive.",
   "@viewer.error.timeout": {
     "description": "Shown when opening the file timed out, typically on a slow or stalled drive or network share. \"volume\" means a disk or mounted drive. A Retry button sits below it.",
     "screenshot": "viewer-search.png",
@@ -61,7 +61,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.error.archiveUnreadable": "Couldn't open this file from the archive. It may be encrypted, damaged, or use a format Cmdr can''t read.",
+  "viewer.error.archiveUnreadable": "Couldn’t open this file from the archive. It may be encrypted, damaged, or use a format Cmdr can’t read.",
   "@viewer.error.archiveUnreadable": {
     "description": "Shown when a file inside an archive (zip) can''t be previewed because the archive entry is encrypted, corrupt, or uses an unsupported compression method. \"archive\" means a zip file being browsed like a folder.",
     "screenshot": "viewer-search.png",
@@ -366,7 +366,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.statusBar.badge.streamingIndexingTooltip": "This is a large file in streaming mode. We''re building an index in background (max {seconds} sec)… Line numbers are currently approximate.",
+  "viewer.statusBar.badge.streamingIndexingTooltip": "This is a large file in streaming mode. We’re building an index in background (max {seconds} sec)… Line numbers are currently approximate.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
     "description": "Tooltip for the \"streaming, indexing…\" badge, explaining that a background index is being built (with a time cap) and line numbers are approximate until it's done. \"sec\" abbreviates seconds.",
     "placeholders": {
@@ -381,7 +381,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.statusBar.badge.streamingTooltip": "This is a large file in streaming mode. Indexing would''ve taken longer than {seconds} sec, so we didn''t do it. The line numbers are estimates.",
+  "viewer.statusBar.badge.streamingTooltip": "This is a large file in streaming mode. Indexing would’ve taken longer than {seconds} sec, so we didn’t do it. The line numbers are estimates.",
   "@viewer.statusBar.badge.streamingTooltip": {
     "description": "Tooltip for the \"streaming\" badge, explaining that indexing was skipped because it would have exceeded the time cap, so line numbers are estimates. \"sec\" abbreviates seconds.",
     "placeholders": {
@@ -427,7 +427,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.image.error": "Sorry, we couldn''t show this image. The file may be damaged or in a format we can''t display.",
+  "viewer.image.error": "Sorry, we couldn’t show this image. The file may be damaged or in a format we can’t display.",
   "@viewer.image.error": {
     "description": "Inline message shown when an image fails to load in the viewer, suggesting the file is corrupt or in an unsupported format. Reassuring, conversational tone.",
     "screenshot": "viewer-search.png",
@@ -493,7 +493,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.copyDialog.refuseBody": "That''s larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the selection as a file.",
+  "viewer.copyDialog.refuseBody": "That’s larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the selection as a file.",
   "@viewer.copyDialog.refuseBody": {
     "description": "Body of the dialog shown when a selection is too big to copy (over the 100 MB clipboard limit), offering search or save-to-file instead. Keep \"100 MB\" and the \"⌘F\" glyph literal.",
     "screenshot": "viewer-search.png",
@@ -532,7 +532,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.copy.clipboardUnreachable": "Couldn''t reach the clipboard. Try again?",
+  "viewer.copy.clipboardUnreachable": "Couldn’t reach the clipboard. Try again?",
   "@viewer.copy.clipboardUnreachable": {
     "description": "Warning toast when writing to the system clipboard failed. Conversational, suggests retrying.",
     "screenshot": "viewer-search.png",
@@ -544,13 +544,13 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.copy.copyFailed": "Couldn''t copy the selection. Try again?",
+  "viewer.copy.copyFailed": "Couldn’t copy the selection. Try again?",
   "@viewer.copy.copyFailed": {
     "description": "Warning toast when copying the selection failed for a non-timeout reason. Conversational, suggests retrying.",
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.copy.readFailed": "Couldn''t read the selection. Try again?",
+  "viewer.copy.readFailed": "Couldn’t read the selection. Try again?",
   "@viewer.copy.readFailed": {
     "description": "Warning toast when reading the selection (after the user confirmed a large copy) failed. Conversational, suggests retrying.",
     "screenshot": "viewer-search.png",
@@ -568,7 +568,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.saveAs.panelFailed": "Couldn''t open the save panel. Try again?",
+  "viewer.saveAs.panelFailed": "Couldn’t open the save panel. Try again?",
   "@viewer.saveAs.panelFailed": {
     "description": "Warning toast when the system save panel couldn't be opened. Conversational, suggests retrying.",
     "screenshot": "viewer-search.png",
@@ -589,7 +589,7 @@
     "screenshot": "viewer-search.png",
     "screenshotNote": "The file viewer window, pictured here with its find bar open. Your string is part of its chrome (title, toolbar, status bar), one of the file-kind or media labels it shows there, or one of the messages it shows in place of content when a file can’t be loaded."
   },
-  "viewer.saveAs.saveFailed": "Couldn''t save the selection. Try again?",
+  "viewer.saveAs.saveFailed": "Couldn’t save the selection. Try again?",
   "@viewer.saveAs.saveFailed": {
     "description": "Warning toast when saving the selection to a file failed for a non-timeout reason. Conversational, suggests retrying.",
     "screenshot": "viewer-search.png",

@@ -51,14 +51,14 @@ describe('settings registry label/description parity (en)', () => {
   it('preserves apostrophes in copy (the ICU hazard)', () => {
     const def = getSettingDefinition('appearance.useAppIconsForDocuments')
     expect(def?.description).toBe(
-      "Show the app's icon for documents instead of generic file type icons. More colorful but slightly slower.",
+      'Show the app’s icon for documents instead of generic file type icons. More colorful but slightly slower.',
     )
   })
 
   it('preserves the MTP description with quotes and apostrophes', () => {
     const def = getSettingDefinition('fileOperations.mtpEnabled')
     expect(def?.description).toBe(
-      "Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you'll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to “File transfer”, “Android Auto”, or similar. (Varies by device.)",
+      'Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you’ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to “File transfer”, “Android Auto”, or similar. (Varies by device.)',
     )
   })
 

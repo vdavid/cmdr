@@ -68,11 +68,11 @@
   },
   "shortcuts.conflict.reservedByMacOs": "{combo} is gereserveerd door macOS ({command}) en bereikt Cmdr niet. Kies een andere combinatie.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "sourceHash": "4aad26f"
+    "sourceHash": "76e8ad2"
   },
   "shortcuts.conflict.fixedKey": "{combo} is een vaste toets in Cmdr ({command}) en kan niet opnieuw worden toegewezen. Kies een andere combinatie.",
   "@shortcuts.conflict.fixedKey": {
-    "sourceHash": "2c2c76f"
+    "sourceHash": "42c3c0e"
   },
   "shortcuts.conflict.systemShortcut": "{combo} wordt meestal door macOS gebruikt ({label}), dus bereikt het Cmdr mogelijk nooit. Je kunt het vrijmaken in Systeeminstellingen > Toetsenbord.",
   "@shortcuts.conflict.systemShortcut": {
@@ -195,11 +195,11 @@
   },
   "shortcuts.section.macOsTooltip": "macOS beheert deze sneltoets. Cmdr kan die niet wijzigen.",
   "@shortcuts.section.macOsTooltip": {
-    "sourceHash": "262b2cc"
+    "sourceHash": "fe5e056"
   },
   "shortcuts.section.fixedTooltip": "Deze toets zit ingebouwd in Cmdr en kan niet worden gewijzigd.",
   "@shortcuts.section.fixedTooltip": {
-    "sourceHash": "f07b460"
+    "sourceHash": "9367bfe"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {

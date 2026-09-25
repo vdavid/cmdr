@@ -105,7 +105,7 @@
   },
   "servers.refusal.authenticationRejected": "那個密碼對 {username} 不管用。",
   "@servers.refusal.authenticationRejected": {
-    "sourceHash": "b2c42b0"
+    "sourceHash": "ac235d2"
   },
   "servers.refusal.needsCredentials": "這個伺服器要求輸入密碼。",
   "@servers.refusal.needsCredentials": {
@@ -113,15 +113,15 @@
   },
   "servers.refusal.accountNotPermitted": "{username} 在這裡沒有存取權。請改用其他帳號試試。",
   "@servers.refusal.accountNotPermitted": {
-    "sourceHash": "fbd3b7b"
+    "sourceHash": "baa82ef"
   },
   "servers.refusal.authMethodUnsupported": "這個伺服器用的登入方式，Cmdr 還不支援。",
   "@servers.refusal.authMethodUnsupported": {
-    "sourceHash": "62b963e"
+    "sourceHash": "48b9b15"
   },
   "servers.refusal.certificateUntrusted": "macOS 不信任這個伺服器的憑證。請在「鑰匙圈存取」中加入它，然後再試一次。",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "6db00c6"
+    "sourceHash": "b8f3b4a"
   },
   "servers.refusal.notAWebdavServer": "這個位址沒有任何東西回應 WebDAV。",
   "@servers.refusal.notAWebdavServer": {
@@ -129,23 +129,23 @@
   },
   "servers.refusal.invalidUrl": "這看起來不像伺服器位址。",
   "@servers.refusal.invalidUrl": {
-    "sourceHash": "9a121ac"
+    "sourceHash": "d3f5f7d"
   },
   "servers.refusal.timedOut": "{host} 沒有及時回應。",
   "@servers.refusal.timedOut": {
-    "sourceHash": "7662825"
+    "sourceHash": "b2f0e52"
   },
   "servers.refusal.unreachable": "Cmdr 連不上 {host}。",
   "@servers.refusal.unreachable": {
-    "sourceHash": "ae716c3"
+    "sourceHash": "6fcba90"
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr 還沒有信任 {host} 的主機金鑰。",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "40a9d28"
+    "sourceHash": "343f48b"
   },
   "servers.refusal.hostKeyRevoked": "在這部 Mac 的 SSH 設定裡，{host} 的主機金鑰被標記為已遭洩漏。Cmdr 不會連線到它。",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "47aacda"
+    "sourceHash": "e23d585"
   },
   "servers.refusal.startFolderOutsideRoot": "起始資料夾只能是根資料夾，或是它裡面的資料夾。",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -153,23 +153,23 @@
   },
   "servers.refusal.rootNotFound": "Cmdr 無法開啟 {host} 上的這個資料夾。請確認它存在，而且你的帳號有權限讀取。",
   "@servers.refusal.rootNotFound": {
-    "sourceHash": "883a0bc"
+    "sourceHash": "aa029f8"
   },
   "servers.refusal.startFolderNotFound": "Cmdr 無法開啟 {host} 上的這個起始資料夾。請確認它存在，而且你的帳號有權限讀取。",
   "@servers.refusal.startFolderNotFound": {
-    "sourceHash": "f1df16e"
+    "sourceHash": "0997a8d"
   },
   "servers.refusal.saveUnconfirmed": "{host} 沒有及時回應，所以什麼都沒儲存。等一下再試一次。",
   "@servers.refusal.saveUnconfirmed": {
-    "sourceHash": "f7bb3a6"
+    "sourceHash": "3fb55a6"
   },
   "servers.refusal.secretNotStored": "Cmdr 沒辦法把這個密碼存進鑰匙圈。請再試一次，或關閉「記住在鑰匙圈中」，不儲存密碼直接登入。",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "080b475"
+    "sourceHash": "20957fe"
   },
   "servers.refusal.savedSecretNotUpdated": "Cmdr 已儲存你的變更，但沒辦法更新鑰匙圈中的密碼。再儲存一次即可重試。",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "471a6d8"
+    "sourceHash": "2ae1e2b"
   },
   "servers.sheet.addTitle": "加入伺服器",
   "@servers.sheet.addTitle": {
@@ -313,7 +313,7 @@
   },
   "servers.sheet.autoReconnectHelp": "如果連線中斷，Cmdr 會自動重新連線到這台伺服器。這不會讓 Cmdr 在啟動時連線：只有在窗格中開啟這台伺服器時，Cmdr 才會連線。",
   "@servers.sheet.autoReconnectHelp": {
-    "sourceHash": "5fc66ee"
+    "sourceHash": "559525d"
   },
   "servers.sheet.autoReconnectInfoLabel": "進一步了解「自動重新連線」",
   "@servers.sheet.autoReconnectInfoLabel": {
@@ -333,19 +333,19 @@
   },
   "servers.hostKey.firstContactBody": "請把下面的指紋和伺服器擁有者給你的那組核對一下，然後再信任它。",
   "@servers.hostKey.firstContactBody": {
-    "sourceHash": "befd6c3"
+    "sourceHash": "f207466"
   },
   "servers.hostKey.changedTitle": "{host} 的主機金鑰變了",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "dde14d6"
+    "sourceHash": "a63a050"
   },
   "servers.hostKey.changedBody": "這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。信任之前，請先和伺服器擁有者核對指紋。",
   "@servers.hostKey.changedBody": {
-    "sourceHash": "34552a6"
+    "sourceHash": "42491c4"
   },
   "servers.hostKey.changedDisclosure": "我核對過了",
   "@servers.hostKey.changedDisclosure": {
-    "sourceHash": "29d1f63"
+    "sourceHash": "4051d39"
   },
   "servers.hostKey.fingerprintLabel": "金鑰指紋",
   "@servers.hostKey.fingerprintLabel": {
@@ -369,7 +369,7 @@
   },
   "servers.paneState.hostKeyChanged": "Cmdr 不會連線到 {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "123ff4f"
+    "sourceHash": "c73ddf3"
   },
   "servers.paneState.hostKeyChangedHint": "它的主機金鑰變了。這可能表示伺服器重新安裝過，也可能有東西夾在你和它中間。請先中斷連線，再重新開啟它來核對指紋。",
   "@servers.paneState.hostKeyChangedHint": {
@@ -381,7 +381,7 @@
   },
   "servers.paneState.signedOutNothingToAsk": "這部伺服器是用金鑰而不是密碼登入的，所以沒有東西要輸入。重新開啟它就會再試一次。",
   "@servers.paneState.signedOutNothingToAsk": {
-    "sourceHash": "71d7eee"
+    "sourceHash": "95e6bd0"
   },
   "servers.paneState.retryProgressAriaLabel": "距離下次重新連線的時間",
   "@servers.paneState.retryProgressAriaLabel": {

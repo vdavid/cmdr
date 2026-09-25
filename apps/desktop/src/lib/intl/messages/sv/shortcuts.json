@@ -66,11 +66,11 @@
   },
   "shortcuts.conflict.reservedByMacOs": "{combo} är reserverad av macOS ({command}) och når inte fram till Cmdr. Välj en annan kombination.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "sourceHash": "4aad26f"
+    "sourceHash": "76e8ad2"
   },
   "shortcuts.conflict.fixedKey": "{combo} är en fast tangent i Cmdr ({command}) och kan inte tilldelas om. Välj en annan kombination.",
   "@shortcuts.conflict.fixedKey": {
-    "sourceHash": "2c2c76f"
+    "sourceHash": "42c3c0e"
   },
   "shortcuts.conflict.systemShortcut": "{combo} brukar vara upptagen av macOS ({label}), så den når kanske aldrig fram till Cmdr. Du kan frigöra den i Systeminställningar > Tangentbord.",
   "@shortcuts.conflict.systemShortcut": {
@@ -193,11 +193,11 @@
   },
   "shortcuts.section.macOsTooltip": "macOS hanterar den här genvägen. Cmdr kan inte ändra den.",
   "@shortcuts.section.macOsTooltip": {
-    "sourceHash": "262b2cc"
+    "sourceHash": "fe5e056"
   },
   "shortcuts.section.fixedTooltip": "Den här tangenten är inbyggd i Cmdr och kan inte ändras.",
   "@shortcuts.section.fixedTooltip": {
-    "sourceHash": "f07b460"
+    "sourceHash": "9367bfe"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {

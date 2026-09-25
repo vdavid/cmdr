@@ -13,7 +13,7 @@
   },
   "mtp.connectedToast.dontShowAgain": "Ne jelenjen meg többé",
   "@mtp.connectedToast.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "mtp.connectedToast.disableMtp": "MTP kikapcsolása…",
   "@mtp.connectedToast.disableMtp": {
@@ -26,11 +26,11 @@
   },
   "mtp.permissionDialog.title": "Az USB-eszköz nem érhető el",
   "@mtp.permissionDialog.title": {
-    "sourceHash": "96130bf"
+    "sourceHash": "1b440ed"
   },
   "mtp.permissionDialog.description": "A Cmdrnek nincs engedélye az eszköz eléréséhez. A Linuxnak udev-szabályokra van szüksége az MTP-eszközök hozzáférésének engedélyezéséhez.",
   "@mtp.permissionDialog.description": {
-    "sourceHash": "c11f0e8"
+    "sourceHash": "fdb8772"
   },
   "mtp.permissionDialog.explanation": "Futtasd ezt a parancsot a terminálban a szabályok telepítéséhez és újratöltéséhez:",
   "@mtp.permissionDialog.explanation": {
@@ -50,7 +50,7 @@
   },
   "mtp.ptpcameradDialog.title": "Nem sikerül kapcsolódni az MTP-eszközhöz",
   "@mtp.ptpcameradDialog.title": {
-    "sourceHash": "058de77"
+    "sourceHash": "8cb1f59"
   },
   "mtp.ptpcameradDialog.inUseBy": "Az eszközt jelenleg ez használja: <processName>{process}</processName>.",
   "@mtp.ptpcameradDialog.inUseBy": {

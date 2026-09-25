@@ -59,7 +59,7 @@ describe('new-file and new-folder dialog chrome (en)', () => {
 
   it('resolves the new-folder timeout warning + AI suggestion chrome', () => {
     expect(tString('fileOperations.mkdir.timeoutMessage')).toBe(
-      "Couldn't confirm the folder was created. The volume may be slow, so the folder may still have been created.",
+      'Couldn’t confirm the folder was created. The volume may be slow, so the folder may still have been created.',
     )
     expect(tString('fileOperations.mkdir.timeoutRefresh')).toBe('Refresh listing')
     expect(tString('fileOperations.mkdir.timeoutDismiss')).toBe('Dismiss')
@@ -80,7 +80,7 @@ describe('new-file and new-folder dialog chrome (en)', () => {
 describe('delete dialog chrome (en)', () => {
   it('resolves the from-path header and no-trash warning', () => {
     expect(t('fileOperations.delete.fromPath', { path: '~/Documents' })).toBe('From: ~/Documents')
-    expect(tString('fileOperations.delete.noTrashWarningStrong')).toBe("This volume doesn't support trash.")
+    expect(tString('fileOperations.delete.noTrashWarningStrong')).toBe('This volume doesn’t support trash.')
     expect(tString('fileOperations.delete.noTrashWarningRest')).toBe('Files will be permanently deleted.')
   })
 
@@ -153,10 +153,10 @@ describe('transfer dialog chrome (en)', () => {
       'Some clashes mix a file and a folder by the same name. Overwriting will replace items of a different type, including the entire contents of a folder.',
     )
     expect(t('fileOperations.transferDialog.pathErrorSubfolder', { verb: 'copy', name: 'photos' })).toBe(
-      "Can't copy “photos” into its own subfolder",
+      'Can’t copy “photos” into its own subfolder',
     )
     expect(t('fileOperations.transferDialog.pathErrorSubfolder', { verb: 'move', name: 'photos' })).toBe(
-      "Can't move “photos” into its own subfolder",
+      'Can’t move “photos” into its own subfolder',
     )
     expect(t('fileOperations.transferDialog.pathErrorAlreadyThere', { name: 'photos' })).toBe(
       '“photos” is already in this location',
@@ -236,10 +236,10 @@ describe('transfer progress dialog chrome (en)', () => {
       'Stop, and move back every file moved so far',
     )
     expect(tString('fileOperations.transferProgress.rollbackAlreadyLandedTooltip')).toBe(
-      "Every file is already at the destination, so Cmdr can't undo the move now. Cancel still stops it from removing the rest of the originals.",
+      'Every file is already at the destination, so Cmdr can’t undo the move now. Cancel still stops it from removing the rest of the originals.',
     )
     expect(tString('fileOperations.transferProgress.smallerDisabledTooltip')).toBe(
-      "Can't compare: target folder size is unknown.",
+      'Can’t compare: target folder size is unknown.',
     )
   })
 
@@ -262,7 +262,7 @@ describe('transfer progress dialog chrome (en)', () => {
     const strong = (c: unknown[]) => c.join('')
     const result = t('fileOperations.transferProgress.warningFileOverFolder', { strong })
     expect(Array.isArray(result) ? result.join('') : result).toBe(
-      "The target exists and is a folder. You're about to overwrite it with a file by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?",
+      'The target exists and is a folder. You’re about to overwrite it with a file by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?',
     )
   })
 })
@@ -279,7 +279,7 @@ describe('error dialog chrome (en)', () => {
 describe('archive-password dialog chrome (en)', () => {
   it('resolves the titles, buttons, and field labels', () => {
     expect(tString('fileOperations.archivePassword.title')).toBe('Password needed')
-    expect(tString('fileOperations.archivePassword.retryTitle')).toBe("That didn't work")
+    expect(tString('fileOperations.archivePassword.retryTitle')).toBe('That didn’t work')
     expect(tString('fileOperations.archivePassword.inputAria')).toBe('Archive password')
     expect(tString('fileOperations.archivePassword.placeholder')).toBe('Password')
     expect(tString('fileOperations.archivePassword.unlock')).toBe('Unlock')
@@ -293,7 +293,7 @@ describe('archive-password dialog chrome (en)', () => {
     )
     const retry = t('fileOperations.archivePassword.retryMessage', { name: 'photos.zip', archive })
     expect(Array.isArray(retry) ? retry.join('') : retry).toBe(
-      "That password didn't unlock photos.zip. Give it another go.",
+      'That password didn’t unlock photos.zip. Give it another go.',
     )
   })
 })

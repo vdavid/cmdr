@@ -107,7 +107,7 @@
   },
   "servers.refusal.authenticationRejected": "Das Passwort hat für {username} nicht geklappt.",
   "@servers.refusal.authenticationRejected": {
-    "sourceHash": "b2c42b0"
+    "sourceHash": "ac235d2"
   },
   "servers.refusal.needsCredentials": "Dieser Server fragt nach einem Passwort.",
   "@servers.refusal.needsCredentials": {
@@ -115,15 +115,15 @@
   },
   "servers.refusal.accountNotPermitted": "{username} hat hier keinen Zugriff. Versuche es mit einem anderen Konto.",
   "@servers.refusal.accountNotPermitted": {
-    "sourceHash": "fbd3b7b"
+    "sourceHash": "baa82ef"
   },
   "servers.refusal.authMethodUnsupported": "Dieser Server nutzt eine Anmeldemethode, die Cmdr noch nicht unterstützt.",
   "@servers.refusal.authMethodUnsupported": {
-    "sourceHash": "62b963e"
+    "sourceHash": "48b9b15"
   },
   "servers.refusal.certificateUntrusted": "macOS vertraut dem Zertifikat dieses Servers nicht. Füge es in der Schlüsselbundverwaltung hinzu und versuche es dann erneut.",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "6db00c6"
+    "sourceHash": "b8f3b4a"
   },
   "servers.refusal.notAWebdavServer": "Unter dieser Adresse antwortet nichts auf WebDAV.",
   "@servers.refusal.notAWebdavServer": {
@@ -131,23 +131,23 @@
   },
   "servers.refusal.invalidUrl": "Das sieht nicht nach einer Serveradresse aus.",
   "@servers.refusal.invalidUrl": {
-    "sourceHash": "9a121ac"
+    "sourceHash": "d3f5f7d"
   },
   "servers.refusal.timedOut": "{host} hat nicht rechtzeitig geantwortet.",
   "@servers.refusal.timedOut": {
-    "sourceHash": "7662825"
+    "sourceHash": "b2f0e52"
   },
   "servers.refusal.unreachable": "Cmdr konnte {host} nicht erreichen.",
   "@servers.refusal.unreachable": {
-    "sourceHash": "ae716c3"
+    "sourceHash": "6fcba90"
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr vertraut dem Schlüssel von {host} noch nicht.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "40a9d28"
+    "sourceHash": "343f48b"
   },
   "servers.refusal.hostKeyRevoked": "Der Schlüssel von {host} ist in deinen SSH-Einstellungen auf diesem Mac als kompromittiert markiert. Cmdr verbindet sich nicht mit diesem Server.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "47aacda"
+    "sourceHash": "e23d585"
   },
   "servers.refusal.startFolderOutsideRoot": "Der Startordner muss der Stammordner oder ein Ordner darin sein.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -155,23 +155,23 @@
   },
   "servers.refusal.rootNotFound": "Cmdr kann diesen Ordner auf {host} nicht öffnen. Prüfe, ob es ihn gibt und ob dein Konto ihn lesen darf.",
   "@servers.refusal.rootNotFound": {
-    "sourceHash": "883a0bc"
+    "sourceHash": "aa029f8"
   },
   "servers.refusal.startFolderNotFound": "Cmdr kann diesen Startordner auf {host} nicht öffnen. Prüfe, ob es ihn gibt und ob dein Konto ihn lesen darf.",
   "@servers.refusal.startFolderNotFound": {
-    "sourceHash": "f1df16e"
+    "sourceHash": "0997a8d"
   },
   "servers.refusal.saveUnconfirmed": "{host} hat nicht rechtzeitig geantwortet, deshalb hat Cmdr nichts gesichert. Versuche es gleich noch einmal.",
   "@servers.refusal.saveUnconfirmed": {
-    "sourceHash": "f7bb3a6"
+    "sourceHash": "3fb55a6"
   },
   "servers.refusal.secretNotStored": "Cmdr konnte dieses Passwort nicht im Schlüsselbund sichern. Versuche es noch einmal oder schalte „Im Schlüsselbund merken“ aus, um dich anzumelden, ohne es zu sichern.",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "080b475"
+    "sourceHash": "20957fe"
   },
   "servers.refusal.savedSecretNotUpdated": "Cmdr hat deine Änderungen gesichert, konnte das Passwort im Schlüsselbund aber nicht aktualisieren. Sichere noch einmal, um es erneut zu versuchen.",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "471a6d8"
+    "sourceHash": "2ae1e2b"
   },
   "servers.sheet.addTitle": "Server hinzufügen",
   "@servers.sheet.addTitle": {
@@ -316,7 +316,7 @@
   },
   "servers.sheet.autoReconnectHelp": "Wenn die Verbindung abbricht, verbindet sich Cmdr von selbst wieder mit diesem Server. Beim Start verbindet sich Cmdr dadurch nicht: Die Verbindung entsteht, wenn du den Server in einem Bereich öffnest.",
   "@servers.sheet.autoReconnectHelp": {
-    "sourceHash": "5fc66ee"
+    "sourceHash": "559525d"
   },
   "servers.sheet.autoReconnectInfoLabel": "Mehr über „Automatisch erneut verbinden“",
   "@servers.sheet.autoReconnectInfoLabel": {
@@ -336,19 +336,19 @@
   },
   "servers.hostKey.firstContactBody": "Vergleiche den Fingerabdruck unten mit dem, den dir die Person genannt hat, die den Server betreibt. Dann vertraue dem Schlüssel.",
   "@servers.hostKey.firstContactBody": {
-    "sourceHash": "befd6c3"
+    "sourceHash": "f207466"
   },
   "servers.hostKey.changedTitle": "Der Schlüssel von {host} hat sich geändert",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "dde14d6"
+    "sourceHash": "a63a050"
   },
   "servers.hostKey.changedBody": "Das kann bedeuten, dass der Server neu aufgesetzt wurde, oder dass sich etwas zwischen dich und den Server geschaltet hat. Prüfe den Fingerabdruck mit der Person, die den Server betreibt, bevor du dem Schlüssel vertraust.",
   "@servers.hostKey.changedBody": {
-    "sourceHash": "34552a6"
+    "sourceHash": "42491c4"
   },
   "servers.hostKey.changedDisclosure": "Ich habe ihn geprüft",
   "@servers.hostKey.changedDisclosure": {
-    "sourceHash": "29d1f63"
+    "sourceHash": "4051d39"
   },
   "servers.hostKey.fingerprintLabel": "Schlüssel-Fingerabdruck",
   "@servers.hostKey.fingerprintLabel": {
@@ -372,7 +372,7 @@
   },
   "servers.paneState.hostKeyChanged": "Cmdr verbindet sich nicht mit {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "123ff4f"
+    "sourceHash": "c73ddf3"
   },
   "servers.paneState.hostKeyChangedHint": "Der Schlüssel des Servers hat sich geändert. Das kann bedeuten, dass der Server neu aufgesetzt wurde, oder dass sich etwas zwischen dich und den Server geschaltet hat. Trenne die Verbindung und öffne den Server dann erneut, um den Fingerabdruck zu prüfen.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -384,7 +384,7 @@
   },
   "servers.paneState.signedOutNothingToAsk": "Bei diesem Server meldest du dich mit einem Schlüssel an statt mit einem Passwort, du musst also nichts eingeben. Öffne den Server erneut, um es noch einmal zu versuchen.",
   "@servers.paneState.signedOutNothingToAsk": {
-    "sourceHash": "71d7eee"
+    "sourceHash": "95e6bd0"
   },
   "servers.paneState.retryProgressAriaLabel": "Zeit bis zum nächsten Verbindungsversuch",
   "@servers.paneState.retryProgressAriaLabel": {

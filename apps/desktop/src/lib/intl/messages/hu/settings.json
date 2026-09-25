@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Válaszd ki, milyen nyelvet használjon a Cmdr. A „Rendszer szerinti” a Mac nyelvét követi.",
   "@settings.appearance.language.description": {
-    "sourceHash": "6e36bba"
+    "sourceHash": "2dd7f63"
   },
   "settings.appearance.language.opt.system": "Rendszer szerinti",
   "@settings.appearance.language.opt.system": {
@@ -275,7 +275,7 @@
   },
   "settings.appearance.useAppIconsForDocuments.description": "Az appikont mutatja a dokumentumokhoz az általános fájltípus-ikonok helyett. Színesebb, de kissé lassabb.",
   "@settings.appearance.useAppIconsForDocuments.description": {
-    "sourceHash": "9ae8a9c"
+    "sourceHash": "9651182"
   },
   "settings.appearance.showFunctionKeyBar.label": "Funkcióbillentyű-sáv megjelenítése",
   "@settings.appearance.showFunctionKeyBar.label": {
@@ -455,7 +455,7 @@
   },
   "settings.mediaIndex.privacyNote": "Ez teljes egészében a Macen fut az Apple beépített Vision keretrendszerével. A képeid soha nem hagyják el a számítógépedet, és nincs benne AI-szolgáltató vagy API-kulcs.",
   "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
+    "sourceHash": "9e5a87f"
   },
   "settings.mediaIndex.clip.title": "Szemantikus keresés",
   "@settings.mediaIndex.clip.title": {
@@ -463,7 +463,7 @@
   },
   "settings.mediaIndex.clip.description": "Találd meg a fotókat a tartalmuk leírásával, például „naplemente a tengerparton”, egy eszközön futó MI-modellel.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "e7bece5"
+    "sourceHash": "9a569ba"
   },
   "settings.mediaIndex.clip.ready": "Kész – keress a fotóid között leírás alapján.",
   "@settings.mediaIndex.clip.ready": {
@@ -483,7 +483,7 @@
   },
   "settings.mediaIndex.clip.failed": "A letöltés nem fejeződött be. Ellenőrizd a kapcsolatot, és próbáld újra.",
   "@settings.mediaIndex.clip.failed": {
-    "sourceHash": "5feb349"
+    "sourceHash": "8a3682d"
   },
   "settings.mediaIndex.clip.notSupported": "A leírás szerinti kereséshez Apple silicon chippel szerelt Mac szükséges.",
   "@settings.mediaIndex.clip.notSupported": {
@@ -511,7 +511,7 @@
   },
   "settings.mediaIndex.clip.deleteFailed": "A modellt most nem sikerült eltávolítani. Próbáld újra egy pillanat múlva.",
   "@settings.mediaIndex.clip.deleteFailed": {
-    "sourceHash": "6c9ced5"
+    "sourceHash": "126c735"
   },
   "settings.mediaIndex.cards.enable": "Indexelés bekapcsolása",
   "@settings.mediaIndex.cards.enable": {
@@ -543,7 +543,7 @@
   },
   "settings.mediaIndex.showFileStatusIcons.description": "A fájllistában minden képre kis jelvényt tesz, amely megmutatja, hogy indexelve van-e a kereséshez.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
-    "sourceHash": "62dda47"
+    "sourceHash": "1a725aa"
   },
   "settings.mediaIndex.showInSearch.label": "Képtalálatok megjelenítése a Keresésben",
   "@settings.mediaIndex.showInSearch.label": {
@@ -551,7 +551,7 @@
   },
   "settings.mediaIndex.showInSearch.description": "A Keresés egy sor egyező képet mutat a fájljaid fölött. A találatok még pontatlanok, ezért ki van kapcsolva, amíg nem kéred.",
   "@settings.mediaIndex.showInSearch.description": {
-    "sourceHash": "5b62cab"
+    "sourceHash": "143a4e7"
   },
   "settings.mediaIndex.networkVolumes.label": "Hálózati meghajtók képindexelése",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -587,7 +587,7 @@
   },
   "settings.mediaIndex.networkVolumes.intro": "A hálózati meghajtók csak akkor indexelődnek, ha itt bekapcsolod őket. A Cmdr kíméletesen olvassa a fotókat a hálózaton: csak amikor épp nem vagy elfoglalt, korlátozott sebességgel, és szünetel, ha megszakad a kapcsolat a meghajtóval.",
   "@settings.mediaIndex.networkVolumes.intro": {
-    "sourceHash": "165a9eb"
+    "sourceHash": "2d192ce"
   },
   "settings.mediaIndex.networkVolumes.none": "Csatlakoztass egy hálózati meghajtót, hogy indexelhesd a rajta lévő fotókat.",
   "@settings.mediaIndex.networkVolumes.none": {
@@ -739,7 +739,7 @@
   },
   "settings.mediaIndex.reclaim.couldNotDelete": "A Cmdr nem tudta törölni a további bejegyzéseket. Próbáld újra.",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
-    "sourceHash": "3295df4"
+    "sourceHash": "c57ac43"
   },
   "settings.mediaIndex.reclaim.deletedSpaceLater": "A Cmdr törölte a további bejegyzéseket, a tárhelyet később szabadítja fel.",
   "@settings.mediaIndex.reclaim.deletedSpaceLater": {
@@ -759,7 +759,7 @@
   },
   "settings.indexing.staleNotify.description": "A sárga állapotot akkor is látod, ha ezt kikapcsolod.",
   "@settings.indexing.staleNotify.description": {
-    "sourceHash": "c4216d8"
+    "sourceHash": "03af10e"
   },
   "settings.indexing.masterOffNote": "A meghajtó indexelése ki van kapcsolva, ezért egyetlen meghajtó sincs indexelve, és a mappaméretek rejtve maradnak. Minden meghajtó megjegyzi a saját be- vagy kikapcsolt állapotát, arra az esetre, amikor ezt újra bekapcsolod.",
   "@settings.indexing.masterOffNote": {
@@ -783,7 +783,7 @@
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "Még egyik meghajtónál sem kapcsoltad ki a kérdést.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
-    "sourceHash": "3a5a54b"
+    "sourceHash": "e7702a8"
   },
   "settings.indexing.silencedDrives.label": "Némított meghajtókérdések",
   "@settings.indexing.silencedDrives.label": {
@@ -953,7 +953,7 @@
   },
   "settings.network.enabled.description": "SMB-szerverek felderítése a helyi hálózaton, és kapcsolódás hozzájuk. Ha ki van kapcsolva, a Cmdr a már csatolt megosztásokon továbbra is tud fájlokat olvasni és írni, de nem kéri a macOS-tól a Helyi hálózat hozzáférést.",
   "@settings.network.enabled.description": {
-    "sourceHash": "3500345"
+    "sourceHash": "72a0854"
   },
   "settings.network.firstTriggerDone.label": "Hálózati felderítés elindult",
   "@settings.network.firstTriggerDone.label": {
@@ -1049,7 +1049,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "Android- és más eszközök felismerése és csatlakozás hozzájuk USB-kábelen át fájlböngészéshez és -átvitelhez. Hogy ezt a funkciót Android-telefonon használd, érdemes USB-kábelt használnod, majd a telefonodon nyiss meg valami olyat, mint Beállítások > USB-beállítások, és állítsd a kapcsolatot „Fájlátvitel”, „Android Auto” vagy hasonló módra. (Eszközönként eltérő.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "37444c2"
+    "sourceHash": "c66df04"
   },
   "settings.fileOperations.adbEnabled.label": "Android-fájlok elérése ADB-n át",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1057,7 +1057,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Eléred egy olyan Android-telefon teljes fájlrendszerét, amelyen be van kapcsolva az USB-hibakeresés; az MTP ezt nem mutatja meg. Ehhez kell az Android platform tools csomag (az „adb” parancs) ezen a Macen. Ha nincs telepítve Android-fejlesztőeszköz, nem kerül semmibe, ha bekapcsolva hagyod.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "57cf2aa"
+    "sourceHash": "9a22518"
   },
   "settings.fileOperations.adbBinaryPath.label": "Az adb helye",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1170,7 +1170,7 @@
   },
   "settings.analytics.enabled.description": "Kérlek, kapcsold be, hogy lássuk, mely funkciók számítanak a nyílt béta alatt.\nA statisztika nem a nevedhez vagy az e-mail-címedhez kötődik, hanem egy véletlenszerű azonosítóhoz.\nA Cmdr sosem küld fájlneveket, útvonalakat, keresési kifejezéseket vagy promptokat.\nKikapcsolva a Cmdr semmilyen statisztikát nem küld.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "23bafcb"
+    "sourceHash": "f5534ee"
   },
   "settings.analytics.email.label": "Bétakapcsolattartási e-mail",
   "@settings.analytics.email.label": {
@@ -1250,7 +1250,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "Az F3 megnyitja a Cmdr fájlmegjelenítőjét, amely nyers bájtokat mutat (nem szöveges tartalomnál veszteséges UTF-8-cal). Amikor képet, PDF-et, archívumot vagy más bináris fájlt nyitsz meg, a megjelenítő piros sávot mutat, amely elmagyarázza, hogy valószínűleg a ⇧Space (Gyorsnézet) vagy az Enter (megnyitás a társított appban) az, amit szerettél volna. Kapcsold ezt be (vagy kattints a sávban a „Soha ne mutasd újra ezt a figyelmeztetést” gombra), hogy végleg elnyomd a figyelmeztetést.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "5ba5ff7"
+    "sourceHash": "a93b4cb"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Space-billentyűs Gyorsnézet tipp elnyomása",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1258,7 +1258,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "A Cmdr a Space-szel váltja a fájlkijelölést, és a ⇧Space-szel a Gyorsnézetet (a Finder sima Space-szel hozza a Gyorsnézetet). Valahányszor megnyomod a Space-t a fájllistában, a Cmdr egy bekezdésnyi emlékeztetőt mutat erről a különbségről. Kapcsold ezt be (vagy kattints a buborékban a „Ne mutasd újra” gombra), hogy végleg elnyomd az emlékeztetőt.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "be9e1ff"
+    "sourceHash": "10357b4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Megjegyzendő bezárt lapok száma panelenként",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1334,7 +1334,7 @@
   },
   "settings.advanced.showSafeSaveFiles.label": "Más alkalmazások ideiglenes fájljainak megjelenítése",
   "@settings.advanced.showSafeSaveFiles.label": {
-    "sourceHash": "3436491"
+    "sourceHash": "c43c6af"
   },
   "settings.advanced.showSafeSaveFiles.description": "Amikor egy alkalmazás, például a Szövegszerkesztő vagy a Megtekintő elment egy fájlt, a macOS az új változatot ideiglenes néven írja ki mellé (a név „.sb-” tagra végződik), majd kicseréli. Kapcsold ki, ha ezeket nem szeretnéd látni a fájllistában.",
   "@settings.advanced.showSafeSaveFiles.description": {
@@ -1342,11 +1342,11 @@
   },
   "settings.advanced.showStagingTempFiles.label": "A Cmdr ideiglenes fájljainak megjelenítése",
   "@settings.advanced.showStagingTempFiles.label": {
-    "sourceHash": "5a7636d"
+    "sourceHash": "61c8190"
   },
   "settings.advanced.showStagingTempFiles.description": "Másoláskor a Cmdr minden fájlt ideiglenes néven ír ki, és csak akkor nevezi át, amikor a fájl elkészült, így egy összeomlás nem hagyhat félig megírt fájlt valódi néven. A megszakadt másolások maradványai mindig látszanak.",
   "@settings.advanced.showStagingTempFiles.description": {
-    "sourceHash": "2d88a78"
+    "sourceHash": "a562689"
   },
   "settings.advanced.logLlmCalls.label": "AI-modellhívások naplózása",
   "@settings.advanced.logLlmCalls.label": {
@@ -1594,7 +1594,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "A Cmdr felsorolja az ezen a Macen megtalált terminálappokat. Ha olyat használnál, amit nem ismer, válaszd az „App kiválasztása…” lehetőséget.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "32ccd8f"
+    "sourceHash": "a921be1"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "App kiválasztása…",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1626,7 +1626,7 @@
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "Ez a fájllista körüli üres terület, nem pedig egy fájlsor.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
-    "sourceHash": "734b6c2"
+    "sourceHash": "cae047d"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "A szülőmappába vivő dupla kattintás tippje megjelent",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -2158,7 +2158,7 @@
   },
   "settings.ai.tooltipCloud": "Hozd a saját API-kulcsodat a gyors, kiváló minőségű AI-hoz. Működik az OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter szolgáltatókkal, vagy bármilyen helyi szerverrel, amit futtatsz (Ollama, LM Studio stb.). Internetkapcsolatot igényel (kivéve, ha helyi szervert használsz). A Cmdr nem használ hozzá lemezterületet vagy memóriát.",
   "@settings.ai.tooltipCloud": {
-    "sourceHash": "1f63e66"
+    "sourceHash": "9cfff88"
   },
   "settings.ai.tooltipLocal": "Teljesen az eszközödön futtat egy kis nyelvi modellt. Maximális adatvédelem: semmi sem hagyja el a számítógépedet. Offline is működik. Kb. 2 GB lemezterületet és kb. 400 MB memóriát használ (a kontextusmérettől függően változik). Apple silicon chippel szerelt Mac kell hozzá (M1+).",
   "@settings.ai.tooltipLocal": {
@@ -2186,7 +2186,7 @@
   },
   "settings.fileSystemWatching.clearIndexDescription": "Törli az összes meghajtó indexét. Az indexelés újraépíti, és egy olyan mappában futó keresés is, amelyet a Cmdr nem indexelt.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "370e2bc"
+    "sourceHash": "b6074f3"
   },
   "settings.fileSystemWatching.cardDownloads": "Letöltések",
   "@settings.fileSystemWatching.cardDownloads": {
@@ -2307,7 +2307,7 @@
   },
   "settings.network.permissionWithout": "Enélkül a Cmdr a már csatolt megosztásokon továbbra is tud fájlokat olvasni és írni, de nem fedezhetsz fel új szervereket, és nem használhatod a gyorsabb közvetlen kapcsolatunkat.",
   "@settings.network.permissionWithout": {
-    "sourceHash": "4beca45"
+    "sourceHash": "a563afd"
   },
   "settings.network.customTimeoutUnit": "másodperc",
   "@settings.network.customTimeoutUnit": {
@@ -2331,11 +2331,11 @@
   },
   "settings.updates.emailSignupError": "Bocs, most nem sikerült feliratkoztatnunk. Megpróbálod újra?",
   "@settings.updates.emailSignupError": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "settings.updates.emailPrivacyNote": "Csak a Mac-eden tárolódik. Sosem küldjük el a használati statisztikáddal együtt, így az nem köthető vissza hozzád. Csak kapcsolatfelvételre és egy általad küldött jelentéshez való opcionális csatolásra használjuk. Hogy ne kapj több e-mailt, használd a leiratkozási linket bármelyik üzenetünkben.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "f22c213"
+    "sourceHash": "cf92795"
   },
   "settings.logging.openLogFile": "Naplófájl megnyitása",
   "@settings.logging.openLogFile": {
@@ -2443,7 +2443,7 @@
   },
   "settings.mediaIndex.chosenFolders.help": "Ezekben a mappákban a fotók akkor is indexelve lesznek, ha fent mást választasz. Ha eltávolítasz egy mappát, új indexelés nem indul; ami már indexelve van, továbbra is kereshető.",
   "@settings.mediaIndex.chosenFolders.help": {
-    "sourceHash": "c48ff3f"
+    "sourceHash": "858eb44"
   },
   "settings.mediaIndex.chosenFolders.empty": "Még nincs mappa. Adj hozzá egyet, hogy induljon a fotói indexelése.",
   "@settings.mediaIndex.chosenFolders.empty": {
@@ -2475,7 +2475,7 @@
   },
   "settings.servers.trustedHostKeys.description": "Az első kapcsolódáskor a Cmdr rákérdez, mielőtt megbízhatónak tekintené egy szerver kulcsát, és itt jegyzi meg a válaszodat. A mentett szervereidet a Szerverek listában találod; ez az oldal csak a kulcsokról szól.",
   "@settings.servers.trustedHostKeys.description": {
-    "sourceHash": "bbbed1a"
+    "sourceHash": "b3a8900"
   },
   "settings.servers.trustedHostKeys.empty": "Még nincs megbízhatónak tekintett kulcs. Amikor először kapcsolódsz egy SFTP-szerverre, a Cmdr megmutatja az ujjlenyomatát, és rákérdez.",
   "@settings.servers.trustedHostKeys.empty": {

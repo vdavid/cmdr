@@ -41,7 +41,7 @@ describe('describeSecretError', () => {
   it('falls back to generic copy for `other` variants', () => {
     const err = { type: 'other', message: 'disk quota exceeded' }
     const out = describeSecretError(err, 'save')
-    expect(out.title).toContain("Couldn't save")
+    expect(out.title).toContain('Couldn’t save')
     expect(out.detail).toBe('disk quota exceeded')
   })
 
@@ -51,7 +51,7 @@ describe('describeSecretError', () => {
     expect(describeSecretError(err, 'read').title.toLowerCase()).toContain('read')
   })
 
-  it("never guesses the classification out of the store's own words", () => {
+  it('never guesses the classification out of the store’s own words', () => {
     // Pre-fix this read `access_denied` out of the word "cancelled", so a copy
     // edit or a localized OS message silently changed which guidance appeared.
     const err = new Error('Operation was cancelled by the user')
@@ -61,7 +61,7 @@ describe('describeSecretError', () => {
     expect(out.title).not.toContain('Keychain')
   })
 
-  it("keeps an untyped value's text as detail, never as the classification", () => {
+  it('keeps an untyped value’s text as detail, never as the classification', () => {
     const out = describeSecretError('something went wrong', 'save')
 
     expect(out.detail).toBe('something went wrong')
@@ -78,7 +78,7 @@ describe('describeSecretError', () => {
 })
 
 describe('AiSecretFailure', () => {
-  it("carries the store's own words into its diagnostic, so the log line says why", () => {
+  it('carries the store’s own words into its diagnostic, so the log line says why', () => {
     // The Rust save and status paths don't log, so this diagnostic is the only record of
     // what the Keychain or keyring said. The store's message never holds the key itself.
     const failure = new AiSecretFailure({ type: 'access_denied', message: 'User interaction is not allowed.' })

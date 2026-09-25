@@ -9,7 +9,7 @@
   },
   "common.attachEmailInvalid": "Ez nem úgy néz ki, mint egy e-mail-cím",
   "@common.attachEmailInvalid": {
-    "sourceHash": "515c7cf"
+    "sourceHash": "0e55e59"
   },
   "common.attachEmailPlaceholder": "te@example.com",
   "@common.attachEmailPlaceholder": {

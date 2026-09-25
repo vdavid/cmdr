@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "選擇 Cmdr 使用的語言。「跟隨系統」會採用你 Mac 的語言。",
   "@settings.appearance.language.description": {
-    "sourceHash": "6e36bba"
+    "sourceHash": "2dd7f63"
   },
   "settings.appearance.language.opt.system": "跟隨系統",
   "@settings.appearance.language.opt.system": {
@@ -275,7 +275,7 @@
   },
   "settings.appearance.useAppIconsForDocuments.description": "為文件顯示它所屬 App 的圖像，而不是通用的檔案類型圖像。色彩更豐富，但會稍慢一些。",
   "@settings.appearance.useAppIconsForDocuments.description": {
-    "sourceHash": "9ae8a9c"
+    "sourceHash": "9651182"
   },
   "settings.appearance.showFunctionKeyBar.label": "顯示功能鍵列",
   "@settings.appearance.showFunctionKeyBar.label": {
@@ -455,7 +455,7 @@
   },
   "settings.mediaIndex.privacyNote": "這一切完全在你的 Mac 上，透過 Apple 內建的 Vision 框架執行。你的影像絕不離開你的電腦，也不涉及任何 AI 提供者或 API 金鑰。",
   "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
+    "sourceHash": "9e5a87f"
   },
   "settings.mediaIndex.clip.title": "語意搜尋",
   "@settings.mediaIndex.clip.title": {
@@ -463,7 +463,7 @@
   },
   "settings.mediaIndex.clip.description": "透過描述照片中的內容來尋找照片，例如「海灘日落」，使用裝置本機的 AI 模型。",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "e7bece5"
+    "sourceHash": "9a569ba"
   },
   "settings.mediaIndex.clip.ready": "已準備就緒 — 透過描述搜尋你的照片。",
   "@settings.mediaIndex.clip.ready": {
@@ -483,7 +483,7 @@
   },
   "settings.mediaIndex.clip.failed": "下載沒有完成。請檢查你的網路連線後再試一次。",
   "@settings.mediaIndex.clip.failed": {
-    "sourceHash": "5feb349"
+    "sourceHash": "8a3682d"
   },
   "settings.mediaIndex.clip.notSupported": "「透過描述搜尋」需要搭載 Apple 晶片的 Mac。",
   "@settings.mediaIndex.clip.notSupported": {
@@ -511,7 +511,7 @@
   },
   "settings.mediaIndex.clip.deleteFailed": "現在沒辦法移除模型。請稍後再試一次。",
   "@settings.mediaIndex.clip.deleteFailed": {
-    "sourceHash": "6c9ced5"
+    "sourceHash": "126c735"
   },
   "settings.mediaIndex.cards.enable": "啟用索引",
   "@settings.mediaIndex.cards.enable": {
@@ -543,7 +543,7 @@
   },
   "settings.mediaIndex.showFileStatusIcons.description": "在檔案列表中為每張影像加上一個小標記，顯示它是否已建立搜尋索引。",
   "@settings.mediaIndex.showFileStatusIcons.description": {
-    "sourceHash": "62dda47"
+    "sourceHash": "1a725aa"
   },
   "settings.mediaIndex.showInSearch.label": "在搜尋中顯示影像結果",
   "@settings.mediaIndex.showInSearch.label": {
@@ -551,7 +551,7 @@
   },
   "settings.mediaIndex.showInSearch.description": "搜尋會在你的檔案上方加一排相符的影像。比對還很粗略，所以先關著，等你想用再打開。",
   "@settings.mediaIndex.showInSearch.description": {
-    "sourceHash": "5b62cab"
+    "sourceHash": "143a4e7"
   },
   "settings.mediaIndex.networkVolumes.label": "網路磁碟機影像索引",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -587,7 +587,7 @@
   },
   "settings.mediaIndex.networkVolumes.intro": "只有在這裡開啟後，網路磁碟機才會建立索引。Cmdr 透過網路讀取照片時很克制：只在你不忙的時候讀取，速度有限，並會在磁碟機中斷連線時暫停。",
   "@settings.mediaIndex.networkVolumes.intro": {
-    "sourceHash": "165a9eb"
+    "sourceHash": "2d192ce"
   },
   "settings.mediaIndex.networkVolumes.none": "連接一部網路磁碟機，就能為上面的照片建立索引。",
   "@settings.mediaIndex.networkVolumes.none": {
@@ -739,7 +739,7 @@
   },
   "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr 無法刪除多餘的項目。請再試一次。",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
-    "sourceHash": "3295df4"
+    "sourceHash": "c57ac43"
   },
   "settings.mediaIndex.reclaim.deletedSpaceLater": "已刪除多餘的項目。Cmdr 稍後會釋出磁碟空間。",
   "@settings.mediaIndex.reclaim.deletedSpaceLater": {
@@ -759,7 +759,7 @@
   },
   "settings.indexing.staleNotify.description": "即使你關閉這一項，仍會看到黃色狀態。",
   "@settings.indexing.staleNotify.description": {
-    "sourceHash": "c4216d8"
+    "sourceHash": "03af10e"
   },
   "settings.indexing.masterOffNote": "磁碟機索引已關閉，因此沒有磁碟機在建立索引，資料夾大小也不會顯示。每部磁碟機都會記住自己的開關選擇，等你重新開啟時就會再次生效。",
   "@settings.indexing.masterOffNote": {
@@ -783,7 +783,7 @@
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "你還沒有為任何磁碟機關閉提示。",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
-    "sourceHash": "3a5a54b"
+    "sourceHash": "e7702a8"
   },
   "settings.indexing.silencedDrives.label": "已靜音的磁碟機提示",
   "@settings.indexing.silencedDrives.label": {
@@ -953,7 +953,7 @@
   },
   "settings.network.enabled.description": "在你的區域網路上探索 SMB 伺服器並連接它們。關閉時，Cmdr 仍可在已裝載的共享上讀寫檔案，但不會向 macOS 要求區域網路的存取權。",
   "@settings.network.enabled.description": {
-    "sourceHash": "3500345"
+    "sourceHash": "72a0854"
   },
   "settings.network.firstTriggerDone.label": "網路探索已啟動",
   "@settings.network.firstTriggerDone.label": {
@@ -1049,7 +1049,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "透過 USB 連接線偵測並連接 Android 及其他裝置，以瀏覽和傳輸檔案。要在 Android 手機上使用這個功能，你會需要一條 USB 連接線，然後在手機上前往類似「設定 > USB 偏好設定」的位置，並把連線設為「檔案傳輸」、「Android Auto」或類似的選項。（因裝置而異。）",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "37444c2"
+    "sourceHash": "c66df04"
   },
   "settings.fileOperations.adbEnabled.label": "透過 ADB 存取 Android 檔案",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1057,7 +1057,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "只要 Android 手機開啟了「USB 偵錯」，你就能存取它的整個檔案系統，包括 MTP 無法顯示的部分。這需要在這部 Mac 上安裝 Android SDK 平台工具（也就是 adb 指令）。就算你沒安裝任何 Android 工具，開著這一項也不會有任何代價。",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "57cf2aa"
+    "sourceHash": "9a22518"
   },
   "settings.fileOperations.adbBinaryPath.label": "adb 的位置",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1169,7 +1169,7 @@
   },
   "settings.analytics.enabled.description": "請開啟這一項，幫助我們在公開測試期間了解哪些功能重要。\n統計不會關聯到你的姓名或電子郵件，而是關聯到一個隨機識別碼。\nCmdr 絕不會傳送檔名、路徑、搜尋字詞或提示詞。\n關閉後，Cmdr 不會傳送任何統計。",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "23bafcb"
+    "sourceHash": "f5534ee"
   },
   "settings.analytics.email.label": "測試版聯絡用電子郵件",
   "@settings.analytics.email.label": {
@@ -1249,7 +1249,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 會開啟 Cmdr 的檔案檢視器，它顯示的是原始位元組（非文字內容採用有損的 UTF-8）。當你開啟影像、PDF、壓縮檔或其他二進位檔案時，檢視器會顯示一條紅色橫幅，說明 ⇧Space（快速查看）或 Enter（在關聯的 App 中開啟）很可能才是你想要的。開啟這一項（或按一下橫幅中的「不再顯示這個警告」）就能永久關閉這個警告。",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "5ba5ff7"
+    "sourceHash": "a93b4cb"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "不顯示 Space 鍵的快速查看提示",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1257,7 +1257,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr 用 Space 切換檔案選取，用 ⇧Space 觸發快速查看（Finder 用單獨的 Space 觸發快速查看）。每次你在檔案列表中按 Space，Cmdr 都會顯示一段簡短的提醒說明這個差別。開啟這一項（或按一下提示中的「不再顯示」）就能永久關閉這個提醒。",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "be9e1ff"
+    "sourceHash": "10357b4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "每個窗格記住的已關閉分頁數量",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1333,7 +1333,7 @@
   },
   "settings.advanced.showSafeSaveFiles.label": "顯示其他 App 的暫存檔案",
   "@settings.advanced.showSafeSaveFiles.label": {
-    "sourceHash": "3436491"
+    "sourceHash": "c43c6af"
   },
   "settings.advanced.showSafeSaveFiles.description": "「文字編輯」和「預覽程式」這類 App 儲存檔案時，macOS 會在旁邊用暫存名稱（以「.sb-」結尾）寫入新版本，然後再換掉。關閉這一項就能讓它們不出現在檔案列表中。",
   "@settings.advanced.showSafeSaveFiles.description": {
@@ -1341,11 +1341,11 @@
   },
   "settings.advanced.showStagingTempFiles.label": "顯示 Cmdr 的暫存檔案",
   "@settings.advanced.showStagingTempFiles.label": {
-    "sourceHash": "5a7636d"
+    "sourceHash": "61c8190"
   },
   "settings.advanced.showStagingTempFiles.description": "複製時，Cmdr 會先用暫存名稱寫入每個檔案，寫完後再重新命名，這樣當機就不會留下用真實名稱存下的半個檔案。中斷的複製留下的殘餘檔案總是會顯示。",
   "@settings.advanced.showStagingTempFiles.description": {
-    "sourceHash": "2d88a78"
+    "sourceHash": "a562689"
   },
   "settings.advanced.logLlmCalls.label": "記錄 AI 模型呼叫",
   "@settings.advanced.logLlmCalls.label": {
@@ -1593,7 +1593,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "Cmdr 會列出在這部 Mac 上找到的終端機 App。想用它不認得的 App，請選擇「選擇 App⋯」。",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "32ccd8f"
+    "sourceHash": "a921be1"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "選擇 App⋯",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1625,7 +1625,7 @@
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "也就是檔案列表周圍的空白區域，而不是某個檔案所在的橫列。",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
-    "sourceHash": "734b6c2"
+    "sourceHash": "cae047d"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "已顯示點兩下前往上層資料夾的提示",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -2156,7 +2156,7 @@
   },
   "settings.ai.tooltipCloud": "自備 API 金鑰，取得快速、高品質的 AI。支援 OpenAI、Anthropic（Claude）、Google（Gemini）、xAI（Grok）、Groq、DeepSeek、OpenRouter，或你自己執行的任何本機伺服器（Ollama、LM Studio 等）。需要網際網路連線（除非使用本機伺服器）。不會佔用 Cmdr 的磁碟空間或記憶體。",
   "@settings.ai.tooltipCloud": {
-    "sourceHash": "1f63e66"
+    "sourceHash": "9cfff88"
   },
   "settings.ai.tooltipLocal": "在你的裝置上完整執行一個小型語言模型。隱私最大化：沒有任何內容離開你的電腦。可以離線運作。佔用約 2 GB 磁碟空間和約 400 MB 記憶體（隨上下文大小而變）。需要 Apple 晶片（M1 以上）。",
   "@settings.ai.tooltipLocal": {
@@ -2184,7 +2184,7 @@
   },
   "settings.fileSystemWatching.clearIndexDescription": "刪除每一部磁碟機的索引。建立索引時會重新產生，在 Cmdr 還沒建立索引的資料夾裡搜尋時也會。",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "370e2bc"
+    "sourceHash": "b6074f3"
   },
   "settings.fileSystemWatching.cardDownloads": "下載項目",
   "@settings.fileSystemWatching.cardDownloads": {
@@ -2305,7 +2305,7 @@
   },
   "settings.network.permissionWithout": "沒有它，Cmdr 仍可在已經裝載的共享上讀寫檔案，但你無法探索新的伺服器，也無法使用我們更快的直接連線。",
   "@settings.network.permissionWithout": {
-    "sourceHash": "4beca45"
+    "sourceHash": "a563afd"
   },
   "settings.network.customTimeoutUnit": "秒",
   "@settings.network.customTimeoutUnit": {
@@ -2330,11 +2330,11 @@
   },
   "settings.updates.emailSignupError": "抱歉，我們現在沒辦法幫你註冊。要再試一次嗎？",
   "@settings.updates.emailSignupError": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "settings.updates.emailPrivacyNote": "只會存在你的 Mac 上。我們絕不會把它和你的使用統計一起傳送，所以那些統計無法被關聯到你本人。它只用來聯絡你，以及在你傳送報告時選擇性地附上。如果不想再收到電子郵件，請使用我們任何一封信裡的取消訂閱連結。",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "f22c213"
+    "sourceHash": "cf92795"
   },
   "settings.logging.openLogFile": "開啟記錄檔",
   "@settings.logging.openLogFile": {
@@ -2442,7 +2442,7 @@
   },
   "settings.mediaIndex.chosenFolders.help": "不管你上面選了哪一項，這些資料夾裡的照片都會建立索引。移除資料夾只會停止新的索引，已經建立索引的內容仍然可以搜尋。",
   "@settings.mediaIndex.chosenFolders.help": {
-    "sourceHash": "c48ff3f"
+    "sourceHash": "858eb44"
   },
   "settings.mediaIndex.chosenFolders.empty": "還沒有資料夾。加一個，就能開始為裡面的照片建立索引。",
   "@settings.mediaIndex.chosenFolders.empty": {
@@ -2474,7 +2474,7 @@
   },
   "settings.servers.trustedHostKeys.description": "第一次連線時，Cmdr 會先問你要不要信任這部伺服器的主機金鑰，並把你的答案記在這裡。已儲存的伺服器放在「伺服器」列表裡，不在這一頁。",
   "@settings.servers.trustedHostKeys.description": {
-    "sourceHash": "bbbed1a"
+    "sourceHash": "b3a8900"
   },
   "settings.servers.trustedHostKeys.empty": "目前還沒有信任任何金鑰。第一次連線到 SFTP 伺服器時，Cmdr 會顯示它的金鑰指紋並問你要不要信任。",
   "@settings.servers.trustedHostKeys.empty": {

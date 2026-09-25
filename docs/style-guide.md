@@ -22,6 +22,10 @@ Writing, code, and design styles.
 - Quotation marks
   - **UI copy quotes with curly marks, never straight ones**: “double” for a quoted phrase or label, nested ‘single’ for
     a quote inside a quote, never `"` or `'`.
+- Apostrophes
+  - **UI copy writes every apostrophe as `’` (U+2019), like Apple**: “Don’t show again”, “Cmdr’s”, “you’re”. In the
+    app's catalogs this also retires ICU's doubled `''`. A straight `'` stays only where it's literal code a user types
+    (a shell command in backticks).
 - Specific terms
   - **US English spelling, everywhere**: "color", "canceled", "behavior", "gray", "favorites". The app's `en` message
     catalog is the base the British and Australian overlays fork from, so the register is load-bearing there; the

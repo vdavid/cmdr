@@ -41,11 +41,11 @@ describe('failureReasonFor', () => {
     const copying = failureReasonFor(snapshot(error))
     const deleting = failureReasonFor(snapshot(error, { operationType: 'delete' }))
 
-    expect(copying?.message).toBe("You don't have permission to copy files here.")
-    expect(deleting?.message).toBe("You don't have permission to delete files here.")
+    expect(copying?.message).toBe('You don’t have permission to copy files here.')
+    expect(deleting?.message).toBe('You don’t have permission to delete files here.')
   })
 
-  it("carries the variant's own facts, not a generic sentence", () => {
+  it('carries the variant’s own facts, not a generic sentence', () => {
     const error: WriteOperationError = {
       type: 'insufficient_space',
       required: 1073741824,

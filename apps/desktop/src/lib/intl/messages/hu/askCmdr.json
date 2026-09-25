@@ -523,11 +523,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "Ezt a nevet már egy másik fájl használja, amely nem része ennek az átnevezési tervnek. A fájl védelme érdekében ez az átnevezés blokkolva van.",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "(nem létezik)",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "Ez a forrásfájl már nem létezik. Lehet, hogy a Cmdren kívül törölték vagy átnevezték.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -675,7 +675,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "Az AI-funkciók még nem látják a mappáidat. Kattints a teljes lemezhozzáférés beállításához.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "Az AI-funkciók be vannak kapcsolva, de szolgáltató kell hozzájuk. Kattints, és állíts be egyet a beállításokban.",
   "@askCmdr.wake.needsApiKey": {

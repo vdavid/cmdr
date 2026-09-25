@@ -1,7 +1,7 @@
 {
   "queryUi.bar.placeholder.ai": "Describe lo que buscas",
   "@queryUi.bar.placeholder.ai": {
-    "sourceHash": "fbfb9a8"
+    "sourceHash": "d8ef53e"
   },
   "queryUi.bar.placeholder.regex": "Patrón de expresión regular",
   "@queryUi.bar.placeholder.regex": {
@@ -106,7 +106,7 @@
   },
   "queryUi.ai.lead": "Esto es lo que ha hecho el agente:",
   "@queryUi.ai.lead": {
-    "sourceHash": "bf7c5a2"
+    "sourceHash": "0598e43"
   },
   "queryUi.ai.empty": "Aún no hay nada por lo que filtrar. ¿Lo reformulas?",
   "@queryUi.ai.empty": {
@@ -256,7 +256,7 @@
   },
   "queryUi.results.live.resolvingCoverage": "Comprobando qué está ya indexado…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "524487d"
+    "sourceHash": "dc547a0"
   },
   "queryUi.results.live.waitingForAnotherWalk": "Esperando otro recorrido de estas carpetas…",
   "@queryUi.results.live.waitingForAnotherWalk": {
@@ -268,11 +268,11 @@
   },
   "queryUi.results.live.readingIndex": "Leyendo lo que ya está indexado…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "ed4159a"
+    "sourceHash": "b8bd4f7"
   },
   "queryUi.results.live.walking": "Recorriendo carpetas que aún no están indexadas…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "3829650"
+    "sourceHash": "2acf23a"
   },
   "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {coincidencia} many {coincidencias} other {coincidencias}} hasta ahora",
   "@queryUi.results.live.matchesSoFar": {
@@ -284,11 +284,11 @@
   },
   "queryUi.results.live.incomplete": "{shownText} de {totalText} resultados. Cmdr no ha terminado de buscar.",
   "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
+    "sourceHash": "737d12c"
   },
   "queryUi.results.live.incompleteEmpty": "No se ha encontrado nada antes de que la búsqueda se detuviera. Cmdr no ha terminado de buscar.",
   "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
+    "sourceHash": "6910921"
   },
   "queryUi.results.live.capped": "Mostrando las primeras {shownText} de {totalText} coincidencias.",
   "@queryUi.results.live.capped": {
@@ -438,15 +438,15 @@
   },
   "queryUi.dialog.aiTranslateFailedToast": "No se ha podido ejecutar la búsqueda con IA ahora mismo. ¿Lo intentas de nuevo?",
   "@queryUi.dialog.aiTranslateFailedToast": {
-    "sourceHash": "6856c79"
+    "sourceHash": "b18f37c"
   },
   "queryUi.dialog.runQueryToast": "No se ha podido completar esa búsqueda. {message}",
   "@queryUi.dialog.runQueryToast": {
-    "sourceHash": "02a3bba"
+    "sourceHash": "51acd6e"
   },
   "queryUi.dialog.runQueryUnknownReason": "No está claro el motivo. ¿Pruebas con una búsqueda más concreta?",
   "@queryUi.dialog.runQueryUnknownReason": {
-    "sourceHash": "4f79b0f"
+    "sourceHash": "bb9a283"
   },
   "queryUi.filters.toolbarAria": "Filtros de búsqueda",
   "@queryUi.filters.toolbarAria": {

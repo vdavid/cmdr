@@ -29,11 +29,11 @@
   },
   "goToPath.dialog.ancestorHint": "Ez az útvonal nem létezik. A legközelebbi hely, ahová ugorhatsz: {dir}.",
   "@goToPath.dialog.ancestorHint": {
-    "sourceHash": "43db9f4"
+    "sourceHash": "e6eefca"
   },
   "goToPath.toast.landedOnAncestor": "<req>{requested}</req> nem létezik, ezért ide hoztunk: <land>{landed}</land>.",
   "@goToPath.toast.landedOnAncestor": {
-    "sourceHash": "4ffc1e4"
+    "sourceHash": "9af3d3a"
   },
   "goToPath.toast.pressToGoBack": "A visszalépéshez nyomd meg ezt: <chip></chip>.",
   "@goToPath.toast.pressToGoBack": {
@@ -49,6 +49,6 @@
   },
   "goToPath.dialog.snapshotNotAPath": "A találatok nem útvonal, nem lehet odanavigálni.",
   "@goToPath.dialog.snapshotNotAPath": {
-    "sourceHash": "e613c52"
+    "sourceHash": "1332610"
   }
 }

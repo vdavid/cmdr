@@ -1,5 +1,5 @@
 {
-  "queryUi.bar.placeholder.ai": "Describe what you''re looking for",
+  "queryUi.bar.placeholder.ai": "Describe what you’re looking for",
   "@queryUi.bar.placeholder.ai": {
     "description": "Placeholder text in the search input while AI mode is active. Invites the user to type a natural-language request (for example 'big PDFs from last week').",
     "screenshot": "search-dialog.png",
@@ -144,7 +144,7 @@
     },
     "screenshot": "search-dialog.png"
   },
-  "queryUi.ai.lead": "Here''s what the agent did:",
+  "queryUi.ai.lead": "Here’s what the agent did:",
   "@queryUi.ai.lead": {
     "description": "Lead-in line of the AI transparency strip, shown after an AI search has run. Introduces a plain-language summary of the filters the AI set. First-person 'agent' voice is intentional here (a sanctioned exception to the no-first-person rule): the product's model is an AI agent acting for the user. Keep it warm and honest.",
     "screenshot": "search-dialog.png",
@@ -388,7 +388,7 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.resolvingCoverage": "Working out what's already indexed…",
+  "queryUi.results.live.resolvingCoverage": "Working out what’s already indexed…",
   "@queryUi.results.live.resolvingCoverage": {
     "description": "Label under a spinner at the start of a search that may have to look through folders the app hasn't indexed. The app is checking which parts of the folder it already knows about, which can take a few seconds on a big drive. Ends with '…'.",
     "screenshot": "search-dialog.png",
@@ -409,13 +409,13 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.readingIndex": "Reading what's already indexed…",
+  "queryUi.results.live.readingIndex": "Reading what’s already indexed…",
   "@queryUi.results.live.readingIndex": {
     "description": "Label under a spinner while a search reads the part of the folder the app has already indexed, before it starts looking through the rest. Ends with '…'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.walking": "Looking through folders that aren't indexed yet…",
+  "queryUi.results.live.walking": "Looking through folders that aren’t indexed yet…",
   "@queryUi.results.live.walking": {
     "description": "Label under a spinner while a search reads folders the app has no index for, going through them one by one. This is the slow part and can run for minutes. Ends with '…'.",
     "screenshot": "search-dialog.png",
@@ -441,7 +441,7 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.incomplete": "{shownText} of {totalText} results. Cmdr didn't finish looking.",
+  "queryUi.results.live.incomplete": "{shownText} of {totalText} results. Cmdr didn’t finish looking.",
   "@queryUi.results.live.incomplete": {
     "description": "Status-bar text after a search ended without covering everything it set out to, because the user stopped it or the drive went away. Says plainly that the list is a lower bound; the note above the results explains why. 'Cmdr' is the product name and stays as-is. Avoid the words 'error' and 'failed'.",
     "placeholders": {
@@ -451,7 +451,7 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.results.live.incompleteEmpty": "Nothing found before this search stopped. Cmdr didn't finish looking.",
+  "queryUi.results.live.incompleteEmpty": "Nothing found before this search stopped. Cmdr didn’t finish looking.",
   "@queryUi.results.live.incompleteEmpty": {
     "description": "Status-bar text after a search that was stopped (by the user, or by a drive going away) before it found anything at all. Says plainly that the empty list isn't a real 'nothing matched'; the note above the results explains why. 'Cmdr' is the product name and stays as-is. Avoid the words 'error' and 'failed'.",
     "placeholders": {},
@@ -733,13 +733,13 @@
     "description": "Accessibility label for the group of primary/secondary buttons in the search dialog footer, read by screen readers.",
     "screenshot": "search-dialog.png"
   },
-  "queryUi.dialog.aiTranslateFailedToast": "Couldn''t run the AI search just now. Try again?",
+  "queryUi.dialog.aiTranslateFailedToast": "Couldn’t run the AI search just now. Try again?",
   "@queryUi.dialog.aiTranslateFailedToast": {
     "description": "Toast shown when an AI search couldn't be translated for an unknown reason. Reassuring and actionable, inviting a retry. Per app style, avoid the words 'error' and 'failed'.",
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.dialog.runQueryToast": "Couldn''t finish that search. {message}",
+  "queryUi.dialog.runQueryToast": "Couldn’t finish that search. {message}",
   "@queryUi.dialog.runQueryToast": {
     "description": "Toast shown when a search or selection run is refused, wrapping the reason the app got back (for example 'Query too broad. Add a filename pattern, size, date, or type filter'). Keep the wrapper short; the reason carries the detail. Per app style, avoid the words 'error' and 'failed'.",
     "placeholders": {
@@ -748,7 +748,7 @@
     "screenshot": "search-dialog.png",
     "screenshotNote": "Cmdr’s search, select, and filter surfaces are one shared dialog: a mode row at the top, the query bar, the scope and filter controls under it, and results below. This shows that dialog; your string is one of those controls, one of the filter or date options, or a line in the results area."
   },
-  "queryUi.dialog.runQueryUnknownReason": "The reason isn''t clear. Try a narrower query?",
+  "queryUi.dialog.runQueryUnknownReason": "The reason isn’t clear. Try a narrower query?",
   "@queryUi.dialog.runQueryUnknownReason": {
     "description": "Stand-in reason inside the 'Couldn't finish that search' toast when the app got no explanation back. Suggests the most likely fix.",
     "screenshot": "search-dialog.png",

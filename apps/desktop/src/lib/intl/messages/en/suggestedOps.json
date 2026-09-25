@@ -11,7 +11,7 @@
   "@suggestedOps.empty": {
     "description": "Shown in the dialog body when the agent has no pending suggestions."
   },
-  "suggestedOps.loadFailed": "Cmdr couldn't read the suggestions. Close this and open it again.",
+  "suggestedOps.loadFailed": "Cmdr couldn’t read the suggestions. Close this and open it again.",
   "@suggestedOps.loadFailed": {
     "description": "Shown when reading the suggestion list threw. Distinct from the empty state, which would read as the agent having suggested nothing."
   },
@@ -55,7 +55,7 @@
   "@suggestedOps.reversibleDeleteWritten": {
     "description": "Marker on a group that only adds files (copy, extract, a new archive), so undoing means removing what it created."
   },
-  "suggestedOps.irreversible": "This can't be undone",
+  "suggestedOps.irreversible": "This can’t be undone",
   "@suggestedOps.irreversible": {
     "description": "Marker on a permanent delete, or a compress that overwrites an existing archive. Disclosure only: Cmdr never refuses the group over it."
   },
@@ -67,7 +67,7 @@
   "@suggestedOps.folderWillBeCreatedTooltip": {
     "description": "Tooltip explaining the folder-creation marker."
   },
-  "suggestedOps.destinationUnknown": "Cmdr couldn't check the target folder",
+  "suggestedOps.destinationUnknown": "Cmdr couldn’t check the target folder",
   "@suggestedOps.destinationUnknown": {
     "description": "Shown when the destination volume did not answer in time, so whether the folder exists is genuinely unknown rather than assumed."
   },
@@ -111,7 +111,7 @@
   "@suggestedOps.loadingFiles": {
     "description": "Placeholder while a window of the file list is being read."
   },
-  "suggestedOps.filesLoadFailed": "Cmdr couldn''t load these files.",
+  "suggestedOps.filesLoadFailed": "Cmdr couldn’t load these files.",
   "@suggestedOps.filesLoadFailed": {
     "description": "Shown above the file list of an expanded suggestion group when reading its files didn't work. It takes the place of the per-row loading placeholder, which would otherwise wait forever. The button beside it is suggestedOps.retryFiles."
   },
@@ -119,11 +119,11 @@
   "@suggestedOps.retryFiles": {
     "description": "Button beside suggestedOps.filesLoadFailed that reads the group's files again. A short control label."
   },
-  "suggestedOps.decisionNotRecorded": "Cmdr couldn''t save your answer. Try again.",
+  "suggestedOps.decisionNotRecorded": "Cmdr couldn’t save your answer. Try again.",
   "@suggestedOps.decisionNotRecorded": {
     "description": "Notice at the top of the Suggested ops dialog when pressing Approve or Reject didn't reach the suggestion store, so nothing changed. The list has just been reloaded, so every group shows as it really stands, and the person presses the same button again."
   },
-  "suggestedOps.approvalUnsure": "Cmdr isn''t sure the approval went through. Check the operation queue before you approve it again.",
+  "suggestedOps.approvalUnsure": "Cmdr isn’t sure the approval went through. Check the operation queue before you approve it again.",
   "@suggestedOps.approvalUnsure": {
     "description": "Notice at the top of the Suggested ops dialog when an approval stopped answering partway, so whether its files started moving is unknown. \"Operation queue\" names the queue window by its title (queue.windowTitle); keep the two matching. The point is to stop the person running the same files twice."
   },

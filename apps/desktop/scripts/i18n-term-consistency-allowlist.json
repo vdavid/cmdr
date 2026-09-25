@@ -146,7 +146,7 @@
         "reason": "The dialog title asks the user (`Elküldöd a jelentést?`, the house form for question titles); the button is the nominal `Jelentés küldése`."
       },
       {
-        "source": "Something went wrong, and Cmdr couldn't tell what",
+        "source": "Something went wrong, and Cmdr couldn’t tell what",
         "reason": "`errors.eject.unexpected` follows the eject wrapper `Nem sikerült kiadni: …`, where the settled `Valami nem sikerült` would repeat itself, so it says `A Cmdr problémába ütközött, …`. See `docs/i18n/hu/decisions.md` § Kiadás és leválasztás."
       },
       {

@@ -37,11 +37,11 @@
   },
   "search.notAFolderToast": "Los resultados de búsqueda no son una carpeta. Pega en una carpeta real.",
   "@search.notAFolderToast": {
-    "sourceHash": "c449358"
+    "sourceHash": "a801255"
   },
   "search.searchableFolder.disabledTooltip": "La carpeta actual son resultados de búsqueda, en los que no se puede buscar. Abre primero una carpeta real.",
   "@search.searchableFolder.disabledTooltip": {
-    "sourceHash": "a90d24e"
+    "sourceHash": "42e599d"
   },
   "search.imageResults.title": "Texto en imágenes",
   "@search.imageResults.title": {
@@ -61,7 +61,7 @@
   },
   "search.imageResults.notIndexed": "Las imágenes de esta unidad aún no están indexadas. Podrás buscarlas cuando se ejecute la indexación.",
   "@search.imageResults.notIndexed": {
-    "sourceHash": "287b58e"
+    "sourceHash": "aa3cc36"
   },
   "search.imageResults.empty": "Ninguna imagen contiene este texto.",
   "@search.imageResults.empty": {
@@ -121,7 +121,7 @@
   },
   "search.walkHandoff.stoppedShort": "Puede que los resultados de {label} se queden cortos: Cmdr no ha llegado a recorrerlo todo.",
   "@search.walkHandoff.stoppedShort": {
-    "sourceHash": "3a2a5dd"
+    "sourceHash": "d196ce2"
   },
   "search.walkHandoff.superseded": "Cmdr ha dejado de añadir a los resultados de {label}, porque tu nueva búsqueda ha tomado el relevo.",
   "@search.walkHandoff.superseded": {
@@ -129,23 +129,23 @@
   },
   "search.coverage.uncovered.local": "Cmdr aún no ha indexado {drive}, así que esta búsqueda ha omitido:",
   "@search.coverage.uncovered.local": {
-    "sourceHash": "3b75a63"
+    "sourceHash": "8fe8ce1"
   },
   "search.coverage.uncovered.network": "Cmdr no indexa las unidades de red a menos que se lo pidas, así que esta búsqueda ha omitido:",
   "@search.coverage.uncovered.network": {
-    "sourceHash": "5a2794a"
+    "sourceHash": "0066012"
   },
   "search.coverage.uncovered.unavailable": "Cmdr aún no puede buscar en {drive}, así que esta búsqueda ha omitido:",
   "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "0a3f94b"
+    "sourceHash": "6f9cb5b"
   },
   "search.coverage.uncovered.indexing": "Cmdr todavía está indexando {drive} y aún no ha llegado a estas carpetas, así que la búsqueda las ha omitido:",
   "@search.coverage.uncovered.indexing": {
-    "sourceHash": "f5995ea"
+    "sourceHash": "9cf6003"
   },
   "search.coverage.unresolved": "{count, plural, one {El índice de Cmdr aún no cubre esta carpeta, así que la búsqueda la ha omitido:} many {El índice de Cmdr aún no cubre estas carpetas, así que la búsqueda las ha omitido:} other {El índice de Cmdr aún no cubre estas carpetas, así que la búsqueda las ha omitido:}}",
   "@search.coverage.unresolved": {
-    "sourceHash": "8d9517e"
+    "sourceHash": "6afa798"
   },
   "search.coverage.walk.cancelled": "Has detenido esta búsqueda, así que ves lo que Cmdr había encontrado hasta ese momento. Todo lo que ha leído por el camino queda guardado, y una nueva búsqueda continúa desde ahí.",
   "@search.coverage.walk.cancelled": {
@@ -165,7 +165,7 @@
   },
   "search.coverage.denied": "{count, plural, one {Cmdr no ha tenido permiso para mirar dentro de esta carpeta, así que no hay nada suyo en los resultados:} many {Cmdr no ha tenido permiso para mirar dentro de estas carpetas, así que no hay nada suyo en los resultados:} other {Cmdr no ha tenido permiso para mirar dentro de estas carpetas, así que no hay nada suyo en los resultados:}}",
   "@search.coverage.denied": {
-    "sourceHash": "2c0eb72"
+    "sourceHash": "c71fc2e"
   },
   "search.coverage.deniedFullDiskAccess": "Con acceso a todo el disco, Cmdr puede buscar en carpetas como estas.",
   "@search.coverage.deniedFullDiskAccess": {
@@ -177,7 +177,7 @@
   },
   "search.coverage.declined": "{count, plural, one {Cmdr no mira dentro de las carpetas de instantáneas a propósito, así que no hay nada suyo en los resultados:} many {Cmdr no mira dentro de las carpetas de instantáneas a propósito, así que no hay nada suyo en los resultados:} other {Cmdr no mira dentro de las carpetas de instantáneas a propósito, así que no hay nada suyo en los resultados:}}",
   "@search.coverage.declined": {
-    "sourceHash": "ea5be72"
+    "sourceHash": "85465f3"
   },
   "search.coverage.stillCovering": "{count, plural, one {Otra búsqueda está recorriendo esta carpeta ahora mismo, así que sus archivos aparecerán en un momento:} many {Otra búsqueda está recorriendo estas carpetas ahora mismo, así que sus archivos aparecerán en un momento:} other {Otra búsqueda está recorriendo estas carpetas ahora mismo, así que sus archivos aparecerán en un momento:}}",
   "@search.coverage.stillCovering": {
@@ -193,7 +193,7 @@
   },
   "search.coverage.dontAskAgain": "No volver a preguntar",
   "@search.coverage.dontAskAgain": {
-    "sourceHash": "9c9f7b6"
+    "sourceHash": "3f6e4da"
   },
   "search.coverage.toast.started": "Indexando {drive}. Cuando termine, las búsquedas aquí serán instantáneas.",
   "@search.coverage.toast.started": {
@@ -209,7 +209,7 @@
   },
   "search.coverage.toast.notStarted": "Cmdr no puede indexar {drive} ahora mismo. Puedes intentarlo de nuevo desde el menú de la unidad.",
   "@search.coverage.toast.notStarted": {
-    "sourceHash": "a08fe4a"
+    "sourceHash": "7b98412"
   },
   "search.snapshot.defaultLabel": "Buscar",
   "@search.snapshot.defaultLabel": {
@@ -221,7 +221,7 @@
   },
   "search.runTitle": "Buscar, incluidas las carpetas aún sin indexar",
   "@search.runTitle": {
-    "sourceHash": "859abd4"
+    "sourceHash": "1c389b2"
   },
   "search.coverage.pressEnter": "Pulsa Intro y Cmdr las recorrerá ahora.",
   "@search.coverage.pressEnter": {

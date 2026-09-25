@@ -24,7 +24,7 @@ import TransferProgressDialog from './TransferProgressDialog.svelte'
 
 const ROLLBACK_TOOLTIP = 'Rollback is not available for same-volume moves'
 const ALREADY_LANDED_TOOLTIP =
-  "Every file is already at the destination, so Cmdr can't undo the move now. Cancel still stops it from removing the rest of the originals."
+  'Every file is already at the destination, so Cmdr can’t undo the move now. Cancel still stops it from removing the rest of the originals.'
 
 let conflictCb: ((e: WriteConflictEvent) => void) | null = null
 

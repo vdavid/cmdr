@@ -31,7 +31,7 @@
   "@fileExplorer.doubleClickHint.body": {
     "description": "Body of the one-time double-click-to-parent notification, explaining what the gesture did. \"pane\" = one of the two file-list columns."
   },
-  "fileExplorer.doubleClickHint.dontLikeIt": "Don''t like it?",
+  "fileExplorer.doubleClickHint.dontLikeIt": "Don’t like it?",
   "@fileExplorer.doubleClickHint.dontLikeIt": {
     "description": "Short prompt next to the two buttons in the double-click-to-parent notification, inviting the user to turn the behavior off."
   },
@@ -98,7 +98,7 @@
     "screenshot": "main-window.png",
     "screenshotNote": "The main window, pictured here. Your string is one of the disk space figures Cmdr shows for the drive a file pane is on."
   },
-  "fileExplorer.diskSpace.noLimitNote": "This storage has no size limit, so there's no bar to fill.",
+  "fileExplorer.diskSpace.noLimitNote": "This storage has no size limit, so there’s no bar to fill.",
   "@fileExplorer.diskSpace.noLimitNote": {
     "description": "Second sentence of the hover tooltip when the storage has no size limit. Explains why the usage bar the user expected isn't there. Keep it matter-of-fact; nothing is wrong. A full sentence with its own final punctuation."
   },
@@ -130,7 +130,7 @@
     "description": "Accessibility label for the whole two-pane file explorer region.",
     "screenshot": "main-window.png"
   },
-  "fileExplorer.pane.disconnectFailedToast": "Couldn''t disconnect: {message}",
+  "fileExplorer.pane.disconnectFailedToast": "Couldn’t disconnect: {message}",
   "@fileExplorer.pane.disconnectFailedToast": {
     "description": "Error toast when disconnecting from a network server did not work. {message} is the underlying reason text.",
     "placeholders": {
@@ -141,7 +141,7 @@
   "@fileExplorer.pane.connectedDirectlyToast": {
     "description": "Success toast after upgrading a network share to a faster direct connection."
   },
-  "fileExplorer.pane.directConnectionUnreachableToast": "Can''t reach {server} right now, so this share stays on the system connection.",
+  "fileExplorer.pane.directConnectionUnreachableToast": "Can’t reach {server} right now, so this share stays on the system connection.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
     "description": "Toast shown when connecting a network share directly for faster access couldn't reach the server at all. {server} is the server's friendly name or IP address. Reassures the user that the share still works, just not at the faster speed.",
     "placeholders": {
@@ -155,46 +155,46 @@
       "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.pane.directConnectionUnexpectedToast": "Couldn''t set up a direct connection to {server}, so this share stays on the system connection.",
+  "fileExplorer.pane.directConnectionUnexpectedToast": "Couldn’t set up a direct connection to {server}, so this share stays on the system connection.",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
     "description": "Toast shown when connecting a network share directly for faster access didn't work for a reason we can't be specific about. {server} is the server's friendly name or IP address.",
     "placeholders": {
       "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.pane.directConnectionShareNotOnServerToast": "{server} says it doesn''t have this share, so it stays on the system connection.",
+  "fileExplorer.pane.directConnectionShareNotOnServerToast": "{server} says it doesn’t have this share, so it stays on the system connection.",
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
     "description": "Toast shown when connecting a network share directly for faster access got a clear answer from the server: there is no share by that name on it. Unlike the neighbouring direct-connection toasts, this one is not a temporary condition, so avoid wording like \"right now\" or \"try again\". {server} is the server's friendly name or IP address.",
     "placeholders": {
       "server": "the server's friendly name or IP address, for example Naspolya or 192.168.1.111"
     }
   },
-  "fileExplorer.pane.directConnectionUnavailableToast": "Couldn''t set up a direct connection right now, so this share stays on the system connection.",
+  "fileExplorer.pane.directConnectionUnavailableToast": "Couldn’t set up a direct connection right now, so this share stays on the system connection.",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
     "description": "Toast shown when the direct-connection attempt itself broke down before the app learned why, so no server name is available."
   },
-  "fileExplorer.pane.directConnectionShareGoneToast": "{share} isn''t connected anymore, so there''s no connection to speed up.",
+  "fileExplorer.pane.directConnectionShareGoneToast": "{share} isn’t connected anymore, so there’s no connection to speed up.",
   "@fileExplorer.pane.directConnectionShareGoneToast": {
     "description": "Toast shown when someone asks for a faster direct connection to a network share, but the share was disconnected (unmounted, ejected, or dropped off the network) before the request arrived. {share} is the share's name. Explains why nothing happened; nothing broke.",
     "placeholders": {
       "share": "the name of the network share, for example archive or Photos"
     }
   },
-  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} isn''t responding right now, so Cmdr can''t connect to it directly. Try again in a moment.",
+  "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} isn’t responding right now, so Cmdr can’t connect to it directly. Try again in a moment.",
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
     "description": "Toast shown when someone asks for a faster direct connection to a network share, but the share's current connection stopped answering, so the app couldn't even look it up and didn't try. {share} is the share's name. Nothing is lost, and trying again later may work.",
     "placeholders": {
       "share": "the name of the network share, for example archive or Photos"
     }
   },
-  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} isn''t a network share, so there''s no connection to speed up.",
+  "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} isn’t a network share, so there’s no connection to speed up.",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
     "description": "Toast shown when someone asks for a faster direct connection on a drive that isn't a network share at all, so there's nothing to connect. {volume} is the drive's name. Explains why nothing happened; nothing broke.",
     "placeholders": {
       "volume": "the name of the drive, for example Backup or Macintosh HD"
     }
   },
-  "fileExplorer.pane.trashUnconfirmedToast": "Couldn''t confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
+  "fileExplorer.pane.trashUnconfirmedToast": "Couldn’t confirm the file was moved to Trash. The volume may be slow, but the file may still have been moved. Please check your Trash to be sure.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
     "description": "Persistent warning toast shown when moving a file to the Trash (as part of a rename-overwrite) timed out, so Cmdr can''t confirm it landed. Reassures the user it may have worked and asks them to check. \"Trash\" is the macOS Trash; keep the name."
   },
@@ -202,11 +202,11 @@
   "@fileExplorer.pane.refreshStillRunningToast": {
     "description": "Info toast shown when the user refreshes a pane (⌘R) and the folder takes more than two seconds to read, which happens on a slow network share or a phone. Reassures them the read is still going and the list will catch up on its own."
   },
-  "fileExplorer.pane.dialogRenderFailedToast": "That dialog couldn''t open, so we closed it and gave the keyboard back. Please try again.",
+  "fileExplorer.pane.dialogRenderFailedToast": "That dialog couldn’t open, so we closed it and gave the keyboard back. Please try again.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
     "description": "Error toast shown when a dialog threw while rendering. The dialog is dismissed and focus returns to the file pane, so the user can retry."
   },
-  "fileExplorer.pane.ejectFailedToast": "Couldn''t eject {volumeName}: {message}",
+  "fileExplorer.pane.ejectFailedToast": "Couldn’t eject {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
     "description": "Error toast when ejecting a drive or volume did not work. {volumeName} is the drive''s display name; {message} is the underlying reason text.",
     "placeholders": {
@@ -448,7 +448,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.osMountFallback.message": "Couldn''t directly connect to <shareName>{share}</shareName>. You are connected, but only via macOS''s native SMB network connection, which is 4x slower for most connections (sometimes 100x) than Cmdr''s direct connection. Click the button below to try again.",
+  "fileExplorer.network.osMountFallback.message": "Couldn’t directly connect to <shareName>{share}</shareName>. You are connected, but only via macOS’s native SMB network connection, which is 4x slower for most connections (sometimes 100x) than Cmdr’s direct connection. Click the button below to try again.",
   "@fileExplorer.network.osMountFallback.message": {
     "description": "Body of the notification that appears when Cmdr couldn''t open its own faster connection to a network share, so the share is running on the connection macOS provides. It explains the speed cost and points at the button below it (the \"osMountFallback.retry\" key). <shareName> wraps the share''s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"4x\" and \"100x\" are speed multipliers; write them the way your language writes multipliers. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
@@ -457,7 +457,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.osMountFallback.shareNotOnServer": "Couldn''t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through macOS''s native SMB network connection, which is a lot slower. This one won''t sort itself out: the share may have been renamed or removed on the server, so it''s worth checking there.",
+  "fileExplorer.network.osMountFallback.shareNotOnServer": "Couldn’t directly connect to <shareName>{share}</shareName>, because the server says it has no share by that name. You are still connected through macOS’s native SMB network connection, which is a lot slower. This one won’t sort itself out: the share may have been renamed or removed on the server, so it’s worth checking there.",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
     "description": "Body of the same notification as \"osMountFallback.message\", for the one case where retrying cannot help: the server answered that no share by this name exists, so Cmdr shows no retry button here. It tells the reader where to look instead (the server). <shareName> wraps the share''s name and renders it bold; keep the tag around the name wherever your grammar puts it. \"macOS\", \"SMB\", and \"Cmdr\" are names; keep them.",
     "placeholders": {
@@ -612,7 +612,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.browser.cannotRemoveDiscovered": "Can''t remove discovered hosts",
+  "fileExplorer.network.browser.cannotRemoveDiscovered": "Can’t remove discovered hosts",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
     "description": "Warning toast when the user tries to remove a host that was auto-discovered (only manually-added hosts can be removed).",
     "screenshot": "servers-hub.png",
@@ -642,7 +642,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.browser.hostRemoveFailed": "Couldn''t remove {hostName}",
+  "fileExplorer.network.browser.hostRemoveFailed": "Couldn’t remove {hostName}",
   "@fileExplorer.network.browser.hostRemoveFailed": {
     "description": "Error toast when removing a host from the saved server list did not work.",
     "placeholders": {
@@ -660,7 +660,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.deletePasswordFailed": "Couldn''t delete saved password",
+  "fileExplorer.network.deletePasswordFailed": "Couldn’t delete saved password",
   "@fileExplorer.network.deletePasswordFailed": {
     "description": "Error toast when deleting a host''s saved password from the Keychain did not work.",
     "screenshot": "servers-hub.png",
@@ -684,7 +684,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.browser.disconnectFailed": "Couldn''t disconnect: {message}",
+  "fileExplorer.network.browser.disconnectFailed": "Couldn’t disconnect: {message}",
   "@fileExplorer.network.browser.disconnectFailed": {
     "description": "Error toast when disconnecting from a host did not work. {message} is the underlying reason text.",
     "placeholders": {
@@ -718,7 +718,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Network (SMB) browsing and connection flow. This shows the servers list it starts from; your string appears here or on the closely related browsing, sign-in, or reconnect states reached from it."
   },
-  "fileExplorer.network.share.connectFailedTitle": "Couldn''t connect to {hostName}",
+  "fileExplorer.network.share.connectFailedTitle": "Couldn’t connect to {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
     "description": "Error title shown when opening a host''s share list failed.",
     "placeholders": {
@@ -871,7 +871,7 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
-  "fileExplorer.networkMount.mountFailedTitle": "Couldn''t mount share",
+  "fileExplorer.networkMount.mountFailedTitle": "Couldn’t mount share",
   "@fileExplorer.networkMount.mountFailedTitle": {
     "description": "Error title shown when mounting a network share failed.",
     "screenshot": "servers-hub.png",
@@ -889,18 +889,18 @@
     "screenshot": "servers-hub.png",
     "screenshotNote": "Shown while mounting a network share, in the network flow that starts at the servers list pictured here."
   },
-  "fileExplorer.unreachable.title": "Couldn''t reach {path}",
+  "fileExplorer.unreachable.title": "Couldn’t reach {path}",
   "@fileExplorer.unreachable.title": {
     "description": "Banner heading shown when a folder''s volume can''t be reached. {path} is the path the user tried to open.",
     "placeholders": {
       "path": "the file-system path that could not be reached"
     }
   },
-  "fileExplorer.unreachable.detailGaveUp": "Cmdr tried reconnecting several times but the server didn''t come back. The connection stays available for now. Try again, or disconnect to drop it.",
+  "fileExplorer.unreachable.detailGaveUp": "Cmdr tried reconnecting several times but the server didn’t come back. The connection stays available for now. Try again, or disconnect to drop it.",
   "@fileExplorer.unreachable.detailGaveUp": {
     "description": "Banner detail shown after automatic reconnection to a network server gave up, explaining the options (retry or disconnect)."
   },
-  "fileExplorer.unreachable.detailTimeout": "The volume for this path didn''t respond in time. It may be a network drive that''s currently unavailable.",
+  "fileExplorer.unreachable.detailTimeout": "The volume for this path didn’t respond in time. It may be a network drive that’s currently unavailable.",
   "@fileExplorer.unreachable.detailTimeout": {
     "description": "Banner detail shown when a volume did not respond in time (for example a temporarily-unavailable network drive)."
   },
@@ -936,49 +936,49 @@
       "count": "the same number of items (drives the singular/plural form)"
     }
   },
-  "fileExplorer.clipboard.copyFromDevice": "The clipboard can''t carry files from this device. Use {copyKey} to copy them.",
+  "fileExplorer.clipboard.copyFromDevice": "The clipboard can’t carry files from this device. Use {copyKey} to copy them.",
   "@fileExplorer.clipboard.copyFromDevice": {
     "description": "Info toast shown when the user presses the copy shortcut on a pane showing a connected phone, e-reader, or camera. The system clipboard can't hold that kind of path, so the toast says why and points at Cmdr's own copy command. \"device\" is deliberately broader than \"phone\": the same message covers e-readers and cameras.",
     "placeholders": {
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
   },
-  "fileExplorer.clipboard.moveFromDevice": "The clipboard can''t carry files from this device. Use {moveKey} to move them.",
+  "fileExplorer.clipboard.moveFromDevice": "The clipboard can’t carry files from this device. Use {moveKey} to move them.",
   "@fileExplorer.clipboard.moveFromDevice": {
     "description": "Info toast shown when the user presses the cut shortcut on a pane showing a connected phone, e-reader, or camera. The sibling of fileExplorer.clipboard.copyFromDevice, for moving instead of copying; keep the two worded alike. \"device\" is deliberately broader than \"phone\": the same message covers e-readers and cameras.",
     "placeholders": {
       "moveKey": "the key currently bound to Cmdr's move command, e.g. \"F6\". The user can rebind it, so it isn't always F6."
     }
   },
-  "fileExplorer.clipboard.copyFromServer": "The clipboard can''t carry files from this server. Use {copyKey} to copy them.",
+  "fileExplorer.clipboard.copyFromServer": "The clipboard can’t carry files from this server. Use {copyKey} to copy them.",
   "@fileExplorer.clipboard.copyFromServer": {
     "description": "Info toast shown when the user presses the copy shortcut on a pane showing a server reached over SFTP or WebDAV. The system clipboard can't hold that kind of path, so the toast says why and points at Cmdr's own copy command. Same sentence as fileExplorer.clipboard.copyFromDevice with \"server\" in place of \"device\"; keep the pair worded alike.",
     "placeholders": {
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
   },
-  "fileExplorer.clipboard.moveFromServer": "The clipboard can''t carry files from this server. Use {moveKey} to move them.",
+  "fileExplorer.clipboard.moveFromServer": "The clipboard can’t carry files from this server. Use {moveKey} to move them.",
   "@fileExplorer.clipboard.moveFromServer": {
     "description": "Info toast shown when the user presses the cut shortcut on a pane showing a server reached over SFTP or WebDAV. The sibling of fileExplorer.clipboard.copyFromServer, for moving instead of copying; keep the two worded alike.",
     "placeholders": {
       "moveKey": "the key currently bound to Cmdr's move command, e.g. \"F6\". The user can rebind it, so it isn't always F6."
     }
   },
-  "fileExplorer.clipboard.copyFromUnknown": "These files can''t go on the clipboard. Use {copyKey} to copy them.",
+  "fileExplorer.clipboard.copyFromUnknown": "These files can’t go on the clipboard. Use {copyKey} to copy them.",
   "@fileExplorer.clipboard.copyFromUnknown": {
     "description": "Info toast shown when the user presses the copy shortcut on search results whose files sit somewhere the clipboard can't reach, and Cmdr can no longer tell whether that was a device or a server (the phone was unplugged, or the server disconnected, while the results stayed on screen). Says \"these files\" precisely because naming the place would be a guess. The noun-carrying versions are fileExplorer.clipboard.copyFromDevice and copyFromServer.",
     "placeholders": {
       "copyKey": "the key currently bound to Cmdr's copy command, e.g. \"F5\". The user can rebind it, so it isn't always F5."
     }
   },
-  "fileExplorer.clipboard.moveFromUnknown": "These files can''t go on the clipboard. Use {moveKey} to move them.",
+  "fileExplorer.clipboard.moveFromUnknown": "These files can’t go on the clipboard. Use {moveKey} to move them.",
   "@fileExplorer.clipboard.moveFromUnknown": {
     "description": "Info toast shown when the user presses the cut shortcut on search results whose files sit somewhere the clipboard can't reach, and Cmdr can no longer tell whether that was a device or a server. The sibling of fileExplorer.clipboard.copyFromUnknown, for moving instead of copying; keep the two worded alike.",
     "placeholders": {
       "moveKey": "the key currently bound to Cmdr's move command, e.g. \"F6\". The user can rebind it, so it isn't always F6."
     }
   },
-  "fileExplorer.edit.notOnThisMac": "Cmdr can''t open this file in an editor yet, because it isn''t a regular file on your Mac. Press F3 to view it.",
+  "fileExplorer.edit.notOnThisMac": "Cmdr can’t open this file in an editor yet, because it isn’t a regular file on your Mac. Press F3 to view it.",
   "@fileExplorer.edit.notOnThisMac": {
     "description": "Info toast shown when the user presses F4 (edit) on a file with no regular file behind it on the Mac: a file on a phone or camera, on a server reached over SFTP or WebDAV, inside an archive, or in the virtual .git folders. A text editor can't open it yet, so the toast says so and points at F3, which opens Cmdr's own viewer and can show the file. \"Cmdr\" is the product name and \"F3\" a key name; keep both. Never use the words 'error' or 'failed'."
   },
@@ -1001,18 +1001,18 @@
   "@fileExplorer.edit.openSettings": {
     "description": "VERB phrase (imperative). Button on the text editor toasts (after F4). Opens the Settings window scrolled to the row that picks which app F4 opens files in. Same wording as the commands.handler.openTerminalHere.openSettings button; translate it identically."
   },
-  "fileExplorer.edit.appMissing": "Cmdr can''t find the editor you picked, so this file opened in {app}.",
+  "fileExplorer.edit.appMissing": "Cmdr can’t find the editor you picked, so this file opened in {app}.",
   "@fileExplorer.edit.appMissing": {
     "description": "Toast shown after F4 when the app the user picked to edit files in isn't on this Mac right now (uninstalled, or on a disk that isn't connected). Cmdr opened the file in the system's default text editor instead and reset the setting to it. Names the app the file DID open in, because nothing is left to read the missing app's name from. Not phrased as something going wrong, because the file did open. \"Cmdr\" is the product name; keep it.",
     "placeholders": {
       "app": "the display name of the app the file opened in, as Finder shows it, like \"TextEdit\" or \"Xcode\". Any installed app's own name, never translated; phrase the sentence so it reads correctly whatever name lands here"
     }
   },
-  "fileExplorer.edit.appMissingUnnamed": "Cmdr can''t find the editor you picked, so this file opened in your default text editor.",
+  "fileExplorer.edit.appMissingUnnamed": "Cmdr can’t find the editor you picked, so this file opened in your default text editor.",
   "@fileExplorer.edit.appMissingUnnamed": {
     "description": "The same toast as fileExplorer.edit.appMissing, for the rare case where Cmdr can't name the default app the file opened in. \"your default text editor\" is the Mac's system-wide default app for text files. \"Cmdr\" is the product name; keep it."
   },
-  "fileExplorer.edit.launchRefused": "Cmdr couldn''t start your text editor. Try opening it yourself once, then come back.",
+  "fileExplorer.edit.launchRefused": "Cmdr couldn’t start your text editor. Try opening it yourself once, then come back.",
   "@fileExplorer.edit.launchRefused": {
     "description": "Toast shown after F4 when macOS refused to launch the text editor. Opening the app by hand once usually clears whatever blocked it (a quarantine prompt, a permission), which is what the second sentence suggests. Same advice as commands.handler.openTerminalHere.launchRefused, with \"text editor\" in place of \"terminal app\". Conversational; avoid the words \"error\" and \"failed\"."
   },
@@ -1050,7 +1050,7 @@
   "@fileExplorer.clipboard.pastedAsFileSettings": {
     "description": "Button on the paste-as-file info toast that opens Settings (Behavior > Navigation & file ops) so the user can change or turn off this paste behavior."
   },
-  "fileExplorer.clipboard.copiedPath": "Copied the path, it''s now on your clipboard:",
+  "fileExplorer.clipboard.copiedPath": "Copied the path, it’s now on your clipboard:",
   "@fileExplorer.clipboard.copiedPath": {
     "description": "Info toast confirming that the path of the item under the cursor (or of the current folder, when the cursor sits on the \"..\" row) went to the system clipboard. The path itself is rendered on its own line below this sentence, in a monospace font, so the sentence ends with a colon and never contains the path."
   },
@@ -1070,19 +1070,19 @@
   "@fileExplorer.readOnly.volumeTitle": {
     "description": "Alert dialog title shown when the user tries a write action on a read-only volume."
   },
-  "fileExplorer.readOnly.renameMessage": "This is a read-only volume. Renaming isn''t possible here.",
+  "fileExplorer.readOnly.renameMessage": "This is a read-only volume. Renaming isn’t possible here.",
   "@fileExplorer.readOnly.renameMessage": {
     "description": "Alert body when the user tries to rename a file on a read-only volume."
   },
-  "fileExplorer.readOnly.mkdirMessage": "This is a read-only volume. Creating folders isn''t possible here.",
+  "fileExplorer.readOnly.mkdirMessage": "This is a read-only volume. Creating folders isn’t possible here.",
   "@fileExplorer.readOnly.mkdirMessage": {
     "description": "Alert body when the user tries to create a folder on a read-only volume."
   },
-  "fileExplorer.readOnly.mkfileMessage": "This is a read-only volume. Creating files isn''t possible here.",
+  "fileExplorer.readOnly.mkfileMessage": "This is a read-only volume. Creating files isn’t possible here.",
   "@fileExplorer.readOnly.mkfileMessage": {
     "description": "Alert body when the user tries to create a file on a read-only volume."
   },
-  "fileExplorer.readOnly.deleteMessage": "This is a read-only volume. Deleting files isn''t possible here.",
+  "fileExplorer.readOnly.deleteMessage": "This is a read-only volume. Deleting files isn’t possible here.",
   "@fileExplorer.readOnly.deleteMessage": {
     "description": "Alert body when the user tries to delete a file on a read-only volume."
   },
@@ -1121,7 +1121,7 @@
   "@fileExplorer.git.useTransferToCopyOut": {
     "description": "Info toast when the user presses the system-clipboard copy or cut shortcut (Cmd+C / Cmd+X) inside the virtual `.git` portal, where Cmdr shows a repository''s branches, tags, and commits as browsable folders. Those entries are reconstructed from git history and have no path the system clipboard can carry, so it points the user at the F5 (copy) and F6 (move) transfer keys instead. F5 and F6 are keyboard key names; keep them as-is. \"git\" is the version-control tool name; keep it."
   },
-  "fileExplorer.rename.hiddenAfterRename": "Your file disappeared from view because hidden files aren''t shown.",
+  "fileExplorer.rename.hiddenAfterRename": "Your file disappeared from view because hidden files aren’t shown.",
   "@fileExplorer.rename.hiddenAfterRename": {
     "description": "Info toast after renaming a file to a name starting with a dot, which hides it because hidden files aren''t currently shown. Reassures the user the file still exists."
   },
@@ -1150,14 +1150,14 @@
       "others": "the same number of other files (drives the singular/plural form)"
     }
   },
-  "fileExplorer.rename.unconfirmed": "Couldn''t confirm the rename of “{name}”. The volume may be slow, so the rename may still have gone through.",
+  "fileExplorer.rename.unconfirmed": "Couldn’t confirm the rename of “{name}”. The volume may be slow, so the rename may still have gone through.",
   "@fileExplorer.rename.unconfirmed": {
     "description": "Warning toast shown when a rename gets no answer from the volume in time (a slow network share or phone). The rename may well have succeeded on disk, so the message must never say the file kept its name; it says Cmdr couldn''t tell. Cmdr re-reads the folder right after, so the user will see which it was. {name} is the name the file had before the rename, shown in quotes. As soon as a second rename goes unanswered, this same toast is rewritten with fileExplorer.rename.unconfirmedAndOthers, so the two read as one message that grows.",
     "placeholders": {
       "name": "the name the file had before the rename"
     }
   },
-  "fileExplorer.rename.unconfirmedAndOthers": "Couldn''t confirm the rename of “{name}” and {others, plural, one {one other file} other {{othersText} other files}}. The volume may be slow, so the renames may still have gone through.",
+  "fileExplorer.rename.unconfirmedAndOthers": "Couldn’t confirm the rename of “{name}” and {others, plural, one {one other file} other {{othersText} other files}}. The volume may be slow, so the renames may still have gone through.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
     "description": "Warning toast shown when SEVERAL renames get no answer from the volume in time, which happens when the user renames a run of files by pressing the up/down arrow inside the inline rename editor and each rename is still waiting on a slow network share or phone. It is the same single toast as fileExplorer.rename.unconfirmed, rewritten each time another rename goes unanswered, so a long run can''t bury the user in toasts. The renames may well have succeeded on disk, so the message must never say the files kept their names. {name} is the name the most recent file had before its rename, shown in quotes. {othersText} is how many OTHER renames went unanswered, already formatted for display; it is always 1 or more.",
     "placeholders": {
@@ -1287,12 +1287,12 @@
   "@fileExplorer.dirSize.mismatchTooltipPrefix": {
     "description": "First line of the warning tooltip shown when a folder''s logical (content) and physical (on-disk) sizes differ a lot; the detailed size breakdown follows below it."
   },
-  "fileExplorer.dirSize.lowerBoundLine": "At least this much: some subfolders weren''t scanned yet, so the real total may be larger.",
+  "fileExplorer.dirSize.lowerBoundLine": "At least this much: some subfolders weren’t scanned yet, so the real total may be larger.",
   "@fileExplorer.dirSize.lowerBoundLine": {
     "description": "Line in a folder''s size tooltip when the shown size is a lower bound (displayed with a ≥ prefix) because part of the subtree hasn''t been scanned. Explains the number is a floor: the real total is at least this much and may be larger (not necessarily larger — the unscanned parts could be empty).",
     "screenshot": "operation-chip.png"
   },
-  "fileExplorer.dirSize.unknownTooltip": "Size unknown: this folder hasn''t been scanned yet.",
+  "fileExplorer.dirSize.unknownTooltip": "Size unknown: this folder hasn’t been scanned yet.",
   "@fileExplorer.dirSize.unknownTooltip": {
     "description": "Hover tooltip on a folder whose recursive size is unknown (shown as an em dash —) because nothing in its subtree has been scanned. Distinct from a genuinely-empty folder, which shows 0 bytes.",
     "screenshot": "empty-pane.png"
@@ -1501,7 +1501,7 @@
   "@fileExplorer.imageIndex.file.stale": {
     "description": "Hover tooltip on the badge over an image file''s icon. Means the file changed after it was indexed, so it''s scheduled to be indexed again."
   },
-  "fileExplorer.imageIndex.file.failed": "Couldn''t be indexed",
+  "fileExplorer.imageIndex.file.failed": "Couldn’t be indexed",
   "@fileExplorer.imageIndex.file.failed": {
     "description": "Hover tooltip on the badge over an image file''s icon. Means indexing this image didn''t work. Keep it gentle; do not use the words \"error\" or \"failed\" in the visible copy."
   },
@@ -1825,7 +1825,7 @@
     },
     "screenshot": "quick-look-hint.png"
   },
-  "fileExplorer.quickLookHint.dontShowAgain": "Don''t show again",
+  "fileExplorer.quickLookHint.dontShowAgain": "Don’t show again",
   "@fileExplorer.quickLookHint.dontShowAgain": {
     "description": "Button on the Finder-convert toast that permanently dismisses this hint (until re-enabled in Settings).",
     "screenshot": "quick-look-hint.png"
@@ -1882,7 +1882,7 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "description": "Hover tooltip on the greyed-out \"Add current folder to favorites\" row, explaining why it can't be picked: the pane's folder is already in the list. A statement, not an error."
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "This folder can''t be a favorite: favorites only work on disks and mounted shares",
+  "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favorite: favorites only work on disks and mounted shares",
   "@fileExplorer.navigation.favoritesCantAddHere": {
     "description": "Hover tooltip on the greyed-out \"Add current folder to favorites\" row when the pane is somewhere a favorite could never point back to: inside an archive, in the .git history browser, on a phone, or on a server Cmdr connects to itself. Says a fact about THIS folder first, then the reason after the colon; pair it with its sibling fileExplorer.navigation.favoritesAlreadyAdded, which opens the same way. \"Mounted share\" is a network folder the Mac itself mounts, which behaves like a local disk; keep it plain and don't name protocols (SMB, MTP). No length limit: it's a tooltip, so read naturally rather than trimming."
   },
@@ -1916,23 +1916,23 @@
     "description": "Accessibility label for the inline favorite shortcut capture field.",
     "placeholders": { "name": "the favorite's display name" }
   },
-  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Couldn''t save that shortcut. Try again?",
+  "fileExplorer.navigation.favoriteShortcutSaveFailed": "Couldn’t save that shortcut. Try again?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
     "description": "Toast when a favorite's letter shortcut could not be saved."
   },
-  "fileExplorer.navigation.removeFavoriteFailed": "Couldn''t remove that favorite. Try again?",
+  "fileExplorer.navigation.removeFavoriteFailed": "Couldn’t remove that favorite. Try again?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
     "description": "Error toast when removing a favorite from the list did not work, inviting the user to retry."
   },
-  "fileExplorer.navigation.renameFavoriteFailed": "Couldn''t rename that favorite. Try again?",
+  "fileExplorer.navigation.renameFavoriteFailed": "Couldn’t rename that favorite. Try again?",
   "@fileExplorer.navigation.renameFavoriteFailed": {
     "description": "Error toast when renaming a favorite did not work, inviting the user to retry."
   },
-  "fileExplorer.navigation.reorderFavoritesFailed": "Couldn''t reorder favorites. Try again?",
+  "fileExplorer.navigation.reorderFavoritesFailed": "Couldn’t reorder favorites. Try again?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
     "description": "Error toast when reordering favorites did not work, inviting the user to retry."
   },
-  "fileExplorer.navigation.locationUnreachableToast": "Couldn''t reach that location''s drive. It might be disconnected.",
+  "fileExplorer.navigation.locationUnreachableToast": "Couldn’t reach that location’s drive. It might be disconnected.",
   "@fileExplorer.navigation.locationUnreachableToast": {
     "description": "Toast shown when the app can't figure out which drive (volume) a place lives on, so it can't navigate there. Happens when going to a search result, a typed path, or a downloaded file whose drive is unplugged or no longer present. \"Drive\" means a storage volume like a hard disk or USB stick."
   },
@@ -1950,7 +1950,7 @@
     "description": "Menu item (in the popup under the network share's amber connection dot, next to the pane's volume name) that upgrades an OS-mounted network share to a faster direct connection.",
     "screenshot": "pane-volume-chooser.png"
   },
-  "fileExplorer.navigation.useDirectConnection": "Use Cmdr''s fast direct connection",
+  "fileExplorer.navigation.useDirectConnection": "Use Cmdr’s fast direct connection",
   "@fileExplorer.navigation.useDirectConnection": {
     "description": "Checkbox menu item in the submenu of a network share's row in the volume switcher. Checked (the default), Cmdr opens its own faster connection to this one share. Unchecked, the share stays on the slower connection macOS made. Applies to this share only, not the whole server."
   },
@@ -1970,7 +1970,7 @@
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "description": "Persistent progress toast shown while connecting to a network share using the password macOS already saved."
   },
-  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for “{displayName}”. You''ll see a system prompt asking to allow Keychain access. That''s expected, so click Allow.",
+  "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr can reuse the password macOS already saved for “{displayName}”. You’ll see a system prompt asking to allow Keychain access. That’s expected, so click Allow.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
     "description": "Body of the confirmation dialog offering to reuse a network share''s saved macOS password. Warns that a macOS Keychain consent prompt (which Cmdr can''t customize) will follow. \"Keychain\" is the macOS credential store and \"Allow\" is the button on that system prompt — localize both to the terms your macOS uses (Apple localizes Keychain Access and the Allow button), per the Term-choice principles.",
     "placeholders": {
@@ -2006,7 +2006,7 @@
   "@fileExplorer.navigation.connectionTooltipNeedsSignIn": {
     "description": "Hover tooltip on the connection dot of a server row where Cmdr stopped reconnecting because a password or passphrase is what's missing. Opening the row is how the user gets back in."
   },
-  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "This server''s key changed. Open it to look at the key.",
+  "fileExplorer.navigation.connectionTooltipNeedsHostKey": "This server’s key changed. Open it to look at the key.",
   "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
     "description": "Hover tooltip on the connection dot of an SFTP server row whose host key no longer matches the trusted one. \"Key\" is the server's SSH host key, the fingerprint a person checks before trusting the server again."
   },
@@ -2021,7 +2021,7 @@
       "name": "the server's display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.disconnectBusyTooltip": "Can''t disconnect while operations are in progress on this server",
+  "fileExplorer.navigation.disconnectBusyTooltip": "Can’t disconnect while operations are in progress on this server",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
     "description": "Accessibility label and tooltip on a disconnect control that is disabled because a file operation is still running against the server."
   },
@@ -2032,21 +2032,21 @@
       "name": "the server''s display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.serverUnpinnedToast": "{name} is out of your volume switcher. It''s still saved.",
+  "fileExplorer.navigation.serverUnpinnedToast": "{name} is out of your volume switcher. It’s still saved.",
   "@fileExplorer.navigation.serverUnpinnedToast": {
     "description": "Toast confirming that a server no longer shows in the volume switcher. The second sentence matters: nothing was deleted, and the server is still in the servers hub.",
     "placeholders": {
       "name": "the server''s display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.pinRefusedToast": "Cmdr couldn''t change where {name} shows.",
+  "fileExplorer.navigation.pinRefusedToast": "Cmdr couldn’t change where {name} shows.",
   "@fileExplorer.navigation.pinRefusedToast": {
     "description": "Toast shown when moving a server in or out of the volume switcher didn''t go through.",
     "placeholders": {
       "name": "the server''s display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr couldn''t disconnect from {name}.",
+  "fileExplorer.navigation.disconnectRefusedToast": "Cmdr couldn’t disconnect from {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
     "description": "Toast shown when dropping a server's connection didn't go through.",
     "placeholders": {
@@ -2064,7 +2064,7 @@
       "name": "the server's display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr couldn''t forget {name}.",
+  "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr couldn’t forget {name}.",
   "@fileExplorer.navigation.forgetServerRefusedToast": {
     "description": "Toast shown when removing a saved server didn't go through.",
     "placeholders": {
@@ -2082,7 +2082,7 @@
       "name": "the server's display name, like \"Naspolya\""
     }
   },
-  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr couldn''t forget the saved password for {name}.",
+  "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr couldn’t forget the saved password for {name}.",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
     "description": "Toast shown when removing a server's remembered password didn't go through.",
     "placeholders": {
@@ -2104,7 +2104,7 @@
     },
     "screenshot": "pane-volume-chooser.png"
   },
-  "fileExplorer.navigation.ejectBusyTooltip": "Can''t eject while operations are in progress on this device",
+  "fileExplorer.navigation.ejectBusyTooltip": "Can’t eject while operations are in progress on this device",
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "description": "Accessibility label and tooltip on a disabled eject button, explaining the volume can''t be ejected because a file operation is running on it."
   },
@@ -2143,7 +2143,7 @@
   "@fileExplorer.navigation.spaceStillUnavailable": {
     "description": "Hover tooltip on a volume''s disk-space bar after a retry to fetch free space also failed, inviting another click to retry."
   },
-  "fileExplorer.navigation.spaceFetchFailed": "Couldn''t fetch disk space. Click to retry",
+  "fileExplorer.navigation.spaceFetchFailed": "Couldn’t fetch disk space. Click to retry",
   "@fileExplorer.navigation.spaceFetchFailed": {
     "description": "Hover tooltip on a volume''s disk-space bar when fetching free space failed (first time), inviting a click to retry."
   },
@@ -2199,11 +2199,11 @@
   "@fileExplorer.navigation.driveIndex.tooltipStalePhone": {
     "description": "Hover tooltip on the yellow drive-index dot for an Android phone connected over USB debugging (ADB). The phone never reports its own file changes, so its index reads as possibly out of date even while it's plugged in: Cmdr updates the index for copies, moves, and deletes it does itself, and anything changed on the phone (new photos, another app) appears after the user rescans. The phone version of tooltipStale; it must not mention disconnecting. Never use the words 'error' or 'failed'."
   },
-  "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexing stopped because of a problem saving this drive''s index. Rescan to rebuild it.",
+  "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexing stopped because of a problem saving this drive’s index. Rescan to rebuild it.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
     "description": "Hover tooltip on the RED drive-index dot, shown when the drive''s index database hit a fatal storage problem (a disk I/O failure, a full or read-only disk, corruption) and indexing stopped for this drive. The index is a rebuildable cache, so the fix is to rescan. Keep it calm and actionable; active voice; never use the words ''error'' or ''failed''."
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, and Cmdr''s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, and Cmdr’s next full check in {remaining, plural, one {an hour} other {{remainingText} hours}} will fix it.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
     "description": "Extra paragraph appended to the drive-index dot''s hover tooltip when macOS reported it had lost track of file system changes on this drive since the last full check, and Cmdr deliberately waited instead of rescanning right away. Reassuring, not alarming: the dot stays green because waiting is the intended behavior, and the next scheduled full check will bring folder sizes back in line. Keep the plural branches for all three numbers. Never use the words ''error'' or ''failed''.",
     "placeholders": {
@@ -2215,7 +2215,7 @@
       "remainingText": "the same remaining-hour count, already formatted for the reader (e.g. 6)"
     }
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, and the check running right now will put them right.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, and the check running right now will put them right.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
     "description": "The variant of the coalesced-changes tooltip paragraph shown while Cmdr is actually running the full check on this drive (the dot is blue). The other variants promise a check later; this one points at the one in progress, so don''t reintroduce a time. It also drops the ''in the last N hours'' window the others open with: the running scan cleared the last-completed-scan marker, so there''s no honest window to name. Reassuring, not alarming. Never use the words ''error'' or ''failed''.",
     "placeholders": {
@@ -2223,7 +2223,7 @@
       "countText": "the same count, already formatted for the reader (e.g. 12)"
     }
   },
-  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It''s usually caches full of small files, so it''s no big deal.",
+  "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS lost track of file system changes {count, plural, one {once} other {{countText} times}} in the last {hours, plural, one {hour} other {{hoursText} hours}}, so a few folder sizes might be slightly off. It’s usually caches full of small files, so it’s no big deal.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
     "description": "The variant of the tooltip paragraph above for a drive with no scheduled full check to promise (an external drive, or one whose check is already due). Same first sentence; the closing reassurance replaces the ''next full check in N hours'' promise, so don''t reintroduce a time here. Never use the words ''error'' or ''failed''.",
     "placeholders": {
@@ -2233,7 +2233,7 @@
       "hoursText": "the same hour count, already formatted for the reader (e.g. 18)"
     }
   },
-  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr couldn''t read {count, plural, one {one spot} other {{countText} spots}} on this drive, so a search here may come back a little short.",
+  "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr couldn’t read {count, plural, one {one spot} other {{countText} spots}} on this drive, so a search here may come back a little short.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
     "description": "Footnote paragraph under a finished drive''s index tooltip, when some folders hold no rows because Cmdr was refused access or skips them on purpose. A ''spot'' is a group of folders that share a parent, not a folder count: one unreadable place can hold thousands of folders, and the number a reader recognizes is the place. It''s a footnote, not a warning: nothing is styled as a problem and nothing is asked of them, since the badge is not where someone grants a permission (search''s coverage note does that). Never use the words ''error'' or ''failed''.",
     "placeholders": {
@@ -2241,7 +2241,7 @@
       "countText": "the same count, already formatted for the reader (e.g. 1,497)"
     }
   },
-  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr couldn''t read {count, plural, one {one spot} other {{countText} spots}} on this drive, so a search here may come back a little short. It comes back to them on its own.",
+  "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr couldn’t read {count, plural, one {one spot} other {{countText} spots}} on this drive, so a search here may come back a little short. It comes back to them on its own.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
     "description": "The variant of the footnote above for when at least one of those places stopped answering rather than being refused or deliberately skipped, which is the kind Cmdr retries by itself. Same first sentence; the second says so, which is what keeps the line from reading as something the user has to fix. Never use the words ''error'' or ''failed''.",
     "placeholders": {
@@ -2265,7 +2265,7 @@
   "@fileExplorer.navigation.driveIndex.menuStop": {
     "description": "Menu item to cancel an in-progress scan (shown while the drive is being indexed). Sentence case."
   },
-  "fileExplorer.navigation.driveIndex.menuForget": "Forget this drive''s index",
+  "fileExplorer.navigation.driveIndex.menuForget": "Forget this drive’s index",
   "@fileExplorer.navigation.driveIndex.menuForget": {
     "description": "Menu item that deletes the drive''s index entirely (removes its database from disk), so a fresh full scan starts next time the user turns indexing on. The recovery action when an index is stuck. More destructive than ''Turn off indexing'', which keeps the index to resume. Sentence case."
   },
@@ -2293,7 +2293,7 @@
     },
     "screenshot": "main-window.png"
   },
-  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr couldn''t connect to {name} directly, which it needs to index this share. Check the share is reachable and try again.",
+  "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr couldn’t connect to {name} directly, which it needs to index this share. Check the share is reachable and try again.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
     "description": "Toast shown when turning on indexing for an SMB share doesn''t go through because the direct connection couldn''t be established. Active voice; avoid the words ''error'' and ''failed''.",
     "placeholders": {
@@ -2328,14 +2328,14 @@
       "name": "the drive''s display name (e.g. Backups)"
     }
   },
-  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr can''t index {name} right now. Reconnect the drive and try again.",
+  "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr can’t index {name} right now. Reconnect the drive and try again.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
     "description": "Fallback toast when turning on indexing for a drive doesn''t go through because the per-drive command threw an unexpected exception (not one of the typed refusal reasons).",
     "placeholders": {
       "name": "the drive''s display name (e.g. Backups)"
     }
   },
-  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr hit a snag turning on indexing for {name}. This shouldn''t happen. Restarting Cmdr usually clears it.",
+  "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr hit a snag turning on indexing for {name}. This shouldn’t happen. Restarting Cmdr usually clears it.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
     "description": "Toast shown when turning on indexing for a drive is refused for a reason that signals an internal problem rather than something the user can fix by reconnecting (the drive isn''t registered, or it''s classified as a non-SMB volume when it shouldn''t be). Reassuring and conversational; avoid the words ''error'' and ''failed''.",
     "placeholders": {

@@ -125,7 +125,7 @@ describe('DeleteDialog over online-only cloud content', () => {
     await tick()
 
     expect(bannerText(target)).toContain(ALL_ONLINE_ONLY)
-    expect(bannerText(target)).toContain("There'll be no copies in the Trash")
+    expect(bannerText(target)).toContain('There’ll be no copies in the Trash')
     expect(bannerText(target)).toContain('cloud services usually keep their own trash for about 30 days')
     expect(target.querySelector('[role="switch"]')).toBeNull()
   })
@@ -150,7 +150,7 @@ describe('DeleteDialog over online-only cloud content', () => {
     const { target } = mountDialog({})
     await tick()
 
-    expect(bannerText(target)).toContain("This volume doesn't support trash.")
+    expect(bannerText(target)).toContain('This volume doesn’t support trash.')
     expect(bannerText(target)).not.toContain('online-only')
   })
 

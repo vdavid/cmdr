@@ -5,7 +5,7 @@
   },
   "errorReporter.dialog.description": "這會把 Cmdr 最近的記錄檔傳給團隊，讓我們修正出問題的地方。記錄會先在你的電腦上遮蔽處理：檔案路徑、主機名稱、IP 位址和電子郵件地址都會在傳送前清掉。",
   "@errorReporter.dialog.description": {
-    "sourceHash": "dd11284"
+    "sourceHash": "ba4012f"
   },
   "errorReporter.dialog.referenceIdLabel": "參考 ID：",
   "@errorReporter.dialog.referenceIdLabel": {
@@ -38,7 +38,7 @@
   },
   "errorReporter.dialog.detailsToggle": "即將傳送的內容",
   "@errorReporter.dialog.detailsToggle": {
-    "sourceHash": "b1069f7"
+    "sourceHash": "f57398b"
   },
   "errorReporter.dialog.manifestHeading": "資訊清單",
   "@errorReporter.dialog.manifestHeading": {
@@ -66,7 +66,7 @@
   },
   "errorReporter.dialog.prepareFailed": "無法產生預覽。",
   "@errorReporter.dialog.prepareFailed": {
-    "sourceHash": "3729966"
+    "sourceHash": "24cd5ba"
   },
   "errorReporter.dialog.tryAgain": "再試一次",
   "@errorReporter.dialog.tryAgain": {
@@ -74,7 +74,7 @@
   },
   "errorReporter.dialog.bundleUnavailable": "Cmdr 無法為這份報告收集記錄檔。請稍後再試一次。",
   "@errorReporter.dialog.bundleUnavailable": {
-    "sourceHash": "3743aba"
+    "sourceHash": "15bc5b8"
   },
   "errorReporter.dialog.saveToDisk": "將報告封存檔儲存到磁碟（除錯用）",
   "@errorReporter.dialog.saveToDisk": {
@@ -94,11 +94,11 @@
   },
   "errorReporter.dialog.sendFailedToast": "無法傳送錯誤報告。{reason}",
   "@errorReporter.dialog.sendFailedToast": {
-    "sourceHash": "75337c1"
+    "sourceHash": "1eedf49"
   },
   "errorReporter.dialog.saveFailedToast": "無法儲存報告封存檔：{error}",
   "@errorReporter.dialog.saveFailedToast": {
-    "sourceHash": "34cf2b4"
+    "sourceHash": "6405cca"
   },
   "errorReporter.amend.title": "為你的錯誤報告補充內容",
   "@errorReporter.amend.title": {
@@ -106,7 +106,7 @@
   },
   "errorReporter.amend.description": "Cmdr 已經把這份報告送出去了。寫個備註，或附上你的電子郵件地址，就會一起加到團隊手上的那一份裡。",
   "@errorReporter.amend.description": {
-    "sourceHash": "276771e"
+    "sourceHash": "9e1a80f"
   },
   "errorReporter.amend.noteLabel": "你的備註",
   "@errorReporter.amend.noteLabel": {
@@ -126,7 +126,7 @@
   },
   "errorReporter.amend.unavailable": "那份報告已經沒辦法再加東西了。想把你的備註送到團隊那裡，請從「輔助說明」選單傳送一份新的報告。",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "cbb7a33"
+    "sourceHash": "b96b48a"
   },
   "errorReporter.amend.close": "關閉",
   "@errorReporter.amend.close": {
@@ -134,7 +134,7 @@
   },
   "errorReporter.amend.addFailedToast": "無法加入你的備註。{reason}",
   "@errorReporter.amend.addFailedToast": {
-    "sourceHash": "0b67749"
+    "sourceHash": "02f82ce"
   },
   "errorReporter.sentToast.message": "錯誤報告已傳送。你的參考 ID 是",
   "@errorReporter.sentToast.message": {

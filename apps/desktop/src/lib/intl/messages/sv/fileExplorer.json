@@ -29,7 +29,7 @@
   },
   "fileExplorer.doubleClickHint.dontLikeIt": "Gillar du det inte?",
   "@fileExplorer.doubleClickHint.dontLikeIt": {
-    "sourceHash": "2049722"
+    "sourceHash": "4801954"
   },
   "fileExplorer.doubleClickHint.neverAgain": "Gör aldrig det här igen",
   "@fileExplorer.doubleClickHint.neverAgain": {
@@ -69,7 +69,7 @@
   },
   "fileExplorer.diskSpace.noLimitNote": "Det här lagringsutrymmet har ingen storleksgräns, så det finns ingen stapel att fylla.",
   "@fileExplorer.diskSpace.noLimitNote": {
-    "sourceHash": "0c363c5"
+    "sourceHash": "7e2a153"
   },
   "fileExplorer.diskSpace.lowNote": "Den här stapeln är röd för att volymen har ont om utrymme.",
   "@fileExplorer.diskSpace.lowNote": {
@@ -94,7 +94,7 @@
   },
   "fileExplorer.pane.disconnectFailedToast": "Det gick inte att koppla från: {message}",
   "@fileExplorer.pane.disconnectFailedToast": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.pane.connectedDirectlyToast": "Ansluten direkt för snabbare åtkomst",
   "@fileExplorer.pane.connectedDirectlyToast": {
@@ -102,7 +102,7 @@
   },
   "fileExplorer.pane.directConnectionUnreachableToast": "Det går inte att nå {server} just nu, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
-    "sourceHash": "7f4ea98"
+    "sourceHash": "4a5ca66"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} tog för lång tid på sig att svara, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -110,31 +110,31 @@
   },
   "fileExplorer.pane.directConnectionUnexpectedToast": "Det gick inte att ansluta direkt till {server}, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
-    "sourceHash": "cce5742"
+    "sourceHash": "1b14bd0"
   },
   "fileExplorer.pane.directConnectionShareNotOnServerToast": "{server} säger sig inte ha den här delade mappen, så den ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
-    "sourceHash": "a746d6c"
+    "sourceHash": "1936abc"
   },
   "fileExplorer.pane.directConnectionUnavailableToast": "Det gick inte att ansluta direkt just nu, så den här delade mappen ligger kvar på systemanslutningen.",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
-    "sourceHash": "0440df9"
+    "sourceHash": "282f96d"
   },
   "fileExplorer.pane.directConnectionShareGoneToast": "{share} är inte ansluten längre, så det finns inget att snabba upp.",
   "@fileExplorer.pane.directConnectionShareGoneToast": {
-    "sourceHash": "8a4b5ae"
+    "sourceHash": "d562549"
   },
   "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} svarar inte just nu, så Cmdr kan inte ansluta direkt till den. Försök igen om en stund.",
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
-    "sourceHash": "6c29cca"
+    "sourceHash": "baa6b1a"
   },
   "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} är ingen delad mapp, så det finns inget att snabba upp.",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
-    "sourceHash": "193a804"
+    "sourceHash": "f634743"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Det gick inte att bekräfta att filen flyttades till papperskorgen. Volymen kan vara långsam, men filen kan ändå ha flyttats. Kolla papperskorgen för att vara säker.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "844ccc1"
+    "sourceHash": "6764112"
   },
   "fileExplorer.pane.refreshStillRunningToast": "Mappen läses fortfarande in. Listan uppdateras så snart den kommer.",
   "@fileExplorer.pane.refreshStillRunningToast": {
@@ -142,11 +142,11 @@
   },
   "fileExplorer.pane.dialogRenderFailedToast": "Den här dialogrutan kunde inte öppnas, så vi stängde den och gav tillbaka tangentbordet. Försök igen.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "059dfbd"
+    "sourceHash": "1e8ed2d"
   },
   "fileExplorer.pane.ejectFailedToast": "Det gick inte att mata ut {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
-    "sourceHash": "b22501d"
+    "sourceHash": "f4072a7"
   },
   "fileExplorer.errorPane.tryAgain": "Försök igen",
   "@fileExplorer.errorPane.tryAgain": {
@@ -319,11 +319,11 @@
   },
   "fileExplorer.network.osMountFallback.message": "Det gick inte att ansluta direkt till <shareName>{share}</shareName>. Du är ansluten, men bara via macOS inbyggda SMB-anslutning, som för de flesta anslutningar är fyra gånger långsammare än Cmdrs direktanslutning (ibland 100 gånger). Klicka på knappen nedan för att försöka igen.",
   "@fileExplorer.network.osMountFallback.message": {
-    "sourceHash": "368f523"
+    "sourceHash": "cb53372"
   },
   "fileExplorer.network.osMountFallback.shareNotOnServer": "Det gick inte att ansluta direkt till <shareName>{share}</shareName>, eftersom servern säger att den inte har någon delad mapp med det namnet. Du är fortfarande ansluten, men via macOS inbyggda SMB-anslutning, som är mycket långsammare. Det här löser sig inte av sig självt: den delade mappen kan ha döpts om eller tagits bort på servern, så det är värt att kolla där.",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
-    "sourceHash": "e26082d"
+    "sourceHash": "3ae984e"
   },
   "fileExplorer.network.osMountFallback.retry": "Försök ansluta direkt",
   "@fileExplorer.network.osMountFallback.retry": {
@@ -427,7 +427,7 @@
   },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Det går inte att ta bort upptäckta värdar",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
-    "sourceHash": "03fabd6"
+    "sourceHash": "bde1b3c"
   },
   "fileExplorer.network.browser.removeHostConfirm": "Ta bort {hostName} från serverlistan?",
   "@fileExplorer.network.browser.removeHostConfirm": {
@@ -443,7 +443,7 @@
   },
   "fileExplorer.network.browser.hostRemoveFailed": "Det gick inte att ta bort {hostName}",
   "@fileExplorer.network.browser.hostRemoveFailed": {
-    "sourceHash": "9120dd2"
+    "sourceHash": "684e6eb"
   },
   "fileExplorer.network.forgotPassword": "Glömde det sparade lösenordet för {hostName}",
   "@fileExplorer.network.forgotPassword": {
@@ -451,7 +451,7 @@
   },
   "fileExplorer.network.deletePasswordFailed": "Det gick inte att radera det sparade lösenordet",
   "@fileExplorer.network.deletePasswordFailed": {
-    "sourceHash": "0ff57cb"
+    "sourceHash": "e9c0375"
   },
   "fileExplorer.network.browser.disconnected": "Frånkopplad från {hostName}",
   "@fileExplorer.network.browser.disconnected": {
@@ -463,7 +463,7 @@
   },
   "fileExplorer.network.browser.disconnectFailed": "Det gick inte att koppla från: {message}",
   "@fileExplorer.network.browser.disconnectFailed": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.network.share.credentialsStoredLocally": "Inloggningsuppgifter sparade lokalt (ingen systemnyckelring upptäcktes)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
@@ -479,7 +479,7 @@
   },
   "fileExplorer.network.share.connectFailedTitle": "Det gick inte att ansluta till {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
-    "sourceHash": "06f5c62"
+    "sourceHash": "4c3d88d"
   },
   "fileExplorer.network.share.noSharesTitle": "Inga delade mappar tillgängliga",
   "@fileExplorer.network.share.noSharesTitle": {
@@ -567,7 +567,7 @@
   },
   "fileExplorer.networkMount.mountFailedTitle": "Det gick inte att montera den delade mappen",
   "@fileExplorer.networkMount.mountFailedTitle": {
-    "sourceHash": "d59f414"
+    "sourceHash": "d04d142"
   },
   "fileExplorer.networkMount.tryAgain": "Försök igen",
   "@fileExplorer.networkMount.tryAgain": {
@@ -579,15 +579,15 @@
   },
   "fileExplorer.unreachable.title": "Det gick inte att nå {path}",
   "@fileExplorer.unreachable.title": {
-    "sourceHash": "586e44c"
+    "sourceHash": "5fa39ab"
   },
   "fileExplorer.unreachable.detailGaveUp": "Cmdr försökte återansluta flera gånger men servern kom inte tillbaka. Anslutningen finns kvar tills vidare. Försök igen, eller koppla från för att släppa den.",
   "@fileExplorer.unreachable.detailGaveUp": {
-    "sourceHash": "7d8c5fc"
+    "sourceHash": "720e642"
   },
   "fileExplorer.unreachable.detailTimeout": "Volymen för den här sökvägen svarade inte i tid. Det kan vara en nätverksenhet som för tillfället inte är tillgänglig.",
   "@fileExplorer.unreachable.detailTimeout": {
-    "sourceHash": "61bf814"
+    "sourceHash": "c68d5d3"
   },
   "fileExplorer.unreachable.retrying": "Försöker igen…",
   "@fileExplorer.unreachable.retrying": {
@@ -615,31 +615,31 @@
   },
   "fileExplorer.clipboard.copyFromDevice": "Filer från den här enheten kan inte läggas i urklipp. Använd {copyKey} för att kopiera dem.",
   "@fileExplorer.clipboard.copyFromDevice": {
-    "sourceHash": "4948031"
+    "sourceHash": "ba69ee7"
   },
   "fileExplorer.clipboard.moveFromDevice": "Filer från den här enheten kan inte läggas i urklipp. Använd {moveKey} för att flytta dem.",
   "@fileExplorer.clipboard.moveFromDevice": {
-    "sourceHash": "e0d12fe"
+    "sourceHash": "e7da049"
   },
   "fileExplorer.clipboard.copyFromServer": "Filer från den här servern kan inte läggas i urklipp. Använd {copyKey} för att kopiera dem.",
   "@fileExplorer.clipboard.copyFromServer": {
-    "sourceHash": "a1a1dce"
+    "sourceHash": "12cb39f"
   },
   "fileExplorer.clipboard.moveFromServer": "Filer från den här servern kan inte läggas i urklipp. Använd {moveKey} för att flytta dem.",
   "@fileExplorer.clipboard.moveFromServer": {
-    "sourceHash": "50e6502"
+    "sourceHash": "4ae83d7"
   },
   "fileExplorer.clipboard.copyFromUnknown": "De här filerna kan inte läggas i urklipp. Använd {copyKey} för att kopiera dem.",
   "@fileExplorer.clipboard.copyFromUnknown": {
-    "sourceHash": "659d6e0"
+    "sourceHash": "7aaabdb"
   },
   "fileExplorer.clipboard.moveFromUnknown": "De här filerna kan inte läggas i urklipp. Använd {moveKey} för att flytta dem.",
   "@fileExplorer.clipboard.moveFromUnknown": {
-    "sourceHash": "6ae2091"
+    "sourceHash": "7fed360"
   },
   "fileExplorer.edit.notOnThisMac": "Cmdr kan inte öppna den här filen i redigeraren än, eftersom den inte är en vanlig fil på din Mac. Tryck på F3 för att visa den.",
   "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "99b6f61"
+    "sourceHash": "710100c"
   },
   "fileExplorer.edit.hint": "Filen öppnades i {app}. Vill du ha en annan redigerare nästa gång? Välj den i Inställningar.",
   "@fileExplorer.edit.hint": {
@@ -659,15 +659,15 @@
   },
   "fileExplorer.edit.appMissing": "Cmdr hittar inte redigeraren du valde, så den här filen öppnades i {app}.",
   "@fileExplorer.edit.appMissing": {
-    "sourceHash": "e063ef8"
+    "sourceHash": "9a21bc7"
   },
   "fileExplorer.edit.appMissingUnnamed": "Cmdr hittar inte redigeraren du valde, så den här filen öppnades i din standardredigerare.",
   "@fileExplorer.edit.appMissingUnnamed": {
-    "sourceHash": "421e9d9"
+    "sourceHash": "c61458b"
   },
   "fileExplorer.edit.launchRefused": "Cmdr kunde inte starta din textredigerare. Öppna den själv en gång och försök igen.",
   "@fileExplorer.edit.launchRefused": {
-    "sourceHash": "741e049"
+    "sourceHash": "8a18c5c"
   },
   "fileExplorer.edit.timedOut": "Din textredigerare tar en stund att starta. Den kan fortfarande dyka upp.",
   "@fileExplorer.edit.timedOut": {
@@ -695,7 +695,7 @@
   },
   "fileExplorer.clipboard.copiedPath": "Kopierade sökvägen, den finns nu i urklipp:",
   "@fileExplorer.clipboard.copiedPath": {
-    "sourceHash": "afb1cc2"
+    "sourceHash": "a2eec16"
   },
   "fileExplorer.tabs.limitReached": "Gränsen för antal flikar nådd",
   "@fileExplorer.tabs.limitReached": {
@@ -715,19 +715,19 @@
   },
   "fileExplorer.readOnly.renameMessage": "Det här är en skrivskyddad volym. Det går inte att byta namn här.",
   "@fileExplorer.readOnly.renameMessage": {
-    "sourceHash": "2f68994"
+    "sourceHash": "5806c75"
   },
   "fileExplorer.readOnly.mkdirMessage": "Det här är en skrivskyddad volym. Det går inte att skapa mappar här.",
   "@fileExplorer.readOnly.mkdirMessage": {
-    "sourceHash": "01957f0"
+    "sourceHash": "6385636"
   },
   "fileExplorer.readOnly.mkfileMessage": "Det här är en skrivskyddad volym. Det går inte att skapa filer här.",
   "@fileExplorer.readOnly.mkfileMessage": {
-    "sourceHash": "c5c28e2"
+    "sourceHash": "32e1afa"
   },
   "fileExplorer.readOnly.deleteMessage": "Det här är en skrivskyddad volym. Det går inte att radera filer här.",
   "@fileExplorer.readOnly.deleteMessage": {
-    "sourceHash": "965a635"
+    "sourceHash": "a456b51"
   },
   "fileExplorer.readOnly.archiveTitle": "Skrivskyddat arkiv",
   "@fileExplorer.readOnly.archiveTitle": {
@@ -763,7 +763,7 @@
   },
   "fileExplorer.rename.hiddenAfterRename": "Din fil försvann från vyn eftersom dolda filer inte visas.",
   "@fileExplorer.rename.hiddenAfterRename": {
-    "sourceHash": "445d02a"
+    "sourceHash": "6258274"
   },
   "fileExplorer.rename.keptOriginalName": "{reason}. Det ursprungliga namnet behålls.",
   "@fileExplorer.rename.keptOriginalName": {
@@ -779,11 +779,11 @@
   },
   "fileExplorer.rename.unconfirmed": "Det gick inte att bekräfta namnbytet av ”{name}”. Volymen kan vara långsam, så filen kan ändå ha bytt namn.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "bcea9d0"
+    "sourceHash": "059ac81"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "Det gick inte att bekräfta namnbytena av ”{name}” och {others, plural, one {en annan fil} other {{othersText} andra filer}}. Volymen kan vara långsam, så filerna kan ändå ha bytt namn.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "c64e665"
+    "sourceHash": "f16b15d"
   },
   "fileExplorer.columns.name": "Namn",
   "@fileExplorer.columns.name": {
@@ -884,11 +884,11 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Minst så här mycket: vissa undermappar har inte genomsökts än, så den verkliga summan kan vara större.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "03803e8"
+    "sourceHash": "2aaea43"
   },
   "fileExplorer.dirSize.unknownTooltip": "Storlek okänd: den här mappen har inte genomsökts än.",
   "@fileExplorer.dirSize.unknownTooltip": {
-    "sourceHash": "0207a3d"
+    "sourceHash": "f5771e5"
   },
   "fileExplorer.dirSize.staleLine": "De här storlekarna är från en tidigare genomsökning och kan vara inaktuella.",
   "@fileExplorer.dirSize.staleLine": {
@@ -1021,7 +1021,7 @@
   },
   "fileExplorer.imageIndex.file.failed": "Gick inte att indexera",
   "@fileExplorer.imageIndex.file.failed": {
-    "sourceHash": "a88edd6"
+    "sourceHash": "0ca54ae"
   },
   "fileExplorer.imageIndex.file.excluded": "Ingår inte i bildsökningen",
   "@fileExplorer.imageIndex.file.excluded": {
@@ -1221,7 +1221,7 @@
   },
   "fileExplorer.quickLookHint.dontShowAgain": "Visa inte igen",
   "@fileExplorer.quickLookHint.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "fileExplorer.navigation.groupFavorites": "Favoriter",
   "@fileExplorer.navigation.groupFavorites": {
@@ -1269,7 +1269,7 @@
   },
   "fileExplorer.navigation.favoritesCantAddHere": "Den här mappen kan inte bli en favorit: favoriter fungerar bara på diskar och monterade delade mappar",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "10c98b3"
+    "sourceHash": "86564ea"
   },
   "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {Visa favoriter} one {Visa {count} favorit} other {Visa {count} favoriter}}",
   "@fileExplorer.navigation.seeFavorites": {
@@ -1293,23 +1293,23 @@
   },
   "fileExplorer.navigation.favoriteShortcutSaveFailed": "Det gick inte att spara genvägen. Försök igen?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "dc8e408"
+    "sourceHash": "38e7225"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "Det gick inte att ta bort den favoriten. Försök igen?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
-    "sourceHash": "181bf36"
+    "sourceHash": "a3c8665"
   },
   "fileExplorer.navigation.renameFavoriteFailed": "Det gick inte att byta namn på den favoriten. Försök igen?",
   "@fileExplorer.navigation.renameFavoriteFailed": {
-    "sourceHash": "33e06cd"
+    "sourceHash": "cbf60d7"
   },
   "fileExplorer.navigation.reorderFavoritesFailed": "Det gick inte att ändra ordning på favoriterna. Försök igen?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
-    "sourceHash": "1b16941"
+    "sourceHash": "875befb"
   },
   "fileExplorer.navigation.locationUnreachableToast": "Det gick inte att nå enheten för den platsen. Den kanske inte är ansluten.",
   "@fileExplorer.navigation.locationUnreachableToast": {
-    "sourceHash": "20126a6"
+    "sourceHash": "61da177"
   },
   "fileExplorer.navigation.connectionTooltipDirect": "Ansluten direkt för snabba filåtgärder",
   "@fileExplorer.navigation.connectionTooltipDirect": {
@@ -1325,7 +1325,7 @@
   },
   "fileExplorer.navigation.useDirectConnection": "Använd Cmdrs snabba direktanslutning",
   "@fileExplorer.navigation.useDirectConnection": {
-    "sourceHash": "2955143"
+    "sourceHash": "68ff111"
   },
   "fileExplorer.navigation.connectDirectlyNow": "Anslut direkt nu",
   "@fileExplorer.navigation.connectDirectlyNow": {
@@ -1345,7 +1345,7 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr kan återanvända lösenordet som macOS redan har sparat för ”{displayName}”. Du får en systemfråga om att tillåta åtkomst till nyckelringen. Det är väntat, så klicka på Tillåt.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "334f7de"
+    "sourceHash": "96fa0b9"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Använda det sparade lösenordet?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1377,7 +1377,7 @@
   },
   "fileExplorer.navigation.connectionTooltipNeedsHostKey": "Den här serverns nyckel har ändrats. Öppna servern för att titta på nyckeln.",
   "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
-    "sourceHash": "5743c29"
+    "sourceHash": "a657aa4"
   },
   "fileExplorer.navigation.connectionTooltipSaved": "Sparad. Öppna den för att ansluta.",
   "@fileExplorer.navigation.connectionTooltipSaved": {
@@ -1389,7 +1389,7 @@
   },
   "fileExplorer.navigation.disconnectBusyTooltip": "Det går inte att koppla från medan åtgärder pågår på den här servern",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "2085de5"
+    "sourceHash": "a659820"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} finns nu i din volymväljare.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1397,15 +1397,15 @@
   },
   "fileExplorer.navigation.serverUnpinnedToast": "{name} finns inte längre i din volymväljare. Servern är fortfarande sparad.",
   "@fileExplorer.navigation.serverUnpinnedToast": {
-    "sourceHash": "3367b4d"
+    "sourceHash": "7fa97b2"
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr kunde inte ändra var {name} visas.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "14230e4"
+    "sourceHash": "3ed5f60"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr kunde inte koppla från {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
-    "sourceHash": "7cd7fd2"
+    "sourceHash": "375b424"
   },
   "fileExplorer.navigation.forgetServerConfirmTitle": "Glöm servern",
   "@fileExplorer.navigation.forgetServerConfirmTitle": {
@@ -1417,7 +1417,7 @@
   },
   "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr kunde inte glömma {name}.",
   "@fileExplorer.navigation.forgetServerRefusedToast": {
-    "sourceHash": "0603090"
+    "sourceHash": "f7c6c64"
   },
   "fileExplorer.navigation.forgetSecretConfirmTitle": "Glöm sparat lösenord",
   "@fileExplorer.navigation.forgetSecretConfirmTitle": {
@@ -1429,7 +1429,7 @@
   },
   "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr kunde inte glömma det sparade lösenordet för {name}.",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
-    "sourceHash": "940eb59"
+    "sourceHash": "b7a15b2"
   },
   "fileExplorer.navigation.forgetSecretNoneToast": "Det fanns inget sparat lösenord för {name}.",
   "@fileExplorer.navigation.forgetSecretNoneToast": {
@@ -1441,7 +1441,7 @@
   },
   "fileExplorer.navigation.ejectBusyTooltip": "Det går inte att mata ut medan åtgärder pågår på den här enheten",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "7165c58"
+    "sourceHash": "eafd9bd"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Matar ut {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1474,7 +1474,7 @@
   },
   "fileExplorer.navigation.spaceFetchFailed": "Det gick inte att hämta diskutrymme. Klicka för att försöka igen",
   "@fileExplorer.navigation.spaceFetchFailed": {
-    "sourceHash": "6fe88d7"
+    "sourceHash": "55f2eab"
   },
   "fileExplorer.navigation.spaceUnavailableText": "Otillgänglig",
   "@fileExplorer.navigation.spaceUnavailableText": {
@@ -1522,27 +1522,27 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Indexeringen stoppades på grund av ett problem med att spara den här enhetens index. Sök igenom på nytt för att bygga om det.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
-    "sourceHash": "7386b54"
+    "sourceHash": "7c7e776"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS tappade koll på ändringar i filsystemet {count, plural, one {en gång} other {{countText} gånger}} {hours, plural, one {under den senaste timmen} other {under de senaste {hoursText} timmarna}}, så några mappstorlekar kan vara lite missvisande. Oftast handlar det om cachemappar fulla med små filer, och Cmdrs nästa fullständiga genomsökning {remaining, plural, one {om en timme} other {om {remainingText} timmar}} rättar till det.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
-    "sourceHash": "2b593c3"
+    "sourceHash": "eb09aed"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS tappade koll på ändringar i filsystemet {count, plural, one {en gång} other {{countText} gånger}}, så några mappstorlekar kan vara lite missvisande. Oftast handlar det om cachemappar fulla med små filer, och genomsökningen som pågår just nu rättar till det.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
-    "sourceHash": "9cbf743"
+    "sourceHash": "0ff330c"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS tappade koll på ändringar i filsystemet {count, plural, one {en gång} other {{countText} gånger}} {hours, plural, one {under den senaste timmen} other {under de senaste {hoursText} timmarna}}, så några mappstorlekar kan vara lite missvisande. Oftast handlar det om cachemappar fulla med små filer, så det är ingen stor sak.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
-    "sourceHash": "428975f"
+    "sourceHash": "68420b0"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr kunde inte läsa {count, plural, one {ett ställe} other {{countText} ställen}} på den här enheten, så en sökning här kan bli lite kort.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
-    "sourceHash": "5369ab3"
+    "sourceHash": "6523d04"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr kunde inte läsa {count, plural, one {ett ställe} other {{countText} ställen}} på den här enheten, så en sökning här kan bli lite kort. Cmdr återkommer till dem av sig själv.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
-    "sourceHash": "a74a60f"
+    "sourceHash": "f1ea5cb"
   },
   "fileExplorer.navigation.driveIndex.menuEnable": "Slå på indexering för den här enheten",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
@@ -1562,7 +1562,7 @@
   },
   "fileExplorer.navigation.driveIndex.menuForget": "Glöm den här enhetens index",
   "@fileExplorer.navigation.driveIndex.menuForget": {
-    "sourceHash": "a553f83"
+    "sourceHash": "90c53ac"
   },
   "fileExplorer.navigation.driveIndex.footer": "Senast indexerad: {date} · tog {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
@@ -1580,7 +1580,7 @@
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr kunde inte ansluta direkt till {name}, vilket krävs för att indexera den här delade mappen. Kontrollera att den går att nå och försök igen.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
-    "sourceHash": "e7ac9b4"
+    "sourceHash": "79a31a4"
   },
   "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} är frånkopplad. Återanslut den och slå sedan på indexering.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
@@ -1600,11 +1600,11 @@
   },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr kan inte indexera {name} just nu. Återanslut enheten och försök igen.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
-    "sourceHash": "ac46209"
+    "sourceHash": "83bd66e"
   },
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr stötte på ett problem när indexeringen för {name} skulle slås på. Det här borde inte hända. Att starta om Cmdr brukar lösa det.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e9adbcc"
+    "sourceHash": "e3841d9"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Enhetsindexering är avstängd i Inställningar, så {name} indexeras inte. Slå på den under Indexering > Enhetsindexering.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

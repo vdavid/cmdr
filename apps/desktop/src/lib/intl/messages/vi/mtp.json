@@ -13,7 +13,7 @@
   },
   "mtp.connectedToast.dontShowAgain": "Không hiển thị lại",
   "@mtp.connectedToast.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "mtp.connectedToast.disableMtp": "Tắt MTP…",
   "@mtp.connectedToast.disableMtp": {
@@ -26,11 +26,11 @@
   },
   "mtp.permissionDialog.title": "Không thể truy cập thiết bị USB",
   "@mtp.permissionDialog.title": {
-    "sourceHash": "96130bf"
+    "sourceHash": "1b440ed"
   },
   "mtp.permissionDialog.description": "Cmdr không có quyền truy cập thiết bị này. Linux cần các quy tắc udev để cấp quyền truy cập thiết bị MTP.",
   "@mtp.permissionDialog.description": {
-    "sourceHash": "c11f0e8"
+    "sourceHash": "fdb8772"
   },
   "mtp.permissionDialog.explanation": "Chạy lệnh này trong terminal của bạn để cài các quy tắc và tải lại chúng:",
   "@mtp.permissionDialog.explanation": {
@@ -50,7 +50,7 @@
   },
   "mtp.ptpcameradDialog.title": "Không thể kết nối với thiết bị MTP",
   "@mtp.ptpcameradDialog.title": {
-    "sourceHash": "058de77"
+    "sourceHash": "8cb1f59"
   },
   "mtp.ptpcameradDialog.inUseBy": "Thiết bị đang được <processName>{process}</processName> sử dụng.",
   "@mtp.ptpcameradDialog.inUseBy": {

@@ -126,11 +126,11 @@
   },
   "downloads.shortcutRow.invalidCombo": "Não foi possível registrar: combinação inválida",
   "@downloads.shortcutRow.invalidCombo": {
-    "sourceHash": "32c3532"
+    "sourceHash": "d2601f3"
   },
   "downloads.shortcutRow.registerFailed": "Não foi possível registrar: {reason}",
   "@downloads.shortcutRow.registerFailed": {
-    "sourceHash": "2e6fb97"
+    "sourceHash": "3b0841e"
   },
   "downloads.shortcutRow.addModifier": "Adicione um modificador (⌘, ⌃, ⌥ ou ⇧)",
   "@downloads.shortcutRow.addModifier": {

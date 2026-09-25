@@ -66,11 +66,11 @@
   },
   "shortcuts.conflict.reservedByMacOs": "{combo} ist für macOS reserviert ({command}) und erreicht Cmdr nicht. Wähle eine andere Kombination.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "sourceHash": "4aad26f"
+    "sourceHash": "76e8ad2"
   },
   "shortcuts.conflict.fixedKey": "{combo} ist eine feste Taste in Cmdr ({command}) und lässt sich nicht neu belegen. Wähle eine andere Kombination.",
   "@shortcuts.conflict.fixedKey": {
-    "sourceHash": "2c2c76f"
+    "sourceHash": "42c3c0e"
   },
   "shortcuts.conflict.systemShortcut": "{combo} wird meist von macOS belegt ({label}) und erreicht Cmdr daher womöglich nie. Du kannst sie in Systemeinstellungen > Tastatur freigeben.",
   "@shortcuts.conflict.systemShortcut": {
@@ -193,11 +193,11 @@
   },
   "shortcuts.section.macOsTooltip": "macOS verwaltet diesen Kurzbefehl. Cmdr kann ihn nicht ändern.",
   "@shortcuts.section.macOsTooltip": {
-    "sourceHash": "262b2cc"
+    "sourceHash": "fe5e056"
   },
   "shortcuts.section.fixedTooltip": "Diese Taste ist fest in Cmdr eingebaut und lässt sich nicht ändern.",
   "@shortcuts.section.fixedTooltip": {
-    "sourceHash": "f07b460"
+    "sourceHash": "9367bfe"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {

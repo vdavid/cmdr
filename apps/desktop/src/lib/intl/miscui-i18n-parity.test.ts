@@ -104,10 +104,10 @@ describe('ai area parity (en)', () => {
 
   it('preserves apostrophes in the translate-error copy', () => {
     expect(tString('ai.translateError.rateLimited.body')).toBe(
-      "It's rate-limiting requests or your plan is out of quota. Check your plan and billing, then try again.",
+      'It’s rate-limiting requests or your plan is out of quota. Check your plan and billing, then try again.',
     )
-    expect(tString('ai.translateError.unavailable.title')).toBe("Can't reach your AI provider")
-    expect(tString('ai.translateError.parseError.title')).toBe("Couldn't read the AI's answer")
+    expect(tString('ai.translateError.unavailable.title')).toBe('Can’t reach your AI provider')
+    expect(tString('ai.translateError.parseError.title')).toBe('Couldn’t read the AI’s answer')
     expect(tString('ai.translateError.authFailed.body')).toBe(
       'Check your key in Settings > AI - it might be wrong or revoked.',
     )
@@ -124,13 +124,13 @@ describe('ai area parity (en)', () => {
     )
     expect(t('ai.local.ramLegendSystem', { size: '4.0 GB' })).toBe('System 4.0 GB')
     expect(t('ai.local.deleteConfirmMessage', { modelSize: '2.0 GB' })).toBe(
-      "This frees up 2.0 GB of disk space. You'll need to re-download it to use local AI again.",
+      'This frees up 2.0 GB of disk space. You’ll need to re-download it to use local AI again.',
     )
   })
 
   it('resolves the cloud AI section copy', () => {
     expect(tString('ai.cloud.connectedNoModels')).toBe('Connected (model list not available)')
-    expect(tString('ai.cloud.connectionError')).toBe("Can't reach server")
+    expect(tString('ai.cloud.connectionError')).toBe('Can’t reach server')
     expect(t('ai.cloud.modelPlaceholderExample', { model: 'gpt-4.1-mini' })).toBe('Example: gpt-4.1-mini')
     expect(tString('ai.cloud.apiKeyPlaceholderAnthropic')).toBe('Example: sk-ant-abc123…')
   })
@@ -142,15 +142,15 @@ describe('mtp area parity (en)', () => {
     expect(tString('mtp.connectedToast.bodyMac')).toBe(
       'Cmdr paused the macOS camera daemon (ptpcamerad) to access this device. To use it in another app, disable MTP support in settings.',
     )
-    expect(tString('mtp.connectedToast.dontShowAgain')).toBe("Don't show again")
+    expect(tString('mtp.connectedToast.dontShowAgain')).toBe('Don’t show again')
     expect(tString('mtp.connectedToast.disableMtp')).toBe('Disable MTP…')
     expect(tString('mtp.deviceFallbackName')).toBe('MTP device')
   })
 
   it('preserves apostrophes in the permission dialog copy', () => {
-    expect(tString('mtp.permissionDialog.title')).toBe("Can't access USB device")
+    expect(tString('mtp.permissionDialog.title')).toBe('Can’t access USB device')
     expect(tString('mtp.permissionDialog.description')).toBe(
-      "Cmdr doesn't have permission to access this device. Linux needs udev rules to grant MTP device access.",
+      'Cmdr doesn’t have permission to access this device. Linux needs udev rules to grant MTP device access.',
     )
   })
 
@@ -191,20 +191,20 @@ describe('mtp area parity (en)', () => {
 describe('updates area parity (en)', () => {
   it('resolves the toast copy', () => {
     expect(tString('updates.toast.ready')).toBe('A new version of Cmdr is ready.')
-    expect(tString('updates.toast.readyDetail')).toBe("Restart now, or you'll get it the next time you open Cmdr.")
+    expect(tString('updates.toast.readyDetail')).toBe('Restart now, or you’ll get it the next time you open Cmdr.')
     expect(t('updates.toast.versionChange', { prev: '0.28.3', next: '0.29.0' })).toBe('v0.28.3 → v0.29.0')
     expect(t('updates.toast.versionChangeAria', { prev: '0.28.3', next: '0.29.0' })).toBe(
       'Updating from version 0.28.3 to version 0.29.0',
     )
     expect(tString('updates.toast.later')).toBe('Later')
     expect(tString('updates.toast.restart')).toBe('Restart now')
-    expect(t('updates.failure.check', { reason: 'Try again.' })).toBe("Cmdr couldn't check for updates. Try again.")
+    expect(t('updates.failure.check', { reason: 'Try again.' })).toBe('Cmdr couldn’t check for updates. Try again.')
     expect(tString('updates.failure.checkUntyped')).toBe(
-      "Cmdr couldn't check for updates. Check your internet connection and try again later.",
+      'Cmdr couldn’t check for updates. Check your internet connection and try again later.',
     )
-    expect(tString('updates.failure.download')).toBe("Cmdr couldn't download the update. Try again later.")
+    expect(tString('updates.failure.download')).toBe('Cmdr couldn’t download the update. Try again later.')
     expect(tString('updates.failure.install')).toBe(
-      "Cmdr couldn't install the update. Try again later, or get the latest Cmdr from getcmdr.com.",
+      'Cmdr couldn’t install the update. Try again later, or get the latest Cmdr from getcmdr.com.',
     )
   })
 

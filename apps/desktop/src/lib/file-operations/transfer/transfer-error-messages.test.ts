@@ -23,7 +23,7 @@ describe('getUserFriendlyMessage', () => {
       const error: WriteOperationError = { type: 'source_not_found', path: '/path/to/file.txt' }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.title).toBe("Couldn't find the file")
+      expect(result.title).toBe('Couldn’t find the file')
       expect(result.message).toContain('copy')
       expect(result.message).toContain('no longer exists')
     })
@@ -46,7 +46,7 @@ describe('getUserFriendlyMessage', () => {
       }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.title).toBe("Couldn't access this location")
+      expect(result.title).toBe('Couldn’t access this location')
       expect(result.message).toContain('copy')
     })
 
@@ -72,7 +72,7 @@ describe('getUserFriendlyMessage', () => {
       }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.title).toBe("Can't copy a folder into itself")
+      expect(result.title).toBe('Can’t copy a folder into itself')
     })
 
     it('returns user-friendly message for symlink_loop error', () => {
@@ -90,11 +90,11 @@ describe('getUserFriendlyMessage', () => {
       expect(result.message).toContain('copy')
     })
 
-    it('returns "Couldn\'t copy" for io_error', () => {
+    it('returns "Couldn’t copy" for io_error', () => {
       const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Something broke' }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.title).toBe("Couldn't copy")
+      expect(result.title).toBe('Couldn’t copy')
     })
   })
 
@@ -129,7 +129,7 @@ describe('getUserFriendlyMessage', () => {
       }
       const result = getUserFriendlyMessage(error, 'move')
 
-      expect(result.title).toBe("Can't move a folder into itself")
+      expect(result.title).toBe('Can’t move a folder into itself')
       expect(result.suggestion).toContain('moving')
     })
 
@@ -141,18 +141,18 @@ describe('getUserFriendlyMessage', () => {
       expect(result.message).toContain('move')
     })
 
-    it('uses "Couldn\'t move" for io_error', () => {
+    it('uses "Couldn’t move" for io_error', () => {
       const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Something broke' }
       const result = getUserFriendlyMessage(error, 'move')
 
-      expect(result.title).toBe("Couldn't move")
+      expect(result.title).toBe('Couldn’t move')
     })
 
     it('uses "move" in generic io_error message', () => {
       const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Unknown XYZ' }
       const result = getUserFriendlyMessage(error, 'move')
 
-      expect(result.message).toBe("Couldn't move the file.")
+      expect(result.message).toBe('Couldn’t move the file.')
     })
 
     it('uses "move" for device disconnection', () => {
@@ -259,7 +259,7 @@ describe('getUserFriendlyMessage', () => {
         }
         const result = getUserFriendlyMessage(error, 'move')
 
-        expect(result.title).toBe("Couldn't confirm the move")
+        expect(result.title).toBe('Couldn’t confirm the move')
         expect(result.message).toContain('saved on Fältkamera')
         expect(result.message).toContain('kept your originals')
       })
@@ -307,7 +307,7 @@ describe('getUserFriendlyMessage', () => {
       }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.message).toContain("Couldn't read")
+      expect(result.message).toContain('Couldn’t read')
     })
 
     it('handles write_error', () => {
@@ -318,7 +318,7 @@ describe('getUserFriendlyMessage', () => {
       }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.message).toContain("Couldn't write")
+      expect(result.message).toContain('Couldn’t write')
     })
 
     it('handles name_too_long', () => {
@@ -364,7 +364,7 @@ describe('getUserFriendlyMessage', () => {
       const cases = [
         { reason: 'readOnlyFilesystem', title: 'Read-only folder', message: 'read-only' },
         { reason: 'noPermission', title: 'No permission to add files here', message: 'permission' },
-        { reason: 'unexplained', title: "This folder doesn't accept files", message: "doesn't accept" },
+        { reason: 'unexplained', title: 'This folder doesn’t accept files', message: 'doesn’t accept' },
       ] as const
       for (const { reason, title, message } of cases) {
         const result = getUserFriendlyMessage({ type: 'destination_not_writable', path: 'adb://R58M', reason })
@@ -481,7 +481,7 @@ describe('getUserFriendlyMessage', () => {
       }
       const result = getUserFriendlyMessage(error)
 
-      expect(result.message).toBe("Couldn't copy the file.")
+      expect(result.message).toBe('Couldn’t copy the file.')
     })
   })
 })
@@ -642,11 +642,11 @@ describe('getUserFriendlyMessage: delete operation', () => {
     expect(result.message).toContain('delete')
   })
 
-  it('uses "Couldn\'t delete" for io_error', () => {
+  it('uses "Couldn’t delete" for io_error', () => {
     const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Something broke' }
     const result = getUserFriendlyMessage(error, 'delete')
 
-    expect(result.title).toBe("Couldn't delete")
+    expect(result.title).toBe('Couldn’t delete')
   })
 
   it('gives macOS-specific suggestion for permission_denied on delete', () => {
@@ -709,11 +709,11 @@ describe('getUserFriendlyMessage: trash operation', () => {
     expect(result.message).toContain('move to trash')
   })
 
-  it('uses "Couldn\'t move to trash" for io_error', () => {
+  it('uses "Couldn’t move to trash" for io_error', () => {
     const error: WriteOperationError = { type: 'io_error', path: '/path', message: 'Something broke' }
     const result = getUserFriendlyMessage(error, 'trash')
 
-    expect(result.title).toBe("Couldn't move to trash")
+    expect(result.title).toBe('Couldn’t move to trash')
   })
 
   it('gives macOS-specific suggestion for permission_denied on trash', () => {
@@ -752,7 +752,7 @@ describe('getUserFriendlyMessage: trash operation', () => {
     const error: WriteOperationError = { type: 'trash_not_supported', path: '/Volumes/USB/file.txt' }
     const result = getUserFriendlyMessage(error, 'trash')
 
-    expect(result.message).toContain("doesn't support trash")
+    expect(result.message).toContain('doesn’t support trash')
     expect(result.suggestion).toContain('Shift+F8')
   })
 

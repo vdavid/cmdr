@@ -29,7 +29,7 @@ async function mountToast(path: string) {
 describe('CopiedPathToastContent', () => {
   it('renders the confirmation sentence and the path', async () => {
     const target = await mountToast('/Users/test/Downloads')
-    expect(target.textContent).toContain("Copied the path, it's now on your clipboard:")
+    expect(target.textContent).toContain('Copied the path, it’s now on your clipboard:')
     expect(target.querySelector('.path')?.textContent).toBe('/Users/test/Downloads')
     target.remove()
   })

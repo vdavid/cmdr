@@ -5,7 +5,7 @@
   },
   "onboarding.fdaBadge.tooltip": "Du måste inte ge det här, men Cmdr fungerar mycket bättre med det: söka igenom hela din enhet, läsa molnmappar och ändra filer som macOS håller för sig själv. Klicka för att titta på valet igen.",
   "@onboarding.fdaBadge.tooltip": {
-    "sourceHash": "00f408a"
+    "sourceHash": "d7ff906"
   },
   "onboarding.fdaBadge.ariaLabel": "Ingen full skivtillgång. Öppna steget om full skivtillgång i introduktionen.",
   "@onboarding.fdaBadge.ariaLabel": {
@@ -57,11 +57,11 @@
   },
   "onboarding.stepFda.granted.body": "Fint, det är allt Cmdr behöver. Starta om den nu så kan du börja använda allt.",
   "@onboarding.stepFda.granted.body": {
-    "sourceHash": "32acf9d"
+    "sourceHash": "1f59b5f"
   },
   "onboarding.stepFda.granted.hint": "Cmdr fångar upp den nya behörigheten vid nästa start. Din plats i guiden sparas, så du landar precis här igen.",
   "@onboarding.stepFda.granted.hint": {
-    "sourceHash": "e0e33a3"
+    "sourceHash": "dc1d332"
   },
   "onboarding.stepFda.alreadyGranted.title": "Cmdr har just nu full skivtillgång",
   "@onboarding.stepFda.alreadyGranted.title": {
@@ -85,23 +85,23 @@
   },
   "onboarding.stepFda.revoked.ifIntentional": "Om det var med avsikt, klicka på <deny>Neka</deny> så stör appen dig inte igen.",
   "@onboarding.stepFda.revoked.ifIntentional": {
-    "sourceHash": "9709b73"
+    "sourceHash": "6ab4c94"
   },
   "onboarding.stepFda.revoked.ifNot": "Om det <em>inte</em> var med avsikt, fundera på att tillåta full skivtillgång igen. Här är för- och nackdelarna:",
   "@onboarding.stepFda.revoked.ifNot": {
-    "sourceHash": "24667ee"
+    "sourceHash": "b40412b"
   },
   "onboarding.stepFda.firstAsk.lede": "<strong>Du vill förmodligen bara börja använda appen.</strong> Tråkigt att besvära dig med det här först, men det behövs.",
   "@onboarding.stepFda.firstAsk.lede": {
-    "sourceHash": "7f19b2a"
+    "sourceHash": "4f2f392"
   },
   "onboarding.stepFda.firstAsk.explain": "Du förstår, Cmdr är en filhanterare och behöver komma åt din skiva för att se alla dina filer. macOS ger inte den behörigheten automatiskt.",
   "@onboarding.stepFda.firstAsk.explain": {
-    "sourceHash": "f60c41b"
+    "sourceHash": "4196968"
   },
   "onboarding.stepFda.firstAsk.askPermission": "Vill du ge den här appen full skivtillgång? Så här fungerar det:",
   "@onboarding.stepFda.firstAsk.askPermission": {
-    "sourceHash": "94e5db7"
+    "sourceHash": "28a5c77"
   },
   "onboarding.stepFda.why": "Varför?",
   "@onboarding.stepFda.why": {
@@ -161,11 +161,11 @@
   },
   "onboarding.stepFda.postAction.body": "När du är redo, klicka på <restart>Starta om Cmdr</restart> nedan. Om du ändrar dig, klicka på <deny>Neka</deny> ovanför i stället.",
   "@onboarding.stepFda.postAction.body": {
-    "sourceHash": "f87a5fc"
+    "sourceHash": "7a5c238"
   },
   "onboarding.stepFda.openSettingsFailed": "Cmdr kunde inte öppna {systemSettings}. Öppna det själv, gå till <strong>{privacyAndSecurity}</strong> och sedan <strong>{fullDiskAccess}</strong>, och slå på <strong>Cmdr</strong>.",
   "@onboarding.stepFda.openSettingsFailed": {
-    "sourceHash": "8cfce29"
+    "sourceHash": "7da3acc"
   },
   "onboarding.stepAi.bannerTitle.granted": "Full skivtillgång beviljad",
   "@onboarding.stepAi.bannerTitle.granted": {
@@ -181,15 +181,15 @@
   },
   "onboarding.stepAi.bannerBody.denied": "Du valde att inte aktivera full skivtillgång. Vi respekterar det. Du får då snart några behörighetsförfrågningar från macOS för att Cmdr ska komma åt ditt Skrivbord, Hämtade filer och liknande mappar. Acceptera eller avvisa dem som du vill. Du kan ändra allt det här senare i {systemSettings}.",
   "@onboarding.stepAi.bannerBody.denied": {
-    "sourceHash": "ccb4ae5"
+    "sourceHash": "fa85a39"
   },
   "onboarding.stepAi.bannerTitle.stuck": "Cmdr verkar inte ha full skivtillgång ännu",
   "@onboarding.stepAi.bannerTitle.stuck": {
-    "sourceHash": "88c9c19"
+    "sourceHash": "6e60ae7"
   },
   "onboarding.stepAi.bannerBody.stuck": "Du sa att du ville aktivera full skivtillgång, men Cmdr verkar inte ha fått den. Du kan behöva starta om appen (gör det nu, vi fortsätter härifrån!), eller gå till <settingsLink>{systemSettings} > Integritet och säkerhet > Full skivtillgång</settingsLink> och hitta Cmdr, eller lägg till den manuellt med den lilla ”+”-knappen längst ner.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "fcdff85"
+    "sourceHash": "c13bbbe"
   },
   "onboarding.stepAi.welcomeLinux.title": "Välkommen till Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -197,11 +197,11 @@
   },
   "onboarding.stepAi.welcomeLinux.subtitle": "Nu ställer vi in AI.",
   "@onboarding.stepAi.welcomeLinux.subtitle": {
-    "sourceHash": "a96e109"
+    "sourceHash": "e4c4251"
   },
   "onboarding.stepAi.title": "Nu pratar vi AI",
   "@onboarding.stepAi.title": {
-    "sourceHash": "a580449"
+    "sourceHash": "7fb7b12"
   },
   "onboarding.stepAi.intro": "Cmdr har en massa AI-funktioner som du <em>kanske</em> vill ha och kanske inte vill ha. AI är ett omtvistat ämne nuförtiden.",
   "@onboarding.stepAi.intro": {
@@ -293,7 +293,7 @@
   },
   "onboarding.stepAi.local.tooltip": "Den lokala modellen är betydligt dummare än molnmodellerna, och den tar upp runt 2 GB utrymme plus lite RAM och CPU vid varje användning.\nI gengäld lämnar ingen data din dator.\nCmdr försöker skicka ut uppdateringar så att du kan använda den bästa lilla modellen som finns. Men om du vill ha integritet <em>och</em> en hyfsad modell är ditt bästa val att köra en egen ollama-server och ställa in den med alternativet <strong>Ja, jag vill ha AI</strong> nedan.",
   "@onboarding.stepAi.local.tooltip": {
-    "sourceHash": "c3fa36a"
+    "sourceHash": "ddc1a76"
   },
   "onboarding.stepAi.local.note": "Började hämta den lokala modellen i bakgrunden. Du kan slutföra guiden nu; aviseringen i hörnet håller dig uppdaterad.",
   "@onboarding.stepAi.local.note": {
@@ -305,7 +305,7 @@
   },
   "onboarding.stepAi.missingKeyWarning": "Du har aktiverat AI men inte angett någon API-nyckel. AI fungerar inte och du får se en varning. Åtgärda det här ovanför.\n\n<strong>Klicka på ”{nextLabel}” igen för att strunta i det här och gå vidare.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "bdb8a08"
+    "sourceHash": "b942278"
   },
   "onboarding.stepAi.cloudConsentOffNote": "Moln-AI förblir avstängt tills du tillåter det. Du kan göra det senare i Inställningar > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -333,11 +333,11 @@
   },
   "onboarding.stepBeta.greeting": "Hej, jag heter <david>David</david>! Jag bygger Cmdr, och du är en av de allra första som använder det. Tack för ditt förtroende! ❤️",
   "@onboarding.stepBeta.greeting": {
-    "sourceHash": "f7ade14"
+    "sourceHash": "2736b42"
   },
   "onboarding.stepBeta.openBeta": "Cmdr är i öppen beta: det är överlag stabilt och användbart, men vissa delar är ojämna. <alpha></alpha>-märken markerar de områden som är mest under arbete. Din återkoppling hjälper mig att fixa buggar och prioritera funktioner.",
   "@onboarding.stepBeta.openBeta": {
-    "sourceHash": "0dba196"
+    "sourceHash": "f3bed8c"
   },
   "onboarding.stepBeta.checklist.title": "Checklista för att komma igång, varje punkt tar 30 sekunder:",
   "@onboarding.stepBeta.checklist.title": {
@@ -373,7 +373,7 @@
   },
   "onboarding.stepBeta.analyticsLede": "För att lära mig vad som fungerar och inte skickar Cmdr användningsstatistik under den öppna betan: vilka funktioner som används och hur ofta, aldrig något från dina filer.\nStatistiken är kopplad till ett slumpmässigt id, inte till ditt namn eller din e-post.\nDet är på nu och du kan stänga av det när som helst.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "edd95b4"
+    "sourceHash": "7544e4c"
   },
   "onboarding.stepBeta.analyticsTitle": "Skicka användningsstatistik",
   "@onboarding.stepBeta.analyticsTitle": {
@@ -381,7 +381,7 @@
   },
   "onboarding.stepBeta.analyticsCaption": "Observera att det är PÅ som standard för att uppmuntra folk att skicka mig data under betan.\nDu kan ändra det här när som helst i Inställningar.",
   "@onboarding.stepBeta.analyticsCaption": {
-    "sourceHash": "cfd1e86"
+    "sourceHash": "06ce4eb"
   },
   "onboarding.stepBeta.crashReportsNote": "Kraschrapporter är också på: om Cmdr går ner skickar appen appversionen, din macOS-version och stället i koden där det stannade.\nAldrig dina filer.\nDu kan stänga av båda i inställningarna när du vill.",
   "@onboarding.stepBeta.crashReportsNote": {
@@ -401,19 +401,19 @@
   },
   "onboarding.stepBeta.signup.failure": "Tyvärr, vi kunde inte registrera dig just nu. Försök igen?",
   "@onboarding.stepBeta.signup.failure": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "onboarding.stepBeta.signup.rejected": "E-postlistan godtog inte den adressen. Kolla efter ett stavfel och tryck sedan på Spara igen.",
   "@onboarding.stepBeta.signup.rejected": {
-    "sourceHash": "05ccee5"
+    "sourceHash": "5a1bca7"
   },
   "onboarding.stepBeta.signup.unreachable": "Det gick inte att nå registreringsservern just nu, så du står inte på listan än. Din adress är sparad på den här Macen: tryck på Spara igen om en stund, eller när som helst från Inställningar › Uppdateringar och integritet.",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "8036aad"
+    "sourceHash": "e4d8f67"
   },
   "onboarding.stepBeta.emailNote": "Lämna din e-postadress så hör jag av mig med en och annan fråga eller uppdatering.\nE-postadressen du anger här lagras bara på din Mac och kopplas aldrig till din användningsstatistik, de två är medvetet två separata delsystem.",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "f256066"
+    "sourceHash": "0a793b1"
   },
   "onboarding.stepBeta.terms.title": "Åh, och det här också, tack",
   "@onboarding.stepBeta.terms.title": {
@@ -421,11 +421,11 @@
   },
   "onboarding.stepBeta.terms.lede": "Det är ett juridiskt krav att ha det här.",
   "@onboarding.stepBeta.terms.lede": {
-    "sourceHash": "c59e47e"
+    "sourceHash": "26e1bbf"
   },
   "onboarding.stepBeta.terms.consent": "Jag har läst och godkänner <terms>användarvillkoren</terms>.",
   "@onboarding.stepBeta.terms.consent": {
-    "sourceHash": "620a4b6"
+    "sourceHash": "7becd05"
   },
   "onboarding.stepBeta.terms.blockedTooltip": "Godkänn användarvillkoren för att fortsätta.",
   "@onboarding.stepBeta.terms.blockedTooltip": {
@@ -437,11 +437,11 @@
   },
   "onboarding.stepOptional.title": "Du är nästan redo",
   "@onboarding.stepOptional.title": {
-    "sourceHash": "6ad977a"
+    "sourceHash": "a7bb760"
   },
   "onboarding.stepOptional.lede": "Du valde att gå igenom en detaljerad inställning, så här är några enkla val. Om du inte bryr dig så mycket, klicka bara på knappen nedan. Allt det här är valfritt, och standardvärdena är valda för din skull.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "b1242c9"
+    "sourceHash": "278452e"
   },
   "onboarding.stepOptional.recommendedOn": "Rekommenderas: på",
   "@onboarding.stepOptional.recommendedOn": {
@@ -461,7 +461,7 @@
   },
   "onboarding.stepOptional.networking.desc": "Med det här <em>på</em> kan du ansluta till SMB-servrar som delade mappar på företagets nätverk, en NAS hemma och liknande.\nDen enda kostnaden är en macOS-behörighetsdialog som dyker upp och ber dig tillåta ”Lokalt nätverk”, och en för ”Acceptera inkommande anslutningar”.\nBåda dialogerna är ofarliga, men om du inte vet vad de är kan de verka skrämmande eller irriterande.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "c03c7df"
+    "sourceHash": "d473c62"
   },
   "onboarding.stepOptional.indexing.title": "Enhetsindexering",
   "@onboarding.stepOptional.indexing.title": {
@@ -485,7 +485,7 @@
   },
   "onboarding.stepOptional.indexing.descCost": "Om du stänger av det här får du bara <code>{dirPlaceholder}</code> för storlekarna.\nKostnaden är runt 1 GB index på din enhet för ett par miljoner filer, men ingen extra CPU- eller minnesanvändning efter de första 2–3 minuterna när du startar appen första gången, eller startar den efter ett långt uppehåll.\nDet är en billig funktion med tanke på fördelarna.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "0b60064"
+    "sourceHash": "954cf6b"
   },
   "onboarding.stepOptional.updates.title": "Automatiska uppdateringar",
   "@onboarding.stepOptional.updates.title": {
@@ -497,7 +497,7 @@
   },
   "onboarding.stepOptional.updates.desc": "Om du aktiverar det här gör Cmdr en liten nätverksförfrågan till en central licensserver vid varje appstart plus en gång var 24:e timme, och du får alltid de senaste uppdateringarna.\nOm det är avstängt behåller du din nuvarande version, och Cmdr gör noll automatiska nätverksförfrågningar (förutom periodiska licenskontroller, om du har en kommersiell licens).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "12b7f08"
+    "sourceHash": "bfd8d7e"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-telefoner, Kindles, kameror)",
   "@onboarding.stepOptional.mtp.title": {
@@ -509,7 +509,7 @@
   },
   "onboarding.stepOptional.mtp.desc": "Om du aktiverar det här kan Cmdr <strong>ansluta till Android-telefoner, Kindles, kameror</strong>, vissa musikspelare och alla andra enheter som stöder protokollen MTP eller PTP.\nKostnaden är att macOS <em>också</em> vill ansluta till dem (och det går oftast inte, det är därför du inte bara kan använda Finder för att kopiera foton från Android-telefoner), så Cmdr måste hålla tillbaka den macOS-processen medan den körs.\nNär du avslutar Cmdr får macOS snällt tillbaka processen.",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "9563b7b"
+    "sourceHash": "8a60e7f"
   },
   "onboarding.cloudPicker.listAria": "Moln-AI-leverantörer",
   "@onboarding.cloudPicker.listAria": {
@@ -521,7 +521,7 @@
   },
   "onboarding.cloudSetup.step.signup": "Registrera dig hos <signupLink>{provider}</signupLink> (om du inte har ett konto)",
   "@onboarding.cloudSetup.step.signup": {
-    "sourceHash": "d89f1e1"
+    "sourceHash": "06a92f1"
   },
   "onboarding.cloudSetup.step.createKey": "Skapa en API-nyckel <keyLink>här</keyLink>",
   "@onboarding.cloudSetup.step.createKey": {
@@ -585,11 +585,11 @@
   },
   "onboarding.cloudSetup.status.authError": "Den nyckeln fungerade inte",
   "@onboarding.cloudSetup.status.authError": {
-    "sourceHash": "2f23f3b"
+    "sourceHash": "b93b44a"
   },
   "onboarding.cloudSetup.status.connectionError": "Det går inte att nå tjänsten just nu",
   "@onboarding.cloudSetup.status.connectionError": {
-    "sourceHash": "67cb2e5"
+    "sourceHash": "fcab672"
   },
   "onboarding.cloudSetup.status.genericError": "Något gick fel",
   "@onboarding.cloudSetup.status.genericError": {

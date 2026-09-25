@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "Hogy hová kerülnek az adataid, és mi történik velük ott, az a választott szolgáltatástól és a vele kötött megállapodásodtól függ. Az Ollama, az LM Studio és az egyéni végpontok esetében is így van: az adatok oda kerülnek, ahol az adott szerver fut. A Cmdr saját szerverei ebből semmit sem látnak.",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>Névjavaslatok új mappához</b>: a jelenlegi mappa útvonala és legfeljebb 100 benne lévő név",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>Keresés hétköznapi szavakkal</b>: a beírt szöveg",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "Korlátozza a kéréseket, vagy elfogyott a csomagod kerete. Ellenőrizd a csomagodat és a számlázást, majd próbáld újra.",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "Az AI túl sokáig dolgozott",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "Nem érhető el az AI-szolgáltatód",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "Ellenőrizd az internetkapcsolatodat vagy a szolgáltató állapotát, majd próbáld újra.",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "Az AI üres választ adott",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "Nem sikerült értelmezni az AI válaszát",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "Próbáld újra, vagy válassz másik modellt itt: Beállítások > AI.",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "Ez az AI-szolgáltató nem ismerős",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "Válassz egy szolgáltatót itt: Beállítások > AI.",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "Nem érhető el a szerver",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "Valami nem sikerült",
   "@ai.cloud.genericError": {
@@ -423,7 +423,7 @@
   },
   "ai.local.deleteConfirmMessage": "Ezzel {modelSize} lemezterület szabadul fel. A helyi AI újbóli használatához újra le kell töltened.",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "Törlés…",
   "@ai.local.deleteButtonDeleting": {
@@ -435,7 +435,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a macOS kulcskarika megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a macOS kulcskarika megtagadta a hozzáférést}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {Nyisd meg a Kulcskarika-elérés appot, és nézd meg a „Cmdr” bejegyzést, vagy töröld, majd próbáld újra a mentést.} other {Nyisd meg a Kulcskarika-elérés appot, keresd meg a „Cmdr” bejegyzést, és adj hozzáférést, vagy töröld, majd add meg újra a kulcsodat.}}",
   "@ai.secretError.keychainBody": {
@@ -443,7 +443,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {Nem sikerült elmenteni az API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést} other {Nem sikerült beolvasni a mentett API-kulcsodat: a rendszer kulcstartója megtagadta a hozzáférést}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "Oldd fel a kulcstartódat (Jelszavak / Kulcstartók alkalmazás), majd próbáld újra.",
   "@ai.secretError.keyringBody": {
@@ -451,7 +451,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {Nem sikerült elmenteni az API-kulcsodat.} other {Nem sikerült beolvasni a mentett API-kulcsodat.}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "Ellenőrizd, hogy a rendszer kulcstartója elérhető-e, majd próbáld újra. Ha továbbra is fennáll, indítsd újra az appot.",
   "@ai.secretError.genericBody": {

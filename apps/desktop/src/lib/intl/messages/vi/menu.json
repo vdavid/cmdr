@@ -423,7 +423,7 @@
   },
   "menu.help.whatsNew": "Có gì mới",
   "@menu.help.whatsNew": {
-    "sourceHash": "135e912"
+    "sourceHash": "37e6112"
   },
   "menu.help.sendFeedback": "Gửi phản hồi…",
   "@menu.help.sendFeedback": {
@@ -567,7 +567,7 @@
   },
   "menu.mediaIndex.excludeFolder": "Không lập chỉ mục hình ảnh trong thư mục này",
   "@menu.mediaIndex.excludeFolder": {
-    "sourceHash": "811f28c"
+    "sourceHash": "9119500"
   },
   "menu.mediaIndex.includeFolder": "Lập chỉ mục hình ảnh ở đây trở lại",
   "@menu.mediaIndex.includeFolder": {

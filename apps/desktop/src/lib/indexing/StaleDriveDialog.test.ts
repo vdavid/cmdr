@@ -91,11 +91,11 @@ describe('StaleDriveDialog', () => {
     expect(markFirstStaleDialogShown).toHaveBeenCalledTimes(1)
   })
 
-  it("opens once for a phone, telling its owner that the phone's own changes show up after a rescan", async () => {
+  it('opens once for a phone, telling its owner that the phone’s own changes show up after a rescan', async () => {
     const target = mountDialog()
     await fire({ volumeId: 'adb-pixel', freshness: 'stale' })
     expect(target.querySelector('[role="dialog"]')).not.toBeNull()
-    expect(target.textContent).toContain("This phone's index may be out of date")
+    expect(target.textContent).toContain('This phone’s index may be out of date')
     expect(target.textContent).toContain('Pixel')
     expect(target.textContent).toContain('show up in folder sizes and search after a rescan')
     expect(target.textContent).not.toContain('disconnected')

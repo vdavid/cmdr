@@ -438,7 +438,7 @@ describe('mcp-nav-to-path listener', () => {
     expect(emit).toHaveBeenCalledWith('mcp-response', {
       requestId: 'req-2',
       ok: false,
-      error: "Couldn't reach that location's drive. It might be disconnected.",
+      error: 'Couldn’t reach that location’s drive. It might be disconnected.',
     })
   })
 

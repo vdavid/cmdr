@@ -170,14 +170,14 @@ describe('accessibility', () => {
  * without it.
  */
 describe('disclosure', () => {
-  it("labels the agent's words as the agent's, never as something Cmdr checked", () => {
+  it('labels the agent’s words as the agent’s, never as something Cmdr checked', () => {
     const host = mountDialog()
 
     expect(host.textContent).toContain('They all look like invoices to me.')
     expect(host.textContent).toContain('The AI’s reason')
   })
 
-  it("labels Cmdr's own facts as Cmdr's, so the two sit side by side", () => {
+  it('labels Cmdr’s own facts as Cmdr’s, so the two sit side by side', () => {
     seed({}, true)
     const host = mountDialog()
 
@@ -189,7 +189,7 @@ describe('disclosure', () => {
     seed({ verb: 'delete', reversible: 'irreversible', destination: null, destinationState: 'notApplicable' })
     const host = mountDialog()
 
-    expect(host.textContent).toContain("This can't be undone")
+    expect(host.textContent).toContain('This can’t be undone')
     const buttons = [...host.querySelectorAll('button')].map((b) => b.textContent.trim())
     expect(buttons).toContain('Reject')
   })
@@ -205,7 +205,7 @@ describe('disclosure', () => {
     seed({ destinationState: 'unknown' })
     const host = mountDialog()
 
-    expect(host.textContent).toContain("Cmdr couldn't check the target folder")
+    expect(host.textContent).toContain('Cmdr couldn’t check the target folder')
   })
 
   it('marks a group a pattern produced', () => {
@@ -248,7 +248,7 @@ describe('honest absence', () => {
     store.state.windowError = true
     const host = mountDialog()
 
-    expect(host.textContent).toContain("Cmdr couldn't load these files.")
+    expect(host.textContent).toContain('Cmdr couldn’t load these files.')
     expect(host.textContent).not.toContain('Loading the files…')
     const retry = [...host.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Try again')
     expect(retry).toBeDefined()
@@ -261,7 +261,7 @@ describe('honest absence', () => {
     store.state.decisionNotice = 'suggestedOps.approvalUnsure'
     const host = mountDialog()
 
-    expect(host.textContent).toContain("Cmdr isn't sure the approval went through.")
+    expect(host.textContent).toContain('Cmdr isn’t sure the approval went through.')
   })
 
   it('distinguishes a read that failed from an empty list', () => {
@@ -270,7 +270,7 @@ describe('honest absence', () => {
     store.state.loadError = true
     const host = mountDialog()
 
-    expect(host.textContent).toContain("Cmdr couldn't read the suggestions.")
+    expect(host.textContent).toContain('Cmdr couldn’t read the suggestions.')
     expect(host.textContent).not.toContain('Nothing is waiting for you right now.')
   })
 })

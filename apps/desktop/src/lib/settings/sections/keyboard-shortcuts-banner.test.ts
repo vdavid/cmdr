@@ -55,7 +55,7 @@ describe('classifyConflict', () => {
 describe('reservedByMacOsMessage', () => {
   it('builds the honest reserved-by-macOS copy', () => {
     const msg = reservedByMacOsMessage('⌘H', cmd({ id: 'app.hide', name: 'Hide Cmdr', nativeShortcut: true }))
-    expect(msg).toBe("⌘H is reserved by macOS (Hide Cmdr) and won't reach Cmdr. Pick a different combo.")
+    expect(msg).toBe('⌘H is reserved by macOS (Hide Cmdr) and won’t reach Cmdr. Pick a different combo.')
   })
 })
 
@@ -88,7 +88,7 @@ describe('fixedKeyMessage', () => {
   it('names the combo and the owning command', () => {
     const message = fixedKeyMessage('↑', cmd({ id: 'nav.up', name: 'Select previous file', fixedKey: true }))
     expect(message).toBe(
-      "↑ is a fixed key in Cmdr (Select previous file) and can't be reassigned. Pick a different combo.",
+      '↑ is a fixed key in Cmdr (Select previous file) and can’t be reassigned. Pick a different combo.',
     )
   })
 })

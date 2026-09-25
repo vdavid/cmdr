@@ -526,11 +526,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "Een ander bestand gebruikt deze naam al en maakt geen deel uit van dit naamwijzigingsplan. Deze naamwijziging is geblokkeerd om dat bestand te beschermen.",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "(bestaat niet)",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "Dit bronbestand bestaat niet meer. Het is misschien buiten Cmdr verwijderd of heeft een andere naam gekregen.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -678,7 +678,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "AI-functies kunnen je mappen nog niet zien. Klik om volledige schijftoegang in te stellen.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "AI-functies staan aan, maar ze hebben een aanbieder nodig om te werken. Klik om er een te kiezen in instellingen.",
   "@askCmdr.wake.needsApiKey": {

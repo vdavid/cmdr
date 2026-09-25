@@ -155,11 +155,11 @@
   },
   "indexing.rescan.staleIndex": "L’index de votre disque est obsolète. L’application n’a pas été ouverte depuis un moment, semble-t-il. Une nouvelle analyse est en cours pour se remettre à jour.",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "Le journal des modifications de fichiers du système ne remonte pas assez loin. Une nouvelle analyse est en cours pour reconstruire l’index.",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "Beaucoup de fichiers ont changé depuis la dernière exécution. Une nouvelle analyse est en cours plutôt que de rejouer les changements un à un.",
   "@indexing.rescan.replayOverflow": {
@@ -167,7 +167,7 @@
   },
   "indexing.rescan.watcherStartFailed": "Le surveillant des modifications de fichiers n’a pas pu démarrer. Une nouvelle analyse est en cours pour remettre l’index à jour.",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "Une forte activité du système de fichiers a saturé le tampon d’évènements. Une nouvelle analyse est en cours pour rester exact.",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -175,7 +175,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "L’analyse précédente ne s’est pas terminée (l’application a peut-être été fermée). L’analyse repart de zéro.",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "Une rafale d’activité du système de fichiers a saturé le canal du surveillant. Une nouvelle analyse est en cours pour rester exact.",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -203,15 +203,15 @@
   },
   "indexing.firstConnect.silenceDrive": "Ne plus demander pour ce disque",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "Ne plus demander pour aucun disque",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "L’index de ce disque est peut-être obsolète",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "Pendant que {name} était déconnecté, des fichiers qui s’y trouvent ont pu changer. La taille des dossiers et les résultats de recherche peuvent être un peu décalés jusqu’à une nouvelle analyse. Le statut jaune à côté du disque le signale toujours, et une nouvelle analyse l’actualise.",
   "@indexing.staleDialog.body": {
@@ -219,11 +219,11 @@
   },
   "indexing.staleDialog.titlePhone": "L’index de ce téléphone est peut-être obsolète",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} ne prévient pas Cmdr quand ses fichiers changent, donc Cmdr met l’index à jour avec les changements qu’il fait lui-même. Les changements faits sur le téléphone, comme de nouvelles photos, sont pris en compte dans la taille des dossiers et la recherche après une nouvelle analyse. Le statut jaune à côté du téléphone reste affiché pour vous le rappeler.",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "Ne plus jamais afficher",
   "@indexing.staleDialog.neverShowAgain": {
@@ -253,7 +253,7 @@
   },
   "indexing.enrich.pausedIdle": "En attente de votre inactivité",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "En pause, reprend à la reconnexion",
   "@indexing.enrich.pausedDisconnected": {

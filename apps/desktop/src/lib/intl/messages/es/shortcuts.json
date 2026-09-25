@@ -66,11 +66,11 @@
   },
   "shortcuts.conflict.reservedByMacOs": "macOS reserva {combo} ({command}) y no llegará a Cmdr. Elige otra combinación.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "sourceHash": "4aad26f"
+    "sourceHash": "76e8ad2"
   },
   "shortcuts.conflict.fixedKey": "{combo} es una tecla fija en Cmdr ({command}) y no se puede reasignar. Elige otra combinación.",
   "@shortcuts.conflict.fixedKey": {
-    "sourceHash": "2c2c76f"
+    "sourceHash": "42c3c0e"
   },
   "shortcuts.conflict.systemShortcut": "macOS suele usar {combo} ({label}), así que puede que nunca llegue a Cmdr. Puedes liberarla en Ajustes del Sistema > Teclado.",
   "@shortcuts.conflict.systemShortcut": {
@@ -193,11 +193,11 @@
   },
   "shortcuts.section.macOsTooltip": "macOS gestiona este atajo. Cmdr no puede cambiarlo.",
   "@shortcuts.section.macOsTooltip": {
-    "sourceHash": "262b2cc"
+    "sourceHash": "fe5e056"
   },
   "shortcuts.section.fixedTooltip": "Esta tecla está integrada en Cmdr y no se puede cambiar.",
   "@shortcuts.section.fixedTooltip": {
-    "sourceHash": "f07b460"
+    "sourceHash": "9367bfe"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {

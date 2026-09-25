@@ -5,7 +5,7 @@
   },
   "feedback.dialog.description": "哪些好用？還缺什麼？你的留言會直接送到 Cmdr 作者的手上。",
   "@feedback.dialog.description": {
-    "sourceHash": "fe435e3"
+    "sourceHash": "a0dc540"
   },
   "feedback.dialog.label": "你的意見反應",
   "@feedback.dialog.label": {
@@ -13,7 +13,7 @@
   },
   "feedback.dialog.placeholder": "例如：希望能有在分頁之間跳轉的快速鍵。",
   "@feedback.dialog.placeholder": {
-    "sourceHash": "dd0214b"
+    "sourceHash": "a2c4d22"
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
@@ -22,7 +22,7 @@
   },
   "feedback.dialog.tooLong": "抱歉，內容太長了。最多 {maxText} 個字元。",
   "@feedback.dialog.tooLong": {
-    "sourceHash": "60a59ec"
+    "sourceHash": "b9a0cef"
   },
   "feedback.dialog.moreWays": "你也可以<github>在 GitHub 上瀏覽和投票</github>，或者<call>預約通話</call>和 David 聊聊。",
   "@feedback.dialog.moreWays": {
@@ -30,11 +30,11 @@
   },
   "feedback.dialog.invalid": "這則留言沒能送出。把它縮短一點再試一次？",
   "@feedback.dialog.invalid": {
-    "sourceHash": "c379ff8"
+    "sourceHash": "a997cb3"
   },
   "feedback.dialog.softFailure": "抱歉，現在沒辦法傳送你的意見反應。要再試一次嗎？",
   "@feedback.dialog.softFailure": {
-    "sourceHash": "21012f3"
+    "sourceHash": "603c329"
   },
   "feedback.dialog.cancel": "取消",
   "@feedback.dialog.cancel": {

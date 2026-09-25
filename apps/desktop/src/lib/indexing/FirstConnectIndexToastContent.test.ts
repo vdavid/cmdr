@@ -58,17 +58,17 @@ describe('FirstConnectIndexToastContent', () => {
     expect(dismissToast).toHaveBeenCalledWith('toast-1')
   })
 
-  it('"Don\'t ask again for this drive" silences the drive and dismisses', () => {
+  it('"Don’t ask again for this drive" silences the drive and dismisses', () => {
     const { target, onSilenceDrive } = render()
-    must(target, "Don't ask again for this drive").click()
+    must(target, 'Don’t ask again for this drive').click()
     flushSync()
     expect(onSilenceDrive).toHaveBeenCalledWith('smb-backups')
     expect(dismissToast).toHaveBeenCalledWith('toast-1')
   })
 
-  it('"Don\'t ask again for any drives" silences all and dismisses', () => {
+  it('"Don’t ask again for any drives" silences all and dismisses', () => {
     const { target, onSilenceAll } = render()
-    must(target, "Don't ask again for any drives").click()
+    must(target, 'Don’t ask again for any drives').click()
     flushSync()
     expect(onSilenceAll).toHaveBeenCalledTimes(1)
     expect(dismissToast).toHaveBeenCalledWith('toast-1')

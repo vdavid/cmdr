@@ -706,7 +706,7 @@ describe('characterization — cloud arms (try/catch error toast)', () => {
     explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
     cloudMakeAvailableOffline.mockRejectedValueOnce('disk full')
     await handleCommandExecute('cloud.makeOffline', makeCtx(explorer))
-    expect(addToast).toHaveBeenCalledExactlyOnceWith("Couldn't download from cloud. disk full", { level: 'error' })
+    expect(addToast).toHaveBeenCalledExactlyOnceWith('Couldn’t download from cloud. disk full', { level: 'error' })
   })
 
   it('cloud.removeDownload calls cloudRemoveDownload(path) on success', async () => {
@@ -722,7 +722,7 @@ describe('characterization — cloud arms (try/catch error toast)', () => {
     explorer.getFileAndPathUnderCursor.mockReturnValue(ENTRY)
     cloudRemoveDownload.mockRejectedValueOnce('locked')
     await handleCommandExecute('cloud.removeDownload', makeCtx(explorer))
-    expect(addToast).toHaveBeenCalledExactlyOnceWith("Couldn't remove the download. locked", { level: 'error' })
+    expect(addToast).toHaveBeenCalledExactlyOnceWith('Couldn’t remove the download. locked', { level: 'error' })
   })
 
   it('cloud arms no-op when nothing is under the cursor', async () => {

@@ -63,7 +63,7 @@ const MUTATION_CASES: MutationError[] = [
   { type: 'trashRefused', reason: 'notPermitted', detail: 'NSFileWriteNoPermissionError' },
   { type: 'volume', error: { type: 'notFound', data: '/Volumes/share/holiday.raw' } },
   { type: 'timedOut' },
-  { type: 'unexpected', detail: "the rename task didn't finish: panicked" },
+  { type: 'unexpected', detail: 'the rename task didn’t finish: panicked' },
 ]
 
 /** The writing rules for error copy (`docs/guides/error-handling.md`). */
@@ -114,11 +114,11 @@ describe('renderMutationError', () => {
   })
 
   it('agrees with the live validation, so a turned-down name reads the way the red border read', () => {
-    expect(renderMutationError({ type: 'nameEmpty' }, 'folder')).toBe("Folder name can't be empty")
-    expect(renderMutationError({ type: 'nameEmpty' }, 'file')).toBe("Filename can't be empty")
+    expect(renderMutationError({ type: 'nameEmpty' }, 'folder')).toBe('Folder name can’t be empty')
+    expect(renderMutationError({ type: 'nameEmpty' }, 'file')).toBe('Filename can’t be empty')
   })
 
-  it("says a timeout may still land, because the backend's deadline detaches rather than cancels", () => {
+  it('says a timeout may still land, because the backend’s deadline detaches rather than cancels', () => {
     expect(renderMutationError({ type: 'timedOut' }).toLowerCase()).toContain('may still')
   })
 
@@ -139,7 +139,7 @@ describe('technicalDetail', () => {
     ).toBe('i/o (errno 5)')
   })
 
-  it("hands back the OS's own words when the Trash refused", () => {
+  it('hands back the OS’s own words when the Trash refused', () => {
     expect(
       technicalDetail({ type: 'trashRefused', reason: 'notPermitted', detail: 'NSFileWriteNoPermissionError' }),
     ).toBe('NSFileWriteNoPermissionError')

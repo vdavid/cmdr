@@ -94,10 +94,10 @@ describe('onboarding step 1 (FDA) parity (en)', () => {
   it('resolves the granted-success copy', () => {
     expect(tString('onboarding.stepFda.granted.title')).toBe('You granted full disk access!')
     expect(tString('onboarding.stepFda.granted.body')).toBe(
-      "Nice, that's all Cmdr needs. Restart it now to start using everything.",
+      'Nice, that’s all Cmdr needs. Restart it now to start using everything.',
     )
     expect(tString('onboarding.stepFda.granted.hint')).toBe(
-      "Cmdr picks up the new permission on the next launch. Your spot in onboarding is saved, so you'll land right back here.",
+      'Cmdr picks up the new permission on the next launch. Your spot in onboarding is saved, so you’ll land right back here.',
     )
   })
 
@@ -115,22 +115,22 @@ describe('onboarding step 1 (FDA) parity (en)', () => {
     )
     expect(tString('onboarding.stepFda.revoked.noAccess')).toBe('The app currently has no full disk access.')
     expect(renderRich('onboarding.stepFda.revoked.ifIntentional', ['deny'])).toBe(
-      "If that was intentional, click <deny>Deny</deny> and the app won't bother you again.",
+      'If that was intentional, click <deny>Deny</deny> and the app won’t bother you again.',
     )
     expect(renderRich('onboarding.stepFda.revoked.ifNot', ['em'])).toBe(
-      "If it <em>wasn't</em> intentional, consider allowing full disk access again. Here are the pros and cons:",
+      'If it <em>wasn’t</em> intentional, consider allowing full disk access again. Here are the pros and cons:',
     )
   })
 
   it('resolves the first-ask copy', () => {
     expect(renderRich('onboarding.stepFda.firstAsk.lede', ['strong'])).toBe(
-      "<strong>You probably just want to start using the app.</strong> Sorry to bother you with this first, but it's needed.",
+      '<strong>You probably just want to start using the app.</strong> Sorry to bother you with this first, but it’s needed.',
     )
     expect(tString('onboarding.stepFda.firstAsk.explain')).toBe(
-      "You see, Cmdr is a file manager, and it needs to access your disk to see all your files. macOS doesn't automatically grant permission to this.",
+      'You see, Cmdr is a file manager, and it needs to access your disk to see all your files. macOS doesn’t automatically grant permission to this.',
     )
     expect(tString('onboarding.stepFda.firstAsk.askPermission')).toBe(
-      "Would you like to give this app full disk access? Here's what that means:",
+      'Would you like to give this app full disk access? Here’s what that means:',
     )
   })
 
@@ -170,7 +170,7 @@ describe('onboarding step 1 (FDA) parity (en)', () => {
       'Cmdr needs to restart so the new permission takes effect.',
     )
     expect(renderRich('onboarding.stepFda.postAction.body', ['restart', 'deny'])).toBe(
-      "When you're ready, click <restart>Restart Cmdr</restart> below. If you change your mind, click <deny>Deny</deny> above instead.",
+      'When you’re ready, click <restart>Restart Cmdr</restart> below. If you change your mind, click <deny>Deny</deny> above instead.',
     )
   })
 })
@@ -183,18 +183,18 @@ describe('onboarding step 2 (AI) parity (en)', () => {
     )
     expect(tString('onboarding.stepAi.bannerTitle.denied')).toBe('No full disk access')
     expect(tString('onboarding.stepAi.bannerBody.denied', { systemSettings: SYS_SETTINGS })).toBe(
-      "You chose not to enable full disk access. We respect that. You'll then shortly get a few permission requests from macOS for Cmdr to access your Desktop, Downloads, and similar folders. Accept or reject these at will. You can change all of this later in your System Settings.",
+      'You chose not to enable full disk access. We respect that. You’ll then shortly get a few permission requests from macOS for Cmdr to access your Desktop, Downloads, and similar folders. Accept or reject these at will. You can change all of this later in your System Settings.',
     )
-    expect(tString('onboarding.stepAi.bannerTitle.stuck')).toBe("Cmdr doesn't seem to have full disk access yet")
+    expect(tString('onboarding.stepAi.bannerTitle.stuck')).toBe('Cmdr doesn’t seem to have full disk access yet')
     expect(renderRich('onboarding.stepAi.bannerBody.stuck', ['settingsLink'], { systemSettings: SYS_SETTINGS })).toBe(
-      "You said you wanted to enable full disk access, but Cmdr doesn't seem to have gotten it. You might need to restart the app (do it now, we'll continue from here!), or go to your <settingsLink>System Settings > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little “+” button at the bottom.",
+      'You said you wanted to enable full disk access, but Cmdr doesn’t seem to have gotten it. You might need to restart the app (do it now, we’ll continue from here!), or go to your <settingsLink>System Settings > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little “+” button at the bottom.',
     )
   })
 
   it('resolves the headings, intro, and comparison table', () => {
     expect(tString('onboarding.stepAi.welcomeLinux.title')).toBe('Welcome to Cmdr!')
-    expect(tString('onboarding.stepAi.welcomeLinux.subtitle')).toBe("Let's set up AI.")
-    expect(tString('onboarding.stepAi.title')).toBe("Now, let's talk AI")
+    expect(tString('onboarding.stepAi.welcomeLinux.subtitle')).toBe('Let’s set up AI.')
+    expect(tString('onboarding.stepAi.title')).toBe('Now, let’s talk AI')
     expect(renderRich('onboarding.stepAi.intro', ['em'])).toBe(
       'Cmdr has a bunch of AI features that you <em>may</em> want and may not want. AI is a controversial topic these days.',
     )
@@ -243,7 +243,7 @@ describe('onboarding step 2 (AI) parity (en)', () => {
     // The local option's trade-off moved behind an info glyph, one sentence per line.
     // `<strong>` names the cloud option, so the two must stay in step.
     expect(renderRich('onboarding.stepAi.local.tooltip', ['strong', 'em'])).toBe(
-      "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that's available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+      'The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that’s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.',
     )
     expect(tString('onboarding.stepAi.local.note')).toBe(
       'Started downloading the local model in the background. You can finish onboarding now; the toast in the corner will keep you posted.',
@@ -265,10 +265,10 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
   it('resolves the personal intro and feedback channels', () => {
     expect(tString('onboarding.stepBeta.title')).toBe('Help improve Cmdr!')
     expect(renderRich('onboarding.stepBeta.greeting', ['david'])).toBe(
-      "Hi, I'm <david>David</david>! I build Cmdr, and you're one of the very first people using it. Thanks for your trust! ❤️",
+      'Hi, I’m <david>David</david>! I build Cmdr, and you’re one of the very first people using it. Thanks for your trust! ❤️',
     )
     expect(renderRich('onboarding.stepBeta.openBeta', ['alpha'])).toBe(
-      "Cmdr is in open beta: it's overall solid and usable, but some parts are rough. <alpha></alpha> badges mark the most work-in-progress areas. Your feedback helps me fix bugs and prioritize features.",
+      'Cmdr is in open beta: it’s overall solid and usable, but some parts are rough. <alpha></alpha> badges mark the most work-in-progress areas. Your feedback helps me fix bugs and prioritize features.',
     )
   })
 
@@ -292,10 +292,10 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
   // A setback names itself and offers a way on; "try again?" alone was a dead end.
   it('resolves both signup setbacks with something to do next', () => {
     expect(tString('onboarding.stepBeta.signup.rejected')).toBe(
-      "The mailing list didn't accept that address. Worth a look for a typo, then hit Save again.",
+      'The mailing list didn’t accept that address. Worth a look for a typo, then hit Save again.',
     )
     expect(tString('onboarding.stepBeta.signup.unreachable')).toBe(
-      "Couldn't reach the signup server just now, so you're not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+      'Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.',
     )
   })
 
@@ -303,11 +303,11 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
   // its own line (the tooltip renders them `pre-line`), so the newlines are part of the copy.
   it('resolves the analytics and email blocks', () => {
     expect(tString('onboarding.stepBeta.analyticsLede')).toBe(
-      "To learn what's working and what isn't, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files.\nThey're tied to a random id, not to your name or email.\nIt's on now, and you can turn it off anytime.",
+      'To learn what’s working and what isn’t, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files.\nThey’re tied to a random id, not to your name or email.\nIt’s on now, and you can turn it off anytime.',
     )
     expect(tString('onboarding.stepBeta.analyticsTitle')).toBe('Send usage stats')
     expect(tString('onboarding.stepBeta.analyticsCaption')).toBe(
-      "Note that it's ON by default to encourage people to send me data during the Beta.\nYou can change this any time in Settings.",
+      'Note that it’s ON by default to encourage people to send me data during the Beta.\nYou can change this any time in Settings.',
     )
     expect(tString('onboarding.stepBeta.crashReportsNote')).toBe(
       'Crash reports are on too: if Cmdr goes down, it sends the app version, your macOS version, and where the code stopped.\nNever your files.\nYou can turn both of these off in Settings whenever you like.',
@@ -317,19 +317,19 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
     expect(tString('onboarding.stepBeta.signup.success')).toBe(
       'Check your inbox to confirm your email. Thanks for helping out!',
     )
-    expect(tString('onboarding.stepBeta.signup.failure')).toBe("Sorry, we couldn't sign you up right now. Try again?")
+    expect(tString('onboarding.stepBeta.signup.failure')).toBe('Sorry, we couldn’t sign you up right now. Try again?')
     expect(tString('onboarding.stepBeta.emailNote')).toBe(
-      "Drop your email and I'll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it's never connected to your usage stats, the two are intentionally two separate subsystems.",
+      'Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it’s never connected to your usage stats, the two are intentionally two separate subsystems.',
     )
   })
 
   it('resolves the terms-acceptance block', () => {
     expect(tString('onboarding.stepBeta.terms.title')).toBe('Oh, and this too please')
-    expect(tString('onboarding.stepBeta.terms.lede')).toBe("It's a legal obligation to have it here.")
+    expect(tString('onboarding.stepBeta.terms.lede')).toBe('It’s a legal obligation to have it here.')
     // The consent sentence is the legally load-bearing string on this page: it must stay a
     // plain, unconditional statement of agreement. Pin it word for word.
     expect(renderRich('onboarding.stepBeta.terms.consent', ['terms'])).toBe(
-      "I've read and agree to the <terms>terms and conditions</terms>.",
+      'I’ve read and agree to the <terms>terms and conditions</terms>.',
     )
     expect(tString('onboarding.stepBeta.terms.blockedTooltip')).toBe('Accept the terms and conditions to continue.')
   })
@@ -338,9 +338,9 @@ describe('onboarding step 3 (open beta) parity (en)', () => {
 describe('onboarding step 4 (optional setup) parity (en)', () => {
   it('resolves the heading, lede, footer, and shared caption', () => {
     expect(tString('onboarding.stepOptional.footer.start')).toBe('Start using Cmdr')
-    expect(tString('onboarding.stepOptional.title')).toBe("You're almost ready")
+    expect(tString('onboarding.stepOptional.title')).toBe('You’re almost ready')
     expect(tString('onboarding.stepOptional.lede')).toBe(
-      "You chose to walk through a detailed setup, so here are a few easy choices. If you don't care too much, just click the button below. These are all options, and the defaults are picked for your benefit.",
+      'You chose to walk through a detailed setup, so here are a few easy choices. If you don’t care too much, just click the button below. These are all options, and the defaults are picked for your benefit.',
     )
     expect(tString('onboarding.stepOptional.recommendedOn')).toBe('Recommended: on')
     expect(tString('onboarding.stepOptional.changeAnytime')).toBe('You can change this any time in Settings.')
@@ -364,7 +364,7 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
   it('resolves the four toggle blocks', () => {
     expect(tString('onboarding.stepOptional.networking.title')).toBe('Networking')
     expect(renderRich('onboarding.stepOptional.networking.desc', ['em'])).toBe(
-      "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don't know what these are, they might be scary or annoying.",
+      'Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don’t know what these are, they might be scary or annoying.',
     )
     expect(tString('onboarding.stepOptional.indexing.title')).toBe('Drive indexing')
     expect(tString('onboarding.stepOptional.indexing.descIntro')).toBe(
@@ -380,17 +380,17 @@ describe('onboarding step 4 (optional setup) parity (en)', () => {
     // this sentence can't drift from what the Size column actually shows. The `<` reaches
     // the reader as a `<`, never as `&lt;`: `<Trans>` renders text, not HTML.
     expect(renderRich('onboarding.stepOptional.indexing.descCost', ['code'], { dirPlaceholder: '<dir>' })).toBe(
-      "If you turn this off, you only get <code><dir></code> for the sizes.\nThe cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time.\nIt's a cheap feature considering the benefits.",
+      'If you turn this off, you only get <code><dir></code> for the sizes.\nThe cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time.\nIt’s a cheap feature considering the benefits.',
     )
     expect(tString('onboarding.stepOptional.updates.title')).toBe('Automatic updates')
     expect(tString('onboarding.stepOptional.updates.desc')).toBe(
-      "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf disabled, you'll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
+      'If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf disabled, you’ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).',
     )
     expect(tString('onboarding.stepOptional.mtp.title')).toBe('MTP (Android phones, Kindles, cameras)')
     // The trailing "But it's a bit of a cost, so:" is gone: it used to lead into the
     // recommendation caption beside the toggle, and this sentence now ends a tooltip.
     expect(renderRich('onboarding.stepOptional.mtp.desc', ['strong', 'em'])).toBe(
-      "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can't just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it's running.\nWhen you quit Cmdr, this is politely restored.",
+      'If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can’t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it’s running.\nWhen you quit Cmdr, this is politely restored.',
     )
   })
 })
@@ -403,7 +403,7 @@ describe('onboarding cloud provider picker/setup parity (en)', () => {
   it('resolves the setup title and steps', () => {
     expect(tString('onboarding.cloudSetup.title', { provider: 'OpenAI' })).toBe('Set up OpenAI')
     expect(renderRich('onboarding.cloudSetup.step.signup', ['signupLink'], { provider: 'OpenAI' })).toBe(
-      "Sign up at <signupLink>OpenAI</signupLink> (if you don't have an account)",
+      'Sign up at <signupLink>OpenAI</signupLink> (if you don’t have an account)',
     )
     expect(renderRich('onboarding.cloudSetup.step.createKey', ['keyLink'])).toBe(
       'Create an API key <keyLink>here</keyLink>',
@@ -429,8 +429,8 @@ describe('onboarding cloud provider picker/setup parity (en)', () => {
 
   it('resolves the connection status strings', () => {
     expect(tString('onboarding.cloudSetup.status.checking')).toBe('Checking your key…')
-    expect(tString('onboarding.cloudSetup.status.authError')).toBe("That key didn't work")
-    expect(tString('onboarding.cloudSetup.status.connectionError')).toBe("Can't reach the service right now")
+    expect(tString('onboarding.cloudSetup.status.authError')).toBe('That key didn’t work')
+    expect(tString('onboarding.cloudSetup.status.connectionError')).toBe('Can’t reach the service right now')
     expect(tString('onboarding.cloudSetup.status.genericError')).toBe('Something went wrong')
     expect(tString('onboarding.cloudSetup.status.connected')).toBe('Connected!')
   })

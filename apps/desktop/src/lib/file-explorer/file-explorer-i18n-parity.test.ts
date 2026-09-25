@@ -104,17 +104,17 @@ describe('en-US parity: interpolating / plural / select fileExplorer keys (golde
 
   it('navigation saved-password dialog body keeps its apostrophes', () => {
     expect(tString('fileExplorer.navigation.useSavedPasswordMessage', { displayName: 'mynas' })).toBe(
-      "Cmdr can reuse the password macOS already saved for “mynas”. You'll see a system prompt asking to allow Keychain access. That's expected, so click Allow.",
+      'Cmdr can reuse the password macOS already saved for “mynas”. You’ll see a system prompt asking to allow Keychain access. That’s expected, so click Allow.',
     )
   })
 
   it('reused pane toasts the navigation layer now calls', () => {
     expect(tString('fileExplorer.pane.connectedDirectlyToast')).toBe('Connected directly for faster access')
     expect(tString('fileExplorer.pane.directConnectionUnreachableToast', { server: 'mynas' })).toBe(
-      "Can't reach mynas right now, so this share stays on the system connection.",
+      'Can’t reach mynas right now, so this share stays on the system connection.',
     )
     expect(tString('fileExplorer.pane.ejectFailedToast', { volumeName: 'Backup', message: 'busy' })).toBe(
-      "Couldn't eject Backup: busy",
+      'Couldn’t eject Backup: busy',
     )
   })
 })

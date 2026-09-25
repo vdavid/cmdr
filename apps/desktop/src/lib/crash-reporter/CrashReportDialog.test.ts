@@ -103,7 +103,7 @@ describe('CrashReportDialog send', () => {
 
     expect(onClose).not.toHaveBeenCalled()
     const alert = target.querySelector('[role="alert"]')
-    expect(alert?.textContent).toContain("The report didn't go out.")
+    expect(alert?.textContent).toContain('The report didn’t go out.')
     expect(alert?.textContent).toContain('Check your internet connection')
     expect(alert?.textContent).not.toContain('error sending request')
     expect(sendButton(target).disabled).toBe(false)

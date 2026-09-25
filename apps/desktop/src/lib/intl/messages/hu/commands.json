@@ -81,7 +81,7 @@
   },
   "commands.helpWhatsNew.label": "Újdonságok",
   "@commands.helpWhatsNew.label": {
-    "sourceHash": "aa0c54f"
+    "sourceHash": "37e6112"
   },
   "commands.helpWhatsNew.description": "Megnézheted, mi változott a Cmdr legutóbbi kiadásaiban",
   "@commands.helpWhatsNew.description": {
@@ -130,7 +130,7 @@
   },
   "commands.favoritesAdd.description": "A fókuszált panel aktuális mappáját hozzáadja a kedvencekhez, hogy a kedvencek menüjéből bármikor visszatérhess oda.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "b09b35e"
+    "sourceHash": "999aa52"
   },
   "commands.favoritesOpen.label": "Kedvencek megjelenítése",
   "@commands.favoritesOpen.label": {
@@ -458,7 +458,7 @@
   },
   "commands.fileGoToTrash.description": "Az aktuális meghajtó Kukájának megnyitása",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "45df2c4"
+    "sourceHash": "73eae92"
   },
   "commands.dialogConfirm.label": "Megnyitási párbeszéd megerősítése",
   "@commands.dialogConfirm.label": {
@@ -478,7 +478,7 @@
   },
   "commands.fileOpenTerminalHere.description": "A terminálapp megnyitása abban a mappában, amit épp nézel",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "fa93e44"
+    "sourceHash": "ac0ddb8"
   },
   "commands.fileCopyPath.label": "Útvonal másolása a vágólapra",
   "@commands.fileCopyPath.label": {
@@ -554,7 +554,7 @@
   },
   "commands.cloudAskGemini.description": "Megnyitja a Google Drive Gemini asszisztensét, a kijelölt fájlra ráállítva",
   "@commands.cloudAskGemini.description": {
-    "sourceHash": "3b425f6"
+    "sourceHash": "37d4e7c"
   },
   "commands.tagsToggleGrey.label": "Szürke címke be-/kikapcsolása",
   "@commands.tagsToggleGrey.label": {
@@ -770,7 +770,7 @@
   },
   "commands.handler.favoriteAddFailed": "Nem sikerült hozzáadni azt a mappát a kedvencekhez. Megpróbálod újra?",
   "@commands.handler.favoriteAddFailed": {
-    "sourceHash": "3f85e99"
+    "sourceHash": "0792537"
   },
   "commands.handler.tabLimitReached": "Elérted a lapok korlátját",
   "@commands.handler.tabLimitReached": {
@@ -782,19 +782,19 @@
   },
   "commands.handler.cloudDownloadFailed": "Nem sikerült letölteni a felhőből. {detail}",
   "@commands.handler.cloudDownloadFailed": {
-    "sourceHash": "70792cf"
+    "sourceHash": "9efe237"
   },
   "commands.handler.cloudRemoveDownloadFailed": "Nem sikerült eltávolítani a letöltést. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
-    "sourceHash": "425280d"
+    "sourceHash": "11189fb"
   },
   "commands.handler.googleDriveLinkMissing": "Ennek az elemnek nincs Google Drive-linkje.",
   "@commands.handler.googleDriveLinkMissing": {
-    "sourceHash": "af21508"
+    "sourceHash": "7be9109"
   },
   "commands.handler.googleDriveOpenFailed": "Nem sikerült megnyitni a Google Drive-ban. {detail}",
   "@commands.handler.googleDriveOpenFailed": {
-    "sourceHash": "71dc94a"
+    "sourceHash": "e7fd439"
   },
   "commands.handler.googleDriveLinkCopied": "Google Drive-link másolva.",
   "@commands.handler.googleDriveLinkCopied": {
@@ -802,7 +802,7 @@
   },
   "commands.handler.googleDriveCopyFailed": "Nem sikerült másolni a Google Drive-linket. {detail}",
   "@commands.handler.googleDriveCopyFailed": {
-    "sourceHash": "dd970ec"
+    "sourceHash": "0af1fd3"
   },
   "commands.handler.openTerminalHere.hint": "Ez a mappa megnyílt a terminálappodban. Szeretnéd, hogy a Cmdr legközelebb másik appot nyisson? Válaszd ki a Beállításokban, a „Navigáció és fájlműveletek” alatt.",
   "@commands.handler.openTerminalHere.hint": {
@@ -818,19 +818,19 @@
   },
   "commands.handler.openTerminalHere.appMissing": "{app} már nincs telepítve, ezért ez a Terminalban nyílt meg.",
   "@commands.handler.openTerminalHere.appMissing": {
-    "sourceHash": "70726d6"
+    "sourceHash": "770ded9"
   },
   "commands.handler.openTerminalHere.appMissingUnnamed": "A terminálappod már nincs telepítve, ezért ez a Terminalban nyílt meg.",
   "@commands.handler.openTerminalHere.appMissingUnnamed": {
-    "sourceHash": "29e9be5"
+    "sourceHash": "8e40ade"
   },
   "commands.handler.openTerminalHere.noPath": "Ennek a mappának nincs olyan elérési útja, amit egy terminál meg tudna nyitni.",
   "@commands.handler.openTerminalHere.noPath": {
-    "sourceHash": "d6520b7"
+    "sourceHash": "7851182"
   },
   "commands.handler.openTerminalHere.launchRefused": "A Cmdr nem tudta elindítani a terminálappodat. Nyisd meg egyszer magad, aztán próbáld újra.",
   "@commands.handler.openTerminalHere.launchRefused": {
-    "sourceHash": "ffd6b3a"
+    "sourceHash": "dd7296e"
   },
   "commands.handler.openTerminalHere.timedOut": "A terminálappod lassabban indul. Lehet, hogy még megnyílik.",
   "@commands.handler.openTerminalHere.timedOut": {

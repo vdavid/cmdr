@@ -13,7 +13,7 @@
   },
   "mtp.connectedToast.dontShowAgain": "Niet meer tonen",
   "@mtp.connectedToast.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "mtp.connectedToast.disableMtp": "Schakel MTP uit…",
   "@mtp.connectedToast.disableMtp": {
@@ -26,11 +26,11 @@
   },
   "mtp.permissionDialog.title": "Geen toegang tot USB-apparaat",
   "@mtp.permissionDialog.title": {
-    "sourceHash": "96130bf"
+    "sourceHash": "1b440ed"
   },
   "mtp.permissionDialog.description": "Cmdr heeft geen toegang tot dit apparaat. Linux heeft udev-regels nodig om toegang tot MTP-apparaten te geven.",
   "@mtp.permissionDialog.description": {
-    "sourceHash": "c11f0e8"
+    "sourceHash": "fdb8772"
   },
   "mtp.permissionDialog.explanation": "Voer deze opdracht uit in je terminal om de regels te installeren en opnieuw te laden:",
   "@mtp.permissionDialog.explanation": {
@@ -50,7 +50,7 @@
   },
   "mtp.ptpcameradDialog.title": "Kan niet verbinden met MTP-apparaat",
   "@mtp.ptpcameradDialog.title": {
-    "sourceHash": "058de77"
+    "sourceHash": "8cb1f59"
   },
   "mtp.ptpcameradDialog.inUseBy": "Het apparaat is in gebruik door <processName>{process}</processName>.",
   "@mtp.ptpcameradDialog.inUseBy": {

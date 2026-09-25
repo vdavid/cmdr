@@ -523,11 +523,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "En annan fil har redan det här namnet och ingår inte i den här namnbytesplanen. Namnbytet blockeras för att skydda den filen.",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "(finns inte)",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "Den här källfilen finns inte längre. Den kan ha raderats eller bytt namn utanför Cmdr.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -675,7 +675,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "AI-funktioner kan inte se dina mappar än. Klicka för att ställa in full skivtillgång.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "AI-funktioner är på, men de behöver en leverantör för att fungera. Klicka för att ställa in en i inställningarna.",
   "@askCmdr.wake.needsApiKey": {

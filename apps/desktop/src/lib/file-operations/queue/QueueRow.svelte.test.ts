@@ -291,7 +291,7 @@ describe('QueueRow', () => {
     expect(rollbackButton()).toBeNull()
   })
 
-  it("a failed row says it couldn't finish and drops every live control", () => {
+  it('a failed row says it couldn’t finish and drops every live control', () => {
     render({
       row: buildFailedRow({
         type: 'read_only_device',
@@ -301,7 +301,7 @@ describe('QueueRow', () => {
       }),
     })
 
-    expect(target.querySelector('.status-text')?.textContent.trim()).toBe("Couldn't finish")
+    expect(target.querySelector('.status-text')?.textContent.trim()).toBe('Couldn’t finish')
     expect(target.querySelector('[aria-label="Pause this operation"]')).toBeNull()
     expect(target.querySelector('[aria-label="Resume this operation"]')).toBeNull()
     expect(target.querySelector('[aria-label="Cancel this operation"]')).toBeNull()
@@ -340,7 +340,7 @@ describe('QueueRow', () => {
       ),
     })
     reason = target.querySelector('.reason-cell')?.textContent ?? ''
-    expect(reason).toContain("You don't have permission to delete files here.")
+    expect(reason).toContain('You don’t have permission to delete files here.')
   })
 
   it('clicking Dismiss fires onDismiss', () => {
@@ -492,7 +492,7 @@ describe('QueueRow: Show (back to the main window)', () => {
     })
   }
 
-  it("offers Show on a running row, and asks for that row's operation", () => {
+  it('offers Show on a running row, and asks for that row’s operation', () => {
     render({ row: buildRow('running') })
 
     const button = showButton()

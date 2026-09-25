@@ -122,11 +122,11 @@
   },
   "licensing.commercialReminder.usingPersonal": "你正在使用个人版许可证。",
   "@licensing.commercialReminder.usingPersonal": {
-    "sourceHash": "508c17d"
+    "sourceHash": "3aa6518"
   },
   "licensing.commercialReminder.askCommercial": "如果你在工作中使用 Cmdr，请获取商业版许可证以保持合规。",
   "@licensing.commercialReminder.askCommercial": {
-    "sourceHash": "6bf4031"
+    "sourceHash": "84b372c"
   },
   "licensing.commercialReminder.priceInfo": "商业版许可证一次性 $59，可支持持续开发。",
   "@licensing.commercialReminder.priceInfo": {
@@ -154,7 +154,7 @@
   },
   "licensing.expiration.info": "Cmdr 现已在个人使用模式下运行。如果你仍在工作中使用它，请续订你的许可证。",
   "@licensing.expiration.info": {
-    "sourceHash": "5fcebb5"
+    "sourceHash": "274de6c"
   },
   "licensing.expiration.renew": "续订许可证",
   "@licensing.expiration.renew": {
@@ -178,7 +178,7 @@
   },
   "licensing.dialog.serverInvalidBanner": "服务器没能验证这个密钥。请换一个密钥试试，或者发邮件到 <supportEmail>{email}</supportEmail> 联系我们。",
   "@licensing.dialog.serverInvalidBanner": {
-    "sourceHash": "616b906"
+    "sourceHash": "fa68511"
   },
   "licensing.dialog.labelType": "许可证类型",
   "@licensing.dialog.labelType": {
@@ -230,7 +230,7 @@
   },
   "licensing.dialog.pendingHint": "我们会在 {days} 天内自动与服务器完成验证。",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "8d9801b"
+    "sourceHash": "b4bbb38"
   },
   "licensing.dialog.useDifferentKey": "使用其他密钥",
   "@licensing.dialog.useDifferentKey": {
@@ -254,7 +254,7 @@
   },
   "licensing.dialog.enterPrompt": "请粘贴购买后收到的电子邮件中的许可证密钥。还没有密钥？<getLicense>获取许可证</getLicense>。",
   "@licensing.dialog.enterPrompt": {
-    "sourceHash": "f6fb47a"
+    "sourceHash": "4e3a096"
   },
   "licensing.dialog.inputPlaceholder": "示例：CMDR-ABCD-EFGH-1234",
   "@licensing.dialog.inputPlaceholder": {
@@ -262,11 +262,11 @@
   },
   "licensing.dialog.retryExhausted": "我们已尝试 {count} 次但都没成功。很抱歉给你带来麻烦。请发送消息至 <supportEmail>{email}</supportEmail>，我们会帮你解决。",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "4f3331b"
+    "sourceHash": "d2aa21a"
   },
   "licensing.dialog.serverInvalidHelp": "如果你认为这是误判，请发送电子邮件至 <supportEmail>{email}</supportEmail>，我们会帮你解决。",
   "@licensing.dialog.serverInvalidHelp": {
-    "sourceHash": "90471d2"
+    "sourceHash": "743cbed"
   },
   "licensing.dialog.genericHelp": "如果你需要帮助，请通过 <supportEmail>{email}</supportEmail> 联系我们。",
   "@licensing.dialog.genericHelp": {
@@ -302,7 +302,7 @@
   },
   "licensing.dialog.networkFallbackError": "无法通过服务器验证你的许可证。请稍后再试。",
   "@licensing.dialog.networkFallbackError": {
-    "sourceHash": "cb2b8e0"
+    "sourceHash": "fc7e124"
   },
   "licensing.dialog.expiredOnError": "这个许可证已在 {date} 过期。",
   "@licensing.dialog.expiredOnError": {
@@ -314,7 +314,7 @@
   },
   "licensing.dialog.serverInvalidError": "我们认识这个密钥，但当我们向支付提供方核对时，对方没有识别出它。如果购买被退款或尚未结清，就可能出现这种情况。",
   "@licensing.dialog.serverInvalidError": {
-    "sourceHash": "4beeef1"
+    "sourceHash": "58f1457"
   },
   "licensing.dialog.emptyKeyError": "请输入许可证密钥",
   "@licensing.dialog.emptyKeyError": {
@@ -326,11 +326,11 @@
   },
   "licensing.dialog.mailtoBody": "您好，\n\n我在激活许可证密钥时遇到了麻烦：\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
-    "sourceHash": "bcdc2b6"
+    "sourceHash": "c076655"
   },
   "licensing.error.badSignature": "这个许可证密钥没有通过我们的签名验证，看起来不像有效的密钥。",
   "@licensing.error.badSignature": {
-    "sourceHash": "e9842df"
+    "sourceHash": "3bcac8e"
   },
   "licensing.error.badSignatureHint": "请仔细检查有没有打错，然后从购买邮件中重新粘贴一次。",
   "@licensing.error.badSignatureHint": {
@@ -346,7 +346,7 @@
   },
   "licensing.error.shortCodeNotFound": "这个许可证看起来没问题，但我们仔细查找后，没能在数据库中找到它。",
   "@licensing.error.shortCodeNotFound": {
-    "sourceHash": "c123af8"
+    "sourceHash": "0f9ccbf"
   },
   "licensing.error.shortCodeNotFoundHint": "请确认你粘贴的是购买电子邮件中正确的密钥。",
   "@licensing.error.shortCodeNotFoundHint": {
@@ -354,7 +354,7 @@
   },
   "licensing.error.network": "哎呀，我们这次没能连接到许可证服务器。",
   "@licensing.error.network": {
-    "sourceHash": "63da44b"
+    "sourceHash": "d03567c"
   },
   "licensing.error.networkHint": "请检查你的网络连接，然后重试。",
   "@licensing.error.networkHint": {
@@ -362,7 +362,7 @@
   },
   "licensing.error.server": "嗯，许可证服务器返回了一些奇怪的内容。真抱歉。",
   "@licensing.error.server": {
-    "sourceHash": "6ca76c0"
+    "sourceHash": "89870f9"
   },
   "licensing.error.serverHint": "请稍后再试。",
   "@licensing.error.serverHint": {
@@ -374,7 +374,7 @@
   },
   "licensing.error.genericHint": "请重试。如果问题持续存在，请发送电子邮件给我们，我们会帮你。",
   "@licensing.error.genericHint": {
-    "sourceHash": "9108b68"
+    "sourceHash": "be0771c"
   },
   "licensing.section.title": "许可证",
   "@licensing.section.title": {

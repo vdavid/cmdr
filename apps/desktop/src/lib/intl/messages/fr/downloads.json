@@ -126,11 +126,11 @@
   },
   "downloads.shortcutRow.invalidCombo": "Enregistrement impossible : combinaison non valide",
   "@downloads.shortcutRow.invalidCombo": {
-    "sourceHash": "32c3532"
+    "sourceHash": "d2601f3"
   },
   "downloads.shortcutRow.registerFailed": "Enregistrement impossible : {reason}",
   "@downloads.shortcutRow.registerFailed": {
-    "sourceHash": "2e6fb97"
+    "sourceHash": "3b0841e"
   },
   "downloads.shortcutRow.addModifier": "Ajoutez une touche de modification (⌘, ⌃, ⌥ ou ⇧)",
   "@downloads.shortcutRow.addModifier": {

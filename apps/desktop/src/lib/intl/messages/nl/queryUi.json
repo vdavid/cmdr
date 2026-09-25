@@ -1,7 +1,7 @@
 {
   "queryUi.bar.placeholder.ai": "Beschrijf wat je zoekt",
   "@queryUi.bar.placeholder.ai": {
-    "sourceHash": "fbfb9a8"
+    "sourceHash": "d8ef53e"
   },
   "queryUi.bar.placeholder.regex": "Reguliere-expressiepatroon",
   "@queryUi.bar.placeholder.regex": {
@@ -106,7 +106,7 @@
   },
   "queryUi.ai.lead": "Dit heeft de agent gedaan:",
   "@queryUi.ai.lead": {
-    "sourceHash": "bf7c5a2"
+    "sourceHash": "0598e43"
   },
   "queryUi.ai.empty": "Nog niets om op te filteren. Probeer het anders te formuleren?",
   "@queryUi.ai.empty": {
@@ -257,7 +257,7 @@
   },
   "queryUi.results.live.resolvingCoverage": "Nagaan wat er al geïndexeerd is…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "524487d"
+    "sourceHash": "dc547a0"
   },
   "queryUi.results.live.waitingForAnotherWalk": "Wachten op een andere doorloop van deze mappen…",
   "@queryUi.results.live.waitingForAnotherWalk": {
@@ -269,11 +269,11 @@
   },
   "queryUi.results.live.readingIndex": "Lezen wat er al geïndexeerd is…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "ed4159a"
+    "sourceHash": "b8bd4f7"
   },
   "queryUi.results.live.walking": "Mappen doorlopen die nog niet geïndexeerd zijn…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "3829650"
+    "sourceHash": "2acf23a"
   },
   "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {resultaat} other {resultaten}} tot nu toe",
   "@queryUi.results.live.matchesSoFar": {
@@ -285,11 +285,11 @@
   },
   "queryUi.results.live.incomplete": "{shownText} van {totalText} resultaten. Cmdr heeft niet alles doorzocht.",
   "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
+    "sourceHash": "737d12c"
   },
   "queryUi.results.live.incompleteEmpty": "Niets gevonden voordat de zoekopdracht stopte. Cmdr heeft niet alles doorzocht.",
   "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
+    "sourceHash": "6910921"
   },
   "queryUi.results.live.capped": "De eerste {shownText} van {totalText} resultaten worden getoond.",
   "@queryUi.results.live.capped": {
@@ -441,15 +441,15 @@
   },
   "queryUi.dialog.aiTranslateFailedToast": "De AI-zoekopdracht lukte zojuist niet. Probeer het opnieuw?",
   "@queryUi.dialog.aiTranslateFailedToast": {
-    "sourceHash": "6856c79"
+    "sourceHash": "b18f37c"
   },
   "queryUi.dialog.runQueryToast": "Deze zoekopdracht kon niet worden voltooid. {message}",
   "@queryUi.dialog.runQueryToast": {
-    "sourceHash": "02a3bba"
+    "sourceHash": "51acd6e"
   },
   "queryUi.dialog.runQueryUnknownReason": "De reden is onduidelijk. Probeer een specifiekere zoekopdracht?",
   "@queryUi.dialog.runQueryUnknownReason": {
-    "sourceHash": "4f79b0f"
+    "sourceHash": "bb9a283"
   },
   "queryUi.filters.toolbarAria": "Zoekfilters",
   "@queryUi.filters.toolbarAria": {

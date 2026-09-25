@@ -122,11 +122,11 @@
   },
   "licensing.commercialReminder.usingPersonal": "Vous utilisez une licence personnelle.",
   "@licensing.commercialReminder.usingPersonal": {
-    "sourceHash": "508c17d"
+    "sourceHash": "3aa6518"
   },
   "licensing.commercialReminder.askCommercial": "Si vous utilisez Cmdr au travail, obtenez une licence commerciale pour rester en conformité.",
   "@licensing.commercialReminder.askCommercial": {
-    "sourceHash": "6bf4031"
+    "sourceHash": "84b372c"
   },
   "licensing.commercialReminder.priceInfo": "Une licence commerciale coûte 59 $, en une seule fois, et soutient le développement continu.",
   "@licensing.commercialReminder.priceInfo": {
@@ -154,7 +154,7 @@
   },
   "licensing.expiration.info": "Cmdr fonctionne désormais en mode usage personnel. Si vous l’utilisez encore au travail, renouvelez votre licence.",
   "@licensing.expiration.info": {
-    "sourceHash": "5fcebb5"
+    "sourceHash": "274de6c"
   },
   "licensing.expiration.renew": "Renouveler la licence",
   "@licensing.expiration.renew": {
@@ -178,7 +178,7 @@
   },
   "licensing.dialog.serverInvalidBanner": "Cette clé n’a pas pu être vérifiée auprès du serveur. Essayez une autre clé ou écrivez-nous à <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.serverInvalidBanner": {
-    "sourceHash": "616b906"
+    "sourceHash": "fa68511"
   },
   "licensing.dialog.labelType": "Type de licence",
   "@licensing.dialog.labelType": {
@@ -231,7 +231,7 @@
   },
   "licensing.dialog.pendingHint": "Nous vérifierons automatiquement auprès du serveur sous {days} jours.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "8d9801b"
+    "sourceHash": "b4bbb38"
   },
   "licensing.dialog.useDifferentKey": "Utiliser une autre clé",
   "@licensing.dialog.useDifferentKey": {
@@ -255,7 +255,7 @@
   },
   "licensing.dialog.enterPrompt": "Collez votre clé de licence depuis l’e-mail reçu après l’achat. Vous n’en avez pas encore ? <getLicense>Obtenir une licence</getLicense>.",
   "@licensing.dialog.enterPrompt": {
-    "sourceHash": "f6fb47a"
+    "sourceHash": "4e3a096"
   },
   "licensing.dialog.inputPlaceholder": "Exemple : CMDR-ABCD-EFGH-1234",
   "@licensing.dialog.inputPlaceholder": {
@@ -263,11 +263,11 @@
   },
   "licensing.dialog.retryExhausted": "Nous avons essayé {count} fois et ça n’a pas marché. Désolés pour la gêne. Écrivez-nous à <supportEmail>{email}</supportEmail> et nous réglerons ça.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "4f3331b"
+    "sourceHash": "d2aa21a"
   },
   "licensing.dialog.serverInvalidHelp": "Si vous pensez qu’il s’agit d’une erreur, écrivez-nous à <supportEmail>{email}</supportEmail> et nous réglerons ça.",
   "@licensing.dialog.serverInvalidHelp": {
-    "sourceHash": "90471d2"
+    "sourceHash": "743cbed"
   },
   "licensing.dialog.genericHelp": "Si vous avez besoin d’aide, contactez-nous à <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.genericHelp": {
@@ -303,7 +303,7 @@
   },
   "licensing.dialog.networkFallbackError": "Vérification de votre licence auprès du serveur impossible. Réessayez plus tard.",
   "@licensing.dialog.networkFallbackError": {
-    "sourceHash": "cb2b8e0"
+    "sourceHash": "fc7e124"
   },
   "licensing.dialog.expiredOnError": "Cette licence a expiré le {date}.",
   "@licensing.dialog.expiredOnError": {
@@ -315,7 +315,7 @@
   },
   "licensing.dialog.serverInvalidError": "Nous connaissons cette clé, mais en la vérifiant auprès de notre prestataire de paiement, il ne l’a pas reconnue. Cela peut arriver si l’achat a été remboursé ou n’a pas abouti.",
   "@licensing.dialog.serverInvalidError": {
-    "sourceHash": "4beeef1"
+    "sourceHash": "58f1457"
   },
   "licensing.dialog.emptyKeyError": "Saisissez une clé de licence",
   "@licensing.dialog.emptyKeyError": {
@@ -327,11 +327,11 @@
   },
   "licensing.dialog.mailtoBody": "Bonjour,\n\nJe rencontre un problème pour activer ma clé de licence :\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
-    "sourceHash": "bcdc2b6"
+    "sourceHash": "c076655"
   },
   "licensing.error.badSignature": "Cette clé de licence n’a pas passé notre vérification de signature, ce qui signifie qu’elle ne ressemble pas à une clé valable.",
   "@licensing.error.badSignature": {
-    "sourceHash": "e9842df"
+    "sourceHash": "3bcac8e"
   },
   "licensing.error.badSignatureHint": "Revérifiez les fautes de frappe et essayez de la recoller depuis votre e-mail d’achat.",
   "@licensing.error.badSignatureHint": {
@@ -347,7 +347,7 @@
   },
   "licensing.error.shortCodeNotFound": "Cette licence a l’air bonne, mais nous avons bien cherché et n’avons pas pu la trouver dans notre base de données.",
   "@licensing.error.shortCodeNotFound": {
-    "sourceHash": "c123af8"
+    "sourceHash": "0f9ccbf"
   },
   "licensing.error.shortCodeNotFoundHint": "Vérifiez que vous avez collé la bonne clé depuis votre e-mail d’achat.",
   "@licensing.error.shortCodeNotFoundHint": {
@@ -355,7 +355,7 @@
   },
   "licensing.error.network": "Aïe, nous n’avons pas pu joindre le serveur de licences cette fois-ci.",
   "@licensing.error.network": {
-    "sourceHash": "63da44b"
+    "sourceHash": "d03567c"
   },
   "licensing.error.networkHint": "Vérifiez votre connexion internet et réessayez.",
   "@licensing.error.networkHint": {
@@ -363,7 +363,7 @@
   },
   "licensing.error.server": "Hmm, le serveur de licences a répondu quelque chose d’étrange. Nous en sommes désolés.",
   "@licensing.error.server": {
-    "sourceHash": "6ca76c0"
+    "sourceHash": "89870f9"
   },
   "licensing.error.serverHint": "Réessayez plus tard.",
   "@licensing.error.serverHint": {
@@ -375,7 +375,7 @@
   },
   "licensing.error.genericHint": "Réessayez. Si le problème persiste, écrivez-nous et nous vous aiderons.",
   "@licensing.error.genericHint": {
-    "sourceHash": "9108b68"
+    "sourceHash": "be0771c"
   },
   "licensing.section.title": "Licence",
   "@licensing.section.title": {

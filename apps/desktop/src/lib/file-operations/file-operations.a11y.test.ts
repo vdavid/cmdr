@@ -171,7 +171,7 @@ describe('RollbackConfirmDialog a11y', () => {
     const target = await mountDialog()
     const dialog = target.querySelector('[role="dialog"]')
     expect(dialog?.getAttribute('aria-describedby')).toBe('rollback-confirmation-body')
-    expect(target.querySelector('#rollback-confirmation-body')?.textContent).toContain("won't come back")
+    expect(target.querySelector('#rollback-confirmation-body')?.textContent).toContain('won’t come back')
   })
 })
 

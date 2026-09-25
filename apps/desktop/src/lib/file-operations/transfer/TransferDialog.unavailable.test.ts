@@ -123,7 +123,7 @@ describe('a size scan that gives up', () => {
     expect(stats?.querySelector('.scan-status')).toBeNull()
 
     const notice = target.querySelector('.scan-unavailable')
-    expect(notice?.textContent).toContain("isn't responding")
+    expect(notice?.textContent).toContain('isn’t responding')
 
     const retry = notice?.querySelector('button')
     expect(retry).not.toBeNull()
@@ -143,7 +143,7 @@ describe('a size scan that gives up', () => {
     const stats = target.querySelector('.scan-stats')
     expect(stats?.getAttribute('data-scan-state')).toBe('unavailable')
     // No "not responding" claim for something that answered and said no.
-    expect(target.querySelector('.scan-unavailable')?.textContent).not.toContain("isn't responding")
+    expect(target.querySelector('.scan-unavailable')?.textContent).not.toContain('isn’t responding')
   })
 })
 
@@ -156,7 +156,7 @@ describe('a conflict check that gives up', () => {
     const body = target.querySelector('.dialog-body')
     expect(body?.getAttribute('data-conflict-state')).toBe('unknown')
     expect(target.querySelector('.conflicts-checking')).toBeNull()
-    expect(target.querySelector('.conflicts-unknown')?.textContent).toContain("couldn't check")
+    expect(target.querySelector('.conflicts-unknown')?.textContent).toContain('couldn’t check')
   })
 
   it('still lets the transfer start, since the backend asks about each clash it meets', async () => {

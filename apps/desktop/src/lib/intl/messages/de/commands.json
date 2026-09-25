@@ -81,7 +81,7 @@
   },
   "commands.helpWhatsNew.label": "Neuigkeiten",
   "@commands.helpWhatsNew.label": {
-    "sourceHash": "aa0c54f"
+    "sourceHash": "37e6112"
   },
   "commands.helpWhatsNew.description": "Sieh, was sich in den neuesten Versionen von Cmdr geändert hat",
   "@commands.helpWhatsNew.description": {
@@ -130,7 +130,7 @@
   },
   "commands.favoritesAdd.description": "Den aktuellen Ordner des fokussierten Bereichs zu den Favoriten hinzufügen, damit das Favoritenmenü jederzeit wieder dorthin führt.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "b09b35e"
+    "sourceHash": "999aa52"
   },
   "commands.favoritesOpen.label": "Favoriten anzeigen",
   "@commands.favoritesOpen.label": {
@@ -458,7 +458,7 @@
   },
   "commands.fileGoToTrash.description": "Den Papierkorb des Laufwerks öffnen, auf dem du gerade bist",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "45df2c4"
+    "sourceHash": "73eae92"
   },
   "commands.dialogConfirm.label": "Öffnen-Dialog bestätigen",
   "@commands.dialogConfirm.label": {
@@ -478,7 +478,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Deine Terminal-App in dem Ordner öffnen, den du gerade ansiehst",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "fa93e44"
+    "sourceHash": "ac0ddb8"
   },
   "commands.fileCopyPath.label": "Pfad in die Zwischenablage kopieren",
   "@commands.fileCopyPath.label": {
@@ -554,7 +554,7 @@
   },
   "commands.cloudAskGemini.description": "Öffnet den Gemini-Assistenten von Google Drive mit der ausgewählten Datei als Thema",
   "@commands.cloudAskGemini.description": {
-    "sourceHash": "3b425f6"
+    "sourceHash": "37d4e7c"
   },
   "commands.tagsToggleGrey.label": "Tag „Grau“ umschalten",
   "@commands.tagsToggleGrey.label": {
@@ -770,7 +770,7 @@
   },
   "commands.handler.favoriteAddFailed": "Dieser Ordner konnte nicht zu den Favoriten hinzugefügt werden. Erneut versuchen?",
   "@commands.handler.favoriteAddFailed": {
-    "sourceHash": "3f85e99"
+    "sourceHash": "0792537"
   },
   "commands.handler.tabLimitReached": "Tab-Limit erreicht",
   "@commands.handler.tabLimitReached": {
@@ -782,19 +782,19 @@
   },
   "commands.handler.cloudDownloadFailed": "Laden aus der Cloud nicht möglich. {detail}",
   "@commands.handler.cloudDownloadFailed": {
-    "sourceHash": "70792cf"
+    "sourceHash": "9efe237"
   },
   "commands.handler.cloudRemoveDownloadFailed": "Der Download konnte nicht entfernt werden. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
-    "sourceHash": "425280d"
+    "sourceHash": "11189fb"
   },
   "commands.handler.googleDriveLinkMissing": "Für dieses Objekt gibt es keinen Google-Drive-Link.",
   "@commands.handler.googleDriveLinkMissing": {
-    "sourceHash": "af21508"
+    "sourceHash": "7be9109"
   },
   "commands.handler.googleDriveOpenFailed": "Öffnen in Google Drive nicht möglich. {detail}",
   "@commands.handler.googleDriveOpenFailed": {
-    "sourceHash": "71dc94a"
+    "sourceHash": "e7fd439"
   },
   "commands.handler.googleDriveLinkCopied": "Google-Drive-Link kopiert.",
   "@commands.handler.googleDriveLinkCopied": {
@@ -802,7 +802,7 @@
   },
   "commands.handler.googleDriveCopyFailed": "Kopieren des Google-Drive-Links nicht möglich. {detail}",
   "@commands.handler.googleDriveCopyFailed": {
-    "sourceHash": "dd970ec"
+    "sourceHash": "0af1fd3"
   },
   "commands.handler.openTerminalHere.hint": "Ordner in deiner Terminal-App geöffnet. Soll Cmdr beim nächsten Mal eine andere App öffnen? Wähle sie in den Einstellungen unter „Navigation & Dateioperationen“.",
   "@commands.handler.openTerminalHere.hint": {
@@ -818,19 +818,19 @@
   },
   "commands.handler.openTerminalHere.appMissing": "{app} ist nicht mehr installiert, also wurde stattdessen Terminal geöffnet.",
   "@commands.handler.openTerminalHere.appMissing": {
-    "sourceHash": "70726d6"
+    "sourceHash": "770ded9"
   },
   "commands.handler.openTerminalHere.appMissingUnnamed": "Deine Terminal-App ist nicht mehr installiert, also wurde stattdessen Terminal geöffnet.",
   "@commands.handler.openTerminalHere.appMissingUnnamed": {
-    "sourceHash": "29e9be5"
+    "sourceHash": "8e40ade"
   },
   "commands.handler.openTerminalHere.noPath": "Dieser Ordner hat keinen Pfad, den ein Terminal öffnen kann.",
   "@commands.handler.openTerminalHere.noPath": {
-    "sourceHash": "d6520b7"
+    "sourceHash": "7851182"
   },
   "commands.handler.openTerminalHere.launchRefused": "Cmdr konnte deine Terminal-App nicht starten. Öffne sie einmal selbst und versuche es dann noch mal.",
   "@commands.handler.openTerminalHere.launchRefused": {
-    "sourceHash": "ffd6b3a"
+    "sourceHash": "dd7296e"
   },
   "commands.handler.openTerminalHere.timedOut": "Deine Terminal-App braucht länger zum Starten. Vielleicht geht sie gleich noch auf.",
   "@commands.handler.openTerminalHere.timedOut": {

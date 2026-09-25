@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "L’endroit où vont vos données, et ce qu’il en advient, dépend du service que vous choisissez et de votre accord avec lui. Cela vaut aussi pour Ollama, LM Studio et les points de terminaison personnalisés : les données vont là où ce serveur tourne. Les serveurs de Cmdr n’en voient jamais rien.",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>Suggestions de noms pour un nouveau dossier</b> : le chemin du dossier actuel et jusqu’à 100 noms qu’il contient",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>Recherche en langage courant</b> : le texte que vous tapez",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "Il limite le débit des requêtes ou votre forfait n’a plus de quota. Vérifiez votre forfait et votre facturation, puis réessayez.",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "L’IA a mis trop de temps",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "Impossible de joindre votre fournisseur d’IA",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "Vérifiez votre connexion internet ou l’état du fournisseur, puis réessayez.",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "L’IA est revenue vide",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "Lecture de la réponse de l’IA impossible",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "Réessayez, ou choisissez un autre modèle dans Réglages > IA.",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "Ce fournisseur d’IA n’est pas reconnu",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "Choisissez un fournisseur dans Réglages > IA.",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "Serveur injoignable",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "Un problème est survenu",
   "@ai.cloud.genericError": {
@@ -422,7 +422,7 @@
   },
   "ai.local.deleteConfirmMessage": "Cela libère {modelSize} d’espace disque. Vous devrez le retélécharger pour réutiliser l’IA locale.",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "Suppression…",
   "@ai.local.deleteButtonDeleting": {
@@ -434,7 +434,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {Impossible d’enregistrer votre clé d’API : le Trousseau macOS a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le Trousseau macOS a refusé l’accès}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {Ouvrez Trousseaux d’accès et vérifiez l’entrée « Cmdr », ou supprimez-la puis réessayez d’enregistrer.} other {Ouvrez Trousseaux d’accès, trouvez l’entrée « Cmdr », autorisez l’accès, ou supprimez-la puis saisissez de nouveau votre clé.}}",
   "@ai.secretError.keychainBody": {
@@ -442,7 +442,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {Impossible d’enregistrer votre clé d’API : le trousseau du système a refusé l’accès} other {Impossible de lire votre clé d’API enregistrée : le trousseau du système a refusé l’accès}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "Déverrouillez votre trousseau (application Mots de passe ou Trousseaux) puis réessayez.",
   "@ai.secretError.keyringBody": {
@@ -450,7 +450,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {Impossible d’enregistrer votre clé d’API.} other {Impossible de lire votre clé d’API enregistrée.}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "Vérifiez que le trousseau de votre système est disponible, puis réessayez. Si le problème persiste, redémarrez l’application.",
   "@ai.secretError.genericBody": {

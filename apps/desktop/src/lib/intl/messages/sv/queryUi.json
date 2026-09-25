@@ -1,7 +1,7 @@
 {
   "queryUi.bar.placeholder.ai": "Beskriv vad du letar efter",
   "@queryUi.bar.placeholder.ai": {
-    "sourceHash": "fbfb9a8"
+    "sourceHash": "d8ef53e"
   },
   "queryUi.bar.placeholder.regex": "Reguljärt uttryck",
   "@queryUi.bar.placeholder.regex": {
@@ -106,7 +106,7 @@
   },
   "queryUi.ai.lead": "Det här gjorde agenten:",
   "@queryUi.ai.lead": {
-    "sourceHash": "bf7c5a2"
+    "sourceHash": "0598e43"
   },
   "queryUi.ai.empty": "Inget att filtrera på än. Försök att formulera om?",
   "@queryUi.ai.empty": {
@@ -256,7 +256,7 @@
   },
   "queryUi.results.live.resolvingCoverage": "Tar reda på vad som redan är indexerat…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "524487d"
+    "sourceHash": "dc547a0"
   },
   "queryUi.results.live.waitingForAnotherWalk": "Väntar på en annan genomsökning av de här mapparna…",
   "@queryUi.results.live.waitingForAnotherWalk": {
@@ -268,11 +268,11 @@
   },
   "queryUi.results.live.readingIndex": "Läser det som redan är indexerat…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "ed4159a"
+    "sourceHash": "b8bd4f7"
   },
   "queryUi.results.live.walking": "Går igenom mappar som inte är indexerade än…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "3829650"
+    "sourceHash": "2acf23a"
   },
   "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {träff} other {träffar}} hittills",
   "@queryUi.results.live.matchesSoFar": {
@@ -284,11 +284,11 @@
   },
   "queryUi.results.live.incomplete": "{shownText} av {totalText} resultat. Cmdr hann inte klart.",
   "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
+    "sourceHash": "737d12c"
   },
   "queryUi.results.live.incompleteEmpty": "Inget hittades innan sökningen stoppades. Cmdr hann inte klart.",
   "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
+    "sourceHash": "6910921"
   },
   "queryUi.results.live.capped": "Visar de första {shownText} av {totalText} träffarna.",
   "@queryUi.results.live.capped": {
@@ -439,15 +439,15 @@
   },
   "queryUi.dialog.aiTranslateFailedToast": "Det gick inte att köra AI-sökningen just nu. Försök igen?",
   "@queryUi.dialog.aiTranslateFailedToast": {
-    "sourceHash": "6856c79"
+    "sourceHash": "b18f37c"
   },
   "queryUi.dialog.runQueryToast": "Den här sökningen kunde inte slutföras. {message}",
   "@queryUi.dialog.runQueryToast": {
-    "sourceHash": "02a3bba"
+    "sourceHash": "51acd6e"
   },
   "queryUi.dialog.runQueryUnknownReason": "Orsaken är oklar. Prova en snävare sökning?",
   "@queryUi.dialog.runQueryUnknownReason": {
-    "sourceHash": "4f79b0f"
+    "sourceHash": "bb9a283"
   },
   "queryUi.filters.toolbarAria": "Sökfilter",
   "@queryUi.filters.toolbarAria": {

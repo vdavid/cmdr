@@ -156,11 +156,11 @@
   },
   "indexing.rescan.staleIndex": "A meghajtó indexe elavult. Úgy tűnik, az app egy ideje nem futott. Friss átvizsgálás indul, hogy behozza a lemaradást.",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "A rendszer fájlváltozás-naplója nem nyúlik vissza eléggé. Friss átvizsgálás indul az index újraépítéséhez.",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "Sok fájlváltozás történt a legutóbbi futás óta. Friss átvizsgálás indul ahelyett, hogy egyenként visszajátszanánk őket.",
   "@indexing.rescan.replayOverflow": {
@@ -168,7 +168,7 @@
   },
   "indexing.rescan.watcherStartFailed": "A fájlváltozás-figyelőt nem sikerült elindítani. Friss átvizsgálás indul, hogy az index naprakész legyen.",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "A nagy fájlrendszer-aktivitás túlterhelte az eseménytárolót. Friss átvizsgálás indul a pontosság érdekében.",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -176,7 +176,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "Az előző átvizsgálás nem fejeződött be (lehet, hogy bezárult az app). Az átvizsgálás újraindul az elejéről.",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "A hirtelen fájlrendszer-aktivitás túlterhelte a figyelő csatornáját. Friss átvizsgálás indul a pontosság érdekében.",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -204,15 +204,15 @@
   },
   "indexing.firstConnect.silenceDrive": "Ennél a meghajtónál ne kérdezd újra",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "Egyik meghajtónál se kérdezd újra",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "Ennek a meghajtónak az indexe elavulhatott",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "Amíg {name} le volt választva, a rajta lévő fájlok megváltozhattak. A mappaméretek és a keresési találatok kissé pontatlanok lehetnek, amíg újra nem vizsgálod át. A meghajtó melletti sárga állapot mindig jelzi, ha ez történik, és egy újbóli átvizsgálás frissíti.",
   "@indexing.staleDialog.body": {
@@ -220,11 +220,11 @@
   },
   "indexing.staleDialog.titlePhone": "Ennek a telefonnak az indexe elavulhatott",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} nem szól a Cmdrnek, amikor megváltoznak rajta a fájlok, ezért az indexét a Cmdr a saját változtatásaival tartja naprakészen. A telefonon végzett változtatások, például az új fotók, egy újbóli átvizsgálás után jelennek meg a mappaméretekben és a keresésben. A telefon melletti sárga állapot emlékeztetőül ott marad.",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "Soha ne jelenjen meg újra",
   "@indexing.staleDialog.neverShowAgain": {
@@ -253,7 +253,7 @@
   },
   "indexing.enrich.pausedIdle": "Vár, amíg épp nem vagy elfoglalt",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "Szüneteltetve, újracsatlakozáskor folytatódik",
   "@indexing.enrich.pausedDisconnected": {

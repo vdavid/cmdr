@@ -20,7 +20,7 @@
     "screenshot": "delete-confirm.png"
   },
 
-  "fileOperations.delete.noTrashWarningStrong": "This volume doesn''t support trash.",
+  "fileOperations.delete.noTrashWarningStrong": "This volume doesn’t support trash.",
   "@fileOperations.delete.noTrashWarningStrong": {
     "description": "Bold lead of a warning banner in the delete dialog, shown on volumes (FAT32, SMB, etc.) that have no trash. Followed by fileOperations.delete.noTrashWarningRest in the same sentence.",
     "screenshot": "delete-confirmation-no-trash-support.png"
@@ -32,28 +32,28 @@
     "screenshot": "delete-confirmation-no-trash-support.png"
   },
 
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Some of your selection is online-only. Moving those to the Trash would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Some of your selection is online-only. Moving those to the Trash would <strong>download them first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and either make all files available offline first, or deselect all online-only files.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
     "description": "Warning banner in the delete dialog, shown when the person pressed the \"move to trash\" key over a selection where SOME items are online-only and the rest aren't. Online-only means the file lives in a cloud-storage folder (Dropbox, Google Drive, OneDrive, …) and the provider has evicted its contents to its own servers, leaving a placeholder on the Mac; \"online-only\" is Apple's Finder term, so prefer your platform's own existing wording for it. Four facts, all of which matter: (1) the Trash lives on the Mac, so putting an online-only file there would download it from the cloud service first; (2) because one gesture can't be half a trash and half a delete, Cmdr offers to delete the WHOLE selection permanently; (3) there will be NO copies in the macOS Trash afterwards, though the cloud service keeps its own deleted-files history (Dropbox keeps 30 days) to restore from — don't soften this into \"it goes to the trash anyway\", it does not; (4) two ways out, both real in Cmdr: make the files available offline (the provider's own download action, in Cmdr's right-click menu — don't name that menu item, its label comes from the provider), or deselect the online-only files (Cmdr badges them in the file pane). <strong> bolds \"download them first\" and \"delete\". “Delete” in quotes is the confirm button's own label: use the same word you translated fileOperations.delete.confirmDelete to. \"Click\" is deliberate even though Enter works too. \"Trash\" is the macOS Trash the Finder uses; the lowercase \"their own trash\" is the cloud service's, not Apple's.",
     "screenshot": "delete-confirm.png",
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Everything you selected is online-only. Moving it to the Trash would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There''ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "Everything you selected is online-only. Moving it to the Trash would <strong>download it first</strong>. In this case, Cmdr only offers to <strong>delete</strong> the entire selection. There’ll be no copies in the Trash, but cloud services usually keep their own trash for about 30 days. Click “Delete” if deletion is OK, otherwise cancel this dialog and make these files available offline first.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
     "description": "The same warning banner as fileOperations.delete.cloudOnlineOnlyMixedWarning (read its description for every term and fact), for the case where EVERY selected item is online-only. Keep the two in one voice; they differ in two places only: this one says the whole selection is online-only, and it offers just one way out, since \"deselect the online-only files\" would leave nothing selected.",
     "screenshot": "delete-confirm.png",
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Your selection turned out to hold online-only content, so the button below now offers Delete. Read the note above, then press it again if that''s OK.",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "Your selection turned out to hold online-only content, so the button below now offers Delete. Read the note above, then press it again if that’s OK.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "description": "Line that appears just above the confirm button in the delete dialog, after a press that Cmdr deliberately didn't act on. The person pressed \"Move to trash\", and while Cmdr was still counting a selected folder it found online-only content inside, which turns the whole thing into a permanent delete. Rather than run the one operation nothing can undo off a press that meant something else, the dialog stays open, changes its warning and its button, and says this. Tone: matter-of-fact, no apology, no blame. \"Delete\" names the confirm button's own label: use the same word you translated fileOperations.delete.confirmDelete to. \"The note above\" is the warning banner at the top of the same dialog. \"Online-only\" is Apple's Finder term for a file whose contents the cloud service has evicted to its servers.",
     "screenshot": "delete-confirm.png",
     "screenshotNote": "The delete confirmation dialog, pictured here. Your string is one of its variants: a different item count, an archive or symlink warning, or the progress line it shows while scanning."
   },
 
-  "fileOperations.delete.archiveWarningStrong": "There''s no trash inside an archive.",
+  "fileOperations.delete.archiveWarningStrong": "There’s no trash inside an archive.",
   "@fileOperations.delete.archiveWarningStrong": {
     "description": "Bold lead of a warning banner in the delete dialog, shown when deleting items from inside a zip archive (Cmdr browses zips like folders). Followed by fileOperations.delete.archiveWarningRest in the same sentence. \"archive\" = a zip file.",
     "screenshot": "delete-confirm.png",
@@ -102,12 +102,12 @@
     }
   },
 
-  "fileOperations.trash.undoUnavailable": "Nothing to put back. These items may already be back, or their drive isn''t connected.",
+  "fileOperations.trash.undoUnavailable": "Nothing to put back. These items may already be back, or their drive isn’t connected.",
   "@fileOperations.trash.undoUnavailable": {
     "description": "Result toast when an undo had nothing to reverse: the items are already back, someone emptied the trash, or the drive they belong on is no longer connected. Two sentences, both plain statements rather than a warning. Sentence case; the apostrophe is doubled for ICU and renders as one."
   },
 
-  "fileOperations.trash.noTrashHere": "This drive doesn''t keep a trash.",
+  "fileOperations.trash.noTrashHere": "This drive doesn’t keep a trash.",
   "@fileOperations.trash.noTrashHere": {
     "description": "Toast shown when the user asks to go to the trash while standing on a drive that has none (a USB stick formatted FAT32, a network share). A statement of fact about the drive, not a problem with what the user did. Sentence case; the apostrophe is doubled for ICU and renders as one."
   },
@@ -279,7 +279,7 @@
     "screenshot": "new-folder-dialog.png"
   },
 
-  "fileOperations.mkdir.timeoutMessage": "Couldn''t confirm the folder was created. The volume may be slow, so the folder may still have been created.",
+  "fileOperations.mkdir.timeoutMessage": "Couldn’t confirm the folder was created. The volume may be slow, so the folder may still have been created.",
   "@fileOperations.mkdir.timeoutMessage": {
     "description": "Warning in the new-folder dialog when the create command did not confirm in time (slow volume). Reassures the folder may still exist. Conversational, not alarming."
   },
@@ -422,12 +422,12 @@
     "description": "Note shown when the destination is an SMB share mounted by the operating system rather than connected directly by Cmdr. Warns that canceling a transfer may lag. Keep the quoted “Connect directly” matching that picker action's label."
   },
 
-  "fileOperations.transferDialog.targetWillBeCreatedCopy": "This folder doesn''t exist yet. Cmdr will create it during the copy.",
+  "fileOperations.transferDialog.targetWillBeCreatedCopy": "This folder doesn’t exist yet. Cmdr will create it during the copy.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
     "description": "Yellow inline warning beneath the destination path box in the Copy/Move dialog, shown when the typed destination folder doesn''t exist yet and the Copy action is selected. Reassures the user the folder will be made automatically. Active voice, friendly. Keep the product name 'Cmdr' as-is. There''s a separate '...Move' variant for the Move action."
   },
 
-  "fileOperations.transferDialog.targetWillBeCreatedMove": "This folder doesn''t exist yet. Cmdr will create it during the move.",
+  "fileOperations.transferDialog.targetWillBeCreatedMove": "This folder doesn’t exist yet. Cmdr will create it during the move.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
     "description": "Yellow inline warning beneath the destination path box in the Copy/Move dialog, shown when the typed destination folder doesn''t exist yet and the Move action is selected. Reassures the user the folder will be made automatically. Active voice, friendly. Keep the product name 'Cmdr' as-is. There''s a separate '...Copy' variant for the Copy action."
   },
@@ -437,12 +437,12 @@
     "description": "Red inline notice beneath the destination path box in the Copy/Move/Compress dialog, shown before confirming when the destination folder is on storage mounted read-only (a disk image, a write-protected card). Plain and factual, about the folder rather than the whole device."
   },
 
-  "fileOperations.transferDialog.destinationNoPermission": "You don''t have permission to add files to this folder.",
+  "fileOperations.transferDialog.destinationNoPermission": "You don’t have permission to add files to this folder.",
   "@fileOperations.transferDialog.destinationNoPermission": {
     "description": "Red inline notice beneath the destination path box in the Copy/Move/Compress dialog, shown before confirming when the user''s account isn''t allowed to add files to the destination folder. Plain and factual."
   },
 
-  "fileOperations.transferDialog.destinationNotWritable": "This folder doesn''t accept new files.",
+  "fileOperations.transferDialog.destinationNotWritable": "This folder doesn’t accept new files.",
   "@fileOperations.transferDialog.destinationNotWritable": {
     "description": "Red inline notice beneath the destination path box in the Copy/Move/Compress dialog, shown before confirming when the destination folder refuses new files and Cmdr can''t tell whether it''s read-only or a permission problem (for example the top-level folder of a phone connected over ADB). Keep it neutral: don''t claim read-only or a permission."
   },
@@ -470,7 +470,7 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferDialog.hardlinkNote": "<written></written> will be written. The source is <ondisk></ondisk> on disk – the extra is hardlinked files, which can''t stay linked across drives.",
+  "fileOperations.transferDialog.hardlinkNote": "<written></written> will be written. The source is <ondisk></ondisk> on disk – the extra is hardlinked files, which can’t stay linked across drives.",
   "@fileOperations.transferDialog.hardlinkNote": {
     "description": "Note explaining why the bytes a copy will write exceed the source's on-disk size: hardlinked files become separate copies on another drive. <written> renders the to-be-written size and <ondisk> renders the source's on-disk size, both as inline size widgets (no inner text to translate). 'hardlinked' is a filesystem term. The dash is an en dash."
   },
@@ -490,12 +490,12 @@
     "description": "Tooltip on the \"Estimated size\" label in the Compress dialog, clarifying the number is a quick approximation and the real packed size may differ. \"zip\" is a file format; do not translate it."
   },
 
-  "fileOperations.transferDialog.scanUnresponsive": "The source isn''t responding, so this size is all we could count.",
+  "fileOperations.transferDialog.scanUnresponsive": "The source isn’t responding, so this size is all we could count.",
   "@fileOperations.transferDialog.scanUnresponsive": {
     "description": "Shown in the transfer dialog when the size scan gave up because the source volume (a network share, say) stopped answering. The counters above it stay on screen, so the sentence explains that they're a partial count rather than a total. A 'Try again' button sits beside it."
   },
 
-  "fileOperations.transferDialog.scanStopped": "We couldn''t finish measuring the source, so this size is all we could count.",
+  "fileOperations.transferDialog.scanStopped": "We couldn’t finish measuring the source, so this size is all we could count.",
   "@fileOperations.transferDialog.scanStopped": {
     "description": "Shown in the transfer dialog when the size scan stopped for any reason other than an unresponsive volume (a folder disappeared mid-walk, a permission problem). Same shape as the unresponsive variant, without blaming the connection."
   },
@@ -505,7 +505,7 @@
     "description": "Button beside the message about a size scan that couldn't finish. Starts the scan over. Short control label."
   },
 
-  "fileOperations.transferDialog.conflictsUnknown": "We couldn''t check what''s already at the destination. You''ll be asked about anything that clashes.",
+  "fileOperations.transferDialog.conflictsUnknown": "We couldn’t check what’s already at the destination. You’ll be asked about anything that clashes.",
   "@fileOperations.transferDialog.conflictsUnknown": {
     "description": "Shown in the transfer dialog when the check for existing files at the destination couldn't run (an unresponsive volume, say). Two parts: it doesn't know what's there, and the transfer will still ask about each clash it meets. It must never read as 'nothing is there'."
   },
@@ -629,7 +629,7 @@
     "screenshot": "transfer-confirmation-copy.png"
   },
 
-  "fileOperations.transferDialog.pathErrorSubfolder": "Can''t {verb, select, copy {copy} other {move}} “{name}” into its own subfolder",
+  "fileOperations.transferDialog.pathErrorSubfolder": "Can’t {verb, select, copy {copy} other {move}} “{name}” into its own subfolder",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
     "description": "Validation error under the destination-path field when the chosen destination is inside the item being transferred. The verb matches the operation (copy/move). The name is the source folder/file name, kept in straight double quotes.",
     "placeholders": {
@@ -893,14 +893,14 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You''re about to overwrite it with a <strong>file</strong> by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?",
+  "fileOperations.transferProgress.warningFileOverFolder": "The target exists and is a <strong>folder</strong>. You’re about to overwrite it with a <strong>file</strong> by the same name. All contents of the target folder would be deleted and replaced by the file. What to do?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
     "description": "Red warning shown in the conflict step when a file would replace a same-named folder, deleting the folder's contents. <strong> wraps the emphasized words 'folder' and 'file'. Keep it stark; this is a destructive action.",
     "screenshot": "transfer-dialog.png",
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string belongs to one of its phases (scanning, paused, queued, or finishing up) or to one of its two progress bars."
   },
 
-  "fileOperations.transferProgress.lookAlikeHint": "These names look the same, but the server spells them differently. Overwrite replaces the one that''s there.",
+  "fileOperations.transferProgress.lookAlikeHint": "These names look the same, but the server spells them differently. Overwrite replaces the one that’s there.",
   "@fileOperations.transferProgress.lookAlikeHint": {
     "description": "Quiet note in the conflict step of the copy/move progress dialog, under the name and folder of the item that's in the way. Shows only when the destination (usually a network share) holds an item whose name looks identical to the incoming one but is stored as different characters: for example 'café' written with a single 'é' character versus 'e' followed by a separate accent mark. On screen the two names are indistinguishable, so the note explains why the dialog asks about a name that seems to match. 'these names' means the incoming item's name and the existing item's name. 'the server' is the computer or network drive being copied to. 'spells them differently' means stores them as different character sequences; say it in plain words, not technical terms like Unicode or normalization. 'Overwrite' refers to the dialog's Overwrite button: use the same word as that button's translation (key fileOperations.transferProgress.conflictOverwrite). 'the one that's there' is the existing item, which Overwrite replaces while keeping its current name. Two short sentences. It explains; it isn't a warning (destructive clashes have a separate red warning).",
     "screenshot": "transfer-dialog.png",
@@ -966,7 +966,7 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.smallerDisabledTooltip": "Can''t compare: target folder size is unknown.",
+  "fileOperations.transferProgress.smallerDisabledTooltip": "Can’t compare: target folder size is unknown.",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
     "description": "Tooltip on the disabled 'Overwrite all smaller' button when the destination is a folder whose size is unknown, so a size comparison isn't possible. The dash is an en dash.",
     "screenshot": "transfer-dialog.png",
@@ -1124,7 +1124,7 @@
     "screenshotNote": "The copy/move progress dialog, pictured here. Your string is the tooltip on its Rollback button."
   },
 
-  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Every file is already at the destination, so Cmdr can''t undo the move now. Cancel still stops it from removing the rest of the originals.",
+  "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Every file is already at the destination, so Cmdr can’t undo the move now. Cancel still stops it from removing the rest of the originals.",
   "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
     "description": "Tooltip on the Rollback button of a move between two drives once Cmdr has reached its last step: every file has arrived at the destination and Cmdr is removing the originals one by one. The button is switched off there, and this says why plus what still works. Two jobs, in this order: (a) the move has landed, so there is no undoing it any more, (b) the Cancel button beside it still works and stops Cmdr before it removes the originals it hasn't reached yet. Never suggest the undo might partly work. 'Cancel' is that button's own label (fileOperations.button.cancel), so use the same word you translated it with. 'Cmdr' is the app name and stays as it is. The toast the user reads afterwards, fileOperations.cancelRollback.moveAlreadyLanded, tells the same story, so keep the two consistent. Sentence case; the apostrophe is doubled for ICU and renders as one.",
     "screenshot": "transfer-dialog.png",
@@ -1196,7 +1196,7 @@
     "screenshot": "conflict-dialog.png"
   },
 
-  "fileOperations.transferProgress.queuedToast": "{countText} ahead of this one, so it''s waiting its turn. Find it in the operation queue.",
+  "fileOperations.transferProgress.queuedToast": "{countText} ahead of this one, so it’s waiting its turn. Find it in the operation queue.",
   "@fileOperations.transferProgress.queuedToast": {
     "description": "Quiet toast shown when a new copy/move/delete can''t start right away because another operation is busy on the same drive, so it waits in the queue. The operation queue window comes forward at the same time. \"Operation queue\" is that window''s name; keep it identical to queue.windowTitle.",
     "placeholders": {
@@ -1243,13 +1243,13 @@
     "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
 
-  "fileOperations.rollbackConfirm.body": "This deletes every file the operation has written so far, and any file it replaced won''t come back. Cmdr skips anything it isn''t sure about, so a few may stay behind.",
+  "fileOperations.rollbackConfirm.body": "This deletes every file the operation has written so far, and any file it replaced won’t come back. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
   "@fileOperations.rollbackConfirm.body": {
     "description": "Body of the Rollback confirmation shown on a COPY (or a compress) that is still RUNNING. Three facts, all load-bearing: it removes everything written so far (not only the half-written file that a plain Cancel drops), a file that was overwritten during the operation is gone for good because no copy of the original was kept, and Cmdr leaves alone every file it can''t match against what it wrote, so the reversal can come out partial. Keep the last sentence parallel with the bodyStopAndMoveBack and bodyUndo* siblings, which make the same promise. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong. A running MOVE gets bodyStopAndMoveBack instead, because rolling one back deletes nothing.",
     "screenshot": "rollback-confirmation-stopAndDelete.png"
   },
 
-  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "This moves back everything the operation has moved so far, and any file it replaced won''t come back. Cmdr skips anything it isn''t sure about, so a few may stay where they are.",
+  "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "This moves back everything the operation has moved so far, and any file it replaced won’t come back. Cmdr skips anything it isn’t sure about, so a few may stay where they are.",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
     "description": "Body of the Rollback confirmation shown on a MOVE (or a move to the trash) that is still RUNNING. The sibling of fileOperations.rollbackConfirm.body, which covers a running copy. The difference is the whole point: rolling back a move deletes NOTHING, it carries the files back where they came from, so keep the tone calm rather than a warning and never word it as a delete. Three facts, all load-bearing: everything moved SO FAR travels back (not only the file in flight, which is what a plain Cancel leaves), a file at the destination that this move overwrote is gone for good because no copy of it was kept, and Cmdr leaves alone every file it can''t match against what it moved, so the reversal can come out partial. Keep the last sentence parallel with its siblings. Deliberately gives no file count: the running counter includes files the operation skipped, so a number here would be wrong.",
     "screenshot": "rollback-confirmation-stopAndMoveBack.png"
@@ -1259,17 +1259,17 @@
     "description": "Title of the same dialog when the operation is already PARTLY rolled back, so pressing the button carries on from where the rollback stopped rather than starting a fresh one. The body under it is unchanged and still says what happens to the files. Sibling of fileOperations.rollbackConfirm.title, which covers the first time round."
   },
 
-  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "This deletes the files and folders the operation created. Cmdr skips anything it isn''t sure about, so a few may stay behind.",
+  "fileOperations.rollbackConfirm.bodyUndoByDeleting": "This deletes the files and folders the operation created. Cmdr skips anything it isn’t sure about, so a few may stay behind.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
     "description": "Body of the Rollback confirmation when the user undoes a FINISHED operation that created things: a copy, a new file, a new folder, or a compress. Two facts, both load-bearing: rolling back deletes what the operation made, and Cmdr leaves alone every file it can''t match against what it recorded (the user changed it since, or it was never recorded), so the reversal can come out partial. Sibling wordings cover undoing a move and undoing a rename; keep the second sentence parallel across all three.",
     "screenshot": "rollback-confirmation-undoByDeleting.png"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "This moves the files back where they came from. Cmdr skips anything it isn''t sure about, so a few may stay where they are.",
+  "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "This moves the files back where they came from. Cmdr skips anything it isn’t sure about, so a few may stay where they are.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
     "description": "Body of the Rollback confirmation when the user undoes a FINISHED move, or a move to the trash. Nothing is deleted here, so keep the tone calm rather than a warning: the files travel back to where they started. Second sentence: Cmdr leaves alone every file it can''t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and rename wordings.",
     "screenshot": "rollback-confirmation-undoByMovingBack.png"
   },
-  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "This gives the files their old names back. Cmdr skips anything it isn''t sure about, so a few may keep the names they have now.",
+  "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "This gives the files their old names back. Cmdr skips anything it isn’t sure about, so a few may keep the names they have now.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
     "description": "Body of the Rollback confirmation when the user undoes a FINISHED rename, whether one file or a batch of hundreds. Nothing moves and nothing is deleted; only the names change back, so keep the tone calm. Second sentence: Cmdr leaves alone every file it can''t match against what it recorded, so the reversal can come out partial. Keep it parallel with the sibling copy and move wordings.",
     "screenshot": "rollback-confirmation-undoByRenamingBack.png"
@@ -1358,7 +1358,7 @@
     }
   },
 
-  "fileOperations.cancelRollback.leftBehind": "Cmdr skips anything it isn''t sure about, so these stayed where they are:",
+  "fileOperations.cancelRollback.leftBehind": "Cmdr skips anything it isn’t sure about, so these stayed where they are:",
   "@fileOperations.cancelRollback.leftBehind": {
     "description": "Middle line of the toast after a cancelled copy or move whose undo left things behind. It sets the expectation BEFORE the reasons, so the user reads the leftovers as care rather than as something going wrong: Cmdr refuses to remove or move anything it can''t match against what it wrote. The lines under it (fileOperations.cancelRollback.reason.*) each name one reason and are shown as a bulleted list, which is why this line ends in a colon. It opens with the same verb as the Rollback confirmations (fileOperations.rollbackConfirm.body and its bodyUndo* siblings), which say Cmdr skips anything it isn''t sure about; keep the two matched in your language too. Sentence case; the apostrophe is doubled for ICU and renders as one.",
     "screenshot": "toast-transfer-complete.png",
@@ -1382,7 +1382,7 @@
     }
   },
 
-  "fileOperations.cancelRollback.reason.unverifiable.named": "Left {name} alone: Cmdr couldn''t check whether it changed.",
+  "fileOperations.cancelRollback.reason.unverifiable.named": "Left {name} alone: Cmdr couldn’t check whether it changed.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
     "description": "One line in the bulleted list of what a cancelled copy or move''s undo left behind. This version is used when the reason applies to exactly ONE item, so the line names it. This reason: the drive couldn''t tell Cmdr whether the item is still the one it wrote (some network drives and phones can''t), and Cmdr never removes or moves a file it can''t check first. Say it as caution, not as a fault of the drive or the user. Sentence case; the apostrophe is doubled for ICU and renders as one.",
     "placeholders": {
@@ -1390,7 +1390,7 @@
     }
   },
 
-  "fileOperations.cancelRollback.reason.unverifiable.counted": "Left {countText} {count, plural, one {item} other {items}} alone: Cmdr couldn''t check whether they changed.",
+  "fileOperations.cancelRollback.reason.unverifiable.counted": "Left {countText} {count, plural, one {item} other {items}} alone: Cmdr couldn’t check whether they changed.",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
     "description": "The same line as fileOperations.cancelRollback.reason.unverifiable.named, used when the reason applies to two or more items, so it counts them instead of naming one. Sentence case; the apostrophe is doubled for ICU and renders as one.",
     "placeholders": {
@@ -1433,7 +1433,7 @@
     }
   },
 
-  "fileOperations.cancelRollback.reason.failed.named": "Couldn''t undo {name}. Its drive may be disconnected or read-only.",
+  "fileOperations.cancelRollback.reason.failed.named": "Couldn’t undo {name}. Its drive may be disconnected or read-only.",
   "@fileOperations.cancelRollback.reason.failed.named": {
     "description": "One line in the bulleted list of what a cancelled copy or move''s undo left behind. This version is used when the reason applies to exactly ONE item, so the line names it. Unlike the other reasons on that list this one is NOT a deliberate choice: the drive turned the undo down, so it may be worth trying again once the drive is back or writable. Stay conversational and never use the words \"error\" or \"failed\". Sentence case; the apostrophe is doubled for ICU and renders as one.",
     "placeholders": {
@@ -1441,7 +1441,7 @@
     }
   },
 
-  "fileOperations.cancelRollback.reason.failed.counted": "Couldn''t undo {countText} {count, plural, one {item} other {items}}. Their drive may be disconnected or read-only.",
+  "fileOperations.cancelRollback.reason.failed.counted": "Couldn’t undo {countText} {count, plural, one {item} other {items}}. Their drive may be disconnected or read-only.",
   "@fileOperations.cancelRollback.reason.failed.counted": {
     "description": "The same line as fileOperations.cancelRollback.reason.failed.named, used when the reason applies to two or more items, so it counts them instead of naming one. Stay conversational and never use the words \"error\" or \"failed\". Sentence case; the apostrophe is doubled for ICU and renders as one.",
     "placeholders": {
@@ -1450,7 +1450,7 @@
     }
   },
 
-  "fileOperations.cancelRollback.stagedLeftover.named": "Couldn''t remove {name}, an unfinished copy left at the destination. It''s safe to delete, and Cmdr clears it on a later transfer there.",
+  "fileOperations.cancelRollback.stagedLeftover.named": "Couldn’t remove {name}, an unfinished copy left at the destination. It’s safe to delete, and Cmdr clears it on a later transfer there.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
     "description": "Last line of the toast after a cancelled copy or move, when Cmdr''s own half-written working file is still sitting at the destination and the drive wouldn''t let Cmdr take it away. This version is used when there is exactly ONE, so the line names it. What {name} holds is a scratch name Cmdr invented, like holiday.jpg.cmdr-tmp-4d1f9c, and naming it is the point: it is what the user would look for at the destination. This is NOT one of the deliberate choices the fileOperations.cancelRollback.reason.* lines describe: those are Cmdr protecting the user''s files, this is Cmdr''s own leftover that it couldn''t clear yet, so it reads as a straight account rather than as care. The second sentence is what the user can act on, and it carries two claims that must both stay true. (a) Deleting it by hand loses nothing, because the file it was copying is still whole at the source. (b) Cmdr''s own cleanup only runs at the start of a transfer into that same folder AND only touches leftovers over an hour old, so somebody who cancels and retries right away will still see it. Say \"a later transfer\", never \"the next one\": promising the next transfer is exactly the kind of over-claim this line exists to stop. Stay conversational and never use the words \"error\" or \"failed\". Sentence case; the apostrophe is doubled for ICU and renders as one.",
     "placeholders": {
@@ -1458,7 +1458,7 @@
     }
   },
 
-  "fileOperations.cancelRollback.stagedLeftover.counted": "Couldn''t remove {countText} unfinished {count, plural, one {copy} other {copies}} left at the destination. They''re safe to delete, and Cmdr clears them on a later transfer there.",
+  "fileOperations.cancelRollback.stagedLeftover.counted": "Couldn’t remove {countText} unfinished {count, plural, one {copy} other {copies}} left at the destination. They’re safe to delete, and Cmdr clears them on a later transfer there.",
   "@fileOperations.cancelRollback.stagedLeftover.counted": {
     "description": "The same line as fileOperations.cancelRollback.stagedLeftover.named, used when two or more of Cmdr''s half-written working files stayed at the destination, so it counts them instead of naming one. They can sit in different folders under the destination, which is why the line says \"there\" rather than naming a folder. Keep both claims of the named version, and the same restraint: \"a later transfer\", never \"the next one\", because Cmdr''s cleanup spares anything under an hour old. Stay conversational and never use the words \"error\" or \"failed\". Sentence case; the apostrophe is doubled for ICU and renders as one.",
     "placeholders": {
@@ -1514,7 +1514,7 @@
     "screenshot": "archive-password-first-attempt.png"
   },
 
-  "fileOperations.archivePassword.retryTitle": "That didn''t work",
+  "fileOperations.archivePassword.retryTitle": "That didn’t work",
   "@fileOperations.archivePassword.retryTitle": {
     "description": "Title of the archive-password dialog when the password the user just entered was rejected, so they''re being asked again. Friendly and light, not scolding. Avoid the words \"error\" and \"failed\". Short heading.",
     "screenshot": "archive-password-wrong-attempt.png"
@@ -1529,7 +1529,7 @@
     "screenshot": "archive-password-first-attempt.png"
   },
 
-  "fileOperations.archivePassword.retryMessage": "That password didn''t unlock <archive>{name}</archive>. Give it another go.",
+  "fileOperations.archivePassword.retryMessage": "That password didn’t unlock <archive>{name}</archive>. Give it another go.",
   "@fileOperations.archivePassword.retryMessage": {
     "description": "Body of the archive-password dialog after a rejected password, asking the user to try again. Friendly and encouraging, not scolding. Avoid the words \"error\" and \"failed\". <archive> wraps the archive filename, which is styled (bold); keep the tag around the name only.",
     "placeholders": {
@@ -1556,7 +1556,7 @@
     "screenshot": "archive-password-first-attempt.png"
   },
 
-  "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can''t contain “/” or null characters} other {Filename can''t contain “/” or null characters}}",
+  "fileOperations.validation.disallowedChars": "{kind, select, folder {Folder name can’t contain “/” or null characters} other {Filename can’t contain “/” or null characters}}",
   "@fileOperations.validation.disallowedChars": {
     "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name includes a slash or a null character (both forbidden on the file system). The \"/\" is a literal slash character and must stay as-is. Write each branch as a complete, natural sentence for a file versus a folder (the noun and its agreement differ across languages).",
     "placeholders": {
@@ -1564,7 +1564,7 @@
     }
   },
 
-  "fileOperations.validation.empty": "{kind, select, folder {Folder name can''t be empty} other {Filename can''t be empty}}",
+  "fileOperations.validation.empty": "{kind, select, folder {Folder name can’t be empty} other {Filename can’t be empty}}",
   "@fileOperations.validation.empty": {
     "description": "Inline validation message shown live as the user types a name in the rename / new-file / new-folder field, when the name is blank (or only whitespace). Write each branch as a complete, natural sentence for a file versus a folder.",
     "placeholders": {
@@ -1592,7 +1592,7 @@
     }
   },
 
-  "fileOperations.validation.extensionChangeBlocked": "Changing the file extension isn''t allowed (was “{oldExt}”)",
+  "fileOperations.validation.extensionChangeBlocked": "Changing the file extension isn’t allowed (was “{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
     "description": "Inline validation message shown live while renaming a file, when the user changed the file extension but their setting forbids extension changes. \"{oldExt}\" is the original extension WITH its leading dot (e.g. \".txt\"); it''s the user''s own filename text, so keep it verbatim and structure the sentence to tolerate any extension.",
     "placeholders": {
@@ -1608,14 +1608,14 @@
     }
   },
 
-  "fileOperations.validation.nameNotUsable": "{kind, select, folder {That folder name can''t be used} other {That filename can''t be used}}",
+  "fileOperations.validation.nameNotUsable": "{kind, select, folder {That folder name can’t be used} other {That filename can’t be used}}",
   "@fileOperations.validation.nameNotUsable": {
     "description": "Message shown when the file system turns a name down while saving a rename, without saying which rule it broke. It''s the catch-all behind the specific messages (empty, disallowed character, too long), so keep it short and general rather than guessing at a reason. It also appears inside a longer sentence about a file that kept its name, so write it as a complete sentence with NO closing period. Write each branch as a complete, natural sentence for a file versus a folder.",
     "placeholders": {
       "kind": "what is being named: \"folder\" for a folder, anything else for a file"
     }
   },
-  "fileOperations.validation.pathEmpty": "Path can''t be empty",
+  "fileOperations.validation.pathEmpty": "Path can’t be empty",
   "@fileOperations.validation.pathEmpty": {
     "description": "Inline validation message for a directory-path field (e.g. the transfer destination or go-to-path), shown when the path is blank or only whitespace. \"Path\" means a full file-system path."
   },

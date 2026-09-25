@@ -46,7 +46,7 @@ describe('search dialog config copy parity (en)', () => {
 
 describe('search toast and tooltip parity (en)', () => {
   it('preserves the not-a-folder toast (apostrophe hazard)', () => {
-    expect(SEARCH_RESULTS_NOT_A_FOLDER_TOAST).toBe("Search results aren't a folder. Paste into a real folder instead.")
+    expect(SEARCH_RESULTS_NOT_A_FOLDER_TOAST).toBe('Search results aren’t a folder. Paste into a real folder instead.')
   })
 
   it('preserves the unavailable-current-folder tooltip', () => {
@@ -57,7 +57,7 @@ describe('search toast and tooltip parity (en)', () => {
     })
     expect(result.currentFolder).toBeNull()
     expect(result.currentFolderUnavailableReason).toBe(
-      "Current folder is search results, which isn't searchable. Open a real folder first.",
+      'Current folder is search results, which isn’t searchable. Open a real folder first.',
     )
   })
 })
@@ -65,28 +65,28 @@ describe('search toast and tooltip parity (en)', () => {
 describe('coverage note parity (en)', () => {
   it('says a local drive has no index, and names the drive', () => {
     expect(tString('search.coverage.uncovered.local', { drive: 'Macintosh HD' })).toBe(
-      "Cmdr hasn't indexed Macintosh HD yet, so this search skipped:",
+      'Cmdr hasn’t indexed Macintosh HD yet, so this search skipped:',
     )
   })
 
   it('gives a network drive its own voice, with no nudge to index it', () => {
     expect(tString('search.coverage.uncovered.network', { drive: 'Naspolya' })).toBe(
-      "Cmdr doesn't index network drives unless you ask, so this search skipped:",
+      'Cmdr doesn’t index network drives unless you ask, so this search skipped:',
     )
   })
 
   it('says what the index knows about an unresolved path, never that the folder is gone', () => {
     expect(tString('search.coverage.unresolved', { count: 1 })).toBe(
-      "Cmdr's index doesn't cover this folder yet, so this search skipped it:",
+      'Cmdr’s index doesn’t cover this folder yet, so this search skipped it:',
     )
     expect(tString('search.coverage.unresolved', { count: 2 })).toBe(
-      "Cmdr's index doesn't cover these folders yet, so this search skipped them:",
+      'Cmdr’s index doesn’t cover these folders yet, so this search skipped them:',
     )
   })
 
   it('resolves the offer, its dismissal, and the unnamed-drive stand-in', () => {
     expect(tString('search.coverage.indexDrive')).toBe('Index this drive')
-    expect(tString('search.coverage.dontAskAgain')).toBe("Don't ask again")
+    expect(tString('search.coverage.dontAskAgain')).toBe('Don’t ask again')
     expect(tString('search.coverage.unnamedDrive')).toBe('this drive')
   })
 
@@ -98,7 +98,7 @@ describe('coverage note parity (en)', () => {
       'Drive indexing is off in Settings, so nothing indexes. Turn it on under Indexing > Drive indexing.',
     )
     expect(tString('search.coverage.toast.notStarted', { drive: 'Backups' })).toBe(
-      "Cmdr can't index Backups right now. You can try again from the drive menu.",
+      'Cmdr can’t index Backups right now. You can try again from the drive menu.',
     )
   })
 })

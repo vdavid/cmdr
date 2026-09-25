@@ -5,7 +5,7 @@
   },
   "errorReporter.dialog.description": "Thao tác này gửi các tệp nhật ký gần đây của Cmdr đến nhóm để chúng tôi khắc phục sự cố. Nhật ký được lược bỏ phía máy của bạn: đường dẫn tệp, tên máy chủ, địa chỉ IP, và email đều được xóa trước khi gửi.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "dd11284"
+    "sourceHash": "ba4012f"
   },
   "errorReporter.dialog.referenceIdLabel": "ID tham chiếu:",
   "@errorReporter.dialog.referenceIdLabel": {
@@ -38,7 +38,7 @@
   },
   "errorReporter.dialog.detailsToggle": "Những gì sắp được gửi",
   "@errorReporter.dialog.detailsToggle": {
-    "sourceHash": "b1069f7"
+    "sourceHash": "f57398b"
   },
   "errorReporter.dialog.manifestHeading": "Bản kê",
   "@errorReporter.dialog.manifestHeading": {
@@ -66,7 +66,7 @@
   },
   "errorReporter.dialog.prepareFailed": "Không thể chuẩn bị bản xem trước.",
   "@errorReporter.dialog.prepareFailed": {
-    "sourceHash": "3729966"
+    "sourceHash": "24cd5ba"
   },
   "errorReporter.dialog.tryAgain": "Thử lại",
   "@errorReporter.dialog.tryAgain": {
@@ -74,7 +74,7 @@
   },
   "errorReporter.dialog.bundleUnavailable": "Cmdr không thu thập được nhật ký cho báo cáo. Hãy thử lại sau giây lát.",
   "@errorReporter.dialog.bundleUnavailable": {
-    "sourceHash": "3743aba"
+    "sourceHash": "15bc5b8"
   },
   "errorReporter.dialog.saveToDisk": "Lưu gói vào đĩa (debug)",
   "@errorReporter.dialog.saveToDisk": {
@@ -94,11 +94,11 @@
   },
   "errorReporter.dialog.sendFailedToast": "Không thể gửi báo cáo trục trặc. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
-    "sourceHash": "75337c1"
+    "sourceHash": "1eedf49"
   },
   "errorReporter.dialog.saveFailedToast": "Không thể lưu gói: {error}",
   "@errorReporter.dialog.saveFailedToast": {
-    "sourceHash": "34cf2b4"
+    "sourceHash": "6405cca"
   },
   "errorReporter.amend.title": "Thêm vào báo cáo trục trặc của bạn",
   "@errorReporter.amend.title": {
@@ -106,7 +106,7 @@
   },
   "errorReporter.amend.description": "Cmdr đã gửi báo cáo này rồi. Hãy viết ghi chú, hoặc đính kèm email của bạn, và nó sẽ được thêm vào chính báo cáo mà nhóm đã có.",
   "@errorReporter.amend.description": {
-    "sourceHash": "276771e"
+    "sourceHash": "9e1a80f"
   },
   "errorReporter.amend.noteLabel": "Ghi chú của bạn",
   "@errorReporter.amend.noteLabel": {
@@ -126,7 +126,7 @@
   },
   "errorReporter.amend.unavailable": "Không thể thêm ghi chú vào báo cáo đó nữa. Để nhóm nhận được ghi chú của bạn, hãy gửi một báo cáo mới từ menu Trợ giúp.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "cbb7a33"
+    "sourceHash": "b96b48a"
   },
   "errorReporter.amend.close": "Đóng",
   "@errorReporter.amend.close": {
@@ -134,7 +134,7 @@
   },
   "errorReporter.amend.addFailedToast": "Không thể thêm ghi chú của bạn. {reason}",
   "@errorReporter.amend.addFailedToast": {
-    "sourceHash": "0b67749"
+    "sourceHash": "02f82ce"
   },
   "errorReporter.sentToast.message": "Đã gửi báo cáo trục trặc. ID tham chiếu của bạn là",
   "@errorReporter.sentToast.message": {

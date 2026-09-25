@@ -224,13 +224,13 @@ describe('DriveIndexBadge menu', () => {
   it('a scanning drive offers stop + forget', async () => {
     const { target } = render(makeStatus({ freshness: 'scanning' }))
     await openMenu(target)
-    expect(menuLabels()).toEqual(['Stop indexing', "Forget this drive's index"])
+    expect(menuLabels()).toEqual(['Stop indexing', 'Forget this drive’s index'])
   })
 
   it('a fresh/stale drive offers rescan + turn off + forget', async () => {
     const { target } = render(makeStatus({ freshness: 'stale' }))
     await openMenu(target)
-    expect(menuLabels()).toEqual(['Rescan now', 'Turn off indexing for this drive', "Forget this drive's index"])
+    expect(menuLabels()).toEqual(['Rescan now', 'Turn off indexing for this drive', 'Forget this drive’s index'])
   })
 
   it('shows the last-indexed footer when scan facts exist', async () => {
@@ -449,7 +449,7 @@ describe('DriveIndexBadge coalesced-signal note', () => {
     expect(ariaLabel(target)).toContain(
       'macOS lost track of file system changes once in the last 24 hours, so a few folder sizes might be slightly off.',
     )
-    expect(ariaLabel(target)).toContain("Cmdr's next full check in 6 hours will fix it.")
+    expect(ariaLabel(target)).toContain('Cmdr’s next full check in 6 hours will fix it.')
   })
 
   it('reads in the plural for several skipped signals', () => {
@@ -459,7 +459,7 @@ describe('DriveIndexBadge coalesced-signal note', () => {
   })
 
   it('says "an hour", not "1 hours", when the next check is close', () => {
-    expect(ariaLabel(render(sweptStatus(2, 1)).target)).toContain("Cmdr's next full check in an hour will fix it.")
+    expect(ariaLabel(render(sweptStatus(2, 1)).target)).toContain('Cmdr’s next full check in an hour will fix it.')
   })
 
   it('drops the next-check promise for a drive with no scheduled sweep', () => {
@@ -467,7 +467,7 @@ describe('DriveIndexBadge coalesced-signal note', () => {
     // future check, so the tooltip must not invent one.
     const label = ariaLabel(render(sweptStatus(3, null)).target)
     expect(label).toContain('macOS lost track of file system changes 3 times in the last 24 hours')
-    expect(label).toContain("It's usually caches full of small files, so it's no big deal.")
+    expect(label).toContain('It’s usually caches full of small files, so it’s no big deal.')
     expect(label).not.toContain('next full check')
   })
 
@@ -489,7 +489,7 @@ describe('DriveIndexBadge stale tooltip', () => {
     expect(label).toContain('may have changed while it was disconnected')
   })
 
-  it("says a phone's own changes show up after a rescan, since nothing watches it", () => {
+  it('says a phone’s own changes show up after a rescan, since nothing watches it', () => {
     const label = ariaLabel(render(makeStatus({ freshness: 'stale', liveWatch: false })).target)
     expect(label).toContain('Changes made on the phone itself show up after a rescan')
     expect(label).not.toContain('disconnected')
@@ -499,7 +499,7 @@ describe('DriveIndexBadge stale tooltip', () => {
 describe('DriveIndexBadge "done, with holes" footnote', () => {
   it('says nothing extra when a finished index read everything', () => {
     const label = ariaLabel(render(makeStatus({ freshness: 'fresh' })).target)
-    expect(label).not.toContain("couldn't read")
+    expect(label).not.toContain('couldn’t read')
   })
 
   it('counts places, in the plural, with thousands separators', () => {
@@ -508,7 +508,7 @@ describe('DriveIndexBadge "done, with holes" footnote', () => {
     const label = ariaLabel(
       render(makeStatus({ freshness: 'fresh', unreadableLocations: 1497, unreadableRetried: false })).target,
     )
-    expect(label).toContain("Cmdr couldn't read 1,497 spots on this drive")
+    expect(label).toContain('Cmdr couldn’t read 1,497 spots on this drive')
     expect(label).toContain('a search here may come back a little short')
   })
 
@@ -516,7 +516,7 @@ describe('DriveIndexBadge "done, with holes" footnote', () => {
     const label = ariaLabel(
       render(makeStatus({ freshness: 'fresh', unreadableLocations: 1, unreadableRetried: true })).target,
     )
-    expect(label).toContain("Cmdr couldn't read one spot on this drive")
+    expect(label).toContain('Cmdr couldn’t read one spot on this drive')
     expect(label).toContain('It comes back to them on its own.')
   })
 
@@ -542,6 +542,6 @@ describe('DriveIndexBadge "done, with holes" footnote', () => {
       ).target,
     )
     expect(label).toContain('macOS lost track of file system changes')
-    expect(label).toContain("Cmdr couldn't read 4 spots on this drive")
+    expect(label).toContain('Cmdr couldn’t read 4 spots on this drive')
   })
 })

@@ -226,7 +226,7 @@ describe('copyToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this device. Use F5 to copy them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this device. Use F5 to copy them.', {
       level: 'info',
     })
     expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
@@ -262,7 +262,7 @@ describe('copyToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this device. Use F5 to copy them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this device. Use F5 to copy them.', {
       level: 'info',
     })
     expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
@@ -278,7 +278,7 @@ describe('copyToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("These files can't go on the clipboard. Use F5 to copy them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('These files can’t go on the clipboard. Use F5 to copy them.', {
       level: 'info',
     })
     expect(copyPathsToClipboardSpy).not.toHaveBeenCalled()
@@ -301,7 +301,7 @@ describe('copyToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this device. Use F5 to copy them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this device. Use F5 to copy them.', {
       level: 'info',
     })
     expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
@@ -319,7 +319,7 @@ describe('copyToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this server. Use F5 to copy them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this server. Use F5 to copy them.', {
       level: 'info',
     })
     expect(copyFilesToClipboardSpy).not.toHaveBeenCalled()
@@ -335,7 +335,7 @@ describe('copyToClipboard', () => {
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
     expect(addToastSpy).toHaveBeenCalledWith(
-      "The clipboard can't carry files from this device. Use ⌘⇧C to copy them.",
+      'The clipboard can’t carry files from this device. Use ⌘⇧C to copy them.',
       { level: 'info' },
     )
   })
@@ -346,7 +346,7 @@ describe('copyToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).copyToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this device. Use F5 to copy them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this device. Use F5 to copy them.', {
       level: 'info',
     })
   })
@@ -434,7 +434,7 @@ describe('cutToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).cutToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this device. Use F6 to move them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this device. Use F6 to move them.', {
       level: 'info',
     })
     expect(cutPathsToClipboardSpy).not.toHaveBeenCalled()
@@ -449,7 +449,7 @@ describe('cutToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).cutToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this device. Use F6 to move them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this device. Use F6 to move them.', {
       level: 'info',
     })
     expect(cutPathsToClipboardSpy).not.toHaveBeenCalled()
@@ -462,7 +462,7 @@ describe('cutToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).cutToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("These files can't go on the clipboard. Use F6 to move them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('These files can’t go on the clipboard. Use F6 to move them.', {
       level: 'info',
     })
     expect(cutPathsToClipboardSpy).not.toHaveBeenCalled()
@@ -473,7 +473,7 @@ describe('cutToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).cutToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this device. Use F6 to move them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this device. Use F6 to move them.', {
       level: 'info',
     })
     expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
@@ -488,7 +488,7 @@ describe('cutToClipboard', () => {
 
     await createClipboardOperations(access, buildDialogs()).cutToClipboard()
 
-    expect(addToastSpy).toHaveBeenCalledWith("The clipboard can't carry files from this server. Use F6 to move them.", {
+    expect(addToastSpy).toHaveBeenCalledWith('The clipboard can’t carry files from this server. Use F6 to move them.', {
       level: 'info',
     })
     expect(cutFilesToClipboardSpy).not.toHaveBeenCalled()
@@ -793,7 +793,7 @@ describe('pasteFromClipboard', () => {
     expect(resolvePathVolumeSpy).not.toHaveBeenCalled()
   })
 
-  it("pastes files copied in Finder under the source volume's own spelling", async () => {
+  it('pastes files copied in Finder under the source volume’s own spelling', async () => {
     // Finder spells an accented name the way the macOS kernel mount does
     // (decomposed); a direct SMB connection stores it composed and would miss.
     readClipboardFilesSpy.mockResolvedValue({ paths: ['/Volumes/Stick/foto\u0301k.jpg'], isCut: false })

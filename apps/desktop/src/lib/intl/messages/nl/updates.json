@@ -1,19 +1,19 @@
 {
   "updates.failure.check": "Cmdr kon niet naar updates zoeken. {reason}",
   "@updates.failure.check": {
-    "sourceHash": "66f0ef1"
+    "sourceHash": "5fb454c"
   },
   "updates.failure.checkUntyped": "Cmdr kon niet naar updates zoeken. Controleer je internetverbinding en probeer het later opnieuw.",
   "@updates.failure.checkUntyped": {
-    "sourceHash": "55dcdd7"
+    "sourceHash": "233f5d9"
   },
   "updates.failure.download": "Cmdr kon de update niet downloaden. Probeer het later opnieuw.",
   "@updates.failure.download": {
-    "sourceHash": "fdd5095"
+    "sourceHash": "1becb1b"
   },
   "updates.failure.install": "Cmdr kon de update niet installeren. Probeer het later opnieuw, of download de nieuwste Cmdr van getcmdr.com.",
   "@updates.failure.install": {
-    "sourceHash": "c997a13"
+    "sourceHash": "05a4714"
   },
   "updates.checkToast.sendErrorReport": "Verstuur foutrapport",
   "@updates.checkToast.sendErrorReport": {
@@ -25,7 +25,7 @@
   },
   "updates.toast.readyDetail": "Herstart nu, of je krijgt hem de volgende keer dat je Cmdr opent.",
   "@updates.toast.readyDetail": {
-    "sourceHash": "aab853f"
+    "sourceHash": "42ce099"
   },
   "updates.toast.versionChange": "v{prev} → v{next}",
   "@updates.toast.versionChange": {
@@ -51,11 +51,11 @@
   },
   "updates.moveToApplicationsDialog.translocated": "Er staat een nieuwe versie klaar, maar macOS draait Cmdr vanuit een tijdelijke, alleen-lezen kopie. Dat gebeurt als je een app rechtstreeks opent vanaf de plek waar je hem hebt gedownload, en updates kunnen dan nergens terecht.",
   "@updates.moveToApplicationsDialog.translocated": {
-    "sourceHash": "510a3a6"
+    "sourceHash": "ed64953"
   },
   "updates.moveToApplicationsDialog.readOnlyVolume": "Er staat een nieuwe versie klaar, maar Cmdr draait vanaf een alleen-lezen plek, meestal een schijfkopie die nog gekoppeld is. Updates kunnen daar nergens terecht.",
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
-    "sourceHash": "94edc89"
+    "sourceHash": "a23ef5a"
   },
   "updates.moveToApplicationsDialog.howTo": "Stop Cmdr, sleep het naar de map ‘Apps’ en open het daarvandaan. Elke update daarna komt vanzelf binnen.",
   "@updates.moveToApplicationsDialog.howTo": {

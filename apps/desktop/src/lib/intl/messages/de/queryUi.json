@@ -1,7 +1,7 @@
 {
   "queryUi.bar.placeholder.ai": "Beschreibe, wonach du suchst",
   "@queryUi.bar.placeholder.ai": {
-    "sourceHash": "fbfb9a8"
+    "sourceHash": "d8ef53e"
   },
   "queryUi.bar.placeholder.regex": "Regulärer Ausdruck",
   "@queryUi.bar.placeholder.regex": {
@@ -106,7 +106,7 @@
   },
   "queryUi.ai.lead": "Das hat der Agent gemacht:",
   "@queryUi.ai.lead": {
-    "sourceHash": "bf7c5a2"
+    "sourceHash": "0598e43"
   },
   "queryUi.ai.empty": "Noch nichts zum Filtern da. Anders formulieren?",
   "@queryUi.ai.empty": {
@@ -257,7 +257,7 @@
   },
   "queryUi.results.live.resolvingCoverage": "Wird geprüft, was bereits indiziert ist …",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "524487d"
+    "sourceHash": "dc547a0"
   },
   "queryUi.results.live.waitingForAnotherWalk": "Warten auf einen anderen Suchlauf für diese Ordner …",
   "@queryUi.results.live.waitingForAnotherWalk": {
@@ -269,11 +269,11 @@
   },
   "queryUi.results.live.readingIndex": "Bereits Indiziertes wird gelesen …",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "ed4159a"
+    "sourceHash": "b8bd4f7"
   },
   "queryUi.results.live.walking": "Ordner ohne Index werden durchsucht …",
   "@queryUi.results.live.walking": {
-    "sourceHash": "3829650"
+    "sourceHash": "2acf23a"
   },
   "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {Treffer} other {Treffer}} bisher",
   "@queryUi.results.live.matchesSoFar": {
@@ -285,11 +285,11 @@
   },
   "queryUi.results.live.incomplete": "{shownText} von {totalText} Ergebnissen. Cmdr ist nicht fertig geworden.",
   "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
+    "sourceHash": "737d12c"
   },
   "queryUi.results.live.incompleteEmpty": "Nichts gefunden, bevor die Suche stoppte. Cmdr ist nicht fertig geworden.",
   "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
+    "sourceHash": "6910921"
   },
   "queryUi.results.live.capped": "Die ersten {shownText} von {totalText} Treffern werden gezeigt.",
   "@queryUi.results.live.capped": {
@@ -439,15 +439,15 @@
   },
   "queryUi.dialog.aiTranslateFailedToast": "Die KI-Suche konnte gerade nicht ausgeführt werden. Erneut versuchen?",
   "@queryUi.dialog.aiTranslateFailedToast": {
-    "sourceHash": "6856c79"
+    "sourceHash": "b18f37c"
   },
   "queryUi.dialog.runQueryToast": "Diese Suche ließ sich nicht abschließen. {message}",
   "@queryUi.dialog.runQueryToast": {
-    "sourceHash": "02a3bba"
+    "sourceHash": "51acd6e"
   },
   "queryUi.dialog.runQueryUnknownReason": "Der Grund ist unklar. Vielleicht die Suche eingrenzen?",
   "@queryUi.dialog.runQueryUnknownReason": {
-    "sourceHash": "4f79b0f"
+    "sourceHash": "bb9a283"
   },
   "queryUi.filters.toolbarAria": "Suchfilter",
   "@queryUi.filters.toolbarAria": {

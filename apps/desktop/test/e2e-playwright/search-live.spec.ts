@@ -142,7 +142,7 @@ test.describe('Search dialog: a live search over unindexed ground', () => {
     // one. Anything else here means the walk stopped short, which this fixture can't do.
     const status = await textOf(tauriPage, STATUS_TEXT)
     expect(status).toContain('results')
-    expect(status).not.toContain("didn't finish")
+    expect(status).not.toContain('didn’t finish')
 
     // Nothing left to caveat, so the note collapses rather than inventing a reason.
     // A walk that covered everything it was handed has nothing to report.

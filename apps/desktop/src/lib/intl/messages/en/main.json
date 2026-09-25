@@ -7,11 +7,11 @@
   "@main.instanceLock.alertBody": {
     "description": "⚠️ RAW string, NOT ICU: apostrophes stay single here and any {token} is replaced literally. Body of the native macOS alert under main.instanceLock.alertTitle, drawn before any Cmdr window exists. It says what is happening (another Cmdr owns this data folder) and gives the two ways out: go to the copy that is already running, or quit it and launch again. \"data folder\" is where Cmdr keeps its index and settings; \"Cmdr\" is the product name and must stay verbatim. The alert has a single OK button, so this text is the whole explanation."
   },
-  "main.upgradeNudge.mac": "We''ve added new onboarding options. Open Cmdr > Onboarding… to review them.",
+  "main.upgradeNudge.mac": "We’ve added new onboarding options. Open Cmdr > Onboarding… to review them.",
   "@main.upgradeNudge.mac": {
     "description": "Info toast (macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Cmdr > Onboarding…\" is a menu path the user follows; \"Cmdr\" is the brand name and \"Onboarding…\" is the menu item label (keep its trailing ellipsis). Paired with main.upgradeNudge.other for non-macOS."
   },
-  "main.upgradeNudge.other": "We''ve added new onboarding options. Open the command palette and run Onboarding… to review them.",
+  "main.upgradeNudge.other": "We’ve added new onboarding options. Open the command palette and run Onboarding… to review them.",
   "@main.upgradeNudge.other": {
     "description": "Info toast (non-macOS) shown once to existing users after an update, pointing them at the new onboarding options. \"Command palette\" and \"Onboarding…\" match the names used elsewhere in the app (keep the trailing ellipsis on \"Onboarding…\"). Paired with main.upgradeNudge.mac for macOS."
   },
@@ -19,7 +19,7 @@
   "@main.dockPinNudge.title": {
     "description": "Title of a one-time notification, shown a few days into using Cmdr on macOS, asking whether the app may add itself to the Dock. The Dock is the row of app icons along the edge of a macOS screen; use the name Apple uses for it in your language. \"Cmdr\" is the product name and stays verbatim. A genuine question, warm and low-pressure, never a prompt the user has to escape from."
   },
-  "main.dockPinNudge.body": "You''ve been using Cmdr for a few days now, so it seems to be working for you. Want it pinned next to Finder down there?",
+  "main.dockPinNudge.body": "You’ve been using Cmdr for a few days now, so it seems to be working for you. Want it pinned next to Finder down there?",
   "@main.dockPinNudge.body": {
     "description": "Body of that notification. Two beats: the app noticed the person keeps coming back, and the offer itself. \"Finder\" is Apple's file manager and keeps the name Apple uses in your language; \"pinned\" means the icon stays in the Dock even when the app is closed. \"a few days\" is deliberately vague and must NOT be replaced with a number: the exact threshold can move. \"down there\" points at the Dock, which usually sits at the bottom of the screen; drop the direction if it would be wrong or odd in your language."
   },
@@ -39,15 +39,15 @@
   "@main.dockPinNudge.added": {
     "description": "Brief success notification after the user accepts the Dock offer and the icon lands. It disappears on its own. States the finished fact; no congratulations and nothing further to do."
   },
-  "main.dockPinNudge.addedButDockDidNotRestart": "Cmdr''s icon is in place, but the Dock didn''t reload. It''ll appear the next time you log in.",
+  "main.dockPinNudge.addedButDockDidNotRestart": "Cmdr’s icon is in place, but the Dock didn’t reload. It’ll appear the next time you log in.",
   "@main.dockPinNudge.addedButDockDidNotRestart": {
     "description": "Notification shown when the Dock icon was stored but the Dock itself did not reload, so nothing visibly changed yet. It must NOT say the pinning did not happen, because it did: the only thing missing is the redraw, and logging out and back in supplies it. \"log in\" is signing in to the Mac account."
   },
-  "main.dockPinNudge.managedDock": "Your Dock is managed by a configuration profile, so Cmdr can''t add itself. Whoever manages this Mac can change that.",
+  "main.dockPinNudge.managedDock": "Your Dock is managed by a configuration profile, so Cmdr can’t add itself. Whoever manages this Mac can change that.",
   "@main.dockPinNudge.managedDock": {
     "description": "Notification shown when the offer was accepted but the Mac's Dock is controlled centrally, usually by a workplace or school. \"Configuration profile\" is the macOS term for those centrally-managed settings; use Apple's wording in your language. Factual and blame-free: it names who can lift the restriction rather than suggesting a workaround that would not stick."
   },
-  "main.dockPinNudge.notAdded": "Cmdr couldn''t get into the Dock this time. You can drag it in from your Applications folder whenever you like.",
+  "main.dockPinNudge.notAdded": "Cmdr couldn’t get into the Dock this time. You can drag it in from your Applications folder whenever you like.",
   "@main.dockPinNudge.notAdded": {
     "description": "Notification shown when the offer was accepted but the icon did not land, for a reason the user can do nothing about. It gives the manual way in instead: dragging the app out of the Applications folder onto the Dock, which is how a macOS user does this by hand. \"Applications\" is the macOS folder holding installed apps; use Apple's name for it in your language."
   },
@@ -55,7 +55,7 @@
   "@main.revealNudge.title": {
     "description": "Title of a one-time notification, shown a couple of days into using Cmdr on macOS, asking whether another app's “Show in Finder” command may open the folder in Cmdr instead of in Finder. “Show in Finder” is the macOS command name that apps like Chrome and Slack put on their downloads, and \"Finder\" is Apple's file manager; use the wording your locale's macOS and its apps use for both. \"Cmdr\" is the product name and stays verbatim. A genuine question, warm and low-pressure, never a prompt the user has to escape from."
   },
-  "main.revealNudge.body": "You''ve been using Cmdr for a while now. When another app runs “Show in Finder”, Cmdr can open that folder instead, with the file already under the cursor.",
+  "main.revealNudge.body": "You’ve been using Cmdr for a while now. When another app runs “Show in Finder”, Cmdr can open that folder instead, with the file already under the cursor.",
   "@main.revealNudge.body": {
     "description": "Body of that notification. Two beats: the app noticed the person keeps coming back, and the offer itself. \"for a while now\" is deliberately vague and must NOT be replaced with a number: the exact threshold can move, so a number would make the sentence a lie for half the users. “Show in Finder” is the macOS command name; use your locale's macOS wording. \"under the cursor\" means the file is already highlighted in the file list when the folder opens, so nobody has to look for it."
   },
@@ -82,7 +82,7 @@
       "app": "The name of the app that currently receives \"Show in Finder\", for example \"Path Finder\". A bundle identifier like \"com.cocoatech.PathFinder\" appears instead when that app is no longer installed."
     }
   },
-  "main.revealNudge.notTurnedOn": "Cmdr couldn''t take “Show in Finder” this time. The switch is in Settings whenever you want to try again.",
+  "main.revealNudge.notTurnedOn": "Cmdr couldn’t take “Show in Finder” this time. The switch is in Settings whenever you want to try again.",
   "@main.revealNudge.notTurnedOn": {
     "description": "Notification shown when the user accepted the offer but the macOS setting did not change, for a reason the user can do nothing about here. It points at the switch in Cmdr's Settings as the way to try again. Must not use the words \"error\" or \"failed\". “Show in Finder” is the macOS command name; use your locale's macOS wording."
   },
@@ -107,7 +107,7 @@
     },
     "screenshot": "quit-confirmation-one-copy.png"
   },
-  "main.quit.body": "Whatever''s finished stays done. Anything still being written stops where it is, and Cmdr clears away what it leaves half-written.",
+  "main.quit.body": "Whatever’s finished stays done. Anything still being written stops where it is, and Cmdr clears away what it leaves half-written.",
   "@main.quit.body": {
     "description": "Body text of the quit-while-running dialog, directly under the title. It reassures the user that quitting is safe: completed files are kept, nothing is undone, and anything caught mid-write is cleaned up rather than left looking complete. IMPORTANT: keep this number-neutral. One operation can be writing several files at once, and several operations can run at once, so the sentence must read correctly whether one file or many are interrupted — do NOT introduce a singular that commits to exactly one. Keep the reassuring, matter-of-fact tone; this is not a warning.",
     "screenshot": "quit-confirmation-one-copy.png"
@@ -145,7 +145,7 @@
   "@main.oldWebkit.title": {
     "description": "Heading of the full-screen notice Cmdr shows instead of its interface when the Mac's WebKit is too old to run the app at all. It replaces the whole window, so this is the first and only thing the person sees. \"Cmdr\" is the product name and stays untranslated; \"Safari\" is Apple's browser and keeps whatever name Apple uses in the target language. Cmdr's interface is drawn by the system WebKit, which tracks the Safari version, so \"a newer Safari\" is literally what is needed. Keep it short: it is a heading."
   },
-  "main.oldWebkit.body": "Cmdr''s interface needs Safari 15.4 or newer, and this Mac has an older one. Open Software Update and install everything pending. That should sort it out.",
+  "main.oldWebkit.body": "Cmdr’s interface needs Safari 15.4 or newer, and this Mac has an older one. Open Software Update and install everything pending. That should sort it out.",
   "@main.oldWebkit.body": {
     "description": "Body of the notice under main.oldWebkit.title. It says what is missing and what to do about it. \"Software Update\" is the macOS system settings pane: use the name Apple uses for it in the target language, since the person has to find it. \"15.4\" is a Safari version number and stays as digits. \"Cmdr\" is the product name and stays untranslated. Tone is calm and practical, not an apology: this is fixable by installing pending macOS updates, and on most old Macs it is."
   },
@@ -156,7 +156,7 @@
       "version": "the macOS version this Mac is running, already written the way people say it (\"10.15\" for Catalina, \"11\" for Big Sur). It is a version label, not a number: never reformat its digits or its dot for the target language."
     }
   },
-  "main.oldMacos.body": "Cmdr officially supports macOS 12 and up, so here it''s best effort. Most of it works, but some colors and small layout details can look off, and fixes for older systems come last. If you hit something broken, I''d still like to hear about it.",
+  "main.oldMacos.body": "Cmdr officially supports macOS 12 and up, so here it’s best effort. Most of it works, but some colors and small layout details can look off, and fixes for older systems come last. If you hit something broken, I’d still like to hear about it.",
   "@main.oldMacos.body": {
     "description": "Body of the one-time old-macOS dialog under main.oldMacos.title, shown once per machine and never again. Three things, in order: this macOS is outside the tested range, what that costs in practice (some colors and small layout details can be wrong), and an invitation to report anything broken anyway. \"12\" is a macOS version number and stays as digits. \"Best effort\" means Cmdr tries but makes no promises here; use whatever phrase carries that in the target language rather than a literal rendering. \"Come last\" means such fixes are the lowest priority, not that they never happen. The last sentence is Cmdr's maker speaking in the first person, which is deliberate; keep it warm and personal, and use the informal register if the language has one. Tone throughout is honest and relaxed, NOT an apology and NOT a warning."
   },
@@ -183,7 +183,7 @@
       "settingsLink": "the clickable link wrapping the text \"Settings > Advanced\""
     }
   },
-  "main.escapeFullScreenHint.onceNote": "You''ll only see this once.",
+  "main.escapeFullScreenHint.onceNote": "You’ll only see this once.",
   "@main.escapeFullScreenHint.onceNote": {
     "description": "Small footnote at the bottom of the one-time Escape full-screen toast (main.escapeFullScreenHint.message). It reassures the user that this toast never comes back, so they don't need to turn anything off to stop seeing it. \"this\" refers to the toast itself. Keep it short and friendly."
   }

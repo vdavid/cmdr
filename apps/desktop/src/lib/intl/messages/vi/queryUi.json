@@ -1,7 +1,7 @@
 {
   "queryUi.bar.placeholder.ai": "Mô tả thứ bạn đang tìm",
   "@queryUi.bar.placeholder.ai": {
-    "sourceHash": "fbfb9a8"
+    "sourceHash": "d8ef53e"
   },
   "queryUi.bar.placeholder.regex": "Mẫu biểu thức chính quy",
   "@queryUi.bar.placeholder.regex": {
@@ -106,7 +106,7 @@
   },
   "queryUi.ai.lead": "Đây là những gì tác nhân đã làm:",
   "@queryUi.ai.lead": {
-    "sourceHash": "bf7c5a2"
+    "sourceHash": "0598e43"
   },
   "queryUi.ai.empty": "Chưa có gì để lọc. Thử diễn đạt lại nhé?",
   "@queryUi.ai.empty": {
@@ -256,7 +256,7 @@
   },
   "queryUi.results.live.resolvingCoverage": "Đang xem những gì đã lập chỉ mục…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "524487d"
+    "sourceHash": "dc547a0"
   },
   "queryUi.results.live.waitingForAnotherWalk": "Đang chờ một lượt quét khác của các thư mục này…",
   "@queryUi.results.live.waitingForAnotherWalk": {
@@ -268,11 +268,11 @@
   },
   "queryUi.results.live.readingIndex": "Đang đọc phần đã lập chỉ mục…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "ed4159a"
+    "sourceHash": "b8bd4f7"
   },
   "queryUi.results.live.walking": "Đang duyệt các thư mục chưa lập chỉ mục…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "3829650"
+    "sourceHash": "2acf23a"
   },
   "queryUi.results.live.matchesSoFar": "Đến giờ có {countText} {count, plural, other {kết quả}}",
   "@queryUi.results.live.matchesSoFar": {
@@ -284,11 +284,11 @@
   },
   "queryUi.results.live.incomplete": "{shownText} trên {totalText} kết quả. Cmdr chưa tìm xong.",
   "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
+    "sourceHash": "737d12c"
   },
   "queryUi.results.live.incompleteEmpty": "Chưa tìm thấy gì thì tìm kiếm đã dừng. Cmdr chưa tìm xong.",
   "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
+    "sourceHash": "6910921"
   },
   "queryUi.results.live.capped": "Đang hiển thị {shownText} kết quả đầu tiên trong {totalText}.",
   "@queryUi.results.live.capped": {
@@ -439,15 +439,15 @@
   },
   "queryUi.dialog.aiTranslateFailedToast": "Chưa chạy được tìm kiếm AI lúc này. Thử lại nhé?",
   "@queryUi.dialog.aiTranslateFailedToast": {
-    "sourceHash": "6856c79"
+    "sourceHash": "b18f37c"
   },
   "queryUi.dialog.runQueryToast": "Không thể hoàn tất tìm kiếm đó. {message}",
   "@queryUi.dialog.runQueryToast": {
-    "sourceHash": "02a3bba"
+    "sourceHash": "51acd6e"
   },
   "queryUi.dialog.runQueryUnknownReason": "Chưa rõ lý do. Thử một truy vấn hẹp hơn?",
   "@queryUi.dialog.runQueryUnknownReason": {
-    "sourceHash": "4f79b0f"
+    "sourceHash": "bb9a283"
   },
   "queryUi.filters.toolbarAria": "Bộ lọc tìm kiếm",
   "@queryUi.filters.toolbarAria": {

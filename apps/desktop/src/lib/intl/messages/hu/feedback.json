@@ -5,7 +5,7 @@
   },
   "feedback.dialog.description": "Mi működik jól? Mi hiányzik? Az üzeneted egyenesen a Cmdr készítőjéhez jut el.",
   "@feedback.dialog.description": {
-    "sourceHash": "fe435e3"
+    "sourceHash": "a0dc540"
   },
   "feedback.dialog.label": "A visszajelzésed",
   "@feedback.dialog.label": {
@@ -13,7 +13,7 @@
   },
   "feedback.dialog.placeholder": "Példa: jó lenne egy billentyűparancs a lapok közti váltáshoz.",
   "@feedback.dialog.placeholder": {
-    "sourceHash": "dd0214b"
+    "sourceHash": "a2c4d22"
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
@@ -22,7 +22,7 @@
   },
   "feedback.dialog.tooLong": "Bocs, ez túl hosszú. A maximum {maxText} karakter.",
   "@feedback.dialog.tooLong": {
-    "sourceHash": "60a59ec"
+    "sourceHash": "b9a0cef"
   },
   "feedback.dialog.moreWays": "<github>Böngészhetsz és szavazhatsz a GitHubon</github>, vagy <call>foglalhatsz egy hívást</call> Daviddel.",
   "@feedback.dialog.moreWays": {
@@ -30,11 +30,11 @@
   },
   "feedback.dialog.invalid": "Az üzenet nem ment át. Rövidítsd le, és próbáld újra?",
   "@feedback.dialog.invalid": {
-    "sourceHash": "c379ff8"
+    "sourceHash": "a997cb3"
   },
   "feedback.dialog.softFailure": "Bocs, most nem sikerült elküldeni a visszajelzésed. Próbáld újra?",
   "@feedback.dialog.softFailure": {
-    "sourceHash": "21012f3"
+    "sourceHash": "603c329"
   },
   "feedback.dialog.cancel": "Mégsem",
   "@feedback.dialog.cancel": {

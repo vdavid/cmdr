@@ -29,7 +29,7 @@
   },
   "fileExplorer.doubleClickHint.dontLikeIt": "不喜歡嗎？",
   "@fileExplorer.doubleClickHint.dontLikeIt": {
-    "sourceHash": "2049722"
+    "sourceHash": "4801954"
   },
   "fileExplorer.doubleClickHint.neverAgain": "不要再這樣做",
   "@fileExplorer.doubleClickHint.neverAgain": {
@@ -69,7 +69,7 @@
   },
   "fileExplorer.diskSpace.noLimitNote": "這個儲存空間沒有容量上限，因此沒有可填滿的長條。",
   "@fileExplorer.diskSpace.noLimitNote": {
-    "sourceHash": "0c363c5"
+    "sourceHash": "7e2a153"
   },
   "fileExplorer.diskSpace.lowNote": "這個長條顯示為紅色，表示卷宗的可用空間不足。",
   "@fileExplorer.diskSpace.lowNote": {
@@ -93,7 +93,7 @@
   },
   "fileExplorer.pane.disconnectFailedToast": "無法中斷連線：{message}",
   "@fileExplorer.pane.disconnectFailedToast": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.pane.connectedDirectlyToast": "已直接連線，存取更快",
   "@fileExplorer.pane.connectedDirectlyToast": {
@@ -101,7 +101,7 @@
   },
   "fileExplorer.pane.directConnectionUnreachableToast": "現在連不上 {server}，所以這個共享資料夾會繼續使用系統連線。",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
-    "sourceHash": "7f4ea98"
+    "sourceHash": "4a5ca66"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} 回應太慢，所以這個共享資料夾會繼續使用系統連線。",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -109,31 +109,31 @@
   },
   "fileExplorer.pane.directConnectionUnexpectedToast": "無法建立到 {server} 的直接連線，所以這個共享資料夾會繼續使用系統連線。",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
-    "sourceHash": "cce5742"
+    "sourceHash": "1b14bd0"
   },
   "fileExplorer.pane.directConnectionShareNotOnServerToast": "{server} 說它沒有這個共享資料夾，所以會繼續使用系統連線。",
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
-    "sourceHash": "a746d6c"
+    "sourceHash": "1936abc"
   },
   "fileExplorer.pane.directConnectionUnavailableToast": "現在無法建立直接連線，所以這個共享資料夾會繼續使用系統連線。",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
-    "sourceHash": "0440df9"
+    "sourceHash": "282f96d"
   },
   "fileExplorer.pane.directConnectionShareGoneToast": "{share} 已經中斷連線了，沒有連線需要加速。",
   "@fileExplorer.pane.directConnectionShareGoneToast": {
-    "sourceHash": "8a4b5ae"
+    "sourceHash": "d562549"
   },
   "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} 現在沒有回應，所以 Cmdr 無法直接連線到它。請稍後再試一次。",
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
-    "sourceHash": "6c29cca"
+    "sourceHash": "baa6b1a"
   },
   "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} 不是網路共享資料夾，沒有連線需要加速。",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
-    "sourceHash": "193a804"
+    "sourceHash": "f634743"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "無法確認檔案是否已移至垃圾桶。這個卷宗可能比較慢，不過檔案也許已經移走了。請查看垃圾桶確認一下。",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "844ccc1"
+    "sourceHash": "6764112"
   },
   "fileExplorer.pane.refreshStillRunningToast": "還在讀取這個資料夾。資料一到，列表就會更新。",
   "@fileExplorer.pane.refreshStillRunningToast": {
@@ -141,11 +141,11 @@
   },
   "fileExplorer.pane.dialogRenderFailedToast": "這個對話方塊沒能開啟，我們已經把它關掉並把鍵盤交還給你。請再試一次。",
   "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "059dfbd"
+    "sourceHash": "1e8ed2d"
   },
   "fileExplorer.pane.ejectFailedToast": "無法退出 {volumeName}：{message}",
   "@fileExplorer.pane.ejectFailedToast": {
-    "sourceHash": "b22501d"
+    "sourceHash": "f4072a7"
   },
   "fileExplorer.errorPane.tryAgain": "再試一次",
   "@fileExplorer.errorPane.tryAgain": {
@@ -317,11 +317,11 @@
   },
   "fileExplorer.network.osMountFallback.message": "無法直接連線到 <shareName>{share}</shareName>。你已經連上了，但用的是 macOS 內建的 SMB 網路連線，大多數情況下比 Cmdr 的直接連線慢 4 倍（有時候慢 100 倍）。請按下方的按鈕再試一次。",
   "@fileExplorer.network.osMountFallback.message": {
-    "sourceHash": "368f523"
+    "sourceHash": "cb53372"
   },
   "fileExplorer.network.osMountFallback.shareNotOnServer": "無法直接連線到 <shareName>{share}</shareName>，因為伺服器說它沒有這個名字的共享資料夾。你仍然連著，但用的是 macOS 內建的 SMB 網路連線，慢上許多。這種情況等下去也不會好：這個共享資料夾可能在伺服器上被重新命名或移除了，值得去那邊看看。",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
-    "sourceHash": "e26082d"
+    "sourceHash": "3ae984e"
   },
   "fileExplorer.network.osMountFallback.retry": "試試直接連線",
   "@fileExplorer.network.osMountFallback.retry": {
@@ -425,7 +425,7 @@
   },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "無法移除自動探索到的主機",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
-    "sourceHash": "03fabd6"
+    "sourceHash": "bde1b3c"
   },
   "fileExplorer.network.browser.removeHostConfirm": "要把 {hostName} 從伺服器列表中移除嗎？",
   "@fileExplorer.network.browser.removeHostConfirm": {
@@ -441,7 +441,7 @@
   },
   "fileExplorer.network.browser.hostRemoveFailed": "無法移除 {hostName}",
   "@fileExplorer.network.browser.hostRemoveFailed": {
-    "sourceHash": "9120dd2"
+    "sourceHash": "684e6eb"
   },
   "fileExplorer.network.forgotPassword": "已忘記 {hostName} 儲存的密碼",
   "@fileExplorer.network.forgotPassword": {
@@ -449,7 +449,7 @@
   },
   "fileExplorer.network.deletePasswordFailed": "無法刪除已儲存的密碼",
   "@fileExplorer.network.deletePasswordFailed": {
-    "sourceHash": "0ff57cb"
+    "sourceHash": "e9c0375"
   },
   "fileExplorer.network.browser.disconnected": "已中斷與 {hostName} 的連線",
   "@fileExplorer.network.browser.disconnected": {
@@ -461,7 +461,7 @@
   },
   "fileExplorer.network.browser.disconnectFailed": "無法中斷連線：{message}",
   "@fileExplorer.network.browser.disconnectFailed": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.network.share.credentialsStoredLocally": "登入資訊已儲存在本機（沒有偵測到系統鑰匙圈）",
   "@fileExplorer.network.share.credentialsStoredLocally": {
@@ -477,7 +477,7 @@
   },
   "fileExplorer.network.share.connectFailedTitle": "無法連線到 {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
-    "sourceHash": "06f5c62"
+    "sourceHash": "4c3d88d"
   },
   "fileExplorer.network.share.noSharesTitle": "沒有可用的共享資料夾",
   "@fileExplorer.network.share.noSharesTitle": {
@@ -565,7 +565,7 @@
   },
   "fileExplorer.networkMount.mountFailedTitle": "無法裝載共享資料夾",
   "@fileExplorer.networkMount.mountFailedTitle": {
-    "sourceHash": "d59f414"
+    "sourceHash": "d04d142"
   },
   "fileExplorer.networkMount.tryAgain": "再試一次",
   "@fileExplorer.networkMount.tryAgain": {
@@ -577,15 +577,15 @@
   },
   "fileExplorer.unreachable.title": "無法連到 {path}",
   "@fileExplorer.unreachable.title": {
-    "sourceHash": "586e44c"
+    "sourceHash": "5fa39ab"
   },
   "fileExplorer.unreachable.detailGaveUp": "Cmdr 試了好幾次重新連線，但伺服器沒有回來。連線目前仍然保留著。你可以再試一次，或中斷連線放棄它。",
   "@fileExplorer.unreachable.detailGaveUp": {
-    "sourceHash": "7d8c5fc"
+    "sourceHash": "720e642"
   },
   "fileExplorer.unreachable.detailTimeout": "這個路徑所在的卷宗沒有及時回應。它可能是目前無法使用的網路磁碟機。",
   "@fileExplorer.unreachable.detailTimeout": {
-    "sourceHash": "61bf814"
+    "sourceHash": "c68d5d3"
   },
   "fileExplorer.unreachable.retrying": "正在重試⋯",
   "@fileExplorer.unreachable.retrying": {
@@ -613,31 +613,31 @@
   },
   "fileExplorer.clipboard.copyFromDevice": "這個裝置上的檔案不能放到剪貼板。請用 {copyKey} 複製。",
   "@fileExplorer.clipboard.copyFromDevice": {
-    "sourceHash": "4948031"
+    "sourceHash": "ba69ee7"
   },
   "fileExplorer.clipboard.moveFromDevice": "這個裝置上的檔案不能放到剪貼板。請用 {moveKey} 移動。",
   "@fileExplorer.clipboard.moveFromDevice": {
-    "sourceHash": "e0d12fe"
+    "sourceHash": "e7da049"
   },
   "fileExplorer.clipboard.copyFromServer": "這個伺服器上的檔案不能放到剪貼板。請用 {copyKey} 複製。",
   "@fileExplorer.clipboard.copyFromServer": {
-    "sourceHash": "a1a1dce"
+    "sourceHash": "12cb39f"
   },
   "fileExplorer.clipboard.moveFromServer": "這個伺服器上的檔案不能放到剪貼板。請用 {moveKey} 移動。",
   "@fileExplorer.clipboard.moveFromServer": {
-    "sourceHash": "50e6502"
+    "sourceHash": "4ae83d7"
   },
   "fileExplorer.clipboard.copyFromUnknown": "這些檔案不能放到剪貼板。請用 {copyKey} 複製。",
   "@fileExplorer.clipboard.copyFromUnknown": {
-    "sourceHash": "659d6e0"
+    "sourceHash": "7aaabdb"
   },
   "fileExplorer.clipboard.moveFromUnknown": "這些檔案不能放到剪貼板。請用 {moveKey} 移動。",
   "@fileExplorer.clipboard.moveFromUnknown": {
-    "sourceHash": "6ae2091"
+    "sourceHash": "7fed360"
   },
   "fileExplorer.edit.notOnThisMac": "Cmdr 還不能用編輯器編輯這個檔案，因為它不是你 Mac 上的一般檔案。請按 F3 檢視。",
   "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "99b6f61"
+    "sourceHash": "710100c"
   },
   "fileExplorer.edit.hint": "已在 {app} 裡開啟這個檔案。想下次換個編輯器？在「設定」裡選一個。",
   "@fileExplorer.edit.hint": {
@@ -657,15 +657,15 @@
   },
   "fileExplorer.edit.appMissing": "Cmdr 找不到你選的編輯器，所以這個檔案改在 {app} 裡開啟了。",
   "@fileExplorer.edit.appMissing": {
-    "sourceHash": "e063ef8"
+    "sourceHash": "9a21bc7"
   },
   "fileExplorer.edit.appMissingUnnamed": "Cmdr 找不到你選的編輯器，所以這個檔案改在你的預設文字編輯器裡開啟了。",
   "@fileExplorer.edit.appMissingUnnamed": {
-    "sourceHash": "421e9d9"
+    "sourceHash": "c61458b"
   },
   "fileExplorer.edit.launchRefused": "Cmdr 沒能啟動你的文字編輯器。先自己開啟一次，然後再試試。",
   "@fileExplorer.edit.launchRefused": {
-    "sourceHash": "741e049"
+    "sourceHash": "8a18c5c"
   },
   "fileExplorer.edit.timedOut": "你的文字編輯器啟動得有點慢，可能還會開啟。",
   "@fileExplorer.edit.timedOut": {
@@ -693,7 +693,7 @@
   },
   "fileExplorer.clipboard.copiedPath": "已把路徑複製到剪貼板了：",
   "@fileExplorer.clipboard.copiedPath": {
-    "sourceHash": "afb1cc2"
+    "sourceHash": "a2eec16"
   },
   "fileExplorer.tabs.limitReached": "已達分頁數量上限",
   "@fileExplorer.tabs.limitReached": {
@@ -713,19 +713,19 @@
   },
   "fileExplorer.readOnly.renameMessage": "這是唯讀卷宗，無法在這裡重新命名。",
   "@fileExplorer.readOnly.renameMessage": {
-    "sourceHash": "2f68994"
+    "sourceHash": "5806c75"
   },
   "fileExplorer.readOnly.mkdirMessage": "這是唯讀卷宗，無法在這裡新增資料夾。",
   "@fileExplorer.readOnly.mkdirMessage": {
-    "sourceHash": "01957f0"
+    "sourceHash": "6385636"
   },
   "fileExplorer.readOnly.mkfileMessage": "這是唯讀卷宗，無法在這裡新增檔案。",
   "@fileExplorer.readOnly.mkfileMessage": {
-    "sourceHash": "c5c28e2"
+    "sourceHash": "32e1afa"
   },
   "fileExplorer.readOnly.deleteMessage": "這是唯讀卷宗，無法在這裡刪除檔案。",
   "@fileExplorer.readOnly.deleteMessage": {
-    "sourceHash": "965a635"
+    "sourceHash": "a456b51"
   },
   "fileExplorer.readOnly.archiveTitle": "唯讀壓縮檔",
   "@fileExplorer.readOnly.archiveTitle": {
@@ -761,7 +761,7 @@
   },
   "fileExplorer.rename.hiddenAfterRename": "你的檔案從畫面上消失了，因為現在沒有顯示隱藏檔案。",
   "@fileExplorer.rename.hiddenAfterRename": {
-    "sourceHash": "445d02a"
+    "sourceHash": "6258274"
   },
   "fileExplorer.rename.keptOriginalName": "{reason}。已保留原本的名稱。",
   "@fileExplorer.rename.keptOriginalName": {
@@ -777,11 +777,11 @@
   },
   "fileExplorer.rename.unconfirmed": "無法確認「{name}」是否已重新命名。這個卷宗可能比較慢，所以名稱也許已經改好了。",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "bcea9d0"
+    "sourceHash": "059ac81"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "無法確認「{name}」和{others, plural, other {另外 {othersText} 個檔案}}是否已重新命名。這個卷宗可能比較慢，所以這些名稱也許都已經改好了。",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "c64e665"
+    "sourceHash": "f16b15d"
   },
   "fileExplorer.columns.name": "名稱",
   "@fileExplorer.columns.name": {
@@ -882,11 +882,11 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "至少有這麼多：有些子資料夾還沒掃描，所以實際總量可能更大。",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "03803e8"
+    "sourceHash": "2aaea43"
   },
   "fileExplorer.dirSize.unknownTooltip": "大小未知：這個資料夾還沒掃描過。",
   "@fileExplorer.dirSize.unknownTooltip": {
-    "sourceHash": "0207a3d"
+    "sourceHash": "f5771e5"
   },
   "fileExplorer.dirSize.staleLine": "這些大小來自比較早的掃描，可能已經過時。",
   "@fileExplorer.dirSize.staleLine": {
@@ -1019,7 +1019,7 @@
   },
   "fileExplorer.imageIndex.file.failed": "無法建立索引",
   "@fileExplorer.imageIndex.file.failed": {
-    "sourceHash": "a88edd6"
+    "sourceHash": "0ca54ae"
   },
   "fileExplorer.imageIndex.file.excluded": "未納入影像搜尋",
   "@fileExplorer.imageIndex.file.excluded": {
@@ -1219,7 +1219,7 @@
   },
   "fileExplorer.quickLookHint.dontShowAgain": "不要再顯示",
   "@fileExplorer.quickLookHint.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "fileExplorer.navigation.groupFavorites": "喜好項目",
   "@fileExplorer.navigation.groupFavorites": {
@@ -1267,7 +1267,7 @@
   },
   "fileExplorer.navigation.favoritesCantAddHere": "這個資料夾不能加入喜好項目：喜好項目只能用在磁碟和已裝載的共享資料夾上",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "10c98b3"
+    "sourceHash": "86564ea"
   },
   "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {查看喜好項目} other {查看 {count} 個喜好項目}}",
   "@fileExplorer.navigation.seeFavorites": {
@@ -1291,23 +1291,23 @@
   },
   "fileExplorer.navigation.favoriteShortcutSaveFailed": "無法儲存這個快速鍵。請再試一次。",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "dc8e408"
+    "sourceHash": "38e7225"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "無法移除那個喜好項目。要再試一次嗎？",
   "@fileExplorer.navigation.removeFavoriteFailed": {
-    "sourceHash": "181bf36"
+    "sourceHash": "a3c8665"
   },
   "fileExplorer.navigation.renameFavoriteFailed": "無法重新命名那個喜好項目。要再試一次嗎？",
   "@fileExplorer.navigation.renameFavoriteFailed": {
-    "sourceHash": "33e06cd"
+    "sourceHash": "cbf60d7"
   },
   "fileExplorer.navigation.reorderFavoritesFailed": "無法重新排序喜好項目。要再試一次嗎？",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
-    "sourceHash": "1b16941"
+    "sourceHash": "875befb"
   },
   "fileExplorer.navigation.locationUnreachableToast": "無法連到那個位置所在的磁碟機。它可能沒有接上。",
   "@fileExplorer.navigation.locationUnreachableToast": {
-    "sourceHash": "20126a6"
+    "sourceHash": "61da177"
   },
   "fileExplorer.navigation.connectionTooltipDirect": "已直接連線，檔案操作更快",
   "@fileExplorer.navigation.connectionTooltipDirect": {
@@ -1323,7 +1323,7 @@
   },
   "fileExplorer.navigation.useDirectConnection": "使用 Cmdr 的快速直接連線",
   "@fileExplorer.navigation.useDirectConnection": {
-    "sourceHash": "2955143"
+    "sourceHash": "68ff111"
   },
   "fileExplorer.navigation.connectDirectlyNow": "立即直接連線",
   "@fileExplorer.navigation.connectDirectlyNow": {
@@ -1343,7 +1343,7 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr 可以沿用 macOS 已經為「{displayName}」儲存的密碼。你會看到系統跳出提示，要求允許取用鑰匙圈。這是正常的，請按「允許」。",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "334f7de"
+    "sourceHash": "96fa0b9"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "要使用已儲存的密碼嗎？",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1375,7 +1375,7 @@
   },
   "fileExplorer.navigation.connectionTooltipNeedsHostKey": "這個伺服器的主機金鑰變了。開啟它就可以查看金鑰。",
   "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
-    "sourceHash": "5743c29"
+    "sourceHash": "a657aa4"
   },
   "fileExplorer.navigation.connectionTooltipSaved": "已儲存。開啟它就可以連線。",
   "@fileExplorer.navigation.connectionTooltipSaved": {
@@ -1387,7 +1387,7 @@
   },
   "fileExplorer.navigation.disconnectBusyTooltip": "這個伺服器上有操作正在進行，無法中斷連線",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "2085de5"
+    "sourceHash": "a659820"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} 已經在你的卷宗切換器裡了。",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1395,15 +1395,15 @@
   },
   "fileExplorer.navigation.serverUnpinnedToast": "{name} 已經不在你的卷宗切換器裡了。它仍然儲存著。",
   "@fileExplorer.navigation.serverUnpinnedToast": {
-    "sourceHash": "3367b4d"
+    "sourceHash": "7fa97b2"
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr 無法更改 {name} 的顯示位置。",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "14230e4"
+    "sourceHash": "3ed5f60"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr 無法中斷與 {name} 的連線。",
   "@fileExplorer.navigation.disconnectRefusedToast": {
-    "sourceHash": "7cd7fd2"
+    "sourceHash": "375b424"
   },
   "fileExplorer.navigation.forgetServerConfirmTitle": "忘記伺服器",
   "@fileExplorer.navigation.forgetServerConfirmTitle": {
@@ -1415,7 +1415,7 @@
   },
   "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr 無法忘記 {name}。",
   "@fileExplorer.navigation.forgetServerRefusedToast": {
-    "sourceHash": "0603090"
+    "sourceHash": "f7c6c64"
   },
   "fileExplorer.navigation.forgetSecretConfirmTitle": "忘記已儲存的密碼",
   "@fileExplorer.navigation.forgetSecretConfirmTitle": {
@@ -1427,7 +1427,7 @@
   },
   "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr 無法忘記 {name} 已儲存的密碼。",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
-    "sourceHash": "940eb59"
+    "sourceHash": "b7a15b2"
   },
   "fileExplorer.navigation.forgetSecretNoneToast": "{name} 沒有已儲存的密碼。",
   "@fileExplorer.navigation.forgetSecretNoneToast": {
@@ -1439,7 +1439,7 @@
   },
   "fileExplorer.navigation.ejectBusyTooltip": "這個裝置上有操作正在進行，無法退出",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "7165c58"
+    "sourceHash": "eafd9bd"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "正在退出 {name}⋯",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1471,7 +1471,7 @@
   },
   "fileExplorer.navigation.spaceFetchFailed": "無法取得磁碟空間。按一下再試一次",
   "@fileExplorer.navigation.spaceFetchFailed": {
-    "sourceHash": "6fe88d7"
+    "sourceHash": "55f2eab"
   },
   "fileExplorer.navigation.spaceUnavailableText": "無法取得",
   "@fileExplorer.navigation.spaceUnavailableText": {
@@ -1519,27 +1519,27 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "儲存這個磁碟機的索引時出了狀況，所以索引已經停下來。請重新掃描以重建索引。",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
-    "sourceHash": "7386b54"
+    "sourceHash": "7c7e776"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "在過去 {hours, plural, other {{hoursText} 小時}}內，macOS 有 {count, plural, other {{countText} 次}}沒跟上檔案系統的改動，所以少數資料夾大小可能會有點出入。這通常只是塞滿小檔案的快取，Cmdr 會在 {remaining, plural, other {{remainingText} 小時}}後做下一次完整檢查，屆時就會恢復準確。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
-    "sourceHash": "2b593c3"
+    "sourceHash": "eb09aed"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS 有 {count, plural, other {{countText} 次}}沒跟上檔案系統的改動，所以少數資料夾大小可能會有點出入。這通常只是塞滿小檔案的快取，正在進行的這次檢查會把它們修正回來。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
-    "sourceHash": "9cbf743"
+    "sourceHash": "0ff330c"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "在過去 {hours, plural, other {{hoursText} 小時}}內，macOS 有 {count, plural, other {{countText} 次}}沒跟上檔案系統的改動，所以少數資料夾大小可能會有點出入。這通常只是塞滿小檔案的快取，不是什麼大問題。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
-    "sourceHash": "428975f"
+    "sourceHash": "68420b0"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr 讀不到這個磁碟機上的 {count, plural, other {{countText} 處}}，所以在這裡搜尋的結果可能會少一些。",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
-    "sourceHash": "5369ab3"
+    "sourceHash": "6523d04"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr 讀不到這個磁碟機上的 {count, plural, other {{countText} 處}}，所以在這裡搜尋的結果可能會少一些。Cmdr 會自己回頭再試。",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
-    "sourceHash": "a74a60f"
+    "sourceHash": "f1ea5cb"
   },
   "fileExplorer.navigation.driveIndex.menuEnable": "為這個磁碟機開啟索引",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
@@ -1559,7 +1559,7 @@
   },
   "fileExplorer.navigation.driveIndex.menuForget": "忘記這個磁碟機的索引",
   "@fileExplorer.navigation.driveIndex.menuForget": {
-    "sourceHash": "a553f83"
+    "sourceHash": "90c53ac"
   },
   "fileExplorer.navigation.driveIndex.footer": "上次建立索引：{date} · 花了 {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
@@ -1575,7 +1575,7 @@
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr 無法直接連線到 {name}，而為這個共享資料夾建立索引需要直接連線。請確認共享資料夾連得上，然後再試一次。",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
-    "sourceHash": "e7ac9b4"
+    "sourceHash": "79a31a4"
   },
   "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} 已中斷連線。請重新連線，然後開啟索引。",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
@@ -1595,11 +1595,11 @@
   },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr 現在無法為 {name} 建立索引。請重新連接磁碟機，然後再試一次。",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
-    "sourceHash": "ac46209"
+    "sourceHash": "83bd66e"
   },
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr 為 {name} 開啟索引時遇到了狀況。這本來不該發生。重新啟動 Cmdr 通常就能解決。",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e9adbcc"
+    "sourceHash": "e3841d9"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "磁碟機索引已在設定中關閉，所以 {name} 仍然沒有建立索引。可以在「索引 > 磁碟機索引」中開啟。",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

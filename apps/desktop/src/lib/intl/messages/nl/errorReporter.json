@@ -5,7 +5,7 @@
   },
   "errorReporter.dialog.description": "Hiermee verstuur je de recente logbestanden van Cmdr naar het team, zodat we kunnen oplossen wat er misging. De logbestanden worden lokaal geschoond: bestandspaden, hostnamen, IP-adressen en e-mailadressen worden allemaal verwijderd voordat ze worden verstuurd.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "dd11284"
+    "sourceHash": "ba4012f"
   },
   "errorReporter.dialog.referenceIdLabel": "Referentie-ID:",
   "@errorReporter.dialog.referenceIdLabel": {
@@ -38,7 +38,7 @@
   },
   "errorReporter.dialog.detailsToggle": "Wat er verstuurd gaat worden",
   "@errorReporter.dialog.detailsToggle": {
-    "sourceHash": "b1069f7"
+    "sourceHash": "f57398b"
   },
   "errorReporter.dialog.manifestHeading": "Manifest",
   "@errorReporter.dialog.manifestHeading": {
@@ -67,7 +67,7 @@
   },
   "errorReporter.dialog.prepareFailed": "Voorvertoning samenstellen lukte niet.",
   "@errorReporter.dialog.prepareFailed": {
-    "sourceHash": "3729966"
+    "sourceHash": "24cd5ba"
   },
   "errorReporter.dialog.tryAgain": "Probeer opnieuw",
   "@errorReporter.dialog.tryAgain": {
@@ -75,7 +75,7 @@
   },
   "errorReporter.dialog.bundleUnavailable": "Cmdr kon zijn logbestanden niet voor het rapport verzamelen. Probeer het zo opnieuw.",
   "@errorReporter.dialog.bundleUnavailable": {
-    "sourceHash": "3743aba"
+    "sourceHash": "15bc5b8"
   },
   "errorReporter.dialog.saveToDisk": "Bewaar bundel op schijf (debug)",
   "@errorReporter.dialog.saveToDisk": {
@@ -95,11 +95,11 @@
   },
   "errorReporter.dialog.sendFailedToast": "Foutrapport versturen lukte niet. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
-    "sourceHash": "75337c1"
+    "sourceHash": "1eedf49"
   },
   "errorReporter.dialog.saveFailedToast": "Bundel bewaren lukte niet: {error}",
   "@errorReporter.dialog.saveFailedToast": {
-    "sourceHash": "34cf2b4"
+    "sourceHash": "6405cca"
   },
   "errorReporter.amend.title": "Toevoegen aan je foutrapport",
   "@errorReporter.amend.title": {
@@ -107,7 +107,7 @@
   },
   "errorReporter.amend.description": "Cmdr heeft dit rapport al verstuurd. Schrijf een notitie of voeg je e-mailadres toe, dan komt het bij wat het team al heeft.",
   "@errorReporter.amend.description": {
-    "sourceHash": "276771e"
+    "sourceHash": "9e1a80f"
   },
   "errorReporter.amend.noteLabel": "Je notitie",
   "@errorReporter.amend.noteLabel": {
@@ -127,7 +127,7 @@
   },
   "errorReporter.amend.unavailable": "Aan dat rapport kun je niets meer toevoegen. Om je notities alsnog bij het team te krijgen, verstuur je een nieuw rapport via het Help-menu.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "cbb7a33"
+    "sourceHash": "b96b48a"
   },
   "errorReporter.amend.close": "Sluit",
   "@errorReporter.amend.close": {
@@ -135,7 +135,7 @@
   },
   "errorReporter.amend.addFailedToast": "Je notitie toevoegen lukte niet. {reason}",
   "@errorReporter.amend.addFailedToast": {
-    "sourceHash": "0b67749"
+    "sourceHash": "02f82ce"
   },
   "errorReporter.sentToast.message": "Foutrapport verstuurd. Je referentie-ID is",
   "@errorReporter.sentToast.message": {

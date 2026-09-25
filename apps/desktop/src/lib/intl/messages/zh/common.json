@@ -9,7 +9,7 @@
   },
   "common.attachEmailInvalid": "这看起来不像邮箱地址",
   "@common.attachEmailInvalid": {
-    "sourceHash": "515c7cf"
+    "sourceHash": "0e55e59"
   },
   "common.attachEmailPlaceholder": "you@example.com",
   "@common.attachEmailPlaceholder": {

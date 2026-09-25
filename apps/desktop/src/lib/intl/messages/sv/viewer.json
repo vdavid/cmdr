@@ -25,15 +25,15 @@
   },
   "viewer.error.notFound": "Det gick inte att hitta den här filen. Den kan ha flyttats, döpts om eller raderats.",
   "@viewer.error.notFound": {
-    "sourceHash": "580b83c"
+    "sourceHash": "9257fab"
   },
   "viewer.error.isDirectory": "Det här är en mapp, så det finns inget att visa här. Öppna den i huvudfönstret för att se vad den innehåller.",
   "@viewer.error.isDirectory": {
-    "sourceHash": "b29fe2e"
+    "sourceHash": "5abb771"
   },
   "viewer.error.timeout": "Det gick inte att läsa in filen. Volymen kan vara långsam eller inte svara.",
   "@viewer.error.timeout": {
-    "sourceHash": "d163618"
+    "sourceHash": "74b9656"
   },
   "viewer.error.tooLargeToPreview": "Filen är för stor för att förhandsvisas härifrån. Kopiera ut den först och öppna den sedan.",
   "@viewer.error.tooLargeToPreview": {
@@ -41,7 +41,7 @@
   },
   "viewer.error.archiveUnreadable": "Det gick inte att öppna den här filen från arkivet. Den kan vara krypterad, skadad, eller använda ett format som Cmdr inte kan läsa.",
   "@viewer.error.archiveUnreadable": {
-    "sourceHash": "01490a6"
+    "sourceHash": "e0b8f4e"
   },
   "viewer.error.retry": "Försök igen",
   "@viewer.error.retry": {
@@ -247,7 +247,7 @@
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "Det här är en stor fil i strömningsläge. Vi bygger ett index i bakgrunden (max {seconds} sek)… Radnumren är än så länge ungefärliga.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "033d82d"
+    "sourceHash": "60095b8"
   },
   "viewer.statusBar.badge.streaming": "strömmar",
   "@viewer.statusBar.badge.streaming": {
@@ -255,7 +255,7 @@
   },
   "viewer.statusBar.badge.streamingTooltip": "Det här är en stor fil i strömningsläge. Indexeringen skulle ha tagit längre tid än {seconds} sek, så vi gjorde den inte. Radnumren är uppskattningar.",
   "@viewer.statusBar.badge.streamingTooltip": {
-    "sourceHash": "1752e59"
+    "sourceHash": "b1a14ac"
   },
   "viewer.statusBar.badge.wrap": "radbyte",
   "@viewer.statusBar.badge.wrap": {
@@ -284,7 +284,7 @@
   },
   "viewer.image.error": "Tyvärr, vi kunde inte visa den här bilden. Filen kan vara skadad eller i ett format vi inte kan visa.",
   "@viewer.image.error": {
-    "sourceHash": "9a24fe8"
+    "sourceHash": "1e8c6d9"
   },
   "viewer.pdf.loading": "Läser in PDF",
   "@viewer.pdf.loading": {
@@ -328,7 +328,7 @@
   },
   "viewer.copyDialog.refuseBody": "Det är större än urklippsgränsen på 100 MB. Prova att söka (⌘F) för att hitta det du behöver, eller spara markeringen som en fil.",
   "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "75f3043"
+    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "Filen ändrades på disken. Läs in på nytt?",
   "@viewer.reloadToast.grew": {
@@ -352,7 +352,7 @@
   },
   "viewer.copy.clipboardUnreachable": "Det gick inte att nå urklipp. Försök igen?",
   "@viewer.copy.clipboardUnreachable": {
-    "sourceHash": "c0382ba"
+    "sourceHash": "3c8ddb8"
   },
   "viewer.copy.readTooLong": "Läsningen tog för lång tid. Prova en mindre markering?",
   "@viewer.copy.readTooLong": {
@@ -360,11 +360,11 @@
   },
   "viewer.copy.copyFailed": "Det gick inte att kopiera markeringen. Försök igen?",
   "@viewer.copy.copyFailed": {
-    "sourceHash": "6a1ab41"
+    "sourceHash": "b08416d"
   },
   "viewer.copy.readFailed": "Det gick inte att läsa markeringen. Försök igen?",
   "@viewer.copy.readFailed": {
-    "sourceHash": "bde5f85"
+    "sourceHash": "24ea14a"
   },
   "viewer.saveAs.title": "Spara markering",
   "@viewer.saveAs.title": {
@@ -376,7 +376,7 @@
   },
   "viewer.saveAs.panelFailed": "Det gick inte att öppna sparrutan. Försök igen?",
   "@viewer.saveAs.panelFailed": {
-    "sourceHash": "70c3f76"
+    "sourceHash": "ade021c"
   },
   "viewer.saveAs.saved": "Markeringen sparades till {name}",
   "@viewer.saveAs.saved": {
@@ -388,7 +388,7 @@
   },
   "viewer.saveAs.saveFailed": "Det gick inte att spara markeringen. Försök igen?",
   "@viewer.saveAs.saveFailed": {
-    "sourceHash": "2d85642"
+    "sourceHash": "ca5709f"
   },
   "viewer.saveAs.destinationReadOnly": "Den platsen är skrivskyddad. Vill du välja en annan mapp att spara i?",
   "@viewer.saveAs.destinationReadOnly": {

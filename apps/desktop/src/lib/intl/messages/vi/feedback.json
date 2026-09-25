@@ -5,7 +5,7 @@
   },
   "feedback.dialog.description": "Điều gì đang hiệu quả? Còn thiếu gì? Lời nhắn của bạn đến thẳng người làm ra Cmdr.",
   "@feedback.dialog.description": {
-    "sourceHash": "fe435e3"
+    "sourceHash": "a0dc540"
   },
   "feedback.dialog.label": "Phản hồi của bạn",
   "@feedback.dialog.label": {
@@ -13,7 +13,7 @@
   },
   "feedback.dialog.placeholder": "Ví dụ: Tôi rất muốn có một phím tắt để nhảy giữa các tab.",
   "@feedback.dialog.placeholder": {
-    "sourceHash": "dd0214b"
+    "sourceHash": "a2c4d22"
   },
   "feedback.dialog.counter": "{currentText} / {maxText}",
   "@feedback.dialog.counter": {
@@ -22,7 +22,7 @@
   },
   "feedback.dialog.tooLong": "Xin lỗi, nội dung này quá dài. Tối đa là {maxText} ký tự.",
   "@feedback.dialog.tooLong": {
-    "sourceHash": "60a59ec"
+    "sourceHash": "b9a0cef"
   },
   "feedback.dialog.moreWays": "Bạn cũng có thể <github>xem và bình chọn trên GitHub</github> hoặc <call>đặt một cuộc gọi</call> với David.",
   "@feedback.dialog.moreWays": {
@@ -30,11 +30,11 @@
   },
   "feedback.dialog.invalid": "Lời nhắn đó chưa gửi đi được. Hãy rút ngắn lại và thử lại nhé?",
   "@feedback.dialog.invalid": {
-    "sourceHash": "c379ff8"
+    "sourceHash": "a997cb3"
   },
   "feedback.dialog.softFailure": "Xin lỗi, chúng tôi chưa gửi được phản hồi của bạn lúc này. Thử lại nhé?",
   "@feedback.dialog.softFailure": {
-    "sourceHash": "21012f3"
+    "sourceHash": "603c329"
   },
   "feedback.dialog.cancel": "Hủy",
   "@feedback.dialog.cancel": {

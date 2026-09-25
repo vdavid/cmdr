@@ -427,7 +427,7 @@
   },
   "menu.help.whatsNew": "Wat is er nieuw",
   "@menu.help.whatsNew": {
-    "sourceHash": "135e912"
+    "sourceHash": "37e6112"
   },
   "menu.help.sendFeedback": "Verstuur feedback…",
   "@menu.help.sendFeedback": {
@@ -572,7 +572,7 @@
   },
   "menu.mediaIndex.excludeFolder": "Indexeer geen afbeeldingen in deze map",
   "@menu.mediaIndex.excludeFolder": {
-    "sourceHash": "811f28c"
+    "sourceHash": "9119500"
   },
   "menu.mediaIndex.includeFolder": "Indexeer afbeeldingen hier weer",
   "@menu.mediaIndex.includeFolder": {

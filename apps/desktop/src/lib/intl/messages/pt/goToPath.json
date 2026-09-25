@@ -29,11 +29,11 @@
   },
   "goToPath.dialog.ancestorHint": "Este caminho não existe. O lugar mais próximo para ir é {dir}.",
   "@goToPath.dialog.ancestorHint": {
-    "sourceHash": "43db9f4"
+    "sourceHash": "e6eefca"
   },
   "goToPath.toast.landedOnAncestor": "<req>{requested}</req> não existe, então levamos você para <land>{landed}</land>.",
   "@goToPath.toast.landedOnAncestor": {
-    "sourceHash": "4ffc1e4"
+    "sourceHash": "9af3d3a"
   },
   "goToPath.toast.pressToGoBack": "Pressione <chip></chip> para voltar.",
   "@goToPath.toast.pressToGoBack": {
@@ -49,6 +49,6 @@
   },
   "goToPath.dialog.snapshotNotAPath": "Os resultados da busca não são um caminho aonde dá para ir.",
   "@goToPath.dialog.snapshotNotAPath": {
-    "sourceHash": "e613c52"
+    "sourceHash": "1332610"
   }
 }

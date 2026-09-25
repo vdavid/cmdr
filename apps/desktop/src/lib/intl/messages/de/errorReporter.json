@@ -5,7 +5,7 @@
   },
   "errorReporter.dialog.description": "Damit sendest du die aktuellen Protokolldateien von Cmdr an das Team, damit wir das Problem beheben können. Die Protokolle werden lokal bereinigt: Dateipfade, Hostnamen, IP-Adressen und E-Mail-Adressen werden vor dem Senden alle entfernt.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "dd11284"
+    "sourceHash": "ba4012f"
   },
   "errorReporter.dialog.referenceIdLabel": "Referenz-ID:",
   "@errorReporter.dialog.referenceIdLabel": {
@@ -38,7 +38,7 @@
   },
   "errorReporter.dialog.detailsToggle": "Was gleich gesendet wird",
   "@errorReporter.dialog.detailsToggle": {
-    "sourceHash": "b1069f7"
+    "sourceHash": "f57398b"
   },
   "errorReporter.dialog.manifestHeading": "Manifest",
   "@errorReporter.dialog.manifestHeading": {
@@ -67,7 +67,7 @@
   },
   "errorReporter.dialog.prepareFailed": "Die Vorschau ließ sich nicht zusammenstellen.",
   "@errorReporter.dialog.prepareFailed": {
-    "sourceHash": "3729966"
+    "sourceHash": "24cd5ba"
   },
   "errorReporter.dialog.tryAgain": "Erneut versuchen",
   "@errorReporter.dialog.tryAgain": {
@@ -75,7 +75,7 @@
   },
   "errorReporter.dialog.bundleUnavailable": "Cmdr konnte seine Protokolldateien nicht für den Bericht sammeln. Versuche es gleich noch einmal.",
   "@errorReporter.dialog.bundleUnavailable": {
-    "sourceHash": "3743aba"
+    "sourceHash": "15bc5b8"
   },
   "errorReporter.dialog.saveToDisk": "Bündel auf Datenträger sichern (Debug)",
   "@errorReporter.dialog.saveToDisk": {
@@ -95,11 +95,11 @@
   },
   "errorReporter.dialog.sendFailedToast": "Fehlerbericht ließ sich nicht senden. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
-    "sourceHash": "75337c1"
+    "sourceHash": "1eedf49"
   },
   "errorReporter.dialog.saveFailedToast": "Bündel ließ sich nicht sichern: {error}",
   "@errorReporter.dialog.saveFailedToast": {
-    "sourceHash": "34cf2b4"
+    "sourceHash": "6405cca"
   },
   "errorReporter.amend.title": "Zu deinem Fehlerbericht hinzufügen",
   "@errorReporter.amend.title": {
@@ -107,7 +107,7 @@
   },
   "errorReporter.amend.description": "Cmdr hat diesen Bericht bereits gesendet. Schreib eine Notiz oder häng deine E-Mail-Adresse an, und es kommt zu dem hinzu, was das Team schon hat.",
   "@errorReporter.amend.description": {
-    "sourceHash": "276771e"
+    "sourceHash": "9e1a80f"
   },
   "errorReporter.amend.noteLabel": "Deine Notiz",
   "@errorReporter.amend.noteLabel": {
@@ -127,7 +127,7 @@
   },
   "errorReporter.amend.unavailable": "Zu diesem Bericht lässt sich keine Notiz mehr hinzufügen. Damit deine Notizen beim Team ankommen, sende über das Menü „Hilfe“ einen neuen Bericht.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "cbb7a33"
+    "sourceHash": "b96b48a"
   },
   "errorReporter.amend.close": "Schließen",
   "@errorReporter.amend.close": {
@@ -135,7 +135,7 @@
   },
   "errorReporter.amend.addFailedToast": "Deine Notiz ließ sich nicht hinzufügen. {reason}",
   "@errorReporter.amend.addFailedToast": {
-    "sourceHash": "0b67749"
+    "sourceHash": "02f82ce"
   },
   "errorReporter.sentToast.message": "Fehlerbericht gesendet. Deine Referenz-ID ist",
   "@errorReporter.sentToast.message": {

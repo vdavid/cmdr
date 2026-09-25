@@ -81,7 +81,7 @@
   },
   "commands.helpWhatsNew.label": "Nyheter",
   "@commands.helpWhatsNew.label": {
-    "sourceHash": "aa0c54f"
+    "sourceHash": "37e6112"
   },
   "commands.helpWhatsNew.description": "Se vad som ändrats i de senaste versionerna av Cmdr",
   "@commands.helpWhatsNew.description": {
@@ -130,7 +130,7 @@
   },
   "commands.favoritesAdd.description": "Lägg till den fokuserade panelens aktuella mapp i favoriter, så tar favoritmenyn dig tillbaka dit när som helst.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "b09b35e"
+    "sourceHash": "999aa52"
   },
   "commands.favoritesOpen.label": "Visa favoriter",
   "@commands.favoritesOpen.label": {
@@ -458,7 +458,7 @@
   },
   "commands.fileGoToTrash.description": "Öppna papperskorgen på enheten du bläddrar i",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "45df2c4"
+    "sourceHash": "73eae92"
   },
   "commands.dialogConfirm.label": "Bekräfta den öppna dialogen",
   "@commands.dialogConfirm.label": {
@@ -478,7 +478,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Öppna din terminalapp i mappen du tittar på",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "fa93e44"
+    "sourceHash": "ac0ddb8"
   },
   "commands.fileCopyPath.label": "Kopiera sökväg till urklipp",
   "@commands.fileCopyPath.label": {
@@ -554,7 +554,7 @@
   },
   "commands.cloudAskGemini.description": "Öppnar Google Drives Gemini-assistent med den markerade filen som ämne",
   "@commands.cloudAskGemini.description": {
-    "sourceHash": "3b425f6"
+    "sourceHash": "37d4e7c"
   },
   "commands.tagsToggleGrey.label": "Växla taggen Grå",
   "@commands.tagsToggleGrey.label": {
@@ -770,7 +770,7 @@
   },
   "commands.handler.favoriteAddFailed": "Det gick inte att lägga till mappen i favoriter. Försök igen?",
   "@commands.handler.favoriteAddFailed": {
-    "sourceHash": "3f85e99"
+    "sourceHash": "0792537"
   },
   "commands.handler.tabLimitReached": "Gränsen för antal flikar nådd",
   "@commands.handler.tabLimitReached": {
@@ -782,19 +782,19 @@
   },
   "commands.handler.cloudDownloadFailed": "Det gick inte att hämta från molnet. {detail}",
   "@commands.handler.cloudDownloadFailed": {
-    "sourceHash": "70792cf"
+    "sourceHash": "9efe237"
   },
   "commands.handler.cloudRemoveDownloadFailed": "Det gick inte att ta bort hämtningen. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
-    "sourceHash": "425280d"
+    "sourceHash": "11189fb"
   },
   "commands.handler.googleDriveLinkMissing": "Det här objektet har ingen Google Drive-länk.",
   "@commands.handler.googleDriveLinkMissing": {
-    "sourceHash": "af21508"
+    "sourceHash": "7be9109"
   },
   "commands.handler.googleDriveOpenFailed": "Det gick inte att öppna det här i Google Drive. {detail}",
   "@commands.handler.googleDriveOpenFailed": {
-    "sourceHash": "71dc94a"
+    "sourceHash": "e7fd439"
   },
   "commands.handler.googleDriveLinkCopied": "Kopierade Google Drive-länken.",
   "@commands.handler.googleDriveLinkCopied": {
@@ -802,7 +802,7 @@
   },
   "commands.handler.googleDriveCopyFailed": "Det gick inte att kopiera Google Drive-länken. {detail}",
   "@commands.handler.googleDriveCopyFailed": {
-    "sourceHash": "dd970ec"
+    "sourceHash": "0af1fd3"
   },
   "commands.handler.openTerminalHere.hint": "Mappen öppnades i din terminalapp. Vill du att Cmdr öppnar en annan app nästa gång? Välj den i Inställningar, under ”Navigering och filåtgärder”.",
   "@commands.handler.openTerminalHere.hint": {
@@ -818,19 +818,19 @@
   },
   "commands.handler.openTerminalHere.appMissing": "{app} är inte installerad längre, så det här öppnades i Terminal.",
   "@commands.handler.openTerminalHere.appMissing": {
-    "sourceHash": "70726d6"
+    "sourceHash": "770ded9"
   },
   "commands.handler.openTerminalHere.appMissingUnnamed": "Din terminalapp är inte installerad längre, så det här öppnades i Terminal.",
   "@commands.handler.openTerminalHere.appMissingUnnamed": {
-    "sourceHash": "29e9be5"
+    "sourceHash": "8e40ade"
   },
   "commands.handler.openTerminalHere.noPath": "Den här mappen har ingen sökväg som en terminal kan öppna.",
   "@commands.handler.openTerminalHere.noPath": {
-    "sourceHash": "d6520b7"
+    "sourceHash": "7851182"
   },
   "commands.handler.openTerminalHere.launchRefused": "Cmdr kunde inte starta din terminalapp. Öppna den själv en gång och försök igen.",
   "@commands.handler.openTerminalHere.launchRefused": {
-    "sourceHash": "ffd6b3a"
+    "sourceHash": "dd7296e"
   },
   "commands.handler.openTerminalHere.timedOut": "Din terminalapp tar en stund att starta. Den kan fortfarande dyka upp.",
   "@commands.handler.openTerminalHere.timedOut": {

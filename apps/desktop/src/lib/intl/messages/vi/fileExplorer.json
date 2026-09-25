@@ -29,7 +29,7 @@
   },
   "fileExplorer.doubleClickHint.dontLikeIt": "Không thích à?",
   "@fileExplorer.doubleClickHint.dontLikeIt": {
-    "sourceHash": "2049722"
+    "sourceHash": "4801954"
   },
   "fileExplorer.doubleClickHint.neverAgain": "Đừng làm vậy nữa",
   "@fileExplorer.doubleClickHint.neverAgain": {
@@ -69,7 +69,7 @@
   },
   "fileExplorer.diskSpace.noLimitNote": "Bộ nhớ này không có giới hạn dung lượng, nên không có thanh nào để lấp đầy.",
   "@fileExplorer.diskSpace.noLimitNote": {
-    "sourceHash": "0c363c5"
+    "sourceHash": "7e2a153"
   },
   "fileExplorer.diskSpace.lowNote": "Thanh này màu đỏ vì ổ đĩa sắp hết dung lượng.",
   "@fileExplorer.diskSpace.lowNote": {
@@ -94,7 +94,7 @@
   },
   "fileExplorer.pane.disconnectFailedToast": "Không thể ngắt kết nối: {message}",
   "@fileExplorer.pane.disconnectFailedToast": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.pane.connectedDirectlyToast": "Đã kết nối trực tiếp để truy cập nhanh hơn",
   "@fileExplorer.pane.connectedDirectlyToast": {
@@ -102,7 +102,7 @@
   },
   "fileExplorer.pane.directConnectionUnreachableToast": "Hiện không kết nối được tới {server}, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
-    "sourceHash": "7f4ea98"
+    "sourceHash": "4a5ca66"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} phản hồi quá chậm, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -110,31 +110,31 @@
   },
   "fileExplorer.pane.directConnectionUnexpectedToast": "Không thiết lập được kết nối trực tiếp tới {server}, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
-    "sourceHash": "cce5742"
+    "sourceHash": "1b14bd0"
   },
   "fileExplorer.pane.directConnectionShareNotOnServerToast": "{server} cho biết nó không có mục chia sẻ này, nên mục này vẫn dùng kết nối hệ thống.",
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
-    "sourceHash": "a746d6c"
+    "sourceHash": "1936abc"
   },
   "fileExplorer.pane.directConnectionUnavailableToast": "Hiện không thiết lập được kết nối trực tiếp, nên mục chia sẻ này vẫn dùng kết nối hệ thống.",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
-    "sourceHash": "0440df9"
+    "sourceHash": "282f96d"
   },
   "fileExplorer.pane.directConnectionShareGoneToast": "{share} không còn kết nối nữa, nên không có gì để tăng tốc.",
   "@fileExplorer.pane.directConnectionShareGoneToast": {
-    "sourceHash": "8a4b5ae"
+    "sourceHash": "d562549"
   },
   "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} hiện không phản hồi, nên Cmdr không thể kết nối trực tiếp tới mục này. Hãy thử lại sau giây lát.",
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
-    "sourceHash": "6c29cca"
+    "sourceHash": "baa6b1a"
   },
   "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} không phải mục chia sẻ mạng, nên không có kết nối nào để tăng tốc.",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
-    "sourceHash": "193a804"
+    "sourceHash": "f634743"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "Không thể xác nhận tệp đã được chuyển vào Thùng rác. Ổ đĩa có thể đang chậm, nhưng tệp có lẽ vẫn đã được chuyển. Hãy kiểm tra Thùng rác để chắc chắn.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "844ccc1"
+    "sourceHash": "6764112"
   },
   "fileExplorer.pane.refreshStillRunningToast": "Vẫn đang đọc thư mục này. Danh sách sẽ cập nhật ngay khi xong.",
   "@fileExplorer.pane.refreshStillRunningToast": {
@@ -142,11 +142,11 @@
   },
   "fileExplorer.pane.dialogRenderFailedToast": "Không thể mở hộp thoại đó, nên chúng tôi đã đóng nó và trả lại bàn phím cho bạn. Hãy thử lại nhé.",
   "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "059dfbd"
+    "sourceHash": "1e8ed2d"
   },
   "fileExplorer.pane.ejectFailedToast": "Không thể tháo {volumeName}: {message}",
   "@fileExplorer.pane.ejectFailedToast": {
-    "sourceHash": "b22501d"
+    "sourceHash": "f4072a7"
   },
   "fileExplorer.errorPane.tryAgain": "Thử lại",
   "@fileExplorer.errorPane.tryAgain": {
@@ -319,11 +319,11 @@
   },
   "fileExplorer.network.osMountFallback.message": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>. Bạn vẫn đang kết nối, nhưng chỉ qua kết nối mạng SMB tích hợp sẵn của macOS, vốn chậm hơn 4 lần so với kết nối trực tiếp của Cmdr ở hầu hết các kết nối (đôi khi là 100 lần). Hãy bấm nút bên dưới để thử lại.",
   "@fileExplorer.network.osMountFallback.message": {
-    "sourceHash": "368f523"
+    "sourceHash": "cb53372"
   },
   "fileExplorer.network.osMountFallback.shareNotOnServer": "Không thể kết nối trực tiếp tới <shareName>{share}</shareName>, vì máy chủ cho biết nó không có mục chia sẻ nào tên như vậy. Bạn vẫn đang kết nối, nhưng qua kết nối mạng SMB tích hợp sẵn của macOS, vốn chậm hơn nhiều. Tình huống này sẽ không tự thay đổi: có thể mục chia sẻ đã được đổi tên hoặc xóa trên máy chủ, nên hãy kiểm tra lại ở đó.",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
-    "sourceHash": "e26082d"
+    "sourceHash": "3ae984e"
   },
   "fileExplorer.network.osMountFallback.retry": "Thử kết nối trực tiếp",
   "@fileExplorer.network.osMountFallback.retry": {
@@ -427,7 +427,7 @@
   },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "Không thể gỡ bỏ máy chủ được phát hiện tự động",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
-    "sourceHash": "03fabd6"
+    "sourceHash": "bde1b3c"
   },
   "fileExplorer.network.browser.removeHostConfirm": "Gỡ bỏ {hostName} khỏi danh sách máy chủ?",
   "@fileExplorer.network.browser.removeHostConfirm": {
@@ -443,7 +443,7 @@
   },
   "fileExplorer.network.browser.hostRemoveFailed": "Không thể gỡ bỏ {hostName}",
   "@fileExplorer.network.browser.hostRemoveFailed": {
-    "sourceHash": "9120dd2"
+    "sourceHash": "684e6eb"
   },
   "fileExplorer.network.forgotPassword": "Đã quên mật khẩu đã lưu cho {hostName}",
   "@fileExplorer.network.forgotPassword": {
@@ -451,7 +451,7 @@
   },
   "fileExplorer.network.deletePasswordFailed": "Không thể xóa mật khẩu đã lưu",
   "@fileExplorer.network.deletePasswordFailed": {
-    "sourceHash": "0ff57cb"
+    "sourceHash": "e9c0375"
   },
   "fileExplorer.network.browser.disconnected": "Đã ngắt kết nối khỏi {hostName}",
   "@fileExplorer.network.browser.disconnected": {
@@ -463,7 +463,7 @@
   },
   "fileExplorer.network.browser.disconnectFailed": "Không thể ngắt kết nối: {message}",
   "@fileExplorer.network.browser.disconnectFailed": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.network.share.credentialsStoredLocally": "Thông tin đăng nhập được lưu cục bộ (không phát hiện thấy kho khóa hệ thống)",
   "@fileExplorer.network.share.credentialsStoredLocally": {
@@ -479,7 +479,7 @@
   },
   "fileExplorer.network.share.connectFailedTitle": "Không thể kết nối tới {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
-    "sourceHash": "06f5c62"
+    "sourceHash": "4c3d88d"
   },
   "fileExplorer.network.share.noSharesTitle": "Không có mục chia sẻ nào",
   "@fileExplorer.network.share.noSharesTitle": {
@@ -567,7 +567,7 @@
   },
   "fileExplorer.networkMount.mountFailedTitle": "Không thể gắn kết mục chia sẻ",
   "@fileExplorer.networkMount.mountFailedTitle": {
-    "sourceHash": "d59f414"
+    "sourceHash": "d04d142"
   },
   "fileExplorer.networkMount.tryAgain": "Thử lại",
   "@fileExplorer.networkMount.tryAgain": {
@@ -579,15 +579,15 @@
   },
   "fileExplorer.unreachable.title": "Không thể truy cập {path}",
   "@fileExplorer.unreachable.title": {
-    "sourceHash": "586e44c"
+    "sourceHash": "5fa39ab"
   },
   "fileExplorer.unreachable.detailGaveUp": "Cmdr đã thử kết nối lại vài lần nhưng máy chủ vẫn chưa trở lại. Kết nối hiện vẫn khả dụng. Hãy thử lại, hoặc ngắt kết nối để bỏ nó.",
   "@fileExplorer.unreachable.detailGaveUp": {
-    "sourceHash": "7d8c5fc"
+    "sourceHash": "720e642"
   },
   "fileExplorer.unreachable.detailTimeout": "Ổ đĩa cho đường dẫn này đã không phản hồi kịp thời. Đây có thể là một ổ đĩa mạng hiện không khả dụng.",
   "@fileExplorer.unreachable.detailTimeout": {
-    "sourceHash": "61bf814"
+    "sourceHash": "c68d5d3"
   },
   "fileExplorer.unreachable.retrying": "Đang thử lại…",
   "@fileExplorer.unreachable.retrying": {
@@ -615,31 +615,31 @@
   },
   "fileExplorer.clipboard.copyFromDevice": "Bảng nhớ tạm không mang được tệp từ thiết bị này. Dùng {copyKey} để sao chép chúng.",
   "@fileExplorer.clipboard.copyFromDevice": {
-    "sourceHash": "4948031"
+    "sourceHash": "ba69ee7"
   },
   "fileExplorer.clipboard.moveFromDevice": "Bảng nhớ tạm không mang được tệp từ thiết bị này. Dùng {moveKey} để di chuyển chúng.",
   "@fileExplorer.clipboard.moveFromDevice": {
-    "sourceHash": "e0d12fe"
+    "sourceHash": "e7da049"
   },
   "fileExplorer.clipboard.copyFromServer": "Bảng nhớ tạm không mang được tệp từ máy chủ này. Dùng {copyKey} để sao chép chúng.",
   "@fileExplorer.clipboard.copyFromServer": {
-    "sourceHash": "a1a1dce"
+    "sourceHash": "12cb39f"
   },
   "fileExplorer.clipboard.moveFromServer": "Bảng nhớ tạm không mang được tệp từ máy chủ này. Dùng {moveKey} để di chuyển chúng.",
   "@fileExplorer.clipboard.moveFromServer": {
-    "sourceHash": "50e6502"
+    "sourceHash": "4ae83d7"
   },
   "fileExplorer.clipboard.copyFromUnknown": "Không thể đưa những tệp này lên bảng nhớ tạm. Dùng {copyKey} để sao chép chúng.",
   "@fileExplorer.clipboard.copyFromUnknown": {
-    "sourceHash": "659d6e0"
+    "sourceHash": "7aaabdb"
   },
   "fileExplorer.clipboard.moveFromUnknown": "Không thể đưa những tệp này lên bảng nhớ tạm. Dùng {moveKey} để di chuyển chúng.",
   "@fileExplorer.clipboard.moveFromUnknown": {
-    "sourceHash": "6ae2091"
+    "sourceHash": "7fed360"
   },
   "fileExplorer.edit.notOnThisMac": "Cmdr chưa thể sửa tệp này trong trình soạn thảo, vì đây không phải là tệp thông thường trên máy Mac của bạn. Nhấn F3 để xem tệp.",
   "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "99b6f61"
+    "sourceHash": "710100c"
   },
   "fileExplorer.edit.hint": "Đã mở tệp trong {app}. Bạn muốn dùng trình soạn thảo khác vào lần sau? Hãy chọn trong Cài đặt.",
   "@fileExplorer.edit.hint": {
@@ -659,15 +659,15 @@
   },
   "fileExplorer.edit.appMissing": "Cmdr không tìm thấy trình soạn thảo bạn đã chọn, nên tệp này đã mở trong {app}.",
   "@fileExplorer.edit.appMissing": {
-    "sourceHash": "e063ef8"
+    "sourceHash": "9a21bc7"
   },
   "fileExplorer.edit.appMissingUnnamed": "Cmdr không tìm thấy trình soạn thảo bạn đã chọn, nên tệp này đã mở trong trình soạn thảo văn bản mặc định của bạn.",
   "@fileExplorer.edit.appMissingUnnamed": {
-    "sourceHash": "421e9d9"
+    "sourceHash": "c61458b"
   },
   "fileExplorer.edit.launchRefused": "Cmdr chưa khởi động được trình soạn thảo văn bản của bạn. Hãy tự mở nó một lần rồi thử lại.",
   "@fileExplorer.edit.launchRefused": {
-    "sourceHash": "741e049"
+    "sourceHash": "8a18c5c"
   },
   "fileExplorer.edit.timedOut": "Trình soạn thảo văn bản của bạn khởi động hơi lâu. Có thể nó vẫn sẽ mở.",
   "@fileExplorer.edit.timedOut": {
@@ -695,7 +695,7 @@
   },
   "fileExplorer.clipboard.copiedPath": "Đã sao chép đường dẫn vào bảng nhớ tạm:",
   "@fileExplorer.clipboard.copiedPath": {
-    "sourceHash": "afb1cc2"
+    "sourceHash": "a2eec16"
   },
   "fileExplorer.tabs.limitReached": "Đã đạt giới hạn số tab",
   "@fileExplorer.tabs.limitReached": {
@@ -715,19 +715,19 @@
   },
   "fileExplorer.readOnly.renameMessage": "Đây là ổ đĩa chỉ đọc. Không thể đổi tên ở đây.",
   "@fileExplorer.readOnly.renameMessage": {
-    "sourceHash": "2f68994"
+    "sourceHash": "5806c75"
   },
   "fileExplorer.readOnly.mkdirMessage": "Đây là ổ đĩa chỉ đọc. Không thể tạo thư mục ở đây.",
   "@fileExplorer.readOnly.mkdirMessage": {
-    "sourceHash": "01957f0"
+    "sourceHash": "6385636"
   },
   "fileExplorer.readOnly.mkfileMessage": "Đây là ổ đĩa chỉ đọc. Không thể tạo tệp ở đây.",
   "@fileExplorer.readOnly.mkfileMessage": {
-    "sourceHash": "c5c28e2"
+    "sourceHash": "32e1afa"
   },
   "fileExplorer.readOnly.deleteMessage": "Đây là ổ đĩa chỉ đọc. Không thể xóa tệp ở đây.",
   "@fileExplorer.readOnly.deleteMessage": {
-    "sourceHash": "965a635"
+    "sourceHash": "a456b51"
   },
   "fileExplorer.readOnly.archiveTitle": "Tệp nén chỉ đọc",
   "@fileExplorer.readOnly.archiveTitle": {
@@ -763,7 +763,7 @@
   },
   "fileExplorer.rename.hiddenAfterRename": "Tệp của bạn đã biến mất khỏi khung nhìn vì các tệp ẩn không được hiển thị.",
   "@fileExplorer.rename.hiddenAfterRename": {
-    "sourceHash": "445d02a"
+    "sourceHash": "6258274"
   },
   "fileExplorer.rename.keptOriginalName": "{reason}. Đã giữ nguyên tên gốc.",
   "@fileExplorer.rename.keptOriginalName": {
@@ -779,11 +779,11 @@
   },
   "fileExplorer.rename.unconfirmed": "Chưa xác nhận được việc đổi tên “{name}”. Ổ đĩa có thể chậm, nên việc đổi tên vẫn có thể đã hoàn tất.",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "bcea9d0"
+    "sourceHash": "059ac81"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "Chưa xác nhận được việc đổi tên “{name}” và {others, plural, other {{othersText} tệp khác}}. Ổ đĩa có thể chậm, nên các lần đổi tên vẫn có thể đã hoàn tất.",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "c64e665"
+    "sourceHash": "f16b15d"
   },
   "fileExplorer.columns.name": "Tên",
   "@fileExplorer.columns.name": {
@@ -884,11 +884,11 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "Ít nhất là chừng này: một số thư mục con chưa được quét, nên tổng thực tế có thể lớn hơn.",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "03803e8"
+    "sourceHash": "2aaea43"
   },
   "fileExplorer.dirSize.unknownTooltip": "Không rõ kích cỡ: thư mục này chưa được quét.",
   "@fileExplorer.dirSize.unknownTooltip": {
-    "sourceHash": "0207a3d"
+    "sourceHash": "f5771e5"
   },
   "fileExplorer.dirSize.staleLine": "Các kích cỡ này là từ lần quét trước và có thể đã lỗi thời.",
   "@fileExplorer.dirSize.staleLine": {
@@ -1022,7 +1022,7 @@
   },
   "fileExplorer.imageIndex.file.failed": "Không thể lập chỉ mục",
   "@fileExplorer.imageIndex.file.failed": {
-    "sourceHash": "a88edd6"
+    "sourceHash": "0ca54ae"
   },
   "fileExplorer.imageIndex.file.excluded": "Không nằm trong phạm vi tìm kiếm hình ảnh",
   "@fileExplorer.imageIndex.file.excluded": {
@@ -1222,7 +1222,7 @@
   },
   "fileExplorer.quickLookHint.dontShowAgain": "Không hiển thị lại",
   "@fileExplorer.quickLookHint.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "fileExplorer.navigation.groupFavorites": "Mục ưa thích",
   "@fileExplorer.navigation.groupFavorites": {
@@ -1270,7 +1270,7 @@
   },
   "fileExplorer.navigation.favoritesCantAddHere": "Thư mục này không thể là mục ưa thích: mục ưa thích chỉ hoạt động trên ổ đĩa và mục chia sẻ đã gắn kết",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "10c98b3"
+    "sourceHash": "86564ea"
   },
   "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {Xem mục ưa thích} other {Xem {count} mục ưa thích}}",
   "@fileExplorer.navigation.seeFavorites": {
@@ -1294,23 +1294,23 @@
   },
   "fileExplorer.navigation.favoriteShortcutSaveFailed": "Không thể lưu phím tắt này. Thử lại?",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "dc8e408"
+    "sourceHash": "38e7225"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "Không thể gỡ bỏ mục ưa thích đó. Thử lại?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
-    "sourceHash": "181bf36"
+    "sourceHash": "a3c8665"
   },
   "fileExplorer.navigation.renameFavoriteFailed": "Không thể đổi tên mục ưa thích đó. Thử lại?",
   "@fileExplorer.navigation.renameFavoriteFailed": {
-    "sourceHash": "33e06cd"
+    "sourceHash": "cbf60d7"
   },
   "fileExplorer.navigation.reorderFavoritesFailed": "Không thể sắp xếp lại mục ưa thích. Thử lại?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
-    "sourceHash": "1b16941"
+    "sourceHash": "875befb"
   },
   "fileExplorer.navigation.locationUnreachableToast": "Không thể truy cập ổ đĩa của vị trí đó. Có thể nó chưa được kết nối.",
   "@fileExplorer.navigation.locationUnreachableToast": {
-    "sourceHash": "20126a6"
+    "sourceHash": "61da177"
   },
   "fileExplorer.navigation.connectionTooltipDirect": "Đã kết nối trực tiếp để thao tác tệp nhanh",
   "@fileExplorer.navigation.connectionTooltipDirect": {
@@ -1326,7 +1326,7 @@
   },
   "fileExplorer.navigation.useDirectConnection": "Dùng kết nối trực tiếp nhanh của Cmdr",
   "@fileExplorer.navigation.useDirectConnection": {
-    "sourceHash": "2955143"
+    "sourceHash": "68ff111"
   },
   "fileExplorer.navigation.connectDirectlyNow": "Kết nối trực tiếp ngay",
   "@fileExplorer.navigation.connectDirectlyNow": {
@@ -1346,7 +1346,7 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr có thể dùng lại mật khẩu mà macOS đã lưu cho “{displayName}”. Bạn sẽ thấy một lời nhắc hệ thống xin phép truy cập chuỗi khóa. Điều đó là bình thường, nên hãy bấm Cho phép.",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "334f7de"
+    "sourceHash": "96fa0b9"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "Dùng mật khẩu đã lưu?",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1378,7 +1378,7 @@
   },
   "fileExplorer.navigation.connectionTooltipNeedsHostKey": "Khóa của máy chủ này đã thay đổi. Hãy mở máy chủ để xem khóa.",
   "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
-    "sourceHash": "5743c29"
+    "sourceHash": "a657aa4"
   },
   "fileExplorer.navigation.connectionTooltipSaved": "Đã lưu. Hãy mở để kết nối.",
   "@fileExplorer.navigation.connectionTooltipSaved": {
@@ -1390,7 +1390,7 @@
   },
   "fileExplorer.navigation.disconnectBusyTooltip": "Không thể ngắt kết nối khi còn thao tác đang chạy trên máy chủ này",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "2085de5"
+    "sourceHash": "a659820"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} giờ đã có trong bộ chọn ổ đĩa của bạn.",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1398,15 +1398,15 @@
   },
   "fileExplorer.navigation.serverUnpinnedToast": "{name} không còn trong bộ chọn ổ đĩa của bạn. Máy chủ này vẫn được lưu.",
   "@fileExplorer.navigation.serverUnpinnedToast": {
-    "sourceHash": "3367b4d"
+    "sourceHash": "7fa97b2"
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr không thể thay đổi nơi {name} hiển thị.",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "14230e4"
+    "sourceHash": "3ed5f60"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr không thể ngắt kết nối khỏi {name}.",
   "@fileExplorer.navigation.disconnectRefusedToast": {
-    "sourceHash": "7cd7fd2"
+    "sourceHash": "375b424"
   },
   "fileExplorer.navigation.forgetServerConfirmTitle": "Quên máy chủ",
   "@fileExplorer.navigation.forgetServerConfirmTitle": {
@@ -1418,7 +1418,7 @@
   },
   "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr không thể quên {name}.",
   "@fileExplorer.navigation.forgetServerRefusedToast": {
-    "sourceHash": "0603090"
+    "sourceHash": "f7c6c64"
   },
   "fileExplorer.navigation.forgetSecretConfirmTitle": "Quên mật khẩu đã lưu",
   "@fileExplorer.navigation.forgetSecretConfirmTitle": {
@@ -1430,7 +1430,7 @@
   },
   "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr không thể quên mật khẩu đã lưu cho {name}.",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
-    "sourceHash": "940eb59"
+    "sourceHash": "b7a15b2"
   },
   "fileExplorer.navigation.forgetSecretNoneToast": "Không có mật khẩu đã lưu cho {name}.",
   "@fileExplorer.navigation.forgetSecretNoneToast": {
@@ -1442,7 +1442,7 @@
   },
   "fileExplorer.navigation.ejectBusyTooltip": "Không thể tháo khi còn thao tác đang chạy trên thiết bị này",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "7165c58"
+    "sourceHash": "eafd9bd"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "Đang tháo {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1474,7 +1474,7 @@
   },
   "fileExplorer.navigation.spaceFetchFailed": "Không thể lấy dung lượng đĩa. Bấm để thử lại",
   "@fileExplorer.navigation.spaceFetchFailed": {
-    "sourceHash": "6fe88d7"
+    "sourceHash": "55f2eab"
   },
   "fileExplorer.navigation.spaceUnavailableText": "Không khả dụng",
   "@fileExplorer.navigation.spaceUnavailableText": {
@@ -1522,27 +1522,27 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "Đã dừng lập chỉ mục do gặp sự cố khi lưu chỉ mục của ổ đĩa này. Quét lại để tạo lại chỉ mục.",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
-    "sourceHash": "7386b54"
+    "sourceHash": "7c7e776"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "macOS đã mất dấu các thay đổi của hệ thống tệp {count, plural, other {{countText} lần}} trong {hours, plural, other {{hoursText} giờ}} qua, nên kích cỡ của vài thư mục có thể hơi lệch. Thường thì đó chỉ là các bộ đệm chứa đầy tệp nhỏ, và lần kiểm tra toàn bộ tiếp theo của Cmdr sau {remaining, plural, other {{remainingText} giờ}} nữa sẽ chỉnh lại cho đúng.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
-    "sourceHash": "2b593c3"
+    "sourceHash": "eb09aed"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS đã mất dấu các thay đổi của hệ thống tệp {count, plural, other {{countText} lần}}, nên kích cỡ của vài thư mục có thể hơi lệch. Thường thì đó chỉ là các bộ đệm chứa đầy tệp nhỏ, và lần kiểm tra đang chạy ngay bây giờ sẽ chỉnh lại cho đúng.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
-    "sourceHash": "9cbf743"
+    "sourceHash": "0ff330c"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "macOS đã mất dấu các thay đổi của hệ thống tệp {count, plural, other {{countText} lần}} trong {hours, plural, other {{hoursText} giờ}} qua, nên kích cỡ của vài thư mục có thể hơi lệch. Thường thì đó chỉ là các bộ đệm chứa đầy tệp nhỏ, nên cũng không sao.",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
-    "sourceHash": "428975f"
+    "sourceHash": "68420b0"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr không đọc được {count, plural, other {{countText} chỗ}} trên ổ đĩa này, nên kết quả tìm kiếm ở đây có thể hơi thiếu.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
-    "sourceHash": "5369ab3"
+    "sourceHash": "6523d04"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr không đọc được {count, plural, other {{countText} chỗ}} trên ổ đĩa này, nên kết quả tìm kiếm ở đây có thể hơi thiếu. Cmdr sẽ tự quay lại với chúng.",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
-    "sourceHash": "a74a60f"
+    "sourceHash": "f1ea5cb"
   },
   "fileExplorer.navigation.driveIndex.menuEnable": "Bật lập chỉ mục cho ổ đĩa này",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
@@ -1562,7 +1562,7 @@
   },
   "fileExplorer.navigation.driveIndex.menuForget": "Quên chỉ mục của ổ đĩa này",
   "@fileExplorer.navigation.driveIndex.menuForget": {
-    "sourceHash": "a553f83"
+    "sourceHash": "90c53ac"
   },
   "fileExplorer.navigation.driveIndex.footer": "Lần lập chỉ mục gần nhất: {date} · mất {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
@@ -1578,7 +1578,7 @@
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr không thể kết nối trực tiếp tới {name}, điều cần thiết để lập chỉ mục mục chia sẻ này. Hãy kiểm tra mục chia sẻ có truy cập được không và thử lại.",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
-    "sourceHash": "e7ac9b4"
+    "sourceHash": "79a31a4"
   },
   "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} đã bị ngắt kết nối. Hãy kết nối lại, rồi bật lập chỉ mục.",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
@@ -1598,11 +1598,11 @@
   },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr không thể lập chỉ mục {name} ngay lúc này. Hãy kết nối lại ổ đĩa và thử lại.",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
-    "sourceHash": "ac46209"
+    "sourceHash": "83bd66e"
   },
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr gặp một trục trặc khi bật lập chỉ mục cho {name}. Điều này không nên xảy ra. Khởi động lại Cmdr thường khắc phục được.",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e9adbcc"
+    "sourceHash": "e3841d9"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "Lập chỉ mục ổ đĩa đang tắt trong Cài đặt, nên {name} vẫn chưa được lập chỉ mục. Hãy bật trong Lập chỉ mục > Lập chỉ mục ổ đĩa.",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

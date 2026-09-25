@@ -81,7 +81,7 @@
   },
   "commands.helpWhatsNew.label": "Có gì mới",
   "@commands.helpWhatsNew.label": {
-    "sourceHash": "aa0c54f"
+    "sourceHash": "37e6112"
   },
   "commands.helpWhatsNew.description": "Xem những thay đổi trong các bản phát hành Cmdr mới nhất",
   "@commands.helpWhatsNew.description": {
@@ -130,7 +130,7 @@
   },
   "commands.favoritesAdd.description": "Thêm thư mục hiện tại của khung đang chọn vào mục ưa thích, để sau này quay lại đó từ menu mục ưa thích.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "b09b35e"
+    "sourceHash": "999aa52"
   },
   "commands.favoritesOpen.label": "Hiển thị mục ưa thích",
   "@commands.favoritesOpen.label": {
@@ -458,7 +458,7 @@
   },
   "commands.fileGoToTrash.description": "Mở thùng rác của ổ đĩa bạn đang duyệt",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "45df2c4"
+    "sourceHash": "73eae92"
   },
   "commands.dialogConfirm.label": "Xác nhận hộp thoại mở",
   "@commands.dialogConfirm.label": {
@@ -478,7 +478,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Mở ứng dụng terminal của bạn trong thư mục bạn đang xem",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "fa93e44"
+    "sourceHash": "ac0ddb8"
   },
   "commands.fileCopyPath.label": "Sao chép đường dẫn vào bảng nhớ tạm",
   "@commands.fileCopyPath.label": {
@@ -554,7 +554,7 @@
   },
   "commands.cloudAskGemini.description": "Mở trợ lý Gemini của Google Drive với tệp đã chọn làm chủ đề",
   "@commands.cloudAskGemini.description": {
-    "sourceHash": "3b425f6"
+    "sourceHash": "37d4e7c"
   },
   "commands.tagsToggleGrey.label": "Bật/tắt thẻ Xám",
   "@commands.tagsToggleGrey.label": {
@@ -770,7 +770,7 @@
   },
   "commands.handler.favoriteAddFailed": "Chưa thêm được thư mục đó vào mục ưa thích. Thử lại nhé?",
   "@commands.handler.favoriteAddFailed": {
-    "sourceHash": "3f85e99"
+    "sourceHash": "0792537"
   },
   "commands.handler.tabLimitReached": "Đã đạt giới hạn số tab",
   "@commands.handler.tabLimitReached": {
@@ -782,19 +782,19 @@
   },
   "commands.handler.cloudDownloadFailed": "Chưa tải về được từ đám mây. {detail}",
   "@commands.handler.cloudDownloadFailed": {
-    "sourceHash": "70792cf"
+    "sourceHash": "9efe237"
   },
   "commands.handler.cloudRemoveDownloadFailed": "Chưa xóa được bản tải về. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
-    "sourceHash": "425280d"
+    "sourceHash": "11189fb"
   },
   "commands.handler.googleDriveLinkMissing": "Mục này không có liên kết Google Drive.",
   "@commands.handler.googleDriveLinkMissing": {
-    "sourceHash": "af21508"
+    "sourceHash": "7be9109"
   },
   "commands.handler.googleDriveOpenFailed": "Chưa mở được mục này trong Google Drive. {detail}",
   "@commands.handler.googleDriveOpenFailed": {
-    "sourceHash": "71dc94a"
+    "sourceHash": "e7fd439"
   },
   "commands.handler.googleDriveLinkCopied": "Đã sao chép liên kết Google Drive.",
   "@commands.handler.googleDriveLinkCopied": {
@@ -802,7 +802,7 @@
   },
   "commands.handler.googleDriveCopyFailed": "Chưa sao chép được liên kết Google Drive. {detail}",
   "@commands.handler.googleDriveCopyFailed": {
-    "sourceHash": "dd970ec"
+    "sourceHash": "0af1fd3"
   },
   "commands.handler.openTerminalHere.hint": "Đã mở thư mục này trong ứng dụng terminal của bạn. Bạn muốn Cmdr mở ứng dụng khác vào lần sau? Hãy chọn trong Cài đặt, mục “Điều hướng & thao tác tệp”.",
   "@commands.handler.openTerminalHere.hint": {
@@ -818,19 +818,19 @@
   },
   "commands.handler.openTerminalHere.appMissing": "{app} không còn được cài đặt, nên mục này đã mở trong Terminal.",
   "@commands.handler.openTerminalHere.appMissing": {
-    "sourceHash": "70726d6"
+    "sourceHash": "770ded9"
   },
   "commands.handler.openTerminalHere.appMissingUnnamed": "Ứng dụng terminal của bạn không còn được cài đặt, nên mục này đã mở trong Terminal.",
   "@commands.handler.openTerminalHere.appMissingUnnamed": {
-    "sourceHash": "29e9be5"
+    "sourceHash": "8e40ade"
   },
   "commands.handler.openTerminalHere.noPath": "Thư mục này không có đường dẫn nào mà terminal mở được.",
   "@commands.handler.openTerminalHere.noPath": {
-    "sourceHash": "d6520b7"
+    "sourceHash": "7851182"
   },
   "commands.handler.openTerminalHere.launchRefused": "Cmdr chưa khởi động được ứng dụng terminal của bạn. Hãy tự mở nó một lần rồi thử lại.",
   "@commands.handler.openTerminalHere.launchRefused": {
-    "sourceHash": "ffd6b3a"
+    "sourceHash": "dd7296e"
   },
   "commands.handler.openTerminalHere.timedOut": "Ứng dụng terminal của bạn khởi động hơi lâu. Có thể nó vẫn sẽ mở.",
   "@commands.handler.openTerminalHere.timedOut": {

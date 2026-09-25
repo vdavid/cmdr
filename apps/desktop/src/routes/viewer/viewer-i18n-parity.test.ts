@@ -29,7 +29,7 @@ afterAll(() => {
 
 describe('viewer error + load states (en)', () => {
   it('matches the pre-migration error strings', () => {
-    expect(tString('viewer.error.timeout')).toBe("Couldn't load the file. The volume may be slow or unresponsive.")
+    expect(tString('viewer.error.timeout')).toBe('Couldn’t load the file. The volume may be slow or unresponsive.')
     expect(tString('viewer.error.noPath')).toBe('No file path specified')
     expect(tString('viewer.error.readFailed')).toBe('Failed to read file')
     expect(tString('viewer.error.retry')).toBe('Retry')
@@ -39,10 +39,10 @@ describe('viewer error + load states (en)', () => {
 
   it('says why a file that is gone or a folder has nothing to show, instead of the generic read message', () => {
     expect(tString('viewer.error.notFound')).toBe(
-      "Couldn't find this file. It may have been moved, renamed, or deleted.",
+      'Couldn’t find this file. It may have been moved, renamed, or deleted.',
     )
     expect(tString('viewer.error.isDirectory')).toBe(
-      "This is a folder, so there's nothing to view here. Open it in the main window to see what's inside.",
+      'This is a folder, so there’s nothing to view here. Open it in the main window to see what’s inside.',
     )
   })
 
@@ -130,11 +130,11 @@ describe('viewer toolbar + status bar (en)', () => {
     )
     expect(tString('viewer.statusBar.badge.streamingIndexing')).toBe('streaming, indexing…')
     expect(tString('viewer.statusBar.badge.streamingIndexingTooltip', { seconds: 5 })).toBe(
-      "This is a large file in streaming mode. We're building an index in background (max 5 sec)… Line numbers are currently approximate.",
+      'This is a large file in streaming mode. We’re building an index in background (max 5 sec)… Line numbers are currently approximate.',
     )
     expect(tString('viewer.statusBar.badge.streaming')).toBe('streaming')
     expect(tString('viewer.statusBar.badge.streamingTooltip', { seconds: 5 })).toBe(
-      "This is a large file in streaming mode. Indexing would've taken longer than 5 sec, so we didn't do it. The line numbers are estimates.",
+      'This is a large file in streaming mode. Indexing would’ve taken longer than 5 sec, so we didn’t do it. The line numbers are estimates.',
     )
     expect(tString('viewer.statusBar.badge.wrap')).toBe('wrap')
     expect(tString('viewer.statusBar.badge.wrapTooltip')).toBe('Lines wrap at the window edge')
@@ -159,7 +159,7 @@ describe('viewer media labels (en)', () => {
   it('matches the inline media status strings', () => {
     expect(tString('viewer.image.loading')).toBe('Loading image')
     expect(tString('viewer.image.error')).toBe(
-      "Sorry, we couldn't show this image. The file may be damaged or in a format we can't display.",
+      'Sorry, we couldn’t show this image. The file may be damaged or in a format we can’t display.',
     )
     expect(tString('viewer.pdf.loading')).toBe('Loading PDF')
   })
@@ -182,7 +182,7 @@ describe('viewer context menu + copy dialogs (en)', () => {
     expect(tString('viewer.copyDialog.saveAsFile')).toBe('Save as file…')
     expect(tString('viewer.copyDialog.copy')).toBe('Copy')
     expect(tString('viewer.copyDialog.refuseBody')).toBe(
-      "That's larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the selection as a file.",
+      'That’s larger than the 100 MB clipboard limit. Try search (⌘F) to find what you need, or save the selection as a file.',
     )
   })
 })
@@ -197,19 +197,19 @@ describe('viewer reload toast + copy/save toasts (en)', () => {
 
   it('matches the copy toasts', () => {
     expect(tString('viewer.copy.onClipboard', { size: '24 MB' })).toBe('24 MB on your clipboard')
-    expect(tString('viewer.copy.clipboardUnreachable')).toBe("Couldn't reach the clipboard. Try again?")
+    expect(tString('viewer.copy.clipboardUnreachable')).toBe('Couldn’t reach the clipboard. Try again?')
     expect(tString('viewer.copy.readTooLong')).toBe('The read took too long. Try a smaller selection?')
-    expect(tString('viewer.copy.copyFailed')).toBe("Couldn't copy the selection. Try again?")
-    expect(tString('viewer.copy.readFailed')).toBe("Couldn't read the selection. Try again?")
+    expect(tString('viewer.copy.copyFailed')).toBe('Couldn’t copy the selection. Try again?')
+    expect(tString('viewer.copy.readFailed')).toBe('Couldn’t read the selection. Try again?')
   })
 
   it('matches the save-as strings', () => {
     expect(tString('viewer.saveAs.title')).toBe('Save selection')
     expect(getMessage('viewer.saveAs.defaultName')).toBe('selection')
-    expect(tString('viewer.saveAs.panelFailed')).toBe("Couldn't open the save panel. Try again?")
+    expect(tString('viewer.saveAs.panelFailed')).toBe('Couldn’t open the save panel. Try again?')
     expect(tString('viewer.saveAs.saved', { name: 'notes.txt' })).toBe('Selection saved to notes.txt')
     expect(tString('viewer.saveAs.tooLong')).toBe('Saving took too long. Try a smaller selection?')
-    expect(tString('viewer.saveAs.saveFailed')).toBe("Couldn't save the selection. Try again?")
+    expect(tString('viewer.saveAs.saveFailed')).toBe('Couldn’t save the selection. Try again?')
   })
 })
 

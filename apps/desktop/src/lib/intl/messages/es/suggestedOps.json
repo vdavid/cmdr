@@ -13,7 +13,7 @@
   },
   "suggestedOps.loadFailed": "Cmdr no ha podido leer las sugerencias. Cierra esto y vuelve a abrirlo.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "3d3af5a"
+    "sourceHash": "ef0da3e"
   },
   "suggestedOps.agentReason": "Motivo de la IA",
   "@suggestedOps.agentReason": {
@@ -57,7 +57,7 @@
   },
   "suggestedOps.irreversible": "Esto no se puede deshacer",
   "@suggestedOps.irreversible": {
-    "sourceHash": "485d5a3"
+    "sourceHash": "b583829"
   },
   "suggestedOps.folderWillBeCreated": "Cmdr creará esta carpeta",
   "@suggestedOps.folderWillBeCreated": {
@@ -69,7 +69,7 @@
   },
   "suggestedOps.destinationUnknown": "Cmdr no ha podido comprobar la carpeta de destino",
   "@suggestedOps.destinationUnknown": {
-    "sourceHash": "e1293c5"
+    "sourceHash": "dc78d1d"
   },
   "suggestedOps.fromPattern": "Coincide con un patrón",
   "@suggestedOps.fromPattern": {
@@ -113,7 +113,7 @@
   },
   "suggestedOps.filesLoadFailed": "Cmdr no ha podido cargar estos archivos.",
   "@suggestedOps.filesLoadFailed": {
-    "sourceHash": "c61d214"
+    "sourceHash": "01f1b86"
   },
   "suggestedOps.retryFiles": "Reintentar",
   "@suggestedOps.retryFiles": {
@@ -121,11 +121,11 @@
   },
   "suggestedOps.decisionNotRecorded": "Cmdr no ha podido guardar tu respuesta. Vuelve a intentarlo.",
   "@suggestedOps.decisionNotRecorded": {
-    "sourceHash": "d4ee9cf"
+    "sourceHash": "9eae594"
   },
   "suggestedOps.approvalUnsure": "Cmdr no está seguro de que la aprobación se haya completado. Revisa la cola de operaciones antes de volver a aprobarla.",
   "@suggestedOps.approvalUnsure": {
-    "sourceHash": "0cd408c"
+    "sourceHash": "fba515a"
   },
   "suggestedOps.indicatorTooltip": "Hay sugerencias de la IA esperando. Haz clic para revisarlas.",
   "@suggestedOps.indicatorTooltip": {

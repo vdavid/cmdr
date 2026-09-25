@@ -175,7 +175,7 @@ describe('previewSchemeInput: what the box says under it', () => {
   })
 
   it('says a search-results path is not somewhere to go', () => {
-    expect(previewSchemeInput({ kind: 'snapshot' })).toBe("Search results aren't a path you can go to.")
+    expect(previewSchemeInput({ kind: 'snapshot' })).toBe('Search results aren’t a path you can go to.')
   })
 })
 

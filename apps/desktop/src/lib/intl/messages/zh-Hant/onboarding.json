@@ -5,7 +5,7 @@
   },
   "onboarding.fdaBadge.tooltip": "這個權限不給也沒關係，但 Cmdr 有了它會好用很多：搜尋整個磁碟機、讀取雲端資料夾，還有修改 macOS 自己留著的檔案。按一下就能再看一次這個選擇。",
   "@onboarding.fdaBadge.tooltip": {
-    "sourceHash": "00f408a"
+    "sourceHash": "d7ff906"
   },
   "onboarding.fdaBadge.ariaLabel": "沒有「完全取用磁碟」權限。開啟入門引導的「完全取用磁碟」步驟。",
   "@onboarding.fdaBadge.ariaLabel": {
@@ -57,11 +57,11 @@
   },
   "onboarding.stepFda.granted.body": "太好了，Cmdr 需要的就是這個。現在重新啟動一下，就能開始用所有功能了。",
   "@onboarding.stepFda.granted.body": {
-    "sourceHash": "32acf9d"
+    "sourceHash": "1f59b5f"
   },
   "onboarding.stepFda.granted.hint": "Cmdr 會在下次啟動時認出這個新權限。你在入門引導裡的進度已經存起來了，所以會直接回到這裡。",
   "@onboarding.stepFda.granted.hint": {
-    "sourceHash": "e0e33a3"
+    "sourceHash": "dc1d332"
   },
   "onboarding.stepFda.alreadyGranted.title": "Cmdr 目前有「完全取用磁碟」權限",
   "@onboarding.stepFda.alreadyGranted.title": {
@@ -85,23 +85,23 @@
   },
   "onboarding.stepFda.revoked.ifIntentional": "如果這是你有意的，按一下 <deny>拒絕</deny>，這個 App 就不會再來煩你了。",
   "@onboarding.stepFda.revoked.ifIntentional": {
-    "sourceHash": "9709b73"
+    "sourceHash": "6ab4c94"
   },
   "onboarding.stepFda.revoked.ifNot": "如果<em>不是</em>有意的，可以考慮重新允許「完全取用磁碟」。以下是它的好處和代價：",
   "@onboarding.stepFda.revoked.ifNot": {
-    "sourceHash": "24667ee"
+    "sourceHash": "b40412b"
   },
   "onboarding.stepFda.firstAsk.lede": "<strong>你大概只想趕快開始用這個 App。</strong>抱歉一開始就拿這個打擾你，但確實需要。",
   "@onboarding.stepFda.firstAsk.lede": {
-    "sourceHash": "7f19b2a"
+    "sourceHash": "4f2f392"
   },
   "onboarding.stepFda.firstAsk.explain": "是這樣的，Cmdr 是檔案管理程式，它需要取用你的磁碟才看得到你所有的檔案。而 macOS 不會自動給這個權限。",
   "@onboarding.stepFda.firstAsk.explain": {
-    "sourceHash": "f60c41b"
+    "sourceHash": "4196968"
   },
   "onboarding.stepFda.firstAsk.askPermission": "你願意給這個 App「完全取用磁碟」權限嗎？它的意思是：",
   "@onboarding.stepFda.firstAsk.askPermission": {
-    "sourceHash": "94e5db7"
+    "sourceHash": "28a5c77"
   },
   "onboarding.stepFda.why": "為什麼？",
   "@onboarding.stepFda.why": {
@@ -161,11 +161,11 @@
   },
   "onboarding.stepFda.postAction.body": "準備好之後，按一下下方的 <restart>重新啟動 Cmdr</restart>。如果你改變主意了，就按上方的 <deny>拒絕</deny>。",
   "@onboarding.stepFda.postAction.body": {
-    "sourceHash": "f87a5fc"
+    "sourceHash": "7a5c238"
   },
   "onboarding.stepFda.openSettingsFailed": "Cmdr 無法開啟 {systemSettings}。請自行開啟，前往 <strong>{privacyAndSecurity}</strong>，再進入 <strong>{fullDiskAccess}</strong>，然後打開 <strong>Cmdr</strong>。",
   "@onboarding.stepFda.openSettingsFailed": {
-    "sourceHash": "8cfce29"
+    "sourceHash": "7da3acc"
   },
   "onboarding.stepAi.bannerTitle.granted": "已授予「完全取用磁碟」權限",
   "@onboarding.stepAi.bannerTitle.granted": {
@@ -181,15 +181,15 @@
   },
   "onboarding.stepAi.bannerBody.denied": "你選擇不開啟「完全取用磁碟」，我們尊重你的決定。接下來 macOS 很快會跳出幾個權限請求，讓 Cmdr 取用你的「桌面」、「下載項目」之類的資料夾。你可以隨自己的意思接受或拒絕。這些以後都能在你的 {systemSettings} 裡改。",
   "@onboarding.stepAi.bannerBody.denied": {
-    "sourceHash": "ccb4ae5"
+    "sourceHash": "fa85a39"
   },
   "onboarding.stepAi.bannerTitle.stuck": "Cmdr 好像還沒拿到「完全取用磁碟」權限",
   "@onboarding.stepAi.bannerTitle.stuck": {
-    "sourceHash": "88c9c19"
+    "sourceHash": "6e60ae7"
   },
   "onboarding.stepAi.bannerBody.stuck": "你說想開啟「完全取用磁碟」，但 Cmdr 好像還沒拿到。你可能得重新啟動 App（現在就重啟吧，我們會從這裡接下去！），或者到你的 <settingsLink>{systemSettings} > 隱私權與安全性 > 完全取用磁碟</settingsLink> 找到 Cmdr，也可以用底部那個小小的「+」按鈕手動加進去。",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "fcdff85"
+    "sourceHash": "c13bbbe"
   },
   "onboarding.stepAi.welcomeLinux.title": "歡迎使用 Cmdr！",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -197,11 +197,11 @@
   },
   "onboarding.stepAi.welcomeLinux.subtitle": "我們來設定 AI 吧。",
   "@onboarding.stepAi.welcomeLinux.subtitle": {
-    "sourceHash": "a96e109"
+    "sourceHash": "e4c4251"
   },
   "onboarding.stepAi.title": "接下來，我們來聊聊 AI",
   "@onboarding.stepAi.title": {
-    "sourceHash": "a580449"
+    "sourceHash": "7fb7b12"
   },
   "onboarding.stepAi.intro": "Cmdr 有一堆 AI 功能，你<em>可能</em>想要，也可能不想要。AI 在現在是個有爭議的話題。",
   "@onboarding.stepAi.intro": {
@@ -293,7 +293,7 @@
   },
   "onboarding.stepAi.local.tooltip": "本機模型比雲端模型笨很多，而且會佔掉大約 2 GB 空間，每次用還會吃掉一些 RAM 和 CPU。\n換來的是：沒有任何資料離開你的電腦。\nCmdr 會盡量透過更新，讓你用到當下最好的小模型。但如果你既想要隱私、<em>又</em>想要一個像樣的模型，那自己跑一台 ollama 伺服器，再用下面的 <strong>要，我想用 AI</strong> 選項把它設定好，會是最好的選擇。",
   "@onboarding.stepAi.local.tooltip": {
-    "sourceHash": "c3fa36a"
+    "sourceHash": "ddc1a76"
   },
   "onboarding.stepAi.local.note": "已經開始在背景下載本機模型了。你現在就可以把入門引導走完，角落的通知會告訴你進度。",
   "@onboarding.stepAi.local.note": {
@@ -305,7 +305,7 @@
   },
   "onboarding.stepAi.missingKeyWarning": "你開啟了 AI，但還沒填 API 金鑰。AI 不會運作，而且你會看到一則警告。請在上面補上。\n\n<strong>再按一下「{nextLabel}」，就會忽略這件事繼續往下走。</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "bdb8a08"
+    "sourceHash": "b942278"
   },
   "onboarding.stepAi.cloudConsentOffNote": "在你允許之前，雲端 AI 會一直保持關閉。之後可以到「設定 > AI」允許。",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -333,11 +333,11 @@
   },
   "onboarding.stepBeta.greeting": "嗨，我是 <david>David</david>！Cmdr 是我做的，而你是最早一批用它的人。謝謝你的信任！❤️",
   "@onboarding.stepBeta.greeting": {
-    "sourceHash": "f7ade14"
+    "sourceHash": "2736b42"
   },
   "onboarding.stepBeta.openBeta": "Cmdr 正在公開測試階段：整體上夠穩、能用，但有些地方還很粗糙。看到 <alpha></alpha> 標記的地方，就是最還在開發中的區域。你的意見反應能幫我修正問題、決定功能的先後順序。",
   "@onboarding.stepBeta.openBeta": {
-    "sourceHash": "0dba196"
+    "sourceHash": "f3bed8c"
   },
   "onboarding.stepBeta.checklist.title": "入門引導檢查清單，每一項只要 30 秒：",
   "@onboarding.stepBeta.checklist.title": {
@@ -373,7 +373,7 @@
   },
   "onboarding.stepBeta.analyticsLede": "為了知道哪些做對了、哪些沒有，公開測試期間 Cmdr 會傳送使用統計：哪些功能被用到、用得多頻繁，絕不會有你檔案裡的任何東西。\n它們對應的是一組隨機產生的識別碼，不是你的姓名或電子郵件地址。\n現在是開著的，你隨時可以關掉。",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "edd95b4"
+    "sourceHash": "7544e4c"
   },
   "onboarding.stepBeta.analyticsTitle": "傳送使用統計",
   "@onboarding.stepBeta.analyticsTitle": {
@@ -381,7 +381,7 @@
   },
   "onboarding.stepBeta.analyticsCaption": "注意，它預設是開著的，好鼓勵大家在測試期間把資料傳給我。\n你隨時可以在「設定」裡改。",
   "@onboarding.stepBeta.analyticsCaption": {
-    "sourceHash": "cfd1e86"
+    "sourceHash": "06ce4eb"
   },
   "onboarding.stepBeta.crashReportsNote": "當機報告也是開著的：Cmdr 要是掛了，它會傳送 App 版本、你的 macOS 版本，還有程式碼停在哪裡。\n絕不會有你的檔案。\n這兩項你隨時都能在「設定」裡關掉。",
   "@onboarding.stepBeta.crashReportsNote": {
@@ -402,19 +402,19 @@
   },
   "onboarding.stepBeta.signup.failure": "抱歉，我們現在沒辦法幫你註冊。要再試一次嗎？",
   "@onboarding.stepBeta.signup.failure": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "onboarding.stepBeta.signup.rejected": "郵寄清單沒有收下這個地址。看看是不是有打錯字，然後再按一次「儲存」。",
   "@onboarding.stepBeta.signup.rejected": {
-    "sourceHash": "05ccee5"
+    "sourceHash": "5a1bca7"
   },
   "onboarding.stepBeta.signup.unreachable": "剛剛無法連上註冊伺服器，所以你還沒加到清單裡。你的地址已經存在這部 Mac 上了：過一分鐘再按一次「儲存」，或是隨時在「設定 › 更新與隱私」裡按。",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "8036aad"
+    "sourceHash": "e4d8f67"
   },
   "onboarding.stepBeta.emailNote": "留下你的電子郵件地址，我會偶爾來問個問題或報個近況。\n你在這裡填的地址只留在你的 Mac 上，絕不會和你的使用統計串在一起，這兩個是刻意分開的子系統。",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "f256066"
+    "sourceHash": "0a793b1"
   },
   "onboarding.stepBeta.terms.title": "喔，還有這個，麻煩你了",
   "@onboarding.stepBeta.terms.title": {
@@ -422,11 +422,11 @@
   },
   "onboarding.stepBeta.terms.lede": "法律上得放這個，所以就放在這裡了。",
   "@onboarding.stepBeta.terms.lede": {
-    "sourceHash": "c59e47e"
+    "sourceHash": "26e1bbf"
   },
   "onboarding.stepBeta.terms.consent": "我已閱讀並同意<terms>條款與細則</terms>。",
   "@onboarding.stepBeta.terms.consent": {
-    "sourceHash": "620a4b6"
+    "sourceHash": "7becd05"
   },
   "onboarding.stepBeta.terms.blockedTooltip": "接受條款與細則之後才能繼續。",
   "@onboarding.stepBeta.terms.blockedTooltip": {
@@ -438,11 +438,11 @@
   },
   "onboarding.stepOptional.title": "你快準備好了",
   "@onboarding.stepOptional.title": {
-    "sourceHash": "6ad977a"
+    "sourceHash": "a7bb760"
   },
   "onboarding.stepOptional.lede": "你選了走一遍詳細設定，所以這裡有幾個好決定的選項。如果你沒那麼在意，按下面的按鈕就行。這些全都是可選的，預設值是為你著想挑的。",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "b1242c9"
+    "sourceHash": "278452e"
   },
   "onboarding.stepOptional.recommendedOn": "建議：開啟",
   "@onboarding.stepOptional.recommendedOn": {
@@ -462,7 +462,7 @@
   },
   "onboarding.stepOptional.networking.desc": "<em>開著</em>這一項，你就能連到 SMB 伺服器，像公司的網路共享資料夾、家裡的 NAS 之類的。\n唯一的代價是 macOS 會跳出一個權限對話框，請你允許「區域網路」取用，還有一個請你允許「接受傳入連線」。\n這兩個對話框都無害，但如果你不曉得它們是什麼，可能會覺得嚇人或煩人。",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "c03c7df"
+    "sourceHash": "d473c62"
   },
   "onboarding.stepOptional.indexing.title": "磁碟機索引",
   "@onboarding.stepOptional.indexing.title": {
@@ -486,7 +486,7 @@
   },
   "onboarding.stepOptional.indexing.descCost": "如果你關掉這一項，資料夾大小就只會顯示 <code>{dirPlaceholder}</code>。\n代價是幾百萬個檔案大約要在你的磁碟機上放 1 GB 的索引，但除了第一次開 App、或很久沒開再開的頭 2–3 分鐘之外，不會多吃 CPU 或記憶體。\n以它帶來的好處來看，這個代價很划算。",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "0b60064"
+    "sourceHash": "954cf6b"
   },
   "onboarding.stepOptional.updates.title": "自動更新",
   "@onboarding.stepOptional.updates.title": {
@@ -498,7 +498,7 @@
   },
   "onboarding.stepOptional.updates.desc": "開啟這一項，Cmdr 會在每次 App 啟動時、外加每 24 小時一次，向中央授權伺服器發一個很小的網路請求，這樣你總能拿到最新的更新。\n關掉的話，你會停在目前的版本，而且零自動網路請求（如果你有商業授權，定期的授權檢查除外）。",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "12b7f08"
+    "sourceHash": "bfd8d7e"
   },
   "onboarding.stepOptional.mtp.title": "MTP（Android 手機、Kindle、相機）",
   "@onboarding.stepOptional.mtp.title": {
@@ -510,7 +510,7 @@
   },
   "onboarding.stepOptional.mtp.desc": "開啟這一項，Cmdr 就能<strong>連到 Android 手機、Kindle、相機</strong>、一些音樂播放器，以及任何支援 MTP 或 PTP 通訊協定的裝置。\n代價是 macOS <em>也</em>想連這些裝置（而且通常連不成，這就是為什麼你沒辦法直接用 Finder 從 Android 手機複製照片），所以 Cmdr 執行的時候得把 macOS 的那個程序壓下去。\n你結束 Cmdr 時，它會被好好地還原回去。",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "9563b7b"
+    "sourceHash": "8a60e7f"
   },
   "onboarding.cloudPicker.listAria": "雲端 AI 提供者",
   "@onboarding.cloudPicker.listAria": {
@@ -522,7 +522,7 @@
   },
   "onboarding.cloudSetup.step.signup": "到 <signupLink>{provider}</signupLink> 註冊（如果你還沒有帳號）",
   "@onboarding.cloudSetup.step.signup": {
-    "sourceHash": "d89f1e1"
+    "sourceHash": "06a92f1"
   },
   "onboarding.cloudSetup.step.createKey": "在<keyLink>這裡</keyLink>建立一組 API 金鑰",
   "@onboarding.cloudSetup.step.createKey": {
@@ -586,11 +586,11 @@
   },
   "onboarding.cloudSetup.status.authError": "那組金鑰不管用",
   "@onboarding.cloudSetup.status.authError": {
-    "sourceHash": "2f23f3b"
+    "sourceHash": "b93b44a"
   },
   "onboarding.cloudSetup.status.connectionError": "現在連不上這個服務",
   "@onboarding.cloudSetup.status.connectionError": {
-    "sourceHash": "67cb2e5"
+    "sourceHash": "fcab672"
   },
   "onboarding.cloudSetup.status.genericError": "出了點狀況",
   "@onboarding.cloudSetup.status.genericError": {

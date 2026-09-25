@@ -175,7 +175,7 @@ describe('a trash the OS refused part of', () => {
     dialogs.handleTransferComplete(ONE_FILE_ONE_REFUSED)
 
     expect(addToast).toHaveBeenCalledWith(
-      "macOS wouldn't let Cmdr touch 1 of the items you picked.",
+      'macOS wouldn’t let Cmdr touch 1 of the items you picked.',
       expect.objectContaining({ level: 'warn' }),
     )
   })

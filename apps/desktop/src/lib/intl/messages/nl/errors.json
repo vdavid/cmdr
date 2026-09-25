@@ -21,7 +21,7 @@
   },
   "errors.listing.notEnoughMemory.suggestion": "Dit kun je proberen:\n- Sluit een paar apps om geheugen vrij te maken, vooral apps die veel bronnen gebruiken (browsers met veel tabbladen, editors, media-apps)\n- Bekijk het geheugengebruik in **Activity Monitor** (zoek ernaar in Spotlight)\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "26a7a46"
+    "sourceHash": "d05a4e4"
   },
   "errors.listing.resourceBusy.title": "Bron in gebruik",
   "@errors.listing.resourceBusy.title": {
@@ -29,7 +29,7 @@
   },
   "errors.listing.resourceBusy.explanation": "Cmdr kon `{path}` niet openen omdat een andere app of proces het op dit moment exclusief gebruikt. Dit is meestal tijdelijk.",
   "@errors.listing.resourceBusy.explanation": {
-    "sourceHash": "8c7bdd4"
+    "sourceHash": "18a07d9"
   },
   "errors.listing.resourceBusy.suggestion": "Wacht even en navigeer hier dan opnieuw heen. Als het blijft gebeuren, kijk dan welke app het bestand mogelijk open houdt (voer in Terminal `lsof +D <folder-path>` uit om te zien welke processen deze map gebruiken).",
   "@errors.listing.resourceBusy.suggestion": {
@@ -53,11 +53,11 @@
   },
   "errors.listing.networkDown.explanation": "De netwerkverbinding van je Mac is uitgevallen, dus Cmdr kan dit volume niet bereiken. Dit kan betekenen dat de wifi is losgekoppeld, een ethernetkabel is losgeraakt, of de netwerkinterface is uitgeschakeld.",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "e2106be"
+    "sourceHash": "179f8bb"
   },
   "errors.listing.networkDown.suggestion": "Dit kun je proberen:\n- Controleer de wifi- of ethernetstatus in **{system_settings} > Netwerk**\n- Als je wifi gebruikt, zet die dan even uit en weer aan\n- Voer in Terminal `ping google.com` uit om je verbinding te testen\n- Navigeer hier opnieuw heen zodra je weer online bent",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "3fe671d"
+    "sourceHash": "bf4b517"
   },
   "errors.listing.networkConnectionDropped.title": "Netwerkverbinding verbroken",
   "@errors.listing.networkConnectionDropped.title": {
@@ -69,7 +69,7 @@
   },
   "errors.listing.networkConnectionDropped.suggestion": "Dit kun je proberen:\n- Controleer je netwerkverbinding\n- Als je een VPN gebruikt, zorg dan dat die nog verbonden is\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.networkConnectionDropped.suggestion": {
-    "sourceHash": "17c6bb8"
+    "sourceHash": "228b9a8"
   },
   "errors.listing.connectionDropped.title": "Verbinding verbroken",
   "@errors.listing.connectionDropped.title": {
@@ -81,7 +81,7 @@
   },
   "errors.listing.connectionDropped.suggestion": "Dit kun je proberen:\n- Controleer of de server draait en reageert\n- Controleer je netwerkverbinding\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.connectionDropped.suggestion": {
-    "sourceHash": "d8fba7b"
+    "sourceHash": "3e3446f"
   },
   "errors.listing.connectionReset.title": "Verbinding opnieuw ingesteld",
   "@errors.listing.connectionReset.title": {
@@ -93,7 +93,7 @@
   },
   "errors.listing.connectionReset.suggestion": "Dit kun je proberen:\n- Controleer of de server draait\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "0ee3d15"
+    "sourceHash": "d980663"
   },
   "errors.listing.connectionTimedOutErrno.title": "Time-out op verbinding",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -101,11 +101,11 @@
   },
   "errors.listing.connectionTimedOutErrno.explanation": "Cmdr probeerde deze map te lezen, maar de verbinding reageerde niet op tijd. Dit betekent meestal dat de server of het apparaat traag of onbereikbaar is, of dat het netwerk tussen jou en het apparaat overbelast is.",
   "@errors.listing.connectionTimedOutErrno.explanation": {
-    "sourceHash": "33612d4"
+    "sourceHash": "c088c41"
   },
   "errors.listing.connectionTimedOutErrno.suggestion": "Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "4172538"
+    "sourceHash": "230ef64"
   },
   "errors.listing.hostDown.title": "Host is uitgevallen",
   "@errors.listing.hostDown.title": {
@@ -113,11 +113,11 @@
   },
   "errors.listing.hostDown.explanation": "De externe host (de computer of server die dit volume host) reageert niet. Die staat misschien uit, is in sluimerstand, of is tijdelijk onbereikbaar.",
   "@errors.listing.hostDown.explanation": {
-    "sourceHash": "cf59cab"
+    "sourceHash": "e175712"
   },
   "errors.listing.hostDown.suggestion": "Dit kun je proberen:\n- Controleer of de host aanstaat en met het netwerk is verbonden\n- Probeer in Terminal `ping <hostname>` om te testen of de host bereikbaar is\n- Als het een NAS of server is, controleer dan de beheerinterface ervan\n- Navigeer hier opnieuw heen zodra de host weer terug is",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "4a09e8e"
+    "sourceHash": "7a8ecd8"
   },
   "errors.listing.staleConnection.title": "Verouderde verbinding",
   "@errors.listing.staleConnection.title": {
@@ -129,7 +129,7 @@
   },
   "errors.listing.staleConnection.suggestion": "Dit kun je proberen:\n- Navigeer weg uit deze map en kom terug\n- Als dit een netwerkschijf is, probeer die dan los te koppelen en opnieuw te koppelen in Finder\n- Controleer of de server die deze map host draait\n- Voer in Terminal `mount` uit om te zien welke volumes nu gekoppeld zijn",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "05960c8"
+    "sourceHash": "73de81d"
   },
   "errors.listing.lockUnavailable.title": "Vergrendeling niet beschikbaar",
   "@errors.listing.lockUnavailable.title": {
@@ -141,7 +141,7 @@
   },
   "errors.listing.lockUnavailable.suggestion": "Dit kun je proberen:\n- Sluit een paar apps, vooral apps die met veel bestanden werken (editors, IDE's, back-uptools)\n- Voer in Terminal `lsof | wc -l` uit om te zien hoeveel bestanden er over alle apps heen open staan\n- Als het probleem blijft, kun je de limiet verhogen met `ulimit -n 4096` in Terminal\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "f9c9f8d"
+    "sourceHash": "a9f23bd"
   },
   "errors.listing.cancelledErrno.title": "Geannuleerd",
   "@errors.listing.cancelledErrno.title": {
@@ -153,7 +153,7 @@
   },
   "errors.listing.cancelledErrno.suggestion": "Navigeer hier opnieuw heen wanneer je het nog eens wilt proberen.",
   "@errors.listing.cancelledErrno.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.notPermitted.title": "Niet toegestaan",
   "@errors.listing.notPermitted.title": {
@@ -161,11 +161,11 @@
   },
   "errors.listing.notPermitted.explanation": "macOS blokkeerde de toegang van Cmdr tot `{path}`. Dit betekent meestal dat de map is beschermd door het beveiligingsbeleid van macOS, of dat Cmdr nog niet de juiste bevoegdheden heeft gekregen.",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "ddf8a5d"
+    "sourceHash": "e28dd0e"
   },
   "errors.listing.notPermitted.suggestion": "Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Als dit een door het systeem beschermde map is (zoals systeemmappen), moet je Cmdr misschien **{full_disk_access}** geven onder {privacy_and_security}\n- Voer in Terminal `ls -la` op dit pad uit om de eigenaar en bevoegdheden te controleren",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "32e9d74"
+    "sourceHash": "bbaa904"
   },
   "errors.listing.pathNotFoundErrno.title": "Pad niet gevonden",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -173,11 +173,11 @@
   },
   "errors.listing.pathNotFoundErrno.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd terwijl Cmdr het probeerde te openen.",
   "@errors.listing.pathNotFoundErrno.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.pathNotFoundErrno.suggestion": "Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in Terminal `ls -la` op de bovenliggende map uit om te zien wat erin staat",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.noPermissionErrno.title": "Geen bevoegdheid",
   "@errors.listing.noPermissionErrno.title": {
@@ -185,11 +185,11 @@
   },
   "errors.listing.noPermissionErrno.explanation": "Cmdr heeft geen toegang tot `{path}`. macOS bepaalt welke apps bij welke mappen mogen, en Cmdr heeft voor deze map nog geen toegang gekregen.",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.noPermissionErrno.suggestion": "Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Controleer de bevoegdheden van de map in Finder: klik er met de rechtermuisknop op, kies Toon info, en kijk onder Delen en bevoegdheden\n- Als dit een gedeelde map is, vraag de eigenaar dan de bevoegdheden bij te werken\n- Voer in Terminal `ls -la` op dit pad uit om de huidige bevoegdheden te zien",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "ea316e7"
+    "sourceHash": "4b513ef"
   },
   "errors.listing.alreadyExistsErrno.title": "Bestaat al",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -197,7 +197,7 @@
   },
   "errors.listing.alreadyExistsErrno.explanation": "Er bestaat al een bestand of map op `{path}`, dus Cmdr kan daar geen nieuwe maken.",
   "@errors.listing.alreadyExistsErrno.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExistsErrno.suggestion": "Geef het bestaande onderdeel een andere naam of kies een andere naam voor het nieuwe.",
   "@errors.listing.alreadyExistsErrno.suggestion": {
@@ -209,7 +209,7 @@
   },
   "errors.listing.crossDeviceOperation.explanation": "Cmdr kan dit onderdeel niet rechtstreeks verplaatsen omdat de bron en bestemming op verschillende volumes staan (bijvoorbeeld een interne schijf en een USB-stick). Verplaatsen tussen volumes vereist dat de gegevens worden gekopieerd en het origineel daarna wordt verwijderd.",
   "@errors.listing.crossDeviceOperation.explanation": {
-    "sourceHash": "4762369"
+    "sourceHash": "a6742d3"
   },
   "errors.listing.crossDeviceOperation.suggestion": "Kopieer het onderdeel naar de bestemming in plaats van het te verplaatsen. Cmdr handelt het kopiëren automatisch af.",
   "@errors.listing.crossDeviceOperation.suggestion": {
@@ -221,7 +221,7 @@
   },
   "errors.listing.notAFolder.explanation": "Cmdr verwachtte dat `{path}` een map was, maar het is een bestand. Dit kan gebeuren als er onlangs iets van naam is veranderd of is vervangen.",
   "@errors.listing.notAFolder.explanation": {
-    "sourceHash": "45d8f76"
+    "sourceHash": "7ab65a3"
   },
   "errors.listing.notAFolder.suggestion": "Controleer het pad en zorg dat het naar een map wijst, niet naar een bestand.",
   "@errors.listing.notAFolder.suggestion": {
@@ -233,7 +233,7 @@
   },
   "errors.listing.isAFolderErrno.explanation": "Cmdr verwachtte dat `{path}` een bestand was, maar het is een map. Dit kan gebeuren als er onlangs iets van naam is veranderd of is vervangen.",
   "@errors.listing.isAFolderErrno.explanation": {
-    "sourceHash": "009d220"
+    "sourceHash": "8c3b294"
   },
   "errors.listing.isAFolderErrno.suggestion": "Controleer het pad en zorg dat het naar een bestand wijst, niet naar een map.",
   "@errors.listing.isAFolderErrno.suggestion": {
@@ -245,11 +245,11 @@
   },
   "errors.listing.diskFullErrno.explanation": "Er is niet genoeg vrije ruimte op dit volume om de bewerking te voltooien.",
   "@errors.listing.diskFullErrno.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.diskFullErrno.suggestion": "Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de Prullenmand (klik met de rechtermuisknop op het Prullenmand-symbool in het Dock)\n- Voer in Terminal `df -h` uit om te zien hoeveel ruimte er nog over is op elk volume\n- Kijk in **{system_settings} > Algemeen > Opslag** voor een overzicht van wat ruimte gebruikt",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "bf54d66"
+    "sourceHash": "f2eb27b"
   },
   "errors.listing.readOnlyVolumeErrno.title": "Alleen-lezenvolume",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -257,11 +257,11 @@
   },
   "errors.listing.readOnlyVolumeErrno.explanation": "Dit volume is alleen-lezen gekoppeld, dus Cmdr kan er geen wijzigingen in aanbrengen. Dit kan zijn omdat het apparaat een fysieke schrijfbeveiliging heeft, de schijfkopie alleen-lezen is gekoppeld, of het bestandssysteem schrijven niet ondersteunt.",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
-    "sourceHash": "cb19e8c"
+    "sourceHash": "e6bcf10"
   },
   "errors.listing.readOnlyVolumeErrno.suggestion": "Dit kun je proberen:\n- Als het apparaat een fysieke schrijfbeveiliging heeft (vaak op SD-kaarten), zet die dan uit\n- Als dit een schijfkopie is, koppel die dan opnieuw met schrijftoegang\n- Kopieer de bestanden anders eerst naar een beschrijfbare locatie",
   "@errors.listing.readOnlyVolumeErrno.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.notSupportedErrno.title": "Niet ondersteund",
   "@errors.listing.notSupportedErrno.title": {
@@ -269,11 +269,11 @@
   },
   "errors.listing.notSupportedErrno.explanation": "Deze bewerking wordt niet ondersteund op dit bestandssysteem. Verschillende bestandssystemen (zoals FAT32, NTFS of netwerkshares) ondersteunen verschillende mogelijkheden, en dit systeem ondersteunt niet wat Cmdr probeert te doen.",
   "@errors.listing.notSupportedErrno.explanation": {
-    "sourceHash": "198aa15"
+    "sourceHash": "a0ca28f"
   },
   "errors.listing.notSupportedErrno.suggestion": "Probeer een andere aanpak, of gebruik Finder voor deze bewerking. Als je met een externe schijf werkt, is die misschien geformatteerd met een bestandssysteem met beperkingen (FAT32 kan bijvoorbeeld geen bestanden groter dan 4 GB opslaan).",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "169d5cf"
+    "sourceHash": "de64ad5"
   },
   "errors.listing.networkUnreachable.title": "Netwerk onbereikbaar",
   "@errors.listing.networkUnreachable.title": {
@@ -281,11 +281,11 @@
   },
   "errors.listing.networkUnreachable.explanation": "Cmdr kan het netwerk waarop dit volume staat niet bereiken. Dit betekent vaak dat je niet met het juiste netwerk verbonden bent, of dat een VPN niet actief is.",
   "@errors.listing.networkUnreachable.explanation": {
-    "sourceHash": "f92dedc"
+    "sourceHash": "d3c1975"
   },
   "errors.listing.networkUnreachable.suggestion": "Dit kun je proberen:\n- Controleer je wifi- of ethernetverbinding\n- Zorg dat je op het juiste netwerk zit (bijvoorbeeld je kantoorwifi of VPN)\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Navigeer hier opnieuw heen zodra je verbonden bent",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "b1754b4"
+    "sourceHash": "7feb3cb"
   },
   "errors.listing.connectionRefused.title": "Verbinding geweigerd",
   "@errors.listing.connectionRefused.title": {
@@ -293,11 +293,11 @@
   },
   "errors.listing.connectionRefused.explanation": "De server weigerde de verbinding actief. Dit betekent meestal dat de serversoftware (bijvoorbeeld een SMB- of NFS-service) niet draait, of is ingesteld om verbindingen van deze Mac te weigeren.",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "537cf4e"
+    "sourceHash": "88e1ac7"
   },
   "errors.listing.connectionRefused.suggestion": "Dit kun je proberen:\n- Controleer of de server draait en de service voor bestandsdeling actief is\n- Controleer of het serveradres en de poort kloppen\n- Probeer in Terminal `ping <hostname>` om te kijken of de server überhaupt bereikbaar is\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "4afa12d"
+    "sourceHash": "17decc3"
   },
   "errors.listing.symlinkLoopErrno.title": "Lus van symbolische koppelingen",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -305,11 +305,11 @@
   },
   "errors.listing.symlinkLoopErrno.explanation": "Cmdr vond een cirkelvormige keten van symbolische koppelingen (snelkoppelingen die naar andere snelkoppelingen wijzen) op `{path}`. Deze koppelingen volgen leidt in een cirkel, dus Cmdr kan het echte bestand of de echte map niet bereiken.",
   "@errors.listing.symlinkLoopErrno.explanation": {
-    "sourceHash": "cb728c1"
+    "sourceHash": "4157be6"
   },
   "errors.listing.symlinkLoopErrno.suggestion": "Dit kun je proberen:\n- Voer in Terminal `ls -la` op dit pad uit om te zien waar de symbolische koppelingen naar wijzen\n- Vind en herstel de koppeling die de lus veroorzaakt\n- Als je niet zeker weet welke koppeling het probleem is, volg ze dan één voor één met `readlink <path>`",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "0a439fb"
+    "sourceHash": "eed9a5a"
   },
   "errors.listing.nameTooLongErrno.title": "Naam te lang",
   "@errors.listing.nameTooLongErrno.title": {
@@ -317,7 +317,7 @@
   },
   "errors.listing.nameTooLongErrno.explanation": "De bestands- of mapnaam overschrijdt de systeemlimiet (255 tekens op de meeste Mac-volumes). Dit kan ook gebeuren wanneer het volledige pad (alle mappen samen) de maximale padlengte van het systeem overschrijdt.",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "d6f7a03"
+    "sourceHash": "8b9a6ff"
   },
   "errors.listing.nameTooLongErrno.suggestion": "Geef het onderdeel een kortere naam. Als de naam redelijk lijkt, is het volledige pad (inclusief alle bovenliggende mappen) misschien te lang. Probeer het naar een korter pad te verplaatsen.",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -329,11 +329,11 @@
   },
   "errors.listing.hostUnreachable.explanation": "Cmdr kan geen netwerkroute vinden naar de host waarop dit volume staat. Dit betekent meestal dat de host op een ander netwerk staat, achter een firewall zit, of dat de routeringsconfiguratie moet worden bijgewerkt.",
   "@errors.listing.hostUnreachable.explanation": {
-    "sourceHash": "3e5e6f9"
+    "sourceHash": "184b0fc"
   },
   "errors.listing.hostUnreachable.suggestion": "Dit kun je proberen:\n- Controleer of de host aanstaat en op hetzelfde netwerk zit\n- Als je een VPN nodig hebt om de host te bereiken, zorg dan dat de VPN verbonden is\n- Probeer in Terminal `ping <hostname>` om de verbinding te testen\n- Navigeer hier opnieuw heen zodra de host bereikbaar is",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "8e7a1cf"
+    "sourceHash": "c222f76"
   },
   "errors.listing.folderNotEmpty.title": "Map niet leeg",
   "@errors.listing.folderNotEmpty.title": {
@@ -341,7 +341,7 @@
   },
   "errors.listing.folderNotEmpty.explanation": "Cmdr kan `{path}` niet verwijderen omdat de map nog bestanden of submappen bevat. Het systeem verwijdert een map op deze manier alleen als die leeg is.",
   "@errors.listing.folderNotEmpty.explanation": {
-    "sourceHash": "c16ac41"
+    "sourceHash": "26871a4"
   },
   "errors.listing.folderNotEmpty.suggestion": "Verwijder eerst de inhoud van de map en probeer de map daarna opnieuw te verwijderen.",
   "@errors.listing.folderNotEmpty.suggestion": {
@@ -353,11 +353,11 @@
   },
   "errors.listing.quotaExceeded.explanation": "Je hebt je schijfquotum bereikt (de maximale hoeveelheid ruimte die aan je gebruikersaccount is toegewezen) op dit volume. Dit komt vaak voor op gedeelde servers en netwerkschijven waar een beheerder limieten per gebruiker instelt.",
   "@errors.listing.quotaExceeded.explanation": {
-    "sourceHash": "6fa75c0"
+    "sourceHash": "b9b0b0e"
   },
   "errors.listing.quotaExceeded.suggestion": "Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt op dit volume te verwijderen\n- Vraag je systeembeheerder om je quotum te verhogen\n- Voer in Terminal `quota` uit om je huidige gebruik en limiet te zien",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "e24428a"
+    "sourceHash": "1b5f0df"
   },
   "errors.listing.authRequiredEauth.title": "Verificatie vereist",
   "@errors.listing.authRequiredEauth.title": {
@@ -365,11 +365,11 @@
   },
   "errors.listing.authRequiredEauth.explanation": "Cmdr kon zich niet verifiëren bij dit volume. Je bewaarde inloggegevens zijn misschien verlopen, of de server weigert de huidige aanmelding.",
   "@errors.listing.authRequiredEauth.explanation": {
-    "sourceHash": "7b51115"
+    "sourceHash": "654cbb2"
   },
   "errors.listing.authRequiredEauth.suggestion": "Dit kun je proberen:\n- Verbreek de verbinding met het volume en maak die opnieuw, en voer je gebruikersnaam en wachtwoord opnieuw in\n- Controleer of je wachtwoord niet is gewijzigd of verlopen\n- Als dit een bedrijfsserver is, neem dan contact op met je IT-team",
   "@errors.listing.authRequiredEauth.suggestion": {
-    "sourceHash": "9ba659e"
+    "sourceHash": "3469202"
   },
   "errors.listing.authRequiredEneedauth.title": "Verificatie vereist",
   "@errors.listing.authRequiredEneedauth.title": {
@@ -381,7 +381,7 @@
   },
   "errors.listing.authRequiredEneedauth.suggestion": "Dit kun je proberen:\n- Verbreek de verbinding met het volume en maak die opnieuw in Finder\n- Voer je gebruikersnaam en wachtwoord in wanneer daarom wordt gevraagd\n- Als je niet zeker bent van de inloggegevens, neem dan contact op met de beheerder van de server",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "0b61f53"
+    "sourceHash": "a90b520"
   },
   "errors.listing.devicePoweredOff.title": "Apparaat uitgeschakeld",
   "@errors.listing.devicePoweredOff.title": {
@@ -389,7 +389,7 @@
   },
   "errors.listing.devicePoweredOff.explanation": "Het apparaat staat uit of is in een diepe sluimerstand, dus Cmdr kan er niet mee communiceren.",
   "@errors.listing.devicePoweredOff.explanation": {
-    "sourceHash": "ae9c029"
+    "sourceHash": "782a157"
   },
   "errors.listing.devicePoweredOff.suggestion": "Zet het apparaat aan, wacht tot het volledig is opgestart en navigeer hier dan opnieuw heen.",
   "@errors.listing.devicePoweredOff.suggestion": {
@@ -401,11 +401,11 @@
   },
   "errors.listing.attributeNotFound.explanation": "Cmdr probeerde een bestandskenmerk te lezen (extra metadata zoals tags of bevoegdheden) dat niet bestaat op dit onderdeel. Dit kan gebeuren wanneer het bestandssysteem geen uitgebreide kenmerken ondersteunt, of wanneer het kenmerk is verwijderd.",
   "@errors.listing.attributeNotFound.explanation": {
-    "sourceHash": "ee5c696"
+    "sourceHash": "ee39dd8"
   },
   "errors.listing.attributeNotFound.suggestion": "Dit bestandssysteem ondersteunt mogelijk niet de metadata die Cmdr nodig heeft. Probeer de bewerking op een ander volume, of kopieer het bestand eerst naar de interne schijf van je Mac.",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "3c357ac"
+    "sourceHash": "463ee44"
   },
   "errors.listing.diskReadProblem.title": "Probleem bij lezen van schijf",
   "@errors.listing.diskReadProblem.title": {
@@ -417,7 +417,7 @@
   },
   "errors.listing.diskReadProblem.suggestion": "Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog goed is aangesloten\n- Open **Disk Utility** (zoek ernaar in Spotlight) en voer **First Aid** uit op dit volume\n- Als dit blijft gebeuren, maak dan zo snel mogelijk een back-up van je gegevens. De schijf ontwikkelt misschien slechte sectoren of begint te slijten.",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "792c921"
+    "sourceHash": "614a5fe"
   },
   "errors.listing.unexpectedSystemResponse.title": "Onverwachte systeemreactie",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -425,11 +425,11 @@
   },
   "errors.listing.unexpectedSystemResponse.explanation": "Het systeem gaf een onverwachte reactie op deze bewerking. Dit kan gebeuren wanneer het bestandssysteem van een volume inconsistenties heeft, of wanneer het volume in een ongebruikelijke staat verkeert.",
   "@errors.listing.unexpectedSystemResponse.explanation": {
-    "sourceHash": "eeddaa7"
+    "sourceHash": "a834896"
   },
   "errors.listing.unexpectedSystemResponse.suggestion": "Dit kun je proberen:\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, open dan **Disk Utility** (zoek ernaar in Spotlight) en voer **First Aid** uit op dit volume om te controleren op problemen met het bestandssysteem",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "4e5a9bb"
+    "sourceHash": "f63d225"
   },
   "errors.listing.deviceProblem.title": "Apparaatprobleem",
   "@errors.listing.deviceProblem.title": {
@@ -441,11 +441,11 @@
   },
   "errors.listing.deviceProblem.suggestion": "Dit kun je proberen:\n- Koppel het apparaat los en sluit het opnieuw aan\n- Probeer een andere USB-poort of kabel\n- Als het een externe schijf is, sluit die dan op een andere computer aan om te zien of het probleem het apparaat volgt\n- Als dit blijft gebeuren, moet het apparaat misschien worden gerepareerd of vervangen",
   "@errors.listing.deviceProblem.suggestion": {
-    "sourceHash": "2cbb1cf"
+    "sourceHash": "5ce793b"
   },
   "errors.listing.couldntReadUnknown.title": "Kon deze map niet lezen",
   "@errors.listing.couldntReadUnknown.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.couldntReadUnknown.explanation": "Cmdr liep tegen een onverwacht probleem aan bij het lezen van `{path}`. Bekijk de technische details hieronder voor de specifieke systeemcode, die kan helpen bij het oplossen.",
   "@errors.listing.couldntReadUnknown.explanation": {
@@ -453,7 +453,7 @@
   },
   "errors.listing.couldntReadUnknown.suggestion": "Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Navigeer hier opnieuw heen om het nog eens te proberen\n- Als dit blijft gebeuren, open dan **Disk Utility** en voer **First Aid** uit op dit volume",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "0073987"
+    "sourceHash": "5155626"
   },
   "errors.listing.notFound.title": "Pad niet gevonden",
   "@errors.listing.notFound.title": {
@@ -461,11 +461,11 @@
   },
   "errors.listing.notFound.explanation": "Cmdr kon `{path}` niet vinden. Het is misschien verplaatst, van naam veranderd of verwijderd terwijl Cmdr het probeerde te openen.",
   "@errors.listing.notFound.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.notFound.suggestion": "Dit kun je proberen:\n- Controleer of het pad correct gespeld is\n- Als dit op een netwerkschijf staat, zorg dan dat die verbonden is en de share toegankelijk is\n- Navigeer naar de bovenliggende map en zoek het onderdeel daar\n- Voer in Terminal `ls -la` op de bovenliggende map uit om te zien wat erin staat",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.tccRestricted.title": "Deze map is beperkt door macOS",
   "@errors.listing.tccRestricted.title": {
@@ -473,7 +473,7 @@
   },
   "errors.listing.tccRestricted.explanation": "Cmdr kan `{path}` niet lezen omdat macOS nog geen toegang tot deze map heeft verleend. Dit is een privacydrempel, geen bug in Cmdr.",
   "@errors.listing.tccRestricted.explanation": {
-    "sourceHash": "027470f"
+    "sourceHash": "1f3fc35"
   },
   "errors.listing.tccRestricted.suggestion": "Twee manieren om dit op te lossen:\n- Geef Cmdr **{full_disk_access}** in **{system_settings} → {privacy_and_security} → {full_disk_access}** om al die beperkingen in één keer op te heffen.\n- Of geef toegang per map voor alleen deze map in **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr**.",
   "@errors.listing.tccRestricted.suggestion": {
@@ -485,23 +485,23 @@
   },
   "errors.listing.permissionDenied.explanation": "Cmdr heeft geen toegang tot `{path}`. macOS bepaalt welke apps bij welke mappen mogen, en Cmdr heeft voor deze map nog geen toegang gekregen.",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.permissionDenied.suggestion": "Dit kun je proberen:\n- Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang\n- Controleer de bevoegdheden van de map in Finder: klik er met de rechtermuisknop op, kies Toon info, en kijk onder Delen en bevoegdheden\n- Als dit een gedeelde map is, vraag de eigenaar dan de bevoegdheden bij te werken\n- Voer in Terminal `ls -la` op het pad uit om de huidige bevoegdheden te zien",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "0fa0829"
+    "sourceHash": "3450aff"
   },
   "errors.listing.remotePermissionDenied.title": "De server opent deze map niet",
   "@errors.listing.remotePermissionDenied.title": {
-    "sourceHash": "1fceff5"
+    "sourceHash": "f9cb7bd"
   },
   "errors.listing.remotePermissionDenied.explanation": "`{path}` staat op een netwerkshare, en het account waarmee je verbinding hebt gemaakt heeft geen bevoegdheid om de map te openen. De server wijst het verzoek af nog voordat macOS eraan te pas komt, dus dit is geen privacyinstelling op je Mac.",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "4e6b9ef"
+    "sourceHash": "d8463b0"
   },
   "errors.listing.remotePermissionDenied.suggestion": "Dit kun je proberen:\n- Controleer de bevoegdheden van de map op de server, en met welk account je de share hebt aangekoppeld\n- Sommige mappen horen bij het systeemaccount van de server zelf (`lost+found` op een Linux-share bijvoorbeeld) en blijven voor iedereen anders gesloten\n- Wil je als iemand anders verbinden, werp de share dan uit en koppel hem opnieuw aan met die inloggegevens",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "506e57a"
+    "sourceHash": "3e6497d"
   },
   "errors.listing.alreadyExists.title": "Bestaat al",
   "@errors.listing.alreadyExists.title": {
@@ -509,7 +509,7 @@
   },
   "errors.listing.alreadyExists.explanation": "Er bestaat al een bestand of map op `{path}`, dus Cmdr kan daar geen nieuwe maken.",
   "@errors.listing.alreadyExists.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExists.suggestion": "Geef het bestaande onderdeel een andere naam of kies een andere naam voor het nieuwe.",
   "@errors.listing.alreadyExists.suggestion": {
@@ -525,7 +525,7 @@
   },
   "errors.listing.cancelled.suggestion": "Navigeer hier opnieuw heen wanneer je het nog eens wilt proberen.",
   "@errors.listing.cancelled.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.deviceDisconnected.title": "Apparaat losgekoppeld",
   "@errors.listing.deviceDisconnected.title": {
@@ -537,7 +537,7 @@
   },
   "errors.listing.deviceDisconnected.suggestion": "Dit kun je proberen:\n- Sluit het apparaat opnieuw aan en zorg dat de kabel goed vastzit\n- Als het een telefoon is, ontgrendel die dan en zorg dat de modus voor bestandsoverdracht actief is\n- Navigeer hier opnieuw heen zodra het apparaat weer terug is",
   "@errors.listing.deviceDisconnected.suggestion": {
-    "sourceHash": "9f6c9a0"
+    "sourceHash": "6940094"
   },
   "errors.listing.notConnected.title": "Nog niet verbonden",
   "@errors.listing.notConnected.title": {
@@ -545,11 +545,11 @@
   },
   "errors.listing.notConnected.explanation": "Cmdr heeft nog geen verbinding gemaakt met de telefoon of server met `{path}`, dus hier valt nog niets te tonen. Er is niets losgekoppeld en niets verwijderd.",
   "@errors.listing.notConnected.explanation": {
-    "sourceHash": "4c508d7"
+    "sourceHash": "93ca2df"
   },
   "errors.listing.notConnected.suggestion": "Dit kun je proberen:\n- Open de telefoon of server via de volumekiezer om er verbinding mee te maken\n- Als het een telefoon is, ontgrendel die dan en accepteer elke melding die verschijnt\n- Navigeer hier opnieuw heen zodra de verbinding er is",
   "@errors.listing.notConnected.suggestion": {
-    "sourceHash": "3c48bcd"
+    "sourceHash": "652f289"
   },
   "errors.listing.deviceReconnecting.title": "Opnieuw verbinden met het apparaat",
   "@errors.listing.deviceReconnecting.title": {
@@ -557,11 +557,11 @@
   },
   "errors.listing.deviceReconnecting.explanation": "De verbinding met het apparaat waarop `{path}` staat, is opnieuw gestart, dus deze actie is niet doorgegaan. Het apparaat is nog steeds aangesloten en Cmdr opent het nu opnieuw. Dit gebeurt meestal na een geannuleerde of onderbroken overdracht.",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "6ba7205"
+    "sourceHash": "0327639"
   },
   "errors.listing.deviceReconnecting.suggestion": "Wacht een paar seconden en probeer het dan opnieuw. Je hoeft niets los te koppelen.",
   "@errors.listing.deviceReconnecting.suggestion": {
-    "sourceHash": "2481e2a"
+    "sourceHash": "4dac2e7"
   },
   "errors.listing.readOnly.title": "Alleen-lezen",
   "@errors.listing.readOnly.title": {
@@ -569,11 +569,11 @@
   },
   "errors.listing.readOnly.explanation": "Dit volume is alleen-lezen, dus Cmdr kan er geen wijzigingen in aanbrengen. Dit kan zijn omdat het apparaat een fysieke schrijfbeveiliging heeft, de schijfkopie alleen-lezen is gekoppeld, of het bestandssysteem schrijven niet ondersteunt.",
   "@errors.listing.readOnly.explanation": {
-    "sourceHash": "99924c3"
+    "sourceHash": "d8080b8"
   },
   "errors.listing.readOnly.suggestion": "Dit kun je proberen:\n- Als het apparaat een fysieke schrijfbeveiliging heeft (vaak op SD-kaarten), zet die dan uit\n- Als dit een schijfkopie is, koppel die dan opnieuw met schrijftoegang\n- Kopieer de bestanden anders eerst naar een beschrijfbare locatie",
   "@errors.listing.readOnly.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.storageFull.title": "Schijf is vol",
   "@errors.listing.storageFull.title": {
@@ -581,11 +581,11 @@
   },
   "errors.listing.storageFull.explanation": "Er is niet genoeg vrije ruimte op dit volume om de bewerking te voltooien.",
   "@errors.listing.storageFull.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.storageFull.suggestion": "Dit kun je proberen:\n- Maak ruimte vrij door bestanden die je niet meer nodig hebt te verplaatsen of te verwijderen\n- Leeg de Prullenmand (klik met de rechtermuisknop op het Prullenmand-symbool in het Dock)\n- Voer in Terminal `df -h` uit om te zien hoeveel ruimte er nog over is op elk volume",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "fcdd42d"
+    "sourceHash": "101099b"
   },
   "errors.listing.connectionTimedOut.title": "Time-out op verbinding",
   "@errors.listing.connectionTimedOut.title": {
@@ -593,11 +593,11 @@
   },
   "errors.listing.connectionTimedOut.explanation": "Cmdr probeerde deze bron te openen, maar de verbinding reageerde niet op tijd. Dit betekent meestal dat de server of het apparaat traag reageert, of dat de netwerkverbinding instabiel is.",
   "@errors.listing.connectionTimedOut.explanation": {
-    "sourceHash": "5b3f8b2"
+    "sourceHash": "15d3054"
   },
   "errors.listing.connectionTimedOut.suggestion": "Dit kun je proberen:\n- Controleer of het apparaat of de server aanstaat en bereikbaar is\n- Controleer je wifi- of ethernetverbinding\n- Probeer in Terminal `ping <hostname>` om te testen of de server bereikbaar is\n- Probeer het opnieuw",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f9b8a2d"
+    "sourceHash": "f474938"
   },
   "errors.listing.notSupported.title": "Niet ondersteund",
   "@errors.listing.notSupported.title": {
@@ -605,7 +605,7 @@
   },
   "errors.listing.notSupported.explanation": "Deze bewerking wordt niet ondersteund op dit type volume. Sommige volumes (zoals telefoonopslag of bepaalde netwerkschijven) ondersteunen niet alle bewerkingen.",
   "@errors.listing.notSupported.explanation": {
-    "sourceHash": "9ecb575"
+    "sourceHash": "d074574"
   },
   "errors.listing.notSupported.suggestion": "Probeer een andere aanpak, of gebruik Finder voor deze bewerking.",
   "@errors.listing.notSupported.suggestion": {
@@ -621,19 +621,19 @@
   },
   "errors.listing.deletePending.suggestion": "Dit kun je proberen:\n- Wacht even en probeer het opnieuw — zodra de laatste verwijzing sluit, verdwijnt het bestand\n- Sluit andere apps die dit bestand mogelijk open hebben\n- Als het blijft hangen, herstart Cmdr dan om verwijzingen los te laten die het misschien nog vasthoudt",
   "@errors.listing.deletePending.suggestion": {
-    "sourceHash": "6dbe760"
+    "sourceHash": "0531cd8"
   },
   "errors.listing.invalidName.title": "Deze naam werkt hier niet",
   "@errors.listing.invalidName.title": {
-    "sourceHash": "69b2aa4"
+    "sourceHash": "7ced906"
   },
   "errors.listing.invalidName.explanation": "`{path}` heeft een naam die de bestemming niet kan opslaan, dus heeft de bestemming de naam geweigerd zonder naar het bestand te zoeken.",
   "@errors.listing.invalidName.explanation": {
-    "sourceHash": "7000b52"
+    "sourceHash": "ac27ddb"
   },
   "errors.listing.invalidName.suggestion": "Dit kun je proberen:\n- Geef het onderdeel een kortere, eenvoudigere naam\n- Sommige bestemmingen weigeren gereserveerde namen zoals `CON`, `NUL` of `LPT1`\n- Een heel lange naam kan over de eigen limiet van de bestemming heen gaan, ook als elk teken erin prima is",
   "@errors.listing.invalidName.suggestion": {
-    "sourceHash": "9074cf3"
+    "sourceHash": "f5cf683"
   },
   "errors.listing.ambiguousName.title": "Meer dan één onderdeel past bij deze naam",
   "@errors.listing.ambiguousName.title": {
@@ -641,15 +641,15 @@
   },
   "errors.listing.ambiguousName.explanation": "`{path}` past bij meer dan één onderdeel op de server. De namen zien er hetzelfde uit, maar de server slaat ze anders op (een letter met een accent kan op twee manieren worden geschreven, en sommige servers maken onderscheid tussen hoofdletters en kleine letters), dus Cmdr heeft er niet zelf een voor je gekozen.",
   "@errors.listing.ambiguousName.explanation": {
-    "sourceHash": "0d964db"
+    "sourceHash": "f1e1509"
   },
   "errors.listing.ambiguousName.suggestion": "Dit kun je proberen:\n- Open de bovenliggende map en kies daar in de lijst het onderdeel dat je bedoelt\n- Voorkom dit de volgende keer: wijzig de naam van een van de twee, zodat ze duidelijk verschillen",
   "@errors.listing.ambiguousName.suggestion": {
-    "sourceHash": "8334ece"
+    "sourceHash": "55b960c"
   },
   "errors.listing.ioSerious.title": "Kon deze map niet lezen",
   "@errors.listing.ioSerious.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.ioSerious.explanation": "Cmdr liep tegen een probleem aan met `{path}`: {osMessage}. Dit kan een tijdelijke hapering zijn of een teken dat de schijf of het apparaat aandacht nodig heeft.",
   "@errors.listing.ioSerious.explanation": {
@@ -657,7 +657,7 @@
   },
   "errors.listing.ioSerious.suggestion": "Dit kun je proberen:\n- Controleer of de schijf of het apparaat nog is aangesloten\n- Probeer het opnieuw\n- Als dit blijft gebeuren, probeer dan **Disk Utility > First Aid** op dit volume",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6c5be6d"
+    "sourceHash": "6e83ebb"
   },
   "errors.listing.isADirectory.title": "Dit is een map, geen bestand",
   "@errors.listing.isADirectory.title": {
@@ -665,7 +665,7 @@
   },
   "errors.listing.isADirectory.explanation": "Cmdr probeerde `{path}` als bestand te openen, maar het is een map.",
   "@errors.listing.isADirectory.explanation": {
-    "sourceHash": "61f5ddb"
+    "sourceHash": "03331bd"
   },
   "errors.listing.isADirectory.suggestion": "Navigeer de map in plaats van die als bestand te openen.",
   "@errors.listing.isADirectory.suggestion": {
@@ -673,11 +673,11 @@
   },
   "errors.listing.archiveUnreadable.title": "Dit archief kan niet worden geopend",
   "@errors.listing.archiveUnreadable.title": {
-    "sourceHash": "6b34ae6"
+    "sourceHash": "939ba84"
   },
   "errors.listing.archiveUnreadable.explanation": "Dit bestand lijkt een archief, maar Cmdr kon de inhoud niet lezen. Het is mogelijk beschadigd of versleuteld, of het gebruikt een archiefstructuur die Cmdr nog niet kan openen.",
   "@errors.listing.archiveUnreadable.explanation": {
-    "sourceHash": "e413580"
+    "sourceHash": "b1e7d8b"
   },
   "errors.listing.archiveUnreadable.suggestion": "Probeer het met een andere app te openen, of vraag de afzender om een nieuwe kopie.",
   "@errors.listing.archiveUnreadable.suggestion": {
@@ -701,11 +701,11 @@
   },
   "errors.listing.emptyRootICloud.explanation": "Cmdr opende iCloud Drive, maar er kwamen geen bestanden terug. macOS verbergt de inhoud van iCloud Drive voor apps die geen **{full_disk_access}** hebben, dus Cmdr die bevoegdheid geven is de meest waarschijnlijke oplossing.\n\nAls je iCloud Drive echt leeg is, kun je deze hint negeren.",
   "@errors.listing.emptyRootICloud.explanation": {
-    "sourceHash": "d095f83"
+    "sourceHash": "4222270"
   },
   "errors.listing.emptyRootICloud.suggestion": "Dit kun je proberen:\n- Open [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) en kies **{full_disk_access}**\n- Voeg Cmdr toe (gebruik de **+**-knop) en zet het aan\n- Stop en heropen Cmdr\n- Kom hier terug om het nog eens te proberen",
   "@errors.listing.emptyRootICloud.suggestion": {
-    "sourceHash": "25cac98"
+    "sourceHash": "2e6e702"
   },
   "errors.git.notARepo.title": "Geen git-repo hier",
   "@errors.git.notARepo.title": {
@@ -713,7 +713,7 @@
   },
   "errors.git.notARepo.message": "Cmdr keek omhoog in de mappenstructuur en vond hier geen `.git`.",
   "@errors.git.notARepo.message": {
-    "sourceHash": "f5b0d17"
+    "sourceHash": "736d43c"
   },
   "errors.git.notARepo.suggestion": "Open een map binnen een git-clone om de repo-chip te zien.",
   "@errors.git.notARepo.suggestion": {
@@ -725,7 +725,7 @@
   },
   "errors.git.orphanedWorktree.message": "Dit is een gekoppelde worktree, maar de hoofdrepo ontbreekt, dus git kan de koppeling niet volgen.",
   "@errors.git.orphanedWorktree.message": {
-    "sourceHash": "5b5433e"
+    "sourceHash": "a29d806"
   },
   "errors.git.orphanedWorktree.suggestion": "Probeer de hoofdrepo te openen, of verwijder de wees met `git worktree prune`.",
   "@errors.git.orphanedWorktree.suggestion": {
@@ -749,7 +749,7 @@
   },
   "errors.git.indexLocked.message": "De index van Git is vergrendeld, wat meestal betekent dat er nog een ander git-commando draait.",
   "@errors.git.indexLocked.message": {
-    "sourceHash": "2f86cb3"
+    "sourceHash": "95399bb"
   },
   "errors.git.indexLocked.suggestion": "Wacht tot het lopende git-commando klaar is en navigeer dan hier opnieuw heen.",
   "@errors.git.indexLocked.suggestion": {
@@ -757,11 +757,11 @@
   },
   "errors.git.permissionDenied.title": "Cmdr kan deze repo niet lezen",
   "@errors.git.permissionDenied.title": {
-    "sourceHash": "b92716b"
+    "sourceHash": "2fb725c"
   },
   "errors.git.permissionDenied.message": "Het besturingssysteem laat Cmdr de `.git`-map niet openen, dus git-info is niet beschikbaar.",
   "@errors.git.permissionDenied.message": {
-    "sourceHash": "0a9e8f1"
+    "sourceHash": "53012e9"
   },
   "errors.git.permissionDenied.suggestion": "Open **{system_settings} > {privacy_and_security} > {files_and_folders}** en geef Cmdr toegang tot de map.",
   "@errors.git.permissionDenied.suggestion": {
@@ -769,11 +769,11 @@
   },
   "errors.git.bareRepo.title": "Bare repo's worden nog niet ondersteund",
   "@errors.git.bareRepo.title": {
-    "sourceHash": "554f310"
+    "sourceHash": "a378648"
   },
   "errors.git.bareRepo.message": "Bare repo's hebben geen working tree, en de git-browser is daaromheen gebouwd.",
   "@errors.git.bareRepo.message": {
-    "sourceHash": "e7af7c6"
+    "sourceHash": "1839f25"
   },
   "errors.git.bareRepo.suggestion": "Clone de repo naar een werkmap om de git-browser te gebruiken.",
   "@errors.git.bareRepo.suggestion": {
@@ -781,11 +781,11 @@
   },
   "errors.git.blobTooLarge.title": "Dit bestand is te groot om uit de geschiedenis te laden",
   "@errors.git.blobTooLarge.title": {
-    "sourceHash": "aa5a29b"
+    "sourceHash": "480f6ba"
   },
   "errors.git.blobTooLarge.message": "Cmdr leest git-blobs per heel bestand tegelijk, en dit bestand zit boven de veiligheidsdrempel.",
   "@errors.git.blobTooLarge.message": {
-    "sourceHash": "6d93691"
+    "sourceHash": "d5609a4"
   },
   "errors.git.blobTooLarge.suggestion": "Check het bestand uit een working tree uit als je het wilt lezen.",
   "@errors.git.blobTooLarge.suggestion": {
@@ -797,7 +797,7 @@
   },
   "errors.git.shallowBoundary.message": "Deze commit ligt voorbij de grens van je shallow clone, dus de gegevens ervan staan niet op schijf.",
   "@errors.git.shallowBoundary.message": {
-    "sourceHash": "447704c"
+    "sourceHash": "66bac24"
   },
   "errors.git.shallowBoundary.suggestion": "Voer `git fetch --unshallow` (of `--depth=N`) uit om meer geschiedenis naar de clone te halen.",
   "@errors.git.shallowBoundary.suggestion": {
@@ -809,7 +809,7 @@
   },
   "errors.git.missingObject.message": "Git zoekt naar een object dat niet meer in de pack-bestanden staat. De repo is misschien gedeeltelijk opgehaald of beschadigd.",
   "@errors.git.missingObject.message": {
-    "sourceHash": "15b0c32"
+    "sourceHash": "1eb902f"
   },
   "errors.git.missingObject.suggestion": "Probeer `git fetch` om het ontbrekende object opnieuw op te halen, of `git fsck` om de schade te inspecteren.",
   "@errors.git.missingObject.suggestion": {
@@ -817,7 +817,7 @@
   },
   "errors.git.gitDirPermissionDenied.title": "Cmdr kan de `.git`-map niet openen",
   "@errors.git.gitDirPermissionDenied.title": {
-    "sourceHash": "f6e2595"
+    "sourceHash": "23c216a"
   },
   "errors.git.gitDirPermissionDenied.message": "Het besturingssysteem weigerde de toegang tot de `.git`-map, ook al is de working tree leesbaar.",
   "@errors.git.gitDirPermissionDenied.message": {
@@ -987,95 +987,95 @@
   },
   "errors.provider.macDroid.transient": "Deze map wordt beheerd door **MacDroid**. Dit kun je proberen:\n- Open MacDroid en controleer of je telefoon verbonden is\n- Zorg dat je telefoon ontgrendeld is en op de modus voor bestandsoverdracht staat\n- Koppel de USB-kabel los en sluit die opnieuw aan, en navigeer dan hier opnieuw heen",
   "@errors.provider.macDroid.transient": {
-    "sourceHash": "994b8b8"
+    "sourceHash": "5df1c20"
   },
   "errors.provider.macDroid.needsAction": "Deze map wordt beheerd door **MacDroid**. Dit kun je proberen:\n- Open MacDroid en controleer of je telefoon verbonden is\n- Zorg dat je telefoon ontgrendeld is met het scherm aan\n- Controleer of de USB-modus voor bestandsoverdracht is ingeschakeld op je telefoon",
   "@errors.provider.macDroid.needsAction": {
-    "sourceHash": "a2c4d13"
+    "sourceHash": "5fe56e6"
   },
   "errors.provider.macDroid.serious": "Deze map wordt beheerd door **MacDroid**. Dit kun je proberen:\n- Koppel de USB-kabel los en sluit die opnieuw aan\n- Herstart MacDroid\n- Probeer een andere USB-poort of kabel",
   "@errors.provider.macDroid.serious": {
-    "sourceHash": "a4ab4fe"
+    "sourceHash": "a79e0b6"
   },
   "errors.provider.iCloud.transient": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Controleer je internetverbinding\n- Zorg dat je bent ingelogd bij iCloud in {system_settings}\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "7c0600f"
+    "sourceHash": "6a98b24"
   },
   "errors.provider.iCloud.needsAction": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Controleer of iCloud Drive is ingeschakeld in **{system_settings} > Apple Account > iCloud**\n- Zorg dat je bent ingelogd bij het juiste Apple-account\n- Controleer of je iCloud-opslag niet vol is",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "1c6dab0"
+    "sourceHash": "48c7123"
   },
   "errors.provider.iCloud.serious": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Log uit en weer in bij iCloud in {system_settings}\n- Bekijk Apples [systeemstatuspagina](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "3276e42"
+    "sourceHash": "4f730c7"
   },
   "errors.provider.macFuse.transient": "Dit is een **macFUSE**-koppeling. De externe server is misschien traag of onbereikbaar. Dit kun je proberen:\n- Controleer je netwerkverbinding\n- Controleer of de externe server draait\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.macFuse.transient": {
-    "sourceHash": "06d9019"
+    "sourceHash": "66fcc6b"
   },
   "errors.provider.macFuse.needsAction": "Dit is een **macFUSE**-koppeling. Dit kun je proberen:\n- Controleer of het FUSE-proces achter deze koppeling nog draait\n- Forceer zo nodig het loskoppelen en koppel het volume opnieuw\n- Zorg dat macFUSE up-to-date is in **{system_settings} > Algemeen > Inlogonderdelen en extensies**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "60e836a"
+    "sourceHash": "0c2981f"
   },
   "errors.provider.macFuse.serious": "Dit is een **macFUSE**-koppeling. Het FUSE-proces erachter is waarschijnlijk vastgelopen of de verbinding verbroken. Dit kun je proberen:\n- Forceer het loskoppelen van het volume: voer `umount -f /Volumes/<name>` uit in Terminal\n- Koppel opnieuw met het oorspronkelijke mount-commando\n- Als dit blijft gebeuren, controleer dan of macFUSE up-to-date is",
   "@errors.provider.macFuse.serious": {
-    "sourceHash": "71d42da"
+    "sourceHash": "8da8430"
   },
   "errors.provider.pCloudFuse.transient": "Deze map staat op de virtuele schijf van **pCloud**. Dit kun je proberen:\n- Controleer je internetverbinding\n- Zorg dat de pCloud-app draait\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.pCloudFuse.transient": {
-    "sourceHash": "1afbd51"
+    "sourceHash": "b51abf9"
   },
   "errors.provider.pCloudFuse.needsAction": "Deze map staat op de virtuele schijf van **pCloud**. Dit kun je proberen:\n- Zorg dat de pCloud-app draait en dat je bent ingelogd\n- Controleer je internetverbinding\n- Keur na een macOS-update de systeemextensie van pCloud opnieuw goed in **{system_settings} > Algemeen > Inlogonderdelen en extensies**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "2753abb"
+    "sourceHash": "42ff4c9"
   },
   "errors.provider.pCloudFuse.serious": "Deze map staat op de virtuele schijf van **pCloud**. Het FUSE-proces van pCloud is misschien vastgelopen. Dit kun je proberen:\n- Stop en heropen de pCloud-app\n- Als de schijf niet terugkomt, forceer dan het loskoppelen: voer `umount -f /Volumes/pCloudDrive` uit in Terminal\n- Keur na een macOS-update de systeemextensie van pCloud opnieuw goed in **{system_settings} > Algemeen > Inlogonderdelen en extensies**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "cba0026"
+    "sourceHash": "232d806"
   },
   "errors.provider.veraCrypt.transient": "Dit is een versleuteld **{name}**-volume. Dit kun je proberen:\n- Controleer of het VeraCrypt-volume nog gekoppeld is\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.veraCrypt.transient": {
-    "sourceHash": "fe408ae"
+    "sourceHash": "125eaf9"
   },
   "errors.provider.veraCrypt.needsAction": "Dit is een versleuteld **{name}**-volume. Dit kun je proberen:\n- Open VeraCrypt en controleer of dit volume gekoppeld is\n- Koppel het volume zo nodig los en opnieuw",
   "@errors.provider.veraCrypt.needsAction": {
-    "sourceHash": "08dec65"
+    "sourceHash": "09d12a7"
   },
   "errors.provider.veraCrypt.serious": "Dit is een versleuteld **{name}**-volume. Dit kun je proberen:\n- Koppel het volume los en opnieuw in VeraCrypt\n- Als het volume problemen blijft geven, controleer het dan met de reparatietools van VeraCrypt",
   "@errors.provider.veraCrypt.serious": {
-    "sourceHash": "a5c41a1"
+    "sourceHash": "a0737db"
   },
   "errors.provider.cmVolumes.transient": "Dit is een cloudkoppeling. Dit kun je proberen:\n- Controleer je internetverbinding\n- Controleer of de koppelsoftware (CloudMounter, Mountain Duck, enzovoort) draait\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.cmVolumes.transient": {
-    "sourceHash": "f0165b3"
+    "sourceHash": "b7ae13e"
   },
   "errors.provider.cmVolumes.nonTransient": "Dit is een cloudkoppeling. Dit kun je proberen:\n- Controleer of de koppelsoftware (CloudMounter, Mountain Duck, enzovoort) draait\n- Verbreek de koppeling en maak die opnieuw\n- Controleer of je inloggegevens niet zijn verlopen",
   "@errors.provider.cmVolumes.nonTransient": {
-    "sourceHash": "752c7e4"
+    "sourceHash": "4474047"
   },
   "errors.provider.genericCloudStorage.transient": "Deze map wordt beheerd door een cloudprovider. Dit kun je proberen:\n- Controleer je internetverbinding\n- Controleer of de synchronisatie-app draait\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.genericCloudStorage.transient": {
-    "sourceHash": "9398792"
+    "sourceHash": "9a454cf"
   },
   "errors.provider.genericCloudStorage.nonTransient": "Deze map wordt beheerd door een cloudprovider. Dit kun je proberen:\n- Controleer of de synchronisatie-app draait\n- Log uit en weer in bij de cloud-app\n- Controleer je internetverbinding",
   "@errors.provider.genericCloudStorage.nonTransient": {
-    "sourceHash": "ce8a112"
+    "sourceHash": "3b8d2a6"
   },
   "errors.provider.appBased.transient": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Controleer je internetverbinding\n- Open {app} en zorg dat het draait en gesynchroniseerd is\n- Navigeer hier opnieuw heen om het nog eens te proberen",
   "@errors.provider.appBased.transient": {
-    "sourceHash": "e3ef8b8"
+    "sourceHash": "ba634b7"
   },
   "errors.provider.appBased.needsAction": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Open {app} en controleer je synchronisatiestatus\n- Zorg dat je bent ingelogd bij {app}\n- Controleer of je toegang hebt tot deze map in {name}",
   "@errors.provider.appBased.needsAction": {
-    "sourceHash": "88009fd"
+    "sourceHash": "f69fe61"
   },
   "errors.provider.appBased.serious": "Deze map wordt beheerd door **{name}**. Dit kun je proberen:\n- Stop en heropen {app}\n- Log uit en weer in bij {app}\n- Bekijk de statuspagina van {name} voor storingen",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "64baea5"
+    "sourceHash": "347589c"
   },
   "errors.write.sourceNotFound.title": "Kon het bestand niet vinden",
   "@errors.write.sourceNotFound.title": {
-    "sourceHash": "2003305"
+    "sourceHash": "eff005a"
   },
   "errors.write.sourceNotFound.message.copy": "Het bestand of de map die je wilde kopiëren bestaat niet meer.",
   "@errors.write.sourceNotFound.message.copy": {
@@ -1099,15 +1099,15 @@
   },
   "errors.write.destinationNotFound.title": "Kon de doelmap niet vinden",
   "@errors.write.destinationNotFound.title": {
-    "sourceHash": "215ddfe"
+    "sourceHash": "ae77ee8"
   },
   "errors.write.destinationNotFound.message.copy": "De map waarnaar je kopieert bestaat niet meer, dus er was nergens om je bestanden neer te zetten. De originelen zijn onaangeroerd.",
   "@errors.write.destinationNotFound.message.copy": {
-    "sourceHash": "cc637e2"
+    "sourceHash": "80f4a4c"
   },
   "errors.write.destinationNotFound.message.move": "De map waarnaar je verplaatst bestaat niet meer, dus er was nergens om je bestanden neer te zetten. De originelen zijn onaangeroerd.",
   "@errors.write.destinationNotFound.message.move": {
-    "sourceHash": "1726290"
+    "sourceHash": "b764d42"
   },
   "errors.write.destinationNotFound.suggestion": "Hij is misschien van naam veranderd of verwijderd, of de schijf is losgekoppeld. Kies een andere bestemming, of open de map opnieuw en probeer het nog eens.",
   "@errors.write.destinationNotFound.suggestion": {
@@ -1119,15 +1119,15 @@
   },
   "errors.write.notConnected.message.source": "Cmdr heeft nog geen verbinding gemaakt met de telefoon of server met deze bestanden, dus er is niets veranderd.",
   "@errors.write.notConnected.message.source": {
-    "sourceHash": "e6690da"
+    "sourceHash": "7869dce"
   },
   "errors.write.notConnected.message.destination": "Cmdr heeft nog geen verbinding gemaakt met de telefoon of server waar de bestanden naartoe gaan, dus er is niets veranderd. Je bestanden zijn onaangeroerd.",
   "@errors.write.notConnected.message.destination": {
-    "sourceHash": "5bbc6b9"
+    "sourceHash": "3b5063d"
   },
   "errors.write.notConnected.suggestion": "Open die via de volumekiezer om er verbinding mee te maken en probeer het daarna opnieuw. Als het een telefoon is, ontgrendel die dan en accepteer elke melding die verschijnt.",
   "@errors.write.notConnected.suggestion": {
-    "sourceHash": "222ba64"
+    "sourceHash": "3fdc936"
   },
   "errors.write.destinationExists.title": "Bestand bestaat al",
   "@errors.write.destinationExists.title": {
@@ -1135,7 +1135,7 @@
   },
   "errors.write.destinationExists.message": "Er is op de bestemming al een bestand met deze naam.",
   "@errors.write.destinationExists.message": {
-    "sourceHash": "50d9094"
+    "sourceHash": "cdcfb7b"
   },
   "errors.write.destinationExists.suggestion": "Kies een andere naam of locatie, of verwijder eerst het bestaande bestand.",
   "@errors.write.destinationExists.suggestion": {
@@ -1143,19 +1143,19 @@
   },
   "errors.write.destinationInsideSource.title.copy": "Kan een map niet in zichzelf kopiëren",
   "@errors.write.destinationInsideSource.title.copy": {
-    "sourceHash": "40c58ea"
+    "sourceHash": "f8dd7f6"
   },
   "errors.write.destinationInsideSource.title.move": "Kan een map niet in zichzelf verplaatsen",
   "@errors.write.destinationInsideSource.title.move": {
-    "sourceHash": "3a9da7b"
+    "sourceHash": "48b9b42"
   },
   "errors.write.destinationInsideSource.message.copy": "Je probeert een map naar een van zijn eigen submappen te kopiëren.",
   "@errors.write.destinationInsideSource.message.copy": {
-    "sourceHash": "46d30ec"
+    "sourceHash": "26785f5"
   },
   "errors.write.destinationInsideSource.message.move": "Je probeert een map naar een van zijn eigen submappen te verplaatsen.",
   "@errors.write.destinationInsideSource.message.move": {
-    "sourceHash": "e6ecfea"
+    "sourceHash": "4fcd446"
   },
   "errors.write.destinationInsideSource.suggestion.copy": "Kies een bestemming buiten de map die je kopieert.",
   "@errors.write.destinationInsideSource.suggestion.copy": {
@@ -1255,19 +1255,19 @@
   },
   "errors.write.moveNotConfirmed.title": "Kon het verplaatsen niet bevestigen",
   "@errors.write.moveNotConfirmed.title": {
-    "sourceHash": "5d64df8"
+    "sourceHash": "8f1fe29"
   },
   "errors.write.moveNotConfirmed.message.named": "Cmdr kon niet bevestigen dat de verplaatste bestanden op {volumeName} zijn bewaard, dus heeft het je originelen laten staan waar ze stonden.",
   "@errors.write.moveNotConfirmed.message.named": {
-    "sourceHash": "0c2dfb6"
+    "sourceHash": "442f2fe"
   },
   "errors.write.moveNotConfirmed.message.unnamed": "Cmdr kon niet bevestigen dat de verplaatste bestanden op de bestemming zijn bewaard, dus heeft het je originelen laten staan waar ze stonden.",
   "@errors.write.moveNotConfirmed.message.unnamed": {
-    "sourceHash": "fefb520"
+    "sourceHash": "565e4b8"
   },
   "errors.write.moveNotConfirmed.suggestion": "Kijk even op de bestemming en probeer het verplaatsen daarna opnieuw. Je originelen staan nog waar ze stonden.",
   "@errors.write.moveNotConfirmed.suggestion": {
-    "sourceHash": "d9500f3"
+    "sourceHash": "4d7fedc"
   },
   "errors.write.trashNotSupported.title": "Prullenmand niet ondersteund",
   "@errors.write.trashNotSupported.title": {
@@ -1275,7 +1275,7 @@
   },
   "errors.write.trashNotSupported.message": "Dit volume ondersteunt de prullenmand niet.",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "45cf0c6"
+    "sourceHash": "911688a"
   },
   "errors.write.trashNotSupported.suggestion": "Gebruik {deletePermanentlyKey} om in plaats daarvan definitief te verwijderen.",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1295,23 +1295,23 @@
   },
   "errors.write.readError.title.copy": "Kopiëren lukte niet",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.readError.title.move": "Verplaatsen lukte niet",
   "@errors.write.readError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.readError.title.delete": "Verwijderen lukte niet",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.readError.title.trash": "Verplaatsen naar prullenmand lukte niet",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.readError.message": "Kon niet van de bron lezen.",
   "@errors.write.readError.message": {
-    "sourceHash": "b3b10d6"
+    "sourceHash": "ead860d"
   },
   "errors.write.readError.suggestion": "Probeer het opnieuw. Als het probleem aanhoudt, bekijk dan de technische details hieronder.",
   "@errors.write.readError.suggestion": {
@@ -1319,23 +1319,23 @@
   },
   "errors.write.writeError.title.copy": "Kopiëren lukte niet",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.writeError.title.move": "Verplaatsen lukte niet",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.writeError.title.delete": "Verwijderen lukte niet",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.writeError.title.trash": "Verplaatsen naar prullenmand lukte niet",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.writeError.message": "Kon niet naar de bestemming schrijven.",
   "@errors.write.writeError.message": {
-    "sourceHash": "cb458f0"
+    "sourceHash": "ec1a179"
   },
   "errors.write.writeError.suggestion": "Probeer het opnieuw. Als het probleem aanhoudt, bekijk dan de technische details hieronder.",
   "@errors.write.writeError.suggestion": {
@@ -1359,7 +1359,7 @@
   },
   "errors.write.invalidName.message": "{path} heeft een naam die de bestemming niet kan opslaan.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "0bd3e6a"
+    "sourceHash": "ad395af"
   },
   "errors.write.invalidName.suggestion": "Geef het een kortere, eenvoudigere naam en probeer het opnieuw. Sommige bestemmingen weigeren ook gereserveerde namen zoals CON, NUL of LPT1.",
   "@errors.write.invalidName.suggestion": {
@@ -1367,19 +1367,19 @@
   },
   "errors.write.trashRefused.title": "Verplaatsen naar prullenmand lukte niet",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.trashRefused.message.notPermitted": "macOS liet Cmdr {count} van de onderdelen die je koos niet aanraken.",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "e11fc50"
+    "sourceHash": "57a38d7"
   },
   "errors.write.trashRefused.message.noTrashForVolume": "macOS kon voor {count} van de onderdelen die je koos geen prullenmand vinden.",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "d86a66d"
+    "sourceHash": "702ae17"
   },
   "errors.write.trashRefused.message.other": "macOS verplaatste {count} van de onderdelen die je koos niet naar de prullenmand.",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "5c73490"
+    "sourceHash": "6f71e12"
   },
   "errors.write.trashRefused.suggestion.notPermitted": "De onderdelen zijn misschien beveiligd, of ze staan op een plek die macOS voor zichzelf houdt. Je kunt ze wel definitief verwijderen met Shift+F8.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
@@ -1395,39 +1395,39 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr heeft op deze Mac ook geen volledige schijftoegang, en dat is een veelvoorkomende oorzaak. De markering ‘Geen volledige schijftoegang’ in de titelbalk brengt je naar die keuze.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "0dbe21b"
+    "sourceHash": "ee5e9f7"
   },
   "errors.write.ioError.title.copy": "Kopiëren lukte niet",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.ioError.title.move": "Verplaatsen lukte niet",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.ioError.title.delete": "Verwijderen lukte niet",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.ioError.title.trash": "Verplaatsen naar prullenmand lukte niet",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.ioError.message.copy": "Kon het bestand niet kopiëren.",
   "@errors.write.ioError.message.copy": {
-    "sourceHash": "93d27d8"
+    "sourceHash": "f25dd52"
   },
   "errors.write.ioError.message.move": "Kon het bestand niet verplaatsen.",
   "@errors.write.ioError.message.move": {
-    "sourceHash": "d2f8eea"
+    "sourceHash": "5f929ee"
   },
   "errors.write.ioError.message.delete": "Kon het bestand niet verwijderen.",
   "@errors.write.ioError.message.delete": {
-    "sourceHash": "87cc29a"
+    "sourceHash": "9e79007"
   },
   "errors.write.ioError.message.trash": "Kon het bestand niet naar de prullenmand verplaatsen.",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "db053da"
+    "sourceHash": "948e289"
   },
   "errors.write.ioError.suggestion": "Probeer het opnieuw. Als het probleem aanhoudt, bekijk dan de technische details hieronder.",
   "@errors.write.ioError.suggestion": {
@@ -1435,23 +1435,23 @@
   },
   "errors.write.permissionDenied.title": "Kon deze locatie niet benaderen",
   "@errors.write.permissionDenied.title": {
-    "sourceHash": "be62ad2"
+    "sourceHash": "bc7f0ff"
   },
   "errors.write.permissionDenied.message.copy": "Je hebt geen bevoegdheid om hier bestanden te kopiëren.",
   "@errors.write.permissionDenied.message.copy": {
-    "sourceHash": "d9ebc5a"
+    "sourceHash": "91272c0"
   },
   "errors.write.permissionDenied.message.move": "Je hebt geen bevoegdheid om hier bestanden te verplaatsen.",
   "@errors.write.permissionDenied.message.move": {
-    "sourceHash": "d5c0358"
+    "sourceHash": "5b0fc94"
   },
   "errors.write.permissionDenied.message.delete": "Je hebt geen bevoegdheid om hier bestanden te verwijderen.",
   "@errors.write.permissionDenied.message.delete": {
-    "sourceHash": "e002a5f"
+    "sourceHash": "0c03fc4"
   },
   "errors.write.permissionDenied.message.trash": "Je hebt geen bevoegdheid om hier bestanden naar de prullenmand te verplaatsen.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "b68bafc"
+    "sourceHash": "cca028a"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Controleer of je schrijftoegang hebt tot de bovenliggende map. Het bestand is misschien beveiligd. Hef de beveiliging op in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1467,7 +1467,7 @@
   },
   "errors.write.permissionDenied.message.named": "Je macOS-gebruiker kan {folder} niet wijzigen.",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "74994f9"
+    "sourceHash": "0ffd79b"
   },
   "errors.write.permissionDenied.suggestion.needsAdminMac": "Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, selecteer je de map in Finder, kies je ‘Toon info’ en kijk je bij ‘Delen en bevoegdheden’.",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
@@ -1475,15 +1475,15 @@
   },
   "errors.write.permissionDenied.suggestion.needsAdminOther": "Daarvoor heb je beheerdersrechten nodig. Om je eigen account toegang te geven, pas je de bevoegdheden van de map aan (bijvoorbeeld via chmod) en probeer je het opnieuw.",
   "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "804027d"
+    "sourceHash": "5ce034b"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Het is misschien beveiligd: selecteer het in Finder, kies ‘Toon info’ en deselecteer ‘Beveiligd’.",
   "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
-    "sourceHash": "ad5e0de"
+    "sourceHash": "64a71c8"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedOther": "Het systeem beschermt dit onderdeel zelf, dus beheerdersrechten veranderen daar niets aan. Er staat misschien een beschermingsvlag op die er eerst af moet.",
   "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "bbf6bdb"
+    "sourceHash": "a4856dc"
   },
   "errors.write.insufficientSpace.title": "Onvoldoende ruimte",
   "@errors.write.insufficientSpace.title": {
@@ -1519,11 +1519,11 @@
   },
   "errors.write.filesTooLargeForFilesystem.message.one": "{name} is {size}, maar deze schijf is geformatteerd als FAT32 en kan geen bestanden bewaren die groter zijn dan {maxSize}.",
   "@errors.write.filesTooLargeForFilesystem.message.one": {
-    "sourceHash": "2993e08"
+    "sourceHash": "f5c262a"
   },
   "errors.write.filesTooLargeForFilesystem.message.many": "{count} bestanden zijn te groot voor deze schijf, die geformatteerd is als FAT32 en geen bestanden kan bewaren die groter zijn dan {maxSize}.",
   "@errors.write.filesTooLargeForFilesystem.message.many": {
-    "sourceHash": "1aac250"
+    "sourceHash": "9720069"
   },
   "errors.write.filesTooLargeForFilesystem.suggestion": "Gebruik een schijf die geformatteerd is als exFAT om zulke grote bestanden te bewaren; die heeft zo'n beperking niet.",
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
@@ -1559,19 +1559,19 @@
   },
   "errors.write.destinationNotWritable.noPermission.message": "Je hebt geen toestemming om bestanden aan deze map toe te voegen.",
   "@errors.write.destinationNotWritable.noPermission.message": {
-    "sourceHash": "15abe78"
+    "sourceHash": "a7e0efa"
   },
   "errors.write.destinationNotWritable.noPermission.suggestion": "Kies een andere doelmap, of wijzig de rechten van deze map en probeer het opnieuw.",
   "@errors.write.destinationNotWritable.noPermission.suggestion": {
-    "sourceHash": "fceb936"
+    "sourceHash": "3851384"
   },
   "errors.write.destinationNotWritable.unexplained.title": "Deze map accepteert geen bestanden",
   "@errors.write.destinationNotWritable.unexplained.title": {
-    "sourceHash": "628c3aa"
+    "sourceHash": "c98e2c3"
   },
   "errors.write.destinationNotWritable.unexplained.message": "Deze map accepteert geen nieuwe bestanden, dus er kan niets naartoe gekopieerd of verplaatst worden.",
   "@errors.write.destinationNotWritable.unexplained.message": {
-    "sourceHash": "22ce481"
+    "sourceHash": "13b79ec"
   },
   "errors.write.destinationNotWritable.unexplained.suggestion": "Kies een andere doelmap.",
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
@@ -1587,7 +1587,7 @@
   },
   "errors.write.fileLocked.message": "Het bestand is beveiligd en kan niet worden verwijderd.",
   "@errors.write.fileLocked.message": {
-    "sourceHash": "62b1038"
+    "sourceHash": "84925b0"
   },
   "errors.write.fileLocked.suggestion.mac": "Ontgrendel het in Finder (‘Toon info’ > deselecteer ‘Beveiligd’) en probeer het opnieuw.",
   "@errors.write.fileLocked.suggestion.mac": {
@@ -1615,7 +1615,7 @@
   },
   "errors.write.newDataKeptAt.message": "De nieuwe {path} is volledig weggeschreven, maar de bestemming liet hem die naam niet aannemen, en het bestand dat hij zou vervangen is al weg. De nieuwe staat op {keptAt}.",
   "@errors.write.newDataKeptAt.message": {
-    "sourceHash": "d1dc96b"
+    "sourceHash": "93d07be"
   },
   "errors.write.newDataKeptAt.suggestion": "Open {keptAt} om het te bekijken en geef het daarna de juiste naam. Is de bestemming een netwerkshare of een telefoon, verbind die dan eerst opnieuw, dan lukt de naamwijziging.",
   "@errors.write.newDataKeptAt.suggestion": {
@@ -1635,27 +1635,27 @@
   },
   "errors.write.originalsKeptAside.suggestion.one": "Open {keptAt} om het te bekijken. Zodra je de map opzij hebt gezet, kun je je bestand weer zijn eigen naam geven.",
   "@errors.write.originalsKeptAside.suggestion.one": {
-    "sourceHash": "6c53394"
+    "sourceHash": "5cbe5bb"
   },
   "errors.write.originalsKeptAside.suggestion.many": "In de details hieronder staat waar elk bestand is. Zodra je de mappen opzij hebt gezet, kun je ze weer hun eigen naam geven.",
   "@errors.write.originalsKeptAside.suggestion.many": {
-    "sourceHash": "7934c84"
+    "sourceHash": "2b05c26"
   },
   "errors.write.fallback.title.copy": "Kopiëren lukte niet",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.fallback.title.move": "Verplaatsen lukte niet",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.fallback.title.delete": "Verwijderen lukte niet",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.fallback.title.trash": "Verplaatsen naar prullenmand lukte niet",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.fallback.message.copy": "Er is een onverwacht probleem opgetreden tijdens het kopiëren.",
   "@errors.write.fallback.message.copy": {
@@ -1679,31 +1679,31 @@
   },
   "errors.mutation.notFound": "Er staat niets meer op ‘{path}’.",
   "@errors.mutation.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.mutation.cantRenameVolumeRoot": "De naam van de hoofdmap van een volume kan hier niet worden gewijzigd.",
   "@errors.mutation.cantRenameVolumeRoot": {
-    "sourceHash": "baf4d16"
+    "sourceHash": "0845c57"
   },
   "errors.mutation.parentNotWritable": "Cmdr kan niet schrijven in ‘{path}’. Controleer de bevoegdheden van de map in Finder.",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "3659a5a"
+    "sourceHash": "e0a7ad6"
   },
   "errors.mutation.fileLocked": "Dit onderdeel is beveiligd. Hef de beveiliging op via ‘Toon info’ in Finder en probeer het opnieuw.",
   "@errors.mutation.fileLocked": {
-    "sourceHash": "d1d127c"
+    "sourceHash": "4be163f"
   },
   "errors.mutation.sipProtected": "macOS beschermt dit onderdeel met System Integrity Protection, dus de naam kan niet worden gewijzigd.",
   "@errors.mutation.sipProtected": {
-    "sourceHash": "1865724"
+    "sourceHash": "2189822"
   },
   "errors.mutation.volumeGone": "Dat volume is niet meer beschikbaar, dus er is niets veranderd.",
   "@errors.mutation.volumeGone": {
-    "sourceHash": "604aad5"
+    "sourceHash": "643398b"
   },
   "errors.mutation.archiveNotEditable": "Cmdr kan dit archief nu niet openen om te bewerken.",
   "@errors.mutation.archiveNotEditable": {
-    "sourceHash": "eedee11"
+    "sourceHash": "47c44dd"
   },
   "errors.mutation.archiveReadOnly": "Alleen zip-archieven kun je wijzigen, en dit archief is alleen-lezen.",
   "@errors.mutation.archiveReadOnly": {
@@ -1711,43 +1711,43 @@
   },
   "errors.mutation.renameOutOfArchive": "Met een naamwijziging kun je een onderdeel niet uit een archief halen. Verplaats het in plaats daarvan.",
   "@errors.mutation.renameOutOfArchive": {
-    "sourceHash": "1f852c5"
+    "sourceHash": "5e82283"
   },
   "errors.mutation.renameAcrossArchives": "Met een naamwijziging kun je een onderdeel niet van het ene archief naar het andere brengen. Verplaats het in plaats daarvan.",
   "@errors.mutation.renameAcrossArchives": {
-    "sourceHash": "5b8f1df"
+    "sourceHash": "89b3231"
   },
   "errors.mutation.archiveEditNotReady": "Cmdr start nog op, dus archieven bewerken kan nog niet.",
   "@errors.mutation.archiveEditNotReady": {
-    "sourceHash": "21a4fcf"
+    "sourceHash": "1a71ae7"
   },
   "errors.mutation.archiveEditCouldntStart": "De archiefbewerking is niet gestart.",
   "@errors.mutation.archiveEditCouldntStart": {
-    "sourceHash": "3a5322f"
+    "sourceHash": "c67e249"
   },
   "errors.mutation.timedOut": "Het volume heeft nog niet gereageerd, dus de wijziging gaat misschien toch nog door.",
   "@errors.mutation.timedOut": {
-    "sourceHash": "27d6a2f"
+    "sourceHash": "94a8419"
   },
   "errors.mutation.unexpected": "Er ging iets mis, en Cmdr kon niet achterhalen wat.",
   "@errors.mutation.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.volume.notFound": "Er staat niets meer op ‘{path}’.",
   "@errors.volume.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.volume.permissionDenied": "Cmdr heeft geen toegang tot ‘{path}’.",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "fee452b"
+    "sourceHash": "2c188b6"
   },
   "errors.volume.alreadyExists": "Er staat al iets op ‘{path}’.",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "de0bbb9"
+    "sourceHash": "8763243"
   },
   "errors.volume.notSupported": "Dit volume ondersteunt dat niet.",
   "@errors.volume.notSupported": {
-    "sourceHash": "f57ad5a"
+    "sourceHash": "b645086"
   },
   "errors.volume.deviceDisconnected": "Het apparaat werd losgekoppeld voordat de wijziging kon doorgaan.",
   "@errors.volume.deviceDisconnected": {
@@ -1755,7 +1755,7 @@
   },
   "errors.volume.notConnected": "Cmdr is nog niet verbonden met deze telefoon of server, dus open die eerst.",
   "@errors.volume.notConnected": {
-    "sourceHash": "094dc49"
+    "sourceHash": "e128225"
   },
   "errors.volume.deviceSessionReset": "Het apparaat heeft zijn verbinding opnieuw gestart. Geef het een paar seconden en probeer het opnieuw.",
   "@errors.volume.deviceSessionReset": {
@@ -1767,11 +1767,11 @@
   },
   "errors.volume.storageFull": "Er is geen ruimte meer op dit volume.",
   "@errors.volume.storageFull": {
-    "sourceHash": "f2f33dc"
+    "sourceHash": "1fcdb67"
   },
   "errors.volume.connectionTimeout": "De verbinding reageerde niet op tijd.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "857ed01"
+    "sourceHash": "f21c934"
   },
   "errors.volume.cancelled": "Cmdr heeft dit op je verzoek gestopt.",
   "@errors.volume.cancelled": {
@@ -1783,7 +1783,7 @@
   },
   "errors.volume.invalidName": "De bestemming kan die naam niet opslaan. Kies een andere.",
   "@errors.volume.invalidName": {
-    "sourceHash": "ef0f2b8"
+    "sourceHash": "531488f"
   },
   "errors.volume.deletePending": "Dat bestand is op weg naar buiten, en iets houdt het nog open. Probeer het zo meteen opnieuw.",
   "@errors.volume.deletePending": {
@@ -1791,7 +1791,7 @@
   },
   "errors.volume.ambiguousName": "Meer dan één onderdeel op de server past bij ‘{path}’, dus Cmdr heeft er geen gekozen. Open de map waarin het staat en kies het daar.",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "f866182"
+    "sourceHash": "0f0e74d"
   },
   "errors.volume.staleDestinationHandle": "Cmdr is de doelmap op het apparaat kwijtgeraakt. Open hem opnieuw en probeer het dan nog eens.",
   "@errors.volume.staleDestinationHandle": {
@@ -1799,7 +1799,7 @@
   },
   "errors.volume.ioError": "Het volume kon dat niet voltooien.",
   "@errors.volume.ioError": {
-    "sourceHash": "c82a0e1"
+    "sourceHash": "59e7d6a"
   },
   "errors.volume.needsPassword": "Dit archief is beveiligd met een wachtwoord.",
   "@errors.volume.needsPassword": {
@@ -1807,7 +1807,7 @@
   },
   "errors.volume.passwordRejected": "Dat wachtwoord werkte niet.",
   "@errors.volume.passwordRejected": {
-    "sourceHash": "33ba224"
+    "sourceHash": "fe9b44a"
   },
   "errors.mutation.trashNotSupported": "Dit volume heeft geen prullenmand, dus definitief verwijderen is de enige manier.",
   "@errors.mutation.trashNotSupported": {
@@ -1815,23 +1815,23 @@
   },
   "errors.mutation.trashRefused": "macOS wilde dit niet naar de prullenmand verplaatsen.",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "6d8a1b6"
+    "sourceHash": "7a6d1a5"
   },
   "errors.serverRequest.unreachable": "Cmdr kon zijn server niet bereiken. Controleer je internetverbinding en probeer het opnieuw.",
   "@errors.serverRequest.unreachable": {
-    "sourceHash": "7f2a23e"
+    "sourceHash": "186a0f6"
   },
   "errors.serverRequest.timedOut": "De server van Cmdr reageerde niet op tijd. Probeer het zo opnieuw.",
   "@errors.serverRequest.timedOut": {
-    "sourceHash": "14b0dcd"
+    "sourceHash": "1413608"
   },
   "errors.serverRequest.serverBusy": "De server van Cmdr heeft nu problemen. Probeer het later opnieuw.",
   "@errors.serverRequest.serverBusy": {
-    "sourceHash": "2df1f8d"
+    "sourceHash": "1f21e5d"
   },
   "errors.serverRequest.refused": "De server van Cmdr heeft dit geweigerd. Blijft het gebeuren, download dan de nieuwste Cmdr van getcmdr.com.",
   "@errors.serverRequest.refused": {
-    "sourceHash": "f36d8f8"
+    "sourceHash": "6a83e2a"
   },
   "errors.serverRequest.unexpected": "Cmdr liep intern tegen een probleem aan. Probeer het opnieuw, en als het blijft gebeuren, start Cmdr opnieuw op.",
   "@errors.serverRequest.unexpected": {
@@ -1843,23 +1843,23 @@
   },
   "errors.eject.volumeNotFound": "Die schijf is niet meer aangesloten, dus er valt niets uit te werpen.",
   "@errors.eject.volumeNotFound": {
-    "sourceHash": "62a3af2"
+    "sourceHash": "2c5112f"
   },
   "errors.eject.notEjectable": "Deze schijf kun je niet uitwerpen, dus hij blijft aangesloten.",
   "@errors.eject.notEjectable": {
-    "sourceHash": "bb88249"
+    "sourceHash": "cc7e9ee"
   },
   "errors.eject.notAnSmbVolume": "Dit is geen netwerkshare, dus er is geen verbinding om te verbreken.",
   "@errors.eject.notAnSmbVolume": {
-    "sourceHash": "d49623e"
+    "sourceHash": "230d2dc"
   },
   "errors.eject.remoteNotConnected": "Deze server is niet meer verbonden, dus er valt niets meer af te sluiten.",
   "@errors.eject.remoteNotConnected": {
-    "sourceHash": "a0ed630"
+    "sourceHash": "3b531d1"
   },
   "errors.eject.deviceDisconnectRefused": "Het apparaat wilde de verbinding niet verbreken. Koppel het los zodra het niet meer bezig is.",
   "@errors.eject.deviceDisconnectRefused": {
-    "sourceHash": "d49861f"
+    "sourceHash": "5b99318"
   },
   "errors.eject.unmountRefused": "Deze schijf is nog in gebruik. Sluit open bestanden, stop geopende apps en werp hem daarna opnieuw uit.",
   "@errors.eject.unmountRefused": {
@@ -1891,27 +1891,27 @@
   },
   "errors.eject.timedOut": "De schijf heeft nog niet gereageerd, dus hij wordt misschien toch nog uitgeworpen.",
   "@errors.eject.timedOut": {
-    "sourceHash": "c592421"
+    "sourceHash": "3feb944"
   },
   "errors.eject.notResponding": "De schijf reageert niet en is dus nog verbonden. Probeer het zo nog eens.",
   "@errors.eject.notResponding": {
-    "sourceHash": "742a732"
+    "sourceHash": "a3d9d82"
   },
   "errors.eject.unexpected": "Er ging iets mis, en Cmdr kon niet achterhalen wat.",
   "@errors.eject.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.mount.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.mount.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Controleer of de server aanstaat en bereikbaar is, en probeer het dan opnieuw.",
   "@errors.mount.timeout": {
-    "sourceHash": "00d198e"
+    "sourceHash": "d0629fe"
   },
   "errors.mount.shareNotFound": "Er is geen gedeelde map met de naam ‘{share}’ op ‘{server}’. Ga terug en kies er een uit de lijst.",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "08aee2a"
+    "sourceHash": "10f3c59"
   },
   "errors.mount.authRequired": "Log in bij ‘{server}’ om ‘{share}’ te openen.",
   "@errors.mount.authRequired": {
@@ -1919,23 +1919,23 @@
   },
   "errors.mount.authFailed": "Die gebruikersnaam en dat wachtwoord werkten niet op ‘{server}’. Controleer ze en log opnieuw in.",
   "@errors.mount.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.mount.permissionDenied": "Je bent bij ‘{server}’ ingelogd als ‘{username}’, maar dat account kan ‘{share}’ niet openen. Log in met een ander account.",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "f8e000b"
+    "sourceHash": "05611b7"
   },
   "errors.mount.cancelled": "Het verbinden met ‘{share}’ stopte voordat het klaar was. Probeer het opnieuw wanneer je wilt.",
   "@errors.mount.cancelled": {
-    "sourceHash": "4f6ff32"
+    "sourceHash": "bc771b3"
   },
   "errors.mount.unsupportedProtocol": "Deze computer en ‘{server}’ hebben geen SMB-versie gemeen. Schakel SMB 2 of later in bij de instellingen van de server en probeer het dan opnieuw.",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "7cb18f6"
+    "sourceHash": "8afe4cb"
   },
   "errors.mount.mountRefused": "Je bent ingelogd bij ‘{server}’, maar de server wilde ‘{share}’ niet openen. Controleer de instellingen van de gedeelde map op de server en probeer het dan opnieuw.",
   "@errors.mount.mountRefused": {
-    "sourceHash": "84344ca"
+    "sourceHash": "6cf694d"
   },
   "errors.mount.mountMissing": "Je computer meldde dat ‘{share}’ op ‘{server}’ verbonden was, maar de gedeelde map verscheen nooit. Probeer het opnieuw.",
   "@errors.mount.mountMissing": {
@@ -1943,7 +1943,7 @@
   },
   "errors.mount.gvfsMissing": "Om op Linux verbinding te maken met netwerkshares is GVFS nodig. Installeer het pakket gvfs-smb van je distributie en probeer het dan opnieuw.",
   "@errors.mount.gvfsMissing": {
-    "sourceHash": "068da95"
+    "sourceHash": "b67831e"
   },
   "errors.mount.unexpected": "Er ging iets mis bij het verbinden met ‘{share}’ op ‘{server}’. Probeer het zo meteen opnieuw.",
   "@errors.mount.unexpected": {
@@ -1951,11 +1951,11 @@
   },
   "errors.shareList.hostUnreachable": "Cmdr kon ‘{server}’ niet bereiken. Controleer of de server aanstaat en op hetzelfde netwerk zit als deze computer.",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.shareList.timeout": "Cmdr heeft gewacht, maar ‘{server}’ reageerde niet op tijd. Probeer het zo meteen opnieuw.",
   "@errors.shareList.timeout": {
-    "sourceHash": "a07b7c8"
+    "sourceHash": "0c2c6ec"
   },
   "errors.shareList.authRequired": "Log in bij ‘{server}’ om de gedeelde mappen te zien.",
   "@errors.shareList.authRequired": {
@@ -1963,11 +1963,11 @@
   },
   "errors.shareList.signingRequired": "‘{server}’ toont geen gedeelde mappen aan gasten. Log in om ze te zien.",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "ecc570d"
+    "sourceHash": "6e92125"
   },
   "errors.shareList.authFailed": "Die gebruikersnaam en dat wachtwoord werkten niet op ‘{server}’. Controleer ze en log opnieuw in.",
   "@errors.shareList.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.shareList.protocolError": "Er ging iets mis bij het opvragen van de gedeelde mappen van ‘{server}’. Probeer het zo meteen opnieuw.",
   "@errors.shareList.protocolError": {
@@ -1975,11 +1975,11 @@
   },
   "errors.shareList.resolutionFailed": "Cmdr kon ‘{server}’ niet vinden op het netwerk. Controleer de naam, of probeer het opnieuw zodra de server weer online is.",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "62e91cf"
+    "sourceHash": "9be124a"
   },
   "errors.shareList.missingDependency": "Om gedeelde mappen op te sommen heeft deze computer smbclient nodig, en dat is niet geïnstalleerd. Installeer het en probeer het dan opnieuw.",
   "@errors.shareList.missingDependency": {
-    "sourceHash": "810b06a"
+    "sourceHash": "6ffa8a9"
   },
   "errors.write.readOnlyDevice.source.title": "Alleen-lezenbron",
   "@errors.write.readOnlyDevice.source.title": {
@@ -2003,7 +2003,7 @@
   },
   "errors.write.duplicateSourceNames.message": "Je hebt twee onderdelen met de naam {name} gekozen, dus ze zouden allebei op dezelfde plek belanden: {first} en {second}.",
   "@errors.write.duplicateSourceNames.message": {
-    "sourceHash": "4146d5f"
+    "sourceHash": "f4517fc"
   },
   "errors.write.duplicateSourceNames.suggestion.copy": "Kopieer ze een voor een, of wijzig eerst de naam van een ervan.",
   "@errors.write.duplicateSourceNames.suggestion.copy": {

@@ -1,7 +1,7 @@
 {
   "adb.connect.adbNotInstalled": "Cmdr không tìm thấy bộ công cụ nền tảng Android.",
   "@adb.connect.adbNotInstalled": {
-    "sourceHash": "4d83ac5"
+    "sourceHash": "a842454"
   },
   "adb.connect.openSettings": "Mở cài đặt",
   "@adb.connect.openSettings": {
@@ -9,11 +9,11 @@
   },
   "adb.connect.serverUnreachable": "Công cụ Android trên máy Mac này đã không phản hồi.",
   "@adb.connect.serverUnreachable": {
-    "sourceHash": "154d824"
+    "sourceHash": "b53716b"
   },
   "adb.connect.deviceGone": "Điện thoại của bạn không còn kết nối nữa.",
   "@adb.connect.deviceGone": {
-    "sourceHash": "ce5e28e"
+    "sourceHash": "e2766e6"
   },
   "adb.connect.unauthorized": "Hãy xem điện thoại của bạn rồi nhấn vào Cho phép.",
   "@adb.connect.unauthorized": {
@@ -21,11 +21,11 @@
   },
   "adb.connect.deviceTooOld": "Phiên bản Android của điện thoại này quá cũ để Cmdr duyệt được.",
   "@adb.connect.deviceTooOld": {
-    "sourceHash": "2e1b0c1"
+    "sourceHash": "9ce52c1"
   },
   "adb.connect.timedOut": "Điện thoại của bạn đã không phản hồi kịp thời.",
   "@adb.connect.timedOut": {
-    "sourceHash": "5a90cf8"
+    "sourceHash": "20ddfdc"
   },
   "adb.connect.transport": "Cmdr đã mất kết nối tới điện thoại của bạn.",
   "@adb.connect.transport": {
@@ -45,11 +45,11 @@
   },
   "adb.readiness.offline": "Điện thoại của bạn không phản hồi. Hãy đánh thức màn hình, hoặc rút và cắm lại cáp.",
   "@adb.readiness.offline": {
-    "sourceHash": "ef50e86"
+    "sourceHash": "6061885"
   },
   "adb.readiness.noPermissions": "Máy Mac này không truy cập được điện thoại của bạn qua USB. Hãy thử cáp hoặc cổng khác.",
   "@adb.readiness.noPermissions": {
-    "sourceHash": "ef170c7"
+    "sourceHash": "265d7ed"
   },
   "adb.hint.text": "Muốn truy cập toàn bộ hệ thống tệp? Hãy bật Gỡ lỗi qua USB.",
   "@adb.hint.text": {
@@ -69,7 +69,7 @@
   },
   "adb.disconnectBusyTooltip": "Không thể ngắt kết nối khi còn thao tác đang chạy trên thiết bị này",
   "@adb.disconnectBusyTooltip": {
-    "sourceHash": "b42bed4"
+    "sourceHash": "a425d4b"
   },
   "adb.disconnectingDeviceAriaLabel": "Đang ngắt kết nối {name}…",
   "@adb.disconnectingDeviceAriaLabel": {

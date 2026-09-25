@@ -41,7 +41,7 @@ for numbers, sizes, dates.
   `DETAILS.md`, `apps/desktop/src-tauri/src/intl/DETAILS.md`.
 - **Error copy uses `getMessage()` (raw), NOT `t()`/ICU**: the pipeline's `{system_settings}` tokens and `esc()` HTML
   entities collide with ICU grammar. Only plural/select sentences go through `t()`.
-- **Catalog values double every apostrophe (`''`)** (ICU escaping): `messages/CLAUDE.md`.
+- **English apostrophes are `’`; a straight `'` in an ICU value is doubled (`''`)**: `messages/CLAUDE.md`.
 - **`<Trans>` renders tag content via a zero-arg `{#snippet content()}`** (snippets aren't callable:
   `invalid_snippet_arguments`). No `{@html}`, so XSS-safe. An unmatched tag renders NOTHING (`i18n-trans-snippets`
   enforces pairing).

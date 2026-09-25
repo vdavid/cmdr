@@ -108,7 +108,7 @@ describe('the four phases, while there is nothing to show yet', () => {
   it('says the walking phase is about folders that are not indexed', async () => {
     const target = mountWith({ live: liveView({ phase: 'walking' }) })
     await tick()
-    expect(target.querySelector('.loading-label')?.textContent).toContain("aren't indexed yet")
+    expect(target.querySelector('.loading-label')?.textContent).toContain('aren’t indexed yet')
   })
 
   it('does not promise a walk for a run that is queued behind another one', async () => {
@@ -119,7 +119,7 @@ describe('the four phases, while there is nothing to show yet', () => {
     await tick()
     const label = target.querySelector('.loading-label')?.textContent ?? ''
     expect(label).not.toBe('')
-    expect(label).not.toContain("aren't indexed yet")
+    expect(label).not.toContain('aren’t indexed yet')
     expect(statusText(target)).not.toContain('folders scanned')
   })
 })
@@ -196,7 +196,7 @@ describe('how a live run ends', () => {
     })
     await tick()
     expect(target.querySelectorAll('.result-row')).toHaveLength(12)
-    expect(statusText(target)).toContain("Cmdr didn't finish looking")
+    expect(statusText(target)).toContain('Cmdr didn’t finish looking')
   })
 
   it('falls back to the ordinary result line when the run covered its ground', async () => {

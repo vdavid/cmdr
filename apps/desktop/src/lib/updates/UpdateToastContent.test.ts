@@ -48,7 +48,7 @@ describe('UpdateToastContent', () => {
     await tick()
     expect(target.textContent).toContain('A new version of Cmdr is ready.')
     // The whole point of the second line: "Later" must not read as "skip this update".
-    expect(target.textContent).toContain("Restart now, or you'll get it the next time you open Cmdr.")
+    expect(target.textContent).toContain('Restart now, or you’ll get it the next time you open Cmdr.')
   })
 
   it('shows both versions once the state knows them', async () => {

@@ -607,12 +607,12 @@
     "description": "Compact red warning badge beside a proposed filename when another file already occupies that name. Keep the parentheses and exclamation mark.",
     "screenshot": "bulk-rename-review-some-blocked.png"
   },
-  "askCmdr.renameReview.overwriteTooltip": "Another file already uses this name and isn''t part of this rename plan. This rename is blocked to protect it.",
+  "askCmdr.renameReview.overwriteTooltip": "Another file already uses this name and isn’t part of this rename plan. This rename is blocked to protect it.",
   "@askCmdr.renameReview.overwriteTooltip": {
     "description": "Accessible tooltip for the overwrite warning badge. Explains that the existing file is outside the rename plan and will not be replaced.",
     "screenshot": "bulk-rename-review-some-blocked.png"
   },
-  "askCmdr.renameReview.sourceMissingBadge": "(doesn''t exist)",
+  "askCmdr.renameReview.sourceMissingBadge": "(doesn’t exist)",
   "@askCmdr.renameReview.sourceMissingBadge": {
     "description": "Compact red warning badge beside a bulk rename row whose proposed source file does not exist. Keep the parentheses.",
     "screenshot": "bulk-rename-review-some-blocked.png"
@@ -914,7 +914,7 @@
   "@askCmdr.wake.stop": {
     "description": "Spoken label and tooltip on the small stop button beside that indicator, which ends the conversation Ask Cmdr started on its own. Longer than the rail's bare \"Stop\" on purpose: this button carries no visible text and sits in the window corner, so the label is the only thing naming what it stops. Sentence case, no full stop."
   },
-  "askCmdr.wake.needsFullDiskAccess": "AI features can't see your folders yet. Click to set up full disk access.",
+  "askCmdr.wake.needsFullDiskAccess": "AI features can’t see your folders yet. Click to set up full disk access.",
   "@askCmdr.wake.needsFullDiskAccess": {
     "description": "Tooltip and spoken label on the status-corner indicator shown when the user turned AI features on but macOS Full Disk Access is still outstanding, so the agent can only see part of the disk. Pressing it opens the system privacy settings, which is what the second sentence promises. Only ever shown to somebody who opted in, so it reads as a step left to finish, never as a warning. The second sentence names Apple's own setting: use the same wording as `search.coverage.setUpFullDiskAccess` so the two surfaces agree. Sentence case."
   },

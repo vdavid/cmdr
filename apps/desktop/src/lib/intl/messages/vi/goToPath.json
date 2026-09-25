@@ -29,11 +29,11 @@
   },
   "goToPath.dialog.ancestorHint": "Đường dẫn này không tồn tại. Nơi gần nhất có thể đến là {dir}.",
   "@goToPath.dialog.ancestorHint": {
-    "sourceHash": "43db9f4"
+    "sourceHash": "e6eefca"
   },
   "goToPath.toast.landedOnAncestor": "<req>{requested}</req> không tồn tại, nên chúng tôi đưa bạn đến <land>{landed}</land>.",
   "@goToPath.toast.landedOnAncestor": {
-    "sourceHash": "4ffc1e4"
+    "sourceHash": "9af3d3a"
   },
   "goToPath.toast.pressToGoBack": "Nhấn <chip></chip> để quay lại.",
   "@goToPath.toast.pressToGoBack": {
@@ -49,6 +49,6 @@
   },
   "goToPath.dialog.snapshotNotAPath": "Kết quả tìm kiếm không phải là một đường dẫn để đi tới.",
   "@goToPath.dialog.snapshotNotAPath": {
-    "sourceHash": "e613c52"
+    "sourceHash": "1332610"
   }
 }

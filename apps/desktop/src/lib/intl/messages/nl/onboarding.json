@@ -5,7 +5,7 @@
   },
   "onboarding.fdaBadge.tooltip": "Je hoeft dit niet te geven, maar Cmdr werkt er een stuk beter mee: je hele schijf doorzoeken, cloudmappen lezen en bestanden wijzigen die macOS voor zichzelf houdt. Klik om de keuze nog eens te bekijken.",
   "@onboarding.fdaBadge.tooltip": {
-    "sourceHash": "00f408a"
+    "sourceHash": "d7ff906"
   },
   "onboarding.fdaBadge.ariaLabel": "Geen volledige schijftoegang. Open de stap over volledige schijftoegang in de onboarding.",
   "@onboarding.fdaBadge.ariaLabel": {
@@ -58,11 +58,11 @@
   },
   "onboarding.stepFda.granted.body": "Mooi, meer heeft Cmdr niet nodig. Herstart de app nu om alles te gaan gebruiken.",
   "@onboarding.stepFda.granted.body": {
-    "sourceHash": "32acf9d"
+    "sourceHash": "1f59b5f"
   },
   "onboarding.stepFda.granted.hint": "Cmdr pikt de nieuwe toegang op bij de volgende start. Je plek in de onboarding wordt bewaard, dus je belandt meteen weer hier.",
   "@onboarding.stepFda.granted.hint": {
-    "sourceHash": "e0e33a3"
+    "sourceHash": "dc1d332"
   },
   "onboarding.stepFda.alreadyGranted.title": "Cmdr heeft op dit moment volledige schijftoegang",
   "@onboarding.stepFda.alreadyGranted.title": {
@@ -86,23 +86,23 @@
   },
   "onboarding.stepFda.revoked.ifIntentional": "Als dat de bedoeling was, klik dan op <deny>Weiger</deny> en de app valt je niet meer lastig.",
   "@onboarding.stepFda.revoked.ifIntentional": {
-    "sourceHash": "9709b73"
+    "sourceHash": "6ab4c94"
   },
   "onboarding.stepFda.revoked.ifNot": "Als het <em>niet</em> de bedoeling was, overweeg dan om volledige schijftoegang opnieuw toe te staan. Dit zijn de voor- en nadelen:",
   "@onboarding.stepFda.revoked.ifNot": {
-    "sourceHash": "24667ee"
+    "sourceHash": "b40412b"
   },
   "onboarding.stepFda.firstAsk.lede": "<strong>Je wilt waarschijnlijk gewoon de app gaan gebruiken.</strong> Sorry dat we je hier eerst mee lastigvallen, maar het is nodig.",
   "@onboarding.stepFda.firstAsk.lede": {
-    "sourceHash": "7f19b2a"
+    "sourceHash": "4f2f392"
   },
   "onboarding.stepFda.firstAsk.explain": "Cmdr is namelijk een bestandsbeheerder en heeft toegang tot je schijf nodig om al je bestanden te zien. macOS verleent deze toegang niet automatisch.",
   "@onboarding.stepFda.firstAsk.explain": {
-    "sourceHash": "f60c41b"
+    "sourceHash": "4196968"
   },
   "onboarding.stepFda.firstAsk.askPermission": "Wil je deze app volledige schijftoegang geven? Dit is wat dat betekent:",
   "@onboarding.stepFda.firstAsk.askPermission": {
-    "sourceHash": "94e5db7"
+    "sourceHash": "28a5c77"
   },
   "onboarding.stepFda.why": "Waarom?",
   "@onboarding.stepFda.why": {
@@ -163,11 +163,11 @@
   },
   "onboarding.stepFda.postAction.body": "Klik hieronder op <restart>Herstart Cmdr</restart> wanneer je er klaar voor bent. Als je je bedenkt, klik dan hierboven op <deny>Weiger</deny>.",
   "@onboarding.stepFda.postAction.body": {
-    "sourceHash": "f87a5fc"
+    "sourceHash": "7a5c238"
   },
   "onboarding.stepFda.openSettingsFailed": "Cmdr kon {systemSettings} niet openen. Open het zelf, ga naar <strong>{privacyAndSecurity}</strong> en dan <strong>{fullDiskAccess}</strong>, en zet <strong>Cmdr</strong> aan.",
   "@onboarding.stepFda.openSettingsFailed": {
-    "sourceHash": "8cfce29"
+    "sourceHash": "7da3acc"
   },
   "onboarding.stepAi.bannerTitle.granted": "Volledige schijftoegang verleend",
   "@onboarding.stepAi.bannerTitle.granted": {
@@ -183,15 +183,15 @@
   },
   "onboarding.stepAi.bannerBody.denied": "Je hebt ervoor gekozen volledige schijftoegang niet in te schakelen. Dat respecteren we. Je krijgt dan zo meteen een paar toegangsverzoeken van macOS, zodat Cmdr bij je Bureaublad, Downloads en vergelijkbare mappen kan. Accepteer of weiger die naar eigen inzicht. Je kunt dit allemaal later aanpassen in {systemSettings}.",
   "@onboarding.stepAi.bannerBody.denied": {
-    "sourceHash": "ccb4ae5"
+    "sourceHash": "fa85a39"
   },
   "onboarding.stepAi.bannerTitle.stuck": "Cmdr lijkt nog geen volledige schijftoegang te hebben",
   "@onboarding.stepAi.bannerTitle.stuck": {
-    "sourceHash": "88c9c19"
+    "sourceHash": "6e60ae7"
   },
   "onboarding.stepAi.bannerBody.stuck": "Je gaf aan volledige schijftoegang in te willen schakelen, maar Cmdr lijkt die niet te hebben gekregen. Misschien moet je de app opnieuw starten (doe het nu, we gaan hier verder!), of ga naar je <settingsLink>{systemSettings} > Privacy en beveiliging > Volledige schijftoegang</settingsLink> en zoek Cmdr, of voeg het handmatig toe met de kleine knop ‘+’ onderaan.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "fcdff85"
+    "sourceHash": "c13bbbe"
   },
   "onboarding.stepAi.welcomeLinux.title": "Welkom bij Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -199,11 +199,11 @@
   },
   "onboarding.stepAi.welcomeLinux.subtitle": "Laten we AI instellen.",
   "@onboarding.stepAi.welcomeLinux.subtitle": {
-    "sourceHash": "a96e109"
+    "sourceHash": "e4c4251"
   },
   "onboarding.stepAi.title": "Nu over AI",
   "@onboarding.stepAi.title": {
-    "sourceHash": "a580449"
+    "sourceHash": "7fb7b12"
   },
   "onboarding.stepAi.intro": "Cmdr heeft een hoop AI-functies die je <em>misschien</em> wel en misschien niet wilt. AI is tegenwoordig een gevoelig onderwerp.",
   "@onboarding.stepAi.intro": {
@@ -295,7 +295,7 @@
   },
   "onboarding.stepAi.local.tooltip": "Het lokale model is een stuk dommer dan cloudmodellen, en het neemt ongeveer 2 GB ruimte in beslag plus wat RAM en CPU bij elk gebruik.\nDaar staat tegenover dat er geen gegevens je computer verlaten.\nCmdr probeert updates uit te brengen zodat je steeds het beste kleine model kunt gebruiken dat er is. Maar wil je privacy <em>én</em> een fatsoenlijk model, dan kun je het beste je eigen ollama-server draaien en die hieronder instellen met de optie <strong>Ja, ik wil AI</strong>.",
   "@onboarding.stepAi.local.tooltip": {
-    "sourceHash": "c3fa36a"
+    "sourceHash": "ddc1a76"
   },
   "onboarding.stepAi.local.note": "Het lokale model wordt op de achtergrond gedownload. Je kunt de onboarding nu afronden; de melding in de hoek houdt je op de hoogte.",
   "@onboarding.stepAi.local.note": {
@@ -307,7 +307,7 @@
   },
   "onboarding.stepAi.missingKeyWarning": "Je hebt AI ingeschakeld, maar geen API-sleutel ingevuld. AI werkt dan niet en je krijgt een waarschuwing te zien. Los dit hierboven op.\n\n<strong>Klik nogmaals op ‘{nextLabel}’ om dit te negeren en verder te gaan.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "bdb8a08"
+    "sourceHash": "b942278"
   },
   "onboarding.stepAi.cloudConsentOffNote": "Cloud-AI blijft uit tot je die toestaat. Dat kan later ook bij Instellingen > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -335,11 +335,11 @@
   },
   "onboarding.stepBeta.greeting": "Hoi, ik ben <david>David</david>! Ik bouw Cmdr en jij bent een van de allereerste mensen die het gebruikt. Bedankt voor je vertrouwen! ❤️",
   "@onboarding.stepBeta.greeting": {
-    "sourceHash": "f7ade14"
+    "sourceHash": "2736b42"
   },
   "onboarding.stepBeta.openBeta": "Cmdr is in open bèta: over het algemeen solide en bruikbaar, maar sommige delen zijn nog ruw. <alpha></alpha>-badges markeren de delen die het meest in ontwikkeling zijn. Jouw feedback helpt me bugs op te lossen en functies te prioriteren.",
   "@onboarding.stepBeta.openBeta": {
-    "sourceHash": "0dba196"
+    "sourceHash": "f3bed8c"
   },
   "onboarding.stepBeta.checklist.title": "Onboardingchecklist, elk punt kost 30 seconden:",
   "@onboarding.stepBeta.checklist.title": {
@@ -375,7 +375,7 @@
   },
   "onboarding.stepBeta.analyticsLede": "Om te leren wat wel en niet werkt, stuurt Cmdr tijdens de open bèta gebruiksstatistieken: welke functies worden gebruikt en hoe vaak, nooit iets uit je bestanden.\nZe zijn gekoppeld aan een willekeurige id, niet aan je naam of e-mailadres.\nHet staat nu aan en je kunt het op elk moment uitzetten.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "edd95b4"
+    "sourceHash": "7544e4c"
   },
   "onboarding.stepBeta.analyticsTitle": "Gebruiksstatistieken sturen",
   "@onboarding.stepBeta.analyticsTitle": {
@@ -383,7 +383,7 @@
   },
   "onboarding.stepBeta.analyticsCaption": "Let op: dit staat standaard AAN om mensen aan te moedigen me gegevens te sturen tijdens de bèta.\nJe kunt dit op elk moment wijzigen in Instellingen.",
   "@onboarding.stepBeta.analyticsCaption": {
-    "sourceHash": "cfd1e86"
+    "sourceHash": "06ce4eb"
   },
   "onboarding.stepBeta.crashReportsNote": "Crashrapporten staan ook aan: als Cmdr onderuitgaat, stuurt het de appversie, je macOS-versie en de plek in de code waar het stopte.\nNooit je bestanden.\nJe kunt allebei uitzetten in de instellingen wanneer je wilt.",
   "@onboarding.stepBeta.crashReportsNote": {
@@ -403,19 +403,19 @@
   },
   "onboarding.stepBeta.signup.failure": "Sorry, het inschrijven lukte nu niet. Nog eens proberen?",
   "@onboarding.stepBeta.signup.failure": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "onboarding.stepBeta.signup.rejected": "De mailinglijst accepteerde dat adres niet. Kijk even of er een typefout in zit en klik daarna opnieuw op ‘Bewaar’.",
   "@onboarding.stepBeta.signup.rejected": {
-    "sourceHash": "05ccee5"
+    "sourceHash": "5a1bca7"
   },
   "onboarding.stepBeta.signup.unreachable": "De inschrijfserver was net niet bereikbaar, dus je staat nog niet op de lijst. Je adres is op deze Mac bewaard: klik over een minuutje opnieuw op ‘Bewaar’, of wanneer je maar wilt via Instellingen › Updates en privacy.",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "8036aad"
+    "sourceHash": "e4d8f67"
   },
   "onboarding.stepBeta.emailNote": "Geef je e-mailadres op, dan neem ik af en toe contact op met een vraag of update.\nHet e-mailadres dat je hier invult, wordt alleen op je Mac bewaard en is nooit gekoppeld aan je gebruiksstatistieken; die twee zijn bewust twee aparte subsystemen.",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "f256066"
+    "sourceHash": "0a793b1"
   },
   "onboarding.stepBeta.terms.title": "O ja, en dit ook nog, alsjeblieft",
   "@onboarding.stepBeta.terms.title": {
@@ -423,11 +423,11 @@
   },
   "onboarding.stepBeta.terms.lede": "Dit moet hier staan vanwege een wettelijke verplichting.",
   "@onboarding.stepBeta.terms.lede": {
-    "sourceHash": "c59e47e"
+    "sourceHash": "26e1bbf"
   },
   "onboarding.stepBeta.terms.consent": "Ik heb de <terms>algemene voorwaarden</terms> gelezen en ga ermee akkoord.",
   "@onboarding.stepBeta.terms.consent": {
-    "sourceHash": "620a4b6"
+    "sourceHash": "7becd05"
   },
   "onboarding.stepBeta.terms.blockedTooltip": "Accepteer de algemene voorwaarden om verder te gaan.",
   "@onboarding.stepBeta.terms.blockedTooltip": {
@@ -439,11 +439,11 @@
   },
   "onboarding.stepOptional.title": "Je bent bijna klaar",
   "@onboarding.stepOptional.title": {
-    "sourceHash": "6ad977a"
+    "sourceHash": "a7bb760"
   },
   "onboarding.stepOptional.lede": "Je koos voor een uitgebreide setup, dus hier zijn een paar eenvoudige keuzes. Als het je niet zoveel uitmaakt, klik dan gewoon op de knop hieronder. Dit zijn allemaal opties, en de standaardwaarden zijn in jouw voordeel gekozen.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "b1242c9"
+    "sourceHash": "278452e"
   },
   "onboarding.stepOptional.recommendedOn": "Aanbevolen: aan",
   "@onboarding.stepOptional.recommendedOn": {
@@ -463,7 +463,7 @@
   },
   "onboarding.stepOptional.networking.desc": "Met dit <em>aan</em> kun je verbinding maken met SMB-servers zoals bedrijfsnetwerkshares, een thuis-NAS en dergelijke.\nDe enige kostenpost is een macOS-toegangsvenster dat verschijnt en je vraagt ‘Lokaal netwerk’ toe te staan, en nog één voor ‘Inkomende verbindingen accepteren’.\nBeide vensters zijn onschadelijk, maar als je niet weet wat dit is, kunnen ze eng of vervelend overkomen.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "c03c7df"
+    "sourceHash": "d473c62"
   },
   "onboarding.stepOptional.indexing.title": "Schijf indexeren",
   "@onboarding.stepOptional.indexing.title": {
@@ -487,7 +487,7 @@
   },
   "onboarding.stepOptional.indexing.descCost": "Als je dit uitzet, krijg je alleen <code>{dirPlaceholder}</code> voor de groottes.\nDe kostenpost is ongeveer 1 GB index op je schijf bij een paar miljoen bestanden, maar geen extra CPU- of geheugengebruik na de eerste 2–3 minuten nadat je de app voor het eerst start, of na lange tijd opnieuw start.\nHet is een goedkope functie gezien de voordelen.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "0b60064"
+    "sourceHash": "954cf6b"
   },
   "onboarding.stepOptional.updates.title": "Automatische updates",
   "@onboarding.stepOptional.updates.title": {
@@ -499,7 +499,7 @@
   },
   "onboarding.stepOptional.updates.desc": "Als je dit inschakelt, doet Cmdr bij elke start van de app plus eenmaal per 24 uur een piepklein netwerkverzoek aan een centrale licentieserver, en krijg je altijd de nieuwste updates.\nSchakel je het uit, dan houd je je huidige versie en zijn er nul geautomatiseerde netwerkverzoeken (op periodieke licentiecontroles na, als je een commerciële licentie hebt).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "12b7f08"
+    "sourceHash": "bfd8d7e"
   },
   "onboarding.stepOptional.mtp.title": "MTP (Android-telefoons, Kindles, camera''s)",
   "@onboarding.stepOptional.mtp.title": {
@@ -511,7 +511,7 @@
   },
   "onboarding.stepOptional.mtp.desc": "Als je dit inschakelt, kan Cmdr <strong>verbinding maken met Android-telefoons, Kindles, camera''s</strong>, sommige muziekspelers en elk ander apparaat dat de protocollen MTP of PTP ondersteunt.\nDe kostenpost is dat macOS hier <em>ook</em> verbinding mee wil maken (en dat mislukt meestal, daarom kun je niet zomaar Finder gebruiken om foto''s van Android-telefoons te kopiëren), dus moet Cmdr dat macOS-proces onderdrukken zolang het draait.\nWanneer je Cmdr stopt, wordt dit netjes hersteld.",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "9563b7b"
+    "sourceHash": "8a60e7f"
   },
   "onboarding.cloudPicker.listAria": "Cloud-AI-aanbieders",
   "@onboarding.cloudPicker.listAria": {
@@ -523,7 +523,7 @@
   },
   "onboarding.cloudSetup.step.signup": "Meld je aan bij <signupLink>{provider}</signupLink> (als je nog geen account hebt)",
   "@onboarding.cloudSetup.step.signup": {
-    "sourceHash": "d89f1e1"
+    "sourceHash": "06a92f1"
   },
   "onboarding.cloudSetup.step.createKey": "Maak <keyLink>hier</keyLink> een API-sleutel aan",
   "@onboarding.cloudSetup.step.createKey": {
@@ -587,11 +587,11 @@
   },
   "onboarding.cloudSetup.status.authError": "Die sleutel werkte niet",
   "@onboarding.cloudSetup.status.authError": {
-    "sourceHash": "2f23f3b"
+    "sourceHash": "b93b44a"
   },
   "onboarding.cloudSetup.status.connectionError": "Kan de service nu niet bereiken",
   "@onboarding.cloudSetup.status.connectionError": {
-    "sourceHash": "67cb2e5"
+    "sourceHash": "fcab672"
   },
   "onboarding.cloudSetup.status.genericError": "Er ging iets mis",
   "@onboarding.cloudSetup.status.genericError": {

@@ -75,22 +75,22 @@ describe('indexing catalog parity (en)', () => {
 
   it('resolves every rescan-reason message with apostrophes intact', () => {
     expect(tString('indexing.rescan.staleIndex')).toBe(
-      "Your drive index is outdated. It looks like the app hasn't run for a while. Running a fresh scan to catch up.",
+      'Your drive index is outdated. It looks like the app hasn’t run for a while. Running a fresh scan to catch up.',
     )
     expect(tString('indexing.rescan.journalGap')).toBe(
-      "The system's file change log doesn't go back far enough. Running a fresh scan to rebuild the index.",
+      'The system’s file change log doesn’t go back far enough. Running a fresh scan to rebuild the index.',
     )
     expect(tString('indexing.rescan.replayOverflow')).toBe(
       'A lot of file changes happened since last run. Running a fresh scan instead of replaying them one by one.',
     )
     expect(tString('indexing.rescan.watcherStartFailed')).toBe(
-      "Couldn't start the file change watcher. Running a fresh scan to get the index up to date.",
+      'Couldn’t start the file change watcher. Running a fresh scan to get the index up to date.',
     )
     expect(tString('indexing.rescan.reconcilerBufferOverflow')).toBe(
       'Heavy filesystem activity overwhelmed the event buffer. Running a fresh scan to stay accurate.',
     )
     expect(tString('indexing.rescan.incompletePreviousScan')).toBe(
-      "The previous scan didn't finish (the app may have been closed). Restarting the scan from scratch.",
+      'The previous scan didn’t finish (the app may have been closed). Restarting the scan from scratch.',
     )
     expect(tString('indexing.rescan.watcherChannelOverflow')).toBe(
       'A burst of filesystem activity overflowed the watcher channel. Running a fresh scan to stay accurate.',

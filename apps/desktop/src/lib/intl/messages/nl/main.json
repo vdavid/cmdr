@@ -9,11 +9,11 @@
   },
   "main.upgradeNudge.mac": "We hebben nieuwe onboardingopties toegevoegd. Open Cmdr > Onboarding… om ze te bekijken.",
   "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
+    "sourceHash": "439adfd"
   },
   "main.upgradeNudge.other": "We hebben nieuwe onboardingopties toegevoegd. Open het opdrachtenpalet en voer Onboarding… uit om ze te bekijken.",
   "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
+    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Cmdr in je Dock houden?",
   "@main.dockPinNudge.title": {
@@ -21,7 +21,7 @@
   },
   "main.dockPinNudge.body": "Je gebruikt Cmdr nu al een paar dagen, dus het lijkt goed te bevallen. Wil je het daar onderin naast Finder vastzetten?",
   "@main.dockPinNudge.body": {
-    "sourceHash": "1718271"
+    "sourceHash": "7f4265e"
   },
   "main.dockPinNudge.unpinNote": "Je kunt het altijd weer losmaken als je van gedachten verandert.",
   "@main.dockPinNudge.unpinNote": {
@@ -41,15 +41,15 @@
   },
   "main.dockPinNudge.addedButDockDidNotRestart": "Cmdrs symbool staat klaar, maar het Dock is nog niet opnieuw geladen. Je ziet het de volgende keer dat je inlogt.",
   "@main.dockPinNudge.addedButDockDidNotRestart": {
-    "sourceHash": "b035470"
+    "sourceHash": "7a4e3bb"
   },
   "main.dockPinNudge.managedDock": "Je Dock wordt beheerd door een configuratieprofiel, dus Cmdr kan zichzelf niet toevoegen. Wie deze Mac beheert, kan dat aanpassen.",
   "@main.dockPinNudge.managedDock": {
-    "sourceHash": "dae0836"
+    "sourceHash": "4781787"
   },
   "main.dockPinNudge.notAdded": "Cmdr is deze keer niet in het Dock terechtgekomen. Je kunt het zelf vanuit de map ‘Apps’ erin slepen wanneer je wilt.",
   "@main.dockPinNudge.notAdded": {
-    "sourceHash": "0d122cb"
+    "sourceHash": "0b863ad"
   },
   "main.revealNudge.title": "‘Toon in Finder’ in Cmdr openen?",
   "@main.revealNudge.title": {
@@ -57,7 +57,7 @@
   },
   "main.revealNudge.body": "Je gebruikt Cmdr nu al een tijdje. Wanneer een andere app ‘Toon in Finder’ uitvoert, kan Cmdr die map openen, met het bestand meteen onder de cursor.",
   "@main.revealNudge.body": {
-    "sourceHash": "1db1d28"
+    "sourceHash": "1934a04"
   },
   "main.revealNudge.switchBackNote": "Je kunt dit altijd terugzetten in Instellingen.",
   "@main.revealNudge.switchBackNote": {
@@ -81,7 +81,7 @@
   },
   "main.revealNudge.notTurnedOn": "Cmdr kon ‘Toon in Finder’ deze keer niet overnemen. De schakelaar staat in Instellingen als je het opnieuw wilt proberen.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "953a4ee"
+    "sourceHash": "0f572c0"
   },
   "main.revealActivation.title": "‘Toon in Finder’ is hier geopend",
   "@main.revealActivation.title": {
@@ -101,7 +101,7 @@
   },
   "main.quit.body": "Wat al klaar is, blijft klaar. Alles wat nog wordt geschreven, stopt waar het is, en wat gedeeltelijk geschreven achterblijft, ruimt Cmdr op.",
   "@main.quit.body": {
-    "sourceHash": "c17f6e7"
+    "sourceHash": "79a69f9"
   },
   "main.quit.countdown": "Over {seconds, plural, one {{secondsText} seconde} other {{secondsText} seconden}} stopt Cmdr vanzelf, zodat herstarten of uitloggen nooit hoeft te wachten.",
   "@main.quit.countdown": {
@@ -129,7 +129,7 @@
   },
   "main.oldWebkit.body": "De interface van Cmdr heeft Safari 15.4 of nieuwer nodig, en op deze Mac staat een oudere versie. Open Software-update en installeer alles wat klaarstaat. Dat lost het meestal op.",
   "@main.oldWebkit.body": {
-    "sourceHash": "bcadac5"
+    "sourceHash": "a7112ec"
   },
   "main.oldMacos.title": "Cmdr op macOS {version}",
   "@main.oldMacos.title": {
@@ -137,7 +137,7 @@
   },
   "main.oldMacos.body": "Cmdr ondersteunt officieel macOS 12 en nieuwer, dus hier doet het zijn best zonder garanties. Het meeste werkt, maar sommige kleuren en kleine details in de opmaak kunnen er raar uitzien, en oplossingen voor oudere systemen komen als laatste. Kom je iets tegen dat kapot is, dan hoor ik het alsnog graag.",
   "@main.oldMacos.body": {
-    "sourceHash": "9484b91"
+    "sourceHash": "f9b4185"
   },
   "main.oldMacos.gotIt": "Begrepen",
   "@main.oldMacos.gotIt": {
@@ -161,6 +161,6 @@
   },
   "main.escapeFullScreenHint.onceNote": "Je ziet dit maar één keer.",
   "@main.escapeFullScreenHint.onceNote": {
-    "sourceHash": "c76cb6c"
+    "sourceHash": "210b892"
   }
 }

@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "你的数据会去往哪里、在那里会被怎样处理，取决于你选择的服务，以及你和它之间的协议。Ollama、LM Studio 和自定义端点也是如此：数据会发往那台服务器所在的地方。Cmdr 自己的服务器从来看不到其中任何内容。",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>新建文件夹的名称建议</b>：当前文件夹的路径，以及其中最多 100 个名称",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>用自然语言搜索</b>：你输入的文字",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "它正在限制请求速率，或者你的套餐配额已用完。请检查你的套餐和账单，然后重试。",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "AI 用时太久了",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "无法连接你的 AI 提供方",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "请检查你的网络或提供方的状态，然后重试。",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "AI 返回了空内容",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "无法读取 AI 的回答",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "请重试，或者在“设置 > AI”中选择另一个模型。",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "无法识别那个 AI 提供方",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "请在“设置 > AI”中选择一个提供方。",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "无法连接服务器",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "出了点问题",
   "@ai.cloud.genericError": {
@@ -423,7 +423,7 @@
   },
   "ai.local.deleteConfirmMessage": "这会释放 {modelSize} 的磁盘空间。再次使用本地 AI 时，你需要重新下载它。",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "正在删除…",
   "@ai.local.deleteButtonDeleting": {
@@ -435,7 +435,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {无法保存你的 API 密钥：macOS 钥匙串拒绝了访问} other {无法读取你保存的 API 密钥：macOS 钥匙串拒绝了访问}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {打开“钥匙串访问”，检查“Cmdr”这一项，或将它删除后重新保存。} other {打开“钥匙串访问”，找到“Cmdr”这一项并授予访问权限，或将它删除后重新输入密钥。}}",
   "@ai.secretError.keychainBody": {
@@ -443,7 +443,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {无法保存你的 API 密钥：系统密钥环拒绝了访问} other {无法读取你保存的 API 密钥：系统密钥环拒绝了访问}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "解锁你的密钥环（“密码”/“密钥环”应用），然后重试。",
   "@ai.secretError.keyringBody": {
@@ -451,7 +451,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {无法保存你的 API 密钥。} other {无法读取你保存的 API 密钥。}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "确认你的系统密钥环可用，然后重试。如果问题仍然存在，请重新启动应用。",
   "@ai.secretError.genericBody": {

@@ -42,7 +42,7 @@ describe('AiTransparencyStrip', () => {
   it('renders the agent lead-in', async () => {
     const { target, cleanup } = setup({ aiPrompt: 'photos', caveat: '' })
     await tick()
-    expect(target.querySelector('.ai-summary-lead')?.textContent).toMatch(/here's what the agent did/i)
+    expect(target.querySelector('.ai-summary-lead')?.textContent).toMatch(/here’s what the agent did/i)
     cleanup()
   })
 

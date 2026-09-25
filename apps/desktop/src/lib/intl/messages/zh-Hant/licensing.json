@@ -122,11 +122,11 @@
   },
   "licensing.commercialReminder.usingPersonal": "你目前使用的是「個人」授權。",
   "@licensing.commercialReminder.usingPersonal": {
-    "sourceHash": "508c17d"
+    "sourceHash": "3aa6518"
   },
   "licensing.commercialReminder.askCommercial": "如果你在工作中使用 Cmdr，請取得「商業」授權，以符合授權規範。",
   "@licensing.commercialReminder.askCommercial": {
-    "sourceHash": "6bf4031"
+    "sourceHash": "84b372c"
   },
   "licensing.commercialReminder.priceInfo": "商業授權一次性 $59，也支持 Cmdr 持續開發下去。",
   "@licensing.commercialReminder.priceInfo": {
@@ -154,7 +154,7 @@
   },
   "licensing.expiration.info": "Cmdr 現在以個人使用模式執行。如果你仍在工作中使用它，請續訂你的授權。",
   "@licensing.expiration.info": {
-    "sourceHash": "5fcebb5"
+    "sourceHash": "274de6c"
   },
   "licensing.expiration.renew": "續訂授權",
   "@licensing.expiration.renew": {
@@ -178,7 +178,7 @@
   },
   "licensing.dialog.serverInvalidBanner": "這組授權碼無法透過伺服器驗證。請改用其他授權碼，或寫信到 <supportEmail>{email}</supportEmail> 給我們。",
   "@licensing.dialog.serverInvalidBanner": {
-    "sourceHash": "616b906"
+    "sourceHash": "fa68511"
   },
   "licensing.dialog.labelType": "授權類型",
   "@licensing.dialog.labelType": {
@@ -230,7 +230,7 @@
   },
   "licensing.dialog.pendingHint": "我們會在 {days} 天內自動與伺服器完成驗證。",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "8d9801b"
+    "sourceHash": "b4bbb38"
   },
   "licensing.dialog.useDifferentKey": "改用其他授權碼",
   "@licensing.dialog.useDifferentKey": {
@@ -254,7 +254,7 @@
   },
   "licensing.dialog.enterPrompt": "請貼上購買後收到的電子郵件裡的授權碼。還沒有嗎？<getLicense>取得授權</getLicense>。",
   "@licensing.dialog.enterPrompt": {
-    "sourceHash": "f6fb47a"
+    "sourceHash": "4e3a096"
   },
   "licensing.dialog.inputPlaceholder": "例如：CMDR-ABCD-EFGH-1234",
   "@licensing.dialog.inputPlaceholder": {
@@ -262,11 +262,11 @@
   },
   "licensing.dialog.retryExhausted": "我們已經試了 {count} 次都沒有成功，很抱歉造成你的困擾。請寫信到 <supportEmail>{email}</supportEmail>，我們會為你處理。",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "4f3331b"
+    "sourceHash": "d2aa21a"
   },
   "licensing.dialog.serverInvalidHelp": "如果你認為這是誤判，請寫信到 <supportEmail>{email}</supportEmail>，我們會為你處理。",
   "@licensing.dialog.serverInvalidHelp": {
-    "sourceHash": "90471d2"
+    "sourceHash": "743cbed"
   },
   "licensing.dialog.genericHelp": "如果需要協助，請透過 <supportEmail>{email}</supportEmail> 與我們聯絡。",
   "@licensing.dialog.genericHelp": {
@@ -302,7 +302,7 @@
   },
   "licensing.dialog.networkFallbackError": "無法透過伺服器驗證你的授權。請稍後再試一次。",
   "@licensing.dialog.networkFallbackError": {
-    "sourceHash": "cb2b8e0"
+    "sourceHash": "fc7e124"
   },
   "licensing.dialog.expiredOnError": "這組授權已於 {date} 過期。",
   "@licensing.dialog.expiredOnError": {
@@ -314,7 +314,7 @@
   },
   "licensing.dialog.serverInvalidError": "我們認得這組授權碼，但向付款服務商查詢時，對方並不認得它。如果這筆購買已經退款或款項尚未完成，就可能這樣。",
   "@licensing.dialog.serverInvalidError": {
-    "sourceHash": "4beeef1"
+    "sourceHash": "58f1457"
   },
   "licensing.dialog.emptyKeyError": "請輸入授權碼",
   "@licensing.dialog.emptyKeyError": {
@@ -326,11 +326,11 @@
   },
   "licensing.dialog.mailtoBody": "您好，\n\n我的授權碼無法啟用：\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
-    "sourceHash": "bcdc2b6"
+    "sourceHash": "c076655"
   },
   "licensing.error.badSignature": "這組授權碼沒有通過我們的簽章驗證，看起來不是有效的授權碼。",
   "@licensing.error.badSignature": {
-    "sourceHash": "e9842df"
+    "sourceHash": "3bcac8e"
   },
   "licensing.error.badSignatureHint": "請仔細檢查有沒有打錯，並從購買通知信裡重新貼上一次。",
   "@licensing.error.badSignatureHint": {
@@ -346,7 +346,7 @@
   },
   "licensing.error.shortCodeNotFound": "這組授權看起來沒問題，但我們找遍了資料庫都沒能找到它。",
   "@licensing.error.shortCodeNotFound": {
-    "sourceHash": "c123af8"
+    "sourceHash": "0f9ccbf"
   },
   "licensing.error.shortCodeNotFoundHint": "請確認你從購買通知信裡貼上的授權碼正確無誤。",
   "@licensing.error.shortCodeNotFoundHint": {
@@ -354,7 +354,7 @@
   },
   "licensing.error.network": "哎呀，我們這次連不到授權伺服器。",
   "@licensing.error.network": {
-    "sourceHash": "63da44b"
+    "sourceHash": "d03567c"
   },
   "licensing.error.networkHint": "請檢查你的網際網路連線，然後再試一次。",
   "@licensing.error.networkHint": {
@@ -362,7 +362,7 @@
   },
   "licensing.error.server": "嗯，授權伺服器回了奇怪的東西。真的很抱歉。",
   "@licensing.error.server": {
-    "sourceHash": "6ca76c0"
+    "sourceHash": "89870f9"
   },
   "licensing.error.serverHint": "請稍後再試一次。",
   "@licensing.error.serverHint": {
@@ -374,7 +374,7 @@
   },
   "licensing.error.genericHint": "請再試一次。如果問題持續發生，請寫信給我們，我們會協助你。",
   "@licensing.error.genericHint": {
-    "sourceHash": "9108b68"
+    "sourceHash": "be0771c"
   },
   "licensing.section.title": "授權",
   "@licensing.section.title": {

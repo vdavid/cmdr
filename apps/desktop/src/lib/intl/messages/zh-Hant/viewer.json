@@ -25,15 +25,15 @@
   },
   "viewer.error.notFound": "找不到這個檔案。它可能被移動、重新命名或刪除了。",
   "@viewer.error.notFound": {
-    "sourceHash": "580b83c"
+    "sourceHash": "9257fab"
   },
   "viewer.error.isDirectory": "這是一個資料夾，所以這裡沒有東西可以檢視。在主視窗中開啟它，就能看到裡面有什麼。",
   "@viewer.error.isDirectory": {
-    "sourceHash": "b29fe2e"
+    "sourceHash": "5abb771"
   },
   "viewer.error.timeout": "無法載入這個檔案。這個卷宗可能很慢或沒有回應。",
   "@viewer.error.timeout": {
-    "sourceHash": "d163618"
+    "sourceHash": "74b9656"
   },
   "viewer.error.tooLargeToPreview": "這個檔案太大，沒辦法直接從這裡預覽。請先把它複製出來，再開啟。",
   "@viewer.error.tooLargeToPreview": {
@@ -41,7 +41,7 @@
   },
   "viewer.error.archiveUnreadable": "無法從封存檔裡開啟這個檔案。它可能已加密、已損壞，或用了 Cmdr 讀不了的格式。",
   "@viewer.error.archiveUnreadable": {
-    "sourceHash": "01490a6"
+    "sourceHash": "e0b8f4e"
   },
   "viewer.error.retry": "再試一次",
   "@viewer.error.retry": {
@@ -243,7 +243,7 @@
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "這是一個以串流模式顯示的大型檔案。我們正在背景建立索引（最多 {seconds} 秒）⋯目前的行號是估算值。",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "033d82d"
+    "sourceHash": "60095b8"
   },
   "viewer.statusBar.badge.streaming": "串流中",
   "@viewer.statusBar.badge.streaming": {
@@ -251,7 +251,7 @@
   },
   "viewer.statusBar.badge.streamingTooltip": "這是一個以串流模式顯示的大型檔案。建立索引會花上超過 {seconds} 秒，所以我們沒有做。行號是估算值。",
   "@viewer.statusBar.badge.streamingTooltip": {
-    "sourceHash": "1752e59"
+    "sourceHash": "b1a14ac"
   },
   "viewer.statusBar.badge.wrap": "自動換行",
   "@viewer.statusBar.badge.wrap": {
@@ -280,7 +280,7 @@
   },
   "viewer.image.error": "抱歉，我們沒辦法顯示這張影像。檔案可能已損壞，或是我們無法顯示的格式。",
   "@viewer.image.error": {
-    "sourceHash": "9a24fe8"
+    "sourceHash": "1e8c6d9"
   },
   "viewer.pdf.loading": "正在載入 PDF",
   "@viewer.pdf.loading": {
@@ -324,7 +324,7 @@
   },
   "viewer.copyDialog.refuseBody": "這超過了剪貼板 100 MB 的上限。試試用搜尋（⌘F）找到你要的部分，或把選取內容儲存成檔案。",
   "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "75f3043"
+    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "檔案在磁碟上有變動。要重新載入嗎？",
   "@viewer.reloadToast.grew": {
@@ -348,7 +348,7 @@
   },
   "viewer.copy.clipboardUnreachable": "無法存取剪貼板。要再試一次嗎？",
   "@viewer.copy.clipboardUnreachable": {
-    "sourceHash": "c0382ba"
+    "sourceHash": "3c8ddb8"
   },
   "viewer.copy.readTooLong": "讀取花的時間太久了。要不要選少一點？",
   "@viewer.copy.readTooLong": {
@@ -356,11 +356,11 @@
   },
   "viewer.copy.copyFailed": "無法複製選取內容。要再試一次嗎？",
   "@viewer.copy.copyFailed": {
-    "sourceHash": "6a1ab41"
+    "sourceHash": "b08416d"
   },
   "viewer.copy.readFailed": "無法讀取選取內容。要再試一次嗎？",
   "@viewer.copy.readFailed": {
-    "sourceHash": "bde5f85"
+    "sourceHash": "24ea14a"
   },
   "viewer.saveAs.title": "儲存選取內容",
   "@viewer.saveAs.title": {
@@ -372,7 +372,7 @@
   },
   "viewer.saveAs.panelFailed": "無法開啟儲存面板。要再試一次嗎？",
   "@viewer.saveAs.panelFailed": {
-    "sourceHash": "70c3f76"
+    "sourceHash": "ade021c"
   },
   "viewer.saveAs.saved": "選取內容已儲存到 {name}",
   "@viewer.saveAs.saved": {
@@ -384,7 +384,7 @@
   },
   "viewer.saveAs.saveFailed": "無法儲存選取內容。要再試一次嗎？",
   "@viewer.saveAs.saveFailed": {
-    "sourceHash": "2d85642"
+    "sourceHash": "ca5709f"
   },
   "viewer.saveAs.destinationReadOnly": "那個位置是唯讀的。換一個資料夾儲存吧？",
   "@viewer.saveAs.destinationReadOnly": {

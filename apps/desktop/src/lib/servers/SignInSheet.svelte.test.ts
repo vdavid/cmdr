@@ -106,7 +106,7 @@ describe('SignInSheet: a refusal', () => {
     // read as being about the whole form, which is a puzzle rather than an
     // instruction.
     const inline = document.body.querySelector('#sign-in-secret-refusal')
-    expect(inline?.textContent).toContain("That password didn't work for ada")
+    expect(inline?.textContent).toContain('That password didn’t work for ada')
     expect(secret?.getAttribute('aria-invalid')).toBe('true')
     expect(secret?.getAttribute('aria-describedby')).toBe('sign-in-secret-refusal')
 
@@ -129,7 +129,7 @@ describe('SignInSheet: a refusal', () => {
 
     const alert = document.body.querySelector('.form-refusal')
     expect(alert?.getAttribute('role')).toBe('alert')
-    expect(alert?.textContent).toContain("Cmdr couldn't reach nas.local.")
+    expect(alert?.textContent).toContain('Cmdr couldn’t reach nas.local.')
   })
 
   it('lets the person try again when an attempt breaks down instead of answering', async () => {
@@ -144,7 +144,7 @@ describe('SignInSheet: a refusal', () => {
     await flush()
 
     expect(buttonSaying('Sign in').disabled).toBe(false)
-    expect(document.body.querySelector('.form-refusal')?.textContent).toContain("Cmdr couldn't reach nas.local.")
+    expect(document.body.querySelector('.form-refusal')?.textContent).toContain('Cmdr couldn’t reach nas.local.')
   })
 
   it('offers the secret exactly once per press, and never a username the shape calls read-only', async () => {
@@ -208,7 +208,7 @@ describe('SignInSheet: the host-key step', () => {
     // that CHANGED never wears first contact's plain primary button.
     expect(document.body.textContent).toContain('SHA256:THE-REAL-ONE')
     expect(document.body.textContent).not.toContain('SHA256:THE-ONE-ON-SCREEN')
-    expect(document.body.textContent).toContain("nas.local's key changed")
+    expect(document.body.textContent).toContain('nas.local’s key changed')
   })
 })
 
@@ -532,7 +532,7 @@ describe('SignInSheet: edit mode', () => {
     // the address sent people to save again over an edit that had landed.
     expect(done).toEqual([])
     expect(document.body.textContent).toContain('Cmdr saved your changes')
-    expect(document.body.textContent).not.toContain("couldn't reach")
+    expect(document.body.textContent).not.toContain('couldn’t reach')
     expect(secret.getAttribute('aria-invalid')).toBe('true')
     expect(document.activeElement).toBe(secret)
   })
@@ -580,8 +580,8 @@ describe('SignInSheet: a refusal and the account that earned it', () => {
     // The share turned away `bob`, the account that was sent. Naming `ada`, who
     // the sheet happened to open with, blames an account nobody tried.
     expect(submissions[0]?.mode === 'sign-in' && submissions[0].username).toBe('bob')
-    expect(document.body.textContent).toContain("bob doesn't have access here")
-    expect(document.body.textContent).not.toContain("ada doesn't have access here")
+    expect(document.body.textContent).toContain('bob doesn’t have access here')
+    expect(document.body.textContent).not.toContain('ada doesn’t have access here')
   })
 })
 

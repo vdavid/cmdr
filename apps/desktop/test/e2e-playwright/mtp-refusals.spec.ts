@@ -58,7 +58,7 @@ test.describe('MTP clipboard rejection', () => {
     // Press Cmd+C (copy to clipboard). Toast appears asynchronously; the
     // helper polls for the message and dismisses it after asserting.
     await pressKey(tauriPage, `${CTRL_OR_META}+c`)
-    await expectAndDismissToast(tauriPage, "The clipboard can't carry files from this device. Use F5 to copy them.", {
+    await expectAndDismissToast(tauriPage, 'The clipboard can’t carry files from this device. Use F5 to copy them.', {
       timeout: waitBudget(5000),
     })
   })
@@ -85,7 +85,7 @@ test.describe('MTP clipboard rejection', () => {
     // Press Cmd+X (cut to clipboard). Toast appears asynchronously; the
     // helper polls for the message and dismisses it after asserting.
     await pressKey(tauriPage, `${CTRL_OR_META}+x`)
-    await expectAndDismissToast(tauriPage, "The clipboard can't carry files from this device. Use F6 to move them.", {
+    await expectAndDismissToast(tauriPage, 'The clipboard can’t carry files from this device. Use F6 to move them.', {
       timeout: waitBudget(5000),
     })
   })

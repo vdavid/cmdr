@@ -14,7 +14,7 @@
   },
   "fileOperations.delete.noTrashWarningStrong": "Dieses Volume unterstützt keinen Papierkorb.",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "ef122e2"
+    "sourceHash": "911688a"
   },
   "fileOperations.delete.noTrashWarningRest": "Dateien werden endgültig gelöscht.",
   "@fileOperations.delete.noTrashWarningRest": {
@@ -22,19 +22,19 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Ein Teil deiner Auswahl ist nur online verfügbar. Diese in den Papierkorb zu bewegen würde sie <strong>zuerst herunterladen</strong>. Deshalb bietet Cmdr hier nur an, die gesamte Auswahl zu <strong>löschen</strong>. Im Papierkorb landet keine Kopie, aber Cloud-Dienste bewahren Gelöschtes meist etwa 30 Tage in ihrem eigenen Papierkorb auf. Klicke auf „Löschen“, wenn das in Ordnung ist. Sonst brich diesen Dialog ab und mache entweder alle Dateien zuerst offline verfügbar oder wähle alle nur online verfügbaren Dateien ab.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "4c48ecf"
+    "sourceHash": "2468db5"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "Alles, was du ausgewählt hast, ist nur online verfügbar. Es in den Papierkorb zu bewegen würde es <strong>zuerst herunterladen</strong>. Deshalb bietet Cmdr hier nur an, die gesamte Auswahl zu <strong>löschen</strong>. Im Papierkorb landet keine Kopie, aber Cloud-Dienste bewahren Gelöschtes meist etwa 30 Tage in ihrem eigenen Papierkorb auf. Klicke auf „Löschen“, wenn das in Ordnung ist. Sonst brich diesen Dialog ab und mache diese Dateien zuerst offline verfügbar.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "52f8c94"
+    "sourceHash": "dd04d39"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "Deine Auswahl enthält doch nur online verfügbare Inhalte, deshalb bietet die Taste unten jetzt „Löschen“ an. Lies den Hinweis oben und drücke sie dann erneut, wenn das in Ordnung ist.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "623e7e0"
+    "sourceHash": "d3f4a7a"
   },
   "fileOperations.delete.archiveWarningStrong": "In einem Archiv gibt es keinen Papierkorb.",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "29efc59"
+    "sourceHash": "d25cd46"
   },
   "fileOperations.delete.archiveWarningRest": "Diese Objekte werden endgültig aus der Zip-Datei entfernt.",
   "@fileOperations.delete.archiveWarningRest": {
@@ -62,11 +62,11 @@
   },
   "fileOperations.trash.undoUnavailable": "Es gibt nichts zurückzulegen. Diese Objekte sind vielleicht schon zurück, oder ihr Laufwerk ist nicht verbunden.",
   "@fileOperations.trash.undoUnavailable": {
-    "sourceHash": "2acefae"
+    "sourceHash": "ee17b5f"
   },
   "fileOperations.trash.noTrashHere": "Dieses Laufwerk hat keinen Papierkorb.",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "91d7462"
+    "sourceHash": "f58bdab"
   },
   "fileOperations.delete.trashSwitch": "In den Papierkorb bewegen",
   "@fileOperations.delete.trashSwitch": {
@@ -158,7 +158,7 @@
   },
   "fileOperations.mkdir.timeoutMessage": "Die Erstellung des Ordners ließ sich nicht bestätigen. Das Volume ist vielleicht langsam, der Ordner wurde also womöglich trotzdem erstellt.",
   "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "751aec6"
+    "sourceHash": "8bc758a"
   },
   "fileOperations.mkdir.timeoutRefresh": "Dateiliste aktualisieren",
   "@fileOperations.mkdir.timeoutRefresh": {
@@ -247,11 +247,11 @@
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Kopieren.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
-    "sourceHash": "025f3dc"
+    "sourceHash": "4e8d166"
   },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Diesen Ordner gibt es noch nicht. Cmdr erstellt ihn beim Bewegen.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
-    "sourceHash": "976edd2"
+    "sourceHash": "1246331"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Dieser Ordner ist schreibgeschützt, hier kann nichts abgelegt werden.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -259,11 +259,11 @@
   },
   "fileOperations.transferDialog.destinationNoPermission": "Du hast keine Berechtigung, diesem Ordner Dateien hinzuzufügen.",
   "@fileOperations.transferDialog.destinationNoPermission": {
-    "sourceHash": "728b1ed"
+    "sourceHash": "a7e0efa"
   },
   "fileOperations.transferDialog.destinationNotWritable": "Dieser Ordner nimmt keine neuen Dateien an.",
   "@fileOperations.transferDialog.destinationNotWritable": {
-    "sourceHash": "d7cd278"
+    "sourceHash": "07094f6"
   },
   "fileOperations.transferDialog.targetWillBeOverwritten": "Eine Datei mit diesem Namen ist bereits hier. Cmdr ersetzt sie.",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
@@ -279,7 +279,7 @@
   },
   "fileOperations.transferDialog.hardlinkNote": "<written></written> werden geschrieben. Die Quelle ist <ondisk></ondisk> auf dem Datenträger – die Differenz sind Hardlink-Dateien, die über Laufwerke hinweg nicht verknüpft bleiben können.",
   "@fileOperations.transferDialog.hardlinkNote": {
-    "sourceHash": "af8a4c9"
+    "sourceHash": "acac507"
   },
   "fileOperations.transferDialog.compressLevelCaption": "Höhere Stufen ergeben ein kleineres Zip, brauchen aber länger zum Packen.",
   "@fileOperations.transferDialog.compressLevelCaption": {
@@ -295,11 +295,11 @@
   },
   "fileOperations.transferDialog.scanUnresponsive": "Die Quelle antwortet nicht, mehr konnten wir nicht zählen.",
   "@fileOperations.transferDialog.scanUnresponsive": {
-    "sourceHash": "03d95e0"
+    "sourceHash": "ec3beb2"
   },
   "fileOperations.transferDialog.scanStopped": "Wir konnten die Quelle nicht zu Ende vermessen, mehr konnten wir nicht zählen.",
   "@fileOperations.transferDialog.scanStopped": {
-    "sourceHash": "aac156c"
+    "sourceHash": "f7d3029"
   },
   "fileOperations.transferDialog.scanRetry": "Erneut versuchen",
   "@fileOperations.transferDialog.scanRetry": {
@@ -307,7 +307,7 @@
   },
   "fileOperations.transferDialog.conflictsUnknown": "Wir konnten nicht prüfen, was am Ziel schon liegt. Bei jeder Überschneidung fragen wir nach.",
   "@fileOperations.transferDialog.conflictsUnknown": {
-    "sourceHash": "1bc997a"
+    "sourceHash": "d42db28"
   },
   "fileOperations.transferDialog.checkingConflicts": "Konflikte werden geprüft …",
   "@fileOperations.transferDialog.checkingConflicts": {
@@ -367,7 +367,7 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "„{name}“ kann nicht in einen eigenen Unterordner {verb, select, copy {kopiert} other {bewegt}} werden",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "815204a"
+    "sourceHash": "96c81d6"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "„{name}“ ist bereits an diesem Ort",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
@@ -507,11 +507,11 @@
   },
   "fileOperations.transferProgress.warningFileOverFolder": "Das Ziel existiert und ist ein <strong>Ordner</strong>. Du bist dabei, es mit einer <strong>Datei</strong> desselben Namens zu überschreiben. Der gesamte Inhalt des Zielordners würde gelöscht und durch die Datei ersetzt. Was möchtest du tun?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "c560c0f"
+    "sourceHash": "6dce75c"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Diese Namen sehen gleich aus, aber der Server schreibt sie unterschiedlich. „Überschreiben“ ersetzt das Objekt, das schon da ist.",
   "@fileOperations.transferProgress.lookAlikeHint": {
-    "sourceHash": "2d35ddf"
+    "sourceHash": "01ed9ad"
   },
   "fileOperations.transferProgress.existingFolderLabel": "Bestehend (Ordner):",
   "@fileOperations.transferProgress.existingFolderLabel": {
@@ -551,7 +551,7 @@
   },
   "fileOperations.transferProgress.smallerDisabledTooltip": "Vergleich nicht möglich: Die Größe des Zielordners ist unbekannt.",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
-    "sourceHash": "3bb25be"
+    "sourceHash": "ad5025c"
   },
   "fileOperations.transferProgress.conflictSkip": "Überspringen",
   "@fileOperations.transferProgress.conflictSkip": {
@@ -649,7 +649,7 @@
   },
   "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Alle Dateien sind schon am Ziel, also lässt sich die Bewegung jetzt nicht mehr zurücknehmen. Mit Abbrechen stoppt Cmdr aber noch, bevor es die restlichen Originale entfernt.",
   "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
-    "sourceHash": "5f8b044"
+    "sourceHash": "da51356"
   },
   "fileOperations.transferProgress.titlePaused": "Angehalten",
   "@fileOperations.transferProgress.titlePaused": {
@@ -694,7 +694,7 @@
   },
   "fileOperations.transferProgress.queuedToast": "{countText} davor, daher wartet dieser hier noch. Du findest ihn in der Vorgangswarteschlange.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "60a251d"
+    "sourceHash": "1bb57e1"
   },
   "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# Vorgang} other {# Vorgänge}}",
   "@fileOperations.transferProgress.queuedToastCount": {
@@ -718,11 +718,11 @@
   },
   "fileOperations.rollbackConfirm.body": "Das löscht alle Dateien, die der Vorgang bisher geschrieben hat, und ersetzte Dateien kommen nicht zurück. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges übrig.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "740e974"
+    "sourceHash": "1d3328f"
   },
   "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Das legt alles zurück, was der Vorgang bisher bewegt hat, und ersetzte Dateien kommen nicht zurück. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges liegen.",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
-    "sourceHash": "a489eb2"
+    "sourceHash": "a058f98"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Rollback abschließen?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -730,15 +730,15 @@
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Das löscht die Dateien und Ordner, die der Vorgang angelegt hat. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges davon übrig.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
-    "sourceHash": "88584f4"
+    "sourceHash": "9afb3e2"
   },
   "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Das legt die Dateien dorthin zurück, wo sie hergekommen sind. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also bleibt womöglich einiges liegen.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
-    "sourceHash": "7d55114"
+    "sourceHash": "5c3f276"
   },
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Das gibt den Dateien ihre alten Namen zurück. Cmdr überspringt alles, bei dem es sich nicht sicher ist, also behält womöglich einiges seinen jetzigen Namen.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
-    "sourceHash": "819690f"
+    "sourceHash": "37932e7"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "So lassen",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
@@ -786,7 +786,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr überspringt alles, bei dem es sich nicht sicher ist. Das hier ist deshalb geblieben, wo es ist:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "fb28a31"
+    "sourceHash": "bab6eb4"
   },
   "fileOperations.cancelRollback.reason.drift.named": "Habe {name} unverändert gelassen: das Objekt hat sich geändert, seit Cmdr es dort abgelegt hat.",
   "@fileOperations.cancelRollback.reason.drift.named": {
@@ -798,11 +798,11 @@
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "Habe {name} unverändert gelassen: Cmdr konnte nicht prüfen, ob sich das Objekt geändert hat.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
-    "sourceHash": "29c32b9"
+    "sourceHash": "3e553b2"
   },
   "fileOperations.cancelRollback.reason.unverifiable.counted": "Habe {countText} {count, plural, one {Objekt} other {Objekte}} unverändert gelassen: Cmdr konnte nicht prüfen, ob sie sich geändert haben.",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "e40696b"
+    "sourceHash": "25fe620"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "Habe {name} am neuen Ort gelassen: am alten Ort liegt jetzt etwas anderes.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
@@ -822,19 +822,19 @@
   },
   "fileOperations.cancelRollback.reason.failed.named": "Cmdr konnte {name} nicht rückgängig machen. Vielleicht ist das Laufwerk nicht verbunden oder schreibgeschützt.",
   "@fileOperations.cancelRollback.reason.failed.named": {
-    "sourceHash": "5c9d51d"
+    "sourceHash": "d22eda5"
   },
   "fileOperations.cancelRollback.reason.failed.counted": "Cmdr konnte {countText} {count, plural, one {Objekt} other {Objekte}} nicht rückgängig machen. Vielleicht ist ihr Laufwerk nicht verbunden oder schreibgeschützt.",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "92c8b00"
+    "sourceHash": "fa172fb"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Cmdr konnte {name} nicht entfernen: eine unvollständige Kopie, die am Ziel geblieben ist. Du kannst sie gefahrlos löschen, und Cmdr räumt sie bei einer späteren Übertragung dorthin weg.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
-    "sourceHash": "4aeaddc"
+    "sourceHash": "d47b49d"
   },
   "fileOperations.cancelRollback.stagedLeftover.counted": "Cmdr konnte {countText} unvollständige {count, plural, one {Kopie} other {Kopien}} nicht entfernen, die am Ziel geblieben sind. Du kannst sie gefahrlos löschen, und Cmdr räumt sie bei einer späteren Übertragung dorthin weg.",
   "@fileOperations.cancelRollback.stagedLeftover.counted": {
-    "sourceHash": "becfef5"
+    "sourceHash": "6567e25"
   },
   "fileOperations.leftovers.stagingFolderKept": "Cmdr hat auf {volumeName} Dateien aus einer nicht abgeschlossenen Bewegung gefunden und sie an ihrem Platz gelassen: in einem verborgenen Ordner namens {folderName}.",
   "@fileOperations.leftovers.stagingFolderKept": {
@@ -866,7 +866,7 @@
   },
   "fileOperations.archivePassword.retryTitle": "Das hat nicht geklappt",
   "@fileOperations.archivePassword.retryTitle": {
-    "sourceHash": "dd30abb"
+    "sourceHash": "a12d349"
   },
   "fileOperations.archivePassword.message": "<archive>{name}</archive> ist passwortgeschützt. Gib das Passwort ein, um es zu entsperren.",
   "@fileOperations.archivePassword.message": {
@@ -874,7 +874,7 @@
   },
   "fileOperations.archivePassword.retryMessage": "Mit diesem Passwort ließ sich <archive>{name}</archive> nicht entsperren. Versuche es noch mal.",
   "@fileOperations.archivePassword.retryMessage": {
-    "sourceHash": "88ef11a"
+    "sourceHash": "3d62c0c"
   },
   "fileOperations.archivePassword.inputAria": "Archivpasswort",
   "@fileOperations.archivePassword.inputAria": {
@@ -890,11 +890,11 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Der Ordnername darf kein „/“ und keine Nullzeichen enthalten} other {Der Dateiname darf kein „/“ und keine Nullzeichen enthalten}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "4fa16ce"
+    "sourceHash": "1a3c594"
   },
   "fileOperations.validation.empty": "{kind, select, folder {Der Ordnername darf nicht leer sein} other {Der Dateiname darf nicht leer sein}}",
   "@fileOperations.validation.empty": {
-    "sourceHash": "e6acb43"
+    "sourceHash": "2a25343"
   },
   "fileOperations.validation.nameTooLong": "{kind, select, folder {Der Ordnername ist zu lang ({byteCount}/{maxBytes} Bytes)} other {Der Dateiname ist zu lang ({byteCount}/{maxBytes} Bytes)}}",
   "@fileOperations.validation.nameTooLong": {
@@ -906,7 +906,7 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "Das Ändern der Dateiendung ist nicht erlaubt (war „{oldExt}“)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "0b2df1e"
+    "sourceHash": "e81362d"
   },
   "fileOperations.validation.conflict": "„{name}“ existiert bereits in diesem Ordner",
   "@fileOperations.validation.conflict": {
@@ -914,11 +914,11 @@
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {Dieser Ordnername kann nicht verwendet werden} other {Dieser Dateiname kann nicht verwendet werden}}",
   "@fileOperations.validation.nameNotUsable": {
-    "sourceHash": "8482a7b"
+    "sourceHash": "6c50bb6"
   },
   "fileOperations.validation.pathEmpty": "Der Pfad darf nicht leer sein",
   "@fileOperations.validation.pathEmpty": {
-    "sourceHash": "348eb60"
+    "sourceHash": "c7afbbc"
   },
   "fileOperations.validation.pathNotAbsolute": "Der Pfad muss absolut sein (mit / beginnen)",
   "@fileOperations.validation.pathNotAbsolute": {

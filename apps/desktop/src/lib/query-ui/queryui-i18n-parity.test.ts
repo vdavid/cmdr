@@ -28,7 +28,7 @@ afterAll(() => {
 
 describe('query-ui static-string parity (en)', () => {
   it('resolves bar, mode-chip, and run-button copy', () => {
-    expect(tString('queryUi.bar.placeholder.ai')).toBe("Describe what you're looking for")
+    expect(tString('queryUi.bar.placeholder.ai')).toBe('Describe what you’re looking for')
     expect(tString('queryUi.bar.placeholder.filename')).toBe('Filename pattern (use * and ? as wildcards)')
     expect(tString('queryUi.bar.runLabel')).toBe('Search')
     expect(tString('queryUi.mode.ai.label')).toBe('Ask anything')
@@ -54,7 +54,7 @@ describe('query-ui static-string parity (en)', () => {
   })
 
   it('resolves the AI transparency strip copy', () => {
-    expect(tString('queryUi.ai.lead')).toBe("Here's what the agent did:")
+    expect(tString('queryUi.ai.lead')).toBe('Here’s what the agent did:')
     expect(tString('queryUi.ai.empty')).toBe('Nothing to filter on yet. Try rephrasing?')
     expect(tString('queryUi.ai.refine')).toBe('Refine…')
   })

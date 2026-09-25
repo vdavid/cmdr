@@ -35,10 +35,12 @@ ICU MessageFormat treats `'` as an escape character. A lone `'` is literal UNLES
 (`{`, `<`, `#`), where it opens a quoted section that swallows following text until the next `'`. `''` always collapses
 to a single `'`. (Verified on `intl-messageformat@11.2.7`, by reading the parser behavior, 2026-06-16.)
 
-Cmdr copy is full of apostrophes ("doesn't", "can't", "you're", "already at the target"). The rule is to double EVERY
-apostrophe in a catalog value, not only the dangerous ones: `''` is always safe, and a blanket rule survives future copy
-edits that might move an apostrophe next to a placeholder. The per-area parity test is the net that catches a missed
-double.
+Cmdr's English writes every apostrophe as `’` (U+2019, `docs/style-guide.md`), which ICU treats as an ordinary
+character, so `en` and its overlays need no escaping at all. A catalog that writes the straight `'` (a translation whose
+language convention is the straight one) doubles EVERY one in an ICU value, not only the dangerous ones: `''` is always
+safe, and a blanket rule survives future copy edits that might move an apostrophe next to a placeholder. The per-area
+parity test is the net that catches a missed double. The one straight `'` left in `en` is a deliberate ICU escape
+(`'<'no perms>` renders a literal `<`).
 
 ## ⚠️ `errors.*` are RAW (no ICU): translators must NOT add ICU syntax there
 

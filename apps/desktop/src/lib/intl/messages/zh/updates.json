@@ -1,19 +1,19 @@
 {
   "updates.failure.check": "Cmdr 无法检查更新。{reason}",
   "@updates.failure.check": {
-    "sourceHash": "66f0ef1"
+    "sourceHash": "5fb454c"
   },
   "updates.failure.checkUntyped": "Cmdr 无法检查更新。请检查网络连接，然后稍后再试。",
   "@updates.failure.checkUntyped": {
-    "sourceHash": "55dcdd7"
+    "sourceHash": "233f5d9"
   },
   "updates.failure.download": "Cmdr 无法下载更新。请稍后再试。",
   "@updates.failure.download": {
-    "sourceHash": "fdd5095"
+    "sourceHash": "1becb1b"
   },
   "updates.failure.install": "Cmdr 无法安装更新。请稍后再试，或从 getcmdr.com 获取最新版 Cmdr。",
   "@updates.failure.install": {
-    "sourceHash": "c997a13"
+    "sourceHash": "05a4714"
   },
   "updates.checkToast.sendErrorReport": "发送错误报告",
   "@updates.checkToast.sendErrorReport": {
@@ -25,7 +25,7 @@
   },
   "updates.toast.readyDetail": "现在重新启动，或者下次打开 Cmdr 时自动生效。",
   "@updates.toast.readyDetail": {
-    "sourceHash": "aab853f"
+    "sourceHash": "42ce099"
   },
   "updates.toast.versionChange": "v{prev} → v{next}",
   "@updates.toast.versionChange": {
@@ -50,11 +50,11 @@
   },
   "updates.moveToApplicationsDialog.translocated": "新版本已就绪，但 macOS 正在从一份临时的只读副本运行 Cmdr。直接在下载位置打开应用时就会这样，更新也就无处可写。",
   "@updates.moveToApplicationsDialog.translocated": {
-    "sourceHash": "510a3a6"
+    "sourceHash": "ed64953"
   },
   "updates.moveToApplicationsDialog.readOnlyVolume": "新版本已就绪，但 Cmdr 正在从一个只读位置运行，通常是仍然挂载着的磁盘映像。更新无处可写。",
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
-    "sourceHash": "94edc89"
+    "sourceHash": "a23ef5a"
   },
   "updates.moveToApplicationsDialog.howTo": "退出 Cmdr，把它拖到你的“应用程序”文件夹，再从那里打开。之后每次更新都会自动到位。",
   "@updates.moveToApplicationsDialog.howTo": {

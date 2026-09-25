@@ -55,7 +55,7 @@ describe('QuickLookHintToastContent', () => {
     expect(text).toContain('works in Finder, too')
     expect(text).toContain('Enter')
     expect(text).toContain('Settings > Keyboard shortcuts')
-    expect(text).toContain("Don't show again")
+    expect(text).toContain('Don’t show again')
   })
 
   it('Settings link dismisses the toast and deep-links into Keyboard shortcuts', async () => {
@@ -73,15 +73,15 @@ describe('QuickLookHintToastContent', () => {
     expect(setSetting).not.toHaveBeenCalled()
   })
 
-  it("Don't show again button flips the suppress setting and dismisses the toast", async () => {
+  it('Don’t show again button flips the suppress setting and dismisses the toast', async () => {
     const target = document.createElement('div')
     document.body.appendChild(target)
     mount(QuickLookHintToastContent, { target, props: {} })
     await tick()
     const suppressButton = Array.from(target.querySelectorAll('button')).find(
-      (b) => b.textContent.trim() === "Don't show again",
+      (b) => b.textContent.trim() === 'Don’t show again',
     )
-    if (!suppressButton) throw new Error("Don't show again button missing")
+    if (!suppressButton) throw new Error('Don’t show again button missing')
     suppressButton.click()
     expect(setSetting).toHaveBeenCalledWith('fileExplorer.suppressQuickLookHint', true)
     expect(dismissToast).toHaveBeenCalledWith('quick-look-hint')

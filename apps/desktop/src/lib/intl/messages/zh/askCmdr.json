@@ -522,11 +522,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "另一个文件已经在用这个名称，而且不在这次重命名计划里。为了保护它，这项重命名已被阻止。",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "（不存在）",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "这个源文件已不存在。它可能已在 Cmdr 之外被删除或重命名。",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -674,7 +674,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "AI 功能还看不到你的文件夹。点按即可设置完全磁盘访问权限。",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "AI 功能已开启，但还需要一个提供方才能工作。点按即可在设置中选一个。",
   "@askCmdr.wake.needsApiKey": {

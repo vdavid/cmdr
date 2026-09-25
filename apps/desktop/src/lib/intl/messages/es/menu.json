@@ -424,7 +424,7 @@
   },
   "menu.help.whatsNew": "Novedades",
   "@menu.help.whatsNew": {
-    "sourceHash": "135e912"
+    "sourceHash": "37e6112"
   },
   "menu.help.sendFeedback": "Enviar comentarios…",
   "@menu.help.sendFeedback": {
@@ -568,7 +568,7 @@
   },
   "menu.mediaIndex.excludeFolder": "No indexar las imágenes de esta carpeta",
   "@menu.mediaIndex.excludeFolder": {
-    "sourceHash": "811f28c"
+    "sourceHash": "9119500"
   },
   "menu.mediaIndex.includeFolder": "Volver a indexar las imágenes de aquí",
   "@menu.mediaIndex.includeFolder": {

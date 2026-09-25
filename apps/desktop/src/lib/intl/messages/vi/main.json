@@ -9,11 +9,11 @@
   },
   "main.upgradeNudge.mac": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở Cmdr > Thiết lập ban đầu… để xem qua.",
   "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
+    "sourceHash": "439adfd"
   },
   "main.upgradeNudge.other": "Chúng tôi đã thêm các tùy chọn thiết lập ban đầu mới. Mở bảng lệnh và chạy Thiết lập ban đầu… để xem qua.",
   "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
+    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Giữ lại Cmdr trong Dock?",
   "@main.dockPinNudge.title": {
@@ -21,7 +21,7 @@
   },
   "main.dockPinNudge.body": "Bạn đã dùng Cmdr được vài ngày rồi, có vẻ nó hợp với bạn. Ghim nó cạnh Finder ở dưới đó nhé?",
   "@main.dockPinNudge.body": {
-    "sourceHash": "1718271"
+    "sourceHash": "7f4265e"
   },
   "main.dockPinNudge.unpinNote": "Bạn có thể bỏ ghim bất cứ lúc nào nếu đổi ý.",
   "@main.dockPinNudge.unpinNote": {
@@ -41,15 +41,15 @@
   },
   "main.dockPinNudge.addedButDockDidNotRestart": "Biểu tượng Cmdr đã nằm đúng chỗ, nhưng Dock chưa tải lại. Nó sẽ xuất hiện trong lần đăng nhập tới.",
   "@main.dockPinNudge.addedButDockDidNotRestart": {
-    "sourceHash": "b035470"
+    "sourceHash": "7a4e3bb"
   },
   "main.dockPinNudge.managedDock": "Dock của bạn được một hồ sơ cấu hình quản lý, nên Cmdr không thể tự thêm vào. Người quản lý máy Mac này có thể thay đổi điều đó.",
   "@main.dockPinNudge.managedDock": {
-    "sourceHash": "dae0836"
+    "sourceHash": "4781787"
   },
   "main.dockPinNudge.notAdded": "Lần này Cmdr chưa vào được Dock. Bạn có thể kéo nó từ thư mục Ứng dụng vào Dock bất cứ lúc nào.",
   "@main.dockPinNudge.notAdded": {
-    "sourceHash": "0d122cb"
+    "sourceHash": "0b863ad"
   },
   "main.revealNudge.title": "Mở “Hiển thị trong Finder” trong Cmdr?",
   "@main.revealNudge.title": {
@@ -57,7 +57,7 @@
   },
   "main.revealNudge.body": "Bạn đã dùng Cmdr một thời gian rồi. Khi một ứng dụng khác chạy “Hiển thị trong Finder”, Cmdr có thể mở thư mục đó thay cho Finder, với con trỏ sẵn ở tệp.",
   "@main.revealNudge.body": {
-    "sourceHash": "1db1d28"
+    "sourceHash": "1934a04"
   },
   "main.revealNudge.switchBackNote": "Bạn có thể đổi lại bất cứ lúc nào trong Cài đặt.",
   "@main.revealNudge.switchBackNote": {
@@ -81,7 +81,7 @@
   },
   "main.revealNudge.notTurnedOn": "Lần này Cmdr chưa nhận được “Hiển thị trong Finder”. Công tắc nằm trong Cài đặt nếu bạn muốn thử lại.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "953a4ee"
+    "sourceHash": "0f572c0"
   },
   "main.revealActivation.title": "“Hiển thị trong Finder” vừa mở ở đây",
   "@main.revealActivation.title": {
@@ -101,7 +101,7 @@
   },
   "main.quit.body": "Những gì đã xong vẫn được giữ nguyên. Những gì đang được ghi sẽ dừng lại ngay tại chỗ, và Cmdr dọn dẹp tệp ghi dở còn sót lại.",
   "@main.quit.body": {
-    "sourceHash": "c17f6e7"
+    "sourceHash": "79a69f9"
   },
   "main.quit.countdown": "{seconds, plural, other {Sẽ thoát sau {secondsText} giây, để việc khởi động lại máy hoặc đăng xuất không bao giờ phải chờ Cmdr.}}",
   "@main.quit.countdown": {
@@ -129,7 +129,7 @@
   },
   "main.oldWebkit.body": "Giao diện của Cmdr cần Safari 15.4 trở lên, còn máy Mac này đang dùng phiên bản cũ hơn. Hãy mở Cập nhật phần mềm và cài mọi bản cập nhật đang chờ. Như vậy thường là xong.",
   "@main.oldWebkit.body": {
-    "sourceHash": "bcadac5"
+    "sourceHash": "a7112ec"
   },
   "main.oldMacos.title": "Cmdr trên macOS {version}",
   "@main.oldMacos.title": {
@@ -137,7 +137,7 @@
   },
   "main.oldMacos.body": "Cmdr chính thức hỗ trợ macOS 12 trở lên, nên ở đây nó chỉ cố hết sức thôi. Hầu hết mọi thứ đều chạy được, nhưng vài màu sắc và các chi tiết bố cục nhỏ có thể trông không đúng lắm, và việc khắc phục cho các hệ thống cũ sẽ được làm sau cùng. Nếu bạn gặp thứ gì đó hỏng, mình vẫn rất muốn nghe.",
   "@main.oldMacos.body": {
-    "sourceHash": "9484b91"
+    "sourceHash": "f9b4185"
   },
   "main.oldMacos.gotIt": "Đã hiểu",
   "@main.oldMacos.gotIt": {
@@ -161,6 +161,6 @@
   },
   "main.escapeFullScreenHint.onceNote": "Bạn sẽ chỉ thấy thông báo này một lần.",
   "@main.escapeFullScreenHint.onceNote": {
-    "sourceHash": "c76cb6c"
+    "sourceHash": "210b892"
   }
 }

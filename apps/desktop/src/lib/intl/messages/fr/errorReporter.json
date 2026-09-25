@@ -5,7 +5,7 @@
   },
   "errorReporter.dialog.description": "Ceci envoie les fichiers journaux récents de Cmdr à l’équipe pour que nous puissions corriger ce qui a mal tourné. Les journaux sont expurgés côté client : chemins de fichiers, noms d’hôte, adresses IP et e-mails sont tous effacés avant l’envoi.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "dd11284"
+    "sourceHash": "ba4012f"
   },
   "errorReporter.dialog.referenceIdLabel": "Identifiant de référence :",
   "@errorReporter.dialog.referenceIdLabel": {
@@ -38,7 +38,7 @@
   },
   "errorReporter.dialog.detailsToggle": "Ce qui va être envoyé",
   "@errorReporter.dialog.detailsToggle": {
-    "sourceHash": "b1069f7"
+    "sourceHash": "f57398b"
   },
   "errorReporter.dialog.manifestHeading": "Manifeste",
   "@errorReporter.dialog.manifestHeading": {
@@ -66,7 +66,7 @@
   },
   "errorReporter.dialog.prepareFailed": "Préparation de l’aperçu impossible.",
   "@errorReporter.dialog.prepareFailed": {
-    "sourceHash": "3729966"
+    "sourceHash": "24cd5ba"
   },
   "errorReporter.dialog.tryAgain": "Réessayer",
   "@errorReporter.dialog.tryAgain": {
@@ -74,7 +74,7 @@
   },
   "errorReporter.dialog.bundleUnavailable": "Cmdr n’a pas pu rassembler ses fichiers journaux pour le rapport. Réessayez dans un instant.",
   "@errorReporter.dialog.bundleUnavailable": {
-    "sourceHash": "3743aba"
+    "sourceHash": "15bc5b8"
   },
   "errorReporter.dialog.saveToDisk": "Enregistrer le lot sur le disque (debug)",
   "@errorReporter.dialog.saveToDisk": {
@@ -94,11 +94,11 @@
   },
   "errorReporter.dialog.sendFailedToast": "Envoi du rapport d’incident impossible. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
-    "sourceHash": "75337c1"
+    "sourceHash": "1eedf49"
   },
   "errorReporter.dialog.saveFailedToast": "Enregistrement du lot impossible : {error}",
   "@errorReporter.dialog.saveFailedToast": {
-    "sourceHash": "34cf2b4"
+    "sourceHash": "6405cca"
   },
   "errorReporter.amend.title": "Ajouter à votre rapport d’incident",
   "@errorReporter.amend.title": {
@@ -106,7 +106,7 @@
   },
   "errorReporter.amend.description": "Cmdr a déjà envoyé ce rapport. Écrivez une note ou joignez votre e-mail : cela rejoindra ce que l’équipe a déjà reçu.",
   "@errorReporter.amend.description": {
-    "sourceHash": "276771e"
+    "sourceHash": "9e1a80f"
   },
   "errorReporter.amend.noteLabel": "Votre note",
   "@errorReporter.amend.noteLabel": {
@@ -126,7 +126,7 @@
   },
   "errorReporter.amend.unavailable": "Ce rapport n’accepte plus de note. Pour transmettre vos notes à l’équipe, envoyez un nouveau rapport depuis le menu Aide.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "cbb7a33"
+    "sourceHash": "b96b48a"
   },
   "errorReporter.amend.close": "Fermer",
   "@errorReporter.amend.close": {
@@ -134,7 +134,7 @@
   },
   "errorReporter.amend.addFailedToast": "Ajout de votre note impossible. {reason}",
   "@errorReporter.amend.addFailedToast": {
-    "sourceHash": "0b67749"
+    "sourceHash": "02f82ce"
   },
   "errorReporter.sentToast.message": "Rapport d’incident envoyé. Votre identifiant de référence est",
   "@errorReporter.sentToast.message": {

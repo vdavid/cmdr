@@ -21,7 +21,7 @@
   },
   "errors.listing.notEnoughMemory.suggestion": "可以這樣試試：\n- 關掉一些 App 來釋放記憶體，特別是佔用資源多的（開了很多分頁的瀏覽器、編輯器、媒體類 App）\n- 在**活動監視器**裡查看記憶體用量（用 Spotlight 搜尋就能開啟）\n- 再次進入這裡重試",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "26a7a46"
+    "sourceHash": "d05a4e4"
   },
   "errors.listing.resourceBusy.title": "資源忙碌中",
   "@errors.listing.resourceBusy.title": {
@@ -29,7 +29,7 @@
   },
   "errors.listing.resourceBusy.explanation": "Cmdr 無法存取 `{path}`，因為有另一個 App 或程序正在獨佔使用它。這通常是暫時的。",
   "@errors.listing.resourceBusy.explanation": {
-    "sourceHash": "8c7bdd4"
+    "sourceHash": "18a07d9"
   },
   "errors.listing.resourceBusy.suggestion": "稍等一下，再次進入這裡。如果一直這樣，看看是哪個 App 可能一直開著這個檔案（在終端機裡執行 `lsof +D <folder-path>`，查看有哪些程序正在使用這個資料夾）。",
   "@errors.listing.resourceBusy.suggestion": {
@@ -53,11 +53,11 @@
   },
   "errors.listing.networkDown.explanation": "你的 Mac 網路連線已中斷，所以 Cmdr 連不到這個卷宗。可能是 Wi-Fi 斷了、乙太網路線沒插好，或網路介面被停用了。",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "e2106be"
+    "sourceHash": "179f8bb"
   },
   "errors.listing.networkDown.suggestion": "可以這樣試試：\n- 在 **{system_settings} > 網路**裡查看 Wi-Fi 或乙太網路狀態\n- 如果用的是 Wi-Fi，試試關掉再開啟\n- 在終端機裡執行 `ping google.com` 測試連線\n- 恢復連線後，再次進入這裡",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "3fe671d"
+    "sourceHash": "bf4b517"
   },
   "errors.listing.networkConnectionDropped.title": "網路連線中斷",
   "@errors.listing.networkConnectionDropped.title": {
@@ -69,7 +69,7 @@
   },
   "errors.listing.networkConnectionDropped.suggestion": "可以這樣試試：\n- 檢查你的網路連線\n- 如果在用 VPN，確認它還連著\n- 再次進入這裡重試",
   "@errors.listing.networkConnectionDropped.suggestion": {
-    "sourceHash": "17c6bb8"
+    "sourceHash": "228b9a8"
   },
   "errors.listing.connectionDropped.title": "連線中斷",
   "@errors.listing.connectionDropped.title": {
@@ -81,7 +81,7 @@
   },
   "errors.listing.connectionDropped.suggestion": "可以這樣試試：\n- 確認伺服器正在執行而且回應正常\n- 檢查你的網路連線\n- 再次進入這裡重試",
   "@errors.listing.connectionDropped.suggestion": {
-    "sourceHash": "d8fba7b"
+    "sourceHash": "3e3446f"
   },
   "errors.listing.connectionReset.title": "連線已重設",
   "@errors.listing.connectionReset.title": {
@@ -93,7 +93,7 @@
   },
   "errors.listing.connectionReset.suggestion": "可以這樣試試：\n- 確認伺服器正在執行\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再次進入這裡重試",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "0ee3d15"
+    "sourceHash": "d980663"
   },
   "errors.listing.connectionTimedOutErrno.title": "連線逾時",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -101,11 +101,11 @@
   },
   "errors.listing.connectionTimedOutErrno.explanation": "Cmdr 試著讀取這個資料夾，但連線沒有及時回應。這通常表示伺服器或裝置很慢、連不上，或你和它之間的網路壅塞了。",
   "@errors.listing.connectionTimedOutErrno.explanation": {
-    "sourceHash": "33612d4"
+    "sourceHash": "c088c41"
   },
   "errors.listing.connectionTimedOutErrno.suggestion": "可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在終端機裡試試 `ping <hostname>`，測試連通性\n- 再次進入這裡重試",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "4172538"
+    "sourceHash": "230ef64"
   },
   "errors.listing.hostDown.title": "主機已關閉",
   "@errors.listing.hostDown.title": {
@@ -113,11 +113,11 @@
   },
   "errors.listing.hostDown.explanation": "遠端主機（存放這個卷宗的電腦或伺服器）沒有回應。它可能已關機、正在睡眠，或暫時連不上。",
   "@errors.listing.hostDown.explanation": {
-    "sourceHash": "cf59cab"
+    "sourceHash": "e175712"
   },
   "errors.listing.hostDown.suggestion": "可以這樣試試：\n- 確認主機已開機而且連上了網路\n- 在終端機裡試試 `ping <hostname>`，測試它連不連得上\n- 如果是 NAS 或伺服器，看看它的管理介面\n- 主機回來後，再次進入這裡",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "4a09e8e"
+    "sourceHash": "7a8ecd8"
   },
   "errors.listing.staleConnection.title": "連線已失效",
   "@errors.listing.staleConnection.title": {
@@ -129,7 +129,7 @@
   },
   "errors.listing.staleConnection.suggestion": "可以這樣試試：\n- 離開這個資料夾再回來\n- 如果這是網路磁碟機，試試在 Finder 裡卸除再重新裝載\n- 確認存放這個資料夾的伺服器正在執行\n- 在終端機裡執行 `mount`，查看目前已裝載的卷宗",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "05960c8"
+    "sourceHash": "73de81d"
   },
   "errors.listing.lockUnavailable.title": "檔案鎖用完了",
   "@errors.listing.lockUnavailable.title": {
@@ -141,7 +141,7 @@
   },
   "errors.listing.lockUnavailable.suggestion": "可以這樣試試：\n- 關掉一些 App，特別是會處理很多檔案的（編輯器、IDE、備份工具）\n- 在終端機裡執行 `lsof | wc -l`，看看所有 App 一共開了多少檔案\n- 如果問題一直出現，可以在終端機裡用 `ulimit -n 4096` 提高上限\n- 再次進入這裡重試",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "f9c9f8d"
+    "sourceHash": "a9f23bd"
   },
   "errors.listing.cancelledErrno.title": "已取消",
   "@errors.listing.cancelledErrno.title": {
@@ -153,7 +153,7 @@
   },
   "errors.listing.cancelledErrno.suggestion": "想重試的時候，隨時再次進入這裡。",
   "@errors.listing.cancelledErrno.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.notPermitted.title": "沒有取用權",
   "@errors.listing.notPermitted.title": {
@@ -161,11 +161,11 @@
   },
   "errors.listing.notPermitted.explanation": "macOS 擋下了 Cmdr 對 `{path}` 的存取。這通常表示這個資料夾受 macOS 安全性政策保護，或 Cmdr 還沒拿到相應的權限。",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "ddf8a5d"
+    "sourceHash": "e28dd0e"
   },
   "errors.listing.notPermitted.suggestion": "可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 如果這是受系統保護的資料夾（例如系統目錄），你可能得在 {privacy_and_security} 裡授予 Cmdr **{full_disk_access}**\n- 在終端機裡對這個路徑執行 `ls -la`，查看擁有者和權限",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "32e9d74"
+    "sourceHash": "bbaa904"
   },
   "errors.listing.pathNotFoundErrno.title": "找不到路徑",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -173,11 +173,11 @@
   },
   "errors.listing.pathNotFoundErrno.explanation": "Cmdr 找不到 `{path}`。在 Cmdr 試著存取它的時候，它可能被移動、重新命名或刪除了。",
   "@errors.listing.pathNotFoundErrno.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.pathNotFoundErrno.suggestion": "可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在終端機裡對上層資料夾執行 `ls -la`，看看裡面有什麼",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.noPermissionErrno.title": "沒有權限",
   "@errors.listing.noPermissionErrno.title": {
@@ -185,11 +185,11 @@
   },
   "errors.listing.noPermissionErrno.explanation": "Cmdr 沒有存取 `{path}` 的權限。macOS 管控哪些 App 能存取哪些資料夾，而 Cmdr 還沒拿到這個資料夾的存取權。",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.noPermissionErrno.suggestion": "可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 在 Finder 裡查看資料夾權限：按右鍵，選擇「取得資訊」，然後看「共享與權限」\n- 如果這是共享資料夾，請擁有者更新權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看目前的權限",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "ea316e7"
+    "sourceHash": "4b513ef"
   },
   "errors.listing.alreadyExistsErrno.title": "已經存在",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -197,7 +197,7 @@
   },
   "errors.listing.alreadyExistsErrno.explanation": "`{path}` 已經有一個檔案或資料夾了，所以 Cmdr 無法在那裡新增。",
   "@errors.listing.alreadyExistsErrno.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExistsErrno.suggestion": "把現有的項目重新命名，或幫新的項目取個不一樣的名稱。",
   "@errors.listing.alreadyExistsErrno.suggestion": {
@@ -209,7 +209,7 @@
   },
   "errors.listing.crossDeviceOperation.explanation": "Cmdr 無法直接移動這個項目，因為來源和目標在不同的卷宗上（例如內建磁碟機和 USB 隨身碟）。跨卷宗移動得先複製資料，再刪除原本的。",
   "@errors.listing.crossDeviceOperation.explanation": {
-    "sourceHash": "4762369"
+    "sourceHash": "a6742d3"
   },
   "errors.listing.crossDeviceOperation.suggestion": "把這個項目複製到目標，而不是移動它。Cmdr 會自動處理複製。",
   "@errors.listing.crossDeviceOperation.suggestion": {
@@ -221,7 +221,7 @@
   },
   "errors.listing.notAFolder.explanation": "Cmdr 以為 `{path}` 是資料夾，但它其實是檔案。最近有東西被重新命名或取代過時，就可能這樣。",
   "@errors.listing.notAFolder.explanation": {
-    "sourceHash": "45d8f76"
+    "sourceHash": "7ab65a3"
   },
   "errors.listing.notAFolder.suggestion": "檢查路徑，確認它指向的是資料夾，而不是檔案。",
   "@errors.listing.notAFolder.suggestion": {
@@ -233,7 +233,7 @@
   },
   "errors.listing.isAFolderErrno.explanation": "Cmdr 以為 `{path}` 是檔案，但它其實是資料夾。最近有東西被重新命名或取代過時，就可能這樣。",
   "@errors.listing.isAFolderErrno.explanation": {
-    "sourceHash": "009d220"
+    "sourceHash": "8c3b294"
   },
   "errors.listing.isAFolderErrno.suggestion": "檢查路徑，確認它指向的是檔案，而不是資料夾。",
   "@errors.listing.isAFolderErrno.suggestion": {
@@ -245,11 +245,11 @@
   },
   "errors.listing.diskFullErrno.explanation": "這個卷宗上的可用空間不夠，沒辦法完成這項操作。",
   "@errors.listing.diskFullErrno.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.diskFullErrno.suggestion": "可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 清空垃圾桶（在 Dock 裡的垃圾桶圖像上按右鍵）\n- 在終端機裡執行 `df -h`，查看每個卷宗還剩多少空間\n- 到 **{system_settings} > 一般 > 儲存空間**看看空間都用在哪裡",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "bf54d66"
+    "sourceHash": "f2eb27b"
   },
   "errors.listing.readOnlyVolumeErrno.title": "唯讀卷宗",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -257,11 +257,11 @@
   },
   "errors.listing.readOnlyVolumeErrno.explanation": "這個卷宗是以唯讀方式裝載的，所以 Cmdr 無法對它做更動。可能是裝置有實體的寫入保護開關、磁碟映像檔以唯讀方式裝載，或檔案系統不支援寫入。",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
-    "sourceHash": "cb19e8c"
+    "sourceHash": "e6bcf10"
   },
   "errors.listing.readOnlyVolumeErrno.suggestion": "可以這樣試試：\n- 如果裝置有實體的寫入保護開關（SD 卡上很常見），把它撥掉\n- 如果這是磁碟映像檔，改用可寫入的方式重新裝載\n- 不然就先把檔案複製到一個可以寫入的位置",
   "@errors.listing.readOnlyVolumeErrno.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.notSupportedErrno.title": "不支援",
   "@errors.listing.notSupportedErrno.title": {
@@ -269,11 +269,11 @@
   },
   "errors.listing.notSupportedErrno.explanation": "這個檔案系統不支援這項操作。不同的檔案系統（例如 FAT32、NTFS 或網路共享資料夾）支援的功能不一樣，而這個不支援 Cmdr 想做的事。",
   "@errors.listing.notSupportedErrno.explanation": {
-    "sourceHash": "198aa15"
+    "sourceHash": "a0ca28f"
   },
   "errors.listing.notSupportedErrno.suggestion": "換個做法試試，或用 Finder 來完成這項操作。如果你在用外接磁碟機，它可能格式化成了有限制的檔案系統（例如 FAT32 存不了大於 4 GB 的檔案）。",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "169d5cf"
+    "sourceHash": "de64ad5"
   },
   "errors.listing.networkUnreachable.title": "連不上網路",
   "@errors.listing.networkUnreachable.title": {
@@ -281,11 +281,11 @@
   },
   "errors.listing.networkUnreachable.explanation": "Cmdr 連不到這個卷宗所在的網路。這通常表示你沒有連上正確的網路，或 VPN 沒有啟用。",
   "@errors.listing.networkUnreachable.explanation": {
-    "sourceHash": "f92dedc"
+    "sourceHash": "d3c1975"
   },
   "errors.listing.networkUnreachable.suggestion": "可以這樣試試：\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 確認你連的是正確的網路（例如公司的 Wi-Fi 或 VPN）\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 連上之後，再次進入這裡",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "b1754b4"
+    "sourceHash": "7feb3cb"
   },
   "errors.listing.connectionRefused.title": "連線遭到拒絕",
   "@errors.listing.connectionRefused.title": {
@@ -293,11 +293,11 @@
   },
   "errors.listing.connectionRefused.explanation": "伺服器主動拒絕了連線。這通常表示伺服器軟體（例如 SMB 或 NFS 服務）沒在執行，或它被設定成拒絕來自這部 Mac 的連線。",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "537cf4e"
+    "sourceHash": "88e1ac7"
   },
   "errors.listing.connectionRefused.suggestion": "可以這樣試試：\n- 確認伺服器正在執行，而且檔案共享服務已啟用\n- 核對伺服器位址和連接埠是否正確\n- 在終端機裡試試 `ping <hostname>`，看看伺服器到底連不連得上\n- 再次進入這裡重試",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "4afa12d"
+    "sourceHash": "17decc3"
   },
   "errors.listing.symlinkLoopErrno.title": "符號連結繞成了圈",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -305,11 +305,11 @@
   },
   "errors.listing.symlinkLoopErrno.explanation": "Cmdr 在 `{path}` 發現了一串首尾相連的符號連結（指向其他連結的連結）。順著這些連結走會繞回原點，所以 Cmdr 到不了真正的檔案或資料夾。",
   "@errors.listing.symlinkLoopErrno.explanation": {
-    "sourceHash": "cb728c1"
+    "sourceHash": "4157be6"
   },
   "errors.listing.symlinkLoopErrno.suggestion": "可以這樣試試：\n- 在終端機裡對這個路徑執行 `ls -la`，看看這些符號連結指向哪裡\n- 找出並修正繞成圈的那個連結\n- 如果不確定是哪個連結有問題，用 `readlink <path>` 一個一個順著查",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "0a439fb"
+    "sourceHash": "eed9a5a"
   },
   "errors.listing.nameTooLongErrno.title": "名稱太長",
   "@errors.listing.nameTooLongErrno.title": {
@@ -317,7 +317,7 @@
   },
   "errors.listing.nameTooLongErrno.explanation": "檔案或資料夾的名稱超過了系統上限（大多數 Mac 卷宗是 255 個字元）。完整路徑（所有資料夾加起來）超過系統的最大長度時，也會這樣。",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "d6f7a03"
+    "sourceHash": "8b9a6ff"
   },
   "errors.listing.nameTooLongErrno.suggestion": "把這個項目改成短一點的名稱。如果名稱看起來沒問題，那可能是完整路徑（包含所有上層資料夾）太長了。試試把它移到短一點的路徑下。",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -329,11 +329,11 @@
   },
   "errors.listing.hostUnreachable.explanation": "Cmdr 找不到通往這個卷宗所在主機的網路路由。這通常表示主機在另一個網路上、被防火牆擋著，或路由設定該更新了。",
   "@errors.listing.hostUnreachable.explanation": {
-    "sourceHash": "3e5e6f9"
+    "sourceHash": "184b0fc"
   },
   "errors.listing.hostUnreachable.suggestion": "可以這樣試試：\n- 確認主機已開機而且在同一個網路上\n- 如果要透過 VPN 才連得到它，確認 VPN 已經連上\n- 在終端機裡試試 `ping <hostname>`，測試連通性\n- 主機連得上之後，再次進入這裡",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "8e7a1cf"
+    "sourceHash": "c222f76"
   },
   "errors.listing.folderNotEmpty.title": "資料夾不是空的",
   "@errors.listing.folderNotEmpty.title": {
@@ -341,7 +341,7 @@
   },
   "errors.listing.folderNotEmpty.explanation": "Cmdr 無法移除 `{path}`，因為裡面還有檔案或子資料夾。系統要求資料夾是空的，才能用這種方式移除。",
   "@errors.listing.folderNotEmpty.explanation": {
-    "sourceHash": "c16ac41"
+    "sourceHash": "26871a4"
   },
   "errors.listing.folderNotEmpty.suggestion": "先刪掉資料夾裡的內容，再試著移除這個資料夾。",
   "@errors.listing.folderNotEmpty.suggestion": {
@@ -353,11 +353,11 @@
   },
   "errors.listing.quotaExceeded.explanation": "你在這個卷宗上已經用到了磁碟配額（分配給你帳號的最大空間）。這在共享伺服器和網路磁碟機上很常見，管理者會為每位使用者設上限。",
   "@errors.listing.quotaExceeded.explanation": {
-    "sourceHash": "6fa75c0"
+    "sourceHash": "b9b0b0e"
   },
   "errors.listing.quotaExceeded.suggestion": "可以這樣試試：\n- 刪掉這個卷宗上不再需要的檔案，騰出空間\n- 請系統管理員把你的配額調高\n- 在終端機裡執行 `quota`，查看你目前的用量和上限",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "e24428a"
+    "sourceHash": "1b5f0df"
   },
   "errors.listing.authRequiredEauth.title": "需要通過驗證",
   "@errors.listing.authRequiredEauth.title": {
@@ -365,11 +365,11 @@
   },
   "errors.listing.authRequiredEauth.explanation": "Cmdr 無法通過這個卷宗的驗證。你儲存的登入資訊可能已經過期，或伺服器拒絕了目前的登入。",
   "@errors.listing.authRequiredEauth.explanation": {
-    "sourceHash": "7b51115"
+    "sourceHash": "654cbb2"
   },
   "errors.listing.authRequiredEauth.suggestion": "可以這樣試試：\n- 中斷再重新連線這個卷宗，重新輸入你的使用者名稱和密碼\n- 確認你的密碼沒有更改或過期\n- 如果這是公司的伺服器，找你的 IT 團隊確認",
   "@errors.listing.authRequiredEauth.suggestion": {
-    "sourceHash": "9ba659e"
+    "sourceHash": "3469202"
   },
   "errors.listing.authRequiredEneedauth.title": "需要通過驗證",
   "@errors.listing.authRequiredEneedauth.title": {
@@ -381,7 +381,7 @@
   },
   "errors.listing.authRequiredEneedauth.suggestion": "可以這樣試試：\n- 在 Finder 裡中斷再重新連線這個卷宗\n- 出現提示時輸入你的使用者名稱和密碼\n- 如果不確定登入資訊，找這台伺服器的管理者確認",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "0b61f53"
+    "sourceHash": "a90b520"
   },
   "errors.listing.devicePoweredOff.title": "裝置已關機",
   "@errors.listing.devicePoweredOff.title": {
@@ -389,7 +389,7 @@
   },
   "errors.listing.devicePoweredOff.explanation": "這個裝置已關機或進入深度睡眠，所以 Cmdr 無法跟它通訊。",
   "@errors.listing.devicePoweredOff.explanation": {
-    "sourceHash": "ae9c029"
+    "sourceHash": "782a157"
   },
   "errors.listing.devicePoweredOff.suggestion": "把裝置開機，等它完全啟動，然後再次進入這裡。",
   "@errors.listing.devicePoweredOff.suggestion": {
@@ -401,11 +401,11 @@
   },
   "errors.listing.attributeNotFound.explanation": "Cmdr 想讀取一個這個項目上並不存在的檔案屬性（像標籤或權限這類額外的中繼資料）。檔案系統不支援延伸屬性，或這個屬性已經被移除時，就可能這樣。",
   "@errors.listing.attributeNotFound.explanation": {
-    "sourceHash": "ee5c696"
+    "sourceHash": "ee39dd8"
   },
   "errors.listing.attributeNotFound.suggestion": "這個檔案系統可能不支援 Cmdr 需要的中繼資料。換一個卷宗試試這項操作，或先把檔案複製到你 Mac 的內建磁碟機上。",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "3c357ac"
+    "sourceHash": "463ee44"
   },
   "errors.listing.diskReadProblem.title": "磁碟讀取出了狀況",
   "@errors.listing.diskReadProblem.title": {
@@ -417,7 +417,7 @@
   },
   "errors.listing.diskReadProblem.suggestion": "可以這樣試試：\n- 確認磁碟或裝置仍然正確連接著\n- 開啟**磁碟工具程式**（用 Spotlight 搜尋就能開啟），對這個卷宗執行**修理工具**\n- 如果一直這樣，請盡快備份你的資料。這顆磁碟可能開始出現損壞磁區，或正在老化。",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "792c921"
+    "sourceHash": "614a5fe"
   },
   "errors.listing.unexpectedSystemResponse.title": "系統回應不如預期",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -425,11 +425,11 @@
   },
   "errors.listing.unexpectedSystemResponse.explanation": "系統對這項操作回了一個預期之外的結果。卷宗的檔案系統有不一致，或卷宗處於不尋常的狀態時，就可能這樣。",
   "@errors.listing.unexpectedSystemResponse.explanation": {
-    "sourceHash": "eeddaa7"
+    "sourceHash": "a834896"
   },
   "errors.listing.unexpectedSystemResponse.suggestion": "可以這樣試試：\n- 再次進入這裡重試\n- 如果一直這樣，開啟**磁碟工具程式**（用 Spotlight 搜尋就能開啟），對這個卷宗執行**修理工具**，檢查檔案系統有沒有問題",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "4e5a9bb"
+    "sourceHash": "f63d225"
   },
   "errors.listing.deviceProblem.title": "裝置出了狀況",
   "@errors.listing.deviceProblem.title": {
@@ -441,11 +441,11 @@
   },
   "errors.listing.deviceProblem.suggestion": "可以這樣試試：\n- 拔掉裝置再重新接上\n- 換一個 USB 連接埠或換條線\n- 如果是外接磁碟機，試著接到另一台電腦上，看看問題會不會跟著裝置走\n- 如果一直這樣，這個裝置可能得送修或更換",
   "@errors.listing.deviceProblem.suggestion": {
-    "sourceHash": "2cbb1cf"
+    "sourceHash": "5ce793b"
   },
   "errors.listing.couldntReadUnknown.title": "無法讀取這個資料夾",
   "@errors.listing.couldntReadUnknown.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.couldntReadUnknown.explanation": "Cmdr 讀取 `{path}` 時遇到了預期之外的狀況。看看下方的技術詳細資訊，裡面有具體的系統代碼，對排查很有幫助。",
   "@errors.listing.couldntReadUnknown.explanation": {
@@ -453,7 +453,7 @@
   },
   "errors.listing.couldntReadUnknown.suggestion": "可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再次進入這裡重試\n- 如果一直這樣，開啟**磁碟工具程式**，對這個卷宗執行**修理工具**",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "0073987"
+    "sourceHash": "5155626"
   },
   "errors.listing.notFound.title": "找不到路徑",
   "@errors.listing.notFound.title": {
@@ -461,11 +461,11 @@
   },
   "errors.listing.notFound.explanation": "Cmdr 找不到 `{path}`。在 Cmdr 試著存取它的時候，它可能被移動、重新命名或刪除了。",
   "@errors.listing.notFound.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.notFound.suggestion": "可以這樣試試：\n- 確認路徑拼寫正確\n- 如果它在網路磁碟機上，確認磁碟機已連線而且共享資料夾存取得到\n- 前往上層資料夾，在那裡找找這個項目\n- 在終端機裡對上層資料夾執行 `ls -la`，看看裡面有什麼",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.tccRestricted.title": "這個資料夾受到 macOS 限制",
   "@errors.listing.tccRestricted.title": {
@@ -473,7 +473,7 @@
   },
   "errors.listing.tccRestricted.explanation": "Cmdr 無法讀取 `{path}`，因為 macOS 還沒授予這個資料夾的存取權。這是隱私關卡，不是 Cmdr 的問題。",
   "@errors.listing.tccRestricted.explanation": {
-    "sourceHash": "027470f"
+    "sourceHash": "1f3fc35"
   },
   "errors.listing.tccRestricted.suggestion": "有兩種解法：\n- 在 **{system_settings} → {privacy_and_security} → {full_disk_access}** 裡授予 Cmdr **{full_disk_access}**，一次解除所有這類限制。\n- 或者在 **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr** 裡，只為這個資料夾授予存取權。",
   "@errors.listing.tccRestricted.suggestion": {
@@ -485,23 +485,23 @@
   },
   "errors.listing.permissionDenied.explanation": "Cmdr 沒有存取 `{path}` 的權限。macOS 管控哪些 App 能存取哪些資料夾，而 Cmdr 還沒拿到這個資料夾的存取權。",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.permissionDenied.suggestion": "可以這樣試試：\n- 開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 存取權\n- 在 Finder 裡查看資料夾權限：在資料夾上按右鍵，選擇「取得資訊」，然後看「共享與權限」\n- 如果這是共享資料夾，請擁有者更新權限\n- 在終端機裡對這個路徑執行 `ls -la`，查看目前的權限",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "0fa0829"
+    "sourceHash": "3450aff"
   },
   "errors.listing.remotePermissionDenied.title": "伺服器不讓開啟這個資料夾",
   "@errors.listing.remotePermissionDenied.title": {
-    "sourceHash": "1fceff5"
+    "sourceHash": "f9cb7bd"
   },
   "errors.listing.remotePermissionDenied.explanation": "`{path}` 在一個網路共享資料夾上，而你連線時用的帳號沒有開啟它的權限。伺服器在 macOS 介入之前就回絕了請求，所以這跟你 Mac 上的隱私設定無關。",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "4e6b9ef"
+    "sourceHash": "d8463b0"
   },
   "errors.listing.remotePermissionDenied.suggestion": "可以這樣試試：\n- 在伺服器上查看這個資料夾的權限，以及你是用哪個帳號裝載這個共享資料夾的\n- 有些資料夾屬於伺服器自己的系統帳號（例如 Linux 共享資料夾上的 `lost+found`），對其他所有人都是關著的\n- 想換個身分連線，就先退出這個共享資料夾，再用那組登入資訊重新裝載",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "506e57a"
+    "sourceHash": "3e6497d"
   },
   "errors.listing.alreadyExists.title": "已經存在",
   "@errors.listing.alreadyExists.title": {
@@ -509,7 +509,7 @@
   },
   "errors.listing.alreadyExists.explanation": "`{path}` 已經有一個檔案或資料夾了，所以 Cmdr 無法在那裡新增。",
   "@errors.listing.alreadyExists.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExists.suggestion": "把現有的項目重新命名，或幫新的項目取個不一樣的名稱。",
   "@errors.listing.alreadyExists.suggestion": {
@@ -525,7 +525,7 @@
   },
   "errors.listing.cancelled.suggestion": "想重試的時候，隨時再次進入這裡。",
   "@errors.listing.cancelled.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.deviceDisconnected.title": "裝置已中斷連線",
   "@errors.listing.deviceDisconnected.title": {
@@ -537,7 +537,7 @@
   },
   "errors.listing.deviceDisconnected.suggestion": "可以這樣試試：\n- 重新接上裝置，確認線材有插牢\n- 如果是手機，把它解鎖並確認已開啟檔案傳輸模式\n- 裝置回來後，再次進入這裡",
   "@errors.listing.deviceDisconnected.suggestion": {
-    "sourceHash": "9f6c9a0"
+    "sourceHash": "6940094"
   },
   "errors.listing.notConnected.title": "尚未連線",
   "@errors.listing.notConnected.title": {
@@ -545,11 +545,11 @@
   },
   "errors.listing.notConnected.explanation": "Cmdr 還沒有連線到存放 `{path}` 的手機或伺服器，所以這裡暫時沒有內容可顯示。沒有任何東西斷線，也沒有任何東西被刪除。",
   "@errors.listing.notConnected.explanation": {
-    "sourceHash": "4c508d7"
+    "sourceHash": "93ca2df"
   },
   "errors.listing.notConnected.suggestion": "可以這樣試試：\n- 從卷宗切換器開啟這支手機或伺服器來連線\n- 如果是手機，把它解鎖並接受它跳出的任何提示\n- 連線好之後，再次進入這裡",
   "@errors.listing.notConnected.suggestion": {
-    "sourceHash": "3c48bcd"
+    "sourceHash": "652f289"
   },
   "errors.listing.deviceReconnecting.title": "正在重新連線到裝置",
   "@errors.listing.deviceReconnecting.title": {
@@ -557,11 +557,11 @@
   },
   "errors.listing.deviceReconnecting.explanation": "跟存放 `{path}` 的裝置之間的連線重新啟動了，所以這次動作沒有完成。裝置還插著，Cmdr 正在重新開啟它。這通常發生在傳輸被取消或中斷之後。",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "6ba7205"
+    "sourceHash": "0327639"
   },
   "errors.listing.deviceReconnecting.suggestion": "等個幾秒再試一次。不需要拔掉任何東西。",
   "@errors.listing.deviceReconnecting.suggestion": {
-    "sourceHash": "2481e2a"
+    "sourceHash": "4dac2e7"
   },
   "errors.listing.readOnly.title": "唯讀",
   "@errors.listing.readOnly.title": {
@@ -569,11 +569,11 @@
   },
   "errors.listing.readOnly.explanation": "這個卷宗是唯讀的，所以 Cmdr 無法對它做更動。可能是裝置有實體的寫入保護開關、磁碟映像檔以唯讀方式裝載，或檔案系統不支援寫入。",
   "@errors.listing.readOnly.explanation": {
-    "sourceHash": "99924c3"
+    "sourceHash": "d8080b8"
   },
   "errors.listing.readOnly.suggestion": "可以這樣試試：\n- 如果裝置有實體的寫入保護開關（SD 卡上很常見），把它撥掉\n- 如果這是磁碟映像檔，改用可寫入的方式重新裝載\n- 不然就先把檔案複製到一個可以寫入的位置",
   "@errors.listing.readOnly.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.storageFull.title": "磁碟已滿",
   "@errors.listing.storageFull.title": {
@@ -581,11 +581,11 @@
   },
   "errors.listing.storageFull.explanation": "這個卷宗上的可用空間不夠，沒辦法完成這項操作。",
   "@errors.listing.storageFull.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.storageFull.suggestion": "可以這樣試試：\n- 移動或刪除不再需要的檔案，騰出空間\n- 清空垃圾桶（在 Dock 裡的垃圾桶圖像上按右鍵）\n- 在終端機裡執行 `df -h`，查看每個卷宗還剩多少空間",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "fcdd42d"
+    "sourceHash": "101099b"
   },
   "errors.listing.connectionTimedOut.title": "連線逾時",
   "@errors.listing.connectionTimedOut.title": {
@@ -593,11 +593,11 @@
   },
   "errors.listing.connectionTimedOut.explanation": "Cmdr 試著存取這個資源，但連線沒有及時回應。這通常表示伺服器或裝置回應很慢，或網路連線不穩。",
   "@errors.listing.connectionTimedOut.explanation": {
-    "sourceHash": "5b3f8b2"
+    "sourceHash": "15d3054"
   },
   "errors.listing.connectionTimedOut.suggestion": "可以這樣試試：\n- 確認裝置或伺服器已開機而且連得上\n- 檢查你的 Wi-Fi 或乙太網路連線\n- 在終端機裡試試 `ping <hostname>`，測試伺服器連不連得上\n- 再試一次",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f9b8a2d"
+    "sourceHash": "f474938"
   },
   "errors.listing.notSupported.title": "不支援",
   "@errors.listing.notSupported.title": {
@@ -605,7 +605,7 @@
   },
   "errors.listing.notSupported.explanation": "這種卷宗不支援這項操作。有些卷宗（例如手機儲存空間或某些網路磁碟機）並不支援所有操作。",
   "@errors.listing.notSupported.explanation": {
-    "sourceHash": "9ecb575"
+    "sourceHash": "d074574"
   },
   "errors.listing.notSupported.suggestion": "換個做法試試，或用 Finder 來完成這項操作。",
   "@errors.listing.notSupported.suggestion": {
@@ -621,19 +621,19 @@
   },
   "errors.listing.deletePending.suggestion": "可以這樣試試：\n- 稍等一下再試一次，最後一個控制代碼一關閉，檔案就會消失\n- 關掉其他可能開著這個檔案的 App\n- 如果它一直都在，重新啟動 Cmdr，放掉它可能還佔著的控制代碼",
   "@errors.listing.deletePending.suggestion": {
-    "sourceHash": "6dbe760"
+    "sourceHash": "0531cd8"
   },
   "errors.listing.invalidName.title": "這個名稱在這裡行不通",
   "@errors.listing.invalidName.title": {
-    "sourceHash": "69b2aa4"
+    "sourceHash": "7ced906"
   },
   "errors.listing.invalidName.explanation": "`{path}` 的名稱是目標位置存不下的，所以它直接回絕了這個名稱，根本沒去找這個檔案。",
   "@errors.listing.invalidName.explanation": {
-    "sourceHash": "7000b52"
+    "sourceHash": "ac27ddb"
   },
   "errors.listing.invalidName.suggestion": "可以這樣試試：\n- 把這個項目改成短一點、單純一點的名稱\n- 有些目標位置會拒絕 `CON`、`NUL`、`LPT1` 這類保留名稱\n- 名稱太長也可能超出目標位置自己的上限，就算裡面每個字元都沒問題",
   "@errors.listing.invalidName.suggestion": {
-    "sourceHash": "9074cf3"
+    "sourceHash": "f5cf683"
   },
   "errors.listing.ambiguousName.title": "有不只一個項目符合這個名稱",
   "@errors.listing.ambiguousName.title": {
@@ -641,15 +641,15 @@
   },
   "errors.listing.ambiguousName.explanation": "`{path}` 符合伺服器上的不只一個項目。它們的名稱看起來一樣，但伺服器儲存的寫法不同（帶重音符號的字母可以用兩種方式儲存，有些伺服器還會區分大小寫），所以 Cmdr 沒有替你挑選其中一個。",
   "@errors.listing.ambiguousName.explanation": {
-    "sourceHash": "0d964db"
+    "sourceHash": "f1e1509"
   },
   "errors.listing.ambiguousName.suggestion": "可以這樣試試：\n- 開啟上層資料夾，從列表裡選出你想要的那一項\n- 想避免下次再遇到，就把其中一個重新命名，讓兩個名稱明顯不同",
   "@errors.listing.ambiguousName.suggestion": {
-    "sourceHash": "8334ece"
+    "sourceHash": "55b960c"
   },
   "errors.listing.ioSerious.title": "無法讀取這個資料夾",
   "@errors.listing.ioSerious.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.ioSerious.explanation": "Cmdr 處理 `{path}` 時遇到了狀況：{osMessage}。這可能只是一時的小毛病，也可能表示磁碟或裝置該檢查了。",
   "@errors.listing.ioSerious.explanation": {
@@ -657,7 +657,7 @@
   },
   "errors.listing.ioSerious.suggestion": "可以這樣試試：\n- 確認磁碟或裝置仍然連接著\n- 再試一次\n- 如果一直這樣，試著對這個卷宗執行**磁碟工具程式 > 修理工具**",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6c5be6d"
+    "sourceHash": "6e83ebb"
   },
   "errors.listing.isADirectory.title": "這是資料夾，不是檔案",
   "@errors.listing.isADirectory.title": {
@@ -665,7 +665,7 @@
   },
   "errors.listing.isADirectory.explanation": "Cmdr 想把 `{path}` 當成檔案開啟，但它是資料夾。",
   "@errors.listing.isADirectory.explanation": {
-    "sourceHash": "61f5ddb"
+    "sourceHash": "03331bd"
   },
   "errors.listing.isADirectory.suggestion": "進入這個資料夾，而不是把它當成檔案開啟。",
   "@errors.listing.isADirectory.suggestion": {
@@ -673,11 +673,11 @@
   },
   "errors.listing.archiveUnreadable.title": "無法開啟這個壓縮檔",
   "@errors.listing.archiveUnreadable.title": {
-    "sourceHash": "6b34ae6"
+    "sourceHash": "939ba84"
   },
   "errors.listing.archiveUnreadable.explanation": "這個檔案看起來是壓縮檔，但 Cmdr 讀不到裡面的內容。它可能已經損壞、加了密，或是 Cmdr 還無法開啟的壓縮格式。",
   "@errors.listing.archiveUnreadable.explanation": {
-    "sourceHash": "e413580"
+    "sourceHash": "b1e7d8b"
   },
   "errors.listing.archiveUnreadable.suggestion": "試試用別的 App 開啟它，或向寄給你的人要一份新的檔案。",
   "@errors.listing.archiveUnreadable.suggestion": {
@@ -701,11 +701,11 @@
   },
   "errors.listing.emptyRootICloud.explanation": "Cmdr 開啟了 iCloud 雲碟，卻沒有拿到任何檔案。macOS 會對沒有**{full_disk_access}**的 App 隱藏 iCloud 雲碟 的內容，所以授予 Cmdr 這個權限很可能就能解決。\n\n如果你的 iCloud 雲碟 真的是空的，可以不理這個提示。",
   "@errors.listing.emptyRootICloud.explanation": {
-    "sourceHash": "d095f83"
+    "sourceHash": "4222270"
   },
   "errors.listing.emptyRootICloud.suggestion": "可以這樣試試：\n- 開啟 [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy)，選擇 **{full_disk_access}**\n- 用 **+** 按鈕加入 Cmdr，並把它的開關打開\n- 結束 Cmdr 再重新開啟\n- 回到這裡重試",
   "@errors.listing.emptyRootICloud.suggestion": {
-    "sourceHash": "25cac98"
+    "sourceHash": "2e6e702"
   },
   "errors.git.notARepo.title": "這裡沒有 git 存放庫",
   "@errors.git.notARepo.title": {
@@ -713,7 +713,7 @@
   },
   "errors.git.notARepo.message": "Cmdr 順著資料夾層級往上找，沒有在這裡找到 `.git`。",
   "@errors.git.notARepo.message": {
-    "sourceHash": "f5b0d17"
+    "sourceHash": "736d43c"
   },
   "errors.git.notARepo.suggestion": "開啟 git 存放庫裡的某個資料夾，就會看到存放庫標記。",
   "@errors.git.notARepo.suggestion": {
@@ -725,7 +725,7 @@
   },
   "errors.git.orphanedWorktree.message": "這是一個連結過來的 worktree，但它的主存放庫不見了，所以 git 沒辦法順著連結找過去。",
   "@errors.git.orphanedWorktree.message": {
-    "sourceHash": "5b5433e"
+    "sourceHash": "a29d806"
   },
   "errors.git.orphanedWorktree.suggestion": "試著開啟主存放庫，或用 `git worktree prune` 把它清掉。",
   "@errors.git.orphanedWorktree.suggestion": {
@@ -749,7 +749,7 @@
   },
   "errors.git.indexLocked.message": "Git 的索引被鎖住了，這通常表示還有另一個 git 指令在執行。",
   "@errors.git.indexLocked.message": {
-    "sourceHash": "2f86cb3"
+    "sourceHash": "95399bb"
   },
   "errors.git.indexLocked.suggestion": "等執行中的 git 指令結束，然後再次進入這裡。",
   "@errors.git.indexLocked.suggestion": {
@@ -757,11 +757,11 @@
   },
   "errors.git.permissionDenied.title": "Cmdr 無法讀取這個存放庫",
   "@errors.git.permissionDenied.title": {
-    "sourceHash": "b92716b"
+    "sourceHash": "2fb725c"
   },
   "errors.git.permissionDenied.message": "系統不讓 Cmdr 開啟 `.git` 資料夾，所以拿不到 git 資訊。",
   "@errors.git.permissionDenied.message": {
-    "sourceHash": "0a9e8f1"
+    "sourceHash": "53012e9"
   },
   "errors.git.permissionDenied.suggestion": "開啟 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 這個資料夾的存取權。",
   "@errors.git.permissionDenied.suggestion": {
@@ -769,11 +769,11 @@
   },
   "errors.git.bareRepo.title": "還不支援 bare 存放庫",
   "@errors.git.bareRepo.title": {
-    "sourceHash": "554f310"
+    "sourceHash": "a378648"
   },
   "errors.git.bareRepo.message": "bare 存放庫沒有工作目錄樹，而 git 瀏覽器是圍繞著工作目錄樹做的。",
   "@errors.git.bareRepo.message": {
-    "sourceHash": "e7af7c6"
+    "sourceHash": "1839f25"
   },
   "errors.git.bareRepo.suggestion": "把存放庫複製到一個工作目錄裡，就能使用 git 瀏覽器。",
   "@errors.git.bareRepo.suggestion": {
@@ -781,11 +781,11 @@
   },
   "errors.git.blobTooLarge.title": "這個檔案太大，無法從歷史記錄載入",
   "@errors.git.blobTooLarge.title": {
-    "sourceHash": "aa5a29b"
+    "sourceHash": "480f6ba"
   },
   "errors.git.blobTooLarge.message": "Cmdr 讀 git blob 時一次讀整個檔案，而這一個超過了安全上限。",
   "@errors.git.blobTooLarge.message": {
-    "sourceHash": "6d93691"
+    "sourceHash": "d5609a4"
   },
   "errors.git.blobTooLarge.suggestion": "想讀它的話，從工作目錄樹裡取出這個檔案。",
   "@errors.git.blobTooLarge.suggestion": {
@@ -797,7 +797,7 @@
   },
   "errors.git.shallowBoundary.message": "這個 commit 在你 shallow clone 的邊界之外，所以它的資料不在磁碟上。",
   "@errors.git.shallowBoundary.message": {
-    "sourceHash": "447704c"
+    "sourceHash": "66bac24"
   },
   "errors.git.shallowBoundary.suggestion": "執行 `git fetch --unshallow`（或 `--depth=N`），把更多歷史記錄拉進來。",
   "@errors.git.shallowBoundary.suggestion": {
@@ -809,7 +809,7 @@
   },
   "errors.git.missingObject.message": "Git 在找一個已經不在 pack 檔案裡的物件。這個存放庫可能只抓了一部分，或是損壞了。",
   "@errors.git.missingObject.message": {
-    "sourceHash": "15b0c32"
+    "sourceHash": "1eb902f"
   },
   "errors.git.missingObject.suggestion": "試試 `git fetch` 把缺少的物件補回來，或用 `git fsck` 檢查損壞的情況。",
   "@errors.git.missingObject.suggestion": {
@@ -817,7 +817,7 @@
   },
   "errors.git.gitDirPermissionDenied.title": "Cmdr 無法開啟 `.git` 資料夾",
   "@errors.git.gitDirPermissionDenied.title": {
-    "sourceHash": "f6e2595"
+    "sourceHash": "23c216a"
   },
   "errors.git.gitDirPermissionDenied.message": "就算工作目錄樹讀得到，系統仍然拒絕了對 `.git` 資料夾的存取。",
   "@errors.git.gitDirPermissionDenied.message": {
@@ -987,95 +987,95 @@
   },
   "errors.provider.macDroid.transient": "這個資料夾由 **MacDroid** 管理。可以這樣試試：\n- 開啟 MacDroid，確認你的手機已連接\n- 確認手機已解鎖，而且設成了檔案傳輸模式\n- 拔掉再插上 USB 線，然後再次進入這裡",
   "@errors.provider.macDroid.transient": {
-    "sourceHash": "994b8b8"
+    "sourceHash": "5df1c20"
   },
   "errors.provider.macDroid.needsAction": "這個資料夾由 **MacDroid** 管理。可以這樣試試：\n- 開啟 MacDroid，確認你的手機已連接\n- 確認手機已解鎖而且螢幕亮著\n- 確認手機上已啟用 USB 檔案傳輸模式",
   "@errors.provider.macDroid.needsAction": {
-    "sourceHash": "a2c4d13"
+    "sourceHash": "5fe56e6"
   },
   "errors.provider.macDroid.serious": "這個資料夾由 **MacDroid** 管理。可以這樣試試：\n- 拔掉再插上 USB 線\n- 重新啟動 MacDroid\n- 換一個 USB 連接埠或換條線",
   "@errors.provider.macDroid.serious": {
-    "sourceHash": "a4ab4fe"
+    "sourceHash": "a79e0b6"
   },
   "errors.provider.iCloud.transient": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 檢查你的網際網路連線\n- 確認你已經在 {system_settings} 裡登入 iCloud\n- 再次進入這裡重試",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "7c0600f"
+    "sourceHash": "6a98b24"
   },
   "errors.provider.iCloud.needsAction": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 在 **{system_settings} > Apple 帳號 > iCloud** 裡確認 iCloud 雲碟已啟用\n- 確認你登入的是正確的 Apple 帳號\n- 看看你的 iCloud 儲存空間是不是滿了",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "1c6dab0"
+    "sourceHash": "48c7123"
   },
   "errors.provider.iCloud.serious": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 在 {system_settings} 裡登出 iCloud 再重新登入\n- 查看 Apple 的[系統狀態頁面](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "3276e42"
+    "sourceHash": "4f730c7"
   },
   "errors.provider.macFuse.transient": "這是一個 **macFUSE** 裝載點。遠端伺服器可能很慢或連不上。可以這樣試試：\n- 檢查你的網路連線\n- 確認遠端伺服器正在執行\n- 再次進入這裡重試",
   "@errors.provider.macFuse.transient": {
-    "sourceHash": "06d9019"
+    "sourceHash": "66fcc6b"
   },
   "errors.provider.macFuse.needsAction": "這是一個 **macFUSE** 裝載點。可以這樣試試：\n- 確認支撐這個裝載點的 FUSE 程序還在執行\n- 有需要的話，強制卸除再重新裝載這個卷宗\n- 在 **{system_settings} > 一般 > 登入項目與延伸功能**裡，確認 macFUSE 是最新版本",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "60e836a"
+    "sourceHash": "0c2981f"
   },
   "errors.provider.macFuse.serious": "這是一個 **macFUSE** 裝載點。撐著它的 FUSE 程序很可能已經當掉或斷線了。可以這樣試試：\n- 強制卸除這個卷宗：在終端機裡執行 `umount -f /Volumes/<name>`\n- 用原本的裝載指令重新裝載\n- 如果一直這樣，確認 macFUSE 是最新版本",
   "@errors.provider.macFuse.serious": {
-    "sourceHash": "71d42da"
+    "sourceHash": "8da8430"
   },
   "errors.provider.pCloudFuse.transient": "這個資料夾在 **pCloud** 的虛擬磁碟機上。可以這樣試試：\n- 檢查你的網際網路連線\n- 確認 pCloud App 正在執行\n- 再次進入這裡重試",
   "@errors.provider.pCloudFuse.transient": {
-    "sourceHash": "1afbd51"
+    "sourceHash": "b51abf9"
   },
   "errors.provider.pCloudFuse.needsAction": "這個資料夾在 **pCloud** 的虛擬磁碟機上。可以這樣試試：\n- 確認 pCloud App 正在執行，而且你已經登入\n- 檢查你的網際網路連線\n- macOS 更新之後，到 **{system_settings} > 一般 > 登入項目與延伸功能**裡重新允許 pCloud 的系統延伸功能",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "2753abb"
+    "sourceHash": "42ff4c9"
   },
   "errors.provider.pCloudFuse.serious": "這個資料夾在 **pCloud** 的虛擬磁碟機上。pCloud 的 FUSE 程序可能已經當掉了。可以這樣試試：\n- 結束 pCloud App 再重新開啟\n- 如果磁碟機沒有回來，強制卸除它：在終端機裡執行 `umount -f /Volumes/pCloudDrive`\n- macOS 更新之後，到 **{system_settings} > 一般 > 登入項目與延伸功能**裡重新允許 pCloud 的系統延伸功能",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "cba0026"
+    "sourceHash": "232d806"
   },
   "errors.provider.veraCrypt.transient": "這是一個 **{name}** 加密卷宗。可以這樣試試：\n- 確認這個 VeraCrypt 卷宗仍然裝載著\n- 再次進入這裡重試",
   "@errors.provider.veraCrypt.transient": {
-    "sourceHash": "fe408ae"
+    "sourceHash": "125eaf9"
   },
   "errors.provider.veraCrypt.needsAction": "這是一個 **{name}** 加密卷宗。可以這樣試試：\n- 開啟 VeraCrypt，確認這個卷宗已經裝載\n- 有需要的話，卸除再重新裝載這個卷宗",
   "@errors.provider.veraCrypt.needsAction": {
-    "sourceHash": "08dec65"
+    "sourceHash": "09d12a7"
   },
   "errors.provider.veraCrypt.serious": "這是一個 **{name}** 加密卷宗。可以這樣試試：\n- 在 VeraCrypt 裡卸除再重新裝載這個卷宗\n- 如果這個卷宗一直出狀況，用 VeraCrypt 的修復工具檢查它",
   "@errors.provider.veraCrypt.serious": {
-    "sourceHash": "a5c41a1"
+    "sourceHash": "a0737db"
   },
   "errors.provider.cmVolumes.transient": "這是一個雲端裝載。可以這樣試試：\n- 檢查你的網際網路連線\n- 確認裝載軟體（CloudMounter、Mountain Duck 等）正在執行\n- 再次進入這裡重試",
   "@errors.provider.cmVolumes.transient": {
-    "sourceHash": "f0165b3"
+    "sourceHash": "b7ae13e"
   },
   "errors.provider.cmVolumes.nonTransient": "這是一個雲端裝載。可以這樣試試：\n- 確認裝載軟體（CloudMounter、Mountain Duck 等）正在執行\n- 中斷再重新連接這個裝載\n- 確認你的登入資訊沒有過期",
   "@errors.provider.cmVolumes.nonTransient": {
-    "sourceHash": "752c7e4"
+    "sourceHash": "4474047"
   },
   "errors.provider.genericCloudStorage.transient": "這個資料夾由某家雲端服務供應商管理。可以這樣試試：\n- 檢查你的網際網路連線\n- 確認同步 App 正在執行\n- 再次進入這裡重試",
   "@errors.provider.genericCloudStorage.transient": {
-    "sourceHash": "9398792"
+    "sourceHash": "9a454cf"
   },
   "errors.provider.genericCloudStorage.nonTransient": "這個資料夾由某家雲端服務供應商管理。可以這樣試試：\n- 確認同步 App 正在執行\n- 登出雲端 App 再重新登入\n- 檢查你的網際網路連線",
   "@errors.provider.genericCloudStorage.nonTransient": {
-    "sourceHash": "ce8a112"
+    "sourceHash": "3b8d2a6"
   },
   "errors.provider.appBased.transient": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 檢查你的網際網路連線\n- 開啟 {app}，確認它正在執行而且已經同步\n- 再次進入這裡重試",
   "@errors.provider.appBased.transient": {
-    "sourceHash": "e3ef8b8"
+    "sourceHash": "ba634b7"
   },
   "errors.provider.appBased.needsAction": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 開啟 {app}，查看你的同步狀態\n- 確認你已經登入 {app}\n- 確認你在 {name} 裡有這個資料夾的存取權",
   "@errors.provider.appBased.needsAction": {
-    "sourceHash": "88009fd"
+    "sourceHash": "f69fe61"
   },
   "errors.provider.appBased.serious": "這個資料夾由 **{name}** 管理。可以這樣試試：\n- 結束 {app} 再重新開啟\n- 登出 {app} 再重新登入\n- 查看 {name} 的狀態頁面，看看有沒有服務中斷",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "64baea5"
+    "sourceHash": "347589c"
   },
   "errors.write.sourceNotFound.title": "找不到這個檔案",
   "@errors.write.sourceNotFound.title": {
-    "sourceHash": "2003305"
+    "sourceHash": "eff005a"
   },
   "errors.write.sourceNotFound.message.copy": "你想複製的檔案或資料夾已經不在了。",
   "@errors.write.sourceNotFound.message.copy": {
@@ -1099,15 +1099,15 @@
   },
   "errors.write.destinationNotFound.title": "找不到目標資料夾",
   "@errors.write.destinationNotFound.title": {
-    "sourceHash": "215ddfe"
+    "sourceHash": "ae77ee8"
   },
   "errors.write.destinationNotFound.message.copy": "你要複製過去的資料夾已經不在了，所以沒有地方放你的檔案。原本的檔案完全沒有被動過。",
   "@errors.write.destinationNotFound.message.copy": {
-    "sourceHash": "cc637e2"
+    "sourceHash": "80f4a4c"
   },
   "errors.write.destinationNotFound.message.move": "你要移動過去的資料夾已經不在了，所以沒有地方放你的檔案。原本的檔案完全沒有被動過。",
   "@errors.write.destinationNotFound.message.move": {
-    "sourceHash": "1726290"
+    "sourceHash": "b764d42"
   },
   "errors.write.destinationNotFound.suggestion": "它可能被重新命名或移除了，也可能是磁碟機斷線了。換一個目標位置，或者重新開啟那個資料夾再試一次。",
   "@errors.write.destinationNotFound.suggestion": {
@@ -1119,15 +1119,15 @@
   },
   "errors.write.notConnected.message.source": "Cmdr 還沒有連線到存放這些檔案的手機或伺服器，所以什麼都沒有改變。",
   "@errors.write.notConnected.message.source": {
-    "sourceHash": "e6690da"
+    "sourceHash": "7869dce"
   },
   "errors.write.notConnected.message.destination": "Cmdr 還沒有連線到目標手機或伺服器，所以什麼都沒有改變。你的檔案完全沒有被動過。",
   "@errors.write.notConnected.message.destination": {
-    "sourceHash": "5bbc6b9"
+    "sourceHash": "3b5063d"
   },
   "errors.write.notConnected.suggestion": "從卷宗切換器開啟它來連線，然後再試一次。如果是手機，把它解鎖並接受它跳出的任何提示。",
   "@errors.write.notConnected.suggestion": {
-    "sourceHash": "222ba64"
+    "sourceHash": "3fdc936"
   },
   "errors.write.destinationExists.title": "檔案已經存在",
   "@errors.write.destinationExists.title": {
@@ -1135,7 +1135,7 @@
   },
   "errors.write.destinationExists.message": "目標位置已經有一個同名的檔案了。",
   "@errors.write.destinationExists.message": {
-    "sourceHash": "50d9094"
+    "sourceHash": "cdcfb7b"
   },
   "errors.write.destinationExists.suggestion": "換個名稱或位置，或者先把現有的檔案刪掉。",
   "@errors.write.destinationExists.suggestion": {
@@ -1143,19 +1143,19 @@
   },
   "errors.write.destinationInsideSource.title.copy": "無法把資料夾複製到它自己裡面",
   "@errors.write.destinationInsideSource.title.copy": {
-    "sourceHash": "40c58ea"
+    "sourceHash": "f8dd7f6"
   },
   "errors.write.destinationInsideSource.title.move": "無法把資料夾移動到它自己裡面",
   "@errors.write.destinationInsideSource.title.move": {
-    "sourceHash": "3a9da7b"
+    "sourceHash": "48b9b42"
   },
   "errors.write.destinationInsideSource.message.copy": "你正想把一個資料夾複製到它自己的某個子資料夾裡。",
   "@errors.write.destinationInsideSource.message.copy": {
-    "sourceHash": "46d30ec"
+    "sourceHash": "26785f5"
   },
   "errors.write.destinationInsideSource.message.move": "你正想把一個資料夾移動到它自己的某個子資料夾裡。",
   "@errors.write.destinationInsideSource.message.move": {
-    "sourceHash": "e6ecfea"
+    "sourceHash": "4fcd446"
   },
   "errors.write.destinationInsideSource.suggestion.copy": "選一個在你要複製的資料夾之外的目標位置。",
   "@errors.write.destinationInsideSource.suggestion.copy": {
@@ -1255,19 +1255,19 @@
   },
   "errors.write.moveNotConfirmed.title": "無法確認這次移動",
   "@errors.write.moveNotConfirmed.title": {
-    "sourceHash": "5d64df8"
+    "sourceHash": "8f1fe29"
   },
   "errors.write.moveNotConfirmed.message.named": "Cmdr 無法確認移動過去的檔案已經儲存到 {volumeName} 上，所以把你原本的檔案留在原處沒有動。",
   "@errors.write.moveNotConfirmed.message.named": {
-    "sourceHash": "0c2dfb6"
+    "sourceHash": "442f2fe"
   },
   "errors.write.moveNotConfirmed.message.unnamed": "Cmdr 無法確認移動過去的檔案已經儲存到目標位置，所以把你原本的檔案留在原處沒有動。",
   "@errors.write.moveNotConfirmed.message.unnamed": {
-    "sourceHash": "fefb520"
+    "sourceHash": "565e4b8"
   },
   "errors.write.moveNotConfirmed.suggestion": "打開目標位置看一下，然後再移動一次。你原本的檔案都還在原處。",
   "@errors.write.moveNotConfirmed.suggestion": {
-    "sourceHash": "d9500f3"
+    "sourceHash": "4d7fedc"
   },
   "errors.write.trashNotSupported.title": "不支援垃圾桶",
   "@errors.write.trashNotSupported.title": {
@@ -1275,7 +1275,7 @@
   },
   "errors.write.trashNotSupported.message": "這個卷宗不支援垃圾桶。",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "45cf0c6"
+    "sourceHash": "911688a"
   },
   "errors.write.trashNotSupported.suggestion": "改用 {deletePermanentlyKey} 來永久刪除。",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1295,23 +1295,23 @@
   },
   "errors.write.readError.title.copy": "無法複製",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.readError.title.move": "無法移動",
   "@errors.write.readError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.readError.title.delete": "無法刪除",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.readError.title.trash": "無法移至垃圾桶",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.readError.message": "無法從來源讀取。",
   "@errors.write.readError.message": {
-    "sourceHash": "b3b10d6"
+    "sourceHash": "ead860d"
   },
   "errors.write.readError.suggestion": "再試一次。如果一直這樣，看看下方的技術詳細資訊。",
   "@errors.write.readError.suggestion": {
@@ -1319,23 +1319,23 @@
   },
   "errors.write.writeError.title.copy": "無法複製",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.writeError.title.move": "無法移動",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.writeError.title.delete": "無法刪除",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.writeError.title.trash": "無法移至垃圾桶",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.writeError.message": "無法寫入目標位置。",
   "@errors.write.writeError.message": {
-    "sourceHash": "cb458f0"
+    "sourceHash": "ec1a179"
   },
   "errors.write.writeError.suggestion": "再試一次。如果一直這樣，看看下方的技術詳細資訊。",
   "@errors.write.writeError.suggestion": {
@@ -1359,7 +1359,7 @@
   },
   "errors.write.invalidName.message": "{path} 的名稱是目標位置存不下的。",
   "@errors.write.invalidName.message": {
-    "sourceHash": "0bd3e6a"
+    "sourceHash": "ad395af"
   },
   "errors.write.invalidName.suggestion": "把它改成短一點、單純一點的名稱再試一次。有些目標位置還會拒絕 CON、NUL、LPT1 這類保留名稱。",
   "@errors.write.invalidName.suggestion": {
@@ -1367,19 +1367,19 @@
   },
   "errors.write.trashRefused.title": "無法移至垃圾桶",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.trashRefused.message.notPermitted": "你選的項目裡有 {count} 個，macOS 不讓 Cmdr 碰。",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "e11fc50"
+    "sourceHash": "57a38d7"
   },
   "errors.write.trashRefused.message.noTrashForVolume": "你選的項目裡有 {count} 個，macOS 找不到對應的垃圾桶。",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "d86a66d"
+    "sourceHash": "702ae17"
   },
   "errors.write.trashRefused.message.other": "你選的項目裡有 {count} 個，macOS 沒有移至垃圾桶。",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "5c73490"
+    "sourceHash": "6f71e12"
   },
   "errors.write.trashRefused.suggestion.notPermitted": "這些項目可能已鎖定，也可能放在 macOS 自己留著的地方。你還是可以用 Shift+F8 把它們永久刪除。",
   "@errors.write.trashRefused.suggestion.notPermitted": {
@@ -1395,39 +1395,39 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr 在這部 Mac 上也沒有「完全取用磁碟」權限，這是很常見的原因。標題列上的警告標記寫著：沒有「完全取用磁碟」權限。按一下就會帶你回到這個選擇。",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "0dbe21b"
+    "sourceHash": "ee5e9f7"
   },
   "errors.write.ioError.title.copy": "無法複製",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.ioError.title.move": "無法移動",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.ioError.title.delete": "無法刪除",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.ioError.title.trash": "無法移至垃圾桶",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.ioError.message.copy": "無法複製這個檔案。",
   "@errors.write.ioError.message.copy": {
-    "sourceHash": "93d27d8"
+    "sourceHash": "f25dd52"
   },
   "errors.write.ioError.message.move": "無法移動這個檔案。",
   "@errors.write.ioError.message.move": {
-    "sourceHash": "d2f8eea"
+    "sourceHash": "5f929ee"
   },
   "errors.write.ioError.message.delete": "無法刪除這個檔案。",
   "@errors.write.ioError.message.delete": {
-    "sourceHash": "87cc29a"
+    "sourceHash": "9e79007"
   },
   "errors.write.ioError.message.trash": "無法把這個檔案移至垃圾桶。",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "db053da"
+    "sourceHash": "948e289"
   },
   "errors.write.ioError.suggestion": "再試一次。如果一直這樣，看看下方的技術詳細資訊。",
   "@errors.write.ioError.suggestion": {
@@ -1435,23 +1435,23 @@
   },
   "errors.write.permissionDenied.title": "無法存取這個位置",
   "@errors.write.permissionDenied.title": {
-    "sourceHash": "be62ad2"
+    "sourceHash": "bc7f0ff"
   },
   "errors.write.permissionDenied.message.copy": "你沒有權限在這裡複製檔案。",
   "@errors.write.permissionDenied.message.copy": {
-    "sourceHash": "d9ebc5a"
+    "sourceHash": "91272c0"
   },
   "errors.write.permissionDenied.message.move": "你沒有權限在這裡移動檔案。",
   "@errors.write.permissionDenied.message.move": {
-    "sourceHash": "d5c0358"
+    "sourceHash": "5b0fc94"
   },
   "errors.write.permissionDenied.message.delete": "你沒有權限在這裡刪除檔案。",
   "@errors.write.permissionDenied.message.delete": {
-    "sourceHash": "e002a5f"
+    "sourceHash": "0c03fc4"
   },
   "errors.write.permissionDenied.message.trash": "你沒有權限在這裡把檔案移至垃圾桶。",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "b68bafc"
+    "sourceHash": "cca028a"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "確認你對上層資料夾有寫入權。這個檔案可能被鎖定了。在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1467,7 +1467,7 @@
   },
   "errors.write.permissionDenied.message.named": "你的 macOS 使用者無法更改 {folder}。",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "74994f9"
+    "sourceHash": "0ffd79b"
   },
   "errors.write.permissionDenied.suggestion.needsAdminMac": "這需要管理者權限。要讓你自己的帳號有權限，請在 Finder 裡選取這個資料夾，選擇「取得資訊」，然後查看「共享與權限」部分。",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
@@ -1475,15 +1475,15 @@
   },
   "errors.write.permissionDenied.suggestion.needsAdminOther": "這需要管理者權限。要讓你自己的帳號有權限，請更改資料夾的權限（例如用 chmod），然後再試一次。",
   "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "804027d"
+    "sourceHash": "5ce034b"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedMac": "這是 macOS 自己保護的，管理者權限也改不了。它可能被鎖定了：在 Finder 裡選取它，選擇「取得資訊」，然後取消勾選「已鎖定」。",
   "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
-    "sourceHash": "ad5e0de"
+    "sourceHash": "64a71c8"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedOther": "這是系統自己保護的，管理者權限也改不了。它可能帶著一個必須先清除的保護標記。",
   "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "bbf6bdb"
+    "sourceHash": "a4856dc"
   },
   "errors.write.insufficientSpace.title": "空間不夠",
   "@errors.write.insufficientSpace.title": {
@@ -1519,11 +1519,11 @@
   },
   "errors.write.filesTooLargeForFilesystem.message.one": "{name} 有 {size}，但這個磁碟機是 FAT32 格式，存不了大於 {maxSize} 的檔案。",
   "@errors.write.filesTooLargeForFilesystem.message.one": {
-    "sourceHash": "2993e08"
+    "sourceHash": "f5c262a"
   },
   "errors.write.filesTooLargeForFilesystem.message.many": "有 {count} 個檔案這個磁碟機放不下。它是 FAT32 格式，存不了大於 {maxSize} 的檔案。",
   "@errors.write.filesTooLargeForFilesystem.message.many": {
-    "sourceHash": "1aac250"
+    "sourceHash": "9720069"
   },
   "errors.write.filesTooLargeForFilesystem.suggestion": "要存這麼大的檔案，請改用 exFAT 格式的磁碟機，它沒有這個限制。",
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
@@ -1559,19 +1559,19 @@
   },
   "errors.write.destinationNotWritable.noPermission.message": "你沒有將檔案加入這個資料夾的權限。",
   "@errors.write.destinationNotWritable.noPermission.message": {
-    "sourceHash": "15abe78"
+    "sourceHash": "a7e0efa"
   },
   "errors.write.destinationNotWritable.noPermission.suggestion": "請選擇另一個目標資料夾，或是更改這個資料夾的權限後再試一次。",
   "@errors.write.destinationNotWritable.noPermission.suggestion": {
-    "sourceHash": "fceb936"
+    "sourceHash": "3851384"
   },
   "errors.write.destinationNotWritable.unexplained.title": "這個資料夾不接受檔案",
   "@errors.write.destinationNotWritable.unexplained.title": {
-    "sourceHash": "628c3aa"
+    "sourceHash": "c98e2c3"
   },
   "errors.write.destinationNotWritable.unexplained.message": "這個資料夾不接受新檔案，無法把任何東西複製或移動到這裡。",
   "@errors.write.destinationNotWritable.unexplained.message": {
-    "sourceHash": "22ce481"
+    "sourceHash": "13b79ec"
   },
   "errors.write.destinationNotWritable.unexplained.suggestion": "請選擇另一個目標資料夾。",
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
@@ -1587,7 +1587,7 @@
   },
   "errors.write.fileLocked.message": "這個檔案已鎖定，無法刪除。",
   "@errors.write.fileLocked.message": {
-    "sourceHash": "62b1038"
+    "sourceHash": "84925b0"
   },
   "errors.write.fileLocked.suggestion.mac": "在 Finder 裡把它解鎖（取得資訊 > 取消勾選「已鎖定」），然後再試一次。",
   "@errors.write.fileLocked.suggestion.mac": {
@@ -1615,7 +1615,7 @@
   },
   "errors.write.newDataKeptAt.message": "新的 {path} 已經完整寫好了，但目標位置不讓它用這個名字，而它要取代的那個檔案已經沒了。新檔案現在在 {keptAt}。",
   "@errors.write.newDataKeptAt.message": {
-    "sourceHash": "d1dc96b"
+    "sourceHash": "93d07be"
   },
   "errors.write.newDataKeptAt.suggestion": "打開 {keptAt} 看一下，然後幫它改名。如果目標位置是網路共享或手機，先重新連上，改名就會成功。",
   "@errors.write.newDataKeptAt.suggestion": {
@@ -1635,27 +1635,27 @@
   },
   "errors.write.originalsKeptAside.suggestion.one": "打開 {keptAt} 看一下。等你把那個資料夾挪開，就可以把檔案的名字改回來。",
   "@errors.write.originalsKeptAside.suggestion.one": {
-    "sourceHash": "6c53394"
+    "sourceHash": "5cbe5bb"
   },
   "errors.write.originalsKeptAside.suggestion.many": "下面的詳情裡寫了每個檔案在哪裡。等你把那些資料夾挪開，就可以把名字都改回來。",
   "@errors.write.originalsKeptAside.suggestion.many": {
-    "sourceHash": "7934c84"
+    "sourceHash": "2b05c26"
   },
   "errors.write.fallback.title.copy": "無法複製",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.fallback.title.move": "無法移動",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.fallback.title.delete": "無法刪除",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.fallback.title.trash": "無法移至垃圾桶",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.fallback.message.copy": "複製的時候出了點狀況。",
   "@errors.write.fallback.message.copy": {
@@ -1679,31 +1679,31 @@
   },
   "errors.mutation.notFound": "「{path}」已經不在了。",
   "@errors.mutation.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.mutation.cantRenameVolumeRoot": "卷宗的最上層資料夾沒辦法在這裡重新命名。",
   "@errors.mutation.cantRenameVolumeRoot": {
-    "sourceHash": "baf4d16"
+    "sourceHash": "0845c57"
   },
   "errors.mutation.parentNotWritable": "Cmdr 無法寫入「{path}」。請在 Finder 裡看看這個資料夾的權限。",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "3659a5a"
+    "sourceHash": "e0a7ad6"
   },
   "errors.mutation.fileLocked": "這個項目已鎖定。請在 Finder 的「取得資訊」面板裡解鎖，然後再試一次。",
   "@errors.mutation.fileLocked": {
-    "sourceHash": "d1d127c"
+    "sourceHash": "4be163f"
   },
   "errors.mutation.sipProtected": "macOS 用「系統完整保護」守著這個項目，所以它無法重新命名。",
   "@errors.mutation.sipProtected": {
-    "sourceHash": "1865724"
+    "sourceHash": "2189822"
   },
   "errors.mutation.volumeGone": "那個卷宗已經不能用了，所以什麼都沒有更動。",
   "@errors.mutation.volumeGone": {
-    "sourceHash": "604aad5"
+    "sourceHash": "643398b"
   },
   "errors.mutation.archiveNotEditable": "Cmdr 現在無法開啟這個壓縮檔來編輯。",
   "@errors.mutation.archiveNotEditable": {
-    "sourceHash": "eedee11"
+    "sourceHash": "47c44dd"
   },
   "errors.mutation.archiveReadOnly": "只有 zip 壓縮檔可以更動，而這一個是唯讀的。",
   "@errors.mutation.archiveReadOnly": {
@@ -1711,43 +1711,43 @@
   },
   "errors.mutation.renameOutOfArchive": "重新命名沒辦法把項目搬出壓縮檔。請改用「移動」。",
   "@errors.mutation.renameOutOfArchive": {
-    "sourceHash": "1f852c5"
+    "sourceHash": "5e82283"
   },
   "errors.mutation.renameAcrossArchives": "重新命名沒辦法把項目從一個壓縮檔搬到另一個。請改用「移動」。",
   "@errors.mutation.renameAcrossArchives": {
-    "sourceHash": "5b8f1df"
+    "sourceHash": "89b3231"
   },
   "errors.mutation.archiveEditNotReady": "Cmdr 還在啟動，所以壓縮檔編輯還沒準備好。",
   "@errors.mutation.archiveEditNotReady": {
-    "sourceHash": "21a4fcf"
+    "sourceHash": "1a71ae7"
   },
   "errors.mutation.archiveEditCouldntStart": "這次壓縮檔編輯沒能開始。",
   "@errors.mutation.archiveEditCouldntStart": {
-    "sourceHash": "3a5322f"
+    "sourceHash": "c67e249"
   },
   "errors.mutation.timedOut": "這個卷宗還沒回應，所以這次更動也許還是會生效。",
   "@errors.mutation.timedOut": {
-    "sourceHash": "27d6a2f"
+    "sourceHash": "94a8419"
   },
   "errors.mutation.unexpected": "出了點狀況，Cmdr 也說不上來是什麼。",
   "@errors.mutation.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.volume.notFound": "「{path}」已經不在了。",
   "@errors.volume.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.volume.permissionDenied": "Cmdr 沒有「{path}」的存取權。",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "fee452b"
+    "sourceHash": "2c188b6"
   },
   "errors.volume.alreadyExists": "「{path}」那裡已經有東西了。",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "de0bbb9"
+    "sourceHash": "8763243"
   },
   "errors.volume.notSupported": "這個卷宗不支援那樣做。",
   "@errors.volume.notSupported": {
-    "sourceHash": "f57ad5a"
+    "sourceHash": "b645086"
   },
   "errors.volume.deviceDisconnected": "更動還沒完成，裝置就斷線了。",
   "@errors.volume.deviceDisconnected": {
@@ -1755,7 +1755,7 @@
   },
   "errors.volume.notConnected": "Cmdr 還沒有連線到這支手機或伺服器，請先開啟它。",
   "@errors.volume.notConnected": {
-    "sourceHash": "094dc49"
+    "sourceHash": "e128225"
   },
   "errors.volume.deviceSessionReset": "裝置重新建立了連線。等個幾秒再試一次。",
   "@errors.volume.deviceSessionReset": {
@@ -1767,11 +1767,11 @@
   },
   "errors.volume.storageFull": "這個卷宗上已經沒有空間了。",
   "@errors.volume.storageFull": {
-    "sourceHash": "f2f33dc"
+    "sourceHash": "1fcdb67"
   },
   "errors.volume.connectionTimeout": "連線沒有及時回應。",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "857ed01"
+    "sourceHash": "f21c934"
   },
   "errors.volume.cancelled": "Cmdr 按你的要求停下來了。",
   "@errors.volume.cancelled": {
@@ -1783,7 +1783,7 @@
   },
   "errors.volume.invalidName": "目標位置存不下這個名稱。請換一個。",
   "@errors.volume.invalidName": {
-    "sourceHash": "ef0f2b8"
+    "sourceHash": "531488f"
   },
   "errors.volume.deletePending": "那個檔案正在離場，還有東西開著它。等一下再試一次。",
   "@errors.volume.deletePending": {
@@ -1791,7 +1791,7 @@
   },
   "errors.volume.ambiguousName": "伺服器上有不只一個項目符合「{path}」，所以 Cmdr 沒有替你選。請到它所在的資料夾裡選擇。",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "f866182"
+    "sourceHash": "0f0e74d"
   },
   "errors.volume.staleDestinationHandle": "Cmdr 跟丟了裝置上的目標資料夾。請再進去一次，然後重試。",
   "@errors.volume.staleDestinationHandle": {
@@ -1799,7 +1799,7 @@
   },
   "errors.volume.ioError": "這個卷宗沒能完成那件事。",
   "@errors.volume.ioError": {
-    "sourceHash": "c82a0e1"
+    "sourceHash": "59e7d6a"
   },
   "errors.volume.needsPassword": "這個壓縮檔有密碼保護。",
   "@errors.volume.needsPassword": {
@@ -1807,7 +1807,7 @@
   },
   "errors.volume.passwordRejected": "那個密碼不管用。",
   "@errors.volume.passwordRejected": {
-    "sourceHash": "33ba224"
+    "sourceHash": "fe9b44a"
   },
   "errors.mutation.trashNotSupported": "這個卷宗沒有垃圾桶，只能永久刪除。",
   "@errors.mutation.trashNotSupported": {
@@ -1815,23 +1815,23 @@
   },
   "errors.mutation.trashRefused": "macOS 不肯把這個項目移至垃圾桶。",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "6d8a1b6"
+    "sourceHash": "7a6d1a5"
   },
   "errors.serverRequest.unreachable": "Cmdr 無法連線到它的伺服器。請檢查網際網路連線，然後再試一次。",
   "@errors.serverRequest.unreachable": {
-    "sourceHash": "7f2a23e"
+    "sourceHash": "186a0f6"
   },
   "errors.serverRequest.timedOut": "Cmdr 的伺服器沒有及時回應。請稍後再試一次。",
   "@errors.serverRequest.timedOut": {
-    "sourceHash": "14b0dcd"
+    "sourceHash": "1413608"
   },
   "errors.serverRequest.serverBusy": "Cmdr 的伺服器目前出了點問題。請稍後再試。",
   "@errors.serverRequest.serverBusy": {
-    "sourceHash": "2df1f8d"
+    "sourceHash": "1f21e5d"
   },
   "errors.serverRequest.refused": "Cmdr 的伺服器拒絕了這個請求。如果持續發生，請到 getcmdr.com 下載最新版的 Cmdr。",
   "@errors.serverRequest.refused": {
-    "sourceHash": "f36d8f8"
+    "sourceHash": "6a83e2a"
   },
   "errors.serverRequest.unexpected": "Cmdr 本身出了點問題。請再試一次。如果持續發生，請重新啟動 Cmdr。",
   "@errors.serverRequest.unexpected": {
@@ -1843,23 +1843,23 @@
   },
   "errors.eject.volumeNotFound": "那個磁碟機已經不在了，沒有東西需要退出。",
   "@errors.eject.volumeNotFound": {
-    "sourceHash": "62a3af2"
+    "sourceHash": "2c5112f"
   },
   "errors.eject.notEjectable": "這個磁碟機不可移除，所以會一直連著。",
   "@errors.eject.notEjectable": {
-    "sourceHash": "bb88249"
+    "sourceHash": "cc7e9ee"
   },
   "errors.eject.notAnSmbVolume": "這不是網路共享資料夾，沒有連線需要中斷。",
   "@errors.eject.notAnSmbVolume": {
-    "sourceHash": "d49623e"
+    "sourceHash": "230d2dc"
   },
   "errors.eject.remoteNotConnected": "這個伺服器已經不再連線，沒有東西需要關閉。",
   "@errors.eject.remoteNotConnected": {
-    "sourceHash": "a0ed630"
+    "sourceHash": "3b531d1"
   },
   "errors.eject.deviceDisconnectRefused": "裝置沒有把連線關掉。等它閒下來再拔線。",
   "@errors.eject.deviceDisconnectRefused": {
-    "sourceHash": "d49861f"
+    "sourceHash": "5b99318"
   },
   "errors.eject.unmountRefused": "還有東西在用這個磁碟機。請關掉開著的檔案和 App，然後再退出一次。",
   "@errors.eject.unmountRefused": {
@@ -1891,27 +1891,27 @@
   },
   "errors.eject.timedOut": "這個磁碟機還沒回應，過一會兒它可能會自己退出。",
   "@errors.eject.timedOut": {
-    "sourceHash": "c592421"
+    "sourceHash": "3feb944"
   },
   "errors.eject.notResponding": "這個磁碟機沒有回應，所以仍保持連線。請稍後再試。",
   "@errors.eject.notResponding": {
-    "sourceHash": "742a732"
+    "sourceHash": "a3d9d82"
   },
   "errors.eject.unexpected": "出了點狀況，Cmdr 也說不上來是什麼。",
   "@errors.eject.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.mount.hostUnreachable": "Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.mount.timeout": "Cmdr 等了一下，但「{server}」沒有及時回應。請確認它已經開機而且連得上，然後再試一次。",
   "@errors.mount.timeout": {
-    "sourceHash": "00d198e"
+    "sourceHash": "d0629fe"
   },
   "errors.mount.shareNotFound": "「{server}」上沒有名為「{share}」的共享資料夾。請返回，從列表中挑一個。",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "08aee2a"
+    "sourceHash": "10f3c59"
   },
   "errors.mount.authRequired": "請先登入，才能開啟「{server}」上的「{share}」。",
   "@errors.mount.authRequired": {
@@ -1919,23 +1919,23 @@
   },
   "errors.mount.authFailed": "這組使用者名稱和密碼在「{server}」上不管用。請檢查一下，再重新登入。",
   "@errors.mount.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.mount.permissionDenied": "你已經用「{username}」登入「{server}」，但這個帳號無法開啟「{share}」。請改用其他帳號登入。",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "f8e000b"
+    "sourceHash": "05611b7"
   },
   "errors.mount.cancelled": "連線到「{share}」的過程在完成前就停止了。準備好之後再試一次。",
   "@errors.mount.cancelled": {
-    "sourceHash": "4f6ff32"
+    "sourceHash": "bc771b3"
   },
   "errors.mount.unsupportedProtocol": "這台電腦和「{server}」沒有共同支援的 SMB 版本。請在伺服器的設定中開啟 SMB 2 或更新版本，然後再試一次。",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "7cb18f6"
+    "sourceHash": "8afe4cb"
   },
   "errors.mount.mountRefused": "你已經登入「{server}」，但它不肯開啟「{share}」。請到伺服器上檢查這個共享資料夾的設定，然後再試一次。",
   "@errors.mount.mountRefused": {
-    "sourceHash": "84344ca"
+    "sourceHash": "6cf694d"
   },
   "errors.mount.mountMissing": "你的電腦回報「{server}」上的「{share}」已經連線，但它一直沒有出現。請再試一次。",
   "@errors.mount.mountMissing": {
@@ -1943,7 +1943,7 @@
   },
   "errors.mount.gvfsMissing": "在 Linux 上連線到網路共享資料夾需要 GVFS。請安裝你所用發行版的 gvfs-smb 套件，然後再試一次。",
   "@errors.mount.gvfsMissing": {
-    "sourceHash": "068da95"
+    "sourceHash": "b67831e"
   },
   "errors.mount.unexpected": "連線到「{server}」上的「{share}」時出了點狀況。請稍後再試一次。",
   "@errors.mount.unexpected": {
@@ -1951,11 +1951,11 @@
   },
   "errors.shareList.hostUnreachable": "Cmdr 連不上「{server}」。請確認它已經開機，而且和這台電腦在同一個網路上。",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.shareList.timeout": "Cmdr 等了一下，但「{server}」沒有及時回應。請稍後再試一次。",
   "@errors.shareList.timeout": {
-    "sourceHash": "a07b7c8"
+    "sourceHash": "0c2c6ec"
   },
   "errors.shareList.authRequired": "請登入以查看「{server}」上的共享資料夾。",
   "@errors.shareList.authRequired": {
@@ -1963,11 +1963,11 @@
   },
   "errors.shareList.signingRequired": "「{server}」不會向訪客顯示共享資料夾。請登入後再查看。",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "ecc570d"
+    "sourceHash": "6e92125"
   },
   "errors.shareList.authFailed": "這組使用者名稱和密碼在「{server}」上不管用。請檢查一下，再重新登入。",
   "@errors.shareList.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.shareList.protocolError": "向「{server}」取得共享資料夾列表時出了點狀況。請稍後再試一次。",
   "@errors.shareList.protocolError": {
@@ -1975,11 +1975,11 @@
   },
   "errors.shareList.resolutionFailed": "Cmdr 在網路上找不到「{server}」。請檢查名稱，或等它重新上線後再試一次。",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "62e91cf"
+    "sourceHash": "9be124a"
   },
   "errors.shareList.missingDependency": "在這台電腦上列出共享資料夾需要 smbclient，但它還沒有安裝。請安裝之後再試一次。",
   "@errors.shareList.missingDependency": {
-    "sourceHash": "810b06a"
+    "sourceHash": "6ffa8a9"
   },
   "errors.write.readOnlyDevice.source.title": "來源為唯讀",
   "@errors.write.readOnlyDevice.source.title": {
@@ -2003,7 +2003,7 @@
   },
   "errors.write.duplicateSourceNames.message": "你選了兩個都叫 {name} 的項目，它們會落到同一個位置：{first} 和 {second}。",
   "@errors.write.duplicateSourceNames.message": {
-    "sourceHash": "4146d5f"
+    "sourceHash": "f4517fc"
   },
   "errors.write.duplicateSourceNames.suggestion.copy": "一個一個地複製，或者先幫其中一個改名。",
   "@errors.write.duplicateSourceNames.suggestion.copy": {

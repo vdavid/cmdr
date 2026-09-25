@@ -13,7 +13,7 @@
   },
   "mtp.connectedToast.dontShowAgain": "Visa inte igen",
   "@mtp.connectedToast.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "mtp.connectedToast.disableMtp": "Stäng av MTP…",
   "@mtp.connectedToast.disableMtp": {
@@ -26,11 +26,11 @@
   },
   "mtp.permissionDialog.title": "Det går inte att komma åt USB-enheten",
   "@mtp.permissionDialog.title": {
-    "sourceHash": "96130bf"
+    "sourceHash": "1b440ed"
   },
   "mtp.permissionDialog.description": "Cmdr har inte behörighet att komma åt den här enheten. Linux behöver udev-regler för att ge åtkomst till MTP-enheter.",
   "@mtp.permissionDialog.description": {
-    "sourceHash": "c11f0e8"
+    "sourceHash": "fdb8772"
   },
   "mtp.permissionDialog.explanation": "Kör det här kommandot i din terminal för att installera reglerna och läsa in dem på nytt:",
   "@mtp.permissionDialog.explanation": {
@@ -50,7 +50,7 @@
   },
   "mtp.ptpcameradDialog.title": "Det går inte att ansluta till MTP-enheten",
   "@mtp.ptpcameradDialog.title": {
-    "sourceHash": "058de77"
+    "sourceHash": "8cb1f59"
   },
   "mtp.ptpcameradDialog.inUseBy": "Enheten används av <processName>{process}</processName>.",
   "@mtp.ptpcameradDialog.inUseBy": {

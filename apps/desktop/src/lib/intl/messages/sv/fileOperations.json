@@ -14,7 +14,7 @@
   },
   "fileOperations.delete.noTrashWarningStrong": "Den här volymen saknar papperskorg.",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "ef122e2"
+    "sourceHash": "911688a"
   },
   "fileOperations.delete.noTrashWarningRest": "Filerna raderas permanent.",
   "@fileOperations.delete.noTrashWarningRest": {
@@ -22,19 +22,19 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "En del av det du har markerat finns bara online. Att flytta dem till papperskorgen skulle <strong>hämta dem först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör antingen alla filer tillgängliga offline först, eller avmarkera alla filer som bara finns online.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "4c48ecf"
+    "sourceHash": "2468db5"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "Allt du har markerat finns bara online. Att flytta det till papperskorgen skulle <strong>hämta det först</strong>. Därför erbjuder Cmdr här bara att <strong>radera</strong> hela markeringen. Ingen kopia hamnar i papperskorgen, men molntjänster brukar behålla sin egen papperskorg i ungefär 30 dagar. Klicka på ”Radera” om det är okej att radera, annars avbryt den här dialogen och gör de här filerna tillgängliga offline först.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "52f8c94"
+    "sourceHash": "dd04d39"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "Det du markerade visade sig innehålla material som bara finns online, så knappen nedanför erbjuder nu ”Radera”. Läs noteringen ovanför och tryck på den igen om det är okej.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "623e7e0"
+    "sourceHash": "d3f4a7a"
   },
   "fileOperations.delete.archiveWarningStrong": "Det finns ingen papperskorg i ett arkiv.",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "29efc59"
+    "sourceHash": "d25cd46"
   },
   "fileOperations.delete.archiveWarningRest": "Objekten tas bort permanent ur zip-arkivet.",
   "@fileOperations.delete.archiveWarningRest": {
@@ -62,11 +62,11 @@
   },
   "fileOperations.trash.undoUnavailable": "Det finns inget att lägga tillbaka. Objekten kan redan vara tillbaka, eller så är deras enhet inte ansluten.",
   "@fileOperations.trash.undoUnavailable": {
-    "sourceHash": "2acefae"
+    "sourceHash": "ee17b5f"
   },
   "fileOperations.trash.noTrashHere": "Det finns ingen papperskorg på den här enheten.",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "91d7462"
+    "sourceHash": "f58bdab"
   },
   "fileOperations.delete.trashSwitch": "Flytta till papperskorgen",
   "@fileOperations.delete.trashSwitch": {
@@ -158,7 +158,7 @@
   },
   "fileOperations.mkdir.timeoutMessage": "Det gick inte att bekräfta att mappen skapades. Volymen kan vara långsam, så mappen kan ändå ha skapats.",
   "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "751aec6"
+    "sourceHash": "8bc758a"
   },
   "fileOperations.mkdir.timeoutRefresh": "Uppdatera listan",
   "@fileOperations.mkdir.timeoutRefresh": {
@@ -247,11 +247,11 @@
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Den här mappen finns inte än. Cmdr skapar den under kopieringen.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
-    "sourceHash": "025f3dc"
+    "sourceHash": "4e8d166"
   },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Den här mappen finns inte än. Cmdr skapar den under flytten.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
-    "sourceHash": "976edd2"
+    "sourceHash": "1246331"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Den här mappen är skrivskyddad, så inget kan hamna här.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -259,11 +259,11 @@
   },
   "fileOperations.transferDialog.destinationNoPermission": "Du har inte behörighet att lägga till filer i den här mappen.",
   "@fileOperations.transferDialog.destinationNoPermission": {
-    "sourceHash": "728b1ed"
+    "sourceHash": "a7e0efa"
   },
   "fileOperations.transferDialog.destinationNotWritable": "Den här mappen tar inte emot nya filer.",
   "@fileOperations.transferDialog.destinationNotWritable": {
-    "sourceHash": "d7cd278"
+    "sourceHash": "07094f6"
   },
   "fileOperations.transferDialog.targetWillBeOverwritten": "Det finns redan en fil med det här namnet här. Cmdr ersätter den.",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
@@ -279,7 +279,7 @@
   },
   "fileOperations.transferDialog.hardlinkNote": "<written></written> kommer att skrivas. Källan är <ondisk></ondisk> på disken – det extra är hårdlänkade filer, som inte kan förbli länkade mellan enheter.",
   "@fileOperations.transferDialog.hardlinkNote": {
-    "sourceHash": "af8a4c9"
+    "sourceHash": "acac507"
   },
   "fileOperations.transferDialog.compressLevelCaption": "Högre nivåer ger en mindre zip men tar längre tid att packa.",
   "@fileOperations.transferDialog.compressLevelCaption": {
@@ -295,11 +295,11 @@
   },
   "fileOperations.transferDialog.scanUnresponsive": "Källan svarar inte, så mer än så här kunde vi inte räkna.",
   "@fileOperations.transferDialog.scanUnresponsive": {
-    "sourceHash": "03d95e0"
+    "sourceHash": "ec3beb2"
   },
   "fileOperations.transferDialog.scanStopped": "Vi kunde inte mäta klart källan, så mer än så här kunde vi inte räkna.",
   "@fileOperations.transferDialog.scanStopped": {
-    "sourceHash": "aac156c"
+    "sourceHash": "f7d3029"
   },
   "fileOperations.transferDialog.scanRetry": "Försök igen",
   "@fileOperations.transferDialog.scanRetry": {
@@ -307,7 +307,7 @@
   },
   "fileOperations.transferDialog.conflictsUnknown": "Vi kunde inte kolla vad som redan finns på målplatsen. Du får en fråga om allt som krockar.",
   "@fileOperations.transferDialog.conflictsUnknown": {
-    "sourceHash": "1bc997a"
+    "sourceHash": "d42db28"
   },
   "fileOperations.transferDialog.checkingConflicts": "Söker efter konflikter…",
   "@fileOperations.transferDialog.checkingConflicts": {
@@ -367,7 +367,7 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "Det går inte att {verb, select, copy {kopiera} other {flytta}} ”{name}” till en egen undermapp",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "815204a"
+    "sourceHash": "96c81d6"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "”{name}” finns redan på den här platsen",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
@@ -507,11 +507,11 @@
   },
   "fileOperations.transferProgress.warningFileOverFolder": "Målet finns och är en <strong>mapp</strong>. Du är på väg att skriva över det med en <strong>fil</strong> med samma namn. Allt innehåll i målmappen skulle raderas och ersättas av filen. Vad vill du göra?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "c560c0f"
+    "sourceHash": "6dce75c"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Namnen ser likadana ut, men servern stavar dem olika. Skriv över ersätter det som redan finns där.",
   "@fileOperations.transferProgress.lookAlikeHint": {
-    "sourceHash": "2d35ddf"
+    "sourceHash": "01ed9ad"
   },
   "fileOperations.transferProgress.existingFolderLabel": "Befintlig (mapp):",
   "@fileOperations.transferProgress.existingFolderLabel": {
@@ -551,7 +551,7 @@
   },
   "fileOperations.transferProgress.smallerDisabledTooltip": "Det går inte att jämföra: målmappens storlek är okänd.",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
-    "sourceHash": "3bb25be"
+    "sourceHash": "ad5025c"
   },
   "fileOperations.transferProgress.conflictSkip": "Hoppa över",
   "@fileOperations.transferProgress.conflictSkip": {
@@ -647,7 +647,7 @@
   },
   "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Alla filer finns redan på målet, så flytten går inte att ångra längre. Avbryt stoppar ändå Cmdr innan resten av originalen tas bort.",
   "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
-    "sourceHash": "5f8b044"
+    "sourceHash": "da51356"
   },
   "fileOperations.transferProgress.titlePaused": "Pausad",
   "@fileOperations.transferProgress.titlePaused": {
@@ -691,7 +691,7 @@
   },
   "fileOperations.transferProgress.queuedToast": "{countText} före den här, så den väntar på sin tur. Hitta den i åtgärdskön.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "60a251d"
+    "sourceHash": "1bb57e1"
   },
   "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {# åtgärd} other {# åtgärder}}",
   "@fileOperations.transferProgress.queuedToastCount": {
@@ -715,11 +715,11 @@
   },
   "fileOperations.rollbackConfirm.body": "Det här raderar alla filer som åtgärden har skrivit hittills, och filer som den har skrivit över kommer inte tillbaka. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "740e974"
+    "sourceHash": "1d3328f"
   },
   "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Det här flyttar tillbaka allt som åtgärden har flyttat hittills, och filer som den har skrivit över kommer inte tillbaka. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar där de är.",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
-    "sourceHash": "a489eb2"
+    "sourceHash": "a058f98"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Ångra klart den här åtgärden?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -727,15 +727,15 @@
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Det här raderar filerna och mapparna som åtgärden skapade. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
-    "sourceHash": "88584f4"
+    "sourceHash": "9afb3e2"
   },
   "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Det här flyttar tillbaka filerna dit de kom ifrån. Cmdr hoppar över allt som är osäkert, så en del kan bli kvar där de är.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
-    "sourceHash": "7d55114"
+    "sourceHash": "5c3f276"
   },
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Det här ger filerna tillbaka sina gamla namn. Cmdr hoppar över allt som är osäkert, så en del kan behålla namnet de har nu.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
-    "sourceHash": "819690f"
+    "sourceHash": "37932e7"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Låt det vara",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
@@ -783,7 +783,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr hoppar över allt som är osäkert, så det här blev kvar:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "fb28a31"
+    "sourceHash": "bab6eb4"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} lämnades som den är: den ändrades efter att Cmdr lade den där.",
   "@fileOperations.cancelRollback.reason.drift.named": {
@@ -795,11 +795,11 @@
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} lämnades som den är: Cmdr kunde inte kontrollera om den ändrats.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
-    "sourceHash": "29c32b9"
+    "sourceHash": "3e553b2"
   },
   "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {objekt} other {objekt}} lämnades som de är: Cmdr kunde inte kontrollera om de ändrats.",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "e40696b"
+    "sourceHash": "25fe620"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} lämnades där den ligger: något annat finns nu där den kom ifrån.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
@@ -819,19 +819,19 @@
   },
   "fileOperations.cancelRollback.reason.failed.named": "Det gick inte att ångra {name}. Enheten den ligger på kan vara frånkopplad eller skrivskyddad.",
   "@fileOperations.cancelRollback.reason.failed.named": {
-    "sourceHash": "5c9d51d"
+    "sourceHash": "d22eda5"
   },
   "fileOperations.cancelRollback.reason.failed.counted": "Det gick inte att ångra {countText} {count, plural, one {objekt} other {objekt}}. Enheten de ligger på kan vara frånkopplad eller skrivskyddad.",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "92c8b00"
+    "sourceHash": "fa172fb"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "Det gick inte att radera {name}, en ofullständig kopia som blev kvar på målplatsen. Du kan radera den utan risk, och Cmdr rensar bort den vid en senare överföring dit.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
-    "sourceHash": "4aeaddc"
+    "sourceHash": "d47b49d"
   },
   "fileOperations.cancelRollback.stagedLeftover.counted": "Det gick inte att radera {countText} {count, plural, one {ofullständig kopia} other {ofullständiga kopior}} som blev kvar på målplatsen. Du kan radera dem utan risk, och Cmdr rensar bort dem vid en senare överföring dit.",
   "@fileOperations.cancelRollback.stagedLeftover.counted": {
-    "sourceHash": "becfef5"
+    "sourceHash": "6567e25"
   },
   "fileOperations.leftovers.stagingFolderKept": "Cmdr hittade filer från en avbruten flytt på {volumeName} och lät dem ligga kvar, i en dold mapp som heter {folderName}.",
   "@fileOperations.leftovers.stagingFolderKept": {
@@ -863,7 +863,7 @@
   },
   "fileOperations.archivePassword.retryTitle": "Det fungerade inte",
   "@fileOperations.archivePassword.retryTitle": {
-    "sourceHash": "dd30abb"
+    "sourceHash": "a12d349"
   },
   "fileOperations.archivePassword.message": "<archive>{name}</archive> är lösenordsskyddad. Ange lösenordet för att låsa upp den.",
   "@fileOperations.archivePassword.message": {
@@ -871,7 +871,7 @@
   },
   "fileOperations.archivePassword.retryMessage": "Det lösenordet låste inte upp <archive>{name}</archive>. Försök igen.",
   "@fileOperations.archivePassword.retryMessage": {
-    "sourceHash": "88ef11a"
+    "sourceHash": "3d62c0c"
   },
   "fileOperations.archivePassword.inputAria": "Arkivlösenord",
   "@fileOperations.archivePassword.inputAria": {
@@ -887,11 +887,11 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Mappnamn får inte innehålla ”/” eller nolltecken} other {Filnamn får inte innehålla ”/” eller nolltecken}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "4fa16ce"
+    "sourceHash": "1a3c594"
   },
   "fileOperations.validation.empty": "{kind, select, folder {Mappnamn får inte vara tomt} other {Filnamn får inte vara tomt}}",
   "@fileOperations.validation.empty": {
-    "sourceHash": "e6acb43"
+    "sourceHash": "2a25343"
   },
   "fileOperations.validation.nameTooLong": "{kind, select, folder {Mappnamnet är för långt ({byteCount}/{maxBytes} byte)} other {Filnamnet är för långt ({byteCount}/{maxBytes} byte)}}",
   "@fileOperations.validation.nameTooLong": {
@@ -903,7 +903,7 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "Det går inte att ändra filtillägget (var ”{oldExt}”)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "0b2df1e"
+    "sourceHash": "e81362d"
   },
   "fileOperations.validation.conflict": "”{name}” finns redan i den här mappen",
   "@fileOperations.validation.conflict": {
@@ -911,11 +911,11 @@
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {Det här mappnamnet kan inte användas} other {Det här filnamnet kan inte användas}}",
   "@fileOperations.validation.nameNotUsable": {
-    "sourceHash": "8482a7b"
+    "sourceHash": "6c50bb6"
   },
   "fileOperations.validation.pathEmpty": "Sökvägen får inte vara tom",
   "@fileOperations.validation.pathEmpty": {
-    "sourceHash": "348eb60"
+    "sourceHash": "c7afbbc"
   },
   "fileOperations.validation.pathNotAbsolute": "Sökvägen måste vara absolut (börja med /)",
   "@fileOperations.validation.pathNotAbsolute": {

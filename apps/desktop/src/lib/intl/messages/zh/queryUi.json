@@ -1,7 +1,7 @@
 {
   "queryUi.bar.placeholder.ai": "描述你要找的东西",
   "@queryUi.bar.placeholder.ai": {
-    "sourceHash": "fbfb9a8"
+    "sourceHash": "d8ef53e"
   },
   "queryUi.bar.placeholder.regex": "正则表达式",
   "@queryUi.bar.placeholder.regex": {
@@ -105,7 +105,7 @@
   },
   "queryUi.ai.lead": "这是代理做的事：",
   "@queryUi.ai.lead": {
-    "sourceHash": "bf7c5a2"
+    "sourceHash": "0598e43"
   },
   "queryUi.ai.empty": "目前还没有可筛选的内容。换个说法试试？",
   "@queryUi.ai.empty": {
@@ -254,7 +254,7 @@
   },
   "queryUi.results.live.resolvingCoverage": "正在确认哪些内容已建立索引…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "524487d"
+    "sourceHash": "dc547a0"
   },
   "queryUi.results.live.waitingForAnotherWalk": "正在等待另一次扫描读完这些文件夹…",
   "@queryUi.results.live.waitingForAnotherWalk": {
@@ -266,11 +266,11 @@
   },
   "queryUi.results.live.readingIndex": "正在读取已建立索引的部分…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "ed4159a"
+    "sourceHash": "b8bd4f7"
   },
   "queryUi.results.live.walking": "正在逐个查看尚未建立索引的文件夹…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "3829650"
+    "sourceHash": "2acf23a"
   },
   "queryUi.results.live.matchesSoFar": "目前找到 {countText} {count, plural, other {个结果}}",
   "@queryUi.results.live.matchesSoFar": {
@@ -282,11 +282,11 @@
   },
   "queryUi.results.live.incomplete": "{totalText} 个结果中显示 {shownText} 个。Cmdr 没有找完。",
   "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
+    "sourceHash": "737d12c"
   },
   "queryUi.results.live.incompleteEmpty": "搜索停止前没有找到任何内容。Cmdr 没有找完。",
   "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
+    "sourceHash": "6910921"
   },
   "queryUi.results.live.capped": "{totalText} 个结果中显示前 {shownText} 个。",
   "@queryUi.results.live.capped": {
@@ -436,15 +436,15 @@
   },
   "queryUi.dialog.aiTranslateFailedToast": "刚才没能运行 AI 搜索。再试一次？",
   "@queryUi.dialog.aiTranslateFailedToast": {
-    "sourceHash": "6856c79"
+    "sourceHash": "b18f37c"
   },
   "queryUi.dialog.runQueryToast": "无法完成这次搜索。{message}",
   "@queryUi.dialog.runQueryToast": {
-    "sourceHash": "02a3bba"
+    "sourceHash": "51acd6e"
   },
   "queryUi.dialog.runQueryUnknownReason": "原因不明。试试更精确的搜索？",
   "@queryUi.dialog.runQueryUnknownReason": {
-    "sourceHash": "4f79b0f"
+    "sourceHash": "bb9a283"
   },
   "queryUi.filters.toolbarAria": "搜索筛选",
   "@queryUi.filters.toolbarAria": {

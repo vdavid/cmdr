@@ -810,7 +810,7 @@ describe('TransferDialog destination path', () => {
     await settleExistsCheck()
 
     expect(destinationWriteAccessMock).toHaveBeenCalledWith({ volumeId: 'root', path: '/system/New' })
-    expect(target.querySelector('.path-error')?.textContent).toContain("doesn't accept new files")
+    expect(target.querySelector('.path-error')?.textContent).toContain('doesn’t accept new files')
     expect(target.querySelector('.path-warning')).toBeNull()
   })
 
@@ -827,7 +827,7 @@ describe('TransferDialog destination path', () => {
     expect(locked.querySelector('.path-error')?.textContent).toContain('permission')
   })
 
-  it("stays quiet when the backend can't tell whether the folder takes writes", async () => {
+  it('stays quiet when the backend can’t tell whether the folder takes writes', async () => {
     destinationWriteAccessMock.mockResolvedValue({ kind: 'unknown' })
     const target = mountDialog({ destinationPath: '/Volumes/naspi/share' })
     await settleExistsCheck()

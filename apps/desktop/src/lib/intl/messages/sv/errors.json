@@ -21,7 +21,7 @@
   },
   "errors.listing.notEnoughMemory.suggestion": "Så här kan du prova:\n- Stäng några appar för att frigöra minne, särskilt sådana som drar mycket resurser (webbläsare med många flikar, redigerare, mediaappar)\n- Kontrollera minnesanvändningen i **Aktivitetskontroll** (sök efter den i Spotlight)\n- Gå hit igen för att försöka på nytt",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "26a7a46"
+    "sourceHash": "d05a4e4"
   },
   "errors.listing.resourceBusy.title": "Resursen är upptagen",
   "@errors.listing.resourceBusy.title": {
@@ -29,7 +29,7 @@
   },
   "errors.listing.resourceBusy.explanation": "Cmdr kom inte åt `{path}` eftersom en annan app eller process just nu använder den exklusivt. Det här är oftast tillfälligt.",
   "@errors.listing.resourceBusy.explanation": {
-    "sourceHash": "8c7bdd4"
+    "sourceHash": "18a07d9"
   },
   "errors.listing.resourceBusy.suggestion": "Vänta en stund och gå sedan hit igen. Om det fortsätter, kontrollera vilken app som kan hålla filen öppen (kör `lsof +D <folder-path>` i Terminal för att se vilka processer som använder den här mappen).",
   "@errors.listing.resourceBusy.suggestion": {
@@ -53,11 +53,11 @@
   },
   "errors.listing.networkDown.explanation": "Din Macs nätverksanslutning är nere, så Cmdr kan inte nå den här volymen. Det kan betyda att Wi-Fi är frånkopplat, att en Ethernet-kabel är urdragen, eller att nätverksgränssnittet är inaktiverat.",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "e2106be"
+    "sourceHash": "179f8bb"
   },
   "errors.listing.networkDown.suggestion": "Så här kan du prova:\n- Kontrollera status för Wi-Fi eller Ethernet i **{system_settings} > Nätverk**\n- Om du är på Wi-Fi, prova att stänga av det och slå på det igen\n- Kör `ping google.com` i Terminal för att testa anslutningen\n- Gå hit igen när du är online igen",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "3fe671d"
+    "sourceHash": "bf4b517"
   },
   "errors.listing.networkConnectionDropped.title": "Nätverksanslutningen bröts",
   "@errors.listing.networkConnectionDropped.title": {
@@ -69,7 +69,7 @@
   },
   "errors.listing.networkConnectionDropped.suggestion": "Så här kan du prova:\n- Kontrollera din nätverksanslutning\n- Om du använder en VPN, se till att den fortfarande är ansluten\n- Gå hit igen för att försöka på nytt",
   "@errors.listing.networkConnectionDropped.suggestion": {
-    "sourceHash": "17c6bb8"
+    "sourceHash": "228b9a8"
   },
   "errors.listing.connectionDropped.title": "Anslutningen bröts",
   "@errors.listing.connectionDropped.title": {
@@ -81,7 +81,7 @@
   },
   "errors.listing.connectionDropped.suggestion": "Så här kan du prova:\n- Kontrollera att servern är igång och svarar\n- Kontrollera din nätverksanslutning\n- Gå hit igen för att försöka på nytt",
   "@errors.listing.connectionDropped.suggestion": {
-    "sourceHash": "d8fba7b"
+    "sourceHash": "3e3446f"
   },
   "errors.listing.connectionReset.title": "Anslutningen återställdes",
   "@errors.listing.connectionReset.title": {
@@ -93,7 +93,7 @@
   },
   "errors.listing.connectionReset.suggestion": "Så här kan du prova:\n- Kontrollera att servern är igång\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Gå hit igen för att försöka på nytt",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "0ee3d15"
+    "sourceHash": "d980663"
   },
   "errors.listing.connectionTimedOutErrno.title": "Anslutningen nådde tidsgränsen",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -101,11 +101,11 @@
   },
   "errors.listing.connectionTimedOutErrno.explanation": "Cmdr försökte läsa den här mappen men anslutningen svarade inte i tid. Det betyder oftast att servern eller enheten är långsam, inte går att nå, eller att nätverket mellan dig och den är överbelastat.",
   "@errors.listing.connectionTimedOutErrno.explanation": {
-    "sourceHash": "33612d4"
+    "sourceHash": "c088c41"
   },
   "errors.listing.connectionTimedOutErrno.suggestion": "Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i Terminal för att testa anslutningen\n- Gå hit igen för att försöka på nytt",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "4172538"
+    "sourceHash": "230ef64"
   },
   "errors.listing.hostDown.title": "Värden är nere",
   "@errors.listing.hostDown.title": {
@@ -113,11 +113,11 @@
   },
   "errors.listing.hostDown.explanation": "Fjärrvärden (datorn eller servern som är värd för den här volymen) svarar inte. Den kan vara avstängd eller i viloläge, eller så går den tillfälligt inte att nå.",
   "@errors.listing.hostDown.explanation": {
-    "sourceHash": "cf59cab"
+    "sourceHash": "e175712"
   },
   "errors.listing.hostDown.suggestion": "Så här kan du prova:\n- Kontrollera att värden är påslagen och ansluten till nätverket\n- Prova `ping <hostname>` i Terminal för att testa om den går att nå\n- Om det är en NAS eller server, kontrollera dess hanteringsgränssnitt\n- Gå hit igen när värden är tillbaka",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "4a09e8e"
+    "sourceHash": "7a8ecd8"
   },
   "errors.listing.staleConnection.title": "Inaktuell anslutning",
   "@errors.listing.staleConnection.title": {
@@ -129,7 +129,7 @@
   },
   "errors.listing.staleConnection.suggestion": "Så här kan du prova:\n- Navigera bort från den här mappen och kom tillbaka\n- Om det här är en nätverksenhet, prova att avmontera och montera om den i Finder\n- Kontrollera att servern som är värd för den här mappen är igång\n- Kör `mount` i Terminal för att se vilka volymer som är monterade just nu",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "05960c8"
+    "sourceHash": "73de81d"
   },
   "errors.listing.lockUnavailable.title": "Inget fillås tillgängligt",
   "@errors.listing.lockUnavailable.title": {
@@ -141,7 +141,7 @@
   },
   "errors.listing.lockUnavailable.suggestion": "Så här kan du prova:\n- Stäng några appar, särskilt sådana som arbetar med många filer (redigerare, IDE:er, säkerhetskopieringsverktyg)\n- Kör `lsof | wc -l` i Terminal för att se hur många filer som är öppna i alla appar tillsammans\n- Om problemet fortsätter kan du höja gränsen med `ulimit -n 4096` i Terminal\n- Gå hit igen för att försöka på nytt",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "f9c9f8d"
+    "sourceHash": "a9f23bd"
   },
   "errors.listing.cancelledErrno.title": "Avbruten",
   "@errors.listing.cancelledErrno.title": {
@@ -153,7 +153,7 @@
   },
   "errors.listing.cancelledErrno.suggestion": "Gå hit igen när du är redo att försöka på nytt.",
   "@errors.listing.cancelledErrno.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.notPermitted.title": "Inte tillåtet",
   "@errors.listing.notPermitted.title": {
@@ -161,11 +161,11 @@
   },
   "errors.listing.notPermitted.explanation": "macOS blockerade Cmdr från att komma åt `{path}`. Det betyder oftast att mappen skyddas av macOS säkerhetspolicyer, eller att Cmdr inte fått rätt behörigheter än.",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "ddf8a5d"
+    "sourceHash": "e28dd0e"
   },
   "errors.listing.notPermitted.suggestion": "Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Om det här är en systemskyddad mapp (som systemkataloger) kan du behöva ge Cmdr **{full_disk_access}** under {privacy_and_security}\n- Kör `ls -la` på den här sökvägen i Terminal för att kontrollera ägare och behörigheter",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "32e9d74"
+    "sourceHash": "bbaa904"
   },
   "errors.listing.pathNotFoundErrno.title": "Sökvägen hittades inte",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -173,11 +173,11 @@
   },
   "errors.listing.pathNotFoundErrno.explanation": "Cmdr kunde inte hitta `{path}`. Den kan ha flyttats, döpts om eller raderats medan Cmdr försökte komma åt den.",
   "@errors.listing.pathNotFoundErrno.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.pathNotFoundErrno.suggestion": "Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.noPermissionErrno.title": "Ingen behörighet",
   "@errors.listing.noPermissionErrno.title": {
@@ -185,11 +185,11 @@
   },
   "errors.listing.noPermissionErrno.explanation": "Cmdr har inte behörighet att komma åt `{path}`. macOS styr vilka appar som får komma åt vilka mappar, och Cmdr har inte fått åtkomst till den här än.",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.noPermissionErrno.suggestion": "Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på den, välj Visa info, och titta under Delning och behörigheter\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på den här sökvägen i Terminal för att se de aktuella behörigheterna",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "ea316e7"
+    "sourceHash": "4b513ef"
   },
   "errors.listing.alreadyExistsErrno.title": "Finns redan",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -197,7 +197,7 @@
   },
   "errors.listing.alreadyExistsErrno.explanation": "Det finns redan en fil eller mapp på `{path}`, så Cmdr kan inte skapa en ny där.",
   "@errors.listing.alreadyExistsErrno.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExistsErrno.suggestion": "Byt namn på det befintliga objektet eller välj ett annat namn för det nya.",
   "@errors.listing.alreadyExistsErrno.suggestion": {
@@ -209,7 +209,7 @@
   },
   "errors.listing.crossDeviceOperation.explanation": "Cmdr kan inte flytta det här objektet direkt eftersom källan och målet ligger på olika volymer (till exempel en intern disk och ett USB-minne). För att flytta mellan volymer måste datan först kopieras och originalet sedan tas bort.",
   "@errors.listing.crossDeviceOperation.explanation": {
-    "sourceHash": "4762369"
+    "sourceHash": "a6742d3"
   },
   "errors.listing.crossDeviceOperation.suggestion": "Kopiera objektet till målet i stället för att flytta det. Cmdr sköter kopieringen automatiskt.",
   "@errors.listing.crossDeviceOperation.suggestion": {
@@ -221,7 +221,7 @@
   },
   "errors.listing.notAFolder.explanation": "Cmdr förväntade sig att `{path}` skulle vara en mapp, men det är en fil. Det kan hända om något nyligen döpts om eller ersatts.",
   "@errors.listing.notAFolder.explanation": {
-    "sourceHash": "45d8f76"
+    "sourceHash": "7ab65a3"
   },
   "errors.listing.notAFolder.suggestion": "Kontrollera sökvägen och se till att den pekar på en mapp, inte en fil.",
   "@errors.listing.notAFolder.suggestion": {
@@ -233,7 +233,7 @@
   },
   "errors.listing.isAFolderErrno.explanation": "Cmdr förväntade sig att `{path}` skulle vara en fil, men det är en mapp. Det kan hända om något nyligen döpts om eller ersatts.",
   "@errors.listing.isAFolderErrno.explanation": {
-    "sourceHash": "009d220"
+    "sourceHash": "8c3b294"
   },
   "errors.listing.isAFolderErrno.suggestion": "Kontrollera sökvägen och se till att den pekar på en fil, inte en mapp.",
   "@errors.listing.isAFolderErrno.suggestion": {
@@ -245,11 +245,11 @@
   },
   "errors.listing.diskFullErrno.explanation": "Det finns inte tillräckligt med ledigt utrymme på den här volymen för att slutföra åtgärden.",
   "@errors.listing.diskFullErrno.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.diskFullErrno.suggestion": "Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgssymbolen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym\n- Kontrollera **{system_settings} > Allmänt > Lagring** för en översikt över vad som använder utrymme",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "bf54d66"
+    "sourceHash": "f2eb27b"
   },
   "errors.listing.readOnlyVolumeErrno.title": "Skrivskyddad volym",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -257,11 +257,11 @@
   },
   "errors.listing.readOnlyVolumeErrno.explanation": "Den här volymen är monterad som skrivskyddad, så Cmdr kan inte göra ändringar på den. Det kan bero på att enheten har en fysisk skrivskyddsspärr, att skivavbilden monterades skrivskyddad, eller att filsystemet inte stöder skrivning.",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
-    "sourceHash": "cb19e8c"
+    "sourceHash": "e6bcf10"
   },
   "errors.listing.readOnlyVolumeErrno.suggestion": "Så här kan du prova:\n- Om enheten har en fysisk skrivskyddsspärr (vanligt på SD-kort), slå av den\n- Om det här är en skivavbild, montera om den med skrivåtkomst\n- Annars, kopiera filerna till en skrivbar plats först",
   "@errors.listing.readOnlyVolumeErrno.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.notSupportedErrno.title": "Stöds inte",
   "@errors.listing.notSupportedErrno.title": {
@@ -269,11 +269,11 @@
   },
   "errors.listing.notSupportedErrno.explanation": "Den här åtgärden stöds inte på det här filsystemet. Olika filsystem (som FAT32, NTFS eller nätverksresurser) stöder olika funktioner, och det här stöder inte det Cmdr försöker göra.",
   "@errors.listing.notSupportedErrno.explanation": {
-    "sourceHash": "198aa15"
+    "sourceHash": "a0ca28f"
   },
   "errors.listing.notSupportedErrno.suggestion": "Prova ett annat sätt, eller använd Finder för den här åtgärden. Om du arbetar med en extern enhet kan den vara formaterad med ett filsystem som har begränsningar (till exempel kan FAT32 inte lagra filer större än 4 GB).",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "169d5cf"
+    "sourceHash": "de64ad5"
   },
   "errors.listing.networkUnreachable.title": "Nätverket går inte att nå",
   "@errors.listing.networkUnreachable.title": {
@@ -281,11 +281,11 @@
   },
   "errors.listing.networkUnreachable.explanation": "Cmdr kan inte nå nätverket som den här volymen ligger på. Det betyder ofta att du inte är ansluten till rätt nätverk, eller att en VPN inte är aktiv.",
   "@errors.listing.networkUnreachable.explanation": {
-    "sourceHash": "f92dedc"
+    "sourceHash": "d3c1975"
   },
   "errors.listing.networkUnreachable.suggestion": "Så här kan du prova:\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Se till att du är på rätt nätverk (till exempel kontorets Wi-Fi eller VPN)\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Gå hit igen när du är ansluten",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "b1754b4"
+    "sourceHash": "7feb3cb"
   },
   "errors.listing.connectionRefused.title": "Anslutningen nekades",
   "@errors.listing.connectionRefused.title": {
@@ -293,11 +293,11 @@
   },
   "errors.listing.connectionRefused.explanation": "Servern nekade aktivt anslutningen. Det betyder oftast att serverprogramvaran (till exempel en SMB- eller NFS-tjänst) inte är igång, eller att den är konfigurerad att avvisa anslutningar från den här datorn.",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "537cf4e"
+    "sourceHash": "88e1ac7"
   },
   "errors.listing.connectionRefused.suggestion": "Så här kan du prova:\n- Kontrollera att servern är igång och att dess fildelningstjänst är aktiv\n- Kontrollera att serveradressen och porten stämmer\n- Prova `ping <hostname>` i Terminal för att se om servern går att nå över huvud taget\n- Gå hit igen för att försöka på nytt",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "4afa12d"
+    "sourceHash": "17decc3"
   },
   "errors.listing.symlinkLoopErrno.title": "Symlänksloop",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -305,11 +305,11 @@
   },
   "errors.listing.symlinkLoopErrno.explanation": "Cmdr hittade en cirkulär kedja av symboliska länkar (genvägar som pekar på andra genvägar) på `{path}`. Länkarna leder runt i en cirkel, så Cmdr når inte den faktiska filen eller mappen.",
   "@errors.listing.symlinkLoopErrno.explanation": {
-    "sourceHash": "cb728c1"
+    "sourceHash": "4157be6"
   },
   "errors.listing.symlinkLoopErrno.suggestion": "Så här kan du prova:\n- Kör `ls -la` på den här sökvägen i Terminal för att se vart de symboliska länkarna pekar\n- Hitta och åtgärda länken som skapar loopen\n- Om du är osäker på vilken länk som är problemet, följ dem en i taget med `readlink <path>`",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "0a439fb"
+    "sourceHash": "eed9a5a"
   },
   "errors.listing.nameTooLongErrno.title": "Namnet är för långt",
   "@errors.listing.nameTooLongErrno.title": {
@@ -317,7 +317,7 @@
   },
   "errors.listing.nameTooLongErrno.explanation": "Fil- eller mappnamnet överskrider systemets gräns (255 tecken på de flesta Mac-volymer). Det kan också hända när hela sökvägen (alla mappar tillsammans) överskrider systemets maximala sökvägslängd.",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "d6f7a03"
+    "sourceHash": "8b9a6ff"
   },
   "errors.listing.nameTooLongErrno.suggestion": "Byt namn på objektet till ett kortare namn. Om namnet ser rimligt ut kan hela sökvägen (inklusive alla överordnade mappar) vara för lång. Prova att flytta objektet till en kortare sökväg.",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -329,11 +329,11 @@
   },
   "errors.listing.hostUnreachable.explanation": "Cmdr kan inte hitta någon nätverksväg till värden som den här volymen ligger på. Det betyder oftast att värden ligger på ett annat nätverk, bakom en brandvägg, eller att routningskonfigurationen behöver uppdateras.",
   "@errors.listing.hostUnreachable.explanation": {
-    "sourceHash": "3e5e6f9"
+    "sourceHash": "184b0fc"
   },
   "errors.listing.hostUnreachable.suggestion": "Så här kan du prova:\n- Kontrollera att värden är påslagen och på samma nätverk\n- Om du behöver en VPN för att nå den, se till att VPN:en är ansluten\n- Prova `ping <hostname>` i Terminal för att testa anslutningen\n- Gå hit igen när värden går att nå",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "8e7a1cf"
+    "sourceHash": "c222f76"
   },
   "errors.listing.folderNotEmpty.title": "Mappen är inte tom",
   "@errors.listing.folderNotEmpty.title": {
@@ -341,7 +341,7 @@
   },
   "errors.listing.folderNotEmpty.explanation": "Cmdr kan inte ta bort `{path}` eftersom den fortfarande innehåller filer eller undermappar. Systemet kräver att en mapp är tom innan den kan tas bort på det här sättet.",
   "@errors.listing.folderNotEmpty.explanation": {
-    "sourceHash": "c16ac41"
+    "sourceHash": "26871a4"
   },
   "errors.listing.folderNotEmpty.suggestion": "Radera innehållet i mappen först, och prova sedan att ta bort mappen igen.",
   "@errors.listing.folderNotEmpty.suggestion": {
@@ -353,11 +353,11 @@
   },
   "errors.listing.quotaExceeded.explanation": "Du har nått din diskkvot (den största mängd utrymme som tilldelats ditt användarkonto) på den här volymen. Det här är vanligt på delade servrar och nätverksenheter där en administratör sätter gränser per användare.",
   "@errors.listing.quotaExceeded.explanation": {
-    "sourceHash": "6fa75c0"
+    "sourceHash": "b9b0b0e"
   },
   "errors.listing.quotaExceeded.suggestion": "Så här kan du prova:\n- Frigör utrymme genom att ta bort filer du inte längre behöver på den här volymen\n- Be din systemadministratör att höja din kvot\n- Kör `quota` i Terminal för att se din nuvarande användning och gräns",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "e24428a"
+    "sourceHash": "1b5f0df"
   },
   "errors.listing.authRequiredEauth.title": "Autentisering krävs",
   "@errors.listing.authRequiredEauth.title": {
@@ -365,11 +365,11 @@
   },
   "errors.listing.authRequiredEauth.explanation": "Cmdr kunde inte autentisera mot den här volymen. Dina sparade inloggningsuppgifter kan ha gått ut, eller så avvisar servern den nuvarande inloggningen.",
   "@errors.listing.authRequiredEauth.explanation": {
-    "sourceHash": "7b51115"
+    "sourceHash": "654cbb2"
   },
   "errors.listing.authRequiredEauth.suggestion": "Så här kan du prova:\n- Koppla från och anslut volymen igen, och ange ditt användarnamn och lösenord på nytt\n- Kontrollera att ditt lösenord inte har ändrats eller gått ut\n- Om det här är en företagsserver, hör med ditt IT-team",
   "@errors.listing.authRequiredEauth.suggestion": {
-    "sourceHash": "9ba659e"
+    "sourceHash": "3469202"
   },
   "errors.listing.authRequiredEneedauth.title": "Autentisering krävs",
   "@errors.listing.authRequiredEneedauth.title": {
@@ -381,7 +381,7 @@
   },
   "errors.listing.authRequiredEneedauth.suggestion": "Så här kan du prova:\n- Koppla från och anslut volymen igen i Finder\n- Ange ditt användarnamn och lösenord när du blir tillfrågad\n- Om du är osäker på inloggningsuppgifterna, hör med serverns administratör",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "0b61f53"
+    "sourceHash": "a90b520"
   },
   "errors.listing.devicePoweredOff.title": "Enheten är avstängd",
   "@errors.listing.devicePoweredOff.title": {
@@ -389,7 +389,7 @@
   },
   "errors.listing.devicePoweredOff.explanation": "Enheten är avstängd eller i djupt viloläge, så Cmdr kan inte kommunicera med den.",
   "@errors.listing.devicePoweredOff.explanation": {
-    "sourceHash": "ae9c029"
+    "sourceHash": "782a157"
   },
   "errors.listing.devicePoweredOff.suggestion": "Slå på enheten, vänta tills den startat helt, och gå sedan hit igen.",
   "@errors.listing.devicePoweredOff.suggestion": {
@@ -401,11 +401,11 @@
   },
   "errors.listing.attributeNotFound.explanation": "Cmdr försökte läsa ett filattribut (extra metadata som taggar eller behörigheter) som inte finns på det här objektet. Det kan hända när filsystemet inte stöder utökade attribut, eller när attributet togs bort.",
   "@errors.listing.attributeNotFound.explanation": {
-    "sourceHash": "ee5c696"
+    "sourceHash": "ee39dd8"
   },
   "errors.listing.attributeNotFound.suggestion": "Det här filsystemet kanske inte stöder de metadata Cmdr behöver. Prova åtgärden på en annan volym, eller kopiera filen till din Macs interna disk först.",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "3c357ac"
+    "sourceHash": "463ee44"
   },
   "errors.listing.diskReadProblem.title": "Problem att läsa från disken",
   "@errors.listing.diskReadProblem.title": {
@@ -417,7 +417,7 @@
   },
   "errors.listing.diskReadProblem.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ordentligt ansluten\n- Öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivkontroll** på den här volymen\n- Om det här fortsätter, säkerhetskopiera dina data så snart som möjligt. Disken kan vara på väg att utveckla skadade sektorer eller börja slitas ut.",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "792c921"
+    "sourceHash": "614a5fe"
   },
   "errors.listing.unexpectedSystemResponse.title": "Oväntat systemsvar",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -425,11 +425,11 @@
   },
   "errors.listing.unexpectedSystemResponse.explanation": "Systemet gav ett oväntat svar för den här åtgärden. Det kan hända när en volyms filsystem har inkonsekvenser, eller när volymen är i ett ovanligt tillstånd.",
   "@errors.listing.unexpectedSystemResponse.explanation": {
-    "sourceHash": "eeddaa7"
+    "sourceHash": "a834896"
   },
   "errors.listing.unexpectedSystemResponse.suggestion": "Så här kan du prova:\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** (sök efter det i Spotlight) och kör **Skivkontroll** på den här volymen för att kontrollera filsystemet",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "4e5a9bb"
+    "sourceHash": "f63d225"
   },
   "errors.listing.deviceProblem.title": "Problem med enheten",
   "@errors.listing.deviceProblem.title": {
@@ -441,11 +441,11 @@
   },
   "errors.listing.deviceProblem.suggestion": "Så här kan du prova:\n- Koppla från och anslut enheten igen\n- Prova en annan USB-port eller kabel\n- Om det är en extern disk, prova att ansluta den till en annan dator för att se om problemet följer med enheten\n- Om det här fortsätter kan enheten behöva repareras eller bytas ut",
   "@errors.listing.deviceProblem.suggestion": {
-    "sourceHash": "2cbb1cf"
+    "sourceHash": "5ce793b"
   },
   "errors.listing.couldntReadUnknown.title": "Det gick inte att läsa den här mappen",
   "@errors.listing.couldntReadUnknown.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.couldntReadUnknown.explanation": "Cmdr stötte på ett oväntat problem när `{path}` lästes. Kolla de tekniska detaljerna nedan för den specifika systemkoden, som kan hjälpa vid felsökning.",
   "@errors.listing.couldntReadUnknown.explanation": {
@@ -453,7 +453,7 @@
   },
   "errors.listing.couldntReadUnknown.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Gå hit igen för att försöka på nytt\n- Om det här fortsätter, öppna **Skivverktyg** och kör **Skivkontroll** på den här volymen",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "0073987"
+    "sourceHash": "5155626"
   },
   "errors.listing.notFound.title": "Sökvägen hittades inte",
   "@errors.listing.notFound.title": {
@@ -461,11 +461,11 @@
   },
   "errors.listing.notFound.explanation": "Cmdr kunde inte hitta `{path}`. Den kan ha flyttats, döpts om eller raderats medan Cmdr försökte komma åt den.",
   "@errors.listing.notFound.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.notFound.suggestion": "Så här kan du prova:\n- Kontrollera att sökvägen är rättstavad\n- Om det här ligger på en nätverksenhet, se till att den är ansluten och att den delade mappen går att komma åt\n- Gå till den överordnade mappen och leta efter objektet där\n- Kör `ls -la` på den överordnade mappen i Terminal för att se vad som finns där",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.tccRestricted.title": "Den här mappen är begränsad av macOS",
   "@errors.listing.tccRestricted.title": {
@@ -473,7 +473,7 @@
   },
   "errors.listing.tccRestricted.explanation": "Cmdr kan inte läsa `{path}` eftersom macOS inte gett åtkomst till den här mappen än. Det är en integritetsspärr, inte ett fel i Cmdr.",
   "@errors.listing.tccRestricted.explanation": {
-    "sourceHash": "027470f"
+    "sourceHash": "1f3fc35"
   },
   "errors.listing.tccRestricted.suggestion": "Två sätt att lösa det:\n- Ge Cmdr **{full_disk_access}** i **{system_settings} → {privacy_and_security} → {full_disk_access}** för att ta bort alla sådana begränsningar på en gång.\n- Eller ge åtkomst per mapp för bara den här mappen i **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr**.",
   "@errors.listing.tccRestricted.suggestion": {
@@ -485,23 +485,23 @@
   },
   "errors.listing.permissionDenied.explanation": "Cmdr har inte behörighet att komma åt `{path}`. macOS styr vilka appar som får komma åt vilka mappar, och Cmdr har inte fått åtkomst till den här än.",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.permissionDenied.suggestion": "Så här kan du prova:\n- Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst\n- Kontrollera mappens behörigheter i Finder: högerklicka på mappen, välj Visa info, och titta under Delning och behörigheter\n- Om det här är en delad mapp, be ägaren uppdatera behörigheterna\n- Kör `ls -la` på sökvägen i Terminal för att se de aktuella behörigheterna",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "0fa0829"
+    "sourceHash": "3450aff"
   },
   "errors.listing.remotePermissionDenied.title": "Servern öppnar inte den här mappen",
   "@errors.listing.remotePermissionDenied.title": {
-    "sourceHash": "1fceff5"
+    "sourceHash": "f9cb7bd"
   },
   "errors.listing.remotePermissionDenied.explanation": "`{path}` ligger i en delad mapp på nätverket, och kontot du anslöt med har inte behörighet att öppna den. Servern avvisar förfrågan innan macOS ens är inblandat, så det här är ingen integritetsinställning på din Mac.",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "4e6b9ef"
+    "sourceHash": "d8463b0"
   },
   "errors.listing.remotePermissionDenied.suggestion": "Så här kan du prova:\n- Kontrollera mappens behörigheter på servern, och vilket konto du monterade den delade mappen med\n- Vissa mappar tillhör serverns eget systemkonto (`lost+found` på en Linux-server, till exempel) och förblir stängda för alla andra\n- Vill du ansluta som någon annan, mata ut den delade mappen och montera den igen med de uppgifterna",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "506e57a"
+    "sourceHash": "3e6497d"
   },
   "errors.listing.alreadyExists.title": "Finns redan",
   "@errors.listing.alreadyExists.title": {
@@ -509,7 +509,7 @@
   },
   "errors.listing.alreadyExists.explanation": "Det finns redan en fil eller mapp på `{path}`, så Cmdr kan inte skapa en ny där.",
   "@errors.listing.alreadyExists.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExists.suggestion": "Byt namn på det befintliga objektet eller välj ett annat namn för det nya.",
   "@errors.listing.alreadyExists.suggestion": {
@@ -525,7 +525,7 @@
   },
   "errors.listing.cancelled.suggestion": "Gå hit igen när du är redo att försöka på nytt.",
   "@errors.listing.cancelled.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.deviceDisconnected.title": "Enheten frånkopplad",
   "@errors.listing.deviceDisconnected.title": {
@@ -537,7 +537,7 @@
   },
   "errors.listing.deviceDisconnected.suggestion": "Så här kan du prova:\n- Anslut enheten igen och se till att kabeln sitter ordentligt\n- Om det är en telefon, lås upp den och se till att filöverföringsläget är aktivt\n- Gå hit igen när enheten är tillbaka",
   "@errors.listing.deviceDisconnected.suggestion": {
-    "sourceHash": "9f6c9a0"
+    "sourceHash": "6940094"
   },
   "errors.listing.notConnected.title": "Inte ansluten än",
   "@errors.listing.notConnected.title": {
@@ -545,11 +545,11 @@
   },
   "errors.listing.notConnected.explanation": "Cmdr har inte anslutit till telefonen eller servern som innehåller `{path}` än, så det finns inget att visa här. Inget har kopplats från och inget har raderats.",
   "@errors.listing.notConnected.explanation": {
-    "sourceHash": "4c508d7"
+    "sourceHash": "93ca2df"
   },
   "errors.listing.notConnected.suggestion": "Så här kan du prova:\n- Öppna telefonen eller servern från volymväljaren för att ansluta till den\n- Om det är en telefon, lås upp den och godkänn eventuella frågor som den visar\n- Gå hit igen när den är ansluten",
   "@errors.listing.notConnected.suggestion": {
-    "sourceHash": "3c48bcd"
+    "sourceHash": "652f289"
   },
   "errors.listing.deviceReconnecting.title": "Återansluter till enheten",
   "@errors.listing.deviceReconnecting.title": {
@@ -557,11 +557,11 @@
   },
   "errors.listing.deviceReconnecting.explanation": "Anslutningen till enheten som innehåller `{path}` startades om, så den här åtgärden gick inte igenom. Enheten är fortfarande ansluten och Cmdr öppnar den igen just nu. Det här händer oftast efter en avbruten överföring.",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "6ba7205"
+    "sourceHash": "0327639"
   },
   "errors.listing.deviceReconnecting.suggestion": "Vänta några sekunder och försök igen. Du behöver inte koppla ur något.",
   "@errors.listing.deviceReconnecting.suggestion": {
-    "sourceHash": "2481e2a"
+    "sourceHash": "4dac2e7"
   },
   "errors.listing.readOnly.title": "Skrivskyddad",
   "@errors.listing.readOnly.title": {
@@ -569,11 +569,11 @@
   },
   "errors.listing.readOnly.explanation": "Den här volymen är skrivskyddad, så Cmdr kan inte göra ändringar på den. Det kan bero på att enheten har en fysisk skrivskyddsspärr, att skivavbilden monterades som skrivskyddad, eller att filsystemet inte stöder skrivning.",
   "@errors.listing.readOnly.explanation": {
-    "sourceHash": "99924c3"
+    "sourceHash": "d8080b8"
   },
   "errors.listing.readOnly.suggestion": "Så här kan du prova:\n- Om enheten har en fysisk skrivskyddsspärr (vanligt på SD-kort), slå av den\n- Om det här är en skivavbild, montera om den med skrivåtkomst\n- Annars, kopiera filerna till en skrivbar plats först",
   "@errors.listing.readOnly.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.storageFull.title": "Disken är full",
   "@errors.listing.storageFull.title": {
@@ -581,11 +581,11 @@
   },
   "errors.listing.storageFull.explanation": "Det finns inte tillräckligt med ledigt utrymme på den här volymen för att slutföra åtgärden.",
   "@errors.listing.storageFull.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.storageFull.suggestion": "Så här kan du prova:\n- Frigör utrymme genom att flytta eller radera filer du inte längre behöver\n- Töm papperskorgen (högerklicka på papperskorgssymbolen i Dock)\n- Kör `df -h` i Terminal för att se hur mycket utrymme som är kvar på varje volym",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "fcdd42d"
+    "sourceHash": "101099b"
   },
   "errors.listing.connectionTimedOut.title": "Anslutningen nådde tidsgränsen",
   "@errors.listing.connectionTimedOut.title": {
@@ -593,11 +593,11 @@
   },
   "errors.listing.connectionTimedOut.explanation": "Cmdr försökte komma åt den här resursen men anslutningen svarade inte i tid. Det betyder oftast att servern eller enheten är långsam att svara, eller att nätverksanslutningen är instabil.",
   "@errors.listing.connectionTimedOut.explanation": {
-    "sourceHash": "5b3f8b2"
+    "sourceHash": "15d3054"
   },
   "errors.listing.connectionTimedOut.suggestion": "Så här kan du prova:\n- Kontrollera att enheten eller servern är påslagen och går att nå\n- Kontrollera din Wi-Fi- eller Ethernet-anslutning\n- Prova `ping <hostname>` i Terminal för att testa om servern går att nå\n- Försök igen",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f9b8a2d"
+    "sourceHash": "f474938"
   },
   "errors.listing.notSupported.title": "Stöds inte",
   "@errors.listing.notSupported.title": {
@@ -605,7 +605,7 @@
   },
   "errors.listing.notSupported.explanation": "Den här åtgärden stöds inte på den här typen av volym. Vissa volymer (som telefonlagring eller vissa nätverksenheter) stöder inte alla åtgärder.",
   "@errors.listing.notSupported.explanation": {
-    "sourceHash": "9ecb575"
+    "sourceHash": "d074574"
   },
   "errors.listing.notSupported.suggestion": "Prova ett annat sätt, eller använd Finder för den här åtgärden.",
   "@errors.listing.notSupported.suggestion": {
@@ -621,19 +621,19 @@
   },
   "errors.listing.deletePending.suggestion": "Så här kan du prova:\n- Vänta en stund och försök igen — när det sista handtaget stängs försvinner filen\n- Stäng eventuella andra appar som kan ha den här filen öppen\n- Om den blir kvar, starta om Cmdr för att släppa eventuella handtag den fortfarande håller",
   "@errors.listing.deletePending.suggestion": {
-    "sourceHash": "6dbe760"
+    "sourceHash": "0531cd8"
   },
   "errors.listing.invalidName.title": "Det här namnet fungerar inte här",
   "@errors.listing.invalidName.title": {
-    "sourceHash": "69b2aa4"
+    "sourceHash": "7ced906"
   },
   "errors.listing.invalidName.explanation": "`{path}` har ett namn som målet inte kan lagra, så målet avvisade namnet utan att leta efter filen.",
   "@errors.listing.invalidName.explanation": {
-    "sourceHash": "7000b52"
+    "sourceHash": "ac27ddb"
   },
   "errors.listing.invalidName.suggestion": "Så här kan du prova:\n- Byt namn på objektet till något kortare och enklare\n- Vissa mål avvisar reserverade namn som `CON`, `NUL` eller `LPT1`\n- Ett väldigt långt namn kan gå över målets egen gräns, även om varje tecken i det är okej",
   "@errors.listing.invalidName.suggestion": {
-    "sourceHash": "9074cf3"
+    "sourceHash": "f5cf683"
   },
   "errors.listing.ambiguousName.title": "Mer än ett objekt matchar det här namnet",
   "@errors.listing.ambiguousName.title": {
@@ -641,15 +641,15 @@
   },
   "errors.listing.ambiguousName.explanation": "`{path}` matchar mer än ett objekt på servern. Namnen ser likadana ut, men servern lagrar dem med olika stavning (en bokstav med accent kan lagras på två sätt, och vissa servrar skiljer på stora och små bokstäver), så Cmdr valde inget åt dig.",
   "@errors.listing.ambiguousName.explanation": {
-    "sourceHash": "0d964db"
+    "sourceHash": "f1e1509"
   },
   "errors.listing.ambiguousName.suggestion": "Så här kan du prova:\n- Öppna den överordnade mappen och välj det objekt du vill ha i listan\n- För att undvika det här nästa gång, byt namn på ett av dem så att namnen tydligt skiljer sig åt",
   "@errors.listing.ambiguousName.suggestion": {
-    "sourceHash": "8334ece"
+    "sourceHash": "55b960c"
   },
   "errors.listing.ioSerious.title": "Det gick inte att läsa den här mappen",
   "@errors.listing.ioSerious.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.ioSerious.explanation": "Cmdr stötte på ett problem med `{path}`: {osMessage}. Det kan vara en tillfällig störning eller ett tecken på att disken eller enheten behöver ses över.",
   "@errors.listing.ioSerious.explanation": {
@@ -657,7 +657,7 @@
   },
   "errors.listing.ioSerious.suggestion": "Så här kan du prova:\n- Kontrollera att disken eller enheten fortfarande är ansluten\n- Försök igen\n- Om det här fortsätter, prova att köra **Skivverktyg > Skivkontroll** på den här volymen",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6c5be6d"
+    "sourceHash": "6e83ebb"
   },
   "errors.listing.isADirectory.title": "Det här är en mapp, inte en fil",
   "@errors.listing.isADirectory.title": {
@@ -665,7 +665,7 @@
   },
   "errors.listing.isADirectory.explanation": "Cmdr försökte öppna `{path}` som en fil, men det är en mapp.",
   "@errors.listing.isADirectory.explanation": {
-    "sourceHash": "61f5ddb"
+    "sourceHash": "03331bd"
   },
   "errors.listing.isADirectory.suggestion": "Navigera in i mappen i stället för att öppna den som en fil.",
   "@errors.listing.isADirectory.suggestion": {
@@ -673,11 +673,11 @@
   },
   "errors.listing.archiveUnreadable.title": "Det går inte att öppna det här arkivet",
   "@errors.listing.archiveUnreadable.title": {
-    "sourceHash": "6b34ae6"
+    "sourceHash": "939ba84"
   },
   "errors.listing.archiveUnreadable.explanation": "Filen ser ut att vara ett arkiv, men Cmdr kunde inte läsa innehållet. Det kan vara skadat, krypterat eller i ett arkivformat som Cmdr inte kan öppna än.",
   "@errors.listing.archiveUnreadable.explanation": {
-    "sourceHash": "e413580"
+    "sourceHash": "b1e7d8b"
   },
   "errors.listing.archiveUnreadable.suggestion": "Försök öppna det i en annan app, eller be den som skickade det om en ny kopia.",
   "@errors.listing.archiveUnreadable.suggestion": {
@@ -701,11 +701,11 @@
   },
   "errors.listing.emptyRootICloud.explanation": "Cmdr öppnade iCloud Drive men fick inga filer tillbaka. macOS gömmer innehållet i iCloud Drive för appar som inte har **{full_disk_access}**, så att ge Cmdr den behörigheten är den troligaste lösningen.\n\nOm din iCloud Drive verkligen är tom kan du strunta i det här tipset.",
   "@errors.listing.emptyRootICloud.explanation": {
-    "sourceHash": "d095f83"
+    "sourceHash": "4222270"
   },
   "errors.listing.emptyRootICloud.suggestion": "Så här kan du prova:\n- Öppna [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) och välj **{full_disk_access}**\n- Lägg till Cmdr (använd knappen **+**) och slå på den\n- Avsluta och öppna Cmdr igen\n- Kom tillbaka hit för att försöka på nytt",
   "@errors.listing.emptyRootICloud.suggestion": {
-    "sourceHash": "25cac98"
+    "sourceHash": "2e6e702"
   },
   "errors.git.notARepo.title": "Inget git-repo här",
   "@errors.git.notARepo.title": {
@@ -713,7 +713,7 @@
   },
   "errors.git.notARepo.message": "Cmdr gick uppåt i mappträdet och hittade ingen `.git` här.",
   "@errors.git.notARepo.message": {
-    "sourceHash": "f5b0d17"
+    "sourceHash": "736d43c"
   },
   "errors.git.notARepo.suggestion": "Öppna en mapp inuti en git-klon för att se repo-chippet.",
   "@errors.git.notARepo.suggestion": {
@@ -725,7 +725,7 @@
   },
   "errors.git.orphanedWorktree.message": "Det här är en länkad worktree men dess huvudrepo saknas, så git kan inte följa länken.",
   "@errors.git.orphanedWorktree.message": {
-    "sourceHash": "5b5433e"
+    "sourceHash": "a29d806"
   },
   "errors.git.orphanedWorktree.suggestion": "Prova att öppna huvudrepot, eller ta bort den föräldralösa med `git worktree prune`.",
   "@errors.git.orphanedWorktree.suggestion": {
@@ -749,7 +749,7 @@
   },
   "errors.git.indexLocked.message": "Gits index är låst, vilket oftast betyder att ett annat git-kommando fortfarande körs.",
   "@errors.git.indexLocked.message": {
-    "sourceHash": "2f86cb3"
+    "sourceHash": "95399bb"
   },
   "errors.git.indexLocked.suggestion": "Vänta tills det körande git-kommandot är klart, och gå sedan hit igen.",
   "@errors.git.indexLocked.suggestion": {
@@ -757,11 +757,11 @@
   },
   "errors.git.permissionDenied.title": "Cmdr kan inte läsa det här repot",
   "@errors.git.permissionDenied.title": {
-    "sourceHash": "b92716b"
+    "sourceHash": "2fb725c"
   },
   "errors.git.permissionDenied.message": "Operativsystemet låter inte Cmdr öppna `.git`-mappen, så git-info är inte tillgänglig.",
   "@errors.git.permissionDenied.message": {
-    "sourceHash": "0a9e8f1"
+    "sourceHash": "53012e9"
   },
   "errors.git.permissionDenied.suggestion": "Öppna **{system_settings} > {privacy_and_security} > {files_and_folders}** och ge Cmdr åtkomst till mappen.",
   "@errors.git.permissionDenied.suggestion": {
@@ -769,11 +769,11 @@
   },
   "errors.git.bareRepo.title": "Bare-repon stöds inte än",
   "@errors.git.bareRepo.title": {
-    "sourceHash": "554f310"
+    "sourceHash": "a378648"
   },
   "errors.git.bareRepo.message": "Bare-repon har inget arbetsträd, och git-bläddraren är byggd kring ett sådant.",
   "@errors.git.bareRepo.message": {
-    "sourceHash": "e7af7c6"
+    "sourceHash": "1839f25"
   },
   "errors.git.bareRepo.suggestion": "Klona repot till en arbetskatalog för att använda git-bläddraren.",
   "@errors.git.bareRepo.suggestion": {
@@ -781,11 +781,11 @@
   },
   "errors.git.blobTooLarge.title": "Den här filen är för stor att läsa in från historiken",
   "@errors.git.blobTooLarge.title": {
-    "sourceHash": "aa5a29b"
+    "sourceHash": "480f6ba"
   },
   "errors.git.blobTooLarge.message": "Cmdr läser git-blobbar en hel fil i taget, och den här är över säkerhetsgränsen.",
   "@errors.git.blobTooLarge.message": {
-    "sourceHash": "6d93691"
+    "sourceHash": "d5609a4"
   },
   "errors.git.blobTooLarge.suggestion": "Checka ut filen från ett arbetsträd om du vill läsa den.",
   "@errors.git.blobTooLarge.suggestion": {
@@ -797,7 +797,7 @@
   },
   "errors.git.shallowBoundary.message": "Den här commiten ligger bortom gränsen för din grunda klon, så dess data finns inte på disk.",
   "@errors.git.shallowBoundary.message": {
-    "sourceHash": "447704c"
+    "sourceHash": "66bac24"
   },
   "errors.git.shallowBoundary.suggestion": "Kör `git fetch --unshallow` (eller `--depth=N`) för att hämta mer historik till klonen.",
   "@errors.git.shallowBoundary.suggestion": {
@@ -809,7 +809,7 @@
   },
   "errors.git.missingObject.message": "Git letar efter ett objekt som inte längre finns i pack-filerna. Repot kan vara delvis hämtat eller skadat.",
   "@errors.git.missingObject.message": {
-    "sourceHash": "15b0c32"
+    "sourceHash": "1eb902f"
   },
   "errors.git.missingObject.suggestion": "Prova `git fetch` för att fylla på det saknade objektet, eller `git fsck` för att granska skadan.",
   "@errors.git.missingObject.suggestion": {
@@ -817,7 +817,7 @@
   },
   "errors.git.gitDirPermissionDenied.title": "Cmdr kan inte öppna `.git`-mappen",
   "@errors.git.gitDirPermissionDenied.title": {
-    "sourceHash": "f6e2595"
+    "sourceHash": "23c216a"
   },
   "errors.git.gitDirPermissionDenied.message": "Operativsystemet nekade åtkomst till `.git`-mappen, trots att arbetsträdet går att läsa.",
   "@errors.git.gitDirPermissionDenied.message": {
@@ -987,95 +987,95 @@
   },
   "errors.provider.macDroid.transient": "Den här mappen hanteras av **MacDroid**. Så här kan du prova:\n- Öppna MacDroid och kontrollera att din telefon är ansluten\n- Se till att telefonen är upplåst och inställd på filöverföringsläge\n- Dra ur och anslut USB-kabeln igen, och gå sedan hit igen",
   "@errors.provider.macDroid.transient": {
-    "sourceHash": "994b8b8"
+    "sourceHash": "5df1c20"
   },
   "errors.provider.macDroid.needsAction": "Den här mappen hanteras av **MacDroid**. Så här kan du prova:\n- Öppna MacDroid och kontrollera att din telefon är ansluten\n- Se till att telefonen är upplåst med skärmen på\n- Kontrollera att USB-filöverföringsläge är aktiverat på telefonen",
   "@errors.provider.macDroid.needsAction": {
-    "sourceHash": "a2c4d13"
+    "sourceHash": "5fe56e6"
   },
   "errors.provider.macDroid.serious": "Den här mappen hanteras av **MacDroid**. Så här kan du prova:\n- Dra ur och anslut USB-kabeln igen\n- Starta om MacDroid\n- Prova en annan USB-port eller kabel",
   "@errors.provider.macDroid.serious": {
-    "sourceHash": "a4ab4fe"
+    "sourceHash": "a79e0b6"
   },
   "errors.provider.iCloud.transient": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Kontrollera din internetanslutning\n- Se till att du är inloggad på iCloud i {system_settings}\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "7c0600f"
+    "sourceHash": "6a98b24"
   },
   "errors.provider.iCloud.needsAction": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Kontrollera att iCloud Drive är aktiverat i **{system_settings} > Apple-konto > iCloud**\n- Se till att du är inloggad på rätt Apple-konto\n- Kontrollera att din iCloud-lagring inte är full",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "1c6dab0"
+    "sourceHash": "48c7123"
   },
   "errors.provider.iCloud.serious": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Logga ut och in igen på iCloud i {system_settings}\n- Kolla Apples [systemstatussida](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "3276e42"
+    "sourceHash": "4f730c7"
   },
   "errors.provider.macFuse.transient": "Det här är en **macFUSE**-montering. Fjärrservern kan vara långsam eller inte gå att nå. Så här kan du prova:\n- Kontrollera din nätverksanslutning\n- Kontrollera att fjärrservern är igång\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.macFuse.transient": {
-    "sourceHash": "06d9019"
+    "sourceHash": "66fcc6b"
   },
   "errors.provider.macFuse.needsAction": "Det här är en **macFUSE**-montering. Så här kan du prova:\n- Kontrollera att FUSE-processen bakom monteringen fortfarande är igång\n- Tvinga fram en avmontering och montera om volymen vid behov\n- Se till att macFUSE är uppdaterat i **{system_settings} > Allmänt > Startobjekt och tillägg**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "60e836a"
+    "sourceHash": "0c2981f"
   },
   "errors.provider.macFuse.serious": "Det här är en **macFUSE**-montering. FUSE-processen bakom den har troligen kraschat eller kopplats från. Så här kan du prova:\n- Tvinga fram en avmontering av volymen: kör `umount -f /Volumes/<name>` i Terminal\n- Montera om med det ursprungliga monteringskommandot\n- Om det här fortsätter, kontrollera att macFUSE är uppdaterat",
   "@errors.provider.macFuse.serious": {
-    "sourceHash": "71d42da"
+    "sourceHash": "8da8430"
   },
   "errors.provider.pCloudFuse.transient": "Den här mappen ligger på **pCloud**s virtuella enhet. Så här kan du prova:\n- Kontrollera din internetanslutning\n- Se till att pCloud-appen är igång\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.pCloudFuse.transient": {
-    "sourceHash": "1afbd51"
+    "sourceHash": "b51abf9"
   },
   "errors.provider.pCloudFuse.needsAction": "Den här mappen ligger på **pCloud**s virtuella enhet. Så här kan du prova:\n- Se till att pCloud-appen är igång och att du är inloggad\n- Kontrollera din internetanslutning\n- Efter en macOS-uppdatering, godkänn pClouds systemtillägg på nytt i **{system_settings} > Allmänt > Startobjekt och tillägg**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "2753abb"
+    "sourceHash": "42ff4c9"
   },
   "errors.provider.pCloudFuse.serious": "Den här mappen ligger på **pCloud**s virtuella enhet. pClouds FUSE-process kan ha kraschat. Så här kan du prova:\n- Avsluta och öppna pCloud-appen igen\n- Om enheten inte dyker upp igen, tvinga fram en avmontering: kör `umount -f /Volumes/pCloudDrive` i Terminal\n- Efter en macOS-uppdatering, godkänn pClouds systemtillägg på nytt i **{system_settings} > Allmänt > Startobjekt och tillägg**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "cba0026"
+    "sourceHash": "232d806"
   },
   "errors.provider.veraCrypt.transient": "Det här är en krypterad **{name}**-volym. Så här kan du prova:\n- Kontrollera att VeraCrypt-volymen fortfarande är monterad\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.veraCrypt.transient": {
-    "sourceHash": "fe408ae"
+    "sourceHash": "125eaf9"
   },
   "errors.provider.veraCrypt.needsAction": "Det här är en krypterad **{name}**-volym. Så här kan du prova:\n- Öppna VeraCrypt och kontrollera att den här volymen är monterad\n- Avmontera och montera om volymen vid behov",
   "@errors.provider.veraCrypt.needsAction": {
-    "sourceHash": "08dec65"
+    "sourceHash": "09d12a7"
   },
   "errors.provider.veraCrypt.serious": "Det här är en krypterad **{name}**-volym. Så här kan du prova:\n- Avmontera och montera om volymen i VeraCrypt\n- Om volymen fortsätter att krångla, kontrollera den med VeraCrypts reparationsverktyg",
   "@errors.provider.veraCrypt.serious": {
-    "sourceHash": "a5c41a1"
+    "sourceHash": "a0737db"
   },
   "errors.provider.cmVolumes.transient": "Det här är en molnmontering. Så här kan du prova:\n- Kontrollera din internetanslutning\n- Kontrollera att monteringsprogramvaran (CloudMounter, Mountain Duck, etc.) är igång\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.cmVolumes.transient": {
-    "sourceHash": "f0165b3"
+    "sourceHash": "b7ae13e"
   },
   "errors.provider.cmVolumes.nonTransient": "Det här är en molnmontering. Så här kan du prova:\n- Kontrollera att monteringsprogramvaran (CloudMounter, Mountain Duck, etc.) är igång\n- Koppla från och anslut monteringen igen\n- Kontrollera att dina inloggningsuppgifter inte har gått ut",
   "@errors.provider.cmVolumes.nonTransient": {
-    "sourceHash": "752c7e4"
+    "sourceHash": "4474047"
   },
   "errors.provider.genericCloudStorage.transient": "Den här mappen hanteras av en molnleverantör. Så här kan du prova:\n- Kontrollera din internetanslutning\n- Kontrollera att synkappen är igång\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.genericCloudStorage.transient": {
-    "sourceHash": "9398792"
+    "sourceHash": "9a454cf"
   },
   "errors.provider.genericCloudStorage.nonTransient": "Den här mappen hanteras av en molnleverantör. Så här kan du prova:\n- Kontrollera att synkappen är igång\n- Logga ut och in igen i molnappen\n- Kontrollera din internetanslutning",
   "@errors.provider.genericCloudStorage.nonTransient": {
-    "sourceHash": "ce8a112"
+    "sourceHash": "3b8d2a6"
   },
   "errors.provider.appBased.transient": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Kontrollera din internetanslutning\n- Öppna {app} och se till att den är igång och synkad\n- Gå hit igen för att försöka på nytt",
   "@errors.provider.appBased.transient": {
-    "sourceHash": "e3ef8b8"
+    "sourceHash": "ba634b7"
   },
   "errors.provider.appBased.needsAction": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Öppna {app} och kontrollera din synkstatus\n- Se till att du är inloggad på {app}\n- Kontrollera att du har åtkomst till den här mappen i {name}",
   "@errors.provider.appBased.needsAction": {
-    "sourceHash": "88009fd"
+    "sourceHash": "f69fe61"
   },
   "errors.provider.appBased.serious": "Den här mappen hanteras av **{name}**. Så här kan du prova:\n- Avsluta och öppna {app} igen\n- Logga ut och in igen på {app}\n- Kolla statussidan för {name} efter avbrott",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "64baea5"
+    "sourceHash": "347589c"
   },
   "errors.write.sourceNotFound.title": "Det gick inte att hitta filen",
   "@errors.write.sourceNotFound.title": {
-    "sourceHash": "2003305"
+    "sourceHash": "eff005a"
   },
   "errors.write.sourceNotFound.message.copy": "Filen eller mappen du försökte kopiera finns inte längre.",
   "@errors.write.sourceNotFound.message.copy": {
@@ -1099,15 +1099,15 @@
   },
   "errors.write.destinationNotFound.title": "Det gick inte att hitta målmappen",
   "@errors.write.destinationNotFound.title": {
-    "sourceHash": "215ddfe"
+    "sourceHash": "ae77ee8"
   },
   "errors.write.destinationNotFound.message.copy": "Mappen du kopierar till finns inte längre, så det fanns ingenstans att lägga filerna. Originalen är orörda.",
   "@errors.write.destinationNotFound.message.copy": {
-    "sourceHash": "cc637e2"
+    "sourceHash": "80f4a4c"
   },
   "errors.write.destinationNotFound.message.move": "Mappen du flyttar till finns inte längre, så det fanns ingenstans att lägga filerna. Originalen är orörda.",
   "@errors.write.destinationNotFound.message.move": {
-    "sourceHash": "1726290"
+    "sourceHash": "b764d42"
   },
   "errors.write.destinationNotFound.suggestion": "Den kan ha döpts om eller tagits bort, eller så kopplades enheten från. Välj ett annat mål, eller öppna mappen igen och försök igen.",
   "@errors.write.destinationNotFound.suggestion": {
@@ -1119,15 +1119,15 @@
   },
   "errors.write.notConnected.message.source": "Cmdr har inte anslutit till telefonen eller servern som innehåller de här filerna än, så inget har ändrats.",
   "@errors.write.notConnected.message.source": {
-    "sourceHash": "e6690da"
+    "sourceHash": "7869dce"
   },
   "errors.write.notConnected.message.destination": "Cmdr har inte anslutit till telefonen eller servern som är målet än, så inget har ändrats. Dina filer är orörda.",
   "@errors.write.notConnected.message.destination": {
-    "sourceHash": "5bbc6b9"
+    "sourceHash": "3b5063d"
   },
   "errors.write.notConnected.suggestion": "Öppna den från volymväljaren för att ansluta till den och försök sedan igen. Om det är en telefon, lås upp den och godkänn eventuella frågor som den visar.",
   "@errors.write.notConnected.suggestion": {
-    "sourceHash": "222ba64"
+    "sourceHash": "3fdc936"
   },
   "errors.write.destinationExists.title": "Filen finns redan",
   "@errors.write.destinationExists.title": {
@@ -1135,7 +1135,7 @@
   },
   "errors.write.destinationExists.message": "Det finns redan en fil med det här namnet på målet.",
   "@errors.write.destinationExists.message": {
-    "sourceHash": "50d9094"
+    "sourceHash": "cdcfb7b"
   },
   "errors.write.destinationExists.suggestion": "Välj ett annat namn eller en annan plats, eller radera den befintliga filen först.",
   "@errors.write.destinationExists.suggestion": {
@@ -1143,19 +1143,19 @@
   },
   "errors.write.destinationInsideSource.title.copy": "Det går inte att kopiera en mapp in i sig själv",
   "@errors.write.destinationInsideSource.title.copy": {
-    "sourceHash": "40c58ea"
+    "sourceHash": "f8dd7f6"
   },
   "errors.write.destinationInsideSource.title.move": "Det går inte att flytta en mapp in i sig själv",
   "@errors.write.destinationInsideSource.title.move": {
-    "sourceHash": "3a9da7b"
+    "sourceHash": "48b9b42"
   },
   "errors.write.destinationInsideSource.message.copy": "Du försöker kopiera en mapp till en av dess egna undermappar.",
   "@errors.write.destinationInsideSource.message.copy": {
-    "sourceHash": "46d30ec"
+    "sourceHash": "26785f5"
   },
   "errors.write.destinationInsideSource.message.move": "Du försöker flytta en mapp till en av dess egna undermappar.",
   "@errors.write.destinationInsideSource.message.move": {
-    "sourceHash": "e6ecfea"
+    "sourceHash": "4fcd446"
   },
   "errors.write.destinationInsideSource.suggestion.copy": "Välj ett mål utanför mappen du kopierar.",
   "@errors.write.destinationInsideSource.suggestion.copy": {
@@ -1255,19 +1255,19 @@
   },
   "errors.write.moveNotConfirmed.title": "Det gick inte att bekräfta flytten",
   "@errors.write.moveNotConfirmed.title": {
-    "sourceHash": "5d64df8"
+    "sourceHash": "8f1fe29"
   },
   "errors.write.moveNotConfirmed.message.named": "Cmdr kunde inte bekräfta att de flyttade filerna hade sparats på {volumeName}, så dina original ligger kvar där de låg.",
   "@errors.write.moveNotConfirmed.message.named": {
-    "sourceHash": "0c2dfb6"
+    "sourceHash": "442f2fe"
   },
   "errors.write.moveNotConfirmed.message.unnamed": "Cmdr kunde inte bekräfta att de flyttade filerna hade sparats på målet, så dina original ligger kvar där de låg.",
   "@errors.write.moveNotConfirmed.message.unnamed": {
-    "sourceHash": "fefb520"
+    "sourceHash": "565e4b8"
   },
   "errors.write.moveNotConfirmed.suggestion": "Titta i målmappen och försök sedan flytta igen. Dina original är orörda.",
   "@errors.write.moveNotConfirmed.suggestion": {
-    "sourceHash": "d9500f3"
+    "sourceHash": "4d7fedc"
   },
   "errors.write.trashNotSupported.title": "Papperskorgen stöds inte",
   "@errors.write.trashNotSupported.title": {
@@ -1275,7 +1275,7 @@
   },
   "errors.write.trashNotSupported.message": "Den här volymen saknar papperskorg.",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "45cf0c6"
+    "sourceHash": "911688a"
   },
   "errors.write.trashNotSupported.suggestion": "Använd {deletePermanentlyKey} för att radera permanent i stället.",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1295,23 +1295,23 @@
   },
   "errors.write.readError.title.copy": "Det gick inte att kopiera",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.readError.title.move": "Det gick inte att flytta",
   "@errors.write.readError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.readError.title.delete": "Det gick inte att radera",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.readError.title.trash": "Det gick inte att flytta till papperskorgen",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.readError.message": "Det gick inte att läsa från källan.",
   "@errors.write.readError.message": {
-    "sourceHash": "b3b10d6"
+    "sourceHash": "ead860d"
   },
   "errors.write.readError.suggestion": "Försök igen. Om problemet kvarstår, kolla de tekniska detaljerna nedan.",
   "@errors.write.readError.suggestion": {
@@ -1319,23 +1319,23 @@
   },
   "errors.write.writeError.title.copy": "Det gick inte att kopiera",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.writeError.title.move": "Det gick inte att flytta",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.writeError.title.delete": "Det gick inte att radera",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.writeError.title.trash": "Det gick inte att flytta till papperskorgen",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.writeError.message": "Det gick inte att skriva till målet.",
   "@errors.write.writeError.message": {
-    "sourceHash": "cb458f0"
+    "sourceHash": "ec1a179"
   },
   "errors.write.writeError.suggestion": "Försök igen. Om problemet kvarstår, kolla de tekniska detaljerna nedan.",
   "@errors.write.writeError.suggestion": {
@@ -1359,7 +1359,7 @@
   },
   "errors.write.invalidName.message": "{path} har ett namn som målet inte kan lagra.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "0bd3e6a"
+    "sourceHash": "ad395af"
   },
   "errors.write.invalidName.suggestion": "Byt namn på den till något kortare och enklare och försök igen. Vissa mål avvisar också reserverade namn som CON, NUL eller LPT1.",
   "@errors.write.invalidName.suggestion": {
@@ -1367,19 +1367,19 @@
   },
   "errors.write.trashRefused.title": "Det gick inte att flytta till papperskorgen",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.trashRefused.message.notPermitted": "macOS lät inte Cmdr röra {count} av objekten du valde.",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "e11fc50"
+    "sourceHash": "57a38d7"
   },
   "errors.write.trashRefused.message.noTrashForVolume": "macOS hittade ingen papperskorg för {count} av objekten du valde.",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "d86a66d"
+    "sourceHash": "702ae17"
   },
   "errors.write.trashRefused.message.other": "macOS flyttade inte {count} av objekten du valde till papperskorgen.",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "5c73490"
+    "sourceHash": "6f71e12"
   },
   "errors.write.trashRefused.suggestion.notPermitted": "Objekten kan vara låsta, eller ligga på ett ställe som macOS håller för sig själv. Du kan ändå radera dem permanent med Shift+F8.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
@@ -1395,39 +1395,39 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr har dessutom ingen full skivtillgång på den här Macen, vilket är en vanlig orsak. Märket ”Ingen full skivtillgång” i namnlisten tar dig till det valet.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "0dbe21b"
+    "sourceHash": "ee5e9f7"
   },
   "errors.write.ioError.title.copy": "Det gick inte att kopiera",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.ioError.title.move": "Det gick inte att flytta",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.ioError.title.delete": "Det gick inte att radera",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.ioError.title.trash": "Det gick inte att flytta till papperskorgen",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.ioError.message.copy": "Det gick inte att kopiera filen.",
   "@errors.write.ioError.message.copy": {
-    "sourceHash": "93d27d8"
+    "sourceHash": "f25dd52"
   },
   "errors.write.ioError.message.move": "Det gick inte att flytta filen.",
   "@errors.write.ioError.message.move": {
-    "sourceHash": "d2f8eea"
+    "sourceHash": "5f929ee"
   },
   "errors.write.ioError.message.delete": "Det gick inte att radera filen.",
   "@errors.write.ioError.message.delete": {
-    "sourceHash": "87cc29a"
+    "sourceHash": "9e79007"
   },
   "errors.write.ioError.message.trash": "Det gick inte att flytta filen till papperskorgen.",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "db053da"
+    "sourceHash": "948e289"
   },
   "errors.write.ioError.suggestion": "Försök igen. Om problemet kvarstår, kolla de tekniska detaljerna nedan.",
   "@errors.write.ioError.suggestion": {
@@ -1435,23 +1435,23 @@
   },
   "errors.write.permissionDenied.title": "Det gick inte att komma åt den här platsen",
   "@errors.write.permissionDenied.title": {
-    "sourceHash": "be62ad2"
+    "sourceHash": "bc7f0ff"
   },
   "errors.write.permissionDenied.message.copy": "Du har inte behörighet att kopiera filer här.",
   "@errors.write.permissionDenied.message.copy": {
-    "sourceHash": "d9ebc5a"
+    "sourceHash": "91272c0"
   },
   "errors.write.permissionDenied.message.move": "Du har inte behörighet att flytta filer hit.",
   "@errors.write.permissionDenied.message.move": {
-    "sourceHash": "d5c0358"
+    "sourceHash": "5b0fc94"
   },
   "errors.write.permissionDenied.message.delete": "Du har inte behörighet att radera filer här.",
   "@errors.write.permissionDenied.message.delete": {
-    "sourceHash": "e002a5f"
+    "sourceHash": "0c03fc4"
   },
   "errors.write.permissionDenied.message.trash": "Du har inte behörighet att flytta filer till papperskorgen här.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "b68bafc"
+    "sourceHash": "cca028a"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Kontrollera att du har skrivåtkomst till den överordnade mappen. Filen kan vara låst. Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1467,7 +1467,7 @@
   },
   "errors.write.permissionDenied.message.named": "Din macOS-användare kan inte ändra {folder}.",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "74994f9"
+    "sourceHash": "0ffd79b"
   },
   "errors.write.permissionDenied.suggestion.needsAdminMac": "Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst markerar du mappen i Finder, går till Visa info och tittar under Delning och behörigheter.",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
@@ -1475,15 +1475,15 @@
   },
   "errors.write.permissionDenied.suggestion.needsAdminOther": "Det kräver administratörsbehörighet. Om du vill ge ditt eget konto åtkomst ändrar du mappens behörigheter (t.ex. via chmod) och försöker igen.",
   "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "804027d"
+    "sourceHash": "5ce034b"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedMac": "macOS skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan vara låst: markera det i Finder, gå till Visa info och avmarkera Låst.",
   "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
-    "sourceHash": "ad5e0de"
+    "sourceHash": "64a71c8"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedOther": "Systemet skyddar det här objektet självt, så administratörsbehörighet ändrar ingenting. Det kan ha en skyddsflagga som måste tas bort först.",
   "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "bbf6bdb"
+    "sourceHash": "a4856dc"
   },
   "errors.write.insufficientSpace.title": "Inte tillräckligt med utrymme",
   "@errors.write.insufficientSpace.title": {
@@ -1519,11 +1519,11 @@
   },
   "errors.write.filesTooLargeForFilesystem.message.one": "{name} är {size}, men den här enheten är formaterad med FAT32, som inte kan lagra filer större än {maxSize}.",
   "@errors.write.filesTooLargeForFilesystem.message.one": {
-    "sourceHash": "2993e08"
+    "sourceHash": "f5c262a"
   },
   "errors.write.filesTooLargeForFilesystem.message.many": "{count} filer är för stora för den här enheten, som är formaterad med FAT32 och inte kan lagra filer större än {maxSize}.",
   "@errors.write.filesTooLargeForFilesystem.message.many": {
-    "sourceHash": "1aac250"
+    "sourceHash": "9720069"
   },
   "errors.write.filesTooLargeForFilesystem.suggestion": "För att lagra så stora filer använder du en enhet formaterad med exFAT, som inte har någon sådan gräns.",
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
@@ -1559,19 +1559,19 @@
   },
   "errors.write.destinationNotWritable.noPermission.message": "Du har inte behörighet att lägga till filer i den här mappen.",
   "@errors.write.destinationNotWritable.noPermission.message": {
-    "sourceHash": "15abe78"
+    "sourceHash": "a7e0efa"
   },
   "errors.write.destinationNotWritable.noPermission.suggestion": "Välj en annan målmapp, eller ändra behörigheterna för den här mappen och försök igen.",
   "@errors.write.destinationNotWritable.noPermission.suggestion": {
-    "sourceHash": "fceb936"
+    "sourceHash": "3851384"
   },
   "errors.write.destinationNotWritable.unexplained.title": "Den här mappen tar inte emot filer",
   "@errors.write.destinationNotWritable.unexplained.title": {
-    "sourceHash": "628c3aa"
+    "sourceHash": "c98e2c3"
   },
   "errors.write.destinationNotWritable.unexplained.message": "Den här mappen tar inte emot nya filer, så inget kan kopieras eller flyttas hit.",
   "@errors.write.destinationNotWritable.unexplained.message": {
-    "sourceHash": "22ce481"
+    "sourceHash": "13b79ec"
   },
   "errors.write.destinationNotWritable.unexplained.suggestion": "Välj en annan målmapp.",
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
@@ -1587,7 +1587,7 @@
   },
   "errors.write.fileLocked.message": "Filen är låst och kan inte raderas.",
   "@errors.write.fileLocked.message": {
-    "sourceHash": "62b1038"
+    "sourceHash": "84925b0"
   },
   "errors.write.fileLocked.suggestion.mac": "Lås upp den i Finder (Visa info > avmarkera Låst) och försök igen.",
   "@errors.write.fileLocked.suggestion.mac": {
@@ -1615,7 +1615,7 @@
   },
   "errors.write.newDataKeptAt.message": "Den nya {path} är färdigskriven och komplett, men målet lät den inte ta det namnet, och filen den skulle ersätta är redan borta. Den nya ligger på {keptAt}.",
   "@errors.write.newDataKeptAt.message": {
-    "sourceHash": "d1dc96b"
+    "sourceHash": "93d07be"
   },
   "errors.write.newDataKeptAt.suggestion": "Öppna {keptAt} och titta på den, byt sedan namn på den. Om målet är en nätverksresurs eller en telefon, anslut den igen först så går namnbytet igenom.",
   "@errors.write.newDataKeptAt.suggestion": {
@@ -1635,27 +1635,27 @@
   },
   "errors.write.originalsKeptAside.suggestion.one": "Öppna {keptAt} och titta på den. När du har flyttat undan mappen kan du byta tillbaka namnet på filen.",
   "@errors.write.originalsKeptAside.suggestion.one": {
-    "sourceHash": "6c53394"
+    "sourceHash": "5cbe5bb"
   },
   "errors.write.originalsKeptAside.suggestion.many": "Detaljerna nedan visar var varje fil ligger. När du har flyttat undan mapparna kan du byta tillbaka deras namn.",
   "@errors.write.originalsKeptAside.suggestion.many": {
-    "sourceHash": "7934c84"
+    "sourceHash": "2b05c26"
   },
   "errors.write.fallback.title.copy": "Det gick inte att kopiera",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.fallback.title.move": "Det gick inte att flytta",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.fallback.title.delete": "Det gick inte att radera",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.fallback.title.trash": "Det gick inte att flytta till papperskorgen",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.fallback.message.copy": "Något oväntat gick fel under kopieringen.",
   "@errors.write.fallback.message.copy": {
@@ -1679,31 +1679,31 @@
   },
   "errors.mutation.notFound": "Det finns inte längre något på ”{path}”.",
   "@errors.mutation.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.mutation.cantRenameVolumeRoot": "Det går inte att byta namn på en volyms rotmapp härifrån.",
   "@errors.mutation.cantRenameVolumeRoot": {
-    "sourceHash": "baf4d16"
+    "sourceHash": "0845c57"
   },
   "errors.mutation.parentNotWritable": "Cmdr kan inte skriva till ”{path}”. Kontrollera mappens behörigheter i Finder.",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "3659a5a"
+    "sourceHash": "e0a7ad6"
   },
   "errors.mutation.fileLocked": "Det här objektet är låst. Lås upp det i Finders fönster Visa info och försök sedan igen.",
   "@errors.mutation.fileLocked": {
-    "sourceHash": "d1d127c"
+    "sourceHash": "4be163f"
   },
   "errors.mutation.sipProtected": "macOS skyddar det här objektet med System Integrity Protection, så det går inte att byta namn på det.",
   "@errors.mutation.sipProtected": {
-    "sourceHash": "1865724"
+    "sourceHash": "2189822"
   },
   "errors.mutation.volumeGone": "Volymen är inte längre tillgänglig, så inget ändrades.",
   "@errors.mutation.volumeGone": {
-    "sourceHash": "604aad5"
+    "sourceHash": "643398b"
   },
   "errors.mutation.archiveNotEditable": "Cmdr kan inte öppna det här arkivet för redigering just nu.",
   "@errors.mutation.archiveNotEditable": {
-    "sourceHash": "eedee11"
+    "sourceHash": "47c44dd"
   },
   "errors.mutation.archiveReadOnly": "Bara zip-arkiv går att ändra och det här arkivet är skrivskyddat.",
   "@errors.mutation.archiveReadOnly": {
@@ -1711,43 +1711,43 @@
   },
   "errors.mutation.renameOutOfArchive": "Ett namnbyte kan inte flytta ut ett objekt ur ett arkiv. Flytta det i stället.",
   "@errors.mutation.renameOutOfArchive": {
-    "sourceHash": "1f852c5"
+    "sourceHash": "5e82283"
   },
   "errors.mutation.renameAcrossArchives": "Ett namnbyte kan inte flytta ett objekt från ett arkiv till ett annat. Flytta det i stället.",
   "@errors.mutation.renameAcrossArchives": {
-    "sourceHash": "5b8f1df"
+    "sourceHash": "89b3231"
   },
   "errors.mutation.archiveEditNotReady": "Cmdr startar fortfarande, så det går inte att redigera arkiv än.",
   "@errors.mutation.archiveEditNotReady": {
-    "sourceHash": "21a4fcf"
+    "sourceHash": "1a71ae7"
   },
   "errors.mutation.archiveEditCouldntStart": "Redigeringen av arkivet startade inte.",
   "@errors.mutation.archiveEditCouldntStart": {
-    "sourceHash": "3a5322f"
+    "sourceHash": "c67e249"
   },
   "errors.mutation.timedOut": "Volymen har inte svarat än, så ändringen kan fortfarande gå igenom.",
   "@errors.mutation.timedOut": {
-    "sourceHash": "27d6a2f"
+    "sourceHash": "94a8419"
   },
   "errors.mutation.unexpected": "Något gick fel och Cmdr kunde inte avgöra vad det var.",
   "@errors.mutation.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.volume.notFound": "Det finns inte längre något på ”{path}”.",
   "@errors.volume.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.volume.permissionDenied": "Cmdr har inte åtkomst till ”{path}”.",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "fee452b"
+    "sourceHash": "2c188b6"
   },
   "errors.volume.alreadyExists": "Det finns redan något på ”{path}”.",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "de0bbb9"
+    "sourceHash": "8763243"
   },
   "errors.volume.notSupported": "Den här volymen stöder inte den åtgärden.",
   "@errors.volume.notSupported": {
-    "sourceHash": "f57ad5a"
+    "sourceHash": "b645086"
   },
   "errors.volume.deviceDisconnected": "Enheten kopplades från innan ändringen gick igenom.",
   "@errors.volume.deviceDisconnected": {
@@ -1755,7 +1755,7 @@
   },
   "errors.volume.notConnected": "Cmdr har inte anslutit till den här telefonen eller servern än, så öppna den först.",
   "@errors.volume.notConnected": {
-    "sourceHash": "094dc49"
+    "sourceHash": "e128225"
   },
   "errors.volume.deviceSessionReset": "Enheten startade om sin anslutning. Vänta några sekunder och försök igen.",
   "@errors.volume.deviceSessionReset": {
@@ -1767,11 +1767,11 @@
   },
   "errors.volume.storageFull": "Det finns inget utrymme kvar på den här volymen.",
   "@errors.volume.storageFull": {
-    "sourceHash": "f2f33dc"
+    "sourceHash": "1fcdb67"
   },
   "errors.volume.connectionTimeout": "Anslutningen svarade inte i tid.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "857ed01"
+    "sourceHash": "f21c934"
   },
   "errors.volume.cancelled": "Cmdr stoppade det här på din begäran.",
   "@errors.volume.cancelled": {
@@ -1783,7 +1783,7 @@
   },
   "errors.volume.invalidName": "Målet kan inte lagra det namnet. Välj ett annat.",
   "@errors.volume.invalidName": {
-    "sourceHash": "ef0f2b8"
+    "sourceHash": "531488f"
   },
   "errors.volume.deletePending": "Filen är på väg bort och något håller den fortfarande öppen. Försök igen om en stund.",
   "@errors.volume.deletePending": {
@@ -1791,7 +1791,7 @@
   },
   "errors.volume.ambiguousName": "Mer än ett objekt på servern matchar ”{path}”, så Cmdr valde inget. Välj det i mappen där det ligger i stället.",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "f866182"
+    "sourceHash": "0f0e74d"
   },
   "errors.volume.staleDestinationHandle": "Cmdr tappade koll på målmappen på enheten. Öppna den igen och försök på nytt.",
   "@errors.volume.staleDestinationHandle": {
@@ -1799,7 +1799,7 @@
   },
   "errors.volume.ioError": "Volymen kunde inte slutföra åtgärden.",
   "@errors.volume.ioError": {
-    "sourceHash": "c82a0e1"
+    "sourceHash": "59e7d6a"
   },
   "errors.volume.needsPassword": "Det här arkivet är lösenordsskyddat.",
   "@errors.volume.needsPassword": {
@@ -1807,7 +1807,7 @@
   },
   "errors.volume.passwordRejected": "Det lösenordet fungerade inte.",
   "@errors.volume.passwordRejected": {
-    "sourceHash": "33ba224"
+    "sourceHash": "fe9b44a"
   },
   "errors.mutation.trashNotSupported": "Den här volymen har ingen papperskorg, så det går bara att radera permanent.",
   "@errors.mutation.trashNotSupported": {
@@ -1815,23 +1815,23 @@
   },
   "errors.mutation.trashRefused": "macOS nekade flytten till papperskorgen.",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "6d8a1b6"
+    "sourceHash": "7a6d1a5"
   },
   "errors.serverRequest.unreachable": "Cmdr nådde inte sin server. Kontrollera din internetanslutning och försök igen.",
   "@errors.serverRequest.unreachable": {
-    "sourceHash": "7f2a23e"
+    "sourceHash": "186a0f6"
   },
   "errors.serverRequest.timedOut": "Cmdrs server svarade inte i tid. Försök igen om en stund.",
   "@errors.serverRequest.timedOut": {
-    "sourceHash": "14b0dcd"
+    "sourceHash": "1413608"
   },
   "errors.serverRequest.serverBusy": "Cmdrs server har problem just nu. Försök igen senare.",
   "@errors.serverRequest.serverBusy": {
-    "sourceHash": "2df1f8d"
+    "sourceHash": "1f21e5d"
   },
   "errors.serverRequest.refused": "Cmdrs server avvisade det här. Om det fortsätter, hämta senaste Cmdr från getcmdr.com.",
   "@errors.serverRequest.refused": {
-    "sourceHash": "f36d8f8"
+    "sourceHash": "6a83e2a"
   },
   "errors.serverRequest.unexpected": "Cmdr stötte på ett internt problem. Försök igen, och om det fortsätter, starta om Cmdr.",
   "@errors.serverRequest.unexpected": {
@@ -1843,23 +1843,23 @@
   },
   "errors.eject.volumeNotFound": "Den enheten är inte längre ansluten, så det finns inget att mata ut.",
   "@errors.eject.volumeNotFound": {
-    "sourceHash": "62a3af2"
+    "sourceHash": "2c5112f"
   },
   "errors.eject.notEjectable": "Den här enheten är inte borttagbar, så den förblir ansluten.",
   "@errors.eject.notEjectable": {
-    "sourceHash": "bb88249"
+    "sourceHash": "cc7e9ee"
   },
   "errors.eject.notAnSmbVolume": "Det här är ingen delad mapp, så det finns inget att koppla från.",
   "@errors.eject.notAnSmbVolume": {
-    "sourceHash": "d49623e"
+    "sourceHash": "230d2dc"
   },
   "errors.eject.remoteNotConnected": "Den här servern är inte längre ansluten, så det finns inget kvar att stänga.",
   "@errors.eject.remoteNotConnected": {
-    "sourceHash": "a0ed630"
+    "sourceHash": "3b531d1"
   },
   "errors.eject.deviceDisconnectRefused": "Enheten ville inte stänga sin anslutning. Koppla ur den när den inte används.",
   "@errors.eject.deviceDisconnectRefused": {
-    "sourceHash": "d49861f"
+    "sourceHash": "5b99318"
   },
   "errors.eject.unmountRefused": "Något använder fortfarande den här enheten. Stäng öppna filer och appar och mata sedan ut igen.",
   "@errors.eject.unmountRefused": {
@@ -1891,27 +1891,27 @@
   },
   "errors.eject.timedOut": "Enheten har inte svarat än, så utmatningen kan fortfarande gå igenom.",
   "@errors.eject.timedOut": {
-    "sourceHash": "c592421"
+    "sourceHash": "3feb944"
   },
   "errors.eject.notResponding": "Enheten svarar inte, så den är fortfarande ansluten. Försök igen om en stund.",
   "@errors.eject.notResponding": {
-    "sourceHash": "742a732"
+    "sourceHash": "a3d9d82"
   },
   "errors.eject.unexpected": "Något gick fel och Cmdr kunde inte avgöra vad det var.",
   "@errors.eject.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.mount.hostUnreachable": "Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.mount.timeout": "Cmdr väntade, men ”{server}” svarade inte i tid. Kontrollera att servern är påslagen och går att nå, och försök sedan igen.",
   "@errors.mount.timeout": {
-    "sourceHash": "00d198e"
+    "sourceHash": "d0629fe"
   },
   "errors.mount.shareNotFound": "Det finns ingen delad mapp som heter ”{share}” på ”{server}”. Gå tillbaka och välj en i listan.",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "08aee2a"
+    "sourceHash": "10f3c59"
   },
   "errors.mount.authRequired": "Logga in för att öppna ”{share}” på ”{server}”.",
   "@errors.mount.authRequired": {
@@ -1919,23 +1919,23 @@
   },
   "errors.mount.authFailed": "Det användarnamnet och lösenordet fungerade inte på ”{server}”. Kontrollera dem och logga in igen.",
   "@errors.mount.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.mount.permissionDenied": "Du är inloggad på ”{server}” som ”{username}”, men det kontot kan inte öppna ”{share}”. Logga in med ett annat konto.",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "f8e000b"
+    "sourceHash": "05611b7"
   },
   "errors.mount.cancelled": "Anslutningen till ”{share}” stoppades innan den var klar. Försök igen när du vill.",
   "@errors.mount.cancelled": {
-    "sourceHash": "4f6ff32"
+    "sourceHash": "bc771b3"
   },
   "errors.mount.unsupportedProtocol": "Den här datorn och ”{server}” har ingen gemensam SMB-version. Slå på SMB 2 eller senare i serverns inställningar och försök sedan igen.",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "7cb18f6"
+    "sourceHash": "8afe4cb"
   },
   "errors.mount.mountRefused": "Du är inloggad på ”{server}”, men servern ville inte öppna ”{share}”. Kontrollera den delade mappens inställningar på servern och försök sedan igen.",
   "@errors.mount.mountRefused": {
-    "sourceHash": "84344ca"
+    "sourceHash": "6cf694d"
   },
   "errors.mount.mountMissing": "Din dator rapporterade att ”{share}” på ”{server}” var ansluten, men den delade mappen dök aldrig upp. Försök igen.",
   "@errors.mount.mountMissing": {
@@ -1943,7 +1943,7 @@
   },
   "errors.mount.gvfsMissing": "För att ansluta till delade mappar på nätverket i Linux krävs GVFS. Installera paketet gvfs-smb från din distribution och försök sedan igen.",
   "@errors.mount.gvfsMissing": {
-    "sourceHash": "068da95"
+    "sourceHash": "b67831e"
   },
   "errors.mount.unexpected": "Något gick fel vid anslutningen till ”{share}” på ”{server}”. Försök igen om en stund.",
   "@errors.mount.unexpected": {
@@ -1951,11 +1951,11 @@
   },
   "errors.shareList.hostUnreachable": "Cmdr kunde inte nå ”{server}”. Kontrollera att servern är påslagen och på samma nätverk som den här datorn.",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.shareList.timeout": "Cmdr väntade, men ”{server}” svarade inte i tid. Försök igen om en stund.",
   "@errors.shareList.timeout": {
-    "sourceHash": "a07b7c8"
+    "sourceHash": "0c2c6ec"
   },
   "errors.shareList.authRequired": "Logga in för att se de delade mapparna på ”{server}”.",
   "@errors.shareList.authRequired": {
@@ -1963,11 +1963,11 @@
   },
   "errors.shareList.signingRequired": "”{server}” visar inte sina delade mappar för gäster. Logga in för att se dem.",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "ecc570d"
+    "sourceHash": "6e92125"
   },
   "errors.shareList.authFailed": "Det användarnamnet och lösenordet fungerade inte på ”{server}”. Kontrollera dem och logga in igen.",
   "@errors.shareList.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.shareList.protocolError": "Något gick fel när listan över delade mappar hämtades från ”{server}”. Försök igen om en stund.",
   "@errors.shareList.protocolError": {
@@ -1975,11 +1975,11 @@
   },
   "errors.shareList.resolutionFailed": "Cmdr hittade inte ”{server}” på nätverket. Kontrollera namnet eller försök på nytt när servern är online igen.",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "62e91cf"
+    "sourceHash": "9be124a"
   },
   "errors.shareList.missingDependency": "För att lista delade mappar behöver den här datorn smbclient, som inte är installerat. Installera det och försök sedan igen.",
   "@errors.shareList.missingDependency": {
-    "sourceHash": "810b06a"
+    "sourceHash": "6ffa8a9"
   },
   "errors.write.readOnlyDevice.source.title": "Skrivskyddad källa",
   "@errors.write.readOnlyDevice.source.title": {
@@ -2003,7 +2003,7 @@
   },
   "errors.write.duplicateSourceNames.message": "Du valde två objekt som heter {name}, så båda skulle hamna på samma plats: {first} och {second}.",
   "@errors.write.duplicateSourceNames.message": {
-    "sourceHash": "4146d5f"
+    "sourceHash": "f4517fc"
   },
   "errors.write.duplicateSourceNames.suggestion.copy": "Kopiera dem ett i taget, eller byt namn på ett först.",
   "@errors.write.duplicateSourceNames.suggestion.copy": {

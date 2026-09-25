@@ -28,7 +28,7 @@ describe('error-reporter dialog copy parity (en)', () => {
   it('resolves the static dialog strings', () => {
     expect(tString('errorReporter.dialog.title')).toBe('Send error report')
     expect(tString('errorReporter.dialog.description')).toBe(
-      "This sends Cmdr's recent log files to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.",
+      'This sends Cmdr’s recent log files to the team so we can fix what went wrong. The logs are redacted client-side: file paths, hostnames, IPs, and emails are all scrubbed before sending.',
     )
     expect(tString('errorReporter.dialog.referenceIdLabel')).toBe('Reference ID:')
     expect(tString('errorReporter.dialog.copy')).toBe('Copy')
@@ -37,7 +37,7 @@ describe('error-reporter dialog copy parity (en)', () => {
     expect(tString('errorReporter.dialog.notePlaceholder')).toBe(
       'What were you trying to do? What did you expect to happen?',
     )
-    expect(tString('errorReporter.dialog.detailsToggle')).toBe("What's about to be sent")
+    expect(tString('errorReporter.dialog.detailsToggle')).toBe('What’s about to be sent')
     expect(tString('errorReporter.dialog.manifestHeading')).toBe('Manifest')
     expect(tString('errorReporter.dialog.noLogLines')).toBe('(no log lines available)')
     expect(tString('errorReporter.dialog.preparing')).toBe('Preparing preview…')
@@ -55,15 +55,15 @@ describe('error-reporter dialog copy parity (en)', () => {
     expect(t('errorReporter.dialog.totalLines', { countText: '1,234' })).toBe(
       'Total log lines (after redaction): 1,234',
     )
-    expect(tString('errorReporter.dialog.prepareFailed')).toBe("Couldn't put the preview together.")
+    expect(tString('errorReporter.dialog.prepareFailed')).toBe('Couldn’t put the preview together.')
     expect(tString('errorReporter.dialog.tryAgain')).toBe('Try again')
     expect(t('errorReporter.dialog.sendFailedToast', { reason: 'Try again.' })).toBe(
-      "Couldn't send the error report. Try again.",
+      'Couldn’t send the error report. Try again.',
     )
     expect(tString('errorReporter.dialog.bundleUnavailable')).toBe(
-      "Cmdr couldn't gather its logs for the report. Try again in a moment.",
+      'Cmdr couldn’t gather its logs for the report. Try again in a moment.',
     )
-    expect(t('errorReporter.dialog.saveFailedToast', { error: 'boom' })).toBe("Couldn't save bundle: boom")
+    expect(t('errorReporter.dialog.saveFailedToast', { error: 'boom' })).toBe('Couldn’t save bundle: boom')
   })
 
   it('matches the old pluralize(n, "line") for the sample headings', () => {
@@ -109,7 +109,7 @@ describe('error-reporter amend-mode copy (en)', () => {
   it('resolves the static amend strings', () => {
     expect(tString('errorReporter.amend.title')).toBe('Add to your error report')
     expect(tString('errorReporter.amend.description')).toBe(
-      "Cmdr already sent this report. Write a note, or attach your email, and it'll join what the team already has.",
+      'Cmdr already sent this report. Write a note, or attach your email, and it’ll join what the team already has.',
     )
     expect(tString('errorReporter.amend.noteLabel')).toBe('Your note')
     expect(tString('errorReporter.amend.detailsToggle')).toBe('What was sent')
@@ -117,11 +117,11 @@ describe('error-reporter amend-mode copy (en)', () => {
     expect(tString('errorReporter.amend.submitting')).toBe('Adding…')
     expect(tString('errorReporter.amend.close')).toBe('Close')
     expect(tString('errorReporter.amend.unavailable')).toBe(
-      "That report can't take a note any more. To get your notes to the team, send a new report from the Help menu.",
+      'That report can’t take a note any more. To get your notes to the team, send a new report from the Help menu.',
     )
   })
 
   it('resolves the interpolated amend strings', () => {
-    expect(t('errorReporter.amend.addFailedToast', { reason: 'Try again.' })).toBe("Couldn't add your note. Try again.")
+    expect(t('errorReporter.amend.addFailedToast', { reason: 'Try again.' })).toBe('Couldn’t add your note. Try again.')
   })
 })

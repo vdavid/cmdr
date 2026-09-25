@@ -9,11 +9,11 @@
   },
   "main.upgradeNudge.mac": "我們新增了入門引導的選項。開啟 Cmdr > 入門引導⋯ 來查看。",
   "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
+    "sourceHash": "439adfd"
   },
   "main.upgradeNudge.other": "我們新增了入門引導的選項。開啟指令面板並執行「入門引導⋯」來查看。",
   "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
+    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "要把 Cmdr 保留在 Dock 上嗎？",
   "@main.dockPinNudge.title": {
@@ -21,7 +21,7 @@
   },
   "main.dockPinNudge.body": "你已經用 Cmdr 好幾天了，看來很順手。要不要把它保留在下面的 Dock 上，就在 Finder 旁邊？",
   "@main.dockPinNudge.body": {
-    "sourceHash": "1718271"
+    "sourceHash": "7f4265e"
   },
   "main.dockPinNudge.unpinNote": "如果之後改變主意，隨時可以把它從 Dock 中移除。",
   "@main.dockPinNudge.unpinNote": {
@@ -41,15 +41,15 @@
   },
   "main.dockPinNudge.addedButDockDidNotRestart": "Cmdr 的圖像已經放好了，只是 Dock 還沒重新載入。下次登入時就會出現。",
   "@main.dockPinNudge.addedButDockDidNotRestart": {
-    "sourceHash": "b035470"
+    "sourceHash": "7a4e3bb"
   },
   "main.dockPinNudge.managedDock": "你的 Dock 由設定描述檔管理，所以 Cmdr 無法自己加進去。管理這部 Mac 的人可以更改這項設定。",
   "@main.dockPinNudge.managedDock": {
-    "sourceHash": "dae0836"
+    "sourceHash": "4781787"
   },
   "main.dockPinNudge.notAdded": "Cmdr 這次無法加入 Dock。你隨時可以從「應用程式」資料夾把它拖到 Dock 上。",
   "@main.dockPinNudge.notAdded": {
-    "sourceHash": "0d122cb"
+    "sourceHash": "0b863ad"
   },
   "main.revealNudge.title": "在 Cmdr 中開啟「在 Finder 中顯示」？",
   "@main.revealNudge.title": {
@@ -57,7 +57,7 @@
   },
   "main.revealNudge.body": "你用 Cmdr 有一陣子了。當其他 App 執行「在 Finder 中顯示」時，Cmdr 可以改為開啟那個資料夾，游標就停在那個檔案上。",
   "@main.revealNudge.body": {
-    "sourceHash": "1db1d28"
+    "sourceHash": "1934a04"
   },
   "main.revealNudge.switchBackNote": "隨時都可以在設定中改回來。",
   "@main.revealNudge.switchBackNote": {
@@ -81,7 +81,7 @@
   },
   "main.revealNudge.notTurnedOn": "Cmdr 這次沒能接手「在 Finder 中顯示」。想再試一次的話，開關在設定中。",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "953a4ee"
+    "sourceHash": "0f572c0"
   },
   "main.revealActivation.title": "「在 Finder 中顯示」在這裡開啟了",
   "@main.revealActivation.title": {
@@ -101,7 +101,7 @@
   },
   "main.quit.body": "已經完成的都會保留。正在寫入的項目會就此停下，Cmdr 會清理掉寫到一半的檔案。",
   "@main.quit.body": {
-    "sourceHash": "c17f6e7"
+    "sourceHash": "79a69f9"
   },
   "main.quit.countdown": "{seconds, plural, other {將在 {secondsText} 秒後自動結束，這樣重新開機或登出時就不用等 Cmdr。}}",
   "@main.quit.countdown": {
@@ -129,7 +129,7 @@
   },
   "main.oldWebkit.body": "Cmdr 的介面需要 Safari 15.4 或更新版本，而這部 Mac 上的版本較舊。請打開「軟體更新」，安裝所有待處理的更新，通常就能解決。",
   "@main.oldWebkit.body": {
-    "sourceHash": "bcadac5"
+    "sourceHash": "a7112ec"
   },
   "main.oldMacos.title": "macOS {version} 上的 Cmdr",
   "@main.oldMacos.title": {
@@ -137,7 +137,7 @@
   },
   "main.oldMacos.body": "Cmdr 官方支援 macOS 12 以上的版本，在這裡只能盡力而為。大部分功能都能用，但有些顏色和細小的版面配置可能會不太對，針對舊系統的修正也會排在最後。要是你碰到什麼壞掉的地方，我還是很想知道。",
   "@main.oldMacos.body": {
-    "sourceHash": "9484b91"
+    "sourceHash": "f9b4185"
   },
   "main.oldMacos.gotIt": "知道了",
   "@main.oldMacos.gotIt": {
@@ -161,6 +161,6 @@
   },
   "main.escapeFullScreenHint.onceNote": "這則提示只會出現這一次。",
   "@main.escapeFullScreenHint.onceNote": {
-    "sourceHash": "c76cb6c"
+    "sourceHash": "210b892"
   }
 }

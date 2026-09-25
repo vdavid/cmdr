@@ -231,7 +231,7 @@ describe('buildDirSizeTooltip', () => {
   it('returns the unknown tooltip when incomplete and size is 0 (the <dir>-placeholder state)', () => {
     // No size breakdown — there's nothing known. complete=false, size=0.
     const result = buildDirSizeTooltip(0, undefined, 0, 0, false, formatSize, formatNum, false, false)
-    expect(tooltipHtml(result)).toBe("Size unknown: this folder hasn't been scanned yet.")
+    expect(tooltipHtml(result)).toBe('Size unknown: this folder hasn’t been scanned yet.')
   })
 
   it('appends the lower-bound line when incomplete and size > 0 (the ≥ state)', () => {

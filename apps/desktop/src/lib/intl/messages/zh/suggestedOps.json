@@ -13,7 +13,7 @@
   },
   "suggestedOps.loadFailed": "Cmdr 无法读取这些建议。请关闭后重新打开。",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "3d3af5a"
+    "sourceHash": "ef0da3e"
   },
   "suggestedOps.agentReason": "AI 给出的理由",
   "@suggestedOps.agentReason": {
@@ -57,7 +57,7 @@
   },
   "suggestedOps.irreversible": "这项操作无法撤销",
   "@suggestedOps.irreversible": {
-    "sourceHash": "485d5a3"
+    "sourceHash": "b583829"
   },
   "suggestedOps.folderWillBeCreated": "Cmdr 会创建这个文件夹",
   "@suggestedOps.folderWillBeCreated": {
@@ -69,7 +69,7 @@
   },
   "suggestedOps.destinationUnknown": "Cmdr 无法检查目标文件夹",
   "@suggestedOps.destinationUnknown": {
-    "sourceHash": "e1293c5"
+    "sourceHash": "dc78d1d"
   },
   "suggestedOps.fromPattern": "通过模式匹配得到",
   "@suggestedOps.fromPattern": {
@@ -113,7 +113,7 @@
   },
   "suggestedOps.filesLoadFailed": "Cmdr 无法加载这些文件。",
   "@suggestedOps.filesLoadFailed": {
-    "sourceHash": "c61d214"
+    "sourceHash": "01f1b86"
   },
   "suggestedOps.retryFiles": "重试",
   "@suggestedOps.retryFiles": {
@@ -121,11 +121,11 @@
   },
   "suggestedOps.decisionNotRecorded": "Cmdr 无法保存你的回答。请重试。",
   "@suggestedOps.decisionNotRecorded": {
-    "sourceHash": "d4ee9cf"
+    "sourceHash": "9eae594"
   },
   "suggestedOps.approvalUnsure": "Cmdr 不确定这次批准是否已生效。再次批准之前，请先查看操作队列。",
   "@suggestedOps.approvalUnsure": {
-    "sourceHash": "0cd408c"
+    "sourceHash": "fba515a"
   },
   "suggestedOps.indicatorTooltip": "有 AI 建议在等你。点按即可复查。",
   "@suggestedOps.indicatorTooltip": {

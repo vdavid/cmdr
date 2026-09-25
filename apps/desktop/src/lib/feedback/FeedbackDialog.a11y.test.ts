@@ -231,7 +231,7 @@ describe('FeedbackDialog', () => {
     await typeEmail(target, 'tester')
 
     expect(findButton(target, 'Send feedback')?.disabled).toBe(true)
-    expect(target.textContent).toContain("doesn't look like an email address")
+    expect(target.textContent).toContain('doesn’t look like an email address')
   })
 
   it('sends without an address when the field is left empty', async () => {

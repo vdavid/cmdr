@@ -123,11 +123,11 @@
   },
   "licensing.commercialReminder.usingPersonal": "Bạn đang dùng giấy phép Cá nhân.",
   "@licensing.commercialReminder.usingPersonal": {
-    "sourceHash": "508c17d"
+    "sourceHash": "3aa6518"
   },
   "licensing.commercialReminder.askCommercial": "Nếu bạn dùng Cmdr cho công việc, hãy mua giấy phép Thương mại để tuân thủ.",
   "@licensing.commercialReminder.askCommercial": {
-    "sourceHash": "6bf4031"
+    "sourceHash": "84b372c"
   },
   "licensing.commercialReminder.priceInfo": "Giấy phép thương mại có giá $59, trả một lần, và giúp duy trì việc phát triển.",
   "@licensing.commercialReminder.priceInfo": {
@@ -155,7 +155,7 @@
   },
   "licensing.expiration.info": "Cmdr giờ đang chạy ở chế độ dùng cá nhân. Nếu bạn vẫn dùng cho công việc, hãy gia hạn giấy phép.",
   "@licensing.expiration.info": {
-    "sourceHash": "5fcebb5"
+    "sourceHash": "274de6c"
   },
   "licensing.expiration.renew": "Gia hạn giấy phép",
   "@licensing.expiration.renew": {
@@ -179,7 +179,7 @@
   },
   "licensing.dialog.serverInvalidBanner": "Không thể xác minh khóa này với máy chủ. Hãy thử khóa khác hoặc gửi email cho chúng tôi tại <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.serverInvalidBanner": {
-    "sourceHash": "616b906"
+    "sourceHash": "fa68511"
   },
   "licensing.dialog.labelType": "Loại giấy phép",
   "@licensing.dialog.labelType": {
@@ -231,7 +231,7 @@
   },
   "licensing.dialog.pendingHint": "Chúng tôi sẽ tự động xác minh với máy chủ trong vòng {days} ngày.",
   "@licensing.dialog.pendingHint": {
-    "sourceHash": "8d9801b"
+    "sourceHash": "b4bbb38"
   },
   "licensing.dialog.useDifferentKey": "Dùng khóa khác",
   "@licensing.dialog.useDifferentKey": {
@@ -255,7 +255,7 @@
   },
   "licensing.dialog.enterPrompt": "Dán khóa giấy phép từ email bạn nhận được sau khi mua. Chưa có khóa? <getLicense>Mua giấy phép</getLicense>.",
   "@licensing.dialog.enterPrompt": {
-    "sourceHash": "f6fb47a"
+    "sourceHash": "4e3a096"
   },
   "licensing.dialog.inputPlaceholder": "Ví dụ: CMDR-ABCD-EFGH-1234",
   "@licensing.dialog.inputPlaceholder": {
@@ -263,11 +263,11 @@
   },
   "licensing.dialog.retryExhausted": "Chúng tôi đã thử {count} lần mà vẫn chưa được. Rất tiếc vì sự bất tiện này. Hãy nhắn cho chúng tôi tại <supportEmail>{email}</supportEmail> và chúng tôi sẽ xử lý.",
   "@licensing.dialog.retryExhausted": {
-    "sourceHash": "4f3331b"
+    "sourceHash": "d2aa21a"
   },
   "licensing.dialog.serverInvalidHelp": "Nếu bạn nghĩ đây là nhầm lẫn, hãy gửi email cho chúng tôi tại <supportEmail>{email}</supportEmail> và chúng tôi sẽ xử lý.",
   "@licensing.dialog.serverInvalidHelp": {
-    "sourceHash": "90471d2"
+    "sourceHash": "743cbed"
   },
   "licensing.dialog.genericHelp": "Nếu bạn cần trợ giúp, hãy liên hệ chúng tôi tại <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.genericHelp": {
@@ -303,7 +303,7 @@
   },
   "licensing.dialog.networkFallbackError": "Không thể xác minh giấy phép của bạn với máy chủ. Hãy thử lại sau nhé.",
   "@licensing.dialog.networkFallbackError": {
-    "sourceHash": "cb2b8e0"
+    "sourceHash": "fc7e124"
   },
   "licensing.dialog.expiredOnError": "Giấy phép này đã hết hạn vào {date}.",
   "@licensing.dialog.expiredOnError": {
@@ -315,7 +315,7 @@
   },
   "licensing.dialog.serverInvalidError": "Chúng tôi nhận ra khóa này, nhưng khi kiểm tra với nhà cung cấp thanh toán thì họ không nhận ra nó. Điều này có thể xảy ra nếu giao dịch đã được hoàn tiền hoặc chưa hoàn tất.",
   "@licensing.dialog.serverInvalidError": {
-    "sourceHash": "4beeef1"
+    "sourceHash": "58f1457"
   },
   "licensing.dialog.emptyKeyError": "Hãy nhập khóa giấy phép",
   "@licensing.dialog.emptyKeyError": {
@@ -327,11 +327,11 @@
   },
   "licensing.dialog.mailtoBody": "Chào,\n\nTôi gặp trục trặc khi kích hoạt khóa giấy phép của mình:\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
-    "sourceHash": "bcdc2b6"
+    "sourceHash": "c076655"
   },
   "licensing.error.badSignature": "Khóa giấy phép này không vượt qua bước xác minh chữ ký của chúng tôi, nghĩa là nó trông không giống một khóa hợp lệ.",
   "@licensing.error.badSignature": {
-    "sourceHash": "e9842df"
+    "sourceHash": "3bcac8e"
   },
   "licensing.error.badSignatureHint": "Hãy kiểm tra kỹ lỗi gõ nhầm và thử dán lại từ email mua hàng của bạn.",
   "@licensing.error.badSignatureHint": {
@@ -347,7 +347,7 @@
   },
   "licensing.error.shortCodeNotFound": "Giấy phép này trông ổn, nhưng chúng tôi đã tìm kỹ mà không thấy nó trong cơ sở dữ liệu.",
   "@licensing.error.shortCodeNotFound": {
-    "sourceHash": "c123af8"
+    "sourceHash": "0f9ccbf"
   },
   "licensing.error.shortCodeNotFoundHint": "Hãy kiểm tra lại xem bạn đã dán đúng khóa từ email mua hàng chưa.",
   "@licensing.error.shortCodeNotFoundHint": {
@@ -355,7 +355,7 @@
   },
   "licensing.error.network": "Ối, lần này chúng tôi không kết nối được tới máy chủ giấy phép.",
   "@licensing.error.network": {
-    "sourceHash": "63da44b"
+    "sourceHash": "d03567c"
   },
   "licensing.error.networkHint": "Hãy kiểm tra kết nối internet của bạn và thử lại.",
   "@licensing.error.networkHint": {
@@ -363,7 +363,7 @@
   },
   "licensing.error.server": "Hừm, máy chủ giấy phép phản hồi điều gì đó lạ. Chúng tôi xin lỗi về việc này.",
   "@licensing.error.server": {
-    "sourceHash": "6ca76c0"
+    "sourceHash": "89870f9"
   },
   "licensing.error.serverHint": "Hãy thử lại sau nhé.",
   "@licensing.error.serverHint": {
@@ -375,7 +375,7 @@
   },
   "licensing.error.genericHint": "Hãy thử lại. Nếu vấn đề vẫn còn, hãy gửi email cho chúng tôi và chúng tôi sẽ giúp.",
   "@licensing.error.genericHint": {
-    "sourceHash": "9108b68"
+    "sourceHash": "be0771c"
   },
   "licensing.section.title": "Giấy phép",
   "@licensing.section.title": {

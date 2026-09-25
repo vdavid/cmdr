@@ -113,8 +113,8 @@ describe('downloads catalog parity (en)', () => {
     expect(tString('downloads.shortcutRow.pressKeys')).toBe('Press keys…')
     expect(tString('downloads.shortcutRow.registered')).toBe('Registered')
     expect(tString('downloads.shortcutRow.notRegistered')).toBe('Not registered')
-    expect(tString('downloads.shortcutRow.invalidCombo')).toBe("Couldn't register: invalid combo")
-    expect(tString('downloads.shortcutRow.registerFailed', { reason: 'busy' })).toBe("Couldn't register: busy")
+    expect(tString('downloads.shortcutRow.invalidCombo')).toBe('Couldn’t register: invalid combo')
+    expect(tString('downloads.shortcutRow.registerFailed', { reason: 'busy' })).toBe('Couldn’t register: busy')
     expect(tString('downloads.shortcutRow.addModifier')).toBe('Add a modifier (⌘, ⌃, ⌥, or ⇧)')
   })
 

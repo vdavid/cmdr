@@ -36,7 +36,7 @@
     "description": "Primary button in the \"Go to path\" dialog that navigates to the typed path. A short button label.",
     "screenshot": "go-to-path.png"
   },
-  "goToPath.dialog.ancestorHint": "This path doesn''t exist. The closest place to go is {dir}.",
+  "goToPath.dialog.ancestorHint": "This path doesn’t exist. The closest place to go is {dir}.",
   "@goToPath.dialog.ancestorHint": {
     "description": "Inline warning under the input when the typed path doesn't exist; tells the user the nearest existing folder it would go to instead.",
     "placeholders": {
@@ -45,7 +45,7 @@
     "screenshot": "go-to-path.png",
     "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
-  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> doesn''t exist, so we took you to <land>{landed}</land>.",
+  "goToPath.toast.landedOnAncestor": "<req>{requested}</req> doesn’t exist, so we took you to <land>{landed}</land>.",
   "@goToPath.toast.landedOnAncestor": {
     "description": "Toast shown after \"Go to path\" navigated to the nearest existing folder because the typed path was missing. Both paths are wrapped in tags (<req></req> and <land></land>) that render them in a monospace font; keep the tags around each path placeholder.",
     "placeholders": {
@@ -73,7 +73,7 @@
     "screenshot": "go-to-path.png",
     "screenshotNote": "The Go to path dialog, pictured here. Your string belongs to a state this screenshot doesn’t show: its list of recent paths, or a hint under the field about the path you typed."
   },
-  "goToPath.dialog.snapshotNotAPath": "Search results aren''t a path you can go to.",
+  "goToPath.dialog.snapshotNotAPath": "Search results aren’t a path you can go to.",
   "@goToPath.dialog.snapshotNotAPath": {
     "description": "Preview line under the Go to path box when the user typed a search-results:// address. A list of search results only exists inside the running app, so there is no folder to go to; the user reaches one by searching again. Do not translate the scheme itself.",
     "screenshot": "go-to-path.png",

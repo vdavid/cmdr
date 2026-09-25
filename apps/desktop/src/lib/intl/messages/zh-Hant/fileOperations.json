@@ -13,7 +13,7 @@
   },
   "fileOperations.delete.noTrashWarningStrong": "這個卷宗不支援垃圾桶。",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "ef122e2"
+    "sourceHash": "911688a"
   },
   "fileOperations.delete.noTrashWarningRest": "檔案會被永久刪除。",
   "@fileOperations.delete.noTrashWarningRest": {
@@ -21,19 +21,19 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你選取的內容中有一部分只存在雲端。把它們移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把所有檔案設為離線可用，或是取消選取所有只存在雲端的檔案。",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "4c48ecf"
+    "sourceHash": "2468db5"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "你選取的內容全都只存在雲端。把它移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把這些檔案設為離線可用。",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "52f8c94"
+    "sourceHash": "dd04d39"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "你選取的內容中含有只存在雲端的檔案，所以下面的按鈕現在提供「刪除」。請看一下上面的說明，沒問題的話再按一次。",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "623e7e0"
+    "sourceHash": "d3f4a7a"
   },
   "fileOperations.delete.archiveWarningStrong": "壓縮檔裡沒有垃圾桶。",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "29efc59"
+    "sourceHash": "d25cd46"
   },
   "fileOperations.delete.archiveWarningRest": "這些項目會從 zip 裡永久移除。",
   "@fileOperations.delete.archiveWarningRest": {
@@ -61,11 +61,11 @@
   },
   "fileOperations.trash.undoUnavailable": "沒有可以放回的東西。這些項目可能已經回到原處，或是它們所在的磁碟機沒有連接。",
   "@fileOperations.trash.undoUnavailable": {
-    "sourceHash": "2acefae"
+    "sourceHash": "ee17b5f"
   },
   "fileOperations.trash.noTrashHere": "這個磁碟機沒有垃圾桶。",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "91d7462"
+    "sourceHash": "f58bdab"
   },
   "fileOperations.delete.trashSwitch": "移至垃圾桶",
   "@fileOperations.delete.trashSwitch": {
@@ -157,7 +157,7 @@
   },
   "fileOperations.mkdir.timeoutMessage": "無法確認資料夾是不是建好了。這個卷宗可能比較慢，所以資料夾也許已經建好了。",
   "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "751aec6"
+    "sourceHash": "8bc758a"
   },
   "fileOperations.mkdir.timeoutRefresh": "重新整理檔案列表",
   "@fileOperations.mkdir.timeoutRefresh": {
@@ -245,11 +245,11 @@
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "這個資料夾還不存在。Cmdr 會在複製時把它建起來。",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
-    "sourceHash": "025f3dc"
+    "sourceHash": "4e8d166"
   },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "這個資料夾還不存在。Cmdr 會在移動時把它建起來。",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
-    "sourceHash": "976edd2"
+    "sourceHash": "1246331"
   },
   "fileOperations.transferDialog.destinationReadOnly": "這個資料夾是唯讀的，無法放入任何東西。",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -257,11 +257,11 @@
   },
   "fileOperations.transferDialog.destinationNoPermission": "你沒有將檔案加入這個資料夾的權限。",
   "@fileOperations.transferDialog.destinationNoPermission": {
-    "sourceHash": "728b1ed"
+    "sourceHash": "a7e0efa"
   },
   "fileOperations.transferDialog.destinationNotWritable": "這個資料夾不接受新檔案。",
   "@fileOperations.transferDialog.destinationNotWritable": {
-    "sourceHash": "d7cd278"
+    "sourceHash": "07094f6"
   },
   "fileOperations.transferDialog.targetWillBeOverwritten": "這裡已經有同名的檔案了。Cmdr 會取代它。",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
@@ -277,7 +277,7 @@
   },
   "fileOperations.transferDialog.hardlinkNote": "將會寫入 <written></written>。來源在磁碟上佔用 <ondisk></ondisk>，多出來的是硬式連結檔案，跨磁碟機時無法保持連結。",
   "@fileOperations.transferDialog.hardlinkNote": {
-    "sourceHash": "af8a4c9"
+    "sourceHash": "acac507"
   },
   "fileOperations.transferDialog.compressLevelCaption": "層級越高，做出來的 zip 越小，但打包也越久。",
   "@fileOperations.transferDialog.compressLevelCaption": {
@@ -293,11 +293,11 @@
   },
   "fileOperations.transferDialog.scanUnresponsive": "來源沒有回應，所以只統計到這些。",
   "@fileOperations.transferDialog.scanUnresponsive": {
-    "sourceHash": "03d95e0"
+    "sourceHash": "ec3beb2"
   },
   "fileOperations.transferDialog.scanStopped": "我們沒能把來源統計完，所以只統計到這些。",
   "@fileOperations.transferDialog.scanStopped": {
-    "sourceHash": "aac156c"
+    "sourceHash": "f7d3029"
   },
   "fileOperations.transferDialog.scanRetry": "再試一次",
   "@fileOperations.transferDialog.scanRetry": {
@@ -305,7 +305,7 @@
   },
   "fileOperations.transferDialog.conflictsUnknown": "我們無法檢查目標位置已經有什麼。遇到同名的項目時會再問你。",
   "@fileOperations.transferDialog.conflictsUnknown": {
-    "sourceHash": "1bc997a"
+    "sourceHash": "d42db28"
   },
   "fileOperations.transferDialog.checkingConflicts": "正在檢查衝突⋯",
   "@fileOperations.transferDialog.checkingConflicts": {
@@ -365,7 +365,7 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "無法把「{name}」{verb, select, copy {複製} other {移動}}到它自己的子資料夾裡",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "815204a"
+    "sourceHash": "96c81d6"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "「{name}」已經在這個位置了",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
@@ -505,11 +505,11 @@
   },
   "fileOperations.transferProgress.warningFileOverFolder": "目標已經存在，而且是一個<strong>資料夾</strong>。你正要用同名的<strong>檔案</strong>覆寫它。目標資料夾的全部內容會被刪除，由這個檔案取代。要怎麼做？",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "c560c0f"
+    "sourceHash": "6dce75c"
   },
   "fileOperations.transferProgress.lookAlikeHint": "這兩個名稱看起來一樣，但伺服器儲存的寫法不同。按一下「覆寫」會取代現有的那一個。",
   "@fileOperations.transferProgress.lookAlikeHint": {
-    "sourceHash": "2d35ddf"
+    "sourceHash": "01ed9ad"
   },
   "fileOperations.transferProgress.existingFolderLabel": "現有（資料夾）：",
   "@fileOperations.transferProgress.existingFolderLabel": {
@@ -549,7 +549,7 @@
   },
   "fileOperations.transferProgress.smallerDisabledTooltip": "無法比較：目標資料夾的大小未知。",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
-    "sourceHash": "3bb25be"
+    "sourceHash": "ad5025c"
   },
   "fileOperations.transferProgress.conflictSkip": "略過",
   "@fileOperations.transferProgress.conflictSkip": {
@@ -645,7 +645,7 @@
   },
   "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "所有檔案都已經在目標位置了，這次移動沒辦法再復原。不過「取消」還是能在 Cmdr 移除其餘原檔案之前把它停下來。",
   "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
-    "sourceHash": "5f8b044"
+    "sourceHash": "da51356"
   },
   "fileOperations.transferProgress.titlePaused": "已暫停",
   "@fileOperations.transferProgress.titlePaused": {
@@ -689,7 +689,7 @@
   },
   "fileOperations.transferProgress.queuedToast": "前面還有 {countText}，所以它得排隊等一下。可以在「操作佇列」裡找到它。",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "60a251d"
+    "sourceHash": "1bb57e1"
   },
   "fileOperations.transferProgress.queuedToastCount": "{count, plural, other {# 項操作}}",
   "@fileOperations.transferProgress.queuedToastCount": {
@@ -713,11 +713,11 @@
   },
   "fileOperations.rollbackConfirm.body": "這會刪除這項操作到目前為止寫入的每一個檔案。被它取代掉的檔案回不來了。Cmdr 會略過沒有把握的部分，所以可能會留下一些。",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "740e974"
+    "sourceHash": "1d3328f"
   },
   "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "這會把這項操作到目前為止移動過的東西全部移回原處。被它取代掉的檔案回不來了。Cmdr 會略過沒有把握的部分，所以可能有些會留在現在的地方。",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
-    "sourceHash": "a489eb2"
+    "sourceHash": "a058f98"
   },
   "fileOperations.rollbackConfirm.titleFinish": "要完成這項操作的復原嗎？",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -725,15 +725,15 @@
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "這會刪除這項操作建立的檔案和資料夾。Cmdr 會略過沒有把握的部分，所以可能會留下一些。",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
-    "sourceHash": "88584f4"
+    "sourceHash": "9afb3e2"
   },
   "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "這會把檔案移回它們原本的位置。Cmdr 會略過沒有把握的部分，所以可能有些會留在現在的地方。",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
-    "sourceHash": "7d55114"
+    "sourceHash": "5c3f276"
   },
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "這會把檔案原本的名稱改回去。Cmdr 會略過沒有把握的部分，所以可能有些會保留現在的名稱。",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
-    "sourceHash": "819690f"
+    "sourceHash": "37932e7"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "維持原樣",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
@@ -781,7 +781,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr 會略過沒有把握的部分，所以這些留了下來：",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "fb28a31"
+    "sourceHash": "bab6eb4"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} 維持原樣：它在 Cmdr 放好之後有過更動。",
   "@fileOperations.cancelRollback.reason.drift.named": {
@@ -793,11 +793,11 @@
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} 維持原樣：Cmdr 無法確認它有沒有更動過。",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
-    "sourceHash": "29c32b9"
+    "sourceHash": "3e553b2"
   },
   "fileOperations.cancelRollback.reason.unverifiable.counted": "有 {countText} 個{count, plural, other {項目}}維持原樣：Cmdr 無法確認它們有沒有更動過。",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "e40696b"
+    "sourceHash": "25fe620"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} 維持原樣：它原本的位置已經被別的東西佔走了。",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
@@ -817,19 +817,19 @@
   },
   "fileOperations.cancelRollback.reason.failed.named": "無法復原 {name}。它所在的磁碟機可能沒有連接，或是唯讀的。",
   "@fileOperations.cancelRollback.reason.failed.named": {
-    "sourceHash": "5c9d51d"
+    "sourceHash": "d22eda5"
   },
   "fileOperations.cancelRollback.reason.failed.counted": "無法復原 {countText} 個{count, plural, other {項目}}。它們所在的磁碟機可能沒有連接，或是唯讀的。",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "92c8b00"
+    "sourceHash": "fa172fb"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "無法刪除 {name}，這是留在目標位置的一個不完整副本。你可以放心刪掉它，Cmdr 之後往那裡傳輸時也會清掉它。",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
-    "sourceHash": "4aeaddc"
+    "sourceHash": "d47b49d"
   },
   "fileOperations.cancelRollback.stagedLeftover.counted": "無法刪除留在目標位置的 {countText} {count, plural, other {個不完整副本}}。你可以放心刪掉它們，Cmdr 之後往那裡傳輸時也會清掉它們。",
   "@fileOperations.cancelRollback.stagedLeftover.counted": {
-    "sourceHash": "becfef5"
+    "sourceHash": "6567e25"
   },
   "fileOperations.leftovers.stagingFolderKept": "Cmdr 在 {volumeName} 上找到一次還沒完成的移動留下的檔案，沒有動它們，全都留在名為「{folderName}」的隱藏資料夾裡。",
   "@fileOperations.leftovers.stagingFolderKept": {
@@ -861,7 +861,7 @@
   },
   "fileOperations.archivePassword.retryTitle": "還是不行",
   "@fileOperations.archivePassword.retryTitle": {
-    "sourceHash": "dd30abb"
+    "sourceHash": "a12d349"
   },
   "fileOperations.archivePassword.message": "<archive>{name}</archive> 有密碼保護。輸入密碼就能解鎖。",
   "@fileOperations.archivePassword.message": {
@@ -869,7 +869,7 @@
   },
   "fileOperations.archivePassword.retryMessage": "這組密碼沒能解鎖 <archive>{name}</archive>。再試一次吧。",
   "@fileOperations.archivePassword.retryMessage": {
-    "sourceHash": "88ef11a"
+    "sourceHash": "3d62c0c"
   },
   "fileOperations.archivePassword.inputAria": "壓縮檔密碼",
   "@fileOperations.archivePassword.inputAria": {
@@ -885,11 +885,11 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {資料夾名稱不能包含「/」或 Null 字元} other {檔名不能包含「/」或 Null 字元}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "4fa16ce"
+    "sourceHash": "1a3c594"
   },
   "fileOperations.validation.empty": "{kind, select, folder {資料夾名稱不能是空的} other {檔名不能是空的}}",
   "@fileOperations.validation.empty": {
-    "sourceHash": "e6acb43"
+    "sourceHash": "2a25343"
   },
   "fileOperations.validation.nameTooLong": "{kind, select, folder {資料夾名稱太長了（{byteCount}/{maxBytes} 位元組）} other {檔名太長了（{byteCount}/{maxBytes} 位元組）}}",
   "@fileOperations.validation.nameTooLong": {
@@ -901,7 +901,7 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "不允許更改副檔名（原本是「{oldExt}」）",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "0b2df1e"
+    "sourceHash": "e81362d"
   },
   "fileOperations.validation.conflict": "這個資料夾裡已經有「{name}」了",
   "@fileOperations.validation.conflict": {
@@ -909,11 +909,11 @@
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {這個資料夾名稱不能用} other {這個檔名不能用}}",
   "@fileOperations.validation.nameNotUsable": {
-    "sourceHash": "8482a7b"
+    "sourceHash": "6c50bb6"
   },
   "fileOperations.validation.pathEmpty": "路徑不能是空的",
   "@fileOperations.validation.pathEmpty": {
-    "sourceHash": "348eb60"
+    "sourceHash": "c7afbbc"
   },
   "fileOperations.validation.pathNotAbsolute": "路徑必須是絕對路徑（以 / 開頭）",
   "@fileOperations.validation.pathNotAbsolute": {

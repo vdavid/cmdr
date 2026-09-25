@@ -265,7 +265,7 @@ describe('StepBeta', () => {
     await typeEmail(mounted.target, 'tester@example.com')
     getSaveButton(mounted.target).click()
     await waitForAsync()
-    expect(mounted.target.textContent).toContain("didn't accept that address")
+    expect(mounted.target.textContent).toContain('didn’t accept that address')
 
     betaSignupMock.mockResolvedValueOnce({ kind: 'softFailure' as const })
     await typeEmail(mounted.target, 'other@example.com')

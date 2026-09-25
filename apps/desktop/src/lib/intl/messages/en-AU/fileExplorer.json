@@ -1,7 +1,7 @@
 {
-  "fileExplorer.pane.trashUnconfirmedToast": "Couldn''t confirm the file was moved to the Bin. The volume may be slow, but the file may still have been moved. Please check your Bin to be sure.",
+  "fileExplorer.pane.trashUnconfirmedToast": "Couldn’t confirm the file was moved to the Bin. The volume may be slow, but the file may still have been moved. Please check your Bin to be sure.",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "844ccc1"
+    "sourceHash": "6764112"
   },
   "fileExplorer.renameConflict.overwriteTrash": "Overwrite and bin old file",
   "@fileExplorer.renameConflict.overwriteTrash": {
@@ -19,17 +19,17 @@
   "@fileExplorer.navigation.renameFavoriteAriaLabel": {
     "sourceHash": "5f4fcbb"
   },
-  "fileExplorer.navigation.removeFavoriteFailed": "Couldn''t remove that favourite. Try again?",
+  "fileExplorer.navigation.removeFavoriteFailed": "Couldn’t remove that favourite. Try again?",
   "@fileExplorer.navigation.removeFavoriteFailed": {
-    "sourceHash": "181bf36"
+    "sourceHash": "a3c8665"
   },
-  "fileExplorer.navigation.renameFavoriteFailed": "Couldn''t rename that favourite. Try again?",
+  "fileExplorer.navigation.renameFavoriteFailed": "Couldn’t rename that favourite. Try again?",
   "@fileExplorer.navigation.renameFavoriteFailed": {
-    "sourceHash": "33e06cd"
+    "sourceHash": "cbf60d7"
   },
-  "fileExplorer.navigation.reorderFavoritesFailed": "Couldn''t reorder favourites. Try again?",
+  "fileExplorer.navigation.reorderFavoritesFailed": "Couldn’t reorder favourites. Try again?",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
-    "sourceHash": "1b16941"
+    "sourceHash": "875befb"
   },
   "fileExplorer.navigation.favoritesAddCurrent": "Add current folder to favourites",
   "@fileExplorer.navigation.favoritesAddCurrent": {
@@ -39,9 +39,9 @@
   "@fileExplorer.navigation.favoritesAlreadyAdded": {
     "sourceHash": "731a929"
   },
-  "fileExplorer.navigation.favoritesCantAddHere": "This folder can''t be a favourite: favourites only work on disks and mounted shares",
+  "fileExplorer.navigation.favoritesCantAddHere": "This folder can’t be a favourite: favourites only work on disks and mounted shares",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "10c98b3"
+    "sourceHash": "86564ea"
   },
   "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {See favourites} one {See {count} favourite} other {See {count} favourites}}",
   "@fileExplorer.navigation.seeFavorites": {

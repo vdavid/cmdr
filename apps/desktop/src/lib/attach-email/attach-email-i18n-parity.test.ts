@@ -48,6 +48,6 @@ describe('attach-email copy parity (en)', () => {
   })
 
   it('resolves the validation message', () => {
-    expect(tString('common.attachEmailInvalid')).toBe("That doesn't look like an email address")
+    expect(tString('common.attachEmailInvalid')).toBe('That doesn’t look like an email address')
   })
 })

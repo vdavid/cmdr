@@ -37,7 +37,7 @@
   },
   "queue.row.status": "{status, select, queued {En attente} running {En cours} paused {En pause} done {Terminé} cancelled {Annulé} failed {N’a pas pu se terminer} other {En cours}}",
   "@queue.row.status": {
-    "sourceHash": "8e9ce48"
+    "sourceHash": "d7a7517"
   },
   "queue.row.statusAwaitingAnswer": "Réponse requise",
   "@queue.row.statusAwaitingAnswer": {
@@ -118,7 +118,7 @@
   },
   "queue.failureToast.title": "{type, select, copy {La copie n’a pas pu se terminer} move {Le déplacement n’a pas pu se terminer} delete {La suppression n’a pas pu se terminer} trash {Le placement dans la corbeille n’a pas pu se terminer} rename {Le renommage n’a pas pu se terminer} create_folder {La création du dossier n’a pas pu se terminer} create_file {La création du fichier n’a pas pu se terminer} archive_edit {La modification de l’archive n’a pas pu se terminer} other {N’a pas pu se terminer}}",
   "@queue.failureToast.title": {
-    "sourceHash": "a55f5df"
+    "sourceHash": "b5f2b47"
   },
   "queue.failureToast.action": "Afficher dans la file d’attente des opérations",
   "@queue.failureToast.action": {
@@ -126,11 +126,11 @@
   },
   "queue.failureToast.summary": "{count, plural, one {{countText} opération n’a pas pu se terminer} many {{countText} opérations n’ont pas pu se terminer} other {{countText} opérations n’ont pas pu se terminer}}",
   "@queue.failureToast.summary": {
-    "sourceHash": "6207914"
+    "sourceHash": "a55d85a"
   },
   "queue.chip.failed": "{count, plural, one {{countText} opération n’a pas pu se terminer} many {{countText} opérations n’ont pas pu se terminer} other {{countText} opérations n’ont pas pu se terminer}}. Ouvrez la file d’attente des opérations pour savoir pourquoi.",
   "@queue.chip.failed": {
-    "sourceHash": "336ad46"
+    "sourceHash": "9c0036b"
   },
   "queue.chip.ariaLabel": "{label}, {percentText} pour cent. Ouvrez la file d’attente des opérations.",
   "@queue.chip.ariaLabel": {

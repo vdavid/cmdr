@@ -422,7 +422,7 @@
   },
   "menu.help.whatsNew": "Újdonságok",
   "@menu.help.whatsNew": {
-    "sourceHash": "135e912"
+    "sourceHash": "37e6112"
   },
   "menu.help.sendFeedback": "Visszajelzés küldése…",
   "@menu.help.sendFeedback": {
@@ -566,7 +566,7 @@
   },
   "menu.mediaIndex.excludeFolder": "Képek indexelésének tiltása itt",
   "@menu.mediaIndex.excludeFolder": {
-    "sourceHash": "811f28c"
+    "sourceHash": "9119500"
   },
   "menu.mediaIndex.includeFolder": "Képek indexelésének engedélyezése itt",
   "@menu.mediaIndex.includeFolder": {

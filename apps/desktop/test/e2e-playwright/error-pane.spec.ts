@@ -21,8 +21,8 @@ const IS_LINUX = os.platform() === 'linux'
 
 // `listing_error_from_errno` maps specific macOS errnos to specific reasons.
 // The non-macOS fallback maps every errno to `CouldntReadUnknown`, hence one title.
-const ETIMEDOUT_TITLE = IS_LINUX ? "Couldn't read this folder" : 'Connection timed out'
-const EACCES_TITLE = IS_LINUX ? "Couldn't read this folder" : 'No permission'
+const ETIMEDOUT_TITLE = IS_LINUX ? 'Couldn’t read this folder' : 'Connection timed out'
+const EACCES_TITLE = IS_LINUX ? 'Couldn’t read this folder' : 'No permission'
 
 // Recreate fixtures before each test so previous test suites (e.g. conflict tests)
 // don't leave the fixture directory in a non-standard layout.

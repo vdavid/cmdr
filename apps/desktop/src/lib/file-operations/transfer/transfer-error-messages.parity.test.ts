@@ -65,7 +65,7 @@ const cases: Case[] = [
     name: 'source_not_found (copy)',
     error: { type: 'source_not_found', path: '/p' },
     expected: {
-      title: "Couldn't find the file",
+      title: 'Couldn’t find the file',
       message: 'The file or folder you tried to copy no longer exists.',
       suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
     },
@@ -75,7 +75,7 @@ const cases: Case[] = [
     error: { type: 'source_not_found', path: '/p' },
     op: 'trash',
     expected: {
-      title: "Couldn't find the file",
+      title: 'Couldn’t find the file',
       message: 'The file or folder you tried to move to trash no longer exists.',
       suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
     },
@@ -88,9 +88,9 @@ const cases: Case[] = [
     name: 'destination_not_found (copy)',
     error: { type: 'destination_not_found', path: '/photos' },
     expected: {
-      title: "Couldn't find the destination folder",
+      title: 'Couldn’t find the destination folder',
       message:
-        "The folder you're copying into isn't there any more, so there was nowhere to put your files. The originals are untouched.",
+        'The folder you’re copying into isn’t there any more, so there was nowhere to put your files. The originals are untouched.',
       suggestion:
         'It may have been renamed or removed, or the drive may have disconnected. Pick another destination, or open the folder again and retry.',
     },
@@ -100,9 +100,9 @@ const cases: Case[] = [
     error: { type: 'destination_not_found', path: '/photos' },
     op: 'move',
     expected: {
-      title: "Couldn't find the destination folder",
+      title: 'Couldn’t find the destination folder',
       message:
-        "The folder you're moving into isn't there any more, so there was nowhere to put your files. The originals are untouched.",
+        'The folder you’re moving into isn’t there any more, so there was nowhere to put your files. The originals are untouched.',
       suggestion:
         'It may have been renamed or removed, or the drive may have disconnected. Pick another destination, or open the folder again and retry.',
     },
@@ -112,7 +112,7 @@ const cases: Case[] = [
     error: { type: 'destination_exists', path: '/p' },
     expected: {
       title: 'File already exists',
-      message: "There's already a file with this name at the destination.",
+      message: 'There’s already a file with this name at the destination.',
       suggestion: 'Choose a different name or location, or delete the existing file first.',
     },
   },
@@ -121,8 +121,8 @@ const cases: Case[] = [
     error: { type: 'destination_inside_source', source: '/a', destination: '/a/b' },
     op: 'move',
     expected: {
-      title: "Can't move a folder into itself",
-      message: "You're trying to move a folder into one of its own subfolders.",
+      title: 'Can’t move a folder into itself',
+      message: 'You’re trying to move a folder into one of its own subfolders.',
       suggestion: 'Choose a destination outside of the folder you are moving.',
     },
   },
@@ -133,7 +133,7 @@ const cases: Case[] = [
     expected: {
       title: 'Two items have the same name',
       message:
-        "You picked two items called invoices, so they'd both land in the same spot: /a/invoices and /b/invoices.",
+        'You picked two items called invoices, so they’d both land in the same spot: /a/invoices and /b/invoices.',
       suggestion: 'Move them one at a time, or rename one first.',
     },
   },
@@ -144,7 +144,7 @@ const cases: Case[] = [
     expected: {
       title: 'Two items have the same name',
       message:
-        "You picked two items called invoices, so they'd both land in the same spot: /a/invoices and /b/invoices.",
+        'You picked two items called invoices, so they’d both land in the same spot: /a/invoices and /b/invoices.',
       suggestion: 'Copy them one at a time, or rename one first.',
     },
   },
@@ -210,10 +210,10 @@ const cases: Case[] = [
     error: { type: 'move_not_confirmed', path: '/p', errno: 5, volumeName: 'Fältkamera' },
     op: 'move',
     expected: {
-      title: "Couldn't confirm the move",
+      title: 'Couldn’t confirm the move',
       message:
-        "Cmdr couldn't confirm the moved files were saved on Fältkamera, so it kept your originals where they were.",
-      suggestion: "Have a look at the destination, then try the move again. Your originals haven't moved.",
+        'Cmdr couldn’t confirm the moved files were saved on Fältkamera, so it kept your originals where they were.',
+      suggestion: 'Have a look at the destination, then try the move again. Your originals haven’t moved.',
     },
   },
   {
@@ -221,10 +221,10 @@ const cases: Case[] = [
     error: { type: 'move_not_confirmed', path: '/p', errno: null, volumeName: null },
     op: 'move',
     expected: {
-      title: "Couldn't confirm the move",
+      title: 'Couldn’t confirm the move',
       message:
-        "Cmdr couldn't confirm the moved files were saved at the destination, so it kept your originals where they were.",
-      suggestion: "Have a look at the destination, then try the move again. Your originals haven't moved.",
+        'Cmdr couldn’t confirm the moved files were saved at the destination, so it kept your originals where they were.',
+      suggestion: 'Have a look at the destination, then try the move again. Your originals haven’t moved.',
     },
   },
   {
@@ -233,7 +233,7 @@ const cases: Case[] = [
     op: 'trash',
     expected: {
       title: 'Trash not supported',
-      message: "This volume doesn't support trash.",
+      message: 'This volume doesn’t support trash.',
       suggestion: 'Use ⇧F8 to delete permanently instead.',
     },
   },
@@ -252,8 +252,8 @@ const cases: Case[] = [
     error: { type: 'read_error', path: '/p', message: 'm' },
     op: 'move',
     expected: {
-      title: "Couldn't move",
-      message: "Couldn't read from the source.",
+      title: 'Couldn’t move',
+      message: 'Couldn’t read from the source.',
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -261,8 +261,8 @@ const cases: Case[] = [
     name: 'write_error (copy)',
     error: { type: 'write_error', path: '/p', message: 'm' },
     expected: {
-      title: "Couldn't copy",
-      message: "Couldn't write to the destination.",
+      title: 'Couldn’t copy',
+      message: 'Couldn’t write to the destination.',
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -280,7 +280,7 @@ const cases: Case[] = [
     error: { type: 'invalid_name', path: '/p', message: 'm' },
     expected: {
       title: 'Invalid file name',
-      message: "/p has a name the destination can't store.",
+      message: '/p has a name the destination can’t store.',
       suggestion:
         'Rename it to something shorter and plainer, then try again. Some destinations also refuse reserved names like CON, NUL, or LPT1.',
     },
@@ -294,7 +294,7 @@ const cases: Case[] = [
     error: { type: 'invalid_name', path: '/share/<b>"a&b"</b>.json', message: 'm' },
     expected: {
       title: 'Invalid file name',
-      message: '/share/&lt;b&gt;"a&amp;b"&lt;/b&gt;.json has a name the destination can\'t store.',
+      message: '/share/&lt;b&gt;"a&amp;b"&lt;/b&gt;.json has a name the destination can’t store.',
       suggestion:
         'Rename it to something shorter and plainer, then try again. Some destinations also refuse reserved names like CON, NUL, or LPT1.',
     },
@@ -304,8 +304,8 @@ const cases: Case[] = [
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'delete',
     expected: {
-      title: "Couldn't delete",
-      message: "Couldn't delete the file.",
+      title: 'Couldn’t delete',
+      message: 'Couldn’t delete the file.',
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -320,8 +320,8 @@ const cases: Case[] = [
       refusedFolder: null,
     },
     expected: {
-      title: "Couldn't access this location",
-      message: "You don't have permission to copy files here.",
+      title: 'Couldn’t access this location',
+      message: 'You don’t have permission to copy files here.',
       suggestion:
         'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
     },
@@ -339,8 +339,8 @@ const cases: Case[] = [
     op: 'delete',
     mac: true,
     expected: {
-      title: "Couldn't access this location",
-      message: "You don't have permission to delete files here.",
+      title: 'Couldn’t access this location',
+      message: 'You don’t have permission to delete files here.',
       suggestion:
         'Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.',
     },
@@ -358,8 +358,8 @@ const cases: Case[] = [
     op: 'delete',
     mac: false,
     expected: {
-      title: "Couldn't access this location",
-      message: "You don't have permission to delete files here.",
+      title: 'Couldn’t access this location',
+      message: 'You don’t have permission to delete files here.',
       suggestion:
         'Check that you have write access to the parent folder. The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
     },
@@ -380,8 +380,8 @@ const cases: Case[] = [
     op: 'move',
     mac: true,
     expected: {
-      title: "Couldn't access this location",
-      message: "Your macOS user can't change /Applications/PixInsight/src/scripts/Toolbox.",
+      title: 'Couldn’t access this location',
+      message: 'Your macOS user can’t change /Applications/PixInsight/src/scripts/Toolbox.',
       suggestion:
         'Changing it needs administrator rights. To give your own account access, select the folder in Finder, choose Get Info, and look under Sharing & Permissions.',
     },
@@ -399,10 +399,10 @@ const cases: Case[] = [
     op: 'copy',
     mac: false,
     expected: {
-      title: "Couldn't access this location",
-      message: "Your macOS user can't change /srv/locked.",
+      title: 'Couldn’t access this location',
+      message: 'Your macOS user can’t change /srv/locked.',
       suggestion:
-        "Changing it needs administrator rights. To give your own account access, adjust the folder's permissions (for example with chmod) and try again.",
+        'Changing it needs administrator rights. To give your own account access, adjust the folder’s permissions (for example with chmod) and try again.',
     },
   },
   // `EPERM`: the OS itself. Administrator rights change nothing, so the advice must
@@ -420,10 +420,10 @@ const cases: Case[] = [
     op: 'delete',
     mac: true,
     expected: {
-      title: "Couldn't access this location",
-      message: "You don't have permission to delete files here.",
+      title: 'Couldn’t access this location',
+      message: 'You don’t have permission to delete files here.',
       suggestion:
-        "macOS protects this one itself, so administrator rights won't change it. The item may be locked: select it in Finder, choose Get Info, and uncheck Locked.",
+        'macOS protects this one itself, so administrator rights won’t change it. The item may be locked: select it in Finder, choose Get Info, and uncheck Locked.',
     },
   },
   {
@@ -439,10 +439,10 @@ const cases: Case[] = [
     op: 'delete',
     mac: false,
     expected: {
-      title: "Couldn't access this location",
-      message: "You don't have permission to delete files here.",
+      title: 'Couldn’t access this location',
+      message: 'You don’t have permission to delete files here.',
       suggestion:
-        "The system protects this one itself, so administrator rights won't change it. The item may carry a protection flag that has to be cleared first.",
+        'The system protects this one itself, so administrator rights won’t change it. The item may carry a protection flag that has to be cleared first.',
     },
   },
   {
@@ -495,7 +495,7 @@ const cases: Case[] = [
     mac: true,
     expected: {
       title: 'File is locked',
-      message: "The file is locked and can't be deleted.",
+      message: 'The file is locked and can’t be deleted.',
       suggestion: 'Unlock it in Finder (Get Info > uncheck Locked) and try again.',
     },
   },
@@ -506,7 +506,7 @@ const cases: Case[] = [
     mac: false,
     expected: {
       title: 'File is locked',
-      message: "The file is locked and can't be deleted.",
+      message: 'The file is locked and can’t be deleted.',
       suggestion:
         'The file may be protected. Check its permissions (e.g. via chmod or your file manager) and try again.',
     },
@@ -522,7 +522,7 @@ const cases: Case[] = [
     expected: {
       title: 'Your new file is under a different name',
       message:
-        "The new /Volumes/nas/notes.txt is written and complete, but the destination wouldn't let it take that name, and the file it was replacing is already gone. The new one is at /Volumes/nas/notes (recovered).txt.",
+        'The new /Volumes/nas/notes.txt is written and complete, but the destination wouldn’t let it take that name, and the file it was replacing is already gone. The new one is at /Volumes/nas/notes (recovered).txt.',
       suggestion:
         'Open /Volumes/nas/notes (recovered).txt to check it, then rename it. If the destination is a network share or a phone, reconnect it first and the rename will go through.',
     },
@@ -548,7 +548,7 @@ const cases: Case[] = [
     error: { type: 'source_not_found', path: '/p' },
     op: 'move',
     expected: {
-      title: "Couldn't find the file",
+      title: 'Couldn’t find the file',
       message: 'The file or folder you tried to move no longer exists.',
       suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
     },
@@ -558,7 +558,7 @@ const cases: Case[] = [
     error: { type: 'source_not_found', path: '/p' },
     op: 'delete',
     expected: {
-      title: "Couldn't find the file",
+      title: 'Couldn’t find the file',
       message: 'The file or folder you tried to delete no longer exists.',
       suggestion: 'It may have been moved, renamed, or deleted. Try refreshing the file list.',
     },
@@ -568,8 +568,8 @@ const cases: Case[] = [
     error: { type: 'destination_inside_source', source: '/a', destination: '/a/b' },
     op: 'copy',
     expected: {
-      title: "Can't copy a folder into itself",
-      message: "You're trying to copy a folder into one of its own subfolders.",
+      title: 'Can’t copy a folder into itself',
+      message: 'You’re trying to copy a folder into one of its own subfolders.',
       suggestion: 'Choose a destination outside of the folder you are copying.',
     },
   },
@@ -628,8 +628,8 @@ const cases: Case[] = [
     error: { type: 'read_error', path: '/p', message: 'm' },
     op: 'trash',
     expected: {
-      title: "Couldn't move to trash",
-      message: "Couldn't read from the source.",
+      title: 'Couldn’t move to trash',
+      message: 'Couldn’t read from the source.',
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -638,8 +638,8 @@ const cases: Case[] = [
     error: { type: 'write_error', path: '/p', message: 'm' },
     op: 'move',
     expected: {
-      title: "Couldn't move",
-      message: "Couldn't write to the destination.",
+      title: 'Couldn’t move',
+      message: 'Couldn’t write to the destination.',
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -648,8 +648,8 @@ const cases: Case[] = [
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'copy',
     expected: {
-      title: "Couldn't copy",
-      message: "Couldn't copy the file.",
+      title: 'Couldn’t copy',
+      message: 'Couldn’t copy the file.',
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -658,8 +658,8 @@ const cases: Case[] = [
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'move',
     expected: {
-      title: "Couldn't move",
-      message: "Couldn't move the file.",
+      title: 'Couldn’t move',
+      message: 'Couldn’t move the file.',
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -668,8 +668,8 @@ const cases: Case[] = [
     error: { type: 'io_error', path: '/p', message: 'm' },
     op: 'trash',
     expected: {
-      title: "Couldn't move to trash",
-      message: "Couldn't move the file to trash.",
+      title: 'Couldn’t move to trash',
+      message: 'Couldn’t move the file to trash.',
       suggestion: 'Try again. If the problem persists, check the technical details below.',
     },
   },
@@ -685,8 +685,8 @@ const cases: Case[] = [
     },
     op: 'move',
     expected: {
-      title: "Couldn't access this location",
-      message: "You don't have permission to move files here.",
+      title: 'Couldn’t access this location',
+      message: 'You don’t have permission to move files here.',
       suggestion:
         'Check that you have write access to the destination folder. You may need to unlock the device or change folder permissions.',
     },
@@ -704,8 +704,8 @@ const cases: Case[] = [
     op: 'trash',
     mac: true,
     expected: {
-      title: "Couldn't access this location",
-      message: "You don't have permission to move files to the trash here.",
+      title: 'Couldn’t access this location',
+      message: 'You don’t have permission to move files to the trash here.',
       suggestion:
         'Check that you have write access to the parent folder. The file may be locked. Unlock it in Finder (Get Info > uncheck Locked) and try again.',
     },
@@ -718,7 +718,7 @@ const cases: Case[] = [
     error: { type: 'totally_unknown' } as unknown as WriteOperationError,
     op: 'copy',
     expected: {
-      title: "Couldn't copy",
+      title: 'Couldn’t copy',
       message: 'Something went wrong while copying.',
       suggestion: 'Try again, or check the technical details below for more information.',
     },
@@ -728,7 +728,7 @@ const cases: Case[] = [
     error: { type: 'totally_unknown' } as unknown as WriteOperationError,
     op: 'move',
     expected: {
-      title: "Couldn't move",
+      title: 'Couldn’t move',
       message: 'Something went wrong while moving.',
       suggestion: 'Try again, or check the technical details below for more information.',
     },
@@ -738,7 +738,7 @@ const cases: Case[] = [
     error: { type: 'totally_unknown' } as unknown as WriteOperationError,
     op: 'delete',
     expected: {
-      title: "Couldn't delete",
+      title: 'Couldn’t delete',
       message: 'Something went wrong while deleting.',
       suggestion: 'Try again, or check the technical details below for more information.',
     },
@@ -748,7 +748,7 @@ const cases: Case[] = [
     error: { type: 'totally_unknown' } as unknown as WriteOperationError,
     op: 'trash',
     expected: {
-      title: "Couldn't move to trash",
+      title: 'Couldn’t move to trash',
       message: 'Something went wrong while moving to trash.',
       suggestion: 'Try again, or check the technical details below for more information.',
     },
@@ -764,7 +764,7 @@ const cases: Case[] = [
     },
     expected: {
       title: 'File too large for this drive',
-      message: `movie.mkv is ${bigFileSize}, but this drive is formatted as FAT32, which can't store files larger than ${fatMaxSize}.`,
+      message: `movie.mkv is ${bigFileSize}, but this drive is formatted as FAT32, which can’t store files larger than ${fatMaxSize}.`,
       suggestion: 'To store files this large, use a drive formatted as exFAT, which has no such limit.',
     },
   },
@@ -780,11 +780,11 @@ const cases: Case[] = [
       message:
         'A folder took the name /dst/thing, so your file is now at /dst/thing (recovered). Nothing was thrown away. The file or folder you tried to copy no longer exists.',
       suggestion:
-        "Open /dst/thing (recovered) to check it. Once you've moved the folder out of the way, you can rename your file back. It may have been moved, renamed, or deleted. Try refreshing the file list.",
+        'Open /dst/thing (recovered) to check it. Once you’ve moved the folder out of the way, you can rename your file back. It may have been moved, renamed, or deleted. Try refreshing the file list.',
     },
   },
   {
-    name: "originals_kept_aside (many, keeping the cause's own advice)",
+    name: 'originals_kept_aside (many, keeping the cause’s own advice)',
     error: {
       type: 'originals_kept_aside',
       cause: { type: 'insufficient_space', required: REQUIRED, available: AVAILABLE, volumeName: null },
@@ -797,7 +797,7 @@ const cases: Case[] = [
       title: 'Your file is under a new name',
       message: `Folders took the names of 2 of your files, so those files are now under new names. Nothing was thrown away; the technical details below list every one. The destination needs ${requiredSize} but only has ${availableSize} available.`,
       suggestion:
-        "Check the details below for where each file is. Once you've moved the folders out of the way, you can rename them back. Free up some space on the destination by deleting unnecessary files, or choose a different location.",
+        'Check the details below for where each file is. Once you’ve moved the folders out of the way, you can rename them back. Free up some space on the destination by deleting unnecessary files, or choose a different location.',
     },
   },
   {
@@ -815,7 +815,7 @@ const cases: Case[] = [
     },
     expected: {
       title: 'Some files are too large for this drive',
-      message: `3 files are too large for this drive, which is formatted as FAT32 and can't store files larger than ${fatMaxSize}.`,
+      message: `3 files are too large for this drive, which is formatted as FAT32 and can’t store files larger than ${fatMaxSize}.`,
       suggestion: 'To store files this large, use a drive formatted as exFAT, which has no such limit.',
     },
   },

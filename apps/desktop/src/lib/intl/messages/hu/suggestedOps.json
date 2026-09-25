@@ -13,7 +13,7 @@
   },
   "suggestedOps.loadFailed": "A Cmdr nem tudta beolvasni a javaslatokat. Zárd be, és nyisd meg újra.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "3d3af5a"
+    "sourceHash": "ef0da3e"
   },
   "suggestedOps.agentReason": "Az AI indoka",
   "@suggestedOps.agentReason": {
@@ -57,7 +57,7 @@
   },
   "suggestedOps.irreversible": "Ezt nem lehet visszavonni",
   "@suggestedOps.irreversible": {
-    "sourceHash": "485d5a3"
+    "sourceHash": "b583829"
   },
   "suggestedOps.folderWillBeCreated": "A Cmdr létrehozza ezt a mappát",
   "@suggestedOps.folderWillBeCreated": {
@@ -69,7 +69,7 @@
   },
   "suggestedOps.destinationUnknown": "A Cmdr nem tudta ellenőrizni a célmappát",
   "@suggestedOps.destinationUnknown": {
-    "sourceHash": "e1293c5"
+    "sourceHash": "dc78d1d"
   },
   "suggestedOps.fromPattern": "Minta alapján találva",
   "@suggestedOps.fromPattern": {
@@ -113,7 +113,7 @@
   },
   "suggestedOps.filesLoadFailed": "A Cmdr nem tudta betölteni ezeket a fájlokat.",
   "@suggestedOps.filesLoadFailed": {
-    "sourceHash": "c61d214"
+    "sourceHash": "01f1b86"
   },
   "suggestedOps.retryFiles": "Próbáld újra",
   "@suggestedOps.retryFiles": {
@@ -121,11 +121,11 @@
   },
   "suggestedOps.decisionNotRecorded": "A Cmdr nem tudta menteni a válaszodat. Próbáld újra.",
   "@suggestedOps.decisionNotRecorded": {
-    "sourceHash": "d4ee9cf"
+    "sourceHash": "9eae594"
   },
   "suggestedOps.approvalUnsure": "A Cmdr nem biztos benne, hogy a jóváhagyás átment. Mielőtt újra jóváhagyod, nézd meg a műveleti sort.",
   "@suggestedOps.approvalUnsure": {
-    "sourceHash": "0cd408c"
+    "sourceHash": "fba515a"
   },
   "suggestedOps.indicatorTooltip": "AI-javaslatok várnak rád. Kattints az áttekintésükhöz.",
   "@suggestedOps.indicatorTooltip": {

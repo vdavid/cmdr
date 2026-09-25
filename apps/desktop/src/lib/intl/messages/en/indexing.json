@@ -262,12 +262,12 @@
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string is how much time it says is left, in the form it uses for longer waits."
   },
 
-  "indexing.rescan.staleIndex": "Your drive index is outdated. It looks like the app hasn''t run for a while. Running a fresh scan to catch up.",
+  "indexing.rescan.staleIndex": "Your drive index is outdated. It looks like the app hasn’t run for a while. Running a fresh scan to catch up.",
   "@indexing.rescan.staleIndex": {
     "description": "Info toast explaining why Cmdr is rescanning the drive: the index went stale because the app wasn't open for a while. Calm and explanatory."
   },
 
-  "indexing.rescan.journalGap": "The system''s file change log doesn''t go back far enough. Running a fresh scan to rebuild the index.",
+  "indexing.rescan.journalGap": "The system’s file change log doesn’t go back far enough. Running a fresh scan to rebuild the index.",
   "@indexing.rescan.journalGap": {
     "description": "Info toast explaining why Cmdr is rescanning: the macOS file-change journal no longer covers the gap since last run. Calm and explanatory."
   },
@@ -277,7 +277,7 @@
     "description": "Info toast explaining why Cmdr is doing a full rescan rather than replaying changes: too many changes accumulated since last run. Calm and explanatory."
   },
 
-  "indexing.rescan.watcherStartFailed": "Couldn''t start the file change watcher. Running a fresh scan to get the index up to date.",
+  "indexing.rescan.watcherStartFailed": "Couldn’t start the file change watcher. Running a fresh scan to get the index up to date.",
   "@indexing.rescan.watcherStartFailed": {
     "description": "Info toast explaining why Cmdr is rescanning: the live file-change watcher couldn't start, so it falls back to a full scan. Calm and explanatory; avoid the words 'error' and 'failed'."
   },
@@ -287,7 +287,7 @@
     "description": "Info toast explaining why Cmdr is rescanning: a burst of filesystem activity overflowed an internal buffer. Calm and explanatory."
   },
 
-  "indexing.rescan.incompletePreviousScan": "The previous scan didn''t finish (the app may have been closed). Restarting the scan from scratch.",
+  "indexing.rescan.incompletePreviousScan": "The previous scan didn’t finish (the app may have been closed). Restarting the scan from scratch.",
   "@indexing.rescan.incompletePreviousScan": {
     "description": "Info toast explaining why Cmdr is rescanning: the last scan didn't complete (the app likely closed mid-scan). Calm and explanatory."
   },
@@ -325,16 +325,16 @@
   "@indexing.firstConnect.enable": {
     "description": "Primary button in the first-connect notification. Turns on indexing for this drive and starts the scan."
   },
-  "indexing.firstConnect.silenceDrive": "Don''t ask again for this drive",
+  "indexing.firstConnect.silenceDrive": "Don’t ask again for this drive",
   "@indexing.firstConnect.silenceDrive": {
     "description": "Button in the first-connect notification that stops Cmdr asking about THIS drive again (but keeps asking about others)."
   },
-  "indexing.firstConnect.silenceAll": "Don''t ask again for any drives",
+  "indexing.firstConnect.silenceAll": "Don’t ask again for any drives",
   "@indexing.firstConnect.silenceAll": {
     "description": "Button in the first-connect notification that stops Cmdr asking about indexing for ANY drive (turns the per-drive prompt off in Settings)."
   },
 
-  "indexing.staleDialog.title": "This drive''s index may be out of date",
+  "indexing.staleDialog.title": "This drive’s index may be out of date",
   "@indexing.staleDialog.title": {
     "description": "Title of the one-time dialog shown the first time any external drive''s index goes stale (the drive was disconnected, so changes may have been missed). Never use the words ''error'' or ''failed''.",
     "screenshot": "drive-index-stale-default.png"
@@ -347,11 +347,11 @@
     },
     "screenshot": "drive-index-stale-default.png"
   },
-  "indexing.staleDialog.titlePhone": "This phone''s index may be out of date",
+  "indexing.staleDialog.titlePhone": "This phone’s index may be out of date",
   "@indexing.staleDialog.titlePhone": {
     "description": "Title of the one-time stale-index dialog when the first index to go stale belongs to an Android phone connected over USB debugging (ADB), which never reports its own file changes. The phone version of indexing.staleDialog.title. Never use the words ''error'' or ''failed''."
   },
-  "indexing.staleDialog.bodyPhone": "{name} doesn''t tell Cmdr when its files change, so Cmdr keeps its index current with the changes Cmdr makes itself. Changes made on the phone, like new photos, show up in folder sizes and search after a rescan. The yellow status next to the phone stays as a reminder.",
+  "indexing.staleDialog.bodyPhone": "{name} doesn’t tell Cmdr when its files change, so Cmdr keeps its index current with the changes Cmdr makes itself. Changes made on the phone, like new photos, show up in folder sizes and search after a rescan. The yellow status next to the phone stays as a reminder.",
   "@indexing.staleDialog.bodyPhone": {
     "description": "Body of the one-time stale-index dialog for an Android phone connected over USB debugging (ADB). The phone is still plugged in: its index reads as possibly out of date because the phone never reports changes made on it. Cmdr keeps the index current for the copies, moves, and deletes Cmdr does itself; anything changed on the phone appears after a rescan. The yellow dot beside the phone stays on for this reason. The phone version of indexing.staleDialog.body; it must not mention disconnecting. Calm and reassuring.",
     "placeholders": {
@@ -406,7 +406,7 @@
     "screenshot": "indexing-checklist.png",
     "screenshotNote": "The drive-indexing checklist, pictured here. Your string belongs to the image-indexing row that appears beside these drive rows while Cmdr reads image contents: its title, progress, speed, or a paused or waiting state."
   },
-  "indexing.enrich.pausedIdle": "Waiting until you''re idle",
+  "indexing.enrich.pausedIdle": "Waiting until you’re idle",
   "@indexing.enrich.pausedIdle": {
     "description": "Status shown for a network (NAS) drive whose image indexing paused because you're actively using the app; it resumes when you stop. Reassuring, not an error.",
     "screenshot": "indexing-checklist.png",

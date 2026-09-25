@@ -37,11 +37,11 @@
   },
   "search.notAFolderToast": "Os resultados da busca não são uma pasta. Cole em uma pasta de verdade.",
   "@search.notAFolderToast": {
-    "sourceHash": "c449358"
+    "sourceHash": "a801255"
   },
   "search.searchableFolder.disabledTooltip": "A pasta atual mostra resultados de busca, que não dá para buscar dentro. Abra uma pasta de verdade primeiro.",
   "@search.searchableFolder.disabledTooltip": {
-    "sourceHash": "a90d24e"
+    "sourceHash": "42e599d"
   },
   "search.imageResults.title": "Texto nas imagens",
   "@search.imageResults.title": {
@@ -61,7 +61,7 @@
   },
   "search.imageResults.notIndexed": "As imagens deste disco ainda não foram indexadas. Elas poderão ser buscadas assim que a indexação for executada.",
   "@search.imageResults.notIndexed": {
-    "sourceHash": "287b58e"
+    "sourceHash": "aa3cc36"
   },
   "search.imageResults.empty": "Nenhuma imagem contém este texto.",
   "@search.imageResults.empty": {
@@ -121,7 +121,7 @@
   },
   "search.walkHandoff.stoppedShort": "Os resultados de {label} podem estar curtos: o Cmdr não percorreu tudo.",
   "@search.walkHandoff.stoppedShort": {
-    "sourceHash": "3a2a5dd"
+    "sourceHash": "d196ce2"
   },
   "search.walkHandoff.superseded": "O Cmdr parou de adicionar aos resultados de {label}, porque sua nova busca assumiu.",
   "@search.walkHandoff.superseded": {
@@ -129,23 +129,23 @@
   },
   "search.coverage.uncovered.local": "O Cmdr ainda não indexou {drive}, então esta busca ignorou:",
   "@search.coverage.uncovered.local": {
-    "sourceHash": "3b75a63"
+    "sourceHash": "8fe8ce1"
   },
   "search.coverage.uncovered.network": "O Cmdr só indexa discos de rede quando você pede, então esta busca ignorou:",
   "@search.coverage.uncovered.network": {
-    "sourceHash": "5a2794a"
+    "sourceHash": "0066012"
   },
   "search.coverage.uncovered.unavailable": "O Cmdr ainda não consegue buscar em {drive}, então esta busca ignorou:",
   "@search.coverage.uncovered.unavailable": {
-    "sourceHash": "0a3f94b"
+    "sourceHash": "6f9cb5b"
   },
   "search.coverage.uncovered.indexing": "O Cmdr ainda está indexando {drive} e não chegou a estas pastas, então esta busca as pulou:",
   "@search.coverage.uncovered.indexing": {
-    "sourceHash": "f5995ea"
+    "sourceHash": "9cf6003"
   },
   "search.coverage.unresolved": "{count, plural, one {O índice do Cmdr ainda não cobre esta pasta, então a busca a ignorou:} many {O índice do Cmdr ainda não cobre estas pastas, então a busca as ignorou:} other {O índice do Cmdr ainda não cobre estas pastas, então a busca as ignorou:}}",
   "@search.coverage.unresolved": {
-    "sourceHash": "8d9517e"
+    "sourceHash": "6afa798"
   },
   "search.coverage.walk.cancelled": "Você parou esta busca, então vê o que o Cmdr tinha encontrado até ali. Tudo o que ele leu pelo caminho fica salvo, e uma nova busca continua dali.",
   "@search.coverage.walk.cancelled": {
@@ -165,7 +165,7 @@
   },
   "search.coverage.denied": "{count, plural, one {O Cmdr não teve permissão para olhar dentro desta pasta, então nada dela está nos resultados:} many {O Cmdr não teve permissão para olhar dentro destas pastas, então nada delas está nos resultados:} other {O Cmdr não teve permissão para olhar dentro destas pastas, então nada delas está nos resultados:}}",
   "@search.coverage.denied": {
-    "sourceHash": "2c0eb72"
+    "sourceHash": "c71fc2e"
   },
   "search.coverage.deniedFullDiskAccess": "Com acesso total ao disco, o Cmdr consegue buscar em pastas como estas.",
   "@search.coverage.deniedFullDiskAccess": {
@@ -177,7 +177,7 @@
   },
   "search.coverage.declined": "{count, plural, one {O Cmdr não olha dentro de pastas de snapshot, de propósito, então nada dela está nos resultados:} many {O Cmdr não olha dentro de pastas de snapshot, de propósito, então nada delas está nos resultados:} other {O Cmdr não olha dentro de pastas de snapshot, de propósito, então nada delas está nos resultados:}}",
   "@search.coverage.declined": {
-    "sourceHash": "ea5be72"
+    "sourceHash": "85465f3"
   },
   "search.coverage.stillCovering": "{count, plural, one {Outra busca está percorrendo esta pasta agora, então os arquivos dela aparecem já já:} many {Outra busca está percorrendo estas pastas agora, então os arquivos delas aparecem já já:} other {Outra busca está percorrendo estas pastas agora, então os arquivos delas aparecem já já:}}",
   "@search.coverage.stillCovering": {
@@ -193,7 +193,7 @@
   },
   "search.coverage.dontAskAgain": "Não perguntar de novo",
   "@search.coverage.dontAskAgain": {
-    "sourceHash": "9c9f7b6"
+    "sourceHash": "3f6e4da"
   },
   "search.coverage.toast.started": "Indexando {drive} agora. Quando terminar, as buscas aqui serão instantâneas.",
   "@search.coverage.toast.started": {
@@ -209,7 +209,7 @@
   },
   "search.coverage.toast.notStarted": "O Cmdr não consegue indexar {drive} agora. Você pode tentar de novo pelo menu do disco.",
   "@search.coverage.toast.notStarted": {
-    "sourceHash": "a08fe4a"
+    "sourceHash": "7b98412"
   },
   "search.snapshot.defaultLabel": "Buscar",
   "@search.snapshot.defaultLabel": {
@@ -221,7 +221,7 @@
   },
   "search.runTitle": "Buscar, incluindo pastas que ainda não estão indexadas",
   "@search.runTitle": {
-    "sourceHash": "859abd4"
+    "sourceHash": "1c389b2"
   },
   "search.coverage.pressEnter": "Aperte Enter e o Cmdr percorre elas agora.",
   "@search.coverage.pressEnter": {

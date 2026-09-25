@@ -370,10 +370,10 @@ describe('ErrorReportDialog', () => {
     expect(target.textContent).toContain('ERR-AB23X')
   })
 
-  it('expanding "What\'s about to be sent" reveals the manifest', async () => {
+  it('expanding "What’s about to be sent" reveals the manifest', async () => {
     const target = await mountSettled()
     const toggle = Array.from(target.querySelectorAll('button')).find((b) =>
-      b.textContent.includes("What's about to be sent"),
+      b.textContent.includes('What’s about to be sent'),
     )
     if (!toggle) throw new Error('toggle missing')
     toggle.click()
@@ -492,7 +492,7 @@ describe('ErrorReportDialog', () => {
       b.textContent.trim().startsWith('Send report'),
     )
     expect(sendButton?.disabled).toBe(true)
-    expect(target.textContent).toContain("doesn't look like an email address")
+    expect(target.textContent).toContain('doesn’t look like an email address')
   })
 
   it('shows the attach-email checkbox, unticked, when an email is on file (sticky default off)', async () => {
@@ -714,7 +714,7 @@ describe('ErrorReportDialog in amend mode', () => {
   it('offers no submit at all when nothing was auto-sent this run', async () => {
     autoSentStash = null
     const target = await mountAmend()
-    expect(target.textContent).toContain("That report can't take a note any more")
+    expect(target.textContent).toContain('That report can’t take a note any more')
     expect(findButton(target, 'Add to report')).toBeUndefined()
     expect(target.querySelector('textarea')).toBeNull()
     expect(vi.mocked(sendErrorReport)).not.toHaveBeenCalled()
@@ -723,7 +723,7 @@ describe('ErrorReportDialog in amend mode', () => {
   it('offers no submit at all when the report can no longer be added to', async () => {
     autoSentCanAmend = false
     const target = await mountAmend()
-    expect(target.textContent).toContain("That report can't take a note any more")
+    expect(target.textContent).toContain('That report can’t take a note any more')
     expect(findButton(target, 'Add to report')).toBeUndefined()
     expect(vi.mocked(sendErrorReport)).not.toHaveBeenCalled()
   })
@@ -731,7 +731,7 @@ describe('ErrorReportDialog in amend mode', () => {
   it('lands on the same dead end when the stash lookup throws', async () => {
     autoSentThrows = true
     const target = await mountAmend()
-    expect(target.textContent).toContain("That report can't take a note any more")
+    expect(target.textContent).toContain('That report can’t take a note any more')
     expect(vi.mocked(sendErrorReport)).not.toHaveBeenCalled()
   })
 

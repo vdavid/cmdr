@@ -29,7 +29,7 @@
   },
   "fileExplorer.doubleClickHint.dontLikeIt": "不喜欢？",
   "@fileExplorer.doubleClickHint.dontLikeIt": {
-    "sourceHash": "2049722"
+    "sourceHash": "4801954"
   },
   "fileExplorer.doubleClickHint.neverAgain": "不再这样做",
   "@fileExplorer.doubleClickHint.neverAgain": {
@@ -69,7 +69,7 @@
   },
   "fileExplorer.diskSpace.noLimitNote": "这个储存空间没有容量上限，所以没有要填满的条。",
   "@fileExplorer.diskSpace.noLimitNote": {
-    "sourceHash": "0c363c5"
+    "sourceHash": "7e2a153"
   },
   "fileExplorer.diskSpace.lowNote": "这个条形显示为红色，表示宗卷的可用空间不足。",
   "@fileExplorer.diskSpace.lowNote": {
@@ -93,7 +93,7 @@
   },
   "fileExplorer.pane.disconnectFailedToast": "无法断开连接：{message}",
   "@fileExplorer.pane.disconnectFailedToast": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.pane.connectedDirectlyToast": "已直接连接，访问更快",
   "@fileExplorer.pane.connectedDirectlyToast": {
@@ -101,7 +101,7 @@
   },
   "fileExplorer.pane.directConnectionUnreachableToast": "暂时无法连接到 {server}，这个共享会继续使用系统连接。",
   "@fileExplorer.pane.directConnectionUnreachableToast": {
-    "sourceHash": "7f4ea98"
+    "sourceHash": "4a5ca66"
   },
   "fileExplorer.pane.directConnectionTooSlowToast": "{server} 响应太慢，这个共享会继续使用系统连接。",
   "@fileExplorer.pane.directConnectionTooSlowToast": {
@@ -109,31 +109,31 @@
   },
   "fileExplorer.pane.directConnectionUnexpectedToast": "无法建立到 {server} 的直接连接，这个共享会继续使用系统连接。",
   "@fileExplorer.pane.directConnectionUnexpectedToast": {
-    "sourceHash": "cce5742"
+    "sourceHash": "1b14bd0"
   },
   "fileExplorer.pane.directConnectionShareNotOnServerToast": "{server} 说它没有这个共享，所以继续使用系统连接。",
   "@fileExplorer.pane.directConnectionShareNotOnServerToast": {
-    "sourceHash": "a746d6c"
+    "sourceHash": "1936abc"
   },
   "fileExplorer.pane.directConnectionUnavailableToast": "暂时无法建立直接连接，这个共享会继续使用系统连接。",
   "@fileExplorer.pane.directConnectionUnavailableToast": {
-    "sourceHash": "0440df9"
+    "sourceHash": "282f96d"
   },
   "fileExplorer.pane.directConnectionShareGoneToast": "{share} 已经断开了，所以没有连接需要加速。",
   "@fileExplorer.pane.directConnectionShareGoneToast": {
-    "sourceHash": "8a4b5ae"
+    "sourceHash": "d562549"
   },
   "fileExplorer.pane.directConnectionMountNotRespondingToast": "{share} 暂时没有响应，所以 Cmdr 无法直接连接它。请稍后重试。",
   "@fileExplorer.pane.directConnectionMountNotRespondingToast": {
-    "sourceHash": "6c29cca"
+    "sourceHash": "baa6b1a"
   },
   "fileExplorer.pane.directConnectionNotNetworkShareToast": "{volume} 不是网络共享，所以没有连接需要加速。",
   "@fileExplorer.pane.directConnectionNotNetworkShareToast": {
-    "sourceHash": "193a804"
+    "sourceHash": "f634743"
   },
   "fileExplorer.pane.trashUnconfirmedToast": "无法确认文件是否已移到废纸篓。这个宗卷可能比较慢，但文件也许已经移走了。请查看废纸篓确认一下。",
   "@fileExplorer.pane.trashUnconfirmedToast": {
-    "sourceHash": "844ccc1"
+    "sourceHash": "6764112"
   },
   "fileExplorer.pane.refreshStillRunningToast": "还在读取这个文件夹。列表一到就会更新。",
   "@fileExplorer.pane.refreshStillRunningToast": {
@@ -141,11 +141,11 @@
   },
   "fileExplorer.pane.dialogRenderFailedToast": "这个对话框没能打开，我们已将其关闭并把键盘交还给你。请重试。",
   "@fileExplorer.pane.dialogRenderFailedToast": {
-    "sourceHash": "059dfbd"
+    "sourceHash": "1e8ed2d"
   },
   "fileExplorer.pane.ejectFailedToast": "无法推出 {volumeName}：{message}",
   "@fileExplorer.pane.ejectFailedToast": {
-    "sourceHash": "b22501d"
+    "sourceHash": "f4072a7"
   },
   "fileExplorer.errorPane.tryAgain": "重试",
   "@fileExplorer.errorPane.tryAgain": {
@@ -317,11 +317,11 @@
   },
   "fileExplorer.network.osMountFallback.message": "无法直接连接到 <shareName>{share}</shareName>。你已经连上了，但用的是 macOS 内建的 SMB 网络连接，大多数情况下它比 Cmdr 的直接连接慢 4 倍（有时能慢 100 倍）。点按下方的按钮再试一次。",
   "@fileExplorer.network.osMountFallback.message": {
-    "sourceHash": "368f523"
+    "sourceHash": "cb53372"
   },
   "fileExplorer.network.osMountFallback.shareNotOnServer": "无法直接连接到 <shareName>{share}</shareName>，因为服务器说它没有这个名字的共享。你仍然连着，但用的是 macOS 内建的 SMB 网络连接，慢得多。这种情况等下去也不会好：这个共享可能在服务器上被重命名或删除了，值得去那边看看。",
   "@fileExplorer.network.osMountFallback.shareNotOnServer": {
-    "sourceHash": "e26082d"
+    "sourceHash": "3ae984e"
   },
   "fileExplorer.network.osMountFallback.retry": "试试直接连接",
   "@fileExplorer.network.osMountFallback.retry": {
@@ -425,7 +425,7 @@
   },
   "fileExplorer.network.browser.cannotRemoveDiscovered": "无法移除自动发现的主机",
   "@fileExplorer.network.browser.cannotRemoveDiscovered": {
-    "sourceHash": "03fabd6"
+    "sourceHash": "bde1b3c"
   },
   "fileExplorer.network.browser.removeHostConfirm": "要从服务器列表中移除 {hostName} 吗？",
   "@fileExplorer.network.browser.removeHostConfirm": {
@@ -441,7 +441,7 @@
   },
   "fileExplorer.network.browser.hostRemoveFailed": "无法移除 {hostName}",
   "@fileExplorer.network.browser.hostRemoveFailed": {
-    "sourceHash": "9120dd2"
+    "sourceHash": "684e6eb"
   },
   "fileExplorer.network.forgotPassword": "已清除 {hostName} 保存的密码",
   "@fileExplorer.network.forgotPassword": {
@@ -449,7 +449,7 @@
   },
   "fileExplorer.network.deletePasswordFailed": "无法删除保存的密码",
   "@fileExplorer.network.deletePasswordFailed": {
-    "sourceHash": "0ff57cb"
+    "sourceHash": "e9c0375"
   },
   "fileExplorer.network.browser.disconnected": "已断开与 {hostName} 的连接",
   "@fileExplorer.network.browser.disconnected": {
@@ -461,7 +461,7 @@
   },
   "fileExplorer.network.browser.disconnectFailed": "无法断开连接：{message}",
   "@fileExplorer.network.browser.disconnectFailed": {
-    "sourceHash": "ac9e8e0"
+    "sourceHash": "e394098"
   },
   "fileExplorer.network.share.credentialsStoredLocally": "登录信息已保存在本地（未检测到系统钥匙串）",
   "@fileExplorer.network.share.credentialsStoredLocally": {
@@ -477,7 +477,7 @@
   },
   "fileExplorer.network.share.connectFailedTitle": "无法连接到 {hostName}",
   "@fileExplorer.network.share.connectFailedTitle": {
-    "sourceHash": "06f5c62"
+    "sourceHash": "4c3d88d"
   },
   "fileExplorer.network.share.noSharesTitle": "没有可用的共享",
   "@fileExplorer.network.share.noSharesTitle": {
@@ -565,7 +565,7 @@
   },
   "fileExplorer.networkMount.mountFailedTitle": "无法装载共享",
   "@fileExplorer.networkMount.mountFailedTitle": {
-    "sourceHash": "d59f414"
+    "sourceHash": "d04d142"
   },
   "fileExplorer.networkMount.tryAgain": "重试",
   "@fileExplorer.networkMount.tryAgain": {
@@ -577,15 +577,15 @@
   },
   "fileExplorer.unreachable.title": "无法访问 {path}",
   "@fileExplorer.unreachable.title": {
-    "sourceHash": "586e44c"
+    "sourceHash": "5fa39ab"
   },
   "fileExplorer.unreachable.detailGaveUp": "Cmdr 已多次尝试重新连接，但服务器没有恢复。连接暂时仍然可用。你可以重试，或断开连接以放弃它。",
   "@fileExplorer.unreachable.detailGaveUp": {
-    "sourceHash": "7d8c5fc"
+    "sourceHash": "720e642"
   },
   "fileExplorer.unreachable.detailTimeout": "这个路径所在的宗卷没有及时响应。它可能是一个暂时连不上的网络驱动器。",
   "@fileExplorer.unreachable.detailTimeout": {
-    "sourceHash": "61bf814"
+    "sourceHash": "c68d5d3"
   },
   "fileExplorer.unreachable.retrying": "正在重试…",
   "@fileExplorer.unreachable.retrying": {
@@ -613,31 +613,31 @@
   },
   "fileExplorer.clipboard.copyFromDevice": "这个设备上的文件不能放到剪贴板。请用 {copyKey} 拷贝。",
   "@fileExplorer.clipboard.copyFromDevice": {
-    "sourceHash": "4948031"
+    "sourceHash": "ba69ee7"
   },
   "fileExplorer.clipboard.moveFromDevice": "这个设备上的文件不能放到剪贴板。请用 {moveKey} 移动。",
   "@fileExplorer.clipboard.moveFromDevice": {
-    "sourceHash": "e0d12fe"
+    "sourceHash": "e7da049"
   },
   "fileExplorer.clipboard.copyFromServer": "这个服务器上的文件不能放到剪贴板。请用 {copyKey} 拷贝。",
   "@fileExplorer.clipboard.copyFromServer": {
-    "sourceHash": "a1a1dce"
+    "sourceHash": "12cb39f"
   },
   "fileExplorer.clipboard.moveFromServer": "这个服务器上的文件不能放到剪贴板。请用 {moveKey} 移动。",
   "@fileExplorer.clipboard.moveFromServer": {
-    "sourceHash": "50e6502"
+    "sourceHash": "4ae83d7"
   },
   "fileExplorer.clipboard.copyFromUnknown": "这些文件不能放到剪贴板。请用 {copyKey} 拷贝。",
   "@fileExplorer.clipboard.copyFromUnknown": {
-    "sourceHash": "659d6e0"
+    "sourceHash": "7aaabdb"
   },
   "fileExplorer.clipboard.moveFromUnknown": "这些文件不能放到剪贴板。请用 {moveKey} 移动。",
   "@fileExplorer.clipboard.moveFromUnknown": {
-    "sourceHash": "6ae2091"
+    "sourceHash": "7fed360"
   },
   "fileExplorer.edit.notOnThisMac": "Cmdr 暂时还不能用编辑器编辑这个文件，因为它不是你 Mac 上的普通文件。请按 F3 查看。",
   "@fileExplorer.edit.notOnThisMac": {
-    "sourceHash": "99b6f61"
+    "sourceHash": "710100c"
   },
   "fileExplorer.edit.hint": "已在 {app} 里打开这个文件。想下次换个编辑器？在“设置”里选一个。",
   "@fileExplorer.edit.hint": {
@@ -657,15 +657,15 @@
   },
   "fileExplorer.edit.appMissing": "Cmdr 找不到你选的编辑器，所以这个文件改在 {app} 里打开了。",
   "@fileExplorer.edit.appMissing": {
-    "sourceHash": "e063ef8"
+    "sourceHash": "9a21bc7"
   },
   "fileExplorer.edit.appMissingUnnamed": "Cmdr 找不到你选的编辑器，所以这个文件改在你的默认文本编辑器里打开了。",
   "@fileExplorer.edit.appMissingUnnamed": {
-    "sourceHash": "421e9d9"
+    "sourceHash": "c61458b"
   },
   "fileExplorer.edit.launchRefused": "Cmdr 没能启动你的文本编辑器。先自己打开一次，然后再试试。",
   "@fileExplorer.edit.launchRefused": {
-    "sourceHash": "741e049"
+    "sourceHash": "8a18c5c"
   },
   "fileExplorer.edit.timedOut": "你的文本编辑器启动得有点慢，可能还会打开。",
   "@fileExplorer.edit.timedOut": {
@@ -693,7 +693,7 @@
   },
   "fileExplorer.clipboard.copiedPath": "已将路径拷贝到剪贴板：",
   "@fileExplorer.clipboard.copiedPath": {
-    "sourceHash": "afb1cc2"
+    "sourceHash": "a2eec16"
   },
   "fileExplorer.tabs.limitReached": "已达到标签页数量上限",
   "@fileExplorer.tabs.limitReached": {
@@ -713,19 +713,19 @@
   },
   "fileExplorer.readOnly.renameMessage": "这是一个只读宗卷。无法在这里重命名。",
   "@fileExplorer.readOnly.renameMessage": {
-    "sourceHash": "2f68994"
+    "sourceHash": "5806c75"
   },
   "fileExplorer.readOnly.mkdirMessage": "这是一个只读宗卷。无法在这里创建文件夹。",
   "@fileExplorer.readOnly.mkdirMessage": {
-    "sourceHash": "01957f0"
+    "sourceHash": "6385636"
   },
   "fileExplorer.readOnly.mkfileMessage": "这是一个只读宗卷。无法在这里创建文件。",
   "@fileExplorer.readOnly.mkfileMessage": {
-    "sourceHash": "c5c28e2"
+    "sourceHash": "32e1afa"
   },
   "fileExplorer.readOnly.deleteMessage": "这是一个只读宗卷。无法在这里删除文件。",
   "@fileExplorer.readOnly.deleteMessage": {
-    "sourceHash": "965a635"
+    "sourceHash": "a456b51"
   },
   "fileExplorer.readOnly.archiveTitle": "只读压缩文件",
   "@fileExplorer.readOnly.archiveTitle": {
@@ -761,7 +761,7 @@
   },
   "fileExplorer.rename.hiddenAfterRename": "你的文件从视图中消失了，因为当前不显示隐藏文件。",
   "@fileExplorer.rename.hiddenAfterRename": {
-    "sourceHash": "445d02a"
+    "sourceHash": "6258274"
   },
   "fileExplorer.rename.keptOriginalName": "{reason}。已保留原来的名称。",
   "@fileExplorer.rename.keptOriginalName": {
@@ -777,11 +777,11 @@
   },
   "fileExplorer.rename.unconfirmed": "无法确认“{name}”是否已重命名。这个宗卷可能比较慢，所以名称也许已经改好了。",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "bcea9d0"
+    "sourceHash": "059ac81"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "无法确认“{name}”和{others, plural, other {其他 {othersText} 个文件}}是否已重命名。这个宗卷可能比较慢，所以这些名称也许已经改好了。",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "c64e665"
+    "sourceHash": "f16b15d"
   },
   "fileExplorer.columns.name": "名称",
   "@fileExplorer.columns.name": {
@@ -882,11 +882,11 @@
   },
   "fileExplorer.dirSize.lowerBoundLine": "至少这么多：有些子文件夹还没有扫描，所以实际总量可能更大。",
   "@fileExplorer.dirSize.lowerBoundLine": {
-    "sourceHash": "03803e8"
+    "sourceHash": "2aaea43"
   },
   "fileExplorer.dirSize.unknownTooltip": "大小未知：这个文件夹还没有扫描。",
   "@fileExplorer.dirSize.unknownTooltip": {
-    "sourceHash": "0207a3d"
+    "sourceHash": "f5771e5"
   },
   "fileExplorer.dirSize.staleLine": "这些大小来自较早的扫描，可能已过时。",
   "@fileExplorer.dirSize.staleLine": {
@@ -1019,7 +1019,7 @@
   },
   "fileExplorer.imageIndex.file.failed": "无法建立索引",
   "@fileExplorer.imageIndex.file.failed": {
-    "sourceHash": "a88edd6"
+    "sourceHash": "0ca54ae"
   },
   "fileExplorer.imageIndex.file.excluded": "未纳入图像搜索",
   "@fileExplorer.imageIndex.file.excluded": {
@@ -1219,7 +1219,7 @@
   },
   "fileExplorer.quickLookHint.dontShowAgain": "不再显示",
   "@fileExplorer.quickLookHint.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "fileExplorer.navigation.groupFavorites": "个人收藏",
   "@fileExplorer.navigation.groupFavorites": {
@@ -1267,7 +1267,7 @@
   },
   "fileExplorer.navigation.favoritesCantAddHere": "这个文件夹不能加入个人收藏：个人收藏只能用在磁盘和已装载的共享上",
   "@fileExplorer.navigation.favoritesCantAddHere": {
-    "sourceHash": "10c98b3"
+    "sourceHash": "86564ea"
   },
   "fileExplorer.navigation.seeFavorites": "{count, plural, =0 {查看个人收藏} other {查看 {count} 项个人收藏}}",
   "@fileExplorer.navigation.seeFavorites": {
@@ -1291,23 +1291,23 @@
   },
   "fileExplorer.navigation.favoriteShortcutSaveFailed": "无法保存这个快捷键。要重试吗？",
   "@fileExplorer.navigation.favoriteShortcutSaveFailed": {
-    "sourceHash": "dc8e408"
+    "sourceHash": "38e7225"
   },
   "fileExplorer.navigation.removeFavoriteFailed": "无法移除这个个人收藏。要重试吗？",
   "@fileExplorer.navigation.removeFavoriteFailed": {
-    "sourceHash": "181bf36"
+    "sourceHash": "a3c8665"
   },
   "fileExplorer.navigation.renameFavoriteFailed": "无法重命名这个个人收藏。要重试吗？",
   "@fileExplorer.navigation.renameFavoriteFailed": {
-    "sourceHash": "33e06cd"
+    "sourceHash": "cbf60d7"
   },
   "fileExplorer.navigation.reorderFavoritesFailed": "无法重新排序个人收藏。要重试吗？",
   "@fileExplorer.navigation.reorderFavoritesFailed": {
-    "sourceHash": "1b16941"
+    "sourceHash": "875befb"
   },
   "fileExplorer.navigation.locationUnreachableToast": "无法访问那个位置所在的驱动器。它可能已经断开了。",
   "@fileExplorer.navigation.locationUnreachableToast": {
-    "sourceHash": "20126a6"
+    "sourceHash": "61da177"
   },
   "fileExplorer.navigation.connectionTooltipDirect": "已直接连接，文件操作更快",
   "@fileExplorer.navigation.connectionTooltipDirect": {
@@ -1323,7 +1323,7 @@
   },
   "fileExplorer.navigation.useDirectConnection": "使用 Cmdr 的快速直接连接",
   "@fileExplorer.navigation.useDirectConnection": {
-    "sourceHash": "2955143"
+    "sourceHash": "68ff111"
   },
   "fileExplorer.navigation.connectDirectlyNow": "立即直接连接",
   "@fileExplorer.navigation.connectDirectlyNow": {
@@ -1343,7 +1343,7 @@
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr 可以复用 macOS 已为“{displayName}”保存的密码。你会看到一个系统提示，请求允许访问钥匙串。这是正常的，点按“允许”即可。",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "334f7de"
+    "sourceHash": "96fa0b9"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "使用保存的密码？",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1375,7 +1375,7 @@
   },
   "fileExplorer.navigation.connectionTooltipNeedsHostKey": "这台服务器的主机密钥变了。打开它即可查看密钥。",
   "@fileExplorer.navigation.connectionTooltipNeedsHostKey": {
-    "sourceHash": "5743c29"
+    "sourceHash": "a657aa4"
   },
   "fileExplorer.navigation.connectionTooltipSaved": "已保存。打开它即可连接。",
   "@fileExplorer.navigation.connectionTooltipSaved": {
@@ -1387,7 +1387,7 @@
   },
   "fileExplorer.navigation.disconnectBusyTooltip": "此服务器上有操作正在进行，无法断开连接",
   "@fileExplorer.navigation.disconnectBusyTooltip": {
-    "sourceHash": "2085de5"
+    "sourceHash": "a659820"
   },
   "fileExplorer.navigation.serverPinnedToast": "{name} 现在会出现在你的宗卷选择器里。",
   "@fileExplorer.navigation.serverPinnedToast": {
@@ -1395,15 +1395,15 @@
   },
   "fileExplorer.navigation.serverUnpinnedToast": "{name} 已移出你的宗卷选择器。它仍然保存着。",
   "@fileExplorer.navigation.serverUnpinnedToast": {
-    "sourceHash": "3367b4d"
+    "sourceHash": "7fa97b2"
   },
   "fileExplorer.navigation.pinRefusedToast": "Cmdr 无法更改 {name} 的显示位置。",
   "@fileExplorer.navigation.pinRefusedToast": {
-    "sourceHash": "14230e4"
+    "sourceHash": "3ed5f60"
   },
   "fileExplorer.navigation.disconnectRefusedToast": "Cmdr 无法断开与 {name} 的连接。",
   "@fileExplorer.navigation.disconnectRefusedToast": {
-    "sourceHash": "7cd7fd2"
+    "sourceHash": "375b424"
   },
   "fileExplorer.navigation.forgetServerConfirmTitle": "忘记服务器",
   "@fileExplorer.navigation.forgetServerConfirmTitle": {
@@ -1415,7 +1415,7 @@
   },
   "fileExplorer.navigation.forgetServerRefusedToast": "Cmdr 无法忘记 {name}。",
   "@fileExplorer.navigation.forgetServerRefusedToast": {
-    "sourceHash": "0603090"
+    "sourceHash": "f7c6c64"
   },
   "fileExplorer.navigation.forgetSecretConfirmTitle": "清除保存的密码",
   "@fileExplorer.navigation.forgetSecretConfirmTitle": {
@@ -1427,7 +1427,7 @@
   },
   "fileExplorer.navigation.forgetSecretRefusedToast": "Cmdr 无法清除 {name} 保存的密码。",
   "@fileExplorer.navigation.forgetSecretRefusedToast": {
-    "sourceHash": "940eb59"
+    "sourceHash": "b7a15b2"
   },
   "fileExplorer.navigation.forgetSecretNoneToast": "{name} 没有保存的密码。",
   "@fileExplorer.navigation.forgetSecretNoneToast": {
@@ -1439,7 +1439,7 @@
   },
   "fileExplorer.navigation.ejectBusyTooltip": "此设备上有操作正在进行，无法推出",
   "@fileExplorer.navigation.ejectBusyTooltip": {
-    "sourceHash": "7165c58"
+    "sourceHash": "eafd9bd"
   },
   "fileExplorer.navigation.ejectingVolumeAriaLabel": "正在推出 {name}…",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
@@ -1471,7 +1471,7 @@
   },
   "fileExplorer.navigation.spaceFetchFailed": "无法获取磁盘空间。点按重试",
   "@fileExplorer.navigation.spaceFetchFailed": {
-    "sourceHash": "6fe88d7"
+    "sourceHash": "55f2eab"
   },
   "fileExplorer.navigation.spaceUnavailableText": "不可用",
   "@fileExplorer.navigation.spaceUnavailableText": {
@@ -1519,27 +1519,27 @@
   },
   "fileExplorer.navigation.driveIndex.tooltipFailed": "由于保存此驱动器的索引时出现问题，索引已停止。请重新扫描以重建索引。",
   "@fileExplorer.navigation.driveIndex.tooltipFailed": {
-    "sourceHash": "7386b54"
+    "sourceHash": "7c7e776"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalesced": "在过去 {hours, plural, other {{hoursText} 小时}}内，macOS 有 {count, plural, other {{countText} 次}}没能跟上文件系统的改动，因此少数文件夹大小可能略有偏差。这通常只是塞满小文件的缓存，Cmdr 将在 {remaining, plural, other {{remainingText} 小时}}后进行下一次完整检查，届时就会恢复准确。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalesced": {
-    "sourceHash": "2b593c3"
+    "sourceHash": "eb09aed"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": "macOS 有 {count, plural, other {{countText} 次}}没能跟上文件系统的改动，因此少数文件夹大小可能略有偏差。这通常只是塞满小文件的缓存，正在进行的这次检查会将其恢复准确。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedCheckRunning": {
-    "sourceHash": "9cbf743"
+    "sourceHash": "0ff330c"
   },
   "fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": "在过去 {hours, plural, other {{hoursText} 小时}}内，macOS 有 {count, plural, other {{countText} 次}}没能跟上文件系统的改动，因此少数文件夹大小可能略有偏差。这通常只是塞满小文件的缓存，问题不大。",
   "@fileExplorer.navigation.driveIndex.tooltipCoalescedNoNextCheck": {
-    "sourceHash": "428975f"
+    "sourceHash": "68420b0"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadable": "Cmdr 读不到这个驱动器上的 {count, plural, other {{countText} 处}}，所以在这里搜索的结果可能会少一些。",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadable": {
-    "sourceHash": "5369ab3"
+    "sourceHash": "6523d04"
   },
   "fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": "Cmdr 读不到这个驱动器上的 {count, plural, other {{countText} 处}}，所以在这里搜索的结果可能会少一些。Cmdr 会自己回头再试。",
   "@fileExplorer.navigation.driveIndex.tooltipUnreadableRetried": {
-    "sourceHash": "a74a60f"
+    "sourceHash": "f1ea5cb"
   },
   "fileExplorer.navigation.driveIndex.menuEnable": "为此驱动器打开索引",
   "@fileExplorer.navigation.driveIndex.menuEnable": {
@@ -1559,7 +1559,7 @@
   },
   "fileExplorer.navigation.driveIndex.menuForget": "忘记此驱动器的索引",
   "@fileExplorer.navigation.driveIndex.menuForget": {
-    "sourceHash": "a553f83"
+    "sourceHash": "90c53ac"
   },
   "fileExplorer.navigation.driveIndex.footer": "上次建立索引：{date} · 用时 {duration}",
   "@fileExplorer.navigation.driveIndex.footer": {
@@ -1575,7 +1575,7 @@
   },
   "fileExplorer.navigation.driveIndex.refusedUpgradeFailed": "Cmdr 无法直接连接到 {name}，而为此共享建立索引需要直接连接。请确认共享可以访问，然后重试。",
   "@fileExplorer.navigation.driveIndex.refusedUpgradeFailed": {
-    "sourceHash": "e7ac9b4"
+    "sourceHash": "79a31a4"
   },
   "fileExplorer.navigation.driveIndex.refusedDisconnected": "{name} 已断开连接。请重新连接，然后打开索引。",
   "@fileExplorer.navigation.driveIndex.refusedDisconnected": {
@@ -1595,11 +1595,11 @@
   },
   "fileExplorer.navigation.driveIndex.refusedGeneric": "Cmdr 现在无法为 {name} 建立索引。请重新连接驱动器，然后重试。",
   "@fileExplorer.navigation.driveIndex.refusedGeneric": {
-    "sourceHash": "ac46209"
+    "sourceHash": "83bd66e"
   },
   "fileExplorer.navigation.driveIndex.refusedInternal": "Cmdr 在为 {name} 打开索引时遇到了问题。这本不该发生。重新启动 Cmdr 通常就能解决。",
   "@fileExplorer.navigation.driveIndex.refusedInternal": {
-    "sourceHash": "e9adbcc"
+    "sourceHash": "e3841d9"
   },
   "fileExplorer.navigation.driveIndex.refusedIndexingOff": "驱动器索引已在设置中关闭，因此 {name} 仍未建立索引。可在“索引 > 驱动器索引”中开启。",
   "@fileExplorer.navigation.driveIndex.refusedIndexingOff": {

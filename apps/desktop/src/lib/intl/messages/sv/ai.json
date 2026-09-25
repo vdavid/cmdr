@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "Vart dina data tar vägen, och vad som händer med dem där, beror på vilken tjänst du väljer och ditt avtal med den. Det gäller även Ollama, LM Studio och anpassade slutpunkter: dina data hamnar där den servern körs. Cmdrs egna servrar ser aldrig något av det.",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>Namnförslag för nya mappar</b>: sökvägen till den aktuella mappen och upp till 100 namn i den",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>Sök med vanliga ord</b>: texten du skriver",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "Den hastighetsbegränsar förfrågningar eller så är din plan slut på kvot. Kontrollera din plan och fakturering och försök sedan igen.",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "AI:n tog för lång tid",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "Det går inte att nå din AI-leverantör",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "Kontrollera ditt internet eller leverantörens status och försök sedan igen.",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "AI:n kom tillbaka tom",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "Det gick inte att läsa AI:ns svar",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "Försök igen, eller välj en annan modell i Inställningar > AI.",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "Den AI-leverantören känns inte igen",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "Välj en leverantör i Inställningar > AI.",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "Det går inte att nå servern",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "Något gick fel",
   "@ai.cloud.genericError": {
@@ -425,7 +425,7 @@
   },
   "ai.local.deleteConfirmMessage": "Det här frigör {modelSize} diskutrymme. Du behöver hämta den på nytt för att använda lokal AI igen.",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "Raderar…",
   "@ai.local.deleteButtonDeleting": {
@@ -437,7 +437,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {Det gick inte att spara din API-nyckel: macOS Nyckelring nekade åtkomst} other {Det gick inte att läsa din sparade API-nyckel: macOS Nyckelring nekade åtkomst}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {Öppna Nyckelhanterare och kontrollera posten ”Cmdr”, eller radera den och försök spara igen.} other {Öppna Nyckelhanterare, leta upp posten ”Cmdr”, ge åtkomst, eller radera den och ange din nyckel på nytt.}}",
   "@ai.secretError.keychainBody": {
@@ -445,7 +445,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {Det gick inte att spara din API-nyckel: systemets nyckelring nekade åtkomst} other {Det gick inte att läsa din sparade API-nyckel: systemets nyckelring nekade åtkomst}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "Lås upp din nyckelring (appen Lösenord eller Nyckelringar) och försök igen.",
   "@ai.secretError.keyringBody": {
@@ -453,7 +453,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {Det gick inte att spara din API-nyckel.} other {Det gick inte att läsa din sparade API-nyckel.}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "Kontrollera att systemets nyckelring är tillgänglig och försök igen. Om det kvarstår, starta om appen.",
   "@ai.secretError.genericBody": {

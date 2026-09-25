@@ -25,15 +25,15 @@
   },
   "viewer.error.notFound": "Não foi possível encontrar este arquivo. Ele pode ter sido movido, renomeado ou apagado.",
   "@viewer.error.notFound": {
-    "sourceHash": "580b83c"
+    "sourceHash": "9257fab"
   },
   "viewer.error.isDirectory": "Isto é uma pasta, então não há nada para visualizar aqui. Abra a pasta na janela principal para ver o que há dentro.",
   "@viewer.error.isDirectory": {
-    "sourceHash": "b29fe2e"
+    "sourceHash": "5abb771"
   },
   "viewer.error.timeout": "Não foi possível carregar o arquivo. O volume pode estar lento ou sem resposta.",
   "@viewer.error.timeout": {
-    "sourceHash": "d163618"
+    "sourceHash": "74b9656"
   },
   "viewer.error.tooLargeToPreview": "Este arquivo é muito grande para pré-visualizar daqui. Copie-o para fora primeiro e depois abra-o.",
   "@viewer.error.tooLargeToPreview": {
@@ -41,7 +41,7 @@
   },
   "viewer.error.archiveUnreadable": "Não foi possível abrir este arquivo de dentro do arquivo compactado. Ele pode estar criptografado, danificado ou usar um formato que o Cmdr não consegue ler.",
   "@viewer.error.archiveUnreadable": {
-    "sourceHash": "01490a6"
+    "sourceHash": "e0b8f4e"
   },
   "viewer.error.retry": "Tentar novamente",
   "@viewer.error.retry": {
@@ -244,7 +244,7 @@
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "Este é um arquivo grande em modo de transmissão. Estamos criando um índice em segundo plano (no máximo {seconds} seg)… Os números das linhas são aproximados por enquanto.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "033d82d"
+    "sourceHash": "60095b8"
   },
   "viewer.statusBar.badge.streaming": "transmitindo",
   "@viewer.statusBar.badge.streaming": {
@@ -252,7 +252,7 @@
   },
   "viewer.statusBar.badge.streamingTooltip": "Este é um arquivo grande em modo de transmissão. A indexação levaria mais de {seconds} seg, então não a fizemos. Os números das linhas são estimativas.",
   "@viewer.statusBar.badge.streamingTooltip": {
-    "sourceHash": "1752e59"
+    "sourceHash": "b1a14ac"
   },
   "viewer.statusBar.badge.wrap": "quebra",
   "@viewer.statusBar.badge.wrap": {
@@ -281,7 +281,7 @@
   },
   "viewer.image.error": "Desculpe, não foi possível mostrar esta imagem. O arquivo pode estar danificado ou em um formato que não conseguimos exibir.",
   "@viewer.image.error": {
-    "sourceHash": "9a24fe8"
+    "sourceHash": "1e8c6d9"
   },
   "viewer.pdf.loading": "Carregando PDF",
   "@viewer.pdf.loading": {
@@ -325,7 +325,7 @@
   },
   "viewer.copyDialog.refuseBody": "Isso é maior que o limite de 100 MB da área de transferência. Tente a busca (⌘F) para encontrar o que você precisa, ou salve a seleção como arquivo.",
   "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "75f3043"
+    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "O arquivo mudou no disco. Recarregar?",
   "@viewer.reloadToast.grew": {
@@ -349,7 +349,7 @@
   },
   "viewer.copy.clipboardUnreachable": "Não foi possível acessar a área de transferência. Tentar de novo?",
   "@viewer.copy.clipboardUnreachable": {
-    "sourceHash": "c0382ba"
+    "sourceHash": "3c8ddb8"
   },
   "viewer.copy.readTooLong": "A leitura demorou demais. Que tal uma seleção menor?",
   "@viewer.copy.readTooLong": {
@@ -357,11 +357,11 @@
   },
   "viewer.copy.copyFailed": "Não foi possível copiar a seleção. Tentar de novo?",
   "@viewer.copy.copyFailed": {
-    "sourceHash": "6a1ab41"
+    "sourceHash": "b08416d"
   },
   "viewer.copy.readFailed": "Não foi possível ler a seleção. Tentar de novo?",
   "@viewer.copy.readFailed": {
-    "sourceHash": "bde5f85"
+    "sourceHash": "24ea14a"
   },
   "viewer.saveAs.title": "Salvar seleção",
   "@viewer.saveAs.title": {
@@ -373,7 +373,7 @@
   },
   "viewer.saveAs.panelFailed": "Não foi possível abrir o painel de salvamento. Tentar de novo?",
   "@viewer.saveAs.panelFailed": {
-    "sourceHash": "70c3f76"
+    "sourceHash": "ade021c"
   },
   "viewer.saveAs.saved": "Seleção salva em {name}",
   "@viewer.saveAs.saved": {
@@ -385,7 +385,7 @@
   },
   "viewer.saveAs.saveFailed": "Não foi possível salvar a seleção. Tentar de novo?",
   "@viewer.saveAs.saveFailed": {
-    "sourceHash": "2d85642"
+    "sourceHash": "ca5709f"
   },
   "viewer.saveAs.destinationReadOnly": "Esta localização é somente leitura. Escolher outra pasta para salvar?",
   "@viewer.saveAs.destinationReadOnly": {

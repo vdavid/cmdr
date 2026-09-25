@@ -208,12 +208,12 @@
     "description": "Status shown when the system-wide shortcut was saved but macOS did not actually claim the hotkey (e.g. another app holds it). A short status phrase."
   },
 
-  "downloads.shortcutRow.invalidCombo": "Couldn''t register: invalid combo",
+  "downloads.shortcutRow.invalidCombo": "Couldn’t register: invalid combo",
   "@downloads.shortcutRow.invalidCombo": {
     "description": "Warning status shown when the chosen system-wide shortcut can't be registered because the key combination is invalid. 'combo' = key combination. Avoid the words 'error' and 'failed'."
   },
 
-  "downloads.shortcutRow.registerFailed": "Couldn''t register: {reason}",
+  "downloads.shortcutRow.registerFailed": "Couldn’t register: {reason}",
   "@downloads.shortcutRow.registerFailed": {
     "description": "Warning status shown when the system-wide shortcut can't be registered, with a reason from the system appended. Avoid the words 'error' and 'failed'.",
     "placeholders": {

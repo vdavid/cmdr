@@ -81,7 +81,7 @@
   },
   "commands.helpWhatsNew.label": "Nouveautés",
   "@commands.helpWhatsNew.label": {
-    "sourceHash": "aa0c54f"
+    "sourceHash": "37e6112"
   },
   "commands.helpWhatsNew.description": "Découvrir les changements des dernières versions de Cmdr",
   "@commands.helpWhatsNew.description": {
@@ -130,7 +130,7 @@
   },
   "commands.favoritesAdd.description": "Ajouter le dossier actuel du panneau actif aux favoris, pour y revenir ensuite depuis le menu des favoris.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "b09b35e"
+    "sourceHash": "999aa52"
   },
   "commands.favoritesOpen.label": "Afficher les favoris",
   "@commands.favoritesOpen.label": {
@@ -458,7 +458,7 @@
   },
   "commands.fileGoToTrash.description": "Ouvrir la corbeille du disque que vous parcourez",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "45df2c4"
+    "sourceHash": "73eae92"
   },
   "commands.dialogConfirm.label": "Confirmer la boîte de dialogue d’ouverture",
   "@commands.dialogConfirm.label": {
@@ -478,7 +478,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Ouvrir votre app de terminal dans le dossier que vous consultez",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "fa93e44"
+    "sourceHash": "ac0ddb8"
   },
   "commands.fileCopyPath.label": "Copier le chemin dans le presse-papiers",
   "@commands.fileCopyPath.label": {
@@ -554,7 +554,7 @@
   },
   "commands.cloudAskGemini.description": "Ouvre l’assistant Gemini de Google Drive avec le fichier sélectionné comme sujet",
   "@commands.cloudAskGemini.description": {
-    "sourceHash": "3b425f6"
+    "sourceHash": "37d4e7c"
   },
   "commands.tagsToggleGrey.label": "Activer/désactiver le tag Gris",
   "@commands.tagsToggleGrey.label": {
@@ -770,7 +770,7 @@
   },
   "commands.handler.favoriteAddFailed": "Impossible d’ajouter ce dossier aux favoris. Réessayer ?",
   "@commands.handler.favoriteAddFailed": {
-    "sourceHash": "3f85e99"
+    "sourceHash": "0792537"
   },
   "commands.handler.tabLimitReached": "Limite d’onglets atteinte",
   "@commands.handler.tabLimitReached": {
@@ -782,19 +782,19 @@
   },
   "commands.handler.cloudDownloadFailed": "Impossible de télécharger depuis le cloud. {detail}",
   "@commands.handler.cloudDownloadFailed": {
-    "sourceHash": "70792cf"
+    "sourceHash": "9efe237"
   },
   "commands.handler.cloudRemoveDownloadFailed": "Impossible de retirer le téléchargement. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
-    "sourceHash": "425280d"
+    "sourceHash": "11189fb"
   },
   "commands.handler.googleDriveLinkMissing": "Cet élément n’a pas de lien Google Drive.",
   "@commands.handler.googleDriveLinkMissing": {
-    "sourceHash": "af21508"
+    "sourceHash": "7be9109"
   },
   "commands.handler.googleDriveOpenFailed": "Impossible d’ouvrir ceci dans Google Drive. {detail}",
   "@commands.handler.googleDriveOpenFailed": {
-    "sourceHash": "71dc94a"
+    "sourceHash": "e7fd439"
   },
   "commands.handler.googleDriveLinkCopied": "Lien Google Drive copié.",
   "@commands.handler.googleDriveLinkCopied": {
@@ -802,7 +802,7 @@
   },
   "commands.handler.googleDriveCopyFailed": "Impossible de copier le lien Google Drive. {detail}",
   "@commands.handler.googleDriveCopyFailed": {
-    "sourceHash": "dd970ec"
+    "sourceHash": "0af1fd3"
   },
   "commands.handler.openTerminalHere.hint": "Dossier ouvert dans votre app de terminal. Vous voulez que Cmdr ouvre une autre app la prochaine fois ? Choisissez-la dans les réglages, sous « Navigation et opérations ».",
   "@commands.handler.openTerminalHere.hint": {
@@ -818,19 +818,19 @@
   },
   "commands.handler.openTerminalHere.appMissing": "{app} n’est plus installée, donc l’ouverture s’est faite dans Terminal.",
   "@commands.handler.openTerminalHere.appMissing": {
-    "sourceHash": "70726d6"
+    "sourceHash": "770ded9"
   },
   "commands.handler.openTerminalHere.appMissingUnnamed": "Votre app de terminal n’est plus installée, donc l’ouverture s’est faite dans Terminal.",
   "@commands.handler.openTerminalHere.appMissingUnnamed": {
-    "sourceHash": "29e9be5"
+    "sourceHash": "8e40ade"
   },
   "commands.handler.openTerminalHere.noPath": "Ce dossier n’a pas de chemin qu’un terminal puisse ouvrir.",
   "@commands.handler.openTerminalHere.noPath": {
-    "sourceHash": "d6520b7"
+    "sourceHash": "7851182"
   },
   "commands.handler.openTerminalHere.launchRefused": "Cmdr n’a pas pu lancer votre app de terminal. Ouvrez-la une fois vous-même, puis réessayez.",
   "@commands.handler.openTerminalHere.launchRefused": {
-    "sourceHash": "ffd6b3a"
+    "sourceHash": "dd7296e"
   },
   "commands.handler.openTerminalHere.timedOut": "Votre app de terminal met du temps à démarrer. Elle va peut-être encore s’ouvrir.",
   "@commands.handler.openTerminalHere.timedOut": {

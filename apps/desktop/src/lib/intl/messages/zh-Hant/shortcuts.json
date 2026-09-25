@@ -65,11 +65,11 @@
   },
   "shortcuts.conflict.reservedByMacOs": "{combo} 由 macOS 保留（{command}），傳不到 Cmdr。請換一組組合鍵。",
   "@shortcuts.conflict.reservedByMacOs": {
-    "sourceHash": "4aad26f"
+    "sourceHash": "76e8ad2"
   },
   "shortcuts.conflict.fixedKey": "{combo} 是 Cmdr 的固定按鍵（{command}），無法重新指定。請換一組組合鍵。",
   "@shortcuts.conflict.fixedKey": {
-    "sourceHash": "2c2c76f"
+    "sourceHash": "42c3c0e"
   },
   "shortcuts.conflict.systemShortcut": "{combo} 通常由 macOS 使用（{label}），所以可能永遠傳不到 Cmdr。你可以在「系統設定 > 鍵盤」裡把它空出來。",
   "@shortcuts.conflict.systemShortcut": {
@@ -190,11 +190,11 @@
   },
   "shortcuts.section.macOsTooltip": "這個快速鍵由 macOS 處理，Cmdr 無法更改。",
   "@shortcuts.section.macOsTooltip": {
-    "sourceHash": "262b2cc"
+    "sourceHash": "fe5e056"
   },
   "shortcuts.section.fixedTooltip": "這個按鍵是 Cmdr 內建的，無法更改。",
   "@shortcuts.section.fixedTooltip": {
-    "sourceHash": "f07b460"
+    "sourceHash": "9367bfe"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {

@@ -48,6 +48,6 @@ describe('favorites.add handler', () => {
   it('shows an error toast when the add fails', async () => {
     vi.mocked(addFavorite).mockRejectedValueOnce(new Error('IPC down'))
     await runFavoritesAdd()
-    expect(addToast).toHaveBeenCalledWith(expect.stringContaining("Couldn't"), { level: 'error' })
+    expect(addToast).toHaveBeenCalledWith(expect.stringContaining('Couldn’t'), { level: 'error' })
   })
 })

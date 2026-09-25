@@ -5,7 +5,7 @@
   },
   "errorReporter.dialog.description": "Det här skickar Cmdrs senaste loggfiler till teamet så att vi kan åtgärda det som gick snett. Loggarna maskeras lokalt: sökvägar, värdnamn, IP-adresser och e-postadresser rensas bort innan de skickas.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "dd11284"
+    "sourceHash": "ba4012f"
   },
   "errorReporter.dialog.referenceIdLabel": "Referens-ID:",
   "@errorReporter.dialog.referenceIdLabel": {
@@ -38,7 +38,7 @@
   },
   "errorReporter.dialog.detailsToggle": "Det här är på väg att skickas",
   "@errorReporter.dialog.detailsToggle": {
-    "sourceHash": "b1069f7"
+    "sourceHash": "f57398b"
   },
   "errorReporter.dialog.manifestHeading": "Manifest",
   "@errorReporter.dialog.manifestHeading": {
@@ -67,7 +67,7 @@
   },
   "errorReporter.dialog.prepareFailed": "Det gick inte att sätta ihop förhandsvisningen.",
   "@errorReporter.dialog.prepareFailed": {
-    "sourceHash": "3729966"
+    "sourceHash": "24cd5ba"
   },
   "errorReporter.dialog.tryAgain": "Försök igen",
   "@errorReporter.dialog.tryAgain": {
@@ -75,7 +75,7 @@
   },
   "errorReporter.dialog.bundleUnavailable": "Cmdr kunde inte samla ihop sina loggar till rapporten. Försök igen om en stund.",
   "@errorReporter.dialog.bundleUnavailable": {
-    "sourceHash": "3743aba"
+    "sourceHash": "15bc5b8"
   },
   "errorReporter.dialog.saveToDisk": "Spara paketet på disk (debug)",
   "@errorReporter.dialog.saveToDisk": {
@@ -95,11 +95,11 @@
   },
   "errorReporter.dialog.sendFailedToast": "Det gick inte att skicka felrapporten. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
-    "sourceHash": "75337c1"
+    "sourceHash": "1eedf49"
   },
   "errorReporter.dialog.saveFailedToast": "Det gick inte att spara paketet: {error}",
   "@errorReporter.dialog.saveFailedToast": {
-    "sourceHash": "34cf2b4"
+    "sourceHash": "6405cca"
   },
   "errorReporter.amend.title": "Lägg till i din felrapport",
   "@errorReporter.amend.title": {
@@ -107,7 +107,7 @@
   },
   "errorReporter.amend.description": "Cmdr har redan skickat den här rapporten. Skriv en notering eller bifoga din e-post, så läggs det till i rapporten som teamet redan har.",
   "@errorReporter.amend.description": {
-    "sourceHash": "276771e"
+    "sourceHash": "9e1a80f"
   },
   "errorReporter.amend.noteLabel": "Din notering",
   "@errorReporter.amend.noteLabel": {
@@ -127,7 +127,7 @@
   },
   "errorReporter.amend.unavailable": "Det går inte längre att lägga till något i den rapporten. Skicka en ny rapport från Hjälp-menyn, så når dina noteringar teamet.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "cbb7a33"
+    "sourceHash": "b96b48a"
   },
   "errorReporter.amend.close": "Stäng",
   "@errorReporter.amend.close": {
@@ -135,7 +135,7 @@
   },
   "errorReporter.amend.addFailedToast": "Det gick inte att lägga till din notering. {reason}",
   "@errorReporter.amend.addFailedToast": {
-    "sourceHash": "0b67749"
+    "sourceHash": "02f82ce"
   },
   "errorReporter.sentToast.message": "Felrapporten har skickats. Ditt referens-ID är",
   "@errorReporter.sentToast.message": {

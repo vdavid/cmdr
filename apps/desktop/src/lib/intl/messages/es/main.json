@@ -9,11 +9,11 @@
   },
   "main.upgradeNudge.mac": "Hemos añadido nuevas opciones de introducción. Abre Cmdr > Introducción… para revisarlas.",
   "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
+    "sourceHash": "439adfd"
   },
   "main.upgradeNudge.other": "Hemos añadido nuevas opciones de introducción. Abre la paleta de comandos y ejecuta Introducción… para revisarlas.",
   "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
+    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "¿Quieres que Cmdr se quede en tu Dock?",
   "@main.dockPinNudge.title": {
@@ -21,7 +21,7 @@
   },
   "main.dockPinNudge.body": "Llevas unos días usando Cmdr, así que parece que te funciona. ¿Quieres fijarlo ahí abajo, junto al Finder?",
   "@main.dockPinNudge.body": {
-    "sourceHash": "1718271"
+    "sourceHash": "7f4265e"
   },
   "main.dockPinNudge.unpinNote": "Puedes desfijarlo cuando quieras si cambias de idea.",
   "@main.dockPinNudge.unpinNote": {
@@ -41,15 +41,15 @@
   },
   "main.dockPinNudge.addedButDockDidNotRestart": "El icono de Cmdr ya está en su sitio, pero el Dock todavía no lo muestra. Aparecerá la próxima vez que inicies sesión.",
   "@main.dockPinNudge.addedButDockDidNotRestart": {
-    "sourceHash": "b035470"
+    "sourceHash": "7a4e3bb"
   },
   "main.dockPinNudge.managedDock": "Tu Dock lo controla un perfil de configuración, así que Cmdr no puede añadirse por su cuenta. Quien administre este Mac puede cambiarlo.",
   "@main.dockPinNudge.managedDock": {
-    "sourceHash": "dae0836"
+    "sourceHash": "4781787"
   },
   "main.dockPinNudge.notAdded": "Cmdr no ha podido entrar en el Dock esta vez. Puedes arrastrarlo ahí desde la carpeta Aplicaciones cuando quieras.",
   "@main.dockPinNudge.notAdded": {
-    "sourceHash": "0d122cb"
+    "sourceHash": "0b863ad"
   },
   "main.revealNudge.title": "¿Abrir “Mostrar en el Finder” en Cmdr?",
   "@main.revealNudge.title": {
@@ -57,7 +57,7 @@
   },
   "main.revealNudge.body": "Llevas un tiempo usando Cmdr. Cuando otra app ejecute “Mostrar en el Finder”, Cmdr puede abrir esa carpeta con el archivo ya bajo el cursor.",
   "@main.revealNudge.body": {
-    "sourceHash": "1db1d28"
+    "sourceHash": "1934a04"
   },
   "main.revealNudge.switchBackNote": "Puedes volver a cambiarlo cuando quieras en los Ajustes.",
   "@main.revealNudge.switchBackNote": {
@@ -81,7 +81,7 @@
   },
   "main.revealNudge.notTurnedOn": "Cmdr no ha podido quedarse con “Mostrar en el Finder” esta vez. El interruptor está en los Ajustes cuando quieras volver a intentarlo.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "953a4ee"
+    "sourceHash": "0f572c0"
   },
   "main.revealActivation.title": "“Mostrar en el Finder” se ha abierto aquí",
   "@main.revealActivation.title": {
@@ -101,7 +101,7 @@
   },
   "main.quit.body": "Todo lo que ya ha terminado se conserva. Lo que aún se está escribiendo se interrumpe donde esté, y Cmdr borra lo que quede a medio escribir.",
   "@main.quit.body": {
-    "sourceHash": "c17f6e7"
+    "sourceHash": "79a69f9"
   },
   "main.quit.countdown": "{seconds, plural, one {Cmdr se cerrará en {secondsText} segundo, para no hacerte esperar al reiniciar el Mac o cerrar sesión.} many {Cmdr se cerrará en {secondsText} segundos, para no hacerte esperar al reiniciar el Mac o cerrar sesión.} other {Cmdr se cerrará en {secondsText} segundos, para no hacerte esperar al reiniciar el Mac o cerrar sesión.}}",
   "@main.quit.countdown": {
@@ -129,7 +129,7 @@
   },
   "main.oldWebkit.body": "La interfaz de Cmdr necesita Safari 15.4 o posterior, y este Mac tiene una versión anterior. Abre Actualización de software e instala todo lo que esté pendiente. Con eso debería bastar.",
   "@main.oldWebkit.body": {
-    "sourceHash": "bcadac5"
+    "sourceHash": "a7112ec"
   },
   "main.oldMacos.title": "Cmdr en macOS {version}",
   "@main.oldMacos.title": {
@@ -137,7 +137,7 @@
   },
   "main.oldMacos.body": "Cmdr es compatible oficialmente con macOS 12 o posterior, así que aquí hace lo que puede. Casi todo funciona, pero algunos colores y pequeños detalles de diseño pueden verse raros, y los arreglos para sistemas antiguos van los últimos. Si te topas con algo roto, aun así me gustaría que me lo contaras.",
   "@main.oldMacos.body": {
-    "sourceHash": "9484b91"
+    "sourceHash": "f9b4185"
   },
   "main.oldMacos.gotIt": "Entendido",
   "@main.oldMacos.gotIt": {
@@ -161,6 +161,6 @@
   },
   "main.escapeFullScreenHint.onceNote": "Solo verás este aviso una vez.",
   "@main.escapeFullScreenHint.onceNote": {
-    "sourceHash": "c76cb6c"
+    "sourceHash": "210b892"
   }
 }

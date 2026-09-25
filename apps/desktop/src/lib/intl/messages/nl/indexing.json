@@ -156,11 +156,11 @@
   },
   "indexing.rescan.staleIndex": "De index van je schijf is verouderd. De app lijkt een tijd niet te zijn gebruikt. Cmdr doorzoekt de schijf opnieuw om bij te werken.",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "Het wijzigingslogboek van het systeem gaat niet ver genoeg terug. Cmdr doorzoekt de schijf opnieuw om de index opnieuw op te bouwen.",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "Er zijn veel bestandswijzigingen geweest sinds de vorige keer. Cmdr doorzoekt de schijf opnieuw in plaats van ze één voor één te verwerken.",
   "@indexing.rescan.replayOverflow": {
@@ -168,7 +168,7 @@
   },
   "indexing.rescan.watcherStartFailed": "De bewaker voor bestandswijzigingen kon niet starten. Cmdr doorzoekt de schijf opnieuw om de index bij te werken.",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "Door drukke activiteit op het bestandssysteem raakte de gebeurtenisbuffer vol. Cmdr doorzoekt de schijf opnieuw om nauwkeurig te blijven.",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -176,7 +176,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "Het vorige doorzoeken is niet afgerond (de app is mogelijk gesloten). Cmdr begint opnieuw met doorzoeken.",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "Een uitbarsting van activiteit op het bestandssysteem liet het bewakerskanaal overlopen. Cmdr doorzoekt de schijf opnieuw om nauwkeurig te blijven.",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -204,15 +204,15 @@
   },
   "indexing.firstConnect.silenceDrive": "Niet meer vragen voor deze schijf",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "Voor geen enkele schijf meer vragen",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "De index van deze schijf is mogelijk verouderd",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "Terwijl {name} losgekoppeld was, zijn bestanden erop mogelijk veranderd. Mapgroottes en zoekresultaten kunnen iets afwijken totdat je opnieuw doorzoekt. De gele status naast de schijf toont altijd wanneer dit gebeurt, en opnieuw doorzoeken werkt alles weer bij.",
   "@indexing.staleDialog.body": {
@@ -220,11 +220,11 @@
   },
   "indexing.staleDialog.titlePhone": "De index van deze telefoon is mogelijk verouderd",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} laat Cmdr niet weten wanneer de bestanden erop veranderen, dus Cmdr werkt de index bij met de wijzigingen die Cmdr zelf aanbrengt. Wijzigingen op de telefoon, zoals nieuwe foto''s, verschijnen in mapgroottes en zoekresultaten nadat je opnieuw doorzoekt. De gele status naast de telefoon blijft zichtbaar als herinnering.",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "Nooit meer tonen",
   "@indexing.staleDialog.neverShowAgain": {
@@ -254,7 +254,7 @@
   },
   "indexing.enrich.pausedIdle": "Wacht tot je niet bezig bent",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "Gepauzeerd, gaat verder bij opnieuw verbinden",
   "@indexing.enrich.pausedDisconnected": {

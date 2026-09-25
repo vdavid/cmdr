@@ -171,7 +171,7 @@ describe('AttachEmailCheckbox a11y', () => {
     mockEmail = ''
     const target = await render()
     await tickBox(target)
-    expect(flatText(target)).not.toContain("doesn't look like an email address")
+    expect(flatText(target)).not.toContain('doesn’t look like an email address')
     expect(emailInputIn(target)?.getAttribute('aria-invalid')).toBeNull()
   })
 
@@ -186,7 +186,7 @@ describe('AttachEmailCheckbox a11y', () => {
     const describedBy = input?.getAttribute('aria-describedby')
     expect(describedBy).toBeTruthy()
     const message = describedBy ? target.querySelector(`#${CSS.escape(describedBy)}`) : null
-    expect(message?.textContent).toContain("doesn't look like an email address")
+    expect(message?.textContent).toContain('doesn’t look like an email address')
     await expectNoA11yViolations(target)
   })
 

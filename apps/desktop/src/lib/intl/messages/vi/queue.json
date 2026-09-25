@@ -37,7 +37,7 @@
   },
   "queue.row.status": "{status, select, queued {Đang chờ} running {Đang chạy} paused {Đã tạm dừng} done {Xong} cancelled {Đã hủy} failed {Chưa hoàn tất được} other {Đang chạy}}",
   "@queue.row.status": {
-    "sourceHash": "8e9ce48"
+    "sourceHash": "d7a7517"
   },
   "queue.row.statusAwaitingAnswer": "Cần bạn trả lời",
   "@queue.row.statusAwaitingAnswer": {
@@ -117,7 +117,7 @@
   },
   "queue.failureToast.title": "{type, select, copy {Chưa hoàn tất được thao tác sao chép} move {Chưa hoàn tất được thao tác di chuyển} delete {Chưa hoàn tất được thao tác xóa} trash {Chưa hoàn tất được thao tác chuyển vào thùng rác} rename {Chưa hoàn tất được thao tác đổi tên} create_folder {Chưa hoàn tất được thao tác tạo thư mục} create_file {Chưa hoàn tất được thao tác tạo tệp} archive_edit {Chưa hoàn tất được thao tác chỉnh sửa tệp nén} other {Chưa hoàn tất được thao tác}}",
   "@queue.failureToast.title": {
-    "sourceHash": "a55f5df"
+    "sourceHash": "b5f2b47"
   },
   "queue.failureToast.action": "Hiển thị trong hàng đợi thao tác",
   "@queue.failureToast.action": {
@@ -125,11 +125,11 @@
   },
   "queue.failureToast.summary": "{count, plural, other {{countText} thao tác chưa hoàn tất được}}",
   "@queue.failureToast.summary": {
-    "sourceHash": "6207914"
+    "sourceHash": "a55d85a"
   },
   "queue.chip.failed": "{count, plural, other {{countText} thao tác chưa hoàn tất được}}. Mở hàng đợi thao tác để xem lý do.",
   "@queue.chip.failed": {
-    "sourceHash": "336ad46"
+    "sourceHash": "9c0036b"
   },
   "queue.chip.ariaLabel": "{label}, {percentText} phần trăm. Mở hàng đợi thao tác.",
   "@queue.chip.ariaLabel": {

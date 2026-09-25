@@ -29,11 +29,11 @@
   },
   "goToPath.dialog.ancestorHint": "這個路徑不存在。最接近的位置是 {dir}。",
   "@goToPath.dialog.ancestorHint": {
-    "sourceHash": "43db9f4"
+    "sourceHash": "e6eefca"
   },
   "goToPath.toast.landedOnAncestor": "<req>{requested}</req> 不存在，所以我們帶你前往了 <land>{landed}</land>。",
   "@goToPath.toast.landedOnAncestor": {
-    "sourceHash": "4ffc1e4"
+    "sourceHash": "9af3d3a"
   },
   "goToPath.toast.pressToGoBack": "按 <chip></chip> 返回。",
   "@goToPath.toast.pressToGoBack": {
@@ -49,6 +49,6 @@
   },
   "goToPath.dialog.snapshotNotAPath": "搜尋結果不是可以前往的路徑。",
   "@goToPath.dialog.snapshotNotAPath": {
-    "sourceHash": "e613c52"
+    "sourceHash": "1332610"
   }
 }

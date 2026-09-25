@@ -14,7 +14,7 @@
   },
   "fileOperations.delete.noTrashWarningStrong": "Dit volume ondersteunt de prullenmand niet.",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "ef122e2"
+    "sourceHash": "911688a"
   },
   "fileOperations.delete.noTrashWarningRest": "Bestanden worden definitief verwijderd.",
   "@fileOperations.delete.noTrashWarningRest": {
@@ -22,19 +22,19 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "Een deel van je selectie is alleen online beschikbaar. Als je die onderdelen naar de prullenmand verplaatst, worden ze <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak eerst alle bestanden offline beschikbaar, of deselecteer alle bestanden die alleen online beschikbaar zijn.",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "4c48ecf"
+    "sourceHash": "2468db5"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "Alles wat je hebt geselecteerd, is alleen online beschikbaar. Als je het naar de prullenmand verplaatst, wordt het <strong>eerst gedownload</strong>. In dit geval biedt Cmdr alleen aan om de hele selectie te <strong>verwijderen</strong>. Er komen geen kopieën in de prullenmand, maar cloudservices bewaren verwijderde bestanden meestal zelf nog ongeveer 30 dagen. Klik op ‘Verwijder’ als verwijderen goed is. Zo niet, annuleer dan en maak deze bestanden eerst offline beschikbaar.",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "52f8c94"
+    "sourceHash": "dd04d39"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "Je selectie bleek inhoud te bevatten die alleen online beschikbaar is, dus de knop hieronder biedt nu ‘Verwijder’ aan. Lees de opmerking hierboven en druk er daarna nog een keer op als dat goed is.",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "623e7e0"
+    "sourceHash": "d3f4a7a"
   },
   "fileOperations.delete.archiveWarningStrong": "Er is geen prullenmand in een archief.",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "29efc59"
+    "sourceHash": "d25cd46"
   },
   "fileOperations.delete.archiveWarningRest": "Deze onderdelen worden definitief uit de zip verwijderd.",
   "@fileOperations.delete.archiveWarningRest": {
@@ -62,11 +62,11 @@
   },
   "fileOperations.trash.undoUnavailable": "Er is niets terug te zetten. Deze onderdelen staan misschien al terug, of hun schijf is niet verbonden.",
   "@fileOperations.trash.undoUnavailable": {
-    "sourceHash": "2acefae"
+    "sourceHash": "ee17b5f"
   },
   "fileOperations.trash.noTrashHere": "Deze schijf heeft geen prullenmand.",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "91d7462"
+    "sourceHash": "f58bdab"
   },
   "fileOperations.delete.trashSwitch": "Naar prullenmand",
   "@fileOperations.delete.trashSwitch": {
@@ -158,7 +158,7 @@
   },
   "fileOperations.mkdir.timeoutMessage": "We konden niet bevestigen dat de map is aangemaakt. Het volume is mogelijk traag, dus de map is misschien toch aangemaakt.",
   "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "751aec6"
+    "sourceHash": "8bc758a"
   },
   "fileOperations.mkdir.timeoutRefresh": "Ververs lijst",
   "@fileOperations.mkdir.timeoutRefresh": {
@@ -247,11 +247,11 @@
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "Deze map bestaat nog niet. Cmdr maakt hem aan tijdens het kopiëren.",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
-    "sourceHash": "025f3dc"
+    "sourceHash": "4e8d166"
   },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "Deze map bestaat nog niet. Cmdr maakt hem aan tijdens het verplaatsen.",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
-    "sourceHash": "976edd2"
+    "sourceHash": "1246331"
   },
   "fileOperations.transferDialog.destinationReadOnly": "Deze map is alleen-lezen, dus hier kan niets heen.",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -259,11 +259,11 @@
   },
   "fileOperations.transferDialog.destinationNoPermission": "Je hebt geen toestemming om bestanden aan deze map toe te voegen.",
   "@fileOperations.transferDialog.destinationNoPermission": {
-    "sourceHash": "728b1ed"
+    "sourceHash": "a7e0efa"
   },
   "fileOperations.transferDialog.destinationNotWritable": "Deze map accepteert geen nieuwe bestanden.",
   "@fileOperations.transferDialog.destinationNotWritable": {
-    "sourceHash": "d7cd278"
+    "sourceHash": "07094f6"
   },
   "fileOperations.transferDialog.targetWillBeOverwritten": "Er staat hier al een bestand met deze naam. Cmdr vervangt het.",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
@@ -279,7 +279,7 @@
   },
   "fileOperations.transferDialog.hardlinkNote": "<written></written> wordt geschreven. De bron is <ondisk></ondisk> op schijf – het verschil zijn hardlink-bestanden, die niet gekoppeld kunnen blijven tussen schijven.",
   "@fileOperations.transferDialog.hardlinkNote": {
-    "sourceHash": "af8a4c9"
+    "sourceHash": "acac507"
   },
   "fileOperations.transferDialog.compressLevelCaption": "Hogere niveaus geven een kleinere zip, maar het comprimeren duurt langer.",
   "@fileOperations.transferDialog.compressLevelCaption": {
@@ -295,11 +295,11 @@
   },
   "fileOperations.transferDialog.scanUnresponsive": "De bron reageert niet, dus meer konden we niet tellen.",
   "@fileOperations.transferDialog.scanUnresponsive": {
-    "sourceHash": "03d95e0"
+    "sourceHash": "ec3beb2"
   },
   "fileOperations.transferDialog.scanStopped": "We konden de bron niet helemaal doormeten, dus meer konden we niet tellen.",
   "@fileOperations.transferDialog.scanStopped": {
-    "sourceHash": "aac156c"
+    "sourceHash": "f7d3029"
   },
   "fileOperations.transferDialog.scanRetry": "Probeer opnieuw",
   "@fileOperations.transferDialog.scanRetry": {
@@ -307,7 +307,7 @@
   },
   "fileOperations.transferDialog.conflictsUnknown": "We konden niet controleren wat er al op de bestemming staat. We vragen het je bij elke botsing.",
   "@fileOperations.transferDialog.conflictsUnknown": {
-    "sourceHash": "1bc997a"
+    "sourceHash": "d42db28"
   },
   "fileOperations.transferDialog.checkingConflicts": "Bezig met controleren op conflicten…",
   "@fileOperations.transferDialog.checkingConflicts": {
@@ -367,7 +367,7 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "Kan ‘{name}’ niet {verb, select, copy {kopiëren} other {verplaatsen}} naar een eigen submap",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "815204a"
+    "sourceHash": "96c81d6"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "‘{name}’ staat al op deze locatie",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
@@ -507,11 +507,11 @@
   },
   "fileOperations.transferProgress.warningFileOverFolder": "Het doel bestaat en is een <strong>map</strong>. Je staat op het punt het te overschrijven met een <strong>bestand</strong> met dezelfde naam. De volledige inhoud van de doelmap zou worden verwijderd en vervangen door het bestand. Wat wil je doen?",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "c560c0f"
+    "sourceHash": "6dce75c"
   },
   "fileOperations.transferProgress.lookAlikeHint": "Deze namen zien er hetzelfde uit, maar de server slaat ze anders op. Met ‘Overschrijf’ vervang je het onderdeel dat er al staat.",
   "@fileOperations.transferProgress.lookAlikeHint": {
-    "sourceHash": "2d35ddf"
+    "sourceHash": "01ed9ad"
   },
   "fileOperations.transferProgress.existingFolderLabel": "Bestaand (map):",
   "@fileOperations.transferProgress.existingFolderLabel": {
@@ -551,7 +551,7 @@
   },
   "fileOperations.transferProgress.smallerDisabledTooltip": "Kan niet vergelijken: grootte van de doelmap is onbekend.",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
-    "sourceHash": "3bb25be"
+    "sourceHash": "ad5025c"
   },
   "fileOperations.transferProgress.conflictSkip": "Sla over",
   "@fileOperations.transferProgress.conflictSkip": {
@@ -648,7 +648,7 @@
   },
   "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "Alle bestanden staan al op de bestemming, dus terugdraaien kan nu niet meer. Met Annuleer stopt Cmdr nog wel voordat het de rest van de originelen verwijdert.",
   "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
-    "sourceHash": "5f8b044"
+    "sourceHash": "da51356"
   },
   "fileOperations.transferProgress.titlePaused": "Gepauzeerd",
   "@fileOperations.transferProgress.titlePaused": {
@@ -692,7 +692,7 @@
   },
   "fileOperations.transferProgress.queuedToast": "Er {countText} deze voor, dus deze wacht op zijn beurt. Vind hem in de bewerkingenwachtrij.",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "60a251d"
+    "sourceHash": "1bb57e1"
   },
   "fileOperations.transferProgress.queuedToastCount": "{count, plural, one {gaat # bewerking} other {gaan # bewerkingen}}",
   "@fileOperations.transferProgress.queuedToastCount": {
@@ -716,11 +716,11 @@
   },
   "fileOperations.rollbackConfirm.body": "Dit verwijdert elk bestand dat de bewerking tot nu toe heeft geschreven. Wat daarbij is vervangen, komt niet terug. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat achterblijven.",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "740e974"
+    "sourceHash": "1d3328f"
   },
   "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "Dit zet alles terug wat de bewerking tot nu toe heeft verplaatst. Wat daarbij is vervangen, komt niet terug. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat blijven staan.",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
-    "sourceHash": "a489eb2"
+    "sourceHash": "a058f98"
   },
   "fileOperations.rollbackConfirm.titleFinish": "Het terugdraaien van deze bewerking voltooien?",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -728,15 +728,15 @@
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "Dit verwijdert de bestanden en mappen die de bewerking heeft aangemaakt. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat achterblijven.",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
-    "sourceHash": "88584f4"
+    "sourceHash": "9afb3e2"
   },
   "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "Dit zet de bestanden terug waar ze vandaan kwamen. Cmdr slaat alles over waar het niet zeker van is, dus er kan wat blijven staan.",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
-    "sourceHash": "7d55114"
+    "sourceHash": "5c3f276"
   },
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "Dit geeft de bestanden hun oude namen terug. Cmdr slaat alles over waar het niet zeker van is, dus sommige houden misschien hun huidige naam.",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
-    "sourceHash": "819690f"
+    "sourceHash": "37932e7"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "Laat het zo",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
@@ -784,7 +784,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr slaat alles over waar het niet zeker van is, dus deze zijn blijven staan:",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "fb28a31"
+    "sourceHash": "bab6eb4"
   },
   "fileOperations.cancelRollback.reason.drift.named": "{name} ongemoeid gelaten: daar is iets aan gewijzigd nadat Cmdr er klaar mee was.",
   "@fileOperations.cancelRollback.reason.drift.named": {
@@ -796,11 +796,11 @@
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "{name} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
-    "sourceHash": "29c32b9"
+    "sourceHash": "3e553b2"
   },
   "fileOperations.cancelRollback.reason.unverifiable.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} ongemoeid gelaten: Cmdr kon niet controleren of daar iets aan gewijzigd is.",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "e40696b"
+    "sourceHash": "25fe620"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "{name} laten staan: op de oude plek staat nu iets anders.",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
@@ -820,19 +820,19 @@
   },
   "fileOperations.cancelRollback.reason.failed.named": "{name} terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.",
   "@fileOperations.cancelRollback.reason.failed.named": {
-    "sourceHash": "5c9d51d"
+    "sourceHash": "d22eda5"
   },
   "fileOperations.cancelRollback.reason.failed.counted": "{countText} {count, plural, one {onderdeel} other {onderdelen}} terugdraaien lukte niet. De schijf is misschien niet verbonden of alleen-lezen.",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "92c8b00"
+    "sourceHash": "fa172fb"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "{name} verwijderen lukte niet: een onvolledig exemplaar dat op de bestemming is blijven staan. Je kunt het gerust verwijderen, en Cmdr ruimt het bij een latere overdracht daarheen op.",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
-    "sourceHash": "4aeaddc"
+    "sourceHash": "d47b49d"
   },
   "fileOperations.cancelRollback.stagedLeftover.counted": "{countText} onvolledige {count, plural, one {exemplaar} other {exemplaren}} verwijderen lukte niet; die zijn op de bestemming blijven staan. Je kunt ze gerust verwijderen, en Cmdr ruimt ze bij een latere overdracht daarheen op.",
   "@fileOperations.cancelRollback.stagedLeftover.counted": {
-    "sourceHash": "becfef5"
+    "sourceHash": "6567e25"
   },
   "fileOperations.leftovers.stagingFolderKept": "Cmdr heeft op {volumeName} bestanden gevonden waarvan het verplaatsen niet is voltooid, en heeft ze allemaal laten staan, in een verborgen map met de naam {folderName}.",
   "@fileOperations.leftovers.stagingFolderKept": {
@@ -864,7 +864,7 @@
   },
   "fileOperations.archivePassword.retryTitle": "Dat werkte niet",
   "@fileOperations.archivePassword.retryTitle": {
-    "sourceHash": "dd30abb"
+    "sourceHash": "a12d349"
   },
   "fileOperations.archivePassword.message": "<archive>{name}</archive> is beveiligd met een wachtwoord. Voer het wachtwoord in om het te ontgrendelen.",
   "@fileOperations.archivePassword.message": {
@@ -872,7 +872,7 @@
   },
   "fileOperations.archivePassword.retryMessage": "Dat wachtwoord ontgrendelde <archive>{name}</archive> niet. Probeer het opnieuw.",
   "@fileOperations.archivePassword.retryMessage": {
-    "sourceHash": "88ef11a"
+    "sourceHash": "3d62c0c"
   },
   "fileOperations.archivePassword.inputAria": "Archiefwachtwoord",
   "@fileOperations.archivePassword.inputAria": {
@@ -888,11 +888,11 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {Een mapnaam mag geen ‘/’ of null-tekens bevatten} other {Een bestandsnaam mag geen ‘/’ of null-tekens bevatten}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "4fa16ce"
+    "sourceHash": "1a3c594"
   },
   "fileOperations.validation.empty": "{kind, select, folder {Een mapnaam mag niet leeg zijn} other {Een bestandsnaam mag niet leeg zijn}}",
   "@fileOperations.validation.empty": {
-    "sourceHash": "e6acb43"
+    "sourceHash": "2a25343"
   },
   "fileOperations.validation.nameTooLong": "{kind, select, folder {Deze mapnaam is te lang ({byteCount}/{maxBytes} bytes)} other {Deze bestandsnaam is te lang ({byteCount}/{maxBytes} bytes)}}",
   "@fileOperations.validation.nameTooLong": {
@@ -904,7 +904,7 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "De bestandsextensie wijzigen is niet toegestaan (was ‘{oldExt}’)",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "0b2df1e"
+    "sourceHash": "e81362d"
   },
   "fileOperations.validation.conflict": "‘{name}’ bestaat al in deze map",
   "@fileOperations.validation.conflict": {
@@ -912,11 +912,11 @@
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {Deze mapnaam kan niet worden gebruikt} other {Deze bestandsnaam kan niet worden gebruikt}}",
   "@fileOperations.validation.nameNotUsable": {
-    "sourceHash": "8482a7b"
+    "sourceHash": "6c50bb6"
   },
   "fileOperations.validation.pathEmpty": "Het pad mag niet leeg zijn",
   "@fileOperations.validation.pathEmpty": {
-    "sourceHash": "348eb60"
+    "sourceHash": "c7afbbc"
   },
   "fileOperations.validation.pathNotAbsolute": "Het pad moet absoluut zijn (begint met /)",
   "@fileOperations.validation.pathNotAbsolute": {

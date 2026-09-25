@@ -5,7 +5,7 @@
   },
   "errorReporter.dialog.description": "Ez elküldi a Cmdr legutóbbi naplófájljait a csapatnak, hogy kijavíthassuk, ami elromlott. A naplókat még a gépeden kitakarjuk: a fájlútvonalakat, gépneveket, IP-címeket és e-maileket küldés előtt mind eltávolítjuk.",
   "@errorReporter.dialog.description": {
-    "sourceHash": "dd11284"
+    "sourceHash": "ba4012f"
   },
   "errorReporter.dialog.referenceIdLabel": "Hivatkozási azonosító:",
   "@errorReporter.dialog.referenceIdLabel": {
@@ -38,7 +38,7 @@
   },
   "errorReporter.dialog.detailsToggle": "Mi kerül elküldésre",
   "@errorReporter.dialog.detailsToggle": {
-    "sourceHash": "b1069f7"
+    "sourceHash": "f57398b"
   },
   "errorReporter.dialog.manifestHeading": "Jegyzék",
   "@errorReporter.dialog.manifestHeading": {
@@ -66,7 +66,7 @@
   },
   "errorReporter.dialog.prepareFailed": "Nem sikerült összeállítani az előnézetet.",
   "@errorReporter.dialog.prepareFailed": {
-    "sourceHash": "3729966"
+    "sourceHash": "24cd5ba"
   },
   "errorReporter.dialog.tryAgain": "Próbáld újra",
   "@errorReporter.dialog.tryAgain": {
@@ -74,7 +74,7 @@
   },
   "errorReporter.dialog.bundleUnavailable": "A Cmdr nem tudta összegyűjteni a naplóit a jelentéshez. Próbáld újra egy kicsit később.",
   "@errorReporter.dialog.bundleUnavailable": {
-    "sourceHash": "3743aba"
+    "sourceHash": "15bc5b8"
   },
   "errorReporter.dialog.saveToDisk": "Csomag mentése lemezre (debug)",
   "@errorReporter.dialog.saveToDisk": {
@@ -94,11 +94,11 @@
   },
   "errorReporter.dialog.sendFailedToast": "Nem sikerült elküldeni a hibajelentést. {reason}",
   "@errorReporter.dialog.sendFailedToast": {
-    "sourceHash": "75337c1"
+    "sourceHash": "1eedf49"
   },
   "errorReporter.dialog.saveFailedToast": "Nem sikerült menteni a csomagot: {error}",
   "@errorReporter.dialog.saveFailedToast": {
-    "sourceHash": "34cf2b4"
+    "sourceHash": "6405cca"
   },
   "errorReporter.amend.title": "Hozzáadás a hibajelentésedhez",
   "@errorReporter.amend.title": {
@@ -106,7 +106,7 @@
   },
   "errorReporter.amend.description": "A Cmdr ezt a jelentést már elküldte. Írj egy megjegyzést, vagy csatold az e-mail-címedet, és odakerül a többi mellé, ami már a csapatnál van.",
   "@errorReporter.amend.description": {
-    "sourceHash": "276771e"
+    "sourceHash": "9e1a80f"
   },
   "errorReporter.amend.noteLabel": "A megjegyzésed",
   "@errorReporter.amend.noteLabel": {
@@ -126,7 +126,7 @@
   },
   "errorReporter.amend.unavailable": "Ehhez a jelentéshez már nem lehet megjegyzést hozzáadni. Ha el szeretnéd juttatni a megjegyzésedet a csapathoz, küldj új jelentést a Súgó menüből.",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "cbb7a33"
+    "sourceHash": "b96b48a"
   },
   "errorReporter.amend.close": "Bezárás",
   "@errorReporter.amend.close": {
@@ -134,7 +134,7 @@
   },
   "errorReporter.amend.addFailedToast": "Nem sikerült hozzáadni a megjegyzésedet. {reason}",
   "@errorReporter.amend.addFailedToast": {
-    "sourceHash": "0b67749"
+    "sourceHash": "02f82ce"
   },
   "errorReporter.sentToast.message": "A hibajelentés elment. A hivatkozási azonosítód:",
   "@errorReporter.sentToast.message": {

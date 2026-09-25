@@ -9,15 +9,15 @@
   },
   "crashReporter.dialog.body.ended": "Cmdr wurde beim letzten Mal unerwartet beendet. Hier ist ein Absturzbericht mit Details, die bei der Behebung helfen können.",
   "@crashReporter.dialog.body.ended": {
-    "sourceHash": "a9661e3"
+    "sourceHash": "d67f8cb"
   },
   "crashReporter.dialog.body.keptRunning": "Cmdr ist beim letzten Mal im Hintergrund auf ein Problem gestoßen und weitergelaufen. Hier ist ein Bericht mit Details, die bei der Behebung helfen können.",
   "@crashReporter.dialog.body.keptRunning": {
-    "sourceHash": "1ed6290"
+    "sourceHash": "a972339"
   },
   "crashReporter.dialog.body.unknown": "Cmdr ist beim letzten Mal auf ein Problem gestoßen. Hier ist ein Bericht mit Details, die bei der Behebung helfen können.",
   "@crashReporter.dialog.body.unknown": {
-    "sourceHash": "962305e"
+    "sourceHash": "bed6934"
   },
   "crashReporter.dialog.privacyNote": "Er enthält die App-Version, die macOS-Version und welcher Teil des Codes auf das Problem gestoßen ist. Keine Dateinamen, keine persönlichen Daten.",
   "@crashReporter.dialog.privacyNote": {
@@ -61,7 +61,7 @@
   },
   "crashReporter.dialog.notSent": "Der Bericht wurde nicht gesendet. {reason}",
   "@crashReporter.dialog.notSent": {
-    "sourceHash": "71ae809"
+    "sourceHash": "56fe2bc"
   },
   "crashReporter.sentToast.message.crash": "Absturzbericht gesendet. Danke, dass du hilfst, Cmdr zu verbessern.",
   "@crashReporter.sentToast.message.crash": {
@@ -89,6 +89,6 @@
   },
   "crashReporter.sentToast.logNotSent": "Das Protokoll wurde nicht gesendet. {reason}",
   "@crashReporter.sentToast.logNotSent": {
-    "sourceHash": "617245e"
+    "sourceHash": "a9f5323"
   }
 }

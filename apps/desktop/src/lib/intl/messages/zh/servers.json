@@ -105,7 +105,7 @@
   },
   "servers.refusal.authenticationRejected": "那个密码对 {username} 不起作用。",
   "@servers.refusal.authenticationRejected": {
-    "sourceHash": "b2c42b0"
+    "sourceHash": "ac235d2"
   },
   "servers.refusal.needsCredentials": "这台服务器需要密码。",
   "@servers.refusal.needsCredentials": {
@@ -113,15 +113,15 @@
   },
   "servers.refusal.accountNotPermitted": "{username} 在这里没有访问权限。请换一个账户试试。",
   "@servers.refusal.accountNotPermitted": {
-    "sourceHash": "fbd3b7b"
+    "sourceHash": "baa82ef"
   },
   "servers.refusal.authMethodUnsupported": "这台服务器用的登录方式，Cmdr 还不支持。",
   "@servers.refusal.authMethodUnsupported": {
-    "sourceHash": "62b963e"
+    "sourceHash": "48b9b15"
   },
   "servers.refusal.certificateUntrusted": "macOS 不信任这台服务器的证书。请在“钥匙串访问”中添加它，然后重试。",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "6db00c6"
+    "sourceHash": "b8f3b4a"
   },
   "servers.refusal.notAWebdavServer": "这个地址上没有任何东西响应 WebDAV。",
   "@servers.refusal.notAWebdavServer": {
@@ -129,23 +129,23 @@
   },
   "servers.refusal.invalidUrl": "这看起来不像服务器地址。",
   "@servers.refusal.invalidUrl": {
-    "sourceHash": "9a121ac"
+    "sourceHash": "d3f5f7d"
   },
   "servers.refusal.timedOut": "{host} 没能及时响应。",
   "@servers.refusal.timedOut": {
-    "sourceHash": "7662825"
+    "sourceHash": "b2f0e52"
   },
   "servers.refusal.unreachable": "Cmdr 连不上 {host}。",
   "@servers.refusal.unreachable": {
-    "sourceHash": "ae716c3"
+    "sourceHash": "6fcba90"
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr 还没有信任 {host} 的主机密钥。",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "40a9d28"
+    "sourceHash": "343f48b"
   },
   "servers.refusal.hostKeyRevoked": "在这台 Mac 的 SSH 设置里，{host} 的主机密钥被标记为已泄露。Cmdr 不会连接到它。",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "47aacda"
+    "sourceHash": "e23d585"
   },
   "servers.refusal.startFolderOutsideRoot": "起始文件夹必须是根文件夹本身，或者它里面的文件夹。",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -153,23 +153,23 @@
   },
   "servers.refusal.rootNotFound": "Cmdr 无法打开 {host} 上的这个文件夹。请确认它存在，并且你的账户能读取它。",
   "@servers.refusal.rootNotFound": {
-    "sourceHash": "883a0bc"
+    "sourceHash": "aa029f8"
   },
   "servers.refusal.startFolderNotFound": "Cmdr 无法打开 {host} 上的这个起始文件夹。请确认它存在，并且你的账户能读取它。",
   "@servers.refusal.startFolderNotFound": {
-    "sourceHash": "f1df16e"
+    "sourceHash": "0997a8d"
   },
   "servers.refusal.saveUnconfirmed": "{host} 没能及时响应，所以什么都没保存。过一会儿再试一次。",
   "@servers.refusal.saveUnconfirmed": {
-    "sourceHash": "f7bb3a6"
+    "sourceHash": "3fb55a6"
   },
   "servers.refusal.secretNotStored": "Cmdr 没能把这个密码存到钥匙串。请再试一次，或者关闭“记住到钥匙串”，不存密码直接登录。",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "080b475"
+    "sourceHash": "20957fe"
   },
   "servers.refusal.savedSecretNotUpdated": "Cmdr 已保存你的更改，但没能更新钥匙串里的密码。再保存一次即可重试。",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "471a6d8"
+    "sourceHash": "2ae1e2b"
   },
   "servers.sheet.addTitle": "添加服务器",
   "@servers.sheet.addTitle": {
@@ -313,7 +313,7 @@
   },
   "servers.sheet.autoReconnectHelp": "如果连接中断，Cmdr 会自动重新连接到这台服务器。这不会让 Cmdr 在启动时连接：只有在窗格中打开这台服务器时，Cmdr 才会连接。",
   "@servers.sheet.autoReconnectHelp": {
-    "sourceHash": "5fc66ee"
+    "sourceHash": "559525d"
   },
   "servers.sheet.autoReconnectInfoLabel": "进一步了解“自动重新连接”",
   "@servers.sheet.autoReconnectInfoLabel": {
@@ -333,19 +333,19 @@
   },
   "servers.hostKey.firstContactBody": "请把下面的指纹和这台服务器的所有者给你的那个核对一下，然后信任它。",
   "@servers.hostKey.firstContactBody": {
-    "sourceHash": "befd6c3"
+    "sourceHash": "f207466"
   },
   "servers.hostKey.changedTitle": "{host} 的主机密钥变了",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "dde14d6"
+    "sourceHash": "a63a050"
   },
   "servers.hostKey.changedBody": "这可能是因为服务器重装过，也可能是有东西夹在你和它之间。信任之前，请先和这台服务器的所有者核对指纹。",
   "@servers.hostKey.changedBody": {
-    "sourceHash": "34552a6"
+    "sourceHash": "42491c4"
   },
   "servers.hostKey.changedDisclosure": "我核对过了",
   "@servers.hostKey.changedDisclosure": {
-    "sourceHash": "29d1f63"
+    "sourceHash": "4051d39"
   },
   "servers.hostKey.fingerprintLabel": "密钥指纹",
   "@servers.hostKey.fingerprintLabel": {
@@ -369,7 +369,7 @@
   },
   "servers.paneState.hostKeyChanged": "Cmdr 不会连接到 {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "123ff4f"
+    "sourceHash": "c73ddf3"
   },
   "servers.paneState.hostKeyChangedHint": "它的主机密钥变了。可能是服务器重装过，也可能是有东西夹在你和它之间。请先断开连接，然后再打开它来核对指纹。",
   "@servers.paneState.hostKeyChangedHint": {
@@ -381,7 +381,7 @@
   },
   "servers.paneState.signedOutNothingToAsk": "登录这台服务器用的是密钥，而不是密码，所以没有要输入的内容。重新打开它即可重试。",
   "@servers.paneState.signedOutNothingToAsk": {
-    "sourceHash": "71d7eee"
+    "sourceHash": "95e6bd0"
   },
   "servers.paneState.retryProgressAriaLabel": "距下次重连尝试的时间",
   "@servers.paneState.retryProgressAriaLabel": {

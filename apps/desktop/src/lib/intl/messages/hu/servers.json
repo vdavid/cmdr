@@ -105,7 +105,7 @@
   },
   "servers.refusal.authenticationRejected": "Ez a jelszó nem jó ehhez a felhasználóhoz: {username}.",
   "@servers.refusal.authenticationRejected": {
-    "sourceHash": "b2c42b0"
+    "sourceHash": "ac235d2"
   },
   "servers.refusal.needsCredentials": "Ez a szerver jelszót kér.",
   "@servers.refusal.needsCredentials": {
@@ -113,15 +113,15 @@
   },
   "servers.refusal.accountNotPermitted": "Ennek a fióknak itt nincs hozzáférése: {username}. Próbálkozz egy másik fiókkal.",
   "@servers.refusal.accountNotPermitted": {
-    "sourceHash": "fbd3b7b"
+    "sourceHash": "baa82ef"
   },
   "servers.refusal.authMethodUnsupported": "Ez a szerver olyan bejelentkezési módot használ, amit a Cmdr még nem támogat.",
   "@servers.refusal.authMethodUnsupported": {
-    "sourceHash": "62b963e"
+    "sourceHash": "48b9b15"
   },
   "servers.refusal.certificateUntrusted": "A macOS nem bízik meg ennek a szervernek a tanúsítványában. Add hozzá a Kulcskarika-elérés appban, majd próbáld újra.",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "6db00c6"
+    "sourceHash": "b8f3b4a"
   },
   "servers.refusal.notAWebdavServer": "Ezen a címen semmi nem válaszol WebDAV-on.",
   "@servers.refusal.notAWebdavServer": {
@@ -129,23 +129,23 @@
   },
   "servers.refusal.invalidUrl": "Ez nem úgy néz ki, mint egy szervercím.",
   "@servers.refusal.invalidUrl": {
-    "sourceHash": "9a121ac"
+    "sourceHash": "d3f5f7d"
   },
   "servers.refusal.timedOut": "{host} nem válaszolt időben.",
   "@servers.refusal.timedOut": {
-    "sourceHash": "7662825"
+    "sourceHash": "b2f0e52"
   },
   "servers.refusal.unreachable": "A Cmdr nem érte el ezt: {host}.",
   "@servers.refusal.unreachable": {
-    "sourceHash": "ae716c3"
+    "sourceHash": "6fcba90"
   },
   "servers.refusal.hostKeyUntrusted": "A Cmdr még nem tekinti megbízhatónak {host} kulcsát.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "40a9d28"
+    "sourceHash": "343f48b"
   },
   "servers.refusal.hostKeyRevoked": "{host} kulcsa kompromittáltként van megjelölve az SSH-beállításaidban ezen a Macen. A Cmdr nem kapcsolódik hozzá.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "47aacda"
+    "sourceHash": "e23d585"
   },
   "servers.refusal.startFolderOutsideRoot": "A kezdőmappa csak a gyökérmappa vagy egy benne lévő mappa lehet.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -153,23 +153,23 @@
   },
   "servers.refusal.rootNotFound": "A Cmdr nem tudja megnyitni ezt a mappát itt: {host}. Ellenőrizd, hogy létezik-e, és hogy a fiókod olvashatja-e.",
   "@servers.refusal.rootNotFound": {
-    "sourceHash": "883a0bc"
+    "sourceHash": "aa029f8"
   },
   "servers.refusal.startFolderNotFound": "A Cmdr nem tudja megnyitni ezt a kezdőmappát itt: {host}. Ellenőrizd, hogy létezik-e, és hogy a fiókod olvashatja-e.",
   "@servers.refusal.startFolderNotFound": {
-    "sourceHash": "f1df16e"
+    "sourceHash": "0997a8d"
   },
   "servers.refusal.saveUnconfirmed": "{host} nem válaszolt időben, ezért a Cmdr nem mentett semmit. Próbáld újra egy pillanat múlva.",
   "@servers.refusal.saveUnconfirmed": {
-    "sourceHash": "f7bb3a6"
+    "sourceHash": "3fb55a6"
   },
   "servers.refusal.secretNotStored": "A Cmdr nem tudta menteni ezt a jelszót a kulcskarikába. Próbáld újra, vagy kapcsold ki a „Megjegyzés a kulcskarikában” beállítást, hogy mentés nélkül jelentkezz be.",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "080b475"
+    "sourceHash": "20957fe"
   },
   "servers.refusal.savedSecretNotUpdated": "A Cmdr mentette a módosításaidat, de a jelszót nem tudta frissíteni a kulcskarikában. Ments újra, és a Cmdr újra megpróbálja.",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "471a6d8"
+    "sourceHash": "2ae1e2b"
   },
   "servers.sheet.addTitle": "Szerver hozzáadása",
   "@servers.sheet.addTitle": {
@@ -313,7 +313,7 @@
   },
   "servers.sheet.autoReconnectHelp": "Ha megszakad a kapcsolat, a Cmdr magától újracsatlakozik ehhez a szerverhez. Ettől a Cmdr nem csatlakozik indításkor: akkor csatlakozik, amikor megnyitod a szervert egy panelben.",
   "@servers.sheet.autoReconnectHelp": {
-    "sourceHash": "5fc66ee"
+    "sourceHash": "559525d"
   },
   "servers.sheet.autoReconnectInfoLabel": "Bővebben: Automatikus újracsatlakozás",
   "@servers.sheet.autoReconnectInfoLabel": {
@@ -333,19 +333,19 @@
   },
   "servers.hostKey.firstContactBody": "Vesd össze az alábbi ujjlenyomatot azzal, amit a szerver tulajdonosától kaptál, majd állítsd be megbízhatóként.",
   "@servers.hostKey.firstContactBody": {
-    "sourceHash": "befd6c3"
+    "sourceHash": "f207466"
   },
   "servers.hostKey.changedTitle": "{host} kulcsa megváltozott",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "dde14d6"
+    "sourceHash": "a63a050"
   },
   "servers.hostKey.changedBody": "Ez jelentheti azt, hogy a szervert újratelepítették, de azt is, hogy valami beékelődött közéd és a szerver közé. Egyeztesd az ujjlenyomatot a szerver tulajdonosával, mielőtt megbízhatóként beállítanád.",
   "@servers.hostKey.changedBody": {
-    "sourceHash": "34552a6"
+    "sourceHash": "42491c4"
   },
   "servers.hostKey.changedDisclosure": "Ellenőriztem",
   "@servers.hostKey.changedDisclosure": {
-    "sourceHash": "29d1f63"
+    "sourceHash": "4051d39"
   },
   "servers.hostKey.fingerprintLabel": "A kulcs ujjlenyomata",
   "@servers.hostKey.fingerprintLabel": {
@@ -369,7 +369,7 @@
   },
   "servers.paneState.hostKeyChanged": "A Cmdr nem kapcsolódik ide: {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "123ff4f"
+    "sourceHash": "c73ddf3"
   },
   "servers.paneState.hostKeyChangedHint": "A kulcsa megváltozott. Ez jelentheti azt, hogy a szervert újratelepítették, de azt is, hogy valami beékelődött közéd és a szerver közé. Válaszd le, majd nyisd meg újra az ujjlenyomat ellenőrzéséhez.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -381,7 +381,7 @@
   },
   "servers.paneState.signedOutNothingToAsk": "Ez a szerver jelszó helyett kulcsot használ a bejelentkezéshez, így nincs mit beírnod. Nyisd meg újra a kapcsolódáshoz.",
   "@servers.paneState.signedOutNothingToAsk": {
-    "sourceHash": "71d7eee"
+    "sourceHash": "95e6bd0"
   },
   "servers.paneState.retryProgressAriaLabel": "Idő a következő újracsatlakozási próbáig",
   "@servers.paneState.retryProgressAriaLabel": {

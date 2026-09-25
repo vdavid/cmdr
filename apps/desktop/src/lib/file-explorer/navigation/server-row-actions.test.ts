@@ -86,7 +86,7 @@ describe('isServerPlaceRow', () => {
 })
 
 describe('listSavedPlaces', () => {
-  it('answers the places the saved servers back, with each one\'s "Reconnect automatically" switch', async () => {
+  it('answers the places the saved servers back, with each one’s "Reconnect automatically" switch', async () => {
     expect(await listSavedPlaces()).toEqual(new Map([['sftp-nas-local-22-ada', { autoReconnect: false }]]))
   })
 
@@ -196,7 +196,7 @@ describe('runServerRowAction', () => {
     expect(setPlacePinned).toHaveBeenLastCalledWith('sftp-nas-local-22-ada', false)
     // ❗ The unpin toast has to say the server survives: nothing was deleted, and
     // a person who reads "removed" will re-add a server they still have.
-    expect(addToast).toHaveBeenLastCalledWith("Naspolya is out of your volume switcher. It's still saved.", {
+    expect(addToast).toHaveBeenLastCalledWith('Naspolya is out of your volume switcher. It’s still saved.', {
       level: 'success',
     })
   })

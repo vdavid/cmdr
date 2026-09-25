@@ -39,7 +39,7 @@ vi.mock('$lib/search/snapshot-store.svelte', async () => {
 vi.mock('$lib/stores/volume-store.svelte', () => ({ getVolumes: () => [] }))
 
 vi.mock('$lib/search/capabilities', () => ({
-  SEARCH_RESULTS_NOT_A_FOLDER_TOAST: "Search results aren't a folder. Pick a real destination.",
+  SEARCH_RESULTS_NOT_A_FOLDER_TOAST: 'Search results aren’t a folder. Pick a real destination.',
 }))
 
 vi.mock('$lib/file-viewer/open-viewer', async () => ({
@@ -118,7 +118,7 @@ describe('startRename', () => {
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
-      "This is a read-only volume. Renaming isn't possible here.",
+      'This is a read-only volume. Renaming isn’t possible here.',
     )
     expect(startRename).not.toHaveBeenCalled()
   })
@@ -169,7 +169,7 @@ describe('startRename', () => {
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
-      "This is a read-only volume. Renaming isn't possible here.",
+      'This is a read-only volume. Renaming isn’t possible here.',
     )
     expect(startRename).not.toHaveBeenCalled()
   })
@@ -220,7 +220,7 @@ describe('openNewFolderDialog', () => {
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
-      "This is a read-only volume. Creating folders isn't possible here.",
+      'This is a read-only volume. Creating folders isn’t possible here.',
     )
     expect(dialogs.showNewFolder).not.toHaveBeenCalled()
   })
@@ -288,7 +288,7 @@ describe('openNewFileDialog', () => {
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
-      "This is a read-only volume. Creating files isn't possible here.",
+      'This is a read-only volume. Creating files isn’t possible here.',
     )
     expect(dialogs.showNewFile).not.toHaveBeenCalled()
   })
@@ -546,7 +546,7 @@ describe('openDeleteDialog', () => {
 
     expect(dialogs.showAlert).toHaveBeenCalledWith(
       'Read-only volume',
-      "This is a read-only volume. Deleting files isn't possible here.",
+      'This is a read-only volume. Deleting files isn’t possible here.',
     )
     expect(dialogs.showDeleteConfirmation).not.toHaveBeenCalled()
   })

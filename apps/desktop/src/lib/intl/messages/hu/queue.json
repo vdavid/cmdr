@@ -37,7 +37,7 @@
   },
   "queue.row.status": "{status, select, queued {Várakozik} running {Fut} paused {Szüneteltetve} done {Kész} cancelled {Megszakítva} failed {Nem sikerült befejezni} other {Fut}}",
   "@queue.row.status": {
-    "sourceHash": "8e9ce48"
+    "sourceHash": "d7a7517"
   },
   "queue.row.statusAwaitingAnswer": "Válaszolnod kell",
   "@queue.row.statusAwaitingAnswer": {
@@ -117,7 +117,7 @@
   },
   "queue.failureToast.title": "{type, select, copy {Nem sikerült befejezni a másolást} move {Nem sikerült befejezni az áthelyezést} delete {Nem sikerült befejezni a törlést} trash {Nem sikerült befejezni az áthelyezést a Kukába} rename {Nem sikerült befejezni az átnevezést} create_folder {Nem sikerült befejezni a mappa létrehozását} create_file {Nem sikerült befejezni a fájl létrehozását} archive_edit {Nem sikerült befejezni az archívum szerkesztését} other {Nem sikerült befejezni}}",
   "@queue.failureToast.title": {
-    "sourceHash": "a55f5df"
+    "sourceHash": "b5f2b47"
   },
   "queue.failureToast.action": "Megjelenítés a műveleti sorban",
   "@queue.failureToast.action": {
@@ -125,11 +125,11 @@
   },
   "queue.failureToast.summary": "{count, plural, one {{countText} műveletet nem sikerült befejezni} other {{countText} műveletet nem sikerült befejezni}}",
   "@queue.failureToast.summary": {
-    "sourceHash": "6207914"
+    "sourceHash": "a55d85a"
   },
   "queue.chip.failed": "{count, plural, one {{countText} műveletet nem sikerült befejezni} other {{countText} műveletet nem sikerült befejezni}}. Nyisd meg a műveleti sort, hogy megtudd, miért.",
   "@queue.chip.failed": {
-    "sourceHash": "336ad46"
+    "sourceHash": "9c0036b"
   },
   "queue.chip.ariaLabel": "{label}, {percentText} százalék. Nyisd meg a műveleti sort.",
   "@queue.chip.ariaLabel": {

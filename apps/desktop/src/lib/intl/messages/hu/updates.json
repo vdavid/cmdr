@@ -1,19 +1,19 @@
 {
   "updates.failure.check": "A Cmdr nem tudta megkeresni a frissítéseket. {reason}",
   "@updates.failure.check": {
-    "sourceHash": "66f0ef1"
+    "sourceHash": "5fb454c"
   },
   "updates.failure.checkUntyped": "A Cmdr nem tudta megkeresni a frissítéseket. Ellenőrizd az internetkapcsolatot, és próbáld újra később.",
   "@updates.failure.checkUntyped": {
-    "sourceHash": "55dcdd7"
+    "sourceHash": "233f5d9"
   },
   "updates.failure.download": "A Cmdr nem tudta letölteni a frissítést. Próbáld újra később.",
   "@updates.failure.download": {
-    "sourceHash": "fdd5095"
+    "sourceHash": "1becb1b"
   },
   "updates.failure.install": "A Cmdr nem tudta telepíteni a frissítést. Próbáld újra később, vagy töltsd le a legújabb Cmdrt a getcmdr.com oldalról.",
   "@updates.failure.install": {
-    "sourceHash": "c997a13"
+    "sourceHash": "05a4714"
   },
   "updates.checkToast.sendErrorReport": "Hibajelentés küldése",
   "@updates.checkToast.sendErrorReport": {
@@ -25,7 +25,7 @@
   },
   "updates.toast.readyDetail": "Indítsd újra most, vagy megkapod, amikor legközelebb megnyitod a Cmdrt.",
   "@updates.toast.readyDetail": {
-    "sourceHash": "aab853f"
+    "sourceHash": "42ce099"
   },
   "updates.toast.versionChange": "v{prev} → v{next}",
   "@updates.toast.versionChange": {
@@ -50,11 +50,11 @@
   },
   "updates.moveToApplicationsDialog.translocated": "Kész egy új verzió, de a macOS a Cmdr appot egy ideiglenes, csak olvasható másolatból futtatja. Ez akkor történik, ha egy appot közvetlenül a letöltés helyéről nyitsz meg, így a frissítéseknek nincs hova települniük.",
   "@updates.moveToApplicationsDialog.translocated": {
-    "sourceHash": "510a3a6"
+    "sourceHash": "ed64953"
   },
   "updates.moveToApplicationsDialog.readOnlyVolume": "Kész egy új verzió, de a Cmdr csak olvasható helyről fut, jellemzően egy még csatolt lemezképről. Így a frissítéseknek nincs hova települniük.",
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
-    "sourceHash": "94edc89"
+    "sourceHash": "a23ef5a"
   },
   "updates.moveToApplicationsDialog.howTo": "Lépj ki a Cmdr appból, húzd át az Alkalmazások mappádba, és onnan indítsd el. Utána már minden frissítés magától megérkezik.",
   "@updates.moveToApplicationsDialog.howTo": {

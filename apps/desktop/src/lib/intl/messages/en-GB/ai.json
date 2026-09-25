@@ -1,7 +1,7 @@
 {
-  "ai.translateError.unknownProvider.title": "That AI provider isn''t recognised",
+  "ai.translateError.unknownProvider.title": "That AI provider isn’t recognised",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.cloudConsent.askCmdr.contentsRule": "Cmdr never sends whole files, photos, or thumbnails. When you ask about a file, it can read a limited part of it: some lines of text, a few pages of a PDF along with its title and author, the list of files inside an archive, or a photo’s camera details, including where it was taken. Photo search works the same way: the text Cmdr recognised inside the matching photos and their tags go to your provider so it can find them. Cmdr can suggest renames, moves, and cleanups, and nothing happens to a file until you approve it.",
   "@ai.cloudConsent.askCmdr.contentsRule": {

@@ -111,7 +111,7 @@ describe('readCancelRollback', () => {
       )
       expect(readout).toEqual({
         headline: 'Removed 9 items.',
-        leftBehind: "Cmdr skips anything it isn't sure about, so these stayed where they are:",
+        leftBehind: 'Cmdr skips anything it isn’t sure about, so these stayed where they are:',
         reasons: ['Left invoice-2026.pdf alone: it changed after Cmdr put it there.'],
         staged: null,
         level: 'info',
@@ -165,7 +165,7 @@ describe('readCancelRollback', () => {
       )
       expect(readout?.reasons).toEqual([
         'Left notes.md alone: it changed after Cmdr put it there.',
-        "Left 3 items alone: Cmdr couldn't check whether they changed.",
+        'Left 3 items alone: Cmdr couldn’t check whether they changed.',
         'Left photo.jpg where it is: something else now sits where it came from.',
         'Left the folder Scans alone: it has something in it now.',
       ])
@@ -196,7 +196,7 @@ describe('readCancelRollback', () => {
         'copy',
       )
       expect(refused?.level).toBe('warn')
-      expect(refused?.reasons).toContain("Couldn't undo report.pdf. Its drive may be disconnected or read-only.")
+      expect(refused?.reasons).toContain('Couldn’t undo report.pdf. Its drive may be disconnected or read-only.')
     })
 
     it('never uses the words error or failed in front of a person', () => {
@@ -246,7 +246,7 @@ describe('readCancelRollback', () => {
     })
   })
 
-  describe("Cmdr's own scratch the destination wouldn't give up", () => {
+  describe('Cmdr’s own scratch the destination wouldn’t give up', () => {
     // An abandoned write keeps its handle open, the destination refuses the
     // delete for as long as that session lives, and the ledger reversal itself
     // can still be perfect. The readout is the only thing standing between that
@@ -265,8 +265,8 @@ describe('readCancelRollback', () => {
         leftBehind: null,
         reasons: [],
         staged:
-          "Couldn't remove holiday.jpg.cmdr-tmp-4d1f9c, an unfinished copy left at the destination. " +
-          "It's safe to delete, and Cmdr clears it on a later transfer there.",
+          'Couldn’t remove holiday.jpg.cmdr-tmp-4d1f9c, an unfinished copy left at the destination. ' +
+          'It’s safe to delete, and Cmdr clears it on a later transfer there.',
         level: 'warn',
       })
     })
@@ -300,8 +300,8 @@ describe('readCancelRollback', () => {
         'copy',
       )
       expect(readout?.staged).toBe(
-        "Couldn't remove 1,240 unfinished copies left at the destination. " +
-          "They're safe to delete, and Cmdr clears them on a later transfer there.",
+        'Couldn’t remove 1,240 unfinished copies left at the destination. ' +
+          'They’re safe to delete, and Cmdr clears them on a later transfer there.',
       )
     })
 

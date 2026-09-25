@@ -24,19 +24,19 @@ describe('getPathValidationError', () => {
 
   it('rejects copying a folder into itself', () => {
     expect(getPathValidationError(['/a/photos'], '/a/photos', 'copy')).toBe(
-      `Can't copy “photos” into its own subfolder`,
+      `Can’t copy “photos” into its own subfolder`,
     )
   })
 
   it('rejects copying a folder into its own subfolder', () => {
     expect(getPathValidationError(['/a/photos'], '/a/photos/sub', 'copy')).toBe(
-      `Can't copy “photos” into its own subfolder`,
+      `Can’t copy “photos” into its own subfolder`,
     )
   })
 
   it('uses the move verb for a move operation', () => {
     expect(getPathValidationError(['/a/photos'], '/a/photos', 'move')).toBe(
-      `Can't move “photos” into its own subfolder`,
+      `Can’t move “photos” into its own subfolder`,
     )
   })
 
@@ -50,14 +50,14 @@ describe('getPathValidationError', () => {
 
   it('normalizes trailing slashes on both sides before comparing', () => {
     expect(getPathValidationError(['/a/photos/'], '/a/photos', 'copy')).toBe(
-      `Can't copy “photos” into its own subfolder`,
+      `Can’t copy “photos” into its own subfolder`,
     )
     expect(getPathValidationError(['/a/photos'], '/a/', 'move')).toBe(`“photos” is already in this location`)
   })
 
   it('flags any matching source when several are given', () => {
     expect(getPathValidationError(['/a/notes.txt', '/a/photos'], '/a/photos/sub', 'copy')).toBe(
-      `Can't copy “photos” into its own subfolder`,
+      `Can’t copy “photos” into its own subfolder`,
     )
   })
 

@@ -40,7 +40,7 @@ describe('readAdbConnectOutcome', () => {
   it('routes a missing toolchain to Settings, which is the only place that fixes it', () => {
     expect(readAdbConnectOutcome({ type: 'adbNotInstalled' })).toEqual({
       kind: 'refused',
-      sentence: "Cmdr couldn't find the Android platform tools.",
+      sentence: 'Cmdr couldn’t find the Android platform tools.',
       recovery: 'open_settings',
     })
   })

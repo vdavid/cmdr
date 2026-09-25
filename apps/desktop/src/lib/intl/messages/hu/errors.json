@@ -21,7 +21,7 @@
   },
   "errors.listing.notEnoughMemory.suggestion": "Ezeket próbálhatod:\n- Zárj be néhány appot a memória felszabadításához, főleg az erőforrás-igényeseket (sok lapot nyitva tartó böngészők, szerkesztők, médiaappok)\n- Nézd meg a memóriahasználatot a **Tevékenységfigyelő** appban (keresd a Spotlightban)\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "26a7a46"
+    "sourceHash": "d05a4e4"
   },
   "errors.listing.resourceBusy.title": "Az erőforrás foglalt",
   "@errors.listing.resourceBusy.title": {
@@ -29,7 +29,7 @@
   },
   "errors.listing.resourceBusy.explanation": "A Cmdr nem fért hozzá ehhez: `{path}`, mert egy másik app vagy folyamat épp kizárólagosan használja. Ez általában átmeneti.",
   "@errors.listing.resourceBusy.explanation": {
-    "sourceHash": "8c7bdd4"
+    "sourceHash": "18a07d9"
   },
   "errors.listing.resourceBusy.suggestion": "Várj egy kicsit, majd lépj ide újra. Ha továbbra is előfordul, nézd meg, melyik app tarthatja nyitva a fájlt (a Terminalban add ki a `lsof +D <folder-path>` parancsot, hogy lásd, mely folyamatok használják ezt a mappát).",
   "@errors.listing.resourceBusy.suggestion": {
@@ -53,11 +53,11 @@
   },
   "errors.listing.networkDown.explanation": "A Mac hálózati kapcsolata nem működik, ezért a Cmdr nem éri el ezt a kötetet. Ez jelentheti, hogy a Wi-Fi megszakadt, kihúztak egy Ethernet-kábelt, vagy a hálózati interfész le van tiltva.",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "e2106be"
+    "sourceHash": "179f8bb"
   },
   "errors.listing.networkDown.suggestion": "Ezeket próbálhatod:\n- Nézd meg a Wi-Fi vagy az Ethernet állapotát itt: **{system_settings} > Hálózat**\n- Ha Wi-Fin vagy, próbáld ki- és bekapcsolni\n- A Terminalban add ki a `ping google.com` parancsot a kapcsolat ellenőrzéséhez\n- Lépj ide újra, amint újra online vagy",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "3fe671d"
+    "sourceHash": "bf4b517"
   },
   "errors.listing.networkConnectionDropped.title": "A hálózati kapcsolat megszakadt",
   "@errors.listing.networkConnectionDropped.title": {
@@ -69,7 +69,7 @@
   },
   "errors.listing.networkConnectionDropped.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd a hálózati kapcsolatot\n- Ha VPN-t használsz, győződj meg róla, hogy még csatlakozik\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.networkConnectionDropped.suggestion": {
-    "sourceHash": "17c6bb8"
+    "sourceHash": "228b9a8"
   },
   "errors.listing.connectionDropped.title": "A kapcsolat megszakadt",
   "@errors.listing.connectionDropped.title": {
@@ -81,7 +81,7 @@
   },
   "errors.listing.connectionDropped.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut és válaszol\n- Ellenőrizd a hálózati kapcsolatot\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.connectionDropped.suggestion": {
-    "sourceHash": "d8fba7b"
+    "sourceHash": "3e3446f"
   },
   "errors.listing.connectionReset.title": "A kapcsolat alaphelyzetbe állt",
   "@errors.listing.connectionReset.title": {
@@ -93,7 +93,7 @@
   },
   "errors.listing.connectionReset.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "0ee3d15"
+    "sourceHash": "d980663"
   },
   "errors.listing.connectionTimedOutErrno.title": "A kapcsolat időtúllépést jelzett",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -101,11 +101,11 @@
   },
   "errors.listing.connectionTimedOutErrno.explanation": "A Cmdr megpróbálta beolvasni ezt a mappát, de a kapcsolat nem válaszolt időben. Ez általában azt jelenti, hogy a szerver vagy az eszköz lassú, nem elérhető, vagy a köztetek lévő hálózat torlódott.",
   "@errors.listing.connectionTimedOutErrno.explanation": {
-    "sourceHash": "33612d4"
+    "sourceHash": "c088c41"
   },
   "errors.listing.connectionTimedOutErrno.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminalban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "4172538"
+    "sourceHash": "230ef64"
   },
   "errors.listing.hostDown.title": "A gazdagép nem működik",
   "@errors.listing.hostDown.title": {
@@ -113,11 +113,11 @@
   },
   "errors.listing.hostDown.explanation": "A távoli gazdagép (a kötetet kiszolgáló számítógép vagy szerver) nem válaszol. Lehet, hogy ki van kapcsolva, alszik, vagy átmenetileg nem elérhető.",
   "@errors.listing.hostDown.explanation": {
-    "sourceHash": "cf59cab"
+    "sourceHash": "e175712"
   },
   "errors.listing.hostDown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és csatlakozik a hálózathoz\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e\n- Ha NAS vagy szerver, nézd meg a felügyeleti felületét\n- Lépj ide újra, amint a gazdagép újra elérhető",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "4a09e8e"
+    "sourceHash": "7a8ecd8"
   },
   "errors.listing.staleConnection.title": "Elavult kapcsolat",
   "@errors.listing.staleConnection.title": {
@@ -129,7 +129,7 @@
   },
   "errors.listing.staleConnection.suggestion": "Ezeket próbálhatod:\n- Lépj ki ebből a mappából, majd gyere vissza\n- Ha ez hálózati meghajtó, próbáld leválasztani és újracsatolni a Finderben\n- Ellenőrizd, hogy a mappát kiszolgáló szerver fut\n- A Terminalban add ki a `mount` parancsot a jelenleg csatolt kötetek megtekintéséhez",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "05960c8"
+    "sourceHash": "73de81d"
   },
   "errors.listing.lockUnavailable.title": "Nincs elérhető zár",
   "@errors.listing.lockUnavailable.title": {
@@ -141,7 +141,7 @@
   },
   "errors.listing.lockUnavailable.suggestion": "Ezeket próbálhatod:\n- Zárj be néhány appot, főleg a sok fájllal dolgozókat (szerkesztők, IDE-k, biztonsági mentő eszközök)\n- A Terminalban add ki a `lsof | wc -l` parancsot, hogy lásd, hány fájl van megnyitva az összes appban\n- Ha a probléma folyamatosan visszatér, a Terminalban a `ulimit -n 4096` paranccsal megemelheted a korlátot\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "f9c9f8d"
+    "sourceHash": "a9f23bd"
   },
   "errors.listing.cancelledErrno.title": "Megszakítva",
   "@errors.listing.cancelledErrno.title": {
@@ -153,7 +153,7 @@
   },
   "errors.listing.cancelledErrno.suggestion": "Lépj ide újra, amikor készen állsz az ismételt próbára.",
   "@errors.listing.cancelledErrno.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.notPermitted.title": "Nem engedélyezett",
   "@errors.listing.notPermitted.title": {
@@ -161,11 +161,11 @@
   },
   "errors.listing.notPermitted.explanation": "A macOS megakadályozta, hogy a Cmdr hozzáférjen ehhez: `{path}`. Ez általában azt jelenti, hogy a mappát a macOS biztonsági szabályai védik, vagy a Cmdr még nem kapta meg a megfelelő engedélyeket.",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "ddf8a5d"
+    "sourceHash": "e28dd0e"
   },
   "errors.listing.notPermitted.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ha ez egy rendszer által védett mappa (például rendszerkönyvtár), lehet, hogy a {privacy_and_security} alatt **{full_disk_access}** jogot kell adnod a Cmdrnek\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon a tulajdonjog és az engedélyek ellenőrzéséhez",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "32e9d74"
+    "sourceHash": "bbaa904"
   },
   "errors.listing.pathNotFoundErrno.title": "Az útvonal nem található",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -173,11 +173,11 @@
   },
   "errors.listing.pathNotFoundErrno.explanation": "A Cmdr nem találta ezt: `{path}`. Lehet, hogy áthelyezték, átnevezték vagy törölték, miközben a Cmdr próbált hozzáférni.",
   "@errors.listing.pathNotFoundErrno.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.pathNotFoundErrno.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminalban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.noPermissionErrno.title": "Nincs engedély",
   "@errors.listing.noPermissionErrno.title": {
@@ -185,11 +185,11 @@
   },
   "errors.listing.noPermissionErrno.explanation": "A Cmdrnek nincs engedélye hozzáférni ehhez: `{path}`. A macOS szabályozza, hogy mely appok mely mappákhoz férhetnek hozzá, és a Cmdr még nem kapott hozzáférést ehhez.",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.noPermissionErrno.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon a jelenlegi engedélyek megtekintéséhez",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "ea316e7"
+    "sourceHash": "4b513ef"
   },
   "errors.listing.alreadyExistsErrno.title": "Már létezik",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -197,7 +197,7 @@
   },
   "errors.listing.alreadyExistsErrno.explanation": "Itt már létezik egy fájl vagy mappa: `{path}`, ezért a Cmdr nem tud újat létrehozni ezen a helyen.",
   "@errors.listing.alreadyExistsErrno.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExistsErrno.suggestion": "Nevezd át a meglévő elemet, vagy válassz más nevet az újnak.",
   "@errors.listing.alreadyExistsErrno.suggestion": {
@@ -209,7 +209,7 @@
   },
   "errors.listing.crossDeviceOperation.explanation": "A Cmdr nem tudja közvetlenül áthelyezni ezt az elemet, mert a forrás és a cél különböző köteteken van (például egy belső meghajtó és egy USB-stick). A kötetek közötti áthelyezéshez le kell másolni az adatokat, majd törölni az eredetit.",
   "@errors.listing.crossDeviceOperation.explanation": {
-    "sourceHash": "4762369"
+    "sourceHash": "a6742d3"
   },
   "errors.listing.crossDeviceOperation.suggestion": "Áthelyezés helyett másold a célhelyre az elemet. A Cmdr automatikusan elvégzi a másolást.",
   "@errors.listing.crossDeviceOperation.suggestion": {
@@ -221,7 +221,7 @@
   },
   "errors.listing.notAFolder.explanation": "A Cmdr azt várta, hogy `{path}` mappa, de ez egy fájl. Ez akkor fordulhat elő, ha valamit nemrég átneveztek vagy lecseréltek.",
   "@errors.listing.notAFolder.explanation": {
-    "sourceHash": "45d8f76"
+    "sourceHash": "7ab65a3"
   },
   "errors.listing.notAFolder.suggestion": "Ellenőrizd az útvonalat, és győződj meg róla, hogy mappára mutat, nem fájlra.",
   "@errors.listing.notAFolder.suggestion": {
@@ -233,7 +233,7 @@
   },
   "errors.listing.isAFolderErrno.explanation": "A Cmdr azt várta, hogy `{path}` fájl, de ez egy mappa. Ez akkor fordulhat elő, ha valamit nemrég átneveztek vagy lecseréltek.",
   "@errors.listing.isAFolderErrno.explanation": {
-    "sourceHash": "009d220"
+    "sourceHash": "8c3b294"
   },
   "errors.listing.isAFolderErrno.suggestion": "Ellenőrizd az útvonalat, és győződj meg róla, hogy fájlra mutat, nem mappára.",
   "@errors.listing.isAFolderErrno.suggestion": {
@@ -245,11 +245,11 @@
   },
   "errors.listing.diskFullErrno.explanation": "Nincs elég szabad hely ezen a köteten a művelet befejezéséhez.",
   "@errors.listing.diskFullErrno.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.diskFullErrno.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminalban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken\n- Nézd meg a **{system_settings} > Általános > Tárhely** részt a hely felhasználásának részletezéséhez",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "bf54d66"
+    "sourceHash": "f2eb27b"
   },
   "errors.listing.readOnlyVolumeErrno.title": "Csak olvasható kötet",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -257,11 +257,11 @@
   },
   "errors.listing.readOnlyVolumeErrno.explanation": "Ez a kötet csak olvashatóként van csatolva, ezért a Cmdr nem tud rajta változtatni. Ennek oka lehet, hogy az eszközön fizikai írásvédelmi kapcsoló van, a lemezképet csak olvashatóként csatolták, vagy a fájlrendszer nem támogatja az írást.",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
-    "sourceHash": "cb19e8c"
+    "sourceHash": "e6bcf10"
   },
   "errors.listing.readOnlyVolumeErrno.suggestion": "Ezeket próbálhatod:\n- Ha az eszközön fizikai írásvédelmi kapcsoló van (gyakori az SD-kártyákon), kapcsold ki\n- Ha ez lemezkép, csatold újra írási hozzáféréssel\n- Egyébként előbb másold a fájlokat egy írható helyre",
   "@errors.listing.readOnlyVolumeErrno.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.notSupportedErrno.title": "Nem támogatott",
   "@errors.listing.notSupportedErrno.title": {
@@ -269,11 +269,11 @@
   },
   "errors.listing.notSupportedErrno.explanation": "Ezt a műveletet ez a fájlrendszer nem támogatja. A különböző fájlrendszerek (mint a FAT32, az NTFS vagy a hálózati megosztások) különböző funkciókat támogatnak, és ez nem támogatja azt, amit a Cmdr megpróbál.",
   "@errors.listing.notSupportedErrno.explanation": {
-    "sourceHash": "198aa15"
+    "sourceHash": "a0ca28f"
   },
   "errors.listing.notSupportedErrno.suggestion": "Próbálj más megoldást, vagy használd a Findert ehhez a művelethez. Ha külső meghajtóval dolgozol, lehet, hogy olyan fájlrendszerrel van formázva, aminek korlátai vannak (például a FAT32 nem tud 4 GB-nál nagyobb fájlokat tárolni).",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "169d5cf"
+    "sourceHash": "de64ad5"
   },
   "errors.listing.networkUnreachable.title": "A hálózat nem érhető el",
   "@errors.listing.networkUnreachable.title": {
@@ -281,11 +281,11 @@
   },
   "errors.listing.networkUnreachable.explanation": "A Cmdr nem éri el a hálózatot, amelyen ez a kötet van. Ez gyakran azt jelenti, hogy nem a megfelelő hálózathoz csatlakozol, vagy egy VPN nem aktív.",
   "@errors.listing.networkUnreachable.explanation": {
-    "sourceHash": "f92dedc"
+    "sourceHash": "d3c1975"
   },
   "errors.listing.networkUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- Győződj meg róla, hogy a megfelelő hálózaton vagy (például az irodai Wi-Fin vagy a VPN-en)\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Lépj ide újra, amint csatlakoztál",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "b1754b4"
+    "sourceHash": "7feb3cb"
   },
   "errors.listing.connectionRefused.title": "A kapcsolat elutasítva",
   "@errors.listing.connectionRefused.title": {
@@ -293,11 +293,11 @@
   },
   "errors.listing.connectionRefused.explanation": "A szerver aktívan elutasította a kapcsolatot. Ez általában azt jelenti, hogy a szerverszoftver (például egy SMB- vagy NFS-szolgáltatás) nem fut, vagy úgy van beállítva, hogy elutasítsa a kapcsolatokat erről a Macről.",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "537cf4e"
+    "sourceHash": "88e1ac7"
   },
   "errors.listing.connectionRefused.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a szerver fut és a fájlmegosztó szolgáltatása aktív\n- Ellenőrizd, hogy a szerver címe és portja helyes\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, egyáltalán elérhető-e a szerver\n- Lépj ide újra az ismételt próbához",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "4afa12d"
+    "sourceHash": "17decc3"
   },
   "errors.listing.symlinkLoopErrno.title": "Szimbolikus linkek hurka",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -305,11 +305,11 @@
   },
   "errors.listing.symlinkLoopErrno.explanation": "A Cmdr szimbolikus linkek (más linkekre mutató parancsikonok) körkörös láncát találta itt: `{path}`. Ezeket a linkeket követve körbe-körbe jutsz, ezért a Cmdr nem éri el a tényleges fájlt vagy mappát.",
   "@errors.listing.symlinkLoopErrno.explanation": {
-    "sourceHash": "cb728c1"
+    "sourceHash": "4157be6"
   },
   "errors.listing.symlinkLoopErrno.suggestion": "Ezeket próbálhatod:\n- A Terminalban add ki az `ls -la` parancsot ezen az útvonalon, hogy lásd, hová mutatnak a szimbolikus linkek\n- Keresd meg és javítsd a hurkot okozó linket\n- Ha nem tudod biztosan, melyik link okozza a hurkot, kövesd őket egyenként a `readlink <path>` paranccsal",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "0a439fb"
+    "sourceHash": "eed9a5a"
   },
   "errors.listing.nameTooLongErrno.title": "A név túl hosszú",
   "@errors.listing.nameTooLongErrno.title": {
@@ -317,7 +317,7 @@
   },
   "errors.listing.nameTooLongErrno.explanation": "A fájl vagy mappa neve meghaladja a rendszer korlátját (a legtöbb Mac-köteten 255 karakter). Ez akkor is előfordulhat, ha a teljes útvonal (az összes mappa együtt) meghaladja a rendszer legnagyobb útvonalhosszát.",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "d6f7a03"
+    "sourceHash": "8b9a6ff"
   },
   "errors.listing.nameTooLongErrno.suggestion": "Nevezd át az elemet rövidebb névre. Ha a név ésszerűnek tűnik, lehet, hogy a teljes útvonal (az összes szülőmappával együtt) túl hosszú. Próbáld áthelyezni egy rövidebb útvonalra.",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -329,11 +329,11 @@
   },
   "errors.listing.hostUnreachable.explanation": "A Cmdr nem talál hálózati útvonalat ahhoz a gazdagéphez, amelyen ez a kötet van. Ez általában azt jelenti, hogy a gazdagép másik hálózaton van, tűzfal mögött, vagy az útválasztási beállítást frissíteni kell.",
   "@errors.listing.hostUnreachable.explanation": {
-    "sourceHash": "3e5e6f9"
+    "sourceHash": "184b0fc"
   },
   "errors.listing.hostUnreachable.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a gazdagép be van kapcsolva és ugyanazon a hálózaton van\n- Ha VPN kell az eléréséhez, győződj meg róla, hogy a VPN csatlakozik\n- A Terminalban próbáld ki a `ping <hostname>` parancsot a kapcsolat teszteléséhez\n- Lépj ide újra, amint a gazdagép elérhető",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "8e7a1cf"
+    "sourceHash": "c222f76"
   },
   "errors.listing.folderNotEmpty.title": "A mappa nem üres",
   "@errors.listing.folderNotEmpty.title": {
@@ -341,7 +341,7 @@
   },
   "errors.listing.folderNotEmpty.explanation": "A Cmdr nem tudja eltávolítani ezt: `{path}`, mert még fájlokat vagy almappákat tartalmaz. A rendszer megköveteli, hogy egy mappa üres legyen, mielőtt így eltávolítható lenne.",
   "@errors.listing.folderNotEmpty.explanation": {
-    "sourceHash": "c16ac41"
+    "sourceHash": "26871a4"
   },
   "errors.listing.folderNotEmpty.suggestion": "Előbb töröld a mappa tartalmát, majd próbáld újra eltávolítani a mappát.",
   "@errors.listing.folderNotEmpty.suggestion": {
@@ -353,11 +353,11 @@
   },
   "errors.listing.quotaExceeded.explanation": "Elérted a lemezkvótádat (a felhasználói fiókodnak kiosztott legnagyobb helyet) ezen a köteten. Ez gyakori a megosztott szervereken és hálózati meghajtókon, ahol egy rendszergazda felhasználónkénti korlátokat állít be.",
   "@errors.listing.quotaExceeded.explanation": {
-    "sourceHash": "6fa75c0"
+    "sourceHash": "b9b0b0e"
   },
   "errors.listing.quotaExceeded.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok eltávolításával ezen a köteten\n- Kérd meg a rendszergazdát, hogy növelje a kvótádat\n- A Terminalban add ki a `quota` parancsot a jelenlegi használat és a korlát megtekintéséhez",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "e24428a"
+    "sourceHash": "1b5f0df"
   },
   "errors.listing.authRequiredEauth.title": "Hitelesítés szükséges",
   "@errors.listing.authRequiredEauth.title": {
@@ -365,11 +365,11 @@
   },
   "errors.listing.authRequiredEauth.explanation": "A Cmdr nem tudott hitelesíteni ezen a köteten. Lehet, hogy a mentett hitelesítő adataid lejártak, vagy a szerver elutasítja a jelenlegi bejelentkezést.",
   "@errors.listing.authRequiredEauth.explanation": {
-    "sourceHash": "7b51115"
+    "sourceHash": "654cbb2"
   },
   "errors.listing.authRequiredEauth.suggestion": "Ezeket próbálhatod:\n- Válaszd le, majd csatlakoztasd újra a kötetet, és add meg újra a felhasználónevedet és jelszavadat\n- Ellenőrizd, hogy a jelszavad nem változott vagy járt le\n- Ha ez céges szerver, egyeztess az IT-csapatoddal",
   "@errors.listing.authRequiredEauth.suggestion": {
-    "sourceHash": "9ba659e"
+    "sourceHash": "3469202"
   },
   "errors.listing.authRequiredEneedauth.title": "Hitelesítés szükséges",
   "@errors.listing.authRequiredEneedauth.title": {
@@ -381,7 +381,7 @@
   },
   "errors.listing.authRequiredEneedauth.suggestion": "Ezeket próbálhatod:\n- Válaszd le, majd csatlakoztasd újra a kötetet a Finderben\n- Add meg a felhasználónevedet és jelszavadat, amikor a rendszer kéri\n- Ha nem vagy biztos a hitelesítő adatokban, egyeztess a szerver rendszergazdájával",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "0b61f53"
+    "sourceHash": "a90b520"
   },
   "errors.listing.devicePoweredOff.title": "Az eszköz ki van kapcsolva",
   "@errors.listing.devicePoweredOff.title": {
@@ -389,7 +389,7 @@
   },
   "errors.listing.devicePoweredOff.explanation": "Az eszköz ki van kapcsolva vagy mély alvó állapotban van, ezért a Cmdr nem tud kommunikálni vele.",
   "@errors.listing.devicePoweredOff.explanation": {
-    "sourceHash": "ae9c029"
+    "sourceHash": "782a157"
   },
   "errors.listing.devicePoweredOff.suggestion": "Kapcsold be az eszközt, várd meg, amíg teljesen elindul, majd lépj ide újra.",
   "@errors.listing.devicePoweredOff.suggestion": {
@@ -401,11 +401,11 @@
   },
   "errors.listing.attributeNotFound.explanation": "A Cmdr egy olyan fájlattribútumot (extra metaadatot, például címkéket vagy engedélyeket) próbált beolvasni, ami nem létezik ezen az elemen. Ez akkor fordulhat elő, ha a fájlrendszer nem támogatja a kiterjesztett attribútumokat, vagy ha az attribútumot eltávolították.",
   "@errors.listing.attributeNotFound.explanation": {
-    "sourceHash": "ee5c696"
+    "sourceHash": "ee39dd8"
   },
   "errors.listing.attributeNotFound.suggestion": "Lehet, hogy ez a fájlrendszer nem támogatja a Cmdrnek szükséges metaadatokat. Próbáld a műveletet másik köteten, vagy előbb másold a fájlt a Mac belső meghajtójára.",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "3c357ac"
+    "sourceHash": "463ee44"
   },
   "errors.listing.diskReadProblem.title": "Lemezolvasási probléma",
   "@errors.listing.diskReadProblem.title": {
@@ -417,7 +417,7 @@
   },
   "errors.listing.diskReadProblem.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még megfelelően csatlakozik\n- Nyisd meg a **Lemezkezelő** appot (keresd a Spotlightban), és futtasd az **Elsősegélyt** ezen a köteten\n- Ha ez folyamatosan előfordul, mentsd az adataidat mielőbb. Lehet, hogy a lemezen hibás szektorok jelennek meg, vagy kezd elkopni.",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "792c921"
+    "sourceHash": "614a5fe"
   },
   "errors.listing.unexpectedSystemResponse.title": "Váratlan rendszerválasz",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -425,11 +425,11 @@
   },
   "errors.listing.unexpectedSystemResponse.explanation": "A rendszer váratlan választ adott erre a műveletre. Ez akkor fordulhat elő, ha egy kötet fájlrendszerében ellentmondások vannak, vagy ha a kötet szokatlan állapotban van.",
   "@errors.listing.unexpectedSystemResponse.explanation": {
-    "sourceHash": "eeddaa7"
+    "sourceHash": "a834896"
   },
   "errors.listing.unexpectedSystemResponse.suggestion": "Ezeket próbálhatod:\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot (keresd a Spotlightban), és futtasd az **Elsősegélyt** ezen a köteten a fájlrendszeri problémák ellenőrzéséhez",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "4e5a9bb"
+    "sourceHash": "f63d225"
   },
   "errors.listing.deviceProblem.title": "Eszközprobléma",
   "@errors.listing.deviceProblem.title": {
@@ -441,11 +441,11 @@
   },
   "errors.listing.deviceProblem.suggestion": "Ezeket próbálhatod:\n- Válaszd le, majd csatlakoztasd újra az eszközt\n- Próbálj másik USB-portot vagy kábelt\n- Ha külső meghajtó, próbáld másik számítógéphez csatlakoztatni, hogy lásd, az eszközt követi-e a probléma\n- Ha ez folyamatosan előfordul, lehet, hogy az eszközt javítani vagy cserélni kell",
   "@errors.listing.deviceProblem.suggestion": {
-    "sourceHash": "2cbb1cf"
+    "sourceHash": "5ce793b"
   },
   "errors.listing.couldntReadUnknown.title": "Nem sikerült beolvasni ezt a mappát",
   "@errors.listing.couldntReadUnknown.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.couldntReadUnknown.explanation": "A Cmdr váratlan problémába ütközött ennek a beolvasásakor: `{path}`. Nézd meg lent a technikai részleteket a konkrét rendszerkódért, ami segíthet a hibakeresésben.",
   "@errors.listing.couldntReadUnknown.explanation": {
@@ -453,7 +453,7 @@
   },
   "errors.listing.couldntReadUnknown.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Lépj ide újra az ismételt próbához\n- Ha ez folyamatosan előfordul, nyisd meg a **Lemezkezelő** appot, és futtasd az **Elsősegélyt** ezen a köteten",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "0073987"
+    "sourceHash": "5155626"
   },
   "errors.listing.notFound.title": "Az útvonal nem található",
   "@errors.listing.notFound.title": {
@@ -461,11 +461,11 @@
   },
   "errors.listing.notFound.explanation": "A Cmdr nem találta ezt: `{path}`. Lehet, hogy áthelyezték, átnevezték vagy törölték, miközben a Cmdr próbált hozzáférni.",
   "@errors.listing.notFound.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.notFound.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az útvonal helyesen van-e írva\n- Ha ez hálózati meghajtón van, győződj meg róla, hogy csatlakozik és a megosztás elérhető\n- Lépj a szülőmappába, és keresd ott az elemet\n- A Terminalban add ki az `ls -la` parancsot a szülőmappán, hogy lásd, mi van benne",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.tccRestricted.title": "Ezt a mappát a macOS korlátozza",
   "@errors.listing.tccRestricted.title": {
@@ -473,7 +473,7 @@
   },
   "errors.listing.tccRestricted.explanation": "A Cmdr nem tudja beolvasni ezt: `{path}`, mert a macOS még nem adott hozzáférést ehhez a mappához. Ez egy adatvédelmi korlát, nem a Cmdr hibája.",
   "@errors.listing.tccRestricted.explanation": {
-    "sourceHash": "027470f"
+    "sourceHash": "1f3fc35"
   },
   "errors.listing.tccRestricted.suggestion": "Két módon javíthatod:\n- Adj a Cmdrnek **{full_disk_access}** jogot itt: **{system_settings} → {privacy_and_security} → {full_disk_access}**, hogy egy lépésben feloldd az összes ilyen korlátot.\n- Vagy adj mappánkénti hozzáférést csak ehhez a mappához itt: **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr**.",
   "@errors.listing.tccRestricted.suggestion": {
@@ -485,23 +485,23 @@
   },
   "errors.listing.permissionDenied.explanation": "A Cmdrnek nincs engedélye hozzáférni ehhez: `{path}`. A macOS szabályozza, hogy mely appok mely mappákhoz férhetnek hozzá, és a Cmdr még nem kapott hozzáférést ehhez.",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.permissionDenied.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a **{system_settings} > {privacy_and_security} > {files_and_folders}** menüt, és adj hozzáférést a Cmdrnek\n- Ellenőrizd a mappa engedélyeit a Finderben: kattints rá jobb gombbal, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt\n- Ha ez megosztott mappa, kérd meg a tulajdonosát, hogy frissítse az engedélyeket\n- A Terminalban add ki az `ls -la` parancsot az útvonalon a jelenlegi engedélyek megtekintéséhez",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "0fa0829"
+    "sourceHash": "3450aff"
   },
   "errors.listing.remotePermissionDenied.title": "A szerver nem nyitja meg ezt a mappát",
   "@errors.listing.remotePermissionDenied.title": {
-    "sourceHash": "1fceff5"
+    "sourceHash": "f9cb7bd"
   },
   "errors.listing.remotePermissionDenied.explanation": "`{path}` egy hálózati megosztáson van, és annak a fióknak, amellyel csatlakoztál, nincs engedélye megnyitni. A szerver már azelőtt elutasítja a kérést, hogy a macOS egyáltalán szóba kerülne, tehát ez nem a Macen lévő adatvédelmi beállításon múlik.",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "4e6b9ef"
+    "sourceHash": "d8463b0"
   },
   "errors.listing.remotePermissionDenied.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd a mappa engedélyeit a szerveren, és azt, hogy melyik fiókkal csatlakoztattad a megosztást\n- Egyes mappák a szerver saját rendszerfiókjához tartoznak (például a `lost+found` egy Linuxos megosztáson), és mindenki más elől zárva maradnak\n- Ha másik fiókkal szeretnél csatlakozni, add ki a megosztást, és csatlakoztasd újra azokkal az adatokkal",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "506e57a"
+    "sourceHash": "3e6497d"
   },
   "errors.listing.alreadyExists.title": "Már létezik",
   "@errors.listing.alreadyExists.title": {
@@ -509,7 +509,7 @@
   },
   "errors.listing.alreadyExists.explanation": "Itt már létezik egy fájl vagy mappa: `{path}`, ezért a Cmdr nem tud újat létrehozni ezen a helyen.",
   "@errors.listing.alreadyExists.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExists.suggestion": "Nevezd át a meglévő elemet, vagy válassz más nevet az újnak.",
   "@errors.listing.alreadyExists.suggestion": {
@@ -525,7 +525,7 @@
   },
   "errors.listing.cancelled.suggestion": "Lépj ide újra, amikor készen állsz az ismételt próbára.",
   "@errors.listing.cancelled.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.deviceDisconnected.title": "Az eszköz leválasztva",
   "@errors.listing.deviceDisconnected.title": {
@@ -537,7 +537,7 @@
   },
   "errors.listing.deviceDisconnected.suggestion": "Ezeket próbálhatod:\n- Csatlakoztasd újra az eszközt, és győződj meg róla, hogy a kábel jól rögzül\n- Ha telefon, oldd fel a zárolását, és győződj meg róla, hogy a fájlátviteli mód aktív\n- Lépj ide újra, amint az eszköz újra elérhető",
   "@errors.listing.deviceDisconnected.suggestion": {
-    "sourceHash": "9f6c9a0"
+    "sourceHash": "6940094"
   },
   "errors.listing.notConnected.title": "Még nincs csatlakoztatva",
   "@errors.listing.notConnected.title": {
@@ -545,11 +545,11 @@
   },
   "errors.listing.notConnected.explanation": "A Cmdr még nem csatlakozott ahhoz a telefonhoz vagy szerverhez, amelyen ez a mappa van: `{path}`. Ezért itt még nincs mit megjeleníteni. Semmi nem vált le, és semmi sem törlődött.",
   "@errors.listing.notConnected.explanation": {
-    "sourceHash": "4c508d7"
+    "sourceHash": "93ca2df"
   },
   "errors.listing.notConnected.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a telefont vagy a szervert a kötetválasztóban, hogy csatlakozz hozzá\n- Ha telefon, oldd fel a zárolását, és fogadd el a megjelenő kéréseket\n- Lépj ide újra, amint létrejött a kapcsolat",
   "@errors.listing.notConnected.suggestion": {
-    "sourceHash": "3c48bcd"
+    "sourceHash": "652f289"
   },
   "errors.listing.deviceReconnecting.title": "Újracsatlakozás az eszközhöz",
   "@errors.listing.deviceReconnecting.title": {
@@ -557,11 +557,11 @@
   },
   "errors.listing.deviceReconnecting.explanation": "Megszakadt és újraindult a kapcsolat az eszközzel, amelyen ez van: `{path}`, így a művelet nem ment végbe. Az eszköz továbbra is csatlakoztatva van, és a Cmdr éppen újra megnyitja. Ez általában megszakított vagy félbeszakadt átvitel után fordul elő.",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "6ba7205"
+    "sourceHash": "0327639"
   },
   "errors.listing.deviceReconnecting.suggestion": "Várj néhány másodpercet, majd próbáld újra. Semmit nem kell kihúznod.",
   "@errors.listing.deviceReconnecting.suggestion": {
-    "sourceHash": "2481e2a"
+    "sourceHash": "4dac2e7"
   },
   "errors.listing.readOnly.title": "Csak olvasható",
   "@errors.listing.readOnly.title": {
@@ -569,11 +569,11 @@
   },
   "errors.listing.readOnly.explanation": "Ez a kötet csak olvasható, ezért a Cmdr nem tud rajta változtatni. Ennek oka lehet, hogy az eszközön fizikai írásvédelmi kapcsoló van, a lemezképet csak olvashatóként csatolták, vagy a fájlrendszer nem támogatja az írást.",
   "@errors.listing.readOnly.explanation": {
-    "sourceHash": "99924c3"
+    "sourceHash": "d8080b8"
   },
   "errors.listing.readOnly.suggestion": "Ezeket próbálhatod:\n- Ha az eszközön fizikai írásvédelmi kapcsoló van (gyakori az SD-kártyákon), kapcsold ki\n- Ha ez lemezkép, csatold újra írási hozzáféréssel\n- Egyébként előbb másold a fájlokat egy írható helyre",
   "@errors.listing.readOnly.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.storageFull.title": "A lemez megtelt",
   "@errors.listing.storageFull.title": {
@@ -581,11 +581,11 @@
   },
   "errors.listing.storageFull.explanation": "Nincs elég szabad hely ezen a köteten a művelet befejezéséhez.",
   "@errors.listing.storageFull.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.storageFull.suggestion": "Ezeket próbálhatod:\n- Szabadíts fel helyet a már nem szükséges fájlok áthelyezésével vagy törlésével\n- Ürítsd ki a Kukát (kattints jobb gombbal a Kuka ikonra a Dockban)\n- A Terminalban add ki a `df -h` parancsot, hogy lásd, mennyi hely maradt az egyes köteteken",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "fcdd42d"
+    "sourceHash": "101099b"
   },
   "errors.listing.connectionTimedOut.title": "A kapcsolat időtúllépést jelzett",
   "@errors.listing.connectionTimedOut.title": {
@@ -593,11 +593,11 @@
   },
   "errors.listing.connectionTimedOut.explanation": "A Cmdr megpróbált hozzáférni ehhez az erőforráshoz, de a kapcsolat nem válaszolt időben. Ez általában azt jelenti, hogy a szerver vagy az eszköz lassan válaszol, vagy a hálózati kapcsolat instabil.",
   "@errors.listing.connectionTimedOut.explanation": {
-    "sourceHash": "5b3f8b2"
+    "sourceHash": "15d3054"
   },
   "errors.listing.connectionTimedOut.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy az eszköz vagy a szerver be van kapcsolva és elérhető\n- Ellenőrizd a Wi-Fi vagy az Ethernet kapcsolatot\n- A Terminalban próbáld ki a `ping <hostname>` parancsot, hogy lásd, elérhető-e a szerver\n- Próbáld újra",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f9b8a2d"
+    "sourceHash": "f474938"
   },
   "errors.listing.notSupported.title": "Nem támogatott",
   "@errors.listing.notSupported.title": {
@@ -605,7 +605,7 @@
   },
   "errors.listing.notSupported.explanation": "Ezt a műveletet ez a fajta kötet nem támogatja. Egyes kötetek (mint a telefontárhely vagy bizonyos hálózati meghajtók) nem támogatnak minden műveletet.",
   "@errors.listing.notSupported.explanation": {
-    "sourceHash": "9ecb575"
+    "sourceHash": "d074574"
   },
   "errors.listing.notSupported.suggestion": "Próbálj más megoldást, vagy használd a Findert ehhez a művelethez.",
   "@errors.listing.notSupported.suggestion": {
@@ -621,19 +621,19 @@
   },
   "errors.listing.deletePending.suggestion": "Ezeket próbálhatod:\n- Várj egy kicsit, és próbáld újra — amint az utolsó leíró bezárul, a fájl eltűnik\n- Zárj be minden más appot, ami nyitva tarthatja ezt a fájlt\n- Ha továbbra is megmarad, indítsd újra a Cmdrt, hogy elengedjen minden leírót, amit még tarthat",
   "@errors.listing.deletePending.suggestion": {
-    "sourceHash": "6dbe760"
+    "sourceHash": "0531cd8"
   },
   "errors.listing.invalidName.title": "Ez a név itt nem működik",
   "@errors.listing.invalidName.title": {
-    "sourceHash": "69b2aa4"
+    "sourceHash": "7ced906"
   },
   "errors.listing.invalidName.explanation": "`{path}` neve olyan, amit a célhely nem tud tárolni, ezért visszautasította a nevet, anélkül hogy megkereste volna a fájlt.",
   "@errors.listing.invalidName.explanation": {
-    "sourceHash": "7000b52"
+    "sourceHash": "ac27ddb"
   },
   "errors.listing.invalidName.suggestion": "Ezeket próbálhatod:\n- Nevezd át az elemet valami rövidebbre és egyszerűbbre\n- Néhány célhely visszautasítja a fenntartott neveket, például a `CON`, `NUL` vagy `LPT1` nevet\n- Egy nagyon hosszú név a célhely saját korlátjába is ütközhet, akkor is, ha minden karakter rendben van benne",
   "@errors.listing.invalidName.suggestion": {
-    "sourceHash": "9074cf3"
+    "sourceHash": "f5cf683"
   },
   "errors.listing.ambiguousName.title": "Több elem is illik erre a névre",
   "@errors.listing.ambiguousName.title": {
@@ -641,15 +641,15 @@
   },
   "errors.listing.ambiguousName.explanation": "A szerveren több elem is illik erre az útvonalra: `{path}`. A nevük ugyanúgy néz ki, de a szerver eltérő írásmóddal tárolja őket (egy ékezetes betű kétféleképpen is tárolható, és néhány szerver megkülönbözteti a kis- és nagybetűket), ezért a Cmdr nem választott helyetted.",
   "@errors.listing.ambiguousName.explanation": {
-    "sourceHash": "0d964db"
+    "sourceHash": "f1e1509"
   },
   "errors.listing.ambiguousName.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a szülőmappát, és válaszd ki a listából azt az elemet, amelyiket szeretnéd\n- Legközelebb elkerülheted, ha az egyiket átnevezed úgy, hogy a két név jól láthatóan különbözzön",
   "@errors.listing.ambiguousName.suggestion": {
-    "sourceHash": "8334ece"
+    "sourceHash": "55b960c"
   },
   "errors.listing.ioSerious.title": "Nem sikerült beolvasni ezt a mappát",
   "@errors.listing.ioSerious.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.ioSerious.explanation": "A Cmdr problémába ütközött ezzel: `{path}`: {osMessage}. Ez lehet átmeneti zavar, vagy annak jele, hogy a lemez vagy az eszköz figyelmet igényel.",
   "@errors.listing.ioSerious.explanation": {
@@ -657,7 +657,7 @@
   },
   "errors.listing.ioSerious.suggestion": "Ezeket próbálhatod:\n- Ellenőrizd, hogy a lemez vagy az eszköz még csatlakozik\n- Próbáld újra\n- Ha ez folyamatosan előfordul, próbáld lefuttatni a **Lemezkezelő > Elsősegély** ellenőrzést ezen a köteten",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6c5be6d"
+    "sourceHash": "6e83ebb"
   },
   "errors.listing.isADirectory.title": "Ez egy mappa, nem fájl",
   "@errors.listing.isADirectory.title": {
@@ -665,7 +665,7 @@
   },
   "errors.listing.isADirectory.explanation": "A Cmdr megpróbálta fájlként megnyitni ezt: `{path}`, de ez egy mappa.",
   "@errors.listing.isADirectory.explanation": {
-    "sourceHash": "61f5ddb"
+    "sourceHash": "03331bd"
   },
   "errors.listing.isADirectory.suggestion": "Lépj be a mappába ahelyett, hogy fájlként nyitnád meg.",
   "@errors.listing.isADirectory.suggestion": {
@@ -673,11 +673,11 @@
   },
   "errors.listing.archiveUnreadable.title": "Ez az archívum nem nyitható meg",
   "@errors.listing.archiveUnreadable.title": {
-    "sourceHash": "6b34ae6"
+    "sourceHash": "939ba84"
   },
   "errors.listing.archiveUnreadable.explanation": "Ez a fájl archívumnak tűnik, de a Cmdr nem tudta elolvasni a tartalmát. Lehet, hogy sérült, titkosított, vagy olyan archívumformátumban van, amelyet a Cmdr még nem tud megnyitni.",
   "@errors.listing.archiveUnreadable.explanation": {
-    "sourceHash": "e413580"
+    "sourceHash": "b1e7d8b"
   },
   "errors.listing.archiveUnreadable.suggestion": "Próbáld megnyitni egy másik appban, vagy kérj friss másolatot attól, akitől kaptad.",
   "@errors.listing.archiveUnreadable.suggestion": {
@@ -701,11 +701,11 @@
   },
   "errors.listing.emptyRootICloud.explanation": "A Cmdr megnyitotta az iCloud Drive-ot, de az fájlok nélkül tért vissza. A macOS elrejti az iCloud Drive tartalmát az olyan appok elől, amelyeknek nincs **{full_disk_access}** jogosultsága, ezért ennek a jognak a megadása a legvalószínűbb megoldás.\n\nHa az iCloud Drive-od tényleg üres, ezt a tippet figyelmen kívül hagyhatod.",
   "@errors.listing.emptyRootICloud.explanation": {
-    "sourceHash": "d095f83"
+    "sourceHash": "4222270"
   },
   "errors.listing.emptyRootICloud.suggestion": "Ezeket próbálhatod:\n- Nyisd meg a [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy) menüt, és válaszd a **{full_disk_access}** lehetőséget\n- Add hozzá a Cmdrt (használd a **+** gombot), és kapcsold be\n- Lépj ki a Cmdrből, és nyisd meg újra\n- Gyere ide vissza az ismételt próbához",
   "@errors.listing.emptyRootICloud.suggestion": {
-    "sourceHash": "25cac98"
+    "sourceHash": "2e6e702"
   },
   "errors.git.notARepo.title": "Nincs itt git repó",
   "@errors.git.notARepo.title": {
@@ -713,7 +713,7 @@
   },
   "errors.git.notARepo.message": "A Cmdr végignézte a mappafát, és nem talált itt `.git` mappát.",
   "@errors.git.notARepo.message": {
-    "sourceHash": "f5b0d17"
+    "sourceHash": "736d43c"
   },
   "errors.git.notARepo.suggestion": "Nyiss meg egy mappát egy git klónon belül, hogy lásd a repozitóriumcímkét.",
   "@errors.git.notARepo.suggestion": {
@@ -725,7 +725,7 @@
   },
   "errors.git.orphanedWorktree.message": "Ez egy csatolt worktree, de a fő repója hiányzik, ezért a git nem tudja követni a hivatkozást.",
   "@errors.git.orphanedWorktree.message": {
-    "sourceHash": "5b5433e"
+    "sourceHash": "a29d806"
   },
   "errors.git.orphanedWorktree.suggestion": "Próbáld megnyitni a fő repót, vagy távolítsd el az árvát a `git worktree prune` paranccsal.",
   "@errors.git.orphanedWorktree.suggestion": {
@@ -749,7 +749,7 @@
   },
   "errors.git.indexLocked.message": "A git indexe zárolva van, ami általában azt jelenti, hogy egy másik git-parancs még fut.",
   "@errors.git.indexLocked.message": {
-    "sourceHash": "2f86cb3"
+    "sourceHash": "95399bb"
   },
   "errors.git.indexLocked.suggestion": "Várd meg, amíg a futó git-parancs befejeződik, majd lépj ide újra.",
   "@errors.git.indexLocked.suggestion": {
@@ -757,11 +757,11 @@
   },
   "errors.git.permissionDenied.title": "A Cmdr nem tudja beolvasni ezt a repót",
   "@errors.git.permissionDenied.title": {
-    "sourceHash": "b92716b"
+    "sourceHash": "2fb725c"
   },
   "errors.git.permissionDenied.message": "Az OS nem engedi, hogy a Cmdr megnyissa a `.git` mappát, ezért a git-információ nem elérhető.",
   "@errors.git.permissionDenied.message": {
-    "sourceHash": "0a9e8f1"
+    "sourceHash": "53012e9"
   },
   "errors.git.permissionDenied.suggestion": "Adj a Cmdrnek hozzáférést a mappához itt: **{system_settings} > {privacy_and_security} > {files_and_folders}**.",
   "@errors.git.permissionDenied.suggestion": {
@@ -769,11 +769,11 @@
   },
   "errors.git.bareRepo.title": "A csupasz repók még nem támogatottak",
   "@errors.git.bareRepo.title": {
-    "sourceHash": "554f310"
+    "sourceHash": "a378648"
   },
   "errors.git.bareRepo.message": "A csupasz repóknak nincs munkafájuk, a git böngésző pedig egy köré épül.",
   "@errors.git.bareRepo.message": {
-    "sourceHash": "e7af7c6"
+    "sourceHash": "1839f25"
   },
   "errors.git.bareRepo.suggestion": "Klónozd a repót egy munkakönyvtárba a git böngésző használatához.",
   "@errors.git.bareRepo.suggestion": {
@@ -781,11 +781,11 @@
   },
   "errors.git.blobTooLarge.title": "Ez a fájl túl nagy ahhoz, hogy az előzményből betöltsük",
   "@errors.git.blobTooLarge.title": {
-    "sourceHash": "aa5a29b"
+    "sourceHash": "480f6ba"
   },
   "errors.git.blobTooLarge.message": "A Cmdr a git blobokat egyszerre, teljes fájlként olvassa, és ez túllépi a biztonsági korlátot.",
   "@errors.git.blobTooLarge.message": {
-    "sourceHash": "6d93691"
+    "sourceHash": "d5609a4"
   },
   "errors.git.blobTooLarge.suggestion": "Ha el akarod olvasni, nyisd meg a fájlt egy munkafából.",
   "@errors.git.blobTooLarge.suggestion": {
@@ -797,7 +797,7 @@
   },
   "errors.git.shallowBoundary.message": "Ez a commit a sekély klónod határán túl található, ezért az adatai nincsenek a lemezen.",
   "@errors.git.shallowBoundary.message": {
-    "sourceHash": "447704c"
+    "sourceHash": "66bac24"
   },
   "errors.git.shallowBoundary.suggestion": "Futtasd a `git fetch --unshallow` (vagy `--depth=N`) parancsot, hogy több előzményt hozz a klónba.",
   "@errors.git.shallowBoundary.suggestion": {
@@ -809,7 +809,7 @@
   },
   "errors.git.missingObject.message": "A git egy olyan objektumot keres, ami már nincs a csomagfájlokban. Lehet, hogy a repó csak részben lett letöltve, vagy sérült.",
   "@errors.git.missingObject.message": {
-    "sourceHash": "15b0c32"
+    "sourceHash": "1eb902f"
   },
   "errors.git.missingObject.suggestion": "Próbáld a `git fetch` paranccsal újra letölteni a hiányzó objektumot, vagy a `git fsck` paranccsal megvizsgálni a sérülést.",
   "@errors.git.missingObject.suggestion": {
@@ -817,7 +817,7 @@
   },
   "errors.git.gitDirPermissionDenied.title": "A Cmdr nem tudja megnyitni a `.git` mappát",
   "@errors.git.gitDirPermissionDenied.title": {
-    "sourceHash": "f6e2595"
+    "sourceHash": "23c216a"
   },
   "errors.git.gitDirPermissionDenied.message": "Az OS megtagadta a hozzáférést a `.git` mappához, pedig a munkafa olvasható.",
   "@errors.git.gitDirPermissionDenied.message": {
@@ -987,95 +987,95 @@
   },
   "errors.provider.macDroid.transient": "Ezt a mappát a **MacDroid** kezeli. Ezeket próbálhatod:\n- Nyisd meg a MacDroidot, és ellenőrizd, hogy a telefonod csatlakozik\n- Győződj meg róla, hogy a telefonod fel van oldva és fájlátviteli módban van\n- Húzd ki és dugd vissza az USB-kábelt, majd lépj ide újra",
   "@errors.provider.macDroid.transient": {
-    "sourceHash": "994b8b8"
+    "sourceHash": "5df1c20"
   },
   "errors.provider.macDroid.needsAction": "Ezt a mappát a **MacDroid** kezeli. Ezeket próbálhatod:\n- Nyisd meg a MacDroidot, és ellenőrizd, hogy a telefonod csatlakozik\n- Győződj meg róla, hogy a telefonod fel van oldva és a kijelzője be van kapcsolva\n- Ellenőrizd, hogy az USB-fájlátviteli mód engedélyezve van a telefonodon",
   "@errors.provider.macDroid.needsAction": {
-    "sourceHash": "a2c4d13"
+    "sourceHash": "5fe56e6"
   },
   "errors.provider.macDroid.serious": "Ezt a mappát a **MacDroid** kezeli. Ezeket próbálhatod:\n- Húzd ki és dugd vissza az USB-kábelt\n- Indítsd újra a MacDroidot\n- Próbálj másik USB-portot vagy kábelt",
   "@errors.provider.macDroid.serious": {
-    "sourceHash": "a4ab4fe"
+    "sourceHash": "a79e0b6"
   },
   "errors.provider.iCloud.transient": "Ezt a mappát az **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Győződj meg róla, hogy be vagy jelentkezve az iCloudba itt: {system_settings}\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "7c0600f"
+    "sourceHash": "6a98b24"
   },
   "errors.provider.iCloud.needsAction": "Ezt a mappát az **{name}** kezeli. Ezeket próbálhatod:\n- Ellenőrizd, hogy az iCloud Drive engedélyezve van itt: **{system_settings} > Apple-fiók > iCloud**\n- Győződj meg róla, hogy a megfelelő Apple-fiókba vagy bejelentkezve\n- Ellenőrizd, hogy nincs tele az iCloud-tárhelyed",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "1c6dab0"
+    "sourceHash": "48c7123"
   },
   "errors.provider.iCloud.serious": "Ezt a mappát az **{name}** kezeli. Ezeket próbálhatod:\n- Jelentkezz ki, majd vissza az iCloudba itt: {system_settings}\n- Nézd meg az Apple [rendszerállapot-oldalát](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "3276e42"
+    "sourceHash": "4f730c7"
   },
   "errors.provider.macFuse.transient": "Ez egy **macFUSE** csatolás. Lehet, hogy a távoli szerver lassú vagy nem elérhető. Ezeket próbálhatod:\n- Ellenőrizd a hálózati kapcsolatodat\n- Ellenőrizd, hogy a távoli szerver fut\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.macFuse.transient": {
-    "sourceHash": "06d9019"
+    "sourceHash": "66fcc6b"
   },
   "errors.provider.macFuse.needsAction": "Ez egy **macFUSE** csatolás. Ezeket próbálhatod:\n- Ellenőrizd, hogy a csatolást kiszolgáló FUSE-folyamat még fut\n- Ha szükséges, kényszerítsd a kötet leválasztását, majd csatold újra\n- Győződj meg róla, hogy a macFUSE naprakész itt: **{system_settings} > Általános > Indítóelemek és bővítmények**",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "60e836a"
+    "sourceHash": "0c2981f"
   },
   "errors.provider.macFuse.serious": "Ez egy **macFUSE** csatolás. A kiszolgáló FUSE-folyamat valószínűleg összeomlott vagy lekapcsolódott. Ezeket próbálhatod:\n- Kényszerítsd a kötet leválasztását: add ki a `umount -f /Volumes/<name>` parancsot a Terminalban\n- Csatold újra az eredeti csatolási paranccsal\n- Ha ez folyamatosan előfordul, ellenőrizd, hogy a macFUSE naprakész",
   "@errors.provider.macFuse.serious": {
-    "sourceHash": "71d42da"
+    "sourceHash": "8da8430"
   },
   "errors.provider.pCloudFuse.transient": "Ez a mappa a **pCloud** virtuális meghajtóján van. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Győződj meg róla, hogy a pCloud app fut\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.pCloudFuse.transient": {
-    "sourceHash": "1afbd51"
+    "sourceHash": "b51abf9"
   },
   "errors.provider.pCloudFuse.needsAction": "Ez a mappa a **pCloud** virtuális meghajtóján van. Ezeket próbálhatod:\n- Győződj meg róla, hogy a pCloud app fut, és be vagy jelentkezve\n- Ellenőrizd az internetkapcsolatodat\n- Egy macOS-frissítés után hagyd jóvá újra a pCloud rendszerbővítményét itt: **{system_settings} > Általános > Indítóelemek és bővítmények**",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "2753abb"
+    "sourceHash": "42ff4c9"
   },
   "errors.provider.pCloudFuse.serious": "Ez a mappa a **pCloud** virtuális meghajtóján van. Lehet, hogy a pCloud FUSE-folyamata összeomlott. Ezeket próbálhatod:\n- Lépj ki a pCloud appból, és nyisd meg újra\n- Ha a meghajtó nem jelenik meg újra, kényszerítsd a leválasztását: add ki a `umount -f /Volumes/pCloudDrive` parancsot a Terminalban\n- Egy macOS-frissítés után hagyd jóvá újra a pCloud rendszerbővítményét itt: **{system_settings} > Általános > Indítóelemek és bővítmények**",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "cba0026"
+    "sourceHash": "232d806"
   },
   "errors.provider.veraCrypt.transient": "Ez egy **{name}** titkosított kötet. Ezeket próbálhatod:\n- Ellenőrizd, hogy a VeraCrypt-kötet még csatolva van\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.veraCrypt.transient": {
-    "sourceHash": "fe408ae"
+    "sourceHash": "125eaf9"
   },
   "errors.provider.veraCrypt.needsAction": "Ez egy **{name}** titkosított kötet. Ezeket próbálhatod:\n- Nyisd meg a VeraCryptet, és ellenőrizd, hogy ez a kötet csatolva van\n- Ha szükséges, válaszd le, majd csatold újra a kötetet",
   "@errors.provider.veraCrypt.needsAction": {
-    "sourceHash": "08dec65"
+    "sourceHash": "09d12a7"
   },
   "errors.provider.veraCrypt.serious": "Ez egy **{name}** titkosított kötet. Ezeket próbálhatod:\n- Válaszd le, majd csatold újra a kötetet a VeraCryptben\n- Ha a kötettel továbbra is probléma van, ellenőrizd a VeraCrypt javítóeszközeivel",
   "@errors.provider.veraCrypt.serious": {
-    "sourceHash": "a5c41a1"
+    "sourceHash": "a0737db"
   },
   "errors.provider.cmVolumes.transient": "Ez egy felhőcsatolás. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Ellenőrizd, hogy a csatolószoftver (CloudMounter, Mountain Duck stb.) fut\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.cmVolumes.transient": {
-    "sourceHash": "f0165b3"
+    "sourceHash": "b7ae13e"
   },
   "errors.provider.cmVolumes.nonTransient": "Ez egy felhőcsatolás. Ezeket próbálhatod:\n- Ellenőrizd, hogy a csatolószoftver (CloudMounter, Mountain Duck stb.) fut\n- Válaszd le, majd csatlakoztasd újra a csatolást\n- Ellenőrizd, hogy a hitelesítő adataid nem jártak le",
   "@errors.provider.cmVolumes.nonTransient": {
-    "sourceHash": "752c7e4"
+    "sourceHash": "4474047"
   },
   "errors.provider.genericCloudStorage.transient": "Ezt a mappát egy felhőszolgáltató kezeli. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Ellenőrizd, hogy a szinkronizáló app fut\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.genericCloudStorage.transient": {
-    "sourceHash": "9398792"
+    "sourceHash": "9a454cf"
   },
   "errors.provider.genericCloudStorage.nonTransient": "Ezt a mappát egy felhőszolgáltató kezeli. Ezeket próbálhatod:\n- Ellenőrizd, hogy a szinkronizáló app fut\n- Jelentkezz ki, majd vissza a felhőappba\n- Ellenőrizd az internetkapcsolatodat",
   "@errors.provider.genericCloudStorage.nonTransient": {
-    "sourceHash": "ce8a112"
+    "sourceHash": "3b8d2a6"
   },
   "errors.provider.appBased.transient": "Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Ellenőrizd az internetkapcsolatodat\n- Nyisd meg az appot ({app}), és győződj meg róla, hogy fut és szinkronizál\n- Lépj ide újra az ismételt próbához",
   "@errors.provider.appBased.transient": {
-    "sourceHash": "e3ef8b8"
+    "sourceHash": "ba634b7"
   },
   "errors.provider.appBased.needsAction": "Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Nyisd meg az appot ({app}), és ellenőrizd a szinkronizálás állapotát\n- Győződj meg róla, hogy be vagy jelentkezve ide: {app}\n- Ellenőrizd, hogy van hozzáférésed ehhez a mappához itt: {name}",
   "@errors.provider.appBased.needsAction": {
-    "sourceHash": "88009fd"
+    "sourceHash": "f69fe61"
   },
   "errors.provider.appBased.serious": "Ezt a mappát ez a szolgáltatás kezeli: **{name}**. Ezeket próbálhatod:\n- Lépj ki az appból ({app}), és nyisd meg újra\n- Jelentkezz ki, majd vissza ide: {app}\n- Nézd meg a szolgáltatás állapotoldalát ({name}), hátha leállás van",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "64baea5"
+    "sourceHash": "347589c"
   },
   "errors.write.sourceNotFound.title": "Nem sikerült megtalálni a fájlt",
   "@errors.write.sourceNotFound.title": {
-    "sourceHash": "2003305"
+    "sourceHash": "eff005a"
   },
   "errors.write.sourceNotFound.message.copy": "A fájl vagy mappa, amelyet másolni próbáltál, már nem létezik.",
   "@errors.write.sourceNotFound.message.copy": {
@@ -1099,15 +1099,15 @@
   },
   "errors.write.destinationNotFound.title": "Nem sikerült megtalálni a célmappát",
   "@errors.write.destinationNotFound.title": {
-    "sourceHash": "215ddfe"
+    "sourceHash": "ae77ee8"
   },
   "errors.write.destinationNotFound.message.copy": "A mappa, amelybe másolsz, már nem létezik, így nem volt hová tenni a fájljaidat. Az eredetiek érintetlenek.",
   "@errors.write.destinationNotFound.message.copy": {
-    "sourceHash": "cc637e2"
+    "sourceHash": "80f4a4c"
   },
   "errors.write.destinationNotFound.message.move": "A mappa, amelybe áthelyezel, már nem létezik, így nem volt hová tenni a fájljaidat. Az eredetiek érintetlenek.",
   "@errors.write.destinationNotFound.message.move": {
-    "sourceHash": "1726290"
+    "sourceHash": "b764d42"
   },
   "errors.write.destinationNotFound.suggestion": "Lehet, hogy átnevezték vagy eltávolították, vagy a meghajtó lecsatlakozott. Válassz másik célt, vagy nyisd meg újra a mappát, és próbáld újra.",
   "@errors.write.destinationNotFound.suggestion": {
@@ -1119,15 +1119,15 @@
   },
   "errors.write.notConnected.message.source": "A Cmdr még nem csatlakozott ahhoz a telefonhoz vagy szerverhez, amelyen ezek a fájlok vannak, ezért semmi sem változott.",
   "@errors.write.notConnected.message.source": {
-    "sourceHash": "e6690da"
+    "sourceHash": "7869dce"
   },
   "errors.write.notConnected.message.destination": "A Cmdr még nem csatlakozott ahhoz a telefonhoz vagy szerverhez, ahová a fájlok kerülnének, ezért semmi sem változott. A fájljaid érintetlenek.",
   "@errors.write.notConnected.message.destination": {
-    "sourceHash": "5bbc6b9"
+    "sourceHash": "3b5063d"
   },
   "errors.write.notConnected.suggestion": "Nyisd meg a kötetválasztóban, hogy csatlakozz hozzá, majd próbáld újra. Ha telefon, oldd fel a zárolását, és fogadd el a megjelenő kéréseket.",
   "@errors.write.notConnected.suggestion": {
-    "sourceHash": "222ba64"
+    "sourceHash": "3fdc936"
   },
   "errors.write.destinationExists.title": "A fájl már létezik",
   "@errors.write.destinationExists.title": {
@@ -1135,7 +1135,7 @@
   },
   "errors.write.destinationExists.message": "A célhelyen már van egy ilyen nevű fájl.",
   "@errors.write.destinationExists.message": {
-    "sourceHash": "50d9094"
+    "sourceHash": "cdcfb7b"
   },
   "errors.write.destinationExists.suggestion": "Válassz másik nevet vagy helyet, vagy előbb töröld a meglévő fájlt.",
   "@errors.write.destinationExists.suggestion": {
@@ -1143,19 +1143,19 @@
   },
   "errors.write.destinationInsideSource.title.copy": "Egy mappa nem másolható önmagába",
   "@errors.write.destinationInsideSource.title.copy": {
-    "sourceHash": "40c58ea"
+    "sourceHash": "f8dd7f6"
   },
   "errors.write.destinationInsideSource.title.move": "Egy mappa nem helyezhető át önmagába",
   "@errors.write.destinationInsideSource.title.move": {
-    "sourceHash": "3a9da7b"
+    "sourceHash": "48b9b42"
   },
   "errors.write.destinationInsideSource.message.copy": "Egy mappát próbálsz az egyik saját almappájába másolni.",
   "@errors.write.destinationInsideSource.message.copy": {
-    "sourceHash": "46d30ec"
+    "sourceHash": "26785f5"
   },
   "errors.write.destinationInsideSource.message.move": "Egy mappát próbálsz az egyik saját almappájába áthelyezni.",
   "@errors.write.destinationInsideSource.message.move": {
-    "sourceHash": "e6ecfea"
+    "sourceHash": "4fcd446"
   },
   "errors.write.destinationInsideSource.suggestion.copy": "Válassz olyan célt, amely a másolandó mappán kívül van.",
   "@errors.write.destinationInsideSource.suggestion.copy": {
@@ -1255,19 +1255,19 @@
   },
   "errors.write.moveNotConfirmed.title": "Nem sikerült ellenőrizni az áthelyezést",
   "@errors.write.moveNotConfirmed.title": {
-    "sourceHash": "5d64df8"
+    "sourceHash": "8f1fe29"
   },
   "errors.write.moveNotConfirmed.message.named": "A Cmdr nem tudta ellenőrizni, hogy az áthelyezett fájlok kiíródtak-e ide: {volumeName}, ezért az eredetieket a helyükön hagyta.",
   "@errors.write.moveNotConfirmed.message.named": {
-    "sourceHash": "0c2dfb6"
+    "sourceHash": "442f2fe"
   },
   "errors.write.moveNotConfirmed.message.unnamed": "A Cmdr nem tudta ellenőrizni, hogy az áthelyezett fájlok kiíródtak-e a célhelyre, ezért az eredetieket a helyükön hagyta.",
   "@errors.write.moveNotConfirmed.message.unnamed": {
-    "sourceHash": "fefb520"
+    "sourceHash": "565e4b8"
   },
   "errors.write.moveNotConfirmed.suggestion": "Nézd meg a célhelyet, majd próbáld újra az áthelyezést. Az eredetiek nem mozdultak el.",
   "@errors.write.moveNotConfirmed.suggestion": {
-    "sourceHash": "d9500f3"
+    "sourceHash": "4d7fedc"
   },
   "errors.write.trashNotSupported.title": "A Kuka nem támogatott",
   "@errors.write.trashNotSupported.title": {
@@ -1275,7 +1275,7 @@
   },
   "errors.write.trashNotSupported.message": "Ez a kötet nem támogatja a Kukát.",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "45cf0c6"
+    "sourceHash": "911688a"
   },
   "errors.write.trashNotSupported.suggestion": "Törölj inkább véglegesen ezzel: {deletePermanentlyKey}.",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1295,23 +1295,23 @@
   },
   "errors.write.readError.title.copy": "Nem sikerült a másolás",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.readError.title.move": "Nem sikerült az áthelyezés",
   "@errors.write.readError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.readError.title.delete": "Nem sikerült a törlés",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.readError.title.trash": "Nem sikerült a Kukába helyezés",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.readError.message": "Nem sikerült olvasni a forrásból.",
   "@errors.write.readError.message": {
-    "sourceHash": "b3b10d6"
+    "sourceHash": "ead860d"
   },
   "errors.write.readError.suggestion": "Próbáld újra. Ha a probléma továbbra is fennáll, nézd meg lent a technikai részleteket.",
   "@errors.write.readError.suggestion": {
@@ -1319,23 +1319,23 @@
   },
   "errors.write.writeError.title.copy": "Nem sikerült a másolás",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.writeError.title.move": "Nem sikerült az áthelyezés",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.writeError.title.delete": "Nem sikerült a törlés",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.writeError.title.trash": "Nem sikerült a Kukába helyezés",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.writeError.message": "Nem sikerült írni a célhelyre.",
   "@errors.write.writeError.message": {
-    "sourceHash": "cb458f0"
+    "sourceHash": "ec1a179"
   },
   "errors.write.writeError.suggestion": "Próbáld újra. Ha a probléma továbbra is fennáll, nézd meg lent a technikai részleteket.",
   "@errors.write.writeError.suggestion": {
@@ -1359,7 +1359,7 @@
   },
   "errors.write.invalidName.message": "{path} neve olyan, amit a célhely nem tud tárolni.",
   "@errors.write.invalidName.message": {
-    "sourceHash": "0bd3e6a"
+    "sourceHash": "ad395af"
   },
   "errors.write.invalidName.suggestion": "Nevezd át valami rövidebbre és egyszerűbbre, majd próbáld újra. Néhány célhely a fenntartott neveket is visszautasítja, például a CON, NUL vagy LPT1 nevet.",
   "@errors.write.invalidName.suggestion": {
@@ -1367,19 +1367,19 @@
   },
   "errors.write.trashRefused.title": "Nem sikerült a Kukába helyezés",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.trashRefused.message.notPermitted": "A macOS a kiválasztott elemek közül {count} darabhoz nem engedte hozzá a Cmdrt.",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "e11fc50"
+    "sourceHash": "57a38d7"
   },
   "errors.write.trashRefused.message.noTrashForVolume": "A macOS a kiválasztott elemek közül {count} darabhoz nem talált Kukát.",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "d86a66d"
+    "sourceHash": "702ae17"
   },
   "errors.write.trashRefused.message.other": "A macOS a kiválasztott elemek közül {count} darabot nem helyezett a Kukába.",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "5c73490"
+    "sourceHash": "6f71e12"
   },
   "errors.write.trashRefused.suggestion.notPermitted": "Az elemek zárolva lehetnek, vagy olyan helyen vannak, amit a macOS magának tart. A Shift+F8 billentyűparanccsal viszont véglegesen törölheted őket.",
   "@errors.write.trashRefused.suggestion.notPermitted": {
@@ -1395,39 +1395,39 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "A Cmdrnek ezen a Macen ráadásul nincs teljes hozzáférése a lemezhez, ami gyakori ok. A címsorban lévő „Nincs teljes hozzáférés a lemezhez” jelvény elvisz ehhez a döntéshez.",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "0dbe21b"
+    "sourceHash": "ee5e9f7"
   },
   "errors.write.ioError.title.copy": "Nem sikerült a másolás",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.ioError.title.move": "Nem sikerült az áthelyezés",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.ioError.title.delete": "Nem sikerült a törlés",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.ioError.title.trash": "Nem sikerült a Kukába helyezés",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.ioError.message.copy": "Nem sikerült a fájl másolása.",
   "@errors.write.ioError.message.copy": {
-    "sourceHash": "93d27d8"
+    "sourceHash": "f25dd52"
   },
   "errors.write.ioError.message.move": "Nem sikerült a fájl áthelyezése.",
   "@errors.write.ioError.message.move": {
-    "sourceHash": "d2f8eea"
+    "sourceHash": "5f929ee"
   },
   "errors.write.ioError.message.delete": "Nem sikerült a fájl törlése.",
   "@errors.write.ioError.message.delete": {
-    "sourceHash": "87cc29a"
+    "sourceHash": "9e79007"
   },
   "errors.write.ioError.message.trash": "Nem sikerült a fájlt a Kukába helyezni.",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "db053da"
+    "sourceHash": "948e289"
   },
   "errors.write.ioError.suggestion": "Próbáld újra. Ha a probléma továbbra is fennáll, nézd meg lent a technikai részleteket.",
   "@errors.write.ioError.suggestion": {
@@ -1435,23 +1435,23 @@
   },
   "errors.write.permissionDenied.title": "Nem sikerült hozzáférni ehhez a helyhez",
   "@errors.write.permissionDenied.title": {
-    "sourceHash": "be62ad2"
+    "sourceHash": "bc7f0ff"
   },
   "errors.write.permissionDenied.message.copy": "Nincs engedélyed ide fájlokat másolni.",
   "@errors.write.permissionDenied.message.copy": {
-    "sourceHash": "d9ebc5a"
+    "sourceHash": "91272c0"
   },
   "errors.write.permissionDenied.message.move": "Nincs engedélyed ide fájlokat áthelyezni.",
   "@errors.write.permissionDenied.message.move": {
-    "sourceHash": "d5c0358"
+    "sourceHash": "5b0fc94"
   },
   "errors.write.permissionDenied.message.delete": "Nincs engedélyed itt fájlokat törölni.",
   "@errors.write.permissionDenied.message.delete": {
-    "sourceHash": "e002a5f"
+    "sourceHash": "0c03fc4"
   },
   "errors.write.permissionDenied.message.trash": "Nincs engedélyed itt fájlokat a Kukába helyezni.",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "b68bafc"
+    "sourceHash": "cca028a"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "Ellenőrizd, hogy van írási hozzáférésed a szülőmappához. Lehet, hogy a fájl zárolva van. Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1467,7 +1467,7 @@
   },
   "errors.write.permissionDenied.message.named": "A macOS-felhasználód nem módosíthatja ezt a mappát: {folder}.",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "74994f9"
+    "sourceHash": "0ffd79b"
   },
   "errors.write.permissionDenied.suggestion.needsAdminMac": "Ehhez rendszergazdai jogosultság kell. Ha a saját fiókodnak akarsz hozzáférést adni, jelöld ki a mappát a Finderben, válaszd az Infó megjelenítése parancsot, és nézd meg a Megosztás és jogok részt.",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
@@ -1475,15 +1475,15 @@
   },
   "errors.write.permissionDenied.suggestion.needsAdminOther": "Ehhez rendszergazdai jogosultság kell. Ha a saját fiókodnak akarsz hozzáférést adni, módosítsd a mappa engedélyeit (például chmod paranccsal), majd próbáld újra.",
   "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "804027d"
+    "sourceHash": "5ce034b"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedMac": "Ezt maga a macOS védi, úgyhogy a rendszergazdai jogosultság sem segít. Lehet, hogy zárolva van: jelöld ki a Finderben, válaszd az Infó megjelenítése parancsot, és vedd ki a „Zárolt” pipát.",
   "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
-    "sourceHash": "ad5e0de"
+    "sourceHash": "64a71c8"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedOther": "Ezt maga a rendszer védi, úgyhogy a rendszergazdai jogosultság sem segít. Lehet, hogy védelmi jelölés van rajta, amit előbb el kell távolítani.",
   "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "bbf6bdb"
+    "sourceHash": "a4856dc"
   },
   "errors.write.insufficientSpace.title": "Nincs elég hely",
   "@errors.write.insufficientSpace.title": {
@@ -1519,11 +1519,11 @@
   },
   "errors.write.filesTooLargeForFilesystem.message.one": "{name} mérete {size}, de ez a meghajtó FAT32 formátumú, így nem tud {maxSize} méretnél nagyobb fájlokat tárolni.",
   "@errors.write.filesTooLargeForFilesystem.message.one": {
-    "sourceHash": "2993e08"
+    "sourceHash": "f5c262a"
   },
   "errors.write.filesTooLargeForFilesystem.message.many": "{count} fájl túl nagy ehhez a meghajtóhoz: a meghajtó FAT32 formátumú, és nem tud {maxSize} méretnél nagyobb fájlokat tárolni.",
   "@errors.write.filesTooLargeForFilesystem.message.many": {
-    "sourceHash": "1aac250"
+    "sourceHash": "9720069"
   },
   "errors.write.filesTooLargeForFilesystem.suggestion": "Ilyen nagy fájlok tárolásához használj exFAT formátumú meghajtót, amelynek nincs ilyen korlátja.",
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
@@ -1559,19 +1559,19 @@
   },
   "errors.write.destinationNotWritable.noPermission.message": "Nincs engedélyed fájlokat hozzáadni ehhez a mappához.",
   "@errors.write.destinationNotWritable.noPermission.message": {
-    "sourceHash": "15abe78"
+    "sourceHash": "a7e0efa"
   },
   "errors.write.destinationNotWritable.noPermission.suggestion": "Válassz másik célmappát, vagy módosítsd a mappa jogosultságait, és próbáld újra.",
   "@errors.write.destinationNotWritable.noPermission.suggestion": {
-    "sourceHash": "fceb936"
+    "sourceHash": "3851384"
   },
   "errors.write.destinationNotWritable.unexplained.title": "Ez a mappa nem fogad fájlokat",
   "@errors.write.destinationNotWritable.unexplained.title": {
-    "sourceHash": "628c3aa"
+    "sourceHash": "c98e2c3"
   },
   "errors.write.destinationNotWritable.unexplained.message": "Ez a mappa nem fogad új fájlokat, ezért semmit nem lehet bele másolni vagy áthelyezni.",
   "@errors.write.destinationNotWritable.unexplained.message": {
-    "sourceHash": "22ce481"
+    "sourceHash": "13b79ec"
   },
   "errors.write.destinationNotWritable.unexplained.suggestion": "Válassz másik célmappát.",
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
@@ -1587,7 +1587,7 @@
   },
   "errors.write.fileLocked.message": "A fájl zárolva van, ezért nem törölhető.",
   "@errors.write.fileLocked.message": {
-    "sourceHash": "62b1038"
+    "sourceHash": "84925b0"
   },
   "errors.write.fileLocked.suggestion.mac": "Oldd fel a Finderben (Infó megjelenítése > vedd ki a „Zárolt” pipát), majd próbáld újra.",
   "@errors.write.fileLocked.suggestion.mac": {
@@ -1615,7 +1615,7 @@
   },
   "errors.write.newDataKeptAt.message": "Az új {path} teljesen kiírva megvan, de a célhely nem engedte, hogy ezt a nevet kapja, és a fájl, amit lecserélt volna, már nincs meg. Az új itt van: {keptAt}.",
   "@errors.write.newDataKeptAt.message": {
-    "sourceHash": "d1dc96b"
+    "sourceHash": "93d07be"
   },
   "errors.write.newDataKeptAt.suggestion": "Nyisd meg és ellenőrizd, majd nevezd át: {keptAt}. Ha a célhely hálózati megosztás vagy telefon, előbb csatlakoztasd újra, és az átnevezés menni fog.",
   "@errors.write.newDataKeptAt.suggestion": {
@@ -1635,27 +1635,27 @@
   },
   "errors.write.originalsKeptAside.suggestion.one": "Nyisd meg és ellenőrizd: {keptAt}. Ha félretetted a mappát, visszanevezheted a fájlodat.",
   "@errors.write.originalsKeptAside.suggestion.one": {
-    "sourceHash": "6c53394"
+    "sourceHash": "5cbe5bb"
   },
   "errors.write.originalsKeptAside.suggestion.many": "Az alábbi részletekben látod, melyik fájl hol van. Ha félretetted a mappákat, visszanevezheted őket.",
   "@errors.write.originalsKeptAside.suggestion.many": {
-    "sourceHash": "7934c84"
+    "sourceHash": "2b05c26"
   },
   "errors.write.fallback.title.copy": "Nem sikerült a másolás",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.fallback.title.move": "Nem sikerült az áthelyezés",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.fallback.title.delete": "Nem sikerült a törlés",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.fallback.title.trash": "Nem sikerült a Kukába helyezés",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.fallback.message.copy": "Váratlan probléma történt a másolás során.",
   "@errors.write.fallback.message.copy": {
@@ -1679,31 +1679,31 @@
   },
   "errors.mutation.notFound": "Már nincs semmi itt: „{path}”.",
   "@errors.mutation.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.mutation.cantRenameVolumeRoot": "Egy kötet legfelső mappája innen nem nevezhető át.",
   "@errors.mutation.cantRenameVolumeRoot": {
-    "sourceHash": "baf4d16"
+    "sourceHash": "0845c57"
   },
   "errors.mutation.parentNotWritable": "A Cmdr nem tud ide írni: „{path}”. Ellenőrizd a mappa engedélyeit a Finderben.",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "3659a5a"
+    "sourceHash": "e0a7ad6"
   },
   "errors.mutation.fileLocked": "Ez az elem zárolva van. Oldd fel a zárolását a Finder Infó megjelenítése ablakában, majd próbáld újra.",
   "@errors.mutation.fileLocked": {
-    "sourceHash": "d1d127c"
+    "sourceHash": "4be163f"
   },
   "errors.mutation.sipProtected": "Ez az elem a macOS Rendszerintegritás-védelme alatt áll, ezért nem nevezhető át.",
   "@errors.mutation.sipProtected": {
-    "sourceHash": "1865724"
+    "sourceHash": "2189822"
   },
   "errors.mutation.volumeGone": "A kötet már nem érhető el, ezért semmi nem változott.",
   "@errors.mutation.volumeGone": {
-    "sourceHash": "604aad5"
+    "sourceHash": "643398b"
   },
   "errors.mutation.archiveNotEditable": "A Cmdr most nem tudja szerkesztésre megnyitni ezt az archívumot.",
   "@errors.mutation.archiveNotEditable": {
-    "sourceHash": "eedee11"
+    "sourceHash": "47c44dd"
   },
   "errors.mutation.archiveReadOnly": "Csak a zip-archívumok módosíthatók, ez pedig csak olvasható.",
   "@errors.mutation.archiveReadOnly": {
@@ -1711,43 +1711,43 @@
   },
   "errors.mutation.renameOutOfArchive": "Átnevezéssel nem lehet kivinni egy elemet az archívumból. Helyezd át inkább.",
   "@errors.mutation.renameOutOfArchive": {
-    "sourceHash": "1f852c5"
+    "sourceHash": "5e82283"
   },
   "errors.mutation.renameAcrossArchives": "Átnevezéssel nem lehet átvinni egy elemet egyik archívumból a másikba. Helyezd át inkább.",
   "@errors.mutation.renameAcrossArchives": {
-    "sourceHash": "5b8f1df"
+    "sourceHash": "89b3231"
   },
   "errors.mutation.archiveEditNotReady": "A Cmdr még indul, ezért az archívumok szerkesztése még nem érhető el.",
   "@errors.mutation.archiveEditNotReady": {
-    "sourceHash": "21a4fcf"
+    "sourceHash": "1a71ae7"
   },
   "errors.mutation.archiveEditCouldntStart": "Az archívum szerkesztése nem indult el.",
   "@errors.mutation.archiveEditCouldntStart": {
-    "sourceHash": "3a5322f"
+    "sourceHash": "c67e249"
   },
   "errors.mutation.timedOut": "A kötet még nem válaszolt, így a módosítás attól még végbemehet.",
   "@errors.mutation.timedOut": {
-    "sourceHash": "27d6a2f"
+    "sourceHash": "94a8419"
   },
   "errors.mutation.unexpected": "Valami nem sikerült, és a Cmdr nem tudta megállapítani, hogy mi.",
   "@errors.mutation.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.volume.notFound": "Már nincs semmi itt: „{path}”.",
   "@errors.volume.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.volume.permissionDenied": "A Cmdrnek nincs hozzáférése ehhez: „{path}”.",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "fee452b"
+    "sourceHash": "2c188b6"
   },
   "errors.volume.alreadyExists": "Már van valami itt: „{path}”.",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "de0bbb9"
+    "sourceHash": "8763243"
   },
   "errors.volume.notSupported": "Ez a kötet ezt nem támogatja.",
   "@errors.volume.notSupported": {
-    "sourceHash": "f57ad5a"
+    "sourceHash": "b645086"
   },
   "errors.volume.deviceDisconnected": "Megszakadt a kapcsolat az eszközzel, mielőtt a módosítás végbement volna.",
   "@errors.volume.deviceDisconnected": {
@@ -1755,7 +1755,7 @@
   },
   "errors.volume.notConnected": "A Cmdr még nem csatlakozott ehhez a telefonhoz vagy szerverhez, ezért előbb nyisd meg.",
   "@errors.volume.notConnected": {
-    "sourceHash": "094dc49"
+    "sourceHash": "e128225"
   },
   "errors.volume.deviceSessionReset": "Az eszköz újraindította a kapcsolatot. Várj néhány másodpercet, majd próbáld újra.",
   "@errors.volume.deviceSessionReset": {
@@ -1767,11 +1767,11 @@
   },
   "errors.volume.storageFull": "Nincs több szabad hely ezen a köteten.",
   "@errors.volume.storageFull": {
-    "sourceHash": "f2f33dc"
+    "sourceHash": "1fcdb67"
   },
   "errors.volume.connectionTimeout": "A kapcsolat nem válaszolt időben.",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "857ed01"
+    "sourceHash": "f21c934"
   },
   "errors.volume.cancelled": "A Cmdr a kérésedre leállította ezt a műveletet.",
   "@errors.volume.cancelled": {
@@ -1783,7 +1783,7 @@
   },
   "errors.volume.invalidName": "Ez a név nem használható a célhelyen. Válassz másikat.",
   "@errors.volume.invalidName": {
-    "sourceHash": "ef0f2b8"
+    "sourceHash": "531488f"
   },
   "errors.volume.deletePending": "A fájl törlése folyamatban van, de valami még nyitva tartja. Próbáld újra egy pillanat múlva.",
   "@errors.volume.deletePending": {
@@ -1791,7 +1791,7 @@
   },
   "errors.volume.ambiguousName": "Több elem is illik erre az útvonalra a szerveren: „{path}”, ezért a Cmdr nem választott. Válaszd ki inkább a mappájából.",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "f866182"
+    "sourceHash": "0f0e74d"
   },
   "errors.volume.staleDestinationHandle": "A Cmdr már nem találja a célmappát az eszközön. Nyisd meg még egyszer, majd próbáld újra.",
   "@errors.volume.staleDestinationHandle": {
@@ -1799,7 +1799,7 @@
   },
   "errors.volume.ioError": "A kötet nem tudta befejezni a műveletet.",
   "@errors.volume.ioError": {
-    "sourceHash": "c82a0e1"
+    "sourceHash": "59e7d6a"
   },
   "errors.volume.needsPassword": "Ez az archívum jelszóval védett.",
   "@errors.volume.needsPassword": {
@@ -1807,7 +1807,7 @@
   },
   "errors.volume.passwordRejected": "Ez a jelszó nem jó.",
   "@errors.volume.passwordRejected": {
-    "sourceHash": "33ba224"
+    "sourceHash": "fe9b44a"
   },
   "errors.mutation.trashNotSupported": "Ezen a köteten nincs Kuka, ezért csak a végleges törlés marad.",
   "@errors.mutation.trashNotSupported": {
@@ -1815,23 +1815,23 @@
   },
   "errors.mutation.trashRefused": "A macOS nem engedte ezt a Kukába helyezni.",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "6d8a1b6"
+    "sourceHash": "7a6d1a5"
   },
   "errors.serverRequest.unreachable": "A Cmdr nem érte el a szerverét. Ellenőrizd az internetkapcsolatot, és próbáld újra.",
   "@errors.serverRequest.unreachable": {
-    "sourceHash": "7f2a23e"
+    "sourceHash": "186a0f6"
   },
   "errors.serverRequest.timedOut": "A Cmdr szervere nem válaszolt időben. Próbáld újra egy kicsit később.",
   "@errors.serverRequest.timedOut": {
-    "sourceHash": "14b0dcd"
+    "sourceHash": "1413608"
   },
   "errors.serverRequest.serverBusy": "A Cmdr szerverének most problémái vannak. Próbáld újra később.",
   "@errors.serverRequest.serverBusy": {
-    "sourceHash": "2df1f8d"
+    "sourceHash": "1f21e5d"
   },
   "errors.serverRequest.refused": "A Cmdr szervere ezt elutasította. Ha újra előfordul, töltsd le a legújabb Cmdrt a getcmdr.com oldalról.",
   "@errors.serverRequest.refused": {
-    "sourceHash": "f36d8f8"
+    "sourceHash": "6a83e2a"
   },
   "errors.serverRequest.unexpected": "A Cmdr belső problémába ütközött. Próbáld újra, és ha ismét előfordul, indítsd újra a Cmdrt.",
   "@errors.serverRequest.unexpected": {
@@ -1843,23 +1843,23 @@
   },
   "errors.eject.volumeNotFound": "Ez a meghajtó már nincs csatlakoztatva, így nincs mit kiadni.",
   "@errors.eject.volumeNotFound": {
-    "sourceHash": "62a3af2"
+    "sourceHash": "2c5112f"
   },
   "errors.eject.notEjectable": "Ez a meghajtó nem cserélhető, ezért csatlakoztatva marad.",
   "@errors.eject.notEjectable": {
-    "sourceHash": "bb88249"
+    "sourceHash": "cc7e9ee"
   },
   "errors.eject.notAnSmbVolume": "Ez nem hálózati megosztás, így nincs mit leválasztani.",
   "@errors.eject.notAnSmbVolume": {
-    "sourceHash": "d49623e"
+    "sourceHash": "230d2dc"
   },
   "errors.eject.remoteNotConnected": "Ez a szerver már nincs csatlakoztatva, így nincs mit lezárni.",
   "@errors.eject.remoteNotConnected": {
-    "sourceHash": "a0ed630"
+    "sourceHash": "3b531d1"
   },
   "errors.eject.deviceDisconnectRefused": "Az eszköz nem zárta le a kapcsolatot. Húzd ki, amikor már nincs használatban.",
   "@errors.eject.deviceDisconnectRefused": {
-    "sourceHash": "d49861f"
+    "sourceHash": "5b99318"
   },
   "errors.eject.unmountRefused": "Valami még használja ezt a meghajtót. Zárd be a nyitott fájlokat és alkalmazásokat, majd add ki újra.",
   "@errors.eject.unmountRefused": {
@@ -1891,27 +1891,27 @@
   },
   "errors.eject.timedOut": "A meghajtó még nem válaszolt, de a kiadás magától is befejeződhet.",
   "@errors.eject.timedOut": {
-    "sourceHash": "c592421"
+    "sourceHash": "3feb944"
   },
   "errors.eject.notResponding": "A meghajtó nem válaszol, ezért még csatlakoztatva van. Próbáld újra egy kicsit később.",
   "@errors.eject.notResponding": {
-    "sourceHash": "742a732"
+    "sourceHash": "a3d9d82"
   },
   "errors.eject.unexpected": "A Cmdr problémába ütközött, és nem tudta megállapítani, hogy mi.",
   "@errors.eject.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.mount.hostUnreachable": "A Cmdr nem tudta elérni ezt a szervert: „{server}”. Ellenőrizd, hogy be van-e kapcsolva, és ugyanazon a hálózaton van-e, mint ez a számítógép.",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.mount.timeout": "A Cmdr várt, de ez a szerver nem válaszolt időben: „{server}”. Ellenőrizd, hogy be van-e kapcsolva és elérhető-e, aztán próbáld újra.",
   "@errors.mount.timeout": {
-    "sourceHash": "00d198e"
+    "sourceHash": "d0629fe"
   },
   "errors.mount.shareNotFound": "Nincs „{share}” nevű megosztás ezen a szerveren: „{server}”. Lépj vissza, és válassz egyet a listából.",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "08aee2a"
+    "sourceHash": "10f3c59"
   },
   "errors.mount.authRequired": "„{share}” megnyitásához jelentkezz be ide: „{server}”.",
   "@errors.mount.authRequired": {
@@ -1919,23 +1919,23 @@
   },
   "errors.mount.authFailed": "Ez a felhasználónév és jelszó nem jó ehhez a szerverhez: „{server}”. Ellenőrizd őket, és jelentkezz be újra.",
   "@errors.mount.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.mount.permissionDenied": "„{username}” néven vagy bejelentkezve ide: „{server}”, de ez a fiók nem nyithatja meg ezt a megosztást: „{share}”. Jelentkezz be egy másik fiókkal.",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "f8e000b"
+    "sourceHash": "05611b7"
   },
   "errors.mount.cancelled": "Félbeszakadt a csatlakozás ehhez a megosztáshoz: „{share}”. Próbáld újra, amikor készen állsz.",
   "@errors.mount.cancelled": {
-    "sourceHash": "4f6ff32"
+    "sourceHash": "bc771b3"
   },
   "errors.mount.unsupportedProtocol": "Ennek a számítógépnek nincs közös SMB-verziója ezzel a szerverrel: „{server}”. Kapcsold be a szerver beállításaiban az SMB 2-es vagy újabb verzióját, aztán próbáld újra.",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "7cb18f6"
+    "sourceHash": "8afe4cb"
   },
   "errors.mount.mountRefused": "Be vagy jelentkezve ide: „{server}”, de a szerver nem engedte megnyitni ezt a megosztást: „{share}”. Ellenőrizd a megosztás beállításait a szerveren, aztán próbáld újra.",
   "@errors.mount.mountRefused": {
-    "sourceHash": "84344ca"
+    "sourceHash": "6cf694d"
   },
   "errors.mount.mountMissing": "A számítógéped jelezte, hogy „{share}” csatlakoztatva van (szerver: „{server}”), de mégsem jelent meg. Próbáld újra.",
   "@errors.mount.mountMissing": {
@@ -1943,7 +1943,7 @@
   },
   "errors.mount.gvfsMissing": "Linuxon a GVFS kell ahhoz, hogy hálózati megosztásokhoz csatlakozhass. Telepítsd a disztribúciód gvfs-smb csomagját, aztán próbáld újra.",
   "@errors.mount.gvfsMissing": {
-    "sourceHash": "068da95"
+    "sourceHash": "b67831e"
   },
   "errors.mount.unexpected": "Valami nem sikerült, miközben a Cmdr ehhez a megosztáshoz csatlakozott: „{share}” (szerver: „{server}”). Próbáld újra egy pillanat múlva.",
   "@errors.mount.unexpected": {
@@ -1951,11 +1951,11 @@
   },
   "errors.shareList.hostUnreachable": "A Cmdr nem tudta elérni ezt a szervert: „{server}”. Ellenőrizd, hogy be van-e kapcsolva, és ugyanazon a hálózaton van-e, mint ez a számítógép.",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.shareList.timeout": "A Cmdr várt, de ez a szerver nem válaszolt időben: „{server}”. Próbáld újra egy pillanat múlva.",
   "@errors.shareList.timeout": {
-    "sourceHash": "a07b7c8"
+    "sourceHash": "0c2c6ec"
   },
   "errors.shareList.authRequired": "Jelentkezz be, hogy lásd ennek a szervernek a megosztásait: „{server}”.",
   "@errors.shareList.authRequired": {
@@ -1963,11 +1963,11 @@
   },
   "errors.shareList.signingRequired": "„{server}” vendégeknek nem mutatja meg a megosztásait. Jelentkezz be, hogy lásd őket.",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "ecc570d"
+    "sourceHash": "6e92125"
   },
   "errors.shareList.authFailed": "Ez a felhasználónév és jelszó nem jó ehhez a szerverhez: „{server}”. Ellenőrizd őket, és jelentkezz be újra.",
   "@errors.shareList.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.shareList.protocolError": "Valami nem sikerült, miközben a Cmdr lekérte ennek a szervernek a megosztásait: „{server}”. Próbáld újra egy pillanat múlva.",
   "@errors.shareList.protocolError": {
@@ -1975,11 +1975,11 @@
   },
   "errors.shareList.resolutionFailed": "A Cmdr nem találta meg ezt a szervert a hálózaton: „{server}”. Ellenőrizd a nevét, vagy próbáld újra, amint ismét elérhető.",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "62e91cf"
+    "sourceHash": "9be124a"
   },
   "errors.shareList.missingDependency": "Ezen a számítógépen az smbclient kell a megosztások listázásához, de nincs telepítve. Telepítsd, aztán próbáld újra.",
   "@errors.shareList.missingDependency": {
-    "sourceHash": "810b06a"
+    "sourceHash": "6ffa8a9"
   },
   "errors.write.readOnlyDevice.source.title": "Csak olvasható forrás",
   "@errors.write.readOnlyDevice.source.title": {
@@ -2003,7 +2003,7 @@
   },
   "errors.write.duplicateSourceNames.message": "Két {name} nevű elemet választottál ki, így mindkettő ugyanoda kerülne: {first} és {second}.",
   "@errors.write.duplicateSourceNames.message": {
-    "sourceHash": "4146d5f"
+    "sourceHash": "f4517fc"
   },
   "errors.write.duplicateSourceNames.suggestion.copy": "Másold őket egyesével, vagy nevezd át az egyiket.",
   "@errors.write.duplicateSourceNames.suggestion.copy": {

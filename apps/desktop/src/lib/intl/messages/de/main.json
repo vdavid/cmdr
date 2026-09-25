@@ -9,11 +9,11 @@
   },
   "main.upgradeNudge.mac": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne Cmdr > Einführung …, um sie anzusehen.",
   "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
+    "sourceHash": "439adfd"
   },
   "main.upgradeNudge.other": "Wir haben neue Einführungsoptionen hinzugefügt. Öffne die Befehlspalette und führe Einführung … aus, um sie anzusehen.",
   "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
+    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Cmdr im Dock behalten?",
   "@main.dockPinNudge.title": {
@@ -21,7 +21,7 @@
   },
   "main.dockPinNudge.body": "Du benutzt Cmdr jetzt seit ein paar Tagen, es scheint dir also zu gefallen. Soll das Symbol unten neben dem Finder bleiben?",
   "@main.dockPinNudge.body": {
-    "sourceHash": "1718271"
+    "sourceHash": "7f4265e"
   },
   "main.dockPinNudge.unpinNote": "Du kannst es jederzeit wieder aus dem Dock entfernen, wenn du es dir anders überlegst.",
   "@main.dockPinNudge.unpinNote": {
@@ -41,15 +41,15 @@
   },
   "main.dockPinNudge.addedButDockDidNotRestart": "Das Symbol von Cmdr liegt schon im Dock, das Dock hat es nur noch nicht neu geladen. Bei deiner nächsten Anmeldung ist es da.",
   "@main.dockPinNudge.addedButDockDidNotRestart": {
-    "sourceHash": "b035470"
+    "sourceHash": "7a4e3bb"
   },
   "main.dockPinNudge.managedDock": "Dein Dock wird von einem Konfigurationsprofil verwaltet, deshalb kann Cmdr sich nicht selbst hinzufügen. Wer diesen Mac verwaltet, kann das ändern.",
   "@main.dockPinNudge.managedDock": {
-    "sourceHash": "dae0836"
+    "sourceHash": "4781787"
   },
   "main.dockPinNudge.notAdded": "Cmdr ist diesmal nicht ins Dock gekommen. Du kannst das Symbol jederzeit aus dem Ordner „Programme“ dorthin ziehen.",
   "@main.dockPinNudge.notAdded": {
-    "sourceHash": "0d122cb"
+    "sourceHash": "0b863ad"
   },
   "main.revealNudge.title": "„Im Finder anzeigen“ in Cmdr öffnen?",
   "@main.revealNudge.title": {
@@ -57,7 +57,7 @@
   },
   "main.revealNudge.body": "Du benutzt Cmdr jetzt schon eine Weile. Wenn eine andere App „Im Finder anzeigen“ ausführt, kann Cmdr diesen Ordner öffnen, mit dem Cursor direkt auf der Datei.",
   "@main.revealNudge.body": {
-    "sourceHash": "1db1d28"
+    "sourceHash": "1934a04"
   },
   "main.revealNudge.switchBackNote": "Du kannst das jederzeit in den Einstellungen wieder umstellen.",
   "@main.revealNudge.switchBackNote": {
@@ -81,7 +81,7 @@
   },
   "main.revealNudge.notTurnedOn": "Cmdr konnte „Im Finder anzeigen“ diesmal nicht übernehmen. Der Schalter dafür ist in den Einstellungen, wenn du es noch einmal versuchen willst.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "953a4ee"
+    "sourceHash": "0f572c0"
   },
   "main.revealActivation.title": "„Im Finder anzeigen“ wurde hier geöffnet",
   "@main.revealActivation.title": {
@@ -101,7 +101,7 @@
   },
   "main.quit.body": "Was fertig ist, bleibt fertig. Alles, was gerade geschrieben wird, stoppt genau dort, wo es ist, und Cmdr entfernt, was dabei halb geschrieben zurückbleibt.",
   "@main.quit.body": {
-    "sourceHash": "c17f6e7"
+    "sourceHash": "79a69f9"
   },
   "main.quit.countdown": "{seconds, plural, one {Cmdr beendet sich in {secondsText} Sekunde, damit ein Neustart oder eine Abmeldung nie darauf warten muss.} other {Cmdr beendet sich in {secondsText} Sekunden, damit ein Neustart oder eine Abmeldung nie darauf warten muss.}}",
   "@main.quit.countdown": {
@@ -129,7 +129,7 @@
   },
   "main.oldWebkit.body": "Die Oberfläche von Cmdr braucht Safari 15.4 oder neuer, und auf diesem Mac läuft eine ältere Version. Öffne Softwareupdate und installiere alles, was aussteht. Das sollte es lösen.",
   "@main.oldWebkit.body": {
-    "sourceHash": "bcadac5"
+    "sourceHash": "a7112ec"
   },
   "main.oldMacos.title": "Cmdr auf macOS {version}",
   "@main.oldMacos.title": {
@@ -137,7 +137,7 @@
   },
   "main.oldMacos.body": "Cmdr unterstützt offiziell macOS 12 und neuer, hier läuft es also nur so gut, wie es eben geht. Das meiste funktioniert, aber ein paar Farben und kleine Layout-Details können daneben liegen, und Korrekturen für ältere Systeme kommen zuletzt. Wenn dir etwas Kaputtes auffällt, höre ich trotzdem gern davon.",
   "@main.oldMacos.body": {
-    "sourceHash": "9484b91"
+    "sourceHash": "f9b4185"
   },
   "main.oldMacos.gotIt": "Alles klar",
   "@main.oldMacos.gotIt": {
@@ -161,6 +161,6 @@
   },
   "main.escapeFullScreenHint.onceNote": "Du siehst diesen Hinweis nur einmal.",
   "@main.escapeFullScreenHint.onceNote": {
-    "sourceHash": "c76cb6c"
+    "sourceHash": "210b892"
   }
 }

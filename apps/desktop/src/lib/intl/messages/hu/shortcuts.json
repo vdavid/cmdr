@@ -66,11 +66,11 @@
   },
   "shortcuts.conflict.reservedByMacOs": "{combo}: ezt a macOS foglalja ({command}), így nem jut el a Cmdrhez. Válassz másik kombinációt.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "sourceHash": "4aad26f"
+    "sourceHash": "76e8ad2"
   },
   "shortcuts.conflict.fixedKey": "{combo}: ez rögzített billentyű a Cmdrben ({command}), és nem rendelhető át. Válassz másik kombinációt.",
   "@shortcuts.conflict.fixedKey": {
-    "sourceHash": "2c2c76f"
+    "sourceHash": "42c3c0e"
   },
   "shortcuts.conflict.systemShortcut": "{combo}: ezt általában a macOS használja ({label}), ezért lehet, hogy soha nem jut el a Cmdrhez. Itt szabadíthatod fel: Rendszerbeállítások > Billentyűzet.",
   "@shortcuts.conflict.systemShortcut": {
@@ -193,11 +193,11 @@
   },
   "shortcuts.section.macOsTooltip": "Ezt a billentyűparancsot a macOS kezeli. A Cmdr nem tudja módosítani.",
   "@shortcuts.section.macOsTooltip": {
-    "sourceHash": "262b2cc"
+    "sourceHash": "fe5e056"
   },
   "shortcuts.section.fixedTooltip": "Ez a billentyű a Cmdrbe van beépítve, és nem módosítható.",
   "@shortcuts.section.fixedTooltip": {
-    "sourceHash": "f07b460"
+    "sourceHash": "9367bfe"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {

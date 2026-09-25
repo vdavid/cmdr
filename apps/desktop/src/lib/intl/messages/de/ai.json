@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "Wohin deine Daten gehen und was dort mit ihnen passiert, hängt vom gewählten Dienst und deiner Vereinbarung mit ihm ab. Das gilt auch für Ollama, LM Studio und eigene Endpunkte: Die Daten gehen dorthin, wo dieser Server läuft. Die eigenen Server von Cmdr sehen nichts davon.",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>Namensvorschläge für neue Ordner</b>: der Pfad des aktuellen Ordners und bis zu 100 Namen darin",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>Suche in eigenen Worten</b>: der Text, den du eingibst",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "Er drosselt Anfragen oder dein Tarif hat das Kontingent ausgeschöpft. Prüfe deinen Tarif und die Abrechnung und versuche es dann erneut.",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "Die KI hat zu lange gebraucht",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "Dein KI-Anbieter ist nicht erreichbar",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "Prüfe deine Internetverbindung oder den Status des Anbieters und versuche es dann erneut.",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "Die KI kam leer zurück",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "Die Antwort der KI war nicht lesbar",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "Versuche es erneut oder wähle unter Einstellungen > KI ein anderes Modell.",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "Dieser KI-Anbieter wird nicht erkannt",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "Wähle unter Einstellungen > KI einen Anbieter.",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "Server nicht erreichbar",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "Etwas ist schiefgelaufen",
   "@ai.cloud.genericError": {
@@ -425,7 +425,7 @@
   },
   "ai.local.deleteConfirmMessage": "Das gibt {modelSize} Speicherplatz frei. Du musst es erneut herunterladen, um die lokale KI wieder zu nutzen.",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "Wird gelöscht …",
   "@ai.local.deleteButtonDeleting": {
@@ -437,7 +437,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Der macOS-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Der macOS-Schlüsselbund hat den Zugriff verweigert}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {Öffne die Schlüsselbundverwaltung und prüfe den Eintrag „Cmdr“, oder lösche ihn und speichere noch einmal.} other {Öffne die Schlüsselbundverwaltung, suche den Eintrag „Cmdr“ und gewähre den Zugriff, oder lösche ihn und gib deinen Schlüssel neu ein.}}",
   "@ai.secretError.keychainBody": {
@@ -445,7 +445,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {Dein API-Schlüssel ließ sich nicht speichern: Dein System-Schlüsselbund hat den Zugriff verweigert} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen: Dein System-Schlüsselbund hat den Zugriff verweigert}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "Entsperre deinen Schlüsselbund (App „Passwörter“ / „Schlüsselbunde“) und versuche es erneut.",
   "@ai.secretError.keyringBody": {
@@ -453,7 +453,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {Dein API-Schlüssel ließ sich nicht speichern.} other {Dein gespeicherter API-Schlüssel ließ sich nicht lesen.}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "Prüfe, ob dein System-Schlüsselbund verfügbar ist, und versuche es erneut. Wenn es weiterhin auftritt, starte die App neu.",
   "@ai.secretError.genericBody": {

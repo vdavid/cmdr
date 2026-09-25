@@ -82,7 +82,7 @@
   },
   "commands.helpWhatsNew.label": "Wat is er nieuw",
   "@commands.helpWhatsNew.label": {
-    "sourceHash": "aa0c54f"
+    "sourceHash": "37e6112"
   },
   "commands.helpWhatsNew.description": "Bekijk wat er is veranderd in de nieuwste versies van Cmdr",
   "@commands.helpWhatsNew.description": {
@@ -131,7 +131,7 @@
   },
   "commands.favoritesAdd.description": "Voeg de huidige map van het actieve paneel toe aan je favorieten, zodat je er via het favorietenmenu weer terugkomt.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "b09b35e"
+    "sourceHash": "999aa52"
   },
   "commands.favoritesOpen.label": "Toon favorieten",
   "@commands.favoritesOpen.label": {
@@ -460,7 +460,7 @@
   },
   "commands.fileGoToTrash.description": "Open de prullenmand van de schijf die je bekijkt",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "45df2c4"
+    "sourceHash": "73eae92"
   },
   "commands.dialogConfirm.label": "Bevestig open dialoogvenster",
   "@commands.dialogConfirm.label": {
@@ -480,7 +480,7 @@
   },
   "commands.fileOpenTerminalHere.description": "Open je terminal-app in de map die je bekijkt",
   "@commands.fileOpenTerminalHere.description": {
-    "sourceHash": "fa93e44"
+    "sourceHash": "ac0ddb8"
   },
   "commands.fileCopyPath.label": "Kopieer pad naar klembord",
   "@commands.fileCopyPath.label": {
@@ -556,7 +556,7 @@
   },
   "commands.cloudAskGemini.description": "Opent de Gemini-assistent van Google Drive met het geselecteerde bestand als onderwerp",
   "@commands.cloudAskGemini.description": {
-    "sourceHash": "3b425f6"
+    "sourceHash": "37d4e7c"
   },
   "commands.tagsToggleGrey.label": "Tag ‘Grijs’ in-/uitschakelen",
   "@commands.tagsToggleGrey.label": {
@@ -773,7 +773,7 @@
   },
   "commands.handler.favoriteAddFailed": "Die map kon niet aan favorieten worden toegevoegd. Probeer het opnieuw?",
   "@commands.handler.favoriteAddFailed": {
-    "sourceHash": "3f85e99"
+    "sourceHash": "0792537"
   },
   "commands.handler.tabLimitReached": "Tabbladlimiet bereikt",
   "@commands.handler.tabLimitReached": {
@@ -785,19 +785,19 @@
   },
   "commands.handler.cloudDownloadFailed": "Downloaden uit de cloud lukte niet. {detail}",
   "@commands.handler.cloudDownloadFailed": {
-    "sourceHash": "70792cf"
+    "sourceHash": "9efe237"
   },
   "commands.handler.cloudRemoveDownloadFailed": "De download kon niet worden verwijderd. {detail}",
   "@commands.handler.cloudRemoveDownloadFailed": {
-    "sourceHash": "425280d"
+    "sourceHash": "11189fb"
   },
   "commands.handler.googleDriveLinkMissing": "Dit onderdeel heeft geen Google Drive-link.",
   "@commands.handler.googleDriveLinkMissing": {
-    "sourceHash": "af21508"
+    "sourceHash": "7be9109"
   },
   "commands.handler.googleDriveOpenFailed": "Openen in Google Drive lukte niet. {detail}",
   "@commands.handler.googleDriveOpenFailed": {
-    "sourceHash": "71dc94a"
+    "sourceHash": "e7fd439"
   },
   "commands.handler.googleDriveLinkCopied": "Google Drive-link gekopieerd.",
   "@commands.handler.googleDriveLinkCopied": {
@@ -805,7 +805,7 @@
   },
   "commands.handler.googleDriveCopyFailed": "Google Drive-link kopiëren lukte niet. {detail}",
   "@commands.handler.googleDriveCopyFailed": {
-    "sourceHash": "dd970ec"
+    "sourceHash": "0af1fd3"
   },
   "commands.handler.openTerminalHere.hint": "Deze map is geopend in je terminal-app. Wil je dat Cmdr de volgende keer een andere app opent? Kies er een in Instellingen, onder ‘Navigatie en bewerkingen’.",
   "@commands.handler.openTerminalHere.hint": {
@@ -821,19 +821,19 @@
   },
   "commands.handler.openTerminalHere.appMissing": "{app} is niet meer geïnstalleerd, dus dit is geopend in Terminal.",
   "@commands.handler.openTerminalHere.appMissing": {
-    "sourceHash": "70726d6"
+    "sourceHash": "770ded9"
   },
   "commands.handler.openTerminalHere.appMissingUnnamed": "Je terminal-app is niet meer geïnstalleerd, dus dit is geopend in Terminal.",
   "@commands.handler.openTerminalHere.appMissingUnnamed": {
-    "sourceHash": "29e9be5"
+    "sourceHash": "8e40ade"
   },
   "commands.handler.openTerminalHere.noPath": "Deze map heeft geen pad dat een terminal kan openen.",
   "@commands.handler.openTerminalHere.noPath": {
-    "sourceHash": "d6520b7"
+    "sourceHash": "7851182"
   },
   "commands.handler.openTerminalHere.launchRefused": "Cmdr kon je terminal-app niet starten. Open hem zelf een keer en probeer het dan opnieuw.",
   "@commands.handler.openTerminalHere.launchRefused": {
-    "sourceHash": "ffd6b3a"
+    "sourceHash": "dd7296e"
   },
   "commands.handler.openTerminalHere.timedOut": "Je terminal-app doet er lang over om te starten. Misschien gaat hij zo alsnog open.",
   "@commands.handler.openTerminalHere.timedOut": {

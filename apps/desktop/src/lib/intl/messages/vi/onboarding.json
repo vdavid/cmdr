@@ -5,7 +5,7 @@
   },
   "onboarding.fdaBadge.tooltip": "Bạn không nhất thiết phải cấp quyền này, nhưng Cmdr chạy tốt hơn nhiều khi có nó: tìm kiếm toàn bộ ổ đĩa, đọc các thư mục đám mây, và sửa những tệp mà macOS giữ riêng cho mình. Bấm để xem lại lựa chọn này.",
   "@onboarding.fdaBadge.tooltip": {
-    "sourceHash": "00f408a"
+    "sourceHash": "d7ff906"
   },
   "onboarding.fdaBadge.ariaLabel": "Không có quyền truy cập đầy đủ vào ổ đĩa. Mở bước quyền truy cập đầy đủ vào ổ đĩa trong phần thiết lập ban đầu.",
   "@onboarding.fdaBadge.ariaLabel": {
@@ -57,11 +57,11 @@
   },
   "onboarding.stepFda.granted.body": "Tuyệt, đó là tất cả những gì Cmdr cần. Khởi động lại ngay để bắt đầu dùng mọi thứ.",
   "@onboarding.stepFda.granted.body": {
-    "sourceHash": "32acf9d"
+    "sourceHash": "1f59b5f"
   },
   "onboarding.stepFda.granted.hint": "Cmdr sẽ nhận quyền mới ở lần khởi động sau. Vị trí của bạn trong quá trình thiết lập được lưu lại, nên bạn sẽ quay đúng về đây.",
   "@onboarding.stepFda.granted.hint": {
-    "sourceHash": "e0e33a3"
+    "sourceHash": "dc1d332"
   },
   "onboarding.stepFda.alreadyGranted.title": "Cmdr hiện đã có quyền truy cập toàn bộ đĩa",
   "@onboarding.stepFda.alreadyGranted.title": {
@@ -85,23 +85,23 @@
   },
   "onboarding.stepFda.revoked.ifIntentional": "Nếu đó là chủ ý, hãy nhấn <deny>Từ chối</deny> và ứng dụng sẽ không làm phiền bạn nữa.",
   "@onboarding.stepFda.revoked.ifIntentional": {
-    "sourceHash": "9709b73"
+    "sourceHash": "6ab4c94"
   },
   "onboarding.stepFda.revoked.ifNot": "Nếu đó <em>không phải</em> chủ ý, hãy cân nhắc cấp lại quyền truy cập toàn bộ đĩa. Đây là điểm lợi và hại:",
   "@onboarding.stepFda.revoked.ifNot": {
-    "sourceHash": "24667ee"
+    "sourceHash": "b40412b"
   },
   "onboarding.stepFda.firstAsk.lede": "<strong>Có lẽ bạn chỉ muốn bắt đầu dùng ứng dụng ngay.</strong> Xin lỗi vì phải hỏi điều này trước, nhưng nó cần thiết.",
   "@onboarding.stepFda.firstAsk.lede": {
-    "sourceHash": "7f19b2a"
+    "sourceHash": "4f2f392"
   },
   "onboarding.stepFda.firstAsk.explain": "Bạn thấy đấy, Cmdr là một trình quản lý tệp, và nó cần truy cập đĩa để thấy mọi tệp của bạn. macOS không tự động cấp quyền này.",
   "@onboarding.stepFda.firstAsk.explain": {
-    "sourceHash": "f60c41b"
+    "sourceHash": "4196968"
   },
   "onboarding.stepFda.firstAsk.askPermission": "Bạn có muốn cấp cho ứng dụng này quyền truy cập toàn bộ đĩa không? Điều đó có nghĩa là:",
   "@onboarding.stepFda.firstAsk.askPermission": {
-    "sourceHash": "94e5db7"
+    "sourceHash": "28a5c77"
   },
   "onboarding.stepFda.why": "Tại sao?",
   "@onboarding.stepFda.why": {
@@ -161,11 +161,11 @@
   },
   "onboarding.stepFda.postAction.body": "Khi đã sẵn sàng, hãy nhấn <restart>Khởi động lại Cmdr</restart> bên dưới. Nếu bạn đổi ý, hãy nhấn <deny>Từ chối</deny> ở trên.",
   "@onboarding.stepFda.postAction.body": {
-    "sourceHash": "f87a5fc"
+    "sourceHash": "7a5c238"
   },
   "onboarding.stepFda.openSettingsFailed": "Cmdr không mở được {systemSettings}. Hãy tự mở, vào <strong>{privacyAndSecurity}</strong>, rồi <strong>{fullDiskAccess}</strong>, và bật <strong>Cmdr</strong> lên.",
   "@onboarding.stepFda.openSettingsFailed": {
-    "sourceHash": "8cfce29"
+    "sourceHash": "7da3acc"
   },
   "onboarding.stepAi.bannerTitle.granted": "Đã cấp quyền truy cập toàn bộ đĩa",
   "@onboarding.stepAi.bannerTitle.granted": {
@@ -181,15 +181,15 @@
   },
   "onboarding.stepAi.bannerBody.denied": "Bạn đã chọn không bật quyền truy cập toàn bộ đĩa. Chúng tôi tôn trọng điều đó. Lát nữa bạn sẽ nhận vài yêu cầu cấp quyền từ macOS để Cmdr truy cập Màn hình nền, Tải về, và các thư mục tương tự. Cứ chấp nhận hoặc từ chối tùy ý. Bạn có thể thay đổi tất cả những điều này sau trong {systemSettings}.",
   "@onboarding.stepAi.bannerBody.denied": {
-    "sourceHash": "ccb4ae5"
+    "sourceHash": "fa85a39"
   },
   "onboarding.stepAi.bannerTitle.stuck": "Cmdr có vẻ vẫn chưa có quyền truy cập toàn bộ đĩa",
   "@onboarding.stepAi.bannerTitle.stuck": {
-    "sourceHash": "88c9c19"
+    "sourceHash": "6e60ae7"
   },
   "onboarding.stepAi.bannerBody.stuck": "Bạn nói rằng muốn bật quyền truy cập toàn bộ đĩa, nhưng Cmdr có vẻ chưa nhận được. Bạn có thể cần khởi động lại ứng dụng (làm ngay đi, chúng ta sẽ tiếp tục từ đây!), hoặc vào <settingsLink>{systemSettings} > Quyền riêng tư & Bảo mật > Truy cập toàn bộ đĩa</settingsLink> và tìm Cmdr, hoặc thêm thủ công bằng nút “+” nhỏ ở dưới cùng.",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "fcdff85"
+    "sourceHash": "c13bbbe"
   },
   "onboarding.stepAi.welcomeLinux.title": "Chào mừng bạn đến với Cmdr!",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -197,11 +197,11 @@
   },
   "onboarding.stepAi.welcomeLinux.subtitle": "Cùng thiết lập AI nào.",
   "@onboarding.stepAi.welcomeLinux.subtitle": {
-    "sourceHash": "a96e109"
+    "sourceHash": "e4c4251"
   },
   "onboarding.stepAi.title": "Giờ thì cùng nói về AI",
   "@onboarding.stepAi.title": {
-    "sourceHash": "a580449"
+    "sourceHash": "7fb7b12"
   },
   "onboarding.stepAi.intro": "Cmdr có một loạt tính năng AI mà bạn <em>có thể</em> muốn và cũng có thể không muốn. AI là một chủ đề gây tranh cãi thời nay.",
   "@onboarding.stepAi.intro": {
@@ -293,7 +293,7 @@
   },
   "onboarding.stepAi.local.tooltip": "Mô hình cục bộ kém thông minh hơn hẳn so với các mô hình đám mây, và nó chiếm khoảng 2 GB dung lượng cùng một ít RAM và CPU mỗi lần dùng.\nĐổi lại, không có dữ liệu nào rời khỏi máy của bạn.\nCmdr cố gắng phát hành cập nhật để bạn luôn dùng được mô hình nhỏ tốt nhất hiện có. Nhưng nếu bạn muốn cả riêng tư <em>và</em> một mô hình khá, thì chạy máy chủ ollama của riêng bạn rồi thiết lập nó bằng tùy chọn <strong>Có, tôi muốn AI</strong> bên dưới là cách tốt nhất.",
   "@onboarding.stepAi.local.tooltip": {
-    "sourceHash": "c3fa36a"
+    "sourceHash": "ddc1a76"
   },
   "onboarding.stepAi.local.note": "Đã bắt đầu tải về mô hình cục bộ ở chế độ nền. Bạn có thể hoàn tất thiết lập ngay bây giờ; thông báo nhỏ ở góc màn hình sẽ cập nhật tình hình cho bạn.",
   "@onboarding.stepAi.local.note": {
@@ -305,7 +305,7 @@
   },
   "onboarding.stepAi.missingKeyWarning": "Bạn đã bật AI nhưng chưa nhập khóa API. AI sẽ không hoạt động và bạn sẽ thấy một cảnh báo. Hãy sửa việc này ở phía trên.\n\n<strong>Nhấn “{nextLabel}” lần nữa để bỏ qua và đi tiếp.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "bdb8a08"
+    "sourceHash": "b942278"
   },
   "onboarding.stepAi.cloudConsentOffNote": "AI đám mây sẽ tắt cho đến khi bạn cho phép. Bạn có thể làm việc đó sau trong Cài đặt > AI.",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -333,11 +333,11 @@
   },
   "onboarding.stepBeta.greeting": "Chào, mình là <david>David</david>! Mình xây dựng Cmdr, và bạn là một trong những người đầu tiên dùng nó. Cảm ơn bạn đã tin tưởng! ❤️",
   "@onboarding.stepBeta.greeting": {
-    "sourceHash": "f7ade14"
+    "sourceHash": "2736b42"
   },
   "onboarding.stepBeta.openBeta": "Cmdr đang trong giai đoạn beta công khai: nhìn chung nó vững vàng và dùng được, nhưng vài phần còn thô. Các huy hiệu <alpha></alpha> đánh dấu những khu vực đang dở dang nhất. Phản hồi của bạn giúp mình sửa lỗi và ưu tiên tính năng.",
   "@onboarding.stepBeta.openBeta": {
-    "sourceHash": "0dba196"
+    "sourceHash": "f3bed8c"
   },
   "onboarding.stepBeta.checklist.title": "Danh sách kiểm tra thiết lập ban đầu, mỗi mục mất 30 giây:",
   "@onboarding.stepBeta.checklist.title": {
@@ -373,7 +373,7 @@
   },
   "onboarding.stepBeta.analyticsLede": "Để biết điều gì hiệu quả và điều gì không, trong giai đoạn beta công khai Cmdr gửi thống kê sử dụng: tính năng nào được dùng và dùng bao nhiêu lần, không bao giờ gửi bất cứ thứ gì từ các tệp của bạn.\nThống kê gắn với một mã định danh ngẫu nhiên, không gắn với tên hay email của bạn.\nNó đang bật, và bạn có thể tắt bất cứ lúc nào.",
   "@onboarding.stepBeta.analyticsLede": {
-    "sourceHash": "edd95b4"
+    "sourceHash": "7544e4c"
   },
   "onboarding.stepBeta.analyticsTitle": "Gửi thống kê sử dụng",
   "@onboarding.stepBeta.analyticsTitle": {
@@ -381,7 +381,7 @@
   },
   "onboarding.stepBeta.analyticsCaption": "Lưu ý rằng nó được BẬT theo mặc định để khuyến khích mọi người gửi dữ liệu cho mình trong giai đoạn Beta.\nBạn có thể thay đổi điều này bất cứ lúc nào trong Cài đặt.",
   "@onboarding.stepBeta.analyticsCaption": {
-    "sourceHash": "cfd1e86"
+    "sourceHash": "06ce4eb"
   },
   "onboarding.stepBeta.crashReportsNote": "Báo cáo sự cố cũng đang bật: nếu Cmdr sập, ứng dụng gửi phiên bản ứng dụng, phiên bản macOS của bạn và chỗ mã dừng lại.\nKhông bao giờ gồm tệp của bạn.\nBạn có thể tắt cả hai trong Cài đặt bất cứ lúc nào.",
   "@onboarding.stepBeta.crashReportsNote": {
@@ -401,19 +401,19 @@
   },
   "onboarding.stepBeta.signup.failure": "Xin lỗi, chúng tôi chưa đăng ký được cho bạn ngay lúc này. Thử lại nhé?",
   "@onboarding.stepBeta.signup.failure": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "onboarding.stepBeta.signup.rejected": "Danh sách gửi thư không nhận địa chỉ đó. Bạn soát lại xem có nhập nhầm không, rồi nhấn Lưu lần nữa.",
   "@onboarding.stepBeta.signup.rejected": {
-    "sourceHash": "05ccee5"
+    "sourceHash": "5a1bca7"
   },
   "onboarding.stepBeta.signup.unreachable": "Lúc này chưa kết nối được tới máy chủ đăng ký, nên bạn chưa có trong danh sách. Địa chỉ của bạn đã được lưu trên máy Mac này: lát nữa hãy nhấn Lưu lần nữa, hoặc bất cứ lúc nào trong Cài đặt › Cập nhật & quyền riêng tư.",
   "@onboarding.stepBeta.signup.unreachable": {
-    "sourceHash": "8036aad"
+    "sourceHash": "e4d8f67"
   },
   "onboarding.stepBeta.emailNote": "Để lại email của bạn và thi thoảng mình sẽ liên hệ với một câu hỏi hoặc bản cập nhật.\nĐịa chỉ email bạn nhập ở đây chỉ được lưu trên máy Mac của bạn và không bao giờ liên kết với thống kê sử dụng của bạn, hai thứ này cố ý là hai hệ thống con riêng biệt.",
   "@onboarding.stepBeta.emailNote": {
-    "sourceHash": "f256066"
+    "sourceHash": "0a793b1"
   },
   "onboarding.stepBeta.terms.title": "À, và cả điều này nữa nhé",
   "@onboarding.stepBeta.terms.title": {
@@ -421,11 +421,11 @@
   },
   "onboarding.stepBeta.terms.lede": "Đây là nghĩa vụ pháp lý nên phải có ở đây.",
   "@onboarding.stepBeta.terms.lede": {
-    "sourceHash": "c59e47e"
+    "sourceHash": "26e1bbf"
   },
   "onboarding.stepBeta.terms.consent": "Tôi đã đọc và đồng ý với <terms>điều khoản và điều kiện</terms>.",
   "@onboarding.stepBeta.terms.consent": {
-    "sourceHash": "620a4b6"
+    "sourceHash": "7becd05"
   },
   "onboarding.stepBeta.terms.blockedTooltip": "Chấp nhận điều khoản và điều kiện để tiếp tục.",
   "@onboarding.stepBeta.terms.blockedTooltip": {
@@ -437,11 +437,11 @@
   },
   "onboarding.stepOptional.title": "Bạn gần như đã sẵn sàng",
   "@onboarding.stepOptional.title": {
-    "sourceHash": "6ad977a"
+    "sourceHash": "a7bb760"
   },
   "onboarding.stepOptional.lede": "Bạn đã chọn đi qua phần thiết lập chi tiết, nên đây là vài lựa chọn đơn giản. Nếu bạn không bận tâm lắm, cứ nhấn nút bên dưới. Đây đều là tùy chọn, và các giá trị mặc định được chọn vì lợi ích của bạn.",
   "@onboarding.stepOptional.lede": {
-    "sourceHash": "b1242c9"
+    "sourceHash": "278452e"
   },
   "onboarding.stepOptional.recommendedOn": "Khuyến nghị: bật",
   "@onboarding.stepOptional.recommendedOn": {
@@ -461,7 +461,7 @@
   },
   "onboarding.stepOptional.networking.desc": "Để cái này <em>bật</em> nghĩa là bạn có thể kết nối tới các máy chủ SMB như thư mục chia sẻ của công ty, một NAS ở nhà, và những thứ tương tự.\nCái giá duy nhất là một hộp thoại cấp quyền của macOS bật lên và yêu cầu bạn cho phép “Mạng cục bộ”, và một hộp thoại cho “Chấp nhận kết nối đến”.\nCả hai hộp thoại đều vô hại, nhưng nếu bạn không biết chúng là gì, chúng có thể đáng sợ hoặc gây phiền.",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "c03c7df"
+    "sourceHash": "d473c62"
   },
   "onboarding.stepOptional.indexing.title": "Lập chỉ mục ổ đĩa",
   "@onboarding.stepOptional.indexing.title": {
@@ -485,7 +485,7 @@
   },
   "onboarding.stepOptional.indexing.descCost": "Nếu bạn tắt cái này, bạn chỉ thấy <code>{dirPlaceholder}</code> thay cho kích cỡ.\nCái giá là khoảng 1 GB chỉ mục trên ổ đĩa của bạn với vài triệu tệp, nhưng không tốn thêm CPU hay bộ nhớ sau 2–3 phút đầu tiên khi bạn khởi động ứng dụng lần đầu, hoặc khởi động lại sau một thời gian dài.\nĐây là một tính năng rẻ so với những lợi ích nó mang lại.",
   "@onboarding.stepOptional.indexing.descCost": {
-    "sourceHash": "0b60064"
+    "sourceHash": "954cf6b"
   },
   "onboarding.stepOptional.updates.title": "Cập nhật tự động",
   "@onboarding.stepOptional.updates.title": {
@@ -497,7 +497,7 @@
   },
   "onboarding.stepOptional.updates.desc": "Nếu bạn bật cái này, Cmdr gửi một yêu cầu mạng nhỏ tới máy chủ giấy phép trung tâm mỗi khi khởi động ứng dụng cộng với một lần mỗi 24 giờ, và bạn luôn nhận được các bản cập nhật mới nhất.\nNếu tắt, bạn sẽ giữ phiên bản hiện tại, và không có yêu cầu mạng tự động nào (trừ các lần kiểm tra giấy phép định kỳ, nếu bạn có giấy phép thương mại).",
   "@onboarding.stepOptional.updates.desc": {
-    "sourceHash": "12b7f08"
+    "sourceHash": "bfd8d7e"
   },
   "onboarding.stepOptional.mtp.title": "MTP (điện thoại Android, Kindle, máy ảnh)",
   "@onboarding.stepOptional.mtp.title": {
@@ -509,7 +509,7 @@
   },
   "onboarding.stepOptional.mtp.desc": "Nếu bạn bật cái này, Cmdr có thể <strong>kết nối tới điện thoại Android, Kindle, máy ảnh</strong>, một số máy nghe nhạc, và bất kỳ thiết bị nào hỗ trợ các giao thức gọi là MTP hoặc PTP.\nCái giá là macOS <em>cũng</em> muốn kết nối tới những thiết bị này (và thường không thành công, đó là lý do bạn không thể chỉ dùng Finder để chép ảnh từ điện thoại Android), nên Cmdr phải ngăn tiến trình macOS đó trong khi nó chạy.\nKhi bạn thoát Cmdr, điều này được khôi phục một cách lịch sự.",
   "@onboarding.stepOptional.mtp.desc": {
-    "sourceHash": "9563b7b"
+    "sourceHash": "8a60e7f"
   },
   "onboarding.cloudPicker.listAria": "Các nhà cung cấp AI đám mây",
   "@onboarding.cloudPicker.listAria": {
@@ -521,7 +521,7 @@
   },
   "onboarding.cloudSetup.step.signup": "Đăng ký tại <signupLink>{provider}</signupLink> (nếu bạn chưa có tài khoản)",
   "@onboarding.cloudSetup.step.signup": {
-    "sourceHash": "d89f1e1"
+    "sourceHash": "06a92f1"
   },
   "onboarding.cloudSetup.step.createKey": "Tạo một khóa API <keyLink>tại đây</keyLink>",
   "@onboarding.cloudSetup.step.createKey": {
@@ -585,11 +585,11 @@
   },
   "onboarding.cloudSetup.status.authError": "Khóa đó không dùng được",
   "@onboarding.cloudSetup.status.authError": {
-    "sourceHash": "2f23f3b"
+    "sourceHash": "b93b44a"
   },
   "onboarding.cloudSetup.status.connectionError": "Hiện chưa thể kết nối tới dịch vụ",
   "@onboarding.cloudSetup.status.connectionError": {
-    "sourceHash": "67cb2e5"
+    "sourceHash": "fcab672"
   },
   "onboarding.cloudSetup.status.genericError": "Có gì đó không ổn",
   "@onboarding.cloudSetup.status.genericError": {

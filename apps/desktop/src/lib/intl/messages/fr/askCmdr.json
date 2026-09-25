@@ -522,11 +522,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "Un autre fichier utilise déjà ce nom et ne fait pas partie de ce plan de renommage. Ce renommage est bloqué pour le protéger.",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "(n’existe pas)",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "Ce fichier source n’existe plus. Il a peut-être été supprimé ou renommé en dehors de Cmdr.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -676,7 +676,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "Les fonctionnalités d’IA ne voient pas encore vos dossiers. Cliquez pour configurer l’accès complet au disque.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "Les fonctionnalités d’IA sont activées, mais il leur faut un fournisseur pour fonctionner. Cliquez pour en configurer un dans les réglages.",
   "@askCmdr.wake.needsApiKey": {

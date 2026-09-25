@@ -13,7 +13,7 @@
   },
   "mtp.connectedToast.dontShowAgain": "Não mostrar novamente",
   "@mtp.connectedToast.dontShowAgain": {
-    "sourceHash": "d98ab77"
+    "sourceHash": "f6f62e0"
   },
   "mtp.connectedToast.disableMtp": "Desativar MTP…",
   "@mtp.connectedToast.disableMtp": {
@@ -26,11 +26,11 @@
   },
   "mtp.permissionDialog.title": "Não foi possível acessar o dispositivo USB",
   "@mtp.permissionDialog.title": {
-    "sourceHash": "96130bf"
+    "sourceHash": "1b440ed"
   },
   "mtp.permissionDialog.description": "O Cmdr não tem permissão para acessar este dispositivo. O Linux precisa de regras udev para conceder acesso a dispositivos MTP.",
   "@mtp.permissionDialog.description": {
-    "sourceHash": "c11f0e8"
+    "sourceHash": "fdb8772"
   },
   "mtp.permissionDialog.explanation": "Execute este comando no seu terminal para instalar as regras e recarregá-las:",
   "@mtp.permissionDialog.explanation": {
@@ -50,7 +50,7 @@
   },
   "mtp.ptpcameradDialog.title": "Não foi possível conectar ao dispositivo MTP",
   "@mtp.ptpcameradDialog.title": {
-    "sourceHash": "058de77"
+    "sourceHash": "8cb1f59"
   },
   "mtp.ptpcameradDialog.inUseBy": "O dispositivo está em uso por <processName>{process}</processName>.",
   "@mtp.ptpcameradDialog.inUseBy": {

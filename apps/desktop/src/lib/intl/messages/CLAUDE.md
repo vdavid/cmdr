@@ -23,8 +23,8 @@ boundary: `../CLAUDE.md`.
 
 - **Key shape: `area.feature.leaf`**: lowerCamel segments, dot-separated, at least two, first segment a known area
   (`desktop-message-key-naming`). Add an area by adding both a catalog file AND the area there.
-- **Double every apostrophe (`''`).** ICU reads a lone `'` before `{`/`<`/`#` as an escape and swallows the text after
-  it; `''` always collapses to `'`, so double it everywhere.
+- **English apostrophes are `’` (U+2019)**, which ICU ignores. A straight `'` in an ICU value is doubled (`''`): ICU
+  reads a lone one before `{`/`<`/`#` as an escape and swallows what follows.
 - **The RAW families never meet ICU**, so their apostrophes stay SINGLE and their `{token}`s are literal replacement
   targets: `errors.*`, plus the NATIVE ones Rust draws (`menu.*`, `licensing.windowTitle.*`, `main.instanceLock.*`)
   through `menu_t`, never `t()`. `i18n-icu` (ERROR) fails a raw value carrying `''`: nothing collapses it there, so the

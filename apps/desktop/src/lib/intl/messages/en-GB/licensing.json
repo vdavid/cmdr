@@ -27,13 +27,13 @@
   "@licensing.about.linkGetLicense": {
     "sourceHash": "fab19d3"
   },
-  "licensing.commercialReminder.usingPersonal": "You''re using a Personal licence.",
+  "licensing.commercialReminder.usingPersonal": "You’re using a Personal licence.",
   "@licensing.commercialReminder.usingPersonal": {
-    "sourceHash": "508c17d"
+    "sourceHash": "3aa6518"
   },
-  "licensing.commercialReminder.askCommercial": "If you''re using Cmdr at work, please get a Commercial licence to stay compliant.",
+  "licensing.commercialReminder.askCommercial": "If you’re using Cmdr at work, please get a Commercial licence to stay compliant.",
   "@licensing.commercialReminder.askCommercial": {
-    "sourceHash": "6bf4031"
+    "sourceHash": "84b372c"
   },
   "licensing.commercialReminder.priceInfo": "A commercial licence is $59, paid once, and supports continued development.",
   "@licensing.commercialReminder.priceInfo": {
@@ -51,9 +51,9 @@
   "@licensing.expiration.orgName": {
     "sourceHash": "a5f0bab"
   },
-  "licensing.expiration.info": "Cmdr is now running in personal use mode. If you''re still using it for work, please renew your licence.",
+  "licensing.expiration.info": "Cmdr is now running in personal use mode. If you’re still using it for work, please renew your licence.",
   "@licensing.expiration.info": {
-    "sourceHash": "5fcebb5"
+    "sourceHash": "274de6c"
   },
   "licensing.expiration.renew": "Renew licence",
   "@licensing.expiration.renew": {
@@ -83,17 +83,17 @@
   "@licensing.dialog.resetConfirm": {
     "sourceHash": "2d77d69"
   },
-  "licensing.dialog.enterPrompt": "Paste your licence key from the email you received after purchase. Don''t have one yet? <getLicense>Get a licence</getLicense>.",
+  "licensing.dialog.enterPrompt": "Paste your licence key from the email you received after purchase. Don’t have one yet? <getLicense>Get a licence</getLicense>.",
   "@licensing.dialog.enterPrompt": {
-    "sourceHash": "f6fb47a"
+    "sourceHash": "4e3a096"
   },
   "licensing.dialog.activatedToast": "Licence activated. Thanks for your support! ❤️",
   "@licensing.dialog.activatedToast": {
     "sourceHash": "af76e26"
   },
-  "licensing.dialog.networkFallbackError": "Couldn''t verify your licence with the server. Please try again later.",
+  "licensing.dialog.networkFallbackError": "Couldn’t verify your licence with the server. Please try again later.",
   "@licensing.dialog.networkFallbackError": {
-    "sourceHash": "cb2b8e0"
+    "sourceHash": "fc7e124"
   },
   "licensing.dialog.expiredOnError": "This licence expired on {date}.",
   "@licensing.dialog.expiredOnError": {
@@ -103,9 +103,9 @@
   "@licensing.dialog.expiredOnHelp": {
     "sourceHash": "036bb88"
   },
-  "licensing.dialog.serverInvalidError": "We know this key but when we checked it with our payment provider, it didn''t recognise it. This can happen if the purchase was refunded or not cleared.",
+  "licensing.dialog.serverInvalidError": "We know this key but when we checked it with our payment provider, it didn’t recognise it. This can happen if the purchase was refunded or not cleared.",
   "@licensing.dialog.serverInvalidError": {
-    "sourceHash": "4beeef1"
+    "sourceHash": "58f1457"
   },
   "licensing.dialog.emptyKeyError": "Please enter a licence key",
   "@licensing.dialog.emptyKeyError": {
@@ -115,13 +115,13 @@
   "@licensing.dialog.mailtoSubject": {
     "sourceHash": "685a80d"
   },
-  "licensing.dialog.mailtoBody": "Hi,\n\nI''m having trouble activating my licence key:\n{key}\n\n",
+  "licensing.dialog.mailtoBody": "Hi,\n\nI’m having trouble activating my licence key:\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
-    "sourceHash": "bcdc2b6"
+    "sourceHash": "c076655"
   },
-  "licensing.error.badSignature": "This licence key failed our signature verification, meaning that it doesn''t look like a valid key.",
+  "licensing.error.badSignature": "This licence key failed our signature verification, meaning that it doesn’t look like a valid key.",
   "@licensing.error.badSignature": {
-    "sourceHash": "e9842df"
+    "sourceHash": "3bcac8e"
   },
   "licensing.error.badFormat": "Our licence key format is different from this.",
   "@licensing.error.badFormat": {
@@ -131,17 +131,17 @@
   "@licensing.error.badFormatHint": {
     "sourceHash": "a62b901"
   },
-  "licensing.error.shortCodeNotFound": "This licence looks good, but we looked hard and couldn''t find it in our database.",
+  "licensing.error.shortCodeNotFound": "This licence looks good, but we looked hard and couldn’t find it in our database.",
   "@licensing.error.shortCodeNotFound": {
-    "sourceHash": "c123af8"
+    "sourceHash": "0f9ccbf"
   },
-  "licensing.error.network": "Ouch, we couldn''t reach the licence server this time.",
+  "licensing.error.network": "Ouch, we couldn’t reach the licence server this time.",
   "@licensing.error.network": {
-    "sourceHash": "63da44b"
+    "sourceHash": "d03567c"
   },
-  "licensing.error.server": "Hmm, the licence server responded with something weird. We''re sorry about that.",
+  "licensing.error.server": "Hmm, the licence server responded with something weird. We’re sorry about that.",
   "@licensing.error.server": {
-    "sourceHash": "6ca76c0"
+    "sourceHash": "89870f9"
   },
   "licensing.section.title": "Licence",
   "@licensing.section.title": {

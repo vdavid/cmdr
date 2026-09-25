@@ -27,9 +27,9 @@
   "@settings.appearance.dateColors.description": {
     "sourceHash": "382ce25"
   },
-  "settings.appearance.useAppIconsForDocuments.description": "Show the app''s icon for documents instead of generic file type icons. More colourful but slightly slower.",
+  "settings.appearance.useAppIconsForDocuments.description": "Show the app’s icon for documents instead of generic file type icons. More colourful but slightly slower.",
   "@settings.appearance.useAppIconsForDocuments.description": {
-    "sourceHash": "9ae8a9c"
+    "sourceHash": "9651182"
   },
   "settings.listing.showTags.description": "Show coloured dots next to names for files and folders that carry macOS Finder tags.",
   "@settings.listing.showTags.description": {

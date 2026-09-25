@@ -13,7 +13,7 @@
   },
   "fileOperations.delete.noTrashWarningStrong": "这个宗卷不支持废纸篓。",
   "@fileOperations.delete.noTrashWarningStrong": {
-    "sourceHash": "ef122e2"
+    "sourceHash": "911688a"
   },
   "fileOperations.delete.noTrashWarningRest": "文件将被彻底删除。",
   "@fileOperations.delete.noTrashWarningRest": {
@@ -21,19 +21,19 @@
   },
   "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你选中的内容里有一部分只在云端。把它们移到废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则就取消这个对话框，先把所有文件设为离线可用，或者取消选择所有只在云端的文件。",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "4c48ecf"
+    "sourceHash": "2468db5"
   },
   "fileOperations.delete.cloudOnlineOnlyAllWarning": "你选中的内容全都只在云端。把它移到废纸篓得<strong>先下载回来</strong>。所以 Cmdr 在这里只提供<strong>删除</strong>整个选择。废纸篓里不会留副本，不过云服务通常会在自己的回收站里保留约 30 天。如果可以删除，请点按“删除”；否则就取消这个对话框，先把这些文件设为离线可用。",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "52f8c94"
+    "sourceHash": "dd04d39"
   },
   "fileOperations.delete.cloudOnlineOnlyHandedBack": "你选中的内容里包含仅存在云端的文件，所以下面的按钮现在提供“删除”。请看一下上面的说明，确认无误后再按一次。",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
-    "sourceHash": "623e7e0"
+    "sourceHash": "d3f4a7a"
   },
   "fileOperations.delete.archiveWarningStrong": "压缩文件里没有废纸篓。",
   "@fileOperations.delete.archiveWarningStrong": {
-    "sourceHash": "29efc59"
+    "sourceHash": "d25cd46"
   },
   "fileOperations.delete.archiveWarningRest": "这些项目将从 zip 中被永久移除。",
   "@fileOperations.delete.archiveWarningRest": {
@@ -61,11 +61,11 @@
   },
   "fileOperations.trash.undoUnavailable": "没有可放回的内容。这些项目可能已经回到原处，或者它们所在的驱动器未连接。",
   "@fileOperations.trash.undoUnavailable": {
-    "sourceHash": "2acefae"
+    "sourceHash": "ee17b5f"
   },
   "fileOperations.trash.noTrashHere": "这个驱动器没有废纸篓。",
   "@fileOperations.trash.noTrashHere": {
-    "sourceHash": "91d7462"
+    "sourceHash": "f58bdab"
   },
   "fileOperations.delete.trashSwitch": "移到废纸篓",
   "@fileOperations.delete.trashSwitch": {
@@ -157,7 +157,7 @@
   },
   "fileOperations.mkdir.timeoutMessage": "无法确认文件夹是否已创建。这个宗卷可能比较慢，所以文件夹也许已经创建好了。",
   "@fileOperations.mkdir.timeoutMessage": {
-    "sourceHash": "751aec6"
+    "sourceHash": "8bc758a"
   },
   "fileOperations.mkdir.timeoutRefresh": "刷新列表",
   "@fileOperations.mkdir.timeoutRefresh": {
@@ -245,11 +245,11 @@
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "这个文件夹还不存在。Cmdr 会在拷贝时自动创建它。",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
-    "sourceHash": "025f3dc"
+    "sourceHash": "4e8d166"
   },
   "fileOperations.transferDialog.targetWillBeCreatedMove": "这个文件夹还不存在。Cmdr 会在移动时自动创建它。",
   "@fileOperations.transferDialog.targetWillBeCreatedMove": {
-    "sourceHash": "976edd2"
+    "sourceHash": "1246331"
   },
   "fileOperations.transferDialog.destinationReadOnly": "这个文件夹是只读的，无法放入任何东西。",
   "@fileOperations.transferDialog.destinationReadOnly": {
@@ -257,11 +257,11 @@
   },
   "fileOperations.transferDialog.destinationNoPermission": "你没有向这个文件夹添加文件的权限。",
   "@fileOperations.transferDialog.destinationNoPermission": {
-    "sourceHash": "728b1ed"
+    "sourceHash": "a7e0efa"
   },
   "fileOperations.transferDialog.destinationNotWritable": "这个文件夹不接收新文件。",
   "@fileOperations.transferDialog.destinationNotWritable": {
-    "sourceHash": "d7cd278"
+    "sourceHash": "07094f6"
   },
   "fileOperations.transferDialog.targetWillBeOverwritten": "这里已经有一个同名文件了。Cmdr 会替换它。",
   "@fileOperations.transferDialog.targetWillBeOverwritten": {
@@ -277,7 +277,7 @@
   },
   "fileOperations.transferDialog.hardlinkNote": "这次要写入 <written></written> 的数据，而源文件在磁盘上只占 <ondisk></ondisk> 的空间。多出的部分是硬链接文件，跨驱动器后没法保持链接。",
   "@fileOperations.transferDialog.hardlinkNote": {
-    "sourceHash": "af8a4c9"
+    "sourceHash": "acac507"
   },
   "fileOperations.transferDialog.compressLevelCaption": "级别越高，生成的 zip 越小，但打包耗时越长。",
   "@fileOperations.transferDialog.compressLevelCaption": {
@@ -293,11 +293,11 @@
   },
   "fileOperations.transferDialog.scanUnresponsive": "来源没有响应，我们只统计到这些。",
   "@fileOperations.transferDialog.scanUnresponsive": {
-    "sourceHash": "03d95e0"
+    "sourceHash": "ec3beb2"
   },
   "fileOperations.transferDialog.scanStopped": "我们没能统计完来源，只统计到这些。",
   "@fileOperations.transferDialog.scanStopped": {
-    "sourceHash": "aac156c"
+    "sourceHash": "f7d3029"
   },
   "fileOperations.transferDialog.scanRetry": "重试",
   "@fileOperations.transferDialog.scanRetry": {
@@ -305,7 +305,7 @@
   },
   "fileOperations.transferDialog.conflictsUnknown": "我们无法检查目标位置已有的内容。遇到重名时会逐个询问你。",
   "@fileOperations.transferDialog.conflictsUnknown": {
-    "sourceHash": "1bc997a"
+    "sourceHash": "d42db28"
   },
   "fileOperations.transferDialog.checkingConflicts": "正在检查冲突…",
   "@fileOperations.transferDialog.checkingConflicts": {
@@ -365,7 +365,7 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "无法将“{name}”{verb, select, copy {拷贝} other {移动}}到它自己的子文件夹中",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "815204a"
+    "sourceHash": "96c81d6"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "“{name}”已经在这个位置了",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
@@ -505,11 +505,11 @@
   },
   "fileOperations.transferProgress.warningFileOverFolder": "目标已存在，是一个<strong>文件夹</strong>。你即将用同名的<strong>文件</strong>覆盖它。目标文件夹的全部内容会被删除，并由该文件取代。要怎么做？",
   "@fileOperations.transferProgress.warningFileOverFolder": {
-    "sourceHash": "c560c0f"
+    "sourceHash": "6dce75c"
   },
   "fileOperations.transferProgress.lookAlikeHint": "这两个名称看起来一样，但服务器存储的写法不同。“覆盖”会替换现有的那一项。",
   "@fileOperations.transferProgress.lookAlikeHint": {
-    "sourceHash": "2d35ddf"
+    "sourceHash": "01ed9ad"
   },
   "fileOperations.transferProgress.existingFolderLabel": "现有（文件夹）：",
   "@fileOperations.transferProgress.existingFolderLabel": {
@@ -549,7 +549,7 @@
   },
   "fileOperations.transferProgress.smallerDisabledTooltip": "无法比较：目标文件夹大小未知。",
   "@fileOperations.transferProgress.smallerDisabledTooltip": {
-    "sourceHash": "3bb25be"
+    "sourceHash": "ad5025c"
   },
   "fileOperations.transferProgress.conflictSkip": "跳过",
   "@fileOperations.transferProgress.conflictSkip": {
@@ -645,7 +645,7 @@
   },
   "fileOperations.transferProgress.rollbackAlreadyLandedTooltip": "所有文件都已经在目标位置了，这次移动没法再回滚。但“取消”仍然能在 Cmdr 移除其余原文件之前把它停下来。",
   "@fileOperations.transferProgress.rollbackAlreadyLandedTooltip": {
-    "sourceHash": "5f8b044"
+    "sourceHash": "da51356"
   },
   "fileOperations.transferProgress.titlePaused": "已暂停",
   "@fileOperations.transferProgress.titlePaused": {
@@ -689,7 +689,7 @@
   },
   "fileOperations.transferProgress.queuedToast": "前面还有 {countText}，所以它正在排队等待。可以在操作队列中找到它。",
   "@fileOperations.transferProgress.queuedToast": {
-    "sourceHash": "60a251d"
+    "sourceHash": "1bb57e1"
   },
   "fileOperations.transferProgress.queuedToastCount": "{count, plural, other {# 项操作}}",
   "@fileOperations.transferProgress.queuedToastCount": {
@@ -713,11 +713,11 @@
   },
   "fileOperations.rollbackConfirm.body": "这会删除这项操作已经写入的所有文件。被覆盖掉的文件找不回来了。Cmdr 会跳过没有把握的部分，所以可能会剩下一些。",
   "@fileOperations.rollbackConfirm.body": {
-    "sourceHash": "740e974"
+    "sourceHash": "1d3328f"
   },
   "fileOperations.rollbackConfirm.bodyStopAndMoveBack": "这会把这项操作已经移动的东西全部放回原处。被覆盖掉的文件找不回来了。Cmdr 会跳过没有把握的部分，所以可能有些会留在原处。",
   "@fileOperations.rollbackConfirm.bodyStopAndMoveBack": {
-    "sourceHash": "a489eb2"
+    "sourceHash": "a058f98"
   },
   "fileOperations.rollbackConfirm.titleFinish": "要完成这项操作的回滚吗？",
   "@fileOperations.rollbackConfirm.titleFinish": {
@@ -725,15 +725,15 @@
   },
   "fileOperations.rollbackConfirm.bodyUndoByDeleting": "这会删除这项操作创建的文件和文件夹。Cmdr 会跳过没有把握的部分，所以可能会剩下一些。",
   "@fileOperations.rollbackConfirm.bodyUndoByDeleting": {
-    "sourceHash": "88584f4"
+    "sourceHash": "9afb3e2"
   },
   "fileOperations.rollbackConfirm.bodyUndoByMovingBack": "这会把文件放回原来的位置。Cmdr 会跳过没有把握的部分，所以可能有些会留在原处。",
   "@fileOperations.rollbackConfirm.bodyUndoByMovingBack": {
-    "sourceHash": "7d55114"
+    "sourceHash": "5c3f276"
   },
   "fileOperations.rollbackConfirm.bodyUndoByRenamingBack": "这会把文件的旧名字还回来。Cmdr 会跳过没有把握的部分，所以可能有些会保留现在的名字。",
   "@fileOperations.rollbackConfirm.bodyUndoByRenamingBack": {
-    "sourceHash": "819690f"
+    "sourceHash": "37932e7"
   },
   "fileOperations.rollbackConfirm.leaveAsIs": "保持原样",
   "@fileOperations.rollbackConfirm.leaveAsIs": {
@@ -781,7 +781,7 @@
   },
   "fileOperations.cancelRollback.leftBehind": "Cmdr 会跳过没有把握的部分，所以这些都保持了原样：",
   "@fileOperations.cancelRollback.leftBehind": {
-    "sourceHash": "fb28a31"
+    "sourceHash": "bab6eb4"
   },
   "fileOperations.cancelRollback.reason.drift.named": "保留了 {name}：Cmdr 放好之后它有改动。",
   "@fileOperations.cancelRollback.reason.drift.named": {
@@ -793,11 +793,11 @@
   },
   "fileOperations.cancelRollback.reason.unverifiable.named": "保留了 {name}：Cmdr 无法确认它有没有改动。",
   "@fileOperations.cancelRollback.reason.unverifiable.named": {
-    "sourceHash": "29c32b9"
+    "sourceHash": "3e553b2"
   },
   "fileOperations.cancelRollback.reason.unverifiable.counted": "保留了 {countText} {count, plural, other {个项目}}：Cmdr 无法确认它们有没有改动。",
   "@fileOperations.cancelRollback.reason.unverifiable.counted": {
-    "sourceHash": "e40696b"
+    "sourceHash": "25fe620"
   },
   "fileOperations.cancelRollback.reason.spotTaken.named": "保留了 {name}：它原来的位置现在被别的东西占用了。",
   "@fileOperations.cancelRollback.reason.spotTaken.named": {
@@ -817,19 +817,19 @@
   },
   "fileOperations.cancelRollback.reason.failed.named": "Cmdr 没能撤销 {name} 的改动。它所在的驱动器可能未连接，或者是只读的。",
   "@fileOperations.cancelRollback.reason.failed.named": {
-    "sourceHash": "5c9d51d"
+    "sourceHash": "d22eda5"
   },
   "fileOperations.cancelRollback.reason.failed.counted": "Cmdr 没能撤销 {countText} {count, plural, other {个项目}}的改动。它们所在的驱动器可能未连接，或者是只读的。",
   "@fileOperations.cancelRollback.reason.failed.counted": {
-    "sourceHash": "92c8b00"
+    "sourceHash": "fa172fb"
   },
   "fileOperations.cancelRollback.stagedLeftover.named": "没能删除 {name}，这是留在目标位置的一个不完整副本。你可以放心删掉它，Cmdr 之后往那里传输时也会清掉它。",
   "@fileOperations.cancelRollback.stagedLeftover.named": {
-    "sourceHash": "4aeaddc"
+    "sourceHash": "d47b49d"
   },
   "fileOperations.cancelRollback.stagedLeftover.counted": "没能删除留在目标位置的 {countText} {count, plural, other {个不完整副本}}。你可以放心删掉它们，Cmdr 之后往那里传输时也会清掉它们。",
   "@fileOperations.cancelRollback.stagedLeftover.counted": {
-    "sourceHash": "becfef5"
+    "sourceHash": "6567e25"
   },
   "fileOperations.leftovers.stagingFolderKept": "Cmdr 在 {volumeName} 上发现了一次没完成的移动留下的文件，并把它们都留在了原处，也就是在一个名为 {folderName} 的隐藏文件夹里。",
   "@fileOperations.leftovers.stagingFolderKept": {
@@ -861,7 +861,7 @@
   },
   "fileOperations.archivePassword.retryTitle": "还是不行",
   "@fileOperations.archivePassword.retryTitle": {
-    "sourceHash": "dd30abb"
+    "sourceHash": "a12d349"
   },
   "fileOperations.archivePassword.message": "<archive>{name}</archive> 受密码保护。输入密码即可解锁。",
   "@fileOperations.archivePassword.message": {
@@ -869,7 +869,7 @@
   },
   "fileOperations.archivePassword.retryMessage": "这个密码没能解锁 <archive>{name}</archive>。再试一次吧。",
   "@fileOperations.archivePassword.retryMessage": {
-    "sourceHash": "88ef11a"
+    "sourceHash": "3d62c0c"
   },
   "fileOperations.archivePassword.inputAria": "压缩文件密码",
   "@fileOperations.archivePassword.inputAria": {
@@ -885,11 +885,11 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {文件夹名中不能包含“/”或空字符} other {文件名中不能包含“/”或空字符}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "4fa16ce"
+    "sourceHash": "1a3c594"
   },
   "fileOperations.validation.empty": "{kind, select, folder {文件夹名不能为空} other {文件名不能为空}}",
   "@fileOperations.validation.empty": {
-    "sourceHash": "e6acb43"
+    "sourceHash": "2a25343"
   },
   "fileOperations.validation.nameTooLong": "{kind, select, folder {文件夹名过长（{byteCount}/{maxBytes} 字节）} other {文件名过长（{byteCount}/{maxBytes} 字节）}}",
   "@fileOperations.validation.nameTooLong": {
@@ -901,7 +901,7 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "不允许更改文件扩展名（原为“{oldExt}”）",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "0b2df1e"
+    "sourceHash": "e81362d"
   },
   "fileOperations.validation.conflict": "这个文件夹里已经有“{name}”了",
   "@fileOperations.validation.conflict": {
@@ -909,11 +909,11 @@
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {这个文件夹名不能使用} other {这个文件名不能使用}}",
   "@fileOperations.validation.nameNotUsable": {
-    "sourceHash": "8482a7b"
+    "sourceHash": "6c50bb6"
   },
   "fileOperations.validation.pathEmpty": "路径不能为空",
   "@fileOperations.validation.pathEmpty": {
-    "sourceHash": "348eb60"
+    "sourceHash": "c7afbbc"
   },
   "fileOperations.validation.pathNotAbsolute": "路径必须是绝对路径（以 / 开头）",
   "@fileOperations.validation.pathNotAbsolute": {

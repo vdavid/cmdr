@@ -43,12 +43,12 @@ describe('validateDisallowedChars', () => {
 
   it('uses folder label when isDir is true', () => {
     const result = validateDisallowedChars('foo/bar', true)
-    expect(result.message).toBe("Folder name can't contain “/” or null characters")
+    expect(result.message).toBe('Folder name can’t contain “/” or null characters')
   })
 
   it('uses file label when isDir is false', () => {
     const result = validateDisallowedChars('foo/bar', false)
-    expect(result.message).toBe("Filename can't contain “/” or null characters")
+    expect(result.message).toBe('Filename can’t contain “/” or null characters')
   })
 })
 
@@ -66,8 +66,8 @@ describe('validateNotEmpty', () => {
   })
 
   it('uses the file-vs-folder variant for the empty message', () => {
-    expect(validateNotEmpty('', false).message).toBe("Filename can't be empty")
-    expect(validateNotEmpty('', true).message).toBe("Folder name can't be empty")
+    expect(validateNotEmpty('', false).message).toBe('Filename can’t be empty')
+    expect(validateNotEmpty('', true).message).toBe('Folder name can’t be empty')
   })
 })
 
@@ -112,13 +112,13 @@ describe('validateDirectoryPath', () => {
   it('rejects empty string', () => {
     const result = validateDirectoryPath('')
     expect(result.severity).toBe('error')
-    expect(result.message).toBe("Path can't be empty")
+    expect(result.message).toBe('Path can’t be empty')
   })
 
   it('rejects whitespace-only string', () => {
     const result = validateDirectoryPath('   ')
     expect(result.severity).toBe('error')
-    expect(result.message).toBe("Path can't be empty")
+    expect(result.message).toBe('Path can’t be empty')
   })
 
   it('rejects relative path', () => {

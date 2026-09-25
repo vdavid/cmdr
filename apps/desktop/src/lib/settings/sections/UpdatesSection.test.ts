@@ -143,7 +143,7 @@ describe('UpdatesSection', () => {
     const target = render()
     await tick()
     const shown = target.querySelector('.failure-message')?.textContent.trim() ?? ''
-    expect(shown).toContain("Cmdr couldn't download the update.")
+    expect(shown).toContain('Cmdr couldn’t download the update.')
     expect(target.textContent).not.toContain('Error:')
     const link = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Send error report')
     expect(link).toBeTruthy()
@@ -194,7 +194,7 @@ describe('UpdatesSection', () => {
     await tick()
     await tick()
 
-    expect(target.textContent).toContain("Sorry, we couldn't sign you up right now")
+    expect(target.textContent).toContain('Sorry, we couldn’t sign you up right now')
   })
 
   it('does not resend when the same address is committed again', async () => {

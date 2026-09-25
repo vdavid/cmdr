@@ -84,7 +84,7 @@ describe('a clash with a name the destination spells differently', () => {
   // the prompt reads as an ordinary clash and nothing says an Overwrite lands
   // on an entry spelled another way.
   const HINT =
-    "These names look the same, but the server spells them differently. Overwrite replaces the one that's there."
+    'These names look the same, but the server spells them differently. Overwrite replaces the one that’s there.'
 
   it('says the names only look the same, and names the entry that is there', async () => {
     const target = await mountDialog({

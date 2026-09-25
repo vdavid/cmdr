@@ -1,5 +1,5 @@
 {
-  "updates.failure.check": "Cmdr couldn''t check for updates. {reason}",
+  "updates.failure.check": "Cmdr couldn’t check for updates. {reason}",
   "@updates.failure.check": {
     "description": "Shown in the menu-triggered update-check toast and in the status line of Settings > Updates & privacy when a check for a new version didn't get an answer. {reason} is one or two complete, already-translated sentences saying why and what to do (for example \"Cmdr couldn't reach its server. Check your internet connection and try again.\"), so end your sentence with a period and let the reason follow it. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\".",
     "placeholders": {
@@ -8,19 +8,19 @@
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
-  "updates.failure.checkUntyped": "Cmdr couldn''t check for updates. Check your internet connection and try again later.",
+  "updates.failure.checkUntyped": "Cmdr couldn’t check for updates. Check your internet connection and try again later.",
   "@updates.failure.checkUntyped": {
     "description": "Same place as updates.failure.check, used when Cmdr can't tell why the check didn't get an answer (usually the internet connection). Two sentences: what didn't happen, then what to try. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\".",
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
-  "updates.failure.download": "Cmdr couldn''t download the update. Try again later.",
+  "updates.failure.download": "Cmdr couldn’t download the update. Try again later.",
   "@updates.failure.download": {
     "description": "Shown in the update-check toast and in Settings > Updates & privacy when a new version was found but downloading it didn't finish. Nothing was installed, and the current version keeps working. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\".",
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
-  "updates.failure.install": "Cmdr couldn''t install the update. Try again later, or get the latest Cmdr from getcmdr.com.",
+  "updates.failure.install": "Cmdr couldn’t install the update. Try again later, or get the latest Cmdr from getcmdr.com.",
   "@updates.failure.install": {
     "description": "Shown in the update-check toast and in Settings > Updates & privacy when a new version was downloaded but writing it into the app didn't finish. Points at the website as the fallback. \"Cmdr\" is the product name and \"getcmdr.com\" the website address: keep both exactly as-is. Avoid the words \"error\" and \"failed\".",
     "screenshot": "settings-updates.png",
@@ -38,7 +38,7 @@
     "screenshot": "settings-updates.png",
     "screenshotNote": "App-update messaging. The status line renders in the Settings > Updates & privacy panel pictured here, and the update toasts appear while that check runs. Version numbers are substituted, not translated."
   },
-  "updates.toast.readyDetail": "Restart now, or you''ll get it the next time you open Cmdr.",
+  "updates.toast.readyDetail": "Restart now, or you’ll get it the next time you open Cmdr.",
   "@updates.toast.readyDetail": {
     "description": "Second line of the update-ready toast, under the headline. Reassures the user that doing nothing still gets them the new version: the update is already written to disk and only needs a fresh launch to take effect. Conversational, and the point it has to land is that no action is required.",
     "screenshot": "settings-updates.png",
@@ -81,12 +81,12 @@
     "description": "Title of the dialog shown when a new version is available but Cmdr is running from somewhere it can't update itself. Sentence case. \"Applications\" is the macOS folder name, which Apple localizes per system language.",
     "screenshot": "move-to-applications-translocated.png"
   },
-  "updates.moveToApplicationsDialog.translocated": "A new version is ready, but macOS is running Cmdr from a temporary read-only copy of itself. That''s what happens when you open an app straight from where you downloaded it, and it means updates have nowhere to land.",
+  "updates.moveToApplicationsDialog.translocated": "A new version is ready, but macOS is running Cmdr from a temporary read-only copy of itself. That’s what happens when you open an app straight from where you downloaded it, and it means updates have nowhere to land.",
   "@updates.moveToApplicationsDialog.translocated": {
     "description": "First paragraph of the move-to-Applications dialog, for the macOS App Translocation case (the app was opened from the Downloads folder). Explains why the update can't be applied. Conversational.",
     "screenshot": "move-to-applications-translocated.png"
   },
-  "updates.moveToApplicationsDialog.readOnlyVolume": "A new version is ready, but Cmdr is running from a read-only spot, usually a disk image that''s still mounted. That means updates have nowhere to land.",
+  "updates.moveToApplicationsDialog.readOnlyVolume": "A new version is ready, but Cmdr is running from a read-only spot, usually a disk image that’s still mounted. That means updates have nowhere to land.",
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
     "description": "First paragraph of the move-to-Applications dialog, for the case where the app runs from a read-only volume such as a mounted .dmg disk image. Conversational.",
     "screenshot": "move-to-applications-read-only-volume.png"

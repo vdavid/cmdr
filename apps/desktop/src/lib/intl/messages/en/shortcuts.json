@@ -98,7 +98,7 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
-  "shortcuts.conflict.reservedByMacOs": "{combo} is reserved by macOS ({command}) and won''t reach Cmdr. Pick a different combo.",
+  "shortcuts.conflict.reservedByMacOs": "{combo} is reserved by macOS ({command}) and won’t reach Cmdr. Pick a different combo.",
   "@shortcuts.conflict.reservedByMacOs": {
     "description": "Warning banner when the user tries to assign a shortcut that macOS owns. Explains the shortcut can't reach the app. \"Cmdr\" and \"macOS\" are names; do not translate them. \"combo\" is a key combination like Command-H.",
     "placeholders": {
@@ -109,7 +109,7 @@
     "screenshotNote": "Keyboard-shortcut UI. This shows the Settings > Keyboard shortcuts list, which uses the same row/scope/conflict layout as the standalone Shortcuts window. macOS modifier glyphs (⌘ ⌥ ⌃ ⇧) and key names are not translated."
   },
 
-  "shortcuts.conflict.fixedKey": "{combo} is a fixed key in Cmdr ({command}) and can''t be reassigned. Pick a different combo.",
+  "shortcuts.conflict.fixedKey": "{combo} is a fixed key in Cmdr ({command}) and can’t be reassigned. Pick a different combo.",
   "@shortcuts.conflict.fixedKey": {
     "description": "Warning banner when the user tries to assign a shortcut that's a built-in fixed key (one the app hardcodes and can't rebind). \"Cmdr\" is the brand name; do not translate it. \"combo\" is a key combination.",
     "placeholders": {
@@ -323,13 +323,13 @@
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
-  "shortcuts.section.macOsTooltip": "macOS handles this shortcut. Cmdr can''t change it.",
+  "shortcuts.section.macOsTooltip": "macOS handles this shortcut. Cmdr can’t change it.",
   "@shortcuts.section.macOsTooltip": {
     "description": "Tooltip on the \"macOS\" badge of a read-only shortcut row, explaining why it can't be changed. \"macOS\" and \"Cmdr\" are names; do not translate them.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
 
-  "shortcuts.section.fixedTooltip": "This key is built into Cmdr and can''t be changed.",
+  "shortcuts.section.fixedTooltip": "This key is built into Cmdr and can’t be changed.",
   "@shortcuts.section.fixedTooltip": {
     "description": "Tooltip on the \"Fixed\" badge of a read-only shortcut row, explaining why it can't be changed. \"Cmdr\" is the brand name; do not translate it.",
     "screenshot": "settings-keyboard-shortcuts.png"

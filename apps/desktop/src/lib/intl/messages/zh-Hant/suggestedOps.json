@@ -13,7 +13,7 @@
   },
   "suggestedOps.loadFailed": "Cmdr 無法讀取這些建議。關掉再重新開啟看看。",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "3d3af5a"
+    "sourceHash": "ef0da3e"
   },
   "suggestedOps.agentReason": "AI 的理由",
   "@suggestedOps.agentReason": {
@@ -57,7 +57,7 @@
   },
   "suggestedOps.irreversible": "這項無法還原",
   "@suggestedOps.irreversible": {
-    "sourceHash": "485d5a3"
+    "sourceHash": "b583829"
   },
   "suggestedOps.folderWillBeCreated": "Cmdr 會新增這個資料夾",
   "@suggestedOps.folderWillBeCreated": {
@@ -69,7 +69,7 @@
   },
   "suggestedOps.destinationUnknown": "Cmdr 無法確認目標資料夾",
   "@suggestedOps.destinationUnknown": {
-    "sourceHash": "e1293c5"
+    "sourceHash": "dc78d1d"
   },
   "suggestedOps.fromPattern": "以樣式比對出來的",
   "@suggestedOps.fromPattern": {
@@ -113,7 +113,7 @@
   },
   "suggestedOps.filesLoadFailed": "Cmdr 無法載入這些檔案。",
   "@suggestedOps.filesLoadFailed": {
-    "sourceHash": "c61d214"
+    "sourceHash": "01f1b86"
   },
   "suggestedOps.retryFiles": "再試一次",
   "@suggestedOps.retryFiles": {
@@ -121,11 +121,11 @@
   },
   "suggestedOps.decisionNotRecorded": "Cmdr 無法儲存你的回答。請再試一次。",
   "@suggestedOps.decisionNotRecorded": {
-    "sourceHash": "d4ee9cf"
+    "sourceHash": "9eae594"
   },
   "suggestedOps.approvalUnsure": "Cmdr 不確定這次同意是否已生效。再次同意之前，請先查看操作佇列。",
   "@suggestedOps.approvalUnsure": {
-    "sourceHash": "0cd408c"
+    "sourceHash": "fba515a"
   },
   "suggestedOps.indicatorTooltip": "有 AI 建議在等你。按一下就能檢視。",
   "@suggestedOps.indicatorTooltip": {

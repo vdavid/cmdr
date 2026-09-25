@@ -25,15 +25,15 @@
   },
   "viewer.error.notFound": "Nem sikerült megtalálni ezt a fájlt. Lehet, hogy áthelyezték, átnevezték vagy törölték.",
   "@viewer.error.notFound": {
-    "sourceHash": "580b83c"
+    "sourceHash": "9257fab"
   },
   "viewer.error.isDirectory": "Ez egy mappa, így itt nincs mit megtekinteni. Nyisd meg a főablakban, hogy lásd, mi van benne.",
   "@viewer.error.isDirectory": {
-    "sourceHash": "b29fe2e"
+    "sourceHash": "5abb771"
   },
   "viewer.error.timeout": "Nem sikerült betölteni a fájlt. Lehet, hogy a kötet lassú, vagy nem válaszol.",
   "@viewer.error.timeout": {
-    "sourceHash": "d163618"
+    "sourceHash": "74b9656"
   },
   "viewer.error.tooLargeToPreview": "Ez a fájl túl nagy ahhoz, hogy innen megjelenítsük. Előbb másold ki, aztán nyisd meg.",
   "@viewer.error.tooLargeToPreview": {
@@ -41,7 +41,7 @@
   },
   "viewer.error.archiveUnreadable": "Nem sikerült megnyitni ezt a fájlt az archívumból. Lehet, hogy titkosított, sérült, vagy olyan formátumú, amelyet a Cmdr nem tud elolvasni.",
   "@viewer.error.archiveUnreadable": {
-    "sourceHash": "01490a6"
+    "sourceHash": "e0b8f4e"
   },
   "viewer.error.retry": "Újra",
   "@viewer.error.retry": {
@@ -244,7 +244,7 @@
   },
   "viewer.statusBar.badge.streamingIndexingTooltip": "Ez egy nagy fájl streamelési módban. A háttérben indexet építünk (legfeljebb {seconds} mp)… A sorszámok jelenleg közelítőek.",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
-    "sourceHash": "033d82d"
+    "sourceHash": "60095b8"
   },
   "viewer.statusBar.badge.streaming": "streamelés",
   "@viewer.statusBar.badge.streaming": {
@@ -252,7 +252,7 @@
   },
   "viewer.statusBar.badge.streamingTooltip": "Ez egy nagy fájl streamelési módban. Az indexelés tovább tartott volna {seconds} mp-nél, ezért kihagytuk. A sorszámok becslések.",
   "@viewer.statusBar.badge.streamingTooltip": {
-    "sourceHash": "1752e59"
+    "sourceHash": "b1a14ac"
   },
   "viewer.statusBar.badge.wrap": "tördelés",
   "@viewer.statusBar.badge.wrap": {
@@ -281,7 +281,7 @@
   },
   "viewer.image.error": "Sajnáljuk, ezt a képet nem tudjuk megjeleníteni. Lehet, hogy a fájl sérült, vagy olyan formátumú, amit nem tudunk megjeleníteni.",
   "@viewer.image.error": {
-    "sourceHash": "9a24fe8"
+    "sourceHash": "1e8c6d9"
   },
   "viewer.pdf.loading": "PDF betöltése",
   "@viewer.pdf.loading": {
@@ -325,7 +325,7 @@
   },
   "viewer.copyDialog.refuseBody": "Ez nagyobb a 100 MB-os vágólapkorlátnál. Próbáld a keresést (⌘F), hogy megtaláld, amire szükséged van, vagy mentsd a kijelölést fájlként.",
   "@viewer.copyDialog.refuseBody": {
-    "sourceHash": "75f3043"
+    "sourceHash": "3eaf921"
   },
   "viewer.reloadToast.grew": "A fájl megváltozott a lemezen. Újratöltöd?",
   "@viewer.reloadToast.grew": {
@@ -349,7 +349,7 @@
   },
   "viewer.copy.clipboardUnreachable": "Nem sikerült elérni a vágólapot. Megpróbálod újra?",
   "@viewer.copy.clipboardUnreachable": {
-    "sourceHash": "c0382ba"
+    "sourceHash": "3c8ddb8"
   },
   "viewer.copy.readTooLong": "A beolvasás túl sokáig tartott. Kipróbálsz egy kisebb kijelölést?",
   "@viewer.copy.readTooLong": {
@@ -357,11 +357,11 @@
   },
   "viewer.copy.copyFailed": "Nem sikerült lemásolni a kijelölést. Megpróbálod újra?",
   "@viewer.copy.copyFailed": {
-    "sourceHash": "6a1ab41"
+    "sourceHash": "b08416d"
   },
   "viewer.copy.readFailed": "Nem sikerült beolvasni a kijelölést. Megpróbálod újra?",
   "@viewer.copy.readFailed": {
-    "sourceHash": "bde5f85"
+    "sourceHash": "24ea14a"
   },
   "viewer.saveAs.title": "Kijelölés mentése",
   "@viewer.saveAs.title": {
@@ -373,7 +373,7 @@
   },
   "viewer.saveAs.panelFailed": "Nem sikerült megnyitni a mentési panelt. Megpróbálod újra?",
   "@viewer.saveAs.panelFailed": {
-    "sourceHash": "70c3f76"
+    "sourceHash": "ade021c"
   },
   "viewer.saveAs.saved": "A kijelölés ide mentve: {name}",
   "@viewer.saveAs.saved": {
@@ -385,7 +385,7 @@
   },
   "viewer.saveAs.saveFailed": "Nem sikerült menteni a kijelölést. Megpróbálod újra?",
   "@viewer.saveAs.saveFailed": {
-    "sourceHash": "2d85642"
+    "sourceHash": "ca5709f"
   },
   "viewer.saveAs.destinationReadOnly": "Ez a hely csak olvasható. Választasz másik mappát a mentéshez?",
   "@viewer.saveAs.destinationReadOnly": {

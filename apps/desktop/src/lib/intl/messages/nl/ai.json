@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "Waar je gegevens heen gaan, en wat er daar mee gebeurt, hangt af van de service die je kiest en je afspraken daarmee. Dat geldt ook voor Ollama, LM Studio en aangepaste eindpunten: de gegevens gaan naar waar die server draait. De eigen servers van Cmdr zien er nooit iets van.",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>Naamsuggesties voor nieuwe mappen</b>: het pad van de huidige map en tot 100 namen daarin",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>Zoeken in gewone taal</b>: de tekst die je typt",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "Het beperkt het aantal verzoeken of je abonnement is door zijn quotum heen. Controleer je abonnement en facturering en probeer het opnieuw.",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "De AI deed er te lang over",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "Je AI-aanbieder is niet bereikbaar",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "Controleer je internet of de status van de aanbieder en probeer het opnieuw.",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "De AI gaf een leeg antwoord",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "Het antwoord van de AI was niet te lezen",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "Probeer het opnieuw, of kies een ander model bij Instellingen > AI.",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "Die AI-aanbieder wordt niet herkend",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "Kies een aanbieder bij Instellingen > AI.",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "Server niet bereikbaar",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "Er ging iets mis",
   "@ai.cloud.genericError": {
@@ -429,7 +429,7 @@
   },
   "ai.local.deleteConfirmMessage": "Dit maakt {modelSize} schijfruimte vrij. Je moet het opnieuw downloaden om lokale AI weer te gebruiken.",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "Verwijderen…",
   "@ai.local.deleteButtonDeleting": {
@@ -441,7 +441,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {Je API-sleutel kon niet worden bewaard: de macOS-sleutelhanger weigerde toegang} other {Je bewaarde API-sleutel kon niet worden gelezen: de macOS-sleutelhanger weigerde toegang}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {Open Sleutelhangertoegang en controleer het onderdeel ‘Cmdr’, of verwijder het en bewaar opnieuw.} other {Open Sleutelhangertoegang, zoek het onderdeel ‘Cmdr’, verleen toegang, of verwijder het en voer je sleutel opnieuw in.}}",
   "@ai.secretError.keychainBody": {
@@ -449,7 +449,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {Je API-sleutel kon niet worden bewaard: de sleutelhanger van je systeem weigerde toegang} other {Je bewaarde API-sleutel kon niet worden gelezen: de sleutelhanger van je systeem weigerde toegang}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "Ontgrendel je sleutelhanger (de app Wachtwoorden / Sleutelhangers) en probeer het opnieuw.",
   "@ai.secretError.keyringBody": {
@@ -457,7 +457,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {Je API-sleutel kon niet worden bewaard.} other {Je bewaarde API-sleutel kon niet worden gelezen.}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "Controleer of de sleutelhanger van je systeem beschikbaar is en probeer het opnieuw. Blijft het gebeuren, herstart dan de app.",
   "@ai.secretError.genericBody": {

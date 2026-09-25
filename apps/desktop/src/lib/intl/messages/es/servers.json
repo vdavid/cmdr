@@ -105,7 +105,7 @@
   },
   "servers.refusal.authenticationRejected": "Esa contraseña no ha funcionado para {username}.",
   "@servers.refusal.authenticationRejected": {
-    "sourceHash": "b2c42b0"
+    "sourceHash": "ac235d2"
   },
   "servers.refusal.needsCredentials": "Este servidor pide una contraseña.",
   "@servers.refusal.needsCredentials": {
@@ -113,15 +113,15 @@
   },
   "servers.refusal.accountNotPermitted": "{username} no tiene acceso aquí. Prueba con otra cuenta.",
   "@servers.refusal.accountNotPermitted": {
-    "sourceHash": "fbd3b7b"
+    "sourceHash": "baa82ef"
   },
   "servers.refusal.authMethodUnsupported": "Este servidor usa un método de inicio de sesión que Cmdr todavía no admite.",
   "@servers.refusal.authMethodUnsupported": {
-    "sourceHash": "62b963e"
+    "sourceHash": "48b9b15"
   },
   "servers.refusal.certificateUntrusted": "macOS no confía en el certificado de este servidor. Añádelo en Acceso a Llaveros y vuelve a intentarlo.",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "6db00c6"
+    "sourceHash": "b8f3b4a"
   },
   "servers.refusal.notAWebdavServer": "En esta dirección no hay nada que responda a WebDAV.",
   "@servers.refusal.notAWebdavServer": {
@@ -129,23 +129,23 @@
   },
   "servers.refusal.invalidUrl": "Eso no parece la dirección de un servidor.",
   "@servers.refusal.invalidUrl": {
-    "sourceHash": "9a121ac"
+    "sourceHash": "d3f5f7d"
   },
   "servers.refusal.timedOut": "{host} no ha respondido a tiempo.",
   "@servers.refusal.timedOut": {
-    "sourceHash": "7662825"
+    "sourceHash": "b2f0e52"
   },
   "servers.refusal.unreachable": "Cmdr no ha podido acceder a {host}.",
   "@servers.refusal.unreachable": {
-    "sourceHash": "ae716c3"
+    "sourceHash": "6fcba90"
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr todavía no confía en la clave de {host}.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "40a9d28"
+    "sourceHash": "343f48b"
   },
   "servers.refusal.hostKeyRevoked": "Tus ajustes de SSH en este Mac marcan la clave de {host} como comprometida. Cmdr no se conectará a ese servidor.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "47aacda"
+    "sourceHash": "e23d585"
   },
   "servers.refusal.startFolderOutsideRoot": "La carpeta inicial tiene que ser la carpeta raíz o una carpeta dentro de ella.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -153,23 +153,23 @@
   },
   "servers.refusal.rootNotFound": "Cmdr no puede abrir esta carpeta en {host}. Comprueba que exista y que tu cuenta pueda leerla.",
   "@servers.refusal.rootNotFound": {
-    "sourceHash": "883a0bc"
+    "sourceHash": "aa029f8"
   },
   "servers.refusal.startFolderNotFound": "Cmdr no puede abrir esta carpeta inicial en {host}. Comprueba que exista y que tu cuenta pueda leerla.",
   "@servers.refusal.startFolderNotFound": {
-    "sourceHash": "f1df16e"
+    "sourceHash": "0997a8d"
   },
   "servers.refusal.saveUnconfirmed": "{host} no ha respondido a tiempo, así que no se ha guardado nada. Inténtalo de nuevo en un momento.",
   "@servers.refusal.saveUnconfirmed": {
-    "sourceHash": "f7bb3a6"
+    "sourceHash": "3fb55a6"
   },
   "servers.refusal.secretNotStored": "Cmdr no ha podido guardar esta contraseña en el Llavero. Inténtalo de nuevo o desactiva “Recordar en el Llavero” para iniciar sesión sin guardarla.",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "080b475"
+    "sourceHash": "20957fe"
   },
   "servers.refusal.savedSecretNotUpdated": "Cmdr ha guardado tus cambios, pero no ha podido actualizar la contraseña en el Llavero. Vuelve a guardar para intentarlo otra vez.",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "471a6d8"
+    "sourceHash": "2ae1e2b"
   },
   "servers.sheet.addTitle": "Añadir servidor",
   "@servers.sheet.addTitle": {
@@ -313,7 +313,7 @@
   },
   "servers.sheet.autoReconnectHelp": "Si se corta la conexión, Cmdr vuelve a conectarse a este servidor por su cuenta. Esto no hace que Cmdr se conecte al iniciarse: se conecta cuando abres el servidor en un panel.",
   "@servers.sheet.autoReconnectHelp": {
-    "sourceHash": "5fc66ee"
+    "sourceHash": "559525d"
   },
   "servers.sheet.autoReconnectInfoLabel": "Más información sobre “Volver a conectar automáticamente”",
   "@servers.sheet.autoReconnectInfoLabel": {
@@ -333,19 +333,19 @@
   },
   "servers.hostKey.firstContactBody": "Compara la huella digital de abajo con la que te dio quien posee el servidor y luego confía en ella.",
   "@servers.hostKey.firstContactBody": {
-    "sourceHash": "befd6c3"
+    "sourceHash": "f207466"
   },
   "servers.hostKey.changedTitle": "La clave de {host} ha cambiado",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "dde14d6"
+    "sourceHash": "a63a050"
   },
   "servers.hostKey.changedBody": "Esto puede significar que el servidor se ha reinstalado, o que hay algo entre tú y él. Comprueba la huella digital con quien posee el servidor antes de confiar en ella.",
   "@servers.hostKey.changedBody": {
-    "sourceHash": "34552a6"
+    "sourceHash": "42491c4"
   },
   "servers.hostKey.changedDisclosure": "Ya la he comprobado",
   "@servers.hostKey.changedDisclosure": {
-    "sourceHash": "29d1f63"
+    "sourceHash": "4051d39"
   },
   "servers.hostKey.fingerprintLabel": "Huella digital de la clave",
   "@servers.hostKey.fingerprintLabel": {
@@ -369,7 +369,7 @@
   },
   "servers.paneState.hostKeyChanged": "Cmdr no se conectará a {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "123ff4f"
+    "sourceHash": "c73ddf3"
   },
   "servers.paneState.hostKeyChangedHint": "Su clave ha cambiado. Esto puede significar que el servidor se ha reinstalado, o que hay algo entre tú y él. Desconecta y vuelve a abrirlo para comprobar la huella digital.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -381,7 +381,7 @@
   },
   "servers.paneState.signedOutNothingToAsk": "En este servidor se inicia sesión con una clave en lugar de una contraseña, así que no hay nada que escribir. Vuelve a abrirlo para reintentar.",
   "@servers.paneState.signedOutNothingToAsk": {
-    "sourceHash": "71d7eee"
+    "sourceHash": "95e6bd0"
   },
   "servers.paneState.retryProgressAriaLabel": "Tiempo hasta el próximo intento de reconexión",
   "@servers.paneState.retryProgressAriaLabel": {

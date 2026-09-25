@@ -1,19 +1,19 @@
 {
   "updates.failure.check": "Cmdr no ha podido buscar actualizaciones. {reason}",
   "@updates.failure.check": {
-    "sourceHash": "66f0ef1"
+    "sourceHash": "5fb454c"
   },
   "updates.failure.checkUntyped": "Cmdr no ha podido buscar actualizaciones. Comprueba tu conexión a internet e inténtalo de nuevo más tarde.",
   "@updates.failure.checkUntyped": {
-    "sourceHash": "55dcdd7"
+    "sourceHash": "233f5d9"
   },
   "updates.failure.download": "Cmdr no ha podido descargar la actualización. Inténtalo de nuevo más tarde.",
   "@updates.failure.download": {
-    "sourceHash": "fdd5095"
+    "sourceHash": "1becb1b"
   },
   "updates.failure.install": "Cmdr no ha podido instalar la actualización. Inténtalo de nuevo más tarde o descarga la versión más reciente de Cmdr desde getcmdr.com.",
   "@updates.failure.install": {
-    "sourceHash": "c997a13"
+    "sourceHash": "05a4714"
   },
   "updates.checkToast.sendErrorReport": "Enviar informe de error",
   "@updates.checkToast.sendErrorReport": {
@@ -25,7 +25,7 @@
   },
   "updates.toast.readyDetail": "Reinicia ahora o la tendrás la próxima vez que abras Cmdr.",
   "@updates.toast.readyDetail": {
-    "sourceHash": "aab853f"
+    "sourceHash": "42ce099"
   },
   "updates.toast.versionChange": "v{prev} → v{next}",
   "@updates.toast.versionChange": {
@@ -50,11 +50,11 @@
   },
   "updates.moveToApplicationsDialog.translocated": "Hay una versión nueva lista, pero macOS está ejecutando Cmdr desde una copia temporal de solo lectura. Eso pasa cuando abres una app directamente desde donde la descargaste, y las actualizaciones no tienen dónde instalarse.",
   "@updates.moveToApplicationsDialog.translocated": {
-    "sourceHash": "510a3a6"
+    "sourceHash": "ed64953"
   },
   "updates.moveToApplicationsDialog.readOnlyVolume": "Hay una versión nueva lista, pero Cmdr se está ejecutando desde un sitio de solo lectura, normalmente una imagen de disco que sigue montada. Las actualizaciones no tienen dónde instalarse.",
   "@updates.moveToApplicationsDialog.readOnlyVolume": {
-    "sourceHash": "94edc89"
+    "sourceHash": "a23ef5a"
   },
   "updates.moveToApplicationsDialog.howTo": "Sal de Cmdr, arrástralo a tu carpeta Aplicaciones y ábrelo desde ahí. A partir de entonces, cada actualización llega sola.",
   "@updates.moveToApplicationsDialog.howTo": {

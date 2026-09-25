@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Välj vilket språk Cmdr använder. ”Systemets standard” följer din Macs språk.",
   "@settings.appearance.language.description": {
-    "sourceHash": "6e36bba"
+    "sourceHash": "2dd7f63"
   },
   "settings.appearance.language.opt.system": "Systemets standard",
   "@settings.appearance.language.opt.system": {
@@ -277,7 +277,7 @@
   },
   "settings.appearance.useAppIconsForDocuments.description": "Visa appens symbol för dokument i stället för generiska filtypssymboler. Mer färgglatt men aningen långsammare.",
   "@settings.appearance.useAppIconsForDocuments.description": {
-    "sourceHash": "9ae8a9c"
+    "sourceHash": "9651182"
   },
   "settings.appearance.showFunctionKeyBar.label": "Visa funktionstangentsraden",
   "@settings.appearance.showFunctionKeyBar.label": {
@@ -457,7 +457,7 @@
   },
   "settings.mediaIndex.privacyNote": "Det här körs helt på din Mac med Apples inbyggda Vision-ramverk. Dina bilder lämnar aldrig din dator, och ingen AI-leverantör eller API-nyckel är inblandad.",
   "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
+    "sourceHash": "9e5a87f"
   },
   "settings.mediaIndex.clip.title": "Semantisk sökning",
   "@settings.mediaIndex.clip.title": {
@@ -465,7 +465,7 @@
   },
   "settings.mediaIndex.clip.description": "Hitta bilder genom att beskriva vad de föreställer, som ”solnedgång på stranden”, med en AI-modell på enheten.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "e7bece5"
+    "sourceHash": "9a569ba"
   },
   "settings.mediaIndex.clip.ready": "Klart – sök bland dina bilder med en beskrivning.",
   "@settings.mediaIndex.clip.ready": {
@@ -485,7 +485,7 @@
   },
   "settings.mediaIndex.clip.failed": "Hämtningen slutfördes inte. Kontrollera din anslutning och försök igen.",
   "@settings.mediaIndex.clip.failed": {
-    "sourceHash": "5feb349"
+    "sourceHash": "8a3682d"
   },
   "settings.mediaIndex.clip.notSupported": "Sökning med beskrivning kräver en Mac med Apple silicon.",
   "@settings.mediaIndex.clip.notSupported": {
@@ -513,7 +513,7 @@
   },
   "settings.mediaIndex.clip.deleteFailed": "Modellen gick inte att radera just nu. Försök igen om en stund.",
   "@settings.mediaIndex.clip.deleteFailed": {
-    "sourceHash": "6c9ced5"
+    "sourceHash": "126c735"
   },
   "settings.mediaIndex.cards.enable": "Aktivera indexering",
   "@settings.mediaIndex.cards.enable": {
@@ -545,7 +545,7 @@
   },
   "settings.mediaIndex.showFileStatusIcons.description": "Lägg till en liten symbol på varje bild i fillistan som visar om den har indexerats för sökning.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
-    "sourceHash": "62dda47"
+    "sourceHash": "1a725aa"
   },
   "settings.mediaIndex.showInSearch.label": "Visa bildresultat i Sök",
   "@settings.mediaIndex.showInSearch.label": {
@@ -553,7 +553,7 @@
   },
   "settings.mediaIndex.showInSearch.description": "Sök lägger till en rad matchande bilder ovanför dina filer. Matchningen är fortfarande grov, så det är avstängt tills du vill ha det.",
   "@settings.mediaIndex.showInSearch.description": {
-    "sourceHash": "5b62cab"
+    "sourceHash": "143a4e7"
   },
   "settings.mediaIndex.networkVolumes.label": "Bildindexering för nätverksenheter",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -589,7 +589,7 @@
   },
   "settings.mediaIndex.networkVolumes.intro": "Nätverksenheter indexeras bara när du aktiverar dem här. Cmdr läser bilder över nätverket skonsamt: bara när du inte är upptagen, med begränsad hastighet, och pausar när enheten kopplas från.",
   "@settings.mediaIndex.networkVolumes.intro": {
-    "sourceHash": "165a9eb"
+    "sourceHash": "2d192ce"
   },
   "settings.mediaIndex.networkVolumes.none": "Anslut en nätverksenhet för att indexera bilderna på den.",
   "@settings.mediaIndex.networkVolumes.none": {
@@ -741,7 +741,7 @@
   },
   "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr kunde inte ta bort de extra posterna. Försök igen.",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
-    "sourceHash": "3295df4"
+    "sourceHash": "c57ac43"
   },
   "settings.mediaIndex.reclaim.deletedSpaceLater": "De extra posterna har tagits bort. Cmdr frigör diskutrymmet senare.",
   "@settings.mediaIndex.reclaim.deletedSpaceLater": {
@@ -761,7 +761,7 @@
   },
   "settings.indexing.staleNotify.description": "Du ser fortfarande den gula statusen om du stänger av det här.",
   "@settings.indexing.staleNotify.description": {
-    "sourceHash": "c4216d8"
+    "sourceHash": "03af10e"
   },
   "settings.indexing.masterOffNote": "Enhetsindexering är avstängd, så ingen enhet indexeras och mappstorlekar förblir dolda. Varje enhet behåller sitt eget val, på eller av, så att allt är redo när du slår på det här igen.",
   "@settings.indexing.masterOffNote": {
@@ -785,7 +785,7 @@
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "Du har inte stängt av frågan för någon enhet ännu.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
-    "sourceHash": "3a5a54b"
+    "sourceHash": "e7702a8"
   },
   "settings.indexing.silencedDrives.label": "Tystade enhetsfrågor",
   "@settings.indexing.silencedDrives.label": {
@@ -955,7 +955,7 @@
   },
   "settings.network.enabled.description": "Upptäck SMB-servrar i ditt lokala nätverk och anslut till dem. När det är av kan Cmdr fortfarande läsa och skriva filer i redan monterade delade mappar, men ber inte macOS om åtkomst till Lokalt nätverk.",
   "@settings.network.enabled.description": {
-    "sourceHash": "3500345"
+    "sourceHash": "72a0854"
   },
   "settings.network.firstTriggerDone.label": "Nätverkssökning startad",
   "@settings.network.firstTriggerDone.label": {
@@ -1051,7 +1051,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "Upptäck och anslut till Android och andra enheter via en USB-kabel för att bläddra och överföra filer. På en Android-telefon ansluter du USB-kabeln och går sedan på telefonen till något i stil med Inställningar > USB-inställningar och ställer in anslutningen på ”Filöverföring”, ”Android Auto” eller liknande. (Varierar mellan enheter.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "37444c2"
+    "sourceHash": "c66df04"
   },
   "settings.fileOperations.adbEnabled.label": "Åtkomst till Android-filer via ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1059,7 +1059,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Nå hela filsystemet på en Android-telefon som har USB-felsökning aktiverad, något som MTP inte kan visa dig. Kräver Android platform tools (kommandot ”adb”) på den här Macen. Att låta det vara påslaget kostar ingenting om du inte har några Android-verktyg installerade.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "57cf2aa"
+    "sourceHash": "9a22518"
   },
   "settings.fileOperations.adbBinaryPath.label": "Sökväg till adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1172,7 +1172,7 @@
   },
   "settings.analytics.enabled.description": "Slå på det här så hjälper du oss se vilka funktioner som spelar roll under den öppna betan.\nStatistiken är inte kopplad till ditt namn eller din e-post utan till ett slumpmässigt id.\nCmdr skickar aldrig filnamn, sökvägar, sökord eller prompter.\nNär det är avstängt skickar Cmdr ingen statistik alls.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "23bafcb"
+    "sourceHash": "f5534ee"
   },
   "settings.analytics.email.label": "Kontakt-e-post för beta",
   "@settings.analytics.email.label": {
@@ -1252,7 +1252,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 öppnar Cmdrs förhandsvisning, som visar råa byte (med förlustbringande UTF-8 för icke-textinnehåll). När du öppnar en bild, PDF, ett arkiv eller en annan binärfil visar förhandsvisningen en röd banner som förklarar att ⇧Mellanslag (Överblick) eller Retur (öppna i den tillhörande appen) förmodligen är vad du ville. Aktivera detta (eller klicka på ”Visa aldrig den här varningen igen” i bannern) för att dölja varningen för gott.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "5ba5ff7"
+    "sourceHash": "a93b4cb"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Dölj tipset om Överblick med mellanslag",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1260,7 +1260,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr använder Mellanslag för att växla filmarkering och ⇧Mellanslag för Överblick (Finder använder vanligt Mellanslag för Överblick). Varje gång du trycker på Mellanslag i fillistan visar Cmdr en kort påminnelse om den här skillnaden. Aktivera detta (eller klicka på ”Visa inte igen” i aviseringen) för att dölja påminnelsen för gott.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "be9e1ff"
+    "sourceHash": "10357b4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Antal stängda flikar att komma ihåg per panel",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1336,7 +1336,7 @@
   },
   "settings.advanced.showSafeSaveFiles.label": "Visa andra appars tillfälliga filer",
   "@settings.advanced.showSafeSaveFiles.label": {
-    "sourceHash": "3436491"
+    "sourceHash": "c43c6af"
   },
   "settings.advanced.showSafeSaveFiles.description": "När appar som TextEdit och Förhandsvisning sparar en fil skriver macOS den nya versionen bredvid under ett tillfälligt namn (som slutar på ”.sb-”) och byter sedan ut den. Stäng av det här för att hålla dem borta från fillistan.",
   "@settings.advanced.showSafeSaveFiles.description": {
@@ -1344,11 +1344,11 @@
   },
   "settings.advanced.showStagingTempFiles.label": "Visa Cmdrs tillfälliga filer",
   "@settings.advanced.showStagingTempFiles.label": {
-    "sourceHash": "5a7636d"
+    "sourceHash": "61c8190"
   },
   "settings.advanced.showStagingTempFiles.description": "Vid kopiering skriver Cmdr varje fil under ett tillfälligt namn och byter namn först när filen är klar, så att en krasch inte kan lämna en halvskriven fil under ett riktigt namn. Rester från en avbruten kopiering visas alltid.",
   "@settings.advanced.showStagingTempFiles.description": {
-    "sourceHash": "2d88a78"
+    "sourceHash": "a562689"
   },
   "settings.advanced.logLlmCalls.label": "Logga AI-modellanrop",
   "@settings.advanced.logLlmCalls.label": {
@@ -1601,7 +1601,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "Cmdr listar de terminalappar den hittar på den här Macen. För en som den inte känner till, välj ”Välj app…”.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "32ccd8f"
+    "sourceHash": "a921be1"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "Välj app…",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1633,7 +1633,7 @@
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "Det är den tomma ytan runt fillistan, inte en filrad.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
-    "sourceHash": "734b6c2"
+    "sourceHash": "cae047d"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Tips om dubbelklick till överordnad mapp visat",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -2165,7 +2165,7 @@
   },
   "settings.ai.tooltipCloud": "Använd din egen API-nyckel för snabb AI av hög kvalitet. Fungerar med OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter eller en valfri lokal server som du kör (Ollama, LM Studio och så vidare). Kräver en internetanslutning (om du inte använder en lokal server). Cmdr använder inget diskutrymme eller minne.",
   "@settings.ai.tooltipCloud": {
-    "sourceHash": "1f63e66"
+    "sourceHash": "9cfff88"
   },
   "settings.ai.tooltipLocal": "Kör en liten språkmodell helt på din enhet. Maximal integritet: ingenting lämnar din dator. Fungerar offline. Använder ~2 GB diskutrymme och ~400 MB minne (varierar med kontextstorlek). Kräver Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
@@ -2193,7 +2193,7 @@
   },
   "settings.fileSystemWatching.clearIndexDescription": "Raderar indexet för alla enheter. Indexeringen bygger upp det igen, och en sökning i en mapp som Cmdr inte har indexerat gör det också.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "370e2bc"
+    "sourceHash": "b6074f3"
   },
   "settings.fileSystemWatching.cardDownloads": "Hämtade filer",
   "@settings.fileSystemWatching.cardDownloads": {
@@ -2314,7 +2314,7 @@
   },
   "settings.network.permissionWithout": "Utan det kan Cmdr fortfarande läsa och skriva filer i delade mappar som redan är monterade, men du kan inte upptäcka nya servrar eller använda vår snabbare direkta anslutning.",
   "@settings.network.permissionWithout": {
-    "sourceHash": "4beca45"
+    "sourceHash": "a563afd"
   },
   "settings.network.customTimeoutUnit": "sekunder",
   "@settings.network.customTimeoutUnit": {
@@ -2338,11 +2338,11 @@
   },
   "settings.updates.emailSignupError": "Tyvärr, vi kunde inte registrera dig just nu. Försök igen?",
   "@settings.updates.emailSignupError": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "settings.updates.emailPrivacyNote": "Lagras bara på din Mac. Vi skickar den aldrig tillsammans med din användningsstatistik, så statistiken kan inte kopplas tillbaka till dig. Används bara för att höra av oss och, om du vill, för att bifoga till en rapport du skickar. Vill du sluta få e-post använder du avregistreringslänken i något av våra meddelanden.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "f22c213"
+    "sourceHash": "cf92795"
   },
   "settings.logging.openLogFile": "Öppna loggfil",
   "@settings.logging.openLogFile": {
@@ -2450,7 +2450,7 @@
   },
   "settings.mediaIndex.chosenFolders.help": "Bilderna i de här mapparna indexeras oavsett vad du annars väljer ovan. Att ta bort en mapp stoppar ny indexering; det som redan är indexerat går fortfarande att söka i.",
   "@settings.mediaIndex.chosenFolders.help": {
-    "sourceHash": "c48ff3f"
+    "sourceHash": "858eb44"
   },
   "settings.mediaIndex.chosenFolders.empty": "Inga mappar än. Lägg till en för att börja indexera bilderna i den.",
   "@settings.mediaIndex.chosenFolders.empty": {
@@ -2482,7 +2482,7 @@
   },
   "settings.servers.trustedHostKeys.description": "Cmdr frågar innan den litar på nyckeln från en server första gången du ansluter, och kommer ihåg ditt svar här. Sparade servrar finns i listan Servrar, inte på den här sidan.",
   "@settings.servers.trustedHostKeys.description": {
-    "sourceHash": "bbbed1a"
+    "sourceHash": "b3a8900"
   },
   "settings.servers.trustedHostKeys.empty": "Inget betrott än. Första gången du ansluter till en SFTP-server visar Cmdr dig serverns fingeravtryck och frågar.",
   "@settings.servers.trustedHostKeys.empty": {

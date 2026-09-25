@@ -307,7 +307,7 @@ describe('StepAi', () => {
     settingsMap['onboarding.fullDiskAccessChoice'] = 'allow'
     mounted = mountStep()
     await waitForAsync()
-    expect(mounted.target.textContent).toContain("Cmdr doesn't seem to have full disk access yet")
+    expect(mounted.target.textContent).toContain('Cmdr doesn’t seem to have full disk access yet')
   })
 
   it('picking cloud reveals the provider picker and setup grid', async () => {
@@ -337,7 +337,7 @@ describe('StepAi', () => {
     expect(cancelAiDownload).toHaveBeenCalled()
   })
 
-  it("the download's end after switching away from Local logs as the person's own cancel, not a failure", async () => {
+  it('the download’s end after switching away from Local logs as the person’s own cancel, not a failure', async () => {
     const start = pendingStart()
     mounted = mountStep()
     await waitForAsync()

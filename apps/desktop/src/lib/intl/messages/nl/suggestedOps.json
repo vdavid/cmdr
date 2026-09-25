@@ -13,7 +13,7 @@
   },
   "suggestedOps.loadFailed": "Cmdr kon de suggesties niet lezen. Sluit dit en open het opnieuw.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "3d3af5a"
+    "sourceHash": "ef0da3e"
   },
   "suggestedOps.agentReason": "Reden van de AI",
   "@suggestedOps.agentReason": {
@@ -57,7 +57,7 @@
   },
   "suggestedOps.irreversible": "Dit kun je niet ongedaan maken",
   "@suggestedOps.irreversible": {
-    "sourceHash": "485d5a3"
+    "sourceHash": "b583829"
   },
   "suggestedOps.folderWillBeCreated": "Cmdr maakt deze map aan",
   "@suggestedOps.folderWillBeCreated": {
@@ -69,7 +69,7 @@
   },
   "suggestedOps.destinationUnknown": "Cmdr kon de doelmap niet controleren",
   "@suggestedOps.destinationUnknown": {
-    "sourceHash": "e1293c5"
+    "sourceHash": "dc78d1d"
   },
   "suggestedOps.fromPattern": "Gevonden met een patroon",
   "@suggestedOps.fromPattern": {
@@ -113,7 +113,7 @@
   },
   "suggestedOps.filesLoadFailed": "Cmdr kon deze bestanden niet laden.",
   "@suggestedOps.filesLoadFailed": {
-    "sourceHash": "c61d214"
+    "sourceHash": "01f1b86"
   },
   "suggestedOps.retryFiles": "Probeer opnieuw",
   "@suggestedOps.retryFiles": {
@@ -121,11 +121,11 @@
   },
   "suggestedOps.decisionNotRecorded": "Cmdr kon je antwoord niet opslaan. Probeer het opnieuw.",
   "@suggestedOps.decisionNotRecorded": {
-    "sourceHash": "d4ee9cf"
+    "sourceHash": "9eae594"
   },
   "suggestedOps.approvalUnsure": "Cmdr weet niet zeker of de goedkeuring is doorgekomen. Kijk in de bewerkingenwachtrij voordat je het opnieuw goedkeurt.",
   "@suggestedOps.approvalUnsure": {
-    "sourceHash": "0cd408c"
+    "sourceHash": "fba515a"
   },
   "suggestedOps.indicatorTooltip": "Er staan AI-suggesties klaar. Klik om ze te bekijken.",
   "@suggestedOps.indicatorTooltip": {

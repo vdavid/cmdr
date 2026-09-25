@@ -524,11 +524,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "Eine andere Datei verwendet diesen Namen bereits und gehört nicht zu diesem Umbenennungsplan. Diese Umbenennung ist zu ihrem Schutz blockiert.",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "(existiert nicht)",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "Diese Quelldatei existiert nicht mehr. Sie wurde möglicherweise außerhalb von Cmdr gelöscht oder umbenannt.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -676,7 +676,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "KI-Funktionen können deine Ordner noch nicht sehen. Klicken, um den Festplattenzugriff einzurichten.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "KI-Funktionen sind eingeschaltet, brauchen zum Arbeiten aber einen Anbieter. Klicken, um in den Einstellungen einen einzurichten.",
   "@askCmdr.wake.needsApiKey": {

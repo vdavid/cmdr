@@ -73,7 +73,7 @@ describe('command-handler toast copy parity', () => {
   it('favorites.add failure', async () => {
     vi.mocked(addFavorite).mockRejectedValueOnce(new Error('IPC down'))
     await (miscHandlers['favorites.add'] as (h: CommandHandlerContext) => Promise<void>)(ctxWith(undefined))
-    expect(mockedToast).toHaveBeenCalledWith("Couldn't add that folder to favorites. Try again?", { level: 'error' })
+    expect(mockedToast).toHaveBeenCalledWith('Couldn’t add that folder to favorites. Try again?', { level: 'error' })
   })
 
   it('tab.new at the limit', () => {
@@ -96,7 +96,7 @@ describe('command-handler toast copy parity', () => {
     vi.mocked(cloudMakeAvailableOffline).mockRejectedValueOnce('boom')
     const hctx = ctxWith({ getFileAndPathUnderCursor: () => ({ path: '/p', filename: 'f' }) })
     await (fileHandlers['cloud.makeOffline'] as (h: CommandHandlerContext) => Promise<void>)(hctx)
-    expect(mockedToast).toHaveBeenCalledWith("Couldn't download from cloud. boom", { level: 'error' })
+    expect(mockedToast).toHaveBeenCalledWith('Couldn’t download from cloud. boom', { level: 'error' })
   })
 
   it('cloud.removeDownload failure appends the raw error', async () => {
@@ -104,7 +104,7 @@ describe('command-handler toast copy parity', () => {
     vi.mocked(cloudRemoveDownload).mockRejectedValueOnce('boom')
     const hctx = ctxWith({ getFileAndPathUnderCursor: () => ({ path: '/p', filename: 'f' }) })
     await (fileHandlers['cloud.removeDownload'] as (h: CommandHandlerContext) => Promise<void>)(hctx)
-    expect(mockedToast).toHaveBeenCalledWith("Couldn't remove the download. boom", { level: 'error' })
+    expect(mockedToast).toHaveBeenCalledWith('Couldn’t remove the download. boom', { level: 'error' })
   })
 
   it('zoom increase with a bound reset shortcut', () => {

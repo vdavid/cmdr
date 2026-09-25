@@ -9,11 +9,11 @@
   },
   "main.upgradeNudge.mac": "Nous avons ajouté de nouvelles options de configuration. Ouvrez Cmdr > Prise en main… pour les découvrir.",
   "@main.upgradeNudge.mac": {
-    "sourceHash": "477f3a5"
+    "sourceHash": "439adfd"
   },
   "main.upgradeNudge.other": "Nous avons ajouté de nouvelles options de configuration. Ouvrez la palette de commandes et lancez Prise en main… pour les découvrir.",
   "@main.upgradeNudge.other": {
-    "sourceHash": "4b0b39e"
+    "sourceHash": "5afe1d2"
   },
   "main.dockPinNudge.title": "Garder Cmdr dans votre Dock ?",
   "@main.dockPinNudge.title": {
@@ -21,7 +21,7 @@
   },
   "main.dockPinNudge.body": "Vous utilisez Cmdr depuis quelques jours, il semble donc vous convenir. Vous voulez qu’il reste en bas, juste à côté du Finder ?",
   "@main.dockPinNudge.body": {
-    "sourceHash": "1718271"
+    "sourceHash": "7f4265e"
   },
   "main.dockPinNudge.unpinNote": "Vous pourrez le supprimer du Dock à tout moment si vous changez d’avis.",
   "@main.dockPinNudge.unpinNote": {
@@ -41,15 +41,15 @@
   },
   "main.dockPinNudge.addedButDockDidNotRestart": "L’icône de Cmdr est en place, mais le Dock ne s’est pas rechargé. Elle apparaîtra à votre prochaine ouverture de session.",
   "@main.dockPinNudge.addedButDockDidNotRestart": {
-    "sourceHash": "b035470"
+    "sourceHash": "7a4e3bb"
   },
   "main.dockPinNudge.managedDock": "Votre Dock est géré par un profil de configuration, Cmdr ne peut donc pas s’y ajouter. La personne qui gère ce Mac peut modifier ce réglage.",
   "@main.dockPinNudge.managedDock": {
-    "sourceHash": "dae0836"
+    "sourceHash": "4781787"
   },
   "main.dockPinNudge.notAdded": "Cmdr n’a pas pu s’ajouter au Dock cette fois-ci. Vous pouvez l’y faire glisser depuis votre dossier Applications quand vous voulez.",
   "@main.dockPinNudge.notAdded": {
-    "sourceHash": "0d122cb"
+    "sourceHash": "0b863ad"
   },
   "main.revealNudge.title": "Ouvrir « Afficher dans le Finder » dans Cmdr ?",
   "@main.revealNudge.title": {
@@ -57,7 +57,7 @@
   },
   "main.revealNudge.body": "Vous utilisez Cmdr depuis un moment. Quand une autre app lance « Afficher dans le Finder », Cmdr peut ouvrir ce dossier à la place, avec le fichier déjà sous le curseur.",
   "@main.revealNudge.body": {
-    "sourceHash": "1db1d28"
+    "sourceHash": "1934a04"
   },
   "main.revealNudge.switchBackNote": "Vous pourrez revenir en arrière à tout moment dans les Réglages.",
   "@main.revealNudge.switchBackNote": {
@@ -81,7 +81,7 @@
   },
   "main.revealNudge.notTurnedOn": "Cmdr n’a pas pu récupérer « Afficher dans le Finder » cette fois-ci. L’option est dans les Réglages si vous voulez réessayer.",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "953a4ee"
+    "sourceHash": "0f572c0"
   },
   "main.revealActivation.title": "« Afficher dans le Finder » s’est ouvert ici",
   "@main.revealActivation.title": {
@@ -101,7 +101,7 @@
   },
   "main.quit.body": "Tout ce qui est déjà terminé le reste. Ce qui est encore en cours d’écriture s’arrête là où il en est, et Cmdr supprime tout fichier à moitié écrit.",
   "@main.quit.body": {
-    "sourceHash": "c17f6e7"
+    "sourceHash": "79a69f9"
   },
   "main.quit.countdown": "{seconds, plural, one {Cmdr quitte dans {secondsText} seconde, pour ne jamais retarder un redémarrage ou une fermeture de session.} many {Cmdr quitte dans {secondsText} secondes, pour ne jamais retarder un redémarrage ou une fermeture de session.} other {Cmdr quitte dans {secondsText} secondes, pour ne jamais retarder un redémarrage ou une fermeture de session.}}",
   "@main.quit.countdown": {
@@ -129,7 +129,7 @@
   },
   "main.oldWebkit.body": "L’interface de Cmdr nécessite Safari 15.4 ou une version plus récente, et ce Mac en a une plus ancienne. Ouvrez Mise à jour de logiciels et installez tout ce qui est en attente. Cela devrait suffire.",
   "@main.oldWebkit.body": {
-    "sourceHash": "bcadac5"
+    "sourceHash": "a7112ec"
   },
   "main.oldMacos.title": "Cmdr sur macOS {version}",
   "@main.oldMacos.title": {
@@ -137,7 +137,7 @@
   },
   "main.oldMacos.body": "Cmdr prend officiellement en charge macOS 12 et les versions plus récentes, donc ici il fait au mieux. La plupart des choses fonctionnent, mais certaines couleurs et de petits détails de mise en page peuvent être décalés, et les corrections pour les anciens systèmes passent en dernier. Si vous tombez sur quelque chose de cassé, j’aimerais quand même le savoir.",
   "@main.oldMacos.body": {
-    "sourceHash": "9484b91"
+    "sourceHash": "f9b4185"
   },
   "main.oldMacos.gotIt": "D’accord",
   "@main.oldMacos.gotIt": {
@@ -161,6 +161,6 @@
   },
   "main.escapeFullScreenHint.onceNote": "Vous ne verrez ce message qu’une seule fois.",
   "@main.escapeFullScreenHint.onceNote": {
-    "sourceHash": "c76cb6c"
+    "sourceHash": "210b892"
   }
 }

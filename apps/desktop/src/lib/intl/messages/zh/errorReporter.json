@@ -5,7 +5,7 @@
   },
   "errorReporter.dialog.description": "这会把 Cmdr 最近的日志文件发送给团队，方便我们修复出了问题的地方。日志会在本地脱敏：文件路径、主机名、IP 和电子邮件地址都会在发送前清除。",
   "@errorReporter.dialog.description": {
-    "sourceHash": "dd11284"
+    "sourceHash": "ba4012f"
   },
   "errorReporter.dialog.referenceIdLabel": "参考编号：",
   "@errorReporter.dialog.referenceIdLabel": {
@@ -38,7 +38,7 @@
   },
   "errorReporter.dialog.detailsToggle": "即将发送的内容",
   "@errorReporter.dialog.detailsToggle": {
-    "sourceHash": "b1069f7"
+    "sourceHash": "f57398b"
   },
   "errorReporter.dialog.manifestHeading": "清单",
   "@errorReporter.dialog.manifestHeading": {
@@ -66,7 +66,7 @@
   },
   "errorReporter.dialog.prepareFailed": "无法生成预览。",
   "@errorReporter.dialog.prepareFailed": {
-    "sourceHash": "3729966"
+    "sourceHash": "24cd5ba"
   },
   "errorReporter.dialog.tryAgain": "重试",
   "@errorReporter.dialog.tryAgain": {
@@ -74,7 +74,7 @@
   },
   "errorReporter.dialog.bundleUnavailable": "Cmdr 无法为这份报告收集日志。请稍后再试。",
   "@errorReporter.dialog.bundleUnavailable": {
-    "sourceHash": "3743aba"
+    "sourceHash": "15bc5b8"
   },
   "errorReporter.dialog.saveToDisk": "将报告包保存到磁盘（调试）",
   "@errorReporter.dialog.saveToDisk": {
@@ -94,11 +94,11 @@
   },
   "errorReporter.dialog.sendFailedToast": "无法发送错误报告。{reason}",
   "@errorReporter.dialog.sendFailedToast": {
-    "sourceHash": "75337c1"
+    "sourceHash": "1eedf49"
   },
   "errorReporter.dialog.saveFailedToast": "无法保存报告包：{error}",
   "@errorReporter.dialog.saveFailedToast": {
-    "sourceHash": "34cf2b4"
+    "sourceHash": "6405cca"
   },
   "errorReporter.amend.title": "添加到你的错误报告",
   "@errorReporter.amend.title": {
@@ -106,7 +106,7 @@
   },
   "errorReporter.amend.description": "Cmdr 已经把这份报告发出去了。写点备注，或者附上你的邮箱，它们会一并加到团队已经收到的那份报告里。",
   "@errorReporter.amend.description": {
-    "sourceHash": "276771e"
+    "sourceHash": "9e1a80f"
   },
   "errorReporter.amend.noteLabel": "你的备注",
   "@errorReporter.amend.noteLabel": {
@@ -126,7 +126,7 @@
   },
   "errorReporter.amend.unavailable": "这份报告已经无法再添加备注。要把你的备注交给团队，请从“帮助”菜单发送一份新报告。",
   "@errorReporter.amend.unavailable": {
-    "sourceHash": "cbb7a33"
+    "sourceHash": "b96b48a"
   },
   "errorReporter.amend.close": "关闭",
   "@errorReporter.amend.close": {
@@ -134,7 +134,7 @@
   },
   "errorReporter.amend.addFailedToast": "无法添加你的备注。{reason}",
   "@errorReporter.amend.addFailedToast": {
-    "sourceHash": "0b67749"
+    "sourceHash": "02f82ce"
   },
   "errorReporter.sentToast.message": "错误报告已发送。你的参考编号是",
   "@errorReporter.sentToast.message": {

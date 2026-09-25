@@ -103,7 +103,7 @@ describe('revealSearchResultInPane (the search "Go to file" edge)', () => {
     addToastMock.mockReset().mockReturnValue('toast-id')
   })
 
-  it("resolves the result's PARENT dir, navigates with that location, then moves the cursor onto the file", async () => {
+  it('resolves the result’s PARENT dir, navigates with that location, then moves the cursor onto the file', async () => {
     resolveLocationMock.mockResolvedValue({ ok: true, location: loc('/Volumes/Nas/docs', 'nas') })
     const { explorer, navigate, moveCursor } = makeExplorer(started())
 
@@ -128,7 +128,7 @@ describe('revealSearchResultInPane (the search "Go to file" edge)', () => {
 
     expect(navigate).not.toHaveBeenCalled()
     expect(moveCursor).not.toHaveBeenCalled()
-    expect(addToastMock).toHaveBeenCalledWith("Couldn't reach that location's drive. It might be disconnected.", {
+    expect(addToastMock).toHaveBeenCalledWith('Couldn’t reach that location’s drive. It might be disconnected.', {
       level: 'info',
     })
   })

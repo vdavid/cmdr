@@ -620,7 +620,7 @@ describe('VolumeBreadcrumb highlight on open', () => {
     expect(isHighlighted(rows[0])).toBe(false)
   })
 
-  it("falls back to the menu's first row when no row is the containing volume", async () => {
+  it('falls back to the menu’s first row when no row is the containing volume', async () => {
     // A phone: it isn't the pane's volume, and neither is the synthetic Servers row,
     // so nothing is checked. ❗ The fallback is the FIRST row of the menu, which since
     // M3 is the "See N favorites" row rather than the first volume.
@@ -785,7 +785,7 @@ describe('VolumeBreadcrumb share submenu', () => {
     expect(rows.map((row) => row.textContent.trim())).toEqual([
       'Eject (Share)',
       'Connect directly now',
-      "Use Cmdr's fast direct connection",
+      'Use Cmdr’s fast direct connection',
     ])
     expect(rows[1].previousElementSibling?.getAttribute('role')).not.toBe('separator')
     expect(rows[2].hasAttribute('data-checked')).toBe(true)
@@ -810,7 +810,7 @@ describe('VolumeBreadcrumb share submenu', () => {
     await openShareSubmenu()
 
     const rows = submenuRows()
-    expect(rows.map((row) => row.textContent.trim())).toEqual(['Eject (Share)', "Use Cmdr's fast direct connection"])
+    expect(rows.map((row) => row.textContent.trim())).toEqual(['Eject (Share)', 'Use Cmdr’s fast direct connection'])
     expect(rows[1].hasAttribute('data-checked')).toBe(false)
     expect(rows[1].previousElementSibling?.getAttribute('role')).toBe('separator')
   })
@@ -1016,7 +1016,7 @@ describe('VolumeBreadcrumb row controls do not activate their row', () => {
     expect(menuSurface()).toBeTruthy()
   })
 
-  it("a server row's Disconnect drops the session, without navigating the pane", async () => {
+  it('a server row’s Disconnect drops the session, without navigating the pane', async () => {
     const onVolumeChange = vi.fn()
     await openWithRows(
       [

@@ -155,11 +155,11 @@
   },
   "indexing.rescan.staleIndex": "你的驱动器索引已过期。看起来应用有一阵子没运行了。正在重新扫描以跟上变化。",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "系统的文件更改日志记录得不够久远。正在重新扫描以重建索引。",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "自上次运行以来发生了大量文件更改。正在重新扫描，而不是逐条重放这些更改。",
   "@indexing.rescan.replayOverflow": {
@@ -167,7 +167,7 @@
   },
   "indexing.rescan.watcherStartFailed": "无法启动文件更改监视器。正在重新扫描，让索引保持最新。",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "频繁的文件系统活动占满了事件缓冲区。正在重新扫描，以保持准确。",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -175,7 +175,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "上一次扫描没有完成（应用可能被关闭了）。正在从头开始重新扫描。",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "一阵密集的文件系统活动占满了监视器通道。正在重新扫描，以保持准确。",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -203,15 +203,15 @@
   },
   "indexing.firstConnect.silenceDrive": "不再为此驱动器询问",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "不再为任何驱动器询问",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "这个驱动器的索引可能已过期",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "在 {name} 断开连接期间，上面的文件可能有过更改。在你重新扫描之前，文件夹大小和搜索结果可能会有些偏差。出现这种情况时，驱动器旁边始终会显示黄色状态，重新扫描即可刷新。",
   "@indexing.staleDialog.body": {
@@ -219,11 +219,11 @@
   },
   "indexing.staleDialog.titlePhone": "这部手机的索引可能已过期",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} 不会在文件有更改时告诉 Cmdr，所以 Cmdr 会把自己做的更改及时更新到它的索引里。在手机上做的更改（比如新照片），要重新扫描后才会显示在文件夹大小和搜索结果里。手机旁边会一直显示黄色状态，提醒你这一点。",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "不再显示",
   "@indexing.staleDialog.neverShowAgain": {
@@ -252,7 +252,7 @@
   },
   "indexing.enrich.pausedIdle": "等待你空闲时继续",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "已暂停，重新连接后继续",
   "@indexing.enrich.pausedDisconnected": {

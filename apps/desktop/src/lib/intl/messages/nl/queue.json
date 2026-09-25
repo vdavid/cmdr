@@ -38,7 +38,7 @@
   },
   "queue.row.status": "{status, select, queued {Wachten} running {Bezig} paused {Gepauzeerd} done {Gereed} cancelled {Geannuleerd} failed {Niet voltooid} other {Bezig}}",
   "@queue.row.status": {
-    "sourceHash": "8e9ce48"
+    "sourceHash": "d7a7517"
   },
   "queue.row.statusAwaitingAnswer": "Antwoord nodig",
   "@queue.row.statusAwaitingAnswer": {
@@ -118,7 +118,7 @@
   },
   "queue.failureToast.title": "{type, select, copy {Kopiëren niet voltooid} move {Verplaatsen niet voltooid} delete {Verwijderen niet voltooid} trash {Naar prullenmand verplaatsen niet voltooid} rename {Naam wijzigen niet voltooid} create_folder {Map aanmaken niet voltooid} create_file {Bestand aanmaken niet voltooid} archive_edit {Archief bewerken niet voltooid} other {Niet voltooid}}",
   "@queue.failureToast.title": {
-    "sourceHash": "a55f5df"
+    "sourceHash": "b5f2b47"
   },
   "queue.failureToast.action": "Toon in de bewerkingenwachtrij",
   "@queue.failureToast.action": {
@@ -126,11 +126,11 @@
   },
   "queue.failureToast.summary": "{count, plural, one {{countText} bewerking is} other {{countText} bewerkingen zijn}} niet voltooid",
   "@queue.failureToast.summary": {
-    "sourceHash": "6207914"
+    "sourceHash": "a55d85a"
   },
   "queue.chip.failed": "{count, plural, one {{countText} bewerking is} other {{countText} bewerkingen zijn}} niet voltooid. Open de bewerkingenwachtrij om te zien waarom.",
   "@queue.chip.failed": {
-    "sourceHash": "336ad46"
+    "sourceHash": "9c0036b"
   },
   "queue.chip.ariaLabel": "{label}, {percentText} procent. Open de bewerkingenwachtrij.",
   "@queue.chip.ariaLabel": {

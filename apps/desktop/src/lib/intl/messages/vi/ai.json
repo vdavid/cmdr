@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "Dữ liệu của bạn đi đâu, và được xử lý ra sao ở đó, tùy thuộc vào dịch vụ bạn chọn và thỏa thuận giữa bạn với dịch vụ đó. Điều này áp dụng cả với Ollama, LM Studio và các điểm cuối tùy chỉnh: dữ liệu đi đến bất cứ nơi nào máy chủ đó đang chạy. Máy chủ của chính Cmdr không bao giờ thấy bất kỳ phần nào trong đó.",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>Gợi ý tên thư mục mới</b>: đường dẫn của thư mục hiện tại và tối đa 100 tên trong đó",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>Tìm kiếm bằng ngôn ngữ tự nhiên</b>: nội dung bạn nhập",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "Họ đang giới hạn tần suất yêu cầu hoặc gói của bạn đã hết hạn ngạch. Hãy kiểm tra gói và thanh toán của bạn, rồi thử lại.",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "AI mất quá nhiều thời gian",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "Không thể kết nối tới nhà cung cấp AI của bạn",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "Hãy kiểm tra internet của bạn hoặc trạng thái của nhà cung cấp, rồi thử lại.",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "AI trả về trống",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "Không thể đọc câu trả lời của AI",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "Hãy thử lại, hoặc chọn một mô hình khác trong Cài đặt > AI.",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "Nhà cung cấp AI đó không được nhận diện",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "Chọn một nhà cung cấp trong Cài đặt > AI.",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "Không thể kết nối tới máy chủ",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "Có gì đó không ổn",
   "@ai.cloud.genericError": {
@@ -423,7 +423,7 @@
   },
   "ai.local.deleteConfirmMessage": "Việc này giải phóng {modelSize} dung lượng đĩa. Bạn sẽ cần tải lại để dùng AI cục bộ lần nữa.",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "Đang xóa…",
   "@ai.local.deleteButtonDeleting": {
@@ -435,7 +435,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {Không thể lưu khóa API của bạn: chuỗi khóa macOS đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: chuỗi khóa macOS đã từ chối quyền truy cập}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {Mở Truy cập chuỗi khóa và kiểm tra mục “Cmdr”, hoặc xóa mục đó rồi thử lưu lại.} other {Mở Truy cập chuỗi khóa, tìm mục “Cmdr”, cấp quyền truy cập, hoặc xóa mục đó rồi nhập lại khóa của bạn.}}",
   "@ai.secretError.keychainBody": {
@@ -443,7 +443,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {Không thể lưu khóa API của bạn: kho khóa hệ thống đã từ chối quyền truy cập} other {Không thể đọc khóa API đã lưu của bạn: kho khóa hệ thống đã từ chối quyền truy cập}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "Mở khóa kho khóa của bạn (ứng dụng Passwords / Keyrings) rồi thử lại.",
   "@ai.secretError.keyringBody": {
@@ -451,7 +451,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {Không thể lưu khóa API của bạn.} other {Không thể đọc khóa API đã lưu của bạn.}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "Kiểm tra xem kho khóa hệ thống của bạn có sẵn sàng không, rồi thử lại. Nếu vẫn tiếp diễn, hãy khởi động lại ứng dụng.",
   "@ai.secretError.genericBody": {

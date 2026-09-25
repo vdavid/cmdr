@@ -523,11 +523,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "Một tệp khác đang dùng tên này và không thuộc kế hoạch đổi tên hiện tại. Lần đổi tên này bị chặn để bảo vệ tệp đó.",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "(không tồn tại)",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "Tệp nguồn này không còn tồn tại. Tệp có thể đã bị xóa hoặc đổi tên bên ngoài Cmdr.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -675,7 +675,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "Các tính năng AI chưa nhìn thấy được thư mục của bạn. Bấm để thiết lập quyền truy cập toàn bộ đĩa.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "Các tính năng AI đang bật, nhưng cần một nhà cung cấp mới hoạt động được. Bấm để thiết lập một cái trong cài đặt.",
   "@askCmdr.wake.needsApiKey": {

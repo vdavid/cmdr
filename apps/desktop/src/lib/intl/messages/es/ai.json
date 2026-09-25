@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "Adónde van tus datos, y qué pasa con ellos allí, depende del servicio que elijas y de tu acuerdo con él. Eso incluye Ollama, LM Studio y los puntos de conexión personalizados: los datos van adonde se ejecute ese servidor. Los servidores de Cmdr nunca ven nada de ello.",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>Sugerencias de nombre para carpetas nuevas</b>: la ruta de la carpeta actual y hasta 100 nombres que hay en ella",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>Búsqueda con tus propias palabras</b>: el texto que escribes",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "Está limitando las solicitudes o tu plan se ha quedado sin cuota. Revisa tu plan y tu facturación, y vuelve a intentarlo.",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "La IA ha tardado demasiado",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "No se puede acceder a tu proveedor de IA",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "Revisa tu conexión a internet o el estado del proveedor, y vuelve a intentarlo.",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "La IA ha devuelto una respuesta vacía",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "No se ha podido leer la respuesta de la IA",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "Inténtalo de nuevo o elige otro modelo en Ajustes > IA.",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "Ese proveedor de IA no se reconoce",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "Elige un proveedor en Ajustes > IA.",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "No se puede acceder al servidor",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "Algo ha ido mal",
   "@ai.cloud.genericError": {
@@ -423,7 +423,7 @@
   },
   "ai.local.deleteConfirmMessage": "Esto libera {modelSize} de espacio en disco. Tendrás que volver a descargarlo para usar la IA local de nuevo.",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "Eliminando…",
   "@ai.local.deleteButtonDeleting": {
@@ -435,7 +435,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {No se ha podido guardar tu clave de API: el Llavero de macOS ha denegado el acceso} other {No se ha podido leer tu clave de API guardada: el Llavero de macOS ha denegado el acceso}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {Abre Acceso a Llaveros y revisa la entrada “Cmdr”, o elimínala e intenta guardar de nuevo.} other {Abre Acceso a Llaveros, busca la entrada “Cmdr”, concede el acceso o elimínala y vuelve a introducir tu clave.}}",
   "@ai.secretError.keychainBody": {
@@ -443,7 +443,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {No se ha podido guardar tu clave de API: el llavero del sistema ha denegado el acceso} other {No se ha podido leer tu clave de API guardada: el llavero del sistema ha denegado el acceso}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "Desbloquea tu llavero (la app de Contraseñas o Llaveros) e inténtalo de nuevo.",
   "@ai.secretError.keyringBody": {
@@ -451,7 +451,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {No se ha podido guardar tu clave de API.} other {No se ha podido leer tu clave de API guardada.}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "Comprueba que el llavero del sistema esté disponible y vuelve a intentarlo. Si continúa, reinicia la app.",
   "@ai.secretError.genericBody": {

@@ -18,7 +18,7 @@
     "screenshot": "mtp-browse.png",
     "screenshotNote": "MTP (phone/camera) device messaging: a connect/permission dialog or toast tied to an MTP device. This shows the MTP browse surface for context. Keep device/protocol names (MTP, PTP) as-is."
   },
-  "mtp.connectedToast.dontShowAgain": "Don''t show again",
+  "mtp.connectedToast.dontShowAgain": "Don’t show again",
   "@mtp.connectedToast.dontShowAgain": {
     "description": "Checkbox label that suppresses the device-connected toast for future connections.",
     "screenshot": "mtp-connected-toast.png"
@@ -34,12 +34,12 @@
     "screenshot": "mtp-connected-toast.png"
   },
 
-  "mtp.permissionDialog.title": "Can''t access USB device",
+  "mtp.permissionDialog.title": "Can’t access USB device",
   "@mtp.permissionDialog.title": {
     "description": "Title of the Linux dialog shown when Cmdr lacks permission to access a connected USB (MTP) device.",
     "screenshot": "mtp-permission-default.png"
   },
-  "mtp.permissionDialog.description": "Cmdr doesn''t have permission to access this device. Linux needs udev rules to grant MTP device access.",
+  "mtp.permissionDialog.description": "Cmdr doesn’t have permission to access this device. Linux needs udev rules to grant MTP device access.",
   "@mtp.permissionDialog.description": {
     "description": "Main explanation in the Linux USB-permission dialog. udev is a Linux device-management term and MTP a protocol acronym; keep both literal.",
     "screenshot": "mtp-permission-default.png"
@@ -65,7 +65,7 @@
     "screenshot": "mtp-permission-default.png"
   },
 
-  "mtp.ptpcameradDialog.title": "Can''t connect to MTP device",
+  "mtp.ptpcameradDialog.title": "Can’t connect to MTP device",
   "@mtp.ptpcameradDialog.title": {
     "description": "Title of the macOS dialog shown when another process holds exclusive access to a connected MTP device. MTP is a protocol acronym; keep it.",
     "screenshot": "ptpcamerad-known-process.png"

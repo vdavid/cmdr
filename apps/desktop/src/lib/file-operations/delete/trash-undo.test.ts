@@ -104,7 +104,7 @@ describe('trashUndoMessage (en)', () => {
 
   it('explains an undo that had nothing to reverse', () => {
     expect(trashUndoMessage({ status: 'unavailable' })).toBe(
-      "Nothing to put back. These items may already be back, or their drive isn't connected.",
+      'Nothing to put back. These items may already be back, or their drive isn’t connected.',
     )
   })
 })
@@ -176,7 +176,7 @@ describe('runTrashUndo', () => {
 
     expect(dismissToast).toHaveBeenCalledWith('trash-undo')
     expect(raised()[1].message).toBe(
-      "Nothing to put back. These items may already be back, or their drive isn't connected.",
+      'Nothing to put back. These items may already be back, or their drive isn’t connected.',
     )
   })
 

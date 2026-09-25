@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Wähle die Sprache, die Cmdr verwendet. „Systemstandard“ folgt der Sprache deines Macs.",
   "@settings.appearance.language.description": {
-    "sourceHash": "6e36bba"
+    "sourceHash": "2dd7f63"
   },
   "settings.appearance.language.opt.system": "Systemstandard",
   "@settings.appearance.language.opt.system": {
@@ -277,7 +277,7 @@
   },
   "settings.appearance.useAppIconsForDocuments.description": "Zeigt das Symbol der App für Dokumente statt allgemeiner Dateityp-Symbole. Bunter, aber etwas langsamer.",
   "@settings.appearance.useAppIconsForDocuments.description": {
-    "sourceHash": "9ae8a9c"
+    "sourceHash": "9651182"
   },
   "settings.appearance.showFunctionKeyBar.label": "Funktionstastenleiste anzeigen",
   "@settings.appearance.showFunctionKeyBar.label": {
@@ -457,7 +457,7 @@
   },
   "settings.mediaIndex.privacyNote": "Das läuft vollständig auf deinem Mac über Apples integriertes Vision-Framework. Deine Bilder verlassen deinen Computer nie, und es sind kein KI-Anbieter und kein API-Schlüssel beteiligt.",
   "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
+    "sourceHash": "9e5a87f"
   },
   "settings.mediaIndex.clip.title": "Semantische Suche",
   "@settings.mediaIndex.clip.title": {
@@ -465,7 +465,7 @@
   },
   "settings.mediaIndex.clip.description": "Finde Fotos, indem du beschreibst, was darauf zu sehen ist, etwa „Strand bei Sonnenuntergang“, mit einem KI-Modell auf dem Gerät.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "e7bece5"
+    "sourceHash": "9a569ba"
   },
   "settings.mediaIndex.clip.ready": "Bereit – suche deine Fotos per Beschreibung.",
   "@settings.mediaIndex.clip.ready": {
@@ -485,7 +485,7 @@
   },
   "settings.mediaIndex.clip.failed": "Der Download wurde nicht abgeschlossen. Prüfe deine Verbindung und versuche es erneut.",
   "@settings.mediaIndex.clip.failed": {
-    "sourceHash": "5feb349"
+    "sourceHash": "8a3682d"
   },
   "settings.mediaIndex.clip.notSupported": "Die Suche per Beschreibung braucht einen Mac mit Apple silicon.",
   "@settings.mediaIndex.clip.notSupported": {
@@ -513,7 +513,7 @@
   },
   "settings.mediaIndex.clip.deleteFailed": "Das Modell ließ sich gerade nicht entfernen. Versuche es gleich noch einmal.",
   "@settings.mediaIndex.clip.deleteFailed": {
-    "sourceHash": "6c9ced5"
+    "sourceHash": "126c735"
   },
   "settings.mediaIndex.cards.enable": "Indizierung aktivieren",
   "@settings.mediaIndex.cards.enable": {
@@ -545,7 +545,7 @@
   },
   "settings.mediaIndex.showFileStatusIcons.description": "Füge jedem Bild in der Dateiliste ein kleines Statussymbol hinzu, das zeigt, ob es für die Suche indiziert wurde.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
-    "sourceHash": "62dda47"
+    "sourceHash": "1a725aa"
   },
   "settings.mediaIndex.showInSearch.label": "Bildergebnisse in der Suche anzeigen",
   "@settings.mediaIndex.showInSearch.label": {
@@ -553,7 +553,7 @@
   },
   "settings.mediaIndex.showInSearch.description": "Die Suche zeigt eine Reihe passender Bilder über deinen Dateien. Der Abgleich ist noch ungenau, deshalb ist die Option aus, bis du sie haben willst.",
   "@settings.mediaIndex.showInSearch.description": {
-    "sourceHash": "5b62cab"
+    "sourceHash": "143a4e7"
   },
   "settings.mediaIndex.networkVolumes.label": "Bildindizierung für Netzlaufwerke",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -589,7 +589,7 @@
   },
   "settings.mediaIndex.networkVolumes.intro": "Netzlaufwerke werden nur indiziert, wenn du sie hier aktivierst. Cmdr liest Fotos schonend über das Netzwerk: nur, während du nicht beschäftigt bist, mit begrenzter Geschwindigkeit, und die Indizierung hält an, wenn das Laufwerk getrennt wird.",
   "@settings.mediaIndex.networkVolumes.intro": {
-    "sourceHash": "165a9eb"
+    "sourceHash": "2d192ce"
   },
   "settings.mediaIndex.networkVolumes.none": "Verbinde ein Netzlaufwerk, um die Fotos darauf zu indizieren.",
   "@settings.mediaIndex.networkVolumes.none": {
@@ -741,7 +741,7 @@
   },
   "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr konnte die zusätzlichen Einträge nicht löschen. Bitte versuche es erneut.",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
-    "sourceHash": "3295df4"
+    "sourceHash": "c57ac43"
   },
   "settings.mediaIndex.reclaim.deletedSpaceLater": "Cmdr hat die zusätzlichen Einträge gelöscht und gibt den Speicherplatz später frei.",
   "@settings.mediaIndex.reclaim.deletedSpaceLater": {
@@ -761,7 +761,7 @@
   },
   "settings.indexing.staleNotify.description": "Du siehst den gelben Status weiterhin, auch wenn du das ausschaltest.",
   "@settings.indexing.staleNotify.description": {
-    "sourceHash": "c4216d8"
+    "sourceHash": "03af10e"
   },
   "settings.indexing.masterOffNote": "Die Laufwerksindizierung ist aus, deshalb wird kein Laufwerk indiziert und Ordnergrößen bleiben ausgeblendet. Jedes Laufwerk behält seine eigene Einstellung, bereit für den Moment, in dem du das wieder einschaltest.",
   "@settings.indexing.masterOffNote": {
@@ -785,7 +785,7 @@
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "Du hast die Abfrage noch für kein Laufwerk ausgeschaltet.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
-    "sourceHash": "3a5a54b"
+    "sourceHash": "e7702a8"
   },
   "settings.indexing.silencedDrives.label": "Stummgeschaltete Laufwerksabfragen",
   "@settings.indexing.silencedDrives.label": {
@@ -955,7 +955,7 @@
   },
   "settings.network.enabled.description": "Findet SMB-Server in deinem lokalen Netzwerk und verbindet sich mit ihnen. Wenn aus, kann Cmdr weiterhin Dateien auf bereits eingebundenen Freigaben lesen und schreiben, fragt macOS aber nicht nach Zugriff auf das lokale Netzwerk.",
   "@settings.network.enabled.description": {
-    "sourceHash": "3500345"
+    "sourceHash": "72a0854"
   },
   "settings.network.firstTriggerDone.label": "Netzwerksuche gestartet",
   "@settings.network.firstTriggerDone.label": {
@@ -1052,7 +1052,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "Erkennt und verbindet Android- und andere Geräte über ein USB-Kabel zum Durchsehen und Übertragen von Dateien. Um diese Funktion auf einem Android-Telefon zu nutzen, verwende ein USB-Kabel, geh dann auf dem Telefon zu etwa Einstellungen > USB-Einstellungen und stelle die Verbindung auf „Dateiübertragung“, „Android Auto“ oder Ähnliches. (Variiert je nach Gerät.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "37444c2"
+    "sourceHash": "c66df04"
   },
   "settings.fileOperations.adbEnabled.label": "Dateizugriff auf Android über ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1060,7 +1060,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Zeigt dir das gesamte Dateisystem eines Android-Telefons, auf dem USB-Debugging eingeschaltet ist, also auch das, was über MTP verborgen bleibt. Dafür brauchst du die Android Platform Tools (den Befehl „adb“) auf diesem Mac. Wenn du keine Android-Tools installiert hast, kostet es nichts, die Einstellung anzulassen.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "57cf2aa"
+    "sourceHash": "9a22518"
   },
   "settings.fileOperations.adbBinaryPath.label": "Speicherort von adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1173,7 +1173,7 @@
   },
   "settings.analytics.enabled.description": "Bitte aktiviere das, damit wir sehen, welche Funktionen während der offenen Beta wichtig sind.\nDie Statistiken sind nicht mit deinem Namen oder deiner E-Mail-Adresse verknüpft, sondern mit einer zufälligen ID.\nCmdr sendet nie Dateinamen, Pfade, Suchbegriffe oder Prompts.\nWenn es aus ist, sendet Cmdr gar keine Statistiken.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "23bafcb"
+    "sourceHash": "f5534ee"
   },
   "settings.analytics.email.label": "Beta-Kontakt-E-Mail",
   "@settings.analytics.email.label": {
@@ -1253,7 +1253,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 öffnet die Vorschau von Cmdr, die rohe Bytes zeigt (mit verlustbehaftetem UTF-8 für nicht-textuelle Inhalte). Wenn du ein Bild, eine PDF, ein Archiv oder eine andere Binärdatei öffnest, zeigt die Vorschau ein rotes Banner, das erklärt, dass ⇧Leertaste (Übersicht) oder die Eingabetaste (Öffnen in der zugehörigen App) wahrscheinlich das war, was du wolltest. Schalte das ein (oder klicke im Banner auf „Diese Warnung nie wieder anzeigen“), um die Warnung dauerhaft zu unterdrücken.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "5ba5ff7"
+    "sourceHash": "a93b4cb"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Leertasten-Hinweis zur Übersicht unterdrücken",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1261,7 +1261,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr nutzt die Leertaste, um die Dateiauswahl umzuschalten, und ⇧Leertaste für die Übersicht (Finder nutzt die einfache Leertaste für die Übersicht). Jedes Mal, wenn du in der Dateiliste die Leertaste drückst, zeigt Cmdr einen kurzen Hinweis auf diesen Unterschied. Schalte das ein (oder klicke im Hinweis auf „Nicht mehr anzeigen“), um den Hinweis dauerhaft zu unterdrücken.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "be9e1ff"
+    "sourceHash": "10357b4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Anzahl der pro Bereich gemerkten geschlossenen Tabs",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1337,7 +1337,7 @@
   },
   "settings.advanced.showSafeSaveFiles.label": "Temporäre Dateien anderer Apps anzeigen",
   "@settings.advanced.showSafeSaveFiles.label": {
-    "sourceHash": "3436491"
+    "sourceHash": "c43c6af"
   },
   "settings.advanced.showSafeSaveFiles.description": "Wenn Apps wie TextEdit und Vorschau eine Datei speichern, schreibt macOS die neue Version unter einem temporären Namen daneben (endet auf „.sb-“) und tauscht sie dann aus. Schalte das aus, um diese aus der Dateiliste herauszuhalten.",
   "@settings.advanced.showSafeSaveFiles.description": {
@@ -1345,11 +1345,11 @@
   },
   "settings.advanced.showStagingTempFiles.label": "Temporäre Dateien von Cmdr anzeigen",
   "@settings.advanced.showStagingTempFiles.label": {
-    "sourceHash": "5a7636d"
+    "sourceHash": "61c8190"
   },
   "settings.advanced.showStagingTempFiles.description": "Beim Kopieren schreibt Cmdr jede Datei unter einem temporären Namen und benennt sie um, sobald sie vollständig ist. So kann ein Absturz keine halb geschriebene Datei unter einem echten Namen hinterlassen. Reste eines abgebrochenen Kopiervorgangs werden immer angezeigt.",
   "@settings.advanced.showStagingTempFiles.description": {
-    "sourceHash": "2d88a78"
+    "sourceHash": "a562689"
   },
   "settings.advanced.logLlmCalls.label": "KI-Modellaufrufe protokollieren",
   "@settings.advanced.logLlmCalls.label": {
@@ -1602,7 +1602,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "Cmdr listet die Terminal-Apps auf, die es auf diesem Mac findet. Für eine, die es nicht kennt, wähle „App auswählen …“.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "32ccd8f"
+    "sourceHash": "a921be1"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "App auswählen …",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1634,7 +1634,7 @@
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "Das ist die leere Fläche rund um die Dateiliste, keine Dateizeile.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
-    "sourceHash": "734b6c2"
+    "sourceHash": "cae047d"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Hinweis zum Doppelklick in den übergeordneten Ordner gezeigt",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -2165,7 +2165,7 @@
   },
   "settings.ai.tooltipCloud": "Bring deinen eigenen API-Schlüssel mit für schnelle, hochwertige KI. Funktioniert mit OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter oder jedem lokalen Server, den du betreibst (Ollama, LM Studio usw.). Erfordert eine Internetverbindung (außer bei einem lokalen Server). Cmdr nutzt keinen Speicherplatz und keinen Arbeitsspeicher.",
   "@settings.ai.tooltipCloud": {
-    "sourceHash": "1f63e66"
+    "sourceHash": "9cfff88"
   },
   "settings.ai.tooltipLocal": "Führt ein kleines Sprachmodell vollständig auf deinem Gerät aus. Maximaler Datenschutz: nichts verlässt deinen Computer. Funktioniert offline. Nutzt ~2 GB Speicherplatz und ~400 MB Arbeitsspeicher (variiert mit der Kontextgröße). Erfordert Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
@@ -2193,7 +2193,7 @@
   },
   "settings.fileSystemWatching.clearIndexDescription": "Löscht den Index aller Laufwerke. Die Indizierung baut ihn wieder auf, und eine Suche in einem Ordner, den Cmdr nicht indiziert hat, ebenso.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "370e2bc"
+    "sourceHash": "b6074f3"
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
@@ -2317,7 +2317,7 @@
   },
   "settings.network.permissionWithout": "Ohne diesen Zugriff kann Cmdr weiterhin Dateien auf bereits eingebundenen Freigaben lesen und schreiben, du kannst aber keine neuen Server finden und unsere schnellere Direktverbindung nicht nutzen.",
   "@settings.network.permissionWithout": {
-    "sourceHash": "4beca45"
+    "sourceHash": "a563afd"
   },
   "settings.network.customTimeoutUnit": "Sekunden",
   "@settings.network.customTimeoutUnit": {
@@ -2341,11 +2341,11 @@
   },
   "settings.updates.emailSignupError": "Tut uns leid, die Anmeldung hat gerade nicht geklappt. Erneut versuchen?",
   "@settings.updates.emailSignupError": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "settings.updates.emailPrivacyNote": "Wird nur auf deinem Mac gespeichert. Wir senden sie nie zusammen mit deinen Nutzungsstatistiken, damit diese nicht mit dir verknüpft werden können. Wird nur genutzt, um dich zu erreichen und wahlweise an einen von dir gesendeten Bericht anzuhängen. Um keine E-Mails mehr zu bekommen, nutze den Abmeldelink in jeder Nachricht, die wir senden.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "f22c213"
+    "sourceHash": "cf92795"
   },
   "settings.logging.openLogFile": "Protokolldatei öffnen",
   "@settings.logging.openLogFile": {
@@ -2453,7 +2453,7 @@
   },
   "settings.mediaIndex.chosenFolders.help": "Fotos in diesen Ordnern werden indiziert, egal was du oben auswählst. Wenn du einen Ordner entfernst, wird nichts Neues mehr indiziert; das bereits Indizierte bleibt durchsuchbar.",
   "@settings.mediaIndex.chosenFolders.help": {
-    "sourceHash": "c48ff3f"
+    "sourceHash": "858eb44"
   },
   "settings.mediaIndex.chosenFolders.empty": "Noch keine Ordner. Füge einen hinzu, um seine Fotos zu indizieren.",
   "@settings.mediaIndex.chosenFolders.empty": {
@@ -2485,7 +2485,7 @@
   },
   "settings.servers.trustedHostKeys.description": "Wenn du dich zum ersten Mal mit einem Server verbindest, fragt Cmdr, bevor es dessen Schlüssel vertraut, und merkt sich deine Antwort hier. Gespeicherte Server stehen in der Liste „Server“, nicht auf dieser Seite.",
   "@settings.servers.trustedHostKeys.description": {
-    "sourceHash": "bbbed1a"
+    "sourceHash": "b3a8900"
   },
   "settings.servers.trustedHostKeys.empty": "Bisher vertraust du keinem Schlüssel. Wenn du dich zum ersten Mal mit einem SFTP-Server verbindest, zeigt dir Cmdr dessen Fingerabdruck und fragt nach.",
   "@settings.servers.trustedHostKeys.empty": {

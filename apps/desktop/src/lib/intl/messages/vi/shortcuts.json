@@ -65,11 +65,11 @@
   },
   "shortcuts.conflict.reservedByMacOs": "{combo} đã được macOS giữ riêng ({command}) và sẽ không đến được Cmdr. Hãy chọn một tổ hợp khác.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "sourceHash": "4aad26f"
+    "sourceHash": "76e8ad2"
   },
   "shortcuts.conflict.fixedKey": "{combo} là một phím cố định trong Cmdr ({command}) và không thể gán lại. Hãy chọn một tổ hợp khác.",
   "@shortcuts.conflict.fixedKey": {
-    "sourceHash": "2c2c76f"
+    "sourceHash": "42c3c0e"
   },
   "shortcuts.conflict.systemShortcut": "{combo} thường được macOS dùng ({label}), nên nó có thể không bao giờ đến được Cmdr. Bạn có thể giải phóng nó trong Cài đặt hệ thống > Bàn phím.",
   "@shortcuts.conflict.systemShortcut": {
@@ -192,11 +192,11 @@
   },
   "shortcuts.section.macOsTooltip": "macOS xử lý phím tắt này. Cmdr không thể thay đổi nó.",
   "@shortcuts.section.macOsTooltip": {
-    "sourceHash": "262b2cc"
+    "sourceHash": "fe5e056"
   },
   "shortcuts.section.fixedTooltip": "Phím này được tích hợp sẵn trong Cmdr và không thể thay đổi.",
   "@shortcuts.section.fixedTooltip": {
-    "sourceHash": "f07b460"
+    "sourceHash": "9367bfe"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {

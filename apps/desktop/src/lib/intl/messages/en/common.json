@@ -12,7 +12,7 @@
     "description": "Accessible name of the email field that appears under the attach-email checkbox in the crash-report, error-report, and feedback dialogs once the user ticks it with no address on file. It has no visible label (the checkbox above it carries the wording), so this is what a screen reader announces. Keep it short."
   },
 
-  "common.attachEmailInvalid": "That doesn''t look like an email address",
+  "common.attachEmailInvalid": "That doesn’t look like an email address",
   "@common.attachEmailInvalid": {
     "description": "Inline validation message under the email field in the crash-report, error-report, and feedback dialogs, shown while what the user typed can't be an address (no @, or a space in it). The Send button stays disabled until it's fixed. Gentle and non-blaming, never accusing the user of a mistake; avoid the words \"error\" and \"invalid\"."
   },

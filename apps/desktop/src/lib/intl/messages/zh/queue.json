@@ -37,7 +37,7 @@
   },
   "queue.row.status": "{status, select, queued {等待中} running {进行中} paused {已暂停} done {已完成} cancelled {已取消} failed {无法完成} other {进行中}}",
   "@queue.row.status": {
-    "sourceHash": "8e9ce48"
+    "sourceHash": "d7a7517"
   },
   "queue.row.statusAwaitingAnswer": "需要你回答",
   "@queue.row.statusAwaitingAnswer": {
@@ -117,7 +117,7 @@
   },
   "queue.failureToast.title": "{type, select, copy {无法完成拷贝操作} move {无法完成移动操作} delete {无法完成删除操作} trash {无法完成移到废纸篓的操作} rename {无法完成重命名操作} create_folder {无法完成创建文件夹的操作} create_file {无法完成创建文件的操作} archive_edit {无法完成编辑压缩文件的操作} other {无法完成这项操作}}",
   "@queue.failureToast.title": {
-    "sourceHash": "a55f5df"
+    "sourceHash": "b5f2b47"
   },
   "queue.failureToast.action": "在操作队列中显示",
   "@queue.failureToast.action": {
@@ -125,11 +125,11 @@
   },
   "queue.failureToast.summary": "{count, plural, other {{countText} 项操作无法完成}}",
   "@queue.failureToast.summary": {
-    "sourceHash": "6207914"
+    "sourceHash": "a55d85a"
   },
   "queue.chip.failed": "{count, plural, other {{countText} 项操作无法完成}}。打开操作队列即可查看原因。",
   "@queue.chip.failed": {
-    "sourceHash": "336ad46"
+    "sourceHash": "9c0036b"
   },
   "queue.chip.ariaLabel": "{label}，已完成 {percentText}%。打开操作队列。",
   "@queue.chip.ariaLabel": {

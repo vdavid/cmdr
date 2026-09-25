@@ -156,11 +156,11 @@
   },
   "indexing.rescan.staleIndex": "O índice do seu disco está desatualizado. Parece que o app não foi aberto há um tempo. Examinando o disco de novo para colocar tudo em dia.",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "O registro de alterações de arquivos do sistema não vai longe o suficiente. Examinando o disco de novo para reconstruir o índice.",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "Muitos arquivos mudaram desde a última vez. Examinando o disco de novo em vez de reaplicar as mudanças uma a uma.",
   "@indexing.rescan.replayOverflow": {
@@ -168,7 +168,7 @@
   },
   "indexing.rescan.watcherStartFailed": "Não foi possível iniciar o monitor de alterações de arquivos. Examinando o disco de novo para colocar o índice em dia.",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "A intensa atividade no sistema de arquivos sobrecarregou o buffer de eventos. Examinando o disco de novo para manter tudo preciso.",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -176,7 +176,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "A varredura anterior não terminou (o app pode ter sido fechado). Reiniciando a varredura do zero.",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "Uma rajada de atividade no sistema de arquivos sobrecarregou o canal do monitor. Examinando o disco de novo para manter tudo preciso.",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -204,15 +204,15 @@
   },
   "indexing.firstConnect.silenceDrive": "Não perguntar de novo para este disco",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "Não perguntar de novo para nenhum disco",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "O índice deste disco pode estar desatualizado",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "Enquanto {name} esteve desconectado, arquivos nele podem ter mudado. Os tamanhos das pastas e os resultados da busca podem ficar um pouco imprecisos até você fazer uma nova varredura. O status amarelo ao lado do disco sempre mostra quando isso acontece, e uma nova varredura o atualiza.",
   "@indexing.staleDialog.body": {
@@ -220,11 +220,11 @@
   },
   "indexing.staleDialog.titlePhone": "O índice deste celular pode estar desatualizado",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} não avisa o Cmdr quando os arquivos do celular mudam, então o Cmdr mantém o índice atualizado com as mudanças feitas pelo próprio Cmdr. As mudanças feitas no celular, como fotos novas, aparecem nos tamanhos das pastas e na busca depois de uma nova varredura. O status amarelo ao lado do celular fica como lembrete.",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "Nunca mais mostrar",
   "@indexing.staleDialog.neverShowAgain": {
@@ -254,7 +254,7 @@
   },
   "indexing.enrich.pausedIdle": "Aguardando o Mac ficar ocioso",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "Pausado, retoma ao reconectar",
   "@indexing.enrich.pausedDisconnected": {

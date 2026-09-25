@@ -44,13 +44,13 @@ describe('TransferErrorDialog: typed-error rendering', () => {
   it('renders the FE-derived title for the typed error', async () => {
     const target = mountDialog({ error: { type: 'source_not_found', path: '/p' } })
     await tick()
-    expect(target.textContent).toContain("Couldn't find the file")
+    expect(target.textContent).toContain('Couldn’t find the file')
   })
 
   it('renders message and suggestion from the typed error', async () => {
     const target = mountDialog({ error: { type: 'destination_exists', path: '/dest/file.txt' } })
     await tick()
-    expect(target.textContent).toContain("There's already a file with this name at the destination.")
+    expect(target.textContent).toContain('There’s already a file with this name at the destination.')
     expect(target.textContent).toContain('Choose a different name')
   })
 

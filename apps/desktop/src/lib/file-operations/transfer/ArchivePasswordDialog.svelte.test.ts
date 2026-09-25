@@ -122,9 +122,9 @@ describe('ArchivePasswordDialog — wrong-attempt re-prompt', () => {
     })
     await settle()
 
-    expect(target.querySelector('#archive-password-title')?.textContent).toBe("That didn't work")
+    expect(target.querySelector('#archive-password-title')?.textContent).toBe('That didn’t work')
     const message = target.querySelector('#archive-password-message')?.textContent ?? ''
-    expect(message).toContain("didn't unlock")
+    expect(message).toContain('didn’t unlock')
     expect(message).toContain('photos.zip')
 
     const input = target.querySelector('input[type="password"]') as HTMLInputElement

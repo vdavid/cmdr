@@ -165,12 +165,12 @@
     "description": "Title of the periodic reminder modal shown to personal-license users. Warm and grateful, not nagging. 'Cmdr' is the product name; do NOT translate.",
     "screenshot": "commercial-reminder.png"
   },
-  "licensing.commercialReminder.usingPersonal": "You''re using a Personal license.",
+  "licensing.commercialReminder.usingPersonal": "You’re using a Personal license.",
   "@licensing.commercialReminder.usingPersonal": {
     "description": "First line of the commercial-reminder modal stating the current license tier. 'Personal' is a license tier name; keep it capitalized and consistent with the other license labels.",
     "screenshot": "commercial-reminder.png"
   },
-  "licensing.commercialReminder.askCommercial": "If you''re using Cmdr at work, please get a Commercial license to stay compliant.",
+  "licensing.commercialReminder.askCommercial": "If you’re using Cmdr at work, please get a Commercial license to stay compliant.",
   "@licensing.commercialReminder.askCommercial": {
     "description": "Body of the commercial-reminder modal politely asking work users to buy a commercial license. 'Cmdr' is the product name; 'Commercial' is a license tier name.",
     "screenshot": "commercial-reminder.png"
@@ -211,7 +211,7 @@
     },
     "screenshot": "expiration-organization.png"
   },
-  "licensing.expiration.info": "Cmdr is now running in personal use mode. If you''re still using it for work, please renew your license.",
+  "licensing.expiration.info": "Cmdr is now running in personal use mode. If you’re still using it for work, please renew your license.",
   "@licensing.expiration.info": {
     "description": "Reassuring follow-up in the expiration modal explaining the app keeps working (now in personal mode) and inviting renewal. 'Cmdr' is the product name; do NOT translate.",
     "screenshot": "expiration-organization.png"
@@ -242,7 +242,7 @@
     "description": "Title of the license dialog when no license is present (the key-entry form).",
     "screenshot": "license-key-dialog.png"
   },
-  "licensing.dialog.serverInvalidBanner": "This key couldn''t be verified with the server. Please try a different key or email us at <supportEmail>{email}</supportEmail>.",
+  "licensing.dialog.serverInvalidBanner": "This key couldn’t be verified with the server. Please try a different key or email us at <supportEmail>{email}</supportEmail>.",
   "@licensing.dialog.serverInvalidBanner": {
     "description": "Warning banner in the license-details view shown when a stored key was later rejected by the server during re-validation. <supportEmail> wraps the inline support-email link.",
     "placeholders": {
@@ -332,7 +332,7 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.dialog.pendingHint": "We''ll verify with the server automatically within {days} days.",
+  "licensing.dialog.pendingHint": "We’ll verify with the server automatically within {days} days.",
   "@licensing.dialog.pendingHint": {
     "description": "Hint under the 'Not yet verified' validity row reassuring the user the app will re-check automatically soon. Always 2 or more days in practice, so plain plural is fine.",
     "placeholders": {
@@ -371,7 +371,7 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.dialog.enterPrompt": "Paste your license key from the email you received after purchase. Don''t have one yet? <getLicense>Get a license</getLicense>.",
+  "licensing.dialog.enterPrompt": "Paste your license key from the email you received after purchase. Don’t have one yet? <getLicense>Get a license</getLicense>.",
   "@licensing.dialog.enterPrompt": {
     "description": "Instruction above the key-entry field telling the user where to find their key. <getLicense> wraps the inline link to the pricing page.",
     "screenshot": "license-key-dialog.png"
@@ -381,7 +381,7 @@
     "description": "Placeholder text inside the license-key input showing the short-code format. 'CMDR-ABCD-EFGH-1234' is a format example and must NOT be translated; only the 'Example:' label is translatable.",
     "screenshot": "license-key-dialog.png"
   },
-  "licensing.dialog.retryExhausted": "We''ve tried {count} times and it didn''t work. We''re sorry for the trouble. Please drop us a message at <supportEmail>{email}</supportEmail> and we''ll sort it out.",
+  "licensing.dialog.retryExhausted": "We’ve tried {count} times and it didn’t work. We’re sorry for the trouble. Please drop us a message at <supportEmail>{email}</supportEmail> and we’ll sort it out.",
   "@licensing.dialog.retryExhausted": {
     "description": "Help text shown after several failed activation attempts (3 or more) against a server-rejected key, apologizing and pointing to support. Warm and apologetic. <supportEmail> wraps the inline support-email link.",
     "placeholders": {
@@ -391,7 +391,7 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.dialog.serverInvalidHelp": "If you believe this is a mistake, email us at <supportEmail>{email}</supportEmail> and we''ll sort it out.",
+  "licensing.dialog.serverInvalidHelp": "If you believe this is a mistake, email us at <supportEmail>{email}</supportEmail> and we’ll sort it out.",
   "@licensing.dialog.serverInvalidHelp": {
     "description": "Help text shown after a server-rejected key (fewer than 3 attempts) inviting the user to contact support. <supportEmail> wraps the inline support-email link.",
     "placeholders": {
@@ -452,7 +452,7 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.dialog.networkFallbackError": "Couldn''t verify your license with the server. Please try again later.",
+  "licensing.dialog.networkFallbackError": "Couldn’t verify your license with the server. Please try again later.",
   "@licensing.dialog.networkFallbackError": {
     "description": "Error shown when the server can't be reached and the license type doesn't allow an optimistic fallback. Conversational; never use the words 'error' or 'failed'.",
     "screenshot": "license-key-dialog.png",
@@ -473,7 +473,7 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.dialog.serverInvalidError": "We know this key but when we checked it with our payment provider, it didn''t recognize it. This can happen if the purchase was refunded or not cleared.",
+  "licensing.dialog.serverInvalidError": "We know this key but when we checked it with our payment provider, it didn’t recognize it. This can happen if the purchase was refunded or not cleared.",
   "@licensing.dialog.serverInvalidError": {
     "description": "Inline error shown when a key is cryptographically valid but the payment provider doesn't recognize the transaction (e.g. refunded). Conversational and non-blaming; never use the words 'error' or 'failed'.",
     "screenshot": "license-key-dialog.png",
@@ -491,7 +491,7 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.dialog.mailtoBody": "Hi,\n\nI''m having trouble activating my license key:\n{key}\n\n",
+  "licensing.dialog.mailtoBody": "Hi,\n\nI’m having trouble activating my license key:\n{key}\n\n",
   "@licensing.dialog.mailtoBody": {
     "description": "Prefilled body of the support email opened from the license dialog's contact links. Keep the literal newline escapes (\\n) for line breaks; {key} is filled in with the user's license key.",
     "placeholders": {
@@ -500,7 +500,7 @@
     "screenshot": "license-key-dialog.png",
     "screenshotNote": "The license dialog. This shows its key-entry state; your string belongs to one of its other states (the details view for a committed license, the verification banners, or an error message), which render in this same dialog."
   },
-  "licensing.error.badSignature": "This license key failed our signature verification, meaning that it doesn''t look like a valid key.",
+  "licensing.error.badSignature": "This license key failed our signature verification, meaning that it doesn’t look like a valid key.",
   "@licensing.error.badSignature": {
     "description": "Activation-error message when the key fails Ed25519 signature verification. Paired with its help hint. Conversational; never use the words 'error' or 'failed' ('failed our signature verification' here describes the check result, kept from the original copy)."
   },
@@ -516,7 +516,7 @@
   "@licensing.error.badFormatHint": {
     "description": "Help hint paired with the bad-format activation error, describing the two valid key shapes. 'CMDR-XXXX-XXXX-XXXX' is a format example and must NOT be translated."
   },
-  "licensing.error.shortCodeNotFound": "This license looks good, but we looked hard and couldn''t find it in our database.",
+  "licensing.error.shortCodeNotFound": "This license looks good, but we looked hard and couldn’t find it in our database.",
   "@licensing.error.shortCodeNotFound": {
     "description": "Activation-error message when a well-formed short code isn't found server-side. Friendly and slightly apologetic. Paired with its help hint."
   },
@@ -524,7 +524,7 @@
   "@licensing.error.shortCodeNotFoundHint": {
     "description": "Help hint paired with the short-code-not-found error, asking the user to re-check the pasted key."
   },
-  "licensing.error.network": "Ouch, we couldn''t reach the license server this time.",
+  "licensing.error.network": "Ouch, we couldn’t reach the license server this time.",
   "@licensing.error.network": {
     "description": "Activation-error message when the license server is unreachable. Light, friendly tone ('Ouch'). Paired with its help hint; never use the words 'error' or 'failed'."
   },
@@ -532,7 +532,7 @@
   "@licensing.error.networkHint": {
     "description": "Help hint paired with the network activation error, suggesting a connection check and retry."
   },
-  "licensing.error.server": "Hmm, the license server responded with something weird. We''re sorry about that.",
+  "licensing.error.server": "Hmm, the license server responded with something weird. We’re sorry about that.",
   "@licensing.error.server": {
     "description": "Activation-error message when the license server returns an unexpected response. Casual and apologetic ('Hmm'). Paired with its help hint."
   },
@@ -544,7 +544,7 @@
   "@licensing.error.generic": {
     "description": "Fallback activation-error message for an unclassified failure. Conversational; never use the words 'error' or 'failed'."
   },
-  "licensing.error.genericHint": "Please try again. If the problem persists, email us and we''ll help.",
+  "licensing.error.genericHint": "Please try again. If the problem persists, email us and we’ll help.",
   "@licensing.error.genericHint": {
     "description": "Help hint paired with the generic activation error, suggesting a retry and offering email support."
   },

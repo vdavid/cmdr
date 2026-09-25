@@ -180,7 +180,7 @@ describe('volumeRowMenu', () => {
       type: 'toggle',
       label: 'Reconnect automatically',
       checked: false,
-      tooltip: expect.stringContaining("doesn't make Cmdr connect at startup") as unknown,
+      tooltip: expect.stringContaining('doesn’t make Cmdr connect at startup') as unknown,
     })
   })
 

@@ -21,7 +21,7 @@
   },
   "errors.listing.notEnoughMemory.suggestion": "可以这样试试：\n- 关掉一些 App 来释放内存，尤其是占用资源较多的（开了很多标签页的浏览器、编辑器、媒体类 App）\n- 在**活动监视器**里查看内存占用（用聚焦搜索打开它）\n- 再次进入这里重试",
   "@errors.listing.notEnoughMemory.suggestion": {
-    "sourceHash": "26a7a46"
+    "sourceHash": "d05a4e4"
   },
   "errors.listing.resourceBusy.title": "资源正忙",
   "@errors.listing.resourceBusy.title": {
@@ -29,7 +29,7 @@
   },
   "errors.listing.resourceBusy.explanation": "Cmdr 无法访问 `{path}`，因为另一个 App 或进程正在独占使用它。这通常是暂时的。",
   "@errors.listing.resourceBusy.explanation": {
-    "sourceHash": "8c7bdd4"
+    "sourceHash": "18a07d9"
   },
   "errors.listing.resourceBusy.suggestion": "稍等片刻，再次进入这里。如果一直这样，看看是哪个 App 可能一直打开着这个文件（在终端里运行 `lsof +D <folder-path>`，查看哪些进程正在使用这个文件夹）。",
   "@errors.listing.resourceBusy.suggestion": {
@@ -53,11 +53,11 @@
   },
   "errors.listing.networkDown.explanation": "你的 Mac 网络连接已断开，所以 Cmdr 无法连到这个宗卷。可能是 Wi-Fi 断开了、以太网线没插好，或者网络接口被停用了。",
   "@errors.listing.networkDown.explanation": {
-    "sourceHash": "e2106be"
+    "sourceHash": "179f8bb"
   },
   "errors.listing.networkDown.suggestion": "可以这样试试：\n- 在 **{system_settings} > 网络**里查看 Wi-Fi 或以太网状态\n- 如果用的是 Wi-Fi，试试关掉再打开\n- 在终端里运行 `ping google.com` 测试连接\n- 恢复联网后，再次进入这里",
   "@errors.listing.networkDown.suggestion": {
-    "sourceHash": "3fe671d"
+    "sourceHash": "bf4b517"
   },
   "errors.listing.networkConnectionDropped.title": "网络连接已断开",
   "@errors.listing.networkConnectionDropped.title": {
@@ -69,7 +69,7 @@
   },
   "errors.listing.networkConnectionDropped.suggestion": "可以这样试试：\n- 检查你的网络连接\n- 如果在用 VPN，确认它还连着\n- 再次进入这里重试",
   "@errors.listing.networkConnectionDropped.suggestion": {
-    "sourceHash": "17c6bb8"
+    "sourceHash": "228b9a8"
   },
   "errors.listing.connectionDropped.title": "连接已断开",
   "@errors.listing.connectionDropped.title": {
@@ -81,7 +81,7 @@
   },
   "errors.listing.connectionDropped.suggestion": "可以这样试试：\n- 确认服务器在运行且响应正常\n- 检查你的网络连接\n- 再次进入这里重试",
   "@errors.listing.connectionDropped.suggestion": {
-    "sourceHash": "d8fba7b"
+    "sourceHash": "3e3446f"
   },
   "errors.listing.connectionReset.title": "连接已重置",
   "@errors.listing.connectionReset.title": {
@@ -93,7 +93,7 @@
   },
   "errors.listing.connectionReset.suggestion": "可以这样试试：\n- 确认服务器在运行\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 再次进入这里重试",
   "@errors.listing.connectionReset.suggestion": {
-    "sourceHash": "0ee3d15"
+    "sourceHash": "d980663"
   },
   "errors.listing.connectionTimedOutErrno.title": "连接超时",
   "@errors.listing.connectionTimedOutErrno.title": {
@@ -101,11 +101,11 @@
   },
   "errors.listing.connectionTimedOutErrno.explanation": "Cmdr 尝试读取这个文件夹，但连接没能及时响应。这通常意味着服务器或设备速度慢、无法连到，或你和它之间的网络拥堵了。",
   "@errors.listing.connectionTimedOutErrno.explanation": {
-    "sourceHash": "33612d4"
+    "sourceHash": "c088c41"
   },
   "errors.listing.connectionTimedOutErrno.suggestion": "可以这样试试：\n- 确认设备或服务器已开机且可达\n- 检查你的 Wi-Fi 或以太网连接\n- 在终端里试试 `ping <hostname>`，测试连通性\n- 再次进入这里重试",
   "@errors.listing.connectionTimedOutErrno.suggestion": {
-    "sourceHash": "4172538"
+    "sourceHash": "230ef64"
   },
   "errors.listing.hostDown.title": "主机已关闭",
   "@errors.listing.hostDown.title": {
@@ -113,11 +113,11 @@
   },
   "errors.listing.hostDown.explanation": "远程主机（托管这个宗卷的电脑或服务器）没有响应。它可能已关机、在睡眠，或暂时无法连到。",
   "@errors.listing.hostDown.explanation": {
-    "sourceHash": "cf59cab"
+    "sourceHash": "e175712"
   },
   "errors.listing.hostDown.suggestion": "可以这样试试：\n- 确认主机已开机并连入网络\n- 在终端里试试 `ping <hostname>`，测试它是否可达\n- 如果是 NAS 或服务器，检查它的管理界面\n- 主机恢复后，再次进入这里",
   "@errors.listing.hostDown.suggestion": {
-    "sourceHash": "4a09e8e"
+    "sourceHash": "7a8ecd8"
   },
   "errors.listing.staleConnection.title": "连接已失效",
   "@errors.listing.staleConnection.title": {
@@ -129,7 +129,7 @@
   },
   "errors.listing.staleConnection.suggestion": "可以这样试试：\n- 离开这个文件夹再回来\n- 如果这是网络驱动器，试试在 Finder 里取消挂载再重新挂载\n- 确认托管这个文件夹的服务器在运行\n- 在终端里运行 `mount`，查看当前已挂载的宗卷",
   "@errors.listing.staleConnection.suggestion": {
-    "sourceHash": "05960c8"
+    "sourceHash": "73de81d"
   },
   "errors.listing.lockUnavailable.title": "文件锁不足",
   "@errors.listing.lockUnavailable.title": {
@@ -141,7 +141,7 @@
   },
   "errors.listing.lockUnavailable.suggestion": "可以这样试试：\n- 关掉一些 App，尤其是会处理很多文件的（编辑器、IDE、备份工具）\n- 在终端里运行 `lsof | wc -l`，查看所有 App 一共打开了多少文件\n- 如果问题一直出现，可以在终端里用 `ulimit -n 4096` 提高上限\n- 再次进入这里重试",
   "@errors.listing.lockUnavailable.suggestion": {
-    "sourceHash": "f9c9f8d"
+    "sourceHash": "a9f23bd"
   },
   "errors.listing.cancelledErrno.title": "已取消",
   "@errors.listing.cancelledErrno.title": {
@@ -153,7 +153,7 @@
   },
   "errors.listing.cancelledErrno.suggestion": "想重试时，随时再次进入这里。",
   "@errors.listing.cancelledErrno.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.notPermitted.title": "没有权限",
   "@errors.listing.notPermitted.title": {
@@ -161,11 +161,11 @@
   },
   "errors.listing.notPermitted.explanation": "macOS 阻止了 Cmdr 访问 `{path}`。这通常意味着该文件夹受 macOS 安全策略保护，或 Cmdr 还没获得相应权限。",
   "@errors.listing.notPermitted.explanation": {
-    "sourceHash": "ddf8a5d"
+    "sourceHash": "e28dd0e"
   },
   "errors.listing.notPermitted.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 如果这是受系统保护的文件夹（比如系统目录），你可能需要在 {privacy_and_security} 里授予 Cmdr **{full_disk_access}**\n- 在终端里对这个路径运行 `ls -la`，查看所有者和权限",
   "@errors.listing.notPermitted.suggestion": {
-    "sourceHash": "32e9d74"
+    "sourceHash": "bbaa904"
   },
   "errors.listing.pathNotFoundErrno.title": "找不到路径",
   "@errors.listing.pathNotFoundErrno.title": {
@@ -173,11 +173,11 @@
   },
   "errors.listing.pathNotFoundErrno.explanation": "Cmdr 找不到 `{path}`。在 Cmdr 尝试访问它时，它可能被移动、重命名或删除了。",
   "@errors.listing.pathNotFoundErrno.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.pathNotFoundErrno.suggestion": "可以这样试试：\n- 确认路径拼写无误\n- 如果它在网络驱动器上，确认驱动器已连接且共享可访问\n- 进入上一级文件夹，在那里找找这个项目\n- 在终端里对上一级文件夹运行 `ls -la`，看看里面有什么",
   "@errors.listing.pathNotFoundErrno.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.noPermissionErrno.title": "无访问权限",
   "@errors.listing.noPermissionErrno.title": {
@@ -185,11 +185,11 @@
   },
   "errors.listing.noPermissionErrno.explanation": "Cmdr 没有权限访问 `{path}`。macOS 控制着哪些 App 能访问哪些文件夹，而 Cmdr 还没获得这个文件夹的访问权限。",
   "@errors.listing.noPermissionErrno.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.noPermissionErrno.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点击它，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限",
   "@errors.listing.noPermissionErrno.suggestion": {
-    "sourceHash": "ea316e7"
+    "sourceHash": "4b513ef"
   },
   "errors.listing.alreadyExistsErrno.title": "已存在",
   "@errors.listing.alreadyExistsErrno.title": {
@@ -197,7 +197,7 @@
   },
   "errors.listing.alreadyExistsErrno.explanation": "`{path}` 处已经有一个文件或文件夹，所以 Cmdr 无法在那里新建。",
   "@errors.listing.alreadyExistsErrno.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExistsErrno.suggestion": "重命名已有的项目，或给新项目取个不同的名字。",
   "@errors.listing.alreadyExistsErrno.suggestion": {
@@ -209,7 +209,7 @@
   },
   "errors.listing.crossDeviceOperation.explanation": "Cmdr 无法直接移动这个项目，因为来源和目标在不同的宗卷上（比如内置驱动器和 U 盘）。跨宗卷移动需要先拷贝数据，再删除原件。",
   "@errors.listing.crossDeviceOperation.explanation": {
-    "sourceHash": "4762369"
+    "sourceHash": "a6742d3"
   },
   "errors.listing.crossDeviceOperation.suggestion": "把这个项目拷贝到目标，而不是移动它。Cmdr 会自动处理拷贝。",
   "@errors.listing.crossDeviceOperation.suggestion": {
@@ -221,7 +221,7 @@
   },
   "errors.listing.notAFolder.explanation": "Cmdr 以为 `{path}` 是文件夹，但它其实是文件。如果最近有什么被重命名或替换过，可能会这样。",
   "@errors.listing.notAFolder.explanation": {
-    "sourceHash": "45d8f76"
+    "sourceHash": "7ab65a3"
   },
   "errors.listing.notAFolder.suggestion": "检查路径，确认它指向的是文件夹，而不是文件。",
   "@errors.listing.notAFolder.suggestion": {
@@ -233,7 +233,7 @@
   },
   "errors.listing.isAFolderErrno.explanation": "Cmdr 以为 `{path}` 是文件，但它其实是文件夹。如果最近有什么被重命名或替换过，可能会这样。",
   "@errors.listing.isAFolderErrno.explanation": {
-    "sourceHash": "009d220"
+    "sourceHash": "8c3b294"
   },
   "errors.listing.isAFolderErrno.suggestion": "检查路径，确认它指向的是文件，而不是文件夹。",
   "@errors.listing.isAFolderErrno.suggestion": {
@@ -245,11 +245,11 @@
   },
   "errors.listing.diskFullErrno.explanation": "这个宗卷上的可用空间不足，无法完成操作。",
   "@errors.listing.diskFullErrno.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.diskFullErrno.suggestion": "可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点击程序坞里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间\n- 在 **{system_settings} > 通用 > 储存空间**里查看空间占用明细",
   "@errors.listing.diskFullErrno.suggestion": {
-    "sourceHash": "bf54d66"
+    "sourceHash": "f2eb27b"
   },
   "errors.listing.readOnlyVolumeErrno.title": "只读宗卷",
   "@errors.listing.readOnlyVolumeErrno.title": {
@@ -257,11 +257,11 @@
   },
   "errors.listing.readOnlyVolumeErrno.explanation": "这个宗卷以只读方式挂载，所以 Cmdr 无法对它做改动。可能是设备有物理写保护开关、磁盘映像以只读方式挂载，或文件系统不支持写入。",
   "@errors.listing.readOnlyVolumeErrno.explanation": {
-    "sourceHash": "cb19e8c"
+    "sourceHash": "e6bcf10"
   },
   "errors.listing.readOnlyVolumeErrno.suggestion": "可以这样试试：\n- 如果设备有物理写保护开关（SD 卡常见），把它拨到关闭\n- 如果这是磁盘映像，以可写方式重新挂载\n- 否则，先把文件拷贝到一个可写的位置",
   "@errors.listing.readOnlyVolumeErrno.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.notSupportedErrno.title": "不支持",
   "@errors.listing.notSupportedErrno.title": {
@@ -269,11 +269,11 @@
   },
   "errors.listing.notSupportedErrno.explanation": "这个文件系统不支持该操作。不同的文件系统（比如 FAT32、NTFS 或网络共享）支持的功能不同，而这个不支持 Cmdr 想做的事。",
   "@errors.listing.notSupportedErrno.explanation": {
-    "sourceHash": "198aa15"
+    "sourceHash": "a0ca28f"
   },
   "errors.listing.notSupportedErrno.suggestion": "换个方式试试，或用 Finder 来完成这项操作。如果你在用外置驱动器，它可能格式化成了有限制的文件系统（比如 FAT32 无法存储大于 4 GB 的文件）。",
   "@errors.listing.notSupportedErrno.suggestion": {
-    "sourceHash": "169d5cf"
+    "sourceHash": "de64ad5"
   },
   "errors.listing.networkUnreachable.title": "网络无法连到",
   "@errors.listing.networkUnreachable.title": {
@@ -281,11 +281,11 @@
   },
   "errors.listing.networkUnreachable.explanation": "Cmdr 无法连到这个宗卷所在的网络。这通常意味着你没连到正确的网络，或 VPN 没在运行。",
   "@errors.listing.networkUnreachable.explanation": {
-    "sourceHash": "f92dedc"
+    "sourceHash": "d3c1975"
   },
   "errors.listing.networkUnreachable.suggestion": "可以这样试试：\n- 检查你的 Wi-Fi 或以太网连接\n- 确认你连的是正确的网络（比如公司 Wi-Fi 或 VPN）\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 连上之后，再次进入这里",
   "@errors.listing.networkUnreachable.suggestion": {
-    "sourceHash": "b1754b4"
+    "sourceHash": "7feb3cb"
   },
   "errors.listing.connectionRefused.title": "连接被拒绝",
   "@errors.listing.connectionRefused.title": {
@@ -293,11 +293,11 @@
   },
   "errors.listing.connectionRefused.explanation": "服务器主动拒绝了连接。这通常意味着服务器软件（比如 SMB 或 NFS 服务）没在运行，或它被配置成拒绝来自这台 Mac 的连接。",
   "@errors.listing.connectionRefused.explanation": {
-    "sourceHash": "537cf4e"
+    "sourceHash": "88e1ac7"
   },
   "errors.listing.connectionRefused.suggestion": "可以这样试试：\n- 确认服务器在运行，且它的文件共享服务已启用\n- 核对服务器地址和端口是否正确\n- 在终端里试试 `ping <hostname>`，看看服务器到底能不能连到\n- 再次进入这里重试",
   "@errors.listing.connectionRefused.suggestion": {
-    "sourceHash": "4afa12d"
+    "sourceHash": "17decc3"
   },
   "errors.listing.symlinkLoopErrno.title": "符号链接死循环",
   "@errors.listing.symlinkLoopErrno.title": {
@@ -305,11 +305,11 @@
   },
   "errors.listing.symlinkLoopErrno.explanation": "Cmdr 在 `{path}` 发现了一串首尾相连的符号链接（指向其他快捷方式的快捷方式）。顺着这些链接会绕圈，所以 Cmdr 到不了真正的文件或文件夹。",
   "@errors.listing.symlinkLoopErrno.explanation": {
-    "sourceHash": "cb728c1"
+    "sourceHash": "4157be6"
   },
   "errors.listing.symlinkLoopErrno.suggestion": "可以这样试试：\n- 在终端里对这个路径运行 `ls -la`，看看这些符号链接指向哪里\n- 找到并修复造成死循环的那个链接\n- 如果不确定是哪个链接有问题，用 `readlink <path>` 一个一个顺着查",
   "@errors.listing.symlinkLoopErrno.suggestion": {
-    "sourceHash": "0a439fb"
+    "sourceHash": "eed9a5a"
   },
   "errors.listing.nameTooLongErrno.title": "名称过长",
   "@errors.listing.nameTooLongErrno.title": {
@@ -317,7 +317,7 @@
   },
   "errors.listing.nameTooLongErrno.explanation": "文件或文件夹的名称超过了系统的上限（多数 Mac 宗卷上是 255 个字符）。完整路径（所有文件夹加起来）超过系统的最大长度时，也会这样。",
   "@errors.listing.nameTooLongErrno.explanation": {
-    "sourceHash": "d6f7a03"
+    "sourceHash": "8b9a6ff"
   },
   "errors.listing.nameTooLongErrno.suggestion": "把这个项目重命名成更短的名称。如果名称看起来没问题，那可能是完整路径（包含所有上级文件夹）太长了。试试把它移到更短的路径下。",
   "@errors.listing.nameTooLongErrno.suggestion": {
@@ -329,11 +329,11 @@
   },
   "errors.listing.hostUnreachable.explanation": "Cmdr 找不到通往这个宗卷所在主机的网络路由。这通常意味着主机在另一个网络上、被防火墙挡着，或路由配置需要更新。",
   "@errors.listing.hostUnreachable.explanation": {
-    "sourceHash": "3e5e6f9"
+    "sourceHash": "184b0fc"
   },
   "errors.listing.hostUnreachable.suggestion": "可以这样试试：\n- 确认主机已开机且在同一个网络上\n- 如果需要 VPN 才能连到它，确认 VPN 已连接\n- 在终端里试试 `ping <hostname>`，测试连通性\n- 主机可连到后，再次进入这里",
   "@errors.listing.hostUnreachable.suggestion": {
-    "sourceHash": "8e7a1cf"
+    "sourceHash": "c222f76"
   },
   "errors.listing.folderNotEmpty.title": "文件夹非空",
   "@errors.listing.folderNotEmpty.title": {
@@ -341,7 +341,7 @@
   },
   "errors.listing.folderNotEmpty.explanation": "Cmdr 无法移除 `{path}`，因为它里面还有文件或子文件夹。系统要求文件夹为空，才能用这种方式移除。",
   "@errors.listing.folderNotEmpty.explanation": {
-    "sourceHash": "c16ac41"
+    "sourceHash": "26871a4"
   },
   "errors.listing.folderNotEmpty.suggestion": "先删除文件夹里的内容，再试着移除文件夹。",
   "@errors.listing.folderNotEmpty.suggestion": {
@@ -353,11 +353,11 @@
   },
   "errors.listing.quotaExceeded.explanation": "你已达到这个宗卷上的磁盘配额（分配给你账户的最大空间）。这在共享服务器和网络驱动器上很常见，管理员会为每个用户设置上限。",
   "@errors.listing.quotaExceeded.explanation": {
-    "sourceHash": "6fa75c0"
+    "sourceHash": "b9b0b0e"
   },
   "errors.listing.quotaExceeded.suggestion": "可以这样试试：\n- 删除这个宗卷上不再需要的文件，腾出空间\n- 请系统管理员调高你的配额\n- 在终端里运行 `quota`，查看你当前的用量和上限",
   "@errors.listing.quotaExceeded.suggestion": {
-    "sourceHash": "e24428a"
+    "sourceHash": "1b5f0df"
   },
   "errors.listing.authRequiredEauth.title": "需要认证",
   "@errors.listing.authRequiredEauth.title": {
@@ -365,11 +365,11 @@
   },
   "errors.listing.authRequiredEauth.explanation": "Cmdr 无法通过这个宗卷的认证。你保存的凭证可能已过期，或服务器拒绝了当前的登录。",
   "@errors.listing.authRequiredEauth.explanation": {
-    "sourceHash": "7b51115"
+    "sourceHash": "654cbb2"
   },
   "errors.listing.authRequiredEauth.suggestion": "可以这样试试：\n- 断开并重新连接这个宗卷，再次输入你的用户名和密码\n- 确认你的密码没有更改或过期\n- 如果这是公司的服务器，请联系你的 IT 团队",
   "@errors.listing.authRequiredEauth.suggestion": {
-    "sourceHash": "9ba659e"
+    "sourceHash": "3469202"
   },
   "errors.listing.authRequiredEneedauth.title": "需要认证",
   "@errors.listing.authRequiredEneedauth.title": {
@@ -381,7 +381,7 @@
   },
   "errors.listing.authRequiredEneedauth.suggestion": "可以这样试试：\n- 在 Finder 里断开并重新连接这个宗卷\n- 在提示时输入你的用户名和密码\n- 如果不确定凭证，请联系这台服务器的管理员",
   "@errors.listing.authRequiredEneedauth.suggestion": {
-    "sourceHash": "0b61f53"
+    "sourceHash": "a90b520"
   },
   "errors.listing.devicePoweredOff.title": "设备已关机",
   "@errors.listing.devicePoweredOff.title": {
@@ -389,7 +389,7 @@
   },
   "errors.listing.devicePoweredOff.explanation": "设备已关机或进入深度睡眠，所以 Cmdr 无法与它通信。",
   "@errors.listing.devicePoweredOff.explanation": {
-    "sourceHash": "ae9c029"
+    "sourceHash": "782a157"
   },
   "errors.listing.devicePoweredOff.suggestion": "打开设备，等它完全启动，然后再次进入这里。",
   "@errors.listing.devicePoweredOff.suggestion": {
@@ -401,11 +401,11 @@
   },
   "errors.listing.attributeNotFound.explanation": "Cmdr 尝试读取一个这个项目上不存在的文件属性（标签或权限之类的额外元数据）。文件系统不支持扩展属性，或该属性已被移除时，可能会这样。",
   "@errors.listing.attributeNotFound.explanation": {
-    "sourceHash": "ee5c696"
+    "sourceHash": "ee39dd8"
   },
   "errors.listing.attributeNotFound.suggestion": "这个文件系统可能不支持 Cmdr 需要的元数据。换一个宗卷试试这项操作，或先把文件拷贝到你 Mac 的内置驱动器上。",
   "@errors.listing.attributeNotFound.suggestion": {
-    "sourceHash": "3c357ac"
+    "sourceHash": "463ee44"
   },
   "errors.listing.diskReadProblem.title": "磁盘读取问题",
   "@errors.listing.diskReadProblem.title": {
@@ -417,7 +417,7 @@
   },
   "errors.listing.diskReadProblem.suggestion": "可以这样试试：\n- 确认磁盘或设备仍正确连接\n- 打开**磁盘工具**（用聚焦搜索打开它），对这个宗卷运行**急救**\n- 如果一直这样，请尽快备份你的数据。磁盘可能正在出现坏扇区，或开始老化。",
   "@errors.listing.diskReadProblem.suggestion": {
-    "sourceHash": "792c921"
+    "sourceHash": "614a5fe"
   },
   "errors.listing.unexpectedSystemResponse.title": "系统返回了意外结果",
   "@errors.listing.unexpectedSystemResponse.title": {
@@ -425,11 +425,11 @@
   },
   "errors.listing.unexpectedSystemResponse.explanation": "系统对这项操作返回了意外的结果。宗卷的文件系统存在不一致，或宗卷处于异常状态时，可能会这样。",
   "@errors.listing.unexpectedSystemResponse.explanation": {
-    "sourceHash": "eeddaa7"
+    "sourceHash": "a834896"
   },
   "errors.listing.unexpectedSystemResponse.suggestion": "可以这样试试：\n- 再次进入这里重试\n- 如果一直这样，打开**磁盘工具**（用聚焦搜索打开它），对这个宗卷运行**急救**，检查文件系统问题",
   "@errors.listing.unexpectedSystemResponse.suggestion": {
-    "sourceHash": "4e5a9bb"
+    "sourceHash": "f63d225"
   },
   "errors.listing.deviceProblem.title": "设备问题",
   "@errors.listing.deviceProblem.title": {
@@ -441,11 +441,11 @@
   },
   "errors.listing.deviceProblem.suggestion": "可以这样试试：\n- 断开并重新连接设备\n- 换一个 USB 端口或线缆\n- 如果是外置驱动器，试着把它接到另一台电脑上，看看问题是否随设备一起出现\n- 如果一直这样，设备可能需要维修或更换",
   "@errors.listing.deviceProblem.suggestion": {
-    "sourceHash": "2cbb1cf"
+    "sourceHash": "5ce793b"
   },
   "errors.listing.couldntReadUnknown.title": "无法读取这个文件夹",
   "@errors.listing.couldntReadUnknown.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.couldntReadUnknown.explanation": "Cmdr 在读取 `{path}` 时遇到了意外问题。查看下方的技术详情，里面有具体的系统代码，有助于排查。",
   "@errors.listing.couldntReadUnknown.explanation": {
@@ -453,7 +453,7 @@
   },
   "errors.listing.couldntReadUnknown.suggestion": "可以这样试试：\n- 确认磁盘或设备仍连接着\n- 再次进入这里重试\n- 如果一直这样，打开**磁盘工具**，对这个宗卷运行**急救**",
   "@errors.listing.couldntReadUnknown.suggestion": {
-    "sourceHash": "0073987"
+    "sourceHash": "5155626"
   },
   "errors.listing.notFound.title": "找不到路径",
   "@errors.listing.notFound.title": {
@@ -461,11 +461,11 @@
   },
   "errors.listing.notFound.explanation": "Cmdr 找不到 `{path}`。在 Cmdr 尝试访问它时，它可能被移动、重命名或删除了。",
   "@errors.listing.notFound.explanation": {
-    "sourceHash": "0c4bb13"
+    "sourceHash": "bfb9636"
   },
   "errors.listing.notFound.suggestion": "可以这样试试：\n- 确认路径拼写无误\n- 如果它在网络驱动器上，确认驱动器已连接且共享可访问\n- 进入上一级文件夹，在那里找找这个项目\n- 在终端里对上一级文件夹运行 `ls -la`，看看里面有什么",
   "@errors.listing.notFound.suggestion": {
-    "sourceHash": "d25f62b"
+    "sourceHash": "8a51477"
   },
   "errors.listing.tccRestricted.title": "这个文件夹被 macOS 限制了",
   "@errors.listing.tccRestricted.title": {
@@ -473,7 +473,7 @@
   },
   "errors.listing.tccRestricted.explanation": "Cmdr 无法读取 `{path}`，因为 macOS 还没授予对这个文件夹的访问权限。这是隐私关卡，不是 Cmdr 的问题。",
   "@errors.listing.tccRestricted.explanation": {
-    "sourceHash": "027470f"
+    "sourceHash": "1f3fc35"
   },
   "errors.listing.tccRestricted.suggestion": "有两种解决办法：\n- 在 **{system_settings} → {privacy_and_security} → {full_disk_access}** 里授予 Cmdr **{full_disk_access}**，一次性解除所有这类限制。\n- 或者在 **{system_settings} → {privacy_and_security} → {files_and_folders} → Cmdr** 里，单独为这个文件夹授予访问权限。",
   "@errors.listing.tccRestricted.suggestion": {
@@ -485,23 +485,23 @@
   },
   "errors.listing.permissionDenied.explanation": "Cmdr 没有权限访问 `{path}`。macOS 控制着哪些 App 能访问哪些文件夹，而 Cmdr 还没获得这个文件夹的访问权限。",
   "@errors.listing.permissionDenied.explanation": {
-    "sourceHash": "a2955dc"
+    "sourceHash": "3871273"
   },
   "errors.listing.permissionDenied.suggestion": "可以这样试试：\n- 打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 访问权限\n- 在 Finder 里查看文件夹权限：右键点击文件夹，选择“显示简介”，看“共享与权限”\n- 如果这是共享文件夹，请文件夹所有者更新权限\n- 在终端里对这个路径运行 `ls -la`，查看当前权限",
   "@errors.listing.permissionDenied.suggestion": {
-    "sourceHash": "0fa0829"
+    "sourceHash": "3450aff"
   },
   "errors.listing.remotePermissionDenied.title": "服务器不让打开这个文件夹",
   "@errors.listing.remotePermissionDenied.title": {
-    "sourceHash": "1fceff5"
+    "sourceHash": "f9cb7bd"
   },
   "errors.listing.remotePermissionDenied.explanation": "`{path}` 在一个网络共享上，而你连接时用的账户没有打开它的权限。服务器在 macOS 介入之前就拒绝了请求，所以这不是你 Mac 上的隐私设置。",
   "@errors.listing.remotePermissionDenied.explanation": {
-    "sourceHash": "4e6b9ef"
+    "sourceHash": "d8463b0"
   },
   "errors.listing.remotePermissionDenied.suggestion": "可以这样试试：\n- 在服务器上查看这个文件夹的权限，以及你是用哪个账户装载的共享\n- 有些文件夹属于服务器自己的系统账户（比如 Linux 共享上的 `lost+found`），对其他所有人都是关闭的\n- 想换个身份连接，就先推出这个共享，再用那套凭证重新装载",
   "@errors.listing.remotePermissionDenied.suggestion": {
-    "sourceHash": "506e57a"
+    "sourceHash": "3e6497d"
   },
   "errors.listing.alreadyExists.title": "已存在",
   "@errors.listing.alreadyExists.title": {
@@ -509,7 +509,7 @@
   },
   "errors.listing.alreadyExists.explanation": "`{path}` 处已经有一个文件或文件夹，所以 Cmdr 无法在那里新建。",
   "@errors.listing.alreadyExists.explanation": {
-    "sourceHash": "487aee7"
+    "sourceHash": "630e6d8"
   },
   "errors.listing.alreadyExists.suggestion": "重命名已有的项目，或给新项目取个不同的名字。",
   "@errors.listing.alreadyExists.suggestion": {
@@ -525,7 +525,7 @@
   },
   "errors.listing.cancelled.suggestion": "想重试时，随时再次进入这里。",
   "@errors.listing.cancelled.suggestion": {
-    "sourceHash": "e21161b"
+    "sourceHash": "d9107b5"
   },
   "errors.listing.deviceDisconnected.title": "设备已断开",
   "@errors.listing.deviceDisconnected.title": {
@@ -537,7 +537,7 @@
   },
   "errors.listing.deviceDisconnected.suggestion": "可以这样试试：\n- 重新连接设备，并确认线缆接牢\n- 如果是手机，解锁它并确认文件传输模式已开启\n- 设备恢复后，再次进入这里",
   "@errors.listing.deviceDisconnected.suggestion": {
-    "sourceHash": "9f6c9a0"
+    "sourceHash": "6940094"
   },
   "errors.listing.notConnected.title": "尚未连接",
   "@errors.listing.notConnected.title": {
@@ -545,11 +545,11 @@
   },
   "errors.listing.notConnected.explanation": "Cmdr 还没有连接到存放 `{path}` 的手机或服务器，所以这里暂时没有内容可显示。没有任何东西断开，也没有任何东西被删除。",
   "@errors.listing.notConnected.explanation": {
-    "sourceHash": "4c508d7"
+    "sourceHash": "93ca2df"
   },
   "errors.listing.notConnected.suggestion": "可以这样试试：\n- 从宗卷选择器中打开这台手机或服务器来连接它\n- 如果是手机，解锁它并接受它弹出的任何提示\n- 连接好后，再次进入这里",
   "@errors.listing.notConnected.suggestion": {
-    "sourceHash": "3c48bcd"
+    "sourceHash": "652f289"
   },
   "errors.listing.deviceReconnecting.title": "正在重新连接设备",
   "@errors.listing.deviceReconnecting.title": {
@@ -557,11 +557,11 @@
   },
   "errors.listing.deviceReconnecting.explanation": "与存放 `{path}` 的设备之间的连接已重启，因此这次操作没有完成。设备仍然插着，Cmdr 正在重新打开它。这通常发生在传输被取消或中断之后。",
   "@errors.listing.deviceReconnecting.explanation": {
-    "sourceHash": "6ba7205"
+    "sourceHash": "0327639"
   },
   "errors.listing.deviceReconnecting.suggestion": "请等待几秒钟，然后重试。无需拔下设备。",
   "@errors.listing.deviceReconnecting.suggestion": {
-    "sourceHash": "2481e2a"
+    "sourceHash": "4dac2e7"
   },
   "errors.listing.readOnly.title": "只读",
   "@errors.listing.readOnly.title": {
@@ -569,11 +569,11 @@
   },
   "errors.listing.readOnly.explanation": "这个宗卷是只读的，所以 Cmdr 无法对它做改动。可能是设备有物理写保护开关、磁盘映像以只读方式挂载，或文件系统不支持写入。",
   "@errors.listing.readOnly.explanation": {
-    "sourceHash": "99924c3"
+    "sourceHash": "d8080b8"
   },
   "errors.listing.readOnly.suggestion": "可以这样试试：\n- 如果设备有物理写保护开关（SD 卡常见），把它拨到关闭\n- 如果这是磁盘映像，以可写方式重新挂载\n- 否则，先把文件拷贝到一个可写的位置",
   "@errors.listing.readOnly.suggestion": {
-    "sourceHash": "6ce54da"
+    "sourceHash": "15fa759"
   },
   "errors.listing.storageFull.title": "磁盘已满",
   "@errors.listing.storageFull.title": {
@@ -581,11 +581,11 @@
   },
   "errors.listing.storageFull.explanation": "这个宗卷上的可用空间不足，无法完成操作。",
   "@errors.listing.storageFull.explanation": {
-    "sourceHash": "30d0741"
+    "sourceHash": "3915993"
   },
   "errors.listing.storageFull.suggestion": "可以这样试试：\n- 移动或删除不再需要的文件，腾出空间\n- 清倒废纸篓（右键点击程序坞里的废纸篓图标）\n- 在终端里运行 `df -h`，查看每个宗卷还剩多少空间",
   "@errors.listing.storageFull.suggestion": {
-    "sourceHash": "fcdd42d"
+    "sourceHash": "101099b"
   },
   "errors.listing.connectionTimedOut.title": "连接超时",
   "@errors.listing.connectionTimedOut.title": {
@@ -593,11 +593,11 @@
   },
   "errors.listing.connectionTimedOut.explanation": "Cmdr 尝试访问这个资源，但连接没能及时响应。这通常意味着服务器或设备响应慢，或网络连接不稳定。",
   "@errors.listing.connectionTimedOut.explanation": {
-    "sourceHash": "5b3f8b2"
+    "sourceHash": "15d3054"
   },
   "errors.listing.connectionTimedOut.suggestion": "可以这样试试：\n- 确认设备或服务器已开机且可达\n- 检查你的 Wi-Fi 或以太网连接\n- 在终端里试试 `ping <hostname>`，测试服务器是否可达\n- 重试",
   "@errors.listing.connectionTimedOut.suggestion": {
-    "sourceHash": "f9b8a2d"
+    "sourceHash": "f474938"
   },
   "errors.listing.notSupported.title": "不支持",
   "@errors.listing.notSupported.title": {
@@ -605,7 +605,7 @@
   },
   "errors.listing.notSupported.explanation": "这种宗卷不支持该操作。有些宗卷（比如手机存储或某些网络驱动器）并不支持所有操作。",
   "@errors.listing.notSupported.explanation": {
-    "sourceHash": "9ecb575"
+    "sourceHash": "d074574"
   },
   "errors.listing.notSupported.suggestion": "换个方式试试，或用 Finder 来完成这项操作。",
   "@errors.listing.notSupported.suggestion": {
@@ -621,19 +621,19 @@
   },
   "errors.listing.deletePending.suggestion": "可以这样试试：\n- 稍等片刻再重试 — 最后一个句柄一关闭，文件就会消失\n- 关掉其他可能打开着这个文件的 App\n- 如果它一直在，重启 Cmdr，放掉它可能还占着的句柄",
   "@errors.listing.deletePending.suggestion": {
-    "sourceHash": "6dbe760"
+    "sourceHash": "0531cd8"
   },
   "errors.listing.invalidName.title": "这个名称在这里用不了",
   "@errors.listing.invalidName.title": {
-    "sourceHash": "69b2aa4"
+    "sourceHash": "7ced906"
   },
   "errors.listing.invalidName.explanation": "`{path}` 的名称是目标位置存不下的，所以它直接回绝了这个名称，压根没去找这个文件。",
   "@errors.listing.invalidName.explanation": {
-    "sourceHash": "7000b52"
+    "sourceHash": "ac27ddb"
   },
   "errors.listing.invalidName.suggestion": "可以这样试试：\n- 把这一项改成更短、更朴素的名称\n- 有些目标位置会拒绝 `CON`、`NUL`、`LPT1` 这类保留名称\n- 名称太长也可能超出目标位置自己的限制，哪怕每个字符都没问题",
   "@errors.listing.invalidName.suggestion": {
-    "sourceHash": "9074cf3"
+    "sourceHash": "f5cf683"
   },
   "errors.listing.ambiguousName.title": "有不止一个项目匹配这个名称",
   "@errors.listing.ambiguousName.title": {
@@ -641,15 +641,15 @@
   },
   "errors.listing.ambiguousName.explanation": "服务器上有不止一个项目匹配 `{path}`。它们的名称看起来一样，但服务器存储的写法不同（带重音的字母可以用两种方式存储，有些服务器还区分大小写），所以 Cmdr 没有替你挑选其中一个。",
   "@errors.listing.ambiguousName.explanation": {
-    "sourceHash": "0d964db"
+    "sourceHash": "f1e1509"
   },
   "errors.listing.ambiguousName.suggestion": "可以这样试试：\n- 打开上一级文件夹，从列表里选出你想要的那一项\n- 为了下次不再遇到，把其中一个改名，让两个名称明显不同",
   "@errors.listing.ambiguousName.suggestion": {
-    "sourceHash": "8334ece"
+    "sourceHash": "55b960c"
   },
   "errors.listing.ioSerious.title": "无法读取这个文件夹",
   "@errors.listing.ioSerious.title": {
-    "sourceHash": "1334729"
+    "sourceHash": "af30f30"
   },
   "errors.listing.ioSerious.explanation": "Cmdr 在处理 `{path}` 时遇到了问题：{osMessage}。这可能是一时的小故障，也可能说明磁盘或设备需要检查。",
   "@errors.listing.ioSerious.explanation": {
@@ -657,7 +657,7 @@
   },
   "errors.listing.ioSerious.suggestion": "可以这样试试：\n- 确认磁盘或设备仍连接着\n- 重试\n- 如果一直这样，试着对这个宗卷运行**磁盘工具 > 急救**",
   "@errors.listing.ioSerious.suggestion": {
-    "sourceHash": "6c5be6d"
+    "sourceHash": "6e83ebb"
   },
   "errors.listing.isADirectory.title": "这是文件夹，不是文件",
   "@errors.listing.isADirectory.title": {
@@ -665,7 +665,7 @@
   },
   "errors.listing.isADirectory.explanation": "Cmdr 想把 `{path}` 当成文件打开，但它是文件夹。",
   "@errors.listing.isADirectory.explanation": {
-    "sourceHash": "61f5ddb"
+    "sourceHash": "03331bd"
   },
   "errors.listing.isADirectory.suggestion": "进入这个文件夹，而不是把它当成文件打开。",
   "@errors.listing.isADirectory.suggestion": {
@@ -673,11 +673,11 @@
   },
   "errors.listing.archiveUnreadable.title": "无法打开这个压缩文件",
   "@errors.listing.archiveUnreadable.title": {
-    "sourceHash": "6b34ae6"
+    "sourceHash": "939ba84"
   },
   "errors.listing.archiveUnreadable.explanation": "这个文件看起来是压缩文件，但 Cmdr 读不到里面的内容。它可能已损坏、被加密，或者采用了 Cmdr 暂时无法打开的压缩格式。",
   "@errors.listing.archiveUnreadable.explanation": {
-    "sourceHash": "e413580"
+    "sourceHash": "b1e7d8b"
   },
   "errors.listing.archiveUnreadable.suggestion": "可以试试用其他应用打开它，或者向发送者要一份新的副本。",
   "@errors.listing.archiveUnreadable.suggestion": {
@@ -701,11 +701,11 @@
   },
   "errors.listing.emptyRootICloud.explanation": "Cmdr 打开了 iCloud 云盘，但没返回任何文件。macOS 会对没有**{full_disk_access}**的 App 隐藏 iCloud 云盘的内容，所以给 Cmdr 授予该权限很可能就能解决。\n\n如果你的 iCloud 云盘真的是空的，可以忽略这个提示。",
   "@errors.listing.emptyRootICloud.explanation": {
-    "sourceHash": "d095f83"
+    "sourceHash": "4222270"
   },
   "errors.listing.emptyRootICloud.suggestion": "可以这样试试：\n- 打开 [**{system_settings} > {privacy_and_security}**](x-apple.systempreferences:com.apple.preference.security?Privacy)，选择 **{full_disk_access}**\n- 添加 Cmdr（用 **+** 按钮），并打开它的开关\n- 退出并重新打开 Cmdr\n- 回到这里重试",
   "@errors.listing.emptyRootICloud.suggestion": {
-    "sourceHash": "25cac98"
+    "sourceHash": "2e6e702"
   },
   "errors.git.notARepo.title": "这里没有 git 仓库",
   "@errors.git.notARepo.title": {
@@ -713,7 +713,7 @@
   },
   "errors.git.notARepo.message": "Cmdr 顺着文件夹层级往上找，没在这里找到 `.git`。",
   "@errors.git.notARepo.message": {
-    "sourceHash": "f5b0d17"
+    "sourceHash": "736d43c"
   },
   "errors.git.notARepo.suggestion": "打开 git 克隆里的某个文件夹，就能看到仓库标记。",
   "@errors.git.notARepo.suggestion": {
@@ -725,7 +725,7 @@
   },
   "errors.git.orphanedWorktree.message": "这是一个关联的 worktree，但它的主仓库不见了，所以 git 没法顺着链接找过去。",
   "@errors.git.orphanedWorktree.message": {
-    "sourceHash": "5b5433e"
+    "sourceHash": "a29d806"
   },
   "errors.git.orphanedWorktree.suggestion": "试着打开主仓库，或用 `git worktree prune` 移除这个孤儿。",
   "@errors.git.orphanedWorktree.suggestion": {
@@ -749,7 +749,7 @@
   },
   "errors.git.indexLocked.message": "Git 的索引被锁住了，这通常意味着另一个 git 命令还在运行。",
   "@errors.git.indexLocked.message": {
-    "sourceHash": "2f86cb3"
+    "sourceHash": "95399bb"
   },
   "errors.git.indexLocked.suggestion": "等正在运行的 git 命令结束，然后再次进入这里。",
   "@errors.git.indexLocked.suggestion": {
@@ -757,11 +757,11 @@
   },
   "errors.git.permissionDenied.title": "Cmdr 无法读取这个仓库",
   "@errors.git.permissionDenied.title": {
-    "sourceHash": "b92716b"
+    "sourceHash": "2fb725c"
   },
   "errors.git.permissionDenied.message": "系统不让 Cmdr 打开 `.git` 文件夹，所以拿不到 git 信息。",
   "@errors.git.permissionDenied.message": {
-    "sourceHash": "0a9e8f1"
+    "sourceHash": "53012e9"
   },
   "errors.git.permissionDenied.suggestion": "打开 **{system_settings} > {privacy_and_security} > {files_and_folders}**，授予 Cmdr 对这个文件夹的访问权限。",
   "@errors.git.permissionDenied.suggestion": {
@@ -769,11 +769,11 @@
   },
   "errors.git.bareRepo.title": "暂不支持裸仓库",
   "@errors.git.bareRepo.title": {
-    "sourceHash": "554f310"
+    "sourceHash": "a378648"
   },
   "errors.git.bareRepo.message": "裸仓库没有工作树，而 git 浏览器是围绕工作树构建的。",
   "@errors.git.bareRepo.message": {
-    "sourceHash": "e7af7c6"
+    "sourceHash": "1839f25"
   },
   "errors.git.bareRepo.suggestion": "把仓库克隆到一个工作目录里，就能使用 git 浏览器。",
   "@errors.git.bareRepo.suggestion": {
@@ -781,11 +781,11 @@
   },
   "errors.git.blobTooLarge.title": "这个文件太大，无法从历史中加载",
   "@errors.git.blobTooLarge.title": {
-    "sourceHash": "aa5a29b"
+    "sourceHash": "480f6ba"
   },
   "errors.git.blobTooLarge.message": "Cmdr 一次整文件地读取 git blob，而这个超过了安全上限。",
   "@errors.git.blobTooLarge.message": {
-    "sourceHash": "6d93691"
+    "sourceHash": "d5609a4"
   },
   "errors.git.blobTooLarge.suggestion": "如果想读它，从工作树中检出这个文件。",
   "@errors.git.blobTooLarge.suggestion": {
@@ -797,7 +797,7 @@
   },
   "errors.git.shallowBoundary.message": "这个 commit 在你浅克隆的边界之外，所以它的数据不在磁盘上。",
   "@errors.git.shallowBoundary.message": {
-    "sourceHash": "447704c"
+    "sourceHash": "66bac24"
   },
   "errors.git.shallowBoundary.suggestion": "运行 `git fetch --unshallow`（或 `--depth=N`），把更多历史拉进克隆里。",
   "@errors.git.shallowBoundary.suggestion": {
@@ -809,7 +809,7 @@
   },
   "errors.git.missingObject.message": "Git 在找一个已不在 pack 文件里的对象。这个仓库可能只拉取了一部分，或者损坏了。",
   "@errors.git.missingObject.message": {
-    "sourceHash": "15b0c32"
+    "sourceHash": "1eb902f"
   },
   "errors.git.missingObject.suggestion": "试试 `git fetch` 把缺失的对象补回来，或用 `git fsck` 检查损坏情况。",
   "@errors.git.missingObject.suggestion": {
@@ -817,7 +817,7 @@
   },
   "errors.git.gitDirPermissionDenied.title": "Cmdr 无法打开 `.git` 文件夹",
   "@errors.git.gitDirPermissionDenied.title": {
-    "sourceHash": "f6e2595"
+    "sourceHash": "23c216a"
   },
   "errors.git.gitDirPermissionDenied.message": "系统拒绝了对 `.git` 文件夹的访问，尽管工作树是可读的。",
   "@errors.git.gitDirPermissionDenied.message": {
@@ -986,95 +986,95 @@
   },
   "errors.provider.macDroid.transient": "这个文件夹由 **MacDroid** 管理。可以这样试试：\n- 打开 MacDroid，确认你的手机已连接\n- 确认你的手机已解锁，并设为文件传输模式\n- 拔下再插上 USB 线缆，然后再次进入这里",
   "@errors.provider.macDroid.transient": {
-    "sourceHash": "994b8b8"
+    "sourceHash": "5df1c20"
   },
   "errors.provider.macDroid.needsAction": "这个文件夹由 **MacDroid** 管理。可以这样试试：\n- 打开 MacDroid，确认你的手机已连接\n- 确认你的手机已解锁且屏幕亮着\n- 确认手机上已启用 USB 文件传输模式",
   "@errors.provider.macDroid.needsAction": {
-    "sourceHash": "a2c4d13"
+    "sourceHash": "5fe56e6"
   },
   "errors.provider.macDroid.serious": "这个文件夹由 **MacDroid** 管理。可以这样试试：\n- 拔下再插上 USB 线缆\n- 重启 MacDroid\n- 换一个 USB 端口或线缆",
   "@errors.provider.macDroid.serious": {
-    "sourceHash": "a4ab4fe"
+    "sourceHash": "a79e0b6"
   },
   "errors.provider.iCloud.transient": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 检查你的互联网连接\n- 确认你已在 {system_settings} 里登录 iCloud\n- 再次进入这里重试",
   "@errors.provider.iCloud.transient": {
-    "sourceHash": "7c0600f"
+    "sourceHash": "6a98b24"
   },
   "errors.provider.iCloud.needsAction": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 在 **{system_settings} > Apple 账户 > iCloud** 里确认 iCloud 云盘已启用\n- 确认你登录的是正确的 Apple 账户\n- 检查你的 iCloud 储存空间没满",
   "@errors.provider.iCloud.needsAction": {
-    "sourceHash": "1c6dab0"
+    "sourceHash": "48c7123"
   },
   "errors.provider.iCloud.serious": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 在 {system_settings} 里退出 iCloud 再重新登录\n- 查看 Apple 的[系统状态页](https://www.apple.com/support/systemstatus/)",
   "@errors.provider.iCloud.serious": {
-    "sourceHash": "3276e42"
+    "sourceHash": "4f730c7"
   },
   "errors.provider.macFuse.transient": "这是一个 **macFUSE** 挂载。远程服务器可能速度慢或无法连到。可以这样试试：\n- 检查你的网络连接\n- 确认远程服务器在运行\n- 再次进入这里重试",
   "@errors.provider.macFuse.transient": {
-    "sourceHash": "06d9019"
+    "sourceHash": "66fcc6b"
   },
   "errors.provider.macFuse.needsAction": "这是一个 **macFUSE** 挂载。可以这样试试：\n- 确认支撑这个挂载的 FUSE 进程仍在运行\n- 如有需要，强制卸载并重新挂载这个宗卷\n- 在 **{system_settings} > 通用 > 登录项与扩展**里，确认 macFUSE 是最新版本",
   "@errors.provider.macFuse.needsAction": {
-    "sourceHash": "60e836a"
+    "sourceHash": "0c2981f"
   },
   "errors.provider.macFuse.serious": "这是一个 **macFUSE** 挂载。支撑它的 FUSE 进程很可能已崩溃或断开。可以这样试试：\n- 强制卸载这个宗卷：在终端里运行 `umount -f /Volumes/<name>`\n- 用原来的挂载命令重新挂载\n- 如果一直这样，确认 macFUSE 是最新版本",
   "@errors.provider.macFuse.serious": {
-    "sourceHash": "71d42da"
+    "sourceHash": "8da8430"
   },
   "errors.provider.pCloudFuse.transient": "这个文件夹在 **pCloud** 的虚拟驱动器上。可以这样试试：\n- 检查你的互联网连接\n- 确认 pCloud App 在运行\n- 再次进入这里重试",
   "@errors.provider.pCloudFuse.transient": {
-    "sourceHash": "1afbd51"
+    "sourceHash": "b51abf9"
   },
   "errors.provider.pCloudFuse.needsAction": "这个文件夹在 **pCloud** 的虚拟驱动器上。可以这样试试：\n- 确认 pCloud App 在运行且你已登录\n- 检查你的互联网连接\n- macOS 更新后，在 **{system_settings} > 通用 > 登录项与扩展**里重新批准 pCloud 的系统扩展",
   "@errors.provider.pCloudFuse.needsAction": {
-    "sourceHash": "2753abb"
+    "sourceHash": "42ff4c9"
   },
   "errors.provider.pCloudFuse.serious": "这个文件夹在 **pCloud** 的虚拟驱动器上。pCloud 的 FUSE 进程可能已崩溃。可以这样试试：\n- 退出并重新打开 pCloud App\n- 如果驱动器没有重新出现，强制卸载它：在终端里运行 `umount -f /Volumes/pCloudDrive`\n- macOS 更新后，在 **{system_settings} > 通用 > 登录项与扩展**里重新批准 pCloud 的系统扩展",
   "@errors.provider.pCloudFuse.serious": {
-    "sourceHash": "cba0026"
+    "sourceHash": "232d806"
   },
   "errors.provider.veraCrypt.transient": "这是一个 **{name}** 加密宗卷。可以这样试试：\n- 确认这个 VeraCrypt 宗卷仍处于挂载状态\n- 再次进入这里重试",
   "@errors.provider.veraCrypt.transient": {
-    "sourceHash": "fe408ae"
+    "sourceHash": "125eaf9"
   },
   "errors.provider.veraCrypt.needsAction": "这是一个 **{name}** 加密宗卷。可以这样试试：\n- 打开 VeraCrypt，确认这个宗卷已挂载\n- 如有需要，卸载并重新挂载这个宗卷",
   "@errors.provider.veraCrypt.needsAction": {
-    "sourceHash": "08dec65"
+    "sourceHash": "09d12a7"
   },
   "errors.provider.veraCrypt.serious": "这是一个 **{name}** 加密宗卷。可以这样试试：\n- 在 VeraCrypt 里卸载并重新挂载这个宗卷\n- 如果这个宗卷一直出问题，用 VeraCrypt 的修复工具检查它",
   "@errors.provider.veraCrypt.serious": {
-    "sourceHash": "a5c41a1"
+    "sourceHash": "a0737db"
   },
   "errors.provider.cmVolumes.transient": "这是一个云挂载。可以这样试试：\n- 检查你的互联网连接\n- 确认挂载软件（CloudMounter、Mountain Duck 等）在运行\n- 再次进入这里重试",
   "@errors.provider.cmVolumes.transient": {
-    "sourceHash": "f0165b3"
+    "sourceHash": "b7ae13e"
   },
   "errors.provider.cmVolumes.nonTransient": "这是一个云挂载。可以这样试试：\n- 确认挂载软件（CloudMounter、Mountain Duck 等）在运行\n- 断开并重新连接这个挂载\n- 检查你的凭证没有过期",
   "@errors.provider.cmVolumes.nonTransient": {
-    "sourceHash": "752c7e4"
+    "sourceHash": "4474047"
   },
   "errors.provider.genericCloudStorage.transient": "这个文件夹由一家云服务商管理。可以这样试试：\n- 检查你的互联网连接\n- 确认同步 App 在运行\n- 再次进入这里重试",
   "@errors.provider.genericCloudStorage.transient": {
-    "sourceHash": "9398792"
+    "sourceHash": "9a454cf"
   },
   "errors.provider.genericCloudStorage.nonTransient": "这个文件夹由一家云服务商管理。可以这样试试：\n- 确认同步 App 在运行\n- 退出云端 App 再重新登录\n- 检查你的互联网连接",
   "@errors.provider.genericCloudStorage.nonTransient": {
-    "sourceHash": "ce8a112"
+    "sourceHash": "3b8d2a6"
   },
   "errors.provider.appBased.transient": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 检查你的互联网连接\n- 打开 {app}，确认它在运行且已同步\n- 再次进入这里重试",
   "@errors.provider.appBased.transient": {
-    "sourceHash": "e3ef8b8"
+    "sourceHash": "ba634b7"
   },
   "errors.provider.appBased.needsAction": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 打开 {app}，查看你的同步状态\n- 确认你已登录 {app}\n- 确认你在 {name} 里有访问这个文件夹的权限",
   "@errors.provider.appBased.needsAction": {
-    "sourceHash": "88009fd"
+    "sourceHash": "f69fe61"
   },
   "errors.provider.appBased.serious": "这个文件夹由 **{name}** 管理。可以这样试试：\n- 退出并重新打开 {app}\n- 退出 {app} 再重新登录\n- 查看 {name} 的状态页，看有没有服务中断",
   "@errors.provider.appBased.serious": {
-    "sourceHash": "64baea5"
+    "sourceHash": "347589c"
   },
   "errors.write.sourceNotFound.title": "找不到这个文件",
   "@errors.write.sourceNotFound.title": {
-    "sourceHash": "2003305"
+    "sourceHash": "eff005a"
   },
   "errors.write.sourceNotFound.message.copy": "你想拷贝的文件或文件夹已经不存在了。",
   "@errors.write.sourceNotFound.message.copy": {
@@ -1098,15 +1098,15 @@
   },
   "errors.write.destinationNotFound.title": "找不到目标文件夹",
   "@errors.write.destinationNotFound.title": {
-    "sourceHash": "215ddfe"
+    "sourceHash": "ae77ee8"
   },
   "errors.write.destinationNotFound.message.copy": "你要拷贝到的文件夹已经不存在了，所以没有地方放你的文件。原文件没有被动过。",
   "@errors.write.destinationNotFound.message.copy": {
-    "sourceHash": "cc637e2"
+    "sourceHash": "80f4a4c"
   },
   "errors.write.destinationNotFound.message.move": "你要移动到的文件夹已经不存在了，所以没有地方放你的文件。原文件没有被动过。",
   "@errors.write.destinationNotFound.message.move": {
-    "sourceHash": "1726290"
+    "sourceHash": "b764d42"
   },
   "errors.write.destinationNotFound.suggestion": "它可能被重命名或删除了，也可能是驱动器断开了。换一个目标位置，或者重新打开这个文件夹再试一次。",
   "@errors.write.destinationNotFound.suggestion": {
@@ -1118,15 +1118,15 @@
   },
   "errors.write.notConnected.message.source": "Cmdr 还没有连接到存放这些文件的手机或服务器，所以什么都没有改变。",
   "@errors.write.notConnected.message.source": {
-    "sourceHash": "e6690da"
+    "sourceHash": "7869dce"
   },
   "errors.write.notConnected.message.destination": "Cmdr 还没有连接到目标手机或服务器，所以什么都没有改变。你的文件没有被动过。",
   "@errors.write.notConnected.message.destination": {
-    "sourceHash": "5bbc6b9"
+    "sourceHash": "3b5063d"
   },
   "errors.write.notConnected.suggestion": "从宗卷选择器中打开它来连接，然后再试一次。如果是手机，解锁它并接受它弹出的任何提示。",
   "@errors.write.notConnected.suggestion": {
-    "sourceHash": "222ba64"
+    "sourceHash": "3fdc936"
   },
   "errors.write.destinationExists.title": "文件已存在",
   "@errors.write.destinationExists.title": {
@@ -1134,7 +1134,7 @@
   },
   "errors.write.destinationExists.message": "目标位置已经有一个同名文件了。",
   "@errors.write.destinationExists.message": {
-    "sourceHash": "50d9094"
+    "sourceHash": "cdcfb7b"
   },
   "errors.write.destinationExists.suggestion": "换个名字或位置，或者先删掉已有的文件。",
   "@errors.write.destinationExists.suggestion": {
@@ -1142,19 +1142,19 @@
   },
   "errors.write.destinationInsideSource.title.copy": "无法把文件夹拷贝到它自身里",
   "@errors.write.destinationInsideSource.title.copy": {
-    "sourceHash": "40c58ea"
+    "sourceHash": "f8dd7f6"
   },
   "errors.write.destinationInsideSource.title.move": "无法把文件夹移动到它自身里",
   "@errors.write.destinationInsideSource.title.move": {
-    "sourceHash": "3a9da7b"
+    "sourceHash": "48b9b42"
   },
   "errors.write.destinationInsideSource.message.copy": "你正想把一个文件夹拷贝到它自己的某个子文件夹里。",
   "@errors.write.destinationInsideSource.message.copy": {
-    "sourceHash": "46d30ec"
+    "sourceHash": "26785f5"
   },
   "errors.write.destinationInsideSource.message.move": "你正想把一个文件夹移动到它自己的某个子文件夹里。",
   "@errors.write.destinationInsideSource.message.move": {
-    "sourceHash": "e6ecfea"
+    "sourceHash": "4fcd446"
   },
   "errors.write.destinationInsideSource.suggestion.copy": "选择一个在你要拷贝的文件夹之外的目标位置。",
   "@errors.write.destinationInsideSource.suggestion.copy": {
@@ -1254,19 +1254,19 @@
   },
   "errors.write.moveNotConfirmed.title": "无法确认这次移动",
   "@errors.write.moveNotConfirmed.title": {
-    "sourceHash": "5d64df8"
+    "sourceHash": "8f1fe29"
   },
   "errors.write.moveNotConfirmed.message.named": "Cmdr 无法确认移过去的文件是否已经保存到 {volumeName} 上，所以把你的原文件留在了原处。",
   "@errors.write.moveNotConfirmed.message.named": {
-    "sourceHash": "0c2dfb6"
+    "sourceHash": "442f2fe"
   },
   "errors.write.moveNotConfirmed.message.unnamed": "Cmdr 无法确认移过去的文件是否已经保存到目标位置，所以把你的原文件留在了原处。",
   "@errors.write.moveNotConfirmed.message.unnamed": {
-    "sourceHash": "fefb520"
+    "sourceHash": "565e4b8"
   },
   "errors.write.moveNotConfirmed.suggestion": "去目标位置看一下，然后再移动一次。你的原文件还在原来的位置。",
   "@errors.write.moveNotConfirmed.suggestion": {
-    "sourceHash": "d9500f3"
+    "sourceHash": "4d7fedc"
   },
   "errors.write.trashNotSupported.title": "不支持废纸篓",
   "@errors.write.trashNotSupported.title": {
@@ -1274,7 +1274,7 @@
   },
   "errors.write.trashNotSupported.message": "这个宗卷不支持废纸篓。",
   "@errors.write.trashNotSupported.message": {
-    "sourceHash": "45cf0c6"
+    "sourceHash": "911688a"
   },
   "errors.write.trashNotSupported.suggestion": "改用 {deletePermanentlyKey} 来彻底删除。",
   "@errors.write.trashNotSupported.suggestion": {
@@ -1294,23 +1294,23 @@
   },
   "errors.write.readError.title.copy": "无法拷贝",
   "@errors.write.readError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.readError.title.move": "无法移动",
   "@errors.write.readError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.readError.title.delete": "无法删除",
   "@errors.write.readError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.readError.title.trash": "无法移到废纸篓",
   "@errors.write.readError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.readError.message": "无法从来源读取。",
   "@errors.write.readError.message": {
-    "sourceHash": "b3b10d6"
+    "sourceHash": "ead860d"
   },
   "errors.write.readError.suggestion": "重试。如果问题持续，查看下方的技术详情。",
   "@errors.write.readError.suggestion": {
@@ -1318,23 +1318,23 @@
   },
   "errors.write.writeError.title.copy": "无法拷贝",
   "@errors.write.writeError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.writeError.title.move": "无法移动",
   "@errors.write.writeError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.writeError.title.delete": "无法删除",
   "@errors.write.writeError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.writeError.title.trash": "无法移到废纸篓",
   "@errors.write.writeError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.writeError.message": "无法写入目标。",
   "@errors.write.writeError.message": {
-    "sourceHash": "cb458f0"
+    "sourceHash": "ec1a179"
   },
   "errors.write.writeError.suggestion": "重试。如果问题持续，查看下方的技术详情。",
   "@errors.write.writeError.suggestion": {
@@ -1358,7 +1358,7 @@
   },
   "errors.write.invalidName.message": "{path} 的名称是目标位置存不下的。",
   "@errors.write.invalidName.message": {
-    "sourceHash": "0bd3e6a"
+    "sourceHash": "ad395af"
   },
   "errors.write.invalidName.suggestion": "把它改成更短、更朴素的名称再试一次。有些目标位置还会拒绝 CON、NUL、LPT1 这类保留名称。",
   "@errors.write.invalidName.suggestion": {
@@ -1366,19 +1366,19 @@
   },
   "errors.write.trashRefused.title": "无法移到废纸篓",
   "@errors.write.trashRefused.title": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.trashRefused.message.notPermitted": "你选中的项目里有 {count} 个，macOS 不让 Cmdr 碰。",
   "@errors.write.trashRefused.message.notPermitted": {
-    "sourceHash": "e11fc50"
+    "sourceHash": "57a38d7"
   },
   "errors.write.trashRefused.message.noTrashForVolume": "你选中的项目里有 {count} 个，macOS 找不到对应的废纸篓。",
   "@errors.write.trashRefused.message.noTrashForVolume": {
-    "sourceHash": "d86a66d"
+    "sourceHash": "702ae17"
   },
   "errors.write.trashRefused.message.other": "你选中的项目里有 {count} 个，macOS 没有移到废纸篓。",
   "@errors.write.trashRefused.message.other": {
-    "sourceHash": "5c73490"
+    "sourceHash": "6f71e12"
   },
   "errors.write.trashRefused.suggestion.notPermitted": "这些项目可能已锁定，也可能放在 macOS 自己留着的地方。你还是可以用 Shift+F8 把它们彻底删除。",
   "@errors.write.trashRefused.suggestion.notPermitted": {
@@ -1394,39 +1394,39 @@
   },
   "errors.write.trashRefused.suggestion.noFullDiskAccess": "Cmdr 在这台 Mac 上也没有完全磁盘访问权限，这是很常见的原因。标题栏里的“没有完全磁盘访问权限”标记会带你回到那个选择。",
   "@errors.write.trashRefused.suggestion.noFullDiskAccess": {
-    "sourceHash": "0dbe21b"
+    "sourceHash": "ee5e9f7"
   },
   "errors.write.ioError.title.copy": "无法拷贝",
   "@errors.write.ioError.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.ioError.title.move": "无法移动",
   "@errors.write.ioError.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.ioError.title.delete": "无法删除",
   "@errors.write.ioError.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.ioError.title.trash": "无法移到废纸篓",
   "@errors.write.ioError.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.ioError.message.copy": "无法拷贝这个文件。",
   "@errors.write.ioError.message.copy": {
-    "sourceHash": "93d27d8"
+    "sourceHash": "f25dd52"
   },
   "errors.write.ioError.message.move": "无法移动这个文件。",
   "@errors.write.ioError.message.move": {
-    "sourceHash": "d2f8eea"
+    "sourceHash": "5f929ee"
   },
   "errors.write.ioError.message.delete": "无法删除这个文件。",
   "@errors.write.ioError.message.delete": {
-    "sourceHash": "87cc29a"
+    "sourceHash": "9e79007"
   },
   "errors.write.ioError.message.trash": "无法把这个文件移到废纸篓。",
   "@errors.write.ioError.message.trash": {
-    "sourceHash": "db053da"
+    "sourceHash": "948e289"
   },
   "errors.write.ioError.suggestion": "重试。如果问题持续，查看下方的技术详情。",
   "@errors.write.ioError.suggestion": {
@@ -1434,23 +1434,23 @@
   },
   "errors.write.permissionDenied.title": "无法访问这个位置",
   "@errors.write.permissionDenied.title": {
-    "sourceHash": "be62ad2"
+    "sourceHash": "bc7f0ff"
   },
   "errors.write.permissionDenied.message.copy": "你没有权限在这里拷贝文件。",
   "@errors.write.permissionDenied.message.copy": {
-    "sourceHash": "d9ebc5a"
+    "sourceHash": "91272c0"
   },
   "errors.write.permissionDenied.message.move": "你没有权限在这里移动文件。",
   "@errors.write.permissionDenied.message.move": {
-    "sourceHash": "d5c0358"
+    "sourceHash": "5b0fc94"
   },
   "errors.write.permissionDenied.message.delete": "你没有权限在这里删除文件。",
   "@errors.write.permissionDenied.message.delete": {
-    "sourceHash": "e002a5f"
+    "sourceHash": "0c03fc4"
   },
   "errors.write.permissionDenied.message.trash": "你没有权限在这里把文件移到废纸篓。",
   "@errors.write.permissionDenied.message.trash": {
-    "sourceHash": "b68bafc"
+    "sourceHash": "cca028a"
   },
   "errors.write.permissionDenied.suggestion.deleteMac": "确认你对上一级文件夹有写入权限。文件可能被锁定了。在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。",
   "@errors.write.permissionDenied.suggestion.deleteMac": {
@@ -1466,7 +1466,7 @@
   },
   "errors.write.permissionDenied.message.named": "你的 macOS 用户无法更改 {folder}。",
   "@errors.write.permissionDenied.message.named": {
-    "sourceHash": "74994f9"
+    "sourceHash": "0ffd79b"
   },
   "errors.write.permissionDenied.suggestion.needsAdminMac": "这需要管理员权限。要给你自己的账户授权，请在 Finder 里选中这个文件夹，选取“显示简介”，然后查看“共享与权限”部分。",
   "@errors.write.permissionDenied.suggestion.needsAdminMac": {
@@ -1474,15 +1474,15 @@
   },
   "errors.write.permissionDenied.suggestion.needsAdminOther": "这需要管理员权限。要给你自己的账户授权，请更改文件夹的权限（比如通过 chmod），然后重试。",
   "@errors.write.permissionDenied.suggestion.needsAdminOther": {
-    "sourceHash": "804027d"
+    "sourceHash": "5ce034b"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedMac": "这是 macOS 自己保护的，管理员权限也改不了。它可能被锁定了：在 Finder 里选中它，选取“显示简介”，然后取消勾选“已锁定”。",
   "@errors.write.permissionDenied.suggestion.systemProtectedMac": {
-    "sourceHash": "ad5e0de"
+    "sourceHash": "64a71c8"
   },
   "errors.write.permissionDenied.suggestion.systemProtectedOther": "这是系统自己保护的，管理员权限也改不了。它可能带着一个需要先清除的保护标记。",
   "@errors.write.permissionDenied.suggestion.systemProtectedOther": {
-    "sourceHash": "bbf6bdb"
+    "sourceHash": "a4856dc"
   },
   "errors.write.insufficientSpace.title": "空间不足",
   "@errors.write.insufficientSpace.title": {
@@ -1518,11 +1518,11 @@
   },
   "errors.write.filesTooLargeForFilesystem.message.one": "{name} 大小为 {size}，但这个驱动器采用 FAT32 格式，无法存储大于 {maxSize} 的文件。",
   "@errors.write.filesTooLargeForFilesystem.message.one": {
-    "sourceHash": "2993e08"
+    "sourceHash": "f5c262a"
   },
   "errors.write.filesTooLargeForFilesystem.message.many": "有 {count} 个文件太大，无法存入这个驱动器。驱动器采用 FAT32 格式，无法存储大于 {maxSize} 的文件。",
   "@errors.write.filesTooLargeForFilesystem.message.many": {
-    "sourceHash": "1aac250"
+    "sourceHash": "9720069"
   },
   "errors.write.filesTooLargeForFilesystem.suggestion": "若要存储这么大的文件，请改用 exFAT 格式的驱动器，它没有这个限制。",
   "@errors.write.filesTooLargeForFilesystem.suggestion": {
@@ -1558,19 +1558,19 @@
   },
   "errors.write.destinationNotWritable.noPermission.message": "你没有向这个文件夹添加文件的权限。",
   "@errors.write.destinationNotWritable.noPermission.message": {
-    "sourceHash": "15abe78"
+    "sourceHash": "a7e0efa"
   },
   "errors.write.destinationNotWritable.noPermission.suggestion": "请选择另一个目标文件夹，或者更改这个文件夹的权限后重试。",
   "@errors.write.destinationNotWritable.noPermission.suggestion": {
-    "sourceHash": "fceb936"
+    "sourceHash": "3851384"
   },
   "errors.write.destinationNotWritable.unexplained.title": "这个文件夹不接收文件",
   "@errors.write.destinationNotWritable.unexplained.title": {
-    "sourceHash": "628c3aa"
+    "sourceHash": "c98e2c3"
   },
   "errors.write.destinationNotWritable.unexplained.message": "这个文件夹不接收新文件，无法把任何东西拷贝或移动到这里。",
   "@errors.write.destinationNotWritable.unexplained.message": {
-    "sourceHash": "22ce481"
+    "sourceHash": "13b79ec"
   },
   "errors.write.destinationNotWritable.unexplained.suggestion": "请选择另一个目标文件夹。",
   "@errors.write.destinationNotWritable.unexplained.suggestion": {
@@ -1586,7 +1586,7 @@
   },
   "errors.write.fileLocked.message": "文件已锁定，无法删除。",
   "@errors.write.fileLocked.message": {
-    "sourceHash": "62b1038"
+    "sourceHash": "84925b0"
   },
   "errors.write.fileLocked.suggestion.mac": "在 Finder 里解锁它（显示简介 > 取消勾选“已锁定”），然后重试。",
   "@errors.write.fileLocked.suggestion.mac": {
@@ -1614,7 +1614,7 @@
   },
   "errors.write.newDataKeptAt.message": "新的 {path} 已经完整写好了，但目标位置不让它用这个名字，而它要替换的那个文件已经没了。新文件现在在 {keptAt}。",
   "@errors.write.newDataKeptAt.message": {
-    "sourceHash": "d1dc96b"
+    "sourceHash": "93d07be"
   },
   "errors.write.newDataKeptAt.suggestion": "打开 {keptAt} 看一下，然后给它改名。如果目标位置是网络共享或手机，先重新连上，改名就能成。",
   "@errors.write.newDataKeptAt.suggestion": {
@@ -1634,27 +1634,27 @@
   },
   "errors.write.originalsKeptAside.suggestion.one": "打开 {keptAt} 看一下。等你把那个文件夹挪开，就可以把文件的名字改回来。",
   "@errors.write.originalsKeptAside.suggestion.one": {
-    "sourceHash": "6c53394"
+    "sourceHash": "5cbe5bb"
   },
   "errors.write.originalsKeptAside.suggestion.many": "下面的详情里写了每个文件在哪儿。等你把那些文件夹挪开，就可以把名字都改回来。",
   "@errors.write.originalsKeptAside.suggestion.many": {
-    "sourceHash": "7934c84"
+    "sourceHash": "2b05c26"
   },
   "errors.write.fallback.title.copy": "无法拷贝",
   "@errors.write.fallback.title.copy": {
-    "sourceHash": "53b17a4"
+    "sourceHash": "dbb854f"
   },
   "errors.write.fallback.title.move": "无法移动",
   "@errors.write.fallback.title.move": {
-    "sourceHash": "3f6c20e"
+    "sourceHash": "ceb5c7e"
   },
   "errors.write.fallback.title.delete": "无法删除",
   "@errors.write.fallback.title.delete": {
-    "sourceHash": "f73bc6b"
+    "sourceHash": "b1165b2"
   },
   "errors.write.fallback.title.trash": "无法移到废纸篓",
   "@errors.write.fallback.title.trash": {
-    "sourceHash": "c2d75cc"
+    "sourceHash": "44e3a2e"
   },
   "errors.write.fallback.message.copy": "拷贝时发生了意外问题。",
   "@errors.write.fallback.message.copy": {
@@ -1678,31 +1678,31 @@
   },
   "errors.mutation.notFound": "“{path}”已经不存在了。",
   "@errors.mutation.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.mutation.cantRenameVolumeRoot": "宗卷的顶层文件夹无法在这里重命名。",
   "@errors.mutation.cantRenameVolumeRoot": {
-    "sourceHash": "baf4d16"
+    "sourceHash": "0845c57"
   },
   "errors.mutation.parentNotWritable": "Cmdr 无法写入“{path}”。请在 Finder 里查看这个文件夹的权限。",
   "@errors.mutation.parentNotWritable": {
-    "sourceHash": "3659a5a"
+    "sourceHash": "e0a7ad6"
   },
   "errors.mutation.fileLocked": "这个项目已锁定。在 Finder 的“显示简介”面板里解锁它，然后重试。",
   "@errors.mutation.fileLocked": {
-    "sourceHash": "d1d127c"
+    "sourceHash": "4be163f"
   },
   "errors.mutation.sipProtected": "因为 macOS 的“系统完整性保护”，这个项目无法重命名。",
   "@errors.mutation.sipProtected": {
-    "sourceHash": "1865724"
+    "sourceHash": "2189822"
   },
   "errors.mutation.volumeGone": "这个宗卷已经不可用了，所以什么都没有改动。",
   "@errors.mutation.volumeGone": {
-    "sourceHash": "604aad5"
+    "sourceHash": "643398b"
   },
   "errors.mutation.archiveNotEditable": "Cmdr 现在无法打开这个压缩文件来编辑。",
   "@errors.mutation.archiveNotEditable": {
-    "sourceHash": "eedee11"
+    "sourceHash": "47c44dd"
   },
   "errors.mutation.archiveReadOnly": "只有 zip 压缩文件可以修改，而这个是只读的。",
   "@errors.mutation.archiveReadOnly": {
@@ -1710,43 +1710,43 @@
   },
   "errors.mutation.renameOutOfArchive": "重命名不能把项目移出压缩文件。请改用“移动”。",
   "@errors.mutation.renameOutOfArchive": {
-    "sourceHash": "1f852c5"
+    "sourceHash": "5e82283"
   },
   "errors.mutation.renameAcrossArchives": "重命名不能把项目从一个压缩文件移入另一个。请改用“移动”。",
   "@errors.mutation.renameAcrossArchives": {
-    "sourceHash": "5b8f1df"
+    "sourceHash": "89b3231"
   },
   "errors.mutation.archiveEditNotReady": "Cmdr 还在启动，所以暂时还不能编辑压缩文件。",
   "@errors.mutation.archiveEditNotReady": {
-    "sourceHash": "21a4fcf"
+    "sourceHash": "1a71ae7"
   },
   "errors.mutation.archiveEditCouldntStart": "这次压缩文件编辑没能开始。",
   "@errors.mutation.archiveEditCouldntStart": {
-    "sourceHash": "3a5322f"
+    "sourceHash": "c67e249"
   },
   "errors.mutation.timedOut": "这个宗卷还没有响应，所以这次改动也许仍会生效。",
   "@errors.mutation.timedOut": {
-    "sourceHash": "27d6a2f"
+    "sourceHash": "94a8419"
   },
   "errors.mutation.unexpected": "出了点问题，Cmdr 也说不清是什么。",
   "@errors.mutation.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.volume.notFound": "“{path}”已经不存在了。",
   "@errors.volume.notFound": {
-    "sourceHash": "45a1f09"
+    "sourceHash": "64611c8"
   },
   "errors.volume.permissionDenied": "Cmdr 没有权限访问“{path}”。",
   "@errors.volume.permissionDenied": {
-    "sourceHash": "fee452b"
+    "sourceHash": "2c188b6"
   },
   "errors.volume.alreadyExists": "“{path}”那里已经有东西了。",
   "@errors.volume.alreadyExists": {
-    "sourceHash": "de0bbb9"
+    "sourceHash": "8763243"
   },
   "errors.volume.notSupported": "这个宗卷不支持这项操作。",
   "@errors.volume.notSupported": {
-    "sourceHash": "f57ad5a"
+    "sourceHash": "b645086"
   },
   "errors.volume.deviceDisconnected": "改动还没完成，设备就断开了。",
   "@errors.volume.deviceDisconnected": {
@@ -1754,7 +1754,7 @@
   },
   "errors.volume.notConnected": "Cmdr 还没有连接到这台手机或服务器，请先打开它。",
   "@errors.volume.notConnected": {
-    "sourceHash": "094dc49"
+    "sourceHash": "e128225"
   },
   "errors.volume.deviceSessionReset": "设备的连接已重启。请等待几秒钟，然后重试。",
   "@errors.volume.deviceSessionReset": {
@@ -1766,11 +1766,11 @@
   },
   "errors.volume.storageFull": "这个宗卷上已经没有空间了。",
   "@errors.volume.storageFull": {
-    "sourceHash": "f2f33dc"
+    "sourceHash": "1fcdb67"
   },
   "errors.volume.connectionTimeout": "连接没能及时响应。",
   "@errors.volume.connectionTimeout": {
-    "sourceHash": "857ed01"
+    "sourceHash": "f21c934"
   },
   "errors.volume.cancelled": "Cmdr 按你的要求停止了这项操作。",
   "@errors.volume.cancelled": {
@@ -1782,7 +1782,7 @@
   },
   "errors.volume.invalidName": "目标位置存不下这个名称。请换一个名称。",
   "@errors.volume.invalidName": {
-    "sourceHash": "ef0f2b8"
+    "sourceHash": "531488f"
   },
   "errors.volume.deletePending": "这个文件正在退场，还有东西占着它。请稍等片刻再重试。",
   "@errors.volume.deletePending": {
@@ -1790,7 +1790,7 @@
   },
   "errors.volume.ambiguousName": "服务器上有不止一个项目匹配“{path}”，所以 Cmdr 没有替你选。请到它所在的文件夹里选择。",
   "@errors.volume.ambiguousName": {
-    "sourceHash": "f866182"
+    "sourceHash": "0f0e74d"
   },
   "errors.volume.staleDestinationHandle": "Cmdr 跟丢了设备上的目标文件夹。请再次进入这个文件夹，然后重试。",
   "@errors.volume.staleDestinationHandle": {
@@ -1798,7 +1798,7 @@
   },
   "errors.volume.ioError": "这个宗卷没能完成这项操作。",
   "@errors.volume.ioError": {
-    "sourceHash": "c82a0e1"
+    "sourceHash": "59e7d6a"
   },
   "errors.volume.needsPassword": "这个压缩文件受密码保护。",
   "@errors.volume.needsPassword": {
@@ -1806,7 +1806,7 @@
   },
   "errors.volume.passwordRejected": "这个密码不起作用。",
   "@errors.volume.passwordRejected": {
-    "sourceHash": "33ba224"
+    "sourceHash": "fe9b44a"
   },
   "errors.mutation.trashNotSupported": "这个宗卷没有废纸篓，只能彻底删除。",
   "@errors.mutation.trashNotSupported": {
@@ -1814,23 +1814,23 @@
   },
   "errors.mutation.trashRefused": "macOS 拒绝把这个项目移到废纸篓。",
   "@errors.mutation.trashRefused": {
-    "sourceHash": "6d8a1b6"
+    "sourceHash": "7a6d1a5"
   },
   "errors.serverRequest.unreachable": "Cmdr 无法连接到它的服务器。请检查网络连接，然后重试。",
   "@errors.serverRequest.unreachable": {
-    "sourceHash": "7f2a23e"
+    "sourceHash": "186a0f6"
   },
   "errors.serverRequest.timedOut": "Cmdr 的服务器没有及时响应。请稍后再试。",
   "@errors.serverRequest.timedOut": {
-    "sourceHash": "14b0dcd"
+    "sourceHash": "1413608"
   },
   "errors.serverRequest.serverBusy": "Cmdr 的服务器暂时出了点问题。请稍后再试。",
   "@errors.serverRequest.serverBusy": {
-    "sourceHash": "2df1f8d"
+    "sourceHash": "1f21e5d"
   },
   "errors.serverRequest.refused": "Cmdr 的服务器拒绝了这个请求。如果一直这样，请从 getcmdr.com 获取最新版 Cmdr。",
   "@errors.serverRequest.refused": {
-    "sourceHash": "f36d8f8"
+    "sourceHash": "6a83e2a"
   },
   "errors.serverRequest.unexpected": "Cmdr 自身出了点问题。请重试；如果问题仍然存在，请重启 Cmdr。",
   "@errors.serverRequest.unexpected": {
@@ -1842,23 +1842,23 @@
   },
   "errors.eject.volumeNotFound": "这个驱动器已经断开了，所以不用再推出。",
   "@errors.eject.volumeNotFound": {
-    "sourceHash": "62a3af2"
+    "sourceHash": "2c5112f"
   },
   "errors.eject.notEjectable": "这个驱动器不可移除，所以会一直保持连接。",
   "@errors.eject.notEjectable": {
-    "sourceHash": "bb88249"
+    "sourceHash": "cc7e9ee"
   },
   "errors.eject.notAnSmbVolume": "这不是网络共享，所以没有连接需要断开。",
   "@errors.eject.notAnSmbVolume": {
-    "sourceHash": "d49623e"
+    "sourceHash": "230d2dc"
   },
   "errors.eject.remoteNotConnected": "这台服务器已经断开了，所以没有连接需要关闭。",
   "@errors.eject.remoteNotConnected": {
-    "sourceHash": "a0ed630"
+    "sourceHash": "3b531d1"
   },
   "errors.eject.deviceDisconnectRefused": "设备没有关闭连接。等它空闲下来再拔下线缆。",
   "@errors.eject.deviceDisconnectRefused": {
-    "sourceHash": "d49861f"
+    "sourceHash": "5b99318"
   },
   "errors.eject.unmountRefused": "还有东西在使用这个驱动器。请关闭打开的文件和 App，然后再次推出。",
   "@errors.eject.unmountRefused": {
@@ -1890,27 +1890,27 @@
   },
   "errors.eject.timedOut": "这个驱动器还没有响应，可能过一会儿它会自己推出。",
   "@errors.eject.timedOut": {
-    "sourceHash": "c592421"
+    "sourceHash": "3feb944"
   },
   "errors.eject.notResponding": "这个驱动器没有响应，所以仍处于连接状态。请稍后再试。",
   "@errors.eject.notResponding": {
-    "sourceHash": "742a732"
+    "sourceHash": "a3d9d82"
   },
   "errors.eject.unexpected": "出了点问题，Cmdr 也说不清是什么。",
   "@errors.eject.unexpected": {
-    "sourceHash": "0c9d9f5"
+    "sourceHash": "2978e2a"
   },
   "errors.mount.hostUnreachable": "Cmdr 连不上“{server}”。请确认它已开机，并且和这台电脑在同一个网络上。",
   "@errors.mount.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.mount.timeout": "Cmdr 等了一会儿，但“{server}”没能及时响应。请确认它已开机并且可以连接，然后重试。",
   "@errors.mount.timeout": {
-    "sourceHash": "00d198e"
+    "sourceHash": "d0629fe"
   },
   "errors.mount.shareNotFound": "“{server}”上没有名为“{share}”的共享。请返回并从列表中选择一个。",
   "@errors.mount.shareNotFound": {
-    "sourceHash": "08aee2a"
+    "sourceHash": "10f3c59"
   },
   "errors.mount.authRequired": "请登录以打开“{server}”上的“{share}”。",
   "@errors.mount.authRequired": {
@@ -1918,23 +1918,23 @@
   },
   "errors.mount.authFailed": "这个用户名和密码在“{server}”上不起作用。请检查后重新登录。",
   "@errors.mount.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.mount.permissionDenied": "你已用“{username}”登录“{server}”，但这个账户无法打开“{share}”。请用其他账户登录。",
   "@errors.mount.permissionDenied": {
-    "sourceHash": "f8e000b"
+    "sourceHash": "05611b7"
   },
   "errors.mount.cancelled": "连接“{share}”的过程在完成前停止了。准备好后请重试。",
   "@errors.mount.cancelled": {
-    "sourceHash": "4f6ff32"
+    "sourceHash": "bc771b3"
   },
   "errors.mount.unsupportedProtocol": "这台电脑和“{server}”没有共同支持的 SMB 版本。请在服务器设置中开启 SMB 2 或更新版本，然后重试。",
   "@errors.mount.unsupportedProtocol": {
-    "sourceHash": "7cb18f6"
+    "sourceHash": "8afe4cb"
   },
   "errors.mount.mountRefused": "你已登录“{server}”，但它拒绝打开“{share}”。请在服务器上检查这个共享的设置，然后重试。",
   "@errors.mount.mountRefused": {
-    "sourceHash": "84344ca"
+    "sourceHash": "6cf694d"
   },
   "errors.mount.mountMissing": "你的电脑报告“{server}”上的“{share}”已连接，但它始终没有出现。请重试。",
   "@errors.mount.mountMissing": {
@@ -1942,7 +1942,7 @@
   },
   "errors.mount.gvfsMissing": "在 Linux 上连接网络共享需要 GVFS。请安装你所用发行版的 gvfs-smb 软件包，然后重试。",
   "@errors.mount.gvfsMissing": {
-    "sourceHash": "068da95"
+    "sourceHash": "b67831e"
   },
   "errors.mount.unexpected": "连接“{server}”上的“{share}”时出了点问题。请稍后重试。",
   "@errors.mount.unexpected": {
@@ -1950,11 +1950,11 @@
   },
   "errors.shareList.hostUnreachable": "Cmdr 连不上“{server}”。请确认它已开机，并且和这台电脑在同一个网络上。",
   "@errors.shareList.hostUnreachable": {
-    "sourceHash": "2bbca3c"
+    "sourceHash": "45ac92c"
   },
   "errors.shareList.timeout": "Cmdr 等了一会儿，但“{server}”没能及时响应。请稍后重试。",
   "@errors.shareList.timeout": {
-    "sourceHash": "a07b7c8"
+    "sourceHash": "0c2c6ec"
   },
   "errors.shareList.authRequired": "请登录以查看“{server}”上的共享。",
   "@errors.shareList.authRequired": {
@@ -1962,11 +1962,11 @@
   },
   "errors.shareList.signingRequired": "“{server}”不向客人显示共享。请登录后查看。",
   "@errors.shareList.signingRequired": {
-    "sourceHash": "ecc570d"
+    "sourceHash": "6e92125"
   },
   "errors.shareList.authFailed": "这个用户名和密码在“{server}”上不起作用。请检查后重新登录。",
   "@errors.shareList.authFailed": {
-    "sourceHash": "6efdcbd"
+    "sourceHash": "b88b224"
   },
   "errors.shareList.protocolError": "向“{server}”获取共享列表时出了点问题。请稍后重试。",
   "@errors.shareList.protocolError": {
@@ -1974,11 +1974,11 @@
   },
   "errors.shareList.resolutionFailed": "Cmdr 在网络上找不到“{server}”。请检查名称，或等它重新上线后再试。",
   "@errors.shareList.resolutionFailed": {
-    "sourceHash": "62e91cf"
+    "sourceHash": "9be124a"
   },
   "errors.shareList.missingDependency": "在这台电脑上列出共享需要 smbclient，但它还没有安装。请安装后重试。",
   "@errors.shareList.missingDependency": {
-    "sourceHash": "810b06a"
+    "sourceHash": "6ffa8a9"
   },
   "errors.write.readOnlyDevice.source.title": "源为只读",
   "@errors.write.readOnlyDevice.source.title": {
@@ -2002,7 +2002,7 @@
   },
   "errors.write.duplicateSourceNames.message": "你选了两个都叫 {name} 的项目，它们会落到同一个位置：{first} 和 {second}。",
   "@errors.write.duplicateSourceNames.message": {
-    "sourceHash": "4146d5f"
+    "sourceHash": "f4517fc"
   },
   "errors.write.duplicateSourceNames.suggestion.copy": "一个一个地拷贝，或者先给其中一个改名。",
   "@errors.write.duplicateSourceNames.suggestion.copy": {

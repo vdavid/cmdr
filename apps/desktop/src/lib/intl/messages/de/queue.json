@@ -37,7 +37,7 @@
   },
   "queue.row.status": "{status, select, queued {Wartet} running {Läuft} paused {Angehalten} done {Fertig} cancelled {Abgebrochen} failed {Nicht abgeschlossen} other {Läuft}}",
   "@queue.row.status": {
-    "sourceHash": "8e9ce48"
+    "sourceHash": "d7a7517"
   },
   "queue.row.statusAwaitingAnswer": "Antwort erforderlich",
   "@queue.row.statusAwaitingAnswer": {
@@ -118,7 +118,7 @@
   },
   "queue.failureToast.title": "{type, select, copy {Kopieren nicht abgeschlossen} move {Bewegen nicht abgeschlossen} delete {Löschen nicht abgeschlossen} trash {In den Papierkorb bewegen nicht abgeschlossen} rename {Umbenennen nicht abgeschlossen} create_folder {Ordner erstellen nicht abgeschlossen} create_file {Datei erstellen nicht abgeschlossen} archive_edit {Archiv bearbeiten nicht abgeschlossen} other {Nicht abgeschlossen}}",
   "@queue.failureToast.title": {
-    "sourceHash": "a55f5df"
+    "sourceHash": "b5f2b47"
   },
   "queue.failureToast.action": "In der Vorgangswarteschlange anzeigen",
   "@queue.failureToast.action": {
@@ -126,11 +126,11 @@
   },
   "queue.failureToast.summary": "{count, plural, one {{countText} Vorgang nicht abgeschlossen} other {{countText} Vorgänge nicht abgeschlossen}}",
   "@queue.failureToast.summary": {
-    "sourceHash": "6207914"
+    "sourceHash": "a55d85a"
   },
   "queue.chip.failed": "{count, plural, one {{countText} Vorgang nicht abgeschlossen. Öffne die Vorgangswarteschlange, um den Grund zu sehen.} other {{countText} Vorgänge nicht abgeschlossen. Öffne die Vorgangswarteschlange, um die Gründe zu sehen.}}",
   "@queue.chip.failed": {
-    "sourceHash": "336ad46"
+    "sourceHash": "9c0036b"
   },
   "queue.chip.ariaLabel": "{label}, {percentText} Prozent. Öffne die Vorgangswarteschlange.",
   "@queue.chip.ariaLabel": {

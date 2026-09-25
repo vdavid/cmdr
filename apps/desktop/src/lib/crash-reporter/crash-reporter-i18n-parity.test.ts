@@ -43,7 +43,7 @@ describe('crash-reporter dialog copy parity (en)', () => {
 
   it('says a report that didn’t go out stayed behind, and lets the reason follow', () => {
     expect(tString('crashReporter.dialog.notSent', { reason: 'Try again.' })).toBe(
-      "The report didn't go out. Try again.",
+      'The report didn’t go out. Try again.',
     )
   })
 })
@@ -64,14 +64,14 @@ describe('crash-reporter dialog title parity (en), two titles for three cases', 
 describe('crash-reporter dialog body copy parity (en), one true sentence per app fate', () => {
   it('says the app quit only for a report whose fate is settled as ended', () => {
     expect(tString('crashReporter.dialog.body.ended')).toBe(
-      "Cmdr quit unexpectedly last time. Here's a crash report with details that can help fix this.",
+      'Cmdr quit unexpectedly last time. Here’s a crash report with details that can help fix this.',
     )
   })
 
   it('says the app carried on when survival was confirmed, and never that it quit', () => {
     const body = tString('crashReporter.dialog.body.keptRunning')
     expect(body).toBe(
-      "Cmdr ran into a problem in the background last time and kept running. Here's a report with details that can help fix this.",
+      'Cmdr ran into a problem in the background last time and kept running. Here’s a report with details that can help fix this.',
     )
     // The whole reason this key exists. A future copy edit that reintroduces the claim
     // is the exact regression to catch.
@@ -80,7 +80,7 @@ describe('crash-reporter dialog body copy parity (en), one true sentence per app
 
   it('claims nothing about the app for a report that carries no fate', () => {
     const body = tString('crashReporter.dialog.body.unknown')
-    expect(body).toBe("Cmdr ran into a problem last time. Here's a report with details that can help fix this.")
+    expect(body).toBe('Cmdr ran into a problem last time. Here’s a report with details that can help fix this.')
     expect(body).not.toContain('quit')
     expect(body).not.toContain('kept running')
   })

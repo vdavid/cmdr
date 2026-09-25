@@ -114,13 +114,13 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.whereItGoes": "Where your data goes, and what happens to it there, depends on the service you pick and your agreement with it. That includes Ollama, LM Studio, and custom endpoints: the data goes wherever that server runs. Cmdr''s own servers never see any of it.",
+  "ai.cloudConsent.whereItGoes": "Where your data goes, and what happens to it there, depends on the service you pick and your agreement with it. That includes Ollama, LM Studio, and custom endpoints: the data goes wherever that server runs. Cmdr’s own servers never see any of it.",
   "@ai.cloudConsent.whereItGoes": {
     "description": "Paragraph right after the intro of the Allow cloud AI fold. Keeps three facts: the destination and its handling depend on the chosen service and the user's terms with it; Ollama, LM Studio, and custom endpoints count too; Cmdr itself receives nothing. Ollama and LM Studio are product names; keep them.",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloudConsent.folderSuggestions": "<b>New folder name suggestions</b>: the current folder''s path and up to 100 names in it",
+  "ai.cloudConsent.folderSuggestions": "<b>New folder name suggestions</b>: the current folder’s path and up to 100 names in it",
   "@ai.cloudConsent.folderSuggestions": {
     "description": "List item in the Allow cloud AI fold. The bold part (inside <b></b>, keep the tags) names the feature: the name suggestions in the New folder dialog. The rest says what's sent. Keep the number. Sentence case, no period.",
     "screenshot": "settings-ai-provider.png",
@@ -270,7 +270,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.translateError.rateLimited.body": "It''s rate-limiting requests or your plan is out of quota. Check your plan and billing, then try again.",
+  "ai.translateError.rateLimited.body": "It’s rate-limiting requests or your plan is out of quota. Check your plan and billing, then try again.",
   "@ai.translateError.rateLimited.body": {
     "description": "Next-step line under the provider-out-of-room toast, explaining rate limiting / quota and pointing to plan and billing.",
     "screenshot": "settings-ai-provider.png",
@@ -288,13 +288,13 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.translateError.unavailable.title": "Can''t reach your AI provider",
+  "ai.translateError.unavailable.title": "Can’t reach your AI provider",
   "@ai.translateError.unavailable.title": {
     "description": "Title shown when the AI provider can't be reached (network or provider down).",
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.translateError.unavailable.body": "Check your internet or the provider''s status, then try again.",
+  "ai.translateError.unavailable.body": "Check your internet or the provider’s status, then try again.",
   "@ai.translateError.unavailable.body": {
     "description": "Next-step line under the can't-reach-provider toast, pointing at internet and provider status.",
     "screenshot": "settings-ai-provider.png",
@@ -324,7 +324,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.translateError.parseError.title": "Couldn''t read the AI''s answer",
+  "ai.translateError.parseError.title": "Couldn’t read the AI’s answer",
   "@ai.translateError.parseError.title": {
     "description": "Title shown when the AI's response couldn't be parsed into the expected form.",
     "screenshot": "settings-ai-provider.png",
@@ -336,7 +336,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.translateError.unknownProvider.title": "That AI provider isn''t recognized",
+  "ai.translateError.unknownProvider.title": "That AI provider isn’t recognized",
   "@ai.translateError.unknownProvider.title": {
     "description": "Title shown when the configured AI provider isn't one Cmdr recognizes.",
     "screenshot": "settings-ai-provider.png",
@@ -405,7 +405,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.cloud.connectionError": "Can''t reach server",
+  "ai.cloud.connectionError": "Can’t reach server",
   "@ai.cloud.connectionError": {
     "description": "Fallback status line shown when the cloud AI server couldn't be reached and the provider gave no specific message.",
     "screenshot": "settings-ai-provider.png",
@@ -664,7 +664,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.local.deleteConfirmMessage": "This frees up {modelSize} of disk space. You''ll need to re-download it to use local AI again.",
+  "ai.local.deleteConfirmMessage": "This frees up {modelSize} of disk space. You’ll need to re-download it to use local AI again.",
   "@ai.local.deleteConfirmMessage": {
     "description": "Body of the delete-model confirmation dialog, stating how much disk space is freed and that re-download is needed later.",
     "placeholders": {
@@ -685,7 +685,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.secretError.keychainTitle": "{op, select, save {Couldn''t save your API key: macOS Keychain denied access} other {Couldn''t read your saved API key: macOS Keychain denied access}}",
+  "ai.secretError.keychainTitle": "{op, select, save {Couldn’t save your API key: macOS Keychain denied access} other {Couldn’t read your saved API key: macOS Keychain denied access}}",
   "@ai.secretError.keychainTitle": {
     "description": "Title of an error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when saving or reading the API key fails because the macOS Keychain refused access. \"macOS Keychain\" and \"Keychain\" are the proper name of the Apple credential store; keep them as Apple names them in your language (Apple ships a localized Keychain Access app, so use that localized name). Write each branch as a complete, natural sentence in your language rather than a shared prefix plus a clause.",
     "placeholders": {
@@ -703,7 +703,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.secretError.keyringTitle": "{op, select, save {Couldn''t save your API key: your system keyring denied access} other {Couldn''t read your saved API key: your system keyring denied access}}",
+  "ai.secretError.keyringTitle": "{op, select, save {Couldn’t save your API key: your system keyring denied access} other {Couldn’t read your saved API key: your system keyring denied access}}",
   "@ai.secretError.keyringTitle": {
     "description": "Title of an error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) on non-macOS systems when saving or reading the API key fails because the OS keyring (credential store) refused access. \"keyring\" is the generic term for the system credential store (on Linux, GNOME Keyring / KWallet); use whatever your platform calls it. Write each branch as a complete, natural sentence.",
     "placeholders": {
@@ -718,7 +718,7 @@
     "screenshot": "settings-ai-provider.png",
     "screenshotNote": "AI feature copy. Cloud-connection states, suggestions, and translate-errors surface around the Settings > AI > Provider subsection pictured here (and inline near AI actions). This shows the AI provider settings for context."
   },
-  "ai.secretError.genericTitle": "{op, select, save {Couldn''t save your API key.} other {Couldn''t read your saved API key.}}",
+  "ai.secretError.genericTitle": "{op, select, save {Couldn’t save your API key.} other {Couldn’t read your saved API key.}}",
   "@ai.secretError.genericTitle": {
     "description": "Title of a fall-back error shown in the cloud-AI provider settings (Settings > AI cloud, and the onboarding cloud-provider step) when saving or reading the API key fails for a reason that isn''t an explicit access denial. Write each branch as a complete, natural sentence.",
     "placeholders": {

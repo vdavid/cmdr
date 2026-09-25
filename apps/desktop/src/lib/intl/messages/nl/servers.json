@@ -108,7 +108,7 @@
   },
   "servers.refusal.authenticationRejected": "Dat wachtwoord werkte niet voor {username}.",
   "@servers.refusal.authenticationRejected": {
-    "sourceHash": "b2c42b0"
+    "sourceHash": "ac235d2"
   },
   "servers.refusal.needsCredentials": "Deze server vraagt om een wachtwoord.",
   "@servers.refusal.needsCredentials": {
@@ -116,15 +116,15 @@
   },
   "servers.refusal.accountNotPermitted": "{username} heeft hier geen toegang. Probeer een ander account.",
   "@servers.refusal.accountNotPermitted": {
-    "sourceHash": "fbd3b7b"
+    "sourceHash": "baa82ef"
   },
   "servers.refusal.authMethodUnsupported": "Deze server gebruikt een inlogmethode die Cmdr nog niet ondersteunt.",
   "@servers.refusal.authMethodUnsupported": {
-    "sourceHash": "62b963e"
+    "sourceHash": "48b9b15"
   },
   "servers.refusal.certificateUntrusted": "macOS vertrouwt het certificaat van deze server niet. Voeg het in Sleutelhangertoegang toe en probeer het opnieuw.",
   "@servers.refusal.certificateUntrusted": {
-    "sourceHash": "6db00c6"
+    "sourceHash": "b8f3b4a"
   },
   "servers.refusal.notAWebdavServer": "Op dit adres reageert niets op WebDAV.",
   "@servers.refusal.notAWebdavServer": {
@@ -132,23 +132,23 @@
   },
   "servers.refusal.invalidUrl": "Dat lijkt geen serveradres te zijn.",
   "@servers.refusal.invalidUrl": {
-    "sourceHash": "9a121ac"
+    "sourceHash": "d3f5f7d"
   },
   "servers.refusal.timedOut": "{host} reageerde niet op tijd.",
   "@servers.refusal.timedOut": {
-    "sourceHash": "7662825"
+    "sourceHash": "b2f0e52"
   },
   "servers.refusal.unreachable": "Cmdr kon {host} niet bereiken.",
   "@servers.refusal.unreachable": {
-    "sourceHash": "ae716c3"
+    "sourceHash": "6fcba90"
   },
   "servers.refusal.hostKeyUntrusted": "Cmdr vertrouwt de sleutel van {host} nog niet.",
   "@servers.refusal.hostKeyUntrusted": {
-    "sourceHash": "40a9d28"
+    "sourceHash": "343f48b"
   },
   "servers.refusal.hostKeyRevoked": "De sleutel van {host} is in je SSH-instellingen op deze Mac gemarkeerd als gecompromitteerd. Cmdr maakt er geen verbinding mee.",
   "@servers.refusal.hostKeyRevoked": {
-    "sourceHash": "47aacda"
+    "sourceHash": "e23d585"
   },
   "servers.refusal.startFolderOutsideRoot": "De beginmap moet de hoofdmap zijn of een map daarbinnen.",
   "@servers.refusal.startFolderOutsideRoot": {
@@ -156,23 +156,23 @@
   },
   "servers.refusal.rootNotFound": "Cmdr kan deze map op {host} niet openen. Controleer of hij bestaat en of je account hem mag lezen.",
   "@servers.refusal.rootNotFound": {
-    "sourceHash": "883a0bc"
+    "sourceHash": "aa029f8"
   },
   "servers.refusal.startFolderNotFound": "Cmdr kan deze beginmap op {host} niet openen. Controleer of hij bestaat en of je account hem mag lezen.",
   "@servers.refusal.startFolderNotFound": {
-    "sourceHash": "f1df16e"
+    "sourceHash": "0997a8d"
   },
   "servers.refusal.saveUnconfirmed": "{host} reageerde niet op tijd, dus er is niets bewaard. Probeer het zo opnieuw.",
   "@servers.refusal.saveUnconfirmed": {
-    "sourceHash": "f7bb3a6"
+    "sourceHash": "3fb55a6"
   },
   "servers.refusal.secretNotStored": "Cmdr kon dit wachtwoord niet bewaren in Sleutelhanger. Probeer het opnieuw of zet ‘Onthoud in Sleutelhanger’ uit om in te loggen zonder het te bewaren.",
   "@servers.refusal.secretNotStored": {
-    "sourceHash": "080b475"
+    "sourceHash": "20957fe"
   },
   "servers.refusal.savedSecretNotUpdated": "Cmdr heeft je wijzigingen bewaard, maar kon het wachtwoord in Sleutelhanger niet bijwerken. Bewaar opnieuw om het nog eens te proberen.",
   "@servers.refusal.savedSecretNotUpdated": {
-    "sourceHash": "471a6d8"
+    "sourceHash": "2ae1e2b"
   },
   "servers.sheet.addTitle": "Voeg server toe",
   "@servers.sheet.addTitle": {
@@ -317,7 +317,7 @@
   },
   "servers.sheet.autoReconnectHelp": "Als de verbinding wegvalt, maakt Cmdr vanzelf opnieuw verbinding met deze server. Hierdoor maakt Cmdr geen verbinding bij het opstarten: dat gebeurt pas als je de server in een paneel opent.",
   "@servers.sheet.autoReconnectHelp": {
-    "sourceHash": "5fc66ee"
+    "sourceHash": "559525d"
   },
   "servers.sheet.autoReconnectInfoLabel": "Meer over ‘Verbind automatisch opnieuw’",
   "@servers.sheet.autoReconnectInfoLabel": {
@@ -337,19 +337,19 @@
   },
   "servers.hostKey.firstContactBody": "Vergelijk de vingerafdruk hieronder met die van de servereigenaar en vertrouw de sleutel daarna.",
   "@servers.hostKey.firstContactBody": {
-    "sourceHash": "befd6c3"
+    "sourceHash": "f207466"
   },
   "servers.hostKey.changedTitle": "De sleutel van {host} is gewijzigd",
   "@servers.hostKey.changedTitle": {
-    "sourceHash": "dde14d6"
+    "sourceHash": "a63a050"
   },
   "servers.hostKey.changedBody": "Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Controleer de vingerafdruk bij de servereigenaar voordat je de sleutel vertrouwt.",
   "@servers.hostKey.changedBody": {
-    "sourceHash": "34552a6"
+    "sourceHash": "42491c4"
   },
   "servers.hostKey.changedDisclosure": "Ik heb het gecontroleerd",
   "@servers.hostKey.changedDisclosure": {
-    "sourceHash": "29d1f63"
+    "sourceHash": "4051d39"
   },
   "servers.hostKey.fingerprintLabel": "Vingerafdruk van de sleutel",
   "@servers.hostKey.fingerprintLabel": {
@@ -373,7 +373,7 @@
   },
   "servers.paneState.hostKeyChanged": "Cmdr maakt geen verbinding met {name}",
   "@servers.paneState.hostKeyChanged": {
-    "sourceHash": "123ff4f"
+    "sourceHash": "c73ddf3"
   },
   "servers.paneState.hostKeyChangedHint": "De sleutel is gewijzigd. Dat kan betekenen dat de server opnieuw is geïnstalleerd, of dat er iets tussen jou en de server zit. Verbreek de verbinding en open de server opnieuw om de vingerafdruk te controleren.",
   "@servers.paneState.hostKeyChangedHint": {
@@ -385,7 +385,7 @@
   },
   "servers.paneState.signedOutNothingToAsk": "Bij deze server log je in met een sleutel in plaats van een wachtwoord, dus er valt niets te typen. Open de server opnieuw om het nog eens te proberen.",
   "@servers.paneState.signedOutNothingToAsk": {
-    "sourceHash": "71d7eee"
+    "sourceHash": "95e6bd0"
   },
   "servers.paneState.retryProgressAriaLabel": "Tijd tot de volgende verbindingspoging",
   "@servers.paneState.retryProgressAriaLabel": {

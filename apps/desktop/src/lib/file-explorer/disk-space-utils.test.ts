@@ -253,18 +253,18 @@ describe('storage with no ceiling', () => {
     // and could land anywhere; there is no honest band to be in.
     const notes = formatSpaceNotes(createUnbounded(999_999_999_999))
     expect(notes).not.toContain('low on space')
-    expect(notes).toBe("This storage has no size limit, so there's no bar to fill.")
+    expect(notes).toBe('This storage has no size limit, so there’s no bar to fill.')
   })
 
   it('explains in the tooltip why there is no bar', () => {
     expect(formatBarTooltip(createUnbounded(64_000_000), 'binary')).toBe(
-      "61.04 MB used. This storage has no size limit, so there's no bar to fill.",
+      '61.04 MB used. This storage has no size limit, so there’s no bar to fill.',
     )
   })
 
   it('still carries the phone-storage hint after its own note', () => {
     expect(formatBarTooltip(createUnbounded(64_000_000), 'binary', 'Phones hide app data.')).toBe(
-      "61.04 MB used. This storage has no size limit, so there's no bar to fill. Phones hide app data.",
+      '61.04 MB used. This storage has no size limit, so there’s no bar to fill. Phones hide app data.',
     )
   })
 })

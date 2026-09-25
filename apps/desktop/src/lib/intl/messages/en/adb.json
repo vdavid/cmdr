@@ -1,5 +1,5 @@
 {
-  "adb.connect.adbNotInstalled": "Cmdr couldn''t find the Android platform tools.",
+  "adb.connect.adbNotInstalled": "Cmdr couldn’t find the Android platform tools.",
   "@adb.connect.adbNotInstalled": {
     "description": "Shown in the pane when Cmdr has no `adb` program to talk to, so it cannot open the phone at all. \"Android platform tools\" is the name of the free Google download that includes it; render it the way the vendor's own localized Android documentation names it in your language, and keep the English name if that is what your language uses. \"Cmdr\" is the product name."
   },
@@ -7,11 +7,11 @@
   "@adb.connect.openSettings": {
     "description": "Button beside that line; it opens the app's Settings window at the Android section, where the user can point Cmdr at the tools or re-check for them. VERB phrase, imperative. \"Settings\" is the app's own Settings window; use the word your language's macOS uses for it."
   },
-  "adb.connect.serverUnreachable": "The Android tools on this Mac didn''t answer.",
+  "adb.connect.serverUnreachable": "The Android tools on this Mac didn’t answer.",
   "@adb.connect.serverUnreachable": {
     "description": "Shown in the pane when the Android tools are installed but the background program they run isn't answering, so Cmdr can't reach any phone. About this Mac, never about the phone. ❌ Never name the background program or the protocol."
   },
-  "adb.connect.deviceGone": "Your phone isn''t connected any more.",
+  "adb.connect.deviceGone": "Your phone isn’t connected any more.",
   "@adb.connect.deviceGone": {
     "description": "Shown in the pane when the phone was unplugged, switched off, or otherwise vanished while Cmdr was opening it. Address the user directly (\"your phone\"). Terminal: there is no button, because plugging the phone back in is what fixes it."
   },
@@ -19,11 +19,11 @@
   "@adb.connect.unauthorized": {
     "description": "Shown in the pane while the phone is showing its own \"Allow USB debugging?\" prompt and waiting for the user to accept. VERB phrases, imperative, addressed to the user. \"Allow\" is the button on ANDROID's own prompt: render it exactly as Android's own translation of that button reads in your language, so the user can match the word on their screen."
   },
-  "adb.connect.deviceTooOld": "This phone''s Android version is too old for Cmdr to browse.",
+  "adb.connect.deviceTooOld": "This phone’s Android version is too old for Cmdr to browse.",
   "@adb.connect.deviceTooOld": {
     "description": "Shown in the pane when the phone runs an Android version older than what Cmdr can talk to (Android 7). Factual, not a judgement. Terminal: no button can change it. \"Android\" is the product name; \"Cmdr\" is ours."
   },
-  "adb.connect.timedOut": "Your phone didn''t answer in time.",
+  "adb.connect.timedOut": "Your phone didn’t answer in time.",
   "@adb.connect.timedOut": {
     "description": "Shown in the pane when the phone was there but didn't finish answering inside Cmdr's budget. Address the user directly. A \"Try again\" button sits beside it."
   },
@@ -43,11 +43,11 @@
   "@adb.readiness.waitingForAuthorization": {
     "description": "Hover tooltip on a phone's row in the volume switcher (the dropdown listing disks and devices) while the phone is showing its \"Allow USB debugging?\" prompt. The row still opens; this says what has to happen first, naming WHERE the user acts (their phone) and WHAT they press. \"Allow\" is the button on ANDROID's own prompt: render it exactly as Android's own translation of that button reads in your language, so the user can match the word on their screen."
   },
-  "adb.readiness.offline": "Your phone isn''t responding. Wake its screen, or reseat the cable.",
+  "adb.readiness.offline": "Your phone isn’t responding. Wake its screen, or reseat the cable.",
   "@adb.readiness.offline": {
     "description": "Hover tooltip on a phone's row in the volume switcher while the row is greyed out and cannot be opened, because the phone is listed but silent. Says the two things that usually fix it. Address the user directly."
   },
-  "adb.readiness.noPermissions": "This Mac can''t reach your phone over USB. Try another cable or port.",
+  "adb.readiness.noPermissions": "This Mac can’t reach your phone over USB. Try another cable or port.",
   "@adb.readiness.noPermissions": {
     "description": "Hover tooltip on a phone's row in the volume switcher while the row is greyed out, because this computer isn't allowed to claim the phone's USB connection. About the Mac, never about the phone's own settings."
   },
@@ -73,7 +73,7 @@
       "name": "the device's name, for example Pixel 7"
     }
   },
-  "adb.disconnectBusyTooltip": "Can''t disconnect while operations are in progress on this device",
+  "adb.disconnectBusyTooltip": "Can’t disconnect while operations are in progress on this device",
   "@adb.disconnectBusyTooltip": {
     "description": "Accessible name and hover tooltip on that Disconnect button while it is greyed out, because a file operation is still copying to or from the phone. States the reason, never blames the user."
   },

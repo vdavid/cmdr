@@ -65,11 +65,11 @@
   },
   "shortcuts.conflict.reservedByMacOs": "{combo} est réservé par macOS ({command}) et n’atteindra pas Cmdr. Choisissez une autre combinaison.",
   "@shortcuts.conflict.reservedByMacOs": {
-    "sourceHash": "4aad26f"
+    "sourceHash": "76e8ad2"
   },
   "shortcuts.conflict.fixedKey": "{combo} est une touche fixe dans Cmdr ({command}) et ne peut pas être réassignée. Choisissez une autre combinaison.",
   "@shortcuts.conflict.fixedKey": {
-    "sourceHash": "2c2c76f"
+    "sourceHash": "42c3c0e"
   },
   "shortcuts.conflict.systemShortcut": "{combo} est généralement pris par macOS ({label}), donc il pourrait ne jamais atteindre Cmdr. Vous pouvez le libérer dans Réglages Système > Clavier.",
   "@shortcuts.conflict.systemShortcut": {
@@ -192,11 +192,11 @@
   },
   "shortcuts.section.macOsTooltip": "macOS gère ce raccourci. Cmdr ne peut pas le modifier.",
   "@shortcuts.section.macOsTooltip": {
-    "sourceHash": "262b2cc"
+    "sourceHash": "fe5e056"
   },
   "shortcuts.section.fixedTooltip": "Cette touche est intégrée à Cmdr et ne peut pas être modifiée.",
   "@shortcuts.section.fixedTooltip": {
-    "sourceHash": "f07b460"
+    "sourceHash": "9367bfe"
   },
   "shortcuts.section.macOsBadge": "macOS",
   "@shortcuts.section.macOsBadge": {

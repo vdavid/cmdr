@@ -517,7 +517,7 @@
     "description": "NOUN phrase (plural). Help-menu item that opens the window listing every key binding, grouped by area. Use the standard term for keyboard shortcuts in this language, the one macOS itself uses in System Settings."
   },
 
-  "menu.help.whatsNew": "What's new",
+  "menu.help.whatsNew": "What’s new",
   "@menu.help.whatsNew": {
     "description": "NOUN phrase. Help-menu item that opens the popup listing the latest releases and what changed in each. Same destination as menu.app.changelog, so the two should read as clearly different doors to the same room: this one names the news, that one names the document. The apostrophe here is a plain ASCII one and is literal text, not a formatting character."
   },
@@ -708,7 +708,7 @@
     "description": "VERB phrase (imperative). A folder's right-click menu: takes this folder off the list Cmdr scans for photos. The opposite of menu.mediaIndex.addFolder; the two must read as a pair, since the same slot shows one or the other."
   },
 
-  "menu.mediaIndex.excludeFolder": "Don't index images in this folder",
+  "menu.mediaIndex.excludeFolder": "Don’t index images in this folder",
   "@menu.mediaIndex.excludeFolder": {
     "description": "VERB phrase (imperative, negative). A folder's right-click menu: the privacy veto, telling Cmdr never to scan this folder's images even if a folder above it is indexed. Being unambiguous matters more than being short; a user reaches for this to keep private photos out. Its opposite is menu.mediaIndex.includeFolder. The apostrophe is a plain ASCII one and is literal text."
   },

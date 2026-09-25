@@ -13,7 +13,7 @@
   },
   "suggestedOps.loadFailed": "Cmdr n’a pas pu lire les suggestions. Fermez cette fenêtre et rouvrez-la.",
   "@suggestedOps.loadFailed": {
-    "sourceHash": "3d3af5a"
+    "sourceHash": "ef0da3e"
   },
   "suggestedOps.agentReason": "Raison donnée par l’IA",
   "@suggestedOps.agentReason": {
@@ -57,7 +57,7 @@
   },
   "suggestedOps.irreversible": "Cette opération est irréversible",
   "@suggestedOps.irreversible": {
-    "sourceHash": "485d5a3"
+    "sourceHash": "b583829"
   },
   "suggestedOps.folderWillBeCreated": "Cmdr créera ce dossier",
   "@suggestedOps.folderWillBeCreated": {
@@ -69,7 +69,7 @@
   },
   "suggestedOps.destinationUnknown": "Cmdr n’a pas pu vérifier le dossier de destination",
   "@suggestedOps.destinationUnknown": {
-    "sourceHash": "e1293c5"
+    "sourceHash": "dc78d1d"
   },
   "suggestedOps.fromPattern": "Correspond à un motif",
   "@suggestedOps.fromPattern": {
@@ -113,7 +113,7 @@
   },
   "suggestedOps.filesLoadFailed": "Cmdr n’a pas pu charger ces fichiers.",
   "@suggestedOps.filesLoadFailed": {
-    "sourceHash": "c61d214"
+    "sourceHash": "01f1b86"
   },
   "suggestedOps.retryFiles": "Réessayer",
   "@suggestedOps.retryFiles": {
@@ -121,11 +121,11 @@
   },
   "suggestedOps.decisionNotRecorded": "Cmdr n’a pas pu enregistrer votre réponse. Réessayez.",
   "@suggestedOps.decisionNotRecorded": {
-    "sourceHash": "d4ee9cf"
+    "sourceHash": "9eae594"
   },
   "suggestedOps.approvalUnsure": "Cmdr ne sait pas si l’approbation a abouti. Vérifiez la file d’attente des opérations avant de l’approuver à nouveau.",
   "@suggestedOps.approvalUnsure": {
-    "sourceHash": "0cd408c"
+    "sourceHash": "fba515a"
   },
   "suggestedOps.indicatorTooltip": "Des suggestions de l’IA vous attendent. Cliquez pour les examiner.",
   "@suggestedOps.indicatorTooltip": {

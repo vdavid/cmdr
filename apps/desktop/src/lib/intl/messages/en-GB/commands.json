@@ -15,9 +15,9 @@
   "@commands.favoritesAdd.label": {
     "sourceHash": "7f3c078"
   },
-  "commands.favoritesAdd.description": "Add the focused pane''s current folder to your favourites, so the favourites menu can take you back to it.",
+  "commands.favoritesAdd.description": "Add the focused pane’s current folder to your favourites, so the favourites menu can take you back to it.",
   "@commands.favoritesAdd.description": {
-    "sourceHash": "b09b35e"
+    "sourceHash": "999aa52"
   },
   "commands.navForward.label": "Go forwards",
   "@commands.navForward.label": {
@@ -27,9 +27,9 @@
   "@commands.fileGoToTrash.label": {
     "sourceHash": "5332858"
   },
-  "commands.fileGoToTrash.description": "Open the Bin of the drive you''re browsing",
+  "commands.fileGoToTrash.description": "Open the Bin of the drive you’re browsing",
   "@commands.fileGoToTrash.description": {
-    "sourceHash": "45df2c4"
+    "sourceHash": "73eae92"
   },
   "commands.tagsToggleGrey.label": "Toggle grey tag",
   "@commands.tagsToggleGrey.label": {
@@ -43,9 +43,9 @@
   "@commands.handler.favoriteAdded": {
     "sourceHash": "ee59953"
   },
-  "commands.handler.favoriteAddFailed": "Couldn't add that folder to favourites. Try again?",
+  "commands.handler.favoriteAddFailed": "Couldn’t add that folder to favourites. Try again?",
   "@commands.handler.favoriteAddFailed": {
-    "sourceHash": "3f85e99"
+    "sourceHash": "0792537"
   },
   "commands.favoritesOpen.label": "Show favourites",
   "@commands.favoritesOpen.label": {

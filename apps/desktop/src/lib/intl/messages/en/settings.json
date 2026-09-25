@@ -4,7 +4,7 @@
     "description": "Label for the app-language picker in Settings > Appearance > Colors and formats. Lets the user choose which language Cmdr's interface uses.",
     "screenshot": "settings-appearance.png"
   },
-  "settings.appearance.language.description": "Choose the language Cmdr uses. “System default” follows your Mac's language.",
+  "settings.appearance.language.description": "Choose the language Cmdr uses. “System default” follows your Mac’s language.",
   "@settings.appearance.language.description": {
     "description": "Help text under the language picker in Settings > Appearance. \"Cmdr\" is the product name; do not translate it. “System default” must match the wording of the settings.appearance.language.opt.system option below.",
     "screenshot": "settings-appearance.png"
@@ -340,7 +340,7 @@
     "description": "Label for the toggle that uses each document's owning-app icon instead of generic file-type icons. In Settings > Appearance > Listing.",
     "screenshot": "settings-appearance-listing.png"
   },
-  "settings.appearance.useAppIconsForDocuments.description": "Show the app''s icon for documents instead of generic file type icons. More colorful but slightly slower.",
+  "settings.appearance.useAppIconsForDocuments.description": "Show the app’s icon for documents instead of generic file type icons. More colorful but slightly slower.",
   "@settings.appearance.useAppIconsForDocuments.description": {
     "description": "Help text for the app-icons-for-documents toggle. \"app\" here means the application that opens a given document.",
     "screenshot": "settings-appearance-listing.png"
@@ -551,12 +551,12 @@
     "description": "Help text for the drive-indexing toggle. Indexing precomputes each folder's total size so it shows instantly. \"Folder\" is the user-facing word for this all over the app (indexing.step.computeFolderSizes, the drive-index tooltips); \"directory\" is the internal term and never appears in UI copy.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
-  "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple''s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
+  "settings.mediaIndex.privacyNote": "This runs entirely on your Mac using Apple’s built-in Vision framework. Your images never leave your computer, and no AI provider or API key is involved.",
   "settings.mediaIndex.clip.title": "Semantic search",
   "@settings.mediaIndex.clip.title": {
     "description": "Title of the control (inside the Image search settings card) for the natural-language photo search feature, where you find a photo by describing what''s in it."
   },
-  "settings.mediaIndex.clip.description": "Find photos by describing what''s in them, like “beach sunset”, using an on-device AI model.",
+  "settings.mediaIndex.clip.description": "Find photos by describing what’s in them, like “beach sunset”, using an on-device AI model.",
   "@settings.mediaIndex.clip.description": {
     "description": "Explains the semantic-search feature: you search by describing a photo's contents, and it runs locally on the Mac. Keep “beach sunset” as a concrete example of a description."
   },
@@ -579,7 +579,7 @@
   "@settings.mediaIndex.clip.downloading": {
     "description": "Shown on the download button while the semantic-search model is downloading."
   },
-  "settings.mediaIndex.clip.failed": "The download didn''t finish. Check your connection and try again.",
+  "settings.mediaIndex.clip.failed": "The download didn’t finish. Check your connection and try again.",
   "@settings.mediaIndex.clip.failed": {
     "description": "Shown when the semantic-search model download didn''t complete. Avoid the words ''error'' and ''failed'' per the app''s copy style."
   },
@@ -613,7 +613,7 @@
       "size": "the reclaimable disk size, preformatted with its unit, for example \"392 MB\""
     }
   },
-  "settings.mediaIndex.clip.deleteFailed": "The model couldn''t be removed just now. Try again in a moment.",
+  "settings.mediaIndex.clip.deleteFailed": "The model couldn’t be removed just now. Try again in a moment.",
   "@settings.mediaIndex.clip.deleteFailed": {
     "description": "Shown when deleting the semantic-search model didn''t complete. Avoid the words ''error'' and ''failed'' per the app''s copy style."
   },
@@ -652,7 +652,7 @@
   "@settings.mediaIndex.showFileStatusIcons.label": {
     "description": "Label for the toggle that shows a small badge on each image file in the file list, marking whether it''s indexed for image search. On by default. In Settings > Indexing > Image indexing, under the \"Index image contents\" toggle."
   },
-  "settings.mediaIndex.showFileStatusIcons.description": "Add a small badge to each image in the file list showing whether it''s been indexed for search.",
+  "settings.mediaIndex.showFileStatusIcons.description": "Add a small badge to each image in the file list showing whether it’s been indexed for search.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
     "description": "Help text under the \"Show status badges on image files\" toggle. Explains the badge marks each image''s indexing state (indexed, waiting, and so on) right in the file list."
   },
@@ -660,7 +660,7 @@
   "@settings.mediaIndex.showInSearch.label": {
     "description": "Label for the toggle that lets the Search dialog show a row of matching images above the file results. Off by default. In Settings > Indexing > Image indexing, under the \"Show status badges on image files\" toggle. \"Search\" names Cmdr''s Search dialog, so use the same word your translation gives that dialog."
   },
-  "settings.mediaIndex.showInSearch.description": "Search adds a row of matching images above your files. Matching is still rough, so it''s off until you want it.",
+  "settings.mediaIndex.showInSearch.description": "Search adds a row of matching images above your files. Matching is still rough, so it’s off until you want it.",
   "@settings.mediaIndex.showInSearch.description": {
     "description": "Help text under the \"Show image results in Search\" toggle. Says what turning it on does (a row of matching images sits above the file results) and admits image matching isn''t accurate yet, which is why it starts off. The tone is candid and relaxed, owning the limitation without apologizing for it. \"Search\" names Cmdr''s Search dialog; keep it consistent with the label above."
   },
@@ -696,7 +696,7 @@
   "@settings.mediaIndex.excludedFolders.description": {
     "description": "Internal (hidden setting): help text for the excluded-folder list. Not shown as a normal settings row."
   },
-  "settings.mediaIndex.networkVolumes.intro": "Network drives are indexed only when you turn them on here. Cmdr reads photos over the network gently: only while you''re not busy, at a limited speed, and it pauses when the drive disconnects.",
+  "settings.mediaIndex.networkVolumes.intro": "Network drives are indexed only when you turn them on here. Cmdr reads photos over the network gently: only while you’re not busy, at a limited speed, and it pauses when the drive disconnects.",
   "@settings.mediaIndex.networkVolumes.intro": {
     "description": "Intro paragraph above the per-network-drive opt-in list, inside the \"Image search\" card in Settings > Behavior > File system watching. Sets honest expectations about the conservative network reading."
   },
@@ -953,7 +953,7 @@
   "@settings.mediaIndex.reclaim.alreadyCleared": {
     "description": "Toast shown if the leftover entries were already deleted (for example by a rescan) by the time the user confirmed, so nothing was removed."
   },
-  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr couldn''t delete the extra entries. Please try again.",
+  "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr couldn’t delete the extra entries. Please try again.",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
     "description": "Toast shown when deleting the leftover indexed entries did not complete. Avoids the words \"error\" and \"failed\" per the app voice."
   },
@@ -976,7 +976,7 @@
     "description": "Label for the toggle that controls whether Cmdr shows a one-time explanation the first time an external drive''s index may be out of date (because the drive was disconnected). In Settings > Behavior > File system watching.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
-  "settings.indexing.staleNotify.description": "You''ll still see the yellow status if you turn this off.",
+  "settings.indexing.staleNotify.description": "You’ll still see the yellow status if you turn this off.",
   "@settings.indexing.staleNotify.description": {
     "description": "Help text under the stale-notification toggle, reassuring that the yellow drive-index status dot stays visible even with the notification turned off.",
     "screenshot": "settings-indexing-drive-indexing.png"
@@ -1008,7 +1008,7 @@
     "description": "Help text under the \"Re-enable notifications for all drives\" button, explaining it undoes the per-drive \"Don''t ask again\" choices.",
     "screenshot": "settings-indexing-drive-indexing.png"
   },
-  "settings.indexing.reEnableNotifications.disabledTooltip": "You haven''t turned off the prompt for any drive yet.",
+  "settings.indexing.reEnableNotifications.disabledTooltip": "You haven’t turned off the prompt for any drive yet.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
     "description": "Tooltip on the disabled \"Re-enable\" button, shown when the user hasn''t silenced the first-connect prompt for any drive (so there''s nothing to re-enable).",
     "screenshot": "settings-indexing-drive-indexing.png"
@@ -1204,7 +1204,7 @@
     "description": "Label for the master networking toggle (SMB discovery and connection). In Settings > File systems > SMB/Network shares.",
     "screenshot": "settings-file-systems-smb.png"
   },
-  "settings.network.enabled.description": "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won''t ask macOS for Local Network access.",
+  "settings.network.enabled.description": "Discover SMB servers on your local network and connect to them. When off, Cmdr can still read and write files on already-mounted shares, but won’t ask macOS for Local Network access.",
   "@settings.network.enabled.description": {
     "description": "Help text for the enable-networking toggle. \"SMB\" is a protocol name (keep it); \"Cmdr\" is the product name (keep it); \"macOS\" is a brand name (keep it). \"Local Network\" is the macOS permission name; use the OS's localized name. \"mounted shares\" = network folders already attached to the system.",
     "screenshot": "settings-file-systems-smb.png"
@@ -1325,7 +1325,7 @@
     "description": "Label for the toggle enabling USB device support. \"Kindle\" is a product name; \"PTP\" and \"MTP\" are USB device protocol abbreviations; keep all three as-is. In Settings > File systems > MTP.",
     "screenshot": "settings-file-systems-mtp.png"
   },
-  "settings.fileOperations.mtpEnabled.description": "Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you''ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to “File transfer”, “Android Auto”, or similar. (Varies by device.)",
+  "settings.fileOperations.mtpEnabled.description": "Detect and connect to Android and other devices over a USB cable for file browsing and transfers. To use this feature on an Android phone, you’ll want to use a USB cable, then on your phone, go to something like Settings > USB Preferences, and set the connection to “File transfer”, “Android Auto”, or similar. (Varies by device.)",
   "@settings.fileOperations.mtpEnabled.description": {
     "description": "Help text for the MTP toggle. \"Android\" and “Android Auto” are product names; keep them. \"Settings > USB Preferences\", “File transfer”, and “Android Auto” are on-phone Android menu labels quoted as examples; translate the descriptive parts but note these vary by device. \"USB\" is a connector name; keep it.",
     "screenshot": "settings-file-systems-mtp.png"
@@ -1334,7 +1334,7 @@
   "@settings.fileOperations.adbEnabled.label": {
     "description": "Label for the toggle enabling Android Debug Bridge support. \"Android\" is a product name and \"ADB\" is the abbreviation for Android Debug Bridge; keep both as-is. In Settings > File systems > Android (ADB)."
   },
-  "settings.fileOperations.adbEnabled.description": "Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can''t show you. Needs the Android platform tools (the “adb” command) on this Mac. Leaving this on costs nothing when you have no Android tooling installed.",
+  "settings.fileOperations.adbEnabled.description": "Reach the whole filesystem of an Android phone that has USB debugging turned on, which MTP can’t show you. Needs the Android platform tools (the “adb” command) on this Mac. Leaving this on costs nothing when you have no Android tooling installed.",
   "@settings.fileOperations.adbEnabled.description": {
     "description": "Help text for the ADB toggle. \"USB debugging\" and \"platform tools\" are labels the reader has to find on their own phone and in Google’s own docs, so render them the way the vendor’s localized Android shows them in your language, ❌ never keep the English. \"Android\", \"MTP\", and the command name “adb” stay as-is."
   },
@@ -1469,7 +1469,7 @@
     "description": "Label for the usage-stats opt-in toggle. In Settings > Updates & privacy. \"stats\" = statistics.",
     "screenshot": "settings-updates.png"
   },
-  "settings.analytics.enabled.description": "Please enable this to help us see which features matter during the open beta.\nIt''s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn''t send any stats.",
+  "settings.analytics.enabled.description": "Please enable this to help us see which features matter during the open beta.\nIt’s not tied to your name or email but a random id.\nCmdr never sends file names, paths, search terms, or prompts.\nWhen off, Cmdr doesn’t send any stats.",
   "@settings.analytics.enabled.description": {
     "description": "Help text for the usage-stats toggle, written in a reassuring privacy-first voice. It asks the user to leave the toggle on, then says what the stats are tied to and what is never sent. \"open beta\" = the public testing phase. \"random id\" = a randomly generated identifier stored on the user's Mac, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; keep it. \"prompts\" = AI prompts.",
     "screenshot": "settings-updates.png"
@@ -1569,7 +1569,7 @@
     "description": "Advanced-section label for the toggle that hides the binary-file warning banner in the viewer. \"binary files\" = non-text files (images, PDFs, archives).",
     "screenshot": "settings-advanced.png"
   },
-  "settings.fileViewer.suppressBinaryWarning.description": "F3 opens Cmdr''s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.",
+  "settings.fileViewer.suppressBinaryWarning.description": "F3 opens Cmdr’s file viewer, which shows raw bytes (with lossy UTF-8 for non-text content). When you open an image, PDF, archive, or other binary file, the viewer shows a red banner explaining that ⇧Space (Quick Look) or Enter (open in the associated app) is probably what you wanted. Turn this on (or click “Never show this warning again” in the banner) to suppress the warning for good.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
     "description": "Help text for the suppress-binary-warning toggle. \"F3\", \"⇧Space\" (Shift-Space), and \"Enter\" are keyboard keys/glyphs; keep the glyphs and use the locale's key names. \"Cmdr\" is the product name (keep it); \"Quick Look\" is the macOS preview feature name (use the OS's localized name). \"UTF-8\" and \"PDF\" are standard names; keep them. The quoted “Never show this warning again” must match the file viewer's actual banner button copy; translate it consistently with that button.",
     "screenshot": "settings-advanced.png"
@@ -1579,7 +1579,7 @@
     "description": "Advanced-section label for the toggle that hides the Space-vs-Quick-Look reminder. \"Space-key\" is the keyboard spacebar; \"Quick Look\" is the macOS preview feature (use the OS's localized name).",
     "screenshot": "settings-advanced.png"
   },
-  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click “Don''t show again” in the toast) to suppress the reminder for good.",
+  "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr uses Space to toggle file selection and ⇧Space for Quick Look (Finder uses plain Space for Quick Look). Each time you press Space in the file list, Cmdr shows a one-paragraph reminder of this difference. Turn this on (or click “Don’t show again” in the toast) to suppress the reminder for good.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
     "description": "Help text for the suppress-Quick-Look-hint toggle. \"Space\" and \"⇧Space\" (Shift-Space) are keyboard keys/glyphs; keep glyphs, use the locale's key names. \"Cmdr\" is the product name (keep it); \"Finder\" and \"Quick Look\" are macOS feature names (use the OS's localized names). \"toast\" = a small transient notification. The quoted “Don't show again” must match the actual toast button copy; translate it consistently with that button.",
     "screenshot": "settings-advanced.png"
@@ -1670,7 +1670,7 @@
     "description": "Help text for the mount-timeout setting (advanced). \"mounting\" = attaching a network share to the system.",
     "screenshot": "settings-advanced.png"
   },
-  "settings.advanced.showSafeSaveFiles.label": "Show other apps' temporary files",
+  "settings.advanced.showSafeSaveFiles.label": "Show other apps’ temporary files",
   "@settings.advanced.showSafeSaveFiles.label": {
     "description": "Advanced-section label for the toggle that shows macOS safe-save scratch files other apps leave while saving.",
     "screenshot": "settings-advanced.png"
@@ -1680,12 +1680,12 @@
     "description": "Help text for the show-safe-save-files toggle (advanced). \"macOS\" is a brand name (keep it), and \".sb-\" is a literal filename fragment (keep it exactly). \"TextEdit\" and \"Preview\" are Apple''s apps, and macOS localizes their names (for example fr \"Aperçu\", zh \"文本编辑\" and \"预览\"): use the names your language''s macOS shows (check the reference pile or the app bundle).",
     "screenshot": "settings-advanced.png"
   },
-  "settings.advanced.showStagingTempFiles.label": "Show Cmdr's temporary files",
+  "settings.advanced.showStagingTempFiles.label": "Show Cmdr’s temporary files",
   "@settings.advanced.showStagingTempFiles.label": {
     "description": "Advanced-section label for the toggle that shows the temporary files Cmdr writes while copying. \"Cmdr\" is the app name; keep it.",
     "screenshot": "settings-advanced.png"
   },
-  "settings.advanced.showStagingTempFiles.description": "While copying, Cmdr writes each file under a temporary name and renames it once the file is complete, so a crash can't leave a half-written file under a real name. Leftovers from an interrupted copy are always shown.",
+  "settings.advanced.showStagingTempFiles.description": "While copying, Cmdr writes each file under a temporary name and renames it once the file is complete, so a crash can’t leave a half-written file under a real name. Leftovers from an interrupted copy are always shown.",
   "@settings.advanced.showStagingTempFiles.description": {
     "description": "Help text for the show-temporary-files toggle (advanced). Explains why the temporary names exist, and that leftovers stay visible regardless of this setting. \"Cmdr\" is the app name; keep it.",
     "screenshot": "settings-advanced.png"
@@ -2001,7 +2001,7 @@
     "description": "Label of the dropdown that picks which terminal app the \"Open terminal here\" action launches, in Settings > Behavior > Navigation & file ops. \"Open terminal here\" is Cmdr's own command name (it opens a terminal at the folder you're looking at), so translate it the same way as the command of that name. The sentence continues in the dropdown beside it, which names an app: \"Open terminal here uses [Ghostty]\".",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.behavior.openTerminalHereApp.description": "Cmdr lists the terminal apps it finds on this Mac. To use one it doesn''t know, pick “Choose an app…”.",
+  "settings.behavior.openTerminalHereApp.description": "Cmdr lists the terminal apps it finds on this Mac. To use one it doesn’t know, pick “Choose an app…”.",
   "@settings.behavior.openTerminalHereApp.description": {
     "description": "Helper text under the \"Open terminal here uses\" dropdown in Settings > Behavior > Navigation & file ops. Says two things: the list is built from what's installed right now, and there's a way out for an app Cmdr doesn't carry a recipe for. “Choose an app…” is the last row of that same dropdown, so translate it identically to the settings.behavior.openTerminalHereApp.chooseApp key.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
@@ -2038,7 +2038,7 @@
     "description": "Label of the switch that controls whether double-clicking the empty background of a file pane goes up one folder (to the parent folder). \"pane\" = one of the two file-list columns; \"go up a folder\" = navigate to the parent folder.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
   },
-  "settings.behavior.doubleClickPaneNavigatesToParent.description": "That''s the empty space around the file list, not a file row.",
+  "settings.behavior.doubleClickPaneNavigatesToParent.description": "That’s the empty space around the file list, not a file row.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
     "description": "Helper text under the double-click-to-parent switch in Settings > Behavior > Navigation & file ops. Clarifies what \"pane background\" (named in the switch label just above) means: the blank area around the file list, as opposed to a row representing a file. \"That''s\" refers back to \"the pane background\" in the label.",
     "screenshot": "settings-behavior-navigation-and-file-ops.png"
@@ -2673,7 +2673,7 @@
   "@settings.ai.tooltipOff": {
     "description": "Tooltip for the AI \"Off\" provider option. \"Cmdr\" is the product name; keep it. \"AI\" = artificial intelligence. Avoid implying AI is required."
   },
-  "settings.ai.tooltipCloud": "Bring your own API key for fast, high-quality AI. Works with OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, or any local server you''re running (Ollama, LM Studio, etc.). Requires an internet connection (unless using a local server). No disk space or memory used by Cmdr.",
+  "settings.ai.tooltipCloud": "Bring your own API key for fast, high-quality AI. Works with OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, or any local server you’re running (Ollama, LM Studio, etc.). Requires an internet connection (unless using a local server). No disk space or memory used by Cmdr.",
   "@settings.ai.tooltipCloud": {
     "description": "Tooltip for the AI \"Cloud AI\" provider option. \"API\" = application programming interface (keep it). All the bracketed and listed names (OpenAI, Anthropic, Claude, Google, Gemini, xAI, Grok, Groq, DeepSeek, OpenRouter, Ollama, LM Studio) are brand/product names; do NOT translate them. \"Cmdr\" is the product name; keep it. \"Bring your own ...\" means the user supplies their own key."
   },
@@ -2703,7 +2703,7 @@
   "@settings.fileSystemWatching.noIndex": {
     "description": "Shown in place of the index size when no drive has an index on disk yet."
   },
-  "settings.fileSystemWatching.clearIndexDescription": "Deletes every drive's index. Indexing builds it again, and so does searching a folder Cmdr hasn't indexed.",
+  "settings.fileSystemWatching.clearIndexDescription": "Deletes every drive’s index. Indexing builds it again, and so does searching a folder Cmdr hasn’t indexed.",
   "@settings.fileSystemWatching.clearIndexDescription": {
     "description": "Help text under the Clear index button explaining what clearing does.",
     "screenshot": "settings-indexing-drive-indexing.png"
@@ -2855,7 +2855,7 @@
     },
     "screenshot": "settings-file-systems-smb.png"
   },
-  "settings.network.permissionWithout": "Without it, Cmdr can still read and write files on shares that are already mounted, but you can''t discover new servers or use our faster direct connection.",
+  "settings.network.permissionWithout": "Without it, Cmdr can still read and write files on shares that are already mounted, but you can’t discover new servers or use our faster direct connection.",
   "@settings.network.permissionWithout": {
     "description": "Explains what still works without the Local Network permission. \"Cmdr\" is the product name; keep it. \"mounted\" = a share already attached to the system; \"shares\" = network folders.",
     "screenshot": "settings-file-systems-smb.png"
@@ -2882,11 +2882,11 @@
   "@settings.updates.emailConfirmHint": {
     "description": "Friendly confirmation shown after the user submits their beta email, asking them to confirm via the inbox link. Warm, appreciative voice."
   },
-  "settings.updates.emailSignupError": "Sorry, we couldn''t sign you up right now. Try again?",
+  "settings.updates.emailSignupError": "Sorry, we couldn’t sign you up right now. Try again?",
   "@settings.updates.emailSignupError": {
     "description": "Apologetic message shown when the beta-email signup fails. Conversational and reassuring; do not use the words \"error\" or \"failed\"."
   },
-  "settings.updates.emailPrivacyNote": "Stored only on your Mac. We never send it together with your usage stats, so those can''t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
+  "settings.updates.emailPrivacyNote": "Stored only on your Mac. We never send it together with your usage stats, so those can’t be tied back to you. Used only to reach out and to optionally attach to a report you send. To stop getting emails, use the unsubscribe link in any message we send.",
   "@settings.updates.emailPrivacyNote": {
     "description": "Privacy note under the beta-email field, reassuring the user about how the email is stored and used. \"Mac\" is the Apple computer brand name; keep it. \"stats\" = statistics.",
     "screenshot": "settings-updates.png"
@@ -3035,7 +3035,7 @@
   "@settings.mediaIndex.chosenFolders.title": {
     "description": "Title above the list of folders the user picked for image indexing. In Settings > Indexing > Image indexing."
   },
-  "settings.mediaIndex.chosenFolders.help": "Photos in these folders are indexed whatever else you pick above. Removing a folder stops new indexing; what''s already indexed stays searchable.",
+  "settings.mediaIndex.chosenFolders.help": "Photos in these folders are indexed whatever else you pick above. Removing a folder stops new indexing; what’s already indexed stays searchable.",
   "@settings.mediaIndex.chosenFolders.help": {
     "description": "Help text under the \"Folders to index\" title. Says these folders always count, and reassures that removing one is not a deletion."
   },
@@ -3071,7 +3071,7 @@
   "@settings.servers.card.trustedHostKeys": {
     "description": "Title of the only card on Settings > File systems > Servers: the list of SSH server keys this Mac has accepted. A host key is what a server proves its identity with, and \"trusted\" means the user said yes to it once. Three or four words."
   },
-  "settings.servers.trustedHostKeys.description": "Cmdr asks before it trusts a server''s key the first time you connect, and remembers your answer here. Saved servers live in the Servers list, not on this page.",
+  "settings.servers.trustedHostKeys.description": "Cmdr asks before it trusts a server’s key the first time you connect, and remembers your answer here. Saved servers live in the Servers list, not on this page.",
   "@settings.servers.trustedHostKeys.description": {
     "description": "Help text under the \"Trusted host keys\" card title. \"Servers\" (capital S) is the name of the row in Cmdr''s volume switcher that lists saved servers; translate it the same way as servers.hub keys. \"Cmdr\" is the app name; keep it."
   },

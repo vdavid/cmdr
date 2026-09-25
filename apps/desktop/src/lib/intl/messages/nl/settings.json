@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Kies de taal die Cmdr gebruikt. ‘Systeemstandaard’ volgt de taal van je Mac.",
   "@settings.appearance.language.description": {
-    "sourceHash": "6e36bba"
+    "sourceHash": "2dd7f63"
   },
   "settings.appearance.language.opt.system": "Systeemstandaard",
   "@settings.appearance.language.opt.system": {
@@ -277,7 +277,7 @@
   },
   "settings.appearance.useAppIconsForDocuments.description": "Toon het symbool van de app voor documenten in plaats van algemene bestandstypesymbolen. Kleurrijker maar iets trager.",
   "@settings.appearance.useAppIconsForDocuments.description": {
-    "sourceHash": "9ae8a9c"
+    "sourceHash": "9651182"
   },
   "settings.appearance.showFunctionKeyBar.label": "Functietoetsbalk tonen",
   "@settings.appearance.showFunctionKeyBar.label": {
@@ -458,7 +458,7 @@
   },
   "settings.mediaIndex.privacyNote": "Dit draait volledig op je Mac met Apples ingebouwde Vision-framework. Je afbeeldingen verlaten je computer nooit, en er komt geen AI-aanbieder of API-sleutel aan te pas.",
   "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
+    "sourceHash": "9e5a87f"
   },
   "settings.mediaIndex.clip.title": "Semantisch zoeken",
   "@settings.mediaIndex.clip.title": {
@@ -466,7 +466,7 @@
   },
   "settings.mediaIndex.clip.description": "Vind foto''s door te beschrijven wat erop staat, zoals ‘strand bij zonsondergang’, met een AI-model op het apparaat.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "e7bece5"
+    "sourceHash": "9a569ba"
   },
   "settings.mediaIndex.clip.ready": "Klaar – zoek je foto''s op beschrijving.",
   "@settings.mediaIndex.clip.ready": {
@@ -486,7 +486,7 @@
   },
   "settings.mediaIndex.clip.failed": "De download is niet voltooid. Controleer je verbinding en probeer het opnieuw.",
   "@settings.mediaIndex.clip.failed": {
-    "sourceHash": "5feb349"
+    "sourceHash": "8a3682d"
   },
   "settings.mediaIndex.clip.notSupported": "Zoeken op beschrijving vereist een Mac met Apple silicon.",
   "@settings.mediaIndex.clip.notSupported": {
@@ -514,7 +514,7 @@
   },
   "settings.mediaIndex.clip.deleteFailed": "Het model kon nu even niet worden verwijderd. Probeer het zo opnieuw.",
   "@settings.mediaIndex.clip.deleteFailed": {
-    "sourceHash": "6c9ced5"
+    "sourceHash": "126c735"
   },
   "settings.mediaIndex.cards.enable": "Indexeren inschakelen",
   "@settings.mediaIndex.cards.enable": {
@@ -546,7 +546,7 @@
   },
   "settings.mediaIndex.showFileStatusIcons.description": "Voeg aan elke afbeelding in de bestandenlijst een kleine markering toe die aangeeft of deze al is geïndexeerd voor zoeken.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
-    "sourceHash": "62dda47"
+    "sourceHash": "1a725aa"
   },
   "settings.mediaIndex.showInSearch.label": "Afbeeldingsresultaten tonen in Zoeken",
   "@settings.mediaIndex.showInSearch.label": {
@@ -554,7 +554,7 @@
   },
   "settings.mediaIndex.showInSearch.description": "Zoeken zet een rij overeenkomende afbeeldingen boven je bestanden. De treffers zijn nog onnauwkeurig, dus dit staat uit tot je het wilt.",
   "@settings.mediaIndex.showInSearch.description": {
-    "sourceHash": "5b62cab"
+    "sourceHash": "143a4e7"
   },
   "settings.mediaIndex.networkVolumes.label": "Afbeeldingen indexeren op netwerkschijven",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -590,7 +590,7 @@
   },
   "settings.mediaIndex.networkVolumes.intro": "Netwerkschijven worden alleen geïndexeerd als je ze hier inschakelt. Cmdr leest foto''s voorzichtig over het netwerk: alleen wanneer je niet bezig bent, met een beperkte snelheid, en het pauzeert wanneer de schijf wordt losgekoppeld.",
   "@settings.mediaIndex.networkVolumes.intro": {
-    "sourceHash": "165a9eb"
+    "sourceHash": "2d192ce"
   },
   "settings.mediaIndex.networkVolumes.none": "Verbind een netwerkschijf om de foto''s erop te indexeren.",
   "@settings.mediaIndex.networkVolumes.none": {
@@ -742,7 +742,7 @@
   },
   "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr kon de extra vermeldingen niet verwijderen. Probeer het opnieuw.",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
-    "sourceHash": "3295df4"
+    "sourceHash": "c57ac43"
   },
   "settings.mediaIndex.reclaim.deletedSpaceLater": "De extra vermeldingen zijn verwijderd. Cmdr maakt de schijfruimte later vrij.",
   "@settings.mediaIndex.reclaim.deletedSpaceLater": {
@@ -762,7 +762,7 @@
   },
   "settings.indexing.staleNotify.description": "Je ziet de gele status nog steeds als je dit uitzet.",
   "@settings.indexing.staleNotify.description": {
-    "sourceHash": "c4216d8"
+    "sourceHash": "03af10e"
   },
   "settings.indexing.masterOffNote": "Het indexeren van schijven staat uit, dus er wordt geen schijf geïndexeerd en mapgroottes blijven verborgen. Elke schijf onthoudt of hij aan of uit staat, zodat alles klaarstaat wanneer je dit weer aanzet.",
   "@settings.indexing.masterOffNote": {
@@ -786,7 +786,7 @@
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "Je hebt de melding nog voor geen enkele schijf uitgezet.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
-    "sourceHash": "3a5a54b"
+    "sourceHash": "e7702a8"
   },
   "settings.indexing.silencedDrives.label": "Gedempte schijfmeldingen",
   "@settings.indexing.silencedDrives.label": {
@@ -957,7 +957,7 @@
   },
   "settings.network.enabled.description": "Ontdek SMB-servers in je lokale netwerk en maak er verbinding mee. Wanneer dit uit staat, kan Cmdr nog steeds bestanden lezen en schrijven op al aangekoppelde shares, maar vraagt het macOS niet om toegang tot Lokaal netwerk.",
   "@settings.network.enabled.description": {
-    "sourceHash": "3500345"
+    "sourceHash": "72a0854"
   },
   "settings.network.firstTriggerDone.label": "Netwerkdetectie gestart",
   "@settings.network.firstTriggerDone.label": {
@@ -1053,7 +1053,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "Detecteer Android- en andere apparaten via een USB-kabel en maak er verbinding mee om bestanden te bekijken en over te dragen. Om deze functie op een Android-telefoon te gebruiken, gebruik je een USB-kabel en ga je op je telefoon naar zoiets als Instellingen > USB-voorkeuren, waar je de verbinding instelt op ‘Bestandsoverdracht’, ‘Android Auto’ of vergelijkbaar. (Verschilt per apparaat.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "37444c2"
+    "sourceHash": "c66df04"
   },
   "settings.fileOperations.adbEnabled.label": "Toegang tot Android-bestanden via ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1061,7 +1061,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Krijg toegang tot het hele bestandssysteem van een Android-telefoon waarop USB-foutopsporing is ingeschakeld, iets wat MTP je niet kan laten zien. Hiervoor heb je de Android platform tools (de opdracht ‘adb’) op deze Mac nodig. Het kost niets om dit ingeschakeld te laten als je geen Android-tools hebt geïnstalleerd.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "57cf2aa"
+    "sourceHash": "9a22518"
   },
   "settings.fileOperations.adbBinaryPath.label": "Locatie van adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1173,7 +1173,7 @@
   },
   "settings.analytics.enabled.description": "Zet dit aan om ons te helpen zien welke functies ertoe doen tijdens de open bèta.\nDe statistieken zijn niet gekoppeld aan je naam of e-mailadres, maar aan een willekeurige id.\nCmdr stuurt nooit bestandsnamen, paden, zoektermen of prompts.\nStaat het uit, dan stuurt Cmdr helemaal geen statistieken.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "23bafcb"
+    "sourceHash": "f5534ee"
   },
   "settings.analytics.email.label": "Contact-e-mail voor de bèta",
   "@settings.analytics.email.label": {
@@ -1253,7 +1253,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 opent het weergavevenster van Cmdr, dat ruwe bytes toont (met verliesgevende UTF-8 voor niet-tekstinhoud). Wanneer je een afbeelding, PDF, archief of ander binair bestand opent, toont het weergavevenster een rode banner die uitlegt dat ⇧Spatie (snelle weergave) of Enter (openen in de bijbehorende app) waarschijnlijk is wat je wilde. Zet dit aan (of klik op ‘Deze waarschuwing nooit meer tonen’ in de banner) om de waarschuwing voorgoed te onderdrukken.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "5ba5ff7"
+    "sourceHash": "a93b4cb"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "De hint voor snelle weergave bij de spatietoets onderdrukken",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1261,7 +1261,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr gebruikt Spatie om de bestandsselectie te wisselen en ⇧Spatie voor snelle weergave (Finder gebruikt gewone Spatie voor snelle weergave). Telkens als je in de bestandenlijst op Spatie drukt, toont Cmdr een herinnering van één alinea over dit verschil. Zet dit aan (of klik op ‘Niet meer tonen’ in de melding) om de herinnering voorgoed te onderdrukken.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "be9e1ff"
+    "sourceHash": "10357b4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Aantal gesloten tabbladen om per paneel te onthouden",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1337,7 +1337,7 @@
   },
   "settings.advanced.showSafeSaveFiles.label": "Tijdelijke bestanden van andere apps tonen",
   "@settings.advanced.showSafeSaveFiles.label": {
-    "sourceHash": "3436491"
+    "sourceHash": "c43c6af"
   },
   "settings.advanced.showSafeSaveFiles.description": "Wanneer apps als Teksteditor en Voorvertoning een bestand bewaren, schrijft macOS de nieuwe versie ernaast onder een tijdelijke naam (eindigend op ‘.sb-’) en wisselt die daarna om. Zet dit uit om ze uit de bestandenlijst te houden.",
   "@settings.advanced.showSafeSaveFiles.description": {
@@ -1345,11 +1345,11 @@
   },
   "settings.advanced.showStagingTempFiles.label": "Cmdrs tijdelijke bestanden tonen",
   "@settings.advanced.showStagingTempFiles.label": {
-    "sourceHash": "5a7636d"
+    "sourceHash": "61c8190"
   },
   "settings.advanced.showStagingTempFiles.description": "Bij het kopiëren schrijft Cmdr elk bestand onder een tijdelijke naam en geeft het pas zijn definitieve naam zodra het bestand compleet is, zodat een crash geen half geschreven bestand onder een echte naam kan achterlaten. Restanten van een onderbroken kopie worden altijd getoond.",
   "@settings.advanced.showStagingTempFiles.description": {
-    "sourceHash": "2d88a78"
+    "sourceHash": "a562689"
   },
   "settings.advanced.logLlmCalls.label": "Log AI-modelaanroepen",
   "@settings.advanced.logLlmCalls.label": {
@@ -1600,7 +1600,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "Cmdr toont de terminal-apps die het op deze Mac vindt. Voor een app die het niet kent, kies je ‘Kies app…’.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "32ccd8f"
+    "sourceHash": "a921be1"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "Kies app…",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1632,7 +1632,7 @@
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "Dat is de lege ruimte rondom de bestandenlijst, geen bestandsrij.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
-    "sourceHash": "734b6c2"
+    "sourceHash": "cae047d"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Hint voor dubbelklik naar bovenliggende map getoond",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -2165,7 +2165,7 @@
   },
   "settings.ai.tooltipCloud": "Breng je eigen API-sleutel mee voor snelle, hoogwaardige AI. Werkt met OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, of elke lokale server die je draait (Ollama, LM Studio, enz.). Vereist een internetverbinding (tenzij je een lokale server gebruikt). Geen schijfruimte of geheugen gebruikt door Cmdr.",
   "@settings.ai.tooltipCloud": {
-    "sourceHash": "1f63e66"
+    "sourceHash": "9cfff88"
   },
   "settings.ai.tooltipLocal": "Draait een klein taalmodel volledig op je apparaat. Maximale privacy: er verlaat niets je computer. Werkt offline. Gebruikt ~2 GB schijfruimte en ~400 MB geheugen (varieert met de contextgrootte). Vereist Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
@@ -2193,7 +2193,7 @@
   },
   "settings.fileSystemWatching.clearIndexDescription": "Verwijdert de index van elke schijf. Indexeren bouwt hem weer op, en zoeken in een map die Cmdr niet heeft geïndexeerd ook.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "370e2bc"
+    "sourceHash": "b6074f3"
   },
   "settings.fileSystemWatching.cardDownloads": "Downloads",
   "@settings.fileSystemWatching.cardDownloads": {
@@ -2317,7 +2317,7 @@
   },
   "settings.network.permissionWithout": "Zonder dit kan Cmdr nog steeds bestanden lezen en schrijven op shares die al aangekoppeld zijn, maar kun je geen nieuwe servers ontdekken of onze snellere rechtstreekse verbinding gebruiken.",
   "@settings.network.permissionWithout": {
-    "sourceHash": "4beca45"
+    "sourceHash": "a563afd"
   },
   "settings.network.customTimeoutUnit": "seconden",
   "@settings.network.customTimeoutUnit": {
@@ -2341,11 +2341,11 @@
   },
   "settings.updates.emailSignupError": "Sorry, het inschrijven lukte nu niet. Nog eens proberen?",
   "@settings.updates.emailSignupError": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "settings.updates.emailPrivacyNote": "Alleen op je Mac opgeslagen. We sturen het nooit samen met je gebruiksstatistieken, zodat die niet aan jou gekoppeld kunnen worden. Alleen gebruikt om contact op te nemen en om optioneel toe te voegen aan een rapport dat je stuurt. Om geen e-mails meer te ontvangen, gebruik je de afmeldlink in elk bericht dat we sturen.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "f22c213"
+    "sourceHash": "cf92795"
   },
   "settings.logging.openLogFile": "Open logbestand",
   "@settings.logging.openLogFile": {
@@ -2453,7 +2453,7 @@
   },
   "settings.mediaIndex.chosenFolders.help": "Foto''s in deze mappen worden geïndexeerd, wat je hierboven ook kiest. Een map verwijderen stopt nieuwe indexering; wat al geïndexeerd is, blijft doorzoekbaar.",
   "@settings.mediaIndex.chosenFolders.help": {
-    "sourceHash": "c48ff3f"
+    "sourceHash": "858eb44"
   },
   "settings.mediaIndex.chosenFolders.empty": "Nog geen mappen. Voeg er een toe om de foto''s erin te indexeren.",
   "@settings.mediaIndex.chosenFolders.empty": {
@@ -2485,7 +2485,7 @@
   },
   "settings.servers.trustedHostKeys.description": "De eerste keer dat je verbinding maakt met een server, vraagt Cmdr of je de sleutel vertrouwt, en het onthoudt je antwoord hier. Opgeslagen servers staan in de lijst Servers, niet op deze pagina.",
   "@settings.servers.trustedHostKeys.description": {
-    "sourceHash": "bbbed1a"
+    "sourceHash": "b3a8900"
   },
   "settings.servers.trustedHostKeys.empty": "Nog niets vertrouwd. De eerste keer dat je verbinding maakt met een SFTP-server, laat Cmdr je de vingerafdruk zien en vraagt het of je die vertrouwt.",
   "@settings.servers.trustedHostKeys.empty": {

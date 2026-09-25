@@ -37,7 +37,7 @@
   },
   "queue.row.status": "{status, select, queued {Aguardando} running {Em andamento} paused {Pausado} done {Concluído} cancelled {Cancelado} failed {Não foi possível concluir} other {Em andamento}}",
   "@queue.row.status": {
-    "sourceHash": "8e9ce48"
+    "sourceHash": "d7a7517"
   },
   "queue.row.statusAwaitingAnswer": "Precisa de resposta",
   "@queue.row.statusAwaitingAnswer": {
@@ -117,7 +117,7 @@
   },
   "queue.failureToast.title": "{type, select, copy {Não foi possível concluir a cópia} move {Não foi possível concluir a movimentação} delete {Não foi possível concluir o apagamento} trash {Não foi possível concluir a movimentação para o Lixo} rename {Não foi possível concluir a renomeação} create_folder {Não foi possível concluir a criação da pasta} create_file {Não foi possível concluir a criação do arquivo} archive_edit {Não foi possível concluir a edição do arquivo compactado} other {Não foi possível concluir}}",
   "@queue.failureToast.title": {
-    "sourceHash": "a55f5df"
+    "sourceHash": "b5f2b47"
   },
   "queue.failureToast.action": "Mostrar na fila de operações",
   "@queue.failureToast.action": {
@@ -125,11 +125,11 @@
   },
   "queue.failureToast.summary": "Não foi possível concluir {count, plural, one {{countText} operação} many {{countText} operações} other {{countText} operações}}",
   "@queue.failureToast.summary": {
-    "sourceHash": "6207914"
+    "sourceHash": "a55d85a"
   },
   "queue.chip.failed": "Não foi possível concluir {count, plural, one {{countText} operação} many {{countText} operações} other {{countText} operações}}. Abra a fila de operações para ver por quê.",
   "@queue.chip.failed": {
-    "sourceHash": "336ad46"
+    "sourceHash": "9c0036b"
   },
   "queue.chip.ariaLabel": "{label}, {percentText} por cento. Abra a fila de operações.",
   "@queue.chip.ariaLabel": {

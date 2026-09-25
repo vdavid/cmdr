@@ -126,11 +126,11 @@
   },
   "downloads.shortcutRow.invalidCombo": "Det gick inte att registrera: ogiltig kombination",
   "@downloads.shortcutRow.invalidCombo": {
-    "sourceHash": "32c3532"
+    "sourceHash": "d2601f3"
   },
   "downloads.shortcutRow.registerFailed": "Det gick inte att registrera: {reason}",
   "@downloads.shortcutRow.registerFailed": {
-    "sourceHash": "2e6fb97"
+    "sourceHash": "3b0841e"
   },
   "downloads.shortcutRow.addModifier": "Lägg till en modifierare (⌘, ⌃, ⌥ eller ⇧)",
   "@downloads.shortcutRow.addModifier": {

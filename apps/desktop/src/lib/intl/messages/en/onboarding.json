@@ -3,7 +3,7 @@
   "@onboarding.fdaBadge.label": {
     "description": "Text on a small warning badge in the macOS title bar, shown when the user hasn't granted Cmdr Full Disk Access. \"Full disk access\" is Apple's own macOS permission name: use the wording Apple ships in System Settings for this locale."
   },
-  "onboarding.fdaBadge.tooltip": "You don't have to grant this, but Cmdr works much better with it: searching your whole drive, reading cloud folders, and changing files macOS keeps to itself. Click to look at the choice again.",
+  "onboarding.fdaBadge.tooltip": "You don’t have to grant this, but Cmdr works much better with it: searching your whole drive, reading cloud folders, and changing files macOS keeps to itself. Click to look at the choice again.",
   "@onboarding.fdaBadge.tooltip": {
     "description": "Hover tooltip on the \"No full disk access\" title-bar badge. Deliberately low-pressure: granting the permission is optional, so the tone offers rather than nags. Lists what improves, then says what clicking does. \"files macOS keeps to itself\" means files behind the operating system's own privacy protection; keep it plain and non-technical rather than naming a macOS feature."
   },
@@ -77,11 +77,11 @@
   "@onboarding.stepFda.granted.title": {
     "description": "Celebratory heading on the Full Disk Access step, shown the moment the app detects the user toggled it on in System Settings. Warm and pleased in tone. \"full disk access\" is the macOS permission name."
   },
-  "onboarding.stepFda.granted.body": "Nice, that''s all Cmdr needs. Restart it now to start using everything.",
+  "onboarding.stepFda.granted.body": "Nice, that’s all Cmdr needs. Restart it now to start using everything.",
   "@onboarding.stepFda.granted.body": {
     "description": "Body text under the Full Disk Access success heading. Reassures the user the permission is enough and prompts a restart. \"Cmdr\" is the product name."
   },
-  "onboarding.stepFda.granted.hint": "Cmdr picks up the new permission on the next launch. Your spot in onboarding is saved, so you''ll land right back here.",
+  "onboarding.stepFda.granted.hint": "Cmdr picks up the new permission on the next launch. Your spot in onboarding is saved, so you’ll land right back here.",
   "@onboarding.stepFda.granted.hint": {
     "description": "Reassuring secondary hint under the Full Disk Access success message, telling the user a restart won't lose their onboarding progress. \"Cmdr\" is the product name."
   },
@@ -113,25 +113,25 @@
     "description": "Emphasized line (rendered bold) restating that the app lacks Full Disk Access, in the revoked-permission variant. \"full disk access\" is the macOS permission name.",
     "screenshot": "onboarding-fda-notgranted.png"
   },
-  "onboarding.stepFda.revoked.ifIntentional": "If that was intentional, click <deny>Deny</deny> and the app won''t bother you again.",
+  "onboarding.stepFda.revoked.ifIntentional": "If that was intentional, click <deny>Deny</deny> and the app won’t bother you again.",
   "@onboarding.stepFda.revoked.ifIntentional": {
     "description": "Tells the user that if revoking access was deliberate, they can decline and won't be asked again. <deny> wraps the bolded word naming the Deny button; the button itself is labeled by onboarding.stepFda.deny, so keep this wrapped word matching that label.",
     "screenshot": "onboarding-fda-notgranted.png"
   },
-  "onboarding.stepFda.revoked.ifNot": "If it <em>wasn''t</em> intentional, consider allowing full disk access again. Here are the pros and cons:",
+  "onboarding.stepFda.revoked.ifNot": "If it <em>wasn’t</em> intentional, consider allowing full disk access again. Here are the pros and cons:",
   "@onboarding.stepFda.revoked.ifNot": {
     "description": "Suggests re-enabling Full Disk Access if revoking it was a mistake, then leads into a pros/cons list. <em> emphasizes the word \"wasn't\". \"full disk access\" is the macOS permission name.",
     "screenshot": "onboarding-fda-notgranted.png"
   },
-  "onboarding.stepFda.firstAsk.lede": "<strong>You probably just want to start using the app.</strong> Sorry to bother you with this first, but it''s needed.",
+  "onboarding.stepFda.firstAsk.lede": "<strong>You probably just want to start using the app.</strong> Sorry to bother you with this first, but it’s needed.",
   "@onboarding.stepFda.firstAsk.lede": {
     "description": "Friendly, slightly apologetic opener on the first-ask Full Disk Access step, acknowledging the user just wants to get going. <strong> bolds the first sentence."
   },
-  "onboarding.stepFda.firstAsk.explain": "You see, Cmdr is a file manager, and it needs to access your disk to see all your files. macOS doesn''t automatically grant permission to this.",
+  "onboarding.stepFda.firstAsk.explain": "You see, Cmdr is a file manager, and it needs to access your disk to see all your files. macOS doesn’t automatically grant permission to this.",
   "@onboarding.stepFda.firstAsk.explain": {
     "description": "Plain-language explanation of why the app needs disk access. \"Cmdr\" is the product name; \"macOS\" is the operating system name; both stay untranslated."
   },
-  "onboarding.stepFda.firstAsk.askPermission": "Would you like to give this app full disk access? Here''s what that means:",
+  "onboarding.stepFda.firstAsk.askPermission": "Would you like to give this app full disk access? Here’s what that means:",
   "@onboarding.stepFda.firstAsk.askPermission": {
     "description": "Question leading into the pros/cons list on the first-ask Full Disk Access step. \"full disk access\" is the macOS permission name."
   },
@@ -208,11 +208,11 @@
   "@onboarding.stepFda.postAction.intro": {
     "description": "Hint shown after the user clicks Open System Settings, explaining a restart is required. \"Cmdr\" is the product name."
   },
-  "onboarding.stepFda.postAction.body": "When you''re ready, click <restart>Restart Cmdr</restart> below. If you change your mind, click <deny>Deny</deny> above instead.",
+  "onboarding.stepFda.postAction.body": "When you’re ready, click <restart>Restart Cmdr</restart> below. If you change your mind, click <deny>Deny</deny> above instead.",
   "@onboarding.stepFda.postAction.body": {
     "description": "Follow-up hint pointing the user to the restart button, or the Deny button if they change their mind. <restart> wraps the bolded \"Restart Cmdr\" button name (match onboarding.wizard.restart) and <deny> wraps the bolded \"Deny\" button name (match onboarding.stepFda.deny). \"Cmdr\" is the product name."
   },
-  "onboarding.stepFda.openSettingsFailed": "Cmdr couldn''t open {systemSettings}. Open it yourself, go to <strong>{privacyAndSecurity}</strong>, then <strong>{fullDiskAccess}</strong>, and turn on <strong>Cmdr</strong>.",
+  "onboarding.stepFda.openSettingsFailed": "Cmdr couldn’t open {systemSettings}. Open it yourself, go to <strong>{privacyAndSecurity}</strong>, then <strong>{fullDiskAccess}</strong>, and turn on <strong>Cmdr</strong>.",
   "@onboarding.stepFda.openSettingsFailed": {
     "description": "Shown on the Full Disk Access step right after the user clicks the Open System Settings button, when System Settings didn't actually open. It gives the manual path instead, so the user can still grant access by hand; the restart hint below stays true. The three placeholders are macOS names already localized by the OS: keep each one exactly as supplied, and keep the <strong> wraps around the pane names and the product name. \"Cmdr\" is the product name (do not translate). Avoid the words \"error\" and \"failed\".",
     "placeholders": {
@@ -239,7 +239,7 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.bannerBody.denied": "You chose not to enable full disk access. We respect that. You''ll then shortly get a few permission requests from macOS for Cmdr to access your Desktop, Downloads, and similar folders. Accept or reject these at will. You can change all of this later in your {systemSettings}.",
+  "onboarding.stepAi.bannerBody.denied": "You chose not to enable full disk access. We respect that. You’ll then shortly get a few permission requests from macOS for Cmdr to access your Desktop, Downloads, and similar folders. Accept or reject these at will. You can change all of this later in your {systemSettings}.",
   "@onboarding.stepAi.bannerBody.denied": {
     "description": "Body of the banner shown when the user declined Full Disk Access: macOS will ask per-folder instead, and the choice is changeable later. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it. \"Cmdr\" is the product name; \"macOS\" is the operating system name; \"Desktop\" and \"Downloads\" are macOS folder names (use your locale's standard macOS names).",
     "placeholders": {
@@ -248,13 +248,13 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.bannerTitle.stuck": "Cmdr doesn''t seem to have full disk access yet",
+  "onboarding.stepAi.bannerTitle.stuck": "Cmdr doesn’t seem to have full disk access yet",
   "@onboarding.stepAi.bannerTitle.stuck": {
     "description": "Title of the warning banner on the AI step, shown when the user asked to enable Full Disk Access but the app still doesn't have it. \"Cmdr\" is the product name; \"full disk access\" is the macOS permission name.",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn''t seem to have gotten it. You might need to restart the app (do it now, we''ll continue from here!), or go to your <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little “+” button at the bottom.",
+  "onboarding.stepAi.bannerBody.stuck": "You said you wanted to enable full disk access, but Cmdr doesn’t seem to have gotten it. You might need to restart the app (do it now, we’ll continue from here!), or go to your <settingsLink>{systemSettings} > Privacy & Security > Full Disk Access</settingsLink> and find Cmdr, or manually add it with the little “+” button at the bottom.",
   "@onboarding.stepAi.bannerBody.stuck": {
     "description": "Body of the warning banner when Full Disk Access didn't take: suggests restarting or opening the exact System Settings pane. <settingsLink> wraps the clickable text that opens that pane; keep the breadcrumb path inside it. {systemSettings} is the localized macOS \"System Settings\" app name supplied by the OS, so don't translate or alter it. \"Privacy & Security\" and \"Full Disk Access\" are the macOS settings pane names (use the exact macOS wording in your locale). Use literal \">\" and \"&\" characters in the breadcrumb (not HTML entities). \"Cmdr\" is the product name. Keep the literal \"+\" character.",
     "placeholders": {
@@ -269,13 +269,13 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.welcomeLinux.subtitle": "Let''s set up AI.",
+  "onboarding.stepAi.welcomeLinux.subtitle": "Let’s set up AI.",
   "@onboarding.stepAi.welcomeLinux.subtitle": {
     "description": "Subtitle under the Linux welcome heading on the AI step, introducing the AI setup.",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.title": "Now, let''s talk AI",
+  "onboarding.stepAi.title": "Now, let’s talk AI",
   "@onboarding.stepAi.title": {
     "description": "Heading of the AI step (shown on macOS, after the Full Disk Access step). Conversational, inviting tone.",
     "screenshot": "onboarding-ai.png"
@@ -393,7 +393,7 @@
     "description": "Label for the radio option that runs AI locally on the device (more private, no data leaves the machine). Friendly, casual phrasing. The trade-off it carries lives behind the info glyph beside it (onboarding.stepAi.local.tooltip), so this line stands alone.",
     "screenshot": "onboarding-ai.png"
   },
-  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that''s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
+  "onboarding.stepAi.local.tooltip": "The local model is significantly dumber than cloud models, and it takes up about 2 GB of space and some RAM and CPU at every use.\nIn return, no data leaves your machine.\nCmdr tries to ship updates so you can use the best small model that’s available. But if you want privacy <em>and</em> a decent model, running your own ollama server and setting it up with option <strong>Yes, I want AI</strong> below is your best choice.",
   "@onboarding.stepAi.local.tooltip": {
     "description": "The local-AI option's full explanation, in the tooltip behind the info glyph beside it: a weaker on-device model that keeps everything local, and the better route for someone who wants both privacy and quality. Honest, plain tone (\"dumber\" is deliberate). <em> emphasizes \"and\"; <strong> wraps the name of the cloud option below, so keep that wording matching onboarding.stepAi.cloud.label. \"Cmdr\" is the product name; \"GB\" is gigabytes; \"RAM\" and \"CPU\" are the memory and the processor; \"ollama\" is a product name; all stay untranslated. \"2 GB\" is an approximate disk-size figure. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-ai.png"
@@ -410,7 +410,7 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "The AI step of the onboarding wizard, pictured here."
   },
-  "onboarding.stepAi.missingKeyWarning": "You''ve enabled AI but haven''t entered an API key. AI won''t work and you''ll see a warning. Please fix this above.\n\n<strong>Click “{nextLabel}” again to ignore this and go on.</strong>",
+  "onboarding.stepAi.missingKeyWarning": "You’ve enabled AI but haven’t entered an API key. AI won’t work and you’ll see a warning. Please fix this above.\n\n<strong>Click “{nextLabel}” again to ignore this and go on.</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
     "description": "Warning shown on the Next button on the AI step when the user picked a cloud provider but stored no API key. The press doesn't advance; the next one does. Matter-of-fact, not scolding. <strong> bolds the way out, which is the sentence the user acts on. {nextLabel} is that button's own label, supplied from onboarding.wizard.next so the two can't drift; keep the quotes around it. \"API key\" is a technical credential term. \"above\" points at the provider setup higher up the same page. The blank line is a real paragraph break in the tooltip; keep it.",
     "placeholders": {
@@ -449,12 +449,12 @@
     "description": "Heading of the open-beta step, inviting the user to help improve the app. Warm, inviting. \"Cmdr\" is the product name and stays untranslated.",
     "screenshot": "onboarding-beta.png"
   },
-  "onboarding.stepBeta.greeting": "Hi, I''m <david>David</david>! I build Cmdr, and you''re one of the very first people using it. Thanks for your trust! ❤️",
+  "onboarding.stepBeta.greeting": "Hi, I’m <david>David</david>! I build Cmdr, and you’re one of the very first people using it. Thanks for your trust! ❤️",
   "@onboarding.stepBeta.greeting": {
     "description": "Personal first-person greeting from David, the app's creator. Keep the warm, personal voice. <david> wraps a link to David's about page; keep his name inside it. \"David\" is a personal name and \"Cmdr\" the product name; both stay untranslated. Keep the heart emoji.",
     "screenshot": "onboarding-beta.png"
   },
-  "onboarding.stepBeta.openBeta": "Cmdr is in open beta: it''s overall solid and usable, but some parts are rough. <alpha></alpha> badges mark the most work-in-progress areas. Your feedback helps me fix bugs and prioritize features.",
+  "onboarding.stepBeta.openBeta": "Cmdr is in open beta: it’s overall solid and usable, but some parts are rough. <alpha></alpha> badges mark the most work-in-progress areas. Your feedback helps me fix bugs and prioritize features.",
   "@onboarding.stepBeta.openBeta": {
     "description": "Explains the app is in open beta: usable but unfinished in places, with ALPHA badges marking rough areas, and that feedback shapes what gets fixed next. First person (David speaking). <alpha> wraps the visual ALPHA status badge component (it has no inner text; leave it empty). \"Cmdr\" is the product name; \"open beta\" is the release stage.",
     "screenshot": "onboarding-beta.png"
@@ -499,7 +499,7 @@
     "description": "Screen-reader name for the tick beside the email row of the checklist. It's a progress mark, not a control: it ticks itself once the mailing list has accepted the address. Not shown visually.",
     "screenshot": "onboarding-beta.png"
   },
-  "onboarding.stepBeta.analyticsLede": "To learn what''s working and what isn''t, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files.\nThey''re tied to a random id, not to your name or email.\nIt''s on now, and you can turn it off anytime.",
+  "onboarding.stepBeta.analyticsLede": "To learn what’s working and what isn’t, during the open beta Cmdr sends usage stats: which features get used and how often, never anything from your files.\nThey’re tied to a random id, not to your name or email.\nIt’s on now, and you can turn it off anytime.",
   "@onboarding.stepBeta.analyticsLede": {
     "description": "Discloses that the app sends usage statistics during the beta, says what they're tied to, and promises it never reads file contents. Transparent, reassuring tone. \"random id\" = a randomly generated identifier stored on the user's Mac, not linked to their identity; keep it plain rather than reaching for a technical term like \"pseudonymous\". \"Cmdr\" is the product name; \"open beta\" is the release stage.",
     "screenshot": "onboarding-beta.png"
@@ -509,7 +509,7 @@
     "description": "Title next to the toggle switch that controls usage statistics. The switch defaults on.",
     "screenshot": "onboarding-beta.png"
   },
-  "onboarding.stepBeta.analyticsCaption": "Note that it''s ON by default to encourage people to send me data during the Beta.\nYou can change this any time in Settings.",
+  "onboarding.stepBeta.analyticsCaption": "Note that it’s ON by default to encourage people to send me data during the Beta.\nYou can change this any time in Settings.",
   "@onboarding.stepBeta.analyticsCaption": {
     "description": "Small caption beside the analytics toggle explaining it defaults on during the beta. First-person (David). Keep \"ON\" emphasized in feel (it's the switch state). \"Beta\" is the release stage; \"Settings\" is the app's settings screen.",
     "screenshot": "onboarding-beta.png"
@@ -533,19 +533,19 @@
   "@onboarding.stepBeta.signup.success": {
     "description": "Confirmation shown after the user submits their email, asking them to confirm via the email they'll receive. Warm, grateful."
   },
-  "onboarding.stepBeta.signup.failure": "Sorry, we couldn''t sign you up right now. Try again?",
+  "onboarding.stepBeta.signup.failure": "Sorry, we couldn’t sign you up right now. Try again?",
   "@onboarding.stepBeta.signup.failure": {
     "description": "Gentle inline message shown when the email signup didn't go through, inviting another attempt. Soft, non-alarming tone (avoid the words \"error\" or \"failed\"). Used by the Settings copy of this field, which has one line for every kind of setback; onboarding's checklist splits it into the two below."
   },
-  "onboarding.stepBeta.signup.rejected": "The mailing list didn''t accept that address. Worth a look for a typo, then hit Save again.",
+  "onboarding.stepBeta.signup.rejected": "The mailing list didn’t accept that address. Worth a look for a typo, then hit Save again.",
   "@onboarding.stepBeta.signup.rejected": {
     "description": "Shown when the mailing list itself turned the address down, which almost always means a typo. Says what happened and exactly what to do. \"Save\" names the button beside the field, so match onboarding.stepBeta.checklist.emailSave. Soft, non-alarming tone (avoid the words \"error\" or \"failed\")."
   },
-  "onboarding.stepBeta.signup.unreachable": "Couldn''t reach the signup server just now, so you''re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
+  "onboarding.stepBeta.signup.unreachable": "Couldn’t reach the signup server just now, so you’re not on the list yet. Your address is saved on this Mac: hit Save again in a minute, or any time from Settings › Updates & privacy.",
   "@onboarding.stepBeta.signup.unreachable": {
     "description": "Shown when the signup request never got through (offline, server down). Transparent about what did and didn't happen, and offers two ways on. \"Save\" names the button beside the field, so match onboarding.stepBeta.checklist.emailSave. \"Settings › Updates & privacy\" is a path through the app's own Settings window; translate both names to match how they appear there. Soft, non-alarming tone (avoid the words \"error\" or \"failed\")."
   },
-  "onboarding.stepBeta.emailNote": "Drop your email and I''ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it''s never connected to your usage stats, the two are intentionally two separate subsystems.",
+  "onboarding.stepBeta.emailNote": "Drop your email and I’ll reach out with the occasional question or update.\nThe email address you enter here is stored only on your Mac and it’s never connected to your usage stats, the two are intentionally two separate subsystems.",
   "@onboarding.stepBeta.emailNote": {
     "description": "Privacy note under the optional email field: David may reach out, and the email is stored locally and never linked to usage stats. First-person, reassuring. \"Mac\" is the device name and stays untranslated.",
     "screenshot": "onboarding-beta.png"
@@ -555,12 +555,12 @@
     "description": "Heading of the terms-acceptance block, the last thing on the open-beta step. Apologetic, light, first-person (David). It introduces the one required item on an otherwise optional page.",
     "screenshot": "onboarding-beta.png"
   },
-  "onboarding.stepBeta.terms.lede": "It''s a legal obligation to have it here.",
+  "onboarding.stepBeta.terms.lede": "It’s a legal obligation to have it here.",
   "@onboarding.stepBeta.terms.lede": {
     "description": "One-line explanation under the terms-acceptance heading: the checkbox is there because the law requires it, not because David wants to add friction. Keep it short and offhand.",
     "screenshot": "onboarding-beta.png"
   },
-  "onboarding.stepBeta.terms.consent": "I''ve read and agree to the <terms>terms and conditions</terms>.",
+  "onboarding.stepBeta.terms.consent": "I’ve read and agree to the <terms>terms and conditions</terms>.",
   "@onboarding.stepBeta.terms.consent": {
     "description": "Label of the required terms checkbox. This sentence is the user's legal act of agreement, so it must stay unambiguous: a first-person statement that the user has read the terms and agrees to them. Don't soften it to \"I acknowledge\" or make it conditional. <terms> wraps a link to the public terms page.",
     "screenshot": "onboarding-beta.png"
@@ -575,12 +575,12 @@
     "description": "Primary footer button on the final optional-setup step that completes onboarding and opens the app. \"Cmdr\" is the product name and stays untranslated. Note there is no exclamation mark here, unlike the similar button on the previous step.",
     "screenshot": "onboarding-step-4-optional.png"
   },
-  "onboarding.stepOptional.title": "You''re almost ready",
+  "onboarding.stepOptional.title": "You’re almost ready",
   "@onboarding.stepOptional.title": {
     "description": "Heading of the final optional-setup step, signaling onboarding is nearly done. Encouraging tone.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.lede": "You chose to walk through a detailed setup, so here are a few easy choices. If you don''t care too much, just click the button below. These are all options, and the defaults are picked for your benefit.",
+  "onboarding.stepOptional.lede": "You chose to walk through a detailed setup, so here are a few easy choices. If you don’t care too much, just click the button below. These are all options, and the defaults are picked for your benefit.",
   "@onboarding.stepOptional.lede": {
     "description": "Intro paragraph for the optional-setup step: a few toggles with sensible defaults the user can ignore. Casual, low-pressure.",
     "screenshot": "onboarding-optional.png"
@@ -605,7 +605,7 @@
     "description": "Half-line summary under the networking toggle's title, naming its one cost. The full explanation sits behind the info glyph beside the title. “Local Network” is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase: it's what the user has to go find. Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don''t know what these are, they might be scary or annoying.",
+  "onboarding.stepOptional.networking.desc": "Having this <em>on</em> means you can connect to SMB servers like company network shares, a home NAS, and the like.\nThe only cost is a macOS permission dialog that pops up and asks you to allow “Local Network”, and one for “Accepting incoming connections”.\nBoth dialogs are harmless, but if you don’t know what these are, they might be scary or annoying.",
   "@onboarding.stepOptional.networking.desc": {
     "description": "Long explanation of the networking toggle, shown in the tooltip behind its info glyph: enables SMB shares at the cost of two macOS permission prompts. <em> emphasizes \"on\". \"SMB\" is the file-sharing protocol; \"NAS\" is a network storage device; \"macOS\" is the operating system; all stay untranslated. “Local Network” is the name of the row in macOS's Privacy & Security settings, so use Apple's own label for your locale verbatim (the `LOCAL_NETWORK` key in SecurityPrivacyExtension.appex), not a paraphrase; it must match onboarding.stepOptional.networking.summary. “Accepting incoming connections” describes the firewall prompt rather than quoting a label, so translate it as prose. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
@@ -635,7 +635,7 @@
     "description": "Second benefit of drive indexing: live folder-size totals across the whole drive.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>{dirPlaceholder}</code> for the sizes.\nThe cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time.\nIt''s a cheap feature considering the benefits.",
+  "onboarding.stepOptional.indexing.descCost": "If you turn this off, you only get <code>{dirPlaceholder}</code> for the sizes.\nThe cost is around 1 GB of index on your drive for a few million files, but no extra CPU or memory use after the first 2–3 minutes of you first starting the app, or starting it after a long time.\nIt’s a cheap feature considering the benefits.",
   "@onboarding.stepOptional.indexing.descCost": {
     "description": "Explains the trade-off of disabling indexing (folders show a placeholder instead of a size) and its cost (disk space, brief startup work). <code> wraps the placeholder the Size column shows for an unmeasured folder, supplied as {dirPlaceholder}. \"1 GB\" is the index size and it scales with how many files the user has, not with the size of the drive; \"CPU\" is the processor; both stay as-is. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "placeholders": {
@@ -653,7 +653,7 @@
     "description": "Half-line summary under the automatic-updates toggle's title, naming what it does and what it costs. The full explanation sits behind the info glyph beside the title. Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf disabled, you''ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
+  "onboarding.stepOptional.updates.desc": "If you enable this, Cmdr makes a tiny network request to a central license server at each app start plus once every 24 hours, and you always get the latest updates.\nIf disabled, you’ll keep your current version, and zero automated network requests (except for periodic license checks, if you have a commercial license).",
   "@onboarding.stepOptional.updates.desc": {
     "description": "The long automatic-updates explanation, shown in the tooltip behind the info glyph: the network requests it makes and the trade-off of disabling it. \"Cmdr\" is the product name. \"24 hours\" and \"commercial license\" are factual details. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
@@ -668,7 +668,7 @@
     "description": "Half-line summary under the MTP toggle's title, naming what it enables and what it costs. The full explanation sits behind the info glyph beside the title. \"Android\" and \"macOS\" stay untranslated. \"and the such\" is a deliberately casual \"and similar devices\". Keep it to one short line.",
     "screenshot": "onboarding-optional.png"
   },
-  "onboarding.stepOptional.mtp.desc": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can''t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it''s running.\nWhen you quit Cmdr, this is politely restored.",
+  "onboarding.stepOptional.mtp.desc": "If you enable this, Cmdr can <strong>connect to Android phones, Kindles, cameras</strong>, some music players, and any other device that supports the protocols called MTP or PTP.\nThe cost is that macOS <em>also</em> wants to connect to these (and it usually fails, which is why you can’t just use Finder to copy photos from Android phones), so Cmdr has to suppress that macOS process while it’s running.\nWhen you quit Cmdr, this is politely restored.",
   "@onboarding.stepOptional.mtp.desc": {
     "description": "The long MTP explanation, shown in the tooltip behind the info glyph: it lets the app talk to phones, e-readers, and cameras, at the cost of temporarily suppressing a conflicting macOS process, which is put back on quit. <strong> bolds the device list; <em> emphasizes \"also\". \"Cmdr\" is the product name; \"macOS\" is the operating system; \"Finder\" is the macOS file manager; \"Android\", \"Kindles\", \"MTP\", and \"PTP\" are device/protocol names; all stay untranslated. Each sentence sits on its own line (the newlines are real line breaks in the tooltip); keep one line per sentence in your translation.",
     "screenshot": "onboarding-optional.png"
@@ -686,7 +686,7 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
-  "onboarding.cloudSetup.step.signup": "Sign up at <signupLink>{provider}</signupLink> (if you don''t have an account)",
+  "onboarding.cloudSetup.step.signup": "Sign up at <signupLink>{provider}</signupLink> (if you don’t have an account)",
   "@onboarding.cloudSetup.step.signup": {
     "description": "First setup step: sign up at the provider's site. <signupLink> wraps the link; keep the provider name inside it. {provider} is the provider's brand name and must NOT be translated.",
     "placeholders": {
@@ -788,13 +788,13 @@
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
-  "onboarding.cloudSetup.status.authError": "That key didn''t work",
+  "onboarding.cloudSetup.status.authError": "That key didn’t work",
   "@onboarding.cloudSetup.status.authError": {
     "description": "Fallback status when the API key was rejected by the provider (used when the provider gives no specific message). Gentle, non-blaming. Avoid the words \"error\" or \"failed\".",
     "screenshot": "onboarding-ai.png",
     "screenshotNote": "Cloud-AI setup copy in the onboarding wizard. This shows the onboarding AI step where these strings render."
   },
-  "onboarding.cloudSetup.status.connectionError": "Can''t reach the service right now",
+  "onboarding.cloudSetup.status.connectionError": "Can’t reach the service right now",
   "@onboarding.cloudSetup.status.connectionError": {
     "description": "Fallback status when the app can't connect to the provider's service (used when the provider gives no specific message). Implies a temporary network problem. Avoid the words \"error\" or \"failed\".",
     "screenshot": "onboarding-ai.png",

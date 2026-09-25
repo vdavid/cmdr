@@ -80,8 +80,8 @@ English-name → title-key map), and `SettingsSidebar` does the same for the nav
 section titles and summary blurbs, `settings.control.*` for shared row microcopy (reset, restart-required,
 decrease/increase aria-labels), and `settings.<feature>.*` for section-component-specific copy. The downloads FDA hint
 reuses the shared `<Trans>` message `common.downloadsFdaHint` (an inline `<settingsLink>`), so don't duplicate it.
-Apostrophes in catalog values are doubled (`''`, the ICU rule). Full i18n runtime design:
-[`$lib/intl/DETAILS.md`](../intl/DETAILS.md).
+English apostrophes in catalog values are `’`; a straight one would need doubling (`''`, the ICU rule). Full i18n
+runtime design: [`$lib/intl/DETAILS.md`](../intl/DETAILS.md).
 
 **Lint scope.** The registry-driven settings core and the section chrome are i18n-migrated and
 `cmdr/no-raw-user-facing-string` is enforced on `lib/settings/`. Four files render copy owned by ADJACENT subsystems

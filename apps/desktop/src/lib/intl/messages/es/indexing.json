@@ -156,11 +156,11 @@
   },
   "indexing.rescan.staleIndex": "El índice de tu unidad está desactualizado. Parece que la app no se ha ejecutado en un tiempo. Haciendo un análisis nuevo para ponerlo al día.",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "El registro de cambios de archivos del sistema no llega lo bastante atrás. Haciendo un análisis nuevo para reconstruir el índice.",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "Han ocurrido muchos cambios de archivos desde la última ejecución. Haciendo un análisis nuevo en lugar de reproducirlos uno a uno.",
   "@indexing.rescan.replayOverflow": {
@@ -168,7 +168,7 @@
   },
   "indexing.rescan.watcherStartFailed": "No se ha podido iniciar la vigilancia de cambios de archivos. Haciendo un análisis nuevo para poner el índice al día.",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "Una actividad intensa del sistema de archivos ha desbordado el búfer de eventos. Haciendo un análisis nuevo para mantener la precisión.",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -176,7 +176,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "El análisis anterior no terminó (puede que la app se cerrara). Reiniciando el análisis desde cero.",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "Una ráfaga de actividad del sistema de archivos ha desbordado el canal de vigilancia. Haciendo un análisis nuevo para mantener la precisión.",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -204,15 +204,15 @@
   },
   "indexing.firstConnect.silenceDrive": "No volver a preguntar por esta unidad",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "No volver a preguntar por ninguna unidad",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "El índice de esta unidad puede estar desactualizado",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "Mientras {name} estuvo sin conectar, los archivos que contiene pueden haber cambiado. Los tamaños de carpetas y los resultados de búsqueda podrían no coincidir del todo hasta que vuelvas a analizar la unidad. El estado amarillo junto a la unidad siempre aparece cuando pasa esto, y un nuevo análisis lo actualiza.",
   "@indexing.staleDialog.body": {
@@ -220,11 +220,11 @@
   },
   "indexing.staleDialog.titlePhone": "El índice de este teléfono puede estar desactualizado",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} no avisa a Cmdr cuando cambian sus archivos, así que Cmdr mantiene el índice al día con los cambios que hace el propio Cmdr. Los cambios hechos en el teléfono, como fotos nuevas, aparecen en los tamaños de carpetas y en la búsqueda tras un nuevo análisis. El estado amarillo junto al teléfono sigue ahí para recordártelo.",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "No volver a mostrar",
   "@indexing.staleDialog.neverShowAgain": {
@@ -254,7 +254,7 @@
   },
   "indexing.enrich.pausedIdle": "Esperando a que dejes de usar el Mac",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "En pausa, se reanuda al reconectar",
   "@indexing.enrich.pausedDisconnected": {

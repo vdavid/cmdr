@@ -525,11 +525,11 @@
   },
   "askCmdr.renameReview.overwriteTooltip": "Outro arquivo já usa este nome e não faz parte deste plano de renomeação. Esta renomeação está bloqueada para proteger esse arquivo.",
   "@askCmdr.renameReview.overwriteTooltip": {
-    "sourceHash": "f3448fc"
+    "sourceHash": "4b7136e"
   },
   "askCmdr.renameReview.sourceMissingBadge": "(não existe)",
   "@askCmdr.renameReview.sourceMissingBadge": {
-    "sourceHash": "fbb0106"
+    "sourceHash": "7d1c550"
   },
   "askCmdr.renameReview.sourceMissingTooltip": "Este arquivo de origem não existe mais. Pode ter sido apagado ou renomeado fora do Cmdr.",
   "@askCmdr.renameReview.sourceMissingTooltip": {
@@ -677,7 +677,7 @@
   },
   "askCmdr.wake.needsFullDiskAccess": "Os recursos de IA ainda não conseguem ver suas pastas. Clique para configurar o acesso total ao disco.",
   "@askCmdr.wake.needsFullDiskAccess": {
-    "sourceHash": "0c301b5"
+    "sourceHash": "ae245b9"
   },
   "askCmdr.wake.needsApiKey": "Os recursos de IA estão ativados, mas precisam de um provedor para funcionar. Clique para configurar um nos ajustes.",
   "@askCmdr.wake.needsApiKey": {

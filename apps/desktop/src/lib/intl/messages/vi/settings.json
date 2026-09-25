@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "Chọn ngôn ngữ Cmdr dùng. “Mặc định hệ thống” theo ngôn ngữ máy Mac của bạn.",
   "@settings.appearance.language.description": {
-    "sourceHash": "6e36bba"
+    "sourceHash": "2dd7f63"
   },
   "settings.appearance.language.opt.system": "Mặc định hệ thống",
   "@settings.appearance.language.opt.system": {
@@ -273,7 +273,7 @@
   },
   "settings.appearance.useAppIconsForDocuments.description": "Hiển thị biểu tượng của ứng dụng cho tài liệu thay vì biểu tượng loại tệp chung. Nhiều màu sắc hơn nhưng hơi chậm hơn.",
   "@settings.appearance.useAppIconsForDocuments.description": {
-    "sourceHash": "9ae8a9c"
+    "sourceHash": "9651182"
   },
   "settings.appearance.showFunctionKeyBar.label": "Hiển thị thanh phím chức năng",
   "@settings.appearance.showFunctionKeyBar.label": {
@@ -453,7 +453,7 @@
   },
   "settings.mediaIndex.privacyNote": "Việc này chạy hoàn toàn trên máy Mac của bạn bằng Vision framework tích hợp của Apple. Hình ảnh của bạn không bao giờ rời khỏi máy tính, và không có nhà cung cấp AI hay khóa API nào tham gia.",
   "@settings.mediaIndex.privacyNote": {
-    "sourceHash": "817fc60"
+    "sourceHash": "9e5a87f"
   },
   "settings.mediaIndex.clip.title": "Tìm kiếm ngữ nghĩa",
   "@settings.mediaIndex.clip.title": {
@@ -461,7 +461,7 @@
   },
   "settings.mediaIndex.clip.description": "Tìm ảnh bằng cách mô tả nội dung trong ảnh, ví dụ “hoàng hôn trên bãi biển”, bằng mô hình AI chạy trên máy.",
   "@settings.mediaIndex.clip.description": {
-    "sourceHash": "e7bece5"
+    "sourceHash": "9a569ba"
   },
   "settings.mediaIndex.clip.ready": "Sẵn sàng — tìm kiếm ảnh của bạn bằng mô tả.",
   "@settings.mediaIndex.clip.ready": {
@@ -481,7 +481,7 @@
   },
   "settings.mediaIndex.clip.failed": "Quá trình tải về chưa hoàn tất. Hãy kiểm tra kết nối và thử lại.",
   "@settings.mediaIndex.clip.failed": {
-    "sourceHash": "5feb349"
+    "sourceHash": "8a3682d"
   },
   "settings.mediaIndex.clip.notSupported": "Tìm kiếm theo mô tả cần máy Mac dùng chip Apple silicon.",
   "@settings.mediaIndex.clip.notSupported": {
@@ -509,7 +509,7 @@
   },
   "settings.mediaIndex.clip.deleteFailed": "Chưa thể xóa mô hình lúc này. Hãy thử lại sau giây lát.",
   "@settings.mediaIndex.clip.deleteFailed": {
-    "sourceHash": "6c9ced5"
+    "sourceHash": "126c735"
   },
   "settings.mediaIndex.cards.enable": "Bật lập chỉ mục",
   "@settings.mediaIndex.cards.enable": {
@@ -541,7 +541,7 @@
   },
   "settings.mediaIndex.showFileStatusIcons.description": "Thêm một huy hiệu nhỏ vào mỗi hình ảnh trong danh sách tệp, cho biết nó đã được lập chỉ mục để tìm kiếm hay chưa.",
   "@settings.mediaIndex.showFileStatusIcons.description": {
-    "sourceHash": "62dda47"
+    "sourceHash": "1a725aa"
   },
   "settings.mediaIndex.showInSearch.label": "Hiển thị kết quả hình ảnh trong Tìm kiếm",
   "@settings.mediaIndex.showInSearch.label": {
@@ -549,7 +549,7 @@
   },
   "settings.mediaIndex.showInSearch.description": "Tìm kiếm sẽ thêm một hàng hình ảnh khớp phía trên các tệp của bạn. Việc so khớp vẫn chưa chính xác lắm, nên tính năng này đang tắt cho đến khi bạn muốn dùng.",
   "@settings.mediaIndex.showInSearch.description": {
-    "sourceHash": "5b62cab"
+    "sourceHash": "143a4e7"
   },
   "settings.mediaIndex.networkVolumes.label": "Lập chỉ mục hình ảnh trên ổ đĩa mạng",
   "@settings.mediaIndex.networkVolumes.label": {
@@ -585,7 +585,7 @@
   },
   "settings.mediaIndex.networkVolumes.intro": "Ổ đĩa mạng chỉ được lập chỉ mục khi bạn bật chúng ở đây. Cmdr đọc ảnh qua mạng một cách nhẹ nhàng: chỉ khi bạn không bận, ở tốc độ giới hạn, và tạm dừng khi ổ đĩa ngắt kết nối.",
   "@settings.mediaIndex.networkVolumes.intro": {
-    "sourceHash": "165a9eb"
+    "sourceHash": "2d192ce"
   },
   "settings.mediaIndex.networkVolumes.none": "Kết nối một ổ đĩa mạng để lập chỉ mục ảnh trên đó.",
   "@settings.mediaIndex.networkVolumes.none": {
@@ -737,7 +737,7 @@
   },
   "settings.mediaIndex.reclaim.couldNotDelete": "Cmdr không thể xóa các mục bổ sung. Hãy thử lại.",
   "@settings.mediaIndex.reclaim.couldNotDelete": {
-    "sourceHash": "3295df4"
+    "sourceHash": "c57ac43"
   },
   "settings.mediaIndex.reclaim.deletedSpaceLater": "Đã xóa các mục bổ sung. Cmdr sẽ giải phóng dung lượng ổ đĩa sau.",
   "@settings.mediaIndex.reclaim.deletedSpaceLater": {
@@ -757,7 +757,7 @@
   },
   "settings.indexing.staleNotify.description": "Bạn vẫn thấy trạng thái vàng nếu tắt mục này.",
   "@settings.indexing.staleNotify.description": {
-    "sourceHash": "c4216d8"
+    "sourceHash": "03af10e"
   },
   "settings.indexing.masterOffNote": "Lập chỉ mục ổ đĩa đang tắt, nên không có ổ đĩa nào được lập chỉ mục và kích cỡ thư mục vẫn ẩn. Mỗi ổ đĩa giữ lựa chọn bật hay tắt của riêng nó, sẵn sàng cho lúc bạn bật lại mục này.",
   "@settings.indexing.masterOffNote": {
@@ -781,7 +781,7 @@
   },
   "settings.indexing.reEnableNotifications.disabledTooltip": "Bạn chưa tắt lời nhắc cho ổ đĩa nào.",
   "@settings.indexing.reEnableNotifications.disabledTooltip": {
-    "sourceHash": "3a5a54b"
+    "sourceHash": "e7702a8"
   },
   "settings.indexing.silencedDrives.label": "Lời nhắc ổ đĩa đã tắt",
   "@settings.indexing.silencedDrives.label": {
@@ -951,7 +951,7 @@
   },
   "settings.network.enabled.description": "Tìm các máy chủ SMB trên mạng cục bộ của bạn và kết nối tới chúng. Khi tắt, Cmdr vẫn đọc và ghi tệp được trên các mục chia sẻ đã gắn kết, nhưng sẽ không xin quyền Mạng cục bộ từ macOS.",
   "@settings.network.enabled.description": {
-    "sourceHash": "3500345"
+    "sourceHash": "72a0854"
   },
   "settings.network.firstTriggerDone.label": "Đã bắt đầu tìm máy chủ trên mạng cục bộ",
   "@settings.network.firstTriggerDone.label": {
@@ -1047,7 +1047,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "Phát hiện và kết nối tới các thiết bị Android cùng thiết bị khác qua cáp USB để duyệt và truyền tệp. Để dùng tính năng này trên điện thoại Android, bạn nên dùng cáp USB, rồi trên điện thoại, vào đại loại như Settings > USB Preferences, và đặt kết nối thành “File transfer”, “Android Auto”, hoặc tương tự. (Tùy thiết bị mà khác nhau.)",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "37444c2"
+    "sourceHash": "c66df04"
   },
   "settings.fileOperations.adbEnabled.label": "Truy cập tệp Android qua ADB",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1055,7 +1055,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "Truy cập toàn bộ hệ thống tệp của một điện thoại Android đang bật gỡ lỗi qua USB, phần mà MTP không cho bạn thấy. Cần có bộ công cụ nền tảng Android (lệnh “adb”) trên máy Mac này. Cứ để bật cũng không tốn gì khi bạn chưa cài công cụ Android nào.",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "57cf2aa"
+    "sourceHash": "9a22518"
   },
   "settings.fileOperations.adbBinaryPath.label": "Vị trí của adb",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1167,7 +1167,7 @@
   },
   "settings.analytics.enabled.description": "Hãy bật mục này để giúp chúng tôi thấy tính năng nào quan trọng trong giai đoạn beta công khai.\nThống kê không gắn với tên hay email của bạn, mà gắn với một mã định danh ngẫu nhiên.\nCmdr không bao giờ gửi tên tệp, đường dẫn, từ khóa tìm kiếm hay câu lệnh.\nKhi tắt, Cmdr không gửi bất kỳ thống kê nào.",
   "@settings.analytics.enabled.description": {
-    "sourceHash": "23bafcb"
+    "sourceHash": "f5534ee"
   },
   "settings.analytics.email.label": "Email liên hệ beta",
   "@settings.analytics.email.label": {
@@ -1247,7 +1247,7 @@
   },
   "settings.fileViewer.suppressBinaryWarning.description": "F3 mở trình xem tệp của Cmdr, vốn hiển thị byte thô (với UTF-8 mất mát cho nội dung phi văn bản). Khi bạn mở ảnh, PDF, tệp nén, hoặc tệp nhị phân khác, trình xem hiển thị biểu ngữ đỏ giải thích rằng ⇧Space (Xem nhanh) hoặc Enter (mở trong ứng dụng liên kết) có lẽ là điều bạn muốn. Bật mục này (hoặc bấm “Đừng bao giờ hiện cảnh báo này nữa” trên biểu ngữ) để ẩn cảnh báo vĩnh viễn.",
   "@settings.fileViewer.suppressBinaryWarning.description": {
-    "sourceHash": "5ba5ff7"
+    "sourceHash": "a93b4cb"
   },
   "settings.fileExplorer.suppressQuickLookHint.label": "Ẩn gợi ý Xem nhanh bằng phím Space",
   "@settings.fileExplorer.suppressQuickLookHint.label": {
@@ -1255,7 +1255,7 @@
   },
   "settings.fileExplorer.suppressQuickLookHint.description": "Cmdr dùng Space để bật/tắt chọn tệp và ⇧Space cho Xem nhanh (Finder dùng Space thường cho Xem nhanh). Mỗi lần bạn nhấn Space trong danh sách tệp, Cmdr hiển thị một đoạn nhắc về khác biệt này. Bật mục này (hoặc bấm “Không hiển thị lại” trên thông báo nhỏ) để ẩn lời nhắc vĩnh viễn.",
   "@settings.fileExplorer.suppressQuickLookHint.description": {
-    "sourceHash": "be9e1ff"
+    "sourceHash": "10357b4"
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.label": "Số tab đã đóng cần nhớ cho mỗi khung",
   "@settings.fileExplorer.tabs.closedTabHistorySize.label": {
@@ -1331,7 +1331,7 @@
   },
   "settings.advanced.showSafeSaveFiles.label": "Hiển thị tệp tạm của các ứng dụng khác",
   "@settings.advanced.showSafeSaveFiles.label": {
-    "sourceHash": "3436491"
+    "sourceHash": "c43c6af"
   },
   "settings.advanced.showSafeSaveFiles.description": "Khi các ứng dụng như TextEdit và Xem trước lưu một tệp, macOS ghi phiên bản mới bên cạnh dưới một tên tạm (kết thúc bằng “.sb-”) rồi hoán đổi. Tắt tùy chọn này để giữ chúng ngoài danh sách tệp.",
   "@settings.advanced.showSafeSaveFiles.description": {
@@ -1339,11 +1339,11 @@
   },
   "settings.advanced.showStagingTempFiles.label": "Hiển thị các tệp tạm của Cmdr",
   "@settings.advanced.showStagingTempFiles.label": {
-    "sourceHash": "5a7636d"
+    "sourceHash": "61c8190"
   },
   "settings.advanced.showStagingTempFiles.description": "Khi sao chép, Cmdr ghi từng tệp dưới một tên tạm và chỉ đổi tên khi tệp đã hoàn tất, nên sự cố không thể để lại tệp ghi dở dưới một tên thật. Các tệp còn sót lại từ lần sao chép bị gián đoạn luôn được hiển thị.",
   "@settings.advanced.showStagingTempFiles.description": {
-    "sourceHash": "2d88a78"
+    "sourceHash": "a562689"
   },
   "settings.advanced.logLlmCalls.label": "Ghi nhật ký lệnh gọi mô hình AI",
   "@settings.advanced.logLlmCalls.label": {
@@ -1592,7 +1592,7 @@
   },
   "settings.behavior.openTerminalHereApp.description": "Cmdr liệt kê các ứng dụng terminal mà nó tìm thấy trên máy Mac này. Để dùng một ứng dụng nó chưa biết, hãy chọn “Chọn ứng dụng…”.",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "32ccd8f"
+    "sourceHash": "a921be1"
   },
   "settings.behavior.openTerminalHereApp.chooseApp": "Chọn ứng dụng…",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
@@ -1624,7 +1624,7 @@
   },
   "settings.behavior.doubleClickPaneNavigatesToParent.description": "Đó là khoảng trống xung quanh danh sách tệp, không phải một hàng tệp.",
   "@settings.behavior.doubleClickPaneNavigatesToParent.description": {
-    "sourceHash": "734b6c2"
+    "sourceHash": "cae047d"
   },
   "settings.behavior.doubleClickOnPaneNotificationSeen.label": "Đã hiển thị gợi ý bấm đúp để đi tới thư mục cha",
   "@settings.behavior.doubleClickOnPaneNotificationSeen.label": {
@@ -2156,7 +2156,7 @@
   },
   "settings.ai.tooltipCloud": "Mang khóa API của riêng bạn để có AI nhanh, chất lượng cao. Hoạt động với OpenAI, Anthropic (Claude), Google (Gemini), xAI (Grok), Groq, DeepSeek, OpenRouter, hoặc bất kỳ máy chủ cục bộ nào bạn đang chạy (Ollama, LM Studio, v.v.). Cần kết nối internet (trừ khi dùng máy chủ cục bộ). Cmdr không dùng dung lượng đĩa hay bộ nhớ nào.",
   "@settings.ai.tooltipCloud": {
-    "sourceHash": "1f63e66"
+    "sourceHash": "9cfff88"
   },
   "settings.ai.tooltipLocal": "Chạy một mô hình ngôn ngữ nhỏ hoàn toàn trên thiết bị của bạn. Riêng tư tối đa: không gì rời khỏi máy tính của bạn. Hoạt động ngoại tuyến. Dùng ~2 GB dung lượng đĩa và ~400 MB bộ nhớ (thay đổi theo cỡ ngữ cảnh). Cần Apple silicon (M1+).",
   "@settings.ai.tooltipLocal": {
@@ -2184,7 +2184,7 @@
   },
   "settings.fileSystemWatching.clearIndexDescription": "Xóa chỉ mục của mọi ổ đĩa. Việc lập chỉ mục sẽ tạo lại, và một lần tìm kiếm trong thư mục mà Cmdr chưa lập chỉ mục cũng vậy.",
   "@settings.fileSystemWatching.clearIndexDescription": {
-    "sourceHash": "370e2bc"
+    "sourceHash": "b6074f3"
   },
   "settings.fileSystemWatching.cardDownloads": "Tải về",
   "@settings.fileSystemWatching.cardDownloads": {
@@ -2305,7 +2305,7 @@
   },
   "settings.network.permissionWithout": "Không có nó, Cmdr vẫn đọc và ghi tệp được trên các mục chia sẻ đã gắn kết, nhưng bạn không thể tìm máy chủ mới hay dùng kết nối trực tiếp nhanh hơn của chúng tôi.",
   "@settings.network.permissionWithout": {
-    "sourceHash": "4beca45"
+    "sourceHash": "a563afd"
   },
   "settings.network.customTimeoutUnit": "giây",
   "@settings.network.customTimeoutUnit": {
@@ -2329,11 +2329,11 @@
   },
   "settings.updates.emailSignupError": "Xin lỗi, chúng tôi chưa đăng ký được cho bạn ngay lúc này. Thử lại nhé?",
   "@settings.updates.emailSignupError": {
-    "sourceHash": "0aac3a9"
+    "sourceHash": "14adb30"
   },
   "settings.updates.emailPrivacyNote": "Chỉ lưu trên máy Mac của bạn. Chúng tôi không bao giờ gửi nó cùng thống kê sử dụng của bạn, nên thống kê không thể bị truy ngược về bạn. Chỉ dùng để liên hệ và để tùy chọn đính kèm vào báo cáo bạn gửi. Để ngừng nhận email, dùng liên kết hủy đăng ký trong bất kỳ thư nào chúng tôi gửi.",
   "@settings.updates.emailPrivacyNote": {
-    "sourceHash": "f22c213"
+    "sourceHash": "cf92795"
   },
   "settings.logging.openLogFile": "Mở tệp nhật ký",
   "@settings.logging.openLogFile": {
@@ -2441,7 +2441,7 @@
   },
   "settings.mediaIndex.chosenFolders.help": "Ảnh trong những thư mục này luôn được lập chỉ mục, dù bạn chọn gì ở trên. Gỡ bỏ một thư mục sẽ dừng việc lập chỉ mục mới; những gì đã lập chỉ mục vẫn tìm kiếm được.",
   "@settings.mediaIndex.chosenFolders.help": {
-    "sourceHash": "c48ff3f"
+    "sourceHash": "858eb44"
   },
   "settings.mediaIndex.chosenFolders.empty": "Chưa có thư mục nào. Hãy thêm một thư mục để bắt đầu lập chỉ mục ảnh trong đó.",
   "@settings.mediaIndex.chosenFolders.empty": {
@@ -2473,7 +2473,7 @@
   },
   "settings.servers.trustedHostKeys.description": "Cmdr hỏi trước khi tin cậy khóa của một máy chủ vào lần đầu bạn kết nối, và ghi nhớ câu trả lời của bạn ở đây. Máy chủ đã lưu nằm trong danh sách Máy chủ, không phải ở trang này.",
   "@settings.servers.trustedHostKeys.description": {
-    "sourceHash": "bbbed1a"
+    "sourceHash": "b3a8900"
   },
   "settings.servers.trustedHostKeys.empty": "Chưa tin cậy khóa nào. Lần đầu bạn kết nối tới một máy chủ SFTP, Cmdr sẽ cho bạn xem dấu vân tay của khóa rồi hỏi bạn.",
   "@settings.servers.trustedHostKeys.empty": {

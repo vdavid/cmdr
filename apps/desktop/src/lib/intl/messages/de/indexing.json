@@ -155,11 +155,11 @@
   },
   "indexing.rescan.staleIndex": "Dein Laufwerksindex ist veraltet. Die App war anscheinend eine Weile nicht geöffnet. Ein neuer Durchlauf bringt ihn auf den aktuellen Stand.",
   "@indexing.rescan.staleIndex": {
-    "sourceHash": "ddac60e"
+    "sourceHash": "cce4c74"
   },
   "indexing.rescan.journalGap": "Das Änderungsprotokoll des Systems reicht nicht weit genug zurück. Ein neuer Durchlauf baut den Index neu auf.",
   "@indexing.rescan.journalGap": {
-    "sourceHash": "5f1075b"
+    "sourceHash": "a697c86"
   },
   "indexing.rescan.replayOverflow": "Seit dem letzten Start haben sich viele Dateien geändert. Statt sie einzeln nachzuvollziehen, läuft ein neuer Durchlauf.",
   "@indexing.rescan.replayOverflow": {
@@ -167,7 +167,7 @@
   },
   "indexing.rescan.watcherStartFailed": "Die Überwachung für Dateiänderungen ließ sich nicht starten. Ein neuer Durchlauf bringt den Index auf den aktuellen Stand.",
   "@indexing.rescan.watcherStartFailed": {
-    "sourceHash": "831e44d"
+    "sourceHash": "07fb462"
   },
   "indexing.rescan.reconcilerBufferOverflow": "Starke Dateisystemaktivität hat den Ereignispuffer überlastet. Ein neuer Durchlauf hält alles genau.",
   "@indexing.rescan.reconcilerBufferOverflow": {
@@ -175,7 +175,7 @@
   },
   "indexing.rescan.incompletePreviousScan": "Der vorige Durchlauf wurde nicht beendet (die App wurde vielleicht geschlossen). Der Durchlauf startet von vorn.",
   "@indexing.rescan.incompletePreviousScan": {
-    "sourceHash": "3ca5217"
+    "sourceHash": "804084a"
   },
   "indexing.rescan.watcherChannelOverflow": "Ein Schub an Dateisystemaktivität hat den Kanal der Überwachung überlastet. Ein neuer Durchlauf hält alles genau.",
   "@indexing.rescan.watcherChannelOverflow": {
@@ -203,15 +203,15 @@
   },
   "indexing.firstConnect.silenceDrive": "Für dieses Laufwerk nicht mehr fragen",
   "@indexing.firstConnect.silenceDrive": {
-    "sourceHash": "99bed41"
+    "sourceHash": "8d7a674"
   },
   "indexing.firstConnect.silenceAll": "Für kein Laufwerk mehr fragen",
   "@indexing.firstConnect.silenceAll": {
-    "sourceHash": "511c970"
+    "sourceHash": "0e10003"
   },
   "indexing.staleDialog.title": "Der Index dieses Laufwerks ist womöglich nicht mehr aktuell",
   "@indexing.staleDialog.title": {
-    "sourceHash": "21a78ee"
+    "sourceHash": "7de163b"
   },
   "indexing.staleDialog.body": "Während {name} getrennt war, haben sich Dateien darauf vielleicht geändert. Ordnergrößen und Suchergebnisse können bis zu einem erneuten Durchlauf etwas abweichen. Der gelbe Status neben dem Laufwerk zeigt das immer an, und ein erneuter Durchlauf bringt alles auf den neuesten Stand.",
   "@indexing.staleDialog.body": {
@@ -219,11 +219,11 @@
   },
   "indexing.staleDialog.titlePhone": "Der Index dieses Telefons ist womöglich nicht mehr aktuell",
   "@indexing.staleDialog.titlePhone": {
-    "sourceHash": "6086bac"
+    "sourceHash": "1f41e08"
   },
   "indexing.staleDialog.bodyPhone": "{name} teilt Cmdr nicht mit, wenn sich Dateien darauf ändern, daher hält Cmdr den Index mit den eigenen Änderungen aktuell. Änderungen auf dem Telefon, etwa neue Fotos, sind nach einem erneuten Durchlauf in Ordnergrößen und Suchergebnissen sichtbar. Der gelbe Status neben dem Telefon bleibt zur Erinnerung stehen.",
   "@indexing.staleDialog.bodyPhone": {
-    "sourceHash": "4ba8463"
+    "sourceHash": "2751fdf"
   },
   "indexing.staleDialog.neverShowAgain": "Nie mehr anzeigen",
   "@indexing.staleDialog.neverShowAgain": {
@@ -253,7 +253,7 @@
   },
   "indexing.enrich.pausedIdle": "Wartet, bis du nicht mehr beschäftigt bist",
   "@indexing.enrich.pausedIdle": {
-    "sourceHash": "d63ee91"
+    "sourceHash": "ee9b2e9"
   },
   "indexing.enrich.pausedDisconnected": "Angehalten, wird bei erneuter Verbindung fortgesetzt",
   "@indexing.enrich.pausedDisconnected": {

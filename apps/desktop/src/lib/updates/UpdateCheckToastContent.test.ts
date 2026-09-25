@@ -93,7 +93,7 @@ describe('UpdateCheckToastContent', () => {
     _setUpdateStatusForTest('idle')
     const target = render()
     await tick()
-    expect(target.textContent).toContain("Cmdr couldn't check for updates.")
+    expect(target.textContent).toContain('Cmdr couldn’t check for updates.')
     expect(target.textContent).toContain('Check your internet connection')
     expect(target.textContent).not.toContain('Error:')
     expect(target.textContent).not.toContain('error sending request')
@@ -107,7 +107,7 @@ describe('UpdateCheckToastContent', () => {
     const target = render()
     await tick()
     const shown = target.querySelector('.message')?.textContent.trim() ?? ''
-    expect(shown).toContain("Cmdr couldn't install the update.")
+    expect(shown).toContain('Cmdr couldn’t install the update.')
     const link = Array.from(target.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Send error report')
     expect(link).toBeTruthy()
     link?.click()

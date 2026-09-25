@@ -53,12 +53,12 @@ describe('OperationFailedToastContent', () => {
   it('names the operation in the house wording, never "failed"', () => {
     render()
     const title = target.querySelector('.title')?.textContent.trim() ?? ''
-    expect(title).toBe("Couldn't finish copying")
+    expect(title).toBe('Couldn’t finish copying')
   })
 
   it('phrases the title per operation type', () => {
     render({ operationType: 'trash' })
-    expect(target.querySelector('.title')?.textContent.trim()).toBe("Couldn't finish moving to trash")
+    expect(target.querySelector('.title')?.textContent.trim()).toBe('Couldn’t finish moving to trash')
   })
 
   it('gives the real reason, not a generic apology', () => {

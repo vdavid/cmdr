@@ -1,7 +1,7 @@
 {
   "queryUi.bar.placeholder.ai": "Descreva o que você está procurando",
   "@queryUi.bar.placeholder.ai": {
-    "sourceHash": "fbfb9a8"
+    "sourceHash": "d8ef53e"
   },
   "queryUi.bar.placeholder.regex": "Padrão de expressão regular",
   "@queryUi.bar.placeholder.regex": {
@@ -106,7 +106,7 @@
   },
   "queryUi.ai.lead": "Veja o que o agente fez:",
   "@queryUi.ai.lead": {
-    "sourceHash": "bf7c5a2"
+    "sourceHash": "0598e43"
   },
   "queryUi.ai.empty": "Nada para filtrar ainda. Que tal reformular?",
   "@queryUi.ai.empty": {
@@ -256,7 +256,7 @@
   },
   "queryUi.results.live.resolvingCoverage": "Vendo o que já está indexado…",
   "@queryUi.results.live.resolvingCoverage": {
-    "sourceHash": "524487d"
+    "sourceHash": "dc547a0"
   },
   "queryUi.results.live.waitingForAnotherWalk": "Aguardando outra passagem por estas pastas…",
   "@queryUi.results.live.waitingForAnotherWalk": {
@@ -268,11 +268,11 @@
   },
   "queryUi.results.live.readingIndex": "Lendo o que já está indexado…",
   "@queryUi.results.live.readingIndex": {
-    "sourceHash": "ed4159a"
+    "sourceHash": "b8bd4f7"
   },
   "queryUi.results.live.walking": "Percorrendo pastas que ainda não estão indexadas…",
   "@queryUi.results.live.walking": {
-    "sourceHash": "3829650"
+    "sourceHash": "2acf23a"
   },
   "queryUi.results.live.matchesSoFar": "{countText} {count, plural, one {resultado} many {resultados} other {resultados}} até agora",
   "@queryUi.results.live.matchesSoFar": {
@@ -284,11 +284,11 @@
   },
   "queryUi.results.live.incomplete": "{shownText} de {totalText} resultados. O Cmdr não terminou de procurar.",
   "@queryUi.results.live.incomplete": {
-    "sourceHash": "7dccf6e"
+    "sourceHash": "737d12c"
   },
   "queryUi.results.live.incompleteEmpty": "Nada encontrado antes de a busca parar. O Cmdr não terminou de procurar.",
   "@queryUi.results.live.incompleteEmpty": {
-    "sourceHash": "bfa15df"
+    "sourceHash": "6910921"
   },
   "queryUi.results.live.capped": "Mostrando os primeiros {shownText} de {totalText} resultados.",
   "@queryUi.results.live.capped": {
@@ -438,15 +438,15 @@
   },
   "queryUi.dialog.aiTranslateFailedToast": "Não foi possível executar a busca por IA agora. Tentar de novo?",
   "@queryUi.dialog.aiTranslateFailedToast": {
-    "sourceHash": "6856c79"
+    "sourceHash": "b18f37c"
   },
   "queryUi.dialog.runQueryToast": "Não foi possível concluir essa busca. {message}",
   "@queryUi.dialog.runQueryToast": {
-    "sourceHash": "02a3bba"
+    "sourceHash": "51acd6e"
   },
   "queryUi.dialog.runQueryUnknownReason": "O motivo não está claro. Tente uma busca mais específica?",
   "@queryUi.dialog.runQueryUnknownReason": {
-    "sourceHash": "4f79b0f"
+    "sourceHash": "bb9a283"
   },
   "queryUi.filters.toolbarAria": "Filtros de busca",
   "@queryUi.filters.toolbarAria": {

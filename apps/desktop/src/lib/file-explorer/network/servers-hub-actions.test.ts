@@ -184,7 +184,7 @@ describe('forget', () => {
     await actions().forget(nearbyOnlyRow)
     expect(removeManualServer).not.toHaveBeenCalled()
     expect(forgetSavedServer).not.toHaveBeenCalled()
-    expect(addToast).toHaveBeenCalledWith("Can't remove discovered hosts", { level: 'warn' })
+    expect(addToast).toHaveBeenCalledWith('Can’t remove discovered hosts', { level: 'warn' })
   })
 })
 

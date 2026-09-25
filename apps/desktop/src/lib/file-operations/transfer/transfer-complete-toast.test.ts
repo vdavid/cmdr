@@ -496,13 +496,13 @@ describe('composeTrashRefusedToast', () => {
   // refused one explain themselves identically.
   it('names how many items stayed behind, worded by the reason', () => {
     expect(composeTrashRefusedToast({ itemCount: 1, reason: 'notPermitted' })).toBe(
-      "macOS wouldn't let Cmdr touch 1 of the items you picked.",
+      'macOS wouldn’t let Cmdr touch 1 of the items you picked.',
     )
     expect(composeTrashRefusedToast({ itemCount: 3, reason: 'noTrashForVolume' })).toBe(
-      "macOS couldn't find a trash for 3 of the items you picked.",
+      'macOS couldn’t find a trash for 3 of the items you picked.',
     )
     expect(composeTrashRefusedToast({ itemCount: 2, reason: 'other' })).toBe(
-      "macOS wouldn't move 2 of the items you picked to the trash.",
+      'macOS wouldn’t move 2 of the items you picked to the trash.',
     )
   })
 

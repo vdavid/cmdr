@@ -73,11 +73,11 @@
   },
   "ai.cloudConsent.whereItGoes": "你的資料會送到哪裡、在那裡會怎麼被處理，取決於你選的服務，以及你和它之間的協議。Ollama、LM Studio 和自訂端點也一樣：資料會送到那台伺服器所在的地方。Cmdr 自己的伺服器從來看不到其中任何內容。",
   "@ai.cloudConsent.whereItGoes": {
-    "sourceHash": "f80daf9"
+    "sourceHash": "44dd8ba"
   },
   "ai.cloudConsent.folderSuggestions": "<b>新資料夾的名稱建議</b>：目前資料夾的路徑，以及其中最多 100 個名稱",
   "@ai.cloudConsent.folderSuggestions": {
-    "sourceHash": "02790c2"
+    "sourceHash": "e2c592a"
   },
   "ai.cloudConsent.search": "<b>用自然語言搜尋</b>：你輸入的文字",
   "@ai.cloudConsent.search": {
@@ -177,7 +177,7 @@
   },
   "ai.translateError.rateLimited.body": "它正在限制請求速率，或是你的方案配額用完了。看看你的方案和帳單，然後再試一次。",
   "@ai.translateError.rateLimited.body": {
-    "sourceHash": "9b296d7"
+    "sourceHash": "ca3616b"
   },
   "ai.translateError.timeout.title": "AI 花了太久時間",
   "@ai.translateError.timeout.title": {
@@ -189,11 +189,11 @@
   },
   "ai.translateError.unavailable.title": "連不到你的 AI 提供者",
   "@ai.translateError.unavailable.title": {
-    "sourceHash": "e684bc4"
+    "sourceHash": "74e6ba8"
   },
   "ai.translateError.unavailable.body": "檢查你的網際網路或提供者的服務狀態，然後再試一次。",
   "@ai.translateError.unavailable.body": {
-    "sourceHash": "ba30402"
+    "sourceHash": "c44a8ed"
   },
   "ai.translateError.emptyResponse.title": "AI 回了空白",
   "@ai.translateError.emptyResponse.title": {
@@ -213,7 +213,7 @@
   },
   "ai.translateError.parseError.title": "無法讀懂 AI 的回答",
   "@ai.translateError.parseError.title": {
-    "sourceHash": "a509880"
+    "sourceHash": "02af146"
   },
   "ai.translateError.parseError.body": "再試一次，或到「設定 > AI」換一個模型。",
   "@ai.translateError.parseError.body": {
@@ -221,7 +221,7 @@
   },
   "ai.translateError.unknownProvider.title": "無法辨識那個 AI 提供者",
   "@ai.translateError.unknownProvider.title": {
-    "sourceHash": "3b70b46"
+    "sourceHash": "794a4c7"
   },
   "ai.translateError.unknownProvider.body": "請到「設定 > AI」選一個提供者。",
   "@ai.translateError.unknownProvider.body": {
@@ -265,7 +265,7 @@
   },
   "ai.cloud.connectionError": "連不到伺服器",
   "@ai.cloud.connectionError": {
-    "sourceHash": "3f378c3"
+    "sourceHash": "79d79fb"
   },
   "ai.cloud.genericError": "出了點狀況",
   "@ai.cloud.genericError": {
@@ -423,7 +423,7 @@
   },
   "ai.local.deleteConfirmMessage": "這會釋出 {modelSize} 的磁碟空間。之後要再用本機 AI 的話，得重新下載。",
   "@ai.local.deleteConfirmMessage": {
-    "sourceHash": "1a6ca0d"
+    "sourceHash": "b295742"
   },
   "ai.local.deleteButtonDeleting": "正在刪除⋯",
   "@ai.local.deleteButtonDeleting": {
@@ -435,7 +435,7 @@
   },
   "ai.secretError.keychainTitle": "{op, select, save {無法儲存你的 API 金鑰：macOS 鑰匙圈拒絕存取} other {無法讀取你已儲存的 API 金鑰：macOS 鑰匙圈拒絕存取}}",
   "@ai.secretError.keychainTitle": {
-    "sourceHash": "ec77588"
+    "sourceHash": "2b2ef89"
   },
   "ai.secretError.keychainBody": "{op, select, save {請開啟「鑰匙圈存取」，檢查其中的「Cmdr」項目，或是把它刪掉再儲存一次。} other {請開啟「鑰匙圈存取」，找到「Cmdr」項目並授予存取權，或是把它刪掉，重新輸入你的金鑰。}}",
   "@ai.secretError.keychainBody": {
@@ -443,7 +443,7 @@
   },
   "ai.secretError.keyringTitle": "{op, select, save {無法儲存你的 API 金鑰：系統鑰匙圈拒絕存取} other {無法讀取你已儲存的 API 金鑰：系統鑰匙圈拒絕存取}}",
   "@ai.secretError.keyringTitle": {
-    "sourceHash": "8c9df45"
+    "sourceHash": "60f5401"
   },
   "ai.secretError.keyringBody": "請解鎖你的鑰匙圈（「密碼」或「鑰匙圈」App），然後再試一次。",
   "@ai.secretError.keyringBody": {
@@ -451,7 +451,7 @@
   },
   "ai.secretError.genericTitle": "{op, select, save {無法儲存你的 API 金鑰。} other {無法讀取你已儲存的 API 金鑰。}}",
   "@ai.secretError.genericTitle": {
-    "sourceHash": "a93c4f0"
+    "sourceHash": "c343e42"
   },
   "ai.secretError.genericBody": "請確認你的系統鑰匙圈可以使用，然後再試一次。如果還是這樣，請重新啟動 App。",
   "@ai.secretError.genericBody": {
