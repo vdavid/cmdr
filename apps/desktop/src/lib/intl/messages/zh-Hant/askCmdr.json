@@ -20,7 +20,7 @@
   "@askCmdr.empty.hint": {
     "sourceHash": "487071b"
   },
-  "askCmdr.composer.placeholder": "問問你的檔案…",
+  "askCmdr.composer.placeholder": "問問你的檔案⋯",
   "@askCmdr.composer.placeholder": {
     "sourceHash": "77e2636"
   },
@@ -32,7 +32,7 @@
   "@askCmdr.composer.stop": {
     "sourceHash": "cae7d57"
   },
-  "askCmdr.thinking": "正在思考…",
+  "askCmdr.thinking": "正在思考⋯",
   "@askCmdr.thinking": {
     "sourceHash": "a02f1ce"
   },
@@ -284,7 +284,7 @@
   "@askCmdr.sessions.back": {
     "sourceHash": "5978844"
   },
-  "askCmdr.sessions.searchPlaceholder": "搜尋你的對話記錄…",
+  "askCmdr.sessions.searchPlaceholder": "搜尋你的對話記錄⋯",
   "@askCmdr.sessions.searchPlaceholder": {
     "sourceHash": "2de9074"
   },
@@ -316,7 +316,7 @@
   "@askCmdr.sessions.loadMore": {
     "sourceHash": "ac8991e"
   },
-  "askCmdr.sessions.searching": "正在搜尋…",
+  "askCmdr.sessions.searching": "正在搜尋⋯",
   "@askCmdr.sessions.searching": {
     "sourceHash": "c31723a"
   },
@@ -592,7 +592,7 @@
   "@askCmdr.renameUndo.undoJobLabel": {
     "sourceHash": "9d2e84e"
   },
-  "askCmdr.renameUndo.undoing": "正在把原本的名稱改回去…",
+  "askCmdr.renameUndo.undoing": "正在把原本的名稱改回去⋯",
   "@askCmdr.renameUndo.undoing": {
     "sourceHash": "756c0fc"
   },

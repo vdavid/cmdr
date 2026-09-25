@@ -11,7 +11,7 @@
   "@viewer.srHeading": {
     "sourceHash": "b32f632"
   },
-  "viewer.loading": "正在載入…",
+  "viewer.loading": "正在載入⋯",
   "@viewer.loading": {
     "sourceHash": "ba3bbbe"
   },
@@ -91,7 +91,7 @@
   "@viewer.binaryWarning.suppressForever": {
     "sourceHash": "b85b92b"
   },
-  "viewer.search.placeholder": "在檔案中尋找…",
+  "viewer.search.placeholder": "在檔案中尋找⋯",
   "@viewer.search.placeholder": {
     "sourceHash": "a3268b3"
   },
@@ -111,7 +111,7 @@
   "@viewer.search.matchPosition": {
     "sourceHash": "ec24db4"
   },
-  "viewer.search.searching": "正在搜尋…",
+  "viewer.search.searching": "正在搜尋⋯",
   "@viewer.search.searching": {
     "sourceHash": "c31723a"
   },
@@ -209,7 +209,7 @@
   "@viewer.toolbar.tail.tooltip": {
     "sourceHash": "733e57f"
   },
-  "viewer.toolbar.reindexing": "正在重建索引…",
+  "viewer.toolbar.reindexing": "正在重建索引⋯",
   "@viewer.toolbar.reindexing": {
     "sourceHash": "f668818"
   },
@@ -237,11 +237,11 @@
   "@viewer.statusBar.badge.indexedTooltip": {
     "sourceHash": "2604f1a"
   },
-  "viewer.statusBar.badge.streamingIndexing": "串流中，正在建立索引…",
+  "viewer.statusBar.badge.streamingIndexing": "串流中，正在建立索引⋯",
   "@viewer.statusBar.badge.streamingIndexing": {
     "sourceHash": "db1718e"
   },
-  "viewer.statusBar.badge.streamingIndexingTooltip": "這是一個以串流模式顯示的大型檔案。我們正在背景建立索引（最多 {seconds} 秒）…目前的行號是估算值。",
+  "viewer.statusBar.badge.streamingIndexingTooltip": "這是一個以串流模式顯示的大型檔案。我們正在背景建立索引（最多 {seconds} 秒）⋯目前的行號是估算值。",
   "@viewer.statusBar.badge.streamingIndexingTooltip": {
     "sourceHash": "033d82d"
   },
@@ -314,7 +314,7 @@
   "@viewer.copyDialog.cancel": {
     "sourceHash": "19766ed"
   },
-  "viewer.copyDialog.saveAsFile": "儲存成檔案…",
+  "viewer.copyDialog.saveAsFile": "儲存成檔案⋯",
   "@viewer.copyDialog.saveAsFile": {
     "sourceHash": "7b9b279"
   },
@@ -386,7 +386,7 @@
   "@viewer.saveAs.saveFailed": {
     "sourceHash": "2d85642"
   },
-  "viewer.saveAs.destinationReadOnly": "該位置是唯讀的。換一個資料夾儲存吧？",
+  "viewer.saveAs.destinationReadOnly": "那個位置是唯讀的。換一個資料夾儲存吧？",
   "@viewer.saveAs.destinationReadOnly": {
     "sourceHash": "8d627aa"
   },

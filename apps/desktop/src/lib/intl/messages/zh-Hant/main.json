@@ -7,11 +7,11 @@
   "@main.instanceLock.alertBody": {
     "sourceHash": "140c57d"
   },
-  "main.upgradeNudge.mac": "我們新增了入門引導的選項。開啟 Cmdr > 入門引導… 來查看。",
+  "main.upgradeNudge.mac": "我們新增了入門引導的選項。開啟 Cmdr > 入門引導⋯ 來查看。",
   "@main.upgradeNudge.mac": {
     "sourceHash": "477f3a5"
   },
-  "main.upgradeNudge.other": "我們新增了入門引導的選項。開啟指令面板並執行「入門引導…」來查看。",
+  "main.upgradeNudge.other": "我們新增了入門引導的選項。開啟指令面板並執行「入門引導⋯」來查看。",
   "@main.upgradeNudge.other": {
     "sourceHash": "4b0b39e"
   },
@@ -53,11 +53,11 @@
   },
   "main.revealNudge.title": "在 Cmdr 中開啟「在 Finder 中顯示」？",
   "@main.revealNudge.title": {
-    "sourceHash": "c92e1b7"
+    "sourceHash": "45a5b47"
   },
-  "main.revealNudge.body": "你用 Cmdr 有一陣子了。當其他 App 執行「在 Finder 中顯示」時，Cmdr 可以改為開啟那個資料夾，游標就停在該檔案上。",
+  "main.revealNudge.body": "你用 Cmdr 有一陣子了。當其他 App 執行「在 Finder 中顯示」時，Cmdr 可以改為開啟那個資料夾，游標就停在那個檔案上。",
   "@main.revealNudge.body": {
-    "sourceHash": "fe4072b"
+    "sourceHash": "1db1d28"
   },
   "main.revealNudge.switchBackNote": "隨時都可以在設定中改回來。",
   "@main.revealNudge.switchBackNote": {
@@ -73,19 +73,19 @@
   },
   "main.revealNudge.turnedOn": "Cmdr 現在會接手其他 App 的「在 Finder 中顯示」。",
   "@main.revealNudge.turnedOn": {
-    "sourceHash": "8eab42b"
+    "sourceHash": "27c0ea2"
   },
   "main.revealNudge.heldByOtherApp": "「在 Finder 中顯示」目前屬於 {app}。你隨時可以在設定中把它交給 Cmdr。",
   "@main.revealNudge.heldByOtherApp": {
-    "sourceHash": "3f513b0"
+    "sourceHash": "0893821"
   },
   "main.revealNudge.notTurnedOn": "Cmdr 這次沒能接手「在 Finder 中顯示」。想再試一次的話，開關在設定中。",
   "@main.revealNudge.notTurnedOn": {
-    "sourceHash": "4a9920d"
+    "sourceHash": "953a4ee"
   },
   "main.revealActivation.title": "「在 Finder 中顯示」在這裡開啟了",
   "@main.revealActivation.title": {
-    "sourceHash": "23d50e1"
+    "sourceHash": "6bb18bb"
   },
   "main.revealActivation.body": "Cmdr 設定成接手這類要求，所以這個檔案出現在窗格中，而不是 Finder 裡。其餘的仍然照舊開啟。",
   "@main.revealActivation.body": {

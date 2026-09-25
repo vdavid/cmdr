@@ -19,15 +19,15 @@
   "@fileOperations.delete.noTrashWarningRest": {
     "sourceHash": "0d73f99"
   },
-  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你選取的內容中有一部分僅存在雲端。把它們移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把所有檔案設為離線可用，或是取消選取所有僅存在雲端的檔案。",
+  "fileOperations.delete.cloudOnlineOnlyMixedWarning": "你選取的內容中有一部分只存在雲端。把它們移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把所有檔案設為離線可用，或是取消選取所有只存在雲端的檔案。",
   "@fileOperations.delete.cloudOnlineOnlyMixedWarning": {
-    "sourceHash": "2a49037"
+    "sourceHash": "4c48ecf"
   },
-  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你選取的內容全都僅存在雲端。把它移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把這些檔案設為離線可用。",
+  "fileOperations.delete.cloudOnlineOnlyAllWarning": "你選取的內容全都只存在雲端。把它移至垃圾桶得<strong>先下載回來</strong>。所以 Cmdr 在這裡只提供<strong>刪除</strong>整個選取範圍。垃圾桶裡不會留副本，不過雲端服務通常會在自己的垃圾桶裡保留約 30 天。如果可以刪除，請按一下「刪除」。否則請取消這個對話方塊，先把這些檔案設為離線可用。",
   "@fileOperations.delete.cloudOnlineOnlyAllWarning": {
-    "sourceHash": "0e52a2b"
+    "sourceHash": "52f8c94"
   },
-  "fileOperations.delete.cloudOnlineOnlyHandedBack": "你選取的內容中含有僅存在雲端的檔案，所以下面的按鈕現在提供「刪除」。請看一下上面的說明，確認無誤後再按一次。",
+  "fileOperations.delete.cloudOnlineOnlyHandedBack": "你選取的內容中含有只存在雲端的檔案，所以下面的按鈕現在提供「刪除」。請看一下上面的說明，沒問題的話再按一次。",
   "@fileOperations.delete.cloudOnlineOnlyHandedBack": {
     "sourceHash": "623e7e0"
   },
@@ -47,7 +47,7 @@
   "@fileOperations.trash.goToTrashAction": {
     "sourceHash": "5332858"
   },
-  "fileOperations.trash.undoing": "正在放回原處…",
+  "fileOperations.trash.undoing": "正在放回原處⋯",
   "@fileOperations.trash.undoing": {
     "sourceHash": "3272a7a"
   },
@@ -71,7 +71,7 @@
   "@fileOperations.delete.trashSwitch": {
     "sourceHash": "b250a45"
   },
-  "fileOperations.delete.overflowMore": "…還有 {countText} 個{count, plural, other {項目}}",
+  "fileOperations.delete.overflowMore": "⋯還有 {countText} 個{count, plural, other {項目}}",
   "@fileOperations.delete.overflowMore": {
     "sourceHash": "3b9968a"
   },
@@ -195,7 +195,7 @@
   "@fileOperations.shared.andJoin": {
     "sourceHash": "04f767b"
   },
-  "fileOperations.shared.scanningTooltip": "正在掃描…",
+  "fileOperations.shared.scanningTooltip": "正在掃描⋯",
   "@fileOperations.shared.scanningTooltip": {
     "sourceHash": "38d96da"
   },
@@ -241,7 +241,7 @@
   },
   "fileOperations.transferDialog.smbNativeNote": "這個共享資料夾用的是系統連線，取消可能會有延遲。在卷宗切換器裡選「直接連線」，傳輸更快，取消也更可靠。",
   "@fileOperations.transferDialog.smbNativeNote": {
-    "sourceHash": "cfec439"
+    "sourceHash": "60af535"
   },
   "fileOperations.transferDialog.targetWillBeCreatedCopy": "這個資料夾還不存在。Cmdr 會在複製時把它建起來。",
   "@fileOperations.transferDialog.targetWillBeCreatedCopy": {
@@ -307,7 +307,7 @@
   "@fileOperations.transferDialog.conflictsUnknown": {
     "sourceHash": "1bc997a"
   },
-  "fileOperations.transferDialog.checkingConflicts": "正在檢查衝突…",
+  "fileOperations.transferDialog.checkingConflicts": "正在檢查衝突⋯",
   "@fileOperations.transferDialog.checkingConflicts": {
     "sourceHash": "11be123"
   },
@@ -365,15 +365,15 @@
   },
   "fileOperations.transferDialog.pathErrorSubfolder": "無法把「{name}」{verb, select, copy {複製} other {移動}}到它自己的子資料夾裡",
   "@fileOperations.transferDialog.pathErrorSubfolder": {
-    "sourceHash": "4ad1eaf"
+    "sourceHash": "815204a"
   },
   "fileOperations.transferDialog.pathErrorAlreadyThere": "「{name}」已經在這個位置了",
   "@fileOperations.transferDialog.pathErrorAlreadyThere": {
-    "sourceHash": "1030a7a"
+    "sourceHash": "1bf762e"
   },
   "fileOperations.transferDialog.pathErrorNotZip": "壓縮檔的名稱必須以「.zip」結尾。",
   "@fileOperations.transferDialog.pathErrorNotZip": {
-    "sourceHash": "c85c6f8"
+    "sourceHash": "7700864"
   },
   "fileOperations.transferDialog.confirmCopy": "複製",
   "@fileOperations.transferDialog.confirmCopy": {
@@ -399,23 +399,23 @@
   "@fileOperations.scanPhase.scanDir": {
     "sourceHash": "1c5273d"
   },
-  "fileOperations.transferProgress.scanTitleCopy": "複製前正在核對…",
+  "fileOperations.transferProgress.scanTitleCopy": "複製前正在核對⋯",
   "@fileOperations.transferProgress.scanTitleCopy": {
     "sourceHash": "f641ae3"
   },
-  "fileOperations.transferProgress.scanTitleMove": "移動前正在核對…",
+  "fileOperations.transferProgress.scanTitleMove": "移動前正在核對⋯",
   "@fileOperations.transferProgress.scanTitleMove": {
     "sourceHash": "2d904be"
   },
-  "fileOperations.transferProgress.scanTitleCompress": "壓縮前正在核對…",
+  "fileOperations.transferProgress.scanTitleCompress": "壓縮前正在核對⋯",
   "@fileOperations.transferProgress.scanTitleCompress": {
     "sourceHash": "c610c90"
   },
-  "fileOperations.transferProgress.scanTitleDelete": "正在統計要刪除的項目…",
+  "fileOperations.transferProgress.scanTitleDelete": "正在統計要刪除的項目⋯",
   "@fileOperations.transferProgress.scanTitleDelete": {
     "sourceHash": "d64adf2"
   },
-  "fileOperations.transferProgress.scanTitleTrash": "正在統計要移至垃圾桶的項目…",
+  "fileOperations.transferProgress.scanTitleTrash": "正在統計要移至垃圾桶的項目⋯",
   "@fileOperations.transferProgress.scanTitleTrash": {
     "sourceHash": "6df6c7f"
   },
@@ -423,27 +423,27 @@
   "@fileOperations.transferProgress.rollbackUnavailableTooltip": {
     "sourceHash": "da6af1f"
   },
-  "fileOperations.transferProgress.titleRollingBack": "正在復原…",
+  "fileOperations.transferProgress.titleRollingBack": "正在復原⋯",
   "@fileOperations.transferProgress.titleRollingBack": {
     "sourceHash": "f89ef2e"
   },
-  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {正在把檔案放回原處} other {正在把 {countText} 個檔案放回原處}}…",
+  "fileOperations.transferProgress.titleReversalMovingBack": "{count, plural, =0 {正在把檔案放回原處} other {正在把 {countText} 個檔案放回原處}}⋯",
   "@fileOperations.transferProgress.titleReversalMovingBack": {
     "sourceHash": "4de9c69"
   },
-  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {正在刪除這項操作建立的東西} other {正在刪除這項操作建立的 {countText} 個檔案}}…",
+  "fileOperations.transferProgress.titleReversalDeleting": "{count, plural, =0 {正在刪除這項操作建立的東西} other {正在刪除這項操作建立的 {countText} 個檔案}}⋯",
   "@fileOperations.transferProgress.titleReversalDeleting": {
     "sourceHash": "587f4a3"
   },
-  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {正在把原本的名稱改回去} other {正在把 {countText} 個原本的名稱改回去}}…",
+  "fileOperations.transferProgress.titleReversalRenamingBack": "{count, plural, =0 {正在把原本的名稱改回去} other {正在把 {countText} 個原本的名稱改回去}}⋯",
   "@fileOperations.transferProgress.titleReversalRenamingBack": {
     "sourceHash": "2ad8510"
   },
-  "fileOperations.transferProgress.titleCancelling": "正在取消…",
+  "fileOperations.transferProgress.titleCancelling": "正在取消⋯",
   "@fileOperations.transferProgress.titleCancelling": {
     "sourceHash": "7d0901a"
   },
-  "fileOperations.transferProgress.titleCancellingSlow": "正在取消…（正在完成 USB 傳輸）",
+  "fileOperations.transferProgress.titleCancellingSlow": "正在取消⋯（正在完成 USB 傳輸）",
   "@fileOperations.transferProgress.titleCancellingSlow": {
     "sourceHash": "80d6761"
   },
@@ -487,15 +487,15 @@
   "@fileOperations.transferProgress.titleConflict": {
     "sourceHash": "ae71a9a"
   },
-  "fileOperations.transferProgress.titleFlushing": "正在寫入最後一部分…",
+  "fileOperations.transferProgress.titleFlushing": "正在寫入最後一部分⋯",
   "@fileOperations.transferProgress.titleFlushing": {
     "sourceHash": "3aa5686"
   },
-  "fileOperations.transferProgress.titleRemovingOriginals": "正在移除原檔案…",
+  "fileOperations.transferProgress.titleRemovingOriginals": "正在移除原檔案⋯",
   "@fileOperations.transferProgress.titleRemovingOriginals": {
     "sourceHash": "15a457d"
   },
-  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {正在複製} move {正在移動} compress {正在壓縮} delete {正在刪除} other {正在移至垃圾桶}}…",
+  "fileOperations.transferProgress.titleActive": "{gerund, select, copy {正在複製} move {正在移動} compress {正在壓縮} delete {正在刪除} other {正在移至垃圾桶}}⋯",
   "@fileOperations.transferProgress.titleActive": {
     "sourceHash": "0c636e5"
   },
@@ -885,7 +885,7 @@
   },
   "fileOperations.validation.disallowedChars": "{kind, select, folder {資料夾名稱不能包含「/」或 Null 字元} other {檔名不能包含「/」或 Null 字元}}",
   "@fileOperations.validation.disallowedChars": {
-    "sourceHash": "d84512c"
+    "sourceHash": "4fa16ce"
   },
   "fileOperations.validation.empty": "{kind, select, folder {資料夾名稱不能是空的} other {檔名不能是空的}}",
   "@fileOperations.validation.empty": {
@@ -901,11 +901,11 @@
   },
   "fileOperations.validation.extensionChangeBlocked": "不允許更改副檔名（原本是「{oldExt}」）",
   "@fileOperations.validation.extensionChangeBlocked": {
-    "sourceHash": "43c2dc1"
+    "sourceHash": "0b2df1e"
   },
   "fileOperations.validation.conflict": "這個資料夾裡已經有「{name}」了",
   "@fileOperations.validation.conflict": {
-    "sourceHash": "ba13237"
+    "sourceHash": "842d02d"
   },
   "fileOperations.validation.nameNotUsable": "{kind, select, folder {這個資料夾名稱不能用} other {這個檔名不能用}}",
   "@fileOperations.validation.nameNotUsable": {

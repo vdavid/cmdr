@@ -145,7 +145,7 @@
   },
   "onboarding.stepFda.step2.tip": "列表裡沒有 Cmdr 嗎？按一下底部的「+」按鈕，從你的<strong>應用程式</strong>資料夾裡選 <strong>Cmdr</strong>。",
   "@onboarding.stepFda.step2.tip": {
-    "sourceHash": "30d0299"
+    "sourceHash": "ffc4289"
   },
   "onboarding.stepFda.step3": "確認後按一下 <strong>結束並重新打開</strong>",
   "@onboarding.stepFda.step3": {
@@ -189,7 +189,7 @@
   },
   "onboarding.stepAi.bannerBody.stuck": "你說想開啟「完全取用磁碟」，但 Cmdr 好像還沒拿到。你可能得重新啟動 App（現在就重啟吧，我們會從這裡接下去！），或者到你的 <settingsLink>{systemSettings} > 隱私權與安全性 > 完全取用磁碟</settingsLink> 找到 Cmdr，也可以用底部那個小小的「+」按鈕手動加進去。",
   "@onboarding.stepAi.bannerBody.stuck": {
-    "sourceHash": "79d5765"
+    "sourceHash": "fcdff85"
   },
   "onboarding.stepAi.welcomeLinux.title": "歡迎使用 Cmdr！",
   "@onboarding.stepAi.welcomeLinux.title": {
@@ -229,11 +229,11 @@
   },
   "onboarding.stepAi.table.searchWithout": "你輸入像 <code>*fish*.ppt</code> 這樣的內容，再選「本月 1 日之後」這個篩選條件。",
   "@onboarding.stepAi.table.searchWithout": {
-    "sourceHash": "872cb1e"
+    "sourceHash": "ebd8f45"
   },
   "onboarding.stepAi.table.searchWith": "你說「我最近和魚有關的簡報」，代理程式就幫你設好篩選條件。",
   "@onboarding.stepAi.table.searchWith": {
-    "sourceHash": "b69cd82"
+    "sourceHash": "457e19a"
   },
   "onboarding.stepAi.table.rowRename": "大量重新命名",
   "@onboarding.stepAi.table.rowRename": {
@@ -245,7 +245,7 @@
   },
   "onboarding.stepAi.table.renameWith": "你說「加上 ISO 日期前綴」，代理程式就幫你設好命名樣式，你檢查過後隨時可以套用。",
   "@onboarding.stepAi.table.renameWith": {
-    "sourceHash": "7fba3f5"
+    "sourceHash": "5287ae3"
   },
   "onboarding.stepAi.table.rowSelect": "選取",
   "@onboarding.stepAi.table.rowSelect": {
@@ -255,13 +255,13 @@
   "@onboarding.stepAi.table.selectWithoutBound": {
     "sourceHash": "83f83b9"
   },
-  "onboarding.stepAi.table.selectWithoutUnbound": "你開啟「選取檔案…」，輸入像 <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code> 這樣的內容，檢查過後再套用。",
+  "onboarding.stepAi.table.selectWithoutUnbound": "你開啟「選取檔案⋯」，輸入像 <code>*.jpg,*.png,*.gif,*.heic,*.webp,*.jpeg</code> 這樣的內容，檢查過後再套用。",
   "@onboarding.stepAi.table.selectWithoutUnbound": {
-    "sourceHash": "4cdc972"
+    "sourceHash": "bf9239a"
   },
   "onboarding.stepAi.table.selectWith": "你說「選取所有影像檔案」，代理程式就給你一份選取建議，你檢查過後隨時可以套用。",
   "@onboarding.stepAi.table.selectWith": {
-    "sourceHash": "07f1063"
+    "sourceHash": "c1cc90b"
   },
   "onboarding.stepAi.resumeCue": "你上次選的是這個。在下面確認或改掉都可以。",
   "@onboarding.stepAi.resumeCue": {
@@ -305,7 +305,7 @@
   },
   "onboarding.stepAi.missingKeyWarning": "你開啟了 AI，但還沒填 API 金鑰。AI 不會運作，而且你會看到一則警告。請在上面補上。\n\n<strong>再按一下「{nextLabel}」，就會忽略這件事繼續往下走。</strong>",
   "@onboarding.stepAi.missingKeyWarning": {
-    "sourceHash": "3d66d11"
+    "sourceHash": "bdb8a08"
   },
   "onboarding.stepAi.cloudConsentOffNote": "在你允許之前，雲端 AI 會一直保持關閉。之後可以到「設定 > AI」允許。",
   "@onboarding.stepAi.cloudConsentOffNote": {
@@ -357,7 +357,7 @@
   },
   "onboarding.stepBeta.checklist.alternativeToNote": "就在頁面最上方，「Cmdr」標題旁邊。這能讓大家和 Google 注意到 Cmdr！",
   "@onboarding.stepBeta.checklist.alternativeToNote": {
-    "sourceHash": "ea4903a"
+    "sourceHash": "ee4aed4"
   },
   "onboarding.stepBeta.checklist.email": "留下你的電子郵件地址 <field></field>，就能很偶爾收到一些近況和問題",
   "@onboarding.stepBeta.checklist.email": {
@@ -458,11 +458,11 @@
   },
   "onboarding.stepOptional.networking.summary": "需要允許一次「區域網路」取用",
   "@onboarding.stepOptional.networking.summary": {
-    "sourceHash": "5006f53"
+    "sourceHash": "f49fbc6"
   },
   "onboarding.stepOptional.networking.desc": "<em>開著</em>這一項，你就能連到 SMB 伺服器，像公司的網路共享資料夾、家裡的 NAS 之類的。\n唯一的代價是 macOS 會跳出一個權限對話框，請你允許「區域網路」取用，還有一個請你允許「接受傳入連線」。\n這兩個對話框都無害，但如果你不曉得它們是什麼，可能會覺得嚇人或煩人。",
   "@onboarding.stepOptional.networking.desc": {
-    "sourceHash": "089707f"
+    "sourceHash": "c03c7df"
   },
   "onboarding.stepOptional.indexing.title": "磁碟機索引",
   "@onboarding.stepOptional.indexing.title": {
@@ -564,11 +564,11 @@
   "@onboarding.cloudSetup.apiKeyAria": {
     "sourceHash": "16f0ee4"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "例如：sk-abc123…",
+  "onboarding.cloudSetup.apiKeyPlaceholder.openai": "例如：sk-abc123⋯",
   "@onboarding.cloudSetup.apiKeyPlaceholder.openai": {
     "sourceHash": "9352883"
   },
-  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "例如：sk-ant-abc123…",
+  "onboarding.cloudSetup.apiKeyPlaceholder.anthropic": "例如：sk-ant-abc123⋯",
   "@onboarding.cloudSetup.apiKeyPlaceholder.anthropic": {
     "sourceHash": "89347d5"
   },
@@ -580,7 +580,7 @@
   "@onboarding.cloudSetup.apiKeyPlaceholder.saved": {
     "sourceHash": "974ffdf"
   },
-  "onboarding.cloudSetup.status.checking": "正在檢查你的金鑰…",
+  "onboarding.cloudSetup.status.checking": "正在檢查你的金鑰⋯",
   "@onboarding.cloudSetup.status.checking": {
     "sourceHash": "e8c3a83"
   },

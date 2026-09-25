@@ -39,8 +39,8 @@ worth keeping).
   `fileOperations.rollbackConfirm.finishRollBack`): `繼續復原` would be blunter about not restarting, but `繼續` is
   spent on `queue.row.resume`.
 - **`警告標記`** for the title-bar badge (`errors.write.trashRefused.suggestion.noFullDiskAccess`): descriptive.
-- **`僅存在雲端`** (`online-only`) and the three `fileOperations.delete.cloudOnlineOnly*` rows: a draft never read by a
-  human; check the long warning bar for overflow too.
+- **`僅存在雲端`** (`online-only`; prose says `只存在雲端`) and the three `fileOperations.delete.cloudOnlineOnly*` rows:
+  a draft never read by a human; check the long warning bar for overflow too.
 
 ## Phrasing
 

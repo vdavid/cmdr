@@ -68,15 +68,15 @@
   "@updates.status.noUpdates": {
     "sourceHash": "63a4ecb"
   },
-  "updates.status.checking": "正在檢查…",
+  "updates.status.checking": "正在檢查⋯",
   "@updates.status.checking": {
     "sourceHash": "ec963ff"
   },
-  "updates.status.downloading": "找到更新項目，正在下載 v{next}（目前：v{prev}）…",
+  "updates.status.downloading": "找到更新項目，正在下載 v{next}（目前：v{prev}）⋯",
   "@updates.status.downloading": {
     "sourceHash": "480c6da"
   },
-  "updates.status.installing": "正在安裝 v{next}（目前：v{prev}）…",
+  "updates.status.installing": "正在安裝 v{next}（目前：v{prev}）⋯",
   "@updates.status.installing": {
     "sourceHash": "214ef12"
   },

@@ -19,7 +19,7 @@
   "@commands.appAbout.label": {
     "sourceHash": "efe010f"
   },
-  "commands.appAcknowledgements.label": "致謝…",
+  "commands.appAcknowledgements.label": "致謝⋯",
   "@commands.appAcknowledgements.label": {
     "sourceHash": "7d0e506"
   },
@@ -39,7 +39,7 @@
   "@commands.appSettings.label": {
     "sourceHash": "ca381c1"
   },
-  "commands.appCheckForUpdates.label": "檢查更新…",
+  "commands.appCheckForUpdates.label": "檢查更新⋯",
   "@commands.appCheckForUpdates.label": {
     "sourceHash": "52d6f7d"
   },
@@ -47,7 +47,7 @@
   "@commands.appCheckForUpdates.description": {
     "sourceHash": "c53dab0"
   },
-  "commands.cmdrOpenOnboarding.label": "入門引導…",
+  "commands.cmdrOpenOnboarding.label": "入門引導⋯",
   "@commands.cmdrOpenOnboarding.label": {
     "sourceHash": "c4cc4aa"
   },
@@ -63,7 +63,7 @@
   "@commands.helpOpenShortcuts.description": {
     "sourceHash": "a9a1e0d"
   },
-  "commands.helpSendErrorReport.label": "傳送錯誤報告…",
+  "commands.helpSendErrorReport.label": "傳送錯誤報告⋯",
   "@commands.helpSendErrorReport.label": {
     "sourceHash": "063c94e"
   },
@@ -116,7 +116,7 @@
   "@commands.searchOpen.label": {
     "sourceHash": "179fed8"
   },
-  "commands.navGoToPath.label": "前往路徑…",
+  "commands.navGoToPath.label": "前往路徑⋯",
   "@commands.navGoToPath.label": {
     "sourceHash": "936edc5"
   },
@@ -660,7 +660,7 @@
   "@commands.selectionSelectSameKind.noExtension": {
     "sourceHash": "d04751e"
   },
-  "commands.selectionSelectFiles.label": "選取檔案…",
+  "commands.selectionSelectFiles.label": "選取檔案⋯",
   "@commands.selectionSelectFiles.label": {
     "sourceHash": "b7f202e"
   },
@@ -668,7 +668,7 @@
   "@commands.selectionSelectFiles.description": {
     "sourceHash": "7695f3e"
   },
-  "commands.selectionDeselectFiles.label": "取消選取檔案…",
+  "commands.selectionDeselectFiles.label": "取消選取檔案⋯",
   "@commands.selectionDeselectFiles.label": {
     "sourceHash": "6fb10d5"
   },
@@ -704,11 +704,11 @@
   "@commands.serversForgetSecret.label": {
     "sourceHash": "ed68566"
   },
-  "commands.serversEdit.label": "編輯伺服器…",
+  "commands.serversEdit.label": "編輯伺服器⋯",
   "@commands.serversEdit.label": {
     "sourceHash": "a3282a7"
   },
-  "commands.serversConnect.label": "連接伺服器…",
+  "commands.serversConnect.label": "連接伺服器⋯",
   "@commands.serversConnect.label": {
     "sourceHash": "6188f47"
   },
@@ -766,7 +766,7 @@
   },
   "commands.handler.favoriteAdded": "已將「{name}」加入喜好項目",
   "@commands.handler.favoriteAdded": {
-    "sourceHash": "a68dd8f"
+    "sourceHash": "ee59953"
   },
   "commands.handler.favoriteAddFailed": "無法把那個資料夾加入喜好項目。要再試一次嗎？",
   "@commands.handler.favoriteAddFailed": {

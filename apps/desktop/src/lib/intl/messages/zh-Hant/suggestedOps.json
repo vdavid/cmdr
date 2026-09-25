@@ -107,7 +107,7 @@
   "@suggestedOps.includeFile": {
     "sourceHash": "71075a7"
   },
-  "suggestedOps.loadingFiles": "正在載入檔案…",
+  "suggestedOps.loadingFiles": "正在載入檔案⋯",
   "@suggestedOps.loadingFiles": {
     "sourceHash": "83257e6"
   },

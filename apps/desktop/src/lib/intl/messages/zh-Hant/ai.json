@@ -1,9 +1,9 @@
 {
-  "ai.toast.downloadingTitle": "正在下載 AI 模型…",
+  "ai.toast.downloadingTitle": "正在下載 AI 模型⋯",
   "@ai.toast.downloadingTitle": {
     "sourceHash": "85d48ae"
   },
-  "ai.toast.startingDownload": "正在開始下載…",
+  "ai.toast.startingDownload": "正在開始下載⋯",
   "@ai.toast.startingDownload": {
     "sourceHash": "22309b1"
   },
@@ -15,7 +15,7 @@
   "@ai.toast.cancel": {
     "sourceHash": "19766ed"
   },
-  "ai.toast.installingTitle": "正在設定 AI…",
+  "ai.toast.installingTitle": "正在設定 AI⋯",
   "@ai.toast.installingTitle": {
     "sourceHash": "85f7001"
   },
@@ -35,7 +35,7 @@
   "@ai.toast.gotIt": {
     "sourceHash": "5ad3dbd"
   },
-  "ai.toast.startingTitle": "AI 正在啟動…",
+  "ai.toast.startingTitle": "AI 正在啟動⋯",
   "@ai.toast.startingTitle": {
     "sourceHash": "d0a6a15"
   },
@@ -231,7 +231,7 @@
   "@ai.cloud.serviceAria": {
     "sourceHash": "7dec1e0"
   },
-  "ai.cloud.apiKeyPlaceholderAnthropic": "例如：sk-ant-abc123…",
+  "ai.cloud.apiKeyPlaceholderAnthropic": "例如：sk-ant-abc123⋯",
   "@ai.cloud.apiKeyPlaceholderAnthropic": {
     "sourceHash": "89347d5"
   },
@@ -243,7 +243,7 @@
   "@ai.cloud.modelPlaceholderExample": {
     "sourceHash": "2287b9f"
   },
-  "ai.cloud.checking": "正在檢查…",
+  "ai.cloud.checking": "正在檢查⋯",
   "@ai.cloud.checking": {
     "sourceHash": "ec963ff"
   },
@@ -287,11 +287,11 @@
   "@ai.local.warningCaution": {
     "sourceHash": "f8070e9"
   },
-  "ai.local.statusRestarting": "正在重新啟動…",
+  "ai.local.statusRestarting": "正在重新啟動⋯",
   "@ai.local.statusRestarting": {
     "sourceHash": "75d0f14"
   },
-  "ai.local.statusStarting": "正在啟動…",
+  "ai.local.statusStarting": "正在啟動⋯",
   "@ai.local.statusStarting": {
     "sourceHash": "bbe5fc3"
   },
@@ -303,23 +303,23 @@
   "@ai.local.statusStopped": {
     "sourceHash": "1a4f630"
   },
-  "ai.local.installStepExtracting": "第 1 步（共 4 步）：正在解壓縮執行環境…",
+  "ai.local.installStepExtracting": "第 1 步（共 4 步）：正在解壓縮執行環境⋯",
   "@ai.local.installStepExtracting": {
     "sourceHash": "44fc84b"
   },
-  "ai.local.installStepDownloading": "第 2 步（共 4 步）：正在下載模型…",
+  "ai.local.installStepDownloading": "第 2 步（共 4 步）：正在下載模型⋯",
   "@ai.local.installStepDownloading": {
     "sourceHash": "99d712f"
   },
-  "ai.local.installStepVerifying": "第 3 步（共 4 步）：正在驗證下載內容…",
+  "ai.local.installStepVerifying": "第 3 步（共 4 步）：正在驗證下載內容⋯",
   "@ai.local.installStepVerifying": {
     "sourceHash": "302f79a"
   },
-  "ai.local.installStepStarting": "第 4 步（共 4 步）：正在啟動伺服器…",
+  "ai.local.installStepStarting": "第 4 步（共 4 步）：正在啟動伺服器⋯",
   "@ai.local.installStepStarting": {
     "sourceHash": "696bd5e"
   },
-  "ai.local.startingDownload": "正在開始下載…",
+  "ai.local.startingDownload": "正在開始下載⋯",
   "@ai.local.startingDownload": {
     "sourceHash": "22309b1"
   },
@@ -409,7 +409,7 @@
   "@ai.local.downloadModel": {
     "sourceHash": "9979bea"
   },
-  "ai.local.deleteDialogTitleDeleting": "正在刪除模型…",
+  "ai.local.deleteDialogTitleDeleting": "正在刪除模型⋯",
   "@ai.local.deleteDialogTitleDeleting": {
     "sourceHash": "d3a7e58"
   },
@@ -417,7 +417,7 @@
   "@ai.local.deleteDialogTitle": {
     "sourceHash": "c486f0c"
   },
-  "ai.local.deletingStatus": "正在停止伺服器並移除檔案…",
+  "ai.local.deletingStatus": "正在停止伺服器並移除檔案⋯",
   "@ai.local.deletingStatus": {
     "sourceHash": "e9de1ca"
   },
@@ -425,7 +425,7 @@
   "@ai.local.deleteConfirmMessage": {
     "sourceHash": "1a6ca0d"
   },
-  "ai.local.deleteButtonDeleting": "正在刪除…",
+  "ai.local.deleteButtonDeleting": "正在刪除⋯",
   "@ai.local.deleteButtonDeleting": {
     "sourceHash": "43b5894"
   },
@@ -439,7 +439,7 @@
   },
   "ai.secretError.keychainBody": "{op, select, save {請開啟「鑰匙圈存取」，檢查其中的「Cmdr」項目，或是把它刪掉再儲存一次。} other {請開啟「鑰匙圈存取」，找到「Cmdr」項目並授予存取權，或是把它刪掉，重新輸入你的金鑰。}}",
   "@ai.secretError.keychainBody": {
-    "sourceHash": "2a0fe5e"
+    "sourceHash": "8f1380e"
   },
   "ai.secretError.keyringTitle": "{op, select, save {無法儲存你的 API 金鑰：系統鑰匙圈拒絕存取} other {無法讀取你已儲存的 API 金鑰：系統鑰匙圈拒絕存取}}",
   "@ai.secretError.keyringTitle": {

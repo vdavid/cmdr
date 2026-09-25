@@ -79,7 +79,7 @@
   "@queryUi.mode.groupAria": {
     "sourceHash": "75f00aa"
   },
-  "queryUi.empty.tryLine": "試試看…",
+  "queryUi.empty.tryLine": "試試看⋯",
   "@queryUi.empty.tryLine": {
     "sourceHash": "469fb7f"
   },
@@ -111,7 +111,7 @@
   "@queryUi.ai.empty": {
     "sourceHash": "df836a8"
   },
-  "queryUi.ai.refine": "調整…",
+  "queryUi.ai.refine": "調整⋯",
   "@queryUi.ai.refine": {
     "sourceHash": "488102b"
   },
@@ -180,11 +180,11 @@
   "@queryUi.results.listboxAria": {
     "sourceHash": "e978b00"
   },
-  "queryUi.results.scanningWithCount": "正在掃描（{countText} 個項目）…",
+  "queryUi.results.scanningWithCount": "正在掃描（{countText} 個項目）⋯",
   "@queryUi.results.scanningWithCount": {
     "sourceHash": "67fb5ac"
   },
-  "queryUi.results.scanning": "正在掃描…",
+  "queryUi.results.scanning": "正在掃描⋯",
   "@queryUi.results.scanning": {
     "sourceHash": "c19b8ea"
   },
@@ -232,19 +232,19 @@
   "@queryUi.results.indexNotReady": {
     "sourceHash": "9efe161"
   },
-  "queryUi.results.scanProgressWithCount": "正在掃描（{countText} 個項目）…",
+  "queryUi.results.scanProgressWithCount": "正在掃描（{countText} 個項目）⋯",
   "@queryUi.results.scanProgressWithCount": {
     "sourceHash": "563387d"
   },
-  "queryUi.results.scanProgress": "正在掃描…",
+  "queryUi.results.scanProgress": "正在掃描⋯",
   "@queryUi.results.scanProgress": {
     "sourceHash": "c19b8ea"
   },
-  "queryUi.results.loadingIndex": "正在載入磁碟機索引…",
+  "queryUi.results.loadingIndex": "正在載入磁碟機索引⋯",
   "@queryUi.results.loadingIndex": {
     "sourceHash": "e9a7368"
   },
-  "queryUi.results.searching": "正在搜尋…",
+  "queryUi.results.searching": "正在搜尋⋯",
   "@queryUi.results.searching": {
     "sourceHash": "c31723a"
   },
@@ -252,11 +252,11 @@
   "@queryUi.results.noMatchHeading": {
     "sourceHash": "15383e2"
   },
-  "queryUi.results.live.resolvingCoverage": "正在確認哪些內容已經建立索引…",
+  "queryUi.results.live.resolvingCoverage": "正在確認哪些內容已經建立索引⋯",
   "@queryUi.results.live.resolvingCoverage": {
     "sourceHash": "524487d"
   },
-  "queryUi.results.live.waitingForAnotherWalk": "正在等另一次掃描讀完這些資料夾…",
+  "queryUi.results.live.waitingForAnotherWalk": "正在等另一次掃描讀完這些資料夾⋯",
   "@queryUi.results.live.waitingForAnotherWalk": {
     "sourceHash": "4a3b061"
   },
@@ -264,11 +264,11 @@
   "@queryUi.results.live.waitingOnPathAria": {
     "sourceHash": "a54a689"
   },
-  "queryUi.results.live.readingIndex": "正在讀取已經建立索引的部分…",
+  "queryUi.results.live.readingIndex": "正在讀取已經建立索引的部分⋯",
   "@queryUi.results.live.readingIndex": {
     "sourceHash": "ed4159a"
   },
-  "queryUi.results.live.walking": "正在逐一查看還沒建立索引的資料夾…",
+  "queryUi.results.live.walking": "正在逐一查看還沒建立索引的資料夾⋯",
   "@queryUi.results.live.walking": {
     "sourceHash": "3829650"
   },
@@ -413,7 +413,7 @@
   "@queryUi.recent.sizeMax": {
     "sourceHash": "7850b6e"
   },
-  "queryUi.recent.modifiedRange": "修改於 {after}…{before}",
+  "queryUi.recent.modifiedRange": "修改於 {after}⋯{before}",
   "@queryUi.recent.modifiedRange": {
     "sourceHash": "e99ce85"
   },
@@ -533,7 +533,7 @@
   "@queryUi.size.unit.bytes": {
     "sourceHash": "277089d"
   },
-  "queryUi.size.customCell": "自訂…",
+  "queryUi.size.customCell": "自訂⋯",
   "@queryUi.size.customCell": {
     "sourceHash": "564a4d3"
   },
@@ -593,7 +593,7 @@
   "@queryUi.date.comparator.between": {
     "sourceHash": "fbb27fb"
   },
-  "queryUi.date.customCell": "自訂…",
+  "queryUi.date.customCell": "自訂⋯",
   "@queryUi.date.customCell": {
     "sourceHash": "564a4d3"
   },

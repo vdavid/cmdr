@@ -71,7 +71,7 @@
   "@adb.disconnectBusyTooltip": {
     "sourceHash": "b42bed4"
   },
-  "adb.disconnectingDeviceAriaLabel": "正在中斷連線：{name}…",
+  "adb.disconnectingDeviceAriaLabel": "正在中斷連線：{name}⋯",
   "@adb.disconnectingDeviceAriaLabel": {
     "sourceHash": "50be3d4"
   },

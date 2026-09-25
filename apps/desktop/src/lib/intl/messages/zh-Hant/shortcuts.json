@@ -132,11 +132,11 @@
   "@shortcuts.section.title": {
     "sourceHash": "e9bef0b"
   },
-  "shortcuts.section.searchByNamePlaceholder": "依動作名稱搜尋…",
+  "shortcuts.section.searchByNamePlaceholder": "依動作名稱搜尋⋯",
   "@shortcuts.section.searchByNamePlaceholder": {
     "sourceHash": "b20d3e3"
   },
-  "shortcuts.section.filterByKeysPlaceholder": "依按鍵篩選…",
+  "shortcuts.section.filterByKeysPlaceholder": "依按鍵篩選⋯",
   "@shortcuts.section.filterByKeysPlaceholder": {
     "sourceHash": "22706d1"
   },
@@ -192,7 +192,7 @@
   "@shortcuts.section.macOsTooltip": {
     "sourceHash": "262b2cc"
   },
-  "shortcuts.section.fixedTooltip": "這個按鍵內建於 Cmdr，無法更改。",
+  "shortcuts.section.fixedTooltip": "這個按鍵是 Cmdr 內建的，無法更改。",
   "@shortcuts.section.fixedTooltip": {
     "sourceHash": "f07b460"
   },
@@ -205,7 +205,7 @@
   "@shortcuts.section.fixedBadge": {
     "sourceHash": "1246fc9"
   },
-  "shortcuts.section.pressKeys": "請按鍵…",
+  "shortcuts.section.pressKeys": "請按鍵⋯",
   "@shortcuts.section.pressKeys": {
     "sourceHash": "7f34202"
   },

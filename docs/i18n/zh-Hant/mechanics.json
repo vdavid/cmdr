@@ -1,0 +1,32 @@
+{
+  "$comment": "Traditional Chinese typography: corner brackets 「」 (Apple zh-TW Finder/AppKit/SystemSettings: 911 「 vs 30 curly quotes, all in sample strings), 『』 nested per the Taiwan MOE standard (unattested in the pile, so restructure before nesting). No apostrophe: Chinese has none. Ellipsis ⋯ (U+22EF), as macOS writes it (pile values: zh-TW 250 ⋯ / 0 …, zh-HK 249 / 0); the schema has no ellipsis field yet, so the last spacing rule holds it. A space between Han and any Latin word or digit, except inside a Chinese date compound (8月1日). The spacing rules skip inserts (U+FFFC): a plural or select node reads as one too, and an insert may render Han ({label}) or Latin ({duration}), so its spacing is judged by hand (style.md § Spacing). Schema: docs/i18n/termbase.md § <tag>/mechanics.json schema.",
+  "quotes": { "primary": ["「", "」"], "nested": ["『", "』"] },
+  "spacing": [
+    {
+      "pattern": "(?![年月])\\p{sc=Han}[A-Za-z0-9]",
+      "why": "a space separates Han from a following Latin word or number (`macOS 通知`, `約 5 分鐘`); only a date compound stays tight (`年7月`, `月1日`)"
+    },
+    {
+      "pattern": "[A-Za-z0-9](?![月日])\\p{sc=Han}",
+      "why": "a space separates a Latin word or number from the Han after it (`USB 裝置`, `App 中`); only a date compound stays tight (`8月`, `1日`)"
+    },
+    {
+      "pattern": "「[ \\u00a0]|[ \\u00a0]」",
+      "why": "no space inside corner brackets"
+    },
+    {
+      "pattern": "…",
+      "why": "the ellipsis is ⋯ (U+22EF), as macOS zh-TW and zh-HK write it, never …"
+    }
+  ],
+  "hedges": [
+    {
+      "pattern": "[（(](?:們|些|她|他|個|張|位)[）)]",
+      "why": "a bracketed plural suffix, pronoun, or classifier (`這（些）`, `使用者（們）`, `他（她）`); Chinese needs none: drop it, or name the count with ICU plural"
+    },
+    {
+      "pattern": "(?:這|那)/(?:這|那)些|[他她]/[他她]|[個張部支項位]/[個張部支項位]",
+      "why": "a slashed number, gender, or classifier alternative; use the neutral form (`這些`, `你`, the noun's own classifier) or rephrase"
+    }
+  ]
+}

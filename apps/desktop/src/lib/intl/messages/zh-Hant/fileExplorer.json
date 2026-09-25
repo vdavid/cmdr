@@ -11,7 +11,7 @@
   "@fileExplorer.archiveEnterMenu.open": {
     "sourceHash": "d3d5d6e"
   },
-  "fileExplorer.archiveEnterMenu.configure": "設定…",
+  "fileExplorer.archiveEnterMenu.configure": "設定⋯",
   "@fileExplorer.archiveEnterMenu.configure": {
     "sourceHash": "37d7822"
   },
@@ -299,7 +299,7 @@
   "@fileExplorer.network.connect": {
     "sourceHash": "1a2303e"
   },
-  "fileExplorer.network.connecting": "正在連線…",
+  "fileExplorer.network.connecting": "正在連線⋯",
   "@fileExplorer.network.connecting": {
     "sourceHash": "72021eb"
   },
@@ -331,7 +331,7 @@
   "@fileExplorer.network.osMountFallback.closeTooltip": {
     "sourceHash": "48845bf"
   },
-  "fileExplorer.network.browser.searching": "正在搜尋…",
+  "fileExplorer.network.browser.searching": "正在搜尋⋯",
   "@fileExplorer.network.browser.searching": {
     "sourceHash": "c31723a"
   },
@@ -347,11 +347,11 @@
   "@fileExplorer.network.browser.refreshHint": {
     "sourceHash": "7f65c7d"
   },
-  "fileExplorer.network.browser.status.resolving": "正在解析…",
+  "fileExplorer.network.browser.status.resolving": "正在解析⋯",
   "@fileExplorer.network.browser.status.resolving": {
     "sourceHash": "6d2b99e"
   },
-  "fileExplorer.network.browser.status.waitingForNetwork": "正在等待網路…",
+  "fileExplorer.network.browser.status.waitingForNetwork": "正在等待網路⋯",
   "@fileExplorer.network.browser.status.waitingForNetwork": {
     "sourceHash": "d1c5574"
   },
@@ -395,7 +395,7 @@
   "@fileExplorer.network.browser.status.connected": {
     "sourceHash": "2296556"
   },
-  "fileExplorer.network.browser.tooltip.resolving": "正在解析主機名稱和 IP 位址…",
+  "fileExplorer.network.browser.tooltip.resolving": "正在解析主機名稱和 IP 位址⋯",
   "@fileExplorer.network.browser.tooltip.resolving": {
     "sourceHash": "cac249d"
   },
@@ -471,7 +471,7 @@
   "@fileExplorer.network.share.notFound": {
     "sourceHash": "bc3d29a"
   },
-  "fileExplorer.network.share.connecting": "正在連線到 {hostName}…",
+  "fileExplorer.network.share.connecting": "正在連線到 {hostName}⋯",
   "@fileExplorer.network.share.connecting": {
     "sourceHash": "fe38aec"
   },
@@ -547,7 +547,7 @@
   "@fileExplorer.mtp.noStorage": {
     "sourceHash": "ff30402"
   },
-  "fileExplorer.mtp.connecting": "正在連線到裝置…",
+  "fileExplorer.mtp.connecting": "正在連線到裝置⋯",
   "@fileExplorer.mtp.connecting": {
     "sourceHash": "860bb9b"
   },
@@ -555,7 +555,7 @@
   "@fileExplorer.mtp.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "fileExplorer.networkMount.mounting": "正在裝載 {target}…",
+  "fileExplorer.networkMount.mounting": "正在裝載 {target}⋯",
   "@fileExplorer.networkMount.mounting": {
     "sourceHash": "7b7368d"
   },
@@ -587,7 +587,7 @@
   "@fileExplorer.unreachable.detailTimeout": {
     "sourceHash": "61bf814"
   },
-  "fileExplorer.unreachable.retrying": "正在重試…",
+  "fileExplorer.unreachable.retrying": "正在重試⋯",
   "@fileExplorer.unreachable.retrying": {
     "sourceHash": "a16c8b1"
   },
@@ -741,7 +741,7 @@
   },
   "fileExplorer.readOnly.deviceMessage": "「{name}」是唯讀的。你可以從它複製檔案出來，但無法複製進去。",
   "@fileExplorer.readOnly.deviceMessage": {
-    "sourceHash": "039488f"
+    "sourceHash": "5582a47"
   },
   "fileExplorer.readOnly.gitPortalTitle": "唯讀 git 入口",
   "@fileExplorer.readOnly.gitPortalTitle": {
@@ -769,19 +769,19 @@
   },
   "fileExplorer.rename.chainKeptOriginalName": "{reason}。「{name}」保留了原本的名稱。",
   "@fileExplorer.rename.chainKeptOriginalName": {
-    "sourceHash": "5b5e6ce"
+    "sourceHash": "638394d"
   },
   "fileExplorer.rename.chainKeptOriginalNameAndOthers": "{reason}。「{name}」保留了原本的名稱，{others, plural, other {另外 {othersText} 個檔案也是}}。",
   "@fileExplorer.rename.chainKeptOriginalNameAndOthers": {
-    "sourceHash": "7b23e8e"
+    "sourceHash": "be35bc8"
   },
   "fileExplorer.rename.unconfirmed": "無法確認「{name}」是否已重新命名。這個卷宗可能比較慢，所以名稱也許已經改好了。",
   "@fileExplorer.rename.unconfirmed": {
-    "sourceHash": "d43e419"
+    "sourceHash": "bcea9d0"
   },
   "fileExplorer.rename.unconfirmedAndOthers": "無法確認「{name}」和{others, plural, other {另外 {othersText} 個檔案}}是否已重新命名。這個卷宗可能比較慢，所以這些名稱也許都已經改好了。",
   "@fileExplorer.rename.unconfirmedAndOthers": {
-    "sourceHash": "1258eb3"
+    "sourceHash": "c64e665"
   },
   "fileExplorer.columns.name": "名稱",
   "@fileExplorer.columns.name": {
@@ -947,7 +947,7 @@
   },
   "fileExplorer.git.tooltip.aheadBehind": "比「{vs}」領先 {ahead, plural, other {{aheadText} 次提交}}，落後 {behind, plural, other {{behindText} 次提交}}",
   "@fileExplorer.git.tooltip.aheadBehind": {
-    "sourceHash": "2eba558"
+    "sourceHash": "6a24049"
   },
   "fileExplorer.git.tooltip.taggedCommit": "被標記的提交 {id}",
   "@fileExplorer.git.tooltip.taggedCommit": {
@@ -959,11 +959,11 @@
   },
   "fileExplorer.git.tooltip.stashedOnBranch": "建立於分支「{branch}」",
   "@fileExplorer.git.tooltip.stashedOnBranch": {
-    "sourceHash": "770565f"
+    "sourceHash": "5a1ad8d"
   },
   "fileExplorer.git.tooltip.worktreeOnBranch": "已檢出分支「{branch}」",
   "@fileExplorer.git.tooltip.worktreeOnBranch": {
-    "sourceHash": "5036eb7"
+    "sourceHash": "4941fa5"
   },
   "fileExplorer.git.tooltip.worktreeDetached": "分離狀態，位於 {id}",
   "@fileExplorer.git.tooltip.worktreeDetached": {
@@ -995,7 +995,7 @@
   },
   "fileExplorer.dateTooltip.lastMoved": "上次移動（「加入」）",
   "@fileExplorer.dateTooltip.lastMoved": {
-    "sourceHash": "450ebc0"
+    "sourceHash": "1366405"
   },
   "fileExplorer.dateTooltip.lastModified": "上次修改",
   "@fileExplorer.dateTooltip.lastModified": {
@@ -1143,7 +1143,7 @@
   },
   "fileExplorer.renameConflict.description": "這個資料夾裡已經有「{name}」。你想怎麼做？",
   "@fileExplorer.renameConflict.description": {
-    "sourceHash": "ded53e8"
+    "sourceHash": "e3f2532"
   },
   "fileExplorer.renameConflict.yours": "{name}（你的）",
   "@fileExplorer.renameConflict.yours": {
@@ -1183,7 +1183,7 @@
   },
   "fileExplorer.extensionChange.description": "確定要把副檔名從「.{oldExt}」改成「.{newExt}」嗎？下次開啟時，這個檔案可能會用不同的 App 打開。",
   "@fileExplorer.extensionChange.description": {
-    "sourceHash": "d0f428b"
+    "sourceHash": "ef7ac59"
   },
   "fileExplorer.extensionChange.alwaysAllow": "總是允許更改副檔名",
   "@fileExplorer.extensionChange.alwaysAllow": {
@@ -1203,7 +1203,7 @@
   },
   "fileExplorer.quickLookHint.finderComparison": "如果你是從 Finder 過來的，這可能有點陌生，因為 Finder 按 <space></space> 時會觸發「快速預覽」。",
   "@fileExplorer.quickLookHint.finderComparison": {
-    "sourceHash": "2089192"
+    "sourceHash": "56d3119"
   },
   "fileExplorer.quickLookHint.quickView": "在 Cmdr 中，你可以用 <key></key> 觸發快速查看。（順帶一提，<key></key> 在 Finder 裡也能用！）",
   "@fileExplorer.quickLookHint.quickView": {
@@ -1315,7 +1315,7 @@
   },
   "fileExplorer.navigation.connectionTooltipSystem": "正在使用系統連線。使用「直接連線，存取更快」選單項目可以更快存取。",
   "@fileExplorer.navigation.connectionTooltipSystem": {
-    "sourceHash": "0cbfa05"
+    "sourceHash": "e4ac697"
   },
   "fileExplorer.navigation.connectDirectly": "直接連線，存取更快",
   "@fileExplorer.navigation.connectDirectly": {
@@ -1333,17 +1333,17 @@
   "@fileExplorer.navigation.connectDirectlyNowTooltip": {
     "sourceHash": "42b6bcc"
   },
-  "fileExplorer.navigation.connectingDirectly": "正在直接連線…",
+  "fileExplorer.navigation.connectingDirectly": "正在直接連線⋯",
   "@fileExplorer.navigation.connectingDirectly": {
     "sourceHash": "1f2d487"
   },
-  "fileExplorer.navigation.connectingWithSavedPassword": "正在使用已儲存的密碼連線…",
+  "fileExplorer.navigation.connectingWithSavedPassword": "正在使用已儲存的密碼連線⋯",
   "@fileExplorer.navigation.connectingWithSavedPassword": {
     "sourceHash": "0fb0ca3"
   },
   "fileExplorer.navigation.useSavedPasswordMessage": "Cmdr 可以沿用 macOS 已經為「{displayName}」儲存的密碼。你會看到系統跳出提示，要求允許取用鑰匙圈。這是正常的，請按「允許」。",
   "@fileExplorer.navigation.useSavedPasswordMessage": {
-    "sourceHash": "6bb2c1d"
+    "sourceHash": "334f7de"
   },
   "fileExplorer.navigation.useSavedPasswordTitle": "要使用已儲存的密碼嗎？",
   "@fileExplorer.navigation.useSavedPasswordTitle": {
@@ -1441,7 +1441,7 @@
   "@fileExplorer.navigation.ejectBusyTooltip": {
     "sourceHash": "7165c58"
   },
-  "fileExplorer.navigation.ejectingVolumeAriaLabel": "正在退出 {name}…",
+  "fileExplorer.navigation.ejectingVolumeAriaLabel": "正在退出 {name}⋯",
   "@fileExplorer.navigation.ejectingVolumeAriaLabel": {
     "sourceHash": "e8bca64"
   },
@@ -1453,11 +1453,11 @@
   "@fileExplorer.navigation.usbSpeedNegotiated": {
     "sourceHash": "3731939"
   },
-  "fileExplorer.navigation.spaceRetryingAuto": "正在自動重試…",
+  "fileExplorer.navigation.spaceRetryingAuto": "正在自動重試⋯",
   "@fileExplorer.navigation.spaceRetryingAuto": {
     "sourceHash": "aa9f4b8"
   },
-  "fileExplorer.navigation.spaceRetrying": "正在重試…",
+  "fileExplorer.navigation.spaceRetrying": "正在重試⋯",
   "@fileExplorer.navigation.spaceRetrying": {
     "sourceHash": "a16c8b1"
   },
@@ -1501,7 +1501,7 @@
   "@fileExplorer.navigation.driveIndex.tooltipDisabled": {
     "sourceHash": "61d11e9"
   },
-  "fileExplorer.navigation.driveIndex.tooltipFresh": "索引已建立，而且是最新的。上次建立索引於 {date}，花了 {duration}。",
+  "fileExplorer.navigation.driveIndex.tooltipFresh": "索引已建立，而且是最新的。上次在 {date} 建立索引，花了 {duration}。",
   "@fileExplorer.navigation.driveIndex.tooltipFresh": {
     "sourceHash": "d036851"
   },

@@ -55,7 +55,7 @@
   "@crashReporter.dialog.send": {
     "sourceHash": "a44d353"
   },
-  "crashReporter.dialog.sending": "正在傳送…",
+  "crashReporter.dialog.sending": "正在傳送⋯",
   "@crashReporter.dialog.sending": {
     "sourceHash": "b8ed527"
   },

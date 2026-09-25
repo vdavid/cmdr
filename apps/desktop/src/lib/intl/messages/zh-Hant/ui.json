@@ -15,7 +15,7 @@
   "@ui.popover.defaultAriaLabel": {
     "sourceHash": "d0db8b5"
   },
-  "ui.select.placeholder": "請選擇…",
+  "ui.select.placeholder": "請選擇⋯",
   "@ui.select.placeholder": {
     "sourceHash": "731fe04"
   },
@@ -51,7 +51,7 @@
   "@ui.shortcutChip.customizeTooltip": {
     "sourceHash": "9a7817d"
   },
-  "ui.toast.sendErrorReport": "傳送錯誤報告…",
+  "ui.toast.sendErrorReport": "傳送錯誤報告⋯",
   "@ui.toast.sendErrorReport": {
     "sourceHash": "063c94e"
   },
@@ -63,19 +63,19 @@
   "@ui.toast.age": {
     "sourceHash": "6dcfed0"
   },
-  "ui.loadingIcon.finalizing": "已載入全部 {countText} 個{count, plural, other {檔案}}。正在排序你的檔案並準備顯示…",
+  "ui.loadingIcon.finalizing": "已載入全部 {countText} 個{count, plural, other {檔案}}。正在排序你的檔案並準備顯示⋯",
   "@ui.loadingIcon.finalizing": {
     "sourceHash": "0de5a42"
   },
-  "ui.loadingIcon.loaded": "已載入 {countText} 個{count, plural, other {檔案}}…",
+  "ui.loadingIcon.loaded": "已載入 {countText} 個{count, plural, other {檔案}}⋯",
   "@ui.loadingIcon.loaded": {
     "sourceHash": "69d2b22"
   },
-  "ui.loadingIcon.openingFolder": "正在開啟資料夾…",
+  "ui.loadingIcon.openingFolder": "正在開啟資料夾⋯",
   "@ui.loadingIcon.openingFolder": {
     "sourceHash": "c3ab98e"
   },
-  "ui.loadingIcon.loading": "正在載入…",
+  "ui.loadingIcon.loading": "正在載入⋯",
   "@ui.loadingIcon.loading": {
     "sourceHash": "ba3bbbe"
   },

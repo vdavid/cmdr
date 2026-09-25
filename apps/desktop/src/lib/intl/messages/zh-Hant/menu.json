@@ -43,11 +43,11 @@
   "@menu.app.licenseDetails": {
     "sourceHash": "0e660e8"
   },
-  "menu.app.licenseEnter": "輸入授權碼…",
+  "menu.app.licenseEnter": "輸入授權碼⋯",
   "@menu.app.licenseEnter": {
     "sourceHash": "24a8d77"
   },
-  "menu.app.checkForUpdates": "檢查更新…",
+  "menu.app.checkForUpdates": "檢查更新⋯",
   "@menu.app.checkForUpdates": {
     "sourceHash": "52d6f7d"
   },
@@ -55,11 +55,11 @@
   "@menu.app.changelog": {
     "sourceHash": "ead07c8"
   },
-  "menu.app.onboarding": "入門引導…",
+  "menu.app.onboarding": "入門引導⋯",
   "@menu.app.onboarding": {
     "sourceHash": "c4cc4aa"
   },
-  "menu.app.settings": "設定…",
+  "menu.app.settings": "設定⋯",
   "@menu.app.settings": {
     "sourceHash": "7a04083"
   },
@@ -95,11 +95,11 @@
   "@menu.file.edit": {
     "sourceHash": "691ca0f"
   },
-  "menu.file.copy": "複製…",
+  "menu.file.copy": "複製⋯",
   "@menu.file.copy": {
     "sourceHash": "7f743d4"
   },
-  "menu.file.move": "移動…",
+  "menu.file.move": "移動⋯",
   "@menu.file.move": {
     "sourceHash": "cd799da"
   },
@@ -107,15 +107,15 @@
   "@menu.file.duplicate": {
     "sourceHash": "02cdaab"
   },
-  "menu.file.compress": "壓縮…",
+  "menu.file.compress": "壓縮⋯",
   "@menu.file.compress": {
     "sourceHash": "66b9d2c"
   },
-  "menu.file.newFolder": "新增資料夾…",
+  "menu.file.newFolder": "新增資料夾⋯",
   "@menu.file.newFolder": {
     "sourceHash": "6cca529"
   },
-  "menu.file.newFile": "新增檔案…",
+  "menu.file.newFile": "新增檔案⋯",
   "@menu.file.newFile": {
     "sourceHash": "6b2727f"
   },
@@ -183,7 +183,7 @@
   "@menu.edit.copyFilename": {
     "sourceHash": "5cdf7f8"
   },
-  "menu.edit.searchFiles": "搜尋檔案…",
+  "menu.edit.searchFiles": "搜尋檔案⋯",
   "@menu.edit.searchFiles": {
     "sourceHash": "149a9d1"
   },
@@ -215,11 +215,11 @@
   "@menu.select.invert": {
     "sourceHash": "d2e128a"
   },
-  "menu.select.files": "選取檔案…",
+  "menu.select.files": "選取檔案⋯",
   "@menu.select.files": {
     "sourceHash": "b7f202e"
   },
-  "menu.select.deselectFiles": "取消選取檔案…",
+  "menu.select.deselectFiles": "取消選取檔案⋯",
   "@menu.select.deselectFiles": {
     "sourceHash": "6fb10d5"
   },
@@ -259,7 +259,7 @@
   "@menu.view.swapPanes": {
     "sourceHash": "cc29396"
   },
-  "menu.view.commandPalette": "指令面板…",
+  "menu.view.commandPalette": "指令面板⋯",
   "@menu.view.commandPalette": {
     "sourceHash": "6b1c93d"
   },
@@ -352,7 +352,7 @@
   "@menu.go.home": {
     "sourceHash": "3a78695"
   },
-  "menu.go.goToPath": "前往路徑…",
+  "menu.go.goToPath": "前往路徑⋯",
   "@menu.go.goToPath": {
     "sourceHash": "936edc5"
   },
@@ -368,7 +368,7 @@
   "@menu.go.addToFavorites": {
     "sourceHash": "7f3c078"
   },
-  "menu.go.connectToServer": "連接伺服器…",
+  "menu.go.connectToServer": "連接伺服器⋯",
   "@menu.go.connectToServer": {
     "sourceHash": "6188f47"
   },
@@ -424,11 +424,11 @@
   "@menu.help.whatsNew": {
     "sourceHash": "135e912"
   },
-  "menu.help.sendFeedback": "傳送意見反應…",
+  "menu.help.sendFeedback": "傳送意見反應⋯",
   "@menu.help.sendFeedback": {
     "sourceHash": "60e1072"
   },
-  "menu.help.sendErrorReport": "傳送錯誤報告…",
+  "menu.help.sendErrorReport": "傳送錯誤報告⋯",
   "@menu.help.sendErrorReport": {
     "sourceHash": "063c94e"
   },
@@ -446,7 +446,7 @@
   },
   "menu.context.copyNamed": "複製「{name}」",
   "@menu.context.copyNamed": {
-    "sourceHash": "e2cc661"
+    "sourceHash": "2131c34"
   },
   "menu.context.addToFavorites": "加入喜好項目",
   "@menu.context.addToFavorites": {
@@ -480,7 +480,7 @@
   "@menu.context.share": {
     "sourceHash": "29887a5"
   },
-  "menu.context.shareLoading": "正在尋找分享選項…",
+  "menu.context.shareLoading": "正在尋找分享選項⋯",
   "@menu.context.shareLoading": {
     "sourceHash": "1db46ae"
   },
@@ -488,11 +488,11 @@
   "@menu.context.shareNone": {
     "sourceHash": "cd12a10"
   },
-  "menu.context.editExtensions": "編輯延伸功能…",
+  "menu.context.editExtensions": "編輯延伸功能⋯",
   "@menu.context.editExtensions": {
     "sourceHash": "c1d99c8"
   },
-  "menu.context.openWithLoading": "正在尋找 App…",
+  "menu.context.openWithLoading": "正在尋找 App⋯",
   "@menu.context.openWithLoading": {
     "sourceHash": "5bcff61"
   },
@@ -504,7 +504,7 @@
   "@menu.context.openWithDefault": {
     "sourceHash": "32a7cca"
   },
-  "menu.context.openWithOther": "其他…",
+  "menu.context.openWithOther": "其他⋯",
   "@menu.context.openWithOther": {
     "sourceHash": "1e37529"
   },
@@ -542,11 +542,11 @@
   },
   "menu.tag.addNamed": "加入「{color}」",
   "@menu.tag.addNamed": {
-    "sourceHash": "1d50324"
+    "sourceHash": "3be3f57"
   },
   "menu.tag.removeNamed": "移除「{color}」",
   "@menu.tag.removeNamed": {
-    "sourceHash": "15d0171"
+    "sourceHash": "7a067fb"
   },
   "menu.mediaIndex.addFolder": "加入索引資料夾",
   "@menu.mediaIndex.addFolder": {
@@ -588,7 +588,7 @@
   "@menu.volume.renameFavorite": {
     "sourceHash": "3064d79"
   },
-  "menu.volume.editFavoriteShortcut": "設定快速鍵…",
+  "menu.volume.editFavoriteShortcut": "設定快速鍵⋯",
   "@menu.volume.editFavoriteShortcut": {
     "sourceHash": "be52b50"
   },
@@ -600,7 +600,7 @@
   "@menu.network.open": {
     "sourceHash": "ed077f3"
   },
-  "menu.network.edit": "編輯伺服器…",
+  "menu.network.edit": "編輯伺服器⋯",
   "@menu.network.edit": {
     "sourceHash": "a3282a7"
   },
@@ -648,15 +648,15 @@
   "@menu.dock.openCmdr": {
     "sourceHash": "f898c5b"
   },
-  "menu.dock.searchFiles": "搜尋檔案…",
+  "menu.dock.searchFiles": "搜尋檔案⋯",
   "@menu.dock.searchFiles": {
     "sourceHash": "149a9d1"
   },
-  "menu.dock.goToFolder": "前往資料夾…",
+  "menu.dock.goToFolder": "前往資料夾⋯",
   "@menu.dock.goToFolder": {
     "sourceHash": "33de610"
   },
-  "menu.dock.connectToServer": "連接伺服器…",
+  "menu.dock.connectToServer": "連接伺服器⋯",
   "@menu.dock.connectToServer": {
     "sourceHash": "6188f47"
   },

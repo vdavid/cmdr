@@ -42,13 +42,19 @@ The must-know rules; the rest of this file elaborates them.
   `…中` suffix like 載入中); a status cell keeps its aspect marker (`已連線`, `已儲存`, `已登出`); a menu item naming
   the app is verb + space + `Cmdr`, unquoted (`隱藏 Cmdr`). Click → `按一下` (never zh-CN's 點按); tap on a phone →
   `輕觸`.
-- **Punctuation**: quote UI names, filenames, and menu names with `「…」`, never `“…”`; never nest `『…』`, restructure
-  instead. Full-width `，。：？！（）`. ❌ Never the full-width semicolon `；`: split the sentence or use `，`. `、` for
-  a tight in-sentence list. Ellipsis is one `…` (U+2026), never Apple's `⋯`, `……`, or `...`; keep it wherever English
-  has one. Arabic numerals. A settings path is `「設定 > AI」`, mirroring English's separator.
+- **Typography set** (`mechanics.json`): quotes `「…」`, nested `『…』` declared but restructure before nesting; no
+  apostrophe; ellipsis `⋯` (U+22EF, as macOS zh-TW and zh-HK write it); full-width punctuation with no space against it.
+- **No hedges**: Chinese has no number, gender, or case, so a hedge is never needed: ❌ no `這（些）`, `（們）`,
+  `他/她`, or slashed classifiers (`個/張`). A bare noun covers one and many; say `你` or name the object; give the noun
+  its own classifier.
+- **Punctuation**: quote UI names, filenames, and menu names with `「…」`, never `“…”`. Full-width `，。：？！（）`. ❌
+  Never the full-width semicolon `；`: split the sentence or use `，`. `、` for a tight in-sentence list. Ellipsis is
+  one `⋯` (U+22EF), never `…`, `……`, or `...`; keep it wherever English has one. Arabic numerals. A settings path is
+  `「設定 > AI」`, mirroring English's separator.
 - **Spacing**: a space between Han and any Latin word, number, or placeholder (`macOS 通知已關閉`, `剩餘約 {duration}`,
   `iCloud 雲碟`, `USB 裝置`), including OS-filled `{system_settings}`-style tokens. No space inside a Latin run
-  (`64.0 MB/1.33 GB`) or against a full-width bracket. A Chinese date compound stays tight (`8月1日`).
+  (`64.0 MB/1.33 GB`) or against a full-width bracket. A Chinese date compound stays tight (`8月1日`). The check can't
+  tell whether an insert renders Latin (`{duration}`, OS tokens: spaced) or Han (`{label}`: tight), so judge those.
 - **Brands**: `Cmdr`, `macOS`, `GitHub`, `SMB`, `MTP`, `Dock`, `Finder`, `Spotlight` stay verbatim and uninflected.
   Apple translates `快速查看` (Quick Look), `終端機` (Terminal), `iCloud 雲碟`, `鑰匙圈` (Keychain), `指揮中心` (Mission
   Control): localize what Apple localizes. An app in general is the Latin `App`; `應用程式` is only Apple's own labels
@@ -210,7 +216,7 @@ it. Recorded rulings, with the divergence measured in the two macOS corpora:
 | retry           | 再試一次  | 再試       | **再試一次**  | reads more natural; MS's 重試 is Windows house style                                        |
 | sort            | 排序      | 排列       | **排序**      | here HK is the outlier; MS and all five file managers say 排序                              |
 | duplicate       | 複製      | 製作副本   | **製作副本**  | HK's form, chosen deliberately; see the note under the table                                |
-| loading         | 載入中⋯   | 正在載入⋯  | **正在載入…** | HK's form; TW mixes a `中`-suffix that clashes with our consistent `正在…` progress pattern |
+| loading         | 載入中⋯   | 正在載入⋯  | **正在載入⋯** | HK's form; TW mixes a `中`-suffix that clashes with our consistent `正在…` progress pattern |
 
 **On `duplicate`**: Taiwan's 複製 is the word this catalog already uses for _copy_, and Cmdr ships Copy and Duplicate as
 two separate commands. Taking Hong Kong's 製作副本 keeps them distinct.
@@ -255,9 +261,8 @@ bundle unless noted.
   sentence or use `，` instead.
 - **`、` for tight in-sentence lists** (`KiB、MiB、GiB`), used but sparingly (15–20 occurrences). Use it between short
   list items inside a sentence; use `，` between clauses.
-- **Ellipsis is `…` (U+2026), one character.** ❗ Apple writes `⋯` (U+22EF) in Traditional, and we deliberately do NOT
-  follow it: Cmdr normalizes on `…` across every catalog (157 in `en`, 147 in `zh`, 0 `⋯` anywhere). Keeping one
-  ellipsis form app-wide beats matching Apple's glyph. Never the doubled literary `……`, never ASCII `...`.
+- **Ellipsis is `⋯` (U+22EF), one character**, as Apple writes it in both Traditional locales (zh-TW 250 `⋯` / 0 `…`,
+  zh-HK 249 / 0, pile values). Never `…`, the doubled literary `……`, or ASCII `...`.
 - **Arabic numerals (0-9)** for every count, size, and percentage, as Apple and all majors do. Chinese numerals (一二三)
   are prose-only.
 
@@ -388,7 +393,7 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `queryUi.date.preset.*` key NAMES, whose values are "Today", "Yesterday", …), so nothing is broken today. If a visible
   "preset" ever appears, write `預設組合` and keep bare `預設` for _default_.
 - **Menu names in running text get corner brackets, not a path.** Write `請從「說明」選單傳送新的報告。` in prose, and
-  reserve the bold `Cmdr > 引導設定…` path shape for step-by-step onboarding instructions. Menu names must match the
+  reserve the bold `Cmdr > 引導設定⋯` path shape for step-by-step onboarding instructions. Menu names must match the
   `menu.*` keys exactly, so a copy edit can't drift the two apart.
 - **Toast strings that follow a colon carry the wrapper's verb, so don't repeat it.** Several error values are dropped
   into a wrapper key and read as the sentence AFTER the colon; write them to continue that sentence and pick a different
@@ -413,31 +418,28 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   (`Ask Cmdr 設定`, `「Ask Cmdr」區段`); write bare `Cmdr` when the sentence describes what the AI does; write `AI` in
   the four `suggestedOps.*` strings, which have to stay distinguishable from the neighbouring `Cmdr 知道的事實`. ❗
   Don't "restore" `Ask Cmdr` as a sentence subject: the English deliberately moved every such subject to `Cmdr`. Per-key
-  evidence: `decisions.md` § "AI 文案的主詞：`Cmdr` / `AI`，`Ask Cmdr`".
+  evidence: `decisions.md` § AI copy's subject.
 - **Click is `按一下`, not macOS zh-CN's `點按`.** Apple zh-TW writes `按一下` 50 times against 4 `點一下` and zero
   `點按` (measured 2026-09-09). A "Click to …" instruction becomes `按一下就能…`.
 - **`context` is `上下文`** (`上下文視窗` for the window, `上下文大小` for the size). The ruling and why it's still
-  `tentative`: `terms.json` `context-window` and `decisions.md` § "狀態角落的兩條 AI 提示、`同意` 的統一，與".
+  `tentative`: `terms.json` `context-window` and `decisions.md` § Status-corner AI hints.
 - **A menu item that names the app is `動詞 + 空格 + Cmdr`, unquoted.** `隱藏 Cmdr`, `結束 Cmdr`, `關於 Cmdr`,
   `開啟 Cmdr`. Apple's Dock quotes the name (`隱藏「%@」`) only because that `%@` is an arbitrary app name filled in at
   runtime; ours is the literal brand, and corner brackets would make the Dock menu disagree with the app menu right next
   to it. The Dock's own menu is a Tier-1 source for these labels and is NOT in the reference pile: read
   `/System/Library/CoreServices/Dock.app/Contents/Resources/zh_{TW,HK}.lproj/DockMenus.strings`. ❗ Its zh-TW `OPEN` is
-  `打開`, which is the § Apple-zh-TW outlier rule again, so take zh-HK's `開啟`. Per-key evidence: `decisions.md` §
-  "右鍵按 Dock 圖像跳出來的那張選單（`menu.dock.*`）".
-- **Keep the trailing `…` wherever the English has one** (a menu item or button that opens a further dialog), and keep
+  `打開`, which is the § Apple-zh-TW outlier rule again, so take zh-HK's `開啟`. Per-key evidence: `decisions.md` § The
+  Dock nudge and the Dock menu.
+- **Keep the trailing `⋯` wherever the English has one** (a menu item or button that opens a further dialog), and keep
   the `*Aria` containment rule in mind: an aria value must contain its visible label verbatim and in order. Chinese
   doesn't inflect, so this is easy here: just don't paraphrase the label inside the aria sentence.
 - **A status word in a table cell keeps its aspect marker.** The servers hub's Status column reads `已連線` / `已儲存` /
   `已登出` / `在附近找到` / `等你確認主機金鑰`. Apple's Traditional status labels carry the `已…` marker rather than
   dropping to a bare verb, and the one blocked-on-the-user state addresses the reader in second person exactly as the
   English does. ❗ Don't "shorten" `已連線` to `連線`: that reads as the action, not the state.
-- **The disk picker has one name: `卷宗切換器`.** The English settled on "volume switcher" everywhere, so
-  `shortcuts.scope.volumeChooser` and the two `commands.pane*VolumeChooser.label` moved off `卷宗選擇器` to match the
-  `fileExplorer.navigation.server*Toast` pair. ❗ The message KEYS still spell `Chooser`: they mirror the persisted
-  command ids `pane.leftVolumeChooser` / `pane.rightVolumeChooser`, which can't be renamed. Translate the value, ignore
-  the key. Same shape recorded in `decisions.md` §
-  "伺服器中心（`servers.hub.*`、`commands.servers*`、`fileExplorer.navigation.server*Toast`）".
+- **The disk picker has one name: `卷宗切換器`**, `卷宗選擇器` nowhere, including `shortcuts.scope.volumeChooser` and
+  `commands.pane*VolumeChooser.label` (their key names mirror persisted command ids; the English value says switcher).
+  `decisions.md` § Servers hub.
 - **A grayed-out "(busy)" menu item is its base label plus `（使用中）`, nothing else.** The `*Busy` keys are the
   disabled twin of an ordinary menu item, shown while a transfer still holds the volume or server, so they have to read
   as the same item in a second state. Copy the base key's value character for character and append the marker:
@@ -450,12 +452,11 @@ CLDR category: **`other` only** (verified with `new Intl.PluralRules('zh-Hant').
   `處理中`) for a new pair, and don't reword the base half to make the compound shorter.
 
 - **A `正在…` progress heading with a target keeps ONE sentence shape across the family.** The pane's
-  `servers.paneState.connecting` / `.reconnecting` pair differs only in the verb (`正在連線到 {name}…` /
-  `正在重新連線到 {name}…`), and Apple's own Traditional progress strings are `正在重新連線⋯` in three separate bundles.
+  `servers.paneState.connecting` / `.reconnecting` pair differs only in the verb (`正在連線到 {name}⋯` /
+  `正在重新連線到 {name}⋯`), and Apple's own Traditional progress strings are `正在重新連線⋯` in three separate bundles.
   A new state in the family copies the shape rather than inventing a second one. ❗ Apple's `重新連接` is its imperative
-  form ("unplug it and reconnect the iPhone"); a STATE is always `重新連線`. Evidence and the rest of the pane family:
-  `decisions.md` §
-  "自動重連的窗格與「沒東西可問」那一行（`servers.paneState.reconnecting`、`servers.paneState.signedOutNothingToAsk`）".
+  form ("unplug it and reconnect the iPhone"); a STATE is always `重新連線`. Evidence: `decisions.md` § Reconnecting and
+  the nothing-to-ask line.
 
 - **English "easy" / "simple" is dodged, not rendered as `簡單`.** The house voice bans trivializing words, and the
   English onboarding copy uses them anyway ("a few easy choices", "Three easy steps"). This catalog resolves the clash

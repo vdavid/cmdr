@@ -44,7 +44,7 @@
   "@licensing.acknowledgements.fullTexts": {
     "sourceHash": "1760aeb"
   },
-  "licensing.acknowledgements.loading": "正在載入列表…",
+  "licensing.acknowledgements.loading": "正在載入列表⋯",
   "@licensing.acknowledgements.loading": {
     "sourceHash": "0b6efaa"
   },
@@ -132,7 +132,7 @@
   "@licensing.commercialReminder.priceInfo": {
     "sourceHash": "55bd2ed"
   },
-  "licensing.commercialReminder.declinePersonal": "我只把 Cmdr<break></break>用於個人用途",
+  "licensing.commercialReminder.declinePersonal": "我只把 Cmdr 用於<break></break>個人用途",
   "@licensing.commercialReminder.declinePersonal": {
     "sourceHash": "49641ff"
   },
@@ -148,7 +148,7 @@
   "@licensing.expiration.orgName": {
     "sourceHash": "a5f0bab"
   },
-  "licensing.expiration.message": "你的商業訂閱已於 <strong>{date}</strong> 過期。",
+  "licensing.expiration.message": "你的商業訂閱在 <strong>{date}</strong> 過期了。",
   "@licensing.expiration.message": {
     "sourceHash": "92b6b97"
   },
@@ -164,7 +164,7 @@
   "@licensing.expiration.continue": {
     "sourceHash": "b5c90b4"
   },
-  "licensing.dialog.loading": "正在載入…",
+  "licensing.dialog.loading": "正在載入⋯",
   "@licensing.dialog.loading": {
     "sourceHash": "ba3bbbe"
   },
@@ -276,7 +276,7 @@
   "@licensing.dialog.cancelButton": {
     "sourceHash": "19766ed"
   },
-  "licensing.dialog.checking": "正在檢查…",
+  "licensing.dialog.checking": "正在檢查⋯",
   "@licensing.dialog.checking": {
     "sourceHash": "ec963ff"
   },
@@ -284,7 +284,7 @@
   "@licensing.dialog.tryAgain": {
     "sourceHash": "d8b8392"
   },
-  "licensing.dialog.activating": "正在啟用…",
+  "licensing.dialog.activating": "正在啟用⋯",
   "@licensing.dialog.activating": {
     "sourceHash": "230f6d1"
   },
@@ -380,7 +380,7 @@
   "@licensing.section.title": {
     "sourceHash": "c011d60"
   },
-  "licensing.section.loading": "正在載入…",
+  "licensing.section.loading": "正在載入⋯",
   "@licensing.section.loading": {
     "sourceHash": "ba3bbbe"
   },

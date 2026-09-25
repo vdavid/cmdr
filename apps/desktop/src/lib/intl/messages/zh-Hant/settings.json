@@ -5,7 +5,7 @@
   },
   "settings.appearance.language.description": "選擇 Cmdr 使用的語言。「跟隨系統」會採用你 Mac 的語言。",
   "@settings.appearance.language.description": {
-    "sourceHash": "a290add"
+    "sourceHash": "6e36bba"
   },
   "settings.appearance.language.opt.system": "跟隨系統",
   "@settings.appearance.language.opt.system": {
@@ -39,7 +39,7 @@
   "@settings.appearance.appColor.label": {
     "sourceHash": "b1107c8"
   },
-  "settings.appearance.appColor.description": "若要更改系統主題色，請前往「系統設定 > 外觀」。",
+  "settings.appearance.appColor.description": "想更改系統主題色，請到「系統設定 > 外觀」。",
   "@settings.appearance.appColor.description": {
     "sourceHash": "7dc4ab7"
   },
@@ -122,7 +122,7 @@
   "@settings.appearance.dateTimeFormat.optDesc.short": {
     "sourceHash": "4475197"
   },
-  "settings.appearance.dateTimeFormat.opt.custom": "自訂…",
+  "settings.appearance.dateTimeFormat.opt.custom": "自訂⋯",
   "@settings.appearance.dateTimeFormat.opt.custom": {
     "sourceHash": "c4e69d5"
   },
@@ -172,7 +172,7 @@
   },
   "settings.appearance.textSize.description": "縮放整個 App 的文字和介面。與 macOS「輔助使用」的文字大小疊加，其中 100% 表示「與系統大小完全一致」。",
   "@settings.appearance.textSize.description": {
-    "sourceHash": "232df24"
+    "sourceHash": "49a0a6b"
   },
   "settings.appearance.uiDensity.label": "介面密度",
   "@settings.appearance.uiDensity.label": {
@@ -273,7 +273,7 @@
   "@settings.appearance.useAppIconsForDocuments.label": {
     "sourceHash": "71561ae"
   },
-  "settings.appearance.useAppIconsForDocuments.description": "為文件顯示其所屬 App 的圖像，而不是通用的檔案類型圖像。更豐富多彩，但會稍慢一些。",
+  "settings.appearance.useAppIconsForDocuments.description": "為文件顯示它所屬 App 的圖像，而不是通用的檔案類型圖像。色彩更豐富，但會稍慢一些。",
   "@settings.appearance.useAppIconsForDocuments.description": {
     "sourceHash": "9ae8a9c"
   },
@@ -297,7 +297,7 @@
   "@settings.listing.showExtensionInName.label": {
     "sourceHash": "cce9a4d"
   },
-  "settings.listing.showExtensionInName.description": "在名稱欄中顯示完整檔名（如 launch.json），並隱藏獨立的副檔名欄。僅影響完整顯示方式。",
+  "settings.listing.showExtensionInName.description": "在名稱欄中顯示完整檔名（如 launch.json），並隱藏獨立的副檔名欄。只影響完整顯示方式。",
   "@settings.listing.showExtensionInName.description": {
     "sourceHash": "e7c361c"
   },
@@ -433,7 +433,7 @@
   "@settings.archives.compressionLevel.label": {
     "sourceHash": "9889378"
   },
-  "settings.archives.compressionLevel.description": "Cmdr 製作 zip 時的壓縮強度。層級越高，檔案越小，但打包耗時越長。這個設定適用於壓縮指令，以及將檔案複製或移動到 zip 中。",
+  "settings.archives.compressionLevel.description": "Cmdr 製作 zip 時的壓縮強度。層級越高，檔案越小，但打包耗時越長。這個設定適用於壓縮指令，以及把檔案複製或移動到 zip 裡。",
   "@settings.archives.compressionLevel.description": {
     "sourceHash": "0ebedaf"
   },
@@ -477,7 +477,7 @@
   "@settings.mediaIndex.clip.download": {
     "sourceHash": "1eced44"
   },
-  "settings.mediaIndex.clip.downloading": "正在下載…",
+  "settings.mediaIndex.clip.downloading": "正在下載⋯",
   "@settings.mediaIndex.clip.downloading": {
     "sourceHash": "a778d34"
   },
@@ -497,7 +497,7 @@
   "@settings.mediaIndex.clip.deleteButton": {
     "sourceHash": "1957b82"
   },
-  "settings.mediaIndex.clip.deleting": "正在刪除…",
+  "settings.mediaIndex.clip.deleting": "正在刪除⋯",
   "@settings.mediaIndex.clip.deleting": {
     "sourceHash": "43b5894"
   },
@@ -669,7 +669,7 @@
   "@settings.mediaIndex.importanceThreshold.previewNone": {
     "sourceHash": "c015ea6"
   },
-  "settings.mediaIndex.importanceThreshold.previewCounting": "正在計算這會涵蓋多少內容…",
+  "settings.mediaIndex.importanceThreshold.previewCounting": "正在計算這會涵蓋多少內容⋯",
   "@settings.mediaIndex.importanceThreshold.previewCounting": {
     "sourceHash": "659de34"
   },
@@ -705,7 +705,7 @@
   "@settings.mediaIndex.progress.ofTotal": {
     "sourceHash": "2acda74"
   },
-  "settings.mediaIndex.progress.counting": "正在統計影像數量…",
+  "settings.mediaIndex.progress.counting": "正在統計影像數量⋯",
   "@settings.mediaIndex.progress.counting": {
     "sourceHash": "fa08ea7"
   },
@@ -749,7 +749,7 @@
   "@settings.indexing.askForEachDrive.label": {
     "sourceHash": "774f72c"
   },
-  "settings.indexing.askForEachDrive.description": "當你首次開啟網路共享或裝置時，詢問是否要為它建立索引。",
+  "settings.indexing.askForEachDrive.description": "第一次開啟網路共享或裝置時，問你要不要為它建立索引。",
   "@settings.indexing.askForEachDrive.description": {
     "sourceHash": "189552c"
   },
@@ -925,7 +925,7 @@
   },
   "settings.ai.cloudConsent.lockedHint": "先開啟上方的「允許使用雲端 AI」，才能設定服務。",
   "@settings.ai.cloudConsent.lockedHint": {
-    "sourceHash": "6f4097a"
+    "sourceHash": "8a24685"
   },
   "settings.ai.cloudProvider.description": "要使用哪一個雲端 AI 服務。",
   "@settings.ai.cloudProvider.description": {
@@ -1049,7 +1049,7 @@
   },
   "settings.fileOperations.mtpEnabled.description": "透過 USB 連接線偵測並連接 Android 及其他裝置，以瀏覽和傳輸檔案。要在 Android 手機上使用這個功能，你會需要一條 USB 連接線，然後在手機上前往類似「設定 > USB 偏好設定」的位置，並把連線設為「檔案傳輸」、「Android Auto」或類似的選項。（因裝置而異。）",
   "@settings.fileOperations.mtpEnabled.description": {
-    "sourceHash": "834ea99"
+    "sourceHash": "37444c2"
   },
   "settings.fileOperations.adbEnabled.label": "透過 ADB 存取 Android 檔案",
   "@settings.fileOperations.adbEnabled.label": {
@@ -1057,7 +1057,7 @@
   },
   "settings.fileOperations.adbEnabled.description": "只要 Android 手機開啟了「USB 偵錯」，你就能存取它的整個檔案系統，包括 MTP 無法顯示的部分。這需要在這部 Mac 上安裝 Android SDK 平台工具（也就是 adb 指令）。就算你沒安裝任何 Android 工具，開著這一項也不會有任何代價。",
   "@settings.fileOperations.adbEnabled.description": {
-    "sourceHash": "8577083"
+    "sourceHash": "57cf2aa"
   },
   "settings.fileOperations.adbBinaryPath.label": "adb 的位置",
   "@settings.fileOperations.adbBinaryPath.label": {
@@ -1079,7 +1079,7 @@
   "@settings.fileExplorer.git.showRepoChip.label": {
     "sourceHash": "7504b23"
   },
-  "settings.fileExplorer.git.showRepoChip.description": "在 git 存放庫中時，於檔案列表上方顯示目前的分支、領先/落後，以及有改動的狀態。",
+  "settings.fileExplorer.git.showRepoChip.description": "在 git 存放庫裡時，檔案列表上方會顯示目前的分支、領先/落後，以及有沒有改動。",
   "@settings.fileExplorer.git.showRepoChip.description": {
     "sourceHash": "7b8a9ba"
   },
@@ -1161,7 +1161,7 @@
   },
   "settings.whatsNew.lastSeenVersion.description": "內部：我們在「新功能」彈出視窗中上次展示的版本。每次啟動都會靜靜往前推進，因此重新啟用彈出視窗時絕不會回放積壓數月的內容。對介面隱藏。",
   "@settings.whatsNew.lastSeenVersion.description": {
-    "sourceHash": "d4f7a52"
+    "sourceHash": "d8677e1"
   },
   "settings.analytics.enabled.label": "傳送使用統計",
   "@settings.analytics.enabled.label": {
@@ -1199,7 +1199,7 @@
   "@settings.updates.attachEmailToReports.label": {
     "sourceHash": "76c512e"
   },
-  "settings.updates.attachEmailToReports.description": "當你傳送當機或錯誤報告時，附上你的測試版聯絡用電子郵件，以便我們回覆。你可以為每份報告單獨更改這一項。",
+  "settings.updates.attachEmailToReports.description": "當你傳送當機或錯誤報告時，附上你的測試版聯絡用電子郵件，方便我們回覆你。你可以為每份報告單獨更改這一項。",
   "@settings.updates.attachEmailToReports.description": {
     "sourceHash": "dd23637"
   },
@@ -1265,7 +1265,7 @@
   },
   "settings.fileExplorer.tabs.closedTabHistorySize.description": "為「重新開啟已關閉的分頁」（⌘⇧T）在每個窗格保留多少個最近關閉的分頁。數值越高，能往回重新開啟的歷史越多。數值越低，越早釋出記憶體。只適用於在目前工作階段中關閉的分頁。",
   "@settings.fileExplorer.tabs.closedTabHistorySize.description": {
-    "sourceHash": "fe01a43"
+    "sourceHash": "e53df3a"
   },
   "settings.advanced.dragThreshold.label": "拖移閾值",
   "@settings.advanced.dragThreshold.label": {
@@ -1337,7 +1337,7 @@
   },
   "settings.advanced.showSafeSaveFiles.description": "「文字編輯」和「預覽程式」這類 App 儲存檔案時，macOS 會在旁邊用暫存名稱（以「.sb-」結尾）寫入新版本，然後再換掉。關閉這一項就能讓它們不出現在檔案列表中。",
   "@settings.advanced.showSafeSaveFiles.description": {
-    "sourceHash": "1749ee6"
+    "sourceHash": "b371701"
   },
   "settings.advanced.showStagingTempFiles.label": "顯示 Cmdr 的暫存檔案",
   "@settings.advanced.showStagingTempFiles.label": {
@@ -1393,7 +1393,7 @@
   },
   "settings.onboarding.upgradeNudgeShown.description": "內部：記錄精靈改版後，是否已為現有使用者觸發過一次性的「現在有了入門引導選單項目」提示。對介面隱藏。",
   "@settings.onboarding.upgradeNudgeShown.description": {
-    "sourceHash": "5cfb2b5"
+    "sourceHash": "c877371"
   },
   "settings.askCmdr.consentRevokePending.label": "Ask Cmdr 已關閉，等待儲存",
   "@settings.askCmdr.consentRevokePending.label": {
@@ -1531,33 +1531,33 @@
   "@settings.revealHandler.label": {
     "sourceHash": "8c39a2f"
   },
-  "settings.revealHandler.description": "當其他 App 執行「在 Finder 中顯示」時，Cmdr 會開啟該資料夾，並把游標停在該檔案上。其餘情況下，Finder 仍是你的預設檔案管理程式。",
+  "settings.revealHandler.description": "當其他 App 執行「在 Finder 中顯示」時，Cmdr 會開啟那個資料夾，並把游標停在那個檔案上。其餘情況下，Finder 仍是你的預設檔案管理程式。",
   "@settings.revealHandler.description": {
-    "sourceHash": "ebb79ff"
+    "sourceHash": "9522e41"
   },
   "settings.revealHandler.heldByOtherApp": "目前：{app}。開啟後，「在 Finder 中顯示」會交給 Cmdr。",
   "@settings.revealHandler.heldByOtherApp": {
-    "sourceHash": "d0aa283"
+    "sourceHash": "4b956ef"
   },
   "settings.revealHandler.uninstallWarning": "<lead>解除安裝 Cmdr 之前，請先關掉這一項。</lead>macOS 仍會把「在 Finder 中顯示」送到這裡，而 Cmdr 一旦不在了，這些點擊就會悄悄沒有反應。",
   "@settings.revealHandler.uninstallWarning": {
-    "sourceHash": "3c10fd3"
+    "sourceHash": "9464597"
   },
   "settings.revealHandler.notInApplications": "把 Cmdr 移到「應用程式」資料夾，才能開啟這一項。從它目前執行的位置，移動或刪除 Cmdr 會讓每一次「在 Finder 中顯示」的點擊都指向空的地方。",
   "@settings.revealHandler.notInApplications": {
-    "sourceHash": "dc15ebf"
+    "sourceHash": "1a380cf"
   },
   "settings.revealHandler.notProductionBuild": "只有正式發行的 Cmdr 版本才能開啟這一項。開發版和測試版來來去去，一旦刪掉其中一個，每一次「在 Finder 中顯示」的點擊就都會指向空的地方。",
   "@settings.revealHandler.notProductionBuild": {
-    "sourceHash": "20648ba"
+    "sourceHash": "7195002"
   },
   "settings.behavior.textEditorApp.label": "編輯檔案時使用",
   "@settings.behavior.textEditorApp.label": {
     "sourceHash": "807338f"
   },
-  "settings.behavior.textEditorApp.description": "Cmdr 會列出 macOS 在這部 Mac 上認得的文字編輯器。想用別的 App，請選擇「選擇 App…」。",
+  "settings.behavior.textEditorApp.description": "Cmdr 會列出 macOS 在這部 Mac 上認得的文字編輯器。想用別的 App，請選擇「選擇 App⋯」。",
   "@settings.behavior.textEditorApp.description": {
-    "sourceHash": "b062aed"
+    "sourceHash": "4641320"
   },
   "settings.behavior.textEditorApp.systemDefault": "跟隨系統（{app}）",
   "@settings.behavior.textEditorApp.systemDefault": {
@@ -1567,7 +1567,7 @@
   "@settings.behavior.textEditorApp.systemDefaultUnnamed": {
     "sourceHash": "b045921"
   },
-  "settings.behavior.textEditorApp.chooseApp": "選擇 App…",
+  "settings.behavior.textEditorApp.chooseApp": "選擇 App⋯",
   "@settings.behavior.textEditorApp.chooseApp": {
     "sourceHash": "26c3b61"
   },
@@ -1575,7 +1575,7 @@
   "@settings.behavior.textEditorApp.chooseAppTitle": {
     "sourceHash": "7a683d5"
   },
-  "settings.behavior.textEditorApp.checking": "正在檢查你的 App…",
+  "settings.behavior.textEditorApp.checking": "正在檢查你的 App⋯",
   "@settings.behavior.textEditorApp.checking": {
     "sourceHash": "0d6957f"
   },
@@ -1591,11 +1591,11 @@
   "@settings.behavior.openTerminalHereApp.label": {
     "sourceHash": "d665817"
   },
-  "settings.behavior.openTerminalHereApp.description": "Cmdr 會列出在這部 Mac 上找到的終端機 App。想用它不認得的 App，請選擇「選擇 App…」。",
+  "settings.behavior.openTerminalHereApp.description": "Cmdr 會列出在這部 Mac 上找到的終端機 App。想用它不認得的 App，請選擇「選擇 App⋯」。",
   "@settings.behavior.openTerminalHereApp.description": {
-    "sourceHash": "0df49fc"
+    "sourceHash": "32ccd8f"
   },
-  "settings.behavior.openTerminalHereApp.chooseApp": "選擇 App…",
+  "settings.behavior.openTerminalHereApp.chooseApp": "選擇 App⋯",
   "@settings.behavior.openTerminalHereApp.chooseApp": {
     "sourceHash": "26c3b61"
   },
@@ -1603,7 +1603,7 @@
   "@settings.behavior.openTerminalHereApp.chooseAppTitle": {
     "sourceHash": "735e979"
   },
-  "settings.behavior.openTerminalHereApp.checking": "正在檢查你的 App…",
+  "settings.behavior.openTerminalHereApp.checking": "正在檢查你的 App⋯",
   "@settings.behavior.openTerminalHereApp.checking": {
     "sourceHash": "0d6957f"
   },
@@ -1657,7 +1657,7 @@
   },
   "settings.behavior.revealNudgeOfferedAt.description": "在 Cmdr 中開啟「在 Finder 中顯示」的一次性詢問是什麼時候提出的。",
   "@settings.behavior.revealNudgeOfferedAt.description": {
-    "sourceHash": "2b9d5b4"
+    "sourceHash": "b6a8933"
   },
   "settings.behavior.revealActivationNoticeSeen.label": "已顯示首次接手提示",
   "@settings.behavior.revealActivationNoticeSeen.label": {
@@ -1665,7 +1665,7 @@
   },
   "settings.behavior.revealActivationNoticeSeen.description": "是否已顯示過關於首次在 Cmdr 中開啟「在 Finder 中顯示」的提示。",
   "@settings.behavior.revealActivationNoticeSeen.description": {
-    "sourceHash": "f2107a5"
+    "sourceHash": "009056a"
   },
   "settings.behavior.adbHintDismissed.label": "已關閉「USB 偵錯」提示",
   "@settings.behavior.adbHintDismissed.label": {
@@ -2041,7 +2041,7 @@
   "@settings.control.customValuePlaceholder": {
     "sourceHash": "999a63f"
   },
-  "settings.control.customOption": "自訂…",
+  "settings.control.customOption": "自訂⋯",
   "@settings.control.customOption": {
     "sourceHash": "c4e69d5"
   },
@@ -2053,7 +2053,7 @@
   "@settings.control.backToPresetsAriaLabel": {
     "sourceHash": "1579f3f"
   },
-  "settings.sidebar.searchPlaceholder": "搜尋設定…",
+  "settings.sidebar.searchPlaceholder": "搜尋設定⋯",
   "@settings.sidebar.searchPlaceholder": {
     "sourceHash": "57054c5"
   },
@@ -2146,7 +2146,7 @@
   "@settings.ai.providerAria": {
     "sourceHash": "8791254"
   },
-  "settings.ai.loading": "正在載入…",
+  "settings.ai.loading": "正在載入⋯",
   "@settings.ai.loading": {
     "sourceHash": "ba3bbbe"
   },
@@ -2170,7 +2170,7 @@
   "@settings.fileSystemWatching.indexSize": {
     "sourceHash": "adbb92c"
   },
-  "settings.fileSystemWatching.clearing": "正在清除…",
+  "settings.fileSystemWatching.clearing": "正在清除⋯",
   "@settings.fileSystemWatching.clearing": {
     "sourceHash": "9a81378"
   },
@@ -2278,15 +2278,15 @@
   "@settings.fileSystemWatching.globalShortcutHint": {
     "sourceHash": "1af3da4"
   },
-  "settings.network.localNetworkAccessLabel": "{localNetwork}存取權",
+  "settings.network.localNetworkAccessLabel": "{localNetwork} 存取權",
   "@settings.network.localNetworkAccessLabel": {
     "sourceHash": "61ce300"
   },
-  "settings.network.permissionIntroPrefix": "Cmdr 需要{localNetwork}才能找到 SMB 伺服器、列出可用的共享，並直接連線以加快檔案傳輸。當你第一次開啟「網路」或使用 ",
+  "settings.network.permissionIntroPrefix": "Cmdr 需要 {localNetwork} 才能找到 SMB 伺服器、列出可用的共享，並直接連線以加快檔案傳輸。當你第一次開啟「網路」或使用 ",
   "@settings.network.permissionIntroPrefix": {
     "sourceHash": "4f7f54f"
   },
-  "settings.network.permissionIntroConnectLink": "連接伺服器…",
+  "settings.network.permissionIntroConnectLink": "連接伺服器⋯",
   "@settings.network.permissionIntroConnectLink": {
     "sourceHash": "6188f47"
   },
@@ -2332,7 +2332,7 @@
   "@settings.updates.emailSignupError": {
     "sourceHash": "0aac3a9"
   },
-  "settings.updates.emailPrivacyNote": "只會存在你的 Mac 上。我們絕不會把它和你的使用統計一起傳送，所以那些統計無法被關聯到你本人。它只用來聯絡你，以及在你傳送報告時選擇性地附上。若要停止收到電子郵件，請使用我們任何一封信裡的取消訂閱連結。",
+  "settings.updates.emailPrivacyNote": "只會存在你的 Mac 上。我們絕不會把它和你的使用統計一起傳送，所以那些統計無法被關聯到你本人。它只用來聯絡你，以及在你傳送報告時選擇性地附上。如果不想再收到電子郵件，請使用我們任何一封信裡的取消訂閱連結。",
   "@settings.updates.emailPrivacyNote": {
     "sourceHash": "f22c213"
   },
@@ -2364,7 +2364,7 @@
   "@settings.mcp.portInUseFallback": {
     "sourceHash": "bf23daa"
   },
-  "settings.mcp.checkingPort": "正在檢查連接埠是否可用…",
+  "settings.mcp.checkingPort": "正在檢查連接埠是否可用⋯",
   "@settings.mcp.checkingPort": {
     "sourceHash": "6069f12"
   },
@@ -2448,7 +2448,7 @@
   "@settings.mediaIndex.chosenFolders.empty": {
     "sourceHash": "da00cf9"
   },
-  "settings.mediaIndex.chosenFolders.add": "加入資料夾…",
+  "settings.mediaIndex.chosenFolders.add": "加入資料夾⋯",
   "@settings.mediaIndex.chosenFolders.add": {
     "sourceHash": "6505f14"
   },
@@ -2464,7 +2464,7 @@
   "@settings.window.title": {
     "sourceHash": "74a883a"
   },
-  "settings.window.loading": "正在載入設定…",
+  "settings.window.loading": "正在載入設定⋯",
   "@settings.window.loading": {
     "sourceHash": "e71a134"
   },
@@ -2528,7 +2528,7 @@
   "@settings.adb.pathPlaceholder": {
     "sourceHash": "e236ef2"
   },
-  "settings.adb.browse": "瀏覽…",
+  "settings.adb.browse": "瀏覽⋯",
   "@settings.adb.browse": {
     "sourceHash": "93c6b66"
   },
