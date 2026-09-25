@@ -10,15 +10,14 @@ Backend: `apps/desktop/src-tauri/src/file_viewer/CLAUDE.md`. Viewer route: `apps
 - `binary-warning.ts`: pure `categorizeForViewerWarning(fileName)` classifies a file into a `category` (`image` /
   `document` / `binary`, or `null` = "don't warn" for text/source/unknown) plus an uppercased `ext` for the `binary`
   case, which the `viewer.binaryWarning.body` select turns into words, keeping the classifier locale-free. The viewer
-  route renders a red banner whenever `shouldWarn`. Suppressible per-instance (banner **Close**) or forever (**Never
-  show this warning again**, flips `fileViewer.suppressBinaryWarning` in Settings > Advanced).
+  route renders a red banner for flagged files without a native viewer, only in Text mode. Suppressible per-instance
+  (banner **Close**) or forever (**Never show this warning again**, flips `fileViewer.suppressBinaryWarning` in
+  Settings > Advanced).
 - Route: `src/routes/viewer/+page.svelte`: viewer UI with virtual scrolling, search bar, status bar.
 
-**Don't trim the image set in `binary-warning.ts` to suppress rendered formats.** Rendered media is suppressed by the
-authoritative backend `kind`, not by this list: the viewer page shows the banner only when
-`!isMedia && warning.shouldWarn`. So a rendered image / PDF never shows it, while formats the classifier promotes to
-neither (RAW like `.cr2`/`.nef`, `.avif`, `.ico`, `.docx`, `.epub`, archives) still warn. Trimming the image set here
-also silences the unrendered ones, which then show raw bytes with no nudge.
+**Don't trim the image set in `binary-warning.ts` to suppress rendered formats.** The page uses the backend's current or
+remembered media kind, so supported images and PDFs never warn, even in Text mode. Unsupported formats such as `.cr2`,
+`.avif`, `.ico`, `.docx`, and archives still warn. Trimming the classifier would silence those too.
 
 ## User interaction
 

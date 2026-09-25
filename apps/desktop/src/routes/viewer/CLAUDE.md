@@ -13,8 +13,8 @@ other components and helpers beside this file. Architecture and decision detail:
   in editable controls. Preserve the backend media kind when switching away from and back to it.
 - Binary and Hex read bounded chunks through `viewerGetBytes`; a routed or phone file uses the session's materialized
   path. Do not decode these reads through the text backends. Their DOM text selection covers rendered rows only.
-- Text-only effects, search, word wrap, encoding, and tail mode must not run in a raw byte or media view. A binary
-  warning concerns decoded text and appears only in Text mode.
+- Text-only effects, search, word wrap, encoding, and tail mode must not run in a raw byte or media view. The raw-view
+  warning appears only in Text mode for a file without a dedicated viewer.
 - Text selection is geometric, with its own caret and anchor logic. Native selection is disabled there. A pointer
   gesture must focus the viewer first; preserve gesture granularity and UTF-16 columns when changing selection code.
 - The virtual text scroll uses pixel heights and chunk walks. `scrollToMatch` has separate indexed and approximate

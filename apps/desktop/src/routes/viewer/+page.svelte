@@ -221,10 +221,15 @@
     let warningSuppressed = $state(false)
     let bannerDismissed = $state(false)
     const warning = $derived(categorizeForViewerWarning(fileName))
-    // The extension classifier flags images and PDFs, but the warning concerns
-    // decoded text only. Rendered media and byte views never show it.
+    // The extension classifier flags images and PDFs, but a file with a native
+    // viewer never needs the warning, even after switching to decoded text.
     const showWarningBanner = $derived(
-        isTextView && warning.shouldWarn && !bannerDismissed && !warningSuppressed && !loading,
+        isTextView &&
+        availableMediaKind(media.kind, media.lastMediaKind) === null &&
+        warning.shouldWarn &&
+        !bannerDismissed &&
+        !warningSuppressed &&
+        !loading,
     )
 
     function dismissBanner(): void {

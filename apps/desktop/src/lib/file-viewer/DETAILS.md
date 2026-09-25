@@ -64,8 +64,8 @@ Depth and rationale for the frontend file viewer. `CLAUDE.md` holds the must-kno
 
 ## Binary-warning suppression
 
-`binary-warning.ts` classifies every image / document / binary extension. The viewer page shows the banner only when
-`viewMode === 'text' && warning.shouldWarn`. So a rendered image / PDF never shows it, while formats the classifier
-promotes to neither (RAW like `.cr2`/`.nef`, `.avif`, `.ico`, `.docx`, `.epub`, archives, etc.) still warn. Don't trim
-the image set here to "suppress" rendered formats: that also silences the unrendered ones (RAW/AVIF/ICO), which then
-show raw bytes with no nudge.
+`binary-warning.ts` classifies image / document / binary extensions by name. The viewer page shows the banner only in
+Text mode when the extension is flagged and the backend's current or remembered kind has no dedicated image/PDF viewer.
+Thus a supported image or PDF never warns, even after switching to Text; unsupported formats (`.cr2`, `.avif`, `.ico`,
+`.docx`, `.epub`, archives, etc.) still warn. Don't trim the extension lists to suppress rendered formats: that would
+silence the unrendered ones too.

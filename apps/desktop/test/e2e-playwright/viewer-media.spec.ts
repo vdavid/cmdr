@@ -121,6 +121,10 @@ test.describe('File viewer media rendering', () => {
 
       await viewer.keyboard.press('0')
       await expect.poll(() => viewer.isVisible('.media-image-stage'), { timeout: waitBudget(5000) }).toBe(true)
+
+      await viewer.keyboard.press('1')
+      await expect.poll(() => viewer.isVisible('.file-content'), { timeout: waitBudget(5000) }).toBe(true)
+      expect(await viewer.isVisible('.binary-warning')).toBe(false)
     } finally {
       await closeScopedWindow(main, viewer, label)
     }
