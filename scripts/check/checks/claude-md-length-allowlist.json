@@ -4,6 +4,10 @@
     "apps/desktop/src/lib/file-explorer/drag/CLAUDE.md": {
       "words": 608,
       "reason": "TODO: trim to roughly 430 words; `DETAILS.md` carries a section per bullet here, one of them titled identically to the longest. Compress the self-drag bullet (roughly 120 words of MTP round-trip narrative) to the guardrail plus a pointer at § Self-drag identity, saving roughly 80; move the wry `collect_paths` explanation and the wry#1723 link out of the `NSFilenamesPboardType` bullet and the promise-provider explanation out of the pasteboard-layout bullet into § Key decisions, roughly 60 more; fold the source-op-mask and `public.file-url` `setString:` bullets into one two-line pasteboard wire-format rule with the AppKit reasons in DETAILS, roughly 40 more. Keep the issue #28 warning, the `clearSelfDragIdentity()` never-on-leave rule, the destination-guard-first ordering, and the `catch_unwind` guard verbatim, since each names something that fails without a symptom."
+    },
+    "apps/desktop/src/routes/viewer/CLAUDE.md": {
+      "words": 649,
+      "reason": "TODO: this one wants a SPLIT, not a trim. `routes/viewer/` is ~40 modules behind one doc pair, and its 18 must-knows are each a genuine break-if-ignored rule with its `DETAILS.md` section already written; a condensing pass took it from 707 to 649 and has nothing left to give without deleting a guardrail. Separate the selection and caret cluster (`selection.svelte.ts`, `viewer-pointer*`, `viewer-caret-*`, `viewer-word.ts`, `viewer-multi-click.ts`, `viewer-selection-granularity.ts`) and the media cluster (`viewer-media.svelte.ts`, `Media*View.svelte`, `media-view.ts`) into subdirectories with C+D pairs of their own, which takes roughly 6 bullets (about 220 words) each out of this file and leaves the page, scroll, search, and window rules here at roughly 350. Until then keep every bullet: each names something that fails silently."
     }
   }
 }
