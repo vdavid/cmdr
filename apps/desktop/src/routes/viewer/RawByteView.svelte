@@ -4,12 +4,17 @@
     import { tString } from '$lib/intl/messages.svelte'
     import {
         bytesPerRawRow,
+        clampRawTopRow,
         firstRawRow,
-        formatRawRow,
+        isRawScrollScaled,
         MAX_RAW_SCROLL_HEIGHT,
         RAW_ROW_HEIGHT,
+        rawChunkRows,
+        rawKeyTopRow,
         rawRowCount,
         scrollTopForRawRow,
+        wheelRowStep,
+        type RawChunk,
         type RawViewMode,
     } from './raw-byte-view'
 
@@ -26,30 +31,34 @@
     let container: HTMLDivElement
     let viewportHeight = $state(600)
     let scrollTop = $state(0)
-    let fetched = $state<{ startRow: number; bytes: number[] } | null>(null)
+    /** The first visible row: the view's one position, which the scrollbar follows when scaled. */
+    let topRow = $state(0)
+    /**
+     * The last chunk that arrived. It stays on screen at its own position until the next one
+     * lands, so a scroll shows the rows it already has instead of blanking for a round trip.
+     */
+    let fetched = $state<RawChunk | null>(null)
     let readError = $state(false)
+    /** The `scrollTop` this view last wrote, so its own echo event doesn't move `topRow`. */
+    let ownScrollTop: number | null = null
+    let wheelCarry = 0
 
     const bytesPerRow = $derived(bytesPerRawRow(mode))
     const totalRows = $derived(rawRowCount(totalBytes, mode))
-    const firstVisible = $derived(firstRawRow(scrollTop, viewportHeight, totalRows))
-    const startRow = $derived(Math.max(0, firstVisible - 16))
+    const scaled = $derived(isRawScrollScaled(totalRows))
+    const viewportRows = $derived(Math.max(1, Math.floor(viewportHeight / RAW_ROW_HEIGHT)))
+    const startRow = $derived(Math.max(0, topRow - 16))
     const count = $derived(Math.min(totalRows - startRow, Math.ceil(viewportHeight / RAW_ROW_HEIGHT) + 32))
     const spacerHeight = $derived(Math.min(totalRows * RAW_ROW_HEIGHT, MAX_RAW_SCROLL_HEIGHT))
-    const rowsTop = $derived(
-        totalRows * RAW_ROW_HEIGHT <= MAX_RAW_SCROLL_HEIGHT
-            ? startRow * RAW_ROW_HEIGHT
-            : Math.max(0, scrollTop + (startRow - firstVisible) * RAW_ROW_HEIGHT),
-    )
-    const rows = $derived.by(() => {
-        if (fetched?.startRow !== startRow) return []
-        const result = []
-        for (let i = 0; i < count; i++) {
-            const bytes = fetched.bytes.slice(i * bytesPerRow, (i + 1) * bytesPerRow)
-            if (bytes.length === 0) break
-            result.push(formatRawRow(bytes, (startRow + i) * bytesPerRow, totalBytes, mode))
-        }
-        return result
+    // Scaled, the rows ride on the real `scrollTop` with `topRow` pinned to the viewport's top
+    // edge; rows above it may sit at a negative offset, clipped by the scroller.
+    const rowsTop = $derived.by(() => {
+        if (!fetched) return 0
+        return scaled
+            ? scrollTop + (fetched.startRow - topRow) * RAW_ROW_HEIGHT
+            : fetched.startRow * RAW_ROW_HEIGHT
     })
+    const rows = $derived(fetched ? rawChunkRows({ chunk: fetched, mode, totalBytes }) : [])
 
     $effect(() => {
         const offset = startRow * bytesPerRow
@@ -72,16 +81,54 @@
         const resize = new ResizeObserver(() => { viewportHeight = container.clientHeight })
         resize.observe(container)
         viewportHeight = container.clientHeight
-        const row = Math.floor(initialOffset / bytesPerRow)
-        container.scrollTop = scrollTopForRawRow(row, viewportHeight, totalRows)
-        scrollTop = container.scrollTop
+        topRow = clampRawTopRow(Math.floor(initialOffset / bytesPerRow), viewportRows, totalRows)
+        syncScrollbar()
         container.focus()
         return () => { resize.disconnect(); }
     })
 
+    function setTopRow(row: number): void {
+        topRow = row
+        onOffsetChange(row * bytesPerRow)
+    }
+
+    /** Moves the (scaled) thumb to `topRow`, remembering the write so its echo is ignored. */
+    function syncScrollbar(): void {
+        const target = scrollTopForRawRow(topRow, viewportHeight, totalRows)
+        container.scrollTop = target
+        ownScrollTop = target
+        scrollTop = container.scrollTop
+    }
+
     function handleScroll(): void {
         scrollTop = container.scrollTop
-        onOffsetChange(firstRawRow(scrollTop, viewportHeight, totalRows) * bytesPerRow)
+        if (ownScrollTop !== null && Math.abs(scrollTop - ownScrollTop) < 1) {
+            ownScrollTop = null
+            return
+        }
+        ownScrollTop = null
+        setTopRow(firstRawRow(scrollTop, viewportHeight, totalRows))
+    }
+
+    // Scaled, one scrollbar pixel spans many rows, so the wheel and keys step whole rows
+    // themselves. Unscaled, the browser's own scrolling is already row-precise and smooth.
+    function handleWheel(e: WheelEvent): void {
+        if (!scaled || e.deltaY === 0) return
+        e.preventDefault()
+        const step = wheelRowStep({ deltaY: e.deltaY, deltaMode: e.deltaMode, viewportRows, carry: wheelCarry })
+        wheelCarry = step.carry
+        if (step.rows === 0) return
+        setTopRow(clampRawTopRow(topRow + step.rows, viewportRows, totalRows))
+        syncScrollbar()
+    }
+
+    function handleKeyDown(e: KeyboardEvent): void {
+        if (!scaled || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return
+        const next = rawKeyTopRow({ key: e.key, topRow, viewportRows, totalRows })
+        if (next === null) return
+        e.preventDefault()
+        setTopRow(next)
+        syncScrollbar()
     }
 </script>
 
@@ -92,6 +139,8 @@
     aria-label={tString('viewer.content.ariaLabel', { fileName })}
     bind:this={container}
     onscroll={handleScroll}
+    onwheel={handleWheel}
+    onkeydown={handleKeyDown}
 >
     <div class="raw-spacer" style="height: {spacerHeight}px">
         <div class="raw-rows" style="top: {rowsTop}px">

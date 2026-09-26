@@ -141,10 +141,18 @@ without another pull. Switching from rendered media to Text still uses the exist
 teardown.
 
 `RawByteView` reads only the visible rows plus 16 rows on either side. A request carries at most 64 KiB; a newer scroll
-or mode change discards its late answer. The DOM spacer stops at 8 million pixels, then maps the thumb proportionally
-onto the file's byte rows, so even a very large file remains reachable. The top byte offset survives a Binary ↔ Hex
-switch. Text search, decoded selection, encoding, word wrap, and tail controls only run in Text mode. Raw rows allow
-native selection of the currently rendered bytes; the dedicated text selection/copy model does not interpret them.
+or mode change discards its late answer. The last chunk that arrived stays rendered at its own position until the next
+one lands, so a scroll never blanks the view for an IPC round trip. The DOM spacer stops at 8 million pixels, then maps
+the thumb proportionally onto the file's byte rows, so even a very large file remains reachable.
+
+Past that cap (about 6 MB in Hex, 25 MB in Binary) one thumb pixel spans many rows, so `topRow` becomes the view's
+single position: the wheel (pixel deltas carry their sub-row remainder) and the unmodified Arrow / Page / Home / End
+keys step it by whole rows, then move the thumb to match, and the echo `scroll` event of that write is ignored. Only a
+user drag of the thumb sets `topRow` from `scrollTop`. Below the cap the browser's native scrolling is already
+row-precise, so the view leaves it alone. The text viewer has the same coarse-thumb limit and doesn't step rows yet. The
+top byte offset survives a Binary ↔ Hex switch. Text search, decoded selection, encoding, word wrap, and tail controls
+only run in Text mode. Raw rows allow native selection of the currently rendered bytes; the dedicated text
+selection/copy model does not interpret them.
 
 - **The image stage's checkerboard needs an explicit `background-repeat: repeat`.** The `ress` reset in `app-reset.css`
   sets `background-repeat: no-repeat` on `*`, so the four 20px hard-stop gradients paint ONCE each in the top-left
