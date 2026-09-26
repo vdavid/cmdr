@@ -24,4 +24,4 @@
   ])
 </script>
 
-<Select {items} value={mode} ariaLabel={tString('viewer.toolbar.viewMode.ariaLabel')} onChange={(picked) => onModeChange(picked as ViewerDisplayMode)} />
+<Select {items} value={mode} ariaLabel={tString('viewer.toolbar.viewMode.ariaLabel')} onChange={(picked) => { onModeChange(picked as ViewerDisplayMode); }} />

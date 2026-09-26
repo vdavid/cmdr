@@ -76,7 +76,7 @@
         container.scrollTop = scrollTopForRawRow(row, viewportHeight, totalRows)
         scrollTop = container.scrollTop
         container.focus()
-        return () => resize.disconnect()
+        return () => { resize.disconnect(); }
     })
 
     function handleScroll(): void {
