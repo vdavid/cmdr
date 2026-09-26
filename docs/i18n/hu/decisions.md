@@ -763,16 +763,6 @@ Allow cloud AI → `Felhő-AI engedélyezése` (quoted when named); as a verb `e
   `teljes képernyő`, which macOS uses for Entire Screen.
 - Escape takes a base noun, `az Escape billentyűvel`: its final `e` is silent, so a suffix would need a hyphen.
 
-## Az áthelyezés közben módosult eredetik (`transfer.changedDuringMove`, 2026-09-25)
-
-- **„changed during the move” → `módosult az áthelyezés közben`** · Finder `PE56` „egy vagy több elem az írás közben
-  módosult” (Finder `LocalizableMerged` `PE56`, macOS 26.6.2, live bundle, 2026-09-25), és a fenti
-  `it changed → módosult` sor · `high`. A számnévi alany mellett egyes számú állítmány (style.md § Plurals). Az
-  `áthelyezés közben` és a `forrásmappákban` betű szerint a testvér `transfer.appearedDuringMove` alakja, mert a két
-  mondat ugyanabban az értesítésben áll.
-
-## A „Megnyitás ezzel” és a „Megosztás” almenü helyőrző sorai (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
-
 ## A „Megnyitás ezzel” és a „Megosztás” almenü helyőrző sorai (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)
 
 Finding apps… → `Appok keresése…`; share options → `megosztási lehetőségek` (tentative), over `beállítás` (settings); No

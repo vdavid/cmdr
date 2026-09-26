@@ -640,17 +640,6 @@ like a system fault). "a lot slower" `慢得多` (no ratio here).
 - Quote the switch verbatim wherever it's referenced; "Allow it" alone is `允许使用`.
 - AI service `AI 服务` stays distinct from provider `提供方`, like the English.
 
-## 移动过程中被改动的原文件（`transfer.changedDuringMove`，2026-09-25）
-
-- **changed during the move → `移动过程中有 … 发生了改动`** · Finder `PE56` 「在刻录时一个或多个项目发生更改」(Finder
-  `LocalizableMerged` `PE56`, macOS 26.6.2, live bundle, 2026-09-25)； `改动`
-  是本目录已定的词（`fileOperations.cancelRollback.reason.drift.counted` 的 `有改动`）· `high`。句首的 `移动过程中有` 和
-  `等源文件夹` 照搬同一条提示里的 `transfer.appearedDuringMove`。
-- **占位符两侧加空格**：`留在 {scope…} 中`（style.md § Numerals, punctuation, and spacing）。顺手把
-  `transfer.appearedDuringMove` 原来的 `出现在{scope…}中` 也改成加空格的写法，两句同框时才一致。
-
-## “打开方式”和“共享”子菜单里的等待行（`menu.context.openWithLoading`、`.shareLoading`、`.shareNone`，2026-09-24）
-
 ## “打开方式”和“共享”子菜单里的等待行（`menu.context.openWithLoading`、`.shareLoading`、`.shareNone`）
 
 `正在查找 App…`, `没有共享选项` (macOS's empty-menu shape, `没有服务可应用`).

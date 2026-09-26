@@ -625,15 +625,6 @@ source is Apple's own Connect to Server dialog (`NetAuthAgent.app`).
 - full screen → `toàn màn hình` (AppKit), sentence-cased, over Apple's title-cased `Toàn`. The toast's switch label and
   the setting match word for word.
 
-## Bản gốc đã thay đổi trong khi di chuyển (`transfer.changedDuringMove`, 2026-09-25)
-
-- **"changed during the move" → `đã thay đổi trong khi di chuyển`** · Finder `PE56` "một hoặc nhiều mục đã thay đổi
-  trong khi đang ghi" (Finder `LocalizableMerged` `PE56`, macOS 26.6.2, live bundle, 2026-09-25) · `high`.
-  `trong khi di chuyển`, `vẫn ở lại` và `thư mục nguồn` lấy nguyên từ chuỗi chị em `transfer.appearedDuringMove`, hiện
-  cùng một toast.
-
-## Dòng chờ trong "Mở bằng" và "Chia sẻ" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
-
 ## Dòng chờ trong "Mở bằng" và "Chia sẻ" (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)
 
 - Loading rows follow macOS's `Đang …` pattern; the empty row is sentence-cased, over macOS's title-cased

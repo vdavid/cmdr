@@ -835,17 +835,6 @@ Apple's Dock menu (`Dock.app/Contents/Resources/de.lproj/DockMenus.strings`) sup
 - `… hat Cmdr aus dem Vollbildmodus geholt`: casual, no blame.
 - `nur den Dialog oder das Menü`: masculine and neuter share no pronoun.
 
-## Geänderte Originale nach dem Bewegen (`transfer.changedDuringMove`, 2026-09-25)
-
-- **„changed during the move“ → `wurde/wurden während des Bewegens geändert`** · Finder `PE56` „… da mindestens ein
-  Objekt während des Brennens geändert wurde“ (Finder `LocalizableMerged` `PE56`, macOS 26.6.2, live bundle,
-  2026-09-25); `während des Bewegens` und `Quellordner` wörtlich aus dem Geschwister `transfer.appearedDuringMove`, weil
-  beide Sätze im selben Toast stehen · `high`.
-- **„stays in {folderName}“ → `bleibt/bleiben in {folderName}`** · Verb in eigenem Plural-Block wie beim Geschwister ·
-  `high`.
-
-## Platzhalterzeilen in „Öffnen mit“ und „Teilen“ (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
-
 ## Platzhalterzeilen in „Öffnen mit“ und „Teilen“ (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)
 
 - `Optionen zum Teilen`: `Freigabe` is the network share, and `Teilen-Optionen` reads clumsily.

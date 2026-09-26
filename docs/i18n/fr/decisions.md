@@ -744,16 +744,6 @@ values write the catalog's `’`.
 - Escape → `Échap`, `la touche Échap` at first mention (MS FRA). "a dialog or menu" is picked up with the masculine
   (`est ouvert`, `le fermer`).
 
-## Originaux modifiés pendant le déplacement (`transfer.changedDuringMove`, 2026-09-25)
-
-- **« changed during the move » → `a changé / ont changé pendant le déplacement`** · voix active, comme
-  `fileOperations.cancelRollback.reason.drift.counted` (« ils ont changé ») ; le Finder `PE56` écrit au passif « ont été
-  modifiés au cours de la gravure » (Finder `LocalizableMerged` `PE56`, macOS 26.6.2, live bundle, 2026-09-25), mais le
-  catalogue préfère l'actif. `pendant le déplacement` et `dossiers source` repris mot pour mot du voisin
-  `transfer.appearedDuringMove`, affiché dans la même notification · `high`.
-
-## Lignes d'attente de « Ouvrir avec » et « Partager » (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`, 2026-09-24)
-
 ## Lignes d'attente de « Ouvrir avec » et « Partager » (`menu.context.openWithLoading`, `.shareLoading`, `.shareNone`)
 
 - `Recherche d’apps…`, `options de partage`, `Aucune option de partage` (macOS’s empty-menu shape).

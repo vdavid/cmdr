@@ -51,7 +51,7 @@
   "@transfer.appearedDuringMove": {
     "sourceHash": "b884882"
   },
-  "transfer.changedDuringMove": "{count, plural, one {{countText} elemento cambió mientras se movían los archivos y se queda} many {{countText} elementos cambiaron mientras se movían los archivos y se quedan} other {{countText} elementos cambiaron mientras se movían los archivos y se quedan}} en {scope, select, manyFolders {{folderName} y en otras carpetas de origen} other {{folderName}}}.",
+  "transfer.changedDuringMove": "{count, plural, one {{countText} elemento ha cambiado mientras se movían los archivos y se queda} many {{countText} elementos han cambiado mientras se movían los archivos y se quedan} other {{countText} elementos han cambiado mientras se movían los archivos y se quedan}} en {scope, select, manyFolders {{folderName} y en otras carpetas de origen} other {{folderName}}}.",
   "@transfer.changedDuringMove": {
     "sourceHash": "b446f54"
   }
