@@ -33,9 +33,11 @@ Full details (decisions, NSOpenPanel coexistence, the testing gap, multi-selecti
   AppKit monitor catches it once addressed to our panel, before Quick Look's own event routing. Keep the monitor scoped
   to the panel's window number and our delegate so other windows retain Escape. See `DETAILS.md` § Opening and Escape.
 - **The close observer is the single source of truth for `is_open`; don't add a parallel flip.** `panel.orderOut(nil)`
-  posts `NSWindowWillCloseNotification` asynchronously (empirically `QLPreviewPanel` posts it on `orderOut:` too, ~200 ms
-  after the close IPC returns; verified via `apps/desktop/test/manual/quick-look-mcp.md`). A synchronous flip in
-  `close_on_main` would race the observer's late flip and break a quick reopen.
+  makes `QLPreviewPanel` post its close notification. A second flip in `close_on_main` would race the observer's and
+  break a quick reopen.
+- **Never hold the controller mutex across `orderOut`.** With the open/close animation off, the close notification
+  can arrive in the same event turn, and the observer locks the same non-reentrant mutex: a deadlock. That's why
+  `close_on_main` takes `&Mutex<Self>` and reads `is_open` in a scoped guard.
 - **`#[unsafe(method_id(...))]` bodies need a single tail expression**: no early `return`, no `?` (both produce
   intermediate `Option`s the macro can't coerce). Compute the value once and let the macro wrap it. See
   `previewItemAtIndex`.
