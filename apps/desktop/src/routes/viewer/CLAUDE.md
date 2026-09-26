@@ -19,7 +19,8 @@ Each is break-if-ignored; the named `DETAILS.md` section has the why.
 - **Composables take getter deps, ❌ never raw `$state`** (which loses reactivity); effects live on the page and
   delegate to `run*Effect()`. (§ Architecture)
 - **Text-only paths gate on `viewMode === 'text'`, ❌ never `media.isMedia`**: Binary/Hex (byte offsets, not rows) and
-  media leave text fields empty, which throws. The switch resets media state BEFORE reopening; `reset()` PRESERVES `lastMediaKind`. (§ "Media rendering")
+  media leave text fields empty, which throws. The switch resets media state BEFORE reopening; `reset()` PRESERVES
+  `lastMediaKind`. (§ "Media rendering")
 - **`cmdr-media://` URLs come ONLY from `mediaUrl(token)`**, and the scheme must stay in `tauri.conf.json`'s `img-src` +
   `object-src` CSP. `viewer-media.spec.ts` guards both. (§ "Media rendering")
 - **`user-select: none` on `.file-content` is deliberate** (native selection loses its anchor on scroll-out), so Edit >
