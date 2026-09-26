@@ -267,6 +267,12 @@
     "forms": "the title-bar pill → märket; a file row's overlay marker → statussymbol / symbol (Visa statussymboler på bildfiler)",
     "sources": "MS terminology (badge → märke); catalog precedent for overlay symbols (varningssymbol, appsymboler)"
   },
+  "binary-view": {
+    "chosen": "Binärt",
+    "forms": "neuter, agreeing with läge, like TC",
+    "confidence": "high",
+    "sources": "TC Lister (2 Binärt); no DC sv in the pile"
+  },
   "brief-view": {
     "accept": ["Kortfattat"],
     "chosen": "Kortfattad",
@@ -1165,6 +1171,12 @@
     "confidence": "high",
     "forms": "Anslut som gäst; gäster",
     "sources": "MS terminology; macOS NetAuthAgent (gäståtkomst)"
+  },
+  "hex": {
+    "chosen": "Hexadecimalt",
+    "confidence": "tentative",
+    "forms": "neuter, agreeing with läge, pairing with Binärt as in TC",
+    "sources": "TC Lister (3 Hexadecimalt); MS maps hex and hexadecimal to hex; no DC sv in the pile"
   },
   "hidden": {
     "accept": ["dolt"],

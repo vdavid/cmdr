@@ -220,6 +220,11 @@
     "sources": "MS terminology pt-BR (badge → selo)",
     "decision": "Image index"
   },
+  "binary-view": {
+    "chosen": "Binário",
+    "confidence": "high",
+    "sources": "TC pt-BR Lister (2 Binário); DC pt-BR (Mostrar com binário); MS pt-BR (binary → binário)"
+  },
   "brief-view": {
     "chosen": "visualização resumida",
     "accept": ["resumid"],
@@ -1111,6 +1116,11 @@
     "chosen": "convidado",
     "confidence": "confirmed",
     "sources": "NetAuthAgent pt-BR (Guest → Convidado)"
+  },
+  "hex": {
+    "chosen": "Hexadecimal",
+    "confidence": "high",
+    "sources": "TC pt-BR Lister (3 Hexadecimal); DC pt-BR (Mostrar com hexadecimal); MS pt-BR (hex → hexa, hexadecimal)"
   },
   "hidden": {
     "chosen": "oculto",

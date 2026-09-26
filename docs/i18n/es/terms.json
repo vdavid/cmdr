@@ -231,6 +231,11 @@
     },
     "decision": "La indexación de imágenes: carpetas, estados, insignias"
   },
+  "binary-view": {
+    "chosen": "Binario",
+    "confidence": "high",
+    "sources": "TC Lister (2 Binario); DC (Mostrar como binario); MS (binary → binario)"
+  },
   "brief-view": {
     "chosen": "vista breve",
     "accept": ["breve"],
@@ -1151,6 +1156,11 @@
     "confidence": "high",
     "sources": "NetAuthAgent (GUEST, EINFO_NO_ACCESS_GUEST)",
     "decision": "Por qué no se monta un recurso compartido o no carga su lista"
+  },
+  "hex": {
+    "chosen": "Hexadecimal",
+    "confidence": "high",
+    "sources": "TC Lister (3 Hexadecimal); DC (Mostrar como hexadecimal); MS (hex → hexa, hexadecimal)"
   },
   "hidden": {
     "chosen": "oculto",

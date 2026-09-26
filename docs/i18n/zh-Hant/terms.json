@@ -332,6 +332,17 @@
     "forms": "the alpha status badge → 標記 (看到 <alpha></alpha> 標記的地方); the title-bar pill → 警告標記 (tentative)",
     "sources": "catalog onboarding.stepBeta.openBeta"
   },
+  "binary-view": {
+    "chosen": "二進位",
+    "avoid": [
+      {
+        "form": "二進制",
+        "why": "DC zh-TW's Mainland form (進制)"
+      }
+    ],
+    "confidence": "high",
+    "sources": "TC zh-TW Lister (2 二進位); MS (binary → 二進位)"
+  },
   "bookmark": {
     "chosen": "書籤",
     "confidence": "confirmed",
@@ -1384,7 +1395,6 @@
     "sources": "DC (exact Create hard link match)"
   },
   "hex": {
-    "accept": ["二進位"],
     "avoid": [
       {
         "form": "十六進制",
@@ -1393,8 +1403,7 @@
     ],
     "chosen": "十六進位",
     "confidence": "high",
-    "forms": "binary → 二進位",
-    "sources": "MS (hex, hexadecimal; HKG + TWN), TC Lister (16進位)"
+    "sources": "MS (hex, hexadecimal; HKG + TWN), TC Lister (3 16進位)"
   },
   "hidden": {
     "accept": ["不顯示", "不會顯示"],

@@ -313,6 +313,11 @@
     "sources": "ms (badge → jelvény, notification badge → értesítési jelvény); macOS Finder file-icon status badges (BADGE_AX_LABEL)",
     "decision": "A képindex jelvényei"
   },
+  "binary-view": {
+    "chosen": "Bináris",
+    "confidence": "high",
+    "sources": "TC Lister (2 Bináris); DC (Megjelenítés binárisan); MS (binary → bináris)"
+  },
   "blocked": {
     "chosen": "blokkolva",
     "accept": ["megakadályoz", "foglalja"],
@@ -1406,6 +1411,18 @@
     "forms": "from the Help menu → a Súgó menüből",
     "confidence": "high",
     "sources": "macOS (Súgó)"
+  },
+  "hex": {
+    "chosen": "Hexa",
+    "avoid": [
+      {
+        "form": "Hexadecimális",
+        "why": "as the mode label: TC Lister names the same mode Hexa, and the long form is a poor fit for the status-bar badge where English says Hex"
+      }
+    ],
+    "confidence": "tentative",
+    "sources": "TC Lister (3 Hexa); DC and MS say hexadecimális",
+    "note": "The mode label is Hexa; prose about the number system may say hexadecimális."
   },
   "hidden": {
     "chosen": "rejtett",

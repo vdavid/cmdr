@@ -292,6 +292,11 @@
     "forms": "the small overlay marker on a file row → Statussymbol; the title-bar pill → der Hinweis",
     "sources": "no direct source; Symbol = icon in German UI"
   },
+  "binary-view": {
+    "chosen": "Binär",
+    "confidence": "high",
+    "sources": "TC Lister (2 Binär); DC (Binär anzeigen); MS (binary → Binär)"
+  },
   "brief-view": {
     "accept": ["Kompaktansicht", "Kompaktmodus"],
     "chosen": "Kompakt",
@@ -1244,6 +1249,11 @@
     "confidence": "high",
     "forms": "hardlinked files → Hardlink-Dateien",
     "sources": "common German dev usage"
+  },
+  "hex": {
+    "chosen": "Hexadezimal",
+    "confidence": "high",
+    "sources": "TC Lister (3 Hexadezimal); MS (hex, hexadecimal → hexadezimal); DC says Hex only inside Als Hex anzeigen"
   },
   "hidden": {
     "accept": ["Verborgene"],

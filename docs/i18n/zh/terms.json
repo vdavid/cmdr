@@ -299,6 +299,11 @@
     "forms": "label 在图像文件上显示状态标记; the title-bar pill also 标记",
     "sources": "descriptive"
   },
+  "binary-view": {
+    "chosen": "二进制",
+    "confidence": "high",
+    "sources": "TC Lister (2 二进制); DC (二进制方式显示); MS (binary → 二进制)"
+  },
   "brief-view": {
     "chosen": "简洁",
     "confidence": "high",
@@ -1217,6 +1222,11 @@
     "confidence": "high",
     "forms": "hardlinked files 硬链接文件",
     "sources": "MS terminology"
+  },
+  "hex": {
+    "chosen": "十六进制",
+    "confidence": "high",
+    "sources": "TC Lister (3 十六进制); DC (十六进制方式显示); MS (hex, hexadecimal → 十六进制)"
   },
   "hidden": {
     "chosen": "隐藏",

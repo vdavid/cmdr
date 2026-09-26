@@ -152,9 +152,10 @@
   "@viewer.toolbar.viewMode.binary": {
     "sourceHash": "ee1c827"
   },
-  "viewer.toolbar.viewMode.hex": "Hexadecimaal",
+  "viewer.toolbar.viewMode.hex": "Hex",
   "@viewer.toolbar.viewMode.hex": {
-    "sourceHash": "69493e6"
+    "sourceHash": "69493e6",
+    "sameAsSourceJustification": "Dutch file managers name this viewer mode Hex too (Total Commander Lister “3 Hex”, Double Commander “Toon als hex”); see the hex ruling in docs/i18n/nl/terms.json."
   },
   "viewer.toolbar.viewMode.viewAsText": "Toon als tekst",
   "@viewer.toolbar.viewMode.viewAsText": {

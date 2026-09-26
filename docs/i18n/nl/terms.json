@@ -265,6 +265,11 @@
     "forms": "badge → markering, status badge → statusmarkering",
     "sources": "macOS Finder Markeer (QK4); catalog gemarkeerd"
   },
+  "binary-view": {
+    "chosen": "Binair",
+    "confidence": "high",
+    "sources": "TC Lister (2 Binair); DC (Toon als binair); MS (binary → binair)"
+  },
   "brief-view": {
     "accept": ["beknopt"],
     "avoid": [
@@ -1145,6 +1150,18 @@
     "chosen": "gast",
     "confidence": "high",
     "sources": "NetAuthAgent AuthDialog.loctable, EINFO_NO_ACCESS_GUEST"
+  },
+  "hex": {
+    "chosen": "Hex",
+    "avoid": [
+      {
+        "form": "Hexadecimaal",
+        "why": "as the mode label: TC Lister and DC both name the mode Hex; MS hexadecimaal is the number-system word"
+      }
+    ],
+    "confidence": "high",
+    "sources": "TC Lister (3 Hex); DC (Toon als hex); MS (hex → hexadecimaal)",
+    "note": "The mode label is Hex; prose about the number system may say hexadecimaal."
   },
   "hidden": {
     "chosen": "verborgen",

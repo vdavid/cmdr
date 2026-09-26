@@ -319,6 +319,12 @@
     "match": ["batch rename", "bulk rename", "mass rename", "mass-rename", "multi-rename", "rename multiple"],
     "sense": "Renaming many files at once from a pattern."
   },
+  "binary-view": {
+    "distinct": ["hex"],
+    "en": "Binary",
+    "match": ["=binary"],
+    "sense": "The viewer's Binary mode: the file's raw bytes as fixed-width character rows (Total Commander Lister's Binary), not base-2 digits."
+  },
   "blocked": {
     "distinct": ["deny", "busy"],
     "en": "blocked",
@@ -1375,9 +1381,10 @@
     "sense": "The menu bar's Help menu, named in prose (send a report from the Help menu)."
   },
   "hex": {
+    "distinct": ["binary-view"],
     "en": "hexadecimal",
-    "match": ["hexadecimal", "hex", "binary view"],
-    "sense": "Base-16 (and base-2) number display in the viewer."
+    "match": ["hexadecimal", "hex"],
+    "sense": "Base-16 display, like the viewer's Hex mode: offset, byte pairs, and characters (Total Commander Lister's Hex)."
   },
   "hidden": {
     "distinct": ["hide"],

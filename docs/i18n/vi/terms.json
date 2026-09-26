@@ -231,6 +231,11 @@
     "forms": "status badge → huy hiệu trạng thái; the corner progress chip is also a huy hiệu",
     "sources": "descriptive; no pile term for this shape"
   },
+  "binary-view": {
+    "chosen": "Nhị phân",
+    "confidence": "high",
+    "sources": "TC vi Lister (2 Nhị phân); MS (binary → nhị phân)"
+  },
   "brief-view": {
     "chosen": "Rút gọn",
     "confidence": "high",
@@ -1096,6 +1101,11 @@
     "confidence": "high",
     "forms": "Connect as guest → Kết nối với tư cách khách",
     "sources": "macOS SystemFolderLocalizations (Guest → Khách), NetAuthAgent EINFO_NO_ACCESS_GUEST"
+  },
+  "hex": {
+    "chosen": "Thập lục phân",
+    "confidence": "high",
+    "sources": "TC vi Lister (3 Thập lục phân); MS says số hex for the number, not a mode label"
   },
   "hidden": {
     "chosen": "ẩn",

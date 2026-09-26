@@ -152,7 +152,7 @@
   "@viewer.toolbar.viewMode.binary": {
     "sourceHash": "ee1c827"
   },
-  "viewer.toolbar.viewMode.hex": "Hexadecimális",
+  "viewer.toolbar.viewMode.hex": "Hexa",
   "@viewer.toolbar.viewMode.hex": {
     "sourceHash": "69493e6"
   },
