@@ -36,7 +36,9 @@ use std::sync::Mutex;
 use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, Bool, ProtocolObject};
 use objc2::{DefinedClass, MainThreadMarker, MainThreadOnly, define_class, msg_send, sel};
-use objc2_app_kit::{NSEvent, NSEventMask, NSEventType, NSWindowAnimationBehavior, NSWindowDelegate};
+use objc2_app_kit::{
+    NSEvent, NSEventMask, NSEventModifierFlags, NSEventType, NSWindowAnimationBehavior, NSWindowDelegate,
+};
 use objc2_foundation::{
     NSInteger, NSNotification, NSNotificationCenter, NSNotificationName, NSObject, NSObjectProtocol, NSString, NSURL,
 };
@@ -234,8 +236,9 @@ fn install_escape_monitor(app: &AppHandle<Wry>) -> bool {
     let block = block2::RcBlock::new(move |event: NonNull<NSEvent>| -> *mut NSEvent {
         // SAFETY: AppKit keeps this event alive throughout the local monitor callback.
         let event_ref = unsafe { event.as_ref() };
-        let command_modifiers = (1 << 18) | (1 << 19) | (1 << 20);
-        if event_ref.keyCode() != ESCAPE_KEY_CODE || event_ref.modifierFlags().0 & command_modifiers != 0 {
+        let chord_modifiers =
+            NSEventModifierFlags::Control | NSEventModifierFlags::Option | NSEventModifierFlags::Command;
+        if event_ref.keyCode() != ESCAPE_KEY_CODE || event_ref.modifierFlags().intersects(chord_modifiers) {
             return event.as_ptr();
         }
         let Some(mtm) = MainThreadMarker::new() else {

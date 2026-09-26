@@ -13,7 +13,7 @@
       "reason": "TODO: the pasteboard main-thread hop, spelled out in `copy_files_to_clipboard`, `copy_paths_to_clipboard`, `cut_paths_to_clipboard`, and `cut_files_to_clipboard`: an `mpsc::channel`, `app.run_on_main_thread` with a `MainThreadMarker` calling `clipboard::write_file_urls_to_clipboard`, then `rx.recv()` with its two `map_err` sentences. Extract `write_paths_on_main(app, paths) -\u003e Result\u003c(), String\u003e` into `crate::clipboard` (the hop is behavior, and `commands/CLAUDE.md` says this layer carries none), with a `read_paths_on_main` beside it for `read_clipboard_files`. Each command is then left with what differs: resolving indices or taking paths by value, its own empty-input refusal, and the `clear_cut_state` or `set_cut_state` call. `src-tauri/CLAUDE.md` cites this file as the AppKit main-thread-hop pattern, so repoint that line at the helper in the same change."
     },
     "apps/desktop/src-tauri/src/commands/quick_look.rs": {
-      "lines": 15,
+      "lines": 14,
       "reason": "TODO: `quick_look_open` and `quick_look_set_path` differ by one method call and share the rest: the `volume_supports_local_fs` gate with its debug line, the 2 s `blocking_with_timeout`, the channel, the `run_on_main_thread` closure that pulls `QuickLookState` and locks it, and the `rx.recv()` reply. Extract `on_quick_look_main(app, volume_id, path, skip_label, action)` in this file, taking the controller call as the closure, so one command passes `ctrl.open_on_main(app, path)` and the other `ctrl.set_path_on_main(path)`. The three commands stay separate `#[tauri::command]` functions, which is what the module doc argues for; only their bodies collapse."
     },
     "apps/desktop/src-tauri/src/file_system/listing/reading.rs": {
