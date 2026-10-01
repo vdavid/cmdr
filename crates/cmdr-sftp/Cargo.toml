@@ -33,7 +33,7 @@ cmdr-fs = { path = "../cmdr-fs" }
 # crate shipped eight breaking minors in eight months, so a bump has to be one
 # file's problem. `aws-lc-rs` is russh's default crypto backend and is already in
 # `Cargo.lock` through `rustls`.
-russh = "0.62.7"
+russh = "0.63.0"
 # The SFTP protocol engine over russh's channel stream. Modeled on
 # openssh-portable's own `sftp-client.c`, and the only candidate that both
 # negotiates `limits@openssh.com` and exposes per-extension predicates.
