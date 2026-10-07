@@ -106,6 +106,7 @@ const EXPECTED_NAMES: Record<string, string> = {
   'nav.firstInFull': 'Jump to first file',
   'nav.lastInFull': 'Jump to last file',
   'file.rename': 'Rename',
+  'file.multiRename': 'Multi-rename',
   'file.view': 'View',
   'file.edit': 'Edit in default editor',
   'file.copy': 'Copy',
@@ -185,6 +186,8 @@ const EXPECTED_NAMES: Record<string, string> = {
 const EXPECTED_DESCRIPTIONS: Record<string, string | undefined> = {
   'view.calculateFolderSizes':
     'Shows the size of every folder in this pane that doesn’t have one yet. Esc stops the calculation.',
+  'file.multiRename':
+    'Renames the selected files (or the whole folder) with a name mask, counter, and search & replace',
   'app.checkForUpdates': 'Check whether a newer version of Cmdr is available, and download it if so',
   'cmdr.openOnboarding': 'Reopen the onboarding wizard to review or change first-launch setup options',
   'help.openShortcuts': 'Open a read-only window listing every keyboard shortcut, live-synced with your customizations',

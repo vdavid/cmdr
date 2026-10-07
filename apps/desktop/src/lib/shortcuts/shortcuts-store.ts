@@ -275,6 +275,7 @@ export const menuCommands = [
   'file.delete',
   'file.deletePermanently',
   'file.rename',
+  'file.multiRename',
   'file.showInFinder',
   'file.openTerminalHere',
   'file.getInfo',

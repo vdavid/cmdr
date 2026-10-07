@@ -1000,3 +1000,20 @@ export type {
 } from './s3'
 
 export { confirmWithCheckbox } from './confirm-dialog'
+
+export {
+  previewMultiRename,
+  applyMultiRename,
+  getMultiRenamePresets,
+  saveMultiRenamePreset,
+  deleteMultiRenamePreset,
+} from './multi-rename'
+export type {
+  ExpectedRename,
+  MultiRenameError,
+  MultiRenamePreset,
+  MultiRenameResult,
+  MultiRenameSpec,
+  MultiRenameStarted,
+  PreviewRow,
+} from './multi-rename'

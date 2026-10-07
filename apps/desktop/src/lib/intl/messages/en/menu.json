@@ -727,5 +727,9 @@
   "menu.help.viewDebugLog": "View debug log",
   "@menu.help.viewDebugLog": {
     "description": "VERB phrase (imperative). Help-menu action that opens the application’s current diagnostic log file in its own read-only viewer. Use the same wording as commands.helpViewDebugLog.label. This is different from the operation log, which lists file operations. No ellipsis; it collects no input."
+  },
+  "menu.file.multiRename": "Multi-rename…",
+  "@menu.file.multiRename": {
+    "description": "File menu item (Ctrl+M): opens the tool that renames many files at once with a name mask, like Total Commander's Multi-Rename Tool. The ellipsis says it opens a sheet."
   }
 }

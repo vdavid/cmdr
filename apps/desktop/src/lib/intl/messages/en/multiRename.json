@@ -1,0 +1,210 @@
+{
+  "multiRename.title": "Multi-rename",
+  "@multiRename.title": {
+    "description": "Title of the Multi-Rename Tool sheet (Ctrl+M), which renames many files at once with a name mask, like Total Commander's tool of the same name."
+  },
+  "multiRename.nameMask": "Name mask",
+  "@multiRename.nameMask": {
+    "description": "Label of the field holding the rename mask for the file name: plain text plus placeholders in brackets such as [N] (old name) or [C] (counter)."
+  },
+  "multiRename.extensionMask": "Extension",
+  "@multiRename.extensionMask": {
+    "description": "Label of the field holding the rename mask for the file extension, kept separate so a typo can't break the file type. [E] keeps the old extension."
+  },
+  "multiRename.insertPlaceholder": "Insert placeholder",
+  "@multiRename.insertPlaceholder": {
+    "description": "Accessible name of the row of buttons that insert a placeholder such as [N] or [C] into the name mask at the caret."
+  },
+  "multiRename.search": "Search for",
+  "@multiRename.search": {
+    "description": "Label of the search field of the rename tool's search & replace. Supports * and ? wildcards and a|b|c lists."
+  },
+  "multiRename.replace": "Replace with",
+  "@multiRename.replace": {
+    "description": "Label of the replacement field of the rename tool's search & replace. With a list search, x|y|z pairs up with it."
+  },
+  "multiRename.caseSensitive": "Match case",
+  "@multiRename.caseSensitive": {
+    "description": "Search & replace option: only match the same uppercase/lowercase letters."
+  },
+  "multiRename.firstOnly": "First match only",
+  "@multiRename.firstOnly": {
+    "description": "Search & replace option: replace only the first match in each name, not all of them."
+  },
+  "multiRename.includeExtension": "Include extension",
+  "@multiRename.includeExtension": {
+    "description": "Search & replace option: also search and replace in the file extension."
+  },
+  "multiRename.regex": "Regular expression",
+  "@multiRename.regex": {
+    "description": "Search & replace option: the search is a regular expression; $1, $2 in the replacement insert its groups."
+  },
+  "multiRename.substitute": "Replace whole name",
+  "@multiRename.substitute": {
+    "description": "Search & replace option: when the search matches, the whole name becomes the replacement (Total Commander's \"Subst.\")."
+  },
+  "multiRename.case": "Letter case",
+  "@multiRename.case": {
+    "description": "Label of the menu that changes the letter case of the new names, applied after search & replace."
+  },
+  "multiRename.case.unchanged": "Unchanged",
+  "@multiRename.case.unchanged": {
+    "description": "Letter-case menu option: keep the letter case as it is."
+  },
+  "multiRename.case.lower": "lowercase",
+  "@multiRename.case.lower": {
+    "description": "Letter-case menu option: all letters lowercase. Written in lowercase on purpose, to show the result."
+  },
+  "multiRename.case.upper": "UPPERCASE",
+  "@multiRename.case.upper": {
+    "description": "Letter-case menu option: all letters uppercase. Written in uppercase on purpose, to show the result."
+  },
+  "multiRename.case.firstUpper": "First letter uppercase",
+  "@multiRename.case.firstUpper": {
+    "description": "Letter-case menu option: the first letter of the name uppercase, the rest lowercase."
+  },
+  "multiRename.case.words": "Every Word Capitalized",
+  "@multiRename.case.words": {
+    "description": "Letter-case menu option: the first letter of every word uppercase, the rest lowercase. Written that way on purpose, to show the result."
+  },
+  "multiRename.removeDiacritics": "Remove diacritics",
+  "@multiRename.removeDiacritics": {
+    "description": "Option: turn letters with accents and other diacritics into plain letters (á becomes a, ž becomes z, ß becomes ss), in every language."
+  },
+  "multiRename.counterStart": "Counter from",
+  "@multiRename.counterStart": {
+    "description": "Label of the number the counter placeholder [C] starts at."
+  },
+  "multiRename.counterStep": "Step",
+  "@multiRename.counterStep": {
+    "description": "Label of the amount the counter placeholder [C] goes up (or down, when negative) per file."
+  },
+  "multiRename.counterDigits": "Digits",
+  "@multiRename.counterDigits": {
+    "description": "Label of how many digits the counter placeholder [C] has; shorter numbers get leading zeros."
+  },
+  "multiRename.presets": "Preset",
+  "@multiRename.presets": {
+    "description": "Label of the menu of saved rename settings (presets) to load."
+  },
+  "multiRename.presetPlaceholder": "Load a preset",
+  "@multiRename.presetPlaceholder": {
+    "description": "Placeholder of the preset menu before one is chosen."
+  },
+  "multiRename.preset.default": "No change",
+  "@multiRename.preset.default": {
+    "description": "Built-in preset that resets every setting, so all names stay as they are (Total Commander's <Default>)."
+  },
+  "multiRename.preset.removeDiacritics": "Remove diacritics",
+  "@multiRename.preset.removeDiacritics": {
+    "description": "Built-in preset that keeps names as they are but removes diacritics (á becomes a, ž becomes z)."
+  },
+  "multiRename.presetName": "Preset name",
+  "@multiRename.presetName": {
+    "description": "Label of the field where the user names the current settings to save them as a preset."
+  },
+  "multiRename.savePreset": "Save preset",
+  "@multiRename.savePreset": {
+    "description": "Button that saves the current rename settings under the name in the Preset name field; an existing preset with that name is replaced."
+  },
+  "multiRename.deletePreset": "Delete preset",
+  "@multiRename.deletePreset": {
+    "description": "Button that deletes the chosen saved preset."
+  },
+  "multiRename.preview": "Preview",
+  "@multiRename.preview": {
+    "description": "Accessible name of the table that previews every file's old and new name."
+  },
+  "multiRename.oldName": "Old name",
+  "@multiRename.oldName": {
+    "description": "Preview table column: the file's current name."
+  },
+  "multiRename.newName": "New name",
+  "@multiRename.newName": {
+    "description": "Preview table column: the name the file will get."
+  },
+  "multiRename.statusColumn": "Note",
+  "@multiRename.statusColumn": {
+    "description": "Preview table column saying why a file won't be renamed (for example the name is taken). Empty when it will be."
+  },
+  "multiRename.status.unchanged": "No change",
+  "@multiRename.status.unchanged": {
+    "description": "Preview note: the new name is the same as the old one, so the file is left alone."
+  },
+  "multiRename.status.duplicate": "Same name as another file",
+  "@multiRename.status.duplicate": {
+    "description": "Preview note: another file in this batch would get the same new name, so neither is renamed."
+  },
+  "multiRename.status.targetExists": "Name is taken",
+  "@multiRename.status.targetExists": {
+    "description": "Preview note: a file that stays in the folder already has this name."
+  },
+  "multiRename.status.invalidName": "Not a valid name",
+  "@multiRename.status.invalidName": {
+    "description": "Preview note: the new name can't be a file name (empty, too long, or \".\" / \"..\")."
+  },
+  "multiRename.status.disallowedCharacter": "Can't contain {character}",
+  "@multiRename.status.disallowedCharacter": {
+    "description": "Preview note: the new name contains a character file names can't have, such as a slash. {character} is that character."
+  },
+  "multiRename.error.unclosed": "A placeholder is missing its closing ]",
+  "@multiRename.error.unclosed": {
+    "description": "Shown when a mask has a [ without a matching ]."
+  },
+  "multiRename.error.unknown": "Cmdr doesn't know the placeholder [{placeholder}]",
+  "@multiRename.error.unknown": {
+    "description": "Shown when a mask has a placeholder that doesn't exist. {placeholder} is what's between the brackets."
+  },
+  "multiRename.error.badRegex": "The regular expression isn't valid",
+  "@multiRename.error.badRegex": {
+    "description": "Shown when the search is a regular expression that can't be parsed."
+  },
+  "multiRename.error.gone": "This folder isn't open any more. Close and open the tool again.",
+  "@multiRename.error.gone": {
+    "description": "Shown when the pane the tool renames in moved to another folder."
+  },
+  "multiRename.error.nothingToRename": "Nothing to rename: every new name is the same or has a problem",
+  "@multiRename.error.nothingToRename": {
+    "description": "Shown when Rename is pressed but no file is ready to be renamed."
+  },
+  "multiRename.error.notConnected": "This location isn't connected right now",
+  "@multiRename.error.notConnected": {
+    "description": "Shown when the drive or server of the folder is no longer connected."
+  },
+  "multiRename.error.couldntStart": "Couldn't start renaming. Try again in a moment.",
+  "@multiRename.error.couldntStart": {
+    "description": "Shown when the rename couldn't start or the preview took too long."
+  },
+  "multiRename.moreRows": "{count, plural, one {# more file isn't shown, but will be renamed} other {# more files aren't shown, but will be renamed}}",
+  "@multiRename.moreRows": {
+    "description": "Below the preview table when it only shows the first 1,000 files. {count} is how many more there are."
+  },
+  "multiRename.counts": "{ready, plural, one {# to rename} other {# to rename}} · {unchanged} unchanged · {problems, plural, one {# problem} other {# problems}}",
+  "@multiRename.counts": {
+    "description": "Footer summary of the preview: how many files will be renamed, how many keep their name, and how many have a problem."
+  },
+  "multiRename.cancel": "Cancel",
+  "@multiRename.cancel": {
+    "description": "Button that closes the tool without renaming."
+  },
+  "multiRename.rename": "{count, plural, =0 {Rename} one {Rename # file} other {Rename # files}}",
+  "@multiRename.rename": {
+    "description": "Primary button that renames the files that are ready. {count} is how many."
+  },
+  "multiRename.started": "{count, plural, one {Renaming # file} other {Renaming # files}}. Undo is in the operation log.",
+  "@multiRename.started": {
+    "description": "Toast after Rename starts. {count} is how many files. The operation log is the window listing past operations, where Undo is."
+  },
+  "multiRename.error.previewOutOfDate": "The folder changed since the preview. Check the new preview, then rename again.",
+  "@multiRename.error.previewOutOfDate": {
+    "description": "Shown when Rename is pressed but files in the folder changed after the preview was shown, so nothing was renamed and the preview is refreshed."
+  },
+  "multiRename.error.readOnly": "This folder can't be renamed in: it's inside an archive or another read-only place",
+  "@multiRename.error.readOnly": {
+    "description": "Shown when Rename is pressed in a folder that can't be changed, such as the inside of a zip archive."
+  },
+  "multiRename.hiddenProblems": "{count, plural, one {# file below the preview has a problem and won't be renamed} other {# files below the preview have a problem and won't be renamed}}",
+  "@multiRename.hiddenProblems": {
+    "description": "Below the preview table when files past the first 1,000 shown have a problem (name taken, invalid) and will be skipped. {count} is how many."
+  }
+}

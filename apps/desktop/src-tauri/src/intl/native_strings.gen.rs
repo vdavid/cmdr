@@ -275,6 +275,7 @@ pub(crate) const NATIVE_STRINGS: &[LocaleStrings] = &[
             ("menu.file.edit", "Edit in editor"),
             ("menu.file.getInfo", "Get info"),
             ("menu.file.move", "Move…"),
+            ("menu.file.multiRename", "Multi-rename…"),
             ("menu.file.newFile", "New file…"),
             ("menu.file.newFolder", "New folder…"),
             ("menu.file.open", "Open"),

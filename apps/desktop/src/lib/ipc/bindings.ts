@@ -1328,6 +1328,35 @@ export const commands = {
     initiator: 'user' | 'aiClient' | 'agent' | 'agentEdited' | null,
   ) =>
     typedError<MutationReply, MutationError>(__TAURI_INVOKE('rename_file', { from, to, force, volumeId, initiator })),
+  /**
+   *  The live preview: each row's new name and whether it can take it. `rows` are
+   *  backend row numbers in rename order; `None` previews every row the pane shows.
+   */
+  previewMultiRename: (listingId: string, includeHidden: boolean, rows: number[] | null, spec: MultiRenameSpec) =>
+    typedError<PreviewRow[], MultiRenameError>(
+      __TAURI_INVOKE('preview_multi_rename', { listingId, includeHidden, rows, spec }),
+    ),
+  /**
+   *  Renames the rows the user saw as ready (`expected`, from the preview they
+   *  started from), as one operation the queue shows and Undo reverses. Refuses
+   *  with `previewOutOfDate` when the folder changed since that preview.
+   */
+  applyMultiRename: (
+    listingId: string,
+    includeHidden: boolean,
+    rows: number[] | null,
+    spec: MultiRenameSpec,
+    expected: ExpectedRename[],
+  ) =>
+    typedError<MultiRenameStarted, MultiRenameError>(
+      __TAURI_INVOKE('apply_multi_rename', { listingId, includeHidden, rows, spec, expected }),
+    ),
+  // The saved presets, newest first.
+  getMultiRenamePresets: () => __TAURI_INVOKE<MultiRenamePreset[]>('get_multi_rename_presets'),
+  // Saves a preset; one with the same name is replaced.
+  saveMultiRenamePreset: (preset: MultiRenamePreset) => __TAURI_INVOKE<void>('save_multi_rename_preset', { preset }),
+  // Deletes a preset by id. No-op when it isn't there.
+  deleteMultiRenamePreset: (id: string) => __TAURI_INVOKE<void>('delete_multi_rename_preset', { id }),
   // Moves a file or directory to the macOS Trash via NSFileManager.
   moveToTrash: (path: string) => typedError<null, MutationError>(__TAURI_INVOKE('move_to_trash', { path })),
   /**
@@ -5960,6 +5989,16 @@ export type CancelRollbackOutcome =
   // The reversal ran but left items behind — see [`CancelRollback::skips`].
   | 'partiallyRolledBack'
 
+// The case step, after search & replace.
+export type CaseChange =
+  | 'unchanged'
+  | 'lower'
+  | 'upper'
+  // The first letter upper, the rest lower.
+  | 'firstUpper'
+  // Every word's first letter upper, the rest lower.
+  | 'words'
+
 // What the person answered.
 export type CheckboxConfirm =
   // The confirming button, with the checkbox as it was left.
@@ -7729,6 +7768,11 @@ export type FavoriteTarget = {
   volumeRoot: string | null
   // Whether a pick gets there, and if not, why.
   reach: FavoriteReach
+// One row the user saw in the preview they started from.
+export type ExpectedRename = {
+  row: number
+  oldName: string
+  newName: string
 }
 
 /**
@@ -9026,6 +9070,13 @@ export type IndexStatusResponse = {
  */
 export type Initiator = 'user' | 'aiClient' | 'agent' | 'agentEdited'
 
+export type InvalidNameReason =
+  | { type: 'empty' }
+  | { type: 'disallowedCharacter'; character: string }
+  | { type: 'tooLong' }
+  // `.` and `..` name the folder itself and its parent.
+  | { type: 'reserved' }
+
 /**
  *  The per-item outcome. A canceled/failed op keeps `Done` rows for what it
  *  reached — exactly what a rollback needs.
@@ -10152,6 +10203,13 @@ export type ManualConnectResult = {
   sharePath: string | null
 }
 
+// Why a mask doesn't parse. Typed, so the frontend words it.
+export type MaskError =
+  // A `[` with no `]`; `at` is its character position, from 0.
+  | { type: 'unclosed'; at: number }
+  // A placeholder Cmdr doesn't know, as typed between the brackets.
+  | { type: 'unknown'; placeholder: string }
+
 /**
  *  `mcp-settings-close`: ask the settings window to close itself. Emitted via a
  *  distinct static `emit_to("settings", …)` (NOT through the generic `mcp-*`
@@ -11057,6 +11115,60 @@ export type MtpStorageInfo = {
 export type MtpStorageRemoved = {
   deviceId: string
   storageId: number
+}
+
+// Why a preview or an apply didn't answer. Typed, so the frontend words it.
+export type MultiRenameError =
+  // The pane's listing is no longer cached (it moved on).
+  | { type: 'gone'; listingId: string }
+  // The spec doesn't parse; the sheet shows it under its field.
+  | { type: 'spec'; error: SpecError }
+  // No row is ready to rename.
+  | { type: 'nothingToRename' }
+  // No volume answers for the folder (unplugged, disconnected).
+  | { type: 'notConnected'; volumeId: string }
+  // The executor refused before renaming anything.
+  | { type: 'couldntStart'; reason: RenameStartError }
+  // The folder changed since the preview the user started from: re-preview.
+  | { type: 'previewOutOfDate' }
+  // The folder is read-only (inside an archive or a `.git` portal).
+  | { type: 'readOnly' }
+  // The preview didn't finish within its deadline.
+  | { type: 'timedOut' }
+  // The preview's worker failed; `detail` is log text only.
+  | { type: 'internal'; detail: string }
+
+// One saved preset.
+export type MultiRenamePreset = {
+  id: string
+  name: string
+  spec: MultiRenameSpec
+}
+
+// Everything the sheet sets.
+export type MultiRenameSpec = {
+  nameMask: string
+  extensionMask: string
+  search: string
+  replace: string
+  caseSensitive: boolean
+  firstOnly: boolean
+  includeExtension: boolean
+  regex: boolean
+  substitute: boolean
+  case: CaseChange
+  removeDiacritics: boolean
+  counterStart: number
+  counterStep: number
+  counterDigits: number
+}
+
+// A started rename.
+export type MultiRenameStarted = {
+  // The operation, for its progress, the queue, and Undo.
+  operationId: string
+  // How many rows it renames.
+  renaming: number
 }
 
 /**
@@ -12092,6 +12204,15 @@ export type PrepareResult = {
   loading: boolean
 }
 
+// One row of the preview.
+export type PreviewRow = {
+  // The pane row (backend index, no `..`).
+  row: number
+  oldName: string
+  newName: string
+  status: RowStatus
+}
+
 /**
  *  What an operation had done at the moment it stopped, so the copy can say how
  *  far it got rather than only that it stopped.
@@ -12936,6 +13057,18 @@ export type RowBeside = 'previous' | 'next'
  *  search hits inside a top-level move/trash unit, and are never reversed.
  */
 export type RowRole = 'rollbackUnit' | 'searchOnly'
+
+// Whether a row can be renamed to its new name.
+export type RowStatus =
+  | { type: 'ready' }
+  // The new name is the old one: nothing to do.
+  | { type: 'unchanged' }
+  // The new name isn't a name a file can have.
+  | { type: 'invalidName'; reason: InvalidNameReason }
+  // Another row of the batch gets the same name.
+  | { type: 'duplicate' }
+  // Something that stays in the folder already has the name.
+  | { type: 'targetExists' }
 
 /**
  *  The mimalloc heap split into live data and allocator slack.
@@ -14886,6 +15019,12 @@ export type SpaceShortfall =
   | 'refuse'
   // Skip the check: the person chose to copy anyway.
   | 'proceed'
+
+// Why the spec itself can't run (the sheet shows it under the field).
+export type SpecError =
+  | { type: 'nameMask'; error: MaskError }
+  | { type: 'extensionMask'; error: MaskError }
+  | { type: 'badRegex'; detail: string }
 
 /**
  *  SQLite's page memory: the one process-wide slab every store's cached database

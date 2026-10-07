@@ -327,6 +327,24 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     }
   }
 
+  /**
+   * What the Multi-Rename Tool renames: the focused pane's listing and its
+   * selected rows as backend row numbers (in row order), or `null` rows for the
+   * whole folder. `null` when the pane shows no real listing (servers, search results).
+   */
+  function getFocusedPaneRenameTarget(): { listingId: string; rows: number[] | null } | null {
+    const pane = access.getPaneRef(access.getFocusedPane())
+    if (!pane || !capabilitiesFor(pane.getVolumeId()).hasBackendListing) return null
+    const listingId = pane.getListingId()
+    if (listingId === '') return null
+    const hasParent = pane.hasParentEntry()
+    const selected = [...pane.getSelectedIndices()]
+      .sort((a, b) => a - b)
+      .map((i) => (hasParent ? i - 1 : i))
+      .filter((i) => i >= 0)
+    return { listingId, rows: selected.length > 0 ? selected : null }
+  }
+
   /** Returns true when the cursor landed on the named item, false when it wasn't found. */
   async function moveCursorByName(paneRef: FilePaneAPI, name: string): Promise<boolean> {
     const inNetwork: boolean = paneRef.isInNetworkView()
@@ -551,6 +569,7 @@ export function createPaneCommands(access: PaneAccess, dialogs: DialogState) {
     handleSelectionAction,
     applyIndicesToFocusedPane,
     getFocusedPaneEntries,
+    getFocusedPaneRenameTarget,
     moveCursorByName,
     moveCursorByNameInFileListing,
     scrollTo,

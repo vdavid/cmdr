@@ -187,6 +187,16 @@ export const fileListCommands: CommandSource[] = [
     whileDialogOpen: BLOCKED_BY_DIALOGS,
   },
   {
+    // Total Commander's Ctrl+M. ⌘M is macOS's Minimize, so it's ⌃M here.
+    id: 'file.multiRename',
+    nameKey: 'commands.fileMultiRename.label',
+    scope: 'Main window/File list',
+    showInPalette: true,
+    shortcuts: ['⌃M'],
+    whileDialogOpen: BLOCKED_BY_DIALOGS,
+    descriptionKey: 'commands.fileMultiRename.description',
+  },
+  {
     id: 'file.view',
     nameKey: 'commands.fileView.label',
     scope: 'Main window/File list',

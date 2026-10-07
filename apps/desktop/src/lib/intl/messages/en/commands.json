@@ -474,6 +474,14 @@
     "description": "Command name that renames the selected file or folder. Appears in the command palette. A terse control label.",
     "screenshot": "settings-keyboard-shortcuts.png"
   },
+  "commands.fileMultiRename.label": "Multi-rename",
+  "@commands.fileMultiRename.label": {
+    "description": "Command name (Ctrl+M, like Total Commander) in the command palette and File menu: opens the tool that renames many files at once with a name mask."
+  },
+  "commands.fileMultiRename.description": "Renames the selected files (or the whole folder) with a name mask, counter, and search & replace",
+  "@commands.fileMultiRename.description": {
+    "description": "Longer help text for \"Multi-rename\", shown as a secondary line in the command palette."
+  },
   "commands.fileView.label": "View",
   "@commands.fileView.label": {
     "description": "Command name that opens the built-in viewer for the selected file. Appears in the command palette. A terse control label.",

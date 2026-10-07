@@ -70,6 +70,7 @@ export function makeCtx(explorer: Partial<ExplorerAPI>): CommandDispatchContext 
       showAboutWindow: vi.fn(),
       showLicenseKeyDialog: vi.fn(),
       showSelectionDialog: vi.fn(),
+      showMultiRename: vi.fn(),
       openOnboarding: vi.fn(),
     },
     source: 'palette',
@@ -195,6 +196,12 @@ export const DELEGATE_ROWS: DelegateRow[] = [
     id: 'about.close',
     expect: (_e, d) => {
       expect(d.showAboutWindow).toHaveBeenCalledExactlyOnceWith(false)
+    },
+  },
+  {
+    id: 'file.multiRename',
+    expect: (_e, d) => {
+      expect(d.showMultiRename).toHaveBeenCalledOnce()
     },
   },
   {

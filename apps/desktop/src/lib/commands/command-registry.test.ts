@@ -85,6 +85,7 @@ const EXPECTED_PALETTE_IDS: readonly CommandId[] = [
   'nav.goToRoot',
   'nav.goHome',
   'file.rename',
+  'file.multiRename',
   'file.view',
   'file.edit',
   'file.copy',

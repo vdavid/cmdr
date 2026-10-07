@@ -92,6 +92,10 @@ export const fileHandlers = {
     detached(explorerRef?.openViewerForCursor())
   },
 
+  'file.multiRename': ({ ctx }) => {
+    ctx.dialogs.showMultiRename()
+  },
+
   'file.rename': ({ explorerRef, dispatchArgs }) => {
     // On the Servers volume, Rename is "Edit server…": the name is what a server has to
     // rename. ❗ Opened, ❌ never awaited: the sheet stays up as long as the user types.

@@ -64,6 +64,7 @@ function makeCtx(
       showAboutWindow: vi.fn(),
       showLicenseKeyDialog: vi.fn(),
       showSelectionDialog: vi.fn(),
+      showMultiRename: vi.fn(),
       openOnboarding: vi.fn(),
     },
     source,

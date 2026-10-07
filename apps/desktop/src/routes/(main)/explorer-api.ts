@@ -318,6 +318,7 @@ export interface ExplorerAPI {
    * dialog. Captured ONCE at dialog open; the dialog does not refresh on mid-dialog
    * focused-pane change.
    */
+  getFocusedPaneRenameTarget: () => { listingId: string; rows: number[] | null } | null
   getFocusedPaneEntries: () => Promise<{
     entries: FileEntry[]
     cursorIndex: number

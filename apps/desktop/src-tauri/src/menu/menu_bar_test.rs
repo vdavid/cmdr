@@ -54,11 +54,12 @@ menu menu.bar.file id=menu_file
   11 item file_delete_permanently menu.file.deletePermanently [Shift+F8] tracked
   12 separator
   13 item rename menu.file.rename [F2] tracked
-  14 separator
-  15 item show_in_finder menu.file.showInFinder [Alt+Cmd+O] tracked
-  16 item open_terminal_here menu.file.openTerminalHere [Alt+Cmd+T] tracked
-  17 item get_info menu.file.getInfo [Cmd+I] tracked
-  18 item quick_look menu.file.quickLook [Shift+Space] tracked
+  14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
+  15 separator
+  16 item show_in_finder menu.file.showInFinder [Alt+Cmd+O] tracked
+  17 item open_terminal_here menu.file.openTerminalHere [Alt+Cmd+T] tracked
+  18 item get_info menu.file.getInfo [Cmd+I] tracked
+  19 item quick_look menu.file.quickLook [Shift+Space] tracked
 menu menu.bar.edit id=menu_edit
   0 predefined undo menu.edit.undo
   1 predefined redo menu.edit.redo
@@ -173,10 +174,11 @@ menu menu.bar.file
   11 item file_delete_permanently menu.file.deletePermanently tracked
   12 separator
   13 item rename menu.file.rename tracked
-  14 separator
-  15 item show_in_finder menu.file.showInFileManager [Alt+Ctrl+O] tracked
-  16 item get_info menu.file.getInfo [Cmd+I] tracked
-  17 item quick_look menu.file.quickLook tracked
+  14 item multi_rename menu.file.multiRename [Ctrl+M] tracked
+  15 separator
+  16 item show_in_finder menu.file.showInFileManager [Alt+Ctrl+O] tracked
+  17 item get_info menu.file.getInfo [Cmd+I] tracked
+  18 item quick_look menu.file.quickLook tracked
 menu menu.bar.edit
   0 item edit_cut menu.edit.cut [Ctrl+X] tracked
   1 item edit_copy menu.edit.copy [Ctrl+C] tracked

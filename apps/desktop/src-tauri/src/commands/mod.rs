@@ -34,6 +34,7 @@ pub mod menu;
 pub mod menu_state;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod mtp;
+pub mod multi_rename;
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub mod network;
 pub mod operation_log;

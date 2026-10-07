@@ -340,6 +340,15 @@ export const DIALOG_GALLERY_ENTRIES: DialogGalleryEntry[] = [
 
   // ── Ask Cmdr and AI ───────────────────────────────────────────────────────
   {
+    dialogId: 'multi-rename',
+    label: 'Multi-rename',
+    hostWindow: 'main',
+    status: 'not-triggerable',
+    reason:
+      'Open a folder and press ⌃M (or File > Multi-rename): the preview is computed by the backend from the focused pane’s real listing, so a fixture would show nothing a real folder doesn’t. Cancel closes it without renaming anything.',
+    states: [],
+  },
+  {
     dialogId: 'bulk-rename-review',
     label: 'Bulk rename review',
     hostWindow: 'main',

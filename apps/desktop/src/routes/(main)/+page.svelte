@@ -16,6 +16,9 @@
     import CommandPalette from '$lib/command-palette/CommandPalette.svelte'
     import SearchDialog from '$lib/search/SearchDialog.svelte'
     import SelectionDialog from '$lib/selection-dialog/SelectionDialog.svelte'
+    import MultiRenameDialog from '$lib/multi-rename/MultiRenameDialog.svelte'
+    import type { MultiRenameTarget } from '$lib/multi-rename/multi-rename-state.svelte'
+    import type { MultiRenameStarted } from '$lib/tauri-commands'
     import GoToPathDialog from '$lib/go-to-path/GoToPathDialog.svelte'
     import WhatsNewDialog from '$lib/whats-new/WhatsNewDialog.svelte'
     import AcknowledgementsDialog from '$lib/licensing/AcknowledgementsDialog.svelte'
@@ -76,7 +79,8 @@
     import { notifyOnboardingComplete, setOnboardingShowing } from '$lib/updates/updater.svelte'
     import { setWizardShowingForDownloadNotice } from '$lib/onboarding/local-download-notice'
     import { initSystemStrings } from '$lib/system-strings.svelte'
-    import { getShowFunctionKeyBar } from '$lib/settings/reactive-settings.svelte'
+    import { getShowFunctionKeyBar, getShowHiddenFiles } from '$lib/settings/reactive-settings.svelte'
+    import { addToast } from '$lib/ui/toast'
     import { revealSearchResultInPane } from '$lib/file-explorer/navigation/navigate-and-select'
     import {
         handleCommandExecute as dispatchCommand,
@@ -135,6 +139,7 @@
      * every auto-applied keystroke.
      */
     let showSelectionDialog = $state<'add' | 'remove' | null>(null)
+    let multiRenameTarget = $state.raw<MultiRenameTarget | null>(null)
     let selectionDialogSnapshot = $state.raw<{
         entries: FileEntry[]
         cursorIndex: number
@@ -558,6 +563,26 @@
         showSelectionDialog = mode
     }
 
+    /** Opens the Multi-Rename Tool on the focused pane (⌃M). A pane with no real listing has nothing to rename. */
+    function openMultiRename(): void {
+        if (multiRenameTarget || !explorerRef) return
+        const target = explorerRef.getFocusedPaneRenameTarget()
+        if (!target) return
+        multiRenameTarget = { ...target, includeHidden: getShowHiddenFiles() }
+    }
+
+    function closeMultiRename(): void {
+        multiRenameTarget = null
+        void Promise.resolve().then(() => {
+            explorerRef?.refocus()
+        })
+    }
+
+    function handleMultiRenameApplied(started: MultiRenameStarted): void {
+        addToast(tString('multiRename.started', { count: started.renaming }), { level: 'info' })
+        closeMultiRename()
+    }
+
     function handleSelectionDialogClose() {
         showSelectionDialog = null
         selectionDialogSnapshot = null
@@ -633,6 +658,9 @@
             },
             showSelectionDialog: (mode: 'add' | 'remove' | null) => {
                 void setSelectionDialog(mode)
+            },
+            showMultiRename: () => {
+                openMultiRename()
             },
             openOnboarding: () => openOnboardingFromMenuOrPalette(startupGatesCtx, 'menu'),
         },
@@ -761,6 +789,14 @@
                 baseDir={getFocusedPanePath()}
                 onGo={handleGoToPath}
                 onCancel={handleGoToPathDialogClose}
+            />
+        {/if}
+
+        {#if multiRenameTarget}
+            <MultiRenameDialog
+                target={multiRenameTarget}
+                onApplied={handleMultiRenameApplied}
+                onClose={closeMultiRename}
             />
         {/if}
 

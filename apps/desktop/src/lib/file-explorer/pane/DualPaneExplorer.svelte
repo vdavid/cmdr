@@ -1044,6 +1044,11 @@
     }
 
     // noinspection JSUnusedGlobalSymbols -- consumed by +page.svelte for Selection dialog
+    /** The Multi-Rename Tool's target: the focused pane's listing and selected rows. */
+    export function getFocusedPaneRenameTarget(): { listingId: string; rows: number[] | null } | null {
+        return paneCommands.getFocusedPaneRenameTarget()
+    }
+
     export async function getFocusedPaneEntries(): Promise<{
         entries: FileEntry[]
         cursorIndex: number
