@@ -490,6 +490,7 @@ describeSmb('SMB authentication', () => {
         port: ${String(SMB_AUTH_PORT)},
         username: ${JSON.stringify(SMB_AUTH_USERNAME)},
         password: ${JSON.stringify(SMB_AUTH_PASSWORD)},
+        credentialSource: 'typed',
         timeoutMs: 30000,
         cacheTtlMs: 5000,
       })
@@ -519,6 +520,7 @@ describeSmb('SMB 50-share server', () => {
         port: ${String(SMB_50SHARES_PORT)},
         username: '',
         password: '',
+        credentialSource: 'typed',
         timeoutMs: 30000,
         cacheTtlMs: 5000,
       })
@@ -559,6 +561,7 @@ describeSmb('SMB unicode server', () => {
         port: ${String(SMB_UNICODE_PORT)},
         username: '',
         password: '',
+        credentialSource: 'typed',
         timeoutMs: 30000,
         cacheTtlMs: 5000,
       })

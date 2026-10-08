@@ -2,11 +2,10 @@
  * E2E for duplicating in place: a copy that lands in the folder its source
  * already lives in.
  *
- * Four gestures reach it and they don't behave alike, which is the whole point
- * of a spec of its own: ⌘V and F5 end a single-item duplicate in the inline
- * rename editor, while the Duplicate command (⌘D, the menu, the palette) asks
- * nothing at all. `src/lib/file-operations/transfer/DETAILS.md` § "Only paste
- * and F5 end a duplicate in the rename editor".
+ * Paste ends a single-item duplicate in the inline rename editor. The Duplicate
+ * command (⌘D, the menu, the palette) asks nothing. F5 takes the new filename in
+ * its target field and blocks copying onto the source itself. See
+ * `src/lib/file-operations/transfer/DETAILS.md` § "Single-item destinations".
  *
  * Fixture layout (at $CMDR_E2E_START_PATH): `left/` holds `file-a.txt`,
  * `file-b.txt`, `sub-dir/`, `bulk/`, `.hidden-file`; `right/` starts empty.
@@ -19,7 +18,9 @@ import { test, expect } from './fixtures.js'
 import { restoreFixtureTree } from '../e2e-shared/fixture-manifest.js'
 import { recreateFixtures } from '../e2e-shared/fixtures.js'
 import { ensureMcpClient, mcpCall, mcpNavToPath } from '../e2e-shared/mcp-client.js'
+import { waitForConflictCheck } from './conflict-helpers.js'
 import {
+  clickButtonByText,
   dispatchMenuCommand,
   ensureAppReady,
   expectAndDismissToast,
@@ -183,14 +184,7 @@ test.describe('Duplicate in place', () => {
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
   })
 
-  test('F5 with both panes on one folder reports no conflict and asks no policy', async ({ tauriPage }) => {
-    // The gesture that used to be worst: the dialog's conflict check is a
-    // destination listing matched by NAME, so with both panes on `left/` it saw
-    // the source itself sitting at the destination and announced a conflict,
-    // showed the overwrite/skip/rename radios, and sent the backend a pre-known
-    // conflict naming the source. Both panes on one folder is the only way F5
-    // reaches a same-folder copy: the check runs once, against the destination
-    // the dialog opened with.
+  test('F5 blocks the source path and copies a relative filename beside it', async ({ tauriPage }) => {
     await ensureAppReady(tauriPage)
     await ensureMcpClient(tauriPage)
     const fixtureRoot = getFixtureRoot()
@@ -203,38 +197,33 @@ test.describe('Duplicate in place', () => {
     await tauriPage.keyboard.press('F5')
     await tauriPage.waitForSelector(TRANSFER_DIALOG, 5000)
 
-    await expect
-      .poll(async () => !(await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflicts-checking`)), {
-        timeout: waitBudget(10000),
-      })
-      .toBeTruthy()
+    await waitForConflictCheck(tauriPage)
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflicts-summary`)).toBe(false)
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .conflict-policy`)).toBe(false)
+    expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .path-error`)).toBe(true)
+    expect(
+      await tauriPage.evaluate<boolean>(`document.querySelector('${TRANSFER_DIALOG} .btn-primary').disabled`),
+    ).toBe(true)
+
+    const sourceContents = fs.readFileSync(path.join(leftDir, 'file-b.txt'), 'utf8')
+    await tauriPage.fill(`${TRANSFER_DIALOG} input.text-field-control`, 'file-b copy.txt')
+    await waitForConflictCheck(tauriPage)
     expect(await tauriPage.isVisible(`${TRANSFER_DIALOG} .path-error`)).toBe(false)
 
-    await tauriPage.click(`${TRANSFER_DIALOG} .btn-primary`)
+    await clickButtonByText(tauriPage, `${TRANSFER_DIALOG} .btn-primary`, 'Copy')
 
     // The progress dialog takes the setup dialog's place, so a transfer surface is up
     // continuously from here until the operation ends AND the frontend has closed it.
     // The file lands before the operation ends and proves it started, so the settle
     // wait can't pass vacuously here.
     await expect
-      .poll(() => fs.existsSync(path.join(leftDir, 'file-b (1).txt')), { timeout: waitBudget(8000) })
+      .poll(() => fs.existsSync(path.join(leftDir, 'file-b copy.txt')), { timeout: waitBudget(8000) })
       .toBeTruthy()
     await waitForTransferUiToSettle(tauriPage)
 
-    expect(fs.existsSync(path.join(leftDir, 'file-b.txt'))).toBe(true)
+    expect(fs.readFileSync(path.join(leftDir, 'file-b.txt'), 'utf8')).toBe(sourceContents)
+    expect(fs.readFileSync(path.join(leftDir, 'file-b copy.txt'), 'utf8')).toBe(sourceContents)
     await expectAndDismissToast(tauriPage, 'Copied 1 file.')
-
-    // F5 is the other gesture that opts in, and the editor opens in the pane the
-    // user is looking at rather than the one the dialog called the destination.
-    await tauriPage.waitForSelector('.rename-input', 5000)
-    await expect.poll(async () => renameEditorValue(tauriPage), { timeout: waitBudget(3000) }).toBe('file-b (1).txt')
-
-    await tauriPage.press('.rename-input', 'Escape')
-    await expect
-      .poll(async () => !(await tauriPage.isVisible('.rename-input')), { timeout: waitBudget(5000) })
-      .toBeTruthy()
-    expect(fs.existsSync(path.join(leftDir, 'file-b (1).txt'))).toBe(true)
+    expect(await tauriPage.isVisible('.rename-input')).toBe(false)
   })
 })
